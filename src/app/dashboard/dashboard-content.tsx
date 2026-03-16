@@ -402,8 +402,224 @@ export function DashboardContent() {
             />
           </div>
         </section>
+
+        <hr className="border-border" />
+
+        {/* API Keys Section */}
+        <ApiKeysSection clerkId={user?.id ?? ""} />
+
+        {/* Context Links Section */}
+        <ContextLinksSection clerkId={user?.id ?? ""} username={convexUser.username} />
       </main>
     </div>
+  );
+}
+
+function ApiKeysSection({ clerkId }: { clerkId: string }) {
+  const keys = useQuery(api.apiKeys.listKeys, clerkId ? { clerkId } : "skip");
+  const createKey = useMutation(api.apiKeys.createKey);
+  const revokeKey = useMutation(api.apiKeys.revokeKey);
+  const [newKey, setNewKey] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const handleCreate = async () => {
+    setCreating(true);
+    try {
+      const result = await createKey({
+        clerkId,
+        label: "CLI key",
+        scopes: ["read:public"],
+      });
+      setNewKey(result.key);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to create key");
+    }
+    setCreating(false);
+  };
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider">
+          API Keys
+        </h2>
+        <button
+          onClick={handleCreate}
+          disabled={creating}
+          className="text-xs px-3 py-1.5 bg-background-secondary border border-border rounded-md hover:border-sky transition-colors disabled:opacity-40"
+        >
+          {creating ? "Creating..." : "Create key"}
+        </button>
+      </div>
+
+      {newKey && (
+        <div className="p-3 border border-gold/30 rounded-md bg-gold/5 space-y-2">
+          <p className="text-xs text-gold font-medium">
+            Key created. Copy it now — it won&apos;t be shown again.
+          </p>
+          <code className="block text-xs font-mono text-foreground bg-background-secondary p-2 rounded break-all select-all">
+            {newKey}
+          </code>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(newKey);
+              setNewKey(null);
+            }}
+            className="text-xs text-sky hover:underline"
+          >
+            Copy and dismiss
+          </button>
+        </div>
+      )}
+
+      {keys && keys.length > 0 ? (
+        <div className="space-y-2">
+          {keys.map((k) => (
+            <div
+              key={k.id}
+              className="flex items-center justify-between px-3 py-2 border border-border rounded-md bg-background-secondary text-xs"
+            >
+              <div className="space-y-0.5">
+                <span className="font-mono text-foreground-secondary">
+                  {k.keyPrefix}
+                </span>
+                {k.label && (
+                  <span className="text-mist ml-2">{k.label}</span>
+                )}
+                <div className="text-mist">
+                  {k.scopes.join(", ")}
+                  {k.lastUsedAt && ` · last used ${k.lastUsedAt.split("T")[0]}`}
+                </div>
+              </div>
+              {!k.isRevoked && (
+                <button
+                  onClick={() => revokeKey({ clerkId, keyId: k.id })}
+                  className="text-coral hover:underline"
+                >
+                  Revoke
+                </button>
+              )}
+              {k.isRevoked && (
+                <span className="text-mist">revoked</span>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-mist">No API keys yet. Create one to use the CLI.</p>
+      )}
+    </section>
+  );
+}
+
+function ContextLinksSection({
+  clerkId,
+  username,
+}: {
+  clerkId: string;
+  username: string;
+}) {
+  const links = useQuery(
+    api.contextLinks.listLinks,
+    clerkId ? { clerkId } : "skip"
+  );
+  const createLink = useMutation(api.contextLinks.createLink);
+  const revokeLink = useMutation(api.contextLinks.revokeLink);
+  const [newLink, setNewLink] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const handleCreate = async () => {
+    setCreating(true);
+    try {
+      const result = await createLink({
+        clerkId,
+        scope: "public",
+        ttl: "7d",
+      });
+      setNewLink(result.url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to create link");
+    }
+    setCreating(false);
+  };
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider">
+          Context Links
+        </h2>
+        <button
+          onClick={handleCreate}
+          disabled={creating}
+          className="text-xs px-3 py-1.5 bg-background-secondary border border-border rounded-md hover:border-sky transition-colors disabled:opacity-40"
+        >
+          {creating ? "Creating..." : "Create link"}
+        </button>
+      </div>
+
+      <p className="text-xs text-mist">
+        Context links let you share your identity bundle with any AI agent.
+        Paste the link into any conversation.
+      </p>
+
+      {newLink && (
+        <div className="p-3 border border-sky/30 rounded-md bg-sky/5 space-y-2">
+          <p className="text-xs text-sky font-medium">
+            Context link created (expires in 7 days):
+          </p>
+          <code className="block text-xs font-mono text-foreground bg-background-secondary p-2 rounded break-all select-all">
+            {newLink}
+          </code>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(newLink);
+              setNewLink(null);
+            }}
+            className="text-xs text-sky hover:underline"
+          >
+            Copy and dismiss
+          </button>
+        </div>
+      )}
+
+      {links && links.length > 0 ? (
+        <div className="space-y-2">
+          {links.map((link) => (
+            <div
+              key={link.id}
+              className={`flex items-center justify-between px-3 py-2 border border-border rounded-md bg-background-secondary text-xs ${
+                link.isExpired ? "opacity-50" : ""
+              }`}
+            >
+              <div className="space-y-0.5">
+                <span className="font-mono text-sky">
+                  /ctx/{username}/{link.token.slice(0, 8)}...
+                </span>
+                <div className="text-mist">
+                  {link.scope} · {link.useCount} uses ·{" "}
+                  {link.isExpired
+                    ? "expired"
+                    : `expires ${typeof link.expiresAt === "string" ? link.expiresAt.split("T")[0] : "never"}`}
+                </div>
+              </div>
+              {!link.isExpired && (
+                <button
+                  onClick={() => revokeLink({ clerkId, linkId: link.id })}
+                  className="text-coral hover:underline"
+                >
+                  Revoke
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-mist">
+          No context links yet. Create one to share your identity with agents.
+        </p>
+      )}
+    </section>
   );
 }
 
