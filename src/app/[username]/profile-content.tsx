@@ -1,9 +1,10 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 
 interface Project {
   name: string;
@@ -17,6 +18,22 @@ export function ProfileContent() {
   const params = useParams();
   const username = params.username as string;
   const profile = useQuery(api.profiles.getPublicProfile, { username });
+  const recordView = useMutation(api.profiles.recordView);
+  const hasRecordedView = useRef(false);
+
+  // Record a page view on mount
+  useEffect(() => {
+    if (hasRecordedView.current) return;
+    if (profile === undefined || profile === null) return;
+    hasRecordedView.current = true;
+    recordView({
+      username,
+      referrer: typeof document !== "undefined" ? document.referrer || undefined : undefined,
+      isAgentRead: false,
+    }).catch(() => {
+      // silently ignore view tracking errors
+    });
+  }, [profile, username, recordView]);
 
   if (profile === undefined) {
     return (
@@ -51,8 +68,50 @@ export function ProfileContent() {
   const data = profile.youJson;
   if (!data) return null;
 
+  const name = data.identity?.name || profile.displayName || username;
+  const tagline = data.identity?.tagline || "";
+  const location = data.identity?.location || "";
+  const bio = data.identity?.bio?.long || data.identity?.bio?.medium || data.identity?.bio?.short || "";
+  const pageTitle = `${name} — you.md/${username}`;
+  const pageDescription = tagline || bio || `${name} on you.md`;
+
+  // Collect sameAs links for JSON-LD
+  const sameAsLinks: string[] = [];
+  if (data.links?.website) sameAsLinks.push(data.links.website);
+  if (data.links?.linkedin) sameAsLinks.push(data.links.linkedin);
+  if (data.links?.x) sameAsLinks.push(data.links.x);
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name,
+    url: `https://you.md/${username}`,
+    ...(tagline ? { jobTitle: tagline } : {}),
+    ...(location ? { address: { "@type": "PostalAddress", addressLocality: location } } : {}),
+    ...(bio ? { description: bio } : {}),
+    ...(sameAsLinks.length > 0 ? { sameAs: sameAsLinks } : {}),
+  };
+
   return (
     <div className="min-h-screen flex flex-col relative">
+      {/* Dynamic head metadata */}
+      <title>{pageTitle}</title>
+      <meta name="description" content={pageDescription} />
+      <meta property="og:title" content={pageTitle} />
+      <meta property="og:description" content={pageDescription} />
+      <meta property="og:type" content="profile" />
+      <meta property="og:url" content={`https://you.md/${username}`} />
+      <meta property="og:site_name" content="you.md" />
+      <meta name="twitter:card" content="summary" />
+      <meta name="twitter:title" content={pageTitle} />
+      <meta name="twitter:description" content={pageDescription} />
+
+      {/* JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Beam glow behind identity section */}
       <div className="absolute inset-0 beam-glow pointer-events-none opacity-50" />
 
@@ -63,29 +122,29 @@ export function ProfileContent() {
             you.md/{username}
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">
-            {data.identity?.name}
+            {name}
           </h1>
-          {data.identity?.tagline && (
+          {tagline && (
             <p className="text-foreground-secondary text-lg">
-              {data.identity.tagline}
+              {tagline}
             </p>
           )}
-          {data.identity?.location && (
-            <p className="text-mist text-sm">{data.identity.location}</p>
+          {location && (
+            <p className="text-mist text-sm">{location}</p>
           )}
         </header>
 
         {/* Bio */}
-        {data.identity?.bio?.long && (
+        {bio && (
           <section>
             <p className="text-foreground-secondary leading-relaxed">
-              {data.identity.bio.long}
+              {bio}
             </p>
           </section>
         )}
 
         {/* Now */}
-        {data.now?.focus?.length > 0 && (
+        {data.now?.focus && data.now.focus.length > 0 && (
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-coral uppercase tracking-wider">
               Now
@@ -105,7 +164,7 @@ export function ProfileContent() {
         )}
 
         {/* Projects */}
-        {data.projects?.length > 0 && (
+        {data.projects && data.projects.length > 0 && (
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-coral uppercase tracking-wider">
               Projects
@@ -151,7 +210,7 @@ export function ProfileContent() {
         )}
 
         {/* Values */}
-        {data.values?.length > 0 && (
+        {data.values && data.values.length > 0 && (
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-coral uppercase tracking-wider">
               Values

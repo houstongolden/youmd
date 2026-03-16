@@ -4,7 +4,7 @@ import { useUser, SignOutButton } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface ProfileFormData {
   name: string;
@@ -176,30 +176,57 @@ export function DashboardContent() {
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Form state — pre-populate from existing bundle
-  const existingJson = latestBundle?.youJson;
+  // Form state
   const [form, setForm] = useState<ProfileFormData>({
-    name: existingJson?.identity?.name || user?.fullName || "",
-    tagline: existingJson?.identity?.tagline || "",
-    location: existingJson?.identity?.location || "",
-    bioShort: existingJson?.identity?.bio?.short || "",
-    bioMedium: existingJson?.identity?.bio?.medium || "",
-    bioLong: existingJson?.identity?.bio?.long || "",
-    nowFocus: existingJson?.now?.focus?.join("\n") || "",
-    projects: existingJson?.projects
-      ?.map(
-        (p: { name: string; role: string; status: string; url: string; description: string }) =>
-          `${p.name}|${p.role}|${p.status}|${p.url}|${p.description}`
-      )
-      .join("\n") || "",
-    values: existingJson?.values?.join("\n") || "",
-    linkWebsite: existingJson?.links?.website || "",
-    linkLinkedin: existingJson?.links?.linkedin || "",
-    linkX: existingJson?.links?.x || "",
-    agentTone: existingJson?.preferences?.agent?.tone || "",
-    agentAvoid: existingJson?.preferences?.agent?.avoid?.join(", ") || "",
-    writingStyle: existingJson?.preferences?.writing?.style || "",
+    name: user?.fullName || "",
+    tagline: "",
+    location: "",
+    bioShort: "",
+    bioMedium: "",
+    bioLong: "",
+    nowFocus: "",
+    projects: "",
+    values: "",
+    linkWebsite: "",
+    linkLinkedin: "",
+    linkX: "",
+    agentTone: "",
+    agentAvoid: "",
+    writingStyle: "",
   });
+
+  // Sync form state when latestBundle loads or changes
+  const hydratedVersionRef = useRef<number | null>(null);
+  useEffect(() => {
+    const json = latestBundle?.youJson;
+    if (!json) return;
+    // Only hydrate once per bundle version to avoid overwriting user edits
+    const bundleVersion = latestBundle?.version ?? 0;
+    if (hydratedVersionRef.current === bundleVersion) return;
+    hydratedVersionRef.current = bundleVersion;
+    setForm({
+      name: json.identity?.name || user?.fullName || "",
+      tagline: json.identity?.tagline || "",
+      location: json.identity?.location || "",
+      bioShort: json.identity?.bio?.short || "",
+      bioMedium: json.identity?.bio?.medium || "",
+      bioLong: json.identity?.bio?.long || "",
+      nowFocus: json.now?.focus?.join("\n") || "",
+      projects: json.projects
+        ?.map(
+          (p: { name: string; role: string; status: string; url: string; description: string }) =>
+            `${p.name}|${p.role}|${p.status}|${p.url}|${p.description}`
+        )
+        .join("\n") || "",
+      values: json.values?.join("\n") || "",
+      linkWebsite: json.links?.website || "",
+      linkLinkedin: json.links?.linkedin || "",
+      linkX: json.links?.x || "",
+      agentTone: json.preferences?.agent?.tone || "",
+      agentAvoid: json.preferences?.agent?.avoid?.join(", ") || "",
+      writingStyle: json.preferences?.writing?.style || "",
+    });
+  }, [latestBundle, user?.fullName]);
 
   const updateField = (field: keyof ProfileFormData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -275,9 +302,34 @@ export function DashboardContent() {
       </nav>
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-6 py-8 space-y-8">
+        {/* Status bar */}
+        <div className="flex items-center gap-3 px-4 py-2 border border-border rounded-md bg-background-secondary text-xs font-mono text-foreground-secondary">
+          <span className="text-mist">@{convexUser.username}</span>
+          <span className="text-border">|</span>
+          <span className={convexUser.plan === "pro" ? "text-gold" : "text-mist"}>
+            {convexUser.plan}
+          </span>
+          <span className="text-border">|</span>
+          <span>
+            {latestBundle ? `v${latestBundle.version}` : "no bundle"}
+          </span>
+          <span className="text-border">|</span>
+          <span className={latestBundle?.isPublished ? "text-sky" : "text-coral"}>
+            {latestBundle?.isPublished ? "published" : "draft"}
+          </span>
+        </div>
+
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">Edit your identity</h1>
           <div className="flex gap-2">
+            <a
+              href={`/${convexUser.username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 text-sm border border-border rounded-md hover:border-sky transition-colors text-foreground-secondary hover:text-foreground"
+            >
+              Preview
+            </a>
             <button
               onClick={handleSave}
               disabled={saving}

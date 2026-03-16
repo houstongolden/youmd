@@ -88,6 +88,94 @@ export default function Home() {
         </div>
       </main>
 
+      {/* How It Works */}
+      <section className="px-6 py-20 border-t border-border">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-center text-sm font-semibold text-coral uppercase tracking-wider mb-12">
+            How it works
+          </h2>
+          <div className="grid sm:grid-cols-3 gap-8">
+            <div className="text-center space-y-3">
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border bg-background-secondary font-mono text-sm text-sky">
+                1
+              </div>
+              <h3 className="font-medium text-sm">Claim</h3>
+              <p className="text-foreground-secondary text-sm leading-relaxed">
+                Pick your username. Your identity lives at you.md/yourname -- permanent and portable.
+              </p>
+            </div>
+            <div className="text-center space-y-3">
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border bg-background-secondary font-mono text-sm text-sky">
+                2
+              </div>
+              <h3 className="font-medium text-sm">Build</h3>
+              <p className="text-foreground-secondary text-sm leading-relaxed">
+                Fill in your identity bundle: bio, projects, values, agent preferences. Structured data, not a wall of text.
+              </p>
+            </div>
+            <div className="text-center space-y-3">
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border bg-background-secondary font-mono text-sm text-sky">
+                3
+              </div>
+              <h3 className="font-medium text-sm">Share</h3>
+              <p className="text-foreground-secondary text-sm leading-relaxed">
+                Publish your bundle. Any agent, app, or human can read your you.json and instantly know how to work with you.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Dual Value Prop */}
+      <section className="px-6 py-20 border-t border-border">
+        <div className="max-w-3xl mx-auto grid sm:grid-cols-2 gap-12">
+          <div className="space-y-4">
+            <h2 className="text-sm font-semibold text-sky uppercase tracking-wider">
+              For your agents
+            </h2>
+            <p className="text-foreground-secondary text-sm leading-relaxed">
+              Stop re-explaining yourself every session. Your you.md bundle gives your AI assistants persistent context -- your tone, your preferences, your current projects. They onboard in seconds, not minutes.
+            </p>
+            <ul className="space-y-2 text-sm text-foreground-secondary">
+              <li className="flex items-start gap-2">
+                <span className="text-mist mt-0.5">-</span>
+                Consistent voice across every AI tool you use
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-mist mt-0.5">-</span>
+                No more copy-pasting your bio into system prompts
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-mist mt-0.5">-</span>
+                Agent preferences travel with you, not with the app
+              </li>
+            </ul>
+          </div>
+          <div className="space-y-4">
+            <h2 className="text-sm font-semibold text-gold uppercase tracking-wider">
+              For everyone else&apos;s agents
+            </h2>
+            <p className="text-foreground-secondary text-sm leading-relaxed">
+              When someone else&apos;s agent needs to reference you -- for outreach, scheduling, collaboration -- your you.md is the canonical source. Structured, verified, and under your control.
+            </p>
+            <ul className="space-y-2 text-sm text-foreground-secondary">
+              <li className="flex items-start gap-2">
+                <span className="text-mist mt-0.5">-</span>
+                Control how other people&apos;s AI sees you
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-mist mt-0.5">-</span>
+                Replace stale LinkedIn scrapes with live, structured data
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-mist mt-0.5">-</span>
+                One source of truth for the entire agent ecosystem
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="px-6 py-8 border-t border-border text-center">
         <p className="text-xs text-mist">
