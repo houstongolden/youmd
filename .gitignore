@@ -14,7 +14,7 @@ node_modules/
 /coverage
 
 # next.js
-/.next/
+.next/
 /out/
 
 # production
@@ -45,3 +45,7 @@ next-env.d.ts
 # convex
 convex/_generated/
 convex/**/*.js
+
+# cli build output
+cli/dist/
+cli/node_modules/

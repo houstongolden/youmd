@@ -24,141 +24,6 @@ interface ProfileFormData {
   writingStyle: string;
 }
 
-function compileBundle(data: ProfileFormData, username: string) {
-  const now = new Date().toISOString();
-
-  const projects = data.projects
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => {
-      const parts = line.split("|").map((s) => s.trim());
-      return {
-        name: parts[0] || "",
-        role: parts[1] || "",
-        status: parts[2] || "active",
-        url: parts[3] || "",
-        description: parts[4] || "",
-      };
-    });
-
-  const youJson = {
-    schema: "you-md/v1",
-    username,
-    generated_at: now,
-    identity: {
-      name: data.name,
-      tagline: data.tagline,
-      location: data.location,
-      bio: {
-        short: data.bioShort,
-        medium: data.bioMedium,
-        long: data.bioLong,
-      },
-    },
-    now: {
-      focus: data.nowFocus.split("\n").filter(Boolean),
-      updated_at: now.split("T")[0],
-    },
-    projects,
-    values: data.values.split("\n").filter(Boolean),
-    links: {
-      website: data.linkWebsite || undefined,
-      linkedin: data.linkLinkedin || undefined,
-      x: data.linkX || undefined,
-    },
-    preferences: {
-      agent: {
-        tone: data.agentTone,
-        avoid: data.agentAvoid.split(",").map((s) => s.trim()).filter(Boolean),
-      },
-      writing: {
-        style: data.writingStyle,
-        format: "markdown preferred",
-      },
-    },
-    analysis: {
-      topics: [],
-      voice_summary: "",
-      credibility_signals: [],
-    },
-    meta: {
-      sources_used: [],
-      last_updated: now,
-      compiler_version: "0.1.0",
-    },
-    verification: null,
-  };
-
-  const youMd = `---
-schema: you-md/v1
-name: ${data.name}
-username: ${username}
-generated_at: ${now.split("T")[0]}
----
-
-# ${data.name}
-
-${data.tagline}
-
-## Now
-
-${data.nowFocus
-    .split("\n")
-    .filter(Boolean)
-    .map((f) => `- ${f}`)
-    .join("\n")}
-
-## Projects
-
-${projects.map((p) => `- **${p.name}** — ${p.description} (${p.role}, ${p.status})`).join("\n")}
-
-## Values
-
-${data.values
-    .split("\n")
-    .filter(Boolean)
-    .map((v) => `- ${v}`)
-    .join("\n")}
-
-## Agent Preferences
-
-Tone: ${data.agentTone}
-Avoid: ${data.agentAvoid}
-Format: ${data.writingStyle}
-
-## Links
-
-${data.linkWebsite ? `- Website: ${data.linkWebsite}` : ""}
-${data.linkLinkedin ? `- LinkedIn: ${data.linkLinkedin}` : ""}
-${data.linkX ? `- X: ${data.linkX}` : ""}
-
----
-
-> Full context: see manifest.json
-`;
-
-  const manifest = {
-    schema: "you-md/v1",
-    username,
-    generated_at: now,
-    compiler_version: "0.1.0",
-    paths: {
-      public: ["you.md", "you.json"],
-      private: [],
-      scoped: [],
-    },
-    sources: {},
-    update_policy: {
-      auto_refresh: false,
-      refresh_interval_days: null,
-      require_approval: true,
-    },
-    custom_paths: [],
-  };
-
-  return { youJson, youMd, manifest };
-}
-
 export function DashboardContent() {
   const { user } = useUser();
   const convexUser = useQuery(
@@ -169,8 +34,8 @@ export function DashboardContent() {
     api.bundles.getLatestBundle,
     convexUser?._id ? { userId: convexUser._id } : "skip"
   );
-  const saveBundle = useMutation(api.bundles.saveBundle);
-  const publishBundle = useMutation(api.bundles.publishBundle);
+  const saveBundleFromForm = useMutation(api.me.saveBundleFromForm);
+  const publishLatest = useMutation(api.me.publishLatest);
 
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -241,20 +106,57 @@ export function DashboardContent() {
   }
 
   const handleSave = async () => {
+    if (!user?.id) return;
     setSaving(true);
     setMessage(null);
     try {
-      const { youJson, youMd, manifest } = compileBundle(
-        form,
-        convexUser.username
-      );
-      await saveBundle({
-        userId: convexUser._id,
-        manifest,
-        youJson,
-        youMd,
+      const projects = form.projects
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => {
+          const parts = line.split("|").map((s) => s.trim());
+          return {
+            name: parts[0] || "",
+            role: parts[1] || "",
+            status: parts[2] || "active",
+            url: parts[3] || "",
+            description: parts[4] || "",
+          };
+        });
+
+      const result = await saveBundleFromForm({
+        clerkId: user.id,
+        profileData: {
+          name: form.name,
+          username: convexUser.username,
+          tagline: form.tagline,
+          location: form.location,
+          bio: {
+            short: form.bioShort,
+            medium: form.bioMedium,
+            long: form.bioLong,
+          },
+          now: form.nowFocus.split("\n").filter(Boolean),
+          projects,
+          values: form.values.split("\n").filter(Boolean),
+          links: {
+            website: form.linkWebsite || undefined,
+            linkedin: form.linkLinkedin || undefined,
+            x: form.linkX || undefined,
+          },
+          preferences: {
+            agent: {
+              tone: form.agentTone,
+              avoid: form.agentAvoid.split(",").map((s) => s.trim()).filter(Boolean),
+            },
+            writing: {
+              style: form.writingStyle,
+              format: "markdown preferred",
+            },
+          },
+        },
       });
-      setMessage("Bundle saved.");
+      setMessage(`Bundle saved (v${result.version}).`);
     } catch (err) {
       setMessage(
         err instanceof Error ? err.message : "Failed to save bundle"
@@ -264,13 +166,13 @@ export function DashboardContent() {
   };
 
   const handlePublish = async () => {
-    if (!latestBundle) return;
+    if (!user?.id || !latestBundle) return;
     setPublishing(true);
     setMessage(null);
     try {
-      await publishBundle({ bundleId: latestBundle._id });
+      const result = await publishLatest({ clerkId: user.id });
       setMessage(
-        `Published! Live at you.md/${convexUser.username}`
+        `Published v${result.version}! Live at you.md/${result.username}`
       );
     } catch (err) {
       setMessage(

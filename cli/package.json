@@ -1,16 +1,38 @@
 {
   "name": "youmd",
   "version": "0.1.0",
-  "description": "CLI for the You.md identity bundle platform",
+  "description": "Your identity file for the agent internet. CLI for the You.md platform.",
   "bin": {
     "youmd": "./dist/index.js"
   },
   "main": "dist/index.js",
+  "files": [
+    "dist/**/*"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "ts-node src/index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
   },
+  "keywords": [
+    "identity",
+    "ai",
+    "agent",
+    "llm",
+    "markdown",
+    "cli",
+    "profile",
+    "you-md"
+  ],
+  "author": "Houston Golden",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/houstongolden/youmd.git",
+    "directory": "cli"
+  },
+  "homepage": "https://you.md",
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
