@@ -1,12 +1,36 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import GradientText from "@/components/reactbits/GradientText";
 
 const Aurora = dynamic(() => import("@/components/reactbits/Aurora"), {
   ssr: false,
 });
+
+function CopyCommand() {
+  const [copied, setCopied] = useState(false);
+  const command = "npx create-youmd";
+
+  return (
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(command);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }}
+      className="group flex items-center gap-3 px-6 py-3.5 rounded-full border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.15] transition-all cursor-pointer"
+    >
+      <span className="font-mono text-[14px] text-[#999]">
+        <span className="text-[#555]">$</span> {command}
+      </span>
+      <span className={`text-[12px] font-medium transition-all ${copied ? "text-emerald-400" : "text-[#555] group-hover:text-[#888]"}`}>
+        {copied ? "copied" : "copy"}
+      </span>
+    </button>
+  );
+}
 
 export default function Home() {
   return (
@@ -81,10 +105,7 @@ export default function Home() {
               Claim your username
               <span className="inline-block ml-1.5 group-hover:translate-x-0.5 transition-transform">&rarr;</span>
             </Link>
-            <div className="px-6 py-3.5 rounded-full border border-white/[0.08] bg-white/[0.02] font-mono text-[14px] text-[#777]">
-              <span className="text-[#555]">$</span>{" "}
-              npm install -g youmd
-            </div>
+            <CopyCommand />
           </div>
         </div>
       </section>
@@ -92,11 +113,11 @@ export default function Home() {
       {/* ── Social proof line ── */}
       <div className="border-y border-white/[0.04] py-5">
         <div className="max-w-4xl mx-auto px-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[12px] font-mono text-[#555]">
-          <span>Published on npm</span>
+          <span>Live on npm as <span className="text-[#777]">youmd</span></span>
           <span className="text-white/10">&bull;</span>
-          <span>Open source spec</span>
+          <span>Open spec: you-md/v1</span>
           <span className="text-white/10">&bull;</span>
-          <span>Works with Claude, ChatGPT, Cursor, any LLM</span>
+          <span>Works with Claude, ChatGPT, Cursor, and every LLM</span>
         </div>
       </div>
 
@@ -269,22 +290,36 @@ export default function Home() {
               <span className="ml-auto text-[11px] font-mono text-[#444]">zsh</span>
             </div>
 
-            <div className="p-6 sm:p-8 font-mono text-[13px] sm:text-[14px] leading-relaxed space-y-4">
-              <div><span className="text-[#555]">$</span> <span className="text-white">youmd init</span></div>
-              <div className="text-[#666] pl-2">you.md &mdash; initializing identity bundle</div>
-
-              <div className="mt-5"><span className="text-[#555]">$</span> <span className="text-white">youmd add website</span> <span className="text-coral">https://yoursite.com</span></div>
-              <div><span className="text-[#555]">$</span> <span className="text-white">youmd build</span></div>
-              <div className="text-[#666] pl-2 space-y-0.5">
-                <div>{"\u251C\u2500\u2500"} Scraping website</div>
-                <div>{"\u251C\u2500\u2500"} Extracting structured data</div>
-                <div>{"\u251C\u2500\u2500"} Analyzing voice + topics</div>
-                <div>{"\u2514\u2500\u2500"} Compiling bundle</div>
+            <div className="p-6 sm:p-8 font-mono text-[13px] sm:text-[14px] leading-relaxed space-y-3">
+              <div><span className="text-[#555]">$</span> <span className="text-white">npx create-youmd</span></div>
+              <div className="text-[#888] pl-2 mt-2">
+                <div className="text-white/60 font-medium">you.md</div>
+                <div className="text-[#666]">your identity file for the agent internet</div>
               </div>
-              <div className="text-emerald-400">done &mdash; bundle compiled (v1)</div>
 
-              <div className="mt-5"><span className="text-[#555]">$</span> <span className="text-white">youmd publish</span></div>
-              <div className="text-emerald-400">live at <span className="text-sky">you.md/yourname</span></div>
+              <div className="pl-2 mt-4 space-y-1.5">
+                <div><span className="text-emerald-400">?</span> <span className="text-[#aaa]">Choose a username:</span> <span className="text-white">houston</span></div>
+                <div className="text-[#666] pl-2">checking... <span className="text-emerald-400">houston is available.</span></div>
+                <div><span className="text-emerald-400">?</span> <span className="text-[#aaa]">Your name:</span> <span className="text-white">Houston Golden</span></div>
+                <div><span className="text-emerald-400">?</span> <span className="text-[#aaa]">Your website:</span> <span className="text-coral">https://houstongolden.com</span></div>
+                <div><span className="text-emerald-400">?</span> <span className="text-[#aaa]">Tagline:</span> <span className="text-white">Founder, BAMF Media. Building You.md.</span></div>
+              </div>
+
+              <div className="pl-2 mt-4 space-y-0.5 text-[#666]">
+                <div>{"\u251C\u2500\u2500"} Writing profile/about.md</div>
+                <div>{"\u251C\u2500\u2500"} Compiling you.json</div>
+                <div>{"\u2514\u2500\u2500"} Generating you.md</div>
+              </div>
+              <div className="text-emerald-400 mt-2">done &mdash; bundle compiled (v1)</div>
+
+              <div className="mt-4 pl-2 py-3 border-l-2 border-white/[0.06]">
+                <div className="text-white font-medium pl-3">Houston Golden</div>
+                <div className="text-[#666] pl-3">Founder, BAMF Media. Building You.md.</div>
+              </div>
+
+              <div className="pl-2 mt-3 text-[#555]">
+                next: <span className="text-[#888]">youmd build</span> <span className="text-[#444]">then</span> <span className="text-[#888]">youmd publish</span>
+              </div>
             </div>
           </div>
         </div>
