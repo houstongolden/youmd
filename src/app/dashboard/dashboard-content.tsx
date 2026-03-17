@@ -24,6 +24,8 @@ interface ProfileFormData {
   writingStyle: string;
 }
 
+type Tab = "profile" | "sources" | "settings";
+
 export function DashboardContent() {
   const { user } = useUser();
   const convexUser = useQuery(
@@ -40,6 +42,7 @@ export function DashboardContent() {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("profile");
 
   // Form state
   const [form, setForm] = useState<ProfileFormData>({
@@ -65,7 +68,6 @@ export function DashboardContent() {
   useEffect(() => {
     const json = latestBundle?.youJson;
     if (!json) return;
-    // Only hydrate once per bundle version to avoid overwriting user edits
     const bundleVersion = latestBundle?.version ?? 0;
     if (hydratedVersionRef.current === bundleVersion) return;
     hydratedVersionRef.current = bundleVersion;
@@ -99,7 +101,7 @@ export function DashboardContent() {
 
   if (!convexUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-foreground-secondary">Loading...</p>
       </div>
     );
@@ -182,16 +184,18 @@ export function DashboardContent() {
     setPublishing(false);
   };
 
+  const profileUrl = `https://you.md/${convexUser.username}`;
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <Link href="/" className="font-mono text-lg tracking-tight">
+        <Link href="/" className="font-mono text-lg tracking-tight text-foreground">
           you.md
         </Link>
         <div className="flex items-center gap-4">
           <Link
             href={`/${convexUser.username}`}
-            className="text-sm font-mono text-sky hover:underline"
+            className="text-sm font-mono text-accent-secondary hover:underline"
           >
             you.md/{convexUser.username}
           </Link>
@@ -204,11 +208,32 @@ export function DashboardContent() {
       </nav>
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-6 py-8 space-y-8">
+        {/* Published profile URL */}
+        <div className="px-5 py-4 border border-border rounded-lg bg-background-secondary">
+          <p className="text-xs text-foreground-secondary mb-1.5">Your published profile</p>
+          <div className="flex items-center gap-3">
+            <a
+              href={profileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-accent-secondary hover:underline text-sm"
+            >
+              {profileUrl}
+            </a>
+            <button
+              onClick={() => navigator.clipboard.writeText(profileUrl)}
+              className="text-xs px-2.5 py-1 border border-border rounded-md text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-colors"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+
         {/* Status bar */}
-        <div className="flex items-center gap-3 px-4 py-2 border border-border rounded-md bg-background-secondary text-xs font-mono text-foreground-secondary">
-          <span className="text-mist">@{convexUser.username}</span>
+        <div className="flex items-center gap-3 px-4 py-2.5 border border-border rounded-lg bg-background-secondary text-xs font-mono text-foreground-secondary">
+          <span className="text-foreground">@{convexUser.username}</span>
           <span className="text-border">|</span>
-          <span className={convexUser.plan === "pro" ? "text-gold" : "text-mist"}>
+          <span className={convexUser.plan === "pro" ? "text-accent-premium" : "text-foreground-secondary"}>
             {convexUser.plan}
           </span>
           <span className="text-border">|</span>
@@ -216,33 +241,42 @@ export function DashboardContent() {
             {latestBundle ? `v${latestBundle.version}` : "no bundle"}
           </span>
           <span className="text-border">|</span>
-          <span className={latestBundle?.isPublished ? "text-sky" : "text-coral"}>
+          <span className={latestBundle?.isPublished ? "text-accent-secondary" : "text-accent-primary"}>
             {latestBundle?.isPublished ? "published" : "draft"}
           </span>
+          {latestBundle && (
+            <>
+              <span className="text-border">|</span>
+              <span>
+                updated {new Date(latestBundle._creationTime).toLocaleDateString()}
+              </span>
+            </>
+          )}
         </div>
 
+        {/* Action buttons */}
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Edit your identity</h1>
+          <h1 className="text-xl font-semibold text-foreground">Edit your identity</h1>
           <div className="flex gap-2">
             <a
               href={`/${convexUser.username}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 text-sm border border-border rounded-md hover:border-sky transition-colors text-foreground-secondary hover:text-foreground"
+              className="px-4 py-2 text-sm border border-border rounded-lg hover:border-accent-secondary transition-colors text-foreground-secondary hover:text-foreground"
             >
               Preview
             </a>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 text-sm bg-background-secondary border border-border rounded-md hover:border-sky transition-colors disabled:opacity-40"
+              className="px-4 py-2 text-sm bg-background-secondary border border-border rounded-lg hover:border-accent-secondary transition-colors disabled:opacity-40 text-foreground"
             >
               {saving ? "Saving..." : "Save draft"}
             </button>
             <button
               onClick={handlePublish}
               disabled={publishing || !latestBundle}
-              className="px-4 py-2 text-sm bg-coral text-void rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
+              className="px-4 py-2 text-sm bg-accent-primary text-void rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
             >
               {publishing ? "Publishing..." : "Publish"}
             </button>
@@ -250,170 +284,365 @@ export function DashboardContent() {
         </div>
 
         {message && (
-          <div className="px-4 py-2 text-sm border border-border rounded-md bg-background-secondary text-foreground-secondary">
+          <div className="px-4 py-2.5 text-sm border border-border rounded-lg bg-background-secondary text-foreground-secondary">
             {message}
           </div>
         )}
 
-        {/* Identity Section */}
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider">
-            Identity
-          </h2>
-          <div className="grid gap-4">
-            <Field
-              label="Full name"
-              value={form.name}
-              onChange={(v) => updateField("name", v)}
-            />
-            <Field
-              label="Tagline"
-              value={form.tagline}
-              onChange={(v) => updateField("tagline", v)}
-              placeholder="Founder, BAMF Media. Building You.md."
-            />
-            <Field
-              label="Location"
-              value={form.location}
-              onChange={(v) => updateField("location", v)}
-              placeholder="Miami, FL"
-            />
+        {/* Tab navigation */}
+        <div className="flex gap-1 border-b border-border">
+          {(["profile", "sources", "settings"] as Tab[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
+                activeTab === tab
+                  ? "border-accent-primary text-foreground"
+                  : "border-transparent text-foreground-secondary hover:text-foreground"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Profile tab */}
+        {activeTab === "profile" && (
+          <div className="space-y-8">
+            <CollapsibleSection title="Identity" defaultOpen>
+              <div className="grid gap-4">
+                <Field
+                  label="Full name"
+                  value={form.name}
+                  onChange={(v) => updateField("name", v)}
+                />
+                <Field
+                  label="Tagline"
+                  value={form.tagline}
+                  onChange={(v) => updateField("tagline", v)}
+                  placeholder="Founder, BAMF Media. Building You.md."
+                />
+                <Field
+                  label="Location"
+                  value={form.location}
+                  onChange={(v) => updateField("location", v)}
+                  placeholder="Miami, FL"
+                />
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Bio" defaultOpen>
+              <div className="grid gap-4">
+                <Field
+                  label="Short (1 line)"
+                  value={form.bioShort}
+                  onChange={(v) => updateField("bioShort", v)}
+                />
+                <TextArea
+                  label="Medium (3 lines)"
+                  value={form.bioMedium}
+                  onChange={(v) => updateField("bioMedium", v)}
+                  rows={3}
+                />
+                <TextArea
+                  label="Long (paragraph)"
+                  value={form.bioLong}
+                  onChange={(v) => updateField("bioLong", v)}
+                  rows={5}
+                />
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Now">
+              <TextArea
+                label="Current focus (one per line)"
+                value={form.nowFocus}
+                onChange={(v) => updateField("nowFocus", v)}
+                rows={4}
+                placeholder="Building You.md&#10;Scaling BAMF Media"
+              />
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Projects">
+              <TextArea
+                label="One per line: Name|Role|Status|URL|Description"
+                value={form.projects}
+                onChange={(v) => updateField("projects", v)}
+                rows={4}
+                placeholder="You.md|Founder|building|https://you.md|Identity as code for the agent internet"
+              />
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Values">
+              <TextArea
+                label="One per line"
+                value={form.values}
+                onChange={(v) => updateField("values", v)}
+                rows={4}
+                placeholder="Build in public&#10;Extreme ownership&#10;Ship fast"
+              />
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Links">
+              <div className="grid gap-4">
+                <Field
+                  label="Website"
+                  value={form.linkWebsite}
+                  onChange={(v) => updateField("linkWebsite", v)}
+                  placeholder="https://yoursite.com"
+                />
+                <Field
+                  label="LinkedIn"
+                  value={form.linkLinkedin}
+                  onChange={(v) => updateField("linkLinkedin", v)}
+                  placeholder="https://linkedin.com/in/yourname"
+                />
+                <Field
+                  label="X / Twitter"
+                  value={form.linkX}
+                  onChange={(v) => updateField("linkX", v)}
+                  placeholder="https://x.com/yourname"
+                />
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Agent Preferences">
+              <div className="grid gap-4">
+                <Field
+                  label="Tone"
+                  value={form.agentTone}
+                  onChange={(v) => updateField("agentTone", v)}
+                  placeholder="direct, confident, no fluff"
+                />
+                <Field
+                  label="Avoid (comma-separated)"
+                  value={form.agentAvoid}
+                  onChange={(v) => updateField("agentAvoid", v)}
+                  placeholder="corporate jargon, passive voice"
+                />
+                <Field
+                  label="Writing style"
+                  value={form.writingStyle}
+                  onChange={(v) => updateField("writingStyle", v)}
+                  placeholder="short paragraphs, punchy sentences"
+                />
+              </div>
+            </CollapsibleSection>
+
+            {/* View you.json */}
+            <CollapsibleSection title="View your you.json">
+              {latestBundle?.youJson ? (
+                <div className="relative">
+                  <pre className="text-xs font-mono text-foreground-secondary bg-background-secondary border border-border rounded-lg p-4 overflow-x-auto max-h-96 overflow-y-auto">
+                    {JSON.stringify(latestBundle.youJson, null, 2)}
+                  </pre>
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(
+                        JSON.stringify(latestBundle.youJson, null, 2)
+                      )
+                    }
+                    className="absolute top-3 right-3 text-xs px-2.5 py-1 border border-border rounded-md bg-background text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-foreground-secondary">
+                  No bundle yet. Save your profile to generate one.
+                </p>
+              )}
+            </CollapsibleSection>
           </div>
-        </section>
+        )}
 
-        {/* Bio Section */}
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider">
-            Bio
-          </h2>
-          <div className="grid gap-4">
-            <Field
-              label="Short (1 line)"
-              value={form.bioShort}
-              onChange={(v) => updateField("bioShort", v)}
-            />
-            <TextArea
-              label="Medium (3 lines)"
-              value={form.bioMedium}
-              onChange={(v) => updateField("bioMedium", v)}
-              rows={3}
-            />
-            <TextArea
-              label="Long (paragraph)"
-              value={form.bioLong}
-              onChange={(v) => updateField("bioLong", v)}
-              rows={5}
-            />
+        {/* Sources tab */}
+        {activeTab === "sources" && (
+          <div className="space-y-8">
+            <SourceManagementSection clerkId={user?.id ?? ""} />
           </div>
-        </section>
+        )}
 
-        {/* Now Section */}
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider">
-            Now
-          </h2>
-          <TextArea
-            label="Current focus (one per line)"
-            value={form.nowFocus}
-            onChange={(v) => updateField("nowFocus", v)}
-            rows={4}
-            placeholder="Building You.md&#10;Scaling BAMF Media"
-          />
-        </section>
-
-        {/* Projects */}
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider">
-            Projects
-          </h2>
-          <TextArea
-            label="One per line: Name|Role|Status|URL|Description"
-            value={form.projects}
-            onChange={(v) => updateField("projects", v)}
-            rows={4}
-            placeholder="You.md|Founder|building|https://you.md|Identity as code for the agent internet"
-          />
-        </section>
-
-        {/* Values */}
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider">
-            Values
-          </h2>
-          <TextArea
-            label="One per line"
-            value={form.values}
-            onChange={(v) => updateField("values", v)}
-            rows={4}
-            placeholder="Build in public&#10;Extreme ownership&#10;Ship fast"
-          />
-        </section>
-
-        {/* Links */}
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider">
-            Links
-          </h2>
-          <div className="grid gap-4">
-            <Field
-              label="Website"
-              value={form.linkWebsite}
-              onChange={(v) => updateField("linkWebsite", v)}
-              placeholder="https://yoursite.com"
-            />
-            <Field
-              label="LinkedIn"
-              value={form.linkLinkedin}
-              onChange={(v) => updateField("linkLinkedin", v)}
-              placeholder="https://linkedin.com/in/yourname"
-            />
-            <Field
-              label="X / Twitter"
-              value={form.linkX}
-              onChange={(v) => updateField("linkX", v)}
-              placeholder="https://x.com/yourname"
-            />
+        {/* Settings tab */}
+        {activeTab === "settings" && (
+          <div className="space-y-8">
+            <ApiKeysSection clerkId={user?.id ?? ""} />
+            <hr className="border-border" />
+            <ContextLinksSection clerkId={user?.id ?? ""} username={convexUser.username} />
           </div>
-        </section>
-
-        {/* Agent Preferences */}
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider">
-            Agent Preferences
-          </h2>
-          <div className="grid gap-4">
-            <Field
-              label="Tone"
-              value={form.agentTone}
-              onChange={(v) => updateField("agentTone", v)}
-              placeholder="direct, confident, no fluff"
-            />
-            <Field
-              label="Avoid (comma-separated)"
-              value={form.agentAvoid}
-              onChange={(v) => updateField("agentAvoid", v)}
-              placeholder="corporate jargon, passive voice"
-            />
-            <Field
-              label="Writing style"
-              value={form.writingStyle}
-              onChange={(v) => updateField("writingStyle", v)}
-              placeholder="short paragraphs, punchy sentences"
-            />
-          </div>
-        </section>
-
-        <hr className="border-border" />
-
-        {/* API Keys Section */}
-        <ApiKeysSection clerkId={user?.id ?? ""} />
-
-        {/* Context Links Section */}
-        <ContextLinksSection clerkId={user?.id ?? ""} username={convexUser.username} />
+        )}
       </main>
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Source Management
+// ---------------------------------------------------------------------------
+
+function SourceManagementSection({ clerkId }: { clerkId: string }) {
+  const sources = useQuery(api.me.getSources, clerkId ? { clerkId } : "skip");
+  const addSource = useMutation(api.me.addSource);
+  const startPipeline = useMutation(api.pipeline.index.startPipeline);
+  const pipelineStatus = useQuery(
+    api.pipeline.index.getPipelineStatus,
+    clerkId ? { clerkId } : "skip"
+  );
+
+  const [newUrl, setNewUrl] = useState("");
+  const [newType, setNewType] = useState<"website" | "linkedin" | "x">("website");
+  const [adding, setAdding] = useState(false);
+  const [building, setBuilding] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const handleAddSource = async () => {
+    if (!newUrl.trim()) return;
+    setAdding(true);
+    setStatusMessage(null);
+    try {
+      await addSource({ clerkId, sourceType: newType, sourceUrl: newUrl.trim() });
+      setNewUrl("");
+      setStatusMessage("Source added.");
+    } catch (err) {
+      setStatusMessage(err instanceof Error ? err.message : "Failed to add source");
+    }
+    setAdding(false);
+  };
+
+  const handleBuild = async () => {
+    setBuilding(true);
+    setStatusMessage(null);
+    try {
+      const result = await startPipeline({ clerkId });
+      setStatusMessage(`Pipeline started. Processing ${result.sourceCount} source(s).`);
+    } catch (err) {
+      setStatusMessage(err instanceof Error ? err.message : "Failed to start pipeline");
+    }
+    setBuilding(false);
+  };
+
+  const isRunning = pipelineStatus?.overallStatus === "running";
+
+  return (
+    <section className="space-y-6">
+      <div>
+        <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider mb-1">
+          Sources
+        </h2>
+        <p className="text-xs text-foreground-secondary">
+          Add your web presence URLs. The pipeline will fetch, extract, and compile your identity from these sources.
+        </p>
+      </div>
+
+      {/* Add source form */}
+      <div className="flex gap-2">
+        <select
+          value={newType}
+          onChange={(e) => setNewType(e.target.value as "website" | "linkedin" | "x")}
+          className="px-3 py-2 text-sm bg-background-secondary border border-border rounded-lg outline-none focus:border-accent-secondary transition-colors text-foreground"
+        >
+          <option value="website">Website</option>
+          <option value="linkedin">LinkedIn</option>
+          <option value="x">X / Twitter</option>
+        </select>
+        <input
+          type="url"
+          value={newUrl}
+          onChange={(e) => setNewUrl(e.target.value)}
+          placeholder="https://..."
+          className="flex-1 px-3 py-2 text-sm bg-background-secondary border border-border rounded-lg outline-none focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all text-foreground placeholder:text-mist/40"
+        />
+        <button
+          onClick={handleAddSource}
+          disabled={adding || !newUrl.trim()}
+          className="px-4 py-2 text-sm bg-background-secondary border border-border rounded-lg hover:border-accent-secondary transition-colors disabled:opacity-40 text-foreground"
+        >
+          {adding ? "Adding..." : "Add"}
+        </button>
+      </div>
+
+      {/* Current sources */}
+      {sources && sources.length > 0 && (
+        <div className="space-y-2">
+          {sources.map((source) => (
+            <div
+              key={source._id}
+              className="flex items-center justify-between px-4 py-3 border border-border rounded-lg bg-background-secondary text-sm"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-background border border-border text-foreground-secondary uppercase">
+                    {source.sourceType}
+                  </span>
+                  <span className={`text-xs font-mono ${
+                    source.status === "extracted" ? "text-success" :
+                    source.status === "failed" ? "text-accent-primary" :
+                    source.status === "fetched" ? "text-accent-secondary" :
+                    "text-foreground-secondary"
+                  }`}>
+                    {source.status}
+                  </span>
+                </div>
+                <p className="text-xs font-mono text-foreground-secondary mt-1 truncate">
+                  {source.sourceUrl}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {sources && sources.length === 0 && (
+        <p className="text-sm text-foreground-secondary">
+          No sources yet. Add a URL above to get started.
+        </p>
+      )}
+
+      {/* Pipeline status */}
+      {pipelineStatus && pipelineStatus.overallStatus !== "idle" && (
+        <div className={`px-4 py-3 border rounded-lg text-sm font-mono ${
+          pipelineStatus.overallStatus === "running"
+            ? "border-accent-secondary/30 bg-accent-secondary/5 text-accent-secondary"
+            : pipelineStatus.overallStatus === "completed" || pipelineStatus.overallStatus === "review"
+              ? "border-success/30 bg-success/5 text-success"
+              : pipelineStatus.overallStatus === "failed"
+                ? "border-accent-primary/30 bg-accent-primary/5 text-accent-primary"
+                : "border-border"
+        }`}>
+          <div className="flex items-center gap-2">
+            <span className="capitalize">{pipelineStatus.overallStatus}</span>
+            {pipelineStatus.currentStage && (
+              <span className="text-foreground-secondary">
+                -- stage: {pipelineStatus.currentStage}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {statusMessage && (
+        <p className="text-xs text-foreground-secondary">{statusMessage}</p>
+      )}
+
+      {/* Trigger Build */}
+      <button
+        onClick={handleBuild}
+        disabled={building || isRunning || !sources || sources.length === 0}
+        className="w-full py-3 bg-accent-primary text-void rounded-lg font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {isRunning
+          ? "Pipeline running..."
+          : building
+            ? "Starting..."
+            : "Trigger Build"}
+      </button>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// API Keys
+// ---------------------------------------------------------------------------
 
 function ApiKeysSection({ clerkId }: { clerkId: string }) {
   const keys = useQuery(api.apiKeys.listKeys, clerkId ? { clerkId } : "skip");
@@ -446,18 +675,18 @@ function ApiKeysSection({ clerkId }: { clerkId: string }) {
         <button
           onClick={handleCreate}
           disabled={creating}
-          className="text-xs px-3 py-1.5 bg-background-secondary border border-border rounded-md hover:border-sky transition-colors disabled:opacity-40"
+          className="text-xs px-3 py-1.5 bg-background-secondary border border-border rounded-lg hover:border-accent-secondary transition-colors disabled:opacity-40 text-foreground"
         >
           {creating ? "Creating..." : "Create key"}
         </button>
       </div>
 
       {newKey && (
-        <div className="p-3 border border-gold/30 rounded-md bg-gold/5 space-y-2">
-          <p className="text-xs text-gold font-medium">
-            Key created. Copy it now — it won&apos;t be shown again.
+        <div className="p-4 border border-accent-premium/30 rounded-lg bg-accent-premium/5 space-y-2">
+          <p className="text-xs text-accent-premium font-medium">
+            Key created. Copy it now -- it will not be shown again.
           </p>
-          <code className="block text-xs font-mono text-foreground bg-background-secondary p-2 rounded break-all select-all">
+          <code className="block text-xs font-mono text-foreground bg-background-secondary p-2.5 rounded-lg break-all select-all">
             {newKey}
           </code>
           <button
@@ -465,7 +694,7 @@ function ApiKeysSection({ clerkId }: { clerkId: string }) {
               navigator.clipboard.writeText(newKey);
               setNewKey(null);
             }}
-            className="text-xs text-sky hover:underline"
+            className="text-xs text-accent-secondary hover:underline"
           >
             Copy and dismiss
           </button>
@@ -477,40 +706,46 @@ function ApiKeysSection({ clerkId }: { clerkId: string }) {
           {keys.map((k) => (
             <div
               key={k.id}
-              className="flex items-center justify-between px-3 py-2 border border-border rounded-md bg-background-secondary text-xs"
+              className="flex items-center justify-between px-4 py-3 border border-border rounded-lg bg-background-secondary text-xs"
             >
-              <div className="space-y-0.5">
-                <span className="font-mono text-foreground-secondary">
-                  {k.keyPrefix}
-                </span>
-                {k.label && (
-                  <span className="text-mist ml-2">{k.label}</span>
-                )}
-                <div className="text-mist">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <code className="font-mono text-foreground px-2 py-0.5 bg-background rounded border border-border">
+                    {k.keyPrefix}...
+                  </code>
+                  {k.label && (
+                    <span className="text-foreground-secondary">{k.label}</span>
+                  )}
+                </div>
+                <div className="text-foreground-secondary">
                   {k.scopes.join(", ")}
-                  {k.lastUsedAt && ` · last used ${k.lastUsedAt.split("T")[0]}`}
+                  {k.lastUsedAt && ` -- last used ${k.lastUsedAt.split("T")[0]}`}
                 </div>
               </div>
               {!k.isRevoked && (
                 <button
                   onClick={() => revokeKey({ clerkId, keyId: k.id })}
-                  className="text-coral hover:underline"
+                  className="text-accent-primary hover:underline"
                 >
                   Revoke
                 </button>
               )}
               {k.isRevoked && (
-                <span className="text-mist">revoked</span>
+                <span className="text-foreground-secondary">revoked</span>
               )}
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-xs text-mist">No API keys yet. Create one to use the CLI.</p>
+        <p className="text-xs text-foreground-secondary">No API keys yet. Create one to use the CLI.</p>
       )}
     </section>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Context Links
+// ---------------------------------------------------------------------------
 
 function ContextLinksSection({
   clerkId,
@@ -552,23 +787,23 @@ function ContextLinksSection({
         <button
           onClick={handleCreate}
           disabled={creating}
-          className="text-xs px-3 py-1.5 bg-background-secondary border border-border rounded-md hover:border-sky transition-colors disabled:opacity-40"
+          className="text-xs px-3 py-1.5 bg-background-secondary border border-border rounded-lg hover:border-accent-secondary transition-colors disabled:opacity-40 text-foreground"
         >
           {creating ? "Creating..." : "Create link"}
         </button>
       </div>
 
-      <p className="text-xs text-mist">
+      <p className="text-xs text-foreground-secondary">
         Context links let you share your identity bundle with any AI agent.
         Paste the link into any conversation.
       </p>
 
       {newLink && (
-        <div className="p-3 border border-sky/30 rounded-md bg-sky/5 space-y-2">
-          <p className="text-xs text-sky font-medium">
+        <div className="p-4 border border-accent-secondary/30 rounded-lg bg-accent-secondary/5 space-y-2">
+          <p className="text-xs text-accent-secondary font-medium">
             Context link created (expires in 7 days):
           </p>
-          <code className="block text-xs font-mono text-foreground bg-background-secondary p-2 rounded break-all select-all">
+          <code className="block text-xs font-mono text-foreground bg-background-secondary p-2.5 rounded-lg break-all select-all">
             {newLink}
           </code>
           <button
@@ -576,7 +811,7 @@ function ContextLinksSection({
               navigator.clipboard.writeText(newLink);
               setNewLink(null);
             }}
-            className="text-xs text-sky hover:underline"
+            className="text-xs text-accent-secondary hover:underline"
           >
             Copy and dismiss
           </button>
@@ -588,16 +823,30 @@ function ContextLinksSection({
           {links.map((link) => (
             <div
               key={link.id}
-              className={`flex items-center justify-between px-3 py-2 border border-border rounded-md bg-background-secondary text-xs ${
+              className={`flex items-center justify-between px-4 py-3 border border-border rounded-lg bg-background-secondary text-xs ${
                 link.isExpired ? "opacity-50" : ""
               }`}
             >
-              <div className="space-y-0.5">
-                <span className="font-mono text-sky">
-                  /ctx/{username}/{link.token.slice(0, 8)}...
-                </span>
-                <div className="text-mist">
-                  {link.scope} · {link.useCount} uses ·{" "}
+              <div className="space-y-1 min-w-0 flex-1 mr-3">
+                <div className="flex items-center gap-2">
+                  <code className="font-mono text-accent-secondary truncate">
+                    {`https://you.md/ctx/${username}/${link.token}`}
+                  </code>
+                  {!link.isExpired && (
+                    <button
+                      onClick={() =>
+                        navigator.clipboard.writeText(
+                          `https://you.md/ctx/${username}/${link.token}`
+                        )
+                      }
+                      className="shrink-0 px-2 py-0.5 border border-border rounded text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-colors"
+                    >
+                      Copy
+                    </button>
+                  )}
+                </div>
+                <div className="text-foreground-secondary">
+                  {link.scope} -- {link.useCount} uses --{" "}
                   {link.isExpired
                     ? "expired"
                     : `expires ${typeof link.expiresAt === "string" ? link.expiresAt.split("T")[0] : "never"}`}
@@ -606,7 +855,7 @@ function ContextLinksSection({
               {!link.isExpired && (
                 <button
                   onClick={() => revokeLink({ clerkId, linkId: link.id })}
-                  className="text-coral hover:underline"
+                  className="text-accent-primary hover:underline shrink-0"
                 >
                   Revoke
                 </button>
@@ -615,13 +864,60 @@ function ContextLinksSection({
           ))}
         </div>
       ) : (
-        <p className="text-xs text-mist">
+        <p className="text-xs text-foreground-secondary">
           No context links yet. Create one to share your identity with agents.
         </p>
       )}
     </section>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Collapsible Section
+// ---------------------------------------------------------------------------
+
+function CollapsibleSection({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <section className="border border-border rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full px-5 py-3.5 text-left bg-background-secondary hover:bg-background-secondary/80 transition-colors"
+      >
+        <h2 className="text-sm font-semibold text-foreground-secondary uppercase tracking-wider">
+          {title}
+        </h2>
+        <svg
+          className={`w-4 h-4 text-foreground-secondary transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="px-5 py-4 space-y-4">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Form primitives
+// ---------------------------------------------------------------------------
 
 function Field({
   label,
@@ -636,7 +932,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs text-foreground-secondary mb-1">
+      <label className="block text-xs text-foreground-secondary mb-1.5">
         {label}
       </label>
       <input
@@ -644,7 +940,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-2 text-sm bg-background-secondary border border-border rounded-md outline-none focus:border-sky transition-colors placeholder:text-mist/40"
+        className="w-full px-3 py-2.5 text-sm bg-background-secondary border border-border rounded-lg outline-none focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all text-foreground placeholder:text-mist/40"
       />
     </div>
   );
@@ -665,7 +961,7 @@ function TextArea({
 }) {
   return (
     <div>
-      <label className="block text-xs text-foreground-secondary mb-1">
+      <label className="block text-xs text-foreground-secondary mb-1.5">
         {label}
       </label>
       <textarea
@@ -673,7 +969,7 @@ function TextArea({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className="w-full px-3 py-2 text-sm bg-background-secondary border border-border rounded-md outline-none focus:border-sky transition-colors resize-y placeholder:text-mist/40 font-mono"
+        className="w-full px-3 py-2.5 text-sm bg-background-secondary border border-border rounded-lg outline-none focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all resize-y text-foreground placeholder:text-mist/40 font-mono"
       />
     </div>
   );

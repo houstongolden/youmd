@@ -368,8 +368,8 @@ export default function Home() {
             </div>
 
             <div className="sm:w-1/2">
-              <div className="bg-background border border-mist/10 rounded-xl p-6 font-mono text-[13px] leading-[2] shadow-2xl">
-                <div className="text-foreground/60 font-semibold mb-1">you/</div>
+              <div className="bg-void border border-mist/10 rounded-xl p-6 font-mono text-[13px] leading-[2] shadow-2xl">
+                <div className="text-light/60 font-semibold mb-1">you/</div>
                 <div className="pl-4 border-l border-mist/10 space-y-0">
                   <div className="pl-3">
                     <span className="text-coral">you.md</span>
@@ -378,29 +378,29 @@ export default function Home() {
                     <span className="text-sky">you.json</span>
                   </div>
                   <div className="pl-3">
-                    <span className="text-foreground-secondary/60">manifest.json</span>
+                    <span className="text-mist">manifest.json</span>
                   </div>
                   <div className="pl-3 mt-1">
-                    <span className="text-foreground-secondary/40">profile/</span>{" "}
-                    <span className="text-foreground-secondary/25">
+                    <span className="text-mist/60">profile/</span>{" "}
+                    <span className="text-mist/40">
                       about &middot; now &middot; projects &middot; values
                     </span>
                   </div>
                   <div className="pl-3">
-                    <span className="text-foreground-secondary/40">preferences/</span>{" "}
-                    <span className="text-foreground-secondary/25">
+                    <span className="text-mist/60">preferences/</span>{" "}
+                    <span className="text-mist/40">
                       agent &middot; writing &middot; formatting
                     </span>
                   </div>
                   <div className="pl-3">
-                    <span className="text-foreground-secondary/40">analysis/</span>{" "}
-                    <span className="text-foreground-secondary/25">
+                    <span className="text-mist/60">analysis/</span>{" "}
+                    <span className="text-mist/40">
                       voice &middot; topics &middot; bios &middot; arcs
                     </span>
                   </div>
                   <div className="pl-3">
                     <span className="text-gold/50">private/</span>{" "}
-                    <span className="text-foreground-secondary/20">encrypted</span>
+                    <span className="text-mist/30">encrypted</span>
                   </div>
                 </div>
               </div>
@@ -427,9 +427,9 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="bg-background-secondary border border-mist/10 rounded-xl overflow-hidden shadow-2xl">
+          <div className="bg-ink border border-mist/10 rounded-xl overflow-hidden shadow-2xl">
             {/* Terminal chrome */}
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-mist/10 bg-background-secondary/80">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-mist/10 bg-ink/80">
               <div className="w-3 h-3 rounded-full bg-coral/60" />
               <div className="w-3 h-3 rounded-full bg-gold/60" />
               <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
@@ -438,16 +438,16 @@ export default function Home() {
               </span>
             </div>
 
-            {/* Terminal content */}
-            <div className="p-6 sm:p-8 font-mono text-[13px] sm:text-[14px] leading-relaxed space-y-3">
+            {/* Terminal content — always light-on-dark */}
+            <div className="p-6 sm:p-8 font-mono text-[13px] sm:text-[14px] leading-relaxed space-y-3 text-light">
               <div>
-                <span className="text-foreground-secondary/50">$</span>{" "}
-                <span className="text-foreground">npx youmd init</span>
+                <span className="text-mist/60">$</span>{" "}
+                <span className="text-light">npx youmd init</span>
               </div>
 
               <div className="pl-2 mt-3">
-                <div className="text-foreground/70 font-medium">you.md</div>
-                <div className="text-foreground-secondary/50">
+                <div className="text-light/80 font-medium">you.md</div>
+                <div className="text-mist/60">
                   your identity file for the agent internet
                 </div>
               </div>
@@ -455,10 +455,10 @@ export default function Home() {
               <div className="pl-2 mt-5 space-y-2">
                 <div>
                   <span className="text-emerald-400">?</span>{" "}
-                  <span className="text-foreground-secondary/70">Choose a username:</span>{" "}
-                  <span className="text-foreground">houston</span>
+                  <span className="text-mist">pick a username:</span>{" "}
+                  <span className="text-light">houston</span>
                 </div>
-                <div className="text-foreground-secondary/40 pl-4">
+                <div className="text-mist/50 pl-4">
                   checking...{" "}
                   <span className="text-emerald-400">
                     houston is available.
@@ -466,47 +466,38 @@ export default function Home() {
                 </div>
                 <div>
                   <span className="text-emerald-400">?</span>{" "}
-                  <span className="text-foreground-secondary/70">Your name:</span>{" "}
-                  <span className="text-foreground">Houston Golden</span>
+                  <span className="text-mist">what&apos;s your name?</span>{" "}
+                  <span className="text-light">Houston Golden</span>
                 </div>
                 <div>
                   <span className="text-emerald-400">?</span>{" "}
-                  <span className="text-foreground-secondary/70">Your website:</span>{" "}
-                  <span className="text-coral">https://houstongolden.com</span>
-                </div>
-                <div>
-                  <span className="text-emerald-400">?</span>{" "}
-                  <span className="text-foreground-secondary/70">Tagline:</span>{" "}
-                  <span className="text-foreground">
-                    Founder, BAMF Media. Building You.md.
-                  </span>
+                  <span className="text-mist">website URL:</span>{" "}
+                  <span className="text-coral">https://bamf.com</span>
                 </div>
               </div>
 
-              <div className="pl-2 mt-5 space-y-1 text-foreground-secondary/40">
+              <div className="pl-2 mt-4 text-mist/50 italic">
+                &quot;reading your about page like a respectful detective...&quot;
+              </div>
+
+              <div className="pl-2 mt-3 text-light/80">
+                ok, so you run BAMF Media &mdash; growth marketing,
+                linkedin ghostwriting, AI-native content systems.
+                you&apos;ve been doing this a while. impressive operation.
+              </div>
+
+              <div className="pl-2 mt-5 space-y-1 text-mist/50">
                 <div>{"\u251C\u2500\u2500"} Writing profile/about.md</div>
-                <div>{"\u251C\u2500\u2500"} Compiling you.json</div>
-                <div>{"\u2514\u2500\u2500"} Generating you.md</div>
+                <div>{"\u251C\u2500\u2500"} Writing profile/projects.md</div>
+                <div>{"\u2514\u2500\u2500"} Compiling you.json</div>
               </div>
 
               <div className="text-emerald-400 mt-3">
                 done &mdash; bundle compiled (v1)
               </div>
 
-              <div className="mt-5 pl-2 py-3 border-l-2 border-coral/20">
-                <div className="text-foreground font-medium pl-3">
-                  Houston Golden
-                </div>
-                <div className="text-foreground-secondary/50 pl-3">
-                  Founder, BAMF Media. Building You.md.
-                </div>
-              </div>
-
-              <div className="pl-2 mt-4 text-foreground-secondary/40">
-                next:{" "}
-                <span className="text-foreground-secondary/60">youmd build</span>{" "}
-                <span className="text-foreground-secondary/30">then</span>{" "}
-                <span className="text-foreground-secondary/60">youmd publish</span>
+              <div className="mt-4 pl-2 text-light/90 font-medium">
+                welcome to the agent internet, houston.
               </div>
             </div>
           </div>

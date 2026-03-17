@@ -37,9 +37,12 @@ export function ProfileContent() {
 
   if (profile === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-foreground-secondary font-mono text-sm">
-          Loading...
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-mist/30 border-t-coral rounded-full animate-spin" />
+          <div className="text-foreground-secondary font-mono text-sm">
+            Loading profile...
+          </div>
         </div>
       </div>
     );
@@ -47,17 +50,17 @@ export function ProfileContent() {
 
   if (profile === null) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
         <div className="font-mono text-foreground-secondary text-sm">
           you.md/{username}
         </div>
-        <h1 className="text-xl font-semibold">Profile not found</h1>
+        <h1 className="text-xl font-semibold text-foreground">Profile not found</h1>
         <p className="text-foreground-secondary text-sm">
           This username hasn&apos;t been claimed yet.
         </p>
         <Link
           href="/claim"
-          className="mt-4 px-4 py-2 text-sm bg-coral text-void rounded-md font-medium hover:opacity-90 transition-opacity"
+          className="mt-4 px-5 py-2.5 text-sm bg-coral text-void rounded-md font-medium hover:opacity-90 transition-opacity"
         >
           Claim it
         </Link>
@@ -72,14 +75,13 @@ export function ProfileContent() {
   const tagline = data.identity?.tagline || "";
   const location = data.identity?.location || "";
   const bio = data.identity?.bio?.long || data.identity?.bio?.medium || data.identity?.bio?.short || "";
-  const pageTitle = `${name} — you.md/${username}`;
-  const pageDescription = tagline || bio || `${name} on you.md`;
 
   // Collect sameAs links for JSON-LD
   const sameAsLinks: string[] = [];
   if (data.links?.website) sameAsLinks.push(data.links.website);
   if (data.links?.linkedin) sameAsLinks.push(data.links.linkedin);
   if (data.links?.x) sameAsLinks.push(data.links.x);
+  if (data.links?.github) sameAsLinks.push(data.links.github);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -92,115 +94,132 @@ export function ProfileContent() {
     ...(sameAsLinks.length > 0 ? { sameAs: sameAsLinks } : {}),
   };
 
-  return (
-    <div className="min-h-screen flex flex-col relative">
-      {/* Dynamic head metadata */}
-      <title>{pageTitle}</title>
-      <meta name="description" content={pageDescription} />
-      <meta property="og:title" content={pageTitle} />
-      <meta property="og:description" content={pageDescription} />
-      <meta property="og:type" content="profile" />
-      <meta property="og:url" content={`https://you.md/${username}`} />
-      <meta property="og:site_name" content="you.md" />
-      <meta name="twitter:card" content="summary" />
-      <meta name="twitter:title" content={pageTitle} />
-      <meta name="twitter:description" content={pageDescription} />
+  // Capitalize first letter helper
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+  return (
+    <div className="min-h-screen flex flex-col bg-background relative">
       {/* JSON-LD structured data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Beam glow behind identity section */}
-      <div className="absolute inset-0 beam-glow pointer-events-none opacity-50" />
+      {/* Beam glow — vertical light behind identity */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[500px] pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 0%, rgba(232,133,122,0.07) 0%, rgba(122,190,208,0.05) 40%, rgba(244,215,140,0.03) 70%, transparent 100%)",
+        }}
+      />
 
-      <main className="flex-1 max-w-xl mx-auto w-full px-6 py-16 relative z-10 space-y-10">
-        {/* Identity header */}
-        <header className="space-y-3">
-          <div className="font-mono text-sm text-mist">
+      {/* Header bar */}
+      <header className="w-full border-b border-border relative z-10">
+        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link
+            href={`/${username}`}
+            className="font-mono text-sm text-mist hover:text-foreground transition-colors"
+          >
             you.md/{username}
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight">
+          </Link>
+          <Link
+            href="/"
+            className="text-xs text-mist hover:text-foreground-secondary transition-colors"
+          >
+            What is this?
+          </Link>
+        </div>
+      </header>
+
+      <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-16 pb-20 relative z-10">
+        {/* ── Identity ── */}
+        <section className="mb-16">
+          <h1 className="text-4xl font-semibold tracking-tight text-coral">
             {name}
           </h1>
           {tagline && (
-            <p className="text-foreground-secondary text-lg">
+            <p className="text-foreground-secondary text-lg mt-3 leading-relaxed">
               {tagline}
             </p>
           )}
           {location && (
-            <p className="text-mist text-sm">{location}</p>
+            <p className="text-mist text-sm mt-2 font-mono">{location}</p>
           )}
-        </header>
+        </section>
 
-        {/* Bio */}
+        {/* ── Bio ── */}
         {bio && (
-          <section>
-            <p className="text-foreground-secondary leading-relaxed">
+          <section className="mb-14">
+            <p className="text-foreground-secondary leading-relaxed text-[15px]">
               {bio}
             </p>
           </section>
         )}
 
-        {/* Now */}
+        {/* ── Now ── */}
         {data.now?.focus && data.now.focus.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-coral uppercase tracking-wider">
-              Now
-            </h2>
-            <ul className="space-y-1">
+          <section className="mb-14">
+            <SectionLabel>Now</SectionLabel>
+            <ul className="space-y-2 mt-4">
               {data.now.focus.map((item: string, i: number) => (
                 <li
                   key={i}
-                  className="text-foreground-secondary text-sm flex items-start gap-2"
+                  className="text-foreground-secondary text-sm flex items-start gap-3"
                 >
-                  <span className="text-mist mt-0.5">-</span>
-                  {item}
+                  <span className="text-coral mt-0.5 shrink-0">&bull;</span>
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
+            {data.now.status && (
+              <p className="text-mist text-xs font-mono mt-3">
+                status: {data.now.status}
+              </p>
+            )}
           </section>
         )}
 
-        {/* Projects */}
+        {/* ── Projects ── */}
         {data.projects && data.projects.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-coral uppercase tracking-wider">
-              Projects
-            </h2>
-            <div className="space-y-3">
+          <section className="mb-14">
+            <SectionLabel>Projects</SectionLabel>
+            <div className="grid gap-3 mt-4">
               {data.projects.map((project: Project, i: number) => (
                 <div
                   key={i}
-                  className="border border-border rounded-md p-4 bg-background-secondary/50"
+                  className="border border-border rounded-lg p-5 bg-background-secondary/50 hover:border-mist/30 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">
-                      {project.name}
-                    </span>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-medium text-sm text-foreground truncate">
+                        {project.name}
+                      </span>
+                      {project.role && (
+                        <span className="text-mist text-xs font-mono shrink-0">
+                          {project.role}
+                        </span>
+                      )}
+                    </div>
                     {project.status && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-sky/10 text-sky font-mono">
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-sky/10 text-sky font-mono shrink-0 border border-sky/20">
                         {project.status}
                       </span>
                     )}
                   </div>
                   {project.description && (
-                    <p className="text-foreground-secondary text-sm mt-1">
+                    <p className="text-foreground-secondary text-sm mt-2 leading-relaxed">
                       {project.description}
                     </p>
-                  )}
-                  {project.role && (
-                    <p className="text-mist text-xs mt-1">{project.role}</p>
                   )}
                   {project.url && (
                     <a
                       href={project.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sky text-xs font-mono mt-1 inline-block hover:underline"
+                      className="text-sky text-xs font-mono mt-3 inline-flex items-center gap-1 hover:underline"
                     >
-                      {project.url}
+                      <span className="text-mist">&rarr;</span> {project.url}
                     </a>
                   )}
                 </div>
@@ -209,33 +228,28 @@ export function ProfileContent() {
           </section>
         )}
 
-        {/* Values */}
+        {/* ── Values ── */}
         {data.values && data.values.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-coral uppercase tracking-wider">
-              Values
-            </h2>
-            <ul className="space-y-1">
+          <section className="mb-14">
+            <SectionLabel>Values</SectionLabel>
+            <div className="flex flex-wrap gap-2 mt-4">
               {data.values.map((value: string, i: number) => (
-                <li
+                <span
                   key={i}
-                  className="text-foreground-secondary text-sm flex items-start gap-2"
+                  className="text-sm px-3 py-1.5 rounded-full border border-border text-foreground-secondary bg-background-secondary/50"
                 >
-                  <span className="text-mist mt-0.5">-</span>
                   {value}
-                </li>
+                </span>
               ))}
-            </ul>
+            </div>
           </section>
         )}
 
-        {/* Links */}
+        {/* ── Links ── */}
         {data.links && Object.keys(data.links).some((k: string) => data.links[k]) && (
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-coral uppercase tracking-wider">
-              Links
-            </h2>
-            <div className="space-y-1">
+          <section className="mb-14">
+            <SectionLabel>Links</SectionLabel>
+            <div className="grid gap-2 mt-4">
               {Object.entries(data.links)
                 .filter(([, url]) => url)
                 .map(([platform, url]) => (
@@ -244,64 +258,89 @@ export function ProfileContent() {
                     href={url as string}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block text-sm text-sky font-mono hover:underline"
+                    className="flex items-center gap-3 text-sm font-mono py-2 px-3 -mx-3 rounded-md hover:bg-background-secondary/80 transition-colors group"
                   >
-                    {platform}: {url as string}
+                    <span className="text-mist text-xs w-20 shrink-0">
+                      {capitalize(platform)}
+                    </span>
+                    <span className="text-sky group-hover:underline truncate">
+                      {url as string}
+                    </span>
                   </a>
                 ))}
             </div>
           </section>
         )}
 
-        {/* Agent Preferences */}
+        {/* ── Agent Preferences ── */}
         {data.preferences?.agent && (
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-coral uppercase tracking-wider">
-              Agent Preferences
-            </h2>
-            <div className="text-foreground-secondary text-sm space-y-1 font-mono">
+          <section className="mb-14">
+            <SectionLabel>Agent Preferences</SectionLabel>
+            <div className="mt-4 border border-border rounded-lg p-5 bg-background-secondary/50 font-mono text-sm space-y-2">
               {data.preferences.agent.tone && (
-                <p>
-                  <span className="text-mist">tone:</span>{" "}
-                  {data.preferences.agent.tone}
-                </p>
+                <div className="flex gap-2">
+                  <span className="text-mist shrink-0">tone:</span>
+                  <span className="text-foreground-secondary">
+                    {data.preferences.agent.tone}
+                  </span>
+                </div>
               )}
               {data.preferences.agent.avoid?.length > 0 && (
-                <p>
-                  <span className="text-mist">avoid:</span>{" "}
-                  {data.preferences.agent.avoid.join(", ")}
-                </p>
+                <div className="flex gap-2">
+                  <span className="text-mist shrink-0">avoid:</span>
+                  <span className="text-foreground-secondary">
+                    {data.preferences.agent.avoid.join(", ")}
+                  </span>
+                </div>
               )}
-              {data.preferences.writing?.style && (
-                <p>
-                  <span className="text-mist">style:</span>{" "}
-                  {data.preferences.writing.style}
-                </p>
+              {data.preferences?.writing?.style && (
+                <div className="flex gap-2">
+                  <span className="text-mist shrink-0">style:</span>
+                  <span className="text-foreground-secondary">
+                    {data.preferences.writing.style}
+                  </span>
+                </div>
               )}
             </div>
           </section>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="px-6 py-8 border-t border-border text-center relative z-10">
-        <p className="text-xs text-mist">
-          Powered by{" "}
-          <Link
-            href="/"
-            className="font-mono text-sky hover:underline"
-          >
-            you.md
-          </Link>
-          {" "}&mdash;{" "}
-          <Link
-            href="/claim"
-            className="text-coral hover:underline"
-          >
-            Claim yours
-          </Link>
-        </p>
+      {/* ── Footer ── */}
+      <footer className="border-t border-border relative z-10">
+        <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col items-center gap-3">
+          {/* Subtle brand gradient line */}
+          <div className="w-12 h-px brand-gradient rounded-full opacity-60" />
+          <p className="text-xs text-mist">
+            Powered by{" "}
+            <Link
+              href="/"
+              className="font-mono brand-gradient-text hover:opacity-80 transition-opacity"
+            >
+              you.md
+            </Link>
+            {" "}&mdash;{" "}
+            <Link
+              href="/claim"
+              className="text-coral hover:underline transition-colors"
+            >
+              Claim yours
+            </Link>
+          </p>
+        </div>
       </footer>
+    </div>
+  );
+}
+
+/* ── Section Label Component ── */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <h2 className="text-xs font-semibold text-gold uppercase tracking-widest font-mono">
+        {children}
+      </h2>
+      <div className="flex-1 h-px bg-border" />
     </div>
   );
 }
