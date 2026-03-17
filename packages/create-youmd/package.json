@@ -1,0 +1,18 @@
+{
+  "name": "create-youmd",
+  "version": "0.2.0",
+  "description": "Create your You.md identity bundle — your identity file for the agent internet",
+  "bin": {
+    "create-youmd": "./index.js"
+  },
+  "files": ["index.js"],
+  "keywords": ["identity", "ai", "agent", "llm", "you-md", "create"],
+  "author": "Houston Golden",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/houstongolden/youmd.git",
+    "directory": "packages/create-youmd"
+  },
+  "homepage": "https://you.md"
+}
