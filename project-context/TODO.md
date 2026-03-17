@@ -2,97 +2,70 @@
 
 Last Updated: 2026-03-16
 
-## Milestone 0: Foundation ✓ COMPLETE
-> Core infrastructure. Auth. Username claim. Empty bundle creation.
+## Milestone 0: Foundation — COMPLETE
+- [x] Next.js 16 + Convex + Clerk + Tailwind v4
+- [x] Full Convex schema (10 tables)
+- [x] Brand system (9 colors, beam-glow, dark mode default)
+- [x] Auth flow (sign-in, sign-up, claim)
+- [x] Git repo + GitHub sync
 
-- [x] Save PRD to project-context
-- [x] Create TODO tracker + feature requests
-- [x] Initialize Next.js 14+ app with App Router
-- [x] Initialize Convex backend (schema + functions)
-- [x] Set up Clerk auth with Convex integration
-- [x] Define Convex schema (all tables from PRD §4.3)
-- [x] Implement user registration + username claim
-- [x] GET /api/v1/profiles/:username — public API endpoint
-- [x] Basic auth flow (sign up, sign in, sign out via Clerk)
-- [x] Username claim page (real-time availability check)
-- [x] Brand system (9 color tokens, beam-glow, gradients, dark mode)
-- [x] Connect to live Convex deployment (uncommon-chicken-142)
-- [x] Configure Clerk credentials (superb-lab-93)
-- [x] Git repo initialized + pushed to GitHub
-- [ ] CI/CD pipeline setup (Vercel + Convex deploy)
-
----
-
-## Milestone 1: Manual Identity Creation — IN PROGRESS
-> Users can create and publish an identity bundle manually (no scraping yet).
-
-- [x] Structured profile editor (web dashboard form)
-- [x] Save bundle mutation (convex/me.ts saveBundleFromForm)
-- [x] Publish bundle mutation (convex/me.ts publishLatest)
-- [x] Public profile page at /[username] (renders you.json)
-- [x] youmd build (local compile from profile/*.md + preferences/*.md)
-- [x] you.json and you.md compilation (convex/lib/compile.ts + cli/src/lib/compiler.ts)
-- [x] Manifest generation
-- [x] Profile page design (brand colors, beam-glow, dark mode, sections)
+## Milestone 1: Manual Identity Creation — COMPLETE
+- [x] Structured dashboard editor (all identity fields)
+- [x] Server-side bundle compilation (convex/lib/compile.ts)
+- [x] Save + publish mutations
+- [x] Public profile page at /[username]
+- [x] CLI: init, build (local compile)
 - [x] Landing page (hero, how-it-works, dual value prop)
-- [x] 404 page with brand styling
-- [ ] youmd publish (needs API auth integration)
-- [ ] Dashboard form uses saveBundleFromForm mutation (currently uses older saveBundle)
-- [ ] Test end-to-end: create account → claim username → fill form → save → publish → view profile
+- [x] 404 page
 
----
+## Milestone 2: Ingestion Pipeline — COMPLETE (code written)
+- [x] Pipeline orchestrator (convex/pipeline/orchestrator.ts)
+- [x] Web fetch via native fetch (convex/pipeline/fetch.ts)
+- [x] Apify integration for LinkedIn/X (convex/pipeline/fetch.ts)
+- [x] LLM extraction via OpenRouter (convex/pipeline/extract.ts)
+- [x] Voice analysis, topic mapping, bio generation, FAQ (convex/pipeline/analyze.ts)
+- [x] Pipeline compilation (convex/pipeline/compile.ts)
+- [x] All LLM prompts (convex/pipeline/prompts.ts)
+- [x] Pipeline state management (convex/pipeline/mutations.ts)
+- [x] HTTP endpoints: POST /me/build, GET /me/build/status
+- [x] OpenRouter API key configured
+- [ ] Apify API key (need from user)
+- [ ] End-to-end pipeline test
 
-## Milestone 2: Ingestion Pipeline
-> Users can add source URLs and the system scrapes, extracts, and generates analysis.
-
-- [x] youmd add <source> <url> (CLI command)
-- [x] POST /me/sources — add source URL (convex/me.ts addSource)
-- [x] GET /me/sources — list sources (convex/me.ts getSources)
-- [ ] Ingestion pipeline (all 6 stages)
-- [ ] Website scraping (Firecrawl)
-- [ ] LinkedIn scraping (Apify)
-- [ ] X scraping (Apify)
-- [ ] LLM extraction prompts (per source type)
-- [ ] LLM analysis prompts (voice, topics, bio variants, arcs, FAQ)
-- [ ] Diff review UI (web)
-- [ ] youmd build (full pipeline)
-- [ ] youmd diff
-- [ ] Human-in-the-loop approval
-
----
-
-## Milestone 3: Security + Sharing + Monetization
+## Milestone 3: Security + Sharing + Monetization — MOSTLY COMPLETE
+- [x] API key management (convex/apiKeys.ts) — create, list, revoke, hash-based auth
+- [x] Context links (convex/contextLinks.ts) — create, list, revoke, resolve
+- [x] Context link HTTP endpoint (GET /ctx?token=xxx)
+- [x] Scoped API keys (read:public, read:private, write:bundle)
+- [x] Free tier gating (1 key, read:public only)
+- [x] Dashboard: API keys management UI
+- [x] Dashboard: context links management UI
+- [x] Authenticated HTTP API (all /me/* endpoints)
 - [ ] Private vault encryption (AES-256-GCM)
-- [ ] Context links — create, list, revoke
-- [ ] API key management
-- [ ] Rate limiting
 - [ ] Stripe integration for Pro plan
+- [ ] Rate limiting
 
----
-
-## Milestone 4: Polish + Launch
-- [ ] Public landing page (production quality)
-- [ ] CLI published to npm as `youmd`
+## Milestone 4: Polish + Launch — IN PROGRESS
+- [x] Landing page
+- [ ] CLI published to npm (ready to publish, needs npm login)
+- [ ] End-to-end testing (sign up → claim → edit → publish → view)
 - [ ] Open Graph / social cards
-- [ ] SEO for profile pages
+- [ ] SEO structured data on profiles
 - [ ] Monitoring + alerting
 
----
+## CLI Status
+- [x] All 12 commands: init, login, register, whoami, status, build, publish, add, diff, preview, link, keys
+- [x] API client (cli/src/lib/api.ts) talking to Convex
+- [x] TypeScript compiles, dist/ builds clean
+- [ ] npm publish (needs npm login)
 
-## CLI Package Status
-- [x] Scaffolded at cli/
-- [x] Commands: init, login, register, whoami, status, build, publish, add, diff, preview
-- [x] Bundle compiler (cli/src/lib/compiler.ts)
-- [x] Config management (cli/src/lib/config.ts)
-- [x] TypeScript compiles cleanly
-- [x] `youmd init` tested — creates .youmd/ bundle structure
-- [x] `youmd build` tested — compiles bundle from markdown files
-- [ ] Compile to standalone binary
-- [ ] Publish to npm as `youmd`
-- [ ] API auth integration for publish/status commands
+## Environment Variables (Convex)
+- [x] CLERK_JWT_ISSUER_DOMAIN
+- [x] OPENROUTER_API_KEY
+- [ ] APIFY_API_KEY
 
----
-
-## Current Focus
-**Milestone 1 — Manual Identity Creation**
-Next: Wire dashboard to new saveBundleFromForm mutation, test full end-to-end flow, prepare CLI for npm publish.
+## Next Steps
+1. npm login + publish CLI as `youmd`
+2. Test full end-to-end flow locally
+3. Test ingestion pipeline with a real URL
+4. Deploy web app to Vercel
