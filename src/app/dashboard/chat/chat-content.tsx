@@ -796,7 +796,7 @@ export function ChatContent() {
       </nav>
 
       {/* Messages area */}
-      <main className="flex-1 overflow-y-auto px-4 py-6">
+      <main className="flex-1 overflow-y-auto px-4 py-6 animate-fade-in">
         <div className="max-w-2xl mx-auto space-y-4">
           {displayMessages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} />
@@ -819,12 +819,12 @@ export function ChatContent() {
             placeholder="tell me about yourself, or ask me anything..."
             rows={1}
             disabled={isThinking}
-            className="flex-1 px-4 py-3 text-sm font-mono bg-background-secondary border border-border rounded-lg outline-none focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all resize-none text-foreground placeholder:text-foreground-secondary/40 disabled:opacity-50"
+            className="flex-1 px-4 py-3 text-sm font-mono bg-background-secondary border border-border rounded-lg outline-none hover:border-mist/40 focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all resize-none text-foreground placeholder:text-foreground-secondary/40 disabled:opacity-50"
           />
           <button
             onClick={sendMessage}
             disabled={isThinking || !input.trim()}
-            className="px-4 py-3 text-sm font-mono bg-accent-primary text-void rounded-lg hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+            className="px-4 py-3 text-sm font-mono bg-accent-primary text-void rounded-lg hover:opacity-90 transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
           >
             send
           </button>

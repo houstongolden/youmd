@@ -64,12 +64,12 @@ export function ClaimForm() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <Link href="/" className="font-mono text-lg tracking-tight text-foreground">
+        <Link href="/" className="font-mono text-lg tracking-tight text-foreground hover:text-coral transition-colors">
           you.md
         </Link>
       </nav>
 
-      <main className="flex-1 flex items-center justify-center px-6">
+      <main className="flex-1 flex items-center justify-center px-6 animate-fade-in">
         <div className="max-w-md w-full space-y-10">
           {/* Branding */}
           <div className="text-center space-y-3">
@@ -96,7 +96,7 @@ export function ClaimForm() {
 
           <div className="space-y-5">
             <div className="relative">
-              <div className="flex items-center border border-border rounded-lg bg-background-secondary overflow-hidden focus-within:border-accent-secondary focus-within:shadow-[0_0_16px_rgba(122,190,208,0.2)] transition-all duration-200">
+              <div className="flex items-center border border-border rounded-lg bg-background-secondary overflow-hidden hover:border-mist/40 focus-within:border-accent-secondary focus-within:shadow-[0_0_16px_rgba(122,190,208,0.2)] transition-all duration-200">
                 <span className="pl-4 pr-1 text-foreground-secondary font-mono text-sm select-none">
                   you.md/
                 </span>
@@ -148,7 +148,7 @@ export function ClaimForm() {
             <button
               onClick={handleClaim}
               disabled={!isAvailable || username.length < 3 || claiming}
-              className="w-full py-3.5 bg-accent-primary text-void rounded-lg font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-3.5 bg-accent-primary text-void rounded-lg font-medium text-sm hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {!isLoaded
                 ? "Loading..."

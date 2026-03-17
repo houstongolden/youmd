@@ -335,6 +335,25 @@ function showHelp(): void {
   console.log("");
 }
 
+function extractProfileHint(bundleDir: string): string | null {
+  // Try to pull something specific from the profile to personalize the greeting
+  const candidates = ["profile/now.md", "profile/about.md", "profile/projects.md"];
+  for (const file of candidates) {
+    const filePath = path.join(bundleDir, file);
+    if (!fs.existsSync(filePath)) continue;
+    const raw = fs.readFileSync(filePath, "utf-8");
+    const content = raw
+      .replace(/---[\s\S]*?---/, "")
+      .trim()
+      .split("\n")
+      .filter((l) => l.trim() && !l.startsWith("<!--") && !l.startsWith("#"));
+    if (content.length > 0) {
+      return content[0].trim();
+    }
+  }
+  return null;
+}
+
 // ─── Main chat command ────────────────────────────────────────────────
 
 export async function chatCommand(): Promise<void> {
@@ -368,11 +387,18 @@ export async function chatCommand(): Promise<void> {
   // Load current profile as context
   const currentBundle = loadCurrentBundle(bundleDir);
 
+  // Extract profile details for a personalized greeting prompt
+  const profileHint = extractProfileHint(bundleDir);
+  let greetingInstruction = "greet me briefly and ask what i'd like to update or work on. keep it short.";
+  if (profileHint) {
+    greetingInstruction = `greet me like you remember me from last time. reference something specific from my profile (like my current focus, a project, or my background) to show you know who i am. then ask what i'd like to update. keep it to 2-3 sentences.`;
+  }
+
   const messages: ChatMessage[] = [
     { role: "system", content: CHAT_SYSTEM_PROMPT },
     {
       role: "user",
-      content: `here is my current identity bundle:\n\n${currentBundle}\n\ngreet me briefly and ask what i'd like to update or work on. keep it short.`,
+      content: `here is my current identity bundle:\n\n${currentBundle}\n\n${greetingInstruction}`,
     },
   ];
 

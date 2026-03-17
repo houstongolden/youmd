@@ -10,6 +10,7 @@ import {
   writeLocalConfig,
 } from "../lib/config";
 import { uploadBundle, publishLatest } from "../lib/api";
+import { Spinner } from "../lib/onboarding";
 
 export async function publishCommand(): Promise<void> {
   console.log("");
@@ -47,7 +48,7 @@ export async function publishCommand(): Promise<void> {
 
   const config = readGlobalConfig();
 
-  console.log("you.md -- publishing bundle");
+  console.log("  " + chalk.bold("you.md") + chalk.dim(" -- publishing bundle"));
   console.log("");
 
   // Read the bundle files
@@ -59,15 +60,13 @@ export async function publishCommand(): Promise<void> {
     ? JSON.parse(fs.readFileSync(manifestPath, "utf-8"))
     : { version: youJson.version || 1, entries: [] };
 
-  console.log("\u251C\u2500\u2500 Reading you.json (v" + (youJson.version || "?") + ")");
-  console.log("\u251C\u2500\u2500 Reading you.md (" + youMd.length + " bytes)");
-  console.log("\u251C\u2500\u2500 Reading manifest.json");
+  console.log("  \u251C\u2500\u2500 " + chalk.dim("reading") + " you.json (v" + (youJson.version || "?") + ")");
+  console.log("  \u251C\u2500\u2500 " + chalk.dim("reading") + " you.md (" + youMd.length + " bytes)");
+  console.log("  \u251C\u2500\u2500 " + chalk.dim("reading") + " manifest.json");
 
-  // Upload the bundle
-  console.log(
-    "\u251C\u2500\u2500 Uploading to " +
-      chalk.cyan("uncommon-chicken-142.convex.site")
-  );
+  // Upload the bundle with a thinking spinner
+  const spinner = new Spinner("beaming you up to the agent internet");
+  spinner.start();
 
   try {
     const uploadRes = await uploadBundle({
@@ -77,10 +76,11 @@ export async function publishCommand(): Promise<void> {
     });
 
     if (!uploadRes.ok) {
+      spinner.stop();
       const errData = uploadRes.data as any;
       console.log("");
       console.log(
-        chalk.red("upload failed") +
+        chalk.red("  upload failed") +
           " -- " +
           (errData?.error || `status ${uploadRes.status}`)
       );
@@ -88,18 +88,16 @@ export async function publishCommand(): Promise<void> {
       return;
     }
 
-    console.log("\u251C\u2500\u2500 Bundle saved");
-
     // Publish the latest bundle
-    console.log("\u2514\u2500\u2500 Publishing...");
-
     const pubRes = await publishLatest();
+
+    spinner.stop();
 
     if (!pubRes.ok) {
       const errData = pubRes.data as any;
       console.log("");
       console.log(
-        chalk.red("publish failed") +
+        chalk.red("  publish failed") +
           " -- " +
           (errData?.error || `status ${pubRes.status}`)
       );
@@ -116,29 +114,40 @@ export async function publishCommand(): Promise<void> {
       writeLocalConfig(localConfig);
     }
 
-    console.log("");
-    console.log(
-      chalk.green("\u2713") +
-        " Published version " +
-        result.version +
-        " as " +
-        chalk.cyan(result.username)
-    );
-    console.log("");
-
     const liveUrl =
       result.url || `https://you.md/${result.username}`;
-    console.log("  live: " + chalk.cyan(liveUrl));
+
+    console.log("");
     console.log(
-      "  api:  " +
+      "  " + chalk.green("\u2713") +
+        " published v" +
+        result.version +
+        " as " +
+        chalk.bold(result.username)
+    );
+    console.log("");
+    console.log("  " + chalk.bold("you are live on the agent internet."));
+    console.log("");
+    console.log("  \u250C" + "\u2500".repeat(liveUrl.length + 4) + "\u2510");
+    console.log("  \u2502  " + chalk.cyan.bold(liveUrl) + "  \u2502");
+    console.log("  \u2514" + "\u2500".repeat(liveUrl.length + 4) + "\u2518");
+    console.log("");
+    console.log(
+      chalk.dim("  api:  ") +
         chalk.cyan(
           `https://uncommon-chicken-142.convex.site/api/v1/profiles?username=${result.username}`
         )
     );
     console.log("");
-  } catch (err) {
+    console.log(
+      chalk.dim("  share your identity: ") +
+        chalk.cyan("youmd link create")
+    );
     console.log("");
-    console.log(chalk.red("error") + " -- failed to publish bundle");
+  } catch (err) {
+    spinner.stop();
+    console.log("");
+    console.log(chalk.red("  error") + " -- failed to publish bundle");
     if (err instanceof Error) {
       console.log("  " + err.message);
     }

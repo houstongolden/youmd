@@ -83,7 +83,7 @@ export function ProfileContent() {
         </p>
         <Link
           href="/claim"
-          className="mt-4 px-5 py-2.5 text-sm bg-coral text-void rounded-md font-medium hover:opacity-90 transition-opacity"
+          className="mt-4 px-5 py-2.5 text-sm bg-coral text-void rounded-md font-medium hover:opacity-90 transition-all"
         >
           Claim it
         </Link>
@@ -155,7 +155,7 @@ export function ProfileContent() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-16 pb-20 relative z-10">
+      <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-16 pb-20 relative z-10 animate-fade-in">
         {/* ── Identity ── */}
         <section className="mb-16">
           <h1 className="text-4xl font-semibold tracking-tight text-coral">
@@ -211,7 +211,7 @@ export function ProfileContent() {
               {data.projects.map((project: Project, i: number) => (
                 <div
                   key={i}
-                  className="border border-border rounded-lg p-5 bg-background-secondary/50 hover:border-mist/30 transition-colors"
+                  className="border border-border rounded-lg p-5 bg-background-secondary/50 hover:border-mist/30 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">

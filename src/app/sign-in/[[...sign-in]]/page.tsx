@@ -8,10 +8,10 @@ export default function SignInPage() {
       <div className="absolute inset-0 beam-glow pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-coral/[0.04] blur-[100px] pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col items-center space-y-8 w-full max-w-md px-6">
+      <div className="relative z-10 flex flex-col items-center space-y-8 w-full max-w-md px-6 animate-fade-in">
         {/* Brand header */}
         <div className="text-center space-y-2">
-          <Link href="/" className="font-mono text-3xl tracking-tight text-foreground hover:opacity-80 transition-opacity">
+          <Link href="/" className="font-mono text-3xl tracking-tight text-foreground hover:text-coral transition-colors">
             you.md
           </Link>
           <p className="text-foreground-secondary text-sm tracking-wide">

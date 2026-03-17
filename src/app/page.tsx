@@ -43,7 +43,7 @@ function CopyCommand() {
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-xl border border-border bg-background-secondary/40 overflow-hidden">
+    <div className="rounded-xl border border-border bg-background-secondary/40 overflow-hidden hover:border-mist/30 hover:shadow-sm transition-all">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-6 py-5 text-left cursor-pointer"
@@ -127,7 +127,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <Link
             href="/"
-            className="font-mono text-[17px] text-foreground font-medium tracking-tight"
+            className="font-mono text-[17px] text-foreground font-medium tracking-tight hover:text-coral transition-colors"
           >
             you.md
           </Link>
@@ -175,7 +175,7 @@ export default function Home() {
         <div className="relative z-10 max-w-4xl mx-auto px-6 pt-32 pb-28 sm:pt-44 sm:pb-36 text-center">
           {/* Spec badge */}
           <div className="mb-10">
-            <span className="inline-block px-4 py-1.5 rounded-full text-[11px] font-mono font-medium tracking-wide uppercase bg-background-secondary/60 text-foreground-secondary border border-mist/15">
+            <span className="inline-block px-4 py-1.5 rounded-full text-[11px] font-mono font-medium tracking-wide uppercase bg-background-secondary/60 text-foreground-secondary border border-mist/15 hover:border-mist/30 transition-all">
               Open spec &middot; you-md/v1
             </span>
           </div>
@@ -262,7 +262,7 @@ export default function Home() {
 
         <div className="grid sm:grid-cols-3 gap-4">
           {/* agent.md */}
-          <div className="rounded-xl border border-border bg-background-secondary/40 p-7 text-center">
+          <div className="rounded-xl border border-border bg-background-secondary/40 p-7 text-center hover:border-mist/30 hover:shadow-sm transition-all">
             <code className="text-lg font-mono text-foreground-secondary/70 block mb-3">
               agent.md
             </code>
@@ -272,7 +272,7 @@ export default function Home() {
           </div>
 
           {/* soul.md */}
-          <div className="rounded-xl border border-border bg-background-secondary/40 p-7 text-center">
+          <div className="rounded-xl border border-border bg-background-secondary/40 p-7 text-center hover:border-mist/30 hover:shadow-sm transition-all">
             <code className="text-lg font-mono text-foreground-secondary/70 block mb-3">
               soul.md
             </code>
@@ -316,7 +316,7 @@ export default function Home() {
 
         <div className="grid sm:grid-cols-3 gap-5">
           {/* Claim */}
-          <div className="rounded-xl border border-coral/15 bg-background-secondary/50 p-8 flex flex-col hover:border-coral/30 transition-colors">
+          <div className="rounded-xl border border-coral/15 bg-background-secondary/50 p-8 flex flex-col hover:border-coral/30 hover:shadow-sm transition-all">
             <div className="w-10 h-10 rounded-lg bg-coral/10 border border-coral/20 flex items-center justify-center mb-6">
               <span className="text-coral font-mono text-sm font-bold">01</span>
             </div>
@@ -333,7 +333,7 @@ export default function Home() {
           </div>
 
           {/* Build */}
-          <div className="rounded-xl border border-sky/15 bg-background-secondary/50 p-8 flex flex-col hover:border-sky/30 transition-colors">
+          <div className="rounded-xl border border-sky/15 bg-background-secondary/50 p-8 flex flex-col hover:border-sky/30 hover:shadow-sm transition-all">
             <div className="w-10 h-10 rounded-lg bg-sky/10 border border-sky/20 flex items-center justify-center mb-6">
               <span className="text-sky font-mono text-sm font-bold">02</span>
             </div>
@@ -347,7 +347,7 @@ export default function Home() {
           </div>
 
           {/* Share */}
-          <div className="rounded-xl border border-gold/15 bg-background-secondary/50 p-8 flex flex-col hover:border-gold/30 transition-colors">
+          <div className="rounded-xl border border-gold/15 bg-background-secondary/50 p-8 flex flex-col hover:border-gold/30 hover:shadow-sm transition-all">
             <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center mb-6">
               <span className="text-gold font-mono text-sm font-bold">03</span>
             </div>
@@ -369,7 +369,7 @@ export default function Home() {
       <section className="max-w-5xl mx-auto px-6 pb-28 sm:pb-36">
         <div className="grid sm:grid-cols-2 gap-5">
           {/* For YOUR agents */}
-          <div className="rounded-xl border border-sky/15 bg-gradient-to-br from-sky/[0.05] to-ink/30 p-8 sm:p-10">
+          <div className="rounded-xl border border-sky/15 bg-gradient-to-br from-sky/[0.05] to-ink/30 p-8 sm:p-10 hover:border-sky/30 hover:shadow-sm transition-all">
             <h3 className="text-xl font-semibold text-foreground mb-4">
               For <span className="text-sky">your</span> agents
             </h3>
@@ -395,7 +395,7 @@ export default function Home() {
           </div>
 
           {/* For EVERYONE ELSE'S agents */}
-          <div className="rounded-xl border border-gold/15 bg-gradient-to-br from-gold/[0.05] to-ink/30 p-8 sm:p-10">
+          <div className="rounded-xl border border-gold/15 bg-gradient-to-br from-gold/[0.05] to-ink/30 p-8 sm:p-10 hover:border-gold/30 hover:shadow-sm transition-all">
             <h3 className="text-xl font-semibold text-foreground mb-4">
               For <span className="text-gold">everyone else&apos;s</span>{" "}
               agents
@@ -598,7 +598,7 @@ export default function Home() {
 
           <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
             {/* Free */}
-            <div className="rounded-xl border border-border bg-background-secondary p-8 flex flex-col">
+            <div className="rounded-xl border border-border bg-background-secondary p-8 flex flex-col hover:border-mist/30 hover:shadow-sm transition-all">
               <h3 className="text-xl font-semibold text-foreground mb-1">Free</h3>
               <p className="text-foreground-secondary text-sm mb-6">$0 / forever</p>
               <ul className="space-y-3 text-sm text-foreground-secondary flex-1 mb-8">
@@ -608,14 +608,14 @@ export default function Home() {
               </ul>
               <Link
                 href="/claim"
-                className="block text-center px-6 py-3 rounded-lg bg-coral text-void font-semibold text-[14px] hover:bg-blush transition-colors"
+                className="block text-center px-6 py-3 rounded-lg bg-coral text-void font-semibold text-[14px] hover:opacity-90 transition-all"
               >
                 Get started free
               </Link>
             </div>
 
             {/* Pro */}
-            <div className="rounded-xl border border-gold/20 bg-gold/5 p-8 flex flex-col glow-gold">
+            <div className="rounded-xl border border-gold/20 bg-gold/5 p-8 flex flex-col glow-gold hover:border-gold/35 hover:shadow-sm transition-all">
               <h3 className="text-xl font-semibold text-foreground mb-1">
                 Pro <span className="text-gold text-lg">&#9733;</span>
               </h3>
@@ -736,17 +736,17 @@ export default function Home() {
          ══════════════════════════════════════════ */}
       <footer className="border-t border-border bg-background-secondary/30">
         <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-mono text-[14px] text-foreground-secondary/50">you.md</span>
+          <Link href="/" className="font-mono text-[14px] text-foreground-secondary/50 hover:text-coral transition-colors">you.md</Link>
           <div className="flex items-center gap-6 text-[13px] text-foreground-secondary/40">
-            <Link href="#" className="hover:text-foreground-secondary transition-colors">
+            <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="hover:text-foreground-secondary transition-colors">
               Open spec
-            </Link>
-            <Link href="#" className="hover:text-foreground-secondary transition-colors">
+            </a>
+            <Link href="/claim" className="hover:text-foreground-secondary transition-colors">
               Docs
             </Link>
-            <Link href="#" className="hover:text-foreground-secondary transition-colors">
+            <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="hover:text-foreground-secondary transition-colors">
               GitHub
-            </Link>
+            </a>
           </div>
           <span className="text-[13px] text-foreground-secondary/40">
             Built by{" "}

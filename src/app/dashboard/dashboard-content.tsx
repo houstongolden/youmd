@@ -250,7 +250,7 @@ export function DashboardContent() {
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
         <div className="flex items-center gap-4">
-          <Link href="/" className="font-mono text-lg tracking-tight text-foreground">
+          <Link href="/" className="font-mono text-lg tracking-tight text-foreground hover:text-coral transition-colors">
             you.md
           </Link>
           <Link
@@ -281,7 +281,7 @@ export function DashboardContent() {
         </div>
       </nav>
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-6 py-8 space-y-8">
+      <main className="flex-1 max-w-2xl mx-auto w-full px-6 py-8 space-y-8 animate-fade-in">
         {/* Published profile URL */}
         <div className="relative px-5 py-5 rounded-lg bg-background-secondary border border-transparent bg-clip-padding" style={{ backgroundImage: "linear-gradient(var(--color-background-secondary), var(--color-background-secondary)), linear-gradient(135deg, var(--color-accent-secondary), var(--color-accent-primary))", backgroundOrigin: "border-box", backgroundClip: "padding-box, border-box", border: "1px solid transparent" }}>
           <p className="text-sm font-medium text-foreground-secondary mb-2">Your published profile</p>
@@ -387,7 +387,7 @@ export function DashboardContent() {
             <button
               onClick={handlePublish}
               disabled={publishing || !latestBundle}
-              className="px-4 py-2 text-sm bg-accent-primary text-void rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2"
+              className="px-4 py-2 text-sm bg-accent-primary text-void rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
               {publishing && <Spinner size="sm" />}
               {publishing ? "Publishing..." : "Publish"}
@@ -658,7 +658,7 @@ function SourceManagementSection({ clerkId }: { clerkId: string }) {
         <select
           value={newType}
           onChange={(e) => setNewType(e.target.value as "website" | "linkedin" | "x")}
-          className="px-3 py-2 text-sm bg-background-secondary border border-border rounded-lg outline-none focus:border-accent-secondary transition-colors text-foreground"
+          className="px-3 py-2 text-sm bg-background-secondary border border-border rounded-lg outline-none hover:border-mist/40 focus:border-accent-secondary transition-all text-foreground"
         >
           <option value="website">Website</option>
           <option value="linkedin">LinkedIn</option>
@@ -669,7 +669,7 @@ function SourceManagementSection({ clerkId }: { clerkId: string }) {
           value={newUrl}
           onChange={(e) => setNewUrl(e.target.value)}
           placeholder="https://..."
-          className="flex-1 px-3 py-2 text-sm bg-background-secondary border border-border rounded-lg outline-none focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all text-foreground placeholder:text-mist/40"
+          className="flex-1 px-3 py-2 text-sm bg-background-secondary border border-border rounded-lg outline-none hover:border-mist/40 focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all text-foreground placeholder:text-mist/40"
         />
         <button
           onClick={handleAddSource}
@@ -747,7 +747,7 @@ function SourceManagementSection({ clerkId }: { clerkId: string }) {
       <button
         onClick={handleBuild}
         disabled={building || isRunning || !sources || sources.length === 0}
-        className="w-full py-3 bg-accent-primary text-void rounded-lg font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full py-3 bg-accent-primary text-void rounded-lg font-medium text-sm hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {isRunning
           ? "Pipeline running..."
@@ -1053,7 +1053,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-2.5 text-sm bg-background-secondary border border-border rounded-lg outline-none focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all text-foreground placeholder:text-mist/40"
+        className="w-full px-3 py-2.5 text-sm bg-background-secondary border border-border rounded-lg outline-none hover:border-mist/40 focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all text-foreground placeholder:text-mist/40"
       />
     </div>
   );
@@ -1082,7 +1082,7 @@ function TextArea({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className="w-full px-3 py-2.5 text-sm bg-background-secondary border border-border rounded-lg outline-none focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all resize-y text-foreground placeholder:text-mist/40 font-mono"
+        className="w-full px-3 py-2.5 text-sm bg-background-secondary border border-border rounded-lg outline-none hover:border-mist/40 focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all resize-y text-foreground placeholder:text-mist/40 font-mono"
       />
     </div>
   );

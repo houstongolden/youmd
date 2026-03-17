@@ -15,7 +15,7 @@ export async function whoamiCommand(): Promise<void> {
     return;
   }
 
-  console.log("you.md -- current identity");
+  console.log("  " + chalk.bold("you.md") + chalk.dim(" -- current identity"));
   console.log("");
 
   // Show cached info first
@@ -84,9 +84,17 @@ export async function whoamiCommand(): Promise<void> {
       );
     }
 
+    const profileUrl = "https://you.md/" + me.username;
+    console.log("");
+    console.log("  \u250C" + "\u2500".repeat(profileUrl.length + 4) + "\u2510");
+    console.log("  \u2502  " + chalk.cyan.bold(profileUrl) + "  \u2502");
+    console.log("  \u2514" + "\u2500".repeat(profileUrl.length + 4) + "\u2518");
+    console.log("");
+
+    const displayName = me.displayName || me.username;
     console.log(
-      "  url:     " +
-        chalk.cyan("https://you.md/" + me.username)
+      "  " + chalk.bold(`you are ${displayName}.`) +
+        chalk.dim(" the agent internet knows you.")
     );
     console.log("");
 
