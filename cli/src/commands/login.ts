@@ -1,17 +1,11 @@
 import * as readline from "readline";
 import chalk from "chalk";
 import { readGlobalConfig, writeGlobalConfig } from "../lib/config";
+import { getMe } from "../lib/api";
 
-export function loginCommand(options: { key?: string }): void {
+export async function loginCommand(options: { key?: string }): Promise<void> {
   if (options.key) {
-    // Direct API key login
-    const config = readGlobalConfig();
-    config.token = options.key;
-    config.apiUrl = config.apiUrl || "https://api.you.md";
-    writeGlobalConfig(config);
-    console.log("");
-    console.log(chalk.green("authenticated") + " -- API key saved to ~/.youmd/config.json");
-    console.log("");
+    await loginWithKey(options.key);
     return;
   }
 
@@ -24,10 +18,14 @@ export function loginCommand(options: { key?: string }): void {
   console.log("");
   console.log("you.md -- authentication");
   console.log("");
-  console.log("Enter your API key, or visit " + chalk.cyan("https://you.md/settings/api") + " to generate one.");
+  console.log(
+    "Enter your API key, or visit " +
+      chalk.cyan("https://you.md/settings/api") +
+      " to generate one."
+  );
   console.log("");
 
-  rl.question("  API key: ", (answer) => {
+  rl.question("  API key: ", async (answer) => {
     rl.close();
 
     const key = answer.trim();
@@ -37,13 +35,72 @@ export function loginCommand(options: { key?: string }): void {
       return;
     }
 
-    const config = readGlobalConfig();
-    config.token = key;
-    config.apiUrl = config.apiUrl || "https://api.you.md";
+    await loginWithKey(key);
+  });
+}
+
+async function loginWithKey(key: string): Promise<void> {
+  // Save the key first
+  const config = readGlobalConfig();
+  config.token = key;
+  config.apiUrl = "https://uncommon-chicken-142.convex.site";
+  writeGlobalConfig(config);
+
+  console.log("");
+
+  // Validate the key by fetching the user's profile
+  try {
+    const res = await getMe();
+
+    if (!res.ok) {
+      console.log(
+        chalk.yellow("warning") +
+          " -- key saved but could not verify with the server"
+      );
+      console.log(
+        "  Server responded with status " + res.status
+      );
+      console.log("");
+      console.log(
+        "The key has been stored. If it is valid, " +
+          chalk.cyan("youmd whoami") +
+          " will show your identity."
+      );
+      console.log("");
+      return;
+    }
+
+    const me = res.data;
+    config.username = me.username;
+    config.email = me.email;
     writeGlobalConfig(config);
 
+    console.log(
+      chalk.green("authenticated") +
+        " as " +
+        chalk.cyan(me.username)
+    );
     console.log("");
-    console.log(chalk.green("authenticated") + " -- API key saved to ~/.youmd/config.json");
+    console.log("  user:  " + me.username);
+    if (me.email) {
+      console.log("  email: " + me.email);
+    }
+    console.log("  plan:  " + me.plan);
+    console.log("  key:   " + key.slice(0, 8) + "..." + key.slice(-4));
     console.log("");
-  });
+  } catch (err) {
+    console.log(
+      chalk.green("key saved") +
+        " to ~/.youmd/config.json"
+    );
+    console.log("");
+    console.log(
+      chalk.yellow("note") +
+        " -- could not reach the server to verify the key"
+    );
+    if (err instanceof Error) {
+      console.log("  " + err.message);
+    }
+    console.log("");
+  }
 }

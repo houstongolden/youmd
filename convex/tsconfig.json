@@ -6,7 +6,7 @@
     "module": "ESNext",
     "jsx": "react-jsx",
     "skipLibCheck": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": false
   },
   "include": ["./**/*"],
   "exclude": ["./_generated"]

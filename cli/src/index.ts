@@ -11,6 +11,8 @@ import { publishCommand } from "./commands/publish";
 import { addCommand } from "./commands/add";
 import { diffCommand } from "./commands/diff";
 import { previewCommand } from "./commands/preview";
+import { linkCommand } from "./commands/link";
+import { keysCommand } from "./commands/keys";
 
 const program = new Command();
 
@@ -70,5 +72,27 @@ program
   .description("Start a local preview server")
   .option("-p, --port <port>", "Port number", "3333")
   .action(previewCommand);
+
+const linkCmd = program
+  .command("link [subcommand]")
+  .description("Manage context links (create, list, revoke)")
+  .option("--scope <scope>", "Link scope: public or full", "public")
+  .option("--ttl <ttl>", "Time to live: 1h, 24h, 7d, 30d, 90d, never", "7d")
+  .option("--max-uses <n>", "Maximum number of uses")
+  .option("--id <id>", "Link ID (for revoke)");
+
+linkCmd.action((subcommand, options) => {
+  return linkCommand(subcommand, options);
+});
+
+const keysCmd = program
+  .command("keys [subcommand]")
+  .description("Manage API keys (list, create, revoke)")
+  .option("--label <label>", "Label for new key")
+  .option("--id <id>", "Key ID (for revoke)");
+
+keysCmd.action((subcommand, options) => {
+  return keysCommand(subcommand, options);
+});
 
 program.parse(process.argv);

@@ -304,6 +304,48 @@ http.route({
 });
 
 // ============================================================
+// PIPELINE ENDPOINTS
+// ============================================================
+
+// POST /api/v1/me/build — Trigger the ingestion pipeline
+http.route({
+  path: "/api/v1/me/build",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const result = await ctx.runMutation(api.pipeline.index.startPipeline, {
+        clerkId: auth.userId,
+      });
+      return json(result);
+    } catch (err) {
+      return json(
+        { error: err instanceof Error ? err.message : "Failed to start pipeline" },
+        500
+      );
+    }
+  }),
+});
+
+// GET /api/v1/me/build/status — Get pipeline status
+http.route({
+  path: "/api/v1/me/build/status",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const status = await ctx.runQuery(api.pipeline.index.getPipelineStatus, {
+      clerkId: auth.userId,
+    });
+
+    return json(status);
+  }),
+});
+
+// ============================================================
 // CORS PREFLIGHT (catch-all for OPTIONS)
 // ============================================================
 
@@ -319,5 +361,7 @@ http.route({ path: "/api/v1/me/bundle", method: "OPTIONS", handler: corsPrefligh
 http.route({ path: "/api/v1/me/publish", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/sources", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/build", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/build/status", method: "OPTIONS", handler: corsPreflight });
 
 export default http;

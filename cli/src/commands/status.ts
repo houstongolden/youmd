@@ -1,25 +1,42 @@
 import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
-import { getLocalBundleDir, localBundleExists, readLocalConfig, isAuthenticated } from "../lib/config";
+import {
+  getLocalBundleDir,
+  localBundleExists,
+  readLocalConfig,
+  isAuthenticated,
+  readGlobalConfig,
+} from "../lib/config";
+import { getMe } from "../lib/api";
 
-export function statusCommand(): void {
+export async function statusCommand(): Promise<void> {
   console.log("");
   console.log("you.md -- status");
   console.log("");
 
   // Check authentication
   const authed = isAuthenticated();
-  console.log("  auth:    " + (authed ? chalk.green("authenticated") : chalk.yellow("not authenticated")));
+  console.log(
+    "  auth:    " +
+      (authed ? chalk.green("authenticated") : chalk.yellow("not authenticated"))
+  );
 
   // Check local bundle
   const hasBundle = localBundleExists();
-  console.log("  bundle:  " + (hasBundle ? chalk.green("initialized") : chalk.yellow("not initialized")));
+  console.log(
+    "  bundle:  " +
+      (hasBundle ? chalk.green("initialized") : chalk.yellow("not initialized"))
+  );
 
   if (!hasBundle) {
     console.log("");
     console.log("Run " + chalk.cyan("youmd init") + " to create a local bundle.");
     console.log("");
+    // Still show remote status if authenticated
+    if (authed) {
+      await showRemoteStatus();
+    }
     return;
   }
 
@@ -66,6 +83,76 @@ export function statusCommand(): void {
     ? fs.readdirSync(prefsDir).filter((f) => f.endsWith(".md")).length
     : 0;
 
-  console.log("  files:   " + profileCount + " profile, " + prefsCount + " preferences");
-  console.log("");
+  console.log(
+    "  files:   " + profileCount + " profile, " + prefsCount + " preferences"
+  );
+
+  // Remote status
+  if (authed) {
+    console.log("");
+    await showRemoteStatus();
+  } else {
+    console.log("");
+  }
+}
+
+async function showRemoteStatus(): Promise<void> {
+  console.log("  " + chalk.dim("--- remote ---"));
+
+  try {
+    const res = await getMe();
+
+    if (!res.ok) {
+      console.log(
+        "  remote:  " +
+          chalk.yellow("could not fetch") +
+          " (status " +
+          res.status +
+          ")"
+      );
+      console.log("");
+      return;
+    }
+
+    const me = res.data;
+    console.log("  user:    " + chalk.green(me.username));
+    console.log("  bundles: " + me.bundleCount);
+
+    if (me.publishedBundle) {
+      console.log(
+        "  live:    v" +
+          me.publishedBundle.version +
+          (me.publishedBundle.publishedAt
+            ? " (published " +
+              new Date(me.publishedBundle.publishedAt).toISOString() +
+              ")"
+            : "")
+      );
+    } else {
+      console.log("  live:    " + chalk.yellow("nothing published"));
+    }
+
+    if (me.latestBundle && !me.latestBundle.isPublished) {
+      console.log(
+        "  draft:   v" +
+          me.latestBundle.version +
+          " (unpublished)"
+      );
+    }
+
+    console.log(
+      "  url:     " +
+        chalk.cyan("https://you.md/" + me.username)
+    );
+    console.log("");
+  } catch (err) {
+    console.log(
+      "  remote:  " +
+        chalk.yellow("unreachable")
+    );
+    if (err instanceof Error) {
+      console.log("  " + chalk.dim(err.message));
+    }
+    console.log("");
+  }
 }

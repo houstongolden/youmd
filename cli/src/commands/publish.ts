@@ -9,8 +9,9 @@ import {
   readLocalConfig,
   writeLocalConfig,
 } from "../lib/config";
+import { uploadBundle, publishLatest } from "../lib/api";
 
-export function publishCommand(): void {
+export async function publishCommand(): Promise<void> {
   console.log("");
 
   if (!isAuthenticated()) {
@@ -31,36 +32,116 @@ export function publishCommand(): void {
 
   const bundleDir = getLocalBundleDir();
   const youJsonPath = path.join(bundleDir, "you.json");
+  const youMdPath = path.join(bundleDir, "you.md");
+  const manifestPath = path.join(bundleDir, "manifest.json");
 
   if (!fs.existsSync(youJsonPath)) {
-    console.log(chalk.yellow("no you.json found -- run ") + chalk.cyan("youmd build") + chalk.yellow(" first"));
+    console.log(
+      chalk.yellow("no you.json found -- run ") +
+        chalk.cyan("youmd build") +
+        chalk.yellow(" first")
+    );
     console.log("");
     return;
   }
 
   const config = readGlobalConfig();
-  const apiUrl = config.apiUrl || "https://api.you.md";
 
   console.log("you.md -- publishing bundle");
   console.log("");
 
-  // Read the bundle
-  const bundle = JSON.parse(fs.readFileSync(youJsonPath, "utf-8"));
+  // Read the bundle files
+  const youJson = JSON.parse(fs.readFileSync(youJsonPath, "utf-8"));
+  const youMd = fs.existsSync(youMdPath)
+    ? fs.readFileSync(youMdPath, "utf-8")
+    : "";
+  const manifest = fs.existsSync(manifestPath)
+    ? JSON.parse(fs.readFileSync(manifestPath, "utf-8"))
+    : { version: youJson.version || 1, entries: [] };
 
-  console.log("\u251C\u2500\u2500 Reading you.json (v" + bundle.version + ")");
-  console.log("\u251C\u2500\u2500 Uploading to " + chalk.cyan(apiUrl));
-  console.log("\u2514\u2500\u2500 Waiting for confirmation");
+  console.log("\u251C\u2500\u2500 Reading you.json (v" + (youJson.version || "?") + ")");
+  console.log("\u251C\u2500\u2500 Reading you.md (" + youMd.length + " bytes)");
+  console.log("\u251C\u2500\u2500 Reading manifest.json");
 
-  // Simulate publish (actual API call would go here)
-  console.log("");
-  console.log(chalk.yellow("publish is not yet connected to the API"));
-  console.log("When the API is live, this will push your bundle to " + chalk.cyan(apiUrl + "/v1/bundle"));
-  console.log("");
+  // Upload the bundle
+  console.log(
+    "\u251C\u2500\u2500 Uploading to " +
+      chalk.cyan("uncommon-chicken-142.convex.site")
+  );
 
-  // Update local config with publish timestamp
-  const localConfig = readLocalConfig();
-  if (localConfig) {
-    localConfig.lastPublished = new Date().toISOString();
-    writeLocalConfig(localConfig);
+  try {
+    const uploadRes = await uploadBundle({
+      manifest,
+      youJson,
+      youMd,
+    });
+
+    if (!uploadRes.ok) {
+      const errData = uploadRes.data as any;
+      console.log("");
+      console.log(
+        chalk.red("upload failed") +
+          " -- " +
+          (errData?.error || `status ${uploadRes.status}`)
+      );
+      console.log("");
+      return;
+    }
+
+    console.log("\u251C\u2500\u2500 Bundle saved");
+
+    // Publish the latest bundle
+    console.log("\u2514\u2500\u2500 Publishing...");
+
+    const pubRes = await publishLatest();
+
+    if (!pubRes.ok) {
+      const errData = pubRes.data as any;
+      console.log("");
+      console.log(
+        chalk.red("publish failed") +
+          " -- " +
+          (errData?.error || `status ${pubRes.status}`)
+      );
+      console.log("");
+      return;
+    }
+
+    const result = pubRes.data;
+
+    // Update local config with publish timestamp
+    const localConfig = readLocalConfig();
+    if (localConfig) {
+      localConfig.lastPublished = new Date().toISOString();
+      writeLocalConfig(localConfig);
+    }
+
+    console.log("");
+    console.log(
+      chalk.green("\u2713") +
+        " Published version " +
+        result.version +
+        " as " +
+        chalk.cyan(result.username)
+    );
+    console.log("");
+
+    const liveUrl =
+      result.url || `https://you.md/${result.username}`;
+    console.log("  live: " + chalk.cyan(liveUrl));
+    console.log(
+      "  api:  " +
+        chalk.cyan(
+          `https://uncommon-chicken-142.convex.site/api/v1/profiles?username=${result.username}`
+        )
+    );
+    console.log("");
+  } catch (err) {
+    console.log("");
+    console.log(chalk.red("error") + " -- failed to publish bundle");
+    if (err instanceof Error) {
+      console.log("  " + err.message);
+    }
+    console.log("");
   }
 }
