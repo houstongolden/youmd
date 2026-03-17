@@ -346,6 +346,29 @@ http.route({
 });
 
 // ============================================================
+// ONBOARDING CHAT PROXY (no auth — public, rate-limited by design)
+// ============================================================
+
+http.route({
+  path: "/api/v1/chat",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const body = await request.json();
+      const content = await ctx.runAction(api.chat.onboardingChat, {
+        messages: body.messages,
+      });
+      return json({ content });
+    } catch (err) {
+      return json(
+        { error: err instanceof Error ? err.message : "Chat failed" },
+        500
+      );
+    }
+  }),
+});
+
+// ============================================================
 // CORS PREFLIGHT (catch-all for OPTIONS)
 // ============================================================
 
@@ -363,5 +386,6 @@ http.route({ path: "/api/v1/me/sources", method: "OPTIONS", handler: corsPreflig
 http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/build", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/build/status", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/chat", method: "OPTIONS", handler: corsPreflight });
 
 export default http;

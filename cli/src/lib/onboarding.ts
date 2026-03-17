@@ -13,6 +13,7 @@ import { compileBundle, writeBundle } from "./compiler";
 
 // ─── Constants ────────────────────────────────────────────────────────
 
+const CHAT_PROXY_URL = "https://kindly-cassowary-600.convex.site/api/v1/chat";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "anthropic/claude-sonnet-4";
 
@@ -223,9 +224,30 @@ interface ChatMessage {
 }
 
 async function callLLM(
-  apiKey: string,
+  apiKey: string | null,
   messages: ChatMessage[]
 ): Promise<string> {
+  // Try the you.md proxy first (no API key needed — it uses the server-side key)
+  try {
+    const proxyRes = await fetch(CHAT_PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (proxyRes.ok) {
+      const proxyData = (await proxyRes.json()) as { content?: string };
+      if (proxyData.content) return proxyData.content;
+    }
+  } catch {
+    // Proxy failed — fall through to direct call if key available
+  }
+
+  // Fall back to direct OpenRouter call if user has their own key
+  if (!apiKey) {
+    throw new Error("Chat service unavailable");
+  }
+
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
     headers: {
@@ -240,6 +262,7 @@ async function callLLM(
       max_tokens: 4096,
       temperature: 0.7,
     }),
+    signal: AbortSignal.timeout(60_000),
   });
 
   if (!res.ok) {
@@ -507,7 +530,7 @@ title: "Writing"
 async function runAIMode(
   rl: readline.Interface,
   info: BasicInfo,
-  apiKey: string
+  apiKey: string | null
 ): Promise<void> {
   const bundleDir = getLocalBundleDir();
   const profileDir = path.join(bundleDir, "profile");
@@ -883,17 +906,21 @@ export async function runOnboarding(): Promise<void> {
     console.log("");
   }
 
-  // ── Phase 2: AI conversation or fallback ────────────────────────────
+  // ── Phase 2: AI conversation (proxy-first, no key needed) ──────────
 
-  const apiKey = getOpenRouterKey();
+  const userApiKey = getOpenRouterKey(); // user's own key, if any
 
-  if (apiKey) {
+  console.log(
+    chalk.dim("  AI onboarding active. Let's build your identity.")
+  );
+  console.log("");
+  try {
+    await runAIMode(rl, basicInfo, userApiKey);
+  } catch {
+    // If AI mode fails entirely (proxy down + no user key), fall back
     console.log(
-      chalk.dim("  AI onboarding active. Let's build your identity.")
+      chalk.dim("  Switching to manual mode.")
     );
-    console.log("");
-    await runAIMode(rl, basicInfo, apiKey);
-  } else {
     await runFallbackMode(rl, basicInfo);
   }
 
