@@ -1,7 +1,7 @@
 export default {
   providers: [
     {
-      domain: "https://superb-lab-93.clerk.accounts.dev",
+      domain: process.env.CLERK_JWT_ISSUER_DOMAIN ?? "https://clerk.you.md",
       applicationID: "convex",
     },
   ],

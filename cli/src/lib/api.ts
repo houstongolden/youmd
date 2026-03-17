@@ -5,7 +5,7 @@
 
 import { readGlobalConfig } from "./config";
 
-const SITE_URL = "https://uncommon-chicken-142.convex.site";
+const SITE_URL = "https://kindly-cassowary-600.convex.site";
 
 interface ApiResponse<T = unknown> {
   ok: boolean;
