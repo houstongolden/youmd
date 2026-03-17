@@ -76,7 +76,7 @@ export default function Home() {
          ══════════════════════════════════════════ */}
       <section className="relative overflow-hidden">
         {/* Aurora background — atmospheric, not overwhelming */}
-        <div className="absolute inset-0 opacity-35 pointer-events-none">
+        <div className="absolute inset-0 opacity-35 pointer-events-none" aria-hidden="true">
           <Aurora
             colorStops={["#E8857A", "#7ABED0", "#F4D78C"]}
             amplitude={1.4}
@@ -86,7 +86,7 @@ export default function Home() {
         </div>
 
         {/* Beam of light — the recurring motif */}
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[1px] h-full beam-glow opacity-60" />
           <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[200px] h-full bg-gradient-to-b from-gold/[0.04] via-sky/[0.02] to-transparent opacity-50 blur-2xl" />
         </div>
@@ -509,7 +509,7 @@ export default function Home() {
          ══════════════════════════════════════════ */}
       <section className="relative overflow-hidden border-t border-border">
         {/* Aurora */}
-        <div className="absolute inset-0 opacity-25 pointer-events-none">
+        <div className="absolute inset-0 opacity-25 pointer-events-none" aria-hidden="true">
           <Aurora
             colorStops={["#E8857A", "#F4D78C", "#7ABED0"]}
             amplitude={1.2}
@@ -519,7 +519,7 @@ export default function Home() {
         </div>
 
         {/* Beam of light */}
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[1px] h-full beam-glow opacity-40" />
           <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[300px] h-full bg-gradient-to-b from-gold/[0.03] via-coral/[0.02] to-transparent opacity-40 blur-3xl" />
         </div>

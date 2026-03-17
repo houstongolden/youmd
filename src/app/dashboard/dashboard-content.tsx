@@ -5,6 +5,8 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { Spinner } from "@/components/ui/Spinner";
+import { CopyButton } from "@/components/ui/CopyButton";
 
 interface ProfileFormData {
   name: string;
@@ -62,6 +64,13 @@ export function DashboardContent() {
     agentAvoid: "",
     writingStyle: "",
   });
+
+  // Auto-dismiss status messages after 5 seconds
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => setMessage(null), 5000);
+    return () => clearTimeout(timer);
+  }, [message]);
 
   // Sync form state when latestBundle loads or changes
   const hydratedVersionRef = useRef<number | null>(null);
@@ -189,9 +198,17 @@ export function DashboardContent() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <Link href="/" className="font-mono text-lg tracking-tight text-foreground">
-          you.md
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/" className="font-mono text-lg tracking-tight text-foreground">
+            you.md
+          </Link>
+          <Link
+            href="/"
+            className="text-xs text-foreground-secondary hover:text-foreground transition-colors"
+          >
+            Back to home
+          </Link>
+        </div>
         <div className="flex items-center gap-4">
           <Link
             href={`/${convexUser.username}`}
@@ -220,12 +237,7 @@ export function DashboardContent() {
             >
               {profileUrl}
             </a>
-            <button
-              onClick={() => navigator.clipboard.writeText(profileUrl)}
-              className="text-xs px-2.5 py-1 border border-border rounded-md text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-colors"
-            >
-              Copy
-            </button>
+            <CopyButton text={profileUrl} />
           </div>
         </div>
 
@@ -254,6 +266,24 @@ export function DashboardContent() {
           )}
         </div>
 
+        {/* Chat with agent */}
+        <Link
+          href="/dashboard/chat"
+          className="flex items-center justify-between px-5 py-4 border border-border rounded-lg bg-background-secondary hover:border-accent-secondary transition-colors group"
+        >
+          <div>
+            <p className="text-sm font-medium text-foreground group-hover:text-accent-secondary transition-colors">
+              Chat with agent
+            </p>
+            <p className="text-xs text-foreground-secondary mt-0.5">
+              Build and refine your identity through conversation
+            </p>
+          </div>
+          <span className="text-foreground-secondary group-hover:text-accent-secondary transition-colors">
+            &rarr;
+          </span>
+        </Link>
+
         {/* Action buttons */}
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-foreground">Edit your identity</h1>
@@ -269,15 +299,17 @@ export function DashboardContent() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 text-sm bg-background-secondary border border-border rounded-lg hover:border-accent-secondary transition-colors disabled:opacity-40 text-foreground"
+              className="px-4 py-2 text-sm bg-background-secondary border border-border rounded-lg hover:border-accent-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-foreground inline-flex items-center gap-2"
             >
+              {saving && <Spinner size="sm" />}
               {saving ? "Saving..." : "Save draft"}
             </button>
             <button
               onClick={handlePublish}
               disabled={publishing || !latestBundle}
-              className="px-4 py-2 text-sm bg-accent-primary text-void rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
+              className="px-4 py-2 text-sm bg-accent-primary text-void rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
+              {publishing && <Spinner size="sm" />}
               {publishing ? "Publishing..." : "Publish"}
             </button>
           </div>
@@ -436,16 +468,10 @@ export function DashboardContent() {
                   <pre className="text-xs font-mono text-foreground-secondary bg-background-secondary border border-border rounded-lg p-4 overflow-x-auto max-h-96 overflow-y-auto">
                     {JSON.stringify(latestBundle.youJson, null, 2)}
                   </pre>
-                  <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(
-                        JSON.stringify(latestBundle.youJson, null, 2)
-                      )
-                    }
+                  <CopyButton
+                    text={JSON.stringify(latestBundle.youJson, null, 2)}
                     className="absolute top-3 right-3 text-xs px-2.5 py-1 border border-border rounded-md bg-background text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-colors"
-                  >
-                    Copy
-                  </button>
+                  />
                 </div>
               ) : (
                 <p className="text-sm text-foreground-secondary">
@@ -833,16 +859,10 @@ function ContextLinksSection({
                     {`https://you.md/ctx/${username}/${link.token}`}
                   </code>
                   {!link.isExpired && (
-                    <button
-                      onClick={() =>
-                        navigator.clipboard.writeText(
-                          `https://you.md/ctx/${username}/${link.token}`
-                        )
-                      }
-                      className="shrink-0 px-2 py-0.5 border border-border rounded text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-colors"
-                    >
-                      Copy
-                    </button>
+                    <CopyButton
+                      text={`https://you.md/ctx/${username}/${link.token}`}
+                      className="shrink-0 px-2 py-0.5 border border-border rounded text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-colors text-xs"
+                    />
                   )}
                 </div>
                 <div className="text-foreground-secondary">

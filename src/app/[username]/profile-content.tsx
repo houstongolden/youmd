@@ -5,6 +5,7 @@ import { api } from "../../../convex/_generated/api";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { CopyButton } from "@/components/ui/CopyButton";
 
 interface Project {
   name: string;
@@ -37,11 +38,33 @@ export function ProfileContent() {
 
   if (profile === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-mist/30 border-t-coral rounded-full animate-spin" />
-          <div className="text-foreground-secondary font-mono text-sm">
-            Loading profile...
+      <div className="min-h-screen flex flex-col bg-background">
+        {/* Skeleton header */}
+        <div className="w-full border-b border-border">
+          <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div className="h-4 w-32 rounded bg-mist/10 animate-pulse" />
+            <div className="h-3 w-20 rounded bg-mist/10 animate-pulse" />
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto w-full px-6 pt-16 pb-20">
+          {/* Skeleton identity */}
+          <div className="mb-16 space-y-4">
+            <div className="h-10 w-64 rounded-lg bg-mist/10 animate-pulse" />
+            <div className="h-5 w-80 rounded bg-mist/10 animate-pulse" />
+            <div className="h-4 w-32 rounded bg-mist/10 animate-pulse" />
+          </div>
+          {/* Skeleton bio */}
+          <div className="mb-14 space-y-3">
+            <div className="h-4 w-full rounded bg-mist/10 animate-pulse" />
+            <div className="h-4 w-full rounded bg-mist/10 animate-pulse" />
+            <div className="h-4 w-3/4 rounded bg-mist/10 animate-pulse" />
+          </div>
+          {/* Skeleton section */}
+          <div className="mb-14 space-y-3">
+            <div className="h-3 w-16 rounded bg-mist/10 animate-pulse" />
+            <div className="h-4 w-48 rounded bg-mist/10 animate-pulse" />
+            <div className="h-4 w-56 rounded bg-mist/10 animate-pulse" />
+            <div className="h-4 w-40 rounded bg-mist/10 animate-pulse" />
           </div>
         </div>
       </div>
@@ -304,6 +327,25 @@ export function ProfileContent() {
             </div>
           </section>
         )}
+        {/* ── Share ── */}
+        <section className="mb-14">
+          <SectionLabel>Share</SectionLabel>
+          <div className="flex items-center gap-3 mt-4">
+            <CopyButton
+              text={`https://you.md/${username}`}
+              label="Copy profile URL"
+              className="text-xs px-3 py-1.5 border border-border rounded-md text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-colors"
+            />
+            <a
+              href={`https://x.com/intent/tweet?text=${encodeURIComponent(`Check out my identity file on the agent internet: https://you.md/${username}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs px-3 py-1.5 border border-border rounded-md text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-colors"
+            >
+              Share on X
+            </a>
+          </div>
+        </section>
       </main>
 
       {/* ── Footer ── */}

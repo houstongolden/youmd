@@ -114,3 +114,14 @@ body {
 .glow-sky {
   box-shadow: 0 0 20px rgba(122, 190, 208, 0.15);
 }
+
+/* Focus rings for accessibility */
+:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}

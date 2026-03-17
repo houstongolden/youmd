@@ -19,6 +19,14 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY as string}
+      appearance={{
+        variables: {
+          colorPrimary: "#E8857A",
+          colorText: "#0A0E1A",
+          colorBackground: "#FFFFFF",
+          borderRadius: "0.5rem",
+        },
+      }}
     >
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         {children}

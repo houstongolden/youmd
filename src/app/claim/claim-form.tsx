@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
+import { Spinner } from "@/components/ui/Spinner";
 
 export function ClaimForm() {
   const { user, isSignedIn, isLoaded } = useUser();
@@ -13,6 +14,18 @@ export function ClaimForm() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
+
+  // If user already has a username, redirect to dashboard
+  const existingUser = useQuery(
+    api.users.getByClerkId,
+    isSignedIn && user ? { clerkId: user.id } : "skip"
+  );
+
+  useEffect(() => {
+    if (existingUser && existingUser.username) {
+      router.replace("/dashboard");
+    }
+  }, [existingUser, router]);
 
   const checkUsername = useQuery(
     api.users.checkUsername,
@@ -105,6 +118,12 @@ export function ClaimForm() {
               </div>
 
               {/* Availability indicator */}
+              {username.length >= 3 && checkUsername === undefined && (
+                <div className="mt-2.5 flex items-center gap-2">
+                  <Spinner size="sm" />
+                  <span className="text-xs text-foreground-secondary">Checking availability...</span>
+                </div>
+              )}
               {username.length >= 3 && checkUsername && (
                 <p
                   className={`mt-2.5 text-xs font-medium ${isAvailable ? "text-success" : "text-accent-primary"}`}
