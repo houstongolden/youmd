@@ -13,7 +13,7 @@ const Aurora = dynamic(() => import("@/components/reactbits/Aurora"), {
 /* ─── Inline: Copy Command ─── */
 function CopyCommand() {
   const [copied, setCopied] = useState(false);
-  const command = "npm create youmd";
+  const command = "npx youmd init";
   return (
     <button
       onClick={() => {
@@ -442,7 +442,7 @@ export default function Home() {
             <div className="p-6 sm:p-8 font-mono text-[13px] sm:text-[14px] leading-relaxed space-y-3">
               <div>
                 <span className="text-foreground-secondary/50">$</span>{" "}
-                <span className="text-foreground">npm create youmd</span>
+                <span className="text-foreground">npx youmd init</span>
               </div>
 
               <div className="pl-2 mt-3">
