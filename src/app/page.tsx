@@ -11,7 +11,7 @@ const Aurora = dynamic(() => import("@/components/reactbits/Aurora"), {
 
 function CopyCommand() {
   const [copied, setCopied] = useState(false);
-  const command = "npx create-youmd";
+  const command = "npm create youmd";
 
   return (
     <button
@@ -291,7 +291,7 @@ export default function Home() {
             </div>
 
             <div className="p-6 sm:p-8 font-mono text-[13px] sm:text-[14px] leading-relaxed space-y-3">
-              <div><span className="text-[#555]">$</span> <span className="text-white">npx create-youmd</span></div>
+              <div><span className="text-[#555]">$</span> <span className="text-white">npm create youmd</span></div>
               <div className="text-[#888] pl-2 mt-2">
                 <div className="text-white/60 font-medium">you.md</div>
                 <div className="text-[#666]">your identity file for the agent internet</div>
