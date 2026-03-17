@@ -19,11 +19,12 @@ const program = new Command();
 program
   .name("youmd")
   .description("CLI for the You.md identity bundle platform")
-  .version("0.1.0");
+  .version("0.2.0");
 
 program
   .command("init")
-  .description("Initialize a local .youmd/ directory with empty bundle structure")
+  .description("Initialize a local .youmd/ identity bundle (interactive)")
+  .option("--skip-prompts", "Skip interactive prompts and create empty bundle")
   .action(initCommand);
 
 program

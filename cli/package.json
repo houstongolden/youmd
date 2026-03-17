@@ -1,9 +1,10 @@
 {
   "name": "youmd",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Your identity file for the agent internet. CLI for the You.md platform.",
   "bin": {
-    "youmd": "./dist/index.js"
+    "youmd": "./dist/index.js",
+    "create-youmd": "./dist/create.js"
   },
   "main": "dist/index.js",
   "files": [
@@ -13,7 +14,8 @@
     "build": "tsc",
     "dev": "ts-node src/index.ts",
     "start": "node dist/index.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "postinstall": "node dist/postinstall.js"
   },
   "keywords": [
     "identity",
