@@ -39,6 +39,83 @@ function CopyCommand() {
   );
 }
 
+/* ─── Inline: FAQ Item ─── */
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-border bg-background-secondary/40 overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-6 py-5 text-left cursor-pointer"
+      >
+        <span className="text-[15px] font-medium text-foreground pr-4">{q}</span>
+        <span
+          className={`text-foreground-secondary/50 text-xl leading-none shrink-0 transition-transform duration-300 ${
+            open ? "rotate-45" : ""
+          }`}
+        >
+          +
+        </span>
+      </button>
+      <div
+        className={`transition-all duration-300 ease-in-out ${
+          open ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+        } overflow-hidden`}
+      >
+        <p className="px-6 pb-5 text-sm text-foreground-secondary leading-relaxed">{a}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Inline: Mobile Nav Toggle ─── */
+function MobileNav() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="sm:hidden relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex flex-col justify-center items-center w-10 h-10 gap-[5px] group"
+        aria-label="Toggle menu"
+      >
+        <span
+          className={`block w-5 h-[2px] bg-foreground-secondary transition-all duration-300 ${
+            open ? "translate-y-[7px] rotate-45" : ""
+          }`}
+        />
+        <span
+          className={`block w-5 h-[2px] bg-foreground-secondary transition-all duration-300 ${
+            open ? "opacity-0 scale-x-0" : ""
+          }`}
+        />
+        <span
+          className={`block w-5 h-[2px] bg-foreground-secondary transition-all duration-300 ${
+            open ? "-translate-y-[7px] -rotate-45" : ""
+          }`}
+        />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-12 w-48 rounded-xl border border-border bg-background-secondary shadow-xl py-2 z-50">
+          <Link
+            href="/sign-in"
+            className="block px-5 py-3 text-[13px] text-foreground-secondary hover:text-foreground hover:bg-background/50 transition-colors"
+            onClick={() => setOpen(false)}
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/claim"
+            className="block px-5 py-3 text-[13px] text-coral font-semibold hover:bg-background/50 transition-colors"
+            onClick={() => setOpen(false)}
+          >
+            Get started
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Main Page ─── */
 export default function Home() {
   return (
@@ -54,7 +131,7 @@ export default function Home() {
           >
             you.md
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="hidden sm:flex items-center gap-6">
             <Link
               href="/sign-in"
               className="text-[13px] text-foreground-secondary hover:text-foreground transition-colors"
@@ -68,6 +145,7 @@ export default function Home() {
               Get started
             </Link>
           </div>
+          <MobileNav />
         </div>
       </nav>
 
@@ -439,7 +517,7 @@ export default function Home() {
             </div>
 
             {/* Terminal content — always light-on-dark */}
-            <div className="p-6 sm:p-8 font-mono text-[13px] sm:text-[14px] leading-relaxed space-y-3 text-light">
+            <div className="p-6 sm:p-8 font-mono text-[12px] sm:text-[13px] md:text-[14px] leading-relaxed space-y-3 text-light overflow-x-auto">
               <div>
                 <span className="text-mist/60">$</span>{" "}
                 <span className="text-light">npx youmd init</span>
@@ -500,6 +578,100 @@ export default function Home() {
                 welcome to the agent internet, houston.
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          PRICING
+         ══════════════════════════════════════════ */}
+      <section className="border-t border-border">
+        <div className="max-w-4xl mx-auto px-6 py-28 sm:py-36">
+          <div className="text-center mb-14">
+            <p className="text-gold text-[12px] font-mono font-semibold uppercase tracking-widest mb-4">
+              Plans
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
+              Simple pricing
+            </h2>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
+            {/* Free */}
+            <div className="rounded-xl border border-border bg-background-secondary p-8 flex flex-col">
+              <h3 className="text-xl font-semibold text-foreground mb-1">Free</h3>
+              <p className="text-foreground-secondary text-sm mb-6">$0 / forever</p>
+              <ul className="space-y-3 text-sm text-foreground-secondary flex-1 mb-8">
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">&#10003;</span> Published profile</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">&#10003;</span> 3 pipeline runs</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">&#10003;</span> 1 API key (read:public)</li>
+              </ul>
+              <Link
+                href="/claim"
+                className="block text-center px-6 py-3 rounded-lg bg-coral text-void font-semibold text-[14px] hover:bg-blush transition-colors"
+              >
+                Get started free
+              </Link>
+            </div>
+
+            {/* Pro */}
+            <div className="rounded-xl border border-gold/20 bg-gold/5 p-8 flex flex-col glow-gold">
+              <h3 className="text-xl font-semibold text-foreground mb-1">
+                Pro <span className="text-gold text-lg">&#9733;</span>
+              </h3>
+              <p className="text-foreground-secondary text-sm mb-6">$12 / month</p>
+              <ul className="space-y-3 text-sm text-foreground-secondary flex-1 mb-8">
+                <li className="flex items-start gap-2"><span className="text-gold mt-0.5">&#10003;</span> Published profile</li>
+                <li className="flex items-start gap-2"><span className="text-gold mt-0.5">&#10003;</span> 10 pipeline runs / month</li>
+                <li className="flex items-start gap-2"><span className="text-gold mt-0.5">&#10003;</span> Unlimited API keys (all scopes)</li>
+                <li className="flex items-start gap-2"><span className="text-gold mt-0.5">&#10003;</span> Private vault</li>
+                <li className="flex items-start gap-2"><span className="text-gold mt-0.5">&#10003;</span> BYOK (bring your own keys)</li>
+                <li className="flex items-start gap-2"><span className="text-gold mt-0.5">&#10003;</span> Custom domain</li>
+                <li className="flex items-start gap-2"><span className="text-gold mt-0.5">&#10003;</span> Profile analytics</li>
+              </ul>
+              <span className="block text-center px-6 py-3 rounded-lg bg-gold/15 text-gold/80 border border-gold/20 font-semibold text-[14px] cursor-default">
+                Coming soon
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          FAQ
+         ══════════════════════════════════════════ */}
+      <section className="border-t border-border">
+        <div className="max-w-3xl mx-auto px-6 py-28 sm:py-36">
+          <div className="text-center mb-14">
+            <p className="text-sky text-[12px] font-mono font-semibold uppercase tracking-widest mb-4">
+              FAQ
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
+              Common questions
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            <FaqItem
+              q="What is you.md?"
+              a="It's a structured identity file that lets any AI agent understand who you are, what you do, and how you work — in seconds."
+            />
+            <FaqItem
+              q="Is my data private?"
+              a="You control what's public and what's private. Public sections power your published profile. Private vault data is encrypted and only accessible with your API keys and explicit scopes."
+            />
+            <FaqItem
+              q="Do I need to know how to code?"
+              a="No. The web dashboard lets you build and manage your entire identity bundle. The CLI is optional — there for developers who prefer the terminal."
+            />
+            <FaqItem
+              q="How do agents read my you.md?"
+              a="Via the public API, context links you share directly, or the JSON endpoint at you.md/yourname/you.json. Any LLM or agent can consume it."
+            />
+            <FaqItem
+              q="Is the spec open source?"
+              a="Yes. The you-md/v1 spec is fully open. Anyone can implement it, self-host it, or extend it."
+            />
           </div>
         </div>
       </section>

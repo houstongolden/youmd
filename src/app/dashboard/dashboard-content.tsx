@@ -4,7 +4,7 @@ import { useUser, SignOutButton } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import { CopyButton } from "@/components/ui/CopyButton";
 
@@ -44,7 +44,10 @@ export function DashboardContent() {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageDismissing, setMessageDismissing] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("profile");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const savedFormRef = useRef<ProfileFormData | null>(null);
 
   // Form state
   const [form, setForm] = useState<ProfileFormData>({
@@ -65,12 +68,28 @@ export function DashboardContent() {
     writingStyle: "",
   });
 
-  // Auto-dismiss status messages after 5 seconds
+  // Auto-dismiss status messages after 5 seconds with fade
   useEffect(() => {
     if (!message) return;
-    const timer = setTimeout(() => setMessage(null), 5000);
-    return () => clearTimeout(timer);
+    setMessageDismissing(false);
+    const fadeTimer = setTimeout(() => setMessageDismissing(true), 4500);
+    const removeTimer = setTimeout(() => {
+      setMessage(null);
+      setMessageDismissing(false);
+    }, 5000);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
   }, [message]);
+
+  const dismissMessage = useCallback(() => {
+    setMessageDismissing(true);
+    setTimeout(() => {
+      setMessage(null);
+      setMessageDismissing(false);
+    }, 300);
+  }, []);
 
   // Sync form state when latestBundle loads or changes
   const hydratedVersionRef = useRef<number | null>(null);
@@ -80,7 +99,7 @@ export function DashboardContent() {
     const bundleVersion = latestBundle?.version ?? 0;
     if (hydratedVersionRef.current === bundleVersion) return;
     hydratedVersionRef.current = bundleVersion;
-    setForm({
+    const hydratedForm: ProfileFormData = {
       name: json.identity?.name || user?.fullName || "",
       tagline: json.identity?.tagline || "",
       location: json.identity?.location || "",
@@ -101,12 +120,39 @@ export function DashboardContent() {
       agentTone: json.preferences?.agent?.tone || "",
       agentAvoid: json.preferences?.agent?.avoid?.join(", ") || "",
       writingStyle: json.preferences?.writing?.style || "",
-    });
+    };
+    setForm(hydratedForm);
+    savedFormRef.current = hydratedForm;
+    setHasUnsavedChanges(false);
   }, [latestBundle, user?.fullName]);
 
   const updateField = (field: keyof ProfileFormData, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (savedFormRef.current) {
+        const isDirty = Object.keys(next).some(
+          (k) => next[k as keyof ProfileFormData] !== savedFormRef.current![k as keyof ProfileFormData]
+        );
+        setHasUnsavedChanges(isDirty);
+      } else {
+        setHasUnsavedChanges(true);
+      }
+      return next;
+    });
   };
+
+  // Keyboard shortcut: Cmd+S / Ctrl+S to save
+  const handleSaveRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        handleSaveRef.current?.();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   if (!convexUser) {
     return (
@@ -167,6 +213,8 @@ export function DashboardContent() {
           },
         },
       });
+      savedFormRef.current = { ...form };
+      setHasUnsavedChanges(false);
       setMessage(`Bundle saved (v${result.version}).`);
     } catch (err) {
       setMessage(
@@ -193,6 +241,9 @@ export function DashboardContent() {
     setPublishing(false);
   };
 
+  // Assign handleSave to ref for keyboard shortcut
+  handleSaveRef.current = handleSave;
+
   const profileUrl = `https://you.md/${convexUser.username}`;
 
   return (
@@ -216,6 +267,12 @@ export function DashboardContent() {
           >
             you.md/{convexUser.username}
           </Link>
+          <Link
+            href="/dashboard/chat"
+            className="border border-coral/20 bg-coral/5 text-coral text-sm px-4 py-2 rounded-lg hover:bg-coral/10 transition-colors"
+          >
+            Chat with agent
+          </Link>
           <SignOutButton>
             <button className="text-sm text-foreground-secondary hover:text-foreground transition-colors">
               Sign out
@@ -226,23 +283,38 @@ export function DashboardContent() {
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-6 py-8 space-y-8">
         {/* Published profile URL */}
-        <div className="px-5 py-4 border border-border rounded-lg bg-background-secondary">
-          <p className="text-xs text-foreground-secondary mb-1.5">Your published profile</p>
+        <div className="relative px-5 py-5 rounded-lg bg-background-secondary border border-transparent bg-clip-padding" style={{ backgroundImage: "linear-gradient(var(--color-background-secondary), var(--color-background-secondary)), linear-gradient(135deg, var(--color-accent-secondary), var(--color-accent-primary))", backgroundOrigin: "border-box", backgroundClip: "padding-box, border-box", border: "1px solid transparent" }}>
+          <p className="text-sm font-medium text-foreground-secondary mb-2">Your published profile</p>
+          <div className="flex items-center gap-3 mb-2">
+            <a
+              href={profileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-accent-secondary hover:underline text-base font-medium"
+            >
+              {profileUrl}
+            </a>
+          </div>
           <div className="flex items-center gap-3">
             <a
               href={profileUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-accent-secondary hover:underline text-sm"
+              className="px-3 py-1.5 text-xs border border-accent-secondary/30 rounded-lg text-accent-secondary hover:bg-accent-secondary/10 transition-colors"
             >
-              {profileUrl}
+              View profile
             </a>
             <CopyButton text={profileUrl} />
+            {latestBundle?.isPublished && latestBundle?._creationTime && (
+              <span className="text-xs text-foreground-secondary">
+                Last published {new Date(latestBundle._creationTime).toLocaleDateString()}
+              </span>
+            )}
           </div>
         </div>
 
         {/* Status bar */}
-        <div className="flex items-center gap-3 px-4 py-2.5 border border-border rounded-lg bg-background-secondary text-xs font-mono text-foreground-secondary">
+        <div className="flex items-center gap-3 px-4 py-2.5 border border-border rounded-lg bg-background-secondary text-sm font-mono text-foreground-secondary">
           <span className="text-foreground">@{convexUser.username}</span>
           <span className="text-border">|</span>
           <span className={convexUser.plan === "pro" ? "text-accent-premium" : "text-foreground-secondary"}>
@@ -286,7 +358,7 @@ export function DashboardContent() {
 
         {/* Action buttons */}
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-foreground">Edit your identity</h1>
+          <h1 className="text-2xl font-bold text-foreground">Edit your identity</h1>
           <div className="flex gap-2">
             <a
               href={`/${convexUser.username}`}
@@ -296,14 +368,22 @@ export function DashboardContent() {
             >
               Preview
             </a>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-2 text-sm bg-background-secondary border border-border rounded-lg hover:border-accent-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-foreground inline-flex items-center gap-2"
-            >
-              {saving && <Spinner size="sm" />}
-              {saving ? "Saving..." : "Save draft"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-4 py-2 text-sm bg-background-secondary border border-border rounded-lg hover:border-accent-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-foreground inline-flex items-center gap-2"
+              >
+                {saving && <Spinner size="sm" />}
+                {saving ? "Saving..." : "Save draft"}
+                {hasUnsavedChanges && !saving && (
+                  <span className="w-2 h-2 rounded-full bg-accent-primary animate-pulse" />
+                )}
+              </button>
+              <span className="text-xs text-foreground-secondary/50 hidden sm:inline">
+                {typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent ?? "") ? "\u2318" : "Ctrl"}+S
+              </span>
+            </div>
             <button
               onClick={handlePublish}
               disabled={publishing || !latestBundle}
@@ -316,8 +396,21 @@ export function DashboardContent() {
         </div>
 
         {message && (
-          <div className="px-4 py-2.5 text-sm border border-border rounded-lg bg-background-secondary text-foreground-secondary">
-            {message}
+          <div
+            className={`flex items-center justify-between px-4 py-2.5 text-sm border border-border rounded-lg bg-background-secondary text-foreground-secondary transition-all duration-300 ${
+              messageDismissing ? "opacity-0 translate-y-[-4px]" : "opacity-100 translate-y-0"
+            }`}
+          >
+            <span>{message}</span>
+            <button
+              onClick={dismissMessage}
+              className="ml-3 text-foreground-secondary/50 hover:text-foreground transition-colors shrink-0"
+              aria-label="Dismiss"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         )}
 
