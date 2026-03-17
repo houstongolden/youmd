@@ -13,6 +13,7 @@ import { diffCommand } from "./commands/diff";
 import { previewCommand } from "./commands/preview";
 import { linkCommand } from "./commands/link";
 import { keysCommand } from "./commands/keys";
+import { chatCommand } from "./commands/chat";
 
 const program = new Command();
 
@@ -73,6 +74,11 @@ program
   .description("Start a local preview server")
   .option("-p, --port <port>", "Port number", "3333")
   .action(previewCommand);
+
+program
+  .command("chat")
+  .description("Talk to the You agent — update your profile, add sources, ask questions")
+  .action(chatCommand);
 
 const linkCmd = program
   .command("link [subcommand]")

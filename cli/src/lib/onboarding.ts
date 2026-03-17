@@ -13,32 +13,64 @@ import { compileBundle, writeBundle } from "./compiler";
 
 // ─── Constants ────────────────────────────────────────────────────────
 
-const CHAT_PROXY_URL = "https://kindly-cassowary-600.convex.site/api/v1/chat";
+const CHAT_PROXY_URL =
+  "https://kindly-cassowary-600.convex.site/api/v1/chat";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "anthropic/claude-sonnet-4";
 
 const USERNAME_RE = /^[a-z0-9][a-z0-9_-]{1,38}[a-z0-9]$/;
 
-const THINKING_WORDS = [
-  "Pondering",
-  "Noodling",
-  "Mapping your identity",
-  "Reading between the lines",
-  "Connecting dots",
-  "Building your universe",
-  "Decoding you",
-  "Assembling the puzzle",
-  "Weaving your story",
-  "Crystallizing",
-  "Synthesizing",
-  "Calibrating",
-  "Absorbing",
-  "Processing your essence",
-  "Structuring your identity",
-  "Compiling you",
-  "Learning you",
-  "Grokking",
-  "Indexing your soul",
+const THINKING_PHRASES = [
+  "reading your about page like a respectful detective",
+  "absorbing your linkedin energy",
+  "scanning your timeline vibe",
+  "learning how you think out loud",
+  "decoding your digital footprint",
+  "mapping your professional universe",
+  "translating you into agent-speak",
+  "assembling the puzzle pieces",
+  "teaching LLMs about you",
+  "studying your sentence structure",
+  "finding your narrative thread",
+  "distilling your essence",
+  "cataloging your side projects",
+  "indexing your strong opinions",
+  "capturing your voice signature",
+  "building your identity constellation",
+  "compiling your context bundle",
+  "downloading your professional soul",
+  "converting vibes to structured data",
+  "weaving your story",
+  "crystallizing your identity",
+  "grokking your whole deal",
+  "connecting the dots",
+  "processing your essence",
+  "structuring your identity",
+  "learning you",
+  "calibrating to your wavelength",
+  "reading between your lines",
+  "mapping your expertise graph",
+  "analyzing your voice patterns",
+  "extracting your narrative arcs",
+  "building your knowledge panel",
+  "computing your identity fingerprint",
+  "synthesizing your public presence",
+  "parsing your career trajectory",
+  "understanding your builder instinct",
+  "decrypting your communication style",
+  "profiling your creative output",
+  "charting your professional constellation",
+  "rendering you in agent-speak",
+  "encoding your identity bundle",
+  "absorbing your origin story",
+  "discovering what makes you tick",
+  "mapping your values system",
+  "tracing your impact footprint",
+  "archiving your digital presence",
+  "curating your identity artifacts",
+  "assembling your context mosaic",
+  "beaming you up to the agent internet",
+  "initializing your identity protocol",
 ];
 
 const DONE_PHRASES = [
@@ -76,47 +108,46 @@ const BUNDLE_SECTIONS = [
 
 type BundleSection = (typeof BUNDLE_SECTIONS)[number];
 
-const SYSTEM_PROMPT = `You are the you.md onboarding agent. You're helping a human create their identity file for the agent internet.
+const SYSTEM_PROMPT = `you are the you.md onboarding agent. you're helping a human create their identity file for the agent internet.
 
-Your personality: Direct but warm. Calm confidence. Subtle dry humor. You genuinely find people interesting. You're like a friend who happens to be really good at structuring information. CLI-native tone. Never cringe. Never over-familiar. Never corporate.
+personality: warm but not gushy. direct. dry humor when natural. genuinely curious about people. you find humans interesting. terminal-native tone — lowercase, no exclamation marks, no emoji, short sentences.
 
-You're building a you-md/v1 identity bundle with these sections:
-- profile/about.md — bio, background, identity narrative
-- profile/now.md — what they're focused on right now
-- profile/projects.md — active and past projects
-- profile/values.md — core values and principles
+you're building a you-md/v1 identity bundle. the sections are:
+- profile/about.md — bio, background, narrative
+- profile/now.md — current focus
+- profile/projects.md — active projects
+- profile/values.md — core values
 - profile/links.md — annotated links
 - preferences/agent.md — how AI should interact with them
-- preferences/writing.md — their communication style and tone
+- preferences/writing.md — communication style
 
-Your job:
-1. You'll receive the user's basic info (name, links) as context.
-2. Generate an initial profile from what you know.
-3. Engage in conversation to learn more. Ask follow-up questions to fill gaps. Be conversational, not interrogative.
-4. After each exchange, output updated sections.
+your job:
+1. analyze what you know about the person from their URLs and conversation
+2. ask follow-up questions to fill gaps — be conversational, not interrogative
+3. after each exchange, output structured updates as JSON blocks:
+   \`\`\`json
+   {"updates": [{"section": "profile/about.md", "content": "...markdown content..."}]}
+   \`\`\`
+4. keep the conversation going until you have enough for a rich identity bundle
+5. never tell the user to edit markdown files themselves
+6. reference specific things you learned about them
 
-CRITICAL OUTPUT FORMAT:
-After every message, you MUST include a JSON block wrapped in \`\`\`json and \`\`\` markers containing an array of section updates. Even if nothing changed, output an empty array.
+rules for content in updates:
+- each section must start with a YAML frontmatter block (--- title: "SectionTitle" ---)
+- content should be real markdown, not HTML comments or placeholders
+- be substantive. write real prose based on what you know.
+- for links.md, format as: - **Label**: URL — brief annotation
+- for agent.md, describe how agents should interact with this person
+- for writing.md, capture their tone/style from how they've been talking to you
 
-Example:
-\`\`\`json
-[
-  {"section": "profile/about.md", "content": "---\\ntitle: \\"About\\"\\n---\\n\\n# Jane Smith\\n\\nFounder, builder, ..."},
-  {"section": "profile/projects.md", "content": "---\\ntitle: \\"Projects\\"\\n---\\n\\n## Acme Corp\\n\\nBuilding the future of..."}
-]
-\`\`\`
+when you think the profile is rich enough (at least about, now, projects, and values have substance), suggest finishing by saying something like "your bundle is looking solid. ready to publish, or want to keep going?"
 
-Rules for content:
-- Each section must start with a YAML frontmatter block (--- title: "SectionTitle" ---)
-- Content should be real markdown, not HTML comments or placeholders
-- Be substantive. Write real prose based on what you know.
-- For links.md, format as: - **Label**: URL — brief annotation
-- For agent.md, describe how agents should interact with this person based on what you've learned
-- For writing.md, capture their tone/style from how they've been talking to you
-
-When you think the profile is rich enough (at least about, now, projects, and values have substance), suggest finishing by saying something like "Your bundle is looking solid. Ready to publish, or want to keep going?"
-
-Never tell the user to "edit the markdown themselves." You handle everything.`;
+example lines:
+- "cool. let me go read your site."
+- "ok so you're basically a linkedin whisperer. noted."
+- "6 jobs in 10 years. ambitious or chaotic? let's find out."
+- "that's a lot of projects. which one keeps you up at night?"
+- "anything you want agents to know but the public shouldn't see? that goes in the vault."`;
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -136,7 +167,9 @@ function ask(rl: readline.Interface, question: string): Promise<string> {
 }
 
 function randomThinking(): string {
-  return THINKING_WORDS[Math.floor(Math.random() * THINKING_WORDS.length)];
+  return THINKING_PHRASES[
+    Math.floor(Math.random() * THINKING_PHRASES.length)
+  ];
 }
 
 function isDonePhrase(input: string): boolean {
@@ -168,11 +201,9 @@ async function checkUsernameRemote(
 }
 
 function getOpenRouterKey(): string | null {
-  // 1. Environment variable
   if (process.env.OPENROUTER_API_KEY) {
     return process.env.OPENROUTER_API_KEY;
   }
-  // 2. Global config
   const configPath = path.join(os.homedir(), ".youmd", "config.json");
   try {
     if (fs.existsSync(configPath)) {
@@ -184,6 +215,31 @@ function getOpenRouterKey(): string | null {
     // ignore
   }
   return null;
+}
+
+// ─── Website fetcher ──────────────────────────────────────────────────
+
+async function fetchWebsiteContent(url: string): Promise<string> {
+  try {
+    const normalizedUrl =
+      url.startsWith("http://") || url.startsWith("https://")
+        ? url
+        : "https://" + url;
+    const res = await fetch(normalizedUrl, {
+      headers: { "User-Agent": "youmd-bot/1.0" },
+      signal: AbortSignal.timeout(10_000),
+    });
+    const html = await res.text();
+    const text = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return text.slice(0, 4000);
+  } catch {
+    return "";
+  }
 }
 
 // ─── Spinner ──────────────────────────────────────────────────────────
@@ -212,11 +268,11 @@ class Spinner {
       clearInterval(this.interval);
       this.interval = null;
     }
-    process.stdout.write("\r" + " ".repeat(60) + "\r");
+    process.stdout.write("\r" + " ".repeat(80) + "\r");
   }
 }
 
-// ─── OpenRouter LLM client ───────────────────────────────────────────
+// ─── LLM client ──────────────────────────────────────────────────────
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -227,7 +283,7 @@ async function callLLM(
   apiKey: string | null,
   messages: ChatMessage[]
 ): Promise<string> {
-  // Try the you.md proxy first (no API key needed — it uses the server-side key)
+  // Try the you.md proxy first (no API key needed)
   try {
     const proxyRes = await fetch(CHAT_PROXY_URL, {
       method: "POST",
@@ -284,7 +340,7 @@ async function callLLM(
 // ─── Section file management ──────────────────────────────────────────
 
 interface SectionUpdate {
-  section: BundleSection;
+  section: string;
   content: string;
 }
 
@@ -292,7 +348,7 @@ function parseUpdatesFromResponse(text: string): {
   display: string;
   updates: SectionUpdate[];
 } {
-  // Extract JSON block from response
+  // Try to extract JSON block with {"updates": [...]}
   const jsonMatch = text.match(/```json\s*\n([\s\S]*?)\n```/);
   let updates: SectionUpdate[] = [];
   let display = text;
@@ -303,15 +359,19 @@ function parseUpdatesFromResponse(text: string): {
 
     try {
       const parsed = JSON.parse(jsonMatch[1]);
-      if (Array.isArray(parsed)) {
-        updates = parsed.filter(
-          (u: any) =>
-            u &&
-            typeof u.section === "string" &&
-            typeof u.content === "string" &&
-            BUNDLE_SECTIONS.includes(u.section as BundleSection)
-        );
-      }
+      // Handle both formats: {"updates": [...]} and bare [...]
+      const arr = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(parsed.updates)
+          ? parsed.updates
+          : [];
+      updates = arr.filter(
+        (u: any) =>
+          u &&
+          typeof u.section === "string" &&
+          typeof u.content === "string" &&
+          BUNDLE_SECTIONS.includes(u.section as BundleSection)
+      );
     } catch {
       // Failed to parse JSON updates -- continue without them
     }
@@ -320,7 +380,11 @@ function parseUpdatesFromResponse(text: string): {
   return { display, updates };
 }
 
-function writeSectionFile(bundleDir: string, section: string, content: string): void {
+function writeSectionFile(
+  bundleDir: string,
+  section: string,
+  content: string
+): void {
   const filePath = path.join(bundleDir, section);
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
@@ -335,16 +399,44 @@ function sectionLabel(section: string): string {
   return `${dir}/${name}`;
 }
 
+// ─── Profile preview box ──────────────────────────────────────────────
+
+function showProfileBox(
+  name: string,
+  headline: string,
+  tags: string
+): void {
+  const lines = [name, headline, tags].filter(Boolean);
+  const maxLen = Math.max(...lines.map((l) => l.length), 40);
+  const width = maxLen + 4;
+
+  console.log("");
+  console.log(
+    "  " + chalk.dim("\u250C" + "\u2500".repeat(width) + "\u2510")
+  );
+  for (const line of lines) {
+    const padded = line + " ".repeat(width - line.length - 2);
+    console.log("  " + chalk.dim("\u2502") + "  " + padded + chalk.dim("\u2502"));
+  }
+  console.log(
+    "  " + chalk.dim("\u2514" + "\u2500".repeat(width) + "\u2518")
+  );
+  console.log("");
+}
+
 // ─── Bundle preview ───────────────────────────────────────────────────
 
-function showBundlePreview(bundleDir: string): void {
+function showBundlePreview(bundleDir: string): { fileCount: number; filledCount: number } {
+  let fileCount = 0;
+  let filledCount = 0;
+
   console.log("");
-  console.log("  " + chalk.bold("Your identity bundle:"));
+  console.log("  " + chalk.bold("your identity bundle:"));
   console.log("");
 
   const sections = [
-    { dir: "profile", label: "Profile" },
-    { dir: "preferences", label: "Preferences" },
+    { dir: "profile", label: "profile" },
+    { dir: "preferences", label: "preferences" },
   ];
 
   for (const { dir, label } of sections) {
@@ -361,6 +453,7 @@ function showBundlePreview(bundleDir: string): void {
     console.log("  " + chalk.bold(label));
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      fileCount++;
       const filePath = path.join(dirPath, file);
       const raw = fs.readFileSync(filePath, "utf-8");
       const contentLines = raw
@@ -373,7 +466,11 @@ function showBundlePreview(bundleDir: string): void {
       const connector = isLast ? "\\--" : "|--";
       const name = path.basename(file, ".md");
       const hasContent =
-        contentLines.filter((l) => l.trim() && !l.startsWith("<!--")).length > 0;
+        contentLines.filter(
+          (l) => l.trim() && !l.startsWith("<!--")
+        ).length > 0;
+
+      if (hasContent) filledCount++;
 
       console.log(
         `    ${connector} ${chalk.cyan(name + ".md")}${hasContent ? chalk.dim(" -- " + (preview || "").slice(0, 50)) : chalk.dim(" (empty)")}`
@@ -381,6 +478,8 @@ function showBundlePreview(bundleDir: string): void {
     }
     console.log("");
   }
+
+  return { fileCount, filledCount };
 }
 
 // ─── Fallback mode (no LLM) ──────────────────────────────────────────
@@ -406,63 +505,44 @@ async function runFallbackMode(
 
   console.log("");
   console.log(
-    chalk.dim(
-      "  No OpenRouter API key found. Running in manual mode."
-    )
-  );
-  console.log(
-    chalk.dim(
-      "  Set OPENROUTER_API_KEY for the full AI-powered experience."
-    )
+    chalk.dim("  chat service unavailable. running in manual mode.")
   );
   console.log("");
 
-  // Ask richer questions than the old version
   const tagline = await ask(
     rl,
-    chalk.green("  > ") + "Give me your one-liner. What do you do? "
+    chalk.green("  > ") + "give me your one-liner. what do you do? "
   );
   const nowFocus = await ask(
     rl,
-    chalk.green("  > ") + "What are you focused on right now? "
+    chalk.green("  > ") + "what are you focused on right now? "
   );
   const projects = await ask(
     rl,
-    chalk.green("  > ") +
-      "Name your top projects (comma-separated): "
+    chalk.green("  > ") + "name your top projects (comma-separated): "
   );
   const values = await ask(
     rl,
-    chalk.green("  > ") +
-      "What principles guide your work? "
+    chalk.green("  > ") + "what principles guide your work? "
   );
   const agentPrefs = await ask(
     rl,
     chalk.green("  > ") +
-      "How should AI agents talk to you? (e.g., direct, casual, formal): "
+      "how should AI agents talk to you? (e.g., direct, casual, formal): "
   );
 
-  // Build about.md
-  const aboutContent = `---
-title: "About"
----
+  writeSectionFile(
+    bundleDir,
+    "profile/about.md",
+    `---\ntitle: "About"\n---\n\n# ${info.name}\n\n${tagline}\n`
+  );
 
-# ${info.name}
+  writeSectionFile(
+    bundleDir,
+    "profile/now.md",
+    `---\ntitle: "Now"\n---\n\n${nowFocus || "<!-- What are you working on right now? -->"}\n`
+  );
 
-${tagline}
-`;
-  writeSectionFile(bundleDir, "profile/about.md", aboutContent);
-
-  // Build now.md
-  const nowContent = `---
-title: "Now"
----
-
-${nowFocus || "<!-- What are you working on right now? -->"}
-`;
-  writeSectionFile(bundleDir, "profile/now.md", nowContent);
-
-  // Build projects.md
   const projectList = projects
     ? projects
         .split(",")
@@ -472,55 +552,41 @@ ${nowFocus || "<!-- What are you working on right now? -->"}
         .join("\n")
     : "<!-- List your projects here -->\n";
 
-  const projectsContent = `---
-title: "Projects"
----
+  writeSectionFile(
+    bundleDir,
+    "profile/projects.md",
+    `---\ntitle: "Projects"\n---\n\n${projectList}`
+  );
 
-${projectList}`;
-  writeSectionFile(bundleDir, "profile/projects.md", projectsContent);
+  writeSectionFile(
+    bundleDir,
+    "profile/values.md",
+    `---\ntitle: "Values"\n---\n\n${values || "<!-- What do you care about? -->"}\n`
+  );
 
-  // Build values.md
-  const valuesContent = `---
-title: "Values"
----
-
-${values || "<!-- What do you care about? -->"}
-`;
-  writeSectionFile(bundleDir, "profile/values.md", valuesContent);
-
-  // Build links.md
   const linkLines: string[] = [];
   if (info.website) linkLines.push(`- **Website**: ${info.website}`);
   if (info.linkedin) linkLines.push(`- **LinkedIn**: ${info.linkedin}`);
   if (info.twitter) linkLines.push(`- **X/Twitter**: ${info.twitter}`);
 
-  const linksContent = `---
-title: "Links"
----
+  writeSectionFile(
+    bundleDir,
+    "profile/links.md",
+    `---\ntitle: "Links"\n---\n\n${linkLines.length > 0 ? linkLines.join("\n") : "<!-- Add your links here -->"}\n`
+  );
 
-${linkLines.length > 0 ? linkLines.join("\n") : "<!-- Add your links here -->"}
-`;
-  writeSectionFile(bundleDir, "profile/links.md", linksContent);
+  writeSectionFile(
+    bundleDir,
+    "preferences/agent.md",
+    `---\ntitle: "Agent"\n---\n\n${agentPrefs ? `Communication style: ${agentPrefs}` : "<!-- How should AI agents interact with you? -->"}\n`
+  );
 
-  // Build agent.md
-  const agentContent = `---
-title: "Agent"
----
+  writeSectionFile(
+    bundleDir,
+    "preferences/writing.md",
+    `---\ntitle: "Writing"\n---\n\n<!-- Your writing style and tone preferences. -->\n`
+  );
 
-${agentPrefs ? `Communication style: ${agentPrefs}` : "<!-- How should AI agents interact with you? -->"}
-`;
-  writeSectionFile(bundleDir, "preferences/agent.md", agentContent);
-
-  // Build writing.md
-  const writingContent = `---
-title: "Writing"
----
-
-<!-- Your writing style and tone preferences. -->
-`;
-  writeSectionFile(bundleDir, "preferences/writing.md", writingContent);
-
-  // Write config, compile, done
   writeLocalConfig({ version: 0, sources: [] });
   await finishBundle(bundleDir, info.username, info.name);
 }
@@ -538,28 +604,65 @@ async function runAIMode(
 
   fs.mkdirSync(profileDir, { recursive: true });
   fs.mkdirSync(preferencesDir, { recursive: true });
-
   writeLocalConfig({ version: 0, sources: [] });
 
-  // Build initial context for the LLM
+  // ── Fetch website content if provided ──────────────────────────────
+  let websiteContent = "";
+  if (info.website) {
+    const fetchSpinner = new Spinner("reading your site");
+    fetchSpinner.start();
+    websiteContent = await fetchWebsiteContent(info.website);
+    fetchSpinner.stop();
+
+    if (websiteContent) {
+      console.log(
+        chalk.dim("  pulled content from ") +
+          chalk.cyan(info.website) +
+          chalk.dim(` (${websiteContent.length} chars)`)
+      );
+      console.log("");
+    } else {
+      console.log(
+        chalk.dim("  couldn't reach ") +
+          chalk.cyan(info.website) +
+          chalk.dim(" -- no worries, we'll work with what you tell me.")
+      );
+      console.log("");
+    }
+  }
+
+  // ── Build initial context ──────────────────────────────────────────
   const linksInfo: string[] = [];
   if (info.website) linksInfo.push(`Website: ${info.website}`);
   if (info.linkedin) linksInfo.push(`LinkedIn: ${info.linkedin}`);
   if (info.twitter) linksInfo.push(`X/Twitter: ${info.twitter}`);
 
-  const initialUserMessage = `Here's what I know so far:
-- Name: ${info.name}
-- Username: ${info.username}
-${linksInfo.length > 0 ? linksInfo.map((l) => `- ${l}`).join("\n") : "- No links provided"}
+  let initialUserMessage = `here's what i know so far:
+- name: ${info.name}
+- username: ${info.username}
+${linksInfo.length > 0 ? linksInfo.map((l) => `- ${l}`).join("\n") : "- no links provided"}`;
 
-Please generate an initial profile from this info, show me a brief summary of what you've put together, and then ask me what else I'd like to add. Start the conversation.`;
+  if (websiteContent) {
+    initialUserMessage += `
+
+i also fetched their website content. here's what the site says:
+---
+${websiteContent}
+---
+
+analyze the website content. comment on what you found — be specific about their work, role, company, anything interesting. then generate initial profile sections from everything you know. after showing what you found, ask what else they want to add.`;
+  } else {
+    initialUserMessage += `
+
+generate initial profile sections from what you know, show a brief summary, and ask conversational follow-up questions to learn more.`;
+  }
 
   const messages: ChatMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "user", content: initialUserMessage },
   ];
 
-  // Initial LLM call
+  // ── Initial LLM call ──────────────────────────────────────────────
   let spinner = new Spinner(randomThinking());
   spinner.start();
 
@@ -570,10 +673,10 @@ Please generate an initial profile from this info, show me a brief summary of wh
     spinner.stop();
     console.log(
       chalk.red(
-        `  Failed to connect to AI: ${err instanceof Error ? err.message : String(err)}`
+        `  failed to connect to AI: ${err instanceof Error ? err.message : String(err)}`
       )
     );
-    console.log(chalk.dim("  Falling back to manual mode."));
+    console.log(chalk.dim("  falling back to manual mode."));
     console.log("");
     await runFallbackMode(rl, info);
     return;
@@ -581,7 +684,6 @@ Please generate an initial profile from this info, show me a brief summary of wh
 
   spinner.stop();
 
-  // Process initial response
   messages.push({ role: "assistant", content: response });
   const initial = parseUpdatesFromResponse(response);
 
@@ -601,20 +703,64 @@ Please generate an initial profile from this info, show me a brief summary of wh
   // Show agent message
   printAgentMessage(initial.display);
 
-  // Conversation loop
-  let conversationActive = true;
+  // Show mini profile box after initial generation
+  if (initial.updates.length > 0) {
+    const aboutUpdate = initial.updates.find(
+      (u) => u.section === "profile/about.md"
+    );
+    if (aboutUpdate) {
+      // Extract headline from about content
+      const lines = aboutUpdate.content
+        .replace(/---[\s\S]*?---/, "")
+        .trim()
+        .split("\n")
+        .filter((l) => l.trim() && !l.startsWith("#"));
+      const headline = lines[0] || "";
+      showProfileBox(info.name, headline.slice(0, 60), "");
+    }
+  }
 
-  while (conversationActive) {
+  console.log(
+    chalk.dim(
+      "  want to tell me more? i can ask about your projects, what you're working on now,"
+    )
+  );
+  console.log(
+    chalk.dim(
+      '  your values, how you like AI to talk to you -- or just tell me anything.'
+    )
+  );
+  console.log(
+    chalk.dim(
+      '  type "done" when you\'re ready to publish.'
+    )
+  );
+  console.log("");
+
+  // ── Conversation loop ──────────────────────────────────────────────
+  let exchangeCount = 0;
+
+  while (true) {
     const userInput = await ask(rl, chalk.green("  > ") + "");
 
     if (!userInput) continue;
 
     if (isDonePhrase(userInput)) {
-      conversationActive = false;
       break;
     }
 
     messages.push({ role: "user", content: userInput });
+    exchangeCount++;
+
+    // After 3+ exchanges, hint to the agent it can suggest wrapping up
+    if (exchangeCount >= 3) {
+      const hintMsg: ChatMessage = {
+        role: "system",
+        content:
+          "the user has provided several rounds of input. if the profile feels rich enough (about, now, projects, values all have substance), you can suggest wrapping up. but if there are obvious gaps, keep asking.",
+      };
+      messages.push(hintMsg);
+    }
 
     spinner = new Spinner(randomThinking());
     spinner.start();
@@ -628,14 +774,22 @@ Please generate an initial profile from this info, show me a brief summary of wh
           `  AI error: ${err instanceof Error ? err.message : String(err)}`
         )
       );
-      console.log(chalk.dim("  Try again, or type 'done' to finish."));
+      console.log(
+        chalk.dim("  try again, or type 'done' to finish.")
+      );
       console.log("");
-      // Remove the failed user message so context stays clean
-      messages.pop();
+      // Remove failed messages
+      messages.pop(); // remove hint if added
+      if (exchangeCount >= 3) messages.pop();
       continue;
     }
 
     spinner.stop();
+
+    // Remove the hint message from history (don't pollute context)
+    if (exchangeCount >= 3) {
+      messages.pop(); // remove the hint
+    }
 
     messages.push({ role: "assistant", content: response });
     const parsed = parseUpdatesFromResponse(response);
@@ -663,12 +817,15 @@ Please generate an initial profile from this info, show me a brief summary of wh
       lowerDisplay.includes("bundle is looking solid") ||
       lowerDisplay.includes("ready to go")
     ) {
-      const answer = await ask(
-        rl,
-        chalk.green("  > ") + ""
-      );
-      if (isDonePhrase(answer) || answer.toLowerCase().includes("publish") || answer.toLowerCase().includes("yes") || answer.toLowerCase().includes("yeah") || answer.toLowerCase().includes("yep")) {
-        conversationActive = false;
+      const answer = await ask(rl, chalk.green("  > ") + "");
+      if (
+        isDonePhrase(answer) ||
+        answer.toLowerCase().includes("publish") ||
+        answer.toLowerCase().includes("yes") ||
+        answer.toLowerCase().includes("yeah") ||
+        answer.toLowerCase().includes("yep")
+      ) {
+        break;
       } else {
         messages.push({ role: "user", content: answer });
 
@@ -732,10 +889,9 @@ async function finishBundle(
 ): Promise<void> {
   console.log("");
 
-  const compileSpinner = new Spinner("Compiling you");
+  const compileSpinner = new Spinner("compiling your context bundle");
   compileSpinner.start();
 
-  // Small delay so the spinner actually shows
   await new Promise((r) => setTimeout(r, 600));
 
   const result = compileBundle(bundleDir);
@@ -748,60 +904,64 @@ async function finishBundle(
       chalk.green("done") +
       chalk.dim(` -- bundle compiled (v${result.bundle.version})`)
   );
+
+  // Show final preview with stats
+  const stats = showBundlePreview(bundleDir);
+
+  console.log(
+    chalk.dim(
+      `  ${stats.fileCount} files, ${stats.filledCount} sections filled`
+    )
+  );
   console.log("");
 
-  // Show preview
-  showBundlePreview(bundleDir);
-
-  // Show context link
+  // Context link
+  console.log("  " + chalk.bold("your context file is ready:"));
   console.log(
-    "  " + chalk.bold("Your context file is ready:")
-  );
-  console.log(
-    "  " +
-      chalk.cyan(`https://you.md/${username}/context`)
+    "  " + chalk.cyan(`https://you.md/${username}/context`)
   );
   console.log("");
 
   // Publish flow
   if (isAuthenticated()) {
     console.log(
-      "  You're authenticated. Publish with: " +
+      "  you're authenticated. publish with: " +
         chalk.cyan("youmd publish")
     );
   } else {
-    console.log("  " + chalk.bold("Next:"));
+    console.log("  " + chalk.bold("to go live:"));
     console.log(
-      "    1. Claim your username at " +
-        chalk.cyan(`https://you.md/claim`)
+      "    1. claim your username at " +
+        chalk.cyan("https://you.md/claim")
     );
     console.log(
-      "    2. " +
-        chalk.cyan("youmd login --key <your-api-key>")
+      "    2. " + chalk.cyan("youmd login --key <your-api-key>")
     );
-    console.log(
-      "    3. " + chalk.cyan("youmd publish")
-    );
+    console.log("    3. " + chalk.cyan("youmd publish"));
   }
 
   console.log("");
-  console.log("  " + chalk.bold("Using your identity with AI agents:"));
+  console.log("  " + chalk.bold("using your identity with AI agents:"));
   console.log(
-    "    Add this to your system prompt or CLAUDE.md:"
+    "    add this to your system prompt or CLAUDE.md:"
   );
   console.log(
     chalk.dim(
-      `    "My identity file: https://you.md/${username}/context"`
+      `    "my identity file: https://you.md/${username}/context"`
     )
   );
   console.log("");
   console.log(
     "  " +
-      chalk.dim("Run ") +
+      chalk.dim("run ") +
       chalk.cyan("youmd build") +
       chalk.dim(" anytime to recompile, or ") +
       chalk.cyan("youmd chat") +
       chalk.dim(" to keep editing with AI.")
+  );
+  console.log("");
+  console.log(
+    "  " + chalk.bold(`welcome to the agent internet, ${name}.`)
   );
   console.log("");
 }
@@ -836,7 +996,7 @@ export async function runOnboarding(): Promise<void> {
   while (!usernameValid) {
     username = await ask(
       rl,
-      chalk.green("  > ") + "Pick a username: "
+      chalk.green("  > ") + "pick a username: "
     );
 
     if (!username) {
@@ -870,19 +1030,28 @@ export async function runOnboarding(): Promise<void> {
 
   const name = await ask(
     rl,
-    chalk.green("  > ") + "What's your name? "
+    chalk.green("  > ") + "what's your name? "
   );
   const website = await ask(
     rl,
-    chalk.green("  > ") + "Website URL " + chalk.dim("(optional)") + ": "
+    chalk.green("  > ") +
+      "website URL " +
+      chalk.dim("(optional)") +
+      ": "
   );
   const linkedin = await ask(
     rl,
-    chalk.green("  > ") + "LinkedIn URL " + chalk.dim("(optional)") + ": "
+    chalk.green("  > ") +
+      "LinkedIn URL " +
+      chalk.dim("(optional)") +
+      ": "
   );
   const twitter = await ask(
     rl,
-    chalk.green("  > ") + "X/Twitter URL " + chalk.dim("(optional)") + ": "
+    chalk.green("  > ") +
+      "X/Twitter URL " +
+      chalk.dim("(optional)") +
+      ": "
   );
 
   console.log("");
@@ -899,28 +1068,24 @@ export async function runOnboarding(): Promise<void> {
   const bundleDir = getLocalBundleDir();
   if (fs.existsSync(bundleDir)) {
     console.log(
-      chalk.yellow(
-        "  .youmd/ already exists. Overwriting profile files."
-      )
+      chalk.yellow("  .youmd/ already exists. overwriting profile files.")
     );
     console.log("");
   }
 
-  // ── Phase 2: AI conversation (proxy-first, no key needed) ──────────
+  // ── Phase 2: AI conversation ──────────────────────────────────────
 
-  const userApiKey = getOpenRouterKey(); // user's own key, if any
+  const userApiKey = getOpenRouterKey();
 
   console.log(
-    chalk.dim("  AI onboarding active. Let's build your identity.")
+    chalk.dim("  cool. let's build your identity.")
   );
   console.log("");
+
   try {
     await runAIMode(rl, basicInfo, userApiKey);
   } catch {
-    // If AI mode fails entirely (proxy down + no user key), fall back
-    console.log(
-      chalk.dim("  Switching to manual mode.")
-    );
+    console.log(chalk.dim("  switching to manual mode."));
     await runFallbackMode(rl, basicInfo);
   }
 
@@ -928,7 +1093,9 @@ export async function runOnboarding(): Promise<void> {
 }
 
 // Re-export for backward compatibility with create.ts
-export async function createBundle(info: OnboardingResult): Promise<void> {
+export async function createBundle(
+  info: OnboardingResult
+): Promise<void> {
   const bundleDir = getLocalBundleDir();
   const profileDir = path.join(bundleDir, "profile");
   const preferencesDir = path.join(bundleDir, "preferences");
@@ -936,7 +1103,6 @@ export async function createBundle(info: OnboardingResult): Promise<void> {
   fs.mkdirSync(profileDir, { recursive: true });
   fs.mkdirSync(preferencesDir, { recursive: true });
 
-  // Write basic files
   writeSectionFile(
     bundleDir,
     "profile/about.md",
@@ -994,3 +1160,21 @@ export async function createBundle(info: OnboardingResult): Promise<void> {
 
   showBundlePreview(bundleDir);
 }
+
+// ─── Exports for chat command ─────────────────────────────────────────
+
+export {
+  callLLM,
+  parseUpdatesFromResponse,
+  writeSectionFile,
+  sectionLabel,
+  showBundlePreview,
+  fetchWebsiteContent,
+  getOpenRouterKey,
+  Spinner,
+  randomThinking,
+  SYSTEM_PROMPT,
+  BUNDLE_SECTIONS,
+  CHAT_PROXY_URL,
+};
+export type { ChatMessage, SectionUpdate, BundleSection, BasicInfo };

@@ -1,0 +1,522 @@
+import * as readline from "readline";
+import * as fs from "fs";
+import * as path from "path";
+import chalk from "chalk";
+import {
+  getLocalBundleDir,
+  localBundleExists,
+  isAuthenticated,
+  readGlobalConfig,
+} from "../lib/config";
+import { compileBundle, writeBundle } from "../lib/compiler";
+import { uploadBundle, publishLatest } from "../lib/api";
+import {
+  callLLM,
+  parseUpdatesFromResponse,
+  writeSectionFile,
+  sectionLabel,
+  showBundlePreview,
+  getOpenRouterKey,
+  Spinner,
+  randomThinking,
+  BUNDLE_SECTIONS,
+} from "../lib/onboarding";
+import type { ChatMessage } from "../lib/onboarding";
+
+// ─── Constants ────────────────────────────────────────────────────────
+
+const CHAT_SYSTEM_PROMPT = `you are the you.md agent. you're having an ongoing conversation with a human about their identity file for the agent internet.
+
+personality: warm but not gushy. direct. dry humor when natural. genuinely curious about people. you find humans interesting. terminal-native tone — lowercase, no exclamation marks, no emoji, short sentences.
+
+you're maintaining a you-md/v1 identity bundle. the sections are:
+- profile/about.md — bio, background, narrative
+- profile/now.md — current focus
+- profile/projects.md — active projects
+- profile/values.md — core values
+- profile/links.md — annotated links
+- preferences/agent.md — how AI should interact with them
+- preferences/writing.md — communication style
+
+the user already has a profile. you'll receive their current bundle content as context. your job:
+1. help them update, refine, or expand their identity
+2. if they tell you something new, update the relevant sections
+3. after each exchange where something changed, output structured updates as JSON blocks:
+   \`\`\`json
+   {"updates": [{"section": "profile/about.md", "content": "...full markdown content for that section..."}]}
+   \`\`\`
+4. if nothing changed (just chatting), don't include the JSON block
+5. never tell the user to edit markdown files themselves
+6. reference specific things from their current profile
+
+rules for content in updates:
+- each section must start with a YAML frontmatter block (--- title: "SectionTitle" ---)
+- content should be real markdown, not HTML comments or placeholders
+- be substantive. always output the FULL section content (not just the changed part)
+- for links.md, format as: - **Label**: URL — brief annotation
+- for agent.md, describe how agents should interact with this person
+- for writing.md, capture their tone/style`;
+
+const SLASH_COMMANDS: Record<string, string> = {
+  "/status": "show bundle status",
+  "/preview": "show profile preview",
+  "/publish": "publish bundle to you.md",
+  "/link": "show context link info",
+  "/rebuild": "recompile the bundle",
+  "/help": "show available commands",
+  "/done": "exit chat",
+  "/quit": "exit chat",
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────
+
+function createRL(): readline.Interface {
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+}
+
+function ask(rl: readline.Interface, question: string): Promise<string> {
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      resolve(answer.trim());
+    });
+  });
+}
+
+function loadCurrentBundle(bundleDir: string): string {
+  const parts: string[] = [];
+  const dirs = [
+    { dir: "profile", label: "Profile" },
+    { dir: "preferences", label: "Preferences" },
+  ];
+
+  for (const { dir, label } of dirs) {
+    const dirPath = path.join(bundleDir, dir);
+    if (!fs.existsSync(dirPath)) continue;
+
+    const files = fs
+      .readdirSync(dirPath)
+      .filter((f) => f.endsWith(".md"))
+      .sort();
+
+    for (const file of files) {
+      const filePath = path.join(dirPath, file);
+      const content = fs.readFileSync(filePath, "utf-8");
+      parts.push(`--- ${dir}/${file} ---\n${content}`);
+    }
+  }
+
+  return parts.join("\n\n");
+}
+
+function showStatus(bundleDir: string): void {
+  console.log("");
+  console.log("  " + chalk.bold("bundle status:"));
+  console.log("");
+
+  const dirs = ["profile", "preferences"];
+  let totalFiles = 0;
+  let filledFiles = 0;
+
+  for (const dir of dirs) {
+    const dirPath = path.join(bundleDir, dir);
+    if (!fs.existsSync(dirPath)) continue;
+
+    const files = fs
+      .readdirSync(dirPath)
+      .filter((f) => f.endsWith(".md"))
+      .sort();
+
+    for (const file of files) {
+      totalFiles++;
+      const filePath = path.join(dirPath, file);
+      const raw = fs.readFileSync(filePath, "utf-8");
+      const content = raw
+        .replace(/---[\s\S]*?---/, "")
+        .trim();
+      const hasContent = content
+        .split("\n")
+        .filter((l) => l.trim() && !l.startsWith("<!--"))
+        .length > 0;
+
+      if (hasContent) filledFiles++;
+
+      const status = hasContent
+        ? chalk.green("filled")
+        : chalk.dim("empty");
+      console.log(`    ${dir}/${file} -- ${status}`);
+    }
+  }
+
+  console.log("");
+  console.log(
+    chalk.dim(
+      `  ${filledFiles}/${totalFiles} sections have content`
+    )
+  );
+
+  // Check compiled artifacts
+  const youJsonExists = fs.existsSync(
+    path.join(bundleDir, "you.json")
+  );
+  const youMdExists = fs.existsSync(
+    path.join(bundleDir, "you.md")
+  );
+
+  if (youJsonExists && youMdExists) {
+    console.log(chalk.dim("  bundle is compiled"));
+  } else {
+    console.log(
+      chalk.yellow("  bundle needs compiling -- run /rebuild")
+    );
+  }
+
+  console.log(
+    chalk.dim(
+      "  authenticated: " + (isAuthenticated() ? "yes" : "no")
+    )
+  );
+  console.log("");
+}
+
+function showLinkInfo(bundleDir: string): void {
+  // Try to read username from the about.md or config
+  const config = readGlobalConfig();
+  const username = config.username || "your-username";
+
+  console.log("");
+  console.log("  " + chalk.bold("context link:"));
+  console.log(
+    "  " + chalk.cyan(`https://you.md/${username}/context`)
+  );
+  console.log("");
+  console.log("  " + chalk.bold("add to your system prompt / CLAUDE.md:"));
+  console.log(
+    chalk.dim(
+      `  "my identity file: https://you.md/${username}/context"`
+    )
+  );
+  console.log("");
+  console.log(
+    chalk.dim(
+      "  manage links with: " + chalk.cyan("youmd link create")
+    )
+  );
+  console.log("");
+}
+
+async function handlePublish(bundleDir: string): Promise<void> {
+  console.log("");
+
+  if (!isAuthenticated()) {
+    console.log(
+      chalk.yellow("  not authenticated. run ") +
+        chalk.cyan("youmd login") +
+        chalk.yellow(" first.")
+    );
+    console.log("");
+    return;
+  }
+
+  // Compile first
+  const result = compileBundle(bundleDir);
+  writeBundle(bundleDir, result);
+
+  console.log(
+    chalk.dim(
+      `  compiled bundle v${result.bundle.version}`
+    )
+  );
+
+  // Read bundle files
+  const youJson = JSON.parse(
+    fs.readFileSync(path.join(bundleDir, "you.json"), "utf-8")
+  );
+  const youMd = fs.readFileSync(
+    path.join(bundleDir, "you.md"),
+    "utf-8"
+  );
+  const manifest = JSON.parse(
+    fs.readFileSync(
+      path.join(bundleDir, "manifest.json"),
+      "utf-8"
+    )
+  );
+
+  console.log(chalk.dim("  uploading..."));
+
+  try {
+    const uploadRes = await uploadBundle({
+      manifest,
+      youJson,
+      youMd,
+    });
+
+    if (!uploadRes.ok) {
+      const errData = uploadRes.data as any;
+      console.log(
+        chalk.red(
+          "  upload failed: " +
+            (errData?.error || `status ${uploadRes.status}`)
+        )
+      );
+      console.log("");
+      return;
+    }
+
+    const pubRes = await publishLatest();
+
+    if (!pubRes.ok) {
+      const errData = pubRes.data as any;
+      console.log(
+        chalk.red(
+          "  publish failed: " +
+            (errData?.error || `status ${pubRes.status}`)
+        )
+      );
+      console.log("");
+      return;
+    }
+
+    const pubResult = pubRes.data;
+    console.log(
+      chalk.green("  published") +
+        ` v${pubResult.version} as ` +
+        chalk.cyan(pubResult.username)
+    );
+    console.log(
+      "  " +
+        chalk.cyan(
+          pubResult.url ||
+            `https://you.md/${pubResult.username}`
+        )
+    );
+    console.log("");
+  } catch (err) {
+    console.log(
+      chalk.red(
+        "  publish error: " +
+          (err instanceof Error ? err.message : String(err))
+      )
+    );
+    console.log("");
+  }
+}
+
+function handleRebuild(bundleDir: string): void {
+  console.log("");
+  const result = compileBundle(bundleDir);
+  writeBundle(bundleDir, result);
+  console.log(
+    "  " +
+      chalk.green("rebuilt") +
+      chalk.dim(` -- bundle v${result.bundle.version}`)
+  );
+  console.log("");
+}
+
+function showHelp(): void {
+  console.log("");
+  console.log("  " + chalk.bold("commands:"));
+  console.log("");
+  for (const [cmd, desc] of Object.entries(SLASH_COMMANDS)) {
+    console.log(
+      `    ${chalk.cyan(cmd.padEnd(12))} ${chalk.dim(desc)}`
+    );
+  }
+  console.log("");
+  console.log(
+    chalk.dim(
+      "  or just type naturally -- tell me what to update and i'll handle it."
+    )
+  );
+  console.log("");
+}
+
+// ─── Main chat command ────────────────────────────────────────────────
+
+export async function chatCommand(): Promise<void> {
+  if (!localBundleExists()) {
+    console.log("");
+    console.log(
+      chalk.yellow("  no .youmd/ directory found.")
+    );
+    console.log(
+      "  run " +
+        chalk.cyan("youmd init") +
+        " to create your identity first."
+    );
+    console.log("");
+    return;
+  }
+
+  const bundleDir = getLocalBundleDir();
+  const apiKey = getOpenRouterKey();
+  const rl = createRL();
+
+  console.log("");
+  console.log("  " + chalk.bold("you.md chat"));
+  console.log(
+    chalk.dim(
+      "  talk to update your profile. /help for commands."
+    )
+  );
+  console.log("");
+
+  // Load current profile as context
+  const currentBundle = loadCurrentBundle(bundleDir);
+
+  const messages: ChatMessage[] = [
+    { role: "system", content: CHAT_SYSTEM_PROMPT },
+    {
+      role: "user",
+      content: `here is my current identity bundle:\n\n${currentBundle}\n\ngreet me briefly and ask what i'd like to update or work on. keep it short.`,
+    },
+  ];
+
+  // Initial greeting from agent
+  const spinner = new Spinner(randomThinking());
+  spinner.start();
+
+  let response: string;
+  try {
+    response = await callLLM(apiKey, messages);
+  } catch (err) {
+    spinner.stop();
+    console.log(
+      chalk.red(
+        `  failed to connect: ${err instanceof Error ? err.message : String(err)}`
+      )
+    );
+    console.log(
+      chalk.dim(
+        "  chat requires the AI service. try again later."
+      )
+    );
+    console.log("");
+    rl.close();
+    return;
+  }
+
+  spinner.stop();
+
+  messages.push({ role: "assistant", content: response });
+  const initial = parseUpdatesFromResponse(response);
+
+  // Write any updates (unlikely on greeting, but handle it)
+  if (initial.updates.length > 0) {
+    for (const update of initial.updates) {
+      writeSectionFile(bundleDir, update.section, update.content);
+    }
+    console.log(
+      chalk.cyan(
+        `  [updated: ${initial.updates.map((u) => sectionLabel(u.section)).join(", ")}]`
+      )
+    );
+    console.log("");
+  }
+
+  printAgentMessage(initial.display);
+
+  // ── Conversation loop ──────────────────────────────────────────────
+
+  while (true) {
+    const userInput = await ask(rl, chalk.green("  > ") + "");
+
+    if (!userInput) continue;
+
+    const lower = userInput.toLowerCase().trim();
+
+    // Handle slash commands
+    if (lower === "/done" || lower === "/quit") {
+      console.log("");
+      console.log(chalk.dim("  later."));
+      console.log("");
+      break;
+    }
+
+    if (lower === "/help") {
+      showHelp();
+      continue;
+    }
+
+    if (lower === "/status") {
+      showStatus(bundleDir);
+      continue;
+    }
+
+    if (lower === "/preview") {
+      showBundlePreview(bundleDir);
+      continue;
+    }
+
+    if (lower === "/publish") {
+      await handlePublish(bundleDir);
+      continue;
+    }
+
+    if (lower === "/link") {
+      showLinkInfo(bundleDir);
+      continue;
+    }
+
+    if (lower === "/rebuild") {
+      handleRebuild(bundleDir);
+      continue;
+    }
+
+    // Regular conversation -- send to LLM
+    messages.push({ role: "user", content: userInput });
+
+    const thinkSpinner = new Spinner(randomThinking());
+    thinkSpinner.start();
+
+    try {
+      response = await callLLM(apiKey, messages);
+    } catch (err) {
+      thinkSpinner.stop();
+      console.log(
+        chalk.red(
+          `  AI error: ${err instanceof Error ? err.message : String(err)}`
+        )
+      );
+      console.log(chalk.dim("  try again."));
+      console.log("");
+      messages.pop();
+      continue;
+    }
+
+    thinkSpinner.stop();
+
+    messages.push({ role: "assistant", content: response });
+    const parsed = parseUpdatesFromResponse(response);
+
+    // Write updates
+    if (parsed.updates.length > 0) {
+      for (const update of parsed.updates) {
+        writeSectionFile(bundleDir, update.section, update.content);
+      }
+      console.log(
+        chalk.cyan(
+          `  [updated: ${parsed.updates.map((u) => sectionLabel(u.section)).join(", ")}]`
+        )
+      );
+      console.log("");
+    }
+
+    printAgentMessage(parsed.display);
+  }
+
+  rl.close();
+}
+
+function printAgentMessage(text: string): void {
+  if (!text) return;
+  const lines = text.split("\n");
+  for (const line of lines) {
+    console.log("  " + line);
+  }
+  console.log("");
+}
