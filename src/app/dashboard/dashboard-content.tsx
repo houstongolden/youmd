@@ -769,9 +769,11 @@ function ApiKeysSection({ clerkId }: { clerkId: string }) {
   const revokeKey = useMutation(api.apiKeys.revokeKey);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [keyError, setKeyError] = useState<string | null>(null);
 
   const handleCreate = async () => {
     setCreating(true);
+    setKeyError(null);
     try {
       const result = await createKey({
         clerkId,
@@ -780,7 +782,7 @@ function ApiKeysSection({ clerkId }: { clerkId: string }) {
       });
       setNewKey(result.key);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create key");
+      setKeyError(err instanceof Error ? err.message : "Could not create API key. Please try again.");
     }
     setCreating(false);
   };
@@ -799,6 +801,10 @@ function ApiKeysSection({ clerkId }: { clerkId: string }) {
           {creating ? "Creating..." : "Create key"}
         </button>
       </div>
+
+      {keyError && (
+        <p className="text-xs text-accent-primary">{keyError}</p>
+      )}
 
       {newKey && (
         <div className="p-4 border border-accent-premium/30 rounded-lg bg-accent-premium/5 space-y-2">
@@ -881,9 +887,11 @@ function ContextLinksSection({
   const revokeLink = useMutation(api.contextLinks.revokeLink);
   const [newLink, setNewLink] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   const handleCreate = async () => {
     setCreating(true);
+    setLinkError(null);
     try {
       const result = await createLink({
         clerkId,
@@ -892,7 +900,7 @@ function ContextLinksSection({
       });
       setNewLink(result.url);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create link");
+      setLinkError(err instanceof Error ? err.message : "Could not create context link. Please try again.");
     }
     setCreating(false);
   };
@@ -916,6 +924,10 @@ function ContextLinksSection({
         Context links let you share your identity bundle with any AI agent.
         Paste the link into any conversation.
       </p>
+
+      {linkError && (
+        <p className="text-xs text-accent-primary">{linkError}</p>
+      )}
 
       {newLink && (
         <div className="p-4 border border-accent-secondary/30 rounded-lg bg-accent-secondary/5 space-y-2">

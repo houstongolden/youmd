@@ -741,9 +741,9 @@ export default function Home() {
             <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="hover:text-foreground-secondary transition-colors">
               Open spec
             </a>
-            <Link href="/claim" className="hover:text-foreground-secondary transition-colors">
+            <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="hover:text-foreground-secondary transition-colors">
               Docs
-            </Link>
+            </a>
             <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="hover:text-foreground-secondary transition-colors">
               GitHub
             </a>

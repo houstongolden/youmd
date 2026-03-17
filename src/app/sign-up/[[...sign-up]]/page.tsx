@@ -15,7 +15,7 @@ export default function SignUpPage() {
             you.md
           </Link>
           <p className="text-foreground-secondary text-sm tracking-wide">
-            your identity on the agent internet
+            Your identity on the agent internet.
           </p>
         </div>
 

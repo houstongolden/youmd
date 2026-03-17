@@ -114,7 +114,6 @@ interface AuroraProps {
   amplitude?: number;
   blend?: number;
   speed?: number;
-  time?: number;
   className?: string;
 }
 

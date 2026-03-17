@@ -92,7 +92,25 @@ export function ProfileContent() {
   }
 
   const data = profile.youJson;
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+        <div className="font-mono text-foreground-secondary text-sm">
+          you.md/{username}
+        </div>
+        <h1 className="text-xl font-semibold text-foreground">Not yet published</h1>
+        <p className="text-foreground-secondary text-sm max-w-xs text-center">
+          This profile has been claimed but hasn&apos;t published a bundle yet. Check back soon.
+        </p>
+        <Link
+          href="/"
+          className="mt-4 px-5 py-2.5 text-sm border border-border rounded-lg text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-all"
+        >
+          Back to home
+        </Link>
+      </div>
+    );
+  }
 
   const name = data.identity?.name || profile.displayName || username;
   const tagline = data.identity?.tagline || "";

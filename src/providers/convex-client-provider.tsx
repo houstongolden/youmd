@@ -22,8 +22,6 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
       appearance={{
         variables: {
           colorPrimary: "#E8857A",
-          colorText: "#0A0E1A",
-          colorBackground: "#FFFFFF",
           borderRadius: "0.5rem",
         },
       }}

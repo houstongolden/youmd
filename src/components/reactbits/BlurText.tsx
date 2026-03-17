@@ -3,16 +3,18 @@
 import { motion } from "motion/react";
 import { useEffect, useRef, useState, useMemo } from "react";
 
+type AnimationValue = string | number | undefined;
+
 const buildKeyframes = (
-  from: Record<string, any>,
-  steps: Record<string, any>[]
+  from: Record<string, AnimationValue>,
+  steps: Record<string, AnimationValue>[]
 ) => {
   const keys = new Set([
     ...Object.keys(from),
     ...steps.flatMap((s) => Object.keys(s)),
   ]);
 
-  const keyframes: Record<string, any[]> = {};
+  const keyframes: Record<string, AnimationValue[]> = {};
   keys.forEach((k) => {
     keyframes[k] = [from[k], ...steps.map((s) => s[k])];
   });
@@ -27,8 +29,8 @@ interface BlurTextProps {
   direction?: "top" | "bottom";
   threshold?: number;
   rootMargin?: string;
-  animationFrom?: Record<string, any>;
-  animationTo?: Record<string, any>[];
+  animationFrom?: Record<string, AnimationValue>;
+  animationTo?: Record<string, AnimationValue>[];
   easing?: (t: number) => number;
   onAnimationComplete?: () => void;
   stepDuration?: number;
@@ -118,8 +120,8 @@ export default function BlurText({
           <motion.span
             className="inline-block will-change-[transform,filter,opacity]"
             key={index}
-            initial={fromSnapshot}
-            animate={inView ? animateKeyframes : fromSnapshot}
+            initial={fromSnapshot as any}
+            animate={(inView ? animateKeyframes : fromSnapshot) as any}
             transition={spanTransition}
             onAnimationComplete={
               index === elements.length - 1

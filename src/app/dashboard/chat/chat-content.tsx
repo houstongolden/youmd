@@ -400,11 +400,11 @@ export function ChatContent() {
 
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`Chat error (${res.status}): ${body.slice(0, 200)}`);
+      throw new Error("The agent is temporarily unavailable. Please try again in a moment.");
     }
 
     const data = await res.json();
-    if (!data.content) throw new Error("Empty response from agent");
+    if (!data.content) throw new Error("The agent returned an empty response. Please try again.");
     return data.content;
   }, []);
 
