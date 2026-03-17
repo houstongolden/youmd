@@ -94,7 +94,7 @@ export function ClaimForm() {
               {/* Availability indicator */}
               {username.length >= 3 && checkUsername && (
                 <p
-                  className={`mt-2 text-xs ${isAvailable ? "text-green-400" : "text-coral"}`}
+                  className={`mt-2 text-xs ${isAvailable ? "text-success" : "text-coral"}`}
                 >
                   {isAvailable
                     ? `you.md/${username} is available`

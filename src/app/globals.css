@@ -12,26 +12,27 @@
   --ink: #1A1F2E;
   --mist: #8899AA;
 
-  /* Semantic tokens (dark mode default) */
-  --background: var(--void);
-  --background-secondary: var(--ink);
-  --foreground: #EDEDED;
-  --foreground-secondary: var(--mist);
+  /* Semantic tokens — LIGHT mode default */
+  --background: #FAFAFA;
+  --background-secondary: #FFFFFF;
+  --foreground: var(--void);
+  --foreground-secondary: #5A6577;
   --accent-primary: var(--coral);
   --accent-secondary: var(--sky);
   --accent-premium: var(--gold);
   --accent-glow: var(--light);
-  --border: rgba(136, 153, 170, 0.2);
+  --success: #4ade80;
+  --border: rgba(26, 31, 46, 0.10);
 }
 
-/* Light mode — inverts but preserves warmth */
-@media (prefers-color-scheme: light) {
+/* Dark mode — switches to void/ink space */
+@media (prefers-color-scheme: dark) {
   :root {
-    --background: #FAFAFA;
-    --background-secondary: #FFFFFF;
-    --foreground: var(--void);
-    --foreground-secondary: #5A6577;
-    --border: rgba(26, 31, 46, 0.12);
+    --background: var(--void);
+    --background-secondary: var(--ink);
+    --foreground: #EDEDED;
+    --foreground-secondary: var(--mist);
+    --border: rgba(136, 153, 170, 0.2);
   }
 }
 
@@ -53,6 +54,7 @@
   --color-accent-secondary: var(--accent-secondary);
   --color-accent-premium: var(--accent-premium);
   --color-accent-glow: var(--accent-glow);
+  --color-success: var(--success);
   --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
