@@ -60,8 +60,17 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
         publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY as string}
         appearance={{
           variables: {
-            colorPrimary: "#E8857A",
-            borderRadius: "0.5rem",
+            colorPrimary: "#C46A3A",
+            colorText: "#EAE6E1",
+            colorBackground: "#171717",
+            colorInputBackground: "#0D0D0D",
+            colorInputText: "#EAE6E1",
+            borderRadius: "0.25rem",
+          },
+          elements: {
+            card: "border border-[hsl(0,0%,18%)]",
+            formButtonPrimary: "bg-[#C46A3A] hover:bg-[#A8552E]",
+            footerActionLink: "text-[#C46A3A] hover:text-[#D27A4F]",
           },
         }}
       >

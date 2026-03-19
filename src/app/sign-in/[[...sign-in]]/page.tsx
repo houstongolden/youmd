@@ -3,55 +3,64 @@ import Link from "next/link";
 
 export default function SignInPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative bg-background overflow-hidden">
-      {/* Beam-glow background effect */}
+    <div className="min-h-screen flex flex-col items-center justify-center relative bg-[hsl(var(--bg))] overflow-hidden">
+      {/* Subtle beam background */}
       <div className="absolute inset-0 beam-glow pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-coral/[0.04] blur-[100px] pointer-events-none" />
 
       <div className="relative z-10 flex flex-col items-center space-y-8 w-full max-w-md px-6 animate-fade-in">
         {/* Brand header */}
         <div className="text-center space-y-2">
-          <Link href="/" className="font-mono text-3xl tracking-tight text-foreground hover:text-coral transition-colors">
+          <Link
+            href="/"
+            className="font-mono text-2xl tracking-tight text-[hsl(var(--text-primary))] hover:text-[hsl(var(--accent))] transition-colors"
+          >
             you.md
           </Link>
-          <p className="text-foreground-secondary text-sm tracking-wide">
-            Your identity on the agent internet.
+          <p className="text-[hsl(var(--text-secondary))] text-xs font-mono tracking-wide">
+            identity context protocol
           </p>
         </div>
 
-        {/* Clerk sign-in component */}
+        {/* Clerk sign-in */}
         <SignIn
           appearance={{
             elements: {
               rootBox: "mx-auto",
-              card: "bg-background-secondary border border-border shadow-xl rounded-xl",
-              headerTitle: "text-foreground font-semibold",
-              headerSubtitle: "text-foreground-secondary",
-              socialButtonsBlockButton: "border-border bg-background hover:bg-background-secondary",
-              formButtonPrimary: "bg-coral hover:bg-blush text-void",
-              formFieldInput: "bg-background border-border text-foreground focus:border-sky",
-              formFieldLabel: "text-foreground-secondary",
-              footerActionLink: "text-sky hover:text-coral",
-              identityPreviewText: "text-foreground",
-              identityPreviewEditButton: "text-sky",
+              card: "terminal-panel shadow-xl",
+              headerTitle: "text-[hsl(var(--text-primary))] font-mono",
+              headerSubtitle: "text-[hsl(var(--text-secondary))]",
+              socialButtonsBlockButton:
+                "border-[hsl(var(--border))] bg-[hsl(var(--bg))] hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-primary))]",
+              formButtonPrimary:
+                "bg-[hsl(var(--accent))] hover:bg-[hsl(var(--accent-dark))] text-white",
+              formFieldInput:
+                "bg-[hsl(var(--bg))] border-[hsl(var(--border))] text-[hsl(var(--text-primary))] focus:border-[hsl(var(--accent))]",
+              formFieldLabel: "text-[hsl(var(--text-secondary))] font-mono text-xs",
+              footerActionLink:
+                "text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-light))]",
+              identityPreviewText: "text-[hsl(var(--text-primary))]",
+              identityPreviewEditButton: "text-[hsl(var(--accent))]",
             },
             variables: {
-              colorPrimary: "#E8857A",
-              colorText: "var(--foreground)",
-              colorBackground: "var(--background-secondary)",
-              colorInputBackground: "var(--background)",
-              colorInputText: "var(--foreground)",
-              borderRadius: "0.5rem",
+              colorPrimary: "#C46A3A",
+              colorText: "#EAE6E1",
+              colorBackground: "#171717",
+              colorInputBackground: "#0D0D0D",
+              colorInputText: "#EAE6E1",
+              borderRadius: "0.25rem",
             },
           }}
           fallbackRedirectUrl="/dashboard"
         />
 
         {/* Sign-up link */}
-        <p className="text-sm text-foreground-secondary">
-          Don&apos;t have an account?{" "}
-          <Link href="/sign-up" className="text-sky hover:text-coral transition-colors font-medium">
-            Sign up
+        <p className="text-xs text-[hsl(var(--text-secondary))] font-mono">
+          no account?{" "}
+          <Link
+            href="/sign-up"
+            className="text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-light))] transition-colors"
+          >
+            sign up
           </Link>
         </p>
       </div>
