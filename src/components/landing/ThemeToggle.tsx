@@ -6,14 +6,19 @@ import { Sun, Moon, Monitor } from "lucide-react";
 type Theme = "light" | "dark" | "system";
 
 const ThemeToggle = () => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("theme") as Theme) || "dark";
-    }
-    return "dark";
-  });
+  const [theme, setTheme] = useState<Theme>("dark");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    const stored = localStorage.getItem("theme") as Theme | null;
+    if (stored && ["light", "dark", "system"].includes(stored)) {
+      setTheme(stored);
+    }
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     const root = document.documentElement;
     localStorage.setItem("theme", theme);
 
@@ -25,7 +30,7 @@ const ThemeToggle = () => {
     } else {
       root.classList.toggle("light", theme === "light");
     }
-  }, [theme]);
+  }, [theme, mounted]);
 
   useEffect(() => {
     if (theme !== "system") return;

@@ -1,0 +1,46 @@
+# You.md — Changelog
+
+## 2026-03-19 — Design System Migration (PRD v2.3)
+- Complete visual rebrand: monochrome + burnt orange (#C46A3A)
+- Ported 20+ components from Lovable prototype
+- PixelYOU canvas logo, ASCII portrait system
+- 12-section landing page with glass nav, boot sequence, typewriter
+- JetBrains Mono + Inter typography (replaces Geist)
+- Dark mode default, theme toggle with .light class
+- Terminal panels replace all card components
+
+## 2026-03-18 — PRD v2.3 Defined
+- ASCII portrait as signature visual identity
+- PixelYOU canvas logo specification
+- Complete style guide integrated into PRD §15
+- Glass nav with --flag navigation
+- Boot sequence animation spec
+- Profile page as "live identity surface"
+
+## 2026-03-17 — 4 Iteration Cycles
+- Iteration 1: UI components (Toast, Spinner, CopyButton), web chat agent, Clerk styling, accessibility
+- Iteration 2: Mobile hamburger menu, pricing section, FAQ, dashboard tabs, Cmd+S shortcut
+- Iteration 3: Visual consistency, hover states, transitions, CLI 72 thinking phrases
+- Iteration 4: Final verification, BlurText fix, copy review
+
+## 2026-03-17 — Conversational CLI Agent (PRD v2.0 §4.6)
+- Complete rewrite of onboarding (1014 lines)
+- Website fetching during onboarding with LLM commentary
+- 50+ themed thinking phrases
+- youmd chat command (522 lines) with slash commands
+- LLM chat proxy via Convex (no user API key needed)
+
+## 2026-03-16 — Full Stack Foundation
+- Milestone 0-3 code complete
+- Next.js + Convex + Clerk + Tailwind
+- Ingestion pipeline (fetch, extract, analyze, compile)
+- API keys, context links, HTTP API
+- CLI published on npm (youmd)
+- Vercel + Convex production deployments
+- GitHub repo synced
+
+## 2026-03-16 — Project Inception
+- PRD v2.0 received from founder
+- Initial project scaffolding
+- Convex schema (10+ tables)
+- First commit

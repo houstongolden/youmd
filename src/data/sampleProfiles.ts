@@ -102,7 +102,7 @@ export interface Profile {
 
 export const sampleProfiles: Profile[] = [
   {
-    username: "houston",
+    username: "houstong",
     name: "Houston Golden",
     tagline: "Founder, BAMF Media. Building You.md.",
     location: "Miami, FL",
@@ -196,7 +196,7 @@ export const sampleProfiles: Profile[] = [
       { date: "2026-03-17", action: "published", detail: "Updated identity bundle to v1.3" },
       { date: "2026-03-15", action: "connected", detail: "Connected GitHub OAuth source" },
       { date: "2026-03-12", action: "updated", detail: "Added new project: You.md" },
-      { date: "2026-03-08", action: "initialized", detail: "Created you.md/houston" },
+      { date: "2026-03-08", action: "initialized", detail: "Created you.md/houstong" },
     ],
     maintainedBy: ["youmd", "claude", "cursor"],
     lastUpdated: "2 hours ago",
@@ -384,7 +384,7 @@ export const sampleProfiles: Profile[] = [
     lastUpdated: "6 hours ago",
   },
   {
-    username: "sato.yuki",
+    username: "sato-yuki",
     name: "Yuki Sato",
     tagline: "Staff engineer @ Stripe. Distributed systems.",
     location: "Tokyo, Japan",
@@ -472,7 +472,7 @@ export const sampleProfiles: Profile[] = [
       { date: "2026-03-17", action: "updated", detail: "Added book project to profile" },
       { date: "2026-03-13", action: "published", detail: "Updated agent preferences" },
       { date: "2026-03-07", action: "connected", detail: "Linked Aider agent" },
-      { date: "2026-03-02", action: "initialized", detail: "Created you.md/sato.yuki" },
+      { date: "2026-03-02", action: "initialized", detail: "Created you.md/sato-yuki" },
     ],
     maintainedBy: ["youmd", "aider", "claude"],
     lastUpdated: "1 hour ago",

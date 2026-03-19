@@ -8,6 +8,7 @@ export default defineSchema({
     email: v.string(),
     displayName: v.optional(v.string()),
     plan: v.union(v.literal("free"), v.literal("pro")),
+    isSample: v.optional(v.boolean()),
     createdAt: v.number(),
   })
     .index("by_username", ["username"])

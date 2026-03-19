@@ -1,93 +1,135 @@
-# You.md — Feature Status
+# You.md — Feature Inventory
 
-Last Updated: 2026-03-17
+Last Updated: 2026-03-19
 
-## v1 Core Features
+## Core Platform
 
-### Spec & Data
-- [x] Open spec you-md/v1 (directory-based identity bundles)
-- [x] you.json compiled output schema
-- [x] you.md entry file format
-- [x] manifest.json with public/private/scoped paths
-- [x] Bundle versioning
+| Feature | Status | Notes |
+|---|---|---|
+| Open spec you-md/v1 | Done | Directory-based identity bundles |
+| Convex backend | Done | Reactive, serverless, TypeScript-native |
+| Clerk auth | Done | Production: clerk.you.md |
+| Username claim | Done | Real-time availability check |
+| Bundle compilation | Done | Server-side via convex/lib/compile.ts |
+| Bundle publishing | Done | Version tracking, unpublish previous |
+| Public profile pages | Done | SSR, JSON-LD, dynamic metadata |
+| OG social cards | Done | Auto-generated per profile |
+| Dashboard editor | Done | Tabbed UI, collapsible sections |
+| Web chat agent | Done | LLM-powered via Convex proxy |
+| Source management | Done | Add URLs, view status |
+| Pipeline trigger | Done | From dashboard |
 
-### Backend (Convex)
-- [x] Users table with Clerk auth
-- [x] Bundles table with versioning + publishing
-- [x] Sources table with pipeline status tracking
-- [x] Analysis artifacts table
-- [x] API keys (SHA-256 hashed, scoped, ym_ prefix)
-- [x] Context links (token-based, TTL, max uses, scope)
-- [x] Private vault table (schema only, encryption deferred)
-- [x] Pipeline jobs table
-- [x] Profile views table (web + agent reads)
-- [x] LLM chat proxy (convex/chat.ts)
+## Ingestion Pipeline
 
-### Ingestion Pipeline
-- [x] Pipeline orchestrator
-- [x] Website scraping (native fetch)
-- [x] Apify integration (LinkedIn, X)
-- [x] LLM extraction via OpenRouter (Claude Sonnet)
-- [x] Voice profiling, topic mapping, bio generation, FAQ
-- [x] Pipeline compilation to bundle
-- [x] All prompt templates (per source type + analysis)
-- [ ] End-to-end tested with real data
+| Feature | Status | Notes |
+|---|---|---|
+| Pipeline orchestrator | Done | 6-stage with job tracking |
+| Website scraping | Done | Native fetch, HTML→text |
+| LinkedIn scraping | Code done | Needs Apify key |
+| X/Twitter scraping | Code done | Needs Apify key |
+| LLM extraction | Done | OpenRouter, Claude Sonnet |
+| Voice analysis | Done | Author voice profile |
+| Topic mapping | Done | Expertise graph |
+| Bio generation | Done | Short/medium/long variants |
+| FAQ generation | Done | Predicted questions |
+| Pipeline compilation | Done | Extracted → bundle |
 
-### HTTP API
-- [x] GET /api/v1/profiles?username= (public you.json)
-- [x] GET /api/v1/check-username?username= (availability)
-- [x] GET /ctx?token= (context link resolution)
-- [x] POST /api/v1/chat (LLM proxy for CLI)
-- [x] GET /api/v1/me (authenticated profile)
-- [x] POST /api/v1/me/bundle (save bundle)
-- [x] POST /api/v1/me/publish (publish)
-- [x] POST/GET /api/v1/me/sources (manage sources)
-- [x] GET /api/v1/me/analytics (view counts)
-- [x] POST /api/v1/me/build (trigger pipeline)
-- [x] GET /api/v1/me/build/status (pipeline status)
-- [x] CORS preflight for all endpoints
+## HTTP API
 
-### Web Frontend
-- [x] Landing page (Aurora, GradientText, BlurText, brand system)
-- [x] Username claim page (real-time availability)
-- [x] Dashboard (profile editor, save/publish, API keys, context links)
-- [x] Public profile page (/[username])
-- [x] Sign in / Sign up (Clerk)
-- [x] 404 page
-- [x] Light mode default
-- [ ] OG social cards (auto-generated per profile)
-- [ ] JSON-LD structured data verification
+| Endpoint | Status |
+|---|---|
+| GET /api/v1/profiles | Done |
+| GET /api/v1/check-username | Done |
+| GET /ctx (context links) | Done |
+| POST /api/v1/chat (LLM proxy) | Done |
+| GET /api/v1/me | Done |
+| POST /api/v1/me/bundle | Done |
+| POST /api/v1/me/publish | Done |
+| POST/GET /api/v1/me/sources | Done |
+| GET /api/v1/me/analytics | Done |
+| POST /api/v1/me/build | Done |
+| GET /api/v1/me/build/status | Done |
 
-### CLI (npm: youmd)
-- [x] 12+ commands (init, login, register, whoami, status, build, publish, add, diff, preview, link, keys)
-- [x] API client talking to prod Convex
-- [x] LLM chat proxy (works without user API key)
-- [x] Interactive onboarding (Phase 1)
-- [ ] **Conversational AI agent onboarding (PRD v2.0)** — building now
-- [ ] **`youmd chat` command** — building now
-- [ ] 50+ themed wait-state phrases
-- [ ] Website fetching during onboarding
-- [ ] Box-drawing profile previews
-- [ ] Slash commands in chat (/status, /preview, /publish, /link, /help)
+## Security
 
-### Security
-- [x] API key hashing (SHA-256)
-- [x] Scoped keys (read:public, read:private, write:bundle)
-- [x] Context link tokens (32-byte random)
-- [x] Link expiry + revocation
-- [x] Free tier limits (1 key, read:public only)
-- [ ] Private vault AES-256-GCM encryption
-- [ ] Rate limiting per plan
+| Feature | Status | Notes |
+|---|---|---|
+| API keys (SHA-256 hashed) | Done | ym_ prefix, scoped |
+| Context links | Done | Token-based, TTL, max uses |
+| Free tier limits | Done | 1 key, read:public |
+| Private vault encryption | Not started | AES-256-GCM, deferred |
+| Rate limiting | Not started | Per plan |
 
-### Monetization
-- [ ] Stripe integration
-- [ ] Pro plan ($12/mo)
-- [ ] BYOK support
+## CLI (npm: youmd)
 
-## Post-v1 (NOT in scope)
-- Interview mode (v1.1)
-- MCP endpoint (v1.1)
-- Custom domains (v1.1)
-- Verified badges (v1.1)
-- Profile theming (v1.2+)
-- Team bundles (v2.0)
+| Feature | Status | Notes |
+|---|---|---|
+| youmd init | Done | Conversational AI onboarding |
+| youmd chat | Done | Ongoing agent conversation |
+| youmd build | Done | Local compile + thinking phrases |
+| youmd publish | Done | Upload + publish to platform |
+| youmd login | Done | API key auth |
+| youmd status | Done | Rich tree-style summary |
+| youmd whoami | Done | Profile display |
+| youmd add | Done | Add source URLs |
+| youmd link | Done | Context link management |
+| youmd keys | Done | API key management |
+| youmd diff | Placeholder | Show changes vs published |
+| youmd preview | Placeholder | Local dev server |
+
+## Design System (PRD v2.3)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Monochrome + burnt orange palette | Done | CSS custom properties |
+| JetBrains Mono + Inter | Done | next/font/google |
+| Dark mode default | Done | .light class toggle |
+| Terminal panel component | Done | CSS class |
+| PixelYOU canvas logo | Done | 3-layer shadow algorithm |
+| ASCII portrait system | Done | HeroPortrait, AsciiAvatar, Generator |
+| Glass navbar | Done | --flag navigation |
+| FadeUp animation | Done | IntersectionObserver |
+| Boot sequence typewriter | Done | 55ms/char |
+| ThemeToggle | Done | Dark/light/system |
+| Section label format | Done | ── LABEL ── |
+
+## Landing Page Sections
+
+| # | Section | Status |
+|---|---|---|
+| 1 | Glass Navbar | Done |
+| 2 | Hero (PixelYOU + boot + ASCII) | Done |
+| 3 | Founder Quote | Done |
+| 4 | Profiles Showcase | Done |
+| 5 | Problem Strip | Done |
+| 6 | How It Works | Done |
+| 7 | What's Inside | Done |
+| 8 | Portrait Generator | Done |
+| 9 | Open Spec | Done |
+| 10 | Integrations | Done |
+| 11 | Pricing | Done |
+| 12 | CTA Footer | Done |
+
+## Feature Requests (Backlog)
+
+- [ ] ASCII portrait upload during profile creation (web)
+- [ ] Download ASCII portrait as PNG from profile page
+- [ ] Verified badges (domain, social, DNS TXT)
+- [ ] Profile analytics dashboard (views, agent reads, top queries)
+- [ ] Freshness score (4-dimension state)
+- [ ] Activity timeline on profile
+- [ ] Agent network section (connected agents, top queries)
+- [ ] Role icons on profiles (◆ Founder, ⟐ Engineer, ◈ Designer)
+- [ ] Composio OAuth for platform connections
+- [ ] Profile page raw JSON toggle
+- [ ] Count-up animations on all metrics
+- [ ] Status pulse (ACTIVE dot)
+- [ ] Profiles directory page (/profiles)
+- [ ] Framework integration PRs (Aider, CrewAI, LangChain)
+- [ ] SKILL.md for skills.sh / clawhub.ai
+- [ ] MCP endpoint
+- [ ] Stripe Pro plan
+- [ ] Interview mode (youmd interview)
+- [ ] Voice onboarding
+- [ ] Team/org bundles
+- [ ] Self-host export (youmd export)

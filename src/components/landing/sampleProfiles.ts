@@ -10,7 +10,7 @@ export interface Profile {
 
 export const sampleProfiles: Profile[] = [
   {
-    username: "houston",
+    username: "houstong",
     name: "Houston Golden",
     tagline: "Founder, BAMF Media. Building You.md.",
     avatarUrl: "/assets/houston-portrait.jpeg",
@@ -39,7 +39,7 @@ export const sampleProfiles: Profile[] = [
     freshness: { score: 79 },
   },
   {
-    username: "sato.yuki",
+    username: "sato-yuki",
     name: "Yuki Sato",
     tagline: "Staff engineer @ Stripe. Distributed systems.",
     avatarUrl:

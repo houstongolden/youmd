@@ -1,85 +1,169 @@
-# You.md — Build Progress Tracker
+# You.md — Build Progress & Roadmap
 
-Last Updated: 2026-03-18
+Last Updated: 2026-03-19
 PRD Version: 2.3
-
-## ACTIVE: Design System Migration (v2.3)
-
-Porting from Lovable prototype (youmd-b73d50c7) to Next.js production app.
-
-### CSS + Design Tokens — IN PROGRESS
-- [ ] New color system: monochrome + burnt orange (#C46A3A)
-- [ ] JetBrains Mono + Inter typography
-- [ ] Dark mode default, light mode via .light class
-- [ ] Terminal panel component styles
-- [ ] All animation keyframes (fadeUp, typewriter, countUp, pulse)
-- [ ] Custom scrollbar
-- [ ] Remove old coral/sky/gold palette
-
-### Key Components — IN PROGRESS
-- [ ] PixelYOU canvas logo
-- [ ] ASCII Portrait system (HeroPortrait, AsciiAvatar, ProfileAsciiHeader)
-- [ ] ASCII Portrait Generator (upload → download PNG)
-- [ ] FadeUp animation component
-- [ ] ThemeToggle (dark/light)
-- [ ] Glass navbar with --flag navigation
-- [ ] Sample profiles data
-
-### Landing Page — IN PROGRESS
-- [ ] Glass Navbar
-- [ ] Hero (PixelYOU + boot sequence + CLI + ASCII portrait)
-- [ ] Founder Quote (terminal panel)
-- [ ] Profiles Showcase (hover-reveal ASCII → photo)
-- [ ] Problem Strip
-- [ ] How It Works (3 CLI steps)
-- [ ] What's Inside (typewriter code)
-- [ ] Portrait Generator section
-- [ ] Open Spec
-- [ ] Integrations
-- [ ] Pricing (Free + Pro)
-- [ ] CTA Footer
-
-### Profile Page — TODO
-- [ ] ASCII portrait banner (full-width)
-- [ ] Terminal panel system header
-- [ ] Raw JSON toggle
-- [ ] Count-up metrics
-- [ ] Role icons
-- [ ] Verified badge + ACTIVE pulse
-- [ ] All profile sections per PRD §15.10
-
-### Profiles Directory — TODO
-- [ ] > ls /profiles header
-- [ ] ASCII avatar hover-reveal
-- [ ] Agent reads + integrations metrics
-- [ ] Search/sort
-
-### Dashboard — TODO (after design migration)
-- [ ] Adapt to new design system
-- [ ] Terminal panel styling
-- [ ] Web chat agent in new style
 
 ---
 
-## Backend (Complete)
-- [x] Convex production (kindly-cassowary-600)
-- [x] Full schema (users, bundles, sources, apiKeys, contextLinks, etc.)
-- [x] Ingestion pipeline (fetch, extract, analyze, compile)
-- [x] LLM chat proxy
-- [x] HTTP API (all endpoints)
-- [x] API key management
-- [x] Context links
+## COMPLETED
 
-## CLI (Complete)
-- [x] Published on npm (youmd)
-- [x] Conversational AI onboarding agent (1014 lines)
-- [x] youmd chat command (522 lines)
-- [x] 72 thinking phrases
-- [x] All 13 commands working
+### Foundation (Milestone 0)
+- [x] Next.js 16 + Convex + Clerk + Tailwind v4
+- [x] Full Convex schema (users, bundles, sources, apiKeys, contextLinks, etc.)
+- [x] Auth flow (Clerk production: clerk.you.md)
+- [x] Git repo + GitHub sync
+- [x] Vercel deployment (you.md custom domain)
+- [x] Convex production (kindly-cassowary-600) + dev (uncommon-chicken-142)
 
-## Infrastructure (Complete)
-- [x] Vercel deployment
-- [x] Convex production
-- [x] Clerk production (clerk.you.md)
-- [x] OpenRouter configured
-- [x] GitHub repo synced
+### Backend (Milestones 1-3)
+- [x] Bundle compilation (convex/lib/compile.ts)
+- [x] Save + publish mutations
+- [x] Ingestion pipeline (fetch, extract, analyze, compile via OpenRouter)
+- [x] API key management (SHA-256 hashed, scoped, ym_ prefix)
+- [x] Context links (token-based, TTL, scope)
+- [x] Full HTTP API (public + authenticated endpoints)
+- [x] LLM chat proxy (convex/chat.ts)
+- [x] Pipeline orchestrator with job tracking
+
+### CLI (npm: youmd)
+- [x] Published on npm with auto-version-bump
+- [x] 13 commands (init, login, register, whoami, status, build, publish, add, diff, preview, chat, link, keys)
+- [x] Conversational AI onboarding agent (1014 lines, 72 thinking phrases)
+- [x] youmd chat command (522 lines, slash commands)
+- [x] Website fetching during onboarding with LLM commentary
+- [x] API client hitting production Convex
+
+### Design System Migration (PRD v2.3)
+- [x] CSS rewrite: monochrome + burnt orange (#C46A3A)
+- [x] JetBrains Mono + Inter typography
+- [x] Dark mode default, .light class toggle
+- [x] Terminal panel, CLI pill, glass nav styles
+- [x] All animation keyframes (fadeUp, blink, pulse, beam)
+
+### Components Ported from Lovable
+- [x] PixelYOU canvas logo
+- [x] ASCII portrait system (HeroPortrait, AsciiAvatar, Generator)
+- [x] FadeUp animation
+- [x] Glass Navbar with --flag navigation
+- [x] ThemeToggle (dark/light/system)
+
+### Landing Page (12 sections)
+- [x] Hero (PixelYOU + boot sequence + CLI + ASCII portrait)
+- [x] Founder Quote (terminal panel)
+- [x] Profiles Showcase (hover-reveal)
+- [x] Problem Strip
+- [x] How It Works (3 CLI steps)
+- [x] What's Inside (typewriter code)
+- [x] Portrait Generator (upload → ASCII → PNG)
+- [x] Open Spec
+- [x] Integrations
+- [x] Pricing (Free + Pro)
+- [x] CTA Footer
+
+### Web App Pages
+- [x] Dashboard with tabs (Profile, Sources, Settings)
+- [x] Web chat agent (/dashboard/chat)
+- [x] Username claim page
+- [x] Sign-in/sign-up (Clerk branded)
+- [x] Public profile page with JSON-LD
+- [x] OG social card generation
+- [x] 404 page
+
+---
+
+## IN PROGRESS / NEEDS FINISHING
+
+### Profile Page (PRD §15.10 compliance)
+- [ ] Port profile page from Lovable prototype (full terminal-panel layout)
+- [ ] ASCII portrait banner (full-width, from user photo)
+- [ ] System header in terminal panel (status pulse, metrics, verified badge)
+- [ ] Raw JSON toggle (<> raw button)
+- [ ] Count-up animations on metrics
+- [ ] Role icons (◆ Founder, ⟐ Engineer, ◈ Designer)
+- [ ] Section dividers with `── LABEL ──` format
+- [ ] All 13 profile sections per PRD §15.10
+
+### Profiles Directory Page
+- [ ] Create /profiles route
+- [ ] `> ls /profiles` header
+- [ ] ASCII avatar hover-reveal (ASCII → photo on hover)
+- [ ] Agent reads + integrations metrics in accent color
+- [ ] Search/filter/sort
+
+### Dashboard Redesign (terminal-native)
+- [ ] Adapt dashboard to new design system (terminal panels, not cards)
+- [ ] Remove old coral/sky/gold references
+- [ ] Web chat agent styled as terminal panel
+
+### Landing Page Polish
+- [ ] Verify all sections match Lovable prototype exactly
+- [ ] Boot sequence typewriter timing
+- [ ] Scroll parallax on How It Works
+- [ ] Content opacity fade on hero scroll
+- [ ] Profiles showcase hover-reveal working
+- [ ] Portrait generator functional end-to-end
+
+---
+
+## UP NEXT (v1 MVP)
+
+### End-to-End Testing
+- [ ] Sign up → claim username → edit profile → save → publish → view live
+- [ ] CLI: npx youmd init → build → publish → view live
+- [ ] Pipeline: add source URL → trigger build → review → approve
+- [ ] Context link: create → share → agent fetches → gets identity
+
+### Polish
+- [ ] Skeleton loaders on all async pages
+- [ ] Error boundaries with branded fallback
+- [ ] Empty state illustrations
+- [ ] Confirmation dialogs for destructive actions
+- [ ] Mobile hamburger menu on all pages
+- [ ] Custom scrollbar working across browsers
+
+### SEO / AEO
+- [ ] JSON-LD verified on all profile pages
+- [ ] OG cards verified (sharing on X, LinkedIn, Slack)
+- [ ] Canonical URLs set
+- [ ] Sitemap generation
+
+### Monitoring
+- [ ] Sentry error tracking
+- [ ] Vercel Analytics
+- [ ] Uptime monitoring
+
+---
+
+## FUTURE (Post-MVP / v1.1+)
+
+### The You Agent System
+- [ ] you-agent/ directory with soul.md, agent.md, skills/
+- [ ] Agent harness for platform operations
+- [ ] MCP endpoint (mcp.you.md/<username>)
+- [ ] Agent-to-agent communication protocol
+
+### Features
+- [ ] Verified badges (domain, LinkedIn, GitHub verification)
+- [ ] Private vault encryption (AES-256-GCM)
+- [ ] Stripe Pro plan ($12/mo)
+- [ ] Rate limiting per plan
+- [ ] Custom domains for profiles
+- [ ] Interview mode (youmd interview)
+- [ ] Autonomous refresh (youmd refresh)
+- [ ] Profile analytics dashboard
+- [ ] Profile page theming (v1.2+)
+- [ ] Team/org bundles (v2.0)
+- [ ] Plugin marketplace (v2.0+)
+
+### Integrations
+- [ ] Composio OAuth for connected platforms
+- [ ] Apify API key configuration
+- [ ] Framework PRs (Aider, CrewAI, LangChain, etc.)
+- [ ] skills.sh / clawhub.ai skill submission
+- [ ] SKILL.md in repo
+
+### CLI Enhancements
+- [ ] youmd preview — local dev server
+- [ ] youmd diff — actual diff vs published
+- [ ] Standalone binary (bun build --compile)
+- [ ] curl installer (you.md/install.sh)
