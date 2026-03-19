@@ -181,11 +181,8 @@ export default function SignInPage() {
     }
   };
 
-  // Surface Clerk-level field errors
-  const fieldError =
-    clerkErrors?.identifier?.[0]?.message ??
-    clerkErrors?.password?.[0]?.message ??
-    null;
+  // Field errors handled in catch block
+  const fieldError = null;
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bg))] relative overflow-hidden">

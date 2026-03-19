@@ -135,7 +135,7 @@ function extractError(err: unknown): string {
 
 /* ── Main sign-up page ───────────────────────────────────────── */
 export default function SignUpPage() {
-  const { signUp, errors: clerkErrors, fetchStatus } = useSignUp();
+  const { isLoaded, signUp, setActive } = useSignUp();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -150,7 +150,7 @@ export default function SignUpPage() {
   const [verifyError, setVerifyError] = useState("");
   const [verifying, setVerifying] = useState(false);
 
-  const isBusy = loading || fetchStatus === "fetching";
+  const isBusy = loading || !isLoaded;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -241,12 +241,8 @@ export default function SignUpPage() {
     }
   };
 
-  // Surface Clerk-level field errors
-  const fieldError =
-    clerkErrors?.emailAddress?.[0]?.message ??
-    clerkErrors?.password?.[0]?.message ??
-    clerkErrors?.username?.[0]?.message ??
-    null;
+  // Field errors handled in catch block
+  const fieldError = null;
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bg))] relative overflow-hidden">
