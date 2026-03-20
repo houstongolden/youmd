@@ -4,29 +4,24 @@ import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { useYouAgent, buildProfileContext } from "@/hooks/useYouAgent";
 import { TerminalShell } from "@/components/terminal/TerminalShell";
-import Link from "next/link";
-import PixelYOU from "@/components/PixelYOU";
+import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 
-/* ── Boot sequence lines ───────────────────────────────────── */
+/* ── Boot sequence items ───────────────────────────────────── */
 
 const BOOT_SEQUENCE = [
-  { text: "you.md/v1 -- identity context protocol", delay: 80 },
-  { text: "", delay: 200 },
-  { text: "authenticated.", delay: 100 },
-  { text: "loading identity protocol...", delay: 150 },
-  { text: "you-md/v1 initialized.", delay: 120 },
-  { text: "", delay: 100 },
-  { text: "claiming username: {username}...", delay: 200 },
-  { text: "username claimed.", delay: 100 },
-  { text: "allocating identity bundle...", delay: 180 },
-  { text: "identity bundle created.", delay: 100 },
-  { text: "", delay: 150 },
-  { text: "connecting to agent network...", delay: 250 },
-  { text: "agent online.", delay: 100 },
-  { text: "", delay: 200 },
+  { text: "you.md v0.1.0", className: "text-[hsl(var(--accent))]", delay: 200 },
+  { text: "identity context protocol for the agent internet", className: "text-[hsl(var(--text-secondary))] opacity-60", delay: 500 },
+  { text: "", delay: 700 },
+  { text: "loading identity protocol...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 900 },
+  { text: "connecting to agent network...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 1200 },
+  { text: "loading you-md/v1 engine...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 1500 },
+  { text: "  \u2713 identity schema loaded", className: "text-[hsl(var(--success))]", delay: 1800 },
+  { text: "  \u2713 agent framework ready", className: "text-[hsl(var(--success))]", delay: 2000 },
+  { text: "  \u2713 source connectors online", className: "text-[hsl(var(--success))]", delay: 2200 },
+  { text: "", delay: 2400 },
 ];
 
 /* ── Main component ────────────────────────────────────────── */
@@ -36,18 +31,29 @@ export function InitializeContent() {
   const router = useRouter();
   const createUser = useMutation(api.users.createUser);
 
-  // Check if user already exists in Convex
   const existingUser = useQuery(
     api.users.getByClerkId,
     user?.id ? { clerkId: user.id } : "skip"
   );
 
-  const [phase, setPhase] = useState<"booting" | "claiming" | "ready" | "error">("booting");
-  const [bootLines, setBootLines] = useState<string[]>([]);
+  const [phase, setPhase] = useState<"boot" | "claim" | "portrait" | "ready" | "error">("boot");
+  const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const claimAttempted = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const lineCounter = useRef(0);
 
-  // If user already has a Convex account, redirect to dashboard
+  const addLine = useCallback((content: ReactNode, className?: string) => {
+    const id = `l${lineCounter.current++}`;
+    setLines((prev) => [...prev, { id, content, className }]);
+  }, []);
+
+  // Auto-scroll
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [lines, phase]);
+
+  // Redirect if user already exists
   useEffect(() => {
     if (existingUser && existingUser.username) {
       router.replace("/dashboard");
@@ -57,8 +63,8 @@ export function InitializeContent() {
   // Run boot sequence and auto-claim
   useEffect(() => {
     if (!user || claimAttempted.current) return;
-    if (existingUser !== null) return; // still loading (undefined) or already exists
-    if (existingUser === undefined) return; // still loading
+    if (existingUser !== null) return;
+    if (existingUser === undefined) return;
 
     claimAttempted.current = true;
 
@@ -67,29 +73,31 @@ export function InitializeContent() {
       user.firstName?.toLowerCase().replace(/[^a-z0-9-]/g, "") ||
       "user";
 
-    // Build boot lines with username interpolated
-    const lines = BOOT_SEQUENCE.map((l) => ({
-      ...l,
-      text: l.text.replace("{username}", username),
-    }));
-
-    let i = 0;
-    let totalDelay = 0;
-
-    // Stagger each line
-    for (const line of lines) {
-      totalDelay += line.delay;
-      const idx = i;
+    // Boot sequence
+    BOOT_SEQUENCE.forEach((item) => {
       setTimeout(() => {
-        setBootLines((prev) => [...prev, lines[idx].text]);
-      }, totalDelay);
-      i++;
-    }
+        if (item.text) {
+          addLine(item.text, item.className);
+        } else {
+          addLine("\u00A0");
+        }
+      }, item.delay);
+    });
 
-    // After boot sequence, create the user
-    const claimDelay = totalDelay + 200;
+    // Claim username phase
+    const claimDelay = 2600;
+    setTimeout(() => {
+      setPhase("claim");
+      addLine(
+        <span>
+          claiming @<span className="text-[hsl(var(--accent))]">{username}</span>...
+        </span>,
+        "text-[hsl(var(--text-secondary))]"
+      );
+    }, claimDelay);
+
+    // Create user in Convex
     setTimeout(async () => {
-      setPhase("claiming");
       try {
         await createUser({
           clerkId: user.id,
@@ -97,14 +105,54 @@ export function InitializeContent() {
           email: user.emailAddresses[0]?.emailAddress ?? "",
           displayName: user.fullName ?? undefined,
         });
-        setBootLines((prev) => [...prev, "identity initialized.", ""]);
-        setPhase("ready");
+
+        addLine(
+          <span>
+            <span className="text-[hsl(var(--success))]">{"\u2713"}</span>{" "}
+            @<span className="text-[hsl(var(--accent))]">{username}</span>{" "}
+            <span className="text-[hsl(var(--text-secondary))]">{"\u2014"} claimed and registered</span>
+          </span>
+        );
+        addLine("\u00A0");
+
+        // Portrait phase
+        setTimeout(() => {
+          setPhase("portrait");
+          addLine("generating ascii portrait...", "text-[hsl(var(--text-secondary))] opacity-50");
+
+          setTimeout(() => {
+            const art = [
+              "    \u2591\u2591\u2592\u2592\u2593\u2593\u2588\u2588\u2593\u2593\u2592\u2592\u2591\u2591    ",
+              "  \u2591\u2592\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2592\u2591  ",
+              "  \u2592\u2588\u2588\u2588    \u2588\u2588\u2588\u2588    \u2588\u2588\u2588\u2592  ",
+              "  \u2593\u2588\u2588  \u25CF  \u2588\u2588\u2588\u2588  \u25CF  \u2588\u2588\u2593  ",
+              "  \u2592\u2588\u2588\u2588    \u2588\u2588\u2588\u2588    \u2588\u2588\u2588\u2592  ",
+              "  \u2591\u2592\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2592\u2591  ",
+              "    \u2591\u2591\u2592\u2592\u2593\u2593\u2588\u2588\u2588\u2588\u2593\u2593\u2592\u2592\u2591\u2591    ",
+            ];
+            art.forEach((line) => addLine(
+              <span className="text-[hsl(var(--accent-mid))]">{line}</span>
+            ));
+            addLine("\u00A0");
+
+            setTimeout(() => {
+              addLine(
+                <span>
+                  <span className="text-[hsl(var(--success))]">{"\u2713"}</span>{" "}
+                  portrait generated {"\u2014"} 120 col detail
+                </span>
+              );
+              addLine("\u00A0");
+              setTimeout(() => setPhase("ready"), 400);
+            }, 400);
+          }, 600);
+        }, 800);
       } catch (err) {
         setError(err instanceof Error ? err.message : "failed to claim username");
         setPhase("error");
       }
-    }, claimDelay);
-  }, [user, existingUser, createUser]);
+    }, claimDelay + 800);
+  }, [user, existingUser, createUser, addLine]);
 
   // Loading state
   if (!user || existingUser === undefined) {
@@ -117,60 +165,33 @@ export function InitializeContent() {
     );
   }
 
-  // Boot sequence / claiming phase
+  // Boot/claim/portrait phase — show centered terminal
   if (phase !== "ready") {
     return (
-      <div className="min-h-screen flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
-        {/* Nav */}
-        <nav className="flex items-center justify-between px-4 py-2.5 border-b border-[hsl(var(--border))] shrink-0">
-          <Link href="/" className="inline-block">
-            <PixelYOU />
-          </Link>
-          <div className="flex items-center gap-3 text-xs font-mono text-[hsl(var(--text-secondary))]">
-            <span>initializing</span>
-          </div>
-        </nav>
-
-        {/* Terminal */}
-        <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full">
-          <div className="terminal-panel-header">
-            <div className="terminal-dot" />
-            <div className="terminal-dot" />
-            <div className="terminal-dot" />
-            <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 ml-2">
-              initialize
-            </span>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-5 py-5">
-            <div className="space-y-0.5 font-mono text-[13px]">
-              {bootLines.map((line, i) =>
-                line === "" ? (
-                  <div key={i} className="h-3" />
-                ) : (
-                  <p
-                    key={i}
-                    className="text-[hsl(var(--text-secondary))] opacity-70 leading-relaxed"
-                  >
-                    &gt; {line}
-                  </p>
-                )
-              )}
-              {phase === "claiming" && (
-                <p className="text-[hsl(var(--accent-mid))] animate-pulse">
-                  &gt; claiming...
-                </p>
-              )}
+      <div className="min-h-screen bg-[hsl(var(--bg))] flex flex-col">
+        <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4">
+          <div
+            className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
+            style={{ borderRadius: "8px" }}
+          >
+            <TerminalHeader title="you.md — initialize" />
+            <div
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto p-6 md:p-8 font-mono text-[14px] leading-relaxed"
+            >
+              {lines.map((line) => (
+                <div key={line.id} className={line.className || ""}>
+                  {line.content || "\u00A0"}
+                </div>
+              ))}
               {phase === "error" && (
-                <div className="space-y-2 mt-2">
-                  <p className="text-[hsl(var(--accent))]">
-                    &gt; error: {error}
-                  </p>
+                <div className="mt-2 space-y-2">
+                  <div className="text-[hsl(var(--accent))]">ERR: {error}</div>
                   <button
                     onClick={() => router.push("/sign-up")}
-                    className="text-xs font-mono text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] transition-colors"
+                    className="text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] transition-colors text-sm"
                   >
-                    &gt; try again
+                    {"\u2192"} try again
                   </button>
                 </div>
               )}
@@ -181,7 +202,7 @@ export function InitializeContent() {
     );
   }
 
-  // Ready — show full-width terminal with agent conversation
+  // Ready — onboarding agent
   return <OnboardingTerminal />;
 }
 
@@ -210,23 +231,8 @@ function OnboardingTerminal() {
   const agent = useYouAgent({
     isOnboarding: true,
     onboardingGreeting,
-    onDone: () => {
-      router.push("/dashboard");
-    },
+    onDone: () => router.push("/dashboard"),
   });
-
-  // Track if welcome line has been added
-  const welcomeAdded = useRef(false);
-
-  // Add a welcome system notice on mount
-  useEffect(() => {
-    if (!welcomeAdded.current && convexUser) {
-      welcomeAdded.current = true;
-      agent.addSystemMessage(
-        `identity bundle initialized for @${username}. the agent will help you build your profile.`
-      );
-    }
-  }, [convexUser, username]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!convexUser) {
     return (
@@ -239,48 +245,38 @@ function OnboardingTerminal() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-4 py-2.5 border-b border-[hsl(var(--border))] shrink-0">
-        <Link href="/" className="inline-block">
-          <PixelYOU />
-        </Link>
-        <div className="flex items-center gap-3 text-xs font-mono text-[hsl(var(--text-secondary))]">
-          <span className="text-[hsl(var(--text-primary))]">@{username}</span>
-          <span className="text-[hsl(var(--border))]">|</span>
-          <span>onboarding</span>
-          <span className="text-[hsl(var(--border))]">|</span>
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] transition-colors"
-          >
-            skip &gt;
-          </button>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[hsl(var(--bg))] flex flex-col">
+      <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4">
+        <div
+          className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
+          style={{ borderRadius: "8px" }}
+        >
+          <TerminalHeader title="you.md — agent" />
 
-      {/* Terminal */}
-      <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full min-h-0">
-        {/* Terminal header */}
-        <div className="terminal-panel-header">
-          <div className="terminal-dot" />
-          <div className="terminal-dot" />
-          <div className="terminal-dot" />
-          <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 ml-2">
-            you.md agent
-          </span>
-        </div>
+          {/* Skip to dashboard */}
+          <div className="flex items-center justify-between px-4 py-1.5 border-b border-[hsl(var(--border))]">
+            <span className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-50">
+              onboarding @{username}
+            </span>
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="text-[11px] font-mono text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] transition-colors"
+            >
+              skip {"\u2192"}
+            </button>
+          </div>
 
-        <TerminalShell
-          displayMessages={agent.displayMessages}
-          input={agent.input}
-          setInput={agent.setInput}
-          isThinking={agent.isThinking}
-          thinkingPhrase={agent.thinkingPhrase}
-          messagesEndRef={agent.messagesEndRef}
-          textareaRef={agent.textareaRef}
-          sendMessage={agent.sendMessage}
-        />
+          <TerminalShell
+            displayMessages={agent.displayMessages}
+            input={agent.input}
+            setInput={agent.setInput}
+            isThinking={agent.isThinking}
+            thinkingPhrase={agent.thinkingPhrase}
+            messagesEndRef={agent.messagesEndRef}
+            textareaRef={agent.textareaRef}
+            sendMessage={agent.sendMessage}
+          />
+        </div>
       </div>
     </div>
   );

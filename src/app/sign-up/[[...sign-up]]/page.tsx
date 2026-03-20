@@ -2,418 +2,332 @@
 
 import { useSignUp } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useState, useRef, useEffect, useCallback, KeyboardEvent } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import Link from "next/link";
-import PixelYOU from "@/components/PixelYOU";
-
-/* ── Types ─────────────────────────────────────────────────── */
-
-type Step =
-  | "email"
-  | "password"
-  | "username"
-  | "processing"
-  | "verify"
-  | "verifying"
-  | "finalizing"
-  | "done"
-  | "error";
-
-interface TermLine {
-  type: "system" | "input" | "error" | "success" | "blank";
-  text: string;
-}
+import { TerminalHeader } from "@/components/terminal/TerminalHeader";
+import { TerminalAuthInput } from "@/components/terminal/TerminalAuthInput";
 
 /* ── Clerk error extraction ────────────────────────────────── */
 
-function extractError(err: unknown): {
-  message: string;
-  param?: string;
-} {
+function extractError(err: unknown): string {
   const clerkErr = err as {
-    errors?: {
-      message?: string;
-      longMessage?: string;
-      meta?: { paramName?: string };
-    }[];
+    errors?: { message?: string; longMessage?: string }[];
     message?: string;
   };
-  return {
-    message:
-      clerkErr.errors?.[0]?.longMessage ??
-      clerkErr.errors?.[0]?.message ??
-      clerkErr.message ??
-      "initialization failed. try again.",
-    param: clerkErr.errors?.[0]?.meta?.paramName,
-  };
+  return (
+    clerkErr.errors?.[0]?.longMessage ??
+    clerkErr.errors?.[0]?.message ??
+    clerkErr.message ??
+    "initialization failed. try again."
+  );
 }
 
-/* ── Typewriter helper ─────────────────────────────────────── */
+/* ── Main page ─────────────────────────────────────────────── */
 
-function useTypewriter(
-  lines: string[],
-  delay: number,
-  onDone: () => void
-) {
-  const [displayed, setDisplayed] = useState<string[]>([]);
-  const doneRef = useRef(false);
-
-  useEffect(() => {
-    if (doneRef.current) return;
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < lines.length) {
-        setDisplayed((prev) => [...prev, lines[i]]);
-        i++;
-      } else {
-        clearInterval(interval);
-        if (!doneRef.current) {
-          doneRef.current = true;
-          onDone();
-        }
-      }
-    }, delay);
-    return () => clearInterval(interval);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return displayed;
-}
-
-/* ── Main sign-up page ─────────────────────────────────────── */
+type Step = "boot" | "email" | "password" | "username" | "processing" | "verify" | "verifying" | "done";
 
 export default function SignUpPage() {
   const signUpHook = useSignUp();
   const signUp = signUpHook.signUp;
   const router = useRouter();
 
-  const [bootDone, setBootDone] = useState(false);
-  const [step, setStep] = useState<Step>("email");
-  const [lines, setLines] = useState<TermLine[]>([]);
-  const [input, setInput] = useState("");
+  const [step, setStep] = useState<Step>("boot");
+  const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const lineCounter = useRef(0);
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  // Boot sequence
-  const bootLines = useTypewriter(
-    [
-      "you.md/v1 -- identity context protocol",
-      "mcp for your identity",
-      "",
-      "initializing auth sequence...",
-      "ready.",
-      "",
-    ],
-    120,
-    () => setBootDone(true)
-  );
+  const addLine = useCallback((content: ReactNode, className?: string) => {
+    const id = `l${lineCounter.current++}`;
+    setLines((prev) => [...prev, { id, content, className }]);
+  }, []);
 
   // Auto-scroll
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [lines, bootLines]);
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [lines, step]);
 
-  // Auto-focus input when step changes
+  // Boot sequence
   useEffect(() => {
-    if (bootDone) {
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [step, bootDone]);
+    const timers = [
+      setTimeout(() => addLine("you.md v0.1.0", "text-[hsl(var(--accent))]"), 200),
+      setTimeout(() => addLine("identity context protocol for the agent internet", "text-[hsl(var(--text-secondary))] opacity-60"), 600),
+      setTimeout(() => addLine("\u00A0"), 900),
+      setTimeout(() => addLine("initializing authentication...", "text-[hsl(var(--text-secondary))] opacity-50"), 1100),
+      setTimeout(() => addLine("\u00A0"), 1400),
+      setTimeout(() => setStep("email"), 1600),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [addLine]);
 
-  const addLine = useCallback((line: TermLine) => {
-    setLines((prev) => [...prev, line]);
-  }, []);
+  // Handlers
+  const handleEmail = useCallback((val: string) => {
+    setEmail(val);
+    addLine(
+      <span>
+        <span className="text-[hsl(var(--accent))]">email:</span>{" "}
+        <span className="text-[hsl(var(--text-secondary))]">{val}</span>
+      </span>
+    );
+    addLine("\u00A0");
+    setTimeout(() => setStep("password"), 300);
+  }, [addLine]);
 
-  const addLines = useCallback((newLines: TermLine[]) => {
-    setLines((prev) => [...prev, ...newLines]);
-  }, []);
+  const handlePassword = useCallback((val: string) => {
+    setPassword(val);
+    addLine(
+      <span>
+        <span className="text-[hsl(var(--accent))]">password:</span>{" "}
+        <span className="text-[hsl(var(--text-secondary))]">{"\u2022".repeat(val.length)}</span>
+      </span>
+    );
+    addLine("\u00A0");
+    setTimeout(() => setStep("username"), 300);
+  }, [addLine]);
 
-  const promptLabel: Record<string, string> = {
-    email: "enter email",
-    password: "choose password",
-    username: "claim username",
-    verify: "enter verification code",
-  };
+  const handleUsername = useCallback(async (val: string) => {
+    addLine(
+      <span>
+        <span className="text-[hsl(var(--accent))]">username:</span>{" "}
+        <span className="text-[hsl(var(--text-secondary))]">{val}</span>
+      </span>
+    );
+    addLine("\u00A0");
+    setStep("processing");
 
-  const isInputStep = ["email", "password", "username", "verify"].includes(step);
+    if (!signUp) return;
 
-  const handleSubmit = useCallback(async () => {
-    const value = input.trim();
-    if (!value || !signUp) return;
-    setInput("");
+    addLine("initializing identity bundle...", "text-[hsl(var(--text-secondary))] opacity-50");
 
-    switch (step) {
-      case "email": {
-        addLine({ type: "input", text: value });
-        setEmail(value);
-        addLine({ type: "blank", text: "" });
-        setStep("password");
-        break;
-      }
-      case "password": {
-        addLine({ type: "input", text: "*".repeat(value.length) });
-        setPassword(value);
-        addLine({ type: "blank", text: "" });
+    try {
+      const result = await signUp.password({
+        emailAddress: email,
+        password,
+        username: val,
+      });
+
+      if (result.error) {
+        addLine(
+          <span className="text-[hsl(var(--accent))]">
+            ERR: {result.error.message ?? "initialization failed."}
+          </span>
+        );
+        addLine("\u00A0");
         setStep("username");
-        break;
+        return;
       }
-      case "username": {
-        addLine({ type: "input", text: value });
-        addLine({ type: "blank", text: "" });
-        setStep("processing");
 
-        addLine({ type: "system", text: "initializing identity bundle..." });
+      if (signUp.status === "complete") {
+        addLine(
+          <span className="text-[hsl(var(--success))]">{"\u2713"} identity created</span>
+        );
+        addLine(
+          <span className="text-[hsl(var(--text-secondary))] opacity-60">
+            {"\u2192"} redirecting to /initialize...
+          </span>
+        );
+        setStep("done");
+        await signUp.finalize({ navigate: () => router.push("/initialize") });
+        return;
+      }
 
-        try {
-          const result = await signUp.password({
-            emailAddress: email,
-            password,
-            username: value,
-          });
-
-          if (result.error) {
-            addLines([
-              { type: "error", text: `ERR: ${result.error.message ?? "initialization failed."}` },
-              { type: "blank", text: "" },
-            ]);
-            setStep("username");
-            return;
-          }
-
-          if (signUp.status === "complete") {
-            addLine({ type: "success", text: "identity created." });
-            addLine({ type: "system", text: "finalizing session..." });
-            setStep("finalizing");
-            const finalizeResult = await signUp.finalize({
-              navigate: () => router.push("/initialize"),
-            });
-            if (finalizeResult.error) {
-              addLine({ type: "error", text: `ERR: ${finalizeResult.error.message}` });
-              setStep("error");
-            }
-            return;
-          }
-
-          // Email verification required
-          if (
-            signUp.status === "missing_requirements" &&
-            signUp.unverifiedFields?.includes("email_address")
-          ) {
-            const sendResult = await signUp.verifications.sendEmailCode();
-            if (sendResult.error) {
-              addLine({ type: "error", text: `ERR: ${sendResult.error.message}` });
-              setStep("error");
-              return;
-            }
-            addLines([
-              { type: "success", text: "account created." },
-              { type: "system", text: `verification code sent to ${email}` },
-              { type: "blank", text: "" },
-            ]);
-            setStep("verify");
-          }
-        } catch (err: unknown) {
-          const { message, param } = extractError(err);
-          addLines([
-            { type: "error", text: `ERR: ${message}` },
-            { type: "blank", text: "" },
-          ]);
-          // Restart from the problematic field
-          if (param === "username") setStep("username");
-          else if (param === "password") setStep("password");
-          else setStep("email");
+      // Email verification required
+      if (
+        signUp.status === "missing_requirements" &&
+        signUp.unverifiedFields?.includes("email_address")
+      ) {
+        const sendResult = await signUp.verifications.sendEmailCode();
+        if (sendResult.error) {
+          addLine(
+            <span className="text-[hsl(var(--accent))]">
+              ERR: {sendResult.error.message}
+            </span>
+          );
+          setStep("username");
+          return;
         }
-        break;
+        addLine(
+          <span className="text-[hsl(var(--success))]">{"\u2713"} account created</span>
+        );
+        addLine(
+          <span className="text-[hsl(var(--text-secondary))] opacity-60">
+            {"\u2192"} verification code sent to {email}
+          </span>
+        );
+        addLine("\u00A0");
+        setTimeout(() => setStep("verify"), 400);
       }
-      case "verify": {
-        addLine({ type: "input", text: value });
-        addLine({ type: "blank", text: "" });
-        setStep("verifying");
-        addLine({ type: "system", text: "verifying..." });
+    } catch (err: unknown) {
+      addLine(
+        <span className="text-[hsl(var(--accent))]">
+          ERR: {extractError(err)}
+        </span>
+      );
+      addLine("\u00A0");
+      setStep("email");
+    }
+  }, [email, password, signUp, router, addLine]);
 
-        try {
-          const verifyResult = await signUp.verifications.verifyEmailCode({
-            code: value,
-          });
+  const handleVerify = useCallback(async (val: string) => {
+    addLine(
+      <span>
+        <span className="text-[hsl(var(--accent))]">code:</span>{" "}
+        <span className="text-[hsl(var(--text-secondary))]">{val}</span>
+      </span>
+    );
+    addLine("\u00A0");
+    setStep("verifying");
 
-          if (verifyResult.error) {
-            addLines([
-              { type: "error", text: `ERR: ${verifyResult.error.message ?? "invalid code."}` },
-              { type: "blank", text: "" },
-            ]);
-            setStep("verify");
-            return;
-          }
+    if (!signUp) return;
 
-          if (signUp.status === "complete") {
-            addLine({ type: "success", text: "verified." });
-            addLine({ type: "system", text: "initializing session..." });
-            setStep("finalizing");
-            const finalizeResult = await signUp.finalize({
-              navigate: () => router.push("/initialize"),
-            });
-            if (finalizeResult.error) {
-              addLine({ type: "error", text: `ERR: ${finalizeResult.error.message}` });
-              setStep("error");
-            }
-          } else {
-            addLines([
-              { type: "error", text: "verification incomplete. check your code." },
-              { type: "blank", text: "" },
-            ]);
-            setStep("verify");
-          }
-        } catch (err: unknown) {
-          addLines([
-            { type: "error", text: `ERR: ${extractError(err).message}` },
-            { type: "blank", text: "" },
-          ]);
-          setStep("verify");
-        }
-        break;
+    addLine(
+      <span className="text-[hsl(var(--text-secondary))] opacity-50">
+        {"\u25CC"} verifying...
+      </span>
+    );
+
+    try {
+      const verifyResult = await signUp.verifications.verifyEmailCode({ code: val });
+
+      if (verifyResult.error) {
+        addLine(
+          <span className="text-[hsl(var(--accent))]">
+            ERR: {verifyResult.error.message ?? "invalid code."}
+          </span>
+        );
+        addLine("\u00A0");
+        setStep("verify");
+        return;
       }
-    }
-  }, [input, signUp, step, email, password, router, addLine, addLines]);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleSubmit();
+      if (signUp.status === "complete") {
+        addLine(
+          <span className="text-[hsl(var(--success))]">{"\u2713"} verified</span>
+        );
+        addLine(
+          <span className="text-[hsl(var(--text-secondary))] opacity-60">
+            {"\u2192"} redirecting to /initialize...
+          </span>
+        );
+        setStep("done");
+        await signUp.finalize({ navigate: () => router.push("/initialize") });
+      } else {
+        addLine(
+          <span className="text-[hsl(var(--accent))]">
+            ERR: verification incomplete. check your code.
+          </span>
+        );
+        addLine("\u00A0");
+        setStep("verify");
+      }
+    } catch (err: unknown) {
+      addLine(
+        <span className="text-[hsl(var(--accent))]">
+          ERR: {extractError(err)}
+        </span>
+      );
+      addLine("\u00A0");
+      setStep("verify");
     }
-  };
+  }, [signUp, router, addLine]);
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bg))] flex flex-col">
-      {/* Nav bar */}
-      <nav className="flex items-center justify-between px-4 py-2.5 border-b border-[hsl(var(--border))] shrink-0">
-        <Link href="/" className="inline-block">
-          <PixelYOU />
-        </Link>
-        <div className="flex items-center gap-3 text-xs font-mono">
-          <span className="text-[hsl(var(--text-secondary))] opacity-50">
-            already initialized?
-          </span>
-          <Link
-            href="/sign-in"
-            className="text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-light))] transition-colors"
+    <div className="min-h-screen bg-[hsl(var(--bg))] flex items-center justify-center p-4">
+      <div className="w-full max-w-3xl">
+        {/* Terminal panel */}
+        <div
+          className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
+          style={{ borderRadius: "8px" }}
+        >
+          <TerminalHeader title="you.md — initialize" />
+
+          {/* Terminal body */}
+          <div
+            ref={scrollRef}
+            className="p-6 md:p-8 min-h-[500px] max-h-[70vh] overflow-y-auto font-mono text-[14px] leading-relaxed"
           >
-            &gt; sign in
-          </Link>
-        </div>
-      </nav>
-
-      {/* Terminal body */}
-      <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full">
-        {/* Terminal header with dots */}
-        <div className="terminal-panel-header">
-          <div className="terminal-dot" />
-          <div className="terminal-dot" />
-          <div className="terminal-dot" />
-          <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 ml-2">
-            auth.init
-          </span>
-        </div>
-
-        {/* Scrollable terminal output */}
-        <div className="flex-1 overflow-y-auto px-5 py-5">
-          <div className="space-y-0.5 font-mono text-[13px]">
-            {/* Boot sequence */}
-            {bootLines.map((text, i) =>
-              text === "" ? (
-                <div key={`boot-${i}`} className="h-3" />
-              ) : (
-                <p
-                  key={`boot-${i}`}
-                  className="text-[hsl(var(--text-secondary))] opacity-60 leading-relaxed"
-                >
-                  {text}
-                </p>
-              )
-            )}
-
-            {/* Interactive lines */}
-            {lines.map((line, i) => (
-              <LineRenderer key={`line-${i}`} line={line} />
+            {/* Rendered lines */}
+            {lines.map((line) => (
+              <div key={line.id} className={line.className || ""}>
+                {line.content || "\u00A0"}
+              </div>
             ))}
 
-            {/* Current prompt label */}
-            {bootDone && isInputStep && (
-              <div className="pt-1">
-                <span className="text-[hsl(var(--text-secondary))] opacity-50 text-[11px]">
-                  $ {promptLabel[step]}
-                </span>
+            {/* Active input */}
+            {step === "email" && (
+              <div className="mt-2">
+                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
+                  enter your email to begin
+                </div>
+                <TerminalAuthInput
+                  prompt=">"
+                  placeholder="email"
+                  onSubmit={handleEmail}
+                />
               </div>
             )}
 
-            {/* Processing indicator */}
-            {(step === "processing" || step === "verifying" || step === "finalizing") && (
-              <p className="text-[hsl(var(--accent-mid))] animate-pulse pt-1">
-                &gt; {step === "processing" ? "processing" : step === "verifying" ? "verifying" : "finalizing"}...
-              </p>
+            {step === "password" && (
+              <div className="mt-2">
+                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
+                  choose a password
+                </div>
+                <TerminalAuthInput
+                  prompt=">"
+                  type="password"
+                  onSubmit={handlePassword}
+                />
+              </div>
             )}
 
-            <div ref={bottomRef} />
+            {step === "username" && (
+              <div className="mt-2">
+                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
+                  claim your username
+                </div>
+                <TerminalAuthInput
+                  prompt=">"
+                  placeholder="username"
+                  onSubmit={handleUsername}
+                />
+              </div>
+            )}
+
+            {step === "verify" && (
+              <div className="mt-2">
+                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
+                  enter verification code
+                </div>
+                <TerminalAuthInput
+                  prompt=">"
+                  placeholder="000000"
+                  onSubmit={handleVerify}
+                />
+              </div>
+            )}
+
+            {step === "verifying" && (
+              <div className="text-[hsl(var(--accent-mid))] animate-pulse">
+                {"\u25CC"} verifying...
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Input area */}
-        {bootDone && isInputStep && (
-          <div className="shrink-0 border-t border-[hsl(var(--border))] px-5 py-3">
-            <div className="flex items-center gap-2">
-              <span className="text-[hsl(var(--accent))] font-mono text-[13px] select-none">
-                &gt;
-              </span>
-              <input
-                ref={inputRef}
-                type={step === "password" ? "password" : "text"}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={step === "verify" ? "______" : "_"}
-                autoComplete={
-                  step === "email"
-                    ? "email"
-                    : step === "password"
-                      ? "new-password"
-                      : step === "username"
-                        ? "username"
-                        : "one-time-code"
-                }
-                className="flex-1 bg-transparent border-none outline-none font-mono text-[13px] text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-secondary))]/15"
-                autoFocus
-              />
-              <span className="text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-25 uppercase tracking-widest">
-                enter
-              </span>
-            </div>
-          </div>
-        )}
+        {/* Link below terminal */}
+        <div className="mt-4 text-center">
+          <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
+            already initialized?{" "}
+            <Link
+              href="/sign-in"
+              className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
+            >
+              sign in
+            </Link>
+          </span>
+        </div>
       </div>
     </div>
-  );
-}
-
-/* ── Line renderer ─────────────────────────────────────────── */
-
-function LineRenderer({ line }: { line: TermLine }) {
-  if (line.type === "blank") return <div className="h-3" />;
-
-  const style = {
-    system: "text-[hsl(var(--text-secondary))] opacity-60",
-    input: "text-[hsl(var(--text-primary))]",
-    error: "text-[hsl(var(--accent))]",
-    success: "text-[hsl(var(--success))]",
-    blank: "",
-  }[line.type];
-
-  const prefix = line.type === "input" ? "> " : "> ";
-
-  return (
-    <p className={`font-mono text-[13px] leading-relaxed ${style}`}>
-      {prefix}
-      {line.text}
-    </p>
   );
 }

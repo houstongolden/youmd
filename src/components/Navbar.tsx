@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 
 const sections = [
   { id: "how-it-works", label: "--how-it-works" },
@@ -11,6 +12,7 @@ const sections = [
 ];
 
 const Navbar = () => {
+  const { isSignedIn, user } = useUser();
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -71,12 +73,34 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/sign-up"
-              className="hidden md:inline-block cta-primary px-3 py-1 text-[10px]"
-            >
-              &gt; enter system
-            </Link>
+            {isSignedIn ? (
+              <Link
+                href="/dashboard"
+                className="hidden md:flex items-center gap-2 group"
+              >
+                {user?.imageUrl ? (
+                  <img
+                    src={user.imageUrl}
+                    alt=""
+                    className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors"
+                  />
+                ) : (
+                  <span className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[9px] text-accent group-hover:border-accent transition-colors">
+                    {user?.username?.[0] ?? user?.firstName?.[0] ?? ">"}
+                  </span>
+                )}
+                <span className="font-mono text-[10px] text-muted-foreground/60 group-hover:text-accent transition-colors">
+                  @{user?.username ?? "you"}
+                </span>
+              </Link>
+            ) : (
+              <Link
+                href="/sign-up"
+                className="hidden md:inline-block cta-primary px-3 py-1 text-[10px]"
+              >
+                &gt; enter system
+              </Link>
+            )}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="md:hidden text-muted-foreground p-1"
@@ -109,13 +133,36 @@ const Navbar = () => {
           >
             --profiles
           </Link>
-          <Link
-            href="/sign-up"
-            onClick={() => setMobileOpen(false)}
-            className="cta-primary px-6 py-2.5 text-[12px] mt-4"
-          >
-            &gt; enter system
-          </Link>
+          {isSignedIn ? (
+            <Link
+              href="/dashboard"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 mt-4"
+            >
+              {user?.imageUrl ? (
+                <img
+                  src={user.imageUrl}
+                  alt=""
+                  className="w-6 h-6 rounded-sm border border-[hsl(var(--border))]"
+                />
+              ) : (
+                <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[10px] text-accent">
+                  {user?.username?.[0] ?? user?.firstName?.[0] ?? ">"}
+                </span>
+              )}
+              <span className="font-mono text-[14px] text-accent">
+                @{user?.username ?? "you"} &gt;
+              </span>
+            </Link>
+          ) : (
+            <Link
+              href="/sign-up"
+              onClick={() => setMobileOpen(false)}
+              className="cta-primary px-6 py-2.5 text-[12px] mt-4"
+            >
+              &gt; enter system
+            </Link>
+          )}
         </div>
       )}
     </>

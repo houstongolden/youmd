@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-03-19 — Terminal-First UI Architecture
+- **No more forms.** Dashboard is now split-screen: 35% terminal + 65% preview pane
+- New `/initialize` route: auto-claims username, runs boot sequence, launches onboarding agent
+- Extracted `useYouAgent` hook from 913-line chat-content.tsx — shared across all terminal UIs
+- Terminal components: TerminalShell, MessageBubble, ThinkingIndicator, TerminalInput, TerminalStatusBar
+- Right pane system: ProfilePreviewPane, SettingsPane, TokensPane, BillingPane, JsonPane
+- Slash commands switch panes: /preview, /settings, /billing, /tokens, /json, /publish, /status, /help
+- Sign-up flow: signup → /initialize (auto-boot) → agent conversation → /dashboard
+- Deleted old form-based dashboard (1100 lines), chat page (913 lines), claim form (133 lines)
+- Mobile responsive: terminal full-width with toggle button for preview pane
+- All /claim links → /sign-up, middleware updated for /initialize
+
 ## 2026-03-19 — Design System Migration (PRD v2.3)
 - Complete visual rebrand: monochrome + burnt orange (#C46A3A)
 - Ported 20+ components from Lovable prototype

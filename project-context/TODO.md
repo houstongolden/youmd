@@ -61,13 +61,28 @@ PRD Version: 2.3
 - [x] CTA Footer
 
 ### Web App Pages
-- [x] Dashboard with tabs (Profile, Sources, Settings)
-- [x] Web chat agent (/dashboard/chat)
-- [x] Username claim page
+- [x] Dashboard with tabs (Profile, Sources, Settings) — REPLACED by terminal split-screen
+- [x] Web chat agent (/dashboard/chat) — REPLACED: terminal IS the dashboard now
+- [x] Username claim page — REPLACED: /initialize auto-claims
 - [x] Sign-in/sign-up (Clerk branded)
 - [x] Public profile page with JSON-LD
 - [x] OG social card generation
 - [x] 404 page
+
+### Terminal-First UI Architecture (2026-03-19)
+- [x] useYouAgent hook — extracted all conversation logic from chat-content.tsx
+- [x] Terminal components (TerminalShell, MessageBubble, ThinkingIndicator, TerminalInput, TerminalStatusBar)
+- [x] /initialize route — auto-claim + boot sequence + onboarding terminal
+- [x] Split-screen dashboard — 35% terminal left, 65% preview right
+- [x] Right pane system (ProfilePreviewPane, SettingsPane, TokensPane, BillingPane, JsonPane)
+- [x] Slash commands switch right pane (/preview, /settings, /billing, /tokens, /json)
+- [x] Sign-up redirects to /initialize (not /claim)
+- [x] /claim redirects to /sign-up
+- [x] Dashboard redirects to /initialize if no Convex user
+- [x] Mobile: terminal full-width with toggle button for preview
+- [x] Deleted /dashboard/chat (dead code)
+- [x] Deleted claim-form.tsx (dead code)
+- [x] All /claim links updated to /sign-up
 
 ---
 
@@ -90,11 +105,6 @@ PRD Version: 2.3
 - [ ] Agent reads + integrations metrics in accent color
 - [ ] Search/filter/sort
 
-### Dashboard Redesign (terminal-native)
-- [ ] Adapt dashboard to new design system (terminal panels, not cards)
-- [ ] Remove old coral/sky/gold references
-- [ ] Web chat agent styled as terminal panel
-
 ### Landing Page Polish
 - [ ] Verify all sections match Lovable prototype exactly
 - [ ] Boot sequence typewriter timing
@@ -108,7 +118,7 @@ PRD Version: 2.3
 ## UP NEXT (v1 MVP)
 
 ### End-to-End Testing
-- [ ] Sign up → claim username → edit profile → save → publish → view live
+- [ ] Sign up → /initialize → boot sequence → agent → /done → dashboard
 - [ ] CLI: npx youmd init → build → publish → view live
 - [ ] Pipeline: add source URL → trigger build → review → approve
 - [ ] Context link: create → share → agent fetches → gets identity

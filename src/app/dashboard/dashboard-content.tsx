@@ -1,13 +1,13 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useUser, SignOutButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useYouAgent, type RightPane } from "@/hooks/useYouAgent";
 import { TerminalShell } from "@/components/terminal/TerminalShell";
-import { TerminalStatusBar } from "@/components/terminal/TerminalStatusBar";
+import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { ProfilePreviewPane } from "@/components/panes/ProfilePreviewPane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
 import { BillingPane } from "@/components/panes/BillingPane";
@@ -36,7 +36,7 @@ export function DashboardContent() {
     },
   });
 
-  // Clerk user exists but no Convex user — redirect to /initialize
+  // No Convex user — redirect to /initialize
   useEffect(() => {
     if (convexUser === null) {
       router.replace("/initialize");
@@ -60,41 +60,56 @@ export function DashboardContent() {
 
   return (
     <div className="h-screen flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
-      {/* Status bar */}
-      <TerminalStatusBar
-        username={username}
-        plan={plan}
-        version={version}
-        isPublished={isPublished}
-      />
+      {/* Top bar — matching reference shell */}
+      <div className="h-12 border-b border-[hsl(var(--border))] flex items-center justify-between px-4 shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[hsl(var(--accent))] font-bold text-sm">YOU</span>
+          <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-40">
+            v{version ?? "0"}.0
+          </span>
+          <span className="text-[hsl(var(--border))]">|</span>
+          <span className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-50">
+            @{username}
+          </span>
+          <span className="text-[hsl(var(--border))]">|</span>
+          <span
+            className={`text-[10px] font-mono ${
+              isPublished
+                ? "text-[hsl(var(--success))]"
+                : "text-[hsl(var(--text-secondary))] opacity-40"
+            }`}
+          >
+            {isPublished ? "published" : "draft"}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* Mobile toggle */}
+          <button
+            onClick={() => setMobileShowPreview(!mobileShowPreview)}
+            className="md:hidden font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-60 hover:text-[hsl(var(--accent))] transition-colors"
+          >
+            {mobileShowPreview ? "terminal" : "preview"}
+          </button>
+          <SignOutButton>
+            <button className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40 hover:text-[hsl(var(--text-primary))] transition-colors">
+              sign out
+            </button>
+          </SignOutButton>
+          <div className="w-7 h-7 rounded-full bg-[hsl(var(--accent))]/20 flex items-center justify-center">
+            <span className="text-[hsl(var(--accent))] text-xs font-mono">
+              {username[0]?.toUpperCase()}
+            </span>
+          </div>
+        </div>
+      </div>
 
-      {/* Split-screen content */}
+      {/* Split layout */}
       <div className="flex-1 flex min-h-0">
-        {/* Left: Terminal (35% on desktop, full on mobile) */}
+        {/* Left: Terminal — 35% */}
         <div
           className={`${mobileShowPreview ? "hidden md:flex" : "flex"} md:w-[35%] w-full flex-col border-r border-[hsl(var(--border))] min-h-0`}
         >
-          {/* Terminal label bar */}
-          <div className="flex items-center justify-between px-4 py-1.5 border-b border-[hsl(var(--border))] shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1.5">
-                <div className="terminal-dot" />
-                <div className="terminal-dot" />
-                <div className="terminal-dot" />
-              </div>
-              <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-50">
-                agent
-              </span>
-            </div>
-            {/* Mobile: toggle to preview */}
-            <button
-              onClick={() => setMobileShowPreview(true)}
-              className="md:hidden text-[10px] font-mono text-[hsl(var(--accent-mid))]"
-            >
-              preview &gt;
-            </button>
-          </div>
-
+          <TerminalHeader title="terminal" />
           <TerminalShell
             displayMessages={agent.displayMessages}
             input={agent.input}
@@ -107,7 +122,7 @@ export function DashboardContent() {
           />
         </div>
 
-        {/* Right: Preview pane (65% on desktop, toggled on mobile) */}
+        {/* Right: Preview — 65% */}
         <div
           className={`${mobileShowPreview ? "flex" : "hidden md:flex"} md:w-[65%] w-full flex-col min-h-0`}
         >
@@ -131,22 +146,12 @@ export function DashboardContent() {
                 </button>
               ))}
             </div>
-            {/* Mobile: back to terminal */}
-            <button
-              onClick={() => setMobileShowPreview(false)}
-              className="md:hidden text-[10px] font-mono text-[hsl(var(--accent-mid))]"
-            >
-              &lt; terminal
-            </button>
           </div>
 
           {/* Active pane */}
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {rightPane === "preview" && (
-              <ProfilePreviewPane
-                userId={convexUser._id}
-                username={username}
-              />
+              <ProfilePreviewPane userId={convexUser._id} username={username} />
             )}
             {rightPane === "json" && <JsonPane userId={convexUser._id} />}
             {rightPane === "settings" && user?.id && (

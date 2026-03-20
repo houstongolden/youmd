@@ -9,13 +9,15 @@ Last Updated: 2026-03-19
 | Open spec you-md/v1 | Done | Directory-based identity bundles |
 | Convex backend | Done | Reactive, serverless, TypeScript-native |
 | Clerk auth | Done | Production: clerk.you.md |
-| Username claim | Done | Real-time availability check |
+| Username claim | Done | Auto-claim via /initialize (no manual form) |
 | Bundle compilation | Done | Server-side via convex/lib/compile.ts |
 | Bundle publishing | Done | Version tracking, unpublish previous |
 | Public profile pages | Done | SSR, JSON-LD, dynamic metadata |
 | OG social cards | Done | Auto-generated per profile |
-| Dashboard editor | Done | Tabbed UI, collapsible sections |
-| Web chat agent | Done | LLM-powered via Convex proxy |
+| Terminal split-screen dashboard | Done | 35% terminal + 65% preview pane |
+| /initialize onboarding | Done | Boot sequence + agent conversation |
+| useYouAgent hook | Done | Shared agent logic for all terminal UIs |
+| Right pane system | Done | /preview, /json, /settings, /tokens, /billing |
 | Source management | Done | Add URLs, view status |
 | Pipeline trigger | Done | From dashboard |
 
