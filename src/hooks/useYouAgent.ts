@@ -392,6 +392,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   );
   const saveBundleFromForm = useMutation(api.me.saveBundleFromForm);
   const publishLatest = useMutation(api.me.publishLatest);
+  const createContextLink = useMutation(api.contextLinks.createLink);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
@@ -589,8 +590,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       if (trimmed === "/help") {
         const helpText = onPaneSwitch
-          ? "available commands:\n/preview -- live profile preview\n/json -- raw you.json\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/status -- bundle status\n/publish -- publish your latest bundle\n/help -- show this message"
-          : "available commands:\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
+          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/preview -- live profile preview\n/json -- raw you.json\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/status -- bundle status\n/publish -- publish your latest bundle\n/help -- show this message"
+          : "available commands:\n/share -- create a shareable identity link\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
 
         setDisplayMessages((prev) => [
           ...prev,
@@ -662,9 +663,66 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         return true;
       }
 
+      // /share — create a context link and generate copyable block
+      if (trimmed === "/share" || trimmed.startsWith("/share ")) {
+        if (!user?.id) {
+          setDisplayMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "user", content: trimmed },
+            {
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: "sign in first to create a shareable context link.",
+            },
+          ]);
+          return true;
+        }
+
+        const isPrivate = trimmed.includes("--private") || trimmed.includes("--full");
+
+        setDisplayMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "user", content: trimmed },
+          { id: crypto.randomUUID(), role: "system-notice", content: "creating context link..." },
+        ]);
+
+        createContextLink({
+          clerkId: user.id,
+          scope: isPrivate ? "full" : "public",
+          ttl: "7d",
+        })
+          .then((result) => {
+            const username = convexUser?.username ?? "user";
+            const shareBlock = `Read my identity context before we start:\n${result.url}\n\nThis is my you.md profile — it contains my bio, projects, values,\npreferences, and how I like to communicate. Use it to understand\nwho I am so we can skip the intro and get straight to work.`;
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(shareBlock).catch(() => {});
+
+            setDisplayMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                role: "system-notice",
+                content: `context link created (${isPrivate ? "full" : "public"} scope, expires 7d)\n\n---\n${shareBlock}\n---\n\ncopied to clipboard. paste into any AI conversation.`,
+              },
+            ]);
+          })
+          .catch((err) => {
+            setDisplayMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                role: "system-notice",
+                content: `share failed: ${err instanceof Error ? err.message : "unknown error"}`,
+              },
+            ]);
+          });
+        return true;
+      }
+
       return false;
     },
-    [latestBundle, convexUser, user?.id, publishLatest, onPaneSwitch, onDone]
+    [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone]
   );
 
   // Send message
