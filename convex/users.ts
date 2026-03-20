@@ -57,6 +57,16 @@ export const checkUsername = query({
       return { available: false, reason: "This username is already taken." };
     }
 
+    // Also check profiles table
+    const existingProfile = await ctx.db
+      .query("profiles")
+      .withIndex("by_username", (q) => q.eq("username", username))
+      .first();
+
+    if (existingProfile) {
+      return { available: false, reason: "This username is already taken." };
+    }
+
     return { available: true, reason: null };
   },
 });
