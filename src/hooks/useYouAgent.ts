@@ -1,10 +1,9 @@
 "use client";
 
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
-import Link from "next/link";
-import { useState, useEffect, useRef, useCallback, KeyboardEvent } from "react";
+import { api } from "../../convex/_generated/api";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -25,7 +24,7 @@ const THINKING_PHRASES = [
   "crystallizing your identity",
   "assembling the puzzle pieces",
   "distilling your essence",
-  "processing your essence",
+  "processing your signals",
   "structuring your identity",
   "analyzing your voice patterns",
   "building your identity constellation",
@@ -34,9 +33,19 @@ const THINKING_PHRASES = [
   "capturing your voice signature",
   "computing your identity fingerprint",
   "synthesizing your public presence",
+  "cross-referencing your context",
+  "indexing your expertise",
+  "parsing your story arc",
+  "compiling your identity bundle",
+  "resolving your context graph",
+  "tracing your signal",
+  "triangulating your vibe",
+  "rendering your identity surface",
+  "encoding your perspective",
+  "building your agent briefing",
 ];
 
-const BUNDLE_SECTIONS = [
+export const BUNDLE_SECTIONS = [
   "profile/about.md",
   "profile/now.md",
   "profile/projects.md",
@@ -46,20 +55,26 @@ const BUNDLE_SECTIONS = [
   "preferences/writing.md",
 ] as const;
 
-const SYSTEM_PROMPT = `you are the you.md agent. you're helping a human build and refine their identity file for the agent internet.
+const SYSTEM_PROMPT = `you are the you.md agent. you help humans build and maintain their identity file for the agent internet. you are their first AI that truly knows them.
 
-personality: warm but not gushy. direct. dry humor when natural. genuinely curious about people. terminal-native tone — lowercase, no exclamation marks, no emoji, short sentences.
+personality:
+- warm but not gushy. direct. a dash of dry wit when it lands naturally.
+- genuinely curious about people — you actually want to learn what makes them tick.
+- terminal-native tone: lowercase, no exclamation marks, no emoji, short sentences.
+- proactive — don't just wait for answers, connect dots, make observations, suggest things.
+- reference specific things you learn about them. make them feel seen.
+- you're like a sharp coworker who's also a great listener.
 
 you're working with their you-md/v1 identity bundle. ask questions, learn about them, and generate updates to their profile sections. after each exchange, include structured updates as JSON blocks when relevant.
 
 the sections are:
 - profile/about.md — bio, background, narrative
-- profile/now.md — current focus
-- profile/projects.md — active projects
-- profile/values.md — core values
-- profile/links.md — annotated links
-- preferences/agent.md — how AI should interact with them
-- preferences/writing.md — communication style
+- profile/now.md — current focus, what they're working on right now
+- profile/projects.md — active projects with details
+- profile/values.md — core values and principles
+- profile/links.md — annotated links (website, socials, repos)
+- preferences/agent.md — how AI agents should interact with them
+- preferences/writing.md — their communication style
 
 your job:
 1. analyze what you know about the person from their existing profile and conversation
@@ -69,8 +84,19 @@ your job:
    {"updates": [{"section": "profile/about.md", "content": "...markdown content..."}]}
    \`\`\`
 4. keep the conversation going until you have enough for a rich identity bundle
-5. never tell the user to edit markdown files themselves
+5. never tell the user to edit markdown files themselves — you handle all of that
 6. reference specific things you learned about them
+7. if someone shares links, immediately offer to pull context from them
+8. be proactive: "i noticed you mentioned X — want me to add that to your projects?"
+9. occasionally remind them of what you've captured so far
+10. when they share a link, acknowledge it and explain you'll use it to enrich their profile
+
+conversational style examples:
+- "that's a solid stack. let me capture that."
+- "interesting — so you're more on the strategy side than pure engineering?"
+- "i've got a good picture of what you do. want to tell me what you actually care about?"
+- "your bundle is looking solid. ready to publish, or should we keep going?"
+- "noted. updating your preferences now."
 
 rules for content in updates:
 - each section must start with a YAML frontmatter block (--- title: "SectionTitle" ---)
@@ -80,37 +106,41 @@ rules for content in updates:
 - for agent.md, describe how agents should interact with this person
 - for writing.md, capture their tone/style from how they've been talking to you
 
-when you think the profile is rich enough (at least about, now, projects, and values have substance), suggest finishing by saying something like "your bundle is looking solid. ready to publish, or want to keep going?"`;
+when you think the profile is rich enough (at least about, now, projects, and values have substance), suggest finishing by saying something like "your bundle is looking solid. ready to publish, or want to keep going?"
+
+important: keep responses concise. 2-4 sentences max per turn. ask one good question at a time, not a list. be a conversation, not a questionnaire.`;
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface ChatMessage {
+export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
 }
 
-interface DisplayMessage {
+export interface DisplayMessage {
   id: string;
   role: "user" | "assistant" | "system-notice";
   content: string;
 }
 
-interface SectionUpdate {
+export interface SectionUpdate {
   section: string;
   content: string;
 }
 
+export type RightPane = "preview" | "settings" | "billing" | "tokens" | "json";
+
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers (exported for reuse)
 // ---------------------------------------------------------------------------
 
 function randomThinking(): string {
   return THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)];
 }
 
-function parseUpdatesFromResponse(text: string): {
+export function parseUpdatesFromResponse(text: string): {
   display: string;
   updates: SectionUpdate[];
 } {
@@ -148,7 +178,7 @@ function sectionLabel(section: string): string {
   return name;
 }
 
-function buildProfileContext(youJson: Record<string, unknown> | null): string {
+export function buildProfileContext(youJson: Record<string, unknown> | null): string {
   if (!youJson) return "the user has no existing profile data yet.";
 
   const parts: string[] = ["here is the user's current profile data:"];
@@ -195,12 +225,11 @@ function buildProfileContext(youJson: Record<string, unknown> | null): string {
   return parts.join("\n");
 }
 
-function buildProfileDataFromUpdates(
+export function buildProfileDataFromUpdates(
   updates: SectionUpdate[],
   existingJson: Record<string, unknown> | null,
   username: string
 ): Record<string, unknown> {
-  // Start from existing data or empty
   const identity = (existingJson?.identity as Record<string, unknown>) || {};
   const bio = (identity.bio as Record<string, string>) || {};
   const existingNow = existingJson?.now as Record<string, unknown> | undefined;
@@ -235,7 +264,6 @@ function buildProfileDataFromUpdates(
     },
   };
 
-  // Apply updates by extracting content from markdown sections
   for (const update of updates) {
     const content = update.content
       .replace(/---[\s\S]*?---/, "")
@@ -243,7 +271,6 @@ function buildProfileDataFromUpdates(
 
     switch (update.section) {
       case "profile/about.md": {
-        // Extract name from # heading, rest is bio
         const lines = content.split("\n");
         const headingLine = lines.find((l) => l.startsWith("# "));
         if (headingLine) {
@@ -270,7 +297,6 @@ function buildProfileDataFromUpdates(
         break;
       }
       case "profile/projects.md": {
-        // Parse ## headings as projects
         const projectBlocks = content.split(/^## /m).filter(Boolean);
         const projects: Array<Record<string, string>> = [];
         for (const block of projectBlocks) {
@@ -303,7 +329,6 @@ function buildProfileDataFromUpdates(
         break;
       }
       case "profile/links.md": {
-        // Parse links like - **Label**: URL
         const linkLines = content.split("\n").filter((l) => l.includes("**"));
         const links: Record<string, string> = { ...(profileData.links as Record<string, string>) };
         for (const line of linkLines) {
@@ -318,7 +343,6 @@ function buildProfileDataFromUpdates(
       case "preferences/agent.md": {
         const prefs = profileData.preferences as Record<string, Record<string, unknown>>;
         prefs.agent = prefs.agent || {};
-        // Extract tone from content
         const toneLine = content.split("\n").find((l) => l.toLowerCase().includes("tone"));
         if (toneLine) {
           prefs.agent.tone = toneLine.replace(/.*tone[:\s]*/i, "").trim();
@@ -340,10 +364,23 @@ function buildProfileDataFromUpdates(
 }
 
 // ---------------------------------------------------------------------------
-// Main Component
+// Hook Options
 // ---------------------------------------------------------------------------
 
-export function ChatContent() {
+interface UseYouAgentOptions {
+  onPaneSwitch?: (pane: RightPane) => void;
+  isOnboarding?: boolean;
+  onboardingGreeting?: string;
+  onDone?: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
+export function useYouAgent(options: UseYouAgentOptions = {}) {
+  const { onPaneSwitch, isOnboarding, onboardingGreeting, onDone } = options;
+
   const { user } = useUser();
   const convexUser = useQuery(
     api.users.getByClerkId,
@@ -386,10 +423,7 @@ export function ChatContent() {
     }
   }, [input]);
 
-  // ---------------------------------------------------------------------------
   // LLM call
-  // ---------------------------------------------------------------------------
-
   const callLLM = useCallback(async (msgs: ChatMessage[]): Promise<string> => {
     const res = await fetch(CHAT_PROXY_URL, {
       method: "POST",
@@ -399,19 +433,16 @@ export function ChatContent() {
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error("The agent is temporarily unavailable. Please try again in a moment.");
+      await res.text();
+      throw new Error("the agent is temporarily unavailable. try again in a moment.");
     }
 
     const data = await res.json();
-    if (!data.content) throw new Error("The agent returned an empty response. Please try again.");
+    if (!data.content) throw new Error("the agent returned an empty response. try again.");
     return data.content;
   }, []);
 
-  // ---------------------------------------------------------------------------
   // Save updates to Convex
-  // ---------------------------------------------------------------------------
-
   const saveUpdates = useCallback(
     async (updates: SectionUpdate[]) => {
       if (!user?.id || !convexUser) return;
@@ -437,12 +468,12 @@ export function ChatContent() {
     [user?.id, convexUser, latestBundle?.youJson, saveBundleFromForm]
   );
 
-  // ---------------------------------------------------------------------------
   // Initialize conversation with context
-  // ---------------------------------------------------------------------------
-
   useEffect(() => {
     if (initialized || !convexUser) return;
+    // For onboarding, we use a custom greeting prompt
+    // For dashboard, we wait for latestBundle to be defined (can be null)
+    if (!isOnboarding && latestBundle === undefined) return;
 
     const profileContext = buildProfileContext(
       (latestBundle?.youJson as Record<string, unknown>) || null
@@ -453,15 +484,18 @@ export function ChatContent() {
       content: SYSTEM_PROMPT,
     };
 
+    const contextContent = isOnboarding && onboardingGreeting
+      ? onboardingGreeting
+      : `${profileContext}\n\nthe user just opened the web chat. greet them briefly and ask how you can help with their identity bundle. if they have existing data, reference something specific from it. if not, suggest getting started.`;
+
     const contextMessage: ChatMessage = {
       role: "user",
-      content: `${profileContext}\n\nthe user just opened the web chat. greet them briefly and ask how you can help with their identity bundle. if they have existing data, reference something specific from it. if not, suggest getting started.`,
+      content: contextContent,
     };
 
     setMessages([systemMessage, contextMessage]);
     setInitialized(true);
 
-    // Make initial LLM call
     setIsThinking(true);
     setThinkingPhrase(randomThinking());
 
@@ -509,30 +543,59 @@ export function ChatContent() {
         ]);
         setIsThinking(false);
       });
-  }, [initialized, convexUser, latestBundle?.youJson, callLLM, saveUpdates]);
+  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates]);
 
-  // ---------------------------------------------------------------------------
   // Slash commands
-  // ---------------------------------------------------------------------------
-
   const handleSlashCommand = useCallback(
     (cmd: string): boolean => {
       const trimmed = cmd.trim().toLowerCase();
 
-      if (trimmed === "/help") {
+      // Pane-switching commands
+      const paneCommands: Record<string, RightPane> = {
+        "/preview": "preview",
+        "/settings": "settings",
+        "/billing": "billing",
+        "/tokens": "tokens",
+        "/json": "json",
+      };
+
+      if (paneCommands[trimmed] && onPaneSwitch) {
+        onPaneSwitch(paneCommands[trimmed]);
         setDisplayMessages((prev) => [
           ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "user",
-            content: "/help",
-          },
+          { id: crypto.randomUUID(), role: "user", content: trimmed },
           {
             id: crypto.randomUUID(),
             role: "system-notice",
-            content:
-              "available commands:\n/status -- show bundle status\n/publish -- publish your latest bundle\n/preview -- link to your profile page\n/help -- show this message",
+            content: `[switched to ${paneCommands[trimmed]}]`,
           },
+        ]);
+        return true;
+      }
+
+      if (trimmed === "/done") {
+        setDisplayMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "user", content: "/done" },
+          {
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: "[session complete]",
+          },
+        ]);
+        onDone?.();
+        return true;
+      }
+
+      if (trimmed === "/help") {
+        const helpText = onPaneSwitch
+          ? "available commands:\n/preview -- live profile preview\n/json -- raw you.json\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/status -- bundle status\n/publish -- publish your latest bundle\n/help -- show this message"
+          : "available commands:\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
+
+        setDisplayMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "user", content: "/help" },
+          { id: crypto.randomUUID(), role: "system-notice", content: helpText },
         ]);
         return true;
       }
@@ -545,11 +608,7 @@ export function ChatContent() {
 
         setDisplayMessages((prev) => [
           ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "user",
-            content: "/status",
-          },
+          { id: crypto.randomUUID(), role: "user", content: "/status" },
           {
             id: crypto.randomUUID(),
             role: "system-notice",
@@ -563,15 +622,11 @@ export function ChatContent() {
         if (!user?.id || !latestBundle) {
           setDisplayMessages((prev) => [
             ...prev,
-            {
-              id: crypto.randomUUID(),
-              role: "user",
-              content: "/publish",
-            },
+            { id: crypto.randomUUID(), role: "user", content: "/publish" },
             {
               id: crypto.randomUUID(),
               role: "system-notice",
-              content: "no bundle to publish. save some changes first.",
+              content: "no bundle to publish. have a conversation first so the agent can build your profile.",
             },
           ]);
           return true;
@@ -579,16 +634,8 @@ export function ChatContent() {
 
         setDisplayMessages((prev) => [
           ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "user",
-            content: "/publish",
-          },
-          {
-            id: crypto.randomUUID(),
-            role: "system-notice",
-            content: "publishing...",
-          },
+          { id: crypto.randomUUID(), role: "user", content: "/publish" },
+          { id: crypto.randomUUID(), role: "system-notice", content: "publishing..." },
         ]);
 
         publishLatest({ clerkId: user.id })
@@ -615,35 +662,12 @@ export function ChatContent() {
         return true;
       }
 
-      if (trimmed === "/preview") {
-        const username = convexUser?.username;
-        setDisplayMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "user",
-            content: "/preview",
-          },
-          {
-            id: crypto.randomUUID(),
-            role: "system-notice",
-            content: username
-              ? `your profile: https://you.md/${username}`
-              : "no username found.",
-          },
-        ]);
-        return true;
-      }
-
       return false;
     },
-    [latestBundle, convexUser, user?.id, publishLatest]
+    [latestBundle, convexUser, user?.id, publishLatest, onPaneSwitch, onDone]
   );
 
-  // ---------------------------------------------------------------------------
   // Send message
-  // ---------------------------------------------------------------------------
-
   const sendMessage = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed || isThinking) return;
@@ -658,11 +682,7 @@ export function ChatContent() {
     // Add user message to display
     setDisplayMessages((prev) => [
       ...prev,
-      {
-        id: crypto.randomUUID(),
-        role: "user",
-        content: trimmed,
-      },
+      { id: crypto.randomUUID(), role: "user", content: trimmed },
     ]);
 
     // Add to conversation history
@@ -730,183 +750,29 @@ export function ChatContent() {
     textareaRef.current?.focus();
   }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates]);
 
-  // ---------------------------------------------------------------------------
-  // Key handler
-  // ---------------------------------------------------------------------------
-
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
+  return {
+    // State
+    displayMessages,
+    input,
+    setInput,
+    isThinking,
+    thinkingPhrase,
+    initialized,
+    // Refs
+    messagesEndRef,
+    textareaRef,
+    // Actions
+    sendMessage,
+    handleSlashCommand,
+    // Data
+    convexUser,
+    latestBundle,
+    // Helpers for adding system messages from outside
+    addSystemMessage: (content: string) => {
+      setDisplayMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: "system-notice", content },
+      ]);
     },
-    [sendMessage]
-  );
-
-  // ---------------------------------------------------------------------------
-  // Loading state
-  // ---------------------------------------------------------------------------
-
-  if (!convexUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-foreground-secondary font-mono text-sm">loading...</p>
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
-
-  return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      {/* Header */}
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard"
-            className="text-sm text-foreground-secondary hover:text-foreground transition-colors"
-          >
-            &larr; dashboard
-          </Link>
-          <span className="text-border">|</span>
-          <span className="font-mono text-sm text-foreground tracking-tight">
-            you.md agent
-          </span>
-        </div>
-        <div className="flex items-center gap-3 text-xs font-mono text-foreground-secondary">
-          <span>@{convexUser.username}</span>
-          <span className="text-border">|</span>
-          <span>
-            {latestBundle ? `v${latestBundle.version}` : "no bundle"}
-          </span>
-          <span className="text-border">|</span>
-          <span
-            className={
-              latestBundle?.isPublished
-                ? "text-accent-secondary"
-                : "text-accent-primary"
-            }
-          >
-            {latestBundle?.isPublished ? "published" : "draft"}
-          </span>
-        </div>
-      </nav>
-
-      {/* Messages area */}
-      <main className="flex-1 overflow-y-auto px-4 py-6 animate-fade-in">
-        <div className="max-w-2xl mx-auto space-y-4">
-          {displayMessages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))}
-
-          {isThinking && <ThinkingIndicator phrase={thinkingPhrase} />}
-
-          <div ref={messagesEndRef} />
-        </div>
-      </main>
-
-      {/* Input area */}
-      <div className="shrink-0 border-t border-border bg-background px-4 py-4">
-        <div className="max-w-2xl mx-auto flex gap-3">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="tell me about yourself, or ask me anything..."
-            rows={1}
-            disabled={isThinking}
-            className="flex-1 px-4 py-3 text-sm font-mono bg-background-secondary border border-border rounded-lg outline-none hover:border-mist/40 focus:border-accent-secondary focus:shadow-[0_0_12px_rgba(122,190,208,0.15)] transition-all resize-none text-foreground placeholder:text-foreground-secondary/40 disabled:opacity-50"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={isThinking || !input.trim()}
-            className="px-4 py-3 text-sm font-mono bg-accent-primary text-void rounded-lg hover:opacity-90 transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-          >
-            send
-          </button>
-        </div>
-        <div className="max-w-2xl mx-auto mt-2 flex items-center gap-3">
-          <span className="text-[10px] font-mono text-foreground-secondary/50">
-            enter to send, shift+enter for newline
-          </span>
-          <span className="text-foreground-secondary/30">|</span>
-          <span className="text-[10px] font-mono text-foreground-secondary/50">
-            try /help for commands
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Message Bubble
-// ---------------------------------------------------------------------------
-
-function MessageBubble({ message }: { message: DisplayMessage }) {
-  if (message.role === "system-notice") {
-    return (
-      <div className="flex justify-center">
-        <div className="px-3 py-1.5 text-xs font-mono text-accent-secondary bg-accent-secondary/5 border border-accent-secondary/20 rounded-md whitespace-pre-wrap">
-          {message.content}
-        </div>
-      </div>
-    );
-  }
-
-  if (message.role === "user") {
-    return (
-      <div className="flex justify-end">
-        <div className="max-w-[80%] px-4 py-3 bg-coral/10 rounded-lg">
-          <p className="text-sm whitespace-pre-wrap leading-relaxed">
-            {message.content}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // assistant
-  return (
-    <div className="flex justify-start">
-      <div className="max-w-[80%] px-4 py-3 bg-background-secondary rounded-lg">
-        <p className="text-sm whitespace-pre-wrap leading-relaxed">
-          {message.content}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Thinking Indicator
-// ---------------------------------------------------------------------------
-
-function ThinkingIndicator({ phrase }: { phrase: string }) {
-  const [dots, setDots] = useState("");
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDots((prev) => {
-        if (prev === "...") return "";
-        return prev + ".";
-      });
-    }, 400);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="flex justify-start">
-      <div className="max-w-[80%] px-4 py-3 bg-background-secondary rounded-lg">
-        <p className="text-sm text-foreground-secondary/60 font-mono">
-          {phrase}
-          <span className="inline-block w-6">{dots}</span>
-        </p>
-      </div>
-    </div>
-  );
+  };
 }

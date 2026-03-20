@@ -82,7 +82,7 @@ export function ProfileContent() {
           This username hasn&apos;t been claimed yet.
         </p>
         <Link
-          href="/claim"
+          href="/sign-up"
           className="mt-4 px-5 py-2.5 text-sm bg-coral text-void rounded-md font-medium hover:opacity-90 transition-all"
         >
           Claim it
@@ -381,7 +381,7 @@ export function ProfileContent() {
             </Link>
             {" "}&mdash;{" "}
             <Link
-              href="/claim"
+              href="/sign-up"
               className="text-coral hover:underline transition-colors"
             >
               Claim yours

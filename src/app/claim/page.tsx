@@ -1,7 +1,5 @@
-import { ClaimForm } from "./claim-form";
-
-export const dynamic = "force-dynamic";
+import { redirect } from "next/navigation";
 
 export default function ClaimPage() {
-  return <ClaimForm />;
+  redirect("/sign-up");
 }
