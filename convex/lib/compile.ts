@@ -38,6 +38,15 @@ export interface ProfileData {
     topics?: string[];
     voice_summary?: string;
     credibility_signals?: string[];
+    voice_linkedin?: string;
+    voice_x?: string;
+    voice_blog?: string;
+  };
+  socialImages?: {
+    x?: string;
+    github?: string;
+    linkedin?: string;
+    custom?: string;
   };
 }
 
@@ -95,10 +104,36 @@ export function compileYouJson(data: ProfileData): Record<string, unknown> {
       credibility_signals: data.analysis?.credibility_signals ?? [],
     },
 
+    voice: {
+      overall: data.analysis?.voice_summary ?? "",
+      platforms: {
+        linkedin: data.analysis?.voice_linkedin ?? null,
+        x: data.analysis?.voice_x ?? null,
+        blog: data.analysis?.voice_blog ?? null,
+      },
+    },
+
+    social_images: data.socialImages ?? {},
+
+    // Agent navigation guide — tells agents where to find specific context
+    agent_guide: {
+      summary: "this is a you-md/v1 identity bundle. use it to understand who this person is before working with them.",
+      quick_context: [
+        "identity.bio.short — one-line summary",
+        "now.focus — what they're working on right now",
+        "preferences.agent — how they want you to communicate",
+        "projects — their active projects with context",
+        "voice.overall — their communication style",
+      ],
+      for_writing: "check preferences.writing and voice.platforms for platform-specific style",
+      for_coding: "check projects for tech stack context and preferences.agent for tone",
+      for_research: "check analysis.topics and links for their areas of expertise",
+    },
+
     meta: {
       sources_used: [],
       last_updated: now,
-      compiler_version: "0.1.0",
+      compiler_version: "0.2.0",
     },
 
     verification: null,
@@ -177,8 +212,18 @@ generated_at: ${now}
     }
   }
 
-  // Footer
-  sections.push(`---\n\n> Full context: see manifest.json`);
+  // Voice
+  if (data.analysis?.voice_summary) {
+    sections.push(`## Voice\n\n${data.analysis.voice_summary}`);
+  }
+
+  // Footer with agent navigation guide
+  sections.push(`---
+
+> **For agents**: this is a you-md/v1 identity bundle.
+> Quick context: check identity.bio.short, now.focus, and preferences.agent.
+> For writing help: check voice section and preferences.writing.
+> Full structured data: see you.json. Directory: see manifest.json.`);
 
   return sections.join("\n\n");
 }
@@ -203,16 +248,30 @@ export function compileManifest(
   if (data.preferences?.agent) publicPaths.push("preferences/agent.md");
   if (data.preferences?.writing) publicPaths.push("preferences/writing.md");
 
+  // Voice artifacts
+  if (data.analysis?.voice_summary) publicPaths.push("voice/voice.md");
+  if (data.analysis?.voice_linkedin) publicPaths.push("voice/voice.linkedin.md");
+  if (data.analysis?.voice_x) publicPaths.push("voice/voice.x.md");
+  if (data.analysis?.voice_blog) publicPaths.push("voice/voice.blog.md");
+
+  // Private paths
+  const privatePaths = [
+    "private/notes.md",
+    "private/projects.md",
+    "private/internal-links.md",
+    "private/context.md",
+  ];
+
   return {
     schema: "you-md/v1",
     username: data.username,
     generated_at: now,
-    compiler_version: "0.1.0",
+    compiler_version: "0.2.0",
 
     paths: {
       public: publicPaths,
-      private: [],
-      scoped: [],
+      private: privatePaths,
+      scoped: [], // future: per-project scoped access
     },
 
     sources: Object.fromEntries(
