@@ -88,6 +88,36 @@ export default defineSchema({
   })
     .index("by_profileId", ["profileId"]),
 
+  // ── Private context (owner-only, token-accessible) ──────────
+  privateContext: defineTable({
+    profileId: v.id("profiles"),
+    // Private identity data — never exposed via public routes
+    privateNotes: v.optional(v.string()),
+    privateProjects: v.optional(v.array(v.any())),
+    internalLinks: v.optional(v.any()), // Record<string, string>
+    calendarContext: v.optional(v.string()),
+    communicationPrefs: v.optional(v.any()),
+    investmentThesis: v.optional(v.string()),
+    customData: v.optional(v.any()), // freeform JSON for anything else
+    updatedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_profileId", ["profileId"]),
+
+  // ── Access tokens (for agent/app access to private data) ───
+  accessTokens: defineTable({
+    profileId: v.id("profiles"),
+    name: v.string(),
+    tokenHash: v.string(), // SHA-256 hash of the raw token
+    scopes: v.array(v.string()), // ["read", "write"] or ["read"]
+    expiresAt: v.optional(v.number()),
+    isRevoked: v.boolean(),
+    lastUsedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_profileId", ["profileId"])
+    .index("by_tokenHash", ["tokenHash"]),
+
   // ── Existing tables (unchanged) ────────────────────────────
 
   bundles: defineTable({

@@ -54,7 +54,7 @@ const Pricing = () => (
               </p>
             </div>
             <Link
-              href="/sign-up"
+              href="/create"
               className="cta-outline block text-center px-4 py-2.5 text-[11px]"
             >
               &gt; youmd init
@@ -116,7 +116,7 @@ const Pricing = () => (
               </p>
             </div>
             <Link
-              href="/sign-up"
+              href="/create"
               className="cta-primary block text-center px-4 py-2.5 text-[11px]"
             >
               &gt; youmd upgrade --pro

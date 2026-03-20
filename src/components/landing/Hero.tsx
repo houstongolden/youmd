@@ -250,7 +250,7 @@ const Hero = () => {
           className="flex items-center justify-center gap-8 font-mono text-[12px] mt-12"
         >
           <Link
-            href="/sign-up"
+            href="/create"
             className="text-muted-foreground/50 hover:text-accent transition-colors duration-200"
           >
             &gt; get started

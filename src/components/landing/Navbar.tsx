@@ -100,7 +100,7 @@ const Navbar = () => {
               </Link>
             ) : (
               <Link
-                href="/sign-up"
+                href="/create"
                 className="hidden md:inline-block cta-primary px-3 py-1 text-[10px]"
               >
                 &gt; enter system
@@ -163,7 +163,7 @@ const Navbar = () => {
             </Link>
           ) : (
             <Link
-              href="/sign-up"
+              href="/create"
               onClick={() => setMobileOpen(false)}
               className="cta-primary px-6 py-2.5 text-[12px] mt-4"
             >

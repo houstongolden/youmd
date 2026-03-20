@@ -23,6 +23,7 @@ import type * as pipeline_index from "../pipeline/index.js";
 import type * as pipeline_mutations from "../pipeline/mutations.js";
 import type * as pipeline_orchestrator from "../pipeline/orchestrator.js";
 import type * as pipeline_prompts from "../pipeline/prompts.js";
+import type * as private_ from "../private.js";
 import type * as profiles from "../profiles.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   "pipeline/mutations": typeof pipeline_mutations;
   "pipeline/orchestrator": typeof pipeline_orchestrator;
   "pipeline/prompts": typeof pipeline_prompts;
+  private: typeof private_;
   profiles: typeof profiles;
   seed: typeof seed;
   users: typeof users;

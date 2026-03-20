@@ -144,3 +144,41 @@ export const getByUsername = query({
       .first();
   },
 });
+
+/** List all legacy users that have published bundles (for directory) */
+export const listAllLegacy = query({
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").order("desc").take(100);
+
+    // For each user, check if they have a published bundle
+    const results = [];
+    for (const user of users) {
+      // Skip sample/test users
+      if (user.isSample) continue;
+
+      // Check if this user already exists in profiles table (avoid duplicates)
+      const existingProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_username", (q) => q.eq("username", user.username))
+        .first();
+      if (existingProfile) continue;
+
+      // Check for a published bundle
+      const bundle = await ctx.db
+        .query("bundles")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .first();
+
+      const hasBundle = bundle?.isPublished ?? false;
+
+      results.push({
+        username: user.username,
+        displayName: user.displayName ?? null,
+        hasBundle,
+        createdAt: user.createdAt,
+      });
+    }
+
+    return results;
+  },
+});

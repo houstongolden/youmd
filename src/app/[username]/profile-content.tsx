@@ -62,7 +62,7 @@ export function ProfileContent() {
               </p>
               <div className="border-t border-[hsl(var(--border))] pt-3 mt-4">
                 <Link
-                  href="/sign-up"
+                  href="/create"
                   className="text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-light))] transition-colors"
                 >
                   &gt; claim it
@@ -342,7 +342,7 @@ export function ProfileContent() {
               you.md
             </Link>
             {" "}&mdash;{" "}
-            <Link href="/sign-up" className="text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] transition-colors">
+            <Link href="/create" className="text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] transition-colors">
               claim yours
             </Link>
           </p>
