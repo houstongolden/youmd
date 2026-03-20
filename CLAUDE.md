@@ -85,5 +85,18 @@ npx convex deploy           # Deploy Convex to prod (needs CONVEX_DEPLOY_KEY)
 git push                    # Triggers Vercel auto-deploy from GitHub
 ```
 
-## Lovable Design Prototype
-The design reference implementation is at `/tmp/youmd-lovable/` (cloned from github.com/houstongolden/youmd-b73d50c7). Port components from there when implementing new UI. Live preview: youmd.lovable.app
+## Lovable Design Reference
+
+**Read `project-context/LOVABLE_REFERENCE.md` before referencing the Lovable repo.**
+
+The Lovable app (github.com/houstongolden/youmd-b73d50c7) is a **design playground and feature wireframe tool**. It is NOT a codebase to copy from — it's a Vite/React/Supabase app with a completely different backend.
+
+- **Clone:** `/tmp/youmd-lovable/` — run `git clone https://github.com/houstongolden/youmd-b73d50c7 /tmp/youmd-lovable` if missing, `cd /tmp/youmd-lovable && git pull` to update
+- **Live preview:** youmd.lovable.app
+
+**Rules:**
+1. This project is ALWAYS source of truth. Never override core functionality from Lovable.
+2. Never blindly copy/paste. Recreate features properly in our Next.js + Convex stack.
+3. UI design/styling CAN be closely matched — the visual design is approved.
+4. For new features: extract intent, build properly here. For improvements to existing features: create from scratch.
+5. When Houston says "check the lovable repo" — pull latest, read relevant files, implement in our stack.

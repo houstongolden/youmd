@@ -472,3 +472,109 @@ export const scrapeProfile = action({
     };
   },
 });
+
+// ============================================================
+// scrapeLinkedInFull — Quick LinkedIn profile via Apify (for onboarding)
+// ============================================================
+
+export const scrapeLinkedInFull = action({
+  args: {
+    linkedinUrl: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    const apiKey = process.env.APIFY_API_KEY;
+    if (!apiKey) {
+      return {
+        success: false as const,
+        error: "APIFY_API_KEY not configured",
+      };
+    }
+
+    // Validate URL
+    if (!args.linkedinUrl.includes("linkedin.com/in/")) {
+      return {
+        success: false as const,
+        error: "Invalid LinkedIn URL. Expected format: https://linkedin.com/in/username",
+      };
+    }
+
+    const profileActorId = "VhxlqQXRwhW8H5hNV"; // apimaestro/linkedin-profile-detail
+
+    try {
+      const res = await fetch(
+        `https://api.apify.com/v2/acts/${profileActorId}/run-sync-get-dataset-items?token=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            profileUrls: [args.linkedinUrl],
+          }),
+          signal: AbortSignal.timeout(120_000),
+        }
+      );
+
+      if (!res.ok) {
+        const errorBody = await res.text();
+        return {
+          success: false as const,
+          error: `Apify error ${res.status}: ${errorBody.slice(0, 300)}`,
+        };
+      }
+
+      const results = await res.json();
+      const raw = Array.isArray(results) ? results[0] : results;
+
+      if (!raw) {
+        return {
+          success: false as const,
+          error: "No profile data returned from Apify",
+        };
+      }
+
+      // Map to structured profile data
+      const profile = {
+        name: raw.fullName || raw.firstName && raw.lastName
+          ? `${raw.firstName || ""} ${raw.lastName || ""}`.trim()
+          : null,
+        headline: raw.headline || raw.title || null,
+        about: raw.about || raw.summary || null,
+        experience: Array.isArray(raw.experience)
+          ? raw.experience.map((exp: Record<string, unknown>) => ({
+              title: exp.title || null,
+              company: exp.companyName || exp.company || null,
+              duration: exp.duration || exp.dateRange || null,
+              description: exp.description || null,
+              isCurrent: exp.isCurrent ?? false,
+            }))
+          : [],
+        education: Array.isArray(raw.education)
+          ? raw.education.map((edu: Record<string, unknown>) => ({
+              institution: edu.schoolName || edu.school || null,
+              degree: edu.degree || edu.degreeName || null,
+              fieldOfStudy: edu.fieldOfStudy || null,
+              dateRange: edu.dateRange || null,
+            }))
+          : [],
+        skills: Array.isArray(raw.skills)
+          ? raw.skills.map((s: unknown) =>
+              typeof s === "string" ? s : (s as Record<string, unknown>)?.name || null
+            ).filter(Boolean)
+          : [],
+        profileImageUrl: raw.profilePicture || raw.profileImageUrl || raw.imgUrl || null,
+        location: raw.location || raw.geoLocation || null,
+        connections: raw.connections || raw.connectionsCount || null,
+        followers: raw.followersCount || raw.followers || null,
+      };
+
+      return {
+        success: true as const,
+        data: profile,
+      };
+    } catch (error) {
+      return {
+        success: false as const,
+        error: error instanceof Error ? error.message : "LinkedIn scrape failed",
+      };
+    }
+  },
+});

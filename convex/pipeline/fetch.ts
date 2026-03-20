@@ -136,6 +136,8 @@ export const fetchWebsite = internalAction({
 
 const APIFY_ACTORS: Record<string, string> = {
   linkedin: "anchor/linkedin-profile-scraper",
+  linkedin_profile: "VhxlqQXRwhW8H5hNV", // apimaestro/linkedin-profile-detail
+  linkedin_posts: "Wpp1BZ6yGWjySadk3", // supreme_coder/linkedin-post
   x: "apidojo/tweet-scraper",
 };
 
@@ -263,3 +265,121 @@ function buildApifyInput(
       return { startUrls: [{ url }] };
   }
 }
+
+// ---------------------------------------------------------------------------
+// fetchLinkedInFull — Fetch LinkedIn profile + posts via two Apify actors
+// ---------------------------------------------------------------------------
+
+export const fetchLinkedInFull = internalAction({
+  args: {
+    sourceId: v.id("sources"),
+    linkedinUrl: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = process.env.APIFY_API_KEY;
+    if (!apiKey) {
+      await ctx.runMutation(internal.pipeline.mutations.updateSourceStatus, {
+        sourceId: args.sourceId,
+        status: "failed",
+        errorMessage: "APIFY_API_KEY not configured",
+      });
+      return { success: false, error: "APIFY_API_KEY not configured" };
+    }
+
+    await ctx.runMutation(internal.pipeline.mutations.updateSourceStatus, {
+      sourceId: args.sourceId,
+      status: "fetching",
+    });
+
+    try {
+      const profileActorId = APIFY_ACTORS.linkedin_profile;
+      const postsActorId = APIFY_ACTORS.linkedin_posts;
+
+      // Run both actors in parallel
+      const [profileResults, postsResults] = await Promise.all([
+        // Profile actor
+        fetch(
+          `https://api.apify.com/v2/acts/${profileActorId}/run-sync-get-dataset-items?token=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              profileUrls: [args.linkedinUrl],
+            }),
+            signal: AbortSignal.timeout(120_000),
+          }
+        ).then(async (res) => {
+          if (!res.ok) {
+            const body = await res.text();
+            throw new Error(`Profile actor error ${res.status}: ${body.slice(0, 500)}`);
+          }
+          return res.json();
+        }),
+
+        // Posts actor
+        fetch(
+          `https://api.apify.com/v2/acts/${postsActorId}/run-sync-get-dataset-items?token=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              profileUrl: args.linkedinUrl,
+              maxPosts: 20,
+              rawData: true,
+            }),
+            signal: AbortSignal.timeout(120_000),
+          }
+        ).then(async (res) => {
+          if (!res.ok) {
+            const body = await res.text();
+            throw new Error(`Posts actor error ${res.status}: ${body.slice(0, 500)}`);
+          }
+          return res.json();
+        }),
+      ]);
+
+      // Combine into one result
+      const combined = {
+        profile: Array.isArray(profileResults) ? profileResults[0] ?? null : profileResults,
+        posts: Array.isArray(postsResults) ? postsResults : [],
+        fetchedAt: new Date().toISOString(),
+      };
+
+      // Store raw results in file storage
+      const rawBlob = new Blob([JSON.stringify(combined, null, 2)], {
+        type: "application/json",
+      });
+      const rawStorageId = await ctx.storage.store(rawBlob);
+
+      // Convert to text for pipeline consumption
+      const extractedText = JSON.stringify(combined, null, 2);
+      const maxChars = 100_000;
+      const trimmedText =
+        extractedText.length > maxChars
+          ? extractedText.slice(0, maxChars) + "\n\n[Content truncated]"
+          : extractedText;
+
+      await ctx.runMutation(internal.pipeline.mutations.updateSourceFetched, {
+        sourceId: args.sourceId,
+        rawStorageId,
+        extractedText: trimmedText,
+      });
+
+      return {
+        success: true,
+        profileFound: !!combined.profile,
+        postsCount: combined.posts.length,
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown LinkedIn fetch error";
+      await ctx.runMutation(internal.pipeline.mutations.updateSourceStatus, {
+        sourceId: args.sourceId,
+        status: "failed",
+        errorMessage: `LinkedIn full fetch failed: ${message}`,
+      });
+      return { success: false, error: message };
+    }
+  },
+});

@@ -20,6 +20,7 @@ import type * as pipeline_compile from "../pipeline/compile.js";
 import type * as pipeline_extract from "../pipeline/extract.js";
 import type * as pipeline_fetch from "../pipeline/fetch.js";
 import type * as pipeline_index from "../pipeline/index.js";
+import type * as pipeline_linkedin from "../pipeline/linkedin.js";
 import type * as pipeline_mutations from "../pipeline/mutations.js";
 import type * as pipeline_orchestrator from "../pipeline/orchestrator.js";
 import type * as pipeline_prompts from "../pipeline/prompts.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   "pipeline/extract": typeof pipeline_extract;
   "pipeline/fetch": typeof pipeline_fetch;
   "pipeline/index": typeof pipeline_index;
+  "pipeline/linkedin": typeof pipeline_linkedin;
   "pipeline/mutations": typeof pipeline_mutations;
   "pipeline/orchestrator": typeof pipeline_orchestrator;
   "pipeline/prompts": typeof pipeline_prompts;

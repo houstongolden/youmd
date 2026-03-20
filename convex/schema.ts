@@ -170,9 +170,12 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_type", ["userId", "sourceType"]),
 
+  // artifactType: "author_voice" | "topic_map" | "bio_variants" | "faq"
+  //             | "voice_linkedin" | "voice_linkedin_doc"
+  //             | "voice_x" | "voice_blog"
   analysisArtifacts: defineTable({
     userId: v.id("users"),
-    artifactType: v.string(),
+    artifactType: v.string(), // see types above
     content: v.any(),
   })
     .index("by_userId", ["userId"])

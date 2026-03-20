@@ -1,6 +1,6 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 const http = httpRouter();
 
@@ -449,6 +449,150 @@ http.route({
 });
 
 // ============================================================
+// LINKEDIN ENRICHMENT
+// ============================================================
+
+// POST /api/v1/enrich-linkedin — Full LinkedIn enrichment pipeline
+http.route({
+  path: "/api/v1/enrich-linkedin",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const body = await request.json();
+      const linkedinUrl = body.linkedinUrl;
+
+      if (!linkedinUrl || typeof linkedinUrl !== "string") {
+        return json({ success: false, error: "linkedinUrl is required" }, 400);
+      }
+
+      // Validate it looks like a LinkedIn URL
+      if (!linkedinUrl.includes("linkedin.com/in/")) {
+        return json(
+          { success: false, error: "Invalid LinkedIn URL. Expected format: https://linkedin.com/in/username" },
+          400
+        );
+      }
+
+      // If userId provided, look up user; otherwise run without pipeline storage
+      let userId = body.userId;
+
+      // Create a temporary source record if we have a userId
+      let sourceId: string | undefined;
+      if (userId) {
+        sourceId = await ctx.runMutation(api.me.addSource, {
+          clerkId: userId,
+          sourceType: "linkedin_full",
+          sourceUrl: linkedinUrl,
+        });
+      }
+
+      // Fetch LinkedIn profile + posts via Apify
+      const apiKey = process.env.APIFY_API_KEY;
+      if (!apiKey) {
+        return json({ success: false, error: "APIFY_API_KEY not configured" }, 500);
+      }
+
+      const profileActorId = "VhxlqQXRwhW8H5hNV";
+      const postsActorId = "Wpp1BZ6yGWjySadk3";
+
+      // Run both actors in parallel
+      const [profileRes, postsRes] = await Promise.all([
+        fetch(
+          `https://api.apify.com/v2/acts/${profileActorId}/run-sync-get-dataset-items?token=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ profileUrls: [linkedinUrl] }),
+            signal: AbortSignal.timeout(120_000),
+          }
+        ),
+        fetch(
+          `https://api.apify.com/v2/acts/${postsActorId}/run-sync-get-dataset-items?token=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              profileUrl: linkedinUrl,
+              maxPosts: 20,
+              rawData: true,
+            }),
+            signal: AbortSignal.timeout(120_000),
+          }
+        ),
+      ]);
+
+      if (!profileRes.ok) {
+        const err = await profileRes.text();
+        return json(
+          { success: false, error: `Profile fetch failed: ${err.slice(0, 300)}` },
+          502
+        );
+      }
+
+      const profileData = await profileRes.json();
+      const profile = Array.isArray(profileData) ? profileData[0] ?? null : profileData;
+
+      let posts: unknown[] = [];
+      if (postsRes.ok) {
+        const postsData = await postsRes.json();
+        posts = Array.isArray(postsData) ? postsData : [];
+      } else {
+        // Posts fetch is non-fatal
+        console.log("Posts fetch failed, continuing with profile only");
+        await postsRes.text(); // consume body
+      }
+
+      const combined = { profile, posts, fetchedAt: new Date().toISOString() };
+
+      // If we have a userId, run voice analysis
+      let voiceAnalysis = null;
+      if (userId) {
+        try {
+          // Look up internal user ID from clerk ID
+          const user = await ctx.runMutation(internal.pipeline.mutations.getUserByClerkId, {
+            clerkId: userId,
+          });
+          if (user) {
+            const result = await ctx.runAction(
+              internal.pipeline.linkedin.analyzeLinkedInVoice,
+              {
+                userId: user._id,
+                linkedinData: combined,
+              }
+            );
+            voiceAnalysis = result.content;
+
+            // Generate the markdown doc
+            await ctx.runAction(
+              internal.pipeline.linkedin.generateLinkedInVoiceDoc,
+              { userId: user._id }
+            );
+          }
+        } catch (e) {
+          console.log("Voice analysis failed:", e);
+          // Non-fatal — still return the profile/posts data
+        }
+      }
+
+      return json({
+        success: true,
+        profile,
+        posts,
+        voiceAnalysis,
+      });
+    } catch (err) {
+      return json(
+        {
+          success: false,
+          error: err instanceof Error ? err.message : "LinkedIn enrichment failed",
+        },
+        500
+      );
+    }
+  }),
+});
+
+// ============================================================
 // CORS PREFLIGHT (catch-all for OPTIONS)
 // ============================================================
 
@@ -470,5 +614,6 @@ http.route({ path: "/api/v1/chat", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/scrape", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/research", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/enrich-x", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/enrich-linkedin", method: "OPTIONS", handler: corsPreflight });
 
 export default http;
