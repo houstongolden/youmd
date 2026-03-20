@@ -693,7 +693,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         })
           .then((result) => {
             const username = convexUser?.username ?? "user";
-            const shareBlock = `Read my identity context before we start:\n${result.url}\n\nThis is my you.md profile — it contains my bio, projects, values,\npreferences, and how I like to communicate. Use it to understand\nwho I am so we can skip the intro and get straight to work.`;
+            const shareBlock = `Read my identity context before we start:\n${result.url}\n\nThis is my you.md profile (@${username}) — it contains my bio, projects, values,\npreferences, and how I like to communicate. Use it to understand\nwho I am so we can skip the intro and get straight to work.`;
 
             // Copy to clipboard
             navigator.clipboard.writeText(shareBlock).catch(() => {});
@@ -703,7 +703,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
               {
                 id: crypto.randomUUID(),
                 role: "system-notice",
-                content: `context link created (${isPrivate ? "full" : "public"} scope, expires 7d)\n\n---\n${shareBlock}\n---\n\ncopied to clipboard. paste into any AI conversation.`,
+                content: `context link created for @${username} (${isPrivate ? "full" : "public"} scope, expires 7d)\n\n---\n${shareBlock}\n---\n\ncopied to clipboard. paste into any AI conversation.`,
               },
             ]);
           })

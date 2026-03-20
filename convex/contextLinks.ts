@@ -23,6 +23,7 @@ export const createLink = mutation({
     scope: v.union(v.literal("public"), v.literal("full")),
     ttl: v.optional(v.string()), // "1h", "24h", "7d", "30d", "90d", "never"
     maxUses: v.optional(v.number()),
+    profileId: v.optional(v.id("profiles")),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db
@@ -56,8 +57,21 @@ export const createLink = mutation({
 
     const token = generateToken();
 
+    // Look up the user's profile if profileId wasn't provided
+    let profileId = args.profileId;
+    if (!profileId) {
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
+        .first();
+      if (profile) {
+        profileId = profile._id;
+      }
+    }
+
     const linkId = await ctx.db.insert("contextLinks", {
       userId: user._id,
+      profileId,
       token,
       scope: args.scope,
       expiresAt,
@@ -179,7 +193,23 @@ export const resolveLink = query({
     const user = await ctx.db.get(link.userId);
     if (!user) return { error: "User not found", status: 404 };
 
-    // Get the published bundle
+    // Check profiles table first if we have a profileId
+    if (link.profileId) {
+      const profile = await ctx.db.get(link.profileId);
+      if (profile?.youJson) {
+        return {
+          bundle: {
+            ...profile.youJson,
+            _scope: link.scope,
+          },
+          markdown: profile.youMd || "",
+          username: profile.username,
+          scope: link.scope,
+        };
+      }
+    }
+
+    // Fallback: get the published bundle from bundles table
     const bundles = await ctx.db
       .query("bundles")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))

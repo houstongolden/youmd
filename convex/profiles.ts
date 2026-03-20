@@ -91,6 +91,17 @@ export const getPublicProfile = query({
   },
 });
 
+/** Get profile by ownerId (for dashboard — look up the authenticated user's profile) */
+export const getByOwnerId = query({
+  args: { ownerId: v.id("users") },
+  handler: async (ctx, args) => {
+    return ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", args.ownerId))
+      .first();
+  },
+});
+
 /** Get profile by username (lightweight, for checking existence) */
 export const getByUsername = query({
   args: { username: v.string() },

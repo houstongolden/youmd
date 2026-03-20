@@ -9,6 +9,17 @@ import { useYouAgent, buildProfileContext } from "@/hooks/useYouAgent";
 import { TerminalShell } from "@/components/terminal/TerminalShell";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 
+/** Read a cookie by name */
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/** Clear a cookie by name */
+function clearCookie(name: string): void {
+  document.cookie = `${name}=;path=/;max-age=0`;
+}
+
 /* ── Boot sequence items ───────────────────────────────────── */
 
 const BOOT_SEQUENCE = [
@@ -30,10 +41,23 @@ export function InitializeContent() {
   const { user } = useUser();
   const router = useRouter();
   const createUser = useMutation(api.users.createUser);
+  const claimProfile = useMutation(api.profiles.claimProfile);
 
   const existingUser = useQuery(
     api.users.getByClerkId,
     user?.id ? { clerkId: user.id } : "skip"
+  );
+
+  // Check if there's an unclaimed profile from /create flow (session cookie)
+  const [sessionToken] = useState<string | null>(() => {
+    if (typeof document !== "undefined") {
+      return getCookie("youmd_session");
+    }
+    return null;
+  });
+  const sessionProfile = useQuery(
+    api.profiles.getBySessionToken,
+    sessionToken ? { sessionToken } : "skip"
   );
 
   const [phase, setPhase] = useState<"boot" | "claim" | "portrait" | "ready" | "error">("boot");
@@ -96,7 +120,7 @@ export function InitializeContent() {
       );
     }, claimDelay);
 
-    // Create user in Convex
+    // Create user in Convex (also auto-creates/claims profile in the mutation)
     setTimeout(async () => {
       try {
         await createUser({
@@ -105,6 +129,20 @@ export function InitializeContent() {
           email: user.emailAddresses[0]?.emailAddress ?? "",
           displayName: user.fullName ?? undefined,
         });
+
+        // If there's an unclaimed profile from /create flow, claim it
+        if (sessionProfile && sessionToken) {
+          try {
+            await claimProfile({
+              clerkId: user.id,
+              profileId: sessionProfile._id,
+              sessionToken,
+            });
+          } catch {
+            // Profile claim via session is best-effort — createUser may have already claimed it
+          }
+          clearCookie("youmd_session");
+        }
 
         addLine(
           <span>
@@ -152,7 +190,7 @@ export function InitializeContent() {
         setPhase("error");
       }
     }, claimDelay + 800);
-  }, [user, existingUser, createUser, addLine]);
+  }, [user, existingUser, createUser, claimProfile, sessionProfile, sessionToken, addLine]);
 
   // Loading state
   if (!user || existingUser === undefined) {

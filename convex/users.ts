@@ -119,6 +119,33 @@ export const createUser = mutation({
       createdAt: Date.now(),
     });
 
+    // Auto-create or claim a profile entry
+    const existingProfile = await ctx.db
+      .query("profiles")
+      .withIndex("by_username", (q) => q.eq("username", username))
+      .first();
+
+    if (existingProfile && !existingProfile.isClaimed) {
+      // Claim the unclaimed profile
+      await ctx.db.patch(existingProfile._id, {
+        ownerId: userId,
+        isClaimed: true,
+        claimedAt: Date.now(),
+        sessionToken: undefined,
+        updatedAt: Date.now(),
+      });
+    } else if (!existingProfile) {
+      // Create a new profile entry linked to this user
+      await ctx.db.insert("profiles", {
+        username,
+        name: args.displayName || username,
+        isClaimed: true,
+        ownerId: userId,
+        claimedAt: Date.now(),
+        createdAt: Date.now(),
+      });
+    }
+
     return userId;
   },
 });

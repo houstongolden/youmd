@@ -25,6 +25,10 @@ export function DashboardContent() {
     api.bundles.getLatestBundle,
     convexUser?._id ? { userId: convexUser._id } : "skip"
   );
+  const userProfile = useQuery(
+    api.profiles.getByOwnerId,
+    convexUser?._id ? { ownerId: convexUser._id } : "skip"
+  );
 
   const [rightPane, setRightPane] = useState<RightPane>("preview");
 
@@ -54,6 +58,7 @@ export function DashboardContent() {
   const plan = convexUser.plan ?? "free";
   const version = latestBundle?.version ?? null;
   const isPublished = latestBundle?.isPublished ?? false;
+  const profileName = userProfile?.name ?? null;
 
   return (
     <div className="h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
@@ -68,7 +73,9 @@ export function DashboardContent() {
           {/* Status bar — hidden on mobile, visible on desktop */}
           <div className="hidden md:flex items-center justify-between px-4 py-1.5 border-b border-[hsl(var(--border))] shrink-0">
             <div className="flex items-center gap-2 text-[11px] font-mono text-[hsl(var(--text-secondary))]">
-              <span className="text-[hsl(var(--text-primary))] opacity-70">@{username}</span>
+              <span className="text-[hsl(var(--text-primary))] opacity-70">
+                {profileName && profileName !== username ? `${profileName} ` : ""}@{username}
+              </span>
               <span className="opacity-20">|</span>
               <span className="opacity-40">{plan}</span>
               <span className="opacity-20">|</span>

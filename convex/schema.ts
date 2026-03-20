@@ -222,6 +222,7 @@ export default defineSchema({
 
   contextLinks: defineTable({
     userId: v.id("users"),
+    profileId: v.optional(v.id("profiles")),
     token: v.string(),
     scope: v.union(v.literal("public"), v.literal("full")),
     expiresAt: v.optional(v.number()),
@@ -231,5 +232,6 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_token", ["token"])
-    .index("by_userId", ["userId"]),
+    .index("by_userId", ["userId"])
+    .index("by_profileId", ["profileId"]),
 });
