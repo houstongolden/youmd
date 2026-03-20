@@ -90,7 +90,17 @@ export const createUser = mutation({
       throw new Error("This username is reserved.");
     }
 
-    // Check uniqueness
+    // Check if clerkId already has an account — if so, return it (idempotent)
+    const existingClerk = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    if (existingClerk) {
+      return existingClerk._id;
+    }
+
+    // Check username uniqueness
     const existing = await ctx.db
       .query("users")
       .withIndex("by_username", (q) => q.eq("username", username))
@@ -98,16 +108,6 @@ export const createUser = mutation({
 
     if (existing) {
       throw new Error("Username already taken.");
-    }
-
-    // Check if clerkId already has an account
-    const existingClerk = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-
-    if (existingClerk) {
-      throw new Error("Account already exists for this user.");
     }
 
     const userId = await ctx.db.insert("users", {
