@@ -334,6 +334,13 @@ code, pre, .font-mono {
   outline-offset: 2px;
 }
 
+/* Kill focus ring on terminal inputs — the cursor IS the indicator */
+textarea:focus-visible,
+input[type="text"]:focus-visible,
+input[type="password"]:focus-visible {
+  outline: none;
+}
+
 /* ── Scrollbar ────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;

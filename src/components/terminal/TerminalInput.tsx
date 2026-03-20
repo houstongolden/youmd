@@ -20,14 +20,13 @@ export function TerminalInput({
   onSend,
 }: TerminalInputProps) {
   const handleFocus = () => {
-    // Scroll into view on mobile when keyboard opens
     setTimeout(() => {
       textareaRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }, 300);
   };
 
   return (
-    <div className="shrink-0 border-t border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-4 py-3">
+    <div className="shrink-0 border-t border-[hsl(var(--border))] px-4 py-3">
       <div className="flex items-end gap-2">
         <span className="text-[hsl(var(--accent))] font-mono text-sm pb-2.5 select-none">
           &gt;
@@ -44,22 +43,14 @@ export function TerminalInput({
           className="flex-1 px-0 py-2 text-sm font-mono bg-transparent border-none outline-none resize-none text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-secondary))]/20 disabled:opacity-50"
           style={{ maxHeight: "160px" }}
         />
-        <button
-          onClick={onSend}
-          disabled={isThinking || !input.trim()}
-          className="px-3 py-1.5 text-xs font-mono text-[hsl(var(--accent))] border border-[hsl(var(--accent))]/25 hover:bg-[hsl(var(--accent))]/10 transition-colors disabled:opacity-15 disabled:cursor-not-allowed shrink-0 mb-0.5"
-          style={{ borderRadius: "2px" }}
-        >
-          send
-        </button>
       </div>
       <div className="flex items-center gap-3 mt-1 ml-4">
-        <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30">
-          enter to send, shift+enter for newline
+        <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-25">
+          enter to send
         </span>
-        <span className="text-[hsl(var(--text-secondary))] opacity-15">|</span>
-        <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30">
-          /help for commands
+        <span className="text-[hsl(var(--text-secondary))] opacity-10">|</span>
+        <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-25">
+          /help
         </span>
       </div>
     </div>
