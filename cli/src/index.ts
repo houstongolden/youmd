@@ -19,8 +19,8 @@ const program = new Command();
 
 program
   .name("youmd")
-  .description("CLI for the You.md identity bundle platform")
-  .version("0.2.0");
+  .description("your identity file for the agent internet")
+  .version("0.3.0");
 
 program
   .command("init")
