@@ -98,6 +98,30 @@ export default function SignUpPage() {
 
     if (!signUp) return;
 
+    // Check username availability against Convex FIRST
+    addLine("checking username availability...", "text-[hsl(var(--text-secondary))] opacity-50");
+    try {
+      const checkRes = await fetch(
+        `https://kindly-cassowary-600.convex.site/api/v1/check-username?username=${encodeURIComponent(val)}`
+      );
+      const checkData = await checkRes.json();
+      if (!checkData.available) {
+        addLine(
+          <span className="text-[hsl(var(--accent))]">
+            ERR: @{val} is not available. {checkData.reason || "try another username."}
+          </span>
+        );
+        addLine("\u00A0");
+        setStep("username");
+        return;
+      }
+      addLine(
+        <span className="text-[hsl(var(--success))]">{"\u2713"} @{val} is available</span>
+      );
+    } catch {
+      // If check fails, proceed anyway — Clerk/Convex will catch duplicates
+    }
+
     addLine("initializing identity bundle...", "text-[hsl(var(--text-secondary))] opacity-50");
 
     try {

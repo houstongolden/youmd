@@ -64,6 +64,29 @@ export function CreateContent() {
       </span>
     );
 
+    // Check availability before proceeding
+    try {
+      const checkRes = await fetch(
+        `https://kindly-cassowary-600.convex.site/api/v1/check-username?username=${encodeURIComponent(clean)}`
+      );
+      const checkData = await checkRes.json();
+      if (!checkData.available) {
+        addLine(
+          <span className="text-[hsl(var(--accent))]">
+            ERR: @{clean} is not available. {checkData.reason || "try another."}
+          </span>
+        );
+        addLine("\u00A0");
+        return;
+      }
+    } catch {
+      // proceed anyway if check fails
+    }
+
+    addLine(
+      <span className="text-[hsl(var(--success))]">{"\u2713"} @{clean} is available</span>
+    );
+
     setUsername(clean);
     addLine("\u00A0");
     setTimeout(() => setPhase("name"), 300);
