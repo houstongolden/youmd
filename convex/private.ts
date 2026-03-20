@@ -1,6 +1,41 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 
+// ── Agent interaction stats ──────────────────────────────────
+
+/** Get agent interaction stats for a profile */
+export const getAgentStats = query({
+  args: { profileId: v.id("profiles") },
+  handler: async (ctx, args) => {
+    const interactions = await ctx.db
+      .query("agentInteractions")
+      .withIndex("by_profileId", (q) => q.eq("profileId", args.profileId))
+      .collect();
+
+    const totalReads = interactions
+      .filter((i) => i.agentType === "read")
+      .reduce((sum, i) => sum + i.interactionCount, 0);
+    const totalWrites = interactions
+      .filter((i) => i.agentType === "write")
+      .reduce((sum, i) => sum + i.interactionCount, 0);
+    const uniqueAgents = interactions.length;
+    const totalInteractions = interactions.reduce((sum, i) => sum + i.interactionCount, 0);
+
+    return {
+      totalReads,
+      totalWrites,
+      uniqueAgents,
+      totalInteractions,
+      agents: interactions.map((i) => ({
+        name: i.agentName,
+        type: i.agentType,
+        count: i.interactionCount,
+        lastUsed: i.lastInteractionAt,
+      })),
+    };
+  },
+});
+
 // ── SHA-256 hash helper ──────────────────────────────────────
 
 async function hashToken(token: string): Promise<string> {
@@ -258,6 +293,31 @@ export const validateToken = mutation({
       details: { tokenName: accessToken.name },
       createdAt: Date.now(),
     });
+
+    // Track agent interaction
+    const agentName = accessToken.name || "Unknown Agent";
+    const agentType = accessToken.scopes.includes("write") ? "write" : "read";
+    const existingInteraction = await ctx.db
+      .query("agentInteractions")
+      .withIndex("by_profileId", (q) => q.eq("profileId", accessToken.profileId))
+      .collect()
+      .then((interactions) => interactions.find((i) => i.agentName === agentName));
+
+    if (existingInteraction) {
+      await ctx.db.patch(existingInteraction._id, {
+        interactionCount: existingInteraction.interactionCount + 1,
+        lastInteractionAt: Date.now(),
+      });
+    } else {
+      await ctx.db.insert("agentInteractions", {
+        profileId: accessToken.profileId,
+        agentName,
+        agentType,
+        interactionCount: 1,
+        lastInteractionAt: Date.now(),
+        createdAt: Date.now(),
+      });
+    }
 
     // Get profile (public data)
     const profile = await ctx.db.get(accessToken.profileId);

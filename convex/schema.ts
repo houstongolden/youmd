@@ -88,6 +88,19 @@ export default defineSchema({
   })
     .index("by_profileId", ["profileId"]),
 
+  // ── Agent interactions (track which agents connect) ──────────
+  agentInteractions: defineTable({
+    profileId: v.id("profiles"),
+    agentName: v.string(), // "Claude Code", "Cursor", "ChatGPT", "Codex", "Perplexity", "Custom Agent"
+    agentType: v.string(), // "read" | "write" | "chat"
+    interactionCount: v.number(),
+    lastInteractionAt: v.number(),
+    metadata: v.optional(v.any()), // extra context about the agent
+    createdAt: v.number(),
+  })
+    .index("by_profileId", ["profileId"])
+    .index("by_agentName", ["agentName"]),
+
   // ── Private context (owner-only, token-accessible) ──────────
   privateContext: defineTable({
     profileId: v.id("profiles"),

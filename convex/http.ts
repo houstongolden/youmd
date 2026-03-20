@@ -401,6 +401,54 @@ http.route({
 });
 
 // ============================================================
+// AI RESEARCH & ENRICHMENT
+// ============================================================
+
+// POST /api/v1/research — Auto-research a user via Perplexity
+http.route({
+  path: "/api/v1/research",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const body = await request.json();
+      const result = await ctx.runAction(api.chat.researchUser, {
+        name: body.name,
+        username: body.username,
+        email: body.email,
+        links: body.links,
+      });
+      return json(result);
+    } catch (err) {
+      return json(
+        { success: false, error: err instanceof Error ? err.message : "Research failed" },
+        500
+      );
+    }
+  }),
+});
+
+// POST /api/v1/enrich-x — Enrich X profile via XAI/Grok
+http.route({
+  path: "/api/v1/enrich-x",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const body = await request.json();
+      const result = await ctx.runAction(api.chat.enrichXProfile, {
+        xUsername: body.xUsername,
+        profileData: body.profileData,
+      });
+      return json(result);
+    } catch (err) {
+      return json(
+        { success: false, error: err instanceof Error ? err.message : "Enrichment failed" },
+        500
+      );
+    }
+  }),
+});
+
+// ============================================================
 // CORS PREFLIGHT (catch-all for OPTIONS)
 // ============================================================
 
@@ -420,5 +468,7 @@ http.route({ path: "/api/v1/me/build", method: "OPTIONS", handler: corsPreflight
 http.route({ path: "/api/v1/me/build/status", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/scrape", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/research", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/enrich-x", method: "OPTIONS", handler: corsPreflight });
 
 export default http;
