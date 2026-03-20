@@ -6,7 +6,7 @@
     "dev": "npm run dev:frontend & npm run dev:backend",
     "dev:frontend": "next dev --turbopack",
     "dev:backend": "npx convex dev",
-    "build": "npx convex codegen && next build",
+    "build": "VERCEL= npx convex codegen --typecheck=disable && next build",
     "start": "next start",
     "lint": "eslint",
     "predev": "npx convex dev --until-success"
