@@ -8,7 +8,7 @@ import Link from "next/link";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { TerminalAuthInput } from "@/components/terminal/TerminalAuthInput";
 
-type Phase = "boot" | "username" | "name" | "links" | "creating" | "done" | "error";
+type Phase = "boot" | "username" | "name" | "social" | "portrait" | "creating" | "done" | "error";
 
 export function CreateContent() {
   const router = useRouter();
@@ -104,14 +104,123 @@ export function CreateContent() {
     setName(val);
     addLine("\u00A0");
 
-    // Create the profile
+    // Ask for social handle for portrait
+    setTimeout(() => setPhase("social"), 300);
+  }, [addLine]);
+
+  // Social handle handler — scrape profile for portrait
+  const handleSocial = useCallback(async (val: string) => {
+    const trimmed = val.trim().toLowerCase();
+
+    // Allow skip
+    if (trimmed === "skip" || trimmed === "/skip") {
+      addLine(
+        <span className="text-[hsl(var(--text-secondary))] opacity-50">skipped portrait generation</span>
+      );
+      addLine("\u00A0");
+      proceedToCreate();
+      return;
+    }
+
+    // Parse handle — accept "username", "@username", "x.com/username", "github.com/username"
+    let platform = "";
+    let handle = trimmed;
+
+    if (trimmed.includes("github.com/") || trimmed.includes("github")) {
+      platform = "github";
+      handle = trimmed.replace(/.*github\.com\//, "").replace(/^@/, "").split("/")[0].split("?")[0];
+    } else if (trimmed.includes("x.com/") || trimmed.includes("twitter.com/")) {
+      platform = "x";
+      handle = trimmed.replace(/.*(?:x|twitter)\.com\//, "").replace(/^@/, "").split("/")[0].split("?")[0];
+    } else if (trimmed.startsWith("@")) {
+      // Assume X if just @username
+      platform = "x";
+      handle = trimmed.replace(/^@/, "");
+    } else {
+      // Default to GitHub for plain usernames
+      platform = "github";
+      handle = trimmed;
+    }
+
+    addLine(
+      <span>
+        <span className="text-[hsl(var(--accent))]">{platform}:</span>{" "}
+        <span className="text-[hsl(var(--text-secondary))]">@{handle}</span>
+      </span>
+    );
+    addLine("\u00A0");
+    setPhase("portrait");
+
+    addLine("fetching profile...", "text-[hsl(var(--text-secondary))] opacity-50");
+
+    try {
+      // Call our scrape endpoint
+      const scrapeRes = await fetch(
+        "https://kindly-cassowary-600.convex.site/api/v1/scrape",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: platform === "x" ? `https://x.com/${handle}` : `https://github.com/${handle}`,
+          }),
+        }
+      );
+
+      if (scrapeRes.ok) {
+        const scrapeData = await scrapeRes.json();
+        if (scrapeData.displayName) {
+          addLine(
+            <span className="text-[hsl(var(--success))]">
+              {"\u2713"} found {scrapeData.displayName}
+              {scrapeData.bio ? ` — "${scrapeData.bio.slice(0, 60)}${scrapeData.bio.length > 60 ? "..." : ""}"` : ""}
+            </span>
+          );
+        }
+        if (scrapeData.profileImageUrl) {
+          addLine("generating ascii portrait...", "text-[hsl(var(--text-secondary))] opacity-50");
+          // The portrait will be rendered by AsciiAvatar component on the profile page
+          // For now, show a placeholder and store the image URL
+          addLine(
+            <span className="text-[hsl(var(--accent-mid))]">
+              {"\u2713"} portrait source saved — will render on your profile
+            </span>
+          );
+        }
+        if (scrapeData.followers) {
+          addLine(
+            <span className="text-[hsl(var(--text-secondary))] opacity-50">
+              {scrapeData.followers.toLocaleString()} followers{scrapeData.location ? ` — ${scrapeData.location}` : ""}
+            </span>
+          );
+        }
+      } else {
+        addLine(
+          <span className="text-[hsl(var(--text-secondary))] opacity-40">
+            couldn&apos;t fetch profile details — no worries, you can add this later
+          </span>
+        );
+      }
+    } catch {
+      addLine(
+        <span className="text-[hsl(var(--text-secondary))] opacity-40">
+          network error fetching profile — continuing without portrait
+        </span>
+      );
+    }
+
+    addLine("\u00A0");
+    proceedToCreate();
+  }, [addLine, username, name, createProfile, router]);
+
+  // Create the profile
+  const proceedToCreate = useCallback(async () => {
     setPhase("creating");
     addLine("creating @" + username + "...", "text-[hsl(var(--text-secondary))] opacity-50");
 
     try {
       const result = await createProfile({
         username,
-        name: val,
+        name,
       });
 
       addLine(
@@ -203,6 +312,25 @@ export function CreateContent() {
                   placeholder="your name"
                   onSubmit={handleName}
                 />
+              </div>
+            )}
+
+            {phase === "social" && (
+              <div className="mt-2">
+                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
+                  drop your x or github username for your ascii portrait (or type skip)
+                </div>
+                <TerminalAuthInput
+                  prompt=">"
+                  placeholder="@username or github.com/you"
+                  onSubmit={handleSocial}
+                />
+              </div>
+            )}
+
+            {phase === "portrait" && (
+              <div className="text-[hsl(var(--accent-mid))] animate-pulse mt-1">
+                {"\u25CC"} generating portrait...
               </div>
             )}
 

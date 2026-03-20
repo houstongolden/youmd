@@ -264,7 +264,14 @@ function OnboardingTerminal() {
     (latestBundle?.youJson as Record<string, unknown>) || null
   );
 
-  const onboardingGreeting = `${profileContext}\n\nthe user just signed up and claimed the username "${username}". this is their first time here. greet them by name if you know it, otherwise by username. introduce yourself as the you.md agent — you help people build their identity file for the agent internet. ask them about themselves — what they do, what they're building, what they care about. be genuinely curious. keep it natural and terminal-native. don't be generic — make it feel like a real conversation with a sharp, slightly witty AI that actually wants to learn about them.`;
+  const onboardingGreeting = `${profileContext}\n\nthe user just signed up and claimed the username "${username}". this is their first time here.
+
+instructions for this greeting:
+1. greet them warmly by username. introduce yourself in one sentence — you're the you.md agent, you help build identity files for the agent internet.
+2. immediately ask for their x (twitter) or github username so you can generate their ascii portrait. say something like: "first things first — drop me your x or github username and i'll generate your ascii portrait. it's your identity in code."
+3. be genuinely curious and specific, not generic. make them feel like this is going to be a real conversation, not a form.
+4. keep it to 3-4 sentences max. no lists. no "here's what we'll do" — just start the conversation.
+5. terminal-native: lowercase, no emoji, no exclamation marks.`;
 
   const agent = useYouAgent({
     isOnboarding: true,

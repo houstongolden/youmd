@@ -369,6 +369,38 @@ http.route({
 });
 
 // ============================================================
+// PROFILE SCRAPING
+// ============================================================
+
+// POST /api/v1/scrape — Scrape a social profile by URL
+http.route({
+  path: "/api/v1/scrape",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const body = await request.json();
+      const result = await ctx.runAction(api.scrape.scrapeProfile, {
+        url: body.url,
+        username: body.username,
+        platform: body.platform,
+      });
+      if (!result.success) {
+        return json({ success: false, error: result.error }, 400);
+      }
+      return json(result);
+    } catch (err) {
+      return json(
+        {
+          success: false,
+          error: err instanceof Error ? err.message : "Scrape failed",
+        },
+        500
+      );
+    }
+  }),
+});
+
+// ============================================================
 // CORS PREFLIGHT (catch-all for OPTIONS)
 // ============================================================
 
@@ -387,5 +419,6 @@ http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPrefl
 http.route({ path: "/api/v1/me/build", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/build/status", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/scrape", method: "OPTIONS", handler: corsPreflight });
 
 export default http;

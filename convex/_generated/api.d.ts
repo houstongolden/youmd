@@ -11,7 +11,6 @@
 import type * as apiKeys from "../apiKeys.js";
 import type * as bundles from "../bundles.js";
 import type * as chat from "../chat.js";
-import type * as cleanup from "../cleanup.js";
 import type * as contextLinks from "../contextLinks.js";
 import type * as http from "../http.js";
 import type * as lib_compile from "../lib/compile.js";
@@ -26,6 +25,7 @@ import type * as pipeline_orchestrator from "../pipeline/orchestrator.js";
 import type * as pipeline_prompts from "../pipeline/prompts.js";
 import type * as private_ from "../private.js";
 import type * as profiles from "../profiles.js";
+import type * as scrape from "../scrape.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 
@@ -39,7 +39,6 @@ declare const fullApi: ApiFromModules<{
   apiKeys: typeof apiKeys;
   bundles: typeof bundles;
   chat: typeof chat;
-  cleanup: typeof cleanup;
   contextLinks: typeof contextLinks;
   http: typeof http;
   "lib/compile": typeof lib_compile;
@@ -54,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   "pipeline/prompts": typeof pipeline_prompts;
   private: typeof private_;
   profiles: typeof profiles;
+  scrape: typeof scrape;
   seed: typeof seed;
   users: typeof users;
 }>;
