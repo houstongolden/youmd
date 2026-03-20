@@ -51,7 +51,7 @@ const ProfilesShowcase = () => {
                     <span className="w-1.5 h-1.5 rounded-full bg-success/60 status-dot-pulse shrink-0" />
 
                     {/* Avatar */}
-                    <div className="w-8 h-8 rounded overflow-hidden border border-border group-hover:border-accent/30 transition-colors shrink-0 bg-background relative">
+                    <div className="w-8 h-8 rounded overflow-hidden border border-[hsl(var(--border))] group-hover:border-accent/30 transition-colors shrink-0 bg-[hsl(var(--bg))] relative">
                       <AsciiAvatar
                         src={profile.avatarUrl}
                         cols={120}
@@ -70,7 +70,7 @@ const ProfilesShowcase = () => {
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-foreground font-mono text-[12px] font-medium truncate">
+                        <span className="text-[hsl(var(--text-primary))] font-mono text-[12px] font-medium truncate">
                           {profile.name}
                         </span>
                         {profile.verification.verified && (
@@ -106,7 +106,7 @@ const ProfilesShowcase = () => {
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+            <div className="px-5 py-3 border-t border-[hsl(var(--border))] flex items-center justify-between">
               <span className="text-muted-foreground/50 font-mono text-[9px]">
                 {featured.length} active &middot;{" "}
                 {

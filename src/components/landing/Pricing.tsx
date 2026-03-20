@@ -23,13 +23,13 @@ const Pricing = () => (
             whileHover={{
               borderColor: "hsl(var(--accent) / 0.15)",
             }}
-            className="border border-border rounded p-6 transition-colors"
+            className="border border-[hsl(var(--border))] rounded p-6 transition-colors"
           >
             <div className="flex items-baseline justify-between mb-4">
-              <span className="text-foreground font-mono text-[13px]">
+              <span className="text-[hsl(var(--text-primary))] font-mono text-[13px]">
                 Free
               </span>
-              <span className="text-foreground font-mono text-[20px] font-light">
+              <span className="text-[hsl(var(--text-primary))] font-mono text-[20px] font-light">
                 $0
                 <span className="text-muted-foreground/60 text-[10px] ml-1">
                   /forever
@@ -72,7 +72,7 @@ const Pricing = () => (
           >
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
             <div className="flex items-baseline justify-between mb-1">
-              <span className="text-foreground font-mono text-[13px]">
+              <span className="text-[hsl(var(--text-primary))] font-mono text-[13px]">
                 Pro
               </span>
               <span className="text-accent font-mono text-[9px] uppercase tracking-wider">
@@ -83,7 +83,7 @@ const Pricing = () => (
               <span className="text-muted-foreground font-body text-[11px]">
                 For builders who live in agents daily.
               </span>
-              <span className="text-foreground font-mono text-[20px] font-light">
+              <span className="text-[hsl(var(--text-primary))] font-mono text-[20px] font-light">
                 $12
                 <span className="text-muted-foreground/60 text-[10px] ml-1">
                   /mo

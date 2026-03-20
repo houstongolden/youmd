@@ -24,7 +24,7 @@ function extractError(err: unknown): string {
 
 /* ── Main page ─────────────────────────────────────────────── */
 
-type Step = "boot" | "email" | "password" | "authenticating" | "done";
+type Step = "boot" | "email" | "password" | "authenticating" | "verify" | "verifying" | "done";
 
 export default function SignInPage() {
   const signInHook = useSignIn();
@@ -118,10 +118,30 @@ export default function SignInPage() {
         );
         setStep("done");
         await signIn.finalize({ navigate: () => router.push("/dashboard") });
+      } else if (signIn.status === "needs_first_factor") {
+        // Email verification required — send code via v7 API
+        const sendResult = await signIn.emailCode.sendCode({ emailAddress: email });
+        if (sendResult.error) {
+          addLine(
+            <span className="text-[hsl(var(--accent))]">
+              ERR: {sendResult.error.message ?? "failed to send verification code."}
+            </span>
+          );
+          addLine("\u00A0");
+          setStep("email");
+        } else {
+          addLine(
+            <span className="text-[hsl(var(--text-secondary))]">
+              verification code sent to {email}
+            </span>
+          );
+          addLine("\u00A0");
+          setStep("verify");
+        }
       } else {
         addLine(
           <span className="text-[hsl(var(--accent))]">
-            ERR: authentication incomplete. additional steps required.
+            ERR: authentication incomplete ({signIn.status}). try again or sign up.
           </span>
         );
         addLine("\u00A0");
@@ -137,6 +157,69 @@ export default function SignInPage() {
       setStep("email");
     }
   }, [email, signIn, router, addLine]);
+
+  const handleVerify = useCallback(async (code: string) => {
+    addLine(
+      <span>
+        <span className="text-[hsl(var(--accent))]">code:</span>{" "}
+        <span className="text-[hsl(var(--text-secondary))]">{code}</span>
+      </span>
+    );
+    addLine("\u00A0");
+    setStep("verifying");
+
+    if (!signIn) return;
+
+    addLine(
+      <span className="text-[hsl(var(--text-secondary))] opacity-50">
+        {"\u25CC"} verifying...
+      </span>
+    );
+
+    try {
+      const result = await signIn.emailCode.verifyCode({ code });
+
+      if (result.error) {
+        addLine(
+          <span className="text-[hsl(var(--accent))]">
+            ERR: {result.error.message ?? "invalid code."}
+          </span>
+        );
+        addLine("\u00A0");
+        setStep("verify");
+        return;
+      }
+
+      if (signIn.status === "complete") {
+        addLine(
+          <span className="text-[hsl(var(--success))]">{"\u2713"} verified</span>
+        );
+        addLine(
+          <span className="text-[hsl(var(--text-secondary))] opacity-60">
+            {"\u2192"} redirecting to dashboard...
+          </span>
+        );
+        setStep("done");
+        await signIn.finalize({ navigate: () => router.push("/dashboard") });
+      } else {
+        addLine(
+          <span className="text-[hsl(var(--accent))]">
+            ERR: verification incomplete. try again.
+          </span>
+        );
+        addLine("\u00A0");
+        setStep("verify");
+      }
+    } catch (err: unknown) {
+      addLine(
+        <span className="text-[hsl(var(--accent))]">
+          ERR: {extractError(err)}
+        </span>
+      );
+      addLine("\u00A0");
+      setStep("verify");
+    }
+  }, [signIn, router, addLine]);
 
   return (
     <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex items-center justify-center p-4">
@@ -187,9 +270,22 @@ export default function SignInPage() {
               </div>
             )}
 
-            {step === "authenticating" && (
+            {step === "verify" && (
+              <div className="mt-2">
+                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
+                  enter verification code
+                </div>
+                <TerminalAuthInput
+                  prompt=">"
+                  placeholder="______"
+                  onSubmit={handleVerify}
+                />
+              </div>
+            )}
+
+            {(step === "authenticating" || step === "verifying") && (
               <div className="text-[hsl(var(--accent-mid))] animate-pulse">
-                {"\u25CC"} authenticating...
+                {"\u25CC"} {step === "authenticating" ? "authenticating" : "verifying"}...
               </div>
             )}
           </div>

@@ -22,7 +22,7 @@ const FounderQuote = () => (
             $ cat /why/youmd.txt
           </div>
 
-          <blockquote className="font-mono text-sm md:text-base leading-relaxed text-foreground/85 space-y-4">
+          <blockquote className="font-mono text-sm md:text-base leading-relaxed text-[hsl(var(--text-primary)/0.85)] space-y-4">
             <p>
               <span className="text-accent">&gt;</span> I got sick of
               re-introducing myself to every new agent I started
@@ -45,9 +45,9 @@ const FounderQuote = () => (
             </p>
           </blockquote>
 
-          <div className="mt-8 pt-6 border-t border-border">
+          <div className="mt-8 pt-6 border-t border-[hsl(var(--border))]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded overflow-hidden border border-border">
+              <div className="w-10 h-10 rounded overflow-hidden border border-[hsl(var(--border))]">
                 <AsciiAvatar
                   src="/assets/houston-portrait.jpeg"
                   cols={40}
@@ -56,7 +56,7 @@ const FounderQuote = () => (
                 />
               </div>
               <div>
-                <div className="font-mono text-xs text-foreground/80">
+                <div className="font-mono text-xs text-[hsl(var(--text-primary)/0.8)]">
                   Houston Golden
                 </div>
                 <div className="font-mono text-[10px] text-muted-foreground/50">

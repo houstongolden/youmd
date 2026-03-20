@@ -13,6 +13,12 @@ import { SettingsPane } from "@/components/panes/SettingsPane";
 import { BillingPane } from "@/components/panes/BillingPane";
 import { TokensPane } from "@/components/panes/TokensPane";
 import { JsonPane } from "@/components/panes/JsonPane";
+import { SourcesPane } from "@/components/panes/SourcesPane";
+import { PortraitPane } from "@/components/panes/PortraitPane";
+import { PublishPane } from "@/components/panes/PublishPane";
+import { AgentsPane } from "@/components/panes/AgentsPane";
+import { ActivityPane } from "@/components/panes/ActivityPane";
+import { HelpPane } from "@/components/panes/HelpPane";
 
 export function DashboardContent() {
   const { user } = useUser();
@@ -111,9 +117,9 @@ export function DashboardContent() {
             {/* Preview panes — desktop only */}
             <div className="hidden md:flex md:w-[65%] flex-col min-h-0">
               {/* Pane tabs */}
-              <div className="flex items-center px-4 py-1.5 border-b border-[hsl(var(--border))] shrink-0">
+              <div className="flex items-center px-4 py-1.5 border-b border-[hsl(var(--border))] shrink-0 overflow-x-auto">
                 <div className="flex items-center gap-0.5">
-                  {(["preview", "json", "settings", "tokens", "billing"] as RightPane[]).map((pane) => (
+                  {(["preview", "json", "sources", "portrait", "publish", "agents", "activity", "settings", "tokens", "billing", "help"] as RightPane[]).map((pane) => (
                     <button
                       key={pane}
                       onClick={() => setRightPane(pane)}
@@ -145,6 +151,22 @@ export function DashboardContent() {
                 {rightPane === "billing" && (
                   <BillingPane plan={plan} username={username} />
                 )}
+                {rightPane === "sources" && (
+                  <SourcesPane username={username} />
+                )}
+                {rightPane === "portrait" && (
+                  <PortraitPane username={username} />
+                )}
+                {rightPane === "publish" && (
+                  <PublishPane username={username} />
+                )}
+                {rightPane === "agents" && (
+                  <AgentsPane username={username} />
+                )}
+                {rightPane === "activity" && (
+                  <ActivityPane username={username} />
+                )}
+                {rightPane === "help" && <HelpPane />}
               </div>
             </div>
           </div>

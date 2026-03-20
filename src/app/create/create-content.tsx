@@ -46,6 +46,7 @@ export function CreateContent() {
 
   // Username handler
   const handleUsername = useCallback(async (val: string) => {
+    // TODO: Add Cloudflare Turnstile before public launch to prevent username squatting
     const clean = val.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30);
     if (!clean || clean.length < 3) {
       addLine(

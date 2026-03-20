@@ -1,5 +1,54 @@
 # You.md — Changelog
 
+## 2026-03-20 — Identity System Unification + Private Layer + Docs
+
+### Architecture
+- **Profiles decoupled from auth** — profiles can exist without a user account
+- **Unified identity system** — `profiles` is now the canonical table; `users` is auth-only
+- When a user signs up, auto-creates or claims a profile entry
+- Session-based profile claiming: `/create` sets cookie, `/initialize` claims on sign-up
+- Context links are now profile-aware (profileId stored alongside userId)
+
+### Private Layer + Security
+- **privateContext table** — owner-only data (private notes, projects, internal links, calendar, investment thesis)
+- **accessTokens table** — SHA-256 hashed tokens with scopes (read/write), expirable, revocable
+- **securityLogs table** — audit trail for all profile events (created, claimed, reported, tokens)
+- **profileReports table** — abuse reporting with 5 reason types
+- **profileVerifications table** — multiple verification signals per profile
+- Token validation endpoint: external agents validate tokens, get profile + private context based on scopes
+
+### New Pages
+- **`/create`** — no-auth profile creation (pick username, name, profile created instantly)
+- **`/profiles`** — directory page listing all profiles from both systems
+- **`/docs`** — terminal-styled documentation (getting started, /share, CLI, API, privacy, commands)
+
+### Share Flow
+- **`/share` command** — creates context link, generates copyable block, auto-copies to clipboard
+- **`/share --private`** — includes private context for trusted agents
+- Share block designed for pasting into any AI conversation
+
+### UI Overhaul
+- Centered terminal panels with colored dots (red/yellow/green) on auth, initialize, 404 pages
+- Blinking block cursor (█) on terminal inputs
+- Dashboard uses same TerminalHeader as other pages
+- Profile page fully migrated to terminal design tokens
+- Landing page CTAs point to `/create` instead of `/sign-up`
+- ClaimBanner + ReportDialog components for unclaimed profiles
+- 6 new shell panes: Sources, Portrait, Publish, Agents, Activity, Help
+- Mobile keyboard scroll fix (100dvh + scrollIntoView)
+- Orange focus ring killed on all terminal inputs
+
+### Agent Personality
+- Categorized thinking phrases (discovery, analysis, identity, portrait, sync)
+- Progressive questioning depth (L1-L4) in system prompt
+- Source-aware reactions in system prompt
+- soul.md + agent.md deep rewrite — definitive personality specification
+- CLI system prompts updated to match web agent
+
+### CLI (v0.3.0)
+- Upgraded onboarding + chat system prompts (proactive, concise, witty)
+- Description: "your identity file for the agent internet"
+
 ## 2026-03-19 — Terminal-First UI Architecture
 - **No more forms.** Dashboard is now split-screen: 35% terminal + 65% preview pane
 - New `/initialize` route: auto-claims username, runs boot sequence, launches onboarding agent

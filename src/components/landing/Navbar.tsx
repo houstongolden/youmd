@@ -63,7 +63,7 @@ const Navbar = () => {
                 className={`font-mono text-[10px] transition-colors duration-200 ${
                   activeSection === id
                     ? "text-accent"
-                    : "text-muted-foreground/60 hover:text-foreground"
+                    : "text-muted-foreground/60 hover:text-[hsl(var(--text-primary))]"
                 }`}
               >
                 {label}
@@ -74,6 +74,12 @@ const Navbar = () => {
               className="font-mono text-[10px] text-muted-foreground/60 hover:text-accent transition-colors"
             >
               --profiles
+            </Link>
+            <Link
+              href="/docs"
+              className="font-mono text-[10px] text-muted-foreground/60 hover:text-accent transition-colors"
+            >
+              --docs
             </Link>
           </div>
 
@@ -118,7 +124,7 @@ const Navbar = () => {
       </nav>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-background/98 backdrop-blur-xl flex flex-col items-center justify-center gap-6">
+        <div className="fixed inset-0 z-40 bg-[hsl(var(--bg)/0.98)] backdrop-blur-xl flex flex-col items-center justify-center gap-6">
           {sections.map(({ id, label }) => (
             <a
               key={id}
@@ -127,7 +133,7 @@ const Navbar = () => {
               className={`font-mono text-[14px] transition-colors ${
                 activeSection === id
                   ? "text-accent"
-                  : "text-muted-foreground/70 hover:text-foreground"
+                  : "text-muted-foreground/70 hover:text-[hsl(var(--text-primary))]"
               }`}
             >
               {label}
@@ -139,6 +145,13 @@ const Navbar = () => {
             className="font-mono text-[14px] text-muted-foreground/70 hover:text-accent transition-colors"
           >
             --profiles
+          </Link>
+          <Link
+            href="/docs"
+            onClick={() => setMobileOpen(false)}
+            className="font-mono text-[14px] text-muted-foreground/70 hover:text-accent transition-colors"
+          >
+            --docs
           </Link>
           {isSignedIn ? (
             <Link

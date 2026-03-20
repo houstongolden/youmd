@@ -12,37 +12,81 @@ import { api } from "../../convex/_generated/api";
 const CHAT_PROXY_URL =
   "https://kindly-cassowary-600.convex.site/api/v1/chat";
 
-const THINKING_PHRASES = [
-  "reading between your lines",
-  "mapping your expertise graph",
-  "grokking your whole deal",
-  "connecting the dots",
-  "learning you",
-  "calibrating to your wavelength",
-  "decoding your digital footprint",
-  "weaving your story",
-  "crystallizing your identity",
-  "assembling the puzzle pieces",
-  "distilling your essence",
-  "processing your signals",
-  "structuring your identity",
-  "analyzing your voice patterns",
-  "building your identity constellation",
-  "converting vibes to structured data",
-  "finding your narrative thread",
-  "capturing your voice signature",
-  "computing your identity fingerprint",
-  "synthesizing your public presence",
-  "cross-referencing your context",
-  "indexing your expertise",
-  "parsing your story arc",
-  "compiling your identity bundle",
-  "resolving your context graph",
-  "tracing your signal",
-  "triangulating your vibe",
-  "rendering your identity surface",
-  "encoding your perspective",
-  "building your agent briefing",
+// --- Categorized Thinking Phrases (shuffled per session, never repeated) ---
+
+const THINKING_DISCOVERY = [
+  "pulling that up now...",
+  "reading through this...",
+  "digging into your profile...",
+  "interesting — let me look closer...",
+  "cross-referencing with what you told me earlier...",
+  "scraping that — might take a second...",
+  "found some good stuff in here...",
+  "this tells me a lot, actually...",
+  "connecting some dots...",
+  "let me see what's in here...",
+];
+
+const THINKING_ANALYSIS = [
+  "piecing together your stack...",
+  "finding the through-line in your work...",
+  "there's a pattern here...",
+  "extracting the signal...",
+  "looking for what makes you distinct...",
+  "synthesizing everything so far...",
+  "mapping your expertise graph...",
+  "building a timeline from your sources...",
+  "reconciling your public and private context...",
+  "your writing style says a lot — processing...",
+];
+
+const THINKING_IDENTITY = [
+  "drafting your context layer...",
+  "structuring what i know about you...",
+  "writing your identity primitives...",
+  "building your you.json...",
+  "compiling your source graph...",
+  "generating your context snapshot...",
+  "weaving your narrative thread...",
+  "assembling your identity bundle...",
+  "crystallizing your professional identity...",
+  "encoding your context for agents...",
+];
+
+const THINKING_PORTRAIT = [
+  "rendering your portrait...",
+  "finding the right character density...",
+  "mapping your vibe to ascii...",
+  "this portrait's going to be good...",
+  "converting pixels to personality...",
+];
+
+const THINKING_SYNC = [
+  "checking what's changed since last sync...",
+  "your github's been busy...",
+  "new content detected — reading...",
+  "comparing against your current context...",
+  "recalculating your freshness score...",
+  "pulling the latest from your sources...",
+];
+
+export type ThinkingCategory = "discovery" | "analysis" | "identity" | "portrait" | "sync";
+
+const THINKING_POOLS: Record<ThinkingCategory, string[]> = {
+  discovery: THINKING_DISCOVERY,
+  analysis: THINKING_ANALYSIS,
+  identity: THINKING_IDENTITY,
+  portrait: THINKING_PORTRAIT,
+  sync: THINKING_SYNC,
+};
+
+// Flat list for backwards-compatible random selection
+const THINKING_ALL = [
+  ...THINKING_DISCOVERY,
+  ...THINKING_ANALYSIS,
+  ...THINKING_IDENTITY,
+  ...THINKING_PORTRAIT,
+  ...THINKING_SYNC,
 ];
 
 export const BUNDLE_SECTIONS = [
@@ -108,6 +152,26 @@ rules for content in updates:
 
 when you think the profile is rich enough (at least about, now, projects, and values have substance), suggest finishing by saying something like "your bundle is looking solid. ready to publish, or want to keep going?"
 
+progressive question depth — match question depth to conversation stage:
+- L1 (first 1-2 exchanges): surface-level. "drop me some links and i'll start building your context." / "what do you do? or just paste a link and i'll figure it out." / "what's the one thing you want agents to know about you?"
+- L2 (exchanges 3-5): current work. "what are you working on right now that you're excited about?" / "anything you're building that isn't public yet?" / "what's the thing you keep coming back to, project-wise?" / "how would you describe what you do to someone sharp but outside your field?"
+- L3 (exchanges 6-8): identity. "what do you want to be known for?" / "what do people consistently get wrong about you?" / "if an agent was representing you in a meeting, what's the one thing it absolutely needs to know?" / "what's the proudest thing you've built?"
+- L4 (exchange 9+): deep context. "what drives your work that isn't on any resume?" / "how do you want to be talked about when you're not in the room?" / "what's the context that would make every agent interaction better if they just knew it upfront?"
+increase depth naturally as you learn more. never ask L4 questions before you've earned them.
+
+source-aware reactions — when the user shares or references a source:
+- github: focus on repos, tech stack, contribution patterns. "your github tells a story. let me pull the highlights and map your stack."
+- x/twitter: extract themes, voice, real-time thinking. "your feed's a different side of you — pulling the signal from the noise."
+- linkedin: career arc, narrative between roles. "linkedin's got the career arc. let me extract the narrative between the roles."
+- cross-source: when you have context from multiple platforms, connect them. "your github shows what you build, your x shows how you think about it." / "linkedin gives me the career narrative, github shows the actual output. i can see the through-line now."
+
+context-aware responses — adapt based on what the user shares:
+- if they mention building/creating: connect to existing profile data. "that tracks with what i see in your profiles."
+- if they mention their role: cross-reference with sources. "got it — and cross-referencing with your github and x presence, that makes sense."
+- if they share values/opinions: "that's the kind of context that changes how an agent represents you. adding it to your identity layer."
+- if they give short answers: acknowledge and ask a follow-up without pressure.
+- always weave new information into what you already know about them.
+
 important: keep responses concise. 2-4 sentences max per turn. ask one good question at a time, not a list. be a conversation, not a questionnaire.`;
 
 // ---------------------------------------------------------------------------
@@ -130,14 +194,15 @@ export interface SectionUpdate {
   content: string;
 }
 
-export type RightPane = "preview" | "settings" | "billing" | "tokens" | "json";
+export type RightPane = "preview" | "settings" | "billing" | "tokens" | "json" | "sources" | "portrait" | "publish" | "agents" | "activity" | "help";
 
 // ---------------------------------------------------------------------------
 // Helpers (exported for reuse)
 // ---------------------------------------------------------------------------
 
-function randomThinking(): string {
-  return THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)];
+function randomThinking(category?: ThinkingCategory): string {
+  const pool = category ? THINKING_POOLS[category] : THINKING_ALL;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 export function parseUpdatesFromResponse(text: string): {
@@ -552,12 +617,18 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       const trimmed = cmd.trim().toLowerCase();
 
       // Pane-switching commands
+      // Note: /publish and /help are handled separately below with special logic
       const paneCommands: Record<string, RightPane> = {
         "/preview": "preview",
+        "/profile": "preview",
         "/settings": "settings",
         "/billing": "billing",
         "/tokens": "tokens",
         "/json": "json",
+        "/sources": "sources",
+        "/portrait": "portrait",
+        "/agents": "agents",
+        "/activity": "activity",
       };
 
       if (paneCommands[trimmed] && onPaneSwitch) {
@@ -589,8 +660,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       }
 
       if (trimmed === "/help") {
+        if (onPaneSwitch) {
+          onPaneSwitch("help");
+        }
         const helpText = onPaneSwitch
-          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/preview -- live profile preview\n/json -- raw you.json\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/status -- bundle status\n/publish -- publish your latest bundle\n/help -- show this message"
+          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/preview -- live profile preview\n/json -- raw you.json\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/sources -- connected data sources\n/portrait -- ascii portrait settings\n/agents -- agent network & access\n/activity -- security & activity log\n/publish -- publish your latest bundle\n/status -- bundle status\n/help -- show this reference"
           : "available commands:\n/share -- create a shareable identity link\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
 
         setDisplayMessages((prev) => [
@@ -620,6 +694,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       }
 
       if (trimmed === "/publish") {
+        if (onPaneSwitch) {
+          onPaneSwitch("publish");
+        }
         if (!user?.id || !latestBundle) {
           setDisplayMessages((prev) => [
             ...prev,
