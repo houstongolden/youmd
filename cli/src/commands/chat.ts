@@ -17,6 +17,8 @@ import {
   sectionLabel,
   showBundlePreview,
   getOpenRouterKey,
+  scrapeProfile,
+  researchUser,
   Spinner,
   randomThinking,
   BUNDLE_SECTIONS,
@@ -71,6 +73,8 @@ const SLASH_COMMANDS: Record<string, string> = {
   "/preview": "show profile preview",
   "/publish": "publish bundle to you.md",
   "/link": "show context link info",
+  "/share": "generate shareable context block",
+  "/research": "run Perplexity research on your profile",
   "/rebuild": "recompile the bundle",
   "/help": "show available commands",
   "/done": "exit chat",
@@ -344,6 +348,108 @@ function showHelp(): void {
   console.log("");
 }
 
+function showShareBlock(bundleDir: string): void {
+  const config = readGlobalConfig();
+  const username = config.username || "your-username";
+
+  console.log("");
+  console.log("  " + chalk.bold("shareable context block:"));
+  console.log("");
+  console.log(chalk.dim("  ---- copy below this line ----"));
+  console.log("");
+  console.log(`  ## My Identity File`);
+  console.log("");
+  console.log(`  My you.md profile: https://you.md/${username}`);
+  console.log(`  Context endpoint: https://you.md/${username}/context`);
+  console.log("");
+  console.log(`  Add to your system prompt or CLAUDE.md:`);
+  console.log(`  "my identity file: https://you.md/${username}/context"`);
+  console.log("");
+  console.log(`  Or fetch it directly:`);
+  console.log(`  curl -s https://you.md/${username}/context`);
+  console.log("");
+  console.log(chalk.dim("  ---- copy above this line ----"));
+  console.log("");
+}
+
+async function handleResearch(
+  bundleDir: string,
+  messages: ChatMessage[]
+): Promise<boolean> {
+  console.log("");
+
+  // Extract user info from the bundle
+  const aboutPath = path.join(bundleDir, "profile", "about.md");
+  const linksPath = path.join(bundleDir, "profile", "links.md");
+
+  let name = "";
+  let links: string[] = [];
+
+  if (fs.existsSync(aboutPath)) {
+    const raw = fs.readFileSync(aboutPath, "utf-8");
+    const nameMatch = raw.match(/^#\s+(.+)$/m);
+    if (nameMatch) name = nameMatch[1].trim();
+  }
+
+  if (fs.existsSync(linksPath)) {
+    const raw = fs.readFileSync(linksPath, "utf-8");
+    const urlMatches = raw.match(/https?:\/\/[^\s)]+/g);
+    if (urlMatches) links = urlMatches;
+  }
+
+  const config = readGlobalConfig();
+  const username = config.username || "";
+
+  if (!name && !username) {
+    console.log(
+      chalk.yellow(
+        "  can't research -- no name or username found in your profile."
+      )
+    );
+    console.log("");
+    return false;
+  }
+
+  const researchSpinner = new Spinner("researching you with Perplexity");
+  researchSpinner.start();
+
+  const result = await researchUser({
+    name: name || username,
+    username: username || undefined,
+    links: links.length > 0 ? links : undefined,
+  });
+
+  researchSpinner.stop();
+
+  if (!result) {
+    console.log(chalk.yellow("  research came back empty. try again later."));
+    console.log("");
+    return false;
+  }
+
+  const researchText =
+    result.summary ||
+    result.content ||
+    (result.findings ? result.findings.join("\n") : null);
+
+  if (!researchText) {
+    console.log(chalk.yellow("  research returned no usable data."));
+    console.log("");
+    return false;
+  }
+
+  console.log(chalk.dim("  research complete. feeding results to agent..."));
+  console.log("");
+
+  // Inject research into conversation context
+  messages.push({
+    role: "user",
+    content: `i just ran Perplexity research on myself. here's what it found:\n---\n${researchText.slice(0, 4000)}\n---\n\nreview these findings. what stands out? does anything here need to be added to my profile sections? suggest specific updates.`,
+  });
+
+  return true;
+}
+
 function extractProfileHint(bundleDir: string): string | null {
   // Try to pull something specific from the profile to personalize the greeting
   const candidates = ["profile/now.md", "profile/about.md", "profile/projects.md"];
@@ -494,6 +600,54 @@ export async function chatCommand(): Promise<void> {
 
     if (lower === "/link") {
       showLinkInfo(bundleDir);
+      continue;
+    }
+
+    if (lower === "/share") {
+      showShareBlock(bundleDir);
+      continue;
+    }
+
+    if (lower === "/research") {
+      const researchOk = await handleResearch(bundleDir, messages);
+      if (!researchOk) continue;
+      // After research, get an LLM response with the injected context
+      const researchSpinner = new Spinner(randomThinking());
+      researchSpinner.start();
+
+      try {
+        response = await callLLM(apiKey, messages);
+      } catch (err) {
+        researchSpinner.stop();
+        console.log(
+          chalk.red(
+            `  AI error: ${err instanceof Error ? err.message : String(err)}`
+          )
+        );
+        console.log(chalk.dim("  try again."));
+        console.log("");
+        messages.pop();
+        continue;
+      }
+
+      researchSpinner.stop();
+
+      messages.push({ role: "assistant", content: response });
+      const researchParsed = parseUpdatesFromResponse(response);
+
+      if (researchParsed.updates.length > 0) {
+        for (const update of researchParsed.updates) {
+          writeSectionFile(bundleDir, update.section, update.content);
+        }
+        console.log(
+          chalk.cyan(
+            `  [updated: ${researchParsed.updates.map((u) => sectionLabel(u.section)).join(", ")}]`
+          )
+        );
+        console.log("");
+      }
+
+      printAgentMessage(researchParsed.display);
       continue;
     }
 

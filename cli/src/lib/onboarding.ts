@@ -15,6 +15,10 @@ import { compileBundle, writeBundle } from "./compiler";
 
 const CHAT_PROXY_URL =
   "https://kindly-cassowary-600.convex.site/api/v1/chat";
+const SCRAPE_URL =
+  "https://kindly-cassowary-600.convex.site/api/v1/scrape";
+const RESEARCH_URL =
+  "https://kindly-cassowary-600.convex.site/api/v1/research";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "anthropic/claude-sonnet-4";
 
@@ -275,6 +279,78 @@ async function fetchWebsiteContent(url: string): Promise<string> {
   }
 }
 
+// ─── Scrape & Research ────────────────────────────────────────────────
+
+interface ScrapeResult {
+  name?: string;
+  bio?: string;
+  followers?: number;
+  following?: number;
+  location?: string;
+  website?: string;
+  avatar?: string;
+  posts?: Array<{ text: string; date?: string }>;
+  [key: string]: unknown;
+}
+
+async function scrapeProfile(url: string): Promise<ScrapeResult | null> {
+  try {
+    const res = await fetch(SCRAPE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data as ScrapeResult;
+  } catch {
+    return null;
+  }
+}
+
+interface ResearchResult {
+  summary?: string;
+  findings?: string[];
+  content?: string;
+  [key: string]: unknown;
+}
+
+async function researchUser(params: {
+  name: string;
+  username?: string;
+  email?: string;
+  links?: string[];
+}): Promise<ResearchResult | null> {
+  try {
+    const res = await fetch(RESEARCH_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data as ResearchResult;
+  } catch {
+    return null;
+  }
+}
+
+function displayScrapeResult(label: string, data: ScrapeResult): void {
+  console.log("");
+  console.log("  " + chalk.bold(`${label} profile:`));
+  if (data.name) console.log("    name:      " + chalk.cyan(data.name));
+  if (data.bio) console.log("    bio:       " + chalk.dim(data.bio.slice(0, 120)));
+  if (data.followers !== undefined)
+    console.log("    followers: " + chalk.cyan(String(data.followers)));
+  if (data.following !== undefined)
+    console.log("    following: " + chalk.cyan(String(data.following)));
+  if (data.location) console.log("    location:  " + chalk.dim(data.location));
+  if (data.website) console.log("    website:   " + chalk.dim(data.website));
+  console.log("");
+}
+
 // ─── Spinner ──────────────────────────────────────────────────────────
 
 class Spinner {
@@ -523,6 +599,7 @@ interface BasicInfo {
   website: string;
   linkedin: string;
   twitter: string;
+  github: string;
 }
 
 async function runFallbackMode(
@@ -601,6 +678,7 @@ async function runFallbackMode(
   if (info.website) linkLines.push(`- **Website**: ${info.website}`);
   if (info.linkedin) linkLines.push(`- **LinkedIn**: ${info.linkedin}`);
   if (info.twitter) linkLines.push(`- **X/Twitter**: ${info.twitter}`);
+  if (info.github) linkLines.push(`- **GitHub**: ${info.github}`);
 
   writeSectionFile(
     bundleDir,
@@ -629,7 +707,9 @@ async function runFallbackMode(
 async function runAIMode(
   rl: readline.Interface,
   info: BasicInfo,
-  apiKey: string | null
+  apiKey: string | null,
+  scraped?: { twitter?: ScrapeResult | null; github?: ScrapeResult | null },
+  research?: ResearchResult | null
 ): Promise<void> {
   const bundleDir = getLocalBundleDir();
   const profileDir = path.join(bundleDir, "profile");
@@ -669,11 +749,48 @@ async function runAIMode(
   if (info.website) linksInfo.push(`Website: ${info.website}`);
   if (info.linkedin) linksInfo.push(`LinkedIn: ${info.linkedin}`);
   if (info.twitter) linksInfo.push(`X/Twitter: ${info.twitter}`);
+  if (info.github) linksInfo.push(`GitHub: ${info.github}`);
 
   let initialUserMessage = `here's what i know so far:
 - name: ${info.name}
 - username: ${info.username}
 ${linksInfo.length > 0 ? linksInfo.map((l) => `- ${l}`).join("\n") : "- no links provided"}`;
+
+  // Add scraped social profile data
+  if (scraped?.twitter) {
+    const t = scraped.twitter;
+    initialUserMessage += `\n\ni scraped their X/Twitter profile:`;
+    if (t.name) initialUserMessage += `\n- display name: ${t.name}`;
+    if (t.bio) initialUserMessage += `\n- bio: ${t.bio}`;
+    if (t.followers !== undefined) initialUserMessage += `\n- followers: ${t.followers}`;
+    if (t.location) initialUserMessage += `\n- location: ${t.location}`;
+    if (t.posts && t.posts.length > 0) {
+      initialUserMessage += `\n- recent posts:`;
+      for (const post of t.posts.slice(0, 5)) {
+        initialUserMessage += `\n  - "${post.text.slice(0, 200)}"`;
+      }
+    }
+  }
+
+  if (scraped?.github) {
+    const g = scraped.github;
+    initialUserMessage += `\n\ni scraped their GitHub profile:`;
+    if (g.name) initialUserMessage += `\n- display name: ${g.name}`;
+    if (g.bio) initialUserMessage += `\n- bio: ${g.bio}`;
+    if (g.followers !== undefined) initialUserMessage += `\n- followers: ${g.followers}`;
+    if (g.location) initialUserMessage += `\n- location: ${g.location}`;
+  }
+
+  // Add Perplexity research results
+  if (research) {
+    const researchText =
+      research.summary ||
+      research.content ||
+      (research.findings ? research.findings.join("\n") : null);
+    if (researchText) {
+      initialUserMessage += `\n\ni also ran deep research (via Perplexity) on this person. here's what i found:\n---\n${researchText.slice(0, 4000)}\n---`;
+    }
+  }
 
   if (websiteContent) {
     initialUserMessage += `
@@ -683,7 +800,11 @@ i also fetched their website content. here's what the site says:
 ${websiteContent}
 ---
 
-analyze the website content. comment on what you found — be specific about their work, role, company, anything interesting. then generate initial profile sections from everything you know. after showing what you found, ask what else they want to add.`;
+analyze everything you know -- the scraped profiles, research, and website content. comment on what you found -- be specific about their work, role, company, anything interesting. then generate initial profile sections from everything you know. after showing what you found, ask what else they want to add.`;
+  } else if (scraped?.twitter || scraped?.github || research) {
+    initialUserMessage += `
+
+analyze everything you know from the scraped profiles and research. comment on what you found -- be specific about their work, background, anything interesting. then generate initial profile sections. after showing what you found, ask what else they want to add.`;
   } else {
     initialUserMessage += `
 
@@ -1008,6 +1129,7 @@ export interface OnboardingResult {
   website?: string;
   linkedin?: string;
   twitter?: string;
+  github?: string;
 }
 
 export async function runOnboarding(): Promise<void> {
@@ -1072,6 +1194,20 @@ export async function runOnboarding(): Promise<void> {
       chalk.dim("(optional)") +
       ": "
   );
+  const twitter = await ask(
+    rl,
+    chalk.green("  > ") +
+      "X/Twitter username " +
+      chalk.dim("(optional, e.g. @houston)") +
+      ": "
+  );
+  const github = await ask(
+    rl,
+    chalk.green("  > ") +
+      "GitHub username " +
+      chalk.dim("(optional)") +
+      ": "
+  );
   const linkedin = await ask(
     rl,
     chalk.green("  > ") +
@@ -1079,22 +1215,85 @@ export async function runOnboarding(): Promise<void> {
       chalk.dim("(optional)") +
       ": "
   );
-  const twitter = await ask(
-    rl,
-    chalk.green("  > ") +
-      "X/Twitter URL " +
-      chalk.dim("(optional)") +
-      ": "
-  );
 
   console.log("");
+
+  // ── Scrape social profiles ────────────────────────────────────────
+  const twitterHandle = (twitter || "").replace(/^@/, "").trim();
+  const githubHandle = (github || "").trim();
+
+  let twitterData: ScrapeResult | null = null;
+  let githubData: ScrapeResult | null = null;
+
+  if (twitterHandle) {
+    const scrapeSpinner = new Spinner("scanning your X profile");
+    scrapeSpinner.start();
+    twitterData = await scrapeProfile(`https://x.com/${twitterHandle}`);
+    scrapeSpinner.stop();
+
+    if (twitterData) {
+      displayScrapeResult("X", twitterData);
+    } else {
+      console.log(chalk.dim("  couldn't pull X profile -- no worries."));
+      console.log("");
+    }
+  }
+
+  if (githubHandle) {
+    const scrapeSpinner = new Spinner("reading your GitHub");
+    scrapeSpinner.start();
+    githubData = await scrapeProfile(`https://github.com/${githubHandle}`);
+    scrapeSpinner.stop();
+
+    if (githubData) {
+      displayScrapeResult("GitHub", githubData);
+    } else {
+      console.log(chalk.dim("  couldn't pull GitHub profile -- no worries."));
+      console.log("");
+    }
+  }
+
+  // ── Research the user via Perplexity ──────────────────────────────
+  const links: string[] = [];
+  if (website) links.push(website);
+  if (twitterHandle) links.push(`https://x.com/${twitterHandle}`);
+  if (githubHandle) links.push(`https://github.com/${githubHandle}`);
+  if (linkedin) links.push(linkedin);
+
+  let researchData: ResearchResult | null = null;
+
+  if (name || twitterHandle || githubHandle) {
+    const researchSpinner = new Spinner("researching you across the internet");
+    researchSpinner.start();
+    researchData = await researchUser({
+      name: name || username,
+      username: twitterHandle || githubHandle || username,
+      links: links.length > 0 ? links : undefined,
+    });
+    researchSpinner.stop();
+
+    if (researchData) {
+      const summary =
+        researchData.summary ||
+        researchData.content ||
+        (researchData.findings ? researchData.findings.join(" ") : null);
+      if (summary) {
+        console.log(chalk.dim("  research complete -- found context about you."));
+        console.log("");
+      }
+    }
+  }
+
+  const twitterUrl = twitterHandle ? `https://x.com/${twitterHandle}` : "";
+  const githubUrl = githubHandle ? `https://github.com/${githubHandle}` : "";
 
   const basicInfo: BasicInfo = {
     username,
     name: name || username,
     website: website || "",
     linkedin: linkedin || "",
-    twitter: twitter || "",
+    twitter: twitterUrl,
+    github: githubUrl,
   };
 
   // Check for existing bundle
@@ -1116,7 +1315,13 @@ export async function runOnboarding(): Promise<void> {
   console.log("");
 
   try {
-    await runAIMode(rl, basicInfo, userApiKey);
+    await runAIMode(
+      rl,
+      basicInfo,
+      userApiKey,
+      { twitter: twitterData, github: githubData },
+      researchData
+    );
   } catch {
     console.log(chalk.dim("  switching to manual mode."));
     await runFallbackMode(rl, basicInfo);
@@ -1146,6 +1351,7 @@ export async function createBundle(
   if (info.website) linkLines.push(`- **Website**: ${info.website}`);
   if (info.linkedin) linkLines.push(`- **LinkedIn**: ${info.linkedin}`);
   if (info.twitter) linkLines.push(`- **X/Twitter**: ${info.twitter}`);
+  if (info.github) linkLines.push(`- **GitHub**: ${info.github}`);
 
   writeSectionFile(
     bundleDir,
@@ -1203,11 +1409,15 @@ export {
   sectionLabel,
   showBundlePreview,
   fetchWebsiteContent,
+  scrapeProfile,
+  researchUser,
   getOpenRouterKey,
   Spinner,
   randomThinking,
   SYSTEM_PROMPT,
   BUNDLE_SECTIONS,
   CHAT_PROXY_URL,
+  SCRAPE_URL,
+  RESEARCH_URL,
 };
-export type { ChatMessage, SectionUpdate, BundleSection, BasicInfo };
+export type { ChatMessage, SectionUpdate, BundleSection, BasicInfo, ScrapeResult, ResearchResult };

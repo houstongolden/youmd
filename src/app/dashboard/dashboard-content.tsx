@@ -161,7 +161,7 @@ export function DashboardContent() {
                   <PublishPane username={username} />
                 )}
                 {rightPane === "agents" && (
-                  <AgentsPane username={username} />
+                  <AgentsPane username={username} profileId={userProfile?._id} />
                 )}
                 {rightPane === "activity" && (
                   <ActivityPane username={username} />

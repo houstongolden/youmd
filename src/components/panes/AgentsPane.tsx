@@ -1,10 +1,12 @@
 "use client";
 
-// TODO: Wire up real agent access data from Convex (e.g., api.agents.listReads)
-// Currently using mock/placeholder data
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 interface AgentsPaneProps {
   username: string;
+  profileId?: Id<"profiles">;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -19,23 +21,94 @@ function Divider() {
   return <div className="h-px bg-[hsl(var(--border))] my-6" />;
 }
 
-export function AgentsPane({ username }: AgentsPaneProps) {
-  // TODO: Replace with useQuery(api.agents.listReads, { username })
-  const agents = [
-    { name: "Claude (Anthropic)", verified: true, reads: "4,201", lastAccess: "2m ago", level: "full" },
-    { name: "GPT-4 (OpenAI)", verified: true, reads: "3,847", lastAccess: "14m ago", level: "full" },
-    { name: "Gemini (Google)", verified: true, reads: "2,109", lastAccess: "2h ago", level: "public" },
-    { name: "Perplexity", verified: true, reads: "1,892", lastAccess: "5h ago", level: "full" },
-    { name: "Copilot (Microsoft)", verified: false, reads: "643", lastAccess: "1d ago", level: "public" },
-    { name: "Llama (Meta)", verified: false, reads: "312", lastAccess: "2d ago", level: "public" },
-    { name: "Mistral", verified: false, reads: "198", lastAccess: "3d ago", level: "public" },
-  ];
+// ── Agent display metadata ──────────────────────────────────
+
+const AGENT_META: Record<string, { icon: string; label: string }> = {
+  "claude code":   { icon: "[>_]", label: "Claude Code" },
+  "claude":        { icon: "[cl]", label: "Claude" },
+  "anthropic":     { icon: "[an]", label: "Anthropic" },
+  "cursor":        { icon: "[|>]", label: "Cursor" },
+  "chatgpt":       { icon: "[gp]", label: "ChatGPT" },
+  "openai":        { icon: "[oa]", label: "OpenAI" },
+  "gpt-4":         { icon: "[g4]", label: "GPT-4" },
+  "gpt-4o":        { icon: "[go]", label: "GPT-4o" },
+  "copilot":       { icon: "[cp]", label: "Copilot" },
+  "gemini":        { icon: "[gm]", label: "Gemini" },
+  "perplexity":    { icon: "[px]", label: "Perplexity" },
+  "llama":         { icon: "[ll]", label: "Llama" },
+  "mistral":       { icon: "[ms]", label: "Mistral" },
+  "windsurf":      { icon: "[ws]", label: "Windsurf" },
+  "codex":         { icon: "[cx]", label: "Codex" },
+};
+
+function getAgentMeta(name: string): { icon: string; label: string } {
+  const key = name.toLowerCase();
+  for (const [k, v] of Object.entries(AGENT_META)) {
+    if (key.includes(k)) return { icon: v.icon, label: v.label };
+  }
+  return { icon: "[??]", label: name };
+}
+
+function formatRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function formatCount(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+  return String(n);
+}
+
+// ── Mock data (fallback) ────────────────────────────────────
+
+const MOCK_AGENTS = [
+  { name: "Claude (Anthropic)", type: "read" as const, count: 4201, lastUsed: Date.now() - 120000 },
+  { name: "GPT-4 (OpenAI)", type: "read" as const, count: 3847, lastUsed: Date.now() - 840000 },
+  { name: "Gemini (Google)", type: "read" as const, count: 2109, lastUsed: Date.now() - 7200000 },
+  { name: "Perplexity", type: "read" as const, count: 1892, lastUsed: Date.now() - 18000000 },
+  { name: "Copilot (Microsoft)", type: "write" as const, count: 643, lastUsed: Date.now() - 86400000 },
+  { name: "Llama (Meta)", type: "read" as const, count: 312, lastUsed: Date.now() - 172800000 },
+  { name: "Mistral", type: "read" as const, count: 198, lastUsed: Date.now() - 259200000 },
+];
+
+const MOCK_STATS = {
+  totalReads: 12559,
+  totalWrites: 643,
+  uniqueAgents: 7,
+  totalInteractions: 13202,
+};
+
+export function AgentsPane({ username, profileId }: AgentsPaneProps) {
+  const agentStats = useQuery(
+    api.private.getAgentStats,
+    profileId ? { profileId } : "skip"
+  );
+
+  // Resolve data: real or mock
+  const hasRealData = agentStats && agentStats.agents.length > 0;
+  const stats = hasRealData
+    ? {
+        totalReads: agentStats.totalReads,
+        totalWrites: agentStats.totalWrites,
+        uniqueAgents: agentStats.uniqueAgents,
+        totalInteractions: agentStats.totalInteractions,
+      }
+    : MOCK_STATS;
+
+  const agents = hasRealData ? agentStats.agents : MOCK_AGENTS;
 
   return (
     <div className="h-full overflow-y-auto">
       <div className="px-6 py-3 border-b border-[hsl(var(--border))]">
         <span className="text-xs font-mono text-[hsl(var(--text-secondary))]">
-          agents
+          agents{hasRealData ? "" : " [mock]"}
         </span>
       </div>
 
@@ -43,10 +116,10 @@ export function AgentsPane({ username }: AgentsPaneProps) {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
           {[
-            { label: "total reads", value: "14,203" },
-            { label: "agents", value: "7" },
-            { label: "verified", value: "4" },
-            { label: "24h reads", value: "+847" },
+            { label: "total reads", value: formatCount(stats.totalReads) },
+            { label: "total writes", value: formatCount(stats.totalWrites) },
+            { label: "agents", value: String(stats.uniqueAgents) },
+            { label: "interactions", value: formatCount(stats.totalInteractions) },
           ].map((s) => (
             <div
               key={s.label}
@@ -65,38 +138,42 @@ export function AgentsPane({ username }: AgentsPaneProps) {
 
         <SectionLabel>connected agents</SectionLabel>
         <div className="space-y-2">
-          {agents.map((a) => (
-            <div
-              key={a.name}
-              className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
-              style={{ borderRadius: "2px" }}
-            >
-              <div className="flex items-center justify-between mb-2 gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-mono text-[12px] text-[hsl(var(--text-primary))] opacity-80 truncate">
-                    {a.name}
-                  </span>
-                  {a.verified && (
-                    <span
-                      className="font-mono text-[8px] text-[hsl(var(--success))] border border-[hsl(var(--success))]/20 px-1.5 py-0.5 shrink-0"
-                      style={{ borderRadius: "2px", background: "hsl(var(--success) / 0.05)" }}
-                    >
-                      {"\u2713"}
+          {agents.map((a) => {
+            const meta = getAgentMeta(a.name);
+            const isWrite = a.type === "write";
+            return (
+              <div
+                key={a.name}
+                className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
+                style={{ borderRadius: "2px" }}
+              >
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-mono text-[11px] text-[hsl(var(--accent))] opacity-70 shrink-0">
+                      {meta.icon}
                     </span>
-                  )}
+                    <span className="font-mono text-[12px] text-[hsl(var(--text-primary))] opacity-80 truncate">
+                      {meta.label}
+                    </span>
+                  </div>
+                  <span
+                    className={`font-mono text-[10px] uppercase shrink-0 border px-1.5 py-0.5 ${
+                      isWrite
+                        ? "text-[hsl(var(--warning,40_100%_50%))] border-[hsl(var(--warning,40_100%_50%))]/20"
+                        : "text-[hsl(var(--success))] border-[hsl(var(--success))]/20"
+                    }`}
+                    style={{ borderRadius: "2px" }}
+                  >
+                    {a.type}
+                  </span>
                 </div>
-                <span className={`font-mono text-[10px] uppercase shrink-0 ${
-                  a.level === "full" ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-secondary))] opacity-50"
-                }`}>
-                  {a.level}
-                </span>
+                <div className="flex items-center gap-4 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
+                  <span>interactions: {formatCount(a.count)}</span>
+                  <span>last: {formatRelativeTime(a.lastUsed)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-4 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
-                <span>reads: {a.reads}</span>
-                <span>last: {a.lastAccess}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <Divider />

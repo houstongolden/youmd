@@ -168,30 +168,91 @@ export function CreateContent() {
 
       if (scrapeRes.ok) {
         const scrapeData = await scrapeRes.json();
-        if (scrapeData.displayName) {
+        const data = scrapeData.data || scrapeData;
+        if (data.displayName) {
           addLine(
             <span className="text-[hsl(var(--success))]">
-              {"\u2713"} found {scrapeData.displayName}
-              {scrapeData.bio ? ` — "${scrapeData.bio.slice(0, 60)}${scrapeData.bio.length > 60 ? "..." : ""}"` : ""}
+              {"\u2713"} found {data.displayName}
+              {data.bio ? ` — "${data.bio.slice(0, 60)}${data.bio.length > 60 ? "..." : ""}"` : ""}
             </span>
           );
         }
-        if (scrapeData.profileImageUrl) {
-          addLine("generating ascii portrait...", "text-[hsl(var(--text-secondary))] opacity-50");
-          // The portrait will be rendered by AsciiAvatar component on the profile page
-          // For now, show a placeholder and store the image URL
+        if (data.profileImageUrl) {
           addLine(
             <span className="text-[hsl(var(--accent-mid))]">
-              {"\u2713"} portrait source saved — will render on your profile
+              {"\u2713"} portrait source captured
             </span>
           );
         }
-        if (scrapeData.followers) {
+        if (data.followers) {
           addLine(
             <span className="text-[hsl(var(--text-secondary))] opacity-50">
-              {scrapeData.followers.toLocaleString()} followers{scrapeData.location ? ` — ${scrapeData.location}` : ""}
+              {data.followers.toLocaleString()} followers{data.location ? ` — ${data.location}` : ""}
             </span>
           );
+        }
+        addLine("\u00A0");
+
+        // Auto-research via Perplexity (non-blocking)
+        addLine("researching your public presence...", "text-[hsl(var(--text-secondary))] opacity-50");
+        try {
+          const researchRes = await fetch(
+            "https://kindly-cassowary-600.convex.site/api/v1/research",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: name || data.displayName || handle,
+                username: handle,
+                links: [platform === "x" ? `https://x.com/${handle}` : `https://github.com/${handle}`],
+              }),
+            }
+          );
+          if (researchRes.ok) {
+            const researchData = await researchRes.json();
+            if (researchData.success && researchData.research) {
+              addLine(
+                <span className="text-[hsl(var(--success))]">{"\u2713"} context enriched via web research</span>
+              );
+              // Show a brief excerpt
+              const excerpt = researchData.research.slice(0, 120);
+              addLine(
+                <span className="text-[hsl(var(--text-secondary))] opacity-40 text-[12px]">
+                  &quot;{excerpt}{researchData.research.length > 120 ? "..." : ""}&quot;
+                </span>
+              );
+            }
+          }
+        } catch {
+          // Research is optional — don't block on failure
+        }
+
+        // Auto-enrich X profile via XAI (if X platform)
+        if (platform === "x") {
+          addLine("analyzing x profile...", "text-[hsl(var(--text-secondary))] opacity-50");
+          try {
+            const enrichRes = await fetch(
+              "https://kindly-cassowary-600.convex.site/api/v1/enrich-x",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  xUsername: handle,
+                  profileData: data,
+                }),
+              }
+            );
+            if (enrichRes.ok) {
+              const enrichData = await enrichRes.json();
+              if (enrichData.success && enrichData.analysis) {
+                addLine(
+                  <span className="text-[hsl(var(--success))]">{"\u2713"} x profile analyzed</span>
+                );
+              }
+            }
+          } catch {
+            // Enrichment is optional
+          }
         }
       } else {
         addLine(
