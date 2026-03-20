@@ -13,11 +13,13 @@ type Phase = "boot" | "username" | "name" | "social" | "portrait" | "creating" |
 export function CreateContent() {
   const router = useRouter();
   const createProfile = useMutation(api.profiles.createProfile);
+  const updateProfile = useMutation(api.profiles.updateProfile);
 
   const [phase, setPhase] = useState<Phase>("boot");
   const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
+  const scrapedImageRef = useRef<{ platform: string; url: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lineCounter = useRef(0);
 
@@ -178,6 +180,7 @@ export function CreateContent() {
           );
         }
         if (data.profileImageUrl) {
+          scrapedImageRef.current = { platform, url: data.profileImageUrl };
           addLine(
             <span className="text-[hsl(var(--accent-mid))]">
               {"\u2713"} portrait source captured
@@ -271,7 +274,7 @@ export function CreateContent() {
 
     addLine("\u00A0");
     proceedToCreate();
-  }, [addLine, username, name, createProfile, router]);
+  }, [addLine, username, name, createProfile, updateProfile, router]);
 
   // Create the profile
   const proceedToCreate = useCallback(async () => {
@@ -283,6 +286,20 @@ export function CreateContent() {
         username,
         name,
       });
+
+      // Save scraped social image to the profile
+      const scraped = scrapedImageRef.current;
+      if (scraped && result.profileId && result.sessionToken) {
+        try {
+          await updateProfile({
+            profileId: result.profileId,
+            sessionToken: result.sessionToken,
+            avatarUrl: scraped.url,
+          });
+        } catch {
+          // Non-critical — portrait save can fail silently
+        }
+      }
 
       addLine(
         <span>
@@ -325,7 +342,7 @@ export function CreateContent() {
       addLine("\u00A0");
       setPhase("username");
     }
-  }, [username, createProfile, router, addLine]);
+  }, [username, createProfile, updateProfile, router, addLine]);
 
   return (
     <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex items-center justify-center p-4">

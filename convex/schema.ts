@@ -28,6 +28,13 @@ export default defineSchema({
     })),
     links: v.optional(v.any()), // Record<string, string>
     avatarUrl: v.optional(v.string()),
+    socialImages: v.optional(v.object({
+      x: v.optional(v.string()),
+      github: v.optional(v.string()),
+      linkedin: v.optional(v.string()),
+      custom: v.optional(v.string()),
+    })),
+    primaryImage: v.optional(v.string()), // "x" | "github" | "linkedin" | "custom"
 
     // Ownership — null until claimed
     ownerId: v.optional(v.id("users")),

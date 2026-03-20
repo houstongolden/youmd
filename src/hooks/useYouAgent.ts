@@ -211,6 +211,23 @@ rules for update content:
 - be substantive — write real prose based on what you actually know
 - output the FULL section content each time (not diffs)
 
+--- private content ---
+
+when the user mentions something private, sensitive, or internal:
+- ask if they want to save it as private (not visible on public profile)
+- private items include: internal projects, salary/financial info, private notes, internal company details
+- to save private content, output a special JSON block:
+  \`\`\`json
+  {"private_updates": [{"field": "privateNotes", "content": "..."}]}
+  \`\`\`
+  or for private projects:
+  \`\`\`json
+  {"private_updates": [{"field": "privateProjects", "action": "add", "project": {"name": "...", "description": "...", "status": "..."}}]}
+  \`\`\`
+- always confirm before saving something as private
+- use good judgment: if someone says "i'm working on a stealth startup" — that's private by default
+- if someone shares internal company info, roadmaps, or financial details — suggest making it private
+
 --- knowing when to stop ---
 
 when the profile has substance (at minimum: about, now, projects, and values), suggest wrapping up. don't squeeze for more.
@@ -248,6 +265,13 @@ export interface DisplayMessage {
 export interface SectionUpdate {
   section: string;
   content: string;
+}
+
+export interface PrivateUpdate {
+  field: string;
+  content?: string;
+  action?: string;
+  project?: Record<string, string>;
 }
 
 export type RightPane = "preview" | "settings" | "billing" | "tokens" | "json" | "sources" | "portrait" | "publish" | "agents" | "activity" | "help";
@@ -292,6 +316,28 @@ export function parseUpdatesFromResponse(text: string): {
   }
 
   return { display, updates };
+}
+
+export function parsePrivateUpdatesFromResponse(text: string): PrivateUpdate[] {
+  const allJsonBlocks = text.matchAll(/```json\s*\n([\s\S]*?)\n```/g);
+  const privateUpdates: PrivateUpdate[] = [];
+
+  for (const match of allJsonBlocks) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.private_updates && Array.isArray(parsed.private_updates)) {
+        for (const pu of parsed.private_updates) {
+          if (pu && typeof pu.field === "string") {
+            privateUpdates.push(pu as PrivateUpdate);
+          }
+        }
+      }
+    } catch {
+      // not a valid private_updates block
+    }
+  }
+
+  return privateUpdates;
 }
 
 function sectionLabel(section: string): string {
@@ -485,6 +531,114 @@ export function buildProfileDataFromUpdates(
 }
 
 // ---------------------------------------------------------------------------
+// Share block builders
+// ---------------------------------------------------------------------------
+
+function buildPublicShareBlock(
+  url: string,
+  username: string,
+  youJson: Record<string, unknown> | null
+): string {
+  const lines: string[] = [];
+  lines.push(`Read my identity context before we start:`);
+  lines.push(url);
+  lines.push("");
+
+  if (youJson) {
+    lines.push("Quick summary:");
+    const identity = youJson.identity as Record<string, unknown> | undefined;
+    if (identity?.name) lines.push(`- Name: ${identity.name}`);
+    if (identity?.tagline) lines.push(`- Role: ${identity.tagline}`);
+
+    const now = youJson.now as Record<string, unknown> | undefined;
+    if (now?.focus && Array.isArray(now.focus) && (now.focus as string[]).length > 0) {
+      lines.push(`- Currently working on: ${(now.focus as string[]).join(", ")}`);
+    }
+
+    const projects = youJson.projects as Array<Record<string, string>> | undefined;
+    if (projects && projects.length > 0) {
+      lines.push(`- Key projects: ${projects.map((p) => p.name).filter(Boolean).join(", ")}`);
+    }
+
+    const prefs = youJson.preferences as Record<string, Record<string, unknown>> | undefined;
+    if (prefs?.agent?.tone) lines.push(`- Prefers: ${prefs.agent.tone}`);
+    if (prefs?.writing?.style) lines.push(`- Writing style: ${prefs.writing.style}`);
+  }
+
+  lines.push("");
+  lines.push(`Full context available at the URL above.`);
+  return lines.join("\n");
+}
+
+function buildPrivateShareBlock(
+  publicBlock: string,
+  privateCtx: Record<string, unknown> | null
+): string {
+  if (!privateCtx) return publicBlock;
+
+  const lines: string[] = [publicBlock, ""];
+  lines.push("Private context (for trusted agents only):");
+
+  if (privateCtx.privateNotes) {
+    lines.push(String(privateCtx.privateNotes));
+  }
+
+  const privateProjects = privateCtx.privateProjects as Array<Record<string, string>> | undefined;
+  if (privateProjects && privateProjects.length > 0) {
+    lines.push(`Private projects: ${privateProjects.map((p) => p.name || p.description || "unnamed").join(", ")}`);
+  }
+
+  const internalLinks = privateCtx.internalLinks as Record<string, string> | undefined;
+  if (internalLinks) {
+    const entries = Object.entries(internalLinks).filter(([, v]) => v);
+    if (entries.length > 0) {
+      lines.push(`Internal links: ${entries.map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function buildProjectShareBlock(
+  projectName: string,
+  username: string,
+  url: string,
+  youJson: Record<string, unknown> | null,
+  privateCtx: Record<string, unknown> | null
+): string | null {
+  const searchName = projectName.toLowerCase();
+
+  // Search public projects
+  const publicProjects = (youJson?.projects as Array<Record<string, string>> | undefined) || [];
+  let found = publicProjects.find((p) => p.name?.toLowerCase().includes(searchName));
+
+  // Search private projects
+  if (!found && privateCtx) {
+    const privateProjects = (privateCtx.privateProjects as Array<Record<string, string>> | undefined) || [];
+    found = privateProjects.find((p) => p.name?.toLowerCase().includes(searchName));
+  }
+
+  if (!found) return null;
+
+  const lines: string[] = [];
+  lines.push(`Project context for "${found.name || projectName}":`);
+  if (found.role) lines.push(`- Role: ${found.role}`);
+  if (found.status) lines.push(`- Status: ${found.status}`);
+  if (found.description) lines.push(`- Description: ${found.description}`);
+  if (found.url) lines.push(`- URL: ${found.url}`);
+  lines.push("");
+  lines.push(`My identity context: ${url}`);
+
+  const prefs = youJson?.preferences as Record<string, Record<string, unknown>> | undefined;
+  const prefParts: string[] = [];
+  if (prefs?.agent?.tone) prefParts.push(`tone: ${prefs.agent.tone}`);
+  if (prefs?.writing?.style) prefParts.push(`style: ${prefs.writing.style}`);
+  if (prefParts.length > 0) lines.push(`My preferences: ${prefParts.join(", ")}`);
+
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Hook Options
 // ---------------------------------------------------------------------------
 
@@ -511,9 +665,20 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     api.bundles.getLatestBundle,
     convexUser?._id ? { userId: convexUser._id } : "skip"
   );
+  const userProfile = useQuery(
+    api.profiles.getByOwnerId,
+    convexUser?._id ? { ownerId: convexUser._id } : "skip"
+  );
+  const privateContext = useQuery(
+    api.private.getPrivateContext,
+    user?.id && userProfile?._id
+      ? { clerkId: user.id, profileId: userProfile._id }
+      : "skip"
+  );
   const saveBundleFromForm = useMutation(api.me.saveBundleFromForm);
   const publishLatest = useMutation(api.me.publishLatest);
   const createContextLink = useMutation(api.contextLinks.createLink);
+  const updatePrivateContext = useMutation(api.private.updatePrivateContext);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
@@ -720,8 +885,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("help");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/preview -- live profile preview\n/json -- raw you.json\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/sources -- connected data sources\n/portrait -- ascii portrait settings\n/agents -- agent network & access\n/activity -- security & activity log\n/publish -- publish your latest bundle\n/status -- bundle status\n/help -- show this reference"
-          : "available commands:\n/share -- create a shareable identity link\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
+          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/preview -- live profile preview\n/json -- raw you.json\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/sources -- connected data sources\n/portrait -- ascii portrait settings\n/agents -- agent network & access\n/activity -- security & activity log\n/publish -- publish your latest bundle\n/status -- bundle status\n/help -- show this reference"
+          : "available commands:\n/share -- create a shareable identity link\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
 
         setDisplayMessages((prev) => [
           ...prev,
@@ -812,6 +977,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
 
         const isPrivate = trimmed.includes("--private") || trimmed.includes("--full");
+        const projectMatch = trimmed.match(/--project\s+(.+?)(?:\s+--|$)/);
+        const projectName = projectMatch ? projectMatch[1].trim() : null;
 
         setDisplayMessages((prev) => [
           ...prev,
@@ -819,14 +986,52 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           { id: crypto.randomUUID(), role: "system-notice", content: "creating context link..." },
         ]);
 
+        const scope = isPrivate ? "full" : "public";
+
         createContextLink({
           clerkId: user.id,
-          scope: isPrivate ? "full" : "public",
+          scope,
           ttl: "7d",
         })
           .then((result) => {
-            const username = convexUser?.username ?? "user";
-            const shareBlock = `Read my identity context before we start:\n${result.url}\n\nThis is my you.md profile (@${username}) — it contains my bio, projects, values,\npreferences, and how I like to communicate. Use it to understand\nwho I am so we can skip the intro and get straight to work.`;
+            const uname = convexUser?.username ?? "user";
+            const youJson = (latestBundle?.youJson as Record<string, unknown>) || null;
+            const privCtx = (privateContext as Record<string, unknown> | null) ?? null;
+
+            let shareBlock: string;
+            let label: string;
+
+            if (projectName) {
+              // /share --project {name}
+              const projectBlock = buildProjectShareBlock(
+                projectName,
+                uname,
+                result.url,
+                youJson,
+                privCtx
+              );
+              if (projectBlock) {
+                shareBlock = projectBlock;
+                label = `project "${projectName}"`;
+              } else {
+                setDisplayMessages((prev) => [
+                  ...prev,
+                  {
+                    id: crypto.randomUUID(),
+                    role: "system-notice",
+                    content: `no project matching "${projectName}" found in public or private projects.`,
+                  },
+                ]);
+                return;
+              }
+            } else {
+              // /share or /share --private
+              const publicBlock = buildPublicShareBlock(result.url, uname, youJson);
+              shareBlock = isPrivate
+                ? buildPrivateShareBlock(publicBlock, privCtx)
+                : publicBlock;
+              label = isPrivate ? "full" : "public";
+            }
 
             // Copy to clipboard
             navigator.clipboard.writeText(shareBlock).catch(() => {});
@@ -836,7 +1041,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
               {
                 id: crypto.randomUUID(),
                 role: "system-notice",
-                content: `context link created for @${username} (${isPrivate ? "full" : "public"} scope, expires 7d)\n\n---\n${shareBlock}\n---\n\ncopied to clipboard. paste into any AI conversation.`,
+                content: `context link created for @${uname} (${label} scope, expires 7d)\n\n---\n${shareBlock}\n---\n\ncopied to clipboard. paste into any AI conversation.`,
               },
             ]);
           })
@@ -855,7 +1060,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       return false;
     },
-    [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone]
+    [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone, privateContext]
   );
 
   // Send message
@@ -925,6 +1130,48 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
+      // Handle private updates from agent
+      const privUpdates = parsePrivateUpdatesFromResponse(response);
+      if (privUpdates.length > 0 && user?.id && userProfile?._id) {
+        for (const pu of privUpdates) {
+          try {
+            if (pu.field === "privateNotes" && pu.content) {
+              await updatePrivateContext({
+                clerkId: user.id,
+                profileId: userProfile._id,
+                privateNotes: pu.content,
+              });
+              newDisplayMsgs.push({
+                id: crypto.randomUUID(),
+                role: "system-notice",
+                content: "[saved private note]",
+              });
+            } else if (pu.field === "privateProjects" && pu.action === "add" && pu.project) {
+              // Get existing private projects and append
+              const existing = (privateContext as Record<string, unknown> | null);
+              const existingProjects = (existing?.privateProjects as Array<Record<string, string>>) || [];
+              const updatedProjects = [...existingProjects, pu.project];
+              await updatePrivateContext({
+                clerkId: user.id,
+                profileId: userProfile._id,
+                privateProjects: updatedProjects,
+              });
+              newDisplayMsgs.push({
+                id: crypto.randomUUID(),
+                role: "system-notice",
+                content: `[saved private project: ${pu.project.name || "unnamed"}]`,
+              });
+            }
+          } catch (err) {
+            newDisplayMsgs.push({
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: `[failed to save private content: ${err instanceof Error ? err.message : "unknown error"}]`,
+            });
+          }
+        }
+      }
+
       setDisplayMessages((prev) => [...prev, ...newDisplayMsgs]);
     } catch (err) {
       setDisplayMessages((prev) => [
@@ -939,7 +1186,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
     setIsThinking(false);
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates]);
+  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext]);
 
   return {
     // State

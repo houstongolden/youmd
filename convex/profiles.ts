@@ -451,6 +451,90 @@ export const recordView = mutation({
   },
 });
 
+/** Set profile images (multi-image storage + primary selection) */
+export const setProfileImages = mutation({
+  args: {
+    profileId: v.id("profiles"),
+    clerkId: v.string(),
+    socialImages: v.object({
+      x: v.optional(v.string()),
+      github: v.optional(v.string()),
+      linkedin: v.optional(v.string()),
+      custom: v.optional(v.string()),
+    }),
+    primaryImage: v.string(), // "x" | "github" | "linkedin" | "custom"
+  },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile) throw new Error("profile not found");
+
+    // Auth check
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user || profile.ownerId !== user._id) {
+      throw new Error("not the profile owner");
+    }
+
+    // Compute avatarUrl from selected primary image
+    const images = args.socialImages as Record<string, string | undefined>;
+    const avatarUrl = images[args.primaryImage] || profile.avatarUrl;
+
+    await ctx.db.patch(args.profileId, {
+      socialImages: args.socialImages,
+      primaryImage: args.primaryImage,
+      avatarUrl,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, avatarUrl };
+  },
+});
+
+/** Update links (merge with existing, supports any custom label) */
+export const updateLinks = mutation({
+  args: {
+    profileId: v.id("profiles"),
+    clerkId: v.optional(v.string()),
+    sessionToken: v.optional(v.string()),
+    links: v.any(), // Record<string, string>
+  },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile) throw new Error("profile not found");
+
+    // Auth: session token for unclaimed, clerkId for claimed
+    if (!profile.isClaimed) {
+      if (args.sessionToken !== profile.sessionToken) {
+        throw new Error("invalid session token");
+      }
+    } else {
+      const clerkId = args.clerkId;
+      if (!clerkId) throw new Error("authentication required");
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+        .first();
+      if (!user || profile.ownerId !== user._id) {
+        throw new Error("not the profile owner");
+      }
+    }
+
+    // Merge with existing links (don't replace all)
+    const existingLinks = (profile.links as Record<string, string>) || {};
+    const newLinks = args.links as Record<string, string>;
+    const mergedLinks = { ...existingLinks, ...newLinks };
+
+    await ctx.db.patch(args.profileId, {
+      links: mergedLinks,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, links: mergedLinks };
+  },
+});
+
 /** Internal: log a security event */
 export const logSecurityEvent = internalMutation({
   args: {

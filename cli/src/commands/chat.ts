@@ -352,21 +352,79 @@ function showShareBlock(bundleDir: string): void {
   const config = readGlobalConfig();
   const username = config.username || "your-username";
 
+  // Try to load profile data for rich context
+  const youJsonPath = path.join(bundleDir, "you.json");
+  let youJson: Record<string, any> | null = null;
+  if (fs.existsSync(youJsonPath)) {
+    try {
+      youJson = JSON.parse(fs.readFileSync(youJsonPath, "utf-8"));
+    } catch {
+      // fall through with null
+    }
+  }
+
+  const contextUrl = `https://kindly-cassowary-600.convex.site/api/v1/profiles?username=${username}`;
+  const profileUrl = `https://you.md/${username}`;
+
+  const lines: string[] = [];
+  lines.push(`Read my identity context before we start:`);
+  lines.push(contextUrl);
+  lines.push("");
+
+  // Build inline summary from you.json
+  if (youJson) {
+    lines.push("Quick summary:");
+    const identity = youJson.identity as Record<string, any> | undefined;
+    if (identity?.name) lines.push(`- Name: ${identity.name}`);
+    if (identity?.tagline) lines.push(`- Role: ${identity.tagline}`);
+
+    const now = youJson.now as Record<string, any> | undefined;
+    if (now?.focus && Array.isArray(now.focus) && now.focus.length > 0) {
+      lines.push(`- Currently working on: ${now.focus.join(", ")}`);
+    }
+
+    const projects = youJson.projects as Array<Record<string, string>> | undefined;
+    if (projects && projects.length > 0) {
+      lines.push(`- Key projects: ${projects.map((p: any) => p.name).filter(Boolean).join(", ")}`);
+    }
+
+    const prefs = youJson.preferences as Record<string, Record<string, any>> | undefined;
+    if (prefs?.agent?.tone) lines.push(`- Prefers: ${prefs.agent.tone}`);
+    if (prefs?.writing?.style) lines.push(`- Writing style: ${prefs.writing.style}`);
+  } else {
+    // Fallback: try to extract from markdown files
+    const aboutPath = path.join(bundleDir, "profile", "about.md");
+    if (fs.existsSync(aboutPath)) {
+      const raw = fs.readFileSync(aboutPath, "utf-8");
+      const nameMatch = raw.match(/^#\s+(.+)$/m);
+      if (nameMatch) lines.push(`- Name: ${nameMatch[1].trim()}`);
+    }
+    const nowPath = path.join(bundleDir, "profile", "now.md");
+    if (fs.existsSync(nowPath)) {
+      const raw = fs.readFileSync(nowPath, "utf-8");
+      const items = raw
+        .split("\n")
+        .filter((l) => l.startsWith("- ") || l.startsWith("* "))
+        .map((l) => l.replace(/^[-*]\s+/, "").trim())
+        .slice(0, 3);
+      if (items.length > 0) lines.push(`- Currently working on: ${items.join(", ")}`);
+    }
+  }
+
+  lines.push("");
+  lines.push(`Full context available at the URL above.`);
+  lines.push(`Profile: ${profileUrl}`);
+
+  const shareBlock = lines.join("\n");
+
   console.log("");
   console.log("  " + chalk.bold("shareable context block:"));
   console.log("");
   console.log(chalk.dim("  ---- copy below this line ----"));
   console.log("");
-  console.log(`  ## My Identity File`);
-  console.log("");
-  console.log(`  My you.md profile: https://you.md/${username}`);
-  console.log(`  Context endpoint: https://you.md/${username}/context`);
-  console.log("");
-  console.log(`  Add to your system prompt or CLAUDE.md:`);
-  console.log(`  "my identity file: https://you.md/${username}/context"`);
-  console.log("");
-  console.log(`  Or fetch it directly:`);
-  console.log(`  curl -s https://you.md/${username}/context`);
+  for (const line of shareBlock.split("\n")) {
+    console.log("  " + line);
+  }
   console.log("");
   console.log(chalk.dim("  ---- copy above this line ----"));
   console.log("");

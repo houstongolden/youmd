@@ -219,6 +219,7 @@ export function ProfilePreviewPane({ userId, username }: ProfilePreviewPaneProps
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 text-xs font-mono py-1.5 hover:text-[hsl(var(--accent))] transition-colors"
                       >
+                        <LinkFavicon url={url as string} />
                         <span className="text-[hsl(var(--text-secondary))] opacity-40 w-16">
                           {platform}
                         </span>
@@ -289,4 +290,27 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function Divider() {
   return <div className="h-px bg-[hsl(var(--border))]" />;
+}
+
+function extractDomain(url: string): string | null {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
+
+function LinkFavicon({ url }: { url: string }) {
+  const domain = extractDomain(url);
+  if (!domain) return null;
+  return (
+    <img
+      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
+      alt=""
+      width={16}
+      height={16}
+      className="shrink-0"
+      style={{ imageRendering: "pixelated" }}
+    />
+  );
 }
