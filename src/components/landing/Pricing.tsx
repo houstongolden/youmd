@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import Link from "next/link";
 import FadeUp from "./FadeUp";
 
 const Pricing = () => (
@@ -52,12 +53,12 @@ const Pricing = () => (
                 sources
               </p>
             </div>
-            <a
-              href="#get-started"
+            <Link
+              href="/sign-up"
               className="cta-outline block text-center px-4 py-2.5 text-[11px]"
             >
               &gt; youmd init
-            </a>
+            </Link>
           </motion.div>
         </FadeUp>
 
@@ -114,12 +115,12 @@ const Pricing = () => (
                 {"  "}&rsaquo; Analytics & scoped API keys
               </p>
             </div>
-            <a
-              href="#get-started"
+            <Link
+              href="/sign-up"
               className="cta-primary block text-center px-4 py-2.5 text-[11px]"
             >
               &gt; youmd upgrade --pro
-            </a>
+            </Link>
             <p className="text-muted-foreground/50 font-mono text-[9px] text-center mt-2">
               your keys stay local -- never stored on our servers
             </p>

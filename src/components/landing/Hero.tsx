@@ -249,12 +249,12 @@ const Hero = () => {
           transition={{ duration: 0.5, delay: 2.3 }}
           className="flex items-center justify-center gap-8 font-mono text-[12px] mt-12"
         >
-          <a
-            href="#get-started"
+          <Link
+            href="/sign-up"
             className="text-muted-foreground/50 hover:text-accent transition-colors duration-200"
           >
             &gt; get started
-          </a>
+          </Link>
           <a
             href="#spec"
             className="text-muted-foreground/50 hover:text-accent transition-colors duration-200"
