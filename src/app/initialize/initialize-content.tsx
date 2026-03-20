@@ -157,7 +157,7 @@ export function InitializeContent() {
   // Loading state
   if (!user || existingUser === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--bg))]">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))]">
         <p className="text-[hsl(var(--text-secondary))] font-mono text-sm animate-pulse">
           loading...
         </p>
@@ -168,7 +168,7 @@ export function InitializeContent() {
   // Boot/claim/portrait phase — show centered terminal
   if (phase !== "ready") {
     return (
-      <div className="min-h-screen bg-[hsl(var(--bg))] flex flex-col">
+      <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
         <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4">
           <div
             className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
@@ -236,7 +236,7 @@ function OnboardingTerminal() {
 
   if (!convexUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--bg))]">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))]">
         <p className="text-[hsl(var(--text-secondary))] font-mono text-sm animate-pulse">
           loading...
         </p>
@@ -245,7 +245,7 @@ function OnboardingTerminal() {
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bg))] flex flex-col">
+    <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4">
         <div
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"

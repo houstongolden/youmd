@@ -3,7 +3,7 @@ import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[hsl(var(--bg))] flex items-center justify-center p-4">
+    <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex items-center justify-center p-4">
       <div className="w-full max-w-xl">
         <div
           className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"

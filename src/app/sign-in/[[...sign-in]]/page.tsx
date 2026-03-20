@@ -139,7 +139,7 @@ export default function SignInPage() {
   }, [email, signIn, router, addLine]);
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bg))] flex items-center justify-center p-4">
+    <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex items-center justify-center p-4">
       <div className="w-full max-w-3xl">
         {/* Terminal panel */}
         <div
@@ -151,7 +151,7 @@ export default function SignInPage() {
           {/* Terminal body */}
           <div
             ref={scrollRef}
-            className="p-6 md:p-8 min-h-[500px] max-h-[70vh] overflow-y-auto font-mono text-[14px] leading-relaxed"
+            className="p-6 md:p-8 min-h-[300px] max-h-[60dvh] overflow-y-auto font-mono text-[14px] leading-relaxed"
           >
             {/* Rendered lines */}
             {lines.map((line) => (

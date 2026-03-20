@@ -21,10 +21,16 @@ export function TerminalAuthInput({
 }: TerminalAuthInputProps) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (autoFocus && inputRef.current) {
-      inputRef.current.focus();
+      // Delay focus slightly for mobile keyboard
+      setTimeout(() => {
+        inputRef.current?.focus();
+        // Scroll input into view on mobile when keyboard opens
+        containerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
     }
   }, [autoFocus]);
 
@@ -35,10 +41,18 @@ export function TerminalAuthInput({
     }
   };
 
+  const handleFocus = () => {
+    // On mobile, scroll into view when keyboard opens
+    setTimeout(() => {
+      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  };
+
   const displayValue = type === "password" ? "\u2022".repeat(value.length) : value;
 
   return (
     <div
+      ref={containerRef}
       className="flex items-center gap-2 font-mono text-[14px] cursor-text"
       onClick={() => inputRef.current?.focus()}
     >
@@ -53,6 +67,7 @@ export function TerminalAuthInput({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={handleFocus}
           className="absolute inset-0 opacity-0 w-full h-full"
           autoFocus={autoFocus}
           disabled={disabled}

@@ -19,6 +19,13 @@ export function TerminalInput({
   onKeyDown,
   onSend,
 }: TerminalInputProps) {
+  const handleFocus = () => {
+    // Scroll into view on mobile when keyboard opens
+    setTimeout(() => {
+      textareaRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 300);
+  };
+
   return (
     <div className="shrink-0 border-t border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-4 py-3">
       <div className="flex items-end gap-2">
@@ -30,6 +37,7 @@ export function TerminalInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
+          onFocus={handleFocus}
           placeholder="say something..."
           rows={1}
           disabled={isThinking}
