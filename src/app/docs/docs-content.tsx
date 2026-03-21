@@ -9,6 +9,7 @@ import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 const navSections = [
   { id: "getting-started", label: "getting started" },
   { id: "share", label: "share your identity" },
+  { id: "sync", label: "sync" },
   { id: "cli", label: "cli" },
   { id: "api", label: "api" },
   { id: "privacy", label: "privacy" },
@@ -117,21 +118,30 @@ export default function DocsContent() {
             {/* ── Getting Started ────────────────────────── */}
             <SectionHeader id="getting-started">getting started</SectionHeader>
             <P>
-              you.md is the identity file for the agent internet. It is a structured,
+              you.md is the identity file for the agent internet. A structured,
               portable identity bundle that gives every AI agent context about who you
               are -- your bio, projects, values, communication style, and preferences.
+              Think of it as a <Code>.env</Code> file for your identity.
             </P>
-            <P>
-              Think of it as a <Code>.env</Code> file for your identity. Instead of
-              re-explaining yourself in every AI conversation, you share your you.md
-              once and the agent instantly knows your context.
-            </P>
-            <P>
-              To create your identity, visit{" "}
-              <AccentLink href="/create">/create</AccentLink> and follow the
-              initialization flow. You can also use the CLI:{" "}
-              <Code>npx youmd init</Code>.
-            </P>
+
+            <div className="text-[13px] text-[hsl(var(--text-secondary))] leading-relaxed mb-2">
+              <div className="mb-3">
+                <div className="text-[hsl(var(--accent))] mb-1 text-[11px] uppercase tracking-widest">path a: start on the web</div>
+                <div className="pl-3 mb-1">1. Go to <AccentLink href="/create">you.md/create</AccentLink></div>
+                <div className="pl-3 mb-1">2. Pick a username, enter your name, share a social handle</div>
+                <div className="pl-3 mb-1">3. Your profile is created instantly -- no account needed</div>
+                <div className="pl-3 mb-1">4. Sign up later at <AccentLink href="/sign-up">you.md/sign-up</AccentLink> to claim ownership</div>
+                <div className="pl-3 mb-1">5. Open the <AccentLink href="/dashboard">dashboard terminal</AccentLink>, type <Code>/share</Code> to get your shareable context link</div>
+              </div>
+              <div className="mb-2">
+                <div className="text-[hsl(var(--accent))] mb-1 text-[11px] uppercase tracking-widest">path b: start with the cli</div>
+                <div className="pl-3 mb-1">1. Run <Code>npx youmd init</Code> in your terminal</div>
+                <div className="pl-3 mb-1">2. The agent walks you through creating your identity</div>
+                <div className="pl-3 mb-1">3. Run <Code>youmd login</Code> to connect to you.md</div>
+                <div className="pl-3 mb-1">4. Run <Code>youmd push</Code> to publish your profile</div>
+                <div className="pl-3 mb-1">5. Run <Code>youmd share</Code> in chat to get your context link</div>
+              </div>
+            </div>
 
             <Divider />
 
@@ -139,13 +149,19 @@ export default function DocsContent() {
             <SectionHeader id="share">share your identity</SectionHeader>
             <P>
               This is the core feature. Once your identity is built, you can share it
-              with any AI agent in seconds.
+              with any AI agent in seconds. The <Code>/share</Code> command works in
+              both the web dashboard terminal and the CLI.
             </P>
             <div className="text-[13px] text-[hsl(var(--text-secondary))] leading-relaxed mb-2">
               <div className="mb-2 opacity-80">How it works:</div>
               <div className="pl-3 mb-1">
-                1. Open the <AccentLink href="/dashboard">dashboard terminal</AccentLink> and type{" "}
+                1. <span className="text-[hsl(var(--accent))]">Web:</span> open the{" "}
+                <AccentLink href="/dashboard">dashboard terminal</AccentLink> and type{" "}
                 <Code>/share</Code>
+              </div>
+              <div className="pl-3 mb-1">
+                1. <span className="text-[hsl(var(--accent))]">CLI:</span> type{" "}
+                <Code>/share</Code> inside <Code>youmd chat</Code>
               </div>
               <div className="pl-3 mb-1">
                 2. Copy the generated identity context block
@@ -157,6 +173,7 @@ export default function DocsContent() {
                 4. The AI instantly knows your bio, projects, values, and preferences
               </div>
             </div>
+            <P>Both generate the same copyable block:</P>
             <CodeBlock>{`> /share
 
 --- BEGIN YOU.MD CONTEXT ---
@@ -180,23 +197,103 @@ preferences: terminal-native, monochrome
 
             <Divider />
 
+            {/* ── Sync ───────────────────────────────────── */}
+            <SectionHeader id="sync">sync</SectionHeader>
+            <P>
+              You.md works across web and CLI. Create your profile on either platform
+              and keep them in sync.
+            </P>
+            <div className="text-[13px] text-[hsl(var(--text-secondary))] leading-relaxed mb-2">
+              <div className="mb-2 opacity-80">Connecting web and CLI:</div>
+              <div className="pl-3 mb-1">1. Create your profile on either web or CLI</div>
+              <div className="pl-3 mb-1">
+                2. Sign up and get an API key from the dashboard (<Code>/tokens</Code> tab)
+              </div>
+              <div className="pl-3 mb-1">
+                3. <Code>youmd login -k YOUR_KEY</Code> or <Code>youmd login --web</Code> to open dashboard
+              </div>
+              <div className="pl-3 mb-1">
+                4. <Code>youmd pull</Code> -- downloads your web profile to local .youmd/ files
+              </div>
+              <div className="pl-3 mb-1">
+                5. Edit files in any editor (Cursor, Obsidian, VS Code)
+              </div>
+              <div className="pl-3 mb-1">
+                6. <Code>youmd push</Code> -- compiles and publishes back to you.md
+              </div>
+              <div className="pl-3 mb-2">
+                7. <Code>youmd sync --watch</Code> -- auto-syncs on every file save
+              </div>
+            </div>
+            <P>Local file structure:</P>
+            <CodeBlock>{`.youmd/
+  profile/
+    about.md
+    now.md
+    projects.md
+    values.md
+    links.md
+  preferences/
+    agent.md
+    writing.md
+  voice/
+    voice.md
+    voice.linkedin.md
+  you.json
+  you.md
+  manifest.json`}</CodeBlock>
+
+            <Divider />
+
             {/* ── CLI ────────────────────────────────────── */}
             <SectionHeader id="cli">cli</SectionHeader>
             <P>
               The you.md CLI lets you create and manage your identity from the
-              terminal.
+              terminal. Install globally with <Code>npm i -g youmd</Code> or run
+              commands directly with <Code>npx youmd</Code>.
             </P>
-            <CodeBlock>{`# initialize your identity (interactive AI onboarding)
-npx youmd init
+            <div className="bg-[hsl(var(--bg))] border border-[hsl(var(--border))] p-3 font-mono text-[12px] text-[hsl(var(--text-secondary))] my-2">
+              <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+                <span className="text-[hsl(var(--accent))]">youmd init</span>
+                <span>create your identity bundle (interactive AI onboarding)</span>
 
-# chat with the you agent
-npx youmd chat
+                <span className="text-[hsl(var(--accent))]">youmd login</span>
+                <span>authenticate (--web to open browser, -k KEY)</span>
 
-# export your context
-npx youmd export
+                <span className="text-[hsl(var(--accent))]">youmd pull</span>
+                <span>download profile from web to local .youmd/ files</span>
 
-# check status
-npx youmd status`}</CodeBlock>
+                <span className="text-[hsl(var(--accent))]">youmd push</span>
+                <span>upload local files to web and publish</span>
+
+                <span className="text-[hsl(var(--accent))]">youmd sync</span>
+                <span>pull + push (--watch for auto-sync on file save)</span>
+
+                <span className="text-[hsl(var(--accent))]">youmd chat</span>
+                <span>talk to the you agent</span>
+
+                <span className="text-[hsl(var(--accent))]">youmd build</span>
+                <span>compile local bundle from profile files</span>
+
+                <span className="text-[hsl(var(--accent))]">youmd publish</span>
+                <span>publish compiled bundle to you.md</span>
+
+                <span className="text-[hsl(var(--accent))]">youmd status</span>
+                <span>show bundle and pipeline status</span>
+
+                <span className="text-[hsl(var(--accent))]">youmd whoami</span>
+                <span>show current authenticated user</span>
+
+                <span className="text-[hsl(var(--accent))]">youmd add TYPE URL</span>
+                <span>add a source (website, linkedin, x, blog, github)</span>
+
+                <span className="text-[hsl(var(--accent))]">youmd link</span>
+                <span>manage context links (create, list, revoke)</span>
+
+                <span className="text-[hsl(var(--accent))]">youmd keys</span>
+                <span>manage API keys (list, create, revoke)</span>
+              </div>
+            </div>
             <P>
               The <Code>init</Code> command runs a conversational AI onboarding -- it
               asks about your work, projects, values, and preferences, then builds

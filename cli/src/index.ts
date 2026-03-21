@@ -35,6 +35,7 @@ program
   .command("login")
   .description("Authenticate with the You.md platform")
   .option("-k, --key <apiKey>", "API key for authentication")
+  .option("-w, --web", "Open the dashboard in your browser to create an API key")
   .action(loginCommand);
 
 program

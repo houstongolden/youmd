@@ -1,9 +1,43 @@
 import * as readline from "readline";
+import { exec } from "child_process";
 import chalk from "chalk";
 import { readGlobalConfig, writeGlobalConfig } from "../lib/config";
 import { getMe } from "../lib/api";
 
-export async function loginCommand(options: { key?: string }): Promise<void> {
+export async function loginCommand(options: { key?: string; web?: boolean }): Promise<void> {
+  if (options.web) {
+    console.log("");
+    console.log("opening you.md dashboard in your browser...");
+    console.log("");
+
+    const url = "https://you.md/dashboard";
+    const platform = process.platform;
+    const cmd =
+      platform === "darwin"
+        ? `open ${url}`
+        : platform === "win32"
+          ? `start ${url}`
+          : `xdg-open ${url}`;
+
+    exec(cmd, (err) => {
+      if (err) {
+        console.log(
+          chalk.yellow("could not open browser") +
+            " -- visit " +
+            chalk.cyan(url) +
+            " manually"
+        );
+      }
+    });
+
+    console.log(
+      "create an API key in the /tokens tab, then run: " +
+        chalk.cyan("youmd login -k YOUR_KEY")
+    );
+    console.log("");
+    return;
+  }
+
   if (options.key) {
     await loginWithKey(options.key);
     return;
