@@ -37,6 +37,7 @@ export function DashboardContent() {
   );
 
   const [rightPane, setRightPane] = useState<RightPane>("preview");
+  const [mobileView, setMobileView] = useState<"terminal" | "preview">("terminal");
 
   const agent = useYouAgent({
     onPaneSwitch: (pane) => {
@@ -98,10 +99,34 @@ export function DashboardContent() {
             </SignOutButton>
           </div>
 
-          {/* Content — terminal only on mobile, split on desktop */}
+          {/* Mobile view toggle */}
+          <div className="md:hidden flex shrink-0 border-b border-[hsl(var(--border))]">
+            <button
+              onClick={() => setMobileView("terminal")}
+              className={`flex-1 py-2 text-[11px] font-mono text-center transition-colors ${
+                mobileView === "terminal"
+                  ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))]"
+                  : "text-[hsl(var(--text-secondary))] opacity-40"
+              }`}
+            >
+              terminal
+            </button>
+            <button
+              onClick={() => setMobileView("preview")}
+              className={`flex-1 py-2 text-[11px] font-mono text-center transition-colors ${
+                mobileView === "preview"
+                  ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))]"
+                  : "text-[hsl(var(--text-secondary))] opacity-40"
+              }`}
+            >
+              preview
+            </button>
+          </div>
+
+          {/* Content — split on desktop, toggled on mobile */}
           <div className="flex-1 flex min-h-0">
-            {/* Terminal — full width on mobile, 35% on desktop */}
-            <div className="flex w-full md:w-[35%] flex-col md:border-r md:border-[hsl(var(--border))] min-h-0">
+            {/* Terminal */}
+            <div className={`${mobileView === "preview" ? "hidden md:flex" : "flex"} w-full md:w-[35%] flex-col md:border-r md:border-[hsl(var(--border))] min-h-0`}>
               <TerminalShell
                 displayMessages={agent.displayMessages}
                 input={agent.input}
@@ -114,8 +139,8 @@ export function DashboardContent() {
               />
             </div>
 
-            {/* Preview panes — desktop only */}
-            <div className="hidden md:flex md:w-[65%] flex-col min-h-0">
+            {/* Preview panes — visible on desktop always, toggled on mobile */}
+            <div className={`${mobileView === "terminal" ? "hidden md:flex" : "flex"} w-full md:w-[65%] flex-col min-h-0`}>
               {/* Pane tabs */}
               <div className="flex items-center px-4 py-1.5 border-b border-[hsl(var(--border))] shrink-0 overflow-x-auto">
                 <div className="flex items-center gap-0.5">

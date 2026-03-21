@@ -422,31 +422,31 @@ function CreateContentInner() {
       );
       addLine("\u00A0");
 
-      // Show the magic moment
       addLine(
         <span className="text-[hsl(var(--text-secondary))]">
           your profile is live at{" "}
           <span className="text-[hsl(var(--accent))]">you.md/{username}</span>
         </span>
       );
-      addLine("\u00A0");
 
-      // Store session token in cookie for future editing
+      // Store session token in cookie for claiming later
       if (result.sessionToken) {
         document.cookie = `youmd_session=${result.sessionToken};path=/;max-age=604800;samesite=lax`;
       }
 
+      addLine("\u00A0");
+      addLine("sign up to claim ownership and unlock your dashboard.", "text-[hsl(var(--text-secondary))] opacity-70");
       addLine(
         <span className="text-[hsl(var(--text-secondary))] opacity-60">
-          {"\u2192"} sign up anytime to claim ownership and unlock private features
+          {"\u2192"} redirecting to sign up...
         </span>
       );
       addLine("\u00A0");
 
       setPhase("done");
 
-      // Redirect to profile page
-      setTimeout(() => router.push(`/${username}`), 2500);
+      // Redirect to sign-up so they can claim immediately
+      setTimeout(() => router.push("/sign-up"), 2500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "failed to create profile";
       addLine(
