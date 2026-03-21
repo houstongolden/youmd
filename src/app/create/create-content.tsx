@@ -7,6 +7,7 @@ import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { TerminalAuthInput } from "@/components/terminal/TerminalAuthInput";
+import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 
 type Phase = "boot" | "username" | "name" | "social" | "portrait" | "creating" | "done" | "error";
 
@@ -412,6 +413,7 @@ export function CreateContent() {
   }, [username, createProfile, updateProfile, router, addLine]);
 
   const isInputPhase = phase === "username" || phase === "name" || phase === "social";
+  const keyboardHeight = useKeyboardHeight();
 
   const promptLabel = {
     username: "choose a username",
@@ -430,8 +432,18 @@ export function CreateContent() {
     : phase === "social" ? handleSocial
     : () => {};
 
+  // Auto-scroll to bottom when lines change or phase changes
+  useEffect(() => {
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }, 50);
+  }, [lines.length, phase]);
+
   return (
-    <div className="h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
+    <div
+      className="fixed inset-0 bg-[hsl(var(--bg))] flex flex-col"
+      style={{ height: keyboardHeight > 0 ? `calc(100% - ${keyboardHeight}px)` : "100%" }}
+    >
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4 min-h-0">
         {/* Terminal panel — fills available space */}
         <div

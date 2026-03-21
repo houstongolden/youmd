@@ -21,16 +21,10 @@ export function TerminalAuthInput({
 }: TerminalAuthInputProps) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (autoFocus && inputRef.current) {
-      // Delay focus slightly for mobile keyboard
-      setTimeout(() => {
-        inputRef.current?.focus();
-        // Scroll input into view on mobile when keyboard opens
-        containerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-      }, 100);
+      setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [autoFocus]);
 
@@ -41,62 +35,43 @@ export function TerminalAuthInput({
     }
   };
 
-  const handleFocus = () => {
-    // On mobile, scroll into view when keyboard opens
-    setTimeout(() => {
-      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    }, 300);
+  const handleSubmit = () => {
+    if (value.trim()) {
+      onSubmit(value.trim());
+      setValue("");
+    }
   };
 
-  const displayValue = type === "password" ? "\u2022".repeat(value.length) : value;
-
   return (
-    <div
-      ref={containerRef}
-      className="flex items-center gap-2 font-mono text-[14px] cursor-text"
-      onClick={() => inputRef.current?.focus()}
-    >
+    <div className="flex items-center gap-2 font-mono text-[14px]">
       <span className="text-[hsl(var(--accent))] select-none shrink-0">
         {prompt}
       </span>
-      <span className="relative flex-1 min-h-[1.5em]">
-        {/* Hidden real input */}
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={handleFocus}
-          className="absolute inset-0 opacity-0 w-full h-full"
-          autoFocus={autoFocus}
-          disabled={disabled}
-          autoComplete="off"
-          spellCheck={false}
-        />
-        {/* Visible display */}
-        <span className="text-[hsl(var(--text-primary))]">{displayValue}</span>
-        {!disabled && (
-          <span className="cursor-blink text-[hsl(var(--accent))]">
-            {"\u2588"}
-          </span>
-        )}
-        {!value && placeholder && (
-          <span className="text-[hsl(var(--text-secondary))] opacity-20 absolute left-0">
-            {placeholder}
-          </span>
-        )}
-      </span>
-      {/* Submit button */}
+      <input
+        ref={inputRef}
+        type={type}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        className="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[14px] text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/15"
+        autoFocus={autoFocus}
+        disabled={disabled}
+        autoComplete="off"
+        spellCheck={false}
+        placeholder={placeholder}
+        enterKeyHint="send"
+      />
+      {/* Return/submit button */}
       <button
         type="button"
-        onClick={() => { if (value.trim()) { onSubmit(value.trim()); setValue(""); } }}
-        className="shrink-0 px-2 h-7 flex items-center justify-center bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform"
+        onClick={handleSubmit}
+        className="shrink-0 h-6 w-8 flex items-center justify-center bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform"
         style={{ borderRadius: "3px" }}
         aria-label="Submit"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M5 12h14M12 5l7 7-7 7" />
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 10 4 15 9 20" />
+          <path d="M20 4v7a4 4 0 0 1-4 4H4" />
         </svg>
       </button>
     </div>
