@@ -375,17 +375,42 @@ function CreateContentInner() {
         name,
       });
 
-      // Save scraped social image to the profile
+      // Save scraped data + compile a basic youJson so the profile page works
       const scraped = scrapedImageRef.current;
-      if (scraped && result.profileId && result.sessionToken) {
+      if (result.profileId && result.sessionToken) {
         try {
+          // Build a minimal youJson from what we know
+          const basicYouJson = {
+            schema: "you-md/v1",
+            username,
+            generated_at: new Date().toISOString(),
+            identity: {
+              name,
+              tagline: "",
+              location: "",
+              bio: { short: "", medium: "", long: "" },
+            },
+            now: { focus: [], updated_at: new Date().toISOString().split("T")[0] },
+            projects: [],
+            values: [],
+            links: {},
+            preferences: {
+              agent: { tone: "direct, curious", formality: "casual-professional", avoid: [] },
+              writing: { style: "", format: "markdown preferred" },
+            },
+            analysis: { topics: [], voice_summary: "", credibility_signals: [] },
+            meta: { sources_used: [], last_updated: new Date().toISOString(), compiler_version: "0.2.0" },
+          };
+
           await updateProfileMut({
             profileId: result.profileId,
             sessionToken: result.sessionToken,
-            avatarUrl: scraped.url,
+            avatarUrl: scraped?.url,
+            youJson: basicYouJson,
+            youMd: `---\nschema: you-md/v1\nname: ${name}\nusername: ${username}\n---\n\n# ${name}\n`,
           });
         } catch {
-          // Non-critical — portrait save can fail silently
+          // Non-critical
         }
       }
 
@@ -420,8 +445,8 @@ function CreateContentInner() {
 
       setPhase("done");
 
-      // Redirect to profile after a delay
-      setTimeout(() => router.push(`/${username}`), 3000);
+      // Redirect to profile page
+      setTimeout(() => router.push(`/${username}`), 2500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "failed to create profile";
       addLine(

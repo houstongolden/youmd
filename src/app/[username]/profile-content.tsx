@@ -77,24 +77,49 @@ export function ProfileContent() {
 
   const data = profile.youJson;
   if (!data) {
+    // Show a basic profile with whatever info we have
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))] p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "8px" }}>
-            <TerminalHeader title={`you.md/${username}`} />
-            <div className="p-6 font-mono text-[14px] space-y-2">
-              <p className="text-[hsl(var(--text-secondary))] opacity-50">
-                profile claimed but not yet published.
-              </p>
-              <Link
-                href="/"
-                className="block mt-4 text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] transition-colors"
-              >
-                &gt; back to home
-              </Link>
-            </div>
+      <div className="min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
+        <header className="border-b border-[hsl(var(--border))]">
+          <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+            <span className="font-mono text-sm text-[hsl(var(--text-secondary))]">
+              you.md/{username}
+            </span>
+            <Link href="/" className="text-xs font-mono text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-70 transition-opacity">
+              what is this?
+            </Link>
           </div>
-        </div>
+        </header>
+        <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-12 pb-16">
+          <h1 className="text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
+            @{username}
+          </h1>
+          {profile.displayName && (
+            <p className="text-[hsl(var(--text-secondary))] text-sm mt-2">
+              {profile.displayName}
+            </p>
+          )}
+          <div className="mt-8 border border-[hsl(var(--border))] p-5 bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "4px" }}>
+            <p className="text-[hsl(var(--text-secondary))] opacity-50 font-mono text-[13px]">
+              this identity is being built. check back soon.
+            </p>
+            {!profile.isClaimed && (
+              <Link
+                href="/sign-up"
+                className="block mt-3 text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] transition-colors font-mono text-[13px]"
+              >
+                &gt; claim this identity
+              </Link>
+            )}
+          </div>
+        </main>
+        <footer className="border-t border-[hsl(var(--border))]">
+          <div className="max-w-2xl mx-auto px-6 py-6 text-center">
+            <p className="text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-30 uppercase tracking-widest">
+              powered by <Link href="/" className="text-[hsl(var(--accent))] opacity-60 hover:opacity-100 transition-opacity">you.md</Link>
+            </p>
+          </div>
+        </footer>
       </div>
     );
   }
