@@ -23,8 +23,17 @@ const Pricing = () => (
             whileHover={{
               borderColor: "hsl(var(--accent) / 0.15)",
             }}
-            className="border border-[hsl(var(--border))] rounded p-6 transition-colors"
+            className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-6 transition-colors overflow-hidden"
+            style={{ borderRadius: "2px" }}
           >
+            <div className="flex items-center gap-1.5 mb-4">
+              <span className="w-[6px] h-[6px] rounded-full bg-[hsl(var(--text-secondary))]/30" />
+              <span className="w-[6px] h-[6px] rounded-full bg-[hsl(var(--text-secondary))]/30" />
+              <span className="w-[6px] h-[6px] rounded-full bg-[hsl(var(--text-secondary))]/30" />
+              <span className="ml-2 text-[hsl(var(--text-secondary))] opacity-40 font-mono text-[9px]">
+                free.plan
+              </span>
+            </div>
             <div className="flex items-baseline justify-between mb-4">
               <span className="text-[hsl(var(--text-primary))] font-mono text-[13px]">
                 Free
@@ -68,9 +77,18 @@ const Pricing = () => (
             whileHover={{
               borderColor: "hsl(var(--accent) / 0.5)",
             }}
-            className="border border-accent/30 rounded p-6 relative overflow-hidden transition-colors"
+            className="border border-accent/30 bg-[hsl(var(--bg-raised))] p-6 relative overflow-hidden transition-colors"
+            style={{ borderRadius: "2px" }}
           >
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
+            <div className="flex items-center gap-1.5 mb-4">
+              <span className="w-[6px] h-[6px] rounded-full bg-[hsl(var(--accent))]/40" />
+              <span className="w-[6px] h-[6px] rounded-full bg-[hsl(var(--accent))]/40" />
+              <span className="w-[6px] h-[6px] rounded-full bg-[hsl(var(--accent))]/40" />
+              <span className="ml-2 text-[hsl(var(--accent))] opacity-60 font-mono text-[9px]">
+                pro.plan
+              </span>
+            </div>
             <div className="flex items-baseline justify-between mb-1">
               <span className="text-[hsl(var(--text-primary))] font-mono text-[13px]">
                 Pro

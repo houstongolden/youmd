@@ -82,7 +82,7 @@ export function ProfileContent() {
     return (
       <div className="min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
         <header className="border-b border-[hsl(var(--border))]">
-          <div className="max-w-2xl mx-auto pl-12 pr-6 py-4 flex items-center justify-between">
+          <div className="max-w-2xl mx-auto px-4 md:pl-12 md:pr-6 py-4 flex items-center justify-between">
             <span className="font-mono text-sm text-[hsl(var(--text-secondary))]">
               you.md/{username}
             </span>
@@ -91,20 +91,26 @@ export function ProfileContent() {
             </Link>
           </div>
         </header>
-        <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-12 pb-16">
-          <div className="flex items-start gap-6">
+        <main className="flex-1 max-w-2xl mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             {profile.avatarUrl && (
               <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "4px" }}>
                 <AsciiAvatar
                   src={profile.avatarUrl}
                   cols={60}
                   canvasWidth={120}
-                  className="block"
+                  className="hidden sm:block"
+                />
+                <AsciiAvatar
+                  src={profile.avatarUrl}
+                  cols={40}
+                  canvasWidth={80}
+                  className="block sm:hidden"
                 />
               </div>
             )}
-            <div className="min-w-0">
-              <h1 className="text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
+            <div className="min-w-0 text-center sm:text-left">
+              <h1 className="text-xl sm:text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
                 {profile.displayName || `@${username}`}
               </h1>
               {profile.displayName && (
@@ -170,7 +176,7 @@ export function ProfileContent() {
 
       {/* Header */}
       <header className="border-b border-[hsl(var(--border))]">
-        <div className="max-w-2xl mx-auto pl-12 pr-6 py-4 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-4 md:pl-12 md:pr-6 py-4 flex items-center justify-between">
           <Link
             href={`/${username}`}
             className="font-mono text-sm text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] transition-colors"
@@ -186,10 +192,10 @@ export function ProfileContent() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-12 pb-16">
+      <main className="flex-1 max-w-2xl mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
         {/* Identity */}
-        <section className="mb-12">
-          <div className="flex items-start gap-6">
+        <section className="mb-8 md:mb-12">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             {/* ASCII Portrait */}
             {profile.avatarUrl && (
               <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "4px" }}>
@@ -197,12 +203,18 @@ export function ProfileContent() {
                   src={profile.avatarUrl}
                   cols={60}
                   canvasWidth={120}
-                  className="block"
+                  className="hidden sm:block"
+                />
+                <AsciiAvatar
+                  src={profile.avatarUrl}
+                  cols={40}
+                  canvasWidth={80}
+                  className="block sm:hidden"
                 />
               </div>
             )}
-            <div className="min-w-0">
-              <h1 className="text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
+            <div className="min-w-0 text-center sm:text-left">
+              <h1 className="text-xl sm:text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
                 {name}
               </h1>
               <p className="text-[hsl(var(--text-secondary))] opacity-50 text-xs font-mono mt-1">
@@ -224,7 +236,7 @@ export function ProfileContent() {
 
         {/* Bio */}
         {bio && (
-          <section className="mb-10">
+          <section className="mb-8 md:mb-10">
             <p className="text-[hsl(var(--text-secondary))] leading-relaxed text-[15px]">
               {bio}
             </p>
@@ -332,7 +344,7 @@ export function ProfileContent() {
                     <span className="text-[hsl(var(--text-secondary))] opacity-40 w-16">
                       {platform}
                     </span>
-                    <span className="text-[hsl(var(--accent-mid))] truncate">
+                    <span className="text-[hsl(var(--accent-mid))] truncate" title={url as string}>
                       {url as string}
                     </span>
                   </a>
@@ -436,7 +448,7 @@ function LinkFavicon({ url }: { url: string }) {
   return (
     <img
       src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
-      alt=""
+      alt={`${domain} favicon`}
       width={16}
       height={16}
       className="shrink-0"

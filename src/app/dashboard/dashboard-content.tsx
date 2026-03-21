@@ -77,15 +77,15 @@ export function DashboardContent() {
           {/* Header — same as initialize page */}
           <TerminalHeader title="you.md — shell" />
 
-          {/* Status bar — hidden on mobile, visible on desktop */}
-          <div className="hidden md:flex items-center justify-between px-4 py-1.5 border-b border-[hsl(var(--border))] shrink-0">
-            <div className="flex items-center gap-2 text-[11px] font-mono text-[hsl(var(--text-secondary))]">
+          {/* Status bar — desktop: full, mobile: compact */}
+          <div className="flex items-center justify-between px-3 md:px-4 py-1.5 border-b border-[hsl(var(--border))] shrink-0">
+            <div className="flex items-center gap-2 text-[10px] md:text-[11px] font-mono text-[hsl(var(--text-secondary))]">
               <span className="text-[hsl(var(--text-primary))] opacity-70">
-                {profileName && profileName !== username ? `${profileName} ` : ""}@{username}
+                @{username}
               </span>
               <span className="opacity-20">|</span>
-              <span className="opacity-40">{plan}</span>
-              <span className="opacity-20">|</span>
+              <span className="opacity-40 hidden sm:inline">{plan}</span>
+              <span className="opacity-20 hidden sm:inline">|</span>
               <span className="opacity-40">v{version ?? "0"}</span>
               <span className="opacity-20">|</span>
               <span className={isPublished ? "text-[hsl(var(--success))]" : "opacity-40"}>
@@ -93,7 +93,7 @@ export function DashboardContent() {
               </span>
             </div>
             <SignOutButton>
-              <button className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-80 transition-opacity">
+              <button className="text-[10px] md:text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-80 transition-opacity">
                 sign out
               </button>
             </SignOutButton>
@@ -143,23 +143,27 @@ export function DashboardContent() {
             {/* Preview panes — visible on desktop always, toggled on mobile */}
             <div className={`${mobileView === "terminal" ? "hidden md:flex" : "flex"} w-full md:w-[65%] flex-col min-h-0`}>
               {/* Pane tabs */}
-              <div className="flex items-center px-4 py-1.5 border-b border-[hsl(var(--border))] shrink-0 overflow-x-auto">
-                <div className="flex items-center gap-0.5">
-                  {(["preview", "json", "sources", "portrait", "publish", "agents", "activity", "settings", "tokens", "billing", "help"] as RightPane[]).map((pane) => (
-                    <button
-                      key={pane}
-                      onClick={() => setRightPane(pane)}
-                      className={`px-2.5 py-1 text-[10px] font-mono transition-colors ${
-                        rightPane === pane
-                          ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))]"
-                          : "text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"
-                      }`}
-                      style={{ borderRadius: "2px" }}
-                    >
-                      {pane}
-                    </button>
-                  ))}
+              <div className="relative shrink-0 border-b border-[hsl(var(--border))]">
+                <div className="flex items-center px-2 md:px-4 py-1 md:py-1.5 overflow-x-auto scrollbar-none">
+                  <div className="flex items-center gap-0.5">
+                    {(["preview", "json", "sources", "portrait", "publish", "agents", "activity", "settings", "tokens", "billing", "help"] as RightPane[]).map((pane) => (
+                      <button
+                        key={pane}
+                        onClick={() => setRightPane(pane)}
+                        className={`px-2 md:px-2.5 py-1.5 md:py-1 text-[10px] font-mono transition-colors whitespace-nowrap ${
+                          rightPane === pane
+                            ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))]"
+                            : "text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"
+                        }`}
+                        style={{ borderRadius: "2px" }}
+                      >
+                        {pane}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+                {/* Scroll fade hint on the right */}
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[hsl(var(--bg-raised))] to-transparent pointer-events-none md:hidden" />
               </div>
 
               {/* Active pane */}
