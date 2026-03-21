@@ -977,7 +977,63 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     [user?.id, convexUser, latestBundle?.youJson, saveBundleFromForm]
   );
 
-  // Initialize conversation with context
+  // ---------------------------------------------------------------------------
+  // Extract links from profile/bundle for auto-scraping on init
+  // ---------------------------------------------------------------------------
+  function extractLinksFromProfile(
+    youJson: Record<string, unknown> | null,
+    profile: Record<string, unknown> | null
+  ): DetectedSource[] {
+    const sources: DetectedSource[] = [];
+    const seen = new Set<string>();
+
+    // Collect all link URLs from both youJson and profile
+    const allUrls: string[] = [];
+
+    if (youJson) {
+      const links = youJson.links as Record<string, string> | undefined;
+      if (links) {
+        for (const url of Object.values(links)) {
+          if (url) allUrls.push(url);
+        }
+      }
+    }
+
+    if (profile) {
+      const links = profile.links as Record<string, string> | undefined;
+      if (links) {
+        for (const url of Object.values(links)) {
+          if (url) allUrls.push(url);
+        }
+      }
+    }
+
+    // Parse each URL into a DetectedSource
+    for (const url of allUrls) {
+      const xMatch = url.match(/(?:x\.com|twitter\.com)\/([a-zA-Z0-9_]+)/i);
+      if (xMatch && !seen.has(`x:${xMatch[1]}`)) {
+        seen.add(`x:${xMatch[1]}`);
+        sources.push({ platform: "x", url: `https://x.com/${xMatch[1]}`, username: xMatch[1] });
+        continue;
+      }
+      const ghMatch = url.match(/github\.com\/([a-zA-Z0-9_-]+)/i);
+      if (ghMatch && !["orgs", "topics", "settings"].includes(ghMatch[1].toLowerCase()) && !seen.has(`github:${ghMatch[1]}`)) {
+        seen.add(`github:${ghMatch[1]}`);
+        sources.push({ platform: "github", url: `https://github.com/${ghMatch[1]}`, username: ghMatch[1] });
+        continue;
+      }
+      const liMatch = url.match(/linkedin\.com\/in\/([a-zA-Z0-9_-]+)/i);
+      if (liMatch && !seen.has(`linkedin:${liMatch[1]}`)) {
+        seen.add(`linkedin:${liMatch[1]}`);
+        sources.push({ platform: "linkedin", url: `https://linkedin.com/in/${liMatch[1]}`, username: liMatch[1] });
+        continue;
+      }
+    }
+
+    return sources;
+  }
+
+  // Initialize conversation with context + auto-scrape existing links
   useEffect(() => {
     if (initialized || !convexUser) return;
     // For onboarding, we use a custom greeting prompt
@@ -1032,6 +1088,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     const hasSubstantialProfile = profileContext !== "the user has no existing profile data yet." &&
       profileContext.split("\n").length > 3;
 
+    // Determine if this is a returning user (has existing profile data)
+    const isReturning = hasSubstantialProfile;
+
     const contextContent = isOnboarding && onboardingGreeting
       ? onboardingGreeting
       : hasSubstantialProfile
@@ -1043,15 +1102,114 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       content: contextContent,
     };
 
-    setMessages([systemMessage, contextMessage]);
     setInitialized(true);
-
     setIsThinking(true);
     setThinkingPhrase(randomThinking("identity"));
     setThinkingCategory("identity");
 
-    callLLM([systemMessage, contextMessage])
-      .then((response) => {
+    // --- Auto-scrape existing links on init (for returning users) ---
+    const existingYouJson = (latestBundle?.youJson as Record<string, unknown>) || null;
+    const existingLinks = extractLinksFromProfile(
+      existingYouJson,
+      userProfile as Record<string, unknown> | null
+    );
+    // Only auto-scrape if user has links but profile is sparse (thin bundle)
+    const bundleSections = existingYouJson
+      ? Object.keys(existingYouJson).filter((k) => {
+          const val = (existingYouJson as Record<string, unknown>)[k];
+          if (typeof val === "string") return val.length > 20;
+          if (Array.isArray(val)) return val.length > 0;
+          if (typeof val === "object" && val !== null) return Object.keys(val).length > 0;
+          return false;
+        }).length
+      : 0;
+    const shouldAutoScrape = existingLinks.length > 0 && bundleSections < 4;
+    const shouldAutoResearch = !isReturning && displayName;
+
+    async function initConversation() {
+      let allMessages: ChatMessage[] = [systemMessage, contextMessage];
+
+      try {
+        // Auto-scrape existing links for sparse profiles
+        if (shouldAutoScrape) {
+          setThinkingPhrase(randomThinking("sync"));
+          setThinkingCategory("sync");
+          setDisplayMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: `[auto-scraping: ${existingLinks.map((s) => `${s.platform}${s.username ? ` @${s.username}` : ""}`).join(", ")}]`,
+            },
+          ]);
+
+          const scrapeResults = await Promise.all(
+            existingLinks.map((s) => scrapeSource(s))
+          );
+
+          // Mark as scraped so sendMessage won't re-scrape
+          for (const s of existingLinks) {
+            scrapedSourcesRef.current.add(`${s.platform}:${s.username || s.url}`);
+          }
+
+          // Save profile images from scrape results
+          if (userProfile?._id && user?.id) {
+            // Prefer LinkedIn > GitHub > X for profile images
+            const platformPriority = ["linkedin", "github", "x"];
+            let bestImage: string | null = null;
+            let bestPriority = platformPriority.length;
+            for (let i = 0; i < existingLinks.length; i++) {
+              const imgMatch = scrapeResults[i]?.match(/profile_image: (https?:\/\/[^\s]+)/);
+              if (imgMatch?.[1]) {
+                const idx = platformPriority.indexOf(existingLinks[i].platform);
+                if (idx >= 0 && idx < bestPriority) {
+                  bestImage = imgMatch[1];
+                  bestPriority = idx;
+                }
+              }
+            }
+            if (bestImage && !userProfile.avatarUrl) {
+              try {
+                await updateProfile({
+                  profileId: userProfile._id,
+                  clerkId: user.id,
+                  avatarUrl: bestImage,
+                });
+              } catch { /* non-fatal */ }
+            }
+          }
+
+          const scrapeContext = scrapeResults.filter(Boolean).join("\n\n");
+          if (scrapeContext) {
+            allMessages.push({
+              role: "user",
+              content: `[PLATFORM AUTO-SCRAPE ON SESSION START — the following data was scraped from the user's existing linked profiles. use this REAL data to make specific, personal observations in your greeting. reference actual names, titles, numbers, and details.]\n\n${scrapeContext}`,
+            });
+          }
+
+          setThinkingPhrase(randomThinking("analysis"));
+          setThinkingCategory("analysis");
+        }
+
+        // Auto-research for sparse profiles (Perplexity web search)
+        if (shouldAutoResearch) {
+          const allLinks = existingLinks.map((s) => s.url);
+          const researchResult = await researchUser(
+            displayName,
+            convexUser?.username,
+            allLinks.length > 0 ? allLinks : undefined
+          );
+          if (researchResult) {
+            allMessages.push({
+              role: "user",
+              content: `[PLATFORM AUTO-RESEARCH — web research about this user. use any relevant findings to personalize your greeting.]\n\n${researchResult}`,
+            });
+          }
+        }
+
+        setMessages(allMessages);
+
+        const response = await callLLM(allMessages);
         const { display, updates } = parseUpdatesFromResponse(response);
 
         const assistantMsg: ChatMessage = {
@@ -1062,6 +1220,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         setMessages((prev) => [...prev, assistantMsg]);
 
         const newDisplay: DisplayMessage[] = [];
+
+        if (shouldAutoScrape) {
+          newDisplay.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[scraped ${existingLinks.length} source${existingLinks.length > 1 ? "s" : ""} from your profile]`,
+          });
+        }
 
         if (display) {
           newDisplay.push({
@@ -1081,11 +1247,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           saveUpdates(updates);
         }
 
-        setDisplayMessages(newDisplay);
+        setDisplayMessages((prev) => [...prev, ...newDisplay]);
         setIsThinking(false);
-      })
-      .catch((err) => {
-        setDisplayMessages([
+      } catch (err) {
+        setDisplayMessages((prev) => [
+          ...prev,
           {
             id: crypto.randomUUID(),
             role: "assistant",
@@ -1093,8 +1259,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           },
         ]);
         setIsThinking(false);
-      });
-  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates]);
+      }
+    }
+
+    initConversation();
+  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates, userProfile, user?.id, updateProfile]);
 
   // Slash commands
   const handleSlashCommand = useCallback(
@@ -1388,22 +1557,29 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           scrapedSourcesRef.current.add(`${s.platform}:${s.username || s.url}`);
         }
 
-        // Extract and save profile image from scrape results
-        if (userProfile?._id && user?.id) {
-          for (const result of scrapeResults) {
-            const imgMatch = result.match(/profile_image: (https?:\/\/[^\s]+)/);
-            if (imgMatch?.[1] && !userProfile.avatarUrl) {
-              try {
-                await updateProfile({
-                  profileId: userProfile._id,
-                  clerkId: user.id,
-                  avatarUrl: imgMatch[1],
-                });
-              } catch {
-                // Non-fatal
+        // Extract and save profile image — prefer LinkedIn > GitHub > X
+        if (userProfile?._id && user?.id && !userProfile.avatarUrl) {
+          const platformPriority = ["linkedin", "github", "x"];
+          let bestImage: string | null = null;
+          let bestPriority = platformPriority.length;
+          for (let i = 0; i < newSources.length; i++) {
+            const imgMatch = scrapeResults[i]?.match(/profile_image: (https?:\/\/[^\s]+)/);
+            if (imgMatch?.[1]) {
+              const idx = platformPriority.indexOf(newSources[i].platform);
+              if (idx >= 0 && idx < bestPriority) {
+                bestImage = imgMatch[1];
+                bestPriority = idx;
               }
-              break; // Only need one image
             }
+          }
+          if (bestImage) {
+            try {
+              await updateProfile({
+                profileId: userProfile._id,
+                clerkId: user.id,
+                avatarUrl: bestImage,
+              });
+            } catch { /* non-fatal */ }
           }
         }
 
