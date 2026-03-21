@@ -53,7 +53,7 @@ export function TerminalAuthInput({
   return (
     <div
       ref={containerRef}
-      className="flex items-center gap-2 font-mono text-[14px] cursor-text pb-[env(safe-area-inset-bottom)] terminal-input-sticky"
+      className="flex items-center gap-2 font-mono text-[14px] cursor-text"
       onClick={() => inputRef.current?.focus()}
     >
       <span className="text-[hsl(var(--accent))] select-none shrink-0">
@@ -87,6 +87,17 @@ export function TerminalAuthInput({
           </span>
         )}
       </span>
+      {/* Submit button */}
+      <button
+        type="button"
+        onClick={() => { if (value.trim()) { onSubmit(value.trim()); setValue(""); } }}
+        className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform"
+        aria-label="Submit"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7" />
+        </svg>
+      </button>
     </div>
   );
 }

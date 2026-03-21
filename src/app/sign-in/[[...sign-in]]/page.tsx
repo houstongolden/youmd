@@ -221,86 +221,80 @@ export default function SignInPage() {
     }
   }, [signIn, router, addLine]);
 
+  const isInputStep = ["email", "password", "verify"].includes(step);
+
+  const stepLabel: Record<string, string> = {
+    email: "enter your email",
+    password: "enter your password",
+    verify: "enter verification code",
+  };
+
+  const stepPlaceholder: Record<string, string> = {
+    email: "email",
+    password: "",
+    verify: "______",
+  };
+
+  const stepHandler: Record<string, (v: string) => void> = {
+    email: handleEmail,
+    password: handlePassword,
+    verify: handleVerify,
+  };
+
   return (
-    <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl">
-        {/* Terminal panel */}
+    <div className="h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
+      <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4 min-h-0">
         <div
-          className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
+          className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden min-h-0"
           style={{ borderRadius: "8px" }}
         >
           <TerminalHeader title="you.md — authenticate" />
 
-          {/* Terminal body */}
+          {/* Scrollable output */}
           <div
             ref={scrollRef}
-            className="p-6 md:p-8 min-h-[300px] max-h-[60dvh] overflow-y-auto font-mono text-[14px] leading-relaxed"
+            className="flex-1 overflow-y-auto p-5 font-mono text-[14px] leading-relaxed"
           >
-            {/* Rendered lines */}
             {lines.map((line) => (
               <div key={line.id} className={line.className || ""}>
                 {line.content || "\u00A0"}
               </div>
             ))}
 
-            {/* Active input */}
-            {step === "email" && (
-              <div className="mt-2">
-                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
-                  enter your email
-                </div>
-                <TerminalAuthInput
-                  prompt=">"
-                  placeholder="email"
-                  onSubmit={handleEmail}
-                />
-              </div>
-            )}
-
-            {step === "password" && (
-              <div className="mt-2">
-                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
-                  enter your password
-                </div>
-                <TerminalAuthInput
-                  prompt=">"
-                  type="password"
-                  onSubmit={handlePassword}
-                />
-              </div>
-            )}
-
-            {step === "verify" && (
-              <div className="mt-2">
-                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
-                  enter verification code
-                </div>
-                <TerminalAuthInput
-                  prompt=">"
-                  placeholder="______"
-                  onSubmit={handleVerify}
-                />
-              </div>
-            )}
-
             {(step === "authenticating" || step === "verifying") && (
-              <div className="text-[hsl(var(--accent-mid))] animate-pulse">
+              <div className="text-[hsl(var(--accent-mid))] animate-pulse mt-1">
                 {"\u25CC"} {step === "authenticating" ? "authenticating" : "verifying"}...
               </div>
             )}
           </div>
+
+          {/* Input pinned at bottom */}
+          {isInputStep && (
+            <div className="shrink-0 border-t border-[hsl(var(--border))] px-5 py-3 pb-[env(safe-area-inset-bottom)]">
+              <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[12px] mb-1.5 font-mono">
+                {stepLabel[step]}
+              </div>
+              <TerminalAuthInput
+                prompt=">"
+                placeholder={stepPlaceholder[step]}
+                type={step === "password" ? "password" : "text"}
+                onSubmit={stepHandler[step]}
+              />
+            </div>
+          )}
         </div>
 
         {/* Link below terminal */}
-        <div className="mt-4 text-center">
-          <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
-            need to initialize?{" "}
-            <Link
-              href="/sign-up"
-              className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
-            >
-              sign up
-            </Link>
+        {!isInputStep && (
+          <div className="mt-3 text-center shrink-0">
+            <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
+              need to initialize?{" "}
+              <Link
+                href="/sign-up"
+                className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
+              >
+                sign up
+              </Link>
           </span>
         </div>
       </div>

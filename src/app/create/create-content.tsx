@@ -411,100 +411,93 @@ export function CreateContent() {
     }
   }, [username, createProfile, updateProfile, router, addLine]);
 
+  const isInputPhase = phase === "username" || phase === "name" || phase === "social";
+
+  const promptLabel = {
+    username: "choose a username",
+    name: "what should we call you?",
+    social: "drop your x or github username (or skip)",
+  }[phase as string] || "";
+
+  const promptPlaceholder = {
+    username: "username",
+    name: "your name",
+    social: "@username or github.com/you",
+  }[phase as string] || "";
+
+  const handleSubmit = phase === "username" ? handleUsername
+    : phase === "name" ? handleName
+    : phase === "social" ? handleSocial
+    : () => {};
+
   return (
-    <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl">
-        {/* Terminal panel */}
+    <div className="h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
+      <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4 min-h-0">
+        {/* Terminal panel — fills available space */}
         <div
-          className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
+          className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden min-h-0"
           style={{ borderRadius: "8px" }}
         >
           <TerminalHeader title="you.md — create" />
 
-          {/* Terminal body */}
+          {/* Scrollable terminal output */}
           <div
             ref={scrollRef}
-            className="p-6 md:p-8 min-h-[400px] max-h-[60dvh] overflow-y-auto font-mono text-[14px] leading-relaxed"
+            className="flex-1 overflow-y-auto p-5 font-mono text-[14px] leading-relaxed"
           >
-            {/* Rendered lines */}
             {lines.map((line) => (
               <div key={line.id} className={line.className || ""}>
                 {line.content || "\u00A0"}
               </div>
             ))}
 
-            {/* Active input */}
-            {phase === "username" && (
-              <div className="mt-2">
-                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
-                  choose a username
-                </div>
-                <TerminalAuthInput
-                  prompt=">"
-                  placeholder="username"
-                  onSubmit={handleUsername}
-                />
-              </div>
-            )}
-
-            {phase === "name" && (
-              <div className="mt-2">
-                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
-                  what should we call you?
-                </div>
-                <TerminalAuthInput
-                  prompt=">"
-                  placeholder="your name"
-                  onSubmit={handleName}
-                />
-              </div>
-            )}
-
-            {phase === "social" && (
-              <div className="mt-2">
-                <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[13px] mb-1">
-                  drop your x or github username for your ascii portrait (or type skip)
-                </div>
-                <TerminalAuthInput
-                  prompt=">"
-                  placeholder="@username or github.com/you"
-                  onSubmit={handleSocial}
-                />
-              </div>
-            )}
-
+            {/* Processing indicators (non-input phases) */}
             {phase === "portrait" && (
               <div className="text-[hsl(var(--accent-mid))] animate-pulse mt-1">
                 {"\u25CC"} generating portrait...
               </div>
             )}
-
             {phase === "creating" && (
               <div className="text-[hsl(var(--accent-mid))] animate-pulse mt-1">
                 {"\u25CC"} creating...
               </div>
             )}
-
             {phase === "done" && (
               <div className="text-[hsl(var(--text-secondary))] opacity-50 animate-pulse mt-1">
                 {"\u25CC"} redirecting to your profile...
               </div>
             )}
           </div>
+
+          {/* Input pinned at bottom of panel — OUTSIDE scroll area */}
+          {isInputPhase && (
+            <div className="shrink-0 border-t border-[hsl(var(--border))] px-5 py-3 pb-[env(safe-area-inset-bottom)]">
+              <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[12px] mb-1.5 font-mono">
+                {promptLabel}
+              </div>
+              <TerminalAuthInput
+                prompt=">"
+                placeholder={promptPlaceholder}
+                onSubmit={handleSubmit}
+              />
+            </div>
+          )}
         </div>
 
         {/* Links below terminal */}
-        <div className="mt-4 flex items-center justify-center gap-4">
-          <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
-            already have an account?{" "}
-            <Link
-              href="/sign-in"
-              className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
-            >
-              sign in
-            </Link>
-          </span>
-        </div>
+        {!isInputPhase && (
+          <div className="mt-3 text-center shrink-0">
+            <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
+              already have an account?{" "}
+              <Link
+                href="/sign-in"
+                className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
+              >
+                sign in
+              </Link>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
