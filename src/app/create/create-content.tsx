@@ -7,26 +7,30 @@ import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { TerminalAuthInput } from "@/components/terminal/TerminalAuthInput";
 import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 
-// Direct Convex HTTP client — bypasses Clerk auth for unauthenticated profile creation
-const CONVEX_URL = "https://kindly-cassowary-600.convex.cloud";
+import { ConvexReactClient } from "convex/react";
+import { ConvexProvider, useMutation as useConvexMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
-async function callConvexMutation(name: string, args: Record<string, unknown>) {
-  const res = await fetch(`${CONVEX_URL}/api/mutation`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: name, args, format: "json" }),
-  });
-  const data = await res.json();
-  if (data.status === "error") {
-    throw new Error(data.errorMessage || "mutation failed");
-  }
-  return data.value;
-}
+// Standalone Convex client WITHOUT Clerk — for unauthenticated mutations
+const publicConvex = typeof window !== "undefined"
+  ? new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+  : null;
 
 type Phase = "boot" | "username" | "name" | "social" | "portrait" | "creating" | "done" | "error";
 
 export function CreateContent() {
+  if (!publicConvex) return null;
+  return (
+    <ConvexProvider client={publicConvex}>
+      <CreateContentInner />
+    </ConvexProvider>
+  );
+}
+
+function CreateContentInner() {
   const router = useRouter();
+  const createProfileMut = useConvexMutation(api.profiles.createProfile);
+  const updateProfileMut = useConvexMutation(api.profiles.updateProfile);
 
   const [phase, setPhase] = useState<Phase>("boot");
   const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);
@@ -366,7 +370,7 @@ export function CreateContent() {
     addLine("creating @" + username + "...", "text-[hsl(var(--text-secondary))] opacity-50");
 
     try {
-      const result = await callConvexMutation("profiles:createProfile", {
+      const result = await createProfileMut({
         username,
         name,
       });
@@ -375,7 +379,7 @@ export function CreateContent() {
       const scraped = scrapedImageRef.current;
       if (scraped && result.profileId && result.sessionToken) {
         try {
-          await callConvexMutation("profiles:updateProfile", {
+          await updateProfileMut({
             profileId: result.profileId,
             sessionToken: result.sessionToken,
             avatarUrl: scraped.url,

@@ -208,14 +208,15 @@ export const createProfile = mutation({
     links: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    try {
     const uname = args.username.toLowerCase();
 
     // Validate
     if (!USERNAME_RE.test(uname)) {
-      throw new Error("invalid username format");
+      throw new Error("invalid username format: " + uname);
     }
     if (RESERVED_USERNAMES.includes(uname)) {
-      throw new Error("reserved username");
+      throw new Error("reserved username: " + uname);
     }
 
     // Check availability in both tables
@@ -224,7 +225,7 @@ export const createProfile = mutation({
       .withIndex("by_username", (q) => q.eq("username", uname))
       .first();
     if (existingProfile) {
-      throw new Error("username already taken");
+      throw new Error("username already taken in profiles: " + uname);
     }
 
     const existingUser = await ctx.db
@@ -232,7 +233,7 @@ export const createProfile = mutation({
       .withIndex("by_username", (q) => q.eq("username", uname))
       .first();
     if (existingUser) {
-      throw new Error("username already taken");
+      throw new Error("username already taken in users: " + uname);
     }
 
     const sessionToken = generateSessionToken();
@@ -256,6 +257,11 @@ export const createProfile = mutation({
     });
 
     return { profileId, sessionToken, username: uname };
+    } catch (err) {
+      // Surface the actual error message instead of generic "Server Error"
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`createProfile failed: ${msg}`);
+    }
   },
 });
 
