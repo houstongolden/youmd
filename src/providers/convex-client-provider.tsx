@@ -81,3 +81,19 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
     </ClerkErrorBoundary>
   );
 }
+
+/**
+ * Convex provider WITHOUT Clerk auth — for pages that work without sign-in.
+ * Used by /create and other public-facing interactive pages.
+ */
+export function ConvexPublicProvider({ children }: { children: ReactNode }) {
+  if (!convex) {
+    return <>{children}</>;
+  }
+
+  return (
+    <ConvexProvider client={convex}>
+      {children}
+    </ConvexProvider>
+  );
+}
