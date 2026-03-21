@@ -78,7 +78,7 @@ const CliPill = () => {
   return (
     <button
       onClick={handleCopy}
-      className="cli-pill flex items-center gap-3 px-5 py-3 group"
+      className="cli-pill flex items-center gap-3 px-5 py-3 group whitespace-nowrap"
     >
       <span className="text-muted-foreground">$</span>
       <span className="text-accent font-medium">npx youmd init</span>
@@ -211,7 +211,7 @@ const Hero = () => {
               <CliPill />
               <Link
                 href="/create"
-                className="cta-primary px-5 py-3 text-[13px] font-mono shrink-0"
+                className="cta-primary px-5 py-3 text-[13px] font-mono shrink-0 whitespace-nowrap"
               >
                 &gt; start now
               </Link>

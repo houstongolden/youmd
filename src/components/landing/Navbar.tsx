@@ -117,7 +117,11 @@ const Navbar = () => {
               className="md:hidden text-muted-foreground p-1"
               aria-label="Toggle menu"
             >
-              {mobileOpen ? <X size={16} /> : <Menu size={16} />}
+              {mobileOpen ? (
+                <X size={16} />
+              ) : (
+                <span className="font-mono text-[11px] text-[hsl(var(--accent))] tracking-tight select-none">&gt;_</span>
+              )}
             </button>
           </div>
         </div>

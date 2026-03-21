@@ -51,7 +51,7 @@ const CTAFooter = () => {
             <div className="flex items-center justify-center gap-3 flex-wrap mb-3">
               <button
                 onClick={handleCopy}
-                className="cli-pill inline-flex items-center gap-3 px-5 py-3"
+                className="cli-pill inline-flex items-center gap-3 px-5 py-3 whitespace-nowrap"
               >
                 <span className="text-muted-foreground">$</span>
                 <span className="text-accent font-medium">
@@ -70,7 +70,7 @@ const CTAFooter = () => {
               </button>
               <Link
                 href="/create"
-                className="cta-primary px-5 py-3 text-[13px] font-mono"
+                className="cta-primary px-5 py-3 text-[13px] font-mono whitespace-nowrap"
               >
                 &gt; start in browser
               </Link>
