@@ -107,9 +107,9 @@ const Navbar = () => {
             ) : (
               <Link
                 href="/create"
-                className="hidden md:inline-block cta-primary px-3 py-1 text-[10px]"
+                className="hidden md:inline-block cta-primary px-3 py-1 text-[10px] whitespace-nowrap"
               >
-                &gt; create identity
+                &gt; create you
               </Link>
             )}
             <button
@@ -180,7 +180,7 @@ const Navbar = () => {
               onClick={() => setMobileOpen(false)}
               className="cta-primary px-6 py-2.5 text-[12px] mt-4"
             >
-              &gt; create identity
+              &gt; create you
             </Link>
           )}
         </div>
