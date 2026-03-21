@@ -137,7 +137,7 @@ export const listAll = query({
   },
 });
 
-/** Check username availability across both tables */
+/** Check username availability across both tables (v2 — fresh deploy) */
 export const checkUsername = query({
   args: { username: v.string() },
   handler: async (ctx, args) => {
@@ -157,7 +157,7 @@ export const checkUsername = query({
       .withIndex("by_username", (q) => q.eq("username", uname))
       .first();
     if (existingProfile) {
-      return { available: false, reason: "already taken." };
+      return { available: false, reason: "taken in profiles." };
     }
 
     // Check users table

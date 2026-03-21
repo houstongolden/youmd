@@ -83,7 +83,7 @@ http.route({
       return json({ error: "Username parameter required" }, 400);
     }
 
-    const result = await ctx.runQuery(api.users.checkUsername, { username });
+    const result = await ctx.runQuery(api.profiles.checkUsername, { username });
     return json(result);
   }),
 });
