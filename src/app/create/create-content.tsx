@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useSignUp } from "@clerk/nextjs";
 import Link from "next/link";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { TerminalAuthInput } from "@/components/terminal/TerminalAuthInput";
@@ -12,13 +12,12 @@ import { ConvexReactClient } from "convex/react";
 import { ConvexProvider, useMutation as useConvexMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 
-// Standalone Convex client WITHOUT Clerk — for unauthenticated mutations
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL || "https://kindly-cassowary-600.convex.cloud";
 const publicConvex = typeof window !== "undefined"
   ? new ConvexReactClient(CONVEX_URL)
   : null;
 
-type Phase = "boot" | "username" | "name" | "social" | "portrait" | "creating" | "done" | "error";
+type Phase = "boot" | "username" | "name" | "social" | "portrait" | "creating" | "magic" | "email" | "password" | "verifying_email" | "verify_code" | "finalizing" | "done" | "error";
 
 export function CreateContent() {
   if (!publicConvex) return null;
@@ -31,9 +30,11 @@ export function CreateContent() {
 
 function CreateContentInner() {
   const router = useRouter();
-  const { isSignedIn } = useAuth();
+  const signUpHook = useSignUp();
+  const signUp = signUpHook.signUp;
   const createProfileMut = useConvexMutation(api.profiles.createProfile);
   const updateProfileMut = useConvexMutation(api.profiles.updateProfile);
+  const [email, setEmail] = useState("");
 
   const [phase, setPhase] = useState<Phase>("boot");
   const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);
@@ -439,25 +440,20 @@ function CreateContentInner() {
 
       addLine("\u00A0");
 
-      if (isSignedIn) {
-        addLine(
-          <span className="text-[hsl(var(--text-secondary))] opacity-60">
-            {"\u2192"} you're signed in. redirecting to dashboard...
-          </span>
-        );
-        setPhase("done");
-        setTimeout(() => router.push("/initialize"), 1500);
-      } else {
-        addLine("sign up to claim ownership and unlock your dashboard.", "text-[hsl(var(--text-secondary))] opacity-70");
-        addLine(
-          <span className="text-[hsl(var(--text-secondary))] opacity-60">
-            {"\u2192"} redirecting to sign up...
-          </span>
-        );
-        addLine("\u00A0");
-        setPhase("done");
-        setTimeout(() => router.push("/sign-up"), 2500);
+      // Magic moment — show the profile URL and portrait
+      addLine(
+        <span className="text-[hsl(var(--accent))]">
+          {"\u2713"} your profile is live at you.md/{username}
+        </span>
+      );
+      if (scrapedImageRef.current?.url) {
+        addLine("your ascii portrait has been generated.", "text-[hsl(var(--text-secondary))] opacity-60");
       }
+      addLine("\u00A0");
+
+      // Now collect auth — stay in this terminal
+      addLine("claim your profile — enter your email to create an account.", "text-[hsl(var(--text-secondary))] opacity-70");
+      setPhase("email");
     } catch (err: unknown) {
       console.error("createProfile error:", err);
       // Extract the actual error from Convex's wrapper
@@ -475,25 +471,159 @@ function CreateContentInner() {
     }
   }, [username, router, addLine]);
 
-  const isInputPhase = phase === "username" || phase === "name" || phase === "social";
+  // ── Auth handlers (inline sign-up within the terminal) ──
+
+  const handleEmail = useCallback((val: string) => {
+    setEmail(val);
+    addLine(
+      <span>
+        <span className="text-[hsl(var(--accent))]">email:</span>{" "}
+        <span className="text-[hsl(var(--text-secondary))]">{val}</span>
+      </span>
+    );
+    addLine("\u00A0");
+    addLine("choose a password.", "text-[hsl(var(--text-secondary))] opacity-70");
+    setPhase("password");
+  }, [addLine]);
+
+  const handlePassword = useCallback(async (val: string) => {
+    addLine(
+      <span>
+        <span className="text-[hsl(var(--accent))]">password:</span>{" "}
+        <span className="text-[hsl(var(--text-secondary))]">{"\u2022".repeat(val.length)}</span>
+      </span>
+    );
+    addLine("\u00A0");
+
+    if (!signUp) return;
+
+    setPhase("verifying_email");
+    addLine("creating account...", "text-[hsl(var(--text-secondary))] opacity-50");
+
+    try {
+      const result = await signUp.password({
+        emailAddress: email,
+        password: val,
+        username,
+      });
+
+      if (result.error) {
+        addLine(
+          <span className="text-[hsl(var(--accent))]">ERR: {result.error.message ?? "sign up failed."}</span>
+        );
+        addLine("\u00A0");
+        addLine("try a different email.", "text-[hsl(var(--text-secondary))] opacity-70");
+        setPhase("email");
+        return;
+      }
+
+      if (signUp.status === "complete") {
+        addLine(
+          <span className="text-[hsl(var(--success))]">{"\u2713"} account created</span>
+        );
+        setPhase("finalizing");
+        await signUp.finalize({ navigate: () => router.push("/initialize") });
+        return;
+      }
+
+      if (signUp.status === "missing_requirements" && signUp.unverifiedFields?.includes("email_address")) {
+        const sendResult = await signUp.verifications.sendEmailCode();
+        if (sendResult.error) {
+          addLine(
+            <span className="text-[hsl(var(--accent))]">ERR: {sendResult.error.message}</span>
+          );
+          setPhase("email");
+          return;
+        }
+        addLine(
+          <span className="text-[hsl(var(--success))]">{"\u2713"} account created</span>
+        );
+        addLine(
+          <span className="text-[hsl(var(--text-secondary))] opacity-60">
+            {"\u2192"} verification code sent to {email}
+          </span>
+        );
+        addLine("\u00A0");
+        addLine("enter verification code.", "text-[hsl(var(--text-secondary))] opacity-70");
+        setPhase("verify_code");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "sign up failed";
+      addLine(<span className="text-[hsl(var(--accent))]">ERR: {msg}</span>);
+      addLine("\u00A0");
+      setPhase("email");
+    }
+  }, [email, username, signUp, router, addLine]);
+
+  const handleVerifyCode = useCallback(async (val: string) => {
+    addLine(
+      <span>
+        <span className="text-[hsl(var(--accent))]">code:</span>{" "}
+        <span className="text-[hsl(var(--text-secondary))]">{val}</span>
+      </span>
+    );
+    addLine("\u00A0");
+
+    if (!signUp) return;
+
+    setPhase("finalizing");
+    addLine("verifying...", "text-[hsl(var(--text-secondary))] opacity-50");
+
+    try {
+      const verifyResult = await signUp.verifications.verifyEmailCode({ code: val });
+
+      if (verifyResult.error) {
+        addLine(<span className="text-[hsl(var(--accent))]">ERR: {verifyResult.error.message ?? "invalid code."}</span>);
+        addLine("\u00A0");
+        addLine("enter verification code.", "text-[hsl(var(--text-secondary))] opacity-70");
+        setPhase("verify_code");
+        return;
+      }
+
+      if (signUp.status === "complete") {
+        addLine(<span className="text-[hsl(var(--success))]">{"\u2713"} verified</span>);
+        addLine(
+          <span className="text-[hsl(var(--text-secondary))] opacity-60">
+            {"\u2192"} redirecting to dashboard...
+          </span>
+        );
+        setPhase("done");
+        await signUp.finalize({ navigate: () => router.push("/initialize") });
+      } else {
+        addLine(<span className="text-[hsl(var(--accent))]">ERR: verification incomplete. try again.</span>);
+        addLine("\u00A0");
+        setPhase("verify_code");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "verification failed";
+      addLine(<span className="text-[hsl(var(--accent))]">ERR: {msg}</span>);
+      addLine("\u00A0");
+      setPhase("verify_code");
+    }
+  }, [signUp, router, addLine]);
+
+  // ── Input phase mapping ──
+
+  const isInputPhase = ["username", "name", "social", "email", "password", "verify_code"].includes(phase);
   const keyboardHeight = useKeyboardHeight();
 
-  const promptLabel = {
-    username: "choose a username",
-    name: "what should we call you?",
-    social: "drop your x or github username (or skip)",
-  }[phase as string] || "";
-
-  const promptPlaceholder = {
+  const promptPlaceholder: Record<string, string> = {
     username: "username",
     name: "your name",
     social: "@username or github.com/you",
-  }[phase as string] || "";
+    email: "email",
+    password: "",
+    verify_code: "000000",
+  };
 
-  const handleSubmit = phase === "username" ? handleUsername
-    : phase === "name" ? handleName
-    : phase === "social" ? handleSocial
-    : () => {};
+  const handleSubmit: Record<string, (v: string) => void> = {
+    username: handleUsername,
+    name: handleName,
+    social: handleSocial,
+    email: handleEmail,
+    password: handlePassword,
+    verify_code: handleVerifyCode,
+  };
 
   // Auto-scroll to bottom when lines change or phase changes
   useEffect(() => {
@@ -544,13 +674,21 @@ function CreateContentInner() {
             )}
           </div>
 
+          {/* Processing indicators */}
+          {(phase === "verifying_email" || phase === "finalizing") && (
+            <div className="p-5 text-[hsl(var(--accent-mid))] animate-pulse font-mono text-[14px]">
+              {"\u25CC"} {phase === "verifying_email" ? "creating account..." : "finalizing..."}
+            </div>
+          )}
+
           {/* Input pinned at bottom — clean, no labels, just the prompt */}
           {isInputPhase && (
             <div className="shrink-0 border-t border-[hsl(var(--border))] px-5 pt-3 pb-5">
               <TerminalAuthInput
                 prompt=">"
-                placeholder={promptPlaceholder}
-                onSubmit={handleSubmit}
+                placeholder={promptPlaceholder[phase] || ""}
+                type={phase === "password" ? "password" : "text"}
+                onSubmit={handleSubmit[phase] || (() => {})}
               />
             </div>
           )}
