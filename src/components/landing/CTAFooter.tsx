@@ -48,25 +48,33 @@ const CTAFooter = () => {
             </p>
           </FadeUp>
           <FadeUp delay={0.08}>
-            <button
-              onClick={handleCopy}
-              className="cli-pill inline-flex items-center gap-3 px-5 py-3 mb-3"
-            >
-              <span className="text-muted-foreground">$</span>
-              <span className="text-accent font-medium">
-                npx youmd init
-              </span>
-              <span className="cursor-blink text-accent">
-                {"\u2588"}
-              </span>
-              <span className="ml-2 text-muted-foreground/50">
-                {copied ? (
-                  <Check size={13} className="text-success" />
-                ) : (
-                  <Copy size={13} />
-                )}
-              </span>
-            </button>
+            <div className="flex items-center justify-center gap-3 flex-wrap mb-3">
+              <button
+                onClick={handleCopy}
+                className="cli-pill inline-flex items-center gap-3 px-5 py-3"
+              >
+                <span className="text-muted-foreground">$</span>
+                <span className="text-accent font-medium">
+                  npx youmd init
+                </span>
+                <span className="cursor-blink text-accent">
+                  {"\u2588"}
+                </span>
+                <span className="ml-2 text-muted-foreground/50">
+                  {copied ? (
+                    <Check size={13} className="text-success" />
+                  ) : (
+                    <Copy size={13} />
+                  )}
+                </span>
+              </button>
+              <Link
+                href="/create"
+                className="cta-primary px-5 py-3 text-[13px] font-mono"
+              >
+                &gt; start in browser
+              </Link>
+            </div>
             {copied && (
               <p className="text-success font-mono text-[10px] mt-1">
                 copied to clipboard

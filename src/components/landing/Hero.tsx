@@ -201,14 +201,20 @@ const Hero = () => {
               ))}
             </motion.div>
 
-            {/* CLI pill */}
+            {/* Dual CTA: CLI pill + web button */}
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 1.8 }}
-              className="mb-6"
+              className="mb-6 flex items-center gap-3"
             >
               <CliPill />
+              <Link
+                href="/create"
+                className="cta-primary px-5 py-3 text-[13px] font-mono shrink-0"
+              >
+                &gt; start now
+              </Link>
             </motion.div>
 
             {/* Badge */}
