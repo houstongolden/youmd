@@ -4,8 +4,10 @@ on:
   push:
     branches:
       - main
+      - 'claude/**'  # temporary: test deploy workflow
     paths:
       - 'convex/**'
+      - '.github/workflows/convex-deploy.yml'
   workflow_dispatch:
     inputs:
       environment:
@@ -36,4 +38,4 @@ jobs:
       - name: Deploy to Convex
         run: npx convex deploy
         env:
-          CONVEX_DEPLOY_KEY: ${{ (github.event_name == 'push' || inputs.environment == 'prod') && secrets.CONVEX_PROD_DEPLOY_KEY || secrets.CONVEX_DEV_DEPLOY_KEY }}
+          CONVEX_DEPLOY_KEY: ${{ (github.ref == 'refs/heads/main' || inputs.environment == 'prod') && secrets.CONVEX_PROD_DEPLOY_KEY || secrets.CONVEX_DEV_DEPLOY_KEY }}
