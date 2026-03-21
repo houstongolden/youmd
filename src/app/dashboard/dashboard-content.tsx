@@ -188,7 +188,7 @@ export function DashboardContent() {
                   <PortraitPane username={username} />
                 )}
                 {rightPane === "publish" && (
-                  <PublishPane username={username} />
+                  <PublishPane username={username} userId={convexUser._id} />
                 )}
                 {rightPane === "agents" && (
                   <AgentsPane username={username} profileId={userProfile?._id} />
