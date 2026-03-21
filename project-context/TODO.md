@@ -1,6 +1,6 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-03-19
+Last Updated: 2026-03-21
 PRD Version: 2.3
 
 ---
@@ -74,8 +74,21 @@ PRD Version: 2.3
 - [x] Terminal components (TerminalShell, MessageBubble, ThinkingIndicator, TerminalInput, TerminalStatusBar)
 - [x] /initialize route — auto-claim + boot sequence + onboarding terminal
 - [x] Split-screen dashboard — 35% terminal left, 65% preview right
-- [x] Right pane system (ProfilePreviewPane, SettingsPane, TokensPane, BillingPane, JsonPane)
+- [x] Right pane system (11 panes: preview, json, sources, portrait, publish, agents, activity, settings, tokens, billing, help)
 - [x] Slash commands switch right pane (/preview, /settings, /billing, /tokens, /json)
+- [x] Shared pane primitives (PaneSectionLabel, PaneDivider, PaneHeader, PaneEmptyState)
+- [x] PublishPane wired to real Convex data (listRecentBundles)
+- [x] Auto-scrape existing links on session init for returning users
+- [x] Auto-research sparse profiles via Perplexity
+- [x] Auto-publish on every bundle save
+- [x] Smarter profile image selection (LinkedIn > GitHub > X priority)
+- [x] Claude Code-style thinking indicator with category icons
+- [x] Terminal-style message rendering with markdown support
+- [x] Persistent AppNav side panel for logged-in users
+- [x] Border radius standardized to 2px across entire app
+- [x] Mobile responsiveness for public profile (avatar stacking, responsive padding)
+- [x] Mobile status bar visible on dashboard
+- [x] Pricing section terminal-panel styling
 - [x] Sign-up redirects to /initialize (not /claim)
 - [x] /claim redirects to /sign-up
 - [x] Dashboard redirects to /initialize if no Convex user
