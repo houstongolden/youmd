@@ -42,7 +42,7 @@ export function TerminalShell({
   return (
     <div className={`flex flex-col h-full ${className}`}>
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
         <div className="space-y-3">
           {displayMessages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} />

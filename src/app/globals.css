@@ -341,6 +341,15 @@ input[type="password"]:focus-visible {
   outline: none;
 }
 
+/* Prevent iOS auto-zoom on input focus */
+@media screen and (max-width: 768px) {
+  textarea,
+  input[type="text"],
+  input[type="password"] {
+    font-size: 16px;
+  }
+}
+
 /* ── Mobile keyboard: keep input visible ──────────────────── */
 @supports (height: 100dvh) {
   .terminal-input-sticky {

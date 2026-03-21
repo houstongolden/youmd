@@ -963,7 +963,24 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       if (userProfile.location) parts.push(`location: ${userProfile.location}`);
       if (userProfile.bio) {
         const bio = userProfile.bio as Record<string, string>;
-        if (bio.short) parts.push(`bio: ${bio.short}`);
+        if (bio.long) parts.push(`bio: ${bio.long}`);
+        else if (bio.medium) parts.push(`bio: ${bio.medium}`);
+        else if (bio.short) parts.push(`bio: ${bio.short}`);
+      }
+      const profileLinks = userProfile.links as Record<string, string> | undefined;
+      if (profileLinks) {
+        const linkEntries = Object.entries(profileLinks).filter(([, v]) => v);
+        if (linkEntries.length > 0) {
+          parts.push(`links: ${linkEntries.map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+        }
+      }
+      const profileNow = userProfile.now as string[] | undefined;
+      if (profileNow && profileNow.length > 0) {
+        parts.push(`current focus: ${profileNow.join(", ")}`);
+      }
+      const profileProjects = userProfile.projects as Array<Record<string, string>> | undefined;
+      if (profileProjects && profileProjects.length > 0) {
+        parts.push(`projects: ${profileProjects.map((p) => `${p.name} (${p.status || "active"})${p.description ? ` — ${p.description}` : ""}`).join("; ")}`);
       }
       if (userProfile.avatarUrl) parts.push(`has profile image from social media`);
       if (parts.length > 1) profileContext = parts.join("\n");
@@ -977,9 +994,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     const username = convexUser?.username || "";
     const displayName = userProfile?.name || convexUser?.displayName || "";
 
+    const hasSubstantialProfile = profileContext !== "the user has no existing profile data yet." &&
+      profileContext.split("\n").length > 3;
+
     const contextContent = isOnboarding && onboardingGreeting
       ? onboardingGreeting
-      : `${profileContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them by name if you know it. reference specific things from their profile. ask how you can help. if their profile is sparse, proactively suggest building it out — ask for their x or github handle.`;
+      : hasSubstantialProfile
+        ? `${profileContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them by name. reference something SPECIFIC from their profile data above — a project name, a value, something from their bio. show them you actually know who they are. ask what they want to work on or update.`
+        : `${profileContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them${displayName ? ` by name (${displayName})` : ""}. their profile is sparse — proactively suggest building it out. ask for their x, github, or linkedin handle so you can pull real context. mention that the platform will auto-scrape their profiles.`;
 
     const contextMessage: ChatMessage = {
       role: "user",
