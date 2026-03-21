@@ -1,180 +1,462 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { TerminalHeader } from "@/components/terminal/TerminalHeader";
+import PixelYOU from "@/components/PixelYOU";
 
-/* ── Section definitions ──────────────────────────────────── */
+/* ── Navigation structure ────────────────────────────────── */
 
-const navSections = [
-  { id: "getting-started", label: "getting started" },
-  { id: "share", label: "share your identity" },
-  { id: "sync", label: "sync" },
-  { id: "cli", label: "cli" },
-  { id: "api", label: "api" },
-  { id: "privacy", label: "privacy" },
-  { id: "commands", label: "slash commands" },
+interface NavItem {
+  id: string;
+  label: string;
+  children?: { id: string; label: string }[];
+}
+
+const navigation: NavItem[] = [
+  {
+    id: "getting-started",
+    label: "Getting Started",
+    children: [
+      { id: "web-quickstart", label: "Web Quickstart" },
+      { id: "cli-quickstart", label: "CLI Quickstart" },
+    ],
+  },
+  {
+    id: "share",
+    label: "Share Your Identity",
+    children: [
+      { id: "share-command", label: "/share Command" },
+      { id: "context-links", label: "Context Links" },
+    ],
+  },
+  {
+    id: "sync",
+    label: "Sync",
+    children: [
+      { id: "web-cli-sync", label: "Web + CLI" },
+      { id: "file-structure", label: "File Structure" },
+    ],
+  },
+  { id: "cli", label: "CLI Reference" },
+  {
+    id: "api",
+    label: "API",
+    children: [
+      { id: "public-endpoints", label: "Public Endpoints" },
+      { id: "authenticated-endpoints", label: "Authenticated" },
+    ],
+  },
+  { id: "privacy", label: "Privacy" },
+  { id: "commands", label: "Dashboard Commands" },
 ];
 
-/* ── Helpers ───────────────────────────────────────────────── */
+/* ── Primitives ──────────────────────────────────────────── */
 
-function SectionHeader({ id, children }: { id: string; children: React.ReactNode }) {
+function H1({ children }: { children: React.ReactNode }) {
+  return (
+    <h1 className="text-[28px] md:text-[32px] font-medium text-[hsl(var(--text-primary))] tracking-tight mb-2">
+      {children}
+    </h1>
+  );
+}
+
+function H2({ id, children }: { id: string; children: React.ReactNode }) {
   return (
     <h2
       id={id}
-      className="text-[10px] uppercase tracking-widest text-[hsl(var(--accent))] pt-6 pb-2 scroll-mt-4"
+      className="text-[20px] md:text-[22px] font-medium text-[hsl(var(--text-primary))] tracking-tight mt-12 mb-4 scroll-mt-20 border-b border-[hsl(var(--border))] pb-3"
     >
       {children}
     </h2>
   );
 }
 
-function Divider() {
-  return <div className="h-px bg-[hsl(var(--border))] my-4" />;
-}
-
-function Code({ children }: { children: React.ReactNode }) {
+function H3({ id, children }: { id: string; children: React.ReactNode }) {
   return (
-    <code className="bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-1.5 py-0.5 text-[12px] font-mono text-[hsl(var(--text-secondary))]">
+    <h3
+      id={id}
+      className="text-[16px] font-medium text-[hsl(var(--text-primary))] mt-8 mb-3 scroll-mt-20"
+    >
       {children}
-    </code>
-  );
-}
-
-function CodeBlock({ children }: { children: string }) {
-  return (
-    <pre className="bg-[hsl(var(--bg))] border border-[hsl(var(--border))] p-3 font-mono text-[12px] text-[hsl(var(--text-secondary))] overflow-x-auto my-2">
-      {children}
-    </pre>
+    </h3>
   );
 }
 
 function P({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[13px] text-[hsl(var(--text-secondary))] leading-relaxed mb-2">
+    <p className="text-[15px] text-[hsl(var(--text-secondary))] leading-[1.7] mb-4">
       {children}
     </p>
   );
 }
 
-function AccentLink({ href, children }: { href: string; children: React.ReactNode }) {
+function InlineCode({ children }: { children: React.ReactNode }) {
   return (
-    <Link href={href} className="text-[hsl(var(--accent))] hover:opacity-80 transition-opacity">
+    <code className="bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-1.5 py-0.5 rounded text-[13px] font-mono text-[hsl(var(--accent))]">
       {children}
-    </Link>
+    </code>
   );
 }
 
-/* ── Main component ───────────────────────────────────────── */
+function CodeBlock({ title, children }: { title?: string; children: string }) {
+  const [copied, setCopied] = useState(false);
 
-export default function DocsContent() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const scrollTo = useCallback((id: string) => {
-    const el = document.getElementById(id);
-    if (el && scrollRef.current) {
-      const container = scrollRef.current;
-      const elTop = el.offsetTop - container.offsetTop;
-      container.scrollTo({ top: elTop, behavior: "smooth" });
-    }
-  }, []);
+  const copy = () => {
+    navigator.clipboard.writeText(children.trim());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   return (
-    <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl">
-        {/* Terminal panel */}
-        <div
-          className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
-          style={{ borderRadius: "8px" }}
-        >
-          <TerminalHeader title="you.md -- docs" />
-
-          {/* Terminal body */}
-          <div
-            ref={scrollRef}
-            className="p-6 md:p-8 max-h-[80dvh] overflow-y-auto font-mono text-[14px] leading-relaxed"
+    <div className="my-4 rounded-lg border border-[hsl(var(--border))] overflow-hidden">
+      {title && (
+        <div className="bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-4 py-2 flex items-center justify-between">
+          <span className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-60">
+            {title}
+          </span>
+          <button
+            onClick={copy}
+            className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-80 transition-opacity"
           >
-            {/* Title */}
-            <div className="text-[hsl(var(--accent))] mb-1">you.md documentation</div>
-            <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[12px] mb-4">
-              identity context protocol for the agent internet
-            </div>
+            {copied ? "copied" : "copy"}
+          </button>
+        </div>
+      )}
+      <div className="relative">
+        {!title && (
+          <button
+            onClick={copy}
+            className="absolute top-2 right-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-80 transition-opacity"
+          >
+            {copied ? "copied" : "copy"}
+          </button>
+        )}
+        <pre className="bg-[hsl(var(--bg))] p-4 font-mono text-[13px] text-[hsl(var(--text-secondary))] leading-relaxed overflow-x-auto">
+          {children}
+        </pre>
+      </div>
+    </div>
+  );
+}
 
-            {/* Navigation */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2">
-              {navSections.map(({ id, label }) => (
+function Callout({
+  type = "info",
+  children,
+}: {
+  type?: "info" | "tip" | "warning";
+  children: React.ReactNode;
+}) {
+  const colors = {
+    info: "border-l-[hsl(var(--accent))] bg-[hsl(var(--accent))/0.05]",
+    tip: "border-l-[hsl(var(--success))] bg-[hsl(var(--success))/0.05]",
+    warning: "border-l-amber-500 bg-amber-500/5",
+  };
+
+  return (
+    <div
+      className={`border-l-2 ${colors[type]} rounded-r-lg px-4 py-3 my-4 text-[14px] text-[hsl(var(--text-secondary))] leading-relaxed`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function StepList({ children }: { children: React.ReactNode }) {
+  return <ol className="space-y-2 my-4 list-none">{children}</ol>;
+}
+
+function Step({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-3 text-[15px] text-[hsl(var(--text-secondary))] leading-relaxed">
+      <span className="shrink-0 w-6 h-6 rounded-full bg-[hsl(var(--accent))/0.12] text-[hsl(var(--accent))] text-[12px] font-mono flex items-center justify-center mt-0.5">
+        {n}
+      </span>
+      <span>{children}</span>
+    </li>
+  );
+}
+
+function CommandTable({
+  commands,
+}: {
+  commands: { cmd: string; desc: string }[];
+}) {
+  return (
+    <div className="my-4 border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+      <table className="w-full text-[14px]">
+        <thead>
+          <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))]">
+            <th className="text-left px-4 py-2.5 font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-60 font-normal">
+              Command
+            </th>
+            <th className="text-left px-4 py-2.5 font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-60 font-normal">
+              Description
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {commands.map(({ cmd, desc }, i) => (
+            <tr
+              key={cmd}
+              className={
+                i < commands.length - 1
+                  ? "border-b border-[hsl(var(--border))]"
+                  : ""
+              }
+            >
+              <td className="px-4 py-2.5 font-mono text-[13px] text-[hsl(var(--accent))] whitespace-nowrap">
+                {cmd}
+              </td>
+              <td className="px-4 py-2.5 text-[14px] text-[hsl(var(--text-secondary))]">
+                {desc}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+
+function Sidebar({
+  activeId,
+  onNav,
+}: {
+  activeId: string;
+  onNav: (id: string) => void;
+}) {
+  return (
+    <nav className="space-y-1">
+      {navigation.map((item) => (
+        <div key={item.id}>
+          <button
+            onClick={() => onNav(item.id)}
+            className={`block w-full text-left px-3 py-1.5 rounded text-[13px] transition-colors ${
+              activeId === item.id
+                ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))/0.08]"
+                : "text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--bg-raised))]"
+            }`}
+          >
+            {item.label}
+          </button>
+          {item.children && (
+            <div className="ml-3 mt-0.5 space-y-0.5">
+              {item.children.map((child) => (
                 <button
-                  key={id}
-                  onClick={() => scrollTo(id)}
-                  className="text-[11px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
+                  key={child.id}
+                  onClick={() => onNav(child.id)}
+                  className={`block w-full text-left px-3 py-1 rounded text-[12px] transition-colors ${
+                    activeId === child.id
+                      ? "text-[hsl(var(--accent))]"
+                      : "text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-100 hover:text-[hsl(var(--text-primary))]"
+                  }`}
                 >
-                  [{label}]
+                  {child.label}
                 </button>
               ))}
             </div>
+          )}
+        </div>
+      ))}
+    </nav>
+  );
+}
 
-            <Divider />
+/* ── Main ────────────────────────────────────────────────── */
 
-            {/* ── Getting Started ────────────────────────── */}
-            <SectionHeader id="getting-started">getting started</SectionHeader>
-            <P>
-              you.md is the identity file for the agent internet. A structured,
-              portable identity bundle that gives every AI agent context about who you
-              are -- your bio, projects, values, communication style, and preferences.
-              Think of it as a <Code>.env</Code> file for your identity.
-            </P>
+export default function DocsContent() {
+  const [activeId, setActiveId] = useState("getting-started");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-            <div className="text-[13px] text-[hsl(var(--text-secondary))] leading-relaxed mb-2">
-              <div className="mb-3">
-                <div className="text-[hsl(var(--accent))] mb-1 text-[11px] uppercase tracking-widest">path a: start on the web</div>
-                <div className="pl-3 mb-1">1. Go to <AccentLink href="/create">you.md/create</AccentLink></div>
-                <div className="pl-3 mb-1">2. Pick a username, enter your name, share a social handle</div>
-                <div className="pl-3 mb-1">3. Your profile is created instantly -- no account needed</div>
-                <div className="pl-3 mb-1">4. Sign up later at <AccentLink href="/sign-up">you.md/sign-up</AccentLink> to claim ownership</div>
-                <div className="pl-3 mb-1">5. Open the <AccentLink href="/dashboard">dashboard terminal</AccentLink>, type <Code>/share</Code> to get your shareable context link</div>
-              </div>
-              <div className="mb-2">
-                <div className="text-[hsl(var(--accent))] mb-1 text-[11px] uppercase tracking-widest">path b: start with the cli</div>
-                <div className="pl-3 mb-1">1. Run <Code>npx youmd init</Code> in your terminal</div>
-                <div className="pl-3 mb-1">2. The agent walks you through creating your identity</div>
-                <div className="pl-3 mb-1">3. Run <Code>youmd login</Code> to connect to you.md</div>
-                <div className="pl-3 mb-1">4. Run <Code>youmd push</Code> to publish your profile</div>
-                <div className="pl-3 mb-1">5. Run <Code>youmd share</Code> in chat to get your context link</div>
-              </div>
+  const scrollTo = useCallback((id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActiveId(id);
+      setMobileNavOpen(false);
+    }
+  }, []);
+
+  // Track active section on scroll
+  useEffect(() => {
+    const allIds = navigation.flatMap((item) => [
+      item.id,
+      ...(item.children?.map((c) => c.id) ?? []),
+    ]);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: "-80px 0px -60% 0px", threshold: 0 }
+    );
+
+    allIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bg))]">
+      {/* Top bar */}
+      <header className="sticky top-0 z-50 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))/0.9] backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link href="/" className="inline-block">
+              <PixelYOU />
+            </Link>
+            <span className="hidden sm:inline text-[13px] text-[hsl(var(--text-secondary))] opacity-50">
+              /
+            </span>
+            <span className="hidden sm:inline text-[13px] text-[hsl(var(--text-primary))]">
+              Documentation
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/create"
+              className="text-[12px] font-mono text-[hsl(var(--accent))] hover:opacity-80 transition-opacity"
+            >
+              Get Started
+            </Link>
+            <button
+              onClick={() => setMobileNavOpen(!mobileNavOpen)}
+              className="md:hidden text-[hsl(var(--text-secondary))] text-[13px] font-mono"
+            >
+              {mobileNavOpen ? "close" : "menu"}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-6xl mx-auto flex">
+        {/* Sidebar — desktop */}
+        <aside className="hidden md:block w-56 shrink-0 border-r border-[hsl(var(--border))]">
+          <div className="sticky top-14 py-8 px-4 max-h-[calc(100vh-3.5rem)] overflow-y-auto">
+            <Sidebar activeId={activeId} onNav={scrollTo} />
+          </div>
+        </aside>
+
+        {/* Sidebar — mobile overlay */}
+        {mobileNavOpen && (
+          <div className="fixed inset-0 top-14 z-40 bg-[hsl(var(--bg))] md:hidden p-6 overflow-y-auto">
+            <Sidebar activeId={activeId} onNav={scrollTo} />
+          </div>
+        )}
+
+        {/* Content */}
+        <main className="flex-1 min-w-0 px-6 md:px-12 py-10 md:py-12">
+          <div className="max-w-2xl">
+            {/* Page header */}
+            <div className="mb-8">
+              <p className="text-[12px] font-mono text-[hsl(var(--accent))] mb-2 uppercase tracking-wider">
+                Documentation
+              </p>
+              <H1>you.md</H1>
+              <P>
+                The identity file for the agent internet. A structured, portable
+                identity bundle that gives every AI agent context about who you
+                are.
+              </P>
             </div>
 
-            <Divider />
-
-            {/* ── Share Your Identity ────────────────────── */}
-            <SectionHeader id="share">share your identity</SectionHeader>
+            {/* ── Getting Started ──────────────────────────── */}
+            <H2 id="getting-started">Getting Started</H2>
             <P>
-              This is the core feature. Once your identity is built, you can share it
-              with any AI agent in seconds. The <Code>/share</Code> command works in
-              both the web dashboard terminal and the CLI.
+              you.md creates a persistent identity context that any AI agent can
+              read. Think of it as a{" "}
+              <InlineCode>.env</InlineCode> file for your identity -- your bio,
+              projects, values, communication style, and preferences, all in one
+              place.
             </P>
-            <div className="text-[13px] text-[hsl(var(--text-secondary))] leading-relaxed mb-2">
-              <div className="mb-2 opacity-80">How it works:</div>
-              <div className="pl-3 mb-1">
-                1. <span className="text-[hsl(var(--accent))]">Web:</span> open the{" "}
-                <AccentLink href="/dashboard">dashboard terminal</AccentLink> and type{" "}
-                <Code>/share</Code>
-              </div>
-              <div className="pl-3 mb-1">
-                1. <span className="text-[hsl(var(--accent))]">CLI:</span> type{" "}
-                <Code>/share</Code> inside <Code>youmd chat</Code>
-              </div>
-              <div className="pl-3 mb-1">
-                2. Copy the generated identity context block
-              </div>
-              <div className="pl-3 mb-1">
-                3. Paste it into any AI conversation -- Claude, ChatGPT, Cursor, Copilot, or any agent
-              </div>
-              <div className="pl-3 mb-2">
-                4. The AI instantly knows your bio, projects, values, and preferences
-              </div>
-            </div>
-            <P>Both generate the same copyable block:</P>
-            <CodeBlock>{`> /share
+
+            <Callout type="tip">
+              No account required to start. Pick a username, build your profile,
+              and sign up later to claim ownership.
+            </Callout>
+
+            <H3 id="web-quickstart">Web Quickstart</H3>
+            <StepList>
+              <Step n={1}>
+                Go to{" "}
+                <Link
+                  href="/create"
+                  className="text-[hsl(var(--accent))] hover:opacity-80"
+                >
+                  you.md/create
+                </Link>
+              </Step>
+              <Step n={2}>
+                Pick a username and enter your name
+              </Step>
+              <Step n={3}>
+                Your profile is created instantly -- no account needed
+              </Step>
+              <Step n={4}>
+                Sign up at{" "}
+                <Link
+                  href="/sign-up"
+                  className="text-[hsl(var(--accent))] hover:opacity-80"
+                >
+                  you.md/sign-up
+                </Link>{" "}
+                to claim ownership
+              </Step>
+              <Step n={5}>
+                Open the{" "}
+                <Link
+                  href="/dashboard"
+                  className="text-[hsl(var(--accent))] hover:opacity-80"
+                >
+                  dashboard
+                </Link>
+                , type <InlineCode>/share</InlineCode> to get your shareable
+                context link
+              </Step>
+            </StepList>
+
+            <H3 id="cli-quickstart">CLI Quickstart</H3>
+            <CodeBlock title="terminal">{`$ npx youmd init`}</CodeBlock>
+            <StepList>
+              <Step n={1}>
+                The agent walks you through creating your identity interactively
+              </Step>
+              <Step n={2}>
+                Run <InlineCode>youmd login</InlineCode> to connect to you.md
+              </Step>
+              <Step n={3}>
+                Run <InlineCode>youmd push</InlineCode> to publish your profile
+              </Step>
+              <Step n={4}>
+                Run <InlineCode>youmd chat</InlineCode> then type{" "}
+                <InlineCode>/share</InlineCode> to get your context link
+              </Step>
+            </StepList>
+
+            {/* ── Share ────────────────────────────────────── */}
+            <H2 id="share">Share Your Identity</H2>
+            <P>
+              The core feature. Once your identity is built, share it with any AI
+              agent in seconds. The <InlineCode>/share</InlineCode> command works
+              in both the web dashboard and the CLI.
+            </P>
+
+            <H3 id="share-command">/share Command</H3>
+            <P>
+              Type <InlineCode>/share</InlineCode> in either the web dashboard
+              terminal or inside <InlineCode>youmd chat</InlineCode> on the CLI.
+              Both generate the same copyable block:
+            </P>
+            <CodeBlock title="output">{`> /share
 
 --- BEGIN YOU.MD CONTEXT ---
 name: Houston Golden
@@ -186,47 +468,59 @@ preferences: terminal-native, monochrome
 
 [copied to clipboard]`}</CodeBlock>
             <P>
-              Use <Code>/share --private</Code> to include your private layer
-              (contact info, internal notes, sensitive preferences). Only share this
-              with agents you trust.
+              Paste this into any AI conversation -- Claude, ChatGPT, Cursor,
+              Copilot, or any agent. It instantly knows your bio, projects,
+              values, and preferences.
             </P>
             <P>
-              You can also share via URL. Your public context is always available at{" "}
-              <Code>you.md/ctx/[username]</Code> -- any agent can fetch it directly.
+              Use <InlineCode>/share --private</InlineCode> to include your
+              private layer (contact info, internal notes, sensitive
+              preferences). Only share this with agents you trust.
             </P>
 
-            <Divider />
-
-            {/* ── Sync ───────────────────────────────────── */}
-            <SectionHeader id="sync">sync</SectionHeader>
+            <H3 id="context-links">Context Links</H3>
             <P>
-              You.md works across web and CLI. Create your profile on either platform
-              and keep them in sync.
+              Your public context is always available at{" "}
+              <InlineCode>you.md/ctx/[username]</InlineCode>. Any agent can
+              fetch this URL directly to load your context into their
+              conversation.
             </P>
-            <div className="text-[13px] text-[hsl(var(--text-secondary))] leading-relaxed mb-2">
-              <div className="mb-2 opacity-80">Connecting web and CLI:</div>
-              <div className="pl-3 mb-1">1. Create your profile on either web or CLI</div>
-              <div className="pl-3 mb-1">
-                2. Sign up and get an API key from the dashboard (<Code>/tokens</Code> tab)
-              </div>
-              <div className="pl-3 mb-1">
-                3. <Code>youmd login -k YOUR_KEY</Code> or <Code>youmd login --web</Code> to open dashboard
-              </div>
-              <div className="pl-3 mb-1">
-                4. <Code>youmd pull</Code> -- downloads your web profile to local .youmd/ files
-              </div>
-              <div className="pl-3 mb-1">
-                5. Edit files in any editor (Cursor, Obsidian, VS Code)
-              </div>
-              <div className="pl-3 mb-1">
-                6. <Code>youmd push</Code> -- compiles and publishes back to you.md
-              </div>
-              <div className="pl-3 mb-2">
-                7. <Code>youmd sync --watch</Code> -- auto-syncs on every file save
-              </div>
-            </div>
-            <P>Local file structure:</P>
-            <CodeBlock>{`.youmd/
+
+            {/* ── Sync ─────────────────────────────────────── */}
+            <H2 id="sync">Sync</H2>
+            <P>
+              You.md works across web and CLI. Create your profile on either
+              platform and keep them in sync.
+            </P>
+
+            <H3 id="web-cli-sync">Connecting Web + CLI</H3>
+            <StepList>
+              <Step n={1}>Create your profile on either web or CLI</Step>
+              <Step n={2}>
+                Get an API key from the dashboard (
+                <InlineCode>/tokens</InlineCode>)
+              </Step>
+              <Step n={3}>
+                <InlineCode>youmd login -k YOUR_KEY</InlineCode> or{" "}
+                <InlineCode>youmd login --web</InlineCode>
+              </Step>
+              <Step n={4}>
+                <InlineCode>youmd pull</InlineCode> downloads your web profile to
+                local files
+              </Step>
+              <Step n={5}>Edit files in any editor (Cursor, Obsidian, VS Code)</Step>
+              <Step n={6}>
+                <InlineCode>youmd push</InlineCode> compiles and publishes back
+                to you.md
+              </Step>
+              <Step n={7}>
+                <InlineCode>youmd sync --watch</InlineCode> auto-syncs on every
+                file save
+              </Step>
+            </StepList>
+
+            <H3 id="file-structure">Local File Structure</H3>
+            <CodeBlock title=".youmd/">{`.youmd/
   profile/
     about.md
     now.md
@@ -243,182 +537,178 @@ preferences: terminal-native, monochrome
   you.md
   manifest.json`}</CodeBlock>
 
-            <Divider />
-
-            {/* ── CLI ────────────────────────────────────── */}
-            <SectionHeader id="cli">cli</SectionHeader>
+            {/* ── CLI ──────────────────────────────────────── */}
+            <H2 id="cli">CLI Reference</H2>
             <P>
-              The you.md CLI lets you create and manage your identity from the
-              terminal. Install globally with <Code>npm i -g youmd</Code> or run
-              commands directly with <Code>npx youmd</Code>.
+              Install globally with <InlineCode>npm i -g youmd</InlineCode> or
+              run commands directly with <InlineCode>npx youmd</InlineCode>.
             </P>
-            <div className="bg-[hsl(var(--bg))] border border-[hsl(var(--border))] p-3 font-mono text-[12px] text-[hsl(var(--text-secondary))] my-2">
-              <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-                <span className="text-[hsl(var(--accent))]">youmd init</span>
-                <span>create your identity bundle (interactive AI onboarding)</span>
+            <CommandTable
+              commands={[
+                {
+                  cmd: "youmd init",
+                  desc: "Create your identity bundle (interactive AI onboarding)",
+                },
+                {
+                  cmd: "youmd login",
+                  desc: "Authenticate (--web to open browser, -k KEY)",
+                },
+                {
+                  cmd: "youmd pull",
+                  desc: "Download profile from web to local .youmd/ files",
+                },
+                {
+                  cmd: "youmd push",
+                  desc: "Upload local files to web and publish",
+                },
+                {
+                  cmd: "youmd sync",
+                  desc: "Pull + push (--watch for auto-sync on file save)",
+                },
+                { cmd: "youmd chat", desc: "Talk to the you agent" },
+                {
+                  cmd: "youmd build",
+                  desc: "Compile local bundle from profile files",
+                },
+                {
+                  cmd: "youmd publish",
+                  desc: "Publish compiled bundle to you.md",
+                },
+                {
+                  cmd: "youmd status",
+                  desc: "Show bundle and pipeline status",
+                },
+                {
+                  cmd: "youmd whoami",
+                  desc: "Show current authenticated user",
+                },
+                {
+                  cmd: "youmd add TYPE URL",
+                  desc: "Add a source (website, linkedin, x, blog, github)",
+                },
+                {
+                  cmd: "youmd link",
+                  desc: "Manage context links (create, list, revoke)",
+                },
+                {
+                  cmd: "youmd keys",
+                  desc: "Manage API keys (list, create, revoke)",
+                },
+              ]}
+            />
+            <Callout type="info">
+              The <InlineCode>init</InlineCode> command runs a conversational AI
+              onboarding -- it asks about your work, projects, values, and
+              preferences, then builds your identity file automatically.
+            </Callout>
 
-                <span className="text-[hsl(var(--accent))]">youmd login</span>
-                <span>authenticate (--web to open browser, -k KEY)</span>
-
-                <span className="text-[hsl(var(--accent))]">youmd pull</span>
-                <span>download profile from web to local .youmd/ files</span>
-
-                <span className="text-[hsl(var(--accent))]">youmd push</span>
-                <span>upload local files to web and publish</span>
-
-                <span className="text-[hsl(var(--accent))]">youmd sync</span>
-                <span>pull + push (--watch for auto-sync on file save)</span>
-
-                <span className="text-[hsl(var(--accent))]">youmd chat</span>
-                <span>talk to the you agent</span>
-
-                <span className="text-[hsl(var(--accent))]">youmd build</span>
-                <span>compile local bundle from profile files</span>
-
-                <span className="text-[hsl(var(--accent))]">youmd publish</span>
-                <span>publish compiled bundle to you.md</span>
-
-                <span className="text-[hsl(var(--accent))]">youmd status</span>
-                <span>show bundle and pipeline status</span>
-
-                <span className="text-[hsl(var(--accent))]">youmd whoami</span>
-                <span>show current authenticated user</span>
-
-                <span className="text-[hsl(var(--accent))]">youmd add TYPE URL</span>
-                <span>add a source (website, linkedin, x, blog, github)</span>
-
-                <span className="text-[hsl(var(--accent))]">youmd link</span>
-                <span>manage context links (create, list, revoke)</span>
-
-                <span className="text-[hsl(var(--accent))]">youmd keys</span>
-                <span>manage API keys (list, create, revoke)</span>
-              </div>
-            </div>
-            <P>
-              The <Code>init</Code> command runs a conversational AI onboarding -- it
-              asks about your work, projects, values, and preferences, then builds
-              your identity file automatically.
-            </P>
-
-            <Divider />
-
-            {/* ── API ────────────────────────────────────── */}
-            <SectionHeader id="api">api</SectionHeader>
+            {/* ── API ──────────────────────────────────────── */}
+            <H2 id="api">API</H2>
             <P>
               You.md exposes HTTP endpoints for programmatic access to identity
               context.
             </P>
-            <CodeBlock>{`# fetch a public profile
+
+            <H3 id="public-endpoints">Public Endpoints</H3>
+            <CodeBlock title="HTTP">{`# Fetch a public profile
 GET /api/v1/profiles?username=houston
 
-# public context (agent-readable)
+# Public context (agent-readable, plain text)
 GET /ctx/[username]
 
 # JSON context
 GET /ctx/[username].json`}</CodeBlock>
             <P>
-              Context links at <Code>/ctx/[username]</Code> return a plain-text
-              identity block optimized for AI consumption. Agents can fetch this URL
-              directly to load your context into their conversation.
+              Context links at <InlineCode>/ctx/[username]</InlineCode> return a
+              plain-text identity block optimized for AI consumption. Agents can
+              fetch this URL directly.
             </P>
-            <P>
-              For private context, include an access token as a Bearer header:
-            </P>
-            <CodeBlock>{`GET /ctx/[username]?scope=private
+
+            <H3 id="authenticated-endpoints">Authenticated Endpoints</H3>
+            <P>For private context, include an access token:</P>
+            <CodeBlock title="HTTP">{`GET /ctx/[username]?scope=private
 Authorization: Bearer your_access_token`}</CodeBlock>
 
-            <Divider />
-
-            {/* ── Privacy ────────────────────────────────── */}
-            <SectionHeader id="privacy">privacy</SectionHeader>
-            <P>
-              You.md uses a two-layer privacy model:
-            </P>
-            <div className="text-[13px] text-[hsl(var(--text-secondary))] leading-relaxed mb-2">
-              <div className="pl-3 mb-1">
-                <span className="text-[hsl(var(--accent))]">public layer</span> --
-                your bio, role, projects, values, and communication style. Visible to
-                anyone and any agent.
+            {/* ── Privacy ──────────────────────────────────── */}
+            <H2 id="privacy">Privacy</H2>
+            <P>You.md uses a two-layer privacy model:</P>
+            <div className="my-4 space-y-3">
+              <div className="flex gap-3 text-[15px] leading-relaxed">
+                <span className="shrink-0 text-[hsl(var(--accent))] font-mono text-[13px] mt-0.5">
+                  public
+                </span>
+                <span className="text-[hsl(var(--text-secondary))]">
+                  Your bio, role, projects, values, and communication style.
+                  Visible to anyone and any agent.
+                </span>
               </div>
-              <div className="pl-3 mb-1">
-                <span className="text-[hsl(var(--accent))]">private layer</span> --
-                contact info, internal notes, sensitive preferences, API keys. Only
-                shared when you explicitly use <Code>/share --private</Code> or
-                provide an access token.
+              <div className="flex gap-3 text-[15px] leading-relaxed">
+                <span className="shrink-0 text-[hsl(var(--accent))] font-mono text-[13px] mt-0.5">
+                  private
+                </span>
+                <span className="text-[hsl(var(--text-secondary))]">
+                  Contact info, internal notes, sensitive preferences, API keys.
+                  Only shared via{" "}
+                  <InlineCode>/share --private</InlineCode> or access tokens.
+                </span>
               </div>
             </div>
             <P>
               Access tokens can be generated from the dashboard via{" "}
-              <Code>/tokens</Code>. Each token has configurable scope (public or
-              private) and can be revoked at any time.
+              <InlineCode>/tokens</InlineCode>. Each token has configurable scope
+              and can be revoked at any time.
             </P>
+            <Callout type="tip">
+              You control what goes into each layer. Nothing is shared without
+              your explicit action.
+            </Callout>
+
+            {/* ── Dashboard Commands ────────────────────────── */}
+            <H2 id="commands">Dashboard Commands</H2>
             <P>
-              You control what goes into each layer. Nothing is shared without your
-              explicit action.
+              The web dashboard terminal supports the following slash commands:
             </P>
-
-            <Divider />
-
-            {/* ── Slash Commands ──────────────────────────── */}
-            <SectionHeader id="commands">slash commands</SectionHeader>
-            <P>
-              The dashboard terminal supports the following commands:
-            </P>
-            <div className="bg-[hsl(var(--bg))] border border-[hsl(var(--border))] p-3 font-mono text-[12px] text-[hsl(var(--text-secondary))] my-2">
-              <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-                <span className="text-[hsl(var(--accent))]">/share</span>
-                <span>generate shareable identity context block</span>
-
-                <span className="text-[hsl(var(--accent))]">/share --private</span>
-                <span>include private layer in context block</span>
-
-                <span className="text-[hsl(var(--accent))]">/preview</span>
-                <span>preview your public profile</span>
-
-                <span className="text-[hsl(var(--accent))]">/json</span>
-                <span>export identity as raw JSON</span>
-
-                <span className="text-[hsl(var(--accent))]">/settings</span>
-                <span>open account settings</span>
-
-                <span className="text-[hsl(var(--accent))]">/tokens</span>
-                <span>manage API access tokens</span>
-
-                <span className="text-[hsl(var(--accent))]">/billing</span>
-                <span>view billing and subscription</span>
-
-                <span className="text-[hsl(var(--accent))]">/status</span>
-                <span>check profile completeness and status</span>
-
-                <span className="text-[hsl(var(--accent))]">/publish</span>
-                <span>publish latest changes to your public profile</span>
-
-                <span className="text-[hsl(var(--accent))]">/help</span>
-                <span>show all available commands</span>
-              </div>
-            </div>
-
-            <Divider />
+            <CommandTable
+              commands={[
+                {
+                  cmd: "/share",
+                  desc: "Generate shareable identity context block",
+                },
+                {
+                  cmd: "/share --private",
+                  desc: "Include private layer in context block",
+                },
+                { cmd: "/preview", desc: "Preview your public profile" },
+                { cmd: "/json", desc: "Export identity as raw JSON" },
+                { cmd: "/settings", desc: "Open account settings" },
+                { cmd: "/tokens", desc: "Manage API access tokens" },
+                { cmd: "/billing", desc: "View billing and subscription" },
+                {
+                  cmd: "/status",
+                  desc: "Check profile completeness and status",
+                },
+                {
+                  cmd: "/publish",
+                  desc: "Publish latest changes to your public profile",
+                },
+                { cmd: "/help", desc: "Show all available commands" },
+              ]}
+            />
 
             {/* Footer */}
-            <div className="text-[11px] text-[hsl(var(--text-secondary))] opacity-40 mt-4">
-              you.md -- the identity file for the agent internet
+            <div className="border-t border-[hsl(var(--border))] mt-16 pt-8 flex items-center justify-between">
+              <span className="text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
+                you.md -- the identity file for the agent internet
+              </span>
+              <Link
+                href="/create"
+                className="text-[13px] text-[hsl(var(--accent))] hover:opacity-80 transition-opacity"
+              >
+                Get Started
+              </Link>
             </div>
           </div>
-        </div>
-
-        {/* Link below terminal */}
-        <div className="mt-4 text-center">
-          <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
-            ready to build your identity?{" "}
-            <Link
-              href="/create"
-              className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
-            >
-              get started
-            </Link>
-          </span>
-        </div>
+        </main>
       </div>
     </div>
   );

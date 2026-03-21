@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
+import AsciiAvatar from "@/components/AsciiAvatar";
 
 interface Project {
   name: string;
@@ -91,14 +92,28 @@ export function ProfileContent() {
           </div>
         </header>
         <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-12 pb-16">
-          <h1 className="text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
-            @{username}
-          </h1>
-          {profile.displayName && (
-            <p className="text-[hsl(var(--text-secondary))] text-sm mt-2">
-              {profile.displayName}
-            </p>
-          )}
+          <div className="flex items-start gap-6">
+            {profile.avatarUrl && (
+              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "4px" }}>
+                <AsciiAvatar
+                  src={profile.avatarUrl}
+                  cols={60}
+                  canvasWidth={120}
+                  className="block"
+                />
+              </div>
+            )}
+            <div className="min-w-0">
+              <h1 className="text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
+                {profile.displayName || `@${username}`}
+              </h1>
+              {profile.displayName && (
+                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-xs font-mono mt-1">
+                  @{username}
+                </p>
+              )}
+            </div>
+          </div>
           <div className="mt-8 border border-[hsl(var(--border))] p-5 bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "4px" }}>
             <p className="text-[hsl(var(--text-secondary))] opacity-50 font-mono text-[13px]">
               this identity is being built. check back soon.
@@ -174,19 +189,37 @@ export function ProfileContent() {
       <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-12 pb-16">
         {/* Identity */}
         <section className="mb-12">
-          <h1 className="text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
-            {name}
-          </h1>
-          {tagline && (
-            <p className="text-[hsl(var(--text-secondary))] text-sm mt-2 leading-relaxed">
-              {tagline}
-            </p>
-          )}
-          {location && (
-            <p className="text-[hsl(var(--text-secondary))] opacity-40 text-xs mt-1 font-mono">
-              {location}
-            </p>
-          )}
+          <div className="flex items-start gap-6">
+            {/* ASCII Portrait */}
+            {profile.avatarUrl && (
+              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "4px" }}>
+                <AsciiAvatar
+                  src={profile.avatarUrl}
+                  cols={60}
+                  canvasWidth={120}
+                  className="block"
+                />
+              </div>
+            )}
+            <div className="min-w-0">
+              <h1 className="text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
+                {name}
+              </h1>
+              <p className="text-[hsl(var(--text-secondary))] opacity-50 text-xs font-mono mt-1">
+                @{username}
+              </p>
+              {tagline && (
+                <p className="text-[hsl(var(--text-secondary))] text-sm mt-2 leading-relaxed">
+                  {tagline}
+                </p>
+              )}
+              {location && (
+                <p className="text-[hsl(var(--text-secondary))] opacity-40 text-xs mt-1 font-mono">
+                  {location}
+                </p>
+              )}
+            </div>
+          </div>
         </section>
 
         {/* Bio */}
