@@ -762,18 +762,37 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     // For dashboard, we wait for latestBundle to be defined (can be null)
     if (!isOnboarding && latestBundle === undefined) return;
 
-    const profileContext = buildProfileContext(
+    // Build context from BOTH profiles table and bundles table
+    let profileContext = buildProfileContext(
       (latestBundle?.youJson as Record<string, unknown>) || null
     );
+
+    // Enrich with data from profiles table (from /create flow)
+    if (userProfile && profileContext === "the user has no existing profile data yet.") {
+      const parts: string[] = ["here is what we know about the user:"];
+      if (userProfile.name) parts.push(`name: ${userProfile.name}`);
+      if (convexUser?.username) parts.push(`username: @${convexUser.username}`);
+      if (userProfile.tagline) parts.push(`tagline: ${userProfile.tagline}`);
+      if (userProfile.location) parts.push(`location: ${userProfile.location}`);
+      if (userProfile.bio) {
+        const bio = userProfile.bio as Record<string, string>;
+        if (bio.short) parts.push(`bio: ${bio.short}`);
+      }
+      if (userProfile.avatarUrl) parts.push(`has profile image from social media`);
+      if (parts.length > 1) profileContext = parts.join("\n");
+    }
 
     const systemMessage: ChatMessage = {
       role: "system",
       content: SYSTEM_PROMPT,
     };
 
+    const username = convexUser?.username || "";
+    const displayName = userProfile?.name || convexUser?.displayName || "";
+
     const contextContent = isOnboarding && onboardingGreeting
       ? onboardingGreeting
-      : `${profileContext}\n\nthe user just opened the web chat. greet them briefly and ask how you can help with their identity bundle. if they have existing data, reference something specific from it. if not, suggest getting started.`;
+      : `${profileContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them by name if you know it. reference specific things from their profile. ask how you can help. if their profile is sparse, proactively suggest building it out — ask for their x or github handle.`;
 
     const contextMessage: ChatMessage = {
       role: "user",
