@@ -42,6 +42,7 @@ export function CreateContent() {
       setTimeout(() => addLine("\u00A0"), 700),
       setTimeout(() => addLine("no account needed — just pick a username to start.", "text-[hsl(var(--text-secondary))] opacity-50"), 900),
       setTimeout(() => addLine("\u00A0"), 1100),
+      setTimeout(() => addLine("choose a username.", "text-[hsl(var(--text-secondary))] opacity-70"), 1200),
       setTimeout(() => setPhase("username"), 1300),
     ];
     return () => timers.forEach(clearTimeout);
@@ -74,6 +75,7 @@ export function CreateContent() {
 
     setUsername(clean);
     addLine("\u00A0");
+    addLine("what should we call you?", "text-[hsl(var(--text-secondary))] opacity-70");
     setTimeout(() => setPhase("name"), 300);
   }, [addLine]);
 
@@ -89,7 +91,9 @@ export function CreateContent() {
     setName(val);
     addLine("\u00A0");
 
-    // Ask for social handle for portrait
+    // Agent asks for social handle
+    addLine("drop your x or github username so i can generate your ascii portrait.", "text-[hsl(var(--text-secondary))] opacity-70");
+    addLine("type skip if you don't have one.", "text-[hsl(var(--text-secondary))] opacity-40");
     setTimeout(() => setPhase("social"), 300);
   }, [addLine]);
 
@@ -481,12 +485,9 @@ export function CreateContent() {
             )}
           </div>
 
-          {/* Input pinned at bottom of panel — OUTSIDE scroll area */}
+          {/* Input pinned at bottom — clean, no labels, just the prompt */}
           {isInputPhase && (
             <div className="shrink-0 border-t border-[hsl(var(--border))] px-5 pt-3 pb-5">
-              <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[12px] mb-1.5 font-mono">
-                {promptLabel}
-              </div>
               <TerminalAuthInput
                 prompt=">"
                 placeholder={promptPlaceholder}

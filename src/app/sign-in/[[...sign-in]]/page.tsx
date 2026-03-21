@@ -55,6 +55,7 @@ export default function SignInPage() {
       setTimeout(() => addLine("\u00A0"), 900),
       setTimeout(() => addLine("initializing authentication...", "text-[hsl(var(--text-secondary))] opacity-50"), 1100),
       setTimeout(() => addLine("\u00A0"), 1400),
+      setTimeout(() => addLine("enter your email.", "text-[hsl(var(--text-secondary))] opacity-70"), 1500),
       setTimeout(() => setStep("email"), 1600),
     ];
     return () => timers.forEach(clearTimeout);
@@ -69,6 +70,7 @@ export default function SignInPage() {
       </span>
     );
     addLine("\u00A0");
+    addLine("enter your password.", "text-[hsl(var(--text-secondary))] opacity-70");
     setTimeout(() => setStep("password"), 300);
   }, [addLine]);
 
@@ -268,12 +270,9 @@ export default function SignInPage() {
             )}
           </div>
 
-          {/* Input pinned at bottom */}
+          {/* Input pinned at bottom — clean, no labels */}
           {isInputStep && (
-            <div className="shrink-0 border-t border-[hsl(var(--border))] px-5 py-3 pb-[env(safe-area-inset-bottom)]">
-              <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[12px] mb-1.5 font-mono">
-                {stepLabel[step]}
-              </div>
+            <div className="shrink-0 border-t border-[hsl(var(--border))] px-5 pt-3 pb-5">
               <TerminalAuthInput
                 prompt=">"
                 placeholder={stepPlaceholder[step]}
