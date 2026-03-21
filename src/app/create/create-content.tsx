@@ -643,7 +643,25 @@ function CreateContentInner() {
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden min-h-0"
           style={{ borderRadius: "2px" }}
         >
-          <TerminalHeader title="you.md — create" />
+          {/* Header with sign-in link */}
+          <div className="flex items-center justify-between border-b border-[hsl(var(--border))] shrink-0">
+            <div className="flex items-center gap-2 px-4 py-3">
+              <div className="flex gap-1.5">
+                <span className="w-3 h-3 rounded-full" style={{ background: "rgba(239, 68, 68, 0.6)" }} />
+                <span className="w-3 h-3 rounded-full" style={{ background: "rgba(234, 179, 8, 0.6)" }} />
+                <span className="w-3 h-3 rounded-full" style={{ background: "rgba(34, 197, 94, 0.6)" }} />
+              </div>
+              <span className="text-sm font-mono text-[hsl(var(--text-secondary))] opacity-60 ml-2">
+                you.md — create
+              </span>
+            </div>
+            <Link
+              href="/sign-in"
+              className="px-4 py-3 font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40 hover:text-[hsl(var(--accent))] hover:opacity-100 transition-all"
+            >
+              &gt;_ sign in
+            </Link>
+          </div>
 
           {/* Scrollable terminal output */}
           <div
@@ -694,18 +712,15 @@ function CreateContentInner() {
           )}
         </div>
 
-        {/* Links below terminal */}
+        {/* Home link below terminal */}
         {!isInputPhase && (
           <div className="mt-3 text-center shrink-0">
-            <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
-              already have an account?{" "}
-              <Link
-                href="/sign-in"
-                className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
-              >
-                sign in
-              </Link>
-            </span>
+            <Link
+              href="/"
+              className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60 transition-opacity"
+            >
+              &gt; home
+            </Link>
           </div>
         )}
       </div>
