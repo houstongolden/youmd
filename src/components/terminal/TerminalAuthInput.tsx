@@ -43,7 +43,7 @@ export function TerminalAuthInput({
   };
 
   return (
-    <div className="flex items-center gap-2 font-mono text-[14px]">
+    <div className="flex items-center gap-2 font-mono text-[16px]">
       <span className="text-[hsl(var(--accent))] select-none shrink-0">
         {prompt}
       </span>
@@ -53,7 +53,7 @@ export function TerminalAuthInput({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[14px] text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/15"
+        className="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[16px] text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/15"
         autoFocus={autoFocus}
         disabled={disabled}
         autoComplete="off"
@@ -65,7 +65,7 @@ export function TerminalAuthInput({
       <button
         type="button"
         onClick={handleSubmit}
-        className="shrink-0 h-6 w-8 flex items-center justify-center bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform"
+        className="shrink-0 h-7 w-9 flex items-center justify-center bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform"
         style={{ borderRadius: "3px" }}
         aria-label="Submit"
       >

@@ -483,7 +483,7 @@ export function CreateContent() {
 
           {/* Input pinned at bottom of panel — OUTSIDE scroll area */}
           {isInputPhase && (
-            <div className="shrink-0 border-t border-[hsl(var(--border))] px-5 py-3 pb-[env(safe-area-inset-bottom)]">
+            <div className="shrink-0 border-t border-[hsl(var(--border))] px-5 pt-3 pb-5">
               <div className="text-[hsl(var(--text-secondary))] opacity-50 text-[12px] mb-1.5 font-mono">
                 {promptLabel}
               </div>
