@@ -87,9 +87,12 @@ export function InitializeContent() {
   // Run boot sequence and auto-claim
   useEffect(() => {
     if (!user || claimAttempted.current) return;
-    if (existingUser !== null) return;
+    // Wait for query to finish loading
     if (existingUser === undefined) return;
+    // If user already exists, the redirect effect above will handle it
+    if (existingUser !== null) return;
 
+    // existingUser is null — no Convex user yet, time to create
     claimAttempted.current = true;
 
     const username =
