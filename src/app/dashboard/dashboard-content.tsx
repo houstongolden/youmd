@@ -164,7 +164,7 @@ export function DashboardContent() {
               {/* Active pane */}
               <div className="flex-1 min-h-0 overflow-y-auto">
                 {rightPane === "preview" && (
-                  <ProfilePreviewPane userId={convexUser._id} username={username} />
+                  <ProfilePreviewPane userId={convexUser._id} username={username} ownerId={convexUser._id} />
                 )}
                 {rightPane === "json" && <JsonPane userId={convexUser._id} />}
                 {rightPane === "settings" && user?.id && (

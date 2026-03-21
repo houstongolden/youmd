@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { CopyButton } from "@/components/ui/CopyButton";
+import AsciiAvatar from "@/components/AsciiAvatar";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 interface Project {
@@ -16,15 +17,21 @@ interface Project {
 interface ProfilePreviewPaneProps {
   userId: Id<"users">;
   username: string;
+  ownerId?: Id<"users">;
 }
 
-export function ProfilePreviewPane({ userId, username }: ProfilePreviewPaneProps) {
+export function ProfilePreviewPane({ userId, username, ownerId }: ProfilePreviewPaneProps) {
   const latestBundle = useQuery(
     api.bundles.getLatestBundle,
     userId ? { userId } : "skip"
   );
+  const userProfile = useQuery(
+    api.profiles.getByOwnerId,
+    ownerId ? { ownerId } : "skip"
+  );
 
   const data = latestBundle?.youJson;
+  const avatarUrl = userProfile?.avatarUrl;
 
   if (!data) {
     return (
@@ -88,24 +95,38 @@ export function ProfilePreviewPane({ userId, username }: ProfilePreviewPaneProps
       <div className="px-6 py-6 space-y-6 max-w-xl">
         {/* Identity */}
         <section>
-          <h1 className="text-lg font-mono tracking-tight text-[hsl(var(--text-primary))]">
-            @{username}
-          </h1>
-          {tagline && (
-            <p className="text-[hsl(var(--text-secondary))] text-sm mt-1 leading-relaxed">
-              {tagline}
-            </p>
-          )}
-          {location && (
-            <p className="text-[hsl(var(--text-secondary))] opacity-40 text-xs mt-1 font-mono">
-              {location}
-            </p>
-          )}
-          {name && name !== username && (
-            <p className="text-[hsl(var(--accent))] text-sm mt-1 font-mono">
-              {name}
-            </p>
-          )}
+          <div className="flex items-start gap-4">
+            {avatarUrl && (
+              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "4px" }}>
+                <AsciiAvatar
+                  src={avatarUrl}
+                  cols={50}
+                  canvasWidth={100}
+                  className="block"
+                />
+              </div>
+            )}
+            <div className="min-w-0">
+              <h1 className="text-lg font-mono tracking-tight text-[hsl(var(--text-primary))]">
+                @{username}
+              </h1>
+              {name && name !== username && (
+                <p className="text-[hsl(var(--accent))] text-sm mt-1 font-mono">
+                  {name}
+                </p>
+              )}
+              {tagline && (
+                <p className="text-[hsl(var(--text-secondary))] text-sm mt-1 leading-relaxed">
+                  {tagline}
+                </p>
+              )}
+              {location && (
+                <p className="text-[hsl(var(--text-secondary))] opacity-40 text-xs mt-1 font-mono">
+                  {location}
+                </p>
+              )}
+            </div>
+          </div>
         </section>
 
         <Divider />
