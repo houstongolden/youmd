@@ -210,7 +210,6 @@ export const createProfile = mutation({
     links: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    try {
     const uname = args.username.toLowerCase();
 
     // Validate
@@ -277,11 +276,6 @@ export const createProfile = mutation({
     });
 
     return { profileId, sessionToken, username: uname };
-    } catch (err) {
-      // Surface the actual error message instead of generic "Server Error"
-      const msg = err instanceof Error ? err.message : String(err);
-      throw new Error(`createProfile failed: ${msg}`);
-    }
   },
 });
 
