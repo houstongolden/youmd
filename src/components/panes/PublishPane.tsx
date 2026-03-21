@@ -3,22 +3,11 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
 
 interface PublishPaneProps {
   username: string;
   userId?: Id<"users">;
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="text-[10px] font-mono text-[hsl(var(--accent))] uppercase tracking-widest mb-3">
-      &gt; {children}
-    </h3>
-  );
-}
-
-function Divider() {
-  return <div className="h-px bg-[hsl(var(--border))] my-6" />;
 }
 
 function formatTime(ts: number | undefined): string {
@@ -42,11 +31,7 @@ export function PublishPane({ username, userId }: PublishPaneProps) {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-6 py-3 border-b border-[hsl(var(--border))]">
-        <span className="text-xs font-mono text-[hsl(var(--text-secondary))]">
-          publish
-        </span>
-      </div>
+      <PaneHeader>publish</PaneHeader>
 
       <div className="px-6 py-6 space-y-0 max-w-xl">
         <SectionLabel>live status</SectionLabel>

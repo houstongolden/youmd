@@ -1,5 +1,7 @@
 "use client";
 
+import { PaneHeader } from "./shared";
+
 const HELP_TEXT = `NAVIGATION
   /profile          view your identity profile
   /settings         account preferences
@@ -37,11 +39,7 @@ GENERAL
 export function HelpPane() {
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-6 py-3 border-b border-[hsl(var(--border))]">
-        <span className="text-xs font-mono text-[hsl(var(--text-secondary))]">
-          help
-        </span>
-      </div>
+      <PaneHeader>help</PaneHeader>
 
       <div className="px-6 py-6 space-y-0 max-w-xl">
         <h2 className="font-mono text-sm text-[hsl(var(--text-primary))] mb-6">
