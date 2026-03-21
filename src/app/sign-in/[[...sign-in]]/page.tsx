@@ -295,8 +295,9 @@ export default function SignInPage() {
               >
                 sign up
               </Link>
-          </span>
-        </div>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
