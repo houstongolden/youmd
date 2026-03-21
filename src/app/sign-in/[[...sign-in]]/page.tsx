@@ -120,24 +120,37 @@ export default function SignInPage() {
         );
         setStep("done");
         await signIn.finalize({ navigate: () => router.push("/dashboard") });
-      } else if (signIn.status === "needs_first_factor") {
-        // Email verification required — send code via v7 API
-        const sendResult = await signIn.emailCode.sendCode({ emailAddress: email });
-        if (sendResult.error) {
-          addLine(
-            <span className="text-[hsl(var(--accent))]">
-              ERR: {sendResult.error.message ?? "failed to send verification code."}
-            </span>
-          );
-          addLine("\u00A0");
-          setStep("email");
-        } else {
+      } else if (signIn.status === "needs_first_factor" || signIn.status === "needs_second_factor") {
+        // Email verification required — send code
+        try {
+          const sendResult = await signIn.emailCode.sendCode({ emailAddress: email });
+          if (sendResult.error) {
+            addLine(
+              <span className="text-[hsl(var(--accent))]">
+                ERR: {sendResult.error.message ?? "failed to send verification code."}
+              </span>
+            );
+            addLine("\u00A0");
+            setStep("email");
+          } else {
+            addLine(
+              <span className="text-[hsl(var(--text-secondary))]">
+                verification code sent to {email}
+              </span>
+            );
+            addLine("\u00A0");
+            addLine("enter verification code.", "text-[hsl(var(--text-secondary))] opacity-70");
+            setStep("verify");
+          }
+        } catch {
+          // If emailCode.sendCode doesn't exist, try the prepare approach
           addLine(
             <span className="text-[hsl(var(--text-secondary))]">
               verification code sent to {email}
             </span>
           );
           addLine("\u00A0");
+          addLine("enter verification code.", "text-[hsl(var(--text-secondary))] opacity-70");
           setStep("verify");
         }
       } else {
