@@ -82,7 +82,7 @@ export function ProfileContent() {
     return (
       <div className="min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
         <header className="border-b border-[hsl(var(--border))]">
-          <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="max-w-2xl mx-auto pl-12 pr-6 py-4 flex items-center justify-between">
             <span className="font-mono text-sm text-[hsl(var(--text-secondary))]">
               you.md/{username}
             </span>
@@ -170,7 +170,7 @@ export function ProfileContent() {
 
       {/* Header */}
       <header className="border-b border-[hsl(var(--border))]">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto pl-12 pr-6 py-4 flex items-center justify-between">
           <Link
             href={`/${username}`}
             className="font-mono text-sm text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] transition-colors"
