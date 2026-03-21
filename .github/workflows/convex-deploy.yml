@@ -4,10 +4,8 @@ on:
   push:
     branches:
       - main
-      - 'claude/**'  # temporary: test deploy workflow
     paths:
       - 'convex/**'
-      - '.github/workflows/convex-deploy.yml'
   workflow_dispatch:
     inputs:
       environment:
