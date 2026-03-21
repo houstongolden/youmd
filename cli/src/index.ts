@@ -14,6 +14,9 @@ import { previewCommand } from "./commands/preview";
 import { linkCommand } from "./commands/link";
 import { keysCommand } from "./commands/keys";
 import { chatCommand } from "./commands/chat";
+import { pullCommand } from "./commands/pull";
+import { pushCommand } from "./commands/push";
+import { syncCommand } from "./commands/sync";
 
 const program = new Command();
 
@@ -79,6 +82,23 @@ program
   .command("chat")
   .description("Talk to the You agent — update your profile, add sources, ask questions")
   .action(chatCommand);
+
+program
+  .command("pull")
+  .description("Download your profile from you.md to local .youmd/ files")
+  .action(pullCommand);
+
+program
+  .command("push")
+  .description("Upload local .youmd/ files to you.md and publish")
+  .option("--no-publish", "Upload without publishing")
+  .action(pushCommand);
+
+program
+  .command("sync")
+  .description("Sync local files with you.md (pull + push)")
+  .option("-w, --watch", "Watch for local changes and auto-push")
+  .action(syncCommand);
 
 const linkCmd = program
   .command("link [subcommand]")
