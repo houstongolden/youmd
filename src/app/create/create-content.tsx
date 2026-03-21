@@ -426,7 +426,7 @@ export function CreateContent() {
       addLine("\u00A0");
       setPhase("username");
     }
-  }, [username, createProfile, updateProfile, router, addLine]);
+  }, [username, router, addLine]);
 
   const isInputPhase = phase === "username" || phase === "name" || phase === "social";
   const keyboardHeight = useKeyboardHeight();
