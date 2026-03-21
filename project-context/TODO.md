@@ -84,7 +84,10 @@ PRD Version: 2.3
 - [x] Smarter profile image selection (LinkedIn > GitHub > X priority)
 - [x] Claude Code-style thinking indicator with category icons
 - [x] Terminal-style message rendering with markdown support
-- [x] Persistent AppNav side panel for logged-in users
+- [x] Persistent AppNav side panel for logged-in users — REPLACED by unified SiteNav top bar
+- [x] Unified SiteNav — compact top bar on all pages (dashboard, profiles, docs, profile pages)
+- [x] Dashboard navigation — links to home, profile, profiles, docs from dashboard
+- [x] Cleaned up unused nav components (duplicate Navbar.tsx, NavLink.tsx)
 - [x] Border radius standardized to 2px across entire app
 - [x] Mobile responsiveness for public profile (avatar stacking, responsive padding)
 - [x] Mobile status bar visible on dashboard

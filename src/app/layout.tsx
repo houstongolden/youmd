@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Inter } from "next/font/google";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
-import { AppNav } from "@/components/AppNav";
+import { SiteNav } from "@/components/SiteNav";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -49,7 +49,7 @@ export default function RootLayout({
         className={`${jetbrainsMono.variable} ${inter.variable} antialiased`}
       >
         <ConvexClientProvider>
-          <AppNav />
+          <SiteNav />
           {children}
         </ConvexClientProvider>
       </body>

@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-03-21 — Navigation Consistency Overhaul
+
+### Navigation
+- **Unified SiteNav component** — replaces AppNav side-panel with a consistent, compact top bar across all authenticated pages (including dashboard)
+- **Dashboard navigation** — dashboard now has persistent nav links to home, profile, profiles, docs (was previously isolated with no way to navigate out)
+- **Removed duplicate sign-out** — sign out now lives in the top nav bar; removed redundant sign-out from dashboard status bar
+- **Cleaned up unused components** — deleted duplicate Navbar.tsx (was unused), deleted unused NavLink.tsx
+- **Terminal aesthetic preserved** — monospace typography, 1px borders, `> active` indicators, burnt orange accent for active state
+
 ## 2026-03-21 — Agent Personalization, Auto-Scraping, UI Consistency Pass
 
 ### Agent Intelligence

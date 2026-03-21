@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser, SignOutButton } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useState, useEffect } from "react";
@@ -68,7 +68,7 @@ export function DashboardContent() {
   const profileName = userProfile?.name ?? null;
 
   return (
-    <div className="h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
+    <div className="h-[calc(100dvh-2.25rem)] bg-[hsl(var(--bg))] flex flex-col">
       <div className="flex-1 flex flex-col max-w-[1400px] mx-auto w-full p-0 md:p-4 min-h-0">
         <div
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] md:border md:border-[hsl(var(--border))] overflow-hidden min-h-0"
@@ -92,11 +92,6 @@ export function DashboardContent() {
                 {isPublished ? "published" : "draft"}
               </span>
             </div>
-            <SignOutButton>
-              <button className="text-[10px] md:text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-80 transition-opacity">
-                sign out
-              </button>
-            </SignOutButton>
           </div>
 
           {/* Mobile view toggle */}
