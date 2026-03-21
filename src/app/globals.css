@@ -341,6 +341,15 @@ input[type="password"]:focus-visible {
   outline: none;
 }
 
+/* ── Mobile keyboard: keep input visible ──────────────────── */
+@supports (height: 100dvh) {
+  .terminal-input-sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+  }
+}
+
 /* ── Scrollbar ────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;

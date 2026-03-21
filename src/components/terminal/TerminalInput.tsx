@@ -26,7 +26,7 @@ export function TerminalInput({
   };
 
   return (
-    <div className="shrink-0 border-t border-[hsl(var(--border))] px-4 py-3">
+    <div className="shrink-0 border-t border-[hsl(var(--border))] px-4 py-3 pb-[env(safe-area-inset-bottom)] terminal-input-sticky">
       <div className="flex items-end gap-2">
         <span className="text-[hsl(var(--accent))] font-mono text-sm pb-2.5 select-none">
           &gt;

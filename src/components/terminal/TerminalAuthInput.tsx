@@ -29,7 +29,7 @@ export function TerminalAuthInput({
       setTimeout(() => {
         inputRef.current?.focus();
         // Scroll input into view on mobile when keyboard opens
-        containerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        containerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
       }, 100);
     }
   }, [autoFocus]);
@@ -44,7 +44,7 @@ export function TerminalAuthInput({
   const handleFocus = () => {
     // On mobile, scroll into view when keyboard opens
     setTimeout(() => {
-      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }, 300);
   };
 
@@ -53,7 +53,7 @@ export function TerminalAuthInput({
   return (
     <div
       ref={containerRef}
-      className="flex items-center gap-2 font-mono text-[14px] cursor-text"
+      className="flex items-center gap-2 font-mono text-[14px] cursor-text pb-[env(safe-area-inset-bottom)] terminal-input-sticky"
       onClick={() => inputRef.current?.focus()}
     >
       <span className="text-[hsl(var(--accent))] select-none shrink-0">

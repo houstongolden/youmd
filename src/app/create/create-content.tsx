@@ -92,6 +92,108 @@ export function CreateContent() {
     setTimeout(() => setPhase("social"), 300);
   }, [addLine]);
 
+  // --- Social parsing helpers ---
+
+  // Extract username-like tokens from natural language input
+  function parseSocialInput(raw: string): { platforms: string[]; handle: string } {
+    const trimmed = raw.trim().toLowerCase();
+
+    // Direct URL patterns — highest priority
+    const githubUrlMatch = trimmed.match(/github\.com\/([a-zA-Z0-9_-]{1,39})/);
+    if (githubUrlMatch) return { platforms: ["github"], handle: githubUrlMatch[1] };
+
+    const xUrlMatch = trimmed.match(/(?:x|twitter)\.com\/([a-zA-Z0-9_]{1,15})/);
+    if (xUrlMatch) return { platforms: ["x"], handle: xUrlMatch[1] };
+
+    // Detect platform mentions
+    const mentionsX = /\b(x|twitter)\b/.test(trimmed);
+    const mentionsGH = /\b(github|gh)\b/.test(trimmed);
+
+    // Strip filler words to find the username
+    const filler = /\b(my|both|and|are|is|on|username|usernames|handle|handles|it's|its|the|same|for|profile|account)\b/g;
+    const cleaned = trimmed
+      .replace(filler, " ")
+      .replace(/[^\w@\s-]/g, " ")
+      .trim();
+
+    // Find @-prefixed handle or bare username-looking word
+    const atMatch = cleaned.match(/@([a-zA-Z0-9_]{3,30})/);
+    const bareMatch = cleaned.match(/\b([a-zA-Z][a-zA-Z0-9_]{2,29})\b/);
+    const handle = atMatch ? atMatch[1] : bareMatch ? bareMatch[1] : "";
+
+    // Filter out platform names from being treated as handles
+    const platformWords = new Set(["x", "twitter", "github", "gh"]);
+    const finalHandle = platformWords.has(handle) ? (bareMatch ? cleaned.split(/\s+/).filter(w => !platformWords.has(w) && /^[a-zA-Z0-9_]{3,30}$/.test(w))[0] || "" : "") : handle;
+
+    // Determine platforms
+    let platforms: string[] = [];
+    if (mentionsX && mentionsGH) platforms = ["x", "github"];
+    else if (mentionsX) platforms = ["x"];
+    else if (mentionsGH) platforms = ["github"];
+    else if (atMatch) platforms = ["x"]; // @handle defaults to X
+    else platforms = ["github"]; // bare username defaults to GitHub
+
+    return { platforms, handle: finalHandle };
+  }
+
+  // Generate a conversational reaction to scraped profile data
+  function getScrapedReaction(data: Record<string, unknown>, platform: string): string {
+    const parts: string[] = [];
+    const displayName = data.displayName as string | undefined;
+    const bio = data.bio as string | undefined;
+    const location = data.location as string | undefined;
+    const followers = data.followers as number | undefined;
+    const profileImageUrl = data.profileImageUrl as string | undefined;
+
+    if (displayName) parts.push(`found you -- ${displayName}.`);
+
+    if (bio) {
+      const short = bio.slice(0, 80) + (bio.length > 80 ? "..." : "");
+      parts.push(`"${short}"`);
+    }
+
+    if (location) parts.push(`${location.toLowerCase()}.`);
+
+    if (followers && followers > 1000) {
+      parts.push(`${(followers / 1000).toFixed(1)}k followers -- not bad.`);
+    } else if (followers) {
+      parts.push(`${followers} followers.`);
+    }
+
+    if (profileImageUrl) parts.push("grabbed your portrait source.");
+
+    return parts.join(" ") || "found your profile.";
+  }
+
+  // Scrape a single platform and return the data
+  async function scrapePlatform(
+    handle: string,
+    platform: string,
+    addLineRef: typeof addLine,
+  ): Promise<Record<string, unknown> | null> {
+    const url = platform === "x" ? `https://x.com/${handle}` : `https://github.com/${handle}`;
+
+    try {
+      const res = await fetch(
+        "https://kindly-cassowary-600.convex.site/api/v1/scrape",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        }
+      );
+
+      if (res.ok) {
+        const raw = await res.json();
+        const data = raw.data || raw;
+        return data as Record<string, unknown>;
+      }
+    } catch {
+      // Scrape failed silently
+    }
+    return null;
+  }
+
   // Social handle handler — scrape profile for portrait
   const handleSocial = useCallback(async (val: string) => {
     const trimmed = val.trim().toLowerCase();
@@ -106,29 +208,21 @@ export function CreateContent() {
       return;
     }
 
-    // Parse handle — accept "username", "@username", "x.com/username", "github.com/username"
-    let platform = "";
-    let handle = trimmed;
+    // Smart parsing of natural language input
+    const { platforms, handle } = parseSocialInput(val);
 
-    if (trimmed.includes("github.com/") || trimmed.includes("github")) {
-      platform = "github";
-      handle = trimmed.replace(/.*github\.com\//, "").replace(/^@/, "").split("/")[0].split("?")[0];
-    } else if (trimmed.includes("x.com/") || trimmed.includes("twitter.com/")) {
-      platform = "x";
-      handle = trimmed.replace(/.*(?:x|twitter)\.com\//, "").replace(/^@/, "").split("/")[0].split("?")[0];
-    } else if (trimmed.startsWith("@")) {
-      // Assume X if just @username
-      platform = "x";
-      handle = trimmed.replace(/^@/, "");
-    } else {
-      // Default to GitHub for plain usernames
-      platform = "github";
-      handle = trimmed;
+    if (!handle) {
+      addLine(
+        <span className="text-[hsl(var(--accent))]">
+          couldn&apos;t find a username in that -- try just your handle (e.g. houstongolden)
+        </span>
+      );
+      return;
     }
 
     addLine(
       <span>
-        <span className="text-[hsl(var(--accent))]">{platform}:</span>{" "}
+        <span className="text-[hsl(var(--accent))]">{platforms.join(" + ")}:</span>{" "}
         <span className="text-[hsl(var(--text-secondary))]">@{handle}</span>
       </span>
     );
@@ -137,119 +231,110 @@ export function CreateContent() {
 
     addLine("fetching profile...", "text-[hsl(var(--text-secondary))] opacity-50");
 
-    try {
-      // Call our scrape endpoint
-      const scrapeRes = await fetch(
-        "https://kindly-cassowary-600.convex.site/api/v1/scrape",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: platform === "x" ? `https://x.com/${handle}` : `https://github.com/${handle}`,
-          }),
-        }
-      );
+    let bestData: Record<string, unknown> | null = null;
+    let bestPlatform = platforms[0];
 
-      if (scrapeRes.ok) {
-        const scrapeData = await scrapeRes.json();
-        const data = scrapeData.data || scrapeData;
-        if (data.displayName) {
-          addLine(
-            <span className="text-[hsl(var(--success))]">
-              {"\u2713"} found {data.displayName}
-              {data.bio ? ` — "${data.bio.slice(0, 60)}${data.bio.length > 60 ? "..." : ""}"` : ""}
-            </span>
-          );
-        }
-        if (data.profileImageUrl) {
-          scrapedImageRef.current = { platform, url: data.profileImageUrl };
-          addLine(
-            <span className="text-[hsl(var(--accent-mid))]">
-              {"\u2713"} portrait source captured
-            </span>
-          );
-        }
-        if (data.followers) {
-          addLine(
-            <span className="text-[hsl(var(--text-secondary))] opacity-50">
-              {data.followers.toLocaleString()} followers{data.location ? ` — ${data.location}` : ""}
-            </span>
-          );
-        }
-        addLine("\u00A0");
+    // Scrape each mentioned platform sequentially
+    for (const platform of platforms) {
+      const data = await scrapePlatform(handle, platform, addLine);
+      if (data) {
+        // Show conversational reaction
+        const reaction = getScrapedReaction(data, platform);
+        addLine(
+          <span className="text-[hsl(var(--success))]">
+            {platform}: {reaction}
+          </span>
+        );
 
-        // Auto-research via Perplexity (non-blocking)
-        addLine("researching your public presence...", "text-[hsl(var(--text-secondary))] opacity-50");
-        try {
-          const researchRes = await fetch(
-            "https://kindly-cassowary-600.convex.site/api/v1/research",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: name || data.displayName || handle,
-                username: handle,
-                links: [platform === "x" ? `https://x.com/${handle}` : `https://github.com/${handle}`],
-              }),
-            }
-          );
-          if (researchRes.ok) {
-            const researchData = await researchRes.json();
-            if (researchData.success && researchData.research) {
-              addLine(
-                <span className="text-[hsl(var(--success))]">{"\u2713"} context enriched via web research</span>
-              );
-              // Show a brief excerpt
-              const excerpt = researchData.research.slice(0, 120);
-              addLine(
-                <span className="text-[hsl(var(--text-secondary))] opacity-40 text-[12px]">
-                  &quot;{excerpt}{researchData.research.length > 120 ? "..." : ""}&quot;
-                </span>
-              );
-            }
-          }
-        } catch {
-          // Research is optional — don't block on failure
-        }
-
-        // Auto-enrich X profile via XAI (if X platform)
-        if (platform === "x") {
-          addLine("analyzing x profile...", "text-[hsl(var(--text-secondary))] opacity-50");
-          try {
-            const enrichRes = await fetch(
-              "https://kindly-cassowary-600.convex.site/api/v1/enrich-x",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  xUsername: handle,
-                  profileData: data,
-                }),
-              }
-            );
-            if (enrichRes.ok) {
-              const enrichData = await enrichRes.json();
-              if (enrichData.success && enrichData.analysis) {
-                addLine(
-                  <span className="text-[hsl(var(--success))]">{"\u2713"} x profile analyzed</span>
-                );
-              }
-            }
-          } catch {
-            // Enrichment is optional
-          }
+        // Use the first platform with a profile image, or the first successful scrape
+        if (!bestData || (data.profileImageUrl && !bestData.profileImageUrl)) {
+          bestData = data;
+          bestPlatform = platform;
         }
       } else {
         addLine(
           <span className="text-[hsl(var(--text-secondary))] opacity-40">
-            couldn&apos;t fetch profile details — no worries, you can add this later
+            {platform}: no luck -- moving on
           </span>
         );
       }
-    } catch {
+    }
+
+    if (bestData) {
+      // Save profile image if found
+      if (bestData.profileImageUrl) {
+        scrapedImageRef.current = { platform: bestPlatform, url: bestData.profileImageUrl as string };
+      }
+
+      addLine("\u00A0");
+
+      // Auto-research via Perplexity (non-blocking)
+      addLine("researching your public presence...", "text-[hsl(var(--text-secondary))] opacity-50");
+      try {
+        const links = platforms.map(p =>
+          p === "x" ? `https://x.com/${handle}` : `https://github.com/${handle}`
+        );
+        const researchRes = await fetch(
+          "https://kindly-cassowary-600.convex.site/api/v1/research",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: name || (bestData.displayName as string) || handle,
+              username: handle,
+              links,
+            }),
+          }
+        );
+        if (researchRes.ok) {
+          const researchData = await researchRes.json();
+          if (researchData.success && researchData.research) {
+            addLine(
+              <span className="text-[hsl(var(--success))]">context enriched via web research.</span>
+            );
+            const excerpt = researchData.research.slice(0, 120);
+            addLine(
+              <span className="text-[hsl(var(--text-secondary))] opacity-40 text-[12px]">
+                &quot;{excerpt}{researchData.research.length > 120 ? "..." : ""}&quot;
+              </span>
+            );
+          }
+        }
+      } catch {
+        // Research is optional
+      }
+
+      // Auto-enrich X profile via XAI (if X was scraped)
+      if (platforms.includes("x")) {
+        addLine("analyzing x profile...", "text-[hsl(var(--text-secondary))] opacity-50");
+        try {
+          const enrichRes = await fetch(
+            "https://kindly-cassowary-600.convex.site/api/v1/enrich-x",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                xUsername: handle,
+                profileData: bestData,
+              }),
+            }
+          );
+          if (enrichRes.ok) {
+            const enrichData = await enrichRes.json();
+            if (enrichData.success && enrichData.analysis) {
+              addLine(
+                <span className="text-[hsl(var(--success))]">x profile analyzed.</span>
+              );
+            }
+          }
+        } catch {
+          // Enrichment is optional
+        }
+      }
+    } else {
       addLine(
         <span className="text-[hsl(var(--text-secondary))] opacity-40">
-          network error fetching profile — continuing without portrait
+          couldn&apos;t fetch profile details -- no worries, you can add this later
         </span>
       );
     }
