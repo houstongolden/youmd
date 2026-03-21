@@ -294,7 +294,7 @@ export function parseUpdatesFromResponse(text: string): {
   let display = text;
 
   if (jsonMatch) {
-    display = text.replace(/```json\s*\n[\s\S]*?\n```/, "").trim();
+    display = text.replace(/```json\s*\n[\s\S]*?\n```/g, "").trim();
 
     try {
       const parsed = JSON.parse(jsonMatch[1]);
