@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { TerminalAuthInput } from "@/components/terminal/TerminalAuthInput";
@@ -30,6 +31,7 @@ export function CreateContent() {
 
 function CreateContentInner() {
   const router = useRouter();
+  const { isSignedIn } = useAuth();
   const createProfileMut = useConvexMutation(api.profiles.createProfile);
   const updateProfileMut = useConvexMutation(api.profiles.updateProfile);
 
@@ -436,18 +438,26 @@ function CreateContentInner() {
       }
 
       addLine("\u00A0");
-      addLine("sign up to claim ownership and unlock your dashboard.", "text-[hsl(var(--text-secondary))] opacity-70");
-      addLine(
-        <span className="text-[hsl(var(--text-secondary))] opacity-60">
-          {"\u2192"} redirecting to sign up...
-        </span>
-      );
-      addLine("\u00A0");
 
-      setPhase("done");
-
-      // Redirect to sign-up so they can claim immediately
-      setTimeout(() => router.push("/sign-up"), 2500);
+      if (isSignedIn) {
+        addLine(
+          <span className="text-[hsl(var(--text-secondary))] opacity-60">
+            {"\u2192"} you're signed in. redirecting to dashboard...
+          </span>
+        );
+        setPhase("done");
+        setTimeout(() => router.push("/initialize"), 1500);
+      } else {
+        addLine("sign up to claim ownership and unlock your dashboard.", "text-[hsl(var(--text-secondary))] opacity-70");
+        addLine(
+          <span className="text-[hsl(var(--text-secondary))] opacity-60">
+            {"\u2192"} redirecting to sign up...
+          </span>
+        );
+        addLine("\u00A0");
+        setPhase("done");
+        setTimeout(() => router.push("/sign-up"), 2500);
+      }
     } catch (err: unknown) {
       console.error("createProfile error:", err);
       // Extract the actual error from Convex's wrapper
