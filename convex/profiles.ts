@@ -221,21 +221,39 @@ export const createProfile = mutation({
       throw new Error("reserved username: " + uname);
     }
 
-    // Check availability in both tables
+    // Check availability — if profile already exists, return it (idempotent)
     const existingProfile = await ctx.db
       .query("profiles")
       .withIndex("by_username", (q) => q.eq("username", uname))
       .first();
     if (existingProfile) {
-      throw new Error("username already taken in profiles: " + uname);
+      return {
+        profileId: existingProfile._id,
+        sessionToken: existingProfile.sessionToken || generateSessionToken(),
+        username: uname,
+      };
     }
 
+    // Check users table — if user exists with this username, create a profile for them
     const existingUser = await ctx.db
       .query("users")
       .withIndex("by_username", (q) => q.eq("username", uname))
       .first();
     if (existingUser) {
-      throw new Error("username already taken in users: " + uname);
+      // Auto-create a profile linked to the existing user
+      const sessionToken = generateSessionToken();
+      const profileId = await ctx.db.insert("profiles", {
+        username: uname,
+        name: args.name || existingUser.displayName || uname,
+        tagline: args.tagline,
+        links: args.links,
+        isClaimed: true,
+        ownerId: existingUser._id,
+        claimedAt: Date.now(),
+        sessionToken,
+        createdAt: Date.now(),
+      });
+      return { profileId, sessionToken, username: uname };
     }
 
     const sessionToken = generateSessionToken();
