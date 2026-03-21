@@ -133,6 +133,7 @@ export function DashboardContent() {
                 setInput={agent.setInput}
                 isThinking={agent.isThinking}
                 thinkingPhrase={agent.thinkingPhrase}
+                thinkingCategory={agent.thinkingCategory}
                 messagesEndRef={agent.messagesEndRef}
                 textareaRef={agent.textareaRef}
                 sendMessage={agent.sendMessage}

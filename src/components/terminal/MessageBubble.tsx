@@ -4,12 +4,25 @@ import type { DisplayMessage } from "@/hooks/useYouAgent";
 
 export function MessageBubble({ message }: { message: DisplayMessage }) {
   if (message.role === "system-notice") {
+    const content = message.content;
+    const isUpdate = content.startsWith("[updated:") || content.startsWith("[saved") || content.startsWith("[published");
+    const isScraping = content.startsWith("[scraping:");
+    const isError = content.includes("failed") || content.includes("ERR");
+
     return (
       <div
-        className="px-3 py-1.5 text-xs font-mono text-[hsl(var(--accent-mid))] bg-[hsl(var(--accent-wash))] border border-[hsl(var(--accent))]/15 whitespace-pre-wrap"
+        className={`px-3 py-1.5 text-xs font-mono whitespace-pre-wrap ${
+          isUpdate
+            ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/5 border border-[hsl(var(--success))]/15"
+            : isScraping
+              ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent-wash))] border border-[hsl(var(--accent))]/15 animate-pulse"
+              : isError
+                ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/5 border border-[hsl(var(--accent))]/15"
+                : "text-[hsl(var(--accent-mid))] bg-[hsl(var(--accent-wash))] border border-[hsl(var(--accent))]/15"
+        }`}
         style={{ borderRadius: "2px" }}
       >
-        {message.content}
+        {content}
       </div>
     );
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { KeyboardEvent, useCallback } from "react";
-import type { DisplayMessage } from "@/hooks/useYouAgent";
+import type { DisplayMessage, ThinkingCategory } from "@/hooks/useYouAgent";
 import { MessageBubble } from "./MessageBubble";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { TerminalInput } from "./TerminalInput";
@@ -12,6 +12,7 @@ interface TerminalShellProps {
   setInput: (v: string) => void;
   isThinking: boolean;
   thinkingPhrase: string;
+  thinkingCategory?: ThinkingCategory;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   sendMessage: () => void;
@@ -24,6 +25,7 @@ export function TerminalShell({
   setInput,
   isThinking,
   thinkingPhrase,
+  thinkingCategory,
   messagesEndRef,
   textareaRef,
   sendMessage,
@@ -47,7 +49,7 @@ export function TerminalShell({
           {displayMessages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} />
           ))}
-          {isThinking && <ThinkingIndicator phrase={thinkingPhrase} />}
+          {isThinking && <ThinkingIndicator phrase={thinkingPhrase} category={thinkingCategory} />}
           <div ref={messagesEndRef} />
         </div>
       </div>
