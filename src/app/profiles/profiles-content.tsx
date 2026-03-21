@@ -52,7 +52,7 @@ export function ProfilesDirectoryContent() {
         {/* Terminal panel */}
         <div
           className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
-          style={{ borderRadius: "8px" }}
+          style={{ borderRadius: "2px" }}
         >
           <TerminalHeader title="you.md -- directory" />
 
@@ -98,7 +98,7 @@ export function ProfilesDirectoryContent() {
                     key={`${entry.source}-${entry.username}`}
                     href={`/${entry.username}`}
                     className="flex items-center gap-4 py-1.5 group hover:bg-[hsl(var(--border)/0.15)] px-1 -mx-1 transition-colors"
-                    style={{ borderRadius: "4px" }}
+                    style={{ borderRadius: "2px" }}
                   >
                     <span className="w-[140px] shrink-0 text-[hsl(var(--accent))] group-hover:opacity-100 opacity-80 transition-opacity truncate">
                       {entry.username}

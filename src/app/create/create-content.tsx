@@ -641,7 +641,7 @@ function CreateContentInner() {
         {/* Terminal panel — fills available space */}
         <div
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden min-h-0"
-          style={{ borderRadius: "8px" }}
+          style={{ borderRadius: "2px" }}
         >
           <TerminalHeader title="you.md — create" />
 

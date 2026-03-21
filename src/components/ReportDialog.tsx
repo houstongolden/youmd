@@ -54,7 +54,7 @@ export function ReportDialog({ profileId }: ReportDialogProps) {
   }
 
   return (
-    <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 space-y-3" style={{ borderRadius: "4px" }}>
+    <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 space-y-3" style={{ borderRadius: "2px" }}>
       <div className="flex items-center justify-between">
         <span className="font-mono text-[11px] text-[hsl(var(--text-secondary))]">
           report profile

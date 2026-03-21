@@ -1,22 +1,12 @@
 "use client";
 
+import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
+
 // TODO: Wire up real data from Convex queries (e.g., api.sources.listByUser)
 // Currently using mock/placeholder data
 
 interface SourcesPaneProps {
   username: string;
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="text-[10px] font-mono text-[hsl(var(--accent))] uppercase tracking-widest mb-3">
-      &gt; {children}
-    </h3>
-  );
-}
-
-function Divider() {
-  return <div className="h-px bg-[hsl(var(--border))] my-6" />;
 }
 
 const statusConfig: Record<string, { icon: string; colorClass: string }> = {
@@ -39,11 +29,7 @@ export function SourcesPane({ username }: SourcesPaneProps) {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-6 py-3 border-b border-[hsl(var(--border))]">
-        <span className="text-xs font-mono text-[hsl(var(--text-secondary))]">
-          sources
-        </span>
-      </div>
+      <PaneHeader>sources</PaneHeader>
 
       <div className="px-6 py-6 space-y-0 max-w-xl">
         {/* Stats */}

@@ -1,5 +1,38 @@
 # You.md — Changelog
 
+## 2026-03-21 — Agent Personalization, Auto-Scraping, UI Consistency Pass
+
+### Agent Intelligence
+- **Auto-scrape on session init** — returning users with links in their profile get auto-scraped before the first LLM greeting, so the agent greets with real, specific context
+- **Auto-research for sparse profiles** — Perplexity web research triggers for new/sparse users with a display name
+- **Smarter profile image selection** — prefers LinkedIn > GitHub > X when selecting avatar from scrape results
+- **Real scraping integration** — LinkedIn via Apify, X/GitHub via scrape endpoint, Perplexity research — all injected into conversation as real data
+- **System prompt rewrite** — capabilities section, honest about what it can/can't do, structured output format, private content handling
+
+### UI/UX Consistency
+- **Shared pane primitives** — PaneSectionLabel, PaneDivider, PaneHeader, PaneEmptyState (eliminates 5+ duplicate implementations)
+- **Border radius standardized to 2px** across entire app (was 4px/8px in many places)
+- **Pricing section** — terminal-panel styling with 3-dot headers (was rounded cards)
+- **PublishPane** — wired to real Convex data (listRecentBundles query replaces mock data)
+- **All pane headers, section labels, dividers** — now consistent across Settings, Billing, Sources, Portrait, Agents, Activity, Help, Publish
+
+### Mobile Responsiveness
+- **Public profile** — avatar stacks vertically on mobile (smaller 40-col ASCII), responsive padding, centered text
+- **Dashboard status bar** — now visible on mobile (compact 10px text)
+- **Pane tabs** — larger touch targets, scroll fade hint for hidden tabs
+- **Section spacing** — responsive mb-8/mb-10 instead of fixed values
+
+### Dashboard
+- **Persistent AppNav** — side panel for logged-in users on all pages
+- **Claude Code-style thinking** — pulsing dot, category icons, elapsed timer
+- **Terminal-style messages** — monospace rendering with markdown support
+- **Chat input** — fixed iOS auto-zoom, added send button
+
+### Infrastructure
+- **listRecentBundles** query added to convex/bundles.ts
+- **Auto-publish** on every bundle save (no manual /publish needed)
+- **Profile sync** — saveBundleFromForm also updates profiles table
+
 ## 2026-03-20 — Identity System Unification + Private Layer + Docs
 
 ### Architecture

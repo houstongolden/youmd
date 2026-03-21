@@ -17,7 +17,11 @@ Last Updated: 2026-03-19
 | Terminal split-screen dashboard | Done | 35% terminal + 65% preview pane |
 | /initialize onboarding | Done | Boot sequence + agent conversation |
 | useYouAgent hook | Done | Shared agent logic for all terminal UIs |
-| Right pane system | Done | /preview, /json, /settings, /tokens, /billing |
+| Right pane system | Done | 11 panes: preview, json, sources, portrait, publish, agents, activity, settings, tokens, billing, help |
+| Auto-scrape on init | Done | Scrapes existing profile links before first LLM call |
+| Auto-research | Done | Perplexity web research for sparse profiles |
+| Auto-publish | Done | Every bundle save auto-publishes |
+| Shared pane primitives | Done | Consistent UI across all dashboard panes |
 | Source management | Done | Add URLs, view status |
 | Pipeline trigger | Done | From dashboard |
 
@@ -27,8 +31,8 @@ Last Updated: 2026-03-19
 |---|---|---|
 | Pipeline orchestrator | Done | 6-stage with job tracking |
 | Website scraping | Done | Native fetch, HTML→text |
-| LinkedIn scraping | Code done | Needs Apify key |
-| X/Twitter scraping | Code done | Needs Apify key |
+| LinkedIn scraping | Done | Apify integration wired in useYouAgent |
+| X/Twitter scraping | Done | Via scrape endpoint in useYouAgent |
 | LLM extraction | Done | OpenRouter, Claude Sonnet |
 | Voice analysis | Done | Author voice profile |
 | Topic mapping | Done | Expertise graph |

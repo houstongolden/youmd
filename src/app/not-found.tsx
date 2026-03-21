@@ -7,7 +7,7 @@ export default function NotFound() {
       <div className="w-full max-w-xl">
         <div
           className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
-          style={{ borderRadius: "8px" }}
+          style={{ borderRadius: "2px" }}
         >
           <TerminalHeader title="you.md — error" />
 

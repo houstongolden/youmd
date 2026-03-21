@@ -73,6 +73,27 @@ export const saveBundle = mutation({
   },
 });
 
+export const listRecentBundles = query({
+  args: { userId: v.id("users"), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const bundles = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    return bundles
+      .sort((a, b) => b.version - a.version)
+      .slice(0, args.limit ?? 10)
+      .map((b) => ({
+        _id: b._id,
+        version: b.version,
+        isPublished: b.isPublished,
+        createdAt: b.createdAt,
+        publishedAt: b.publishedAt,
+      }));
+  },
+});
+
 export const publishBundle = mutation({
   args: { bundleId: v.id("bundles") },
   handler: async (ctx, args) => {

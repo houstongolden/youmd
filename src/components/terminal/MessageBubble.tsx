@@ -4,9 +4,25 @@ import type { DisplayMessage } from "@/hooks/useYouAgent";
 
 export function MessageBubble({ message }: { message: DisplayMessage }) {
   if (message.role === "system-notice") {
+    const content = message.content;
+    const isUpdate = content.startsWith("[updated:") || content.startsWith("[saved") || content.startsWith("[published");
+    const isScraping = content.startsWith("[scraping:");
+    const isError = content.includes("failed") || content.includes("ERR");
+
     return (
-      <div className="px-3 py-1.5 text-xs font-mono text-[hsl(var(--accent-mid))] bg-[hsl(var(--accent-wash))] border border-[hsl(var(--accent))]/15 whitespace-pre-wrap" style={{ borderRadius: "2px" }}>
-        {message.content}
+      <div
+        className={`px-3 py-1.5 text-xs font-mono whitespace-pre-wrap ${
+          isUpdate
+            ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/5 border border-[hsl(var(--success))]/15"
+            : isScraping
+              ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent-wash))] border border-[hsl(var(--accent))]/15 animate-pulse"
+              : isError
+                ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/5 border border-[hsl(var(--accent))]/15"
+                : "text-[hsl(var(--accent-mid))] bg-[hsl(var(--accent-wash))] border border-[hsl(var(--accent))]/15"
+        }`}
+        style={{ borderRadius: "2px" }}
+      >
+        {content}
       </div>
     );
   }
@@ -17,19 +33,124 @@ export function MessageBubble({ message }: { message: DisplayMessage }) {
         <span className="text-[hsl(var(--accent))] font-mono text-xs mt-0.5 shrink-0 select-none">
           &gt;
         </span>
-        <p className="text-sm whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-primary))]">
+        <p className="text-[14px] font-mono whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-primary))]">
           {message.content}
         </p>
       </div>
     );
   }
 
-  // assistant
+  // assistant — terminal-style with mono font, left accent border
   return (
-    <div className="pl-3 border-l-2 border-[hsl(var(--accent))]/20">
-      <p className="text-sm whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-secondary))]">
-        {message.content}
-      </p>
+    <div className="pl-3 border-l-2 border-[hsl(var(--accent))]/25">
+      <div className="text-[14px] font-mono whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-secondary))]">
+        {renderTerminalContent(message.content)}
+      </div>
     </div>
+  );
+}
+
+/**
+ * Renders assistant message content with basic terminal-style formatting:
+ * - *text* becomes italic (emphasized)
+ * - **text** becomes accent-colored (bold highlights)
+ * - `code` becomes inline code styled
+ * - Lines starting with "- " get bullet styling
+ */
+function renderTerminalContent(content: string) {
+  const lines = content.split("\n");
+
+  return lines.map((line, i) => {
+    // Blank lines
+    if (!line.trim()) {
+      return <br key={i} />;
+    }
+
+    // Bullet points
+    if (line.match(/^\s*[-*]\s/)) {
+      const text = line.replace(/^\s*[-*]\s/, "");
+      return (
+        <div key={i} className="flex items-start gap-2 ml-1">
+          <span className="text-[hsl(var(--accent))] opacity-50 shrink-0 mt-px">{"\u203A"}</span>
+          <span>{formatInline(text)}</span>
+        </div>
+      );
+    }
+
+    return <div key={i}>{formatInline(line)}</div>;
+  });
+}
+
+/**
+ * Handles inline formatting: **bold** → accent, *italic* → dim italic, `code` → code style
+ */
+function formatInline(text: string) {
+  // Split by formatting markers
+  const parts: (string | { type: "bold" | "italic" | "code"; text: string })[] = [];
+  let remaining = text;
+
+  while (remaining.length > 0) {
+    // Match **bold**, *italic*, or `code`
+    const match = remaining.match(/(\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`)/) ;
+    if (!match || match.index === undefined) {
+      parts.push(remaining);
+      break;
+    }
+
+    // Text before the match
+    if (match.index > 0) {
+      parts.push(remaining.slice(0, match.index));
+    }
+
+    if (match[2]) {
+      // **bold**
+      parts.push({ type: "bold", text: match[2] });
+    } else if (match[3]) {
+      // *italic*
+      parts.push({ type: "italic", text: match[3] });
+    } else if (match[4]) {
+      // `code`
+      parts.push({ type: "code", text: match[4] });
+    }
+
+    remaining = remaining.slice(match.index + match[0].length);
+  }
+
+  if (parts.length === 1 && typeof parts[0] === "string") {
+    return <>{parts[0]}</>;
+  }
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (typeof part === "string") return <span key={i}>{part}</span>;
+        if (part.type === "bold") {
+          return (
+            <span key={i} className="text-[hsl(var(--text-primary))]">
+              {part.text}
+            </span>
+          );
+        }
+        if (part.type === "italic") {
+          return (
+            <span key={i} className="italic opacity-70">
+              {part.text}
+            </span>
+          );
+        }
+        if (part.type === "code") {
+          return (
+            <code
+              key={i}
+              className="px-1 py-0.5 text-[13px] bg-[hsl(var(--bg))]/50 text-[hsl(var(--accent-mid))] border border-[hsl(var(--border))]"
+              style={{ borderRadius: "2px" }}
+            >
+              {part.text}
+            </code>
+          );
+        }
+        return null;
+      })}
+    </>
   );
 }

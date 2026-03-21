@@ -1,41 +1,37 @@
 "use client";
 
-// TODO: Wire up real deploy history from Convex (e.g., api.bundles.listVersions)
-// Currently using mock/placeholder data
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
 
 interface PublishPaneProps {
   username: string;
+  userId?: Id<"users">;
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="text-[10px] font-mono text-[hsl(var(--accent))] uppercase tracking-widest mb-3">
-      &gt; {children}
-    </h3>
+function formatTime(ts: number | undefined): string {
+  if (!ts) return "never";
+  const d = new Date(ts);
+  const day = d.getDate();
+  const month = d.toLocaleString("en", { month: "short" });
+  const h = d.getHours().toString().padStart(2, "0");
+  const m = d.getMinutes().toString().padStart(2, "0");
+  return `${day} ${month} ${h}:${m}`;
+}
+
+export function PublishPane({ username, userId }: PublishPaneProps) {
+  const recentBundles = useQuery(
+    api.bundles.listRecentBundles,
+    userId ? { userId, limit: 8 } : "skip"
   );
-}
 
-function Divider() {
-  return <div className="h-px bg-[hsl(var(--border))] my-6" />;
-}
-
-export function PublishPane({ username }: PublishPaneProps) {
-  // TODO: Replace with real data from useQuery(api.bundles.getDeployHistory, ...)
-  const deploys = [
-    { version: "v47", time: "19 Mar 14:22", trigger: "auto -- linkedin sync", status: "live" },
-    { version: "v46", time: "19 Mar 09:15", trigger: "manual -- bio update", status: "archived" },
-    { version: "v45", time: "18 Mar 22:41", trigger: "auto -- github sync", status: "archived" },
-    { version: "v44", time: "18 Mar 16:03", trigger: "auto -- x/twitter sync", status: "archived" },
-    { version: "v43", time: "17 Mar 11:28", trigger: "manual -- portrait regen", status: "archived" },
-  ];
+  const liveBundle = recentBundles?.find((b) => b.isPublished);
+  const latestBundle = recentBundles?.[0];
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-6 py-3 border-b border-[hsl(var(--border))]">
-        <span className="text-xs font-mono text-[hsl(var(--text-secondary))]">
-          publish
-        </span>
-      </div>
+      <PaneHeader>publish</PaneHeader>
 
       <div className="px-6 py-6 space-y-0 max-w-xl">
         <SectionLabel>live status</SectionLabel>
@@ -44,18 +40,30 @@ export function PublishPane({ username }: PublishPaneProps) {
           style={{ borderRadius: "2px" }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <span
-              className="w-2 h-2 rounded-full status-dot-pulse"
-              style={{ background: "hsl(var(--success))" }}
-            />
-            <span className="font-mono text-[12px] text-[hsl(var(--success))]">LIVE</span>
+            {liveBundle ? (
+              <>
+                <span
+                  className="w-2 h-2 rounded-full status-dot-pulse"
+                  style={{ background: "hsl(var(--success))" }}
+                />
+                <span className="font-mono text-[12px] text-[hsl(var(--success))]">LIVE</span>
+              </>
+            ) : (
+              <>
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ background: "hsl(var(--text-secondary))", opacity: 0.3 }}
+                />
+                <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">DRAFT</span>
+              </>
+            )}
           </div>
           <div className="space-y-2">
             {[
               { label: "public url", value: `you.md/${username}`, accent: true },
-              { label: "last published", value: "2025-03-19 14:22:08 UTC", accent: false },
-              { label: "publish mode", value: "auto-publish on sync", accent: false },
-              { label: "version", value: "v47", accent: false },
+              { label: "last published", value: liveBundle?.publishedAt ? formatTime(liveBundle.publishedAt) : "never", accent: false },
+              { label: "publish mode", value: "auto-publish on update", accent: false },
+              { label: "version", value: liveBundle ? `v${liveBundle.version}` : latestBundle ? `v${latestBundle.version} (draft)` : "none", accent: false },
             ].map((r) => (
               <div key={r.label} className="flex items-center justify-between font-mono text-[11px]">
                 <span className="text-[hsl(var(--text-secondary))] opacity-60">{r.label}</span>
@@ -90,32 +98,33 @@ export function PublishPane({ username }: PublishPaneProps) {
 
         <Divider />
 
-        <SectionLabel>recent deploys</SectionLabel>
-        <div className="space-y-0">
-          {deploys.map((d) => (
-            <div
-              key={d.version}
-              className="flex items-center justify-between py-2.5 border-b border-[hsl(var(--border))] opacity-30 last:border-0"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="font-mono text-[11px] text-[hsl(var(--accent))] opacity-60 w-8 shrink-0">
-                  {d.version}
-                </span>
-                <span className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-70 truncate">
-                  {d.trigger}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 hidden sm:inline">
-                  {d.time}
-                </span>
-                <span className={`font-mono text-[10px] ${d.status === "live" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-30"}`}>
-                  {d.status}
+        <SectionLabel>version history</SectionLabel>
+        {recentBundles && recentBundles.length > 0 ? (
+          <div className="space-y-0">
+            {recentBundles.map((b) => (
+              <div
+                key={b._id}
+                className={`flex items-center justify-between py-2.5 border-b border-[hsl(var(--border))] last:border-0 ${b.isPublished ? "" : "opacity-40"}`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="font-mono text-[11px] text-[hsl(var(--accent))] opacity-60 w-8 shrink-0">
+                    v{b.version}
+                  </span>
+                  <span className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-70">
+                    {formatTime(b.createdAt)}
+                  </span>
+                </div>
+                <span className={`font-mono text-[10px] shrink-0 ${b.isPublished ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-30"}`}>
+                  {b.isPublished ? "live" : "archived"}
                 </span>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[hsl(var(--text-secondary))] opacity-30 font-mono text-[11px]">
+            no versions yet. talk to the agent to build your profile.
+          </p>
+        )}
 
         <Divider />
 
@@ -135,13 +144,7 @@ export function PublishPane({ username }: PublishPaneProps) {
               className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40 bg-[hsl(var(--bg))] px-3 py-2 overflow-x-auto"
               style={{ borderRadius: "2px" }}
             >
-              &gt; /publish --rollback v46
-            </div>
-            <div
-              className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40 bg-[hsl(var(--bg))] px-3 py-2 overflow-x-auto"
-              style={{ borderRadius: "2px" }}
-            >
-              &gt; set domain custom.example.com
+              &gt; /status
             </div>
           </div>
         </div>

@@ -1,22 +1,12 @@
 "use client";
 
+import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
+
 // TODO: Wire up real portrait data from Convex (e.g., api.portraits.getByUser)
 // Currently using placeholder ASCII art and mock settings
 
 interface PortraitPaneProps {
   username: string;
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="text-[10px] font-mono text-[hsl(var(--accent))] uppercase tracking-widest mb-3">
-      &gt; {children}
-    </h3>
-  );
-}
-
-function Divider() {
-  return <div className="h-px bg-[hsl(var(--border))] my-6" />;
 }
 
 const PLACEHOLDER_PORTRAIT = `                    \u2591\u2591\u2591\u2591\u2591\u2591\u2592\u2592\u2592\u2592\u2592\u2592\u2593\u2593\u2593\u2593\u2593\u2593\u2593\u2593\u2592\u2592\u2592\u2592\u2592\u2592\u2591\u2591\u2591\u2591\u2591\u2591
@@ -43,11 +33,7 @@ const PLACEHOLDER_PORTRAIT = `                    \u2591\u2591\u2591\u2591\u2591
 export function PortraitPane({ username }: PortraitPaneProps) {
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-6 py-3 border-b border-[hsl(var(--border))]">
-        <span className="text-xs font-mono text-[hsl(var(--text-secondary))]">
-          portrait
-        </span>
-      </div>
+      <PaneHeader>portrait</PaneHeader>
 
       <div className="px-6 py-6 space-y-0 max-w-xl">
         <SectionLabel>current portrait -- @{username}</SectionLabel>

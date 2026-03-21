@@ -49,7 +49,7 @@ export function ProfileContent() {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))] p-4">
         <div className="w-full max-w-md">
-          <div className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "8px" }}>
+          <div className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "2px" }}>
             <TerminalHeader title="you.md — error" />
             <div className="p-6 font-mono text-[14px] space-y-2">
               <p className="text-[hsl(var(--text-secondary))] opacity-60">
@@ -82,7 +82,7 @@ export function ProfileContent() {
     return (
       <div className="min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
         <header className="border-b border-[hsl(var(--border))]">
-          <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="max-w-2xl mx-auto px-4 md:pl-12 md:pr-6 py-4 flex items-center justify-between">
             <span className="font-mono text-sm text-[hsl(var(--text-secondary))]">
               you.md/{username}
             </span>
@@ -91,20 +91,26 @@ export function ProfileContent() {
             </Link>
           </div>
         </header>
-        <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-12 pb-16">
-          <div className="flex items-start gap-6">
+        <main className="flex-1 max-w-2xl mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             {profile.avatarUrl && (
-              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "4px" }}>
+              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "2px" }}>
                 <AsciiAvatar
                   src={profile.avatarUrl}
                   cols={60}
                   canvasWidth={120}
-                  className="block"
+                  className="hidden sm:block"
+                />
+                <AsciiAvatar
+                  src={profile.avatarUrl}
+                  cols={40}
+                  canvasWidth={80}
+                  className="block sm:hidden"
                 />
               </div>
             )}
-            <div className="min-w-0">
-              <h1 className="text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
+            <div className="min-w-0 text-center sm:text-left">
+              <h1 className="text-xl sm:text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
                 {profile.displayName || `@${username}`}
               </h1>
               {profile.displayName && (
@@ -114,7 +120,7 @@ export function ProfileContent() {
               )}
             </div>
           </div>
-          <div className="mt-8 border border-[hsl(var(--border))] p-5 bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "4px" }}>
+          <div className="mt-8 border border-[hsl(var(--border))] p-5 bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "2px" }}>
             <p className="text-[hsl(var(--text-secondary))] opacity-50 font-mono text-[13px]">
               this identity is being built. check back soon.
             </p>
@@ -170,7 +176,7 @@ export function ProfileContent() {
 
       {/* Header */}
       <header className="border-b border-[hsl(var(--border))]">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-4 md:pl-12 md:pr-6 py-4 flex items-center justify-between">
           <Link
             href={`/${username}`}
             className="font-mono text-sm text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] transition-colors"
@@ -186,23 +192,29 @@ export function ProfileContent() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-12 pb-16">
+      <main className="flex-1 max-w-2xl mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
         {/* Identity */}
-        <section className="mb-12">
-          <div className="flex items-start gap-6">
+        <section className="mb-8 md:mb-12">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             {/* ASCII Portrait */}
             {profile.avatarUrl && (
-              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "4px" }}>
+              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "2px" }}>
                 <AsciiAvatar
                   src={profile.avatarUrl}
                   cols={60}
                   canvasWidth={120}
-                  className="block"
+                  className="hidden sm:block"
+                />
+                <AsciiAvatar
+                  src={profile.avatarUrl}
+                  cols={40}
+                  canvasWidth={80}
+                  className="block sm:hidden"
                 />
               </div>
             )}
-            <div className="min-w-0">
-              <h1 className="text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
+            <div className="min-w-0 text-center sm:text-left">
+              <h1 className="text-xl sm:text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
                 {name}
               </h1>
               <p className="text-[hsl(var(--text-secondary))] opacity-50 text-xs font-mono mt-1">
@@ -224,7 +236,7 @@ export function ProfileContent() {
 
         {/* Bio */}
         {bio && (
-          <section className="mb-10">
+          <section className="mb-8 md:mb-10">
             <p className="text-[hsl(var(--text-secondary))] leading-relaxed text-[15px]">
               {bio}
             </p>
@@ -255,7 +267,7 @@ export function ProfileContent() {
                 <div
                   key={i}
                   className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))]"
-                  style={{ borderRadius: "4px" }}
+                  style={{ borderRadius: "2px" }}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -332,7 +344,7 @@ export function ProfileContent() {
                     <span className="text-[hsl(var(--text-secondary))] opacity-40 w-16">
                       {platform}
                     </span>
-                    <span className="text-[hsl(var(--accent-mid))] truncate">
+                    <span className="text-[hsl(var(--accent-mid))] truncate" title={url as string}>
                       {url as string}
                     </span>
                   </a>
@@ -347,7 +359,7 @@ export function ProfileContent() {
             <SectionLabel>agent preferences</SectionLabel>
             <div
               className="mt-3 border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] font-mono text-xs space-y-1.5"
-              style={{ borderRadius: "4px" }}
+              style={{ borderRadius: "2px" }}
             >
               {data.preferences.agent.tone && (
                 <div className="flex gap-2">
@@ -436,7 +448,7 @@ function LinkFavicon({ url }: { url: string }) {
   return (
     <img
       src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
-      alt=""
+      alt={`${domain} favicon`}
       width={16}
       height={16}
       className="shrink-0"

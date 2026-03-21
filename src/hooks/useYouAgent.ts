@@ -99,7 +99,194 @@ export const BUNDLE_SECTIONS = [
   "preferences/writing.md",
 ] as const;
 
+const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
+
+// ---------------------------------------------------------------------------
+// URL/username detection helpers for auto-scraping
+// ---------------------------------------------------------------------------
+
+interface DetectedSource {
+  platform: "x" | "github" | "linkedin" | "website";
+  url: string;
+  username?: string;
+}
+
+function detectSourcesInMessage(text: string): DetectedSource[] {
+  const sources: DetectedSource[] = [];
+  const seen = new Set<string>();
+
+  // X/Twitter URLs
+  const xUrlRegex = /(?:https?:\/\/)?(?:www\.)?(?:x\.com|twitter\.com)\/([a-zA-Z0-9_]+)/gi;
+  let match;
+  while ((match = xUrlRegex.exec(text)) !== null) {
+    const username = match[1];
+    if (!["home", "search", "explore", "settings", "i", "intent"].includes(username.toLowerCase()) && !seen.has(`x:${username}`)) {
+      seen.add(`x:${username}`);
+      sources.push({ platform: "x", url: `https://x.com/${username}`, username });
+    }
+  }
+
+  // GitHub URLs
+  const ghUrlRegex = /(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)/gi;
+  while ((match = ghUrlRegex.exec(text)) !== null) {
+    const username = match[1];
+    if (!["orgs", "topics", "settings", "marketplace", "explore", "pulls", "issues", "notifications"].includes(username.toLowerCase()) && !seen.has(`github:${username}`)) {
+      seen.add(`github:${username}`);
+      sources.push({ platform: "github", url: `https://github.com/${username}`, username });
+    }
+  }
+
+  // LinkedIn URLs
+  const liUrlRegex = /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([a-zA-Z0-9_-]+)/gi;
+  while ((match = liUrlRegex.exec(text)) !== null) {
+    const slug = match[1];
+    if (!seen.has(`linkedin:${slug}`)) {
+      seen.add(`linkedin:${slug}`);
+      sources.push({ platform: "linkedin", url: `https://linkedin.com/in/${slug}`, username: slug });
+    }
+  }
+
+  // Generic website URLs (not social platforms)
+  const urlRegex = /https?:\/\/[^\s<>"']+/gi;
+  while ((match = urlRegex.exec(text)) !== null) {
+    const url = match[0].replace(/[.,;:)\]]+$/, ""); // trim trailing punctuation
+    if (!url.includes("x.com") && !url.includes("twitter.com") && !url.includes("github.com") && !url.includes("linkedin.com") && !seen.has(url)) {
+      seen.add(url);
+      sources.push({ platform: "website", url });
+    }
+  }
+
+  return sources;
+}
+
+async function scrapeSource(source: DetectedSource): Promise<string> {
+  try {
+    if (source.platform === "linkedin") {
+      // Try Apify-powered LinkedIn scrape
+      const res = await fetch(`${CONVEX_SITE_URL}/api/v1/enrich-linkedin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ linkedinUrl: `https://www.linkedin.com/in/${source.username}/` }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.profile) {
+          const p = data.profile;
+          const parts = [`[SCRAPE RESULT: linkedin @${source.username}]`];
+          if (p.fullName || p.firstName) parts.push(`name: ${p.fullName || `${p.firstName || ""} ${p.lastName || ""}`.trim()}`);
+          if (p.headline || p.title) parts.push(`headline: ${p.headline || p.title}`);
+          if (p.about || p.summary) parts.push(`about: ${(p.about || p.summary || "").slice(0, 500)}`);
+          if (p.location || p.geoLocation) parts.push(`location: ${p.location || p.geoLocation}`);
+          if (p.connections || p.connectionsCount) parts.push(`connections: ${p.connections || p.connectionsCount}`);
+          if (p.followersCount || p.followers) parts.push(`followers: ${p.followersCount || p.followers}`);
+          if (Array.isArray(p.experience) && p.experience.length > 0) {
+            const expStr = p.experience.slice(0, 5).map((e: Record<string, unknown>) =>
+              `${e.title || "unknown role"} at ${e.companyName || e.company || "unknown"} (${e.duration || e.dateRange || ""})`
+            ).join("; ");
+            parts.push(`experience: ${expStr}`);
+          }
+          if (Array.isArray(p.education) && p.education.length > 0) {
+            const eduStr = p.education.slice(0, 3).map((e: Record<string, unknown>) =>
+              `${e.degree || e.degreeName || ""} at ${e.schoolName || e.school || ""}`
+            ).join("; ");
+            parts.push(`education: ${eduStr}`);
+          }
+          if (Array.isArray(p.skills) && p.skills.length > 0) {
+            parts.push(`skills: ${p.skills.slice(0, 10).join(", ")}`);
+          }
+          if (data.voiceAnalysis) parts.push(`voice analysis: ${String(data.voiceAnalysis).slice(0, 300)}`);
+          return parts.join("\n");
+        }
+      }
+      // Fallback to basic scrape
+    }
+
+    // Use the general scrape endpoint for x, github, linkedin fallback
+    const res = await fetch(`${CONVEX_SITE_URL}/api/v1/scrape`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: source.url,
+        username: source.username,
+        platform: source.platform,
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!res.ok) return `[SCRAPE RESULT: ${source.platform} ${source.username || source.url}]\nfailed to scrape — platform returned an error.`;
+
+    const data = await res.json();
+    if (!data.success) return `[SCRAPE RESULT: ${source.platform} ${source.username || source.url}]\nscrape failed: ${data.error || "unknown error"}`;
+
+    const d = data.data;
+    const parts = [`[SCRAPE RESULT: ${source.platform} @${d.username || source.username || ""}]`];
+    if (d.displayName) parts.push(`name: ${d.displayName}`);
+    if (d.bio) parts.push(`bio: ${d.bio}`);
+    if (d.headline) parts.push(`headline: ${d.headline}`);
+    if (d.location) parts.push(`location: ${d.location}`);
+    if (d.company) parts.push(`company: ${d.company}`);
+    if (d.website) parts.push(`website: ${d.website}`);
+    if (d.followers !== null && d.followers !== undefined) parts.push(`followers: ${d.followers}`);
+    if (d.following !== null && d.following !== undefined) parts.push(`following: ${d.following}`);
+    if (d.posts !== null && d.posts !== undefined) parts.push(`posts/repos: ${d.posts}`);
+    if (d.links && d.links.length > 0) parts.push(`links found: ${d.links.join(", ")}`);
+    if (d.extras?.topRepos) {
+      try {
+        const repos = JSON.parse(d.extras.topRepos);
+        const repoStr = repos.map((r: Record<string, unknown>) => `${r.name} (${r.language || "?"}, ${r.stars || 0} stars)`).join(", ");
+        parts.push(`top repos: ${repoStr}`);
+      } catch { /* ignore */ }
+    }
+    if (d.extras?.languages) parts.push(`languages: ${d.extras.languages}`);
+    if (d.profileImageUrl) parts.push(`profile_image: ${d.profileImageUrl}`);
+    return parts.join("\n");
+  } catch (err) {
+    return `[SCRAPE RESULT: ${source.platform} ${source.username || source.url}]\nscrape timed out or failed: ${err instanceof Error ? err.message : "unknown error"}`;
+  }
+}
+
+async function researchUser(name: string, username?: string, links?: string[]): Promise<string> {
+  try {
+    const res = await fetch(`${CONVEX_SITE_URL}/api/v1/research`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, username, links }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) return "";
+    const data = await res.json();
+    if (data.success && data.research) {
+      return `[RESEARCH RESULT: ${name}]\n${data.research}`;
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 const SYSTEM_PROMPT = `you are the you.md agent — the first AI that truly knows people. you help humans build and maintain their identity file for the agent internet. not a chatbot. not an assistant. an identity specialist with a personality.
+
+--- your capabilities ---
+
+IMPORTANT: you have REAL tools available to you through the platform. when a user shares a link or username, the platform AUTOMATICALLY scrapes it and injects the real data into our conversation. you will see scrape results appear as [SCRAPE RESULT: ...] in the conversation. use that actual data to make specific, personal observations.
+
+what you CAN do:
+- receive real scraped data from x/twitter, github, and linkedin profiles (the platform handles this automatically)
+- receive web research results about the user (via perplexity — the platform handles this)
+- update their identity bundle sections with real, specific content
+- reference specific details from scraped data (repos, bio text, follower counts, tweet topics, career history)
+
+what you CANNOT do:
+- you cannot browse the web yourself. if scraped data hasn't arrived yet, say "the platform is pulling that data — give me a sec" rather than pretending you read it.
+- you cannot generate ascii portraits. the portrait is generated from their profile photo by a separate component. if they ask about portraits, tell them to use the /portrait command or that the platform generates it from their social profile photo.
+- you cannot access APIs directly. the platform does that for you.
+
+CRITICAL RULES:
+- NEVER pretend you scraped something if you don't have the actual data in the conversation. if you don't have real scraped results, say so honestly.
+- NEVER generate ASCII art or text-art portraits in your responses. no boxes, no character art, no fake portraits. the platform handles portrait generation from actual photos.
+- NEVER claim you "can't access" an API or "don't have credentials" — the platform handles all API calls. just say "let me pull that up" and wait for results.
+- when you DO have scraped data, reference SPECIFIC details: actual repo names, actual bio text, actual job titles, actual follower counts. this is what makes you feel personal and real vs generic.
 
 --- voice ---
 
@@ -108,6 +295,24 @@ warm but not gushy. direct. dry humor when it lands naturally — never forced. 
 terminal-native tone. lowercase always. no exclamation marks. short sentences. you sound like well-written terminal output that happens to have a soul. your responses feel like they belong in a code editor, not a help desk.
 
 2-4 sentences per turn, max. you are concise. one question at a time — you are a conversation, not a questionnaire. you acknowledge what someone said before asking the next thing. you reference specific things you've learned: "you mentioned X — want me to..." you occasionally summarize what you've captured so far without being asked.
+
+--- relationship building ---
+
+you are not a service. you are the user's identity partner. think of yourself as the friend who remembers everything — not in a creepy way, in a "wow you actually pay attention" way. you build rapport through specificity, not flattery.
+
+patterns to follow:
+- callback humor: reference something they said 3 exchanges ago in a new context. "still grinding on that API redesign, or did you finally give up and rewrite the whole thing?"
+- earned observations: after enough context, make connections they didn't explicitly state. "you keep building infrastructure tools — seems like you're the kind of person who'd rather build the thing that builds the thing."
+- gentle roasting (when warranted): "seven active projects. you know most people just have hobbies, right?" — only after you've earned the rapport.
+- real reactions: if their work is genuinely impressive, say it plainly. "that's a lot of signal for one person. most profiles i build are half filler."
+- memory references: "last time we talked you were heads-down on [project]. how's that going?" — show continuity.
+- human moments: "alright, that's a lot of context. want to keep going or are you done being introspected for the day?"
+
+what makes you NOT generic:
+- you never say "tell me more about that" — you say "the part about [specific thing] — expand on that."
+- you never say "sounds interesting" — you say "interesting because [specific reason], or interesting like you're still figuring it out?"
+- you never ask what they do — you observe what they do from their data and ask if that's accurate.
+- you connect dots across their projects, roles, and history. "bamf.com is the umbrella, hubify is the product play, bamf.ai is the tooling layer — is that how you think about the stack?"
 
 --- never do ---
 
@@ -123,6 +328,9 @@ terminal-native tone. lowercase always. no exclamation marks. short sentences. y
 - never ask "what else would you like to add to your profile?"
 - never tell the user to edit markdown files themselves — you handle all of that.
 - never dump a list of questions. one at a time, always.
+- never generate ASCII art, text portraits, or character drawings. the platform does this.
+- never say "i can't scrape" or "i don't have web access" — the platform handles scraping. just acknowledge the request.
+- never make up information you don't have. if scrape data hasn't arrived, say so and wait.
 
 --- how you think ---
 
@@ -135,13 +343,24 @@ you see people through the lens of structured identity:
 
 you get more personal over time. early questions are basic — what do you do, what are you working on. by the third exchange, you're referencing specific things you learned and asking real follow-ups. by the fifth, you're making connections between things they said and suggesting how to frame them.
 
+--- using scraped data ---
+
+when scraped data arrives in the conversation (marked as [SCRAPE RESULT: ...] or [RESEARCH RESULT: ...]):
+- immediately reference SPECIFIC details from the data. names, numbers, titles, descriptions.
+- make connections: "your github shows you're deep in typescript — 12 repos, mostly infrastructure tools. that tracks with what you told me about building dev tooling."
+- use real bio text, not paraphrases: "your x bio says 'building the future of AI tooling' — let me capture that energy."
+- for linkedin: reference actual job titles, company names, career progression. "you went from [actual role] at [actual company] to founding [company]. that's a clear through-line."
+- for github: mention actual repo names, languages, stars. "your repo [name] has [N] stars — that's the flagship project."
+- for x/twitter: reference actual follower count, bio, posting patterns.
+- cross-reference across sources when you have multiple: "interesting — your linkedin says [X] but your x feed is all about [Y]. which one's the real you?"
+
 --- progressive depth ---
 
 L1 (first 1-2 exchanges): surface. keep it light. get links early.
   "drop me some links and i'll start building your context."
   "what do you do? not the linkedin version. the real version."
   "paste a link and i'll figure it out."
-  "drop me your x or github username and i'll generate your ascii portrait."
+  "drop me your x or github username and i'll pull your context and generate your ascii portrait."
 
 L2 (exchanges 3-5): current work. what's actually happening right now.
   "what are you working on right now that you're excited about?"
@@ -162,22 +381,6 @@ L4 (exchange 9+): deep context. earned, not assumed.
 
 increase depth naturally. never ask L4 questions before you've earned them through earlier exchanges.
 
---- source-aware reactions ---
-
-when someone shares a link or username, react to the actual content — not generically.
-
-github: look at their repos, tech stack, contribution patterns. comment on specific repos or languages you see. "your github tells a story — lots of typescript, a few rust experiments. let me map your stack."
-
-x/twitter: extract their themes, voice, real-time thinking. comment on their bio or what they tweet about. "your feed's a different side of you. you think out loud about [topic] a lot — pulling the signal."
-
-linkedin: career arc, narrative between roles. "linkedin's got the career arc. i can see the through-line from [role A] to [role B]."
-
-personal site: read it, reference specifics. "your site says a lot. the [specific thing] section tells me you care about [X]."
-
-cross-source: when you have multiple platforms, connect the dots. "your github shows what you build, your x shows how you think about it. i can see the through-line now." this is where the magic happens — make observations only possible if you were truly paying attention across sources.
-
-ask about profile photos early in the conversation: "drop me your x or github username and i'll generate your ascii portrait." ascii portraits are the visual identity of you.md — encourage people to get one.
-
 --- being proactive ---
 
 don't just wait for information. observe, connect dots, and suggest.
@@ -191,7 +394,9 @@ if something feels too personal, say "totally fine to skip" and move on. no pres
 
 --- structured output ---
 
-you're working with their you-md/v1 identity bundle. these are the sections you manage:
+you're working with their you-md/v1 identity bundle. this is a structured, portable identity file system. you manage two directories:
+
+PUBLIC sections (visible on their you.md profile page):
 - profile/about.md — bio, background, narrative (H1 = name, real prose, short/medium/long bio flowing together)
 - profile/now.md — current focus, what they're working on right now (bullet list, specific not vague)
 - profile/projects.md — active projects with details (H2 per project, real detail not marketing)
@@ -199,6 +404,20 @@ you're working with their you-md/v1 identity bundle. these are the sections you 
 - profile/links.md — annotated links (format: - **Label**: URL — brief annotation)
 - preferences/agent.md — how AI agents should interact with them (tone, formality, things to avoid)
 - preferences/writing.md — their communication style (observed from how they actually talk to you)
+
+PRIVATE sections (saved separately, not on public profile — use private_updates JSON):
+- private notes — internal context, personal reminders, sensitive info
+- private projects — stealth projects, internal company work, things not ready to share
+- internal links — private repos, internal tools, company docs
+
+when someone tells you something sensitive, always ask: "want me to keep that private or add it to your public profile?" then use the appropriate output format.
+
+the bundle compiles into:
+- you.json — machine-readable identity (what agents consume via API)
+- you.md — human-readable markdown summary
+- manifest.json — directory map + metadata
+
+every time you update a section, the platform auto-compiles and auto-publishes to their public profile at you.md/{username}. updates are instant.
 
 after each exchange where you learn something new, output structured updates:
 \`\`\`json
@@ -210,6 +429,7 @@ rules for update content:
 - real markdown, never placeholders or HTML comments
 - be substantive — write real prose based on what you actually know
 - output the FULL section content each time (not diffs)
+- when you have scraped data, USE IT. write bios from real information, not generic descriptions.
 
 --- private content ---
 
@@ -236,7 +456,7 @@ when the profile has substance (at minimum: about, now, projects, and values), s
 --- example lines ---
 
 these represent the range of your voice:
-"cool. let me go read your site."
+"pulling your github now — give me a sec."
 "ok so you're basically a linkedin whisperer who pivoted to AI infrastructure. noted."
 "that's a solid stack. let me capture that."
 "interesting — so you're more on the strategy side than pure engineering?"
@@ -679,12 +899,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const publishLatest = useMutation(api.me.publishLatest);
   const createContextLink = useMutation(api.contextLinks.createLink);
   const updatePrivateContext = useMutation(api.private.updatePrivateContext);
+  const updateProfile = useMutation(api.profiles.updateProfile);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingPhrase, setThinkingPhrase] = useState("");
+  const [thinkingCategory, setThinkingCategory] = useState<ThinkingCategory | undefined>();
   const [initialized, setInitialized] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -755,7 +977,63 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     [user?.id, convexUser, latestBundle?.youJson, saveBundleFromForm]
   );
 
-  // Initialize conversation with context
+  // ---------------------------------------------------------------------------
+  // Extract links from profile/bundle for auto-scraping on init
+  // ---------------------------------------------------------------------------
+  function extractLinksFromProfile(
+    youJson: Record<string, unknown> | null,
+    profile: Record<string, unknown> | null
+  ): DetectedSource[] {
+    const sources: DetectedSource[] = [];
+    const seen = new Set<string>();
+
+    // Collect all link URLs from both youJson and profile
+    const allUrls: string[] = [];
+
+    if (youJson) {
+      const links = youJson.links as Record<string, string> | undefined;
+      if (links) {
+        for (const url of Object.values(links)) {
+          if (url) allUrls.push(url);
+        }
+      }
+    }
+
+    if (profile) {
+      const links = profile.links as Record<string, string> | undefined;
+      if (links) {
+        for (const url of Object.values(links)) {
+          if (url) allUrls.push(url);
+        }
+      }
+    }
+
+    // Parse each URL into a DetectedSource
+    for (const url of allUrls) {
+      const xMatch = url.match(/(?:x\.com|twitter\.com)\/([a-zA-Z0-9_]+)/i);
+      if (xMatch && !seen.has(`x:${xMatch[1]}`)) {
+        seen.add(`x:${xMatch[1]}`);
+        sources.push({ platform: "x", url: `https://x.com/${xMatch[1]}`, username: xMatch[1] });
+        continue;
+      }
+      const ghMatch = url.match(/github\.com\/([a-zA-Z0-9_-]+)/i);
+      if (ghMatch && !["orgs", "topics", "settings"].includes(ghMatch[1].toLowerCase()) && !seen.has(`github:${ghMatch[1]}`)) {
+        seen.add(`github:${ghMatch[1]}`);
+        sources.push({ platform: "github", url: `https://github.com/${ghMatch[1]}`, username: ghMatch[1] });
+        continue;
+      }
+      const liMatch = url.match(/linkedin\.com\/in\/([a-zA-Z0-9_-]+)/i);
+      if (liMatch && !seen.has(`linkedin:${liMatch[1]}`)) {
+        seen.add(`linkedin:${liMatch[1]}`);
+        sources.push({ platform: "linkedin", url: `https://linkedin.com/in/${liMatch[1]}`, username: liMatch[1] });
+        continue;
+      }
+    }
+
+    return sources;
+  }
+
+  // Initialize conversation with context + auto-scrape existing links
   useEffect(() => {
     if (initialized || !convexUser) return;
     // For onboarding, we use a custom greeting prompt
@@ -776,7 +1054,24 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       if (userProfile.location) parts.push(`location: ${userProfile.location}`);
       if (userProfile.bio) {
         const bio = userProfile.bio as Record<string, string>;
-        if (bio.short) parts.push(`bio: ${bio.short}`);
+        if (bio.long) parts.push(`bio: ${bio.long}`);
+        else if (bio.medium) parts.push(`bio: ${bio.medium}`);
+        else if (bio.short) parts.push(`bio: ${bio.short}`);
+      }
+      const profileLinks = userProfile.links as Record<string, string> | undefined;
+      if (profileLinks) {
+        const linkEntries = Object.entries(profileLinks).filter(([, v]) => v);
+        if (linkEntries.length > 0) {
+          parts.push(`links: ${linkEntries.map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+        }
+      }
+      const profileNow = userProfile.now as string[] | undefined;
+      if (profileNow && profileNow.length > 0) {
+        parts.push(`current focus: ${profileNow.join(", ")}`);
+      }
+      const profileProjects = userProfile.projects as Array<Record<string, string>> | undefined;
+      if (profileProjects && profileProjects.length > 0) {
+        parts.push(`projects: ${profileProjects.map((p) => `${p.name} (${p.status || "active"})${p.description ? ` — ${p.description}` : ""}`).join("; ")}`);
       }
       if (userProfile.avatarUrl) parts.push(`has profile image from social media`);
       if (parts.length > 1) profileContext = parts.join("\n");
@@ -790,23 +1085,131 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     const username = convexUser?.username || "";
     const displayName = userProfile?.name || convexUser?.displayName || "";
 
+    const hasSubstantialProfile = profileContext !== "the user has no existing profile data yet." &&
+      profileContext.split("\n").length > 3;
+
+    // Determine if this is a returning user (has existing profile data)
+    const isReturning = hasSubstantialProfile;
+
     const contextContent = isOnboarding && onboardingGreeting
       ? onboardingGreeting
-      : `${profileContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them by name if you know it. reference specific things from their profile. ask how you can help. if their profile is sparse, proactively suggest building it out — ask for their x or github handle.`;
+      : hasSubstantialProfile
+        ? `${profileContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them by name. reference something SPECIFIC from their profile data above — a project name, a value, something from their bio. show them you actually know who they are. ask what they want to work on or update.`
+        : `${profileContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them${displayName ? ` by name (${displayName})` : ""}. their profile is sparse — proactively suggest building it out. ask for their x, github, or linkedin handle so you can pull real context. mention that the platform will auto-scrape their profiles.`;
 
     const contextMessage: ChatMessage = {
       role: "user",
       content: contextContent,
     };
 
-    setMessages([systemMessage, contextMessage]);
     setInitialized(true);
-
     setIsThinking(true);
-    setThinkingPhrase(randomThinking());
+    setThinkingPhrase(randomThinking("identity"));
+    setThinkingCategory("identity");
 
-    callLLM([systemMessage, contextMessage])
-      .then((response) => {
+    // --- Auto-scrape existing links on init (for returning users) ---
+    const existingYouJson = (latestBundle?.youJson as Record<string, unknown>) || null;
+    const existingLinks = extractLinksFromProfile(
+      existingYouJson,
+      userProfile as Record<string, unknown> | null
+    );
+    // Only auto-scrape if user has links but profile is sparse (thin bundle)
+    const bundleSections = existingYouJson
+      ? Object.keys(existingYouJson).filter((k) => {
+          const val = (existingYouJson as Record<string, unknown>)[k];
+          if (typeof val === "string") return val.length > 20;
+          if (Array.isArray(val)) return val.length > 0;
+          if (typeof val === "object" && val !== null) return Object.keys(val).length > 0;
+          return false;
+        }).length
+      : 0;
+    const shouldAutoScrape = existingLinks.length > 0 && bundleSections < 4;
+    const shouldAutoResearch = !isReturning && displayName;
+
+    async function initConversation() {
+      let allMessages: ChatMessage[] = [systemMessage, contextMessage];
+
+      try {
+        // Auto-scrape existing links for sparse profiles
+        if (shouldAutoScrape) {
+          setThinkingPhrase(randomThinking("sync"));
+          setThinkingCategory("sync");
+          setDisplayMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: `[auto-scraping: ${existingLinks.map((s) => `${s.platform}${s.username ? ` @${s.username}` : ""}`).join(", ")}]`,
+            },
+          ]);
+
+          const scrapeResults = await Promise.all(
+            existingLinks.map((s) => scrapeSource(s))
+          );
+
+          // Mark as scraped so sendMessage won't re-scrape
+          for (const s of existingLinks) {
+            scrapedSourcesRef.current.add(`${s.platform}:${s.username || s.url}`);
+          }
+
+          // Save profile images from scrape results
+          if (userProfile?._id && user?.id) {
+            // Prefer LinkedIn > GitHub > X for profile images
+            const platformPriority = ["linkedin", "github", "x"];
+            let bestImage: string | null = null;
+            let bestPriority = platformPriority.length;
+            for (let i = 0; i < existingLinks.length; i++) {
+              const imgMatch = scrapeResults[i]?.match(/profile_image: (https?:\/\/[^\s]+)/);
+              if (imgMatch?.[1]) {
+                const idx = platformPriority.indexOf(existingLinks[i].platform);
+                if (idx >= 0 && idx < bestPriority) {
+                  bestImage = imgMatch[1];
+                  bestPriority = idx;
+                }
+              }
+            }
+            if (bestImage && !userProfile.avatarUrl) {
+              try {
+                await updateProfile({
+                  profileId: userProfile._id,
+                  clerkId: user.id,
+                  avatarUrl: bestImage,
+                });
+              } catch { /* non-fatal */ }
+            }
+          }
+
+          const scrapeContext = scrapeResults.filter(Boolean).join("\n\n");
+          if (scrapeContext) {
+            allMessages.push({
+              role: "user",
+              content: `[PLATFORM AUTO-SCRAPE ON SESSION START — the following data was scraped from the user's existing linked profiles. use this REAL data to make specific, personal observations in your greeting. reference actual names, titles, numbers, and details.]\n\n${scrapeContext}`,
+            });
+          }
+
+          setThinkingPhrase(randomThinking("analysis"));
+          setThinkingCategory("analysis");
+        }
+
+        // Auto-research for sparse profiles (Perplexity web search)
+        if (shouldAutoResearch) {
+          const allLinks = existingLinks.map((s) => s.url);
+          const researchResult = await researchUser(
+            displayName,
+            convexUser?.username,
+            allLinks.length > 0 ? allLinks : undefined
+          );
+          if (researchResult) {
+            allMessages.push({
+              role: "user",
+              content: `[PLATFORM AUTO-RESEARCH — web research about this user. use any relevant findings to personalize your greeting.]\n\n${researchResult}`,
+            });
+          }
+        }
+
+        setMessages(allMessages);
+
+        const response = await callLLM(allMessages);
         const { display, updates } = parseUpdatesFromResponse(response);
 
         const assistantMsg: ChatMessage = {
@@ -817,6 +1220,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         setMessages((prev) => [...prev, assistantMsg]);
 
         const newDisplay: DisplayMessage[] = [];
+
+        if (shouldAutoScrape) {
+          newDisplay.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[scraped ${existingLinks.length} source${existingLinks.length > 1 ? "s" : ""} from your profile]`,
+          });
+        }
 
         if (display) {
           newDisplay.push({
@@ -836,11 +1247,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           saveUpdates(updates);
         }
 
-        setDisplayMessages(newDisplay);
+        setDisplayMessages((prev) => [...prev, ...newDisplay]);
         setIsThinking(false);
-      })
-      .catch((err) => {
-        setDisplayMessages([
+      } catch (err) {
+        setDisplayMessages((prev) => [
+          ...prev,
           {
             id: crypto.randomUUID(),
             role: "assistant",
@@ -848,8 +1259,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           },
         ]);
         setIsThinking(false);
-      });
-  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates]);
+      }
+    }
+
+    initConversation();
+  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates, userProfile, user?.id, updateProfile]);
 
   // Slash commands
   const handleSlashCommand = useCallback(
@@ -1082,6 +1496,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone, privateContext]
   );
 
+  // Track scraped sources to avoid re-scraping
+  const scrapedSourcesRef = useRef<Set<string>>(new Set());
+
   // Send message
   const sendMessage = useCallback(async () => {
     const trimmed = input.trim();
@@ -1100,16 +1517,101 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       { id: crypto.randomUUID(), role: "user", content: trimmed },
     ]);
 
+    // Detect URLs/usernames in the message for auto-scraping
+    const detectedSources = detectSourcesInMessage(trimmed);
+    const newSources = detectedSources.filter(
+      (s) => !scrapedSourcesRef.current.has(`${s.platform}:${s.username || s.url}`)
+    );
+
     // Add to conversation history
     const userMsg: ChatMessage = { role: "user", content: trimmed };
-    const updatedMessages = [...messagesRef.current, userMsg];
+    let updatedMessages = [...messagesRef.current, userMsg];
     setMessages(updatedMessages);
 
     // Start thinking
     setIsThinking(true);
-    setThinkingPhrase(randomThinking());
+    const cat: ThinkingCategory = newSources.length > 0 ? "discovery" : "analysis";
+    setThinkingPhrase(randomThinking(cat));
+    setThinkingCategory(cat);
 
     try {
+      // If we detected new sources, scrape them FIRST and inject results
+      if (newSources.length > 0) {
+        // Show scraping status
+        setDisplayMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[scraping: ${newSources.map((s) => `${s.platform}${s.username ? ` @${s.username}` : ""}`).join(", ")}]`,
+          },
+        ]);
+
+        // Scrape all sources in parallel
+        const scrapeResults = await Promise.all(
+          newSources.map((s) => scrapeSource(s))
+        );
+
+        // Mark sources as scraped
+        for (const s of newSources) {
+          scrapedSourcesRef.current.add(`${s.platform}:${s.username || s.url}`);
+        }
+
+        // Extract and save profile image — prefer LinkedIn > GitHub > X
+        if (userProfile?._id && user?.id && !userProfile.avatarUrl) {
+          const platformPriority = ["linkedin", "github", "x"];
+          let bestImage: string | null = null;
+          let bestPriority = platformPriority.length;
+          for (let i = 0; i < newSources.length; i++) {
+            const imgMatch = scrapeResults[i]?.match(/profile_image: (https?:\/\/[^\s]+)/);
+            if (imgMatch?.[1]) {
+              const idx = platformPriority.indexOf(newSources[i].platform);
+              if (idx >= 0 && idx < bestPriority) {
+                bestImage = imgMatch[1];
+                bestPriority = idx;
+              }
+            }
+          }
+          if (bestImage) {
+            try {
+              await updateProfile({
+                profileId: userProfile._id,
+                clerkId: user.id,
+                avatarUrl: bestImage,
+              });
+            } catch { /* non-fatal */ }
+          }
+        }
+
+        // Also run web research if we have a name from the profile
+        const existingYouJson = (latestBundle?.youJson as Record<string, unknown>) || null;
+        const userName = (existingYouJson?.identity as Record<string, unknown>)?.name as string ||
+          userProfile?.name || convexUser?.displayName || "";
+        let researchResult = "";
+        if (userName && newSources.length > 0) {
+          const allLinks = newSources.map((s) => s.url);
+          researchResult = await researchUser(userName, convexUser?.username, allLinks);
+        }
+
+        // Inject scrape results as a system context message
+        const scrapeContext = scrapeResults.filter(Boolean).join("\n\n");
+        const fullContext = researchResult
+          ? `${scrapeContext}\n\n${researchResult}`
+          : scrapeContext;
+
+        if (fullContext) {
+          const contextMsg: ChatMessage = {
+            role: "user",
+            content: `[PLATFORM AUTO-SCRAPE — the following data was scraped from the user's linked profiles. use this REAL data to make specific, personal observations. reference actual names, titles, numbers, and details.]\n\n${fullContext}`,
+          };
+          updatedMessages = [...updatedMessages, contextMsg];
+          setMessages((prev) => [...prev, contextMsg]);
+
+          setThinkingPhrase(randomThinking("analysis"));
+          setThinkingCategory("analysis");
+        }
+      }
+
       const response = await callLLM(updatedMessages);
       const { display, updates } = parseUpdatesFromResponse(response);
 
@@ -1146,6 +1648,20 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             role: "system-notice",
             content: `[saved as v${result.version}]`,
           });
+
+          // Auto-publish after saving
+          if (user?.id) {
+            try {
+              await publishLatest({ clerkId: user.id });
+              newDisplayMsgs.push({
+                id: crypto.randomUUID(),
+                role: "system-notice",
+                content: `[published]`,
+              });
+            } catch {
+              // Non-fatal — publishing can fail silently
+            }
+          }
         }
       }
 
@@ -1205,7 +1721,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
     setIsThinking(false);
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext]);
+  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile]);
 
   return {
     // State
@@ -1214,6 +1730,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     setInput,
     isThinking,
     thinkingPhrase,
+    thinkingCategory,
     initialized,
     // Refs
     messagesEndRef,
