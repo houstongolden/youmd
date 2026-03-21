@@ -91,7 +91,8 @@ export function TerminalAuthInput({
       <button
         type="button"
         onClick={() => { if (value.trim()) { onSubmit(value.trim()); setValue(""); } }}
-        className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform"
+        className="shrink-0 px-2 h-7 flex items-center justify-center bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform"
+        style={{ borderRadius: "3px" }}
         aria-label="Submit"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
