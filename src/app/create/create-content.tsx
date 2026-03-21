@@ -12,8 +12,9 @@ import { ConvexProvider, useMutation as useConvexMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 
 // Standalone Convex client WITHOUT Clerk — for unauthenticated mutations
+const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL || "https://kindly-cassowary-600.convex.cloud";
 const publicConvex = typeof window !== "undefined"
-  ? new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+  ? new ConvexReactClient(CONVEX_URL)
   : null;
 
 type Phase = "boot" | "username" | "name" | "social" | "portrait" | "creating" | "done" | "error";
@@ -448,7 +449,14 @@ function CreateContentInner() {
       // Redirect to sign-up so they can claim immediately
       setTimeout(() => router.push("/sign-up"), 2500);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "failed to create profile";
+      console.error("createProfile error:", err);
+      // Extract the actual error from Convex's wrapper
+      let msg = "failed to create profile";
+      if (err instanceof Error) {
+        // Convex errors often have the real message after "Uncaught Error: "
+        const match = err.message.match(/Uncaught Error: (.+?)(?:\n|$)/);
+        msg = match ? match[1] : err.message;
+      }
       addLine(
         <span className="text-[hsl(var(--accent))]">ERR: {msg}</span>
       );
