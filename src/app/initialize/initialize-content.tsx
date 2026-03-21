@@ -213,7 +213,7 @@ export function InitializeContent() {
         <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4">
           <div
             className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
-            style={{ borderRadius: "8px" }}
+            style={{ borderRadius: "2px" }}
           >
             <TerminalHeader title="you.md — initialize" />
             <div
@@ -297,7 +297,7 @@ instructions for this greeting:
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4">
         <div
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
-          style={{ borderRadius: "8px" }}
+          style={{ borderRadius: "2px" }}
         >
           <TerminalHeader title="you.md — agent" />
 

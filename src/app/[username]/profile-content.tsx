@@ -49,7 +49,7 @@ export function ProfileContent() {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))] p-4">
         <div className="w-full max-w-md">
-          <div className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "8px" }}>
+          <div className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "2px" }}>
             <TerminalHeader title="you.md — error" />
             <div className="p-6 font-mono text-[14px] space-y-2">
               <p className="text-[hsl(var(--text-secondary))] opacity-60">
@@ -94,7 +94,7 @@ export function ProfileContent() {
         <main className="flex-1 max-w-2xl mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             {profile.avatarUrl && (
-              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "4px" }}>
+              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "2px" }}>
                 <AsciiAvatar
                   src={profile.avatarUrl}
                   cols={60}
@@ -120,7 +120,7 @@ export function ProfileContent() {
               )}
             </div>
           </div>
-          <div className="mt-8 border border-[hsl(var(--border))] p-5 bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "4px" }}>
+          <div className="mt-8 border border-[hsl(var(--border))] p-5 bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "2px" }}>
             <p className="text-[hsl(var(--text-secondary))] opacity-50 font-mono text-[13px]">
               this identity is being built. check back soon.
             </p>
@@ -198,7 +198,7 @@ export function ProfileContent() {
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             {/* ASCII Portrait */}
             {profile.avatarUrl && (
-              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "4px" }}>
+              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "2px" }}>
                 <AsciiAvatar
                   src={profile.avatarUrl}
                   cols={60}
@@ -267,7 +267,7 @@ export function ProfileContent() {
                 <div
                   key={i}
                   className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))]"
-                  style={{ borderRadius: "4px" }}
+                  style={{ borderRadius: "2px" }}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -359,7 +359,7 @@ export function ProfileContent() {
             <SectionLabel>agent preferences</SectionLabel>
             <div
               className="mt-3 border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] font-mono text-xs space-y-1.5"
-              style={{ borderRadius: "4px" }}
+              style={{ borderRadius: "2px" }}
             >
               {data.preferences.agent.tone && (
                 <div className="flex gap-2">

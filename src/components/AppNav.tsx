@@ -71,7 +71,7 @@ export function AppNav() {
       <button
         onClick={() => setOpen(!open)}
         className="fixed top-3 left-3 z-[60] flex items-center justify-center w-8 h-8 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-        style={{ borderRadius: "4px" }}
+        style={{ borderRadius: "2px" }}
         aria-label="Toggle navigation"
       >
         {open ? (
@@ -102,7 +102,7 @@ export function AppNav() {
             {avatarUrl ? (
               <div
                 className="shrink-0 w-10 h-10 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] overflow-hidden"
-                style={{ borderRadius: "4px" }}
+                style={{ borderRadius: "2px" }}
               >
                 <AsciiAvatar
                   src={avatarUrl}
@@ -114,7 +114,7 @@ export function AppNav() {
             ) : (
               <div
                 className="shrink-0 w-10 h-10 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center"
-                style={{ borderRadius: "4px" }}
+                style={{ borderRadius: "2px" }}
               >
                 <span className="font-mono text-[14px] text-[hsl(var(--accent))]">
                   {username[0]}
