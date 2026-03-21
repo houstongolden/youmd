@@ -14,7 +14,7 @@ async function callConvexMutation(name: string, args: Record<string, unknown>) {
   const res = await fetch(`${CONVEX_URL}/api/mutation`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: name, args }),
+    body: JSON.stringify({ path: name, args, format: "json" }),
   });
   const data = await res.json();
   if (data.status === "error") {
