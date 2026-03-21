@@ -34,24 +34,41 @@ export const getPublicProfile = query({
       .withIndex("by_username", (q) => q.eq("username", uname))
       .first();
 
-    if (profile && profile.youJson) {
+    // Try to find the user and their published bundle
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_username", (q) => q.eq("username", uname))
+      .first();
+
+    let publishedBundle = null;
+    if (user) {
+      const bundles = await ctx.db
+        .query("bundles")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect();
+
+      publishedBundle = bundles
+        .filter((b) => b.isPublished)
+        .sort((a, b) => b.version - a.version)[0] ?? null;
+    }
+
+    // Prefer the published bundle's youJson (most authoritative),
+    // fall back to profiles table youJson, then null
+    const youJson = publishedBundle?.youJson ?? profile?.youJson ?? null;
+    const youMd = publishedBundle?.youMd ?? profile?.youMd ?? null;
+
+    if (profile && youJson) {
       return {
         source: "profiles" as const,
         username: profile.username,
         displayName: profile.name,
         avatarUrl: profile.avatarUrl,
-        youJson: profile.youJson,
-        youMd: profile.youMd,
+        youJson,
+        youMd,
         isClaimed: profile.isClaimed,
         profileId: profile._id,
       };
     }
-
-    // Fallback: users + bundles (legacy path)
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_username", (q) => q.eq("username", uname))
-      .first();
 
     if (!user) {
       // Profile exists but has no bundle yet
@@ -70,23 +87,14 @@ export const getPublicProfile = query({
       return null;
     }
 
-    const bundles = await ctx.db
-      .query("bundles")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
-
-    const published = bundles
-      .filter((b) => b.isPublished)
-      .sort((a, b) => b.version - a.version)[0];
-
-    if (!published) return null;
+    if (!publishedBundle) return null;
 
     return {
       source: "legacy" as const,
       username: user.username,
       displayName: user.displayName,
-      youJson: published.youJson,
-      youMd: published.youMd,
+      youJson: publishedBundle.youJson,
+      youMd: publishedBundle.youMd,
       isClaimed: true,
       profileId: profile?._id ?? null,
     };

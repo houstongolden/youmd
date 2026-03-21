@@ -148,6 +148,36 @@ export const publishLatest = mutation({
       publishedAt: Date.now(),
     });
 
+    // Sync published bundle's youJson/youMd to profiles table so public page is current
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
+      .first();
+
+    if (profile && latest.youJson) {
+      const profileUpdates: Record<string, unknown> = {
+        youJson: latest.youJson,
+        youMd: latest.youMd,
+        updatedAt: Date.now(),
+      };
+      // Sync identity fields from the published bundle
+      const identity = latest.youJson?.identity as Record<string, unknown> | undefined;
+      if (identity?.name) profileUpdates.name = identity.name;
+      if (identity?.tagline) profileUpdates.tagline = identity.tagline;
+      if (identity?.location) profileUpdates.location = identity.location;
+      if (identity?.bio) profileUpdates.bio = identity.bio;
+      if (latest.youJson?.links) profileUpdates.links = latest.youJson.links;
+      if (latest.youJson?.now) {
+        const now = latest.youJson.now as Record<string, unknown>;
+        if (now?.focus) profileUpdates.now = now.focus;
+      }
+      if (latest.youJson?.projects) profileUpdates.projects = latest.youJson.projects;
+      if (latest.youJson?.values) profileUpdates.values = latest.youJson.values;
+      if (latest.youJson?.preferences) profileUpdates.preferences = latest.youJson.preferences;
+
+      await ctx.db.patch(profile._id, profileUpdates);
+    }
+
     return {
       version: latest.version,
       username: user.username,
