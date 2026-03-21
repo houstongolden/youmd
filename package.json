@@ -9,7 +9,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "predev": "npx convex dev --until-success"
+    "predev": "npx convex dev --until-success",
+    "deploy:prod": "./scripts/convex-deploy.sh prod",
+    "deploy:dev": "./scripts/convex-deploy.sh dev",
+    "deploy:prod:remote": "./scripts/convex-deploy.sh --remote prod",
+    "deploy:dev:remote": "./scripts/convex-deploy.sh --remote dev"
   },
   "dependencies": {
     "@clerk/backend": "^3.2.0",
