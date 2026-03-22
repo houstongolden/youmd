@@ -1,5 +1,52 @@
 # You.md — Changelog
 
+## 2026-03-22 — Memory System v2 (Full Brain)
+
+### Memory Recall
+- **Agent context injection** — recent memories (up to 50) are injected into the agent's system prompt, grouped by category, enabling personal and contextual responses
+- **buildProfileContext() enhanced** — now accepts optional memory array and formats it for the agent
+
+### Memory Commands
+- **/memory** — shows memory summary with category breakdown, switches to files pane
+- **/recall** — shows 10 most recent memories
+- **/recall {query}** — searches memories by content, category, or tags
+- **Help text updated** — /files, /memory, /recall added to /help output
+
+### Memory Search UI
+- **Search bar in vault** — filter files and memories by content or path
+- **Filtered file count** — shows "X/Y files" when search is active
+
+### External Agent Memory API
+- **GET /api/v1/me/memories** — list memories (supports ?category and ?limit params)
+- **POST /api/v1/me/memories** — save memories from external agents (requires agentName)
+- **convex/memoryApi.ts** — dedicated query/mutation for external agent access
+
+### Session Summaries
+- **Auto-summarization** — every 10 messages, the session is summarized via Claude Haiku
+- **convex/chat.ts summarizeSession** — lightweight action using Haiku for cost-efficiency
+- **Summaries stored** — saved to chatSessions table, visible in sessions/history.md
+
+### Memory Archival
+- **archiveStale mutation** — configurable max age (default 90 days) and max active count (default 200)
+- **Soft delete** — archived memories are hidden but not deleted
+
+### CLI Memory Sync
+- **`youmd memories list`** — list all memories, optionally filter by category
+- **`youmd memories add <category> <content>`** — manually add a memory with optional --tags
+- **`youmd memories stats`** — show memory count by category
+- **API client** — listMemories() and saveMemories() added to cli/src/lib/api.ts
+
+### Files
+- `convex/memoryApi.ts` — new: external agent memory queries/mutations
+- `convex/memories.ts` — added archiveStale mutation
+- `convex/chat.ts` — added summarizeSession action
+- `convex/http.ts` — added GET/POST /api/v1/me/memories routes
+- `cli/src/commands/memories.ts` — new: CLI memories command
+- `cli/src/index.ts` — registered memories command
+- `cli/src/lib/api.ts` — added listMemories, saveMemories
+- `src/hooks/useYouAgent.ts` — memory recall, /memory + /recall commands, session summaries
+- `src/components/panes/FilesPane.tsx` — search bar, filtered file tree
+
 ## 2026-03-22 — Memory System (Unified Brain)
 
 ### New Feature: Persistent Memory

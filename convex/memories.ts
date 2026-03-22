@@ -170,6 +170,60 @@ export const listSessions = query({
   },
 });
 
+/**
+ * Archive stale memories based on policy.
+ * Default: archive memories older than 90 days, keep max 200 active.
+ */
+export const archiveStale = mutation({
+  args: {
+    clerkId: v.string(),
+    maxAgeDays: v.optional(v.number()), // default 90
+    maxActive: v.optional(v.number()), // default 200
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("not authenticated");
+
+    const maxAge = (args.maxAgeDays ?? 90) * 86400000;
+    const maxActive = args.maxActive ?? 200;
+    const cutoff = Date.now() - maxAge;
+
+    const memories = await ctx.db
+      .query("memories")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const active = memories
+      .filter((m) => !m.isArchived)
+      .sort((a, b) => b.createdAt - a.createdAt);
+
+    let archivedCount = 0;
+
+    // Archive by age
+    for (const m of active) {
+      if (m.createdAt < cutoff) {
+        await ctx.db.patch(m._id, { isArchived: true, updatedAt: Date.now() });
+        archivedCount++;
+      }
+    }
+
+    // Archive excess (keep newest maxActive)
+    const remaining = active.filter((m) => m.createdAt >= cutoff);
+    if (remaining.length > maxActive) {
+      const toArchive = remaining.slice(maxActive);
+      for (const m of toArchive) {
+        await ctx.db.patch(m._id, { isArchived: true, updatedAt: Date.now() });
+        archivedCount++;
+      }
+    }
+
+    return { archived: archivedCount };
+  },
+});
+
 /** Create or update a chat session */
 export const upsertSession = mutation({
   args: {

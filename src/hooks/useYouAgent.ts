@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 // ---------------------------------------------------------------------------
@@ -619,49 +619,68 @@ function sectionLabel(section: string): string {
   return name;
 }
 
-export function buildProfileContext(youJson: Record<string, unknown> | null): string {
-  if (!youJson) return "the user has no existing profile data yet.";
+export function buildProfileContext(youJson: Record<string, unknown> | null, recentMemories?: Array<{ category: string; content: string; tags?: string[] }>): string {
+  if (!youJson && (!recentMemories || recentMemories.length === 0)) return "the user has no existing profile data yet.";
 
-  const parts: string[] = ["here is the user's current profile data:"];
-  const identity = youJson.identity as Record<string, unknown> | undefined;
-  if (identity) {
-    if (identity.name) parts.push(`name: ${identity.name}`);
-    if (identity.tagline) parts.push(`tagline: ${identity.tagline}`);
-    if (identity.location) parts.push(`location: ${identity.location}`);
-    const bio = identity.bio as Record<string, string> | undefined;
-    if (bio?.short) parts.push(`bio (short): ${bio.short}`);
-    if (bio?.medium) parts.push(`bio (medium): ${bio.medium}`);
-    if (bio?.long) parts.push(`bio (long): ${bio.long}`);
-  }
+  const parts: string[] = [];
 
-  const now = youJson.now as Record<string, unknown> | undefined;
-  if (now?.focus && Array.isArray(now.focus) && now.focus.length > 0) {
-    parts.push(`current focus: ${(now.focus as string[]).join(", ")}`);
-  }
-
-  const projects = youJson.projects as Array<Record<string, string>> | undefined;
-  if (projects && projects.length > 0) {
-    parts.push(
-      `projects: ${projects.map((p) => `${p.name} (${p.role || ""}${p.status ? ", " + p.status : ""})`).join("; ")}`
-    );
-  }
-
-  const values = youJson.values as string[] | undefined;
-  if (values && values.length > 0) {
-    parts.push(`values: ${values.join(", ")}`);
-  }
-
-  const links = youJson.links as Record<string, string> | undefined;
-  if (links) {
-    const linkEntries = Object.entries(links).filter(([, v]) => v);
-    if (linkEntries.length > 0) {
-      parts.push(`links: ${linkEntries.map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+  if (youJson) {
+    parts.push("here is the user's current profile data:");
+    const identity = youJson.identity as Record<string, unknown> | undefined;
+    if (identity) {
+      if (identity.name) parts.push(`name: ${identity.name}`);
+      if (identity.tagline) parts.push(`tagline: ${identity.tagline}`);
+      if (identity.location) parts.push(`location: ${identity.location}`);
+      const bio = identity.bio as Record<string, string> | undefined;
+      if (bio?.short) parts.push(`bio (short): ${bio.short}`);
+      if (bio?.medium) parts.push(`bio (medium): ${bio.medium}`);
+      if (bio?.long) parts.push(`bio (long): ${bio.long}`);
     }
+
+    const now = youJson.now as Record<string, unknown> | undefined;
+    if (now?.focus && Array.isArray(now.focus) && now.focus.length > 0) {
+      parts.push(`current focus: ${(now.focus as string[]).join(", ")}`);
+    }
+
+    const projects = youJson.projects as Array<Record<string, string>> | undefined;
+    if (projects && projects.length > 0) {
+      parts.push(
+        `projects: ${projects.map((p) => `${p.name} (${p.role || ""}${p.status ? ", " + p.status : ""})`).join("; ")}`
+      );
+    }
+
+    const values = youJson.values as string[] | undefined;
+    if (values && values.length > 0) {
+      parts.push(`values: ${values.join(", ")}`);
+    }
+
+    const links = youJson.links as Record<string, string> | undefined;
+    if (links) {
+      const linkEntries = Object.entries(links).filter(([, v]) => v);
+      if (linkEntries.length > 0) {
+        parts.push(`links: ${linkEntries.map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+      }
+    }
+
+    const prefs = youJson.preferences as Record<string, Record<string, unknown>> | undefined;
+    if (prefs?.agent?.tone) parts.push(`agent tone preference: ${prefs.agent.tone}`);
+    if (prefs?.writing?.style) parts.push(`writing style: ${prefs.writing.style}`);
   }
 
-  const prefs = youJson.preferences as Record<string, Record<string, unknown>> | undefined;
-  if (prefs?.agent?.tone) parts.push(`agent tone preference: ${prefs.agent.tone}`);
-  if (prefs?.writing?.style) parts.push(`writing style: ${prefs.writing.style}`);
+  // Inject recent memories for continuity
+  if (recentMemories && recentMemories.length > 0) {
+    parts.push("");
+    parts.push("--- your memory (things you've learned about this user) ---");
+    const grouped = new Map<string, string[]>();
+    for (const m of recentMemories) {
+      if (!grouped.has(m.category)) grouped.set(m.category, []);
+      grouped.get(m.category)!.push(m.content);
+    }
+    for (const [cat, items] of grouped) {
+      parts.push(`[${cat}s] ${items.join(" | ")}`);
+    }
+    parts.push("use these memories to be more personal and contextual. reference specific things you remember.");
+  }
 
   return parts.join("\n");
 }
@@ -956,6 +975,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const updateProfile = useMutation(api.profiles.updateProfile);
   const saveMemories = useMutation(api.memories.saveMemories);
   const upsertSession = useMutation(api.memories.upsertSession);
+  const summarizeSession = useAction(api.chat.summarizeSession);
+  const recentMemories = useQuery(
+    api.memories.listMemories,
+    convexUser?._id ? { userId: convexUser._id, limit: 50 } : "skip"
+  );
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
@@ -1101,8 +1125,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     if (!isOnboarding && latestBundle === undefined) return;
 
     // Build context from BOTH profiles table and bundles table
+    const memoryContext = (recentMemories ?? []).map((m) => ({
+      category: m.category,
+      content: m.content,
+      tags: m.tags,
+    }));
     let profileContext = buildProfileContext(
-      (latestBundle?.youJson as Record<string, unknown>) || null
+      (latestBundle?.youJson as Record<string, unknown>) || null,
+      memoryContext.length > 0 ? memoryContext : undefined
     );
 
     // Enrich with data from profiles table (from /create flow)
@@ -1323,7 +1353,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }
 
     initConversation();
-  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates, userProfile, user?.id, updateProfile]);
+  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates, userProfile, user?.id, updateProfile, recentMemories]);
 
   // Slash commands
   const handleSlashCommand = useCallback(
@@ -1380,8 +1410,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("help");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/preview -- live profile preview\n/json -- raw you.json\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/sources -- connected data sources\n/portrait -- ascii portrait settings\n/agents -- agent network & access\n/activity -- security & activity log\n/publish -- publish your latest bundle\n/status -- bundle status\n/help -- show this reference"
-          : "available commands:\n/share -- create a shareable identity link\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
+          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/preview -- live profile preview\n/files -- browse your identity bundle as files\n/json -- raw you.json\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/sources -- connected data sources\n/portrait -- ascii portrait settings\n/agents -- agent network & access\n/activity -- security & activity log\n/publish -- publish your latest bundle\n/status -- bundle status\n/help -- show this reference"
+          : "available commands:\n/share -- create a shareable identity link\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/memory -- memory summary\n/recall -- show recent memories\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
 
         setDisplayMessages((prev) => [
           ...prev,
@@ -1553,9 +1583,102 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         return true;
       }
 
+      // /memory — show memory summary
+      if (trimmed === "/memory" || trimmed === "/memories") {
+        if (onPaneSwitch) onPaneSwitch("files");
+        const mems = recentMemories ?? [];
+        if (mems.length === 0) {
+          setDisplayMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "user", content: trimmed },
+            { id: crypto.randomUUID(), role: "system-notice", content: "no memories yet. keep chatting and the agent will automatically save important context." },
+          ]);
+        } else {
+          const grouped = new Map<string, number>();
+          for (const m of mems) {
+            grouped.set(m.category, (grouped.get(m.category) || 0) + 1);
+          }
+          const summary = Array.from(grouped.entries())
+            .map(([cat, count]) => `  ${cat}s: ${count}`)
+            .join("\n");
+          setDisplayMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "user", content: trimmed },
+            {
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: `memory: ${mems.length} total\n${summary}\n\nview in files > memory/ for details`,
+            },
+          ]);
+        }
+        return true;
+      }
+
+      // /recall {query} — search memories
+      if (trimmed.startsWith("/recall ")) {
+        const query = trimmed.slice(8).trim().toLowerCase();
+        const mems = recentMemories ?? [];
+        const matches = mems.filter(
+          (m) =>
+            m.content.toLowerCase().includes(query) ||
+            m.category.toLowerCase().includes(query) ||
+            m.tags?.some((t) => t.toLowerCase().includes(query))
+        );
+
+        if (matches.length === 0) {
+          setDisplayMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "user", content: trimmed },
+            { id: crypto.randomUUID(), role: "system-notice", content: `no memories matching "${query}"` },
+          ]);
+        } else {
+          const results = matches
+            .slice(0, 10)
+            .map((m) => `  [${m.category}] ${m.content}`)
+            .join("\n");
+          setDisplayMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "user", content: trimmed },
+            {
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: `found ${matches.length} memories matching "${query}":\n${results}`,
+            },
+          ]);
+        }
+        return true;
+      }
+
+      // /recall (no args) — show recent memories
+      if (trimmed === "/recall") {
+        const mems = recentMemories ?? [];
+        const recent = mems.slice(0, 10);
+        if (recent.length === 0) {
+          setDisplayMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "user", content: trimmed },
+            { id: crypto.randomUUID(), role: "system-notice", content: "no memories yet." },
+          ]);
+        } else {
+          const list = recent
+            .map((m) => `  [${m.category}] ${m.content}`)
+            .join("\n");
+          setDisplayMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "user", content: trimmed },
+            {
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: `recent memories:\n${list}`,
+            },
+          ]);
+        }
+        return true;
+      }
+
       return false;
     },
-    [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone, privateContext]
+    [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone, privateContext, recentMemories]
   );
 
   // Track scraped sources to avoid re-scraping
@@ -1797,11 +1920,29 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       messageCountRef.current += 2; // user + assistant
       if (user?.id) {
         try {
+          // Generate session summary every 10 messages
+          let summary: string | undefined;
+          if (messageCountRef.current % 10 === 0 && messageCountRef.current >= 10) {
+            try {
+              const summaryResult = await summarizeSession({
+                sessionId: sessionIdRef.current,
+                messages: messagesRef.current.map((m) => ({
+                  role: m.role,
+                  content: m.content,
+                })),
+              });
+              summary = summaryResult.summary ?? undefined;
+            } catch {
+              // Non-fatal
+            }
+          }
+
           await upsertSession({
             clerkId: user.id,
             sessionId: sessionIdRef.current,
             surface: "web",
             messageCount: messageCountRef.current,
+            summary,
           });
         } catch {
           // Non-fatal
@@ -1822,7 +1963,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
     setIsThinking(false);
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, saveMemories, upsertSession]);
+  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, saveMemories, upsertSession, summarizeSession]);
 
   return {
     // State

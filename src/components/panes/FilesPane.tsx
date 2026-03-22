@@ -166,6 +166,7 @@ export function FilesPane({ userId }: FilesPaneProps) {
   const [editedFiles, setEditedFiles] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const files = useMemo(() => {
     if (!latestBundle?.youJson) return [];
@@ -195,7 +196,17 @@ export function FilesPane({ userId }: FilesPaneProps) {
     return [...bundleFiles, ...memoryFiles];
   }, [latestBundle, memories, sessions]);
 
-  const tree = useMemo(() => buildFileTree(files), [files]);
+  const filteredFiles = useMemo(() => {
+    if (!searchQuery.trim()) return files;
+    const q = searchQuery.toLowerCase();
+    return files.filter(
+      (f) =>
+        f.path.toLowerCase().includes(q) ||
+        f.content.toLowerCase().includes(q)
+    );
+  }, [files, searchQuery]);
+
+  const tree = useMemo(() => buildFileTree(filteredFiles), [filteredFiles]);
 
   const selectedFile = useMemo(
     () => files.find((f) => f.path === selectedPath) ?? null,
@@ -308,10 +319,22 @@ export function FilesPane({ userId }: FilesPaneProps) {
             </span>
           </div>
 
+          {/* Search */}
+          <div className="px-2 py-1.5 border-b border-[hsl(var(--border))]">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="search files..."
+              className="w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[10px] px-2 py-1 border border-[hsl(var(--border))] focus:border-[hsl(var(--accent))]/40 focus:outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-30"
+              style={{ borderRadius: "2px" }}
+            />
+          </div>
+
           {/* Stats */}
           <div className="px-3 py-1.5 border-b border-[hsl(var(--border))]">
             <div className="flex items-center justify-between font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
-              <span>{files.length} files</span>
+              <span>{searchQuery ? `${filteredFiles.length}/${files.length}` : files.length} files</span>
               <span>{latestBundle ? `v${latestBundle.version}` : ""}{memories?.length ? ` / ${memories.length} mem` : ""}</span>
             </div>
           </div>

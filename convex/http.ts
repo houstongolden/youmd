@@ -610,10 +610,66 @@ http.route({ path: "/api/v1/me/sources", method: "OPTIONS", handler: corsPreflig
 http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/build", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/build/status", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/memories", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/scrape", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/research", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/enrich-x", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/enrich-linkedin", method: "OPTIONS", handler: corsPreflight });
+
+// ============================================================
+// MEMORY API (authenticated — API key or access token)
+// ============================================================
+
+// GET /api/v1/me/memories — List memories
+http.route({
+  path: "/api/v1/me/memories",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const url = new URL(request.url);
+    const category = url.searchParams.get("category") || undefined;
+    const limit = url.searchParams.has("limit") ? parseInt(url.searchParams.get("limit")!) : undefined;
+
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    if (!user) return json({ error: "User not found" }, 404);
+
+    const memories = await ctx.runQuery(api.memoryApi.listForAgent, {
+      userId: user._id,
+      category,
+      limit,
+    });
+
+    return json({ memories, count: memories.length });
+  }),
+});
+
+// POST /api/v1/me/memories — Save memories
+http.route({
+  path: "/api/v1/me/memories",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const body = await request.json();
+    if (!body.memories || !Array.isArray(body.memories)) {
+      return json({ error: "Request body must contain 'memories' array" }, 400);
+    }
+
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    if (!user) return json({ error: "User not found" }, 404);
+
+    const result = await ctx.runMutation(api.memoryApi.saveFromAgent, {
+      userId: user._id,
+      agentName: body.agentName || auth.username || "API",
+      memories: body.memories,
+    });
+
+    return json(result);
+  }),
+});
 
 export default http;

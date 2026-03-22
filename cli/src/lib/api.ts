@@ -209,6 +209,42 @@ export async function listSources(): Promise<ApiResponse<any[]>> {
   });
 }
 
+// ─── Memories ───────────────────────────────────────────────────────
+
+export interface MemoryItem {
+  category: string;
+  content: string;
+  source: string;
+  sourceAgent?: string;
+  tags?: string[];
+  createdAt: number;
+}
+
+export async function listMemories(opts?: {
+  category?: string;
+  limit?: number;
+}): Promise<ApiResponse<{ memories: MemoryItem[]; count: number }>> {
+  const params = new URLSearchParams();
+  if (opts?.category) params.set("category", opts.category);
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  return request<{ memories: MemoryItem[]; count: number }>(
+    `/api/v1/me/memories${qs ? `?${qs}` : ""}`,
+    { token: getToken() }
+  );
+}
+
+export async function saveMemories(
+  memories: Array<{ category: string; content: string; tags?: string[] }>,
+  agentName?: string
+): Promise<ApiResponse<{ saved: number }>> {
+  return request<{ saved: number }>("/api/v1/me/memories", {
+    method: "POST",
+    token: getToken(),
+    body: { memories, agentName: agentName || "cli" },
+  });
+}
+
 // ─── Analytics ───────────────────────────────────────────────────────
 
 export async function getAnalytics(): Promise<ApiResponse<any>> {

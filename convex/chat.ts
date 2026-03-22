@@ -252,3 +252,65 @@ async function callOpenRouter(
   if (!content) throw new Error("Empty response from OpenRouter");
   return content;
 }
+
+/**
+ * Summarize a chat session — generates a 1-2 sentence summary.
+ * Uses Haiku for cost-efficiency since this is a background task.
+ */
+export const summarizeSession = action({
+  args: {
+    sessionId: v.string(),
+    messages: v.array(
+      v.object({
+        role: v.string(),
+        content: v.string(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    // Only summarize if there are enough messages
+    if (args.messages.length < 4) return { summary: null };
+
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (!anthropicKey) return { summary: null };
+
+    // Build a compact summary request
+    const conversationText = args.messages
+      .filter((m) => m.role !== "system")
+      .slice(-20) // last 20 messages max
+      .map((m) => `${m.role}: ${m.content.slice(0, 200)}`)
+      .join("\n");
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": anthropicKey,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 100,
+          temperature: 0,
+          system: "summarize this conversation in 1 short sentence. be specific about what was discussed. no preamble, just the summary.",
+          messages: [
+            {
+              role: "user",
+              content: conversationText,
+            },
+          ],
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
+
+      if (!response.ok) return { summary: null };
+
+      const data = await response.json();
+      const summary = data.content?.[0]?.text?.trim();
+      return { summary: summary || null };
+    } catch {
+      return { summary: null };
+    }
+  },
+});
