@@ -1387,6 +1387,57 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         return true;
       }
 
+      // /portrait --regenerate — scrape social profiles and update avatar
+      if (trimmed.startsWith("/portrait ") && (trimmed.includes("--regenerate") || trimmed.includes("--regen"))) {
+        const username = convexUser?.username || "";
+        setDisplayMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "user", content: trimmed },
+          { id: crypto.randomUUID(), role: "system-notice", content: "[scraping social profiles for portrait...]" },
+        ]);
+
+        // Try X first, then GitHub
+        const tryPlatforms = async () => {
+          for (const platform of ["x", "github"]) {
+            const url = platform === "x" ? `https://x.com/${username}` : `https://github.com/${username}`;
+            try {
+              const res = await fetch("https://kindly-cassowary-600.convex.site/api/v1/scrape", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                const imgUrl = data?.data?.profileImageUrl || data?.profileImageUrl;
+                if (imgUrl && user?.id && userProfile?._id) {
+                  // Save to profile
+                  await updateProfile({
+                    profileId: userProfile._id,
+                    clerkId: user.id,
+                    avatarUrl: imgUrl,
+                  });
+                  setDisplayMessages((prev) => [
+                    ...prev,
+                    { id: crypto.randomUUID(), role: "system-notice", content: `[portrait updated from ${platform} — refresh to see it]` },
+                  ]);
+                  return;
+                }
+              }
+            } catch {
+              // try next platform
+            }
+          }
+          setDisplayMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "system-notice", content: "[could not fetch portrait — check your connected social links]" },
+          ]);
+        };
+
+        tryPlatforms();
+        if (onPaneSwitch) onPaneSwitch("portrait");
+        return true;
+      }
+
       if (trimmed === "/done") {
         setDisplayMessages((prev) => [
           ...prev,

@@ -70,16 +70,36 @@ const AsciiAvatar = ({ src, cols = 120, canvasWidth = 200, className = "" }: Asc
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const data = imgToAscii(img, cols);
-      if (data.length && canvasRef.current) {
-        renderToCanvas(canvasRef.current, data, canvasWidth);
-        setReady(true);
-      }
+    if (!src) return;
+
+    const tryLoad = (url: string, useCors: boolean) => {
+      const img = new Image();
+      if (useCors) img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const data = imgToAscii(img, cols);
+          if (data.length && canvasRef.current) {
+            renderToCanvas(canvasRef.current, data, canvasWidth);
+            setReady(true);
+          }
+        } catch {
+          // getImageData failed (CORS) — retry with proxy
+          if (useCors && !url.includes("allorigins")) {
+            tryLoad(`https://api.allorigins.win/raw?url=${encodeURIComponent(src)}`, true);
+          }
+        }
+      };
+      img.onerror = () => {
+        // Image failed to load — try proxy if not already using one
+        if (!url.includes("allorigins") && !url.includes("corsproxy")) {
+          tryLoad(`https://api.allorigins.win/raw?url=${encodeURIComponent(src)}`, true);
+        }
+      };
+      img.src = url;
     };
-    img.src = src;
+
+    // Try direct load with CORS first, fall back to proxy
+    tryLoad(src, true);
   }, [src, cols, canvasWidth]);
 
   return (
