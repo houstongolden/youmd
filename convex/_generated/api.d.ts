@@ -16,6 +16,7 @@ import type * as contextLinks from "../contextLinks.js";
 import type * as http from "../http.js";
 import type * as lib_compile from "../lib/compile.js";
 import type * as me from "../me.js";
+import type * as memories from "../memories.js";
 import type * as pipeline_analyze from "../pipeline/analyze.js";
 import type * as pipeline_compile from "../pipeline/compile.js";
 import type * as pipeline_extract from "../pipeline/extract.js";
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/compile": typeof lib_compile;
   me: typeof me;
+  memories: typeof memories;
   "pipeline/analyze": typeof pipeline_analyze;
   "pipeline/compile": typeof pipeline_compile;
   "pipeline/extract": typeof pipeline_extract;

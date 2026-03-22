@@ -48,14 +48,14 @@ export function SiteNav() {
 
   const navLinks = isSignedIn
     ? [
-        { href: "/dashboard", label: "dashboard", active: isOnDashboard },
-        ...(username ? [{ href: `/${username}`, label: "profile", active: isOnMyProfile }] : []),
-        { href: "/profiles", label: "profiles", active: isOnProfiles },
-        { href: "/docs", label: "docs", active: isOnDocs },
+        { href: "/dashboard", label: "--dashboard", active: isOnDashboard },
+        ...(username ? [{ href: `/${username}`, label: "--profile", active: isOnMyProfile }] : []),
+        { href: "/profiles", label: "--profiles", active: isOnProfiles },
+        { href: "/docs", label: "--docs", active: isOnDocs },
       ]
     : [
-        { href: "/profiles", label: "profiles", active: isOnProfiles },
-        { href: "/docs", label: "docs", active: isOnDocs },
+        { href: "/profiles", label: "--profiles", active: isOnProfiles },
+        { href: "/docs", label: "--docs", active: isOnDocs },
       ];
 
   return (
@@ -66,25 +66,23 @@ export function SiteNav() {
           <div className="flex items-center gap-4 md:gap-5 min-w-0">
             <Link
               href="/"
-              className="text-[hsl(var(--accent))] font-mono text-[12px] tracking-tight shrink-0"
+              className="text-accent font-mono text-[12px] tracking-tight shrink-0"
             >
               you
             </Link>
 
-            <span className="text-[hsl(var(--border))] opacity-60 select-none hidden md:inline">/</span>
-
-            <div className="hidden md:flex items-center gap-3 md:gap-4">
+            <div className="hidden md:flex items-center gap-4 md:gap-5">
               {navLinks.map(({ href, label, active }) => (
                 <Link
                   key={href}
                   href={href}
-                  className={`font-mono text-[11px] transition-colors ${
+                  className={`font-mono text-[10px] transition-colors ${
                     active
-                      ? "text-[hsl(var(--accent))]"
-                      : "text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-80 hover:text-[hsl(var(--text-primary))]"
+                      ? "text-accent"
+                      : "text-muted-foreground/60 hover:text-[hsl(var(--text-primary))]"
                   }`}
                 >
-                  {active ? "> " : ""}{label}
+                  {label}
                 </Link>
               ))}
             </div>
@@ -94,11 +92,28 @@ export function SiteNav() {
           <div className="flex items-center gap-3 shrink-0">
             {isSignedIn && (
               <>
-                <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 hidden sm:inline">
-                  @{username ?? "you"}
-                </span>
+                <Link
+                  href="/dashboard"
+                  className="hidden md:flex items-center gap-2 group"
+                >
+                  {user?.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.imageUrl}
+                      alt=""
+                      className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors"
+                    />
+                  ) : (
+                    <span className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[9px] text-accent group-hover:border-accent transition-colors">
+                      {username?.[0] ?? ">"}
+                    </span>
+                  )}
+                  <span className="font-mono text-[10px] text-muted-foreground/60 group-hover:text-accent transition-colors">
+                    @{username ?? "you"}
+                  </span>
+                </Link>
                 <SignOutButton>
-                  <button className="hidden md:inline font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-70 hover:text-[hsl(var(--accent))] transition-all">
+                  <button className="hidden md:inline font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-70 hover:text-accent transition-all">
                     sign out
                   </button>
                 </SignOutButton>
@@ -119,7 +134,7 @@ export function SiteNav() {
               aria-label="Toggle menu"
             >
               {mobileOpen ? (
-                <X size={16} className="text-[hsl(var(--text-secondary))]" />
+                <X size={16} className="text-muted-foreground" />
               ) : (
                 <span className="font-mono text-[11px] text-[hsl(var(--accent))] tracking-tight select-none">&gt;_</span>
               )}
@@ -138,27 +153,35 @@ export function SiteNav() {
               onClick={() => setMobileOpen(false)}
               className={`font-mono text-[14px] transition-colors ${
                 active
-                  ? "text-[hsl(var(--accent))]"
-                  : "text-[hsl(var(--text-secondary))] opacity-70 hover:text-[hsl(var(--text-primary))]"
+                  ? "text-accent"
+                  : "text-muted-foreground/70 hover:text-[hsl(var(--text-primary))]"
               }`}
             >
-              {active ? "> " : ""}{label}
+              {label}
             </Link>
           ))}
           {isSignedIn ? (
-            <div className="flex flex-col items-center gap-4 mt-4">
-              <span className="font-mono text-[14px] text-[hsl(var(--accent))]">
-                @{username ?? "you"}
+            <Link
+              href="/dashboard"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 mt-4"
+            >
+              {user?.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.imageUrl}
+                  alt=""
+                  className="w-6 h-6 rounded-sm border border-[hsl(var(--border))]"
+                />
+              ) : (
+                <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[10px] text-accent">
+                  {username?.[0] ?? ">"}
+                </span>
+              )}
+              <span className="font-mono text-[14px] text-accent">
+                @{username ?? "you"} &gt;
               </span>
-              <SignOutButton>
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-50 hover:text-[hsl(var(--accent))] transition-colors"
-                >
-                  sign out
-                </button>
-              </SignOutButton>
-            </div>
+            </Link>
           ) : (
             <Link
               href="/create"

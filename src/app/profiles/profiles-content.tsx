@@ -3,7 +3,8 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
-import { TerminalHeader } from "@/components/terminal/TerminalHeader";
+import { motion } from "motion/react";
+import { ArrowRight } from "lucide-react";
 
 interface DirectoryEntry {
   username: string;
@@ -45,113 +46,126 @@ export function ProfilesDirectoryContent() {
   }
 
   const isLoading = profiles === undefined || legacyUsers === undefined;
+  const claimedCount = entries.filter((e) => e.isClaimed).length;
 
   return (
-    <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl">
+    <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex items-center justify-center p-4 md:p-6">
+      <div className="w-full max-w-2xl">
+        {/* Section label */}
+        <p className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
+          -- identity directory --
+        </p>
+        <p className="text-muted-foreground text-[13px] font-body mb-10">
+          All registered identities on the network. Claimed and maintained by
+          humans and agents.
+        </p>
+
         {/* Terminal panel */}
-        <div
-          className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
-          style={{ borderRadius: "2px" }}
-        >
-          <TerminalHeader title="you.md -- directory" />
-
-          {/* Terminal body */}
-          <div className="p-6 md:p-8 min-h-[300px] max-h-[80dvh] overflow-y-auto font-mono text-[14px] leading-relaxed">
-            {/* Header lines */}
-            <div className="text-[hsl(var(--accent))]">you.md v0.1.0</div>
-            <div className="text-[hsl(var(--text-secondary))] opacity-60">
-              identity context protocol for the agent internet
-            </div>
-            <div>&nbsp;</div>
-            <div className="text-[hsl(var(--text-secondary))] opacity-50">
-              listing all registered identities...
-            </div>
-            <div>&nbsp;</div>
-
-            {/* Loading state */}
-            {isLoading && (
-              <div className="text-[hsl(var(--accent-mid))] animate-pulse">
-                loading profiles...
-              </div>
-            )}
-
-            {/* Empty state */}
-            {!isLoading && entries.length === 0 && (
-              <div className="text-[hsl(var(--text-secondary))] opacity-50">
-                no profiles found. be the first.
-              </div>
-            )}
-
-            {/* Profile list */}
-            {!isLoading && entries.length > 0 && (
-              <>
-                {/* Column header */}
-                <div className="flex items-center gap-4 text-[hsl(var(--text-secondary))] opacity-40 text-[12px] mb-2 border-b border-[hsl(var(--border))] pb-2">
-                  <span className="w-[140px] shrink-0">username</span>
-                  <span className="flex-1 min-w-0">name</span>
-                  <span className="w-[80px] shrink-0 text-right">status</span>
-                </div>
-
-                {entries.map((entry) => (
-                  <Link
-                    key={`${entry.source}-${entry.username}`}
-                    href={`/${entry.username}`}
-                    className="flex items-center gap-4 py-1.5 group hover:bg-[hsl(var(--border)/0.15)] px-1 -mx-1 transition-colors"
-                    style={{ borderRadius: "2px" }}
-                  >
-                    <span className="w-[140px] shrink-0 text-[hsl(var(--accent))] group-hover:opacity-100 opacity-80 transition-opacity truncate">
-                      {entry.username}
-                    </span>
-                    <span className="flex-1 min-w-0 truncate">
-                      {entry.name ? (
-                        <span className="text-[hsl(var(--text-primary))] opacity-70">
-                          {entry.name}
-                        </span>
-                      ) : (
-                        <span className="text-[hsl(var(--text-secondary))] opacity-30">
-                          --
-                        </span>
-                      )}
-                      {entry.tagline && (
-                        <span className="text-[hsl(var(--text-secondary))] opacity-40 ml-2">
-                          {entry.tagline}
-                        </span>
-                      )}
-                    </span>
-                    <span className="w-[80px] shrink-0 text-right text-[12px]">
-                      {entry.isClaimed ? (
-                        <span className="text-[hsl(var(--success))] opacity-60">
-                          claimed
-                        </span>
-                      ) : (
-                        <span className="text-[hsl(var(--text-secondary))] opacity-30">
-                          unclaimed
-                        </span>
-                      )}
-                    </span>
-                  </Link>
-                ))}
-
-                <div className="mt-4 text-[hsl(var(--text-secondary))] opacity-40 text-[12px]">
-                  {entries.length} {entries.length === 1 ? "identity" : "identities"} registered
-                </div>
-              </>
-            )}
+        <div className="terminal-panel">
+          <div className="terminal-panel-header">
+            <div className="terminal-dot" />
+            <div className="terminal-dot" />
+            <div className="terminal-dot" />
+            <span className="ml-2 text-muted-foreground/60 font-mono text-[10px]">
+              &gt; ls /profiles --active
+            </span>
           </div>
-        </div>
 
-        {/* Link below terminal */}
-        <div className="mt-4 text-center">
-          <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
-            ready to initialize?{" "}
-            <Link
-              href="/initialize"
-              className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
-            >
-              create yours
-            </Link>
-          </span>
+          {/* Loading state */}
+          {isLoading && (
+            <div className="px-5 py-8">
+              <span className="text-accent/70 font-mono text-[12px] animate-pulse">
+                loading profiles...
+              </span>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!isLoading && entries.length === 0 && (
+            <div className="px-5 py-8">
+              <span className="text-muted-foreground/50 font-mono text-[12px]">
+                no profiles found. be the first.
+              </span>
+            </div>
+          )}
+
+          {/* Profile rows */}
+          {!isLoading && entries.length > 0 && (
+            <div className="divide-y divide-border">
+              {entries.map((entry, i) => (
+                <motion.div
+                  key={`${entry.source}-${entry.username}`}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.04 }}
+                >
+                  <Link
+                    href={`/${entry.username}`}
+                    className="flex items-center gap-4 px-5 py-3.5 group hover:bg-accent-wash/40 transition-colors"
+                  >
+                    {/* Status dot */}
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        entry.isClaimed
+                          ? "bg-success/60 status-dot-pulse"
+                          : "bg-[hsl(var(--text-secondary))]/20"
+                      }`}
+                    />
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-accent/80 group-hover:text-accent font-mono text-[12px] transition-colors shrink-0">
+                          @{entry.username}
+                        </span>
+                        {entry.name && (
+                          <span className="text-[hsl(var(--text-primary))] font-mono text-[12px] font-medium truncate">
+                            {entry.name}
+                          </span>
+                        )}
+                      </div>
+                      {entry.tagline && (
+                        <p className="text-muted-foreground font-mono text-[10px] truncate mt-0.5">
+                          {entry.tagline}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Badge */}
+                    <span
+                      className={`hidden sm:inline font-mono text-[9px] shrink-0 ${
+                        entry.isClaimed
+                          ? "text-[hsl(var(--success))]/60"
+                          : "text-muted-foreground/30"
+                      }`}
+                    >
+                      {entry.isClaimed ? "claimed" : "unclaimed"}
+                    </span>
+
+                    <ArrowRight
+                      size={12}
+                      className="text-muted-foreground/30 group-hover:text-accent group-hover:translate-x-0.5 transition-all shrink-0"
+                    />
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Footer */}
+          {!isLoading && entries.length > 0 && (
+            <div className="px-5 py-3 border-t border-[hsl(var(--border))] flex items-center justify-between">
+              <span className="text-muted-foreground/50 font-mono text-[9px]">
+                {entries.length} registered &middot; {claimedCount} claimed
+              </span>
+              <Link
+                href="/create"
+                className="text-accent/70 hover:text-accent font-mono text-[10px] transition-colors"
+              >
+                &gt; create yours
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>
