@@ -43,6 +43,7 @@ export function DashboardContent() {
   const agent = useYouAgent({
     onPaneSwitch: (pane) => {
       setRightPane(pane);
+      setMobileView("preview");
     },
   });
 
@@ -108,14 +109,34 @@ export function DashboardContent() {
               terminal
             </button>
             <button
-              onClick={() => setMobileView("preview")}
+              onClick={() => { setMobileView("preview"); setRightPane("preview"); }}
               className={`flex-1 py-2 text-[11px] font-mono text-center transition-colors ${
-                mobileView === "preview"
+                mobileView === "preview" && rightPane === "preview"
                   ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))]"
                   : "text-[hsl(var(--text-secondary))] opacity-40"
               }`}
             >
               preview
+            </button>
+            <button
+              onClick={() => { setMobileView("preview"); setRightPane("files"); }}
+              className={`flex-1 py-2 text-[11px] font-mono text-center transition-colors ${
+                mobileView === "preview" && rightPane === "files"
+                  ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))]"
+                  : "text-[hsl(var(--text-secondary))] opacity-40"
+              }`}
+            >
+              files
+            </button>
+            <button
+              onClick={() => { setMobileView("preview"); setRightPane("json"); }}
+              className={`flex-1 py-2 text-[11px] font-mono text-center transition-colors ${
+                mobileView === "preview" && rightPane === "json"
+                  ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))]"
+                  : "text-[hsl(var(--text-secondary))] opacity-40"
+              }`}
+            >
+              json
             </button>
           </div>
 

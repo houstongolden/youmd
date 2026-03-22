@@ -85,10 +85,12 @@ function FileViewer({
   file,
   onContentChange,
   editedContent,
+  onBack,
 }: {
   file: VirtualFile;
   onContentChange: (path: string, content: string) => void;
   editedContent: string | undefined;
+  onBack?: () => void;
 }) {
   const content = editedContent ?? file.content;
   const isModified = editedContent !== undefined && editedContent !== file.content;
@@ -97,15 +99,23 @@ function FileViewer({
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-[hsl(var(--border))] shrink-0">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100 mr-1"
+            >
+              {"<"} back
+            </button>
+          )}
+          <span className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80 truncate">
             {file.path}
           </span>
           {isModified && (
-            <span className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase">modified</span>
+            <span className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase shrink-0">modified</span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 uppercase">
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 uppercase hidden sm:inline">
             {getExtLabel(file.path)}
           </span>
           {!file.editable && (
@@ -119,11 +129,11 @@ function FileViewer({
         <textarea
           value={content}
           onChange={(e) => onContentChange(file.path, e.target.value)}
-          className="flex-1 w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[11px] leading-relaxed p-4 resize-none focus:outline-none"
+          className="flex-1 w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[11px] leading-relaxed p-3 md:p-4 resize-none focus:outline-none"
           spellCheck={false}
         />
       ) : (
-        <pre className="flex-1 overflow-auto bg-[hsl(var(--bg))] text-[hsl(var(--text-secondary))] font-mono text-[11px] leading-relaxed p-4 whitespace-pre-wrap break-all">
+        <pre className="flex-1 overflow-auto bg-[hsl(var(--bg))] text-[hsl(var(--text-secondary))] font-mono text-[11px] leading-relaxed p-3 md:p-4 whitespace-pre-wrap break-all">
           {content}
         </pre>
       )}
@@ -210,10 +220,13 @@ export function FilesPane({ userId }: FilesPaneProps) {
     );
   }
 
+  // Mobile: show file viewer full-width when a file is selected
+  const showMobileViewer = selectedFile !== null;
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-6 py-3 border-b border-[hsl(var(--border))] flex items-center justify-between">
+      <div className="px-4 md:px-6 py-3 border-b border-[hsl(var(--border))] flex items-center justify-between">
         <span className="text-xs font-mono text-[hsl(var(--text-secondary))] flex items-center gap-2">
           files
           {modifiedCount > 0 && (
@@ -247,9 +260,10 @@ export function FilesPane({ userId }: FilesPaneProps) {
         )}
       </div>
 
-      <div className="flex-1 flex min-h-0">
-        {/* Sidebar */}
-        <div className="w-[180px] shrink-0 border-r border-[hsl(var(--border))] overflow-y-auto">
+      {/* Mobile: full-width file viewer when selected */}
+      <div className={`flex-1 min-h-0 ${showMobileViewer ? "hidden md:flex" : "flex"} md:flex`}>
+        {/* Sidebar — full width on mobile, fixed width on desktop */}
+        <div className="w-full md:w-[180px] md:shrink-0 md:border-r border-[hsl(var(--border))] overflow-y-auto">
           <div className="px-2 py-1.5 border-b border-[hsl(var(--border))]">
             <input
               type="text"
@@ -273,12 +287,14 @@ export function FilesPane({ userId }: FilesPaneProps) {
           </div>
         </div>
 
-        {/* Editor */}
-        <div className="flex-1 min-w-0">
+        {/* Desktop editor */}
+        <div className="hidden md:flex flex-1 min-w-0">
           {selectedFile ? (
-            <FileViewer file={selectedFile} onContentChange={handleContentChange} editedContent={editedFiles[selectedFile.path]} />
+            <div className="flex-1">
+              <FileViewer file={selectedFile} onContentChange={handleContentChange} editedContent={editedFiles[selectedFile.path]} />
+            </div>
           ) : (
-            <div className="h-full flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-center">
               <p className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-30">
                 select a file to view
               </p>
@@ -286,6 +302,20 @@ export function FilesPane({ userId }: FilesPaneProps) {
           )}
         </div>
       </div>
+
+      {/* Mobile: full-width file viewer */}
+      {showMobileViewer && (
+        <div className="flex-1 min-h-0 flex md:hidden">
+          <div className="flex-1">
+            <FileViewer
+              file={selectedFile!}
+              onContentChange={handleContentChange}
+              editedContent={editedFiles[selectedFile!.path]}
+              onBack={() => setSelectedPath(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
