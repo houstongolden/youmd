@@ -636,7 +636,7 @@ http.route({
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
     if (!user) return json({ error: "User not found" }, 404);
 
-    const memories = await ctx.runQuery(api.memoryApi.listForAgent, {
+    const memories = await ctx.runQuery(api.memories.listMemories, {
       userId: user._id,
       category,
       limit,
@@ -662,7 +662,7 @@ http.route({
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
     if (!user) return json({ error: "User not found" }, 404);
 
-    const result = await ctx.runMutation(api.memoryApi.saveFromAgent, {
+    const result = await ctx.runMutation(api.memories.saveFromAgent, {
       userId: user._id,
       agentName: body.agentName || auth.username || "API",
       memories: body.memories,

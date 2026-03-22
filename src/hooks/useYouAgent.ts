@@ -670,16 +670,11 @@ export function buildProfileContext(youJson: Record<string, unknown> | null, rec
   // Inject recent memories for continuity
   if (recentMemories && recentMemories.length > 0) {
     parts.push("");
-    parts.push("--- your memory (things you've learned about this user) ---");
-    const grouped = new Map<string, string[]>();
+    parts.push("--- your memory ---");
     for (const m of recentMemories) {
-      if (!grouped.has(m.category)) grouped.set(m.category, []);
-      grouped.get(m.category)!.push(m.content);
+      parts.push(`- [${m.category}] ${m.content}`);
     }
-    for (const [cat, items] of grouped) {
-      parts.push(`[${cat}s] ${items.join(" | ")}`);
-    }
-    parts.push("use these memories to be more personal and contextual. reference specific things you remember.");
+    parts.push("reference these memories to be personal and specific.");
   }
 
   return parts.join("\n");
@@ -992,6 +987,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   // Session tracking
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const messageCountRef = useRef<number>(0);
+  const lastSummarizedAtRef = useRef<number>(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1587,92 +1583,35 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       if (trimmed === "/memory" || trimmed === "/memories") {
         if (onPaneSwitch) onPaneSwitch("files");
         const mems = recentMemories ?? [];
-        if (mems.length === 0) {
-          setDisplayMessages((prev) => [
-            ...prev,
-            { id: crypto.randomUUID(), role: "user", content: trimmed },
-            { id: crypto.randomUUID(), role: "system-notice", content: "no memories yet. keep chatting and the agent will automatically save important context." },
-          ]);
-        } else {
-          const grouped = new Map<string, number>();
-          for (const m of mems) {
-            grouped.set(m.category, (grouped.get(m.category) || 0) + 1);
-          }
-          const summary = Array.from(grouped.entries())
-            .map(([cat, count]) => `  ${cat}s: ${count}`)
-            .join("\n");
-          setDisplayMessages((prev) => [
-            ...prev,
-            { id: crypto.randomUUID(), role: "user", content: trimmed },
-            {
-              id: crypto.randomUUID(),
-              role: "system-notice",
-              content: `memory: ${mems.length} total\n${summary}\n\nview in files > memory/ for details`,
-            },
-          ]);
-        }
+        const grouped = new Map<string, number>();
+        for (const m of mems) grouped.set(m.category, (grouped.get(m.category) || 0) + 1);
+        const summary = mems.length === 0
+          ? "no memories yet. keep chatting — the agent saves important context automatically."
+          : `memory: ${mems.length} total\n${Array.from(grouped.entries()).map(([c, n]) => `  ${c}s: ${n}`).join("\n")}`;
+        setDisplayMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "user", content: trimmed },
+          { id: crypto.randomUUID(), role: "system-notice", content: summary },
+        ]);
         return true;
       }
 
-      // /recall {query} — search memories
-      if (trimmed.startsWith("/recall ")) {
-        const query = trimmed.slice(8).trim().toLowerCase();
+      // /recall [query] — search or list recent memories
+      if (trimmed === "/recall" || trimmed.startsWith("/recall ")) {
+        const query = trimmed.startsWith("/recall ") ? trimmed.slice(8).trim().toLowerCase() : "";
         const mems = recentMemories ?? [];
-        const matches = mems.filter(
-          (m) =>
-            m.content.toLowerCase().includes(query) ||
-            m.category.toLowerCase().includes(query) ||
-            m.tags?.some((t) => t.toLowerCase().includes(query))
-        );
-
-        if (matches.length === 0) {
-          setDisplayMessages((prev) => [
-            ...prev,
-            { id: crypto.randomUUID(), role: "user", content: trimmed },
-            { id: crypto.randomUUID(), role: "system-notice", content: `no memories matching "${query}"` },
-          ]);
-        } else {
-          const results = matches
-            .slice(0, 10)
-            .map((m) => `  [${m.category}] ${m.content}`)
-            .join("\n");
-          setDisplayMessages((prev) => [
-            ...prev,
-            { id: crypto.randomUUID(), role: "user", content: trimmed },
-            {
-              id: crypto.randomUUID(),
-              role: "system-notice",
-              content: `found ${matches.length} memories matching "${query}":\n${results}`,
-            },
-          ]);
-        }
-        return true;
-      }
-
-      // /recall (no args) — show recent memories
-      if (trimmed === "/recall") {
-        const mems = recentMemories ?? [];
-        const recent = mems.slice(0, 10);
-        if (recent.length === 0) {
-          setDisplayMessages((prev) => [
-            ...prev,
-            { id: crypto.randomUUID(), role: "user", content: trimmed },
-            { id: crypto.randomUUID(), role: "system-notice", content: "no memories yet." },
-          ]);
-        } else {
-          const list = recent
-            .map((m) => `  [${m.category}] ${m.content}`)
-            .join("\n");
-          setDisplayMessages((prev) => [
-            ...prev,
-            { id: crypto.randomUUID(), role: "user", content: trimmed },
-            {
-              id: crypto.randomUUID(),
-              role: "system-notice",
-              content: `recent memories:\n${list}`,
-            },
-          ]);
-        }
+        const matches = query
+          ? mems.filter((m) => m.content.toLowerCase().includes(query) || m.category.includes(query) || m.tags?.some((t) => t.toLowerCase().includes(query)))
+          : mems.slice(0, 10);
+        const header = query ? `${matches.length} memories matching "${query}"` : "recent memories";
+        const body = matches.length === 0
+          ? (query ? `no memories matching "${query}"` : "no memories yet.")
+          : `${header}:\n${matches.slice(0, 10).map((m) => `  [${m.category}] ${m.content}`).join("\n")}`;
+        setDisplayMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "user", content: trimmed },
+          { id: crypto.randomUUID(), role: "system-notice", content: body },
+        ]);
         return true;
       }
 
@@ -1920,9 +1859,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       messageCountRef.current += 2; // user + assistant
       if (user?.id) {
         try {
-          // Generate session summary every 10 messages
+          // Generate session summary every 10 messages (with guard against re-summarizing)
           let summary: string | undefined;
-          if (messageCountRef.current % 10 === 0 && messageCountRef.current >= 10) {
+          const shouldSummarize = messageCountRef.current % 10 === 0 && messageCountRef.current >= 10 && messageCountRef.current !== lastSummarizedAtRef.current;
+          if (shouldSummarize) {
+            lastSummarizedAtRef.current = messageCountRef.current;
             try {
               const summaryResult = await summarizeSession({
                 sessionId: sessionIdRef.current,

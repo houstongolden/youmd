@@ -171,27 +171,14 @@ export function recompileYouJson(originalYouJson: any, editedFiles: Record<strin
         break;
       }
 
-      case "voice/voice.linkedin.md": {
-        const body = content.replace(/^#.*\n*/m, "").trim();
-        if (!yj.voice) yj.voice = {};
-        if (!yj.voice.platforms) yj.voice.platforms = {};
-        yj.voice.platforms.linkedin = body;
-        break;
-      }
-
-      case "voice/voice.x.md": {
-        const body = content.replace(/^#.*\n*/m, "").trim();
-        if (!yj.voice) yj.voice = {};
-        if (!yj.voice.platforms) yj.voice.platforms = {};
-        yj.voice.platforms.x = body;
-        break;
-      }
-
+      case "voice/voice.linkedin.md":
+      case "voice/voice.x.md":
       case "voice/voice.blog.md": {
         const body = content.replace(/^#.*\n*/m, "").trim();
+        const platform = path.replace("voice/voice.", "").replace(".md", "");
         if (!yj.voice) yj.voice = {};
         if (!yj.voice.platforms) yj.voice.platforms = {};
-        yj.voice.platforms.blog = body;
+        yj.voice.platforms[platform] = body;
         break;
       }
     }

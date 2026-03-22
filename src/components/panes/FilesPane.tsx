@@ -5,7 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
 import { useState, useMemo, useCallback } from "react";
 import { PaneHeader, PaneEmptyState } from "./shared";
-import { decompileBundle, buildFileTree, generateMemoryFiles, type VirtualFile, type FileTreeNode, type MemoryEntry, type SessionEntry } from "@/lib/decompile";
+import { decompileBundle, buildFileTree, generateMemoryFiles, type VirtualFile, type FileTreeNode } from "@/lib/decompile";
 import { recompileYouJson } from "@/lib/recompile";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -13,15 +13,10 @@ interface FilesPaneProps {
   userId: Id<"users">;
 }
 
-// File extension to syntax hint mapping
-const extLabel: Record<string, string> = {
-  ".md": "markdown",
-  ".json": "json",
-};
-
 function getExtLabel(path: string): string {
-  const ext = path.slice(path.lastIndexOf("."));
-  return extLabel[ext] || "text";
+  if (path.endsWith(".json")) return "json";
+  if (path.endsWith(".md")) return "markdown";
+  return "text";
 }
 
 // ── File Tree Item ──────────────────────────────────────────────────────
@@ -38,11 +33,9 @@ function FileTreeItem({
   depth?: number;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const isDir = node.type === "directory";
-  const isSelected = node.path === selectedPath;
   const indent = depth * 12;
 
-  if (isDir) {
+  if (node.type === "directory") {
     return (
       <div>
         <button
@@ -53,7 +46,7 @@ function FileTreeItem({
           <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 w-3">
             {expanded ? "v" : ">"}
           </span>
-          <span className="font-mono text-[11px] text-[hsl(var(--accent))] opacity-70">
+          <span className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-70">
             {node.name}/
           </span>
         </button>
@@ -74,21 +67,21 @@ function FileTreeItem({
     <button
       onClick={() => onSelect(node.path)}
       className={`w-full flex items-center gap-1.5 px-2 py-1 text-left transition-colors ${
-        isSelected
+        node.path === selectedPath
           ? "bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]"
           : "text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-80 hover:bg-[hsl(var(--bg))]"
       }`}
       style={{ paddingLeft: `${20 + indent}px` }}
     >
       <span className="font-mono text-[10px] opacity-30">-</span>
-      <span className="font-mono text-[11px] truncate">{node.name}</span>
+      <span className="font-mono text-[10px] truncate">{node.name}</span>
     </button>
   );
 }
 
-// ── File Editor ─────────────────────────────────────────────────────────
+// ── File Viewer ─────────────────────────────────────────────────────────
 
-function FileEditor({
+function FileViewer({
   file,
   onContentChange,
   editedContent,
@@ -99,25 +92,21 @@ function FileEditor({
 }) {
   const content = editedContent ?? file.content;
   const isModified = editedContent !== undefined && editedContent !== file.content;
-  const lang = getExtLabel(file.path);
 
   return (
     <div className="flex flex-col h-full">
-      {/* File header */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-[hsl(var(--border))] shrink-0">
         <div className="flex items-center gap-2">
           <span className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80">
             {file.path}
           </span>
           {isModified && (
-            <span className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase">
-              modified
-            </span>
+            <span className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase">modified</span>
           )}
         </div>
         <div className="flex items-center gap-2">
           <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 uppercase">
-            {lang}
+            {getExtLabel(file.path)}
           </span>
           {!file.editable && (
             <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 uppercase border border-[hsl(var(--border))] px-1.5 py-0.5" style={{ borderRadius: "2px" }}>
@@ -126,13 +115,11 @@ function FileEditor({
           )}
         </div>
       </div>
-
-      {/* Editor area */}
       {file.editable ? (
         <textarea
           value={content}
           onChange={(e) => onContentChange(file.path, e.target.value)}
-          className="flex-1 w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[11px] leading-relaxed p-4 resize-none focus:outline-none border-none"
+          className="flex-1 w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[11px] leading-relaxed p-4 resize-none focus:outline-none"
           spellCheck={false}
         />
       ) : (
@@ -144,23 +131,14 @@ function FileEditor({
   );
 }
 
-// ── Main FilesPane ──────────────────────────────────────────────────────
+// ── Main ────────────────────────────────────────────────────────────────
 
 export function FilesPane({ userId }: FilesPaneProps) {
   const { user } = useUser();
-  const latestBundle = useQuery(
-    api.bundles.getLatestBundle,
-    userId ? { userId } : "skip"
-  );
+  const latestBundle = useQuery(api.bundles.getLatestBundle, userId ? { userId } : "skip");
   const saveYouJson = useMutation(api.me.saveYouJsonDirect);
-  const memories = useQuery(
-    api.memories.listMemories,
-    userId ? { userId } : "skip"
-  );
-  const sessions = useQuery(
-    api.memories.listSessions,
-    userId ? { userId, limit: 20 } : "skip"
-  );
+  const memories = useQuery(api.memories.listMemories, userId ? { userId } : "skip");
+  const sessions = useQuery(api.memories.listSessions, userId ? { userId, limit: 20 } : "skip");
 
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [editedFiles, setEditedFiles] = useState<Record<string, string>>({});
@@ -169,49 +147,21 @@ export function FilesPane({ userId }: FilesPaneProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const files = useMemo(() => {
-    if (!latestBundle?.youJson) return [];
-    const bundleFiles = decompileBundle(latestBundle.youJson, latestBundle.youMd ?? "");
-
-    // Add memory + session files
-    const memEntries: MemoryEntry[] = (memories ?? []).map((m) => ({
-      _id: m._id,
-      category: m.category,
-      content: m.content,
-      source: m.source,
-      sourceAgent: m.sourceAgent,
-      tags: m.tags,
-      createdAt: m.createdAt,
-    }));
-    const sessEntries: SessionEntry[] = (sessions ?? []).map((s) => ({
-      _id: s._id,
-      sessionId: s.sessionId,
-      surface: s.surface,
-      summary: s.summary,
-      messageCount: s.messageCount,
-      lastMessageAt: s.lastMessageAt,
-      createdAt: s.createdAt,
-    }));
-    const memoryFiles = generateMemoryFiles(memEntries, sessEntries);
-
+    const bundleFiles = latestBundle?.youJson
+      ? decompileBundle(latestBundle.youJson, latestBundle.youMd ?? "")
+      : [];
+    const memoryFiles = generateMemoryFiles(memories ?? [], sessions ?? []);
     return [...bundleFiles, ...memoryFiles];
   }, [latestBundle, memories, sessions]);
 
   const filteredFiles = useMemo(() => {
     if (!searchQuery.trim()) return files;
     const q = searchQuery.toLowerCase();
-    return files.filter(
-      (f) =>
-        f.path.toLowerCase().includes(q) ||
-        f.content.toLowerCase().includes(q)
-    );
+    return files.filter((f) => f.path.toLowerCase().includes(q) || f.content.toLowerCase().includes(q));
   }, [files, searchQuery]);
 
   const tree = useMemo(() => buildFileTree(filteredFiles), [filteredFiles]);
-
-  const selectedFile = useMemo(
-    () => files.find((f) => f.path === selectedPath) ?? null,
-    [files, selectedPath]
-  );
+  const selectedFile = useMemo(() => files.find((f) => f.path === selectedPath) ?? null, [files, selectedPath]);
 
   const handleContentChange = useCallback((path: string, content: string) => {
     setEditedFiles((prev) => ({ ...prev, [path]: content }));
@@ -226,27 +176,18 @@ export function FilesPane({ userId }: FilesPaneProps) {
 
   const handleSave = useCallback(async () => {
     if (!latestBundle?.youJson || !user?.id || modifiedCount === 0) return;
-
     setSaving(true);
     setSaveStatus(null);
     try {
-      // Get only actually modified files
       const modified: Record<string, string> = {};
       for (const [path, content] of Object.entries(editedFiles)) {
         const original = files.find((f) => f.path === path);
-        if (original && content !== original.content) {
-          modified[path] = content;
-        }
+        if (original && content !== original.content) modified[path] = content;
       }
-
       const patchedYouJson = recompileYouJson(latestBundle.youJson, modified);
-      const result = await saveYouJson({
-        clerkId: user.id,
-        youJson: patchedYouJson,
-      });
+      const result = await saveYouJson({ clerkId: user.id, youJson: patchedYouJson });
       setSaveStatus(`saved as v${result.version}`);
       setEditedFiles({});
-      // Clear status after a few seconds
       setTimeout(() => setSaveStatus(null), 3000);
     } catch (err) {
       setSaveStatus(`error: ${err instanceof Error ? err.message : "unknown"}`);
@@ -260,29 +201,26 @@ export function FilesPane({ userId }: FilesPaneProps) {
     setSaveStatus(null);
   }, []);
 
-  if (!latestBundle?.youJson && files.length === 0) {
+  if (files.length === 0) {
     return (
       <div className="h-full flex flex-col">
         <PaneHeader>files</PaneHeader>
-        <PaneEmptyState>
-          no bundle yet. talk to the agent to build your profile.
-        </PaneEmptyState>
+        <PaneEmptyState>no bundle yet. talk to the agent to build your profile.</PaneEmptyState>
       </div>
     );
   }
 
   return (
     <div className="h-full flex flex-col">
+      {/* Header */}
       <div className="px-6 py-3 border-b border-[hsl(var(--border))] flex items-center justify-between">
         <span className="text-xs font-mono text-[hsl(var(--text-secondary))] flex items-center gap-2">
           files
           {modifiedCount > 0 && (
-            <span className="text-[hsl(var(--accent))]">
-              ({modifiedCount} modified)
-            </span>
+            <span className="text-[hsl(var(--accent))]">({modifiedCount} modified)</span>
           )}
           {saveStatus && (
-            <span className={`text-[9px] ${saveStatus.startsWith("error") ? "text-red-400" : "text-[hsl(var(--success))]"}`}>
+            <span className={`text-[9px] ${saveStatus.startsWith("error") ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}`}>
               {saveStatus}
             </span>
           )}
@@ -310,66 +248,40 @@ export function FilesPane({ userId }: FilesPaneProps) {
       </div>
 
       <div className="flex-1 flex min-h-0">
-        {/* File tree sidebar */}
+        {/* Sidebar */}
         <div className="w-[180px] shrink-0 border-r border-[hsl(var(--border))] overflow-y-auto">
-          {/* Tree header */}
-          <div className="px-3 py-2 border-b border-[hsl(var(--border))]">
-            <span className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest">
-              {">"} vault
-            </span>
-          </div>
-
-          {/* Search */}
           <div className="px-2 py-1.5 border-b border-[hsl(var(--border))]">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="search files..."
+              placeholder="search..."
               className="w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[10px] px-2 py-1 border border-[hsl(var(--border))] focus:border-[hsl(var(--accent))]/40 focus:outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-30"
               style={{ borderRadius: "2px" }}
             />
           </div>
-
-          {/* Stats */}
           <div className="px-3 py-1.5 border-b border-[hsl(var(--border))]">
             <div className="flex items-center justify-between font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
               <span>{searchQuery ? `${filteredFiles.length}/${files.length}` : files.length} files</span>
               <span>{latestBundle ? `v${latestBundle.version}` : ""}{memories?.length ? ` / ${memories.length} mem` : ""}</span>
             </div>
           </div>
-
-          {/* Tree */}
           <div className="py-1">
             {tree.map((node) => (
-              <FileTreeItem
-                key={node.path}
-                node={node}
-                selectedPath={selectedPath}
-                onSelect={setSelectedPath}
-              />
+              <FileTreeItem key={node.path} node={node} selectedPath={selectedPath} onSelect={setSelectedPath} />
             ))}
           </div>
         </div>
 
-        {/* Editor area */}
+        {/* Editor */}
         <div className="flex-1 min-w-0">
           {selectedFile ? (
-            <FileEditor
-              file={selectedFile}
-              onContentChange={handleContentChange}
-              editedContent={editedFiles[selectedFile.path]}
-            />
+            <FileViewer file={selectedFile} onContentChange={handleContentChange} editedContent={editedFiles[selectedFile.path]} />
           ) : (
             <div className="h-full flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <p className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-30">
-                  select a file to view
-                </p>
-                <p className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-20">
-                  your identity bundle as a file system
-                </p>
-              </div>
+              <p className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-30">
+                select a file to view
+              </p>
             </div>
           )}
         </div>

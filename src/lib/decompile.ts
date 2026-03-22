@@ -165,7 +165,7 @@ export function decompileBundle(youJson: any, youMd: string): VirtualFile[] {
     });
   }
 
-  // voice/voice.md
+  // Voice files
   const voice = youJson?.voice;
   if (voice?.overall) {
     files.push({
@@ -175,38 +175,22 @@ export function decompileBundle(youJson: any, youMd: string): VirtualFile[] {
       editable: true,
     });
   }
-
-  // voice/voice.linkedin.md
-  if (voice?.platforms?.linkedin) {
-    files.push({
-      path: "voice/voice.linkedin.md",
-      content: [`---`, `title: LinkedIn Voice`, `---`, ``, `# LinkedIn Voice`, ``, voice.platforms.linkedin].join("\n"),
-      section: "voice.linkedin",
-      editable: true,
-    });
+  const voicePlatforms: Array<[string, string, string]> = [
+    ["linkedin", "LinkedIn Voice", "voice.linkedin"],
+    ["x", "X Voice", "voice.x"],
+    ["blog", "Blog Voice", "voice.blog"],
+  ];
+  for (const [key, title, section] of voicePlatforms) {
+    const content = voice?.platforms?.[key];
+    if (content) {
+      files.push({
+        path: `voice/voice.${key}.md`,
+        content: [`---`, `title: ${title}`, `---`, ``, `# ${title}`, ``, content].join("\n"),
+        section,
+        editable: true,
+      });
+    }
   }
-
-  // voice/voice.x.md
-  if (voice?.platforms?.x) {
-    files.push({
-      path: "voice/voice.x.md",
-      content: [`---`, `title: X Voice`, `---`, ``, `# X Voice`, ``, voice.platforms.x].join("\n"),
-      section: "voice.x",
-      editable: true,
-    });
-  }
-
-  // voice/voice.blog.md
-  if (voice?.platforms?.blog) {
-    files.push({
-      path: "voice/voice.blog.md",
-      content: [`---`, `title: Blog Voice`, `---`, ``, `# Blog Voice`, ``, voice.platforms.blog].join("\n"),
-      section: "voice.blog",
-      editable: true,
-    });
-  }
-
-  // Note: memory/ files are added separately via appendMemoryFiles()
 
   // manifest.json
   files.push({

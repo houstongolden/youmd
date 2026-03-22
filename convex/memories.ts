@@ -224,6 +224,38 @@ export const archiveStale = mutation({
   },
 });
 
+/** Save memories from an external agent (no clerkId — caller must validate userId) */
+export const saveFromAgent = mutation({
+  args: {
+    userId: v.id("users"),
+    agentName: v.string(),
+    memories: v.array(
+      v.object({
+        category: v.string(),
+        content: v.string(),
+        tags: v.optional(v.array(v.string())),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const ids = [];
+    for (const mem of args.memories) {
+      const id = await ctx.db.insert("memories", {
+        userId: args.userId,
+        category: mem.category,
+        content: mem.content,
+        source: "external-agent",
+        sourceAgent: args.agentName,
+        tags: mem.tags,
+        isArchived: false,
+        createdAt: Date.now(),
+      });
+      ids.push(id);
+    }
+    return { saved: ids.length };
+  },
+});
+
 /** Create or update a chat session */
 export const upsertSession = mutation({
   args: {
