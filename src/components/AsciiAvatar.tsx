@@ -67,47 +67,80 @@ interface AsciiAvatarProps {
 
 const AsciiAvatar = ({ src, cols = 120, canvasWidth = 200, className = "" }: AsciiAvatarProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [ready, setReady] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
-    if (!src) return;
+    if (!src) { setStatus("error"); return; }
+    setStatus("loading");
 
-    const tryLoad = (url: string, useCors: boolean) => {
-      const img = new Image();
-      if (useCors) img.crossOrigin = "anonymous";
-      img.onload = () => {
-        try {
-          const data = imgToAscii(img, cols);
-          if (data.length && canvasRef.current) {
-            renderToCanvas(canvasRef.current, data, canvasWidth);
-            setReady(true);
-          }
-        } catch {
-          // getImageData failed (CORS) — retry with proxy
-          if (useCors && !url.includes("allorigins")) {
-            tryLoad(`https://api.allorigins.win/raw?url=${encodeURIComponent(src)}`, true);
-          }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      try {
+        const data = imgToAscii(img, cols);
+        if (data.length && canvasRef.current) {
+          renderToCanvas(canvasRef.current, data, canvasWidth);
+          setStatus("ready");
+        } else {
+          setStatus("error");
         }
-      };
-      img.onerror = () => {
-        // Image failed to load — try proxy if not already using one
-        if (!url.includes("allorigins") && !url.includes("corsproxy")) {
-          tryLoad(`https://api.allorigins.win/raw?url=${encodeURIComponent(src)}`, true);
-        }
-      };
-      img.src = url;
+      } catch {
+        setStatus("error");
+      }
     };
 
-    // Try direct load with CORS first, fall back to proxy
-    tryLoad(src, true);
+    img.onerror = () => {
+      // Try without CORS as last resort (won't get pixel data but at least loads)
+      const img2 = new Image();
+      img2.onload = () => {
+        try {
+          const data = imgToAscii(img2, cols);
+          if (data.length && canvasRef.current) {
+            renderToCanvas(canvasRef.current, data, canvasWidth);
+            setStatus("ready");
+          } else {
+            setStatus("error");
+          }
+        } catch {
+          setStatus("error");
+        }
+      };
+      img2.onerror = () => setStatus("error");
+      img2.src = src;
+    };
+
+    img.src = src;
   }, [src, cols, canvasWidth]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={`${className} ${ready ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
-      style={{ imageRendering: "auto" }}
-    />
+    <div className={`relative ${className}`}>
+      <canvas
+        ref={canvasRef}
+        className={`${status === "ready" ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
+        style={{ imageRendering: "auto", width: "100%", height: "auto" }}
+      />
+      {/* Fallback: show the actual photo with an orange tint overlay when canvas fails */}
+      {status === "error" && src && (
+        <div className="relative overflow-hidden" style={{ borderRadius: "2px" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt="profile"
+            className="w-full opacity-60"
+            style={{ filter: "sepia(1) saturate(2) hue-rotate(-10deg) brightness(0.7)" }}
+          />
+          <div className="absolute inset-0 bg-[hsl(var(--accent))]/10 mix-blend-multiply" />
+        </div>
+      )}
+      {status === "loading" && (
+        <div className="flex items-center justify-center py-8">
+          <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-30 animate-pulse">
+            generating portrait...
+          </span>
+        </div>
+      )}
+    </div>
   );
 };
 

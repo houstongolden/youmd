@@ -32,7 +32,7 @@ export function ProfilePreviewPane({ userId, username, ownerId }: ProfilePreview
   );
 
   const data = latestBundle?.youJson;
-  const avatarUrl = userProfile?.avatarUrl || `https://github.com/${username}.png?size=400`;
+  const avatarUrl = userProfile?.avatarUrl || `https://avatars.githubusercontent.com/${username}?s=400`;
 
   if (!data) {
     return <PaneEmptyState>no bundle yet. talk to the agent to build your profile.</PaneEmptyState>;

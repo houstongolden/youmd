@@ -98,7 +98,7 @@ export function SiteNav() {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={user?.imageUrl || (username ? `https://github.com/${username}.png?size=40` : undefined)}
+                    src={user?.imageUrl || (username ? `https://avatars.githubusercontent.com/${username}?s=40` : undefined)}
                     alt=""
                     className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors object-cover"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}

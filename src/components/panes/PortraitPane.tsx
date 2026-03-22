@@ -34,10 +34,10 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
     sources.push({ platform: "profile", url: avatarUrl, isPrimary: true });
   }
 
-  // Fallback: auto-generate URLs from username for GitHub/X
+  // Fallback: auto-generate URLs from username
   if (sources.length === 0 && username) {
-    sources.push({ platform: "github", url: `https://github.com/${username}.png?size=400`, isPrimary: true });
-    sources.push({ platform: "x", url: `https://unavatar.io/x/${username}`, isPrimary: false });
+    // Use avatars.githubusercontent.com directly (CORS-enabled, no redirect)
+    sources.push({ platform: "github", url: `https://avatars.githubusercontent.com/${username}?s=400`, isPrimary: true });
   }
 
   const primaryUrl = avatarUrl || sources.find(s => s.isPrimary)?.url || sources[0]?.url;
