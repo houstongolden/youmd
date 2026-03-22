@@ -52,10 +52,10 @@ export const getPublicProfile = query({
         .sort((a, b) => b.version - a.version)[0] ?? null;
     }
 
-    // Prefer the published bundle's youJson (most authoritative),
-    // fall back to profiles table youJson, then null
-    const youJson = publishedBundle?.youJson ?? profile?.youJson ?? null;
-    const youMd = publishedBundle?.youMd ?? profile?.youMd ?? null;
+    // Prefer profiles table youJson (always synced on save/publish),
+    // fall back to published bundle's youJson for legacy users
+    const youJson = profile?.youJson ?? publishedBundle?.youJson ?? null;
+    const youMd = profile?.youMd ?? publishedBundle?.youMd ?? null;
 
     if (profile && youJson) {
       return {
