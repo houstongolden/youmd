@@ -214,7 +214,7 @@ export function DashboardContent() {
                   <SourcesPane username={username} />
                 )}
                 {rightPane === "portrait" && (
-                  <PortraitPane username={username} />
+                  <PortraitPane username={username} ownerId={convexUser._id} />
                 )}
                 {rightPane === "publish" && (
                   <PublishPane username={username} userId={convexUser._id} />

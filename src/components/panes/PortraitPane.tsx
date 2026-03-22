@@ -1,64 +1,122 @@
 "use client";
 
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
+import AsciiAvatar from "@/components/AsciiAvatar";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
-
-// TODO: Wire up real portrait data from Convex (e.g., api.portraits.getByUser)
-// Currently using placeholder ASCII art and mock settings
 
 interface PortraitPaneProps {
   username: string;
+  ownerId?: Id<"users">;
 }
 
-const PLACEHOLDER_PORTRAIT = `                    \u2591\u2591\u2591\u2591\u2591\u2591\u2592\u2592\u2592\u2592\u2592\u2592\u2593\u2593\u2593\u2593\u2593\u2593\u2593\u2593\u2592\u2592\u2592\u2592\u2592\u2592\u2591\u2591\u2591\u2591\u2591\u2591
-                \u2591\u2591\u2592\u2592\u2592\u2593\u2593\u2593\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2593\u2593\u2593\u2592\u2592\u2592\u2591\u2591
-            \u2591\u2591\u2592\u2593\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2593\u2592\u2591\u2591
-          \u2591\u2592\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2592\u2591
-        \u2591\u2592\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2592\u2591
-      \u2591\u2592\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2592\u2591
-      \u2592\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2592
-    \u2591\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588      \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588      \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2591
-    \u2592\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588  \u25CF\u25CF  \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588  \u25CF\u25CF  \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2592
-    \u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588      \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588      \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593
-    \u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593
-    \u2592\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2592
-    \u2591\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2591
-      \u2592\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588    \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588    \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2592
-      \u2591\u2592\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2592\u2591
-        \u2591\u2592\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2592\u2591
-          \u2591\u2592\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2592\u2591
-            \u2591\u2591\u2592\u2593\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2593\u2592\u2591\u2591
-                \u2591\u2591\u2592\u2592\u2592\u2593\u2593\u2593\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2593\u2593\u2593\u2592\u2592\u2592\u2591\u2591
-                    \u2591\u2591\u2591\u2591\u2591\u2591\u2592\u2592\u2592\u2592\u2592\u2592\u2593\u2593\u2593\u2593\u2593\u2593\u2592\u2592\u2592\u2592\u2592\u2592\u2591\u2591\u2591\u2591\u2591\u2591`;
+export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
+  const userProfile = useQuery(
+    api.profiles.getByOwnerId,
+    ownerId ? { ownerId } : "skip"
+  );
 
-export function PortraitPane({ username }: PortraitPaneProps) {
+  const avatarUrl = userProfile?.avatarUrl;
+  const socialImages = (userProfile?.socialImages as Record<string, string | undefined>) || {};
+  const primaryImage = (userProfile?.primaryImage as string) || "";
+
+  // Collect all available portrait sources
+  const sources: { platform: string; url: string; isPrimary: boolean }[] = [];
+  if (socialImages.github) sources.push({ platform: "github", url: socialImages.github, isPrimary: primaryImage === "github" });
+  if (socialImages.x) sources.push({ platform: "x", url: socialImages.x, isPrimary: primaryImage === "x" });
+  if (socialImages.linkedin) sources.push({ platform: "linkedin", url: socialImages.linkedin, isPrimary: primaryImage === "linkedin" });
+  if (socialImages.custom) sources.push({ platform: "custom", url: socialImages.custom, isPrimary: primaryImage === "custom" });
+
+  // If no social images but we have an avatarUrl, use that
+  if (sources.length === 0 && avatarUrl) {
+    sources.push({ platform: "profile", url: avatarUrl, isPrimary: true });
+  }
+
   return (
     <div className="h-full overflow-y-auto">
       <PaneHeader>portrait</PaneHeader>
 
       <div className="px-6 py-6 space-y-0 max-w-xl">
+        {/* Primary portrait */}
         <SectionLabel>current portrait -- @{username}</SectionLabel>
-        <div
-          className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] mb-2 overflow-x-auto"
-          style={{ borderRadius: "2px" }}
-        >
-          <pre className="font-mono text-[4px] sm:text-[6px] leading-[1.05] text-[hsl(var(--accent))] opacity-80 whitespace-pre select-all">
-            {PLACEHOLDER_PORTRAIT}
-          </pre>
-        </div>
+        {avatarUrl ? (
+          <div
+            className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 mb-2 overflow-hidden"
+            style={{ borderRadius: "2px" }}
+          >
+            <AsciiAvatar src={avatarUrl} cols={80} canvasWidth={400} className="w-full" />
+          </div>
+        ) : (
+          <div
+            className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-6 mb-2 text-center"
+            style={{ borderRadius: "2px" }}
+          >
+            <p className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
+              no portrait source yet.
+            </p>
+            <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-25 mt-1">
+              add your x or github username to generate one.
+            </p>
+          </div>
+        )}
 
         <Divider />
 
+        {/* All social portraits */}
+        {sources.length > 1 && (
+          <>
+            <SectionLabel>all portraits</SectionLabel>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              {sources.map((src) => (
+                <div
+                  key={src.platform}
+                  className={`border p-2 overflow-hidden ${
+                    src.isPrimary
+                      ? "border-[hsl(var(--accent))]/40 bg-[hsl(var(--accent-wash))]"
+                      : "border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]"
+                  }`}
+                  style={{ borderRadius: "2px" }}
+                >
+                  <AsciiAvatar src={src.url} cols={40} canvasWidth={180} className="w-full" />
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-1.5">
+                      <img
+                        src={`https://www.google.com/s2/favicons?domain=${src.platform === "x" ? "x.com" : src.platform === "github" ? "github.com" : src.platform === "linkedin" ? "linkedin.com" : "you.md"}&sz=16`}
+                        alt=""
+                        width={12}
+                        height={12}
+                        className="shrink-0"
+                      />
+                      <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60">
+                        {src.platform}
+                      </span>
+                    </div>
+                    {src.isPrimary && (
+                      <span className="font-mono text-[8px] text-[hsl(var(--accent))] uppercase tracking-wider">
+                        primary
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Divider />
+          </>
+        )}
+
+        {/* Settings */}
         <SectionLabel>settings</SectionLabel>
         <div
           className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] space-y-2"
           style={{ borderRadius: "2px" }}
         >
           {[
-            { label: "style", value: "block \u00B7 120 col" },
+            { label: "style", value: "block · 80 col" },
             { label: "detail level", value: "high" },
-            { label: "characters", value: "\u2591\u2592\u2593\u2588 \u25CF" },
-            { label: "source image", value: "linkedin avatar" },
-            { label: "last generated", value: "2025-03-19 14:22" },
+            { label: "characters", value: "$@B%8&#*oahkbd..." },
+            { label: "source", value: avatarUrl ? (primaryImage || "profile image") : "none" },
+            { label: "sources available", value: String(sources.length) },
           ].map((s) => (
             <div key={s.label} className="flex items-center justify-between font-mono text-[11px]">
               <span className="text-[hsl(var(--text-secondary))] opacity-60">{s.label}</span>
@@ -69,6 +127,7 @@ export function PortraitPane({ username }: PortraitPaneProps) {
 
         <Divider />
 
+        {/* Regenerate instructions */}
         <SectionLabel>regenerate</SectionLabel>
         <div
           className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
@@ -79,48 +138,18 @@ export function PortraitPane({ username }: PortraitPaneProps) {
           </p>
           <div className="mt-2 space-y-1">
             <div
-              className="font-mono text-[11px] text-[hsl(var(--accent))] bg-[hsl(var(--bg))] px-3 py-2 overflow-x-auto"
+              className="font-mono text-[11px] text-[hsl(var(--accent))] bg-[hsl(var(--bg))] px-3 py-2"
               style={{ borderRadius: "2px" }}
             >
               &gt; /portrait --regenerate
             </div>
             <div
-              className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40 bg-[hsl(var(--bg))] px-3 py-2 overflow-x-auto"
+              className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40 bg-[hsl(var(--bg))] px-3 py-2"
               style={{ borderRadius: "2px" }}
             >
-              &gt; /portrait --style braille --cols 160
+              &gt; scrape my x profile photo and regenerate
             </div>
           </div>
-        </div>
-
-        <Divider />
-
-        <SectionLabel>available styles</SectionLabel>
-        <div className="space-y-2">
-          {[
-            { name: "block", sample: "\u2591\u2592\u2593\u2588", desc: "default -- high density block characters" },
-            { name: "braille", sample: "\u2801\u2803\u2807\u2847\u28C7\u28E7\u28F7\u28FF", desc: "unicode braille -- ultra fine detail" },
-            { name: "ascii", sample: ".:-=+*#%@", desc: "classic ascii ramp -- retro terminal" },
-            { name: "minimal", sample: "\u00B7\u2218\u25CB\u25CF", desc: "dot matrix -- clean and sparse" },
-          ].map((style) => (
-            <div
-              key={style.name}
-              className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
-              style={{ borderRadius: "2px" }}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-mono text-[12px] text-[hsl(var(--text-primary))] opacity-80">
-                  {style.name}
-                </span>
-                <span className="font-mono text-[11px] text-[hsl(var(--accent))] opacity-60 tracking-widest">
-                  {style.sample}
-                </span>
-              </div>
-              <p className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
-                {style.desc}
-              </p>
-            </div>
-          ))}
         </div>
       </div>
     </div>
