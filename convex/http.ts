@@ -107,7 +107,7 @@ http.route({
     const result = await ctx.runQuery(api.contextLinks.resolveLink, { token });
 
     if ("error" in result) {
-      return json({ error: result.error }, result.status);
+      return json({ error: result.error }, (result.status as number) || 400);
     }
 
     // Increment use count
