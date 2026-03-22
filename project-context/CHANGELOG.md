@@ -1,5 +1,92 @@
 # You.md — Changelog
 
+## 2026-03-22 — Memory System v2 (Full Brain)
+
+### Memory Recall
+- **Agent context injection** — recent memories (up to 50) are injected into the agent's system prompt, grouped by category, enabling personal and contextual responses
+- **buildProfileContext() enhanced** — now accepts optional memory array and formats it for the agent
+
+### Memory Commands
+- **/memory** — shows memory summary with category breakdown, switches to files pane
+- **/recall** — shows 10 most recent memories
+- **/recall {query}** — searches memories by content, category, or tags
+- **Help text updated** — /files, /memory, /recall added to /help output
+
+### Memory Search UI
+- **Search bar in vault** — filter files and memories by content or path
+- **Filtered file count** — shows "X/Y files" when search is active
+
+### External Agent Memory API
+- **GET /api/v1/me/memories** — list memories (supports ?category and ?limit params)
+- **POST /api/v1/me/memories** — save memories from external agents (requires agentName)
+- **convex/memoryApi.ts** — dedicated query/mutation for external agent access
+
+### Session Summaries
+- **Auto-summarization** — every 10 messages, the session is summarized via Claude Haiku
+- **convex/chat.ts summarizeSession** — lightweight action using Haiku for cost-efficiency
+- **Summaries stored** — saved to chatSessions table, visible in sessions/history.md
+
+### Memory Archival
+- **archiveStale mutation** — configurable max age (default 90 days) and max active count (default 200)
+- **Soft delete** — archived memories are hidden but not deleted
+
+### CLI Memory Sync
+- **`youmd memories list`** — list all memories, optionally filter by category
+- **`youmd memories add <category> <content>`** — manually add a memory with optional --tags
+- **`youmd memories stats`** — show memory count by category
+- **API client** — listMemories() and saveMemories() added to cli/src/lib/api.ts
+
+### Files
+- `convex/memoryApi.ts` — new: external agent memory queries/mutations
+- `convex/memories.ts` — added archiveStale mutation
+- `convex/chat.ts` — added summarizeSession action
+- `convex/http.ts` — added GET/POST /api/v1/me/memories routes
+- `cli/src/commands/memories.ts` — new: CLI memories command
+- `cli/src/index.ts` — registered memories command
+- `cli/src/lib/api.ts` — added listMemories, saveMemories
+- `src/hooks/useYouAgent.ts` — memory recall, /memory + /recall commands, session summaries
+- `src/components/panes/FilesPane.tsx` — search bar, filtered file tree
+
+## 2026-03-22 — Memory System (Unified Brain)
+
+### New Feature: Persistent Memory
+- **Auto-capture from chat** — agent detects facts, insights, decisions, preferences, context, goals, and relationships worth remembering and saves them automatically via `memory_saves` JSON blocks
+- **Session tracking** — each browser session gets a unique ID, message counts are tracked, sessions appear in vault under `sessions/history.md`
+- **Memory files in vault** — memories grouped by category appear as read-only .md files (memory/facts.md, memory/insights.md, etc.) with an index file
+- **7 memory categories** — fact, insight, decision, preference, context, goal, relationship — each with tags and source tracking
+- **Multi-source support** — memories can come from you-agent, CLI, or external agents (via access tokens)
+
+### Schema
+- `memories` table — userId, category, content, source, sourceAgent, tags, sessionId, isArchived
+- `chatSessions` table — userId, sessionId, surface, summary, messageCount
+
+### Files
+- `convex/memories.ts` — full CRUD: saveMemories, listMemories, getMemoryStats, archiveMemory, updateMemory, upsertSession, listSessions
+- `convex/schema.ts` — added memories + chatSessions tables with indexes
+- `src/hooks/useYouAgent.ts` — parseMemorySavesFromResponse(), session tracking, memory system prompt section
+- `src/lib/decompile.ts` — generateMemoryFiles() for vault display
+- `src/components/panes/FilesPane.tsx` — queries memories + sessions, shows in file tree
+
+## 2026-03-22 — Markdown File System (Vault)
+
+### New Feature: Files Pane
+- **File tree browser** — view your entire identity bundle as a file system (profile/, preferences/, voice/ directories)
+- **Inline markdown editor** — click any .md file to view and edit it directly
+- **Decompiler utility** — converts youJson back into individual markdown files with frontmatter
+- **Recompiler utility** — parses edited markdown files back into patched youJson
+- **Save/discard workflow** — save edits as a new bundle version, or discard changes
+- **`saveYouJsonDirect` mutation** — new Convex mutation that accepts patched youJson, recompiles youMd/manifest, syncs to profiles table
+- **Slash commands** — `/files` and `/vault` switch to the files pane from terminal
+- **Read-only compiled outputs** — you.md, you.json, and manifest.json shown but not directly editable
+
+### Files
+- `src/lib/decompile.ts` — bundle decompiler (youJson -> VirtualFile[])
+- `src/lib/recompile.ts` — markdown recompiler (edited files -> patched youJson)
+- `src/components/panes/FilesPane.tsx` — file tree + editor pane component
+- Modified: `src/hooks/useYouAgent.ts` — added "files" to RightPane type + slash commands
+- Modified: `src/app/dashboard/dashboard-content.tsx` — wired FilesPane into dashboard
+- Modified: `convex/me.ts` — added saveYouJsonDirect mutation
+
 ## 2026-03-21 — Navigation Consistency Overhaul
 
 ### Navigation

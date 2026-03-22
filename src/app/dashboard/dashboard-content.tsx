@@ -19,6 +19,7 @@ import { PublishPane } from "@/components/panes/PublishPane";
 import { AgentsPane } from "@/components/panes/AgentsPane";
 import { ActivityPane } from "@/components/panes/ActivityPane";
 import { HelpPane } from "@/components/panes/HelpPane";
+import { FilesPane } from "@/components/panes/FilesPane";
 
 export function DashboardContent() {
   const { user } = useUser();
@@ -141,7 +142,7 @@ export function DashboardContent() {
               <div className="relative shrink-0 border-b border-[hsl(var(--border))]">
                 <div className="flex items-center px-2 md:px-4 py-1 md:py-1.5 overflow-x-auto scrollbar-none">
                   <div className="flex items-center gap-0.5">
-                    {(["preview", "json", "sources", "portrait", "publish", "agents", "activity", "settings", "tokens", "billing", "help"] as RightPane[]).map((pane) => (
+                    {(["preview", "files", "json", "sources", "portrait", "publish", "agents", "activity", "settings", "tokens", "billing", "help"] as RightPane[]).map((pane) => (
                       <button
                         key={pane}
                         onClick={() => setRightPane(pane)}
@@ -166,6 +167,7 @@ export function DashboardContent() {
                 {rightPane === "preview" && (
                   <ProfilePreviewPane userId={convexUser._id} username={username} ownerId={convexUser._id} />
                 )}
+                {rightPane === "files" && <FilesPane userId={convexUser._id} />}
                 {rightPane === "json" && <JsonPane userId={convexUser._id} />}
                 {rightPane === "settings" && user?.id && (
                   <SettingsPane clerkId={user.id} username={username} />

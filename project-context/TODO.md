@@ -102,6 +102,42 @@ PRD Version: 2.3
 
 ---
 
+### Markdown File System (Vault) — 2026-03-22
+- [x] File decompiler utility (youJson -> individual .md files)
+- [x] File recompiler utility (edited .md files -> patched youJson)
+- [x] FilesPane component with file tree + markdown editor
+- [x] `files` tab in dashboard right pane system
+- [x] `/files` and `/vault` slash commands
+- [x] `saveYouJsonDirect` Convex mutation for saving edited files
+- [x] Save/discard buttons with status feedback
+- [ ] Keyboard shortcuts (Ctrl+S to save)
+- [ ] Markdown preview toggle (edit / preview split)
+- [ ] Create new custom .md files
+- [ ] Private vault files (encrypted)
+- [ ] File diff view (compare versions)
+- [ ] Backlinks / bidirectional linking between files
+
+### Memory System (Unified Brain) — 2026-03-22
+- [x] `memories` table in Convex schema (category, content, source, tags, sessionId)
+- [x] `chatSessions` table for conversation history tracking
+- [x] Memory CRUD mutations (save, archive, update, list, stats)
+- [x] Session tracking mutations (upsert, list)
+- [x] `memory_saves` JSON block parsing in useYouAgent
+- [x] Auto-session tracking (sessionId per page load, message counting)
+- [x] Agent system prompt: memory detection + save instructions
+- [x] Memory files in vault (memory/facts.md, memory/insights.md, etc.)
+- [x] Session history in vault (sessions/history.md)
+- [x] Memory stats in file tree sidebar
+- [x] Memory recall in agent context (inject recent memories into system prompt)
+- [x] Memory search / filter UI (search bar in vault file tree)
+- [x] Memory management commands (/memory, /recall, /recall {query})
+- [x] External agent memory ingestion (HTTP API: GET/POST /api/v1/me/memories)
+- [x] Session summaries (auto-generated via LLM every 10 messages)
+- [x] Memory expiration / archival policies (archiveStale mutation: max age + max count)
+- [x] CLI memory sync (`youmd memories list/add/stats`)
+
+---
+
 ## IN PROGRESS / NEEDS FINISHING
 
 ### Profile Page (PRD §15.10 compliance)

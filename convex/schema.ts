@@ -257,4 +257,35 @@ export default defineSchema({
     .index("by_token", ["token"])
     .index("by_userId", ["userId"])
     .index("by_profileId", ["profileId"]),
+
+  // ── Memories (unified brain — auto-captured from conversations) ──
+  memories: defineTable({
+    userId: v.id("users"),
+    category: v.string(), // "fact" | "insight" | "decision" | "preference" | "context" | "goal" | "relationship"
+    content: v.string(), // the actual memory content
+    source: v.string(), // "you-agent" | "cli" | "external-agent" | "manual"
+    sourceAgent: v.optional(v.string()), // agent name if from external agent
+    tags: v.optional(v.array(v.string())), // searchable tags
+    sessionId: v.optional(v.string()), // which chat session produced this
+    isArchived: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_category", ["userId", "category"])
+    .index("by_userId_archived", ["userId", "isArchived"])
+    .index("by_sessionId", ["sessionId"]),
+
+  // ── Chat sessions (conversation history) ──────────────────────
+  chatSessions: defineTable({
+    userId: v.id("users"),
+    sessionId: v.string(), // unique session identifier
+    surface: v.string(), // "web" | "cli" | "api"
+    summary: v.optional(v.string()), // auto-generated session summary
+    messageCount: v.number(),
+    lastMessageAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_sessionId", ["sessionId"]),
 });

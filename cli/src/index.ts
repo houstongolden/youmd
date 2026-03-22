@@ -17,6 +17,7 @@ import { chatCommand } from "./commands/chat";
 import { pullCommand } from "./commands/pull";
 import { pushCommand } from "./commands/push";
 import { syncCommand } from "./commands/sync";
+import { memoriesCommand } from "./commands/memories";
 
 const program = new Command();
 
@@ -122,5 +123,12 @@ const keysCmd = program
 keysCmd.action((subcommand, options) => {
   return keysCommand(subcommand, options);
 });
+
+program
+  .command("memories [subcommand] [args...]")
+  .description("Manage your memory brain (list, add, stats)")
+  .action((subcommand, args) => {
+    return memoriesCommand(subcommand, ...(args || []));
+  });
 
 program.parse(process.argv);

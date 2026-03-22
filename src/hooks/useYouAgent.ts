@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 // ---------------------------------------------------------------------------
@@ -448,6 +448,32 @@ when the user mentions something private, sensitive, or internal:
 - use good judgment: if someone says "i'm working on a stealth startup" — that's private by default
 - if someone shares internal company info, roadmaps, or financial details — suggest making it private
 
+--- memory system ---
+
+you have a persistent memory. when you detect something worth remembering from the conversation — a fact about the user, an insight you've formed, a decision they've made, a preference they've expressed, a goal they've mentioned, or context shared by another agent — save it automatically.
+
+to save memories, output a JSON block:
+\`\`\`json
+{"memory_saves": [{"category": "fact", "content": "works remotely from lisbon", "tags": ["location", "remote"]}]}
+\`\`\`
+
+categories:
+- "fact" — concrete things about them (where they live, what stack they use, their company, etc.)
+- "insight" — connections you've made about them ("tends to build infrastructure over products", "values speed over polish")
+- "decision" — choices they've made during conversation ("wants to keep X private", "prefers casual tone")
+- "preference" — how they like things done ("dislikes emoji", "wants concise agent responses")
+- "context" — broader life/work context ("raising series A", "just moved to a new city", "switching from engineering to product")
+- "goal" — things they're working toward ("launch by Q2", "hire 3 engineers", "write more")
+- "relationship" — people and connections they mention ("co-founder is Sarah", "reports to VP of Engineering")
+
+rules for memory:
+- save memories AUTOMATICALLY. don't ask "should i remember this?" — just save anything worth knowing.
+- be specific. "works at google" not "works at a big tech company."
+- don't save things already in the profile bundle — memories are for context that doesn't fit neatly into profile sections.
+- prefer fewer, high-quality memories over many trivial ones. skip obvious things.
+- you can emit memory_saves alongside updates and private_updates in the same response.
+- tags are optional but useful for grouping related memories.
+
 --- knowing when to stop ---
 
 when the profile has substance (at minimum: about, now, projects, and values), suggest wrapping up. don't squeeze for more.
@@ -494,7 +520,7 @@ export interface PrivateUpdate {
   project?: Record<string, string>;
 }
 
-export type RightPane = "preview" | "settings" | "billing" | "tokens" | "json" | "sources" | "portrait" | "publish" | "agents" | "activity" | "help";
+export type RightPane = "preview" | "files" | "settings" | "billing" | "tokens" | "json" | "sources" | "portrait" | "publish" | "agents" | "activity" | "help";
 
 // ---------------------------------------------------------------------------
 // Helpers (exported for reuse)
@@ -560,54 +586,96 @@ export function parsePrivateUpdatesFromResponse(text: string): PrivateUpdate[] {
   return privateUpdates;
 }
 
+export interface MemorySave {
+  category: string; // "fact" | "insight" | "decision" | "preference" | "context" | "goal" | "relationship"
+  content: string;
+  tags?: string[];
+}
+
+export function parseMemorySavesFromResponse(text: string): MemorySave[] {
+  const allJsonBlocks = text.matchAll(/```json\s*\n([\s\S]*?)\n```/g);
+  const memorySaves: MemorySave[] = [];
+
+  for (const match of allJsonBlocks) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.memory_saves && Array.isArray(parsed.memory_saves)) {
+        for (const ms of parsed.memory_saves) {
+          if (ms && typeof ms.category === "string" && typeof ms.content === "string") {
+            memorySaves.push(ms as MemorySave);
+          }
+        }
+      }
+    } catch {
+      // not a valid memory_saves block
+    }
+  }
+
+  return memorySaves;
+}
+
 function sectionLabel(section: string): string {
   const name = section.replace(/\.md$/, "").split("/").pop() || section;
   return name;
 }
 
-export function buildProfileContext(youJson: Record<string, unknown> | null): string {
-  if (!youJson) return "the user has no existing profile data yet.";
+export function buildProfileContext(youJson: Record<string, unknown> | null, recentMemories?: Array<{ category: string; content: string; tags?: string[] }>): string {
+  if (!youJson && (!recentMemories || recentMemories.length === 0)) return "the user has no existing profile data yet.";
 
-  const parts: string[] = ["here is the user's current profile data:"];
-  const identity = youJson.identity as Record<string, unknown> | undefined;
-  if (identity) {
-    if (identity.name) parts.push(`name: ${identity.name}`);
-    if (identity.tagline) parts.push(`tagline: ${identity.tagline}`);
-    if (identity.location) parts.push(`location: ${identity.location}`);
-    const bio = identity.bio as Record<string, string> | undefined;
-    if (bio?.short) parts.push(`bio (short): ${bio.short}`);
-    if (bio?.medium) parts.push(`bio (medium): ${bio.medium}`);
-    if (bio?.long) parts.push(`bio (long): ${bio.long}`);
-  }
+  const parts: string[] = [];
 
-  const now = youJson.now as Record<string, unknown> | undefined;
-  if (now?.focus && Array.isArray(now.focus) && now.focus.length > 0) {
-    parts.push(`current focus: ${(now.focus as string[]).join(", ")}`);
-  }
-
-  const projects = youJson.projects as Array<Record<string, string>> | undefined;
-  if (projects && projects.length > 0) {
-    parts.push(
-      `projects: ${projects.map((p) => `${p.name} (${p.role || ""}${p.status ? ", " + p.status : ""})`).join("; ")}`
-    );
-  }
-
-  const values = youJson.values as string[] | undefined;
-  if (values && values.length > 0) {
-    parts.push(`values: ${values.join(", ")}`);
-  }
-
-  const links = youJson.links as Record<string, string> | undefined;
-  if (links) {
-    const linkEntries = Object.entries(links).filter(([, v]) => v);
-    if (linkEntries.length > 0) {
-      parts.push(`links: ${linkEntries.map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+  if (youJson) {
+    parts.push("here is the user's current profile data:");
+    const identity = youJson.identity as Record<string, unknown> | undefined;
+    if (identity) {
+      if (identity.name) parts.push(`name: ${identity.name}`);
+      if (identity.tagline) parts.push(`tagline: ${identity.tagline}`);
+      if (identity.location) parts.push(`location: ${identity.location}`);
+      const bio = identity.bio as Record<string, string> | undefined;
+      if (bio?.short) parts.push(`bio (short): ${bio.short}`);
+      if (bio?.medium) parts.push(`bio (medium): ${bio.medium}`);
+      if (bio?.long) parts.push(`bio (long): ${bio.long}`);
     }
+
+    const now = youJson.now as Record<string, unknown> | undefined;
+    if (now?.focus && Array.isArray(now.focus) && now.focus.length > 0) {
+      parts.push(`current focus: ${(now.focus as string[]).join(", ")}`);
+    }
+
+    const projects = youJson.projects as Array<Record<string, string>> | undefined;
+    if (projects && projects.length > 0) {
+      parts.push(
+        `projects: ${projects.map((p) => `${p.name} (${p.role || ""}${p.status ? ", " + p.status : ""})`).join("; ")}`
+      );
+    }
+
+    const values = youJson.values as string[] | undefined;
+    if (values && values.length > 0) {
+      parts.push(`values: ${values.join(", ")}`);
+    }
+
+    const links = youJson.links as Record<string, string> | undefined;
+    if (links) {
+      const linkEntries = Object.entries(links).filter(([, v]) => v);
+      if (linkEntries.length > 0) {
+        parts.push(`links: ${linkEntries.map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+      }
+    }
+
+    const prefs = youJson.preferences as Record<string, Record<string, unknown>> | undefined;
+    if (prefs?.agent?.tone) parts.push(`agent tone preference: ${prefs.agent.tone}`);
+    if (prefs?.writing?.style) parts.push(`writing style: ${prefs.writing.style}`);
   }
 
-  const prefs = youJson.preferences as Record<string, Record<string, unknown>> | undefined;
-  if (prefs?.agent?.tone) parts.push(`agent tone preference: ${prefs.agent.tone}`);
-  if (prefs?.writing?.style) parts.push(`writing style: ${prefs.writing.style}`);
+  // Inject recent memories for continuity
+  if (recentMemories && recentMemories.length > 0) {
+    parts.push("");
+    parts.push("--- your memory ---");
+    for (const m of recentMemories) {
+      parts.push(`- [${m.category}] ${m.content}`);
+    }
+    parts.push("reference these memories to be personal and specific.");
+  }
 
   return parts.join("\n");
 }
@@ -900,6 +968,13 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const createContextLink = useMutation(api.contextLinks.createLink);
   const updatePrivateContext = useMutation(api.private.updatePrivateContext);
   const updateProfile = useMutation(api.profiles.updateProfile);
+  const saveMemories = useMutation(api.memories.saveMemories);
+  const upsertSession = useMutation(api.memories.upsertSession);
+  const summarizeSession = useAction(api.chat.summarizeSession);
+  const recentMemories = useQuery(
+    api.memories.listMemories,
+    convexUser?._id ? { userId: convexUser._id, limit: 50 } : "skip"
+  );
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
@@ -908,6 +983,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const [thinkingPhrase, setThinkingPhrase] = useState("");
   const [thinkingCategory, setThinkingCategory] = useState<ThinkingCategory | undefined>();
   const [initialized, setInitialized] = useState(false);
+
+  // Session tracking
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
+  const messageCountRef = useRef<number>(0);
+  const lastSummarizedAtRef = useRef<number>(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1041,8 +1121,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     if (!isOnboarding && latestBundle === undefined) return;
 
     // Build context from BOTH profiles table and bundles table
+    const memoryContext = (recentMemories ?? []).map((m) => ({
+      category: m.category,
+      content: m.content,
+      tags: m.tags,
+    }));
     let profileContext = buildProfileContext(
-      (latestBundle?.youJson as Record<string, unknown>) || null
+      (latestBundle?.youJson as Record<string, unknown>) || null,
+      memoryContext.length > 0 ? memoryContext : undefined
     );
 
     // Enrich with data from profiles table (from /create flow)
@@ -1263,7 +1349,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }
 
     initConversation();
-  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates, userProfile, user?.id, updateProfile]);
+  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates, userProfile, user?.id, updateProfile, recentMemories]);
 
   // Slash commands
   const handleSlashCommand = useCallback(
@@ -1281,6 +1367,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         "/json": "json",
         "/sources": "sources",
         "/portrait": "portrait",
+        "/files": "files",
+        "/vault": "files",
         "/agents": "agents",
         "/activity": "activity",
       };
@@ -1318,8 +1406,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("help");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/preview -- live profile preview\n/json -- raw you.json\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/sources -- connected data sources\n/portrait -- ascii portrait settings\n/agents -- agent network & access\n/activity -- security & activity log\n/publish -- publish your latest bundle\n/status -- bundle status\n/help -- show this reference"
-          : "available commands:\n/share -- create a shareable identity link\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
+          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/preview -- live profile preview\n/files -- browse your identity bundle as files\n/json -- raw you.json\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/sources -- connected data sources\n/portrait -- ascii portrait settings\n/agents -- agent network & access\n/activity -- security & activity log\n/publish -- publish your latest bundle\n/status -- bundle status\n/help -- show this reference"
+          : "available commands:\n/share -- create a shareable identity link\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/memory -- memory summary\n/recall -- show recent memories\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
 
         setDisplayMessages((prev) => [
           ...prev,
@@ -1491,9 +1579,45 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         return true;
       }
 
+      // /memory — show memory summary
+      if (trimmed === "/memory" || trimmed === "/memories") {
+        if (onPaneSwitch) onPaneSwitch("files");
+        const mems = recentMemories ?? [];
+        const grouped = new Map<string, number>();
+        for (const m of mems) grouped.set(m.category, (grouped.get(m.category) || 0) + 1);
+        const summary = mems.length === 0
+          ? "no memories yet. keep chatting — the agent saves important context automatically."
+          : `memory: ${mems.length} total\n${Array.from(grouped.entries()).map(([c, n]) => `  ${c}s: ${n}`).join("\n")}`;
+        setDisplayMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "user", content: trimmed },
+          { id: crypto.randomUUID(), role: "system-notice", content: summary },
+        ]);
+        return true;
+      }
+
+      // /recall [query] — search or list recent memories
+      if (trimmed === "/recall" || trimmed.startsWith("/recall ")) {
+        const query = trimmed.startsWith("/recall ") ? trimmed.slice(8).trim().toLowerCase() : "";
+        const mems = recentMemories ?? [];
+        const matches = query
+          ? mems.filter((m) => m.content.toLowerCase().includes(query) || m.category.includes(query) || m.tags?.some((t) => t.toLowerCase().includes(query)))
+          : mems.slice(0, 10);
+        const header = query ? `${matches.length} memories matching "${query}"` : "recent memories";
+        const body = matches.length === 0
+          ? (query ? `no memories matching "${query}"` : "no memories yet.")
+          : `${header}:\n${matches.slice(0, 10).map((m) => `  [${m.category}] ${m.content}`).join("\n")}`;
+        setDisplayMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "user", content: trimmed },
+          { id: crypto.randomUUID(), role: "system-notice", content: body },
+        ]);
+        return true;
+      }
+
       return false;
     },
-    [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone, privateContext]
+    [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone, privateContext, recentMemories]
   );
 
   // Track scraped sources to avoid re-scraping
@@ -1707,6 +1831,65 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
+      // Handle memory saves from agent
+      const memorySaves = parseMemorySavesFromResponse(response);
+      if (memorySaves.length > 0 && user?.id) {
+        try {
+          await saveMemories({
+            clerkId: user.id,
+            memories: memorySaves.map((ms) => ({
+              category: ms.category,
+              content: ms.content,
+              source: "you-agent",
+              tags: ms.tags,
+              sessionId: sessionIdRef.current,
+            })),
+          });
+          newDisplayMsgs.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[saved ${memorySaves.length} ${memorySaves.length === 1 ? "memory" : "memories"}]`,
+          });
+        } catch {
+          // Non-fatal — memory saving can fail silently
+        }
+      }
+
+      // Track session
+      messageCountRef.current += 2; // user + assistant
+      if (user?.id) {
+        try {
+          // Generate session summary every 10 messages (with guard against re-summarizing)
+          let summary: string | undefined;
+          const shouldSummarize = messageCountRef.current % 10 === 0 && messageCountRef.current >= 10 && messageCountRef.current !== lastSummarizedAtRef.current;
+          if (shouldSummarize) {
+            lastSummarizedAtRef.current = messageCountRef.current;
+            try {
+              const summaryResult = await summarizeSession({
+                sessionId: sessionIdRef.current,
+                messages: messagesRef.current.map((m) => ({
+                  role: m.role,
+                  content: m.content,
+                })),
+              });
+              summary = summaryResult.summary ?? undefined;
+            } catch {
+              // Non-fatal
+            }
+          }
+
+          await upsertSession({
+            clerkId: user.id,
+            sessionId: sessionIdRef.current,
+            surface: "web",
+            messageCount: messageCountRef.current,
+            summary,
+          });
+        } catch {
+          // Non-fatal
+        }
+      }
+
       setDisplayMessages((prev) => [...prev, ...newDisplayMsgs]);
     } catch (err) {
       setDisplayMessages((prev) => [
@@ -1721,7 +1904,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
     setIsThinking(false);
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile]);
+  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, saveMemories, upsertSession, summarizeSession]);
 
   return {
     // State
