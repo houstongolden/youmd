@@ -50,12 +50,29 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
         {/* Primary portrait */}
         <SectionLabel>current portrait -- @{username}</SectionLabel>
         {primaryUrl ? (
-          <div
-            className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 mb-2 overflow-hidden"
-            style={{ borderRadius: "2px" }}
-          >
-            <AsciiAvatar src={primaryUrl} cols={80} canvasWidth={400} className="w-full" />
-          </div>
+          <>
+            {/* ASCII portrait from canvas */}
+            <div
+              className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 mb-2 overflow-hidden"
+              style={{ borderRadius: "2px" }}
+            >
+              <AsciiAvatar src={primaryUrl} cols={80} canvasWidth={400} className="w-full" />
+            </div>
+            {/* Debug: show source URL and direct img */}
+            <p className="font-mono text-[8px] text-[hsl(var(--text-secondary))] opacity-20 mb-1 break-all">
+              src: {primaryUrl}
+            </p>
+            {/* Direct img tag as proof the URL works */}
+            <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-1 mb-2 overflow-hidden" style={{ borderRadius: "2px" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={primaryUrl}
+                alt=""
+                className="w-full max-w-[200px] opacity-70"
+                style={{ filter: "sepia(1) saturate(2) hue-rotate(-10deg) brightness(0.7)" }}
+              />
+            </div>
+          </>
         ) : (
           <div
             className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-6 mb-2 text-center"

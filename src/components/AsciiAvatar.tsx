@@ -72,11 +72,13 @@ const AsciiAvatar = ({ src, cols = 120, canvasWidth = 200, className = "" }: Asc
   useEffect(() => {
     if (!src) { setStatus("error"); return; }
     setStatus("loading");
+    console.log("[AsciiAvatar] loading src:", src);
 
     const img = new Image();
     img.crossOrigin = "anonymous";
 
     img.onload = () => {
+      console.log("[AsciiAvatar] image loaded:", img.naturalWidth, "x", img.naturalHeight);
       try {
         const data = imgToAscii(img, cols);
         if (data.length && canvasRef.current) {
@@ -90,8 +92,9 @@ const AsciiAvatar = ({ src, cols = 120, canvasWidth = 200, className = "" }: Asc
       }
     };
 
-    img.onerror = () => {
-      // Try without CORS as last resort (won't get pixel data but at least loads)
+    img.onerror = (e) => {
+      console.error("[AsciiAvatar] image load error:", e);
+      // Try without CORS as last resort
       const img2 = new Image();
       img2.onload = () => {
         try {
