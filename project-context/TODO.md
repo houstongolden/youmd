@@ -102,6 +102,23 @@ PRD Version: 2.3
 
 ---
 
+### Markdown File System (Vault) — 2026-03-22
+- [x] File decompiler utility (youJson -> individual .md files)
+- [x] File recompiler utility (edited .md files -> patched youJson)
+- [x] FilesPane component with file tree + markdown editor
+- [x] `files` tab in dashboard right pane system
+- [x] `/files` and `/vault` slash commands
+- [x] `saveYouJsonDirect` Convex mutation for saving edited files
+- [x] Save/discard buttons with status feedback
+- [ ] Keyboard shortcuts (Ctrl+S to save)
+- [ ] Markdown preview toggle (edit / preview split)
+- [ ] Create new custom .md files
+- [ ] Private vault files (encrypted)
+- [ ] File diff view (compare versions)
+- [ ] Backlinks / bidirectional linking between files
+
+---
+
 ## IN PROGRESS / NEEDS FINISHING
 
 ### Profile Page (PRD §15.10 compliance)

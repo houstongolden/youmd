@@ -117,6 +117,103 @@ export const saveBundleFromForm = mutation({
   },
 });
 
+/**
+ * Save a patched youJson directly (used by the files pane editor).
+ * Recompiles youMd and manifest from the youJson, then saves as a new bundle version.
+ */
+export const saveYouJsonDirect = mutation({
+  args: {
+    clerkId: v.string(),
+    youJson: v.any(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
+    const yj = args.youJson;
+
+    // Reconstruct ProfileData from youJson to recompile youMd and manifest
+    const data: ProfileData = {
+      name: yj?.identity?.name ?? "",
+      username: user.username,
+      tagline: yj?.identity?.tagline,
+      location: yj?.identity?.location,
+      bio: yj?.identity?.bio,
+      now: yj?.now?.focus,
+      projects: yj?.projects,
+      values: yj?.values,
+      links: yj?.links,
+      preferences: yj?.preferences,
+      analysis: {
+        topics: yj?.analysis?.topics,
+        voice_summary: yj?.voice?.overall ?? yj?.analysis?.voice_summary,
+        credibility_signals: yj?.analysis?.credibility_signals,
+        voice_linkedin: yj?.voice?.platforms?.linkedin,
+        voice_x: yj?.voice?.platforms?.x,
+        voice_blog: yj?.voice?.platforms?.blog,
+      },
+      socialImages: yj?.social_images,
+    };
+
+    const youMd = compileYouMd(data);
+    const manifest = compileManifest(data);
+
+    // Get next version
+    const existing = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const maxVersion = existing.reduce(
+      (max, b) => Math.max(max, b.version),
+      0
+    );
+
+    const bundleId = await ctx.db.insert("bundles", {
+      userId: user._id,
+      version: maxVersion + 1,
+      schemaVersion: "you-md/v1",
+      manifest,
+      youJson: args.youJson,
+      youMd,
+      isPublished: false,
+      createdAt: Date.now(),
+    });
+
+    // Sync to profiles table
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
+      .first();
+
+    if (profile) {
+      const profileUpdates: Record<string, unknown> = {
+        youJson: args.youJson,
+        youMd,
+        updatedAt: Date.now(),
+      };
+      const identity = yj?.identity;
+      if (identity?.name) profileUpdates.name = identity.name;
+      if (identity?.tagline) profileUpdates.tagline = identity.tagline;
+      if (identity?.location) profileUpdates.location = identity.location;
+      if (identity?.bio) profileUpdates.bio = identity.bio;
+      if (yj?.links) profileUpdates.links = yj.links;
+      if (yj?.now?.focus) profileUpdates.now = yj.now.focus;
+      if (yj?.projects) profileUpdates.projects = yj.projects;
+      if (yj?.values) profileUpdates.values = yj.values;
+      if (yj?.preferences) profileUpdates.preferences = yj.preferences;
+
+      await ctx.db.patch(profile._id, profileUpdates);
+    }
+
+    return { bundleId, version: maxVersion + 1 };
+  },
+});
+
 export const publishLatest = mutation({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {

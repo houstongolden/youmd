@@ -494,7 +494,7 @@ export interface PrivateUpdate {
   project?: Record<string, string>;
 }
 
-export type RightPane = "preview" | "settings" | "billing" | "tokens" | "json" | "sources" | "portrait" | "publish" | "agents" | "activity" | "help";
+export type RightPane = "preview" | "files" | "settings" | "billing" | "tokens" | "json" | "sources" | "portrait" | "publish" | "agents" | "activity" | "help";
 
 // ---------------------------------------------------------------------------
 // Helpers (exported for reuse)
@@ -1281,6 +1281,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         "/json": "json",
         "/sources": "sources",
         "/portrait": "portrait",
+        "/files": "files",
+        "/vault": "files",
         "/agents": "agents",
         "/activity": "activity",
       };

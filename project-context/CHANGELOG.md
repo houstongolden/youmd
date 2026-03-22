@@ -1,5 +1,25 @@
 # You.md — Changelog
 
+## 2026-03-22 — Markdown File System (Vault)
+
+### New Feature: Files Pane
+- **File tree browser** — view your entire identity bundle as a file system (profile/, preferences/, voice/ directories)
+- **Inline markdown editor** — click any .md file to view and edit it directly
+- **Decompiler utility** — converts youJson back into individual markdown files with frontmatter
+- **Recompiler utility** — parses edited markdown files back into patched youJson
+- **Save/discard workflow** — save edits as a new bundle version, or discard changes
+- **`saveYouJsonDirect` mutation** — new Convex mutation that accepts patched youJson, recompiles youMd/manifest, syncs to profiles table
+- **Slash commands** — `/files` and `/vault` switch to the files pane from terminal
+- **Read-only compiled outputs** — you.md, you.json, and manifest.json shown but not directly editable
+
+### Files
+- `src/lib/decompile.ts` — bundle decompiler (youJson -> VirtualFile[])
+- `src/lib/recompile.ts` — markdown recompiler (edited files -> patched youJson)
+- `src/components/panes/FilesPane.tsx` — file tree + editor pane component
+- Modified: `src/hooks/useYouAgent.ts` — added "files" to RightPane type + slash commands
+- Modified: `src/app/dashboard/dashboard-content.tsx` — wired FilesPane into dashboard
+- Modified: `convex/me.ts` — added saveYouJsonDirect mutation
+
 ## 2026-03-21 — Navigation Consistency Overhaul
 
 ### Navigation

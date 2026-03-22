@@ -18,7 +18,8 @@ Last Updated: 2026-03-19
 | Unified SiteNav top bar | Done | Compact nav across all authenticated pages (replaces AppNav side panel) |
 | /initialize onboarding | Done | Boot sequence + agent conversation |
 | useYouAgent hook | Done | Shared agent logic for all terminal UIs |
-| Right pane system | Done | 11 panes: preview, json, sources, portrait, publish, agents, activity, settings, tokens, billing, help |
+| Right pane system | Done | 12 panes: preview, files, json, sources, portrait, publish, agents, activity, settings, tokens, billing, help |
+| Markdown file system (Vault) | Done | Browse + edit identity bundle as individual .md files, save back to Convex |
 | Auto-scrape on init | Done | Scrapes existing profile links before first LLM call |
 | Auto-research | Done | Perplexity web research for sparse profiles |
 | Auto-publish | Done | Every bundle save auto-publishes |
