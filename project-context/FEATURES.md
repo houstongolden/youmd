@@ -20,6 +20,7 @@ Last Updated: 2026-03-19
 | useYouAgent hook | Done | Shared agent logic for all terminal UIs |
 | Right pane system | Done | 12 panes: preview, files, json, sources, portrait, publish, agents, activity, settings, tokens, billing, help |
 | Markdown file system (Vault) | Done | Browse + edit identity bundle as individual .md files, save back to Convex |
+| Memory system (Unified Brain) | Done | Auto-capture memories from chat, session tracking, memory files in vault |
 | Auto-scrape on init | Done | Scrapes existing profile links before first LLM call |
 | Auto-research | Done | Perplexity web research for sparse profiles |
 | Auto-publish | Done | Every bundle save auto-publishes |

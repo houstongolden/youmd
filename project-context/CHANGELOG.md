@@ -1,5 +1,25 @@
 # You.md — Changelog
 
+## 2026-03-22 — Memory System (Unified Brain)
+
+### New Feature: Persistent Memory
+- **Auto-capture from chat** — agent detects facts, insights, decisions, preferences, context, goals, and relationships worth remembering and saves them automatically via `memory_saves` JSON blocks
+- **Session tracking** — each browser session gets a unique ID, message counts are tracked, sessions appear in vault under `sessions/history.md`
+- **Memory files in vault** — memories grouped by category appear as read-only .md files (memory/facts.md, memory/insights.md, etc.) with an index file
+- **7 memory categories** — fact, insight, decision, preference, context, goal, relationship — each with tags and source tracking
+- **Multi-source support** — memories can come from you-agent, CLI, or external agents (via access tokens)
+
+### Schema
+- `memories` table — userId, category, content, source, sourceAgent, tags, sessionId, isArchived
+- `chatSessions` table — userId, sessionId, surface, summary, messageCount
+
+### Files
+- `convex/memories.ts` — full CRUD: saveMemories, listMemories, getMemoryStats, archiveMemory, updateMemory, upsertSession, listSessions
+- `convex/schema.ts` — added memories + chatSessions tables with indexes
+- `src/hooks/useYouAgent.ts` — parseMemorySavesFromResponse(), session tracking, memory system prompt section
+- `src/lib/decompile.ts` — generateMemoryFiles() for vault display
+- `src/components/panes/FilesPane.tsx` — queries memories + sessions, shows in file tree
+
 ## 2026-03-22 — Markdown File System (Vault)
 
 ### New Feature: Files Pane

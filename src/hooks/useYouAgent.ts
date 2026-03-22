@@ -448,6 +448,32 @@ when the user mentions something private, sensitive, or internal:
 - use good judgment: if someone says "i'm working on a stealth startup" — that's private by default
 - if someone shares internal company info, roadmaps, or financial details — suggest making it private
 
+--- memory system ---
+
+you have a persistent memory. when you detect something worth remembering from the conversation — a fact about the user, an insight you've formed, a decision they've made, a preference they've expressed, a goal they've mentioned, or context shared by another agent — save it automatically.
+
+to save memories, output a JSON block:
+\`\`\`json
+{"memory_saves": [{"category": "fact", "content": "works remotely from lisbon", "tags": ["location", "remote"]}]}
+\`\`\`
+
+categories:
+- "fact" — concrete things about them (where they live, what stack they use, their company, etc.)
+- "insight" — connections you've made about them ("tends to build infrastructure over products", "values speed over polish")
+- "decision" — choices they've made during conversation ("wants to keep X private", "prefers casual tone")
+- "preference" — how they like things done ("dislikes emoji", "wants concise agent responses")
+- "context" — broader life/work context ("raising series A", "just moved to a new city", "switching from engineering to product")
+- "goal" — things they're working toward ("launch by Q2", "hire 3 engineers", "write more")
+- "relationship" — people and connections they mention ("co-founder is Sarah", "reports to VP of Engineering")
+
+rules for memory:
+- save memories AUTOMATICALLY. don't ask "should i remember this?" — just save anything worth knowing.
+- be specific. "works at google" not "works at a big tech company."
+- don't save things already in the profile bundle — memories are for context that doesn't fit neatly into profile sections.
+- prefer fewer, high-quality memories over many trivial ones. skip obvious things.
+- you can emit memory_saves alongside updates and private_updates in the same response.
+- tags are optional but useful for grouping related memories.
+
 --- knowing when to stop ---
 
 when the profile has substance (at minimum: about, now, projects, and values), suggest wrapping up. don't squeeze for more.
@@ -558,6 +584,34 @@ export function parsePrivateUpdatesFromResponse(text: string): PrivateUpdate[] {
   }
 
   return privateUpdates;
+}
+
+export interface MemorySave {
+  category: string; // "fact" | "insight" | "decision" | "preference" | "context" | "goal" | "relationship"
+  content: string;
+  tags?: string[];
+}
+
+export function parseMemorySavesFromResponse(text: string): MemorySave[] {
+  const allJsonBlocks = text.matchAll(/```json\s*\n([\s\S]*?)\n```/g);
+  const memorySaves: MemorySave[] = [];
+
+  for (const match of allJsonBlocks) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.memory_saves && Array.isArray(parsed.memory_saves)) {
+        for (const ms of parsed.memory_saves) {
+          if (ms && typeof ms.category === "string" && typeof ms.content === "string") {
+            memorySaves.push(ms as MemorySave);
+          }
+        }
+      }
+    } catch {
+      // not a valid memory_saves block
+    }
+  }
+
+  return memorySaves;
 }
 
 function sectionLabel(section: string): string {
@@ -900,6 +954,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const createContextLink = useMutation(api.contextLinks.createLink);
   const updatePrivateContext = useMutation(api.private.updatePrivateContext);
   const updateProfile = useMutation(api.profiles.updateProfile);
+  const saveMemories = useMutation(api.memories.saveMemories);
+  const upsertSession = useMutation(api.memories.upsertSession);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
@@ -908,6 +964,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const [thinkingPhrase, setThinkingPhrase] = useState("");
   const [thinkingCategory, setThinkingCategory] = useState<ThinkingCategory | undefined>();
   const [initialized, setInitialized] = useState(false);
+
+  // Session tracking
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
+  const messageCountRef = useRef<number>(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1709,6 +1769,45 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
+      // Handle memory saves from agent
+      const memorySaves = parseMemorySavesFromResponse(response);
+      if (memorySaves.length > 0 && user?.id) {
+        try {
+          await saveMemories({
+            clerkId: user.id,
+            memories: memorySaves.map((ms) => ({
+              category: ms.category,
+              content: ms.content,
+              source: "you-agent",
+              tags: ms.tags,
+              sessionId: sessionIdRef.current,
+            })),
+          });
+          newDisplayMsgs.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[saved ${memorySaves.length} ${memorySaves.length === 1 ? "memory" : "memories"}]`,
+          });
+        } catch {
+          // Non-fatal — memory saving can fail silently
+        }
+      }
+
+      // Track session
+      messageCountRef.current += 2; // user + assistant
+      if (user?.id) {
+        try {
+          await upsertSession({
+            clerkId: user.id,
+            sessionId: sessionIdRef.current,
+            surface: "web",
+            messageCount: messageCountRef.current,
+          });
+        } catch {
+          // Non-fatal
+        }
+      }
+
       setDisplayMessages((prev) => [...prev, ...newDisplayMsgs]);
     } catch (err) {
       setDisplayMessages((prev) => [
@@ -1723,7 +1822,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
     setIsThinking(false);
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile]);
+  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, saveMemories, upsertSession]);
 
   return {
     // State

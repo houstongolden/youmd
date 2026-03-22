@@ -5,7 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
 import { useState, useMemo, useCallback } from "react";
 import { PaneHeader, PaneEmptyState } from "./shared";
-import { decompileBundle, buildFileTree, type VirtualFile, type FileTreeNode } from "@/lib/decompile";
+import { decompileBundle, buildFileTree, generateMemoryFiles, type VirtualFile, type FileTreeNode, type MemoryEntry, type SessionEntry } from "@/lib/decompile";
 import { recompileYouJson } from "@/lib/recompile";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -153,6 +153,14 @@ export function FilesPane({ userId }: FilesPaneProps) {
     userId ? { userId } : "skip"
   );
   const saveYouJson = useMutation(api.me.saveYouJsonDirect);
+  const memories = useQuery(
+    api.memories.listMemories,
+    userId ? { userId } : "skip"
+  );
+  const sessions = useQuery(
+    api.memories.listSessions,
+    userId ? { userId, limit: 20 } : "skip"
+  );
 
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [editedFiles, setEditedFiles] = useState<Record<string, string>>({});
@@ -161,8 +169,31 @@ export function FilesPane({ userId }: FilesPaneProps) {
 
   const files = useMemo(() => {
     if (!latestBundle?.youJson) return [];
-    return decompileBundle(latestBundle.youJson, latestBundle.youMd ?? "");
-  }, [latestBundle]);
+    const bundleFiles = decompileBundle(latestBundle.youJson, latestBundle.youMd ?? "");
+
+    // Add memory + session files
+    const memEntries: MemoryEntry[] = (memories ?? []).map((m) => ({
+      _id: m._id,
+      category: m.category,
+      content: m.content,
+      source: m.source,
+      sourceAgent: m.sourceAgent,
+      tags: m.tags,
+      createdAt: m.createdAt,
+    }));
+    const sessEntries: SessionEntry[] = (sessions ?? []).map((s) => ({
+      _id: s._id,
+      sessionId: s.sessionId,
+      surface: s.surface,
+      summary: s.summary,
+      messageCount: s.messageCount,
+      lastMessageAt: s.lastMessageAt,
+      createdAt: s.createdAt,
+    }));
+    const memoryFiles = generateMemoryFiles(memEntries, sessEntries);
+
+    return [...bundleFiles, ...memoryFiles];
+  }, [latestBundle, memories, sessions]);
 
   const tree = useMemo(() => buildFileTree(files), [files]);
 
@@ -218,7 +249,7 @@ export function FilesPane({ userId }: FilesPaneProps) {
     setSaveStatus(null);
   }, []);
 
-  if (!latestBundle?.youJson) {
+  if (!latestBundle?.youJson && files.length === 0) {
     return (
       <div className="h-full flex flex-col">
         <PaneHeader>files</PaneHeader>
@@ -281,7 +312,7 @@ export function FilesPane({ userId }: FilesPaneProps) {
           <div className="px-3 py-1.5 border-b border-[hsl(var(--border))]">
             <div className="flex items-center justify-between font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
               <span>{files.length} files</span>
-              <span>v{latestBundle.version}</span>
+              <span>{latestBundle ? `v${latestBundle.version}` : ""}{memories?.length ? ` / ${memories.length} mem` : ""}</span>
             </div>
           </div>
 

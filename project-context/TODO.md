@@ -117,6 +117,25 @@ PRD Version: 2.3
 - [ ] File diff view (compare versions)
 - [ ] Backlinks / bidirectional linking between files
 
+### Memory System (Unified Brain) — 2026-03-22
+- [x] `memories` table in Convex schema (category, content, source, tags, sessionId)
+- [x] `chatSessions` table for conversation history tracking
+- [x] Memory CRUD mutations (save, archive, update, list, stats)
+- [x] Session tracking mutations (upsert, list)
+- [x] `memory_saves` JSON block parsing in useYouAgent
+- [x] Auto-session tracking (sessionId per page load, message counting)
+- [x] Agent system prompt: memory detection + save instructions
+- [x] Memory files in vault (memory/facts.md, memory/insights.md, etc.)
+- [x] Session history in vault (sessions/history.md)
+- [x] Memory stats in file tree sidebar
+- [ ] Memory recall in agent context (inject recent memories into system prompt)
+- [ ] Memory search / filter UI
+- [ ] Memory management commands (/memory, /recall, /forget)
+- [ ] External agent memory ingestion (via access tokens)
+- [ ] Session summaries (auto-generated via LLM)
+- [ ] Memory expiration / archival policies
+- [ ] CLI memory sync (youmd memories pull/push)
+
 ---
 
 ## IN PROGRESS / NEEDS FINISHING

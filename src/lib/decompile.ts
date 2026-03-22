@@ -206,6 +206,8 @@ export function decompileBundle(youJson: any, youMd: string): VirtualFile[] {
     });
   }
 
+  // Note: memory/ files are added separately via appendMemoryFiles()
+
   // manifest.json
   files.push({
     path: "manifest.json",
@@ -272,4 +274,149 @@ export function buildFileTree(files: VirtualFile[]): FileTreeNode[] {
   }
 
   return root;
+}
+
+// ── Memory file generation ────────────────────────────────────────
+
+export interface MemoryEntry {
+  _id: string;
+  category: string;
+  content: string;
+  source: string;
+  sourceAgent?: string;
+  tags?: string[];
+  createdAt: number;
+}
+
+export interface SessionEntry {
+  _id: string;
+  sessionId: string;
+  surface: string;
+  summary?: string;
+  messageCount: number;
+  lastMessageAt: number;
+  createdAt: number;
+}
+
+const CATEGORY_ORDER = ["fact", "insight", "decision", "preference", "context", "goal", "relationship"];
+
+/**
+ * Generate memory files from memory entries.
+ * Groups by category into individual .md files under memory/.
+ */
+export function generateMemoryFiles(memories: MemoryEntry[], sessions: SessionEntry[]): VirtualFile[] {
+  const files: VirtualFile[] = [];
+
+  if (memories.length === 0 && sessions.length === 0) return files;
+
+  // Group memories by category
+  const byCategory = new Map<string, MemoryEntry[]>();
+  for (const mem of memories) {
+    const cat = mem.category || "uncategorized";
+    if (!byCategory.has(cat)) byCategory.set(cat, []);
+    byCategory.get(cat)!.push(mem);
+  }
+
+  // Generate a file per category
+  for (const cat of CATEGORY_ORDER) {
+    const mems = byCategory.get(cat);
+    if (!mems || mems.length === 0) continue;
+
+    const lines: string[] = [
+      `---`,
+      `title: ${cat.charAt(0).toUpperCase() + cat.slice(1)}s`,
+      `count: ${mems.length}`,
+      `---`,
+      ``,
+      `# ${cat.charAt(0).toUpperCase() + cat.slice(1)}s`,
+      ``,
+    ];
+
+    for (const mem of mems.sort((a, b) => b.createdAt - a.createdAt)) {
+      const date = new Date(mem.createdAt).toISOString().split("T")[0];
+      const tags = mem.tags?.length ? ` [${mem.tags.join(", ")}]` : "";
+      const source = mem.source !== "you-agent" ? ` (via ${mem.sourceAgent || mem.source})` : "";
+      lines.push(`- ${mem.content}${tags}${source} — *${date}*`);
+    }
+
+    files.push({
+      path: `memory/${cat}s.md`,
+      content: lines.join("\n"),
+      section: `memory.${cat}`,
+      editable: false, // memories are agent-managed
+    });
+  }
+
+  // Handle any categories not in CATEGORY_ORDER
+  for (const [cat, mems] of byCategory) {
+    if (CATEGORY_ORDER.includes(cat)) continue;
+    const lines: string[] = [
+      `---`,
+      `title: ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
+      `count: ${mems.length}`,
+      `---`,
+      ``,
+      `# ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
+      ``,
+    ];
+    for (const mem of mems.sort((a, b) => b.createdAt - a.createdAt)) {
+      const date = new Date(mem.createdAt).toISOString().split("T")[0];
+      lines.push(`- ${mem.content} — *${date}*`);
+    }
+    files.push({
+      path: `memory/${cat}.md`,
+      content: lines.join("\n"),
+      section: `memory.${cat}`,
+      editable: false,
+    });
+  }
+
+  // Generate memory/index.md — overview
+  const indexLines: string[] = [
+    `---`,
+    `title: Memory Index`,
+    `total: ${memories.length}`,
+    `---`,
+    ``,
+    `# Memory`,
+    ``,
+    `Total memories: ${memories.length}`,
+    ``,
+  ];
+  for (const cat of CATEGORY_ORDER) {
+    const count = byCategory.get(cat)?.length ?? 0;
+    if (count > 0) indexLines.push(`- **${cat}s**: ${count}`);
+  }
+  files.push({
+    path: "memory/index.md",
+    content: indexLines.join("\n"),
+    section: "memory.index",
+    editable: false,
+  });
+
+  // Generate sessions/history.md
+  if (sessions.length > 0) {
+    const sessionLines: string[] = [
+      `---`,
+      `title: Session History`,
+      `count: ${sessions.length}`,
+      `---`,
+      ``,
+      `# Session History`,
+      ``,
+    ];
+    for (const s of sessions.sort((a, b) => b.createdAt - a.createdAt).slice(0, 20)) {
+      const date = new Date(s.createdAt).toISOString().replace("T", " ").slice(0, 16);
+      const summary = s.summary ? ` — ${s.summary}` : "";
+      sessionLines.push(`- **${date}** [${s.surface}] ${s.messageCount} messages${summary}`);
+    }
+    files.push({
+      path: "sessions/history.md",
+      content: sessionLines.join("\n"),
+      section: "sessions",
+      editable: false,
+    });
+  }
+
+  return files;
 }
