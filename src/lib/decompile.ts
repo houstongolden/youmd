@@ -263,7 +263,7 @@ export function buildFileTree(files: VirtualFile[]): FileTreeNode[] {
 // ── Memory file generation ────────────────────────────────────────
 
 export interface MemoryEntry {
-  _id: string;
+  _id: unknown;
   category: string;
   content: string;
   source: string;
@@ -273,7 +273,7 @@ export interface MemoryEntry {
 }
 
 export interface SessionEntry {
-  _id: string;
+  _id: unknown;
   sessionId: string;
   surface: string;
   summary?: string;
