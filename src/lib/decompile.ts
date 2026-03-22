@@ -192,19 +192,116 @@ export function decompileBundle(youJson: any, youMd: string): VirtualFile[] {
     }
   }
 
+  // ── Scaffold: ensure all standard directories + files exist ──
+  // Even when empty, these should appear in the file tree so users
+  // know the structure and can fill them in.
+  const existingPaths = new Set(files.map((f) => f.path));
+
+  const scaffold: Array<{ path: string; content: string; section: string; editable: boolean }> = [
+    // Profile (public)
+    { path: "profile/about.md", content: "---\ntitle: About\n---\n\n# About\n\nTell the agent about yourself.\n", section: "identity", editable: true },
+    { path: "profile/now.md", content: "---\ntitle: Now\n---\n\n# Now\n\n- what you're working on right now\n", section: "now", editable: true },
+    { path: "profile/projects.md", content: "---\ntitle: Projects\n---\n\n# Projects\n\n## Project Name\nDescription of your project.\n", section: "projects", editable: true },
+    { path: "profile/values.md", content: "---\ntitle: Values\n---\n\n# Values\n\n- your core principles\n", section: "values", editable: true },
+    { path: "profile/links.md", content: "---\ntitle: Links\n---\n\n# Links\n\n- **website:** https://\n- **github:** https://github.com/\n- **x:** https://x.com/\n", section: "links", editable: true },
+    { path: "profile/skills.md", content: "---\ntitle: Skills\n---\n\n# Skills\n\n- your key skills and expertise\n", section: "skills", editable: true },
+    { path: "profile/experience.md", content: "---\ntitle: Experience\n---\n\n# Experience\n\nYour professional background.\n", section: "experience", editable: true },
+
+    // Preferences
+    { path: "preferences/agent.md", content: "---\ntitle: Agent Preferences\n---\n\n# Agent Preferences\n\n**Tone:** direct, curious\n**Formality:** casual-professional\n**Avoid:** corporate speak, emoji\n", section: "preferences.agent", editable: true },
+    { path: "preferences/writing.md", content: "---\ntitle: Writing Style\n---\n\n# Writing Style\n\n**Style:** concise, lowercase, terminal-native\n**Format:** markdown preferred\n", section: "preferences.writing", editable: true },
+    { path: "preferences/tools.md", content: "---\ntitle: Tools\n---\n\n# Tools & Stack\n\nTools, languages, frameworks you use.\n", section: "preferences.tools", editable: true },
+
+    // Voice (platform-specific writing styles)
+    { path: "voice/voice.md", content: "---\ntitle: Voice\n---\n\n# Overall Voice\n\nYour general communication style across all platforms.\n", section: "voice", editable: true },
+    { path: "voice/voice.linkedin.md", content: "---\ntitle: LinkedIn Voice\nplatform: linkedin\n---\n\n# LinkedIn Voice\n\nHow you communicate on LinkedIn.\n", section: "voice.linkedin", editable: true },
+    { path: "voice/voice.x.md", content: "---\ntitle: X Voice\nplatform: x\n---\n\n# X Voice\n\nHow you communicate on X/Twitter.\n", section: "voice.x", editable: true },
+    { path: "voice/voice.email.md", content: "---\ntitle: Email Voice\nplatform: email\n---\n\n# Email Voice\n\nHow you write emails.\n", section: "voice.email", editable: true },
+    { path: "voice/voice.blog.md", content: "---\ntitle: Blog Voice\nplatform: blog\n---\n\n# Blog Voice\n\nHow you write long-form content.\n", section: "voice.blog", editable: true },
+    { path: "voice/voice.slack.md", content: "---\ntitle: Slack Voice\nplatform: slack\n---\n\n# Slack Voice\n\nHow you communicate in team chat.\n", section: "voice.slack", editable: true },
+
+    // Private (owner-only, never public)
+    { path: "private/notes.md", content: "---\ntitle: Private Notes\nvisibility: private\n---\n\n# Private Notes\n\nPersonal notes, internal context, things agents should know but the public shouldn't see.\n", section: "private.notes", editable: true },
+    { path: "private/projects.md", content: "---\ntitle: Private Projects\nvisibility: private\n---\n\n# Private Projects\n\nStealth projects, internal initiatives, confidential work.\n", section: "private.projects", editable: true },
+    { path: "private/internal-links.md", content: "---\ntitle: Internal Links\nvisibility: private\n---\n\n# Internal Links\n\nPrivate URLs, internal tools, team resources.\n", section: "private.links", editable: true },
+    { path: "private/context.md", content: "---\ntitle: Private Context\nvisibility: private\n---\n\n# Private Context\n\nAdditional context for trusted agents: priorities, preferences, working style details.\n", section: "private.context", editable: true },
+    { path: "private/calendar.md", content: "---\ntitle: Calendar Context\nvisibility: private\n---\n\n# Calendar Context\n\nAvailability signals, meeting preferences, timezone.\n", section: "private.calendar", editable: true },
+
+    // Projects (individual project directories)
+    { path: "projects/README.md", content: "---\ntitle: Projects Directory\n---\n\n# Projects\n\nEach project can have its own directory with context files.\nCreate a folder per project: projects/project-name/\n", section: "projects.index", editable: true },
+
+    // Memory
+    { path: "memory/index.md", content: "---\ntitle: Memory Index\n---\n\n# Memory\n\nAgent memories and learned context. Managed automatically.\n", section: "memory", editable: false },
+
+    // Sessions
+    { path: "sessions/history.md", content: "---\ntitle: Session History\n---\n\n# Session History\n\nConversation history and session logs.\n", section: "sessions", editable: false },
+  ];
+
+  // Only add scaffold files that don't already exist from real data
+  for (const s of scaffold) {
+    if (!existingPaths.has(s.path)) {
+      files.push(s);
+    }
+  }
+
+  // FOLDER.md — the directory contract (inspired by folder.md)
+  const username = youJson?.username || "";
+  files.push({
+    path: "FOLDER.md",
+    content: `# you.md/${username} — Directory Structure
+
+This is a you-md/v1 identity bundle. It contains structured context
+about who you are, what you do, and how you communicate.
+
+## Directory Layout
+
+\`\`\`
+profile/        public identity (bio, projects, values, links, skills)
+preferences/    how agents should interact with you (tone, tools, writing)
+voice/          platform-specific communication styles
+private/        owner-only context (never shared publicly)
+projects/       individual project directories
+memory/         agent-learned context (auto-managed)
+sessions/       conversation history
+\`\`\`
+
+## Visibility
+
+- **profile/** — always public, readable by any agent
+- **preferences/** — public, guides agent behavior
+- **voice/** — public, helps agents write like you
+- **private/** — NEVER public, only shared via scoped tokens
+- **projects/** — public by default, can be scoped private
+- **memory/** — private, auto-managed by the agent
+- **sessions/** — private, conversation logs
+
+## For Agents
+
+Read this file first. Check profile/about.md for identity context.
+Check preferences/agent.md for communication preferences.
+Check voice/ for platform-specific writing style.
+
+Full structured data: see you.json
+`,
+    section: "folder",
+    editable: false,
+  });
+
   // manifest.json
+  const allPaths = files.map((f) => f.path);
   files.push({
     path: "manifest.json",
-    content: JSON.stringify(youJson?.meta ? {
-      schema: youJson.schema,
-      username: youJson.username,
-      generated_at: youJson.generated_at,
-      compiler_version: youJson.meta?.compiler_version,
+    content: JSON.stringify({
+      schema: youJson?.schema || "you-md/v1",
+      username,
+      generated_at: youJson?.generated_at || new Date().toISOString(),
+      compiler_version: youJson?.meta?.compiler_version || "0.2.0",
       paths: {
-        public: files.filter(f => !f.path.startsWith("private/")).map(f => f.path),
-        private: ["private/notes.md", "private/projects.md", "private/internal-links.md"],
+        public: allPaths.filter((p) => !p.startsWith("private/") && !p.startsWith("memory/") && !p.startsWith("sessions/")),
+        private: allPaths.filter((p) => p.startsWith("private/")),
+        managed: allPaths.filter((p) => p.startsWith("memory/") || p.startsWith("sessions/")),
       },
-    } : {}, null, 2),
+    }, null, 2),
     section: "manifest",
     editable: false,
   });
