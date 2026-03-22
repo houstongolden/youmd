@@ -104,7 +104,8 @@ http.route({
       return json({ error: "Token parameter required" }, 400);
     }
 
-    const result = await ctx.runQuery(api.contextLinks.resolveLink, { token });
+    const raw = await ctx.runQuery(api.contextLinks.resolveLink, { token });
+    const result = raw as Record<string, unknown>;
 
     if ("error" in result) {
       return json({ error: result.error }, (result.status as number) || 400);
@@ -115,7 +116,7 @@ http.route({
 
     // Record the view
     await ctx.runMutation(api.profiles.recordView, {
-      username: result.username,
+      username: result.username as string,
       referrer: request.headers.get("referer") ?? undefined,
       isAgentRead: true,
       isContextLink: true,
@@ -125,7 +126,7 @@ http.route({
 
     // Return markdown if requested
     if (accept.includes("text/markdown") || accept.includes("text/plain")) {
-      return new Response(result.markdown, {
+      return new Response(result.markdown as string, {
         status: 200,
         headers: {
           "Content-Type": "text/markdown; charset=utf-8",
@@ -138,7 +139,8 @@ http.route({
       schema: "you-md/v1",
       username: result.username,
       scope: result.scope,
-      ...result.bundle,
+      ...(result.bundle as Record<string, unknown>),
+      ...(result.privateContext ? { privateContext: result.privateContext } : {}),
     });
   }),
 });
