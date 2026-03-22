@@ -5,11 +5,13 @@ import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
+import AsciiAvatar from "@/components/AsciiAvatar";
 
 interface DirectoryEntry {
   username: string;
   name: string | null;
   tagline: string | null;
+  avatarUrl: string | null;
   isClaimed: boolean;
   source: "profiles" | "legacy";
 }
@@ -27,6 +29,7 @@ export function ProfilesDirectoryContent() {
         username: p.username,
         name: p.name ?? null,
         tagline: p.tagline ?? null,
+        avatarUrl: p.avatarUrl ?? null,
         isClaimed: p.isClaimed,
         source: "profiles",
       });
@@ -39,6 +42,7 @@ export function ProfilesDirectoryContent() {
         username: u.username,
         name: u.displayName ?? null,
         tagline: null,
+        avatarUrl: null,
         isClaimed: true,
         source: "legacy",
       });
@@ -103,14 +107,20 @@ export function ProfilesDirectoryContent() {
                     href={`/${entry.username}`}
                     className="flex items-center gap-4 px-5 py-3.5 group hover:bg-accent-wash/40 transition-colors"
                   >
-                    {/* Status dot */}
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                        entry.isClaimed
-                          ? "bg-success/60 status-dot-pulse"
-                          : "bg-[hsl(var(--text-secondary))]/20"
-                      }`}
-                    />
+                    {/* Avatar or status dot */}
+                    {entry.avatarUrl ? (
+                      <div className="shrink-0 w-8 h-8 border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "2px" }}>
+                        <AsciiAvatar src={entry.avatarUrl} cols={20} canvasWidth={32} />
+                      </div>
+                    ) : (
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                          entry.isClaimed
+                            ? "bg-success/60 status-dot-pulse"
+                            : "bg-[hsl(var(--text-secondary))]/20"
+                        }`}
+                      />
+                    )}
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
