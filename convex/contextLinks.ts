@@ -197,15 +197,35 @@ export const resolveLink = query({
     if (link.profileId) {
       const profile = await ctx.db.get(link.profileId);
       if (profile?.youJson) {
-        return {
+        const result: Record<string, unknown> = {
           bundle: {
-            ...profile.youJson,
+            ...(profile.youJson as Record<string, unknown>),
             _scope: link.scope,
           },
           markdown: profile.youMd || "",
           username: profile.username,
           scope: link.scope,
         };
+
+        // Include private context for full-scope links
+        if (link.scope === "full") {
+          const privateCtx = await ctx.db
+            .query("privateContext")
+            .withIndex("by_profileId", (q) => q.eq("profileId", link.profileId!))
+            .first();
+          if (privateCtx) {
+            result.privateContext = {
+              privateNotes: privateCtx.privateNotes,
+              privateProjects: privateCtx.privateProjects,
+              internalLinks: privateCtx.internalLinks,
+              calendarContext: privateCtx.calendarContext,
+              communicationPrefs: privateCtx.communicationPrefs,
+              customData: privateCtx.customData,
+            };
+          }
+        }
+
+        return result;
       }
     }
 
