@@ -98,10 +98,18 @@ export function SiteNav() {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={user?.imageUrl || (username ? `https://avatars.githubusercontent.com/${username}?s=40` : undefined)}
+                    src={username ? `https://avatars.githubusercontent.com/${username}?s=40` : user?.imageUrl}
                     alt=""
                     className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    onError={(e) => {
+                      // Fall back to Clerk avatar if GitHub fails
+                      const img = e.target as HTMLImageElement;
+                      if (user?.imageUrl && img.src !== user.imageUrl) {
+                        img.src = user.imageUrl;
+                      } else {
+                        img.style.display = 'none';
+                      }
+                    }}
                   />
                   <span className="font-mono text-[10px] text-muted-foreground/60 group-hover:text-accent transition-colors">
                     @{username ?? "you"}

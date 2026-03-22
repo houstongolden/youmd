@@ -126,9 +126,18 @@ const AsciiAvatar = ({ src, cols = 120, canvasWidth = 200, className = "" }: Asc
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={src}
-            alt="profile"
+            alt=""
+            crossOrigin="anonymous"
             className="w-full opacity-60"
             style={{ filter: "sepia(1) saturate(2) hue-rotate(-10deg) brightness(0.7)" }}
+            onError={(e) => {
+              // If crossOrigin fails, try without it
+              const img = e.target as HTMLImageElement;
+              if (img.crossOrigin) {
+                img.crossOrigin = "";
+                img.src = src;
+              }
+            }}
           />
           <div className="absolute inset-0 bg-[hsl(var(--accent))]/10 mix-blend-multiply" />
         </div>
