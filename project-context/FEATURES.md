@@ -15,6 +15,7 @@ Last Updated: 2026-03-19
 | Public profile pages | Done | SSR, JSON-LD, dynamic metadata |
 | OG social cards | Done | Auto-generated per profile |
 | Terminal split-screen dashboard | Done | 35% terminal + 65% preview pane |
+| Unified SiteNav top bar | Done | Compact nav across all authenticated pages (replaces AppNav side panel) |
 | /initialize onboarding | Done | Boot sequence + agent conversation |
 | useYouAgent hook | Done | Shared agent logic for all terminal UIs |
 | Right pane system | Done | 11 panes: preview, json, sources, portrait, publish, agents, activity, settings, tokens, billing, help |
