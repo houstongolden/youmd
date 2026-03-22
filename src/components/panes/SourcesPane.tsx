@@ -1,6 +1,7 @@
 "use client";
 
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
+import { CopyableCommand } from "./CopyableCommand";
 
 // TODO: Wire up real data from Convex queries (e.g., api.sources.listByUser)
 // Currently using mock/placeholder data
@@ -98,14 +99,13 @@ export function SourcesPane({ username }: SourcesPaneProps) {
           className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
           style={{ borderRadius: "2px" }}
         >
-          <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">
+          <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 mb-2">
             connect a new source via terminal:
           </p>
-          <div
-            className="mt-2 font-mono text-[11px] text-[hsl(var(--accent))] bg-[hsl(var(--bg))] px-3 py-2 overflow-x-auto"
-            style={{ borderRadius: "2px" }}
-          >
-            &gt; add source https://linkedin.com/in/you
+          <div className="space-y-1">
+            <CopyableCommand command="add source https://linkedin.com/in/you" />
+            <CopyableCommand command="add source https://github.com/you" dimmed />
+            <CopyableCommand command="scrape my x profile" dimmed />
           </div>
         </div>
 

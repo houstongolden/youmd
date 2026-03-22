@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
+import { CopyableLink, CopyableCommand } from "./CopyableCommand";
 
 interface AgentsPaneProps {
   username: string;
@@ -98,6 +99,29 @@ export function AgentsPane({ username, profileId }: AgentsPaneProps) {
       <PaneHeader>agents{hasRealData ? "" : " [mock]"}</PaneHeader>
 
       <div className="px-6 py-6 space-y-0 max-w-xl">
+        {/* Share context with agents */}
+        <SectionLabel>share your context</SectionLabel>
+        <div
+          className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] space-y-2 mb-2"
+          style={{ borderRadius: "2px" }}
+        >
+          <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 mb-2">
+            give any agent your full context in one paste:
+          </p>
+          <CopyableLink
+            url={`https://you.md/${username}`}
+            label={`you.md/${username}`}
+            withPrompt={`Read my identity context before we start:\nhttps://you.md/${username}\n\nThis is my you.md profile — it contains my bio, projects, values,\npreferences, and how I like to communicate. Use it to understand\nwho I am so we can skip the intro and get straight to work.`}
+          />
+          <div className="mt-2 space-y-1">
+            <CopyableCommand command="/share" />
+            <CopyableCommand command="/share --private" dimmed />
+            <CopyableCommand command="create a share link for my new agent" dimmed />
+          </div>
+        </div>
+
+        <Divider />
+
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
           {[

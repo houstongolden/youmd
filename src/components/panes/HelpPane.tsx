@@ -1,40 +1,7 @@
 "use client";
 
-import { PaneHeader } from "./shared";
-
-const HELP_TEXT = `NAVIGATION
-  /profile          view your identity profile
-  /settings         account preferences
-  /billing          plan & usage
-  /tokens           api keys management
-  /activity         agent reads & sync log
-  /sources          connected data sources
-  /portrait         ascii portrait settings
-  /publish          deploy status & history
-  /agents           agent network & access
-
-VIEW MODES
-  /public           preview as public visitors see
-  /private          preview with private context
-
-IDENTITY
-  /sync             re-sync all connected sources
-  /portrait         regenerate ascii portrait
-  /publish          publish latest changes
-
-CONTEXT MANAGEMENT
-  set context <key> <value>
-  add source <url>
-  remove source <name>
-
-AGENT COMMANDS
-  set access <public|verified|private>
-  set update-mode <auto|review|manual>
-
-GENERAL
-  /help             show this reference
-  clear             clear terminal
-  exit              leave shell`;
+import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
+import { CopyableCommand } from "./CopyableCommand";
 
 export function HelpPane() {
   return (
@@ -42,22 +9,75 @@ export function HelpPane() {
       <PaneHeader>help</PaneHeader>
 
       <div className="px-6 py-6 space-y-0 max-w-xl">
-        <h2 className="font-mono text-sm text-[hsl(var(--text-primary))] mb-6">
-          you.md shell reference
-        </h2>
-
-        <div
-          className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))]"
-          style={{ borderRadius: "2px" }}
-        >
-          <pre className="font-mono text-[11px] leading-loose text-[hsl(var(--text-primary))] opacity-70 whitespace-pre-wrap sm:whitespace-pre overflow-x-auto">
-            {HELP_TEXT}
-          </pre>
+        {/* Quick start */}
+        <SectionLabel>quick start</SectionLabel>
+        <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 mb-2">
+          try these to get started:
+        </p>
+        <div className="space-y-1 mb-2">
+          <CopyableCommand command="/share" />
+          <CopyableCommand command="/share --private" />
+          <CopyableCommand command="/portrait --regenerate" />
+          <CopyableCommand command="/publish" />
         </div>
 
-        <div className="mt-6 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40">
-          you can also type naturally -- the agent understands free-form input.
+        <Divider />
+
+        {/* Navigation */}
+        <SectionLabel>navigation</SectionLabel>
+        <div className="space-y-1 mb-2">
+          <CopyableCommand command="/preview" dimmed />
+          <CopyableCommand command="/files" dimmed />
+          <CopyableCommand command="/json" dimmed />
+          <CopyableCommand command="/sources" dimmed />
+          <CopyableCommand command="/portrait" dimmed />
+          <CopyableCommand command="/publish" dimmed />
+          <CopyableCommand command="/agents" dimmed />
+          <CopyableCommand command="/activity" dimmed />
+          <CopyableCommand command="/settings" dimmed />
+          <CopyableCommand command="/tokens" dimmed />
+          <CopyableCommand command="/billing" dimmed />
         </div>
+
+        <Divider />
+
+        {/* Sharing */}
+        <SectionLabel>sharing</SectionLabel>
+        <div className="space-y-1 mb-2">
+          <CopyableCommand command="/share" />
+          <CopyableCommand command="/share --private" />
+          <CopyableCommand command="/share --project my-project" dimmed />
+          <CopyableCommand command="create a share link for my openclaw agent" dimmed />
+        </div>
+
+        <Divider />
+
+        {/* Identity */}
+        <SectionLabel>identity</SectionLabel>
+        <div className="space-y-1 mb-2">
+          <CopyableCommand command="/portrait --regenerate" />
+          <CopyableCommand command="/publish" />
+          <CopyableCommand command="/status" />
+          <CopyableCommand command="update my bio" dimmed />
+          <CopyableCommand command="add a new project" dimmed />
+          <CopyableCommand command="this is private" dimmed />
+        </div>
+
+        <Divider />
+
+        {/* Memory */}
+        <SectionLabel>memory</SectionLabel>
+        <div className="space-y-1 mb-2">
+          <CopyableCommand command="/memory" dimmed />
+          <CopyableCommand command="/recall" dimmed />
+          <CopyableCommand command="/recall what projects am i working on" dimmed />
+        </div>
+
+        <Divider />
+
+        <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-30 mt-4">
+          you can also type naturally — the agent understands free-form input.
+        </p>
       </div>
     </div>
   );

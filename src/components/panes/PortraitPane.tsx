@@ -5,6 +5,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import AsciiAvatar from "@/components/AsciiAvatar";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
+import { CopyableCommand } from "./CopyableCommand";
 
 interface PortraitPaneProps {
   username: string;
@@ -137,18 +138,9 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
             regenerate your portrait via terminal:
           </p>
           <div className="mt-2 space-y-1">
-            <div
-              className="font-mono text-[11px] text-[hsl(var(--accent))] bg-[hsl(var(--bg))] px-3 py-2"
-              style={{ borderRadius: "2px" }}
-            >
-              &gt; /portrait --regenerate
-            </div>
-            <div
-              className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40 bg-[hsl(var(--bg))] px-3 py-2"
-              style={{ borderRadius: "2px" }}
-            >
-              &gt; scrape my x profile photo and regenerate
-            </div>
+            <CopyableCommand command="/portrait --regenerate" />
+            <CopyableCommand command="scrape my x profile photo and regenerate" dimmed />
+            <CopyableCommand command="pull my github avatar and make it primary" dimmed />
           </div>
         </div>
       </div>
