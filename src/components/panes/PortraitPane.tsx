@@ -34,6 +34,14 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
     sources.push({ platform: "profile", url: avatarUrl, isPrimary: true });
   }
 
+  // Fallback: auto-generate URLs from username for GitHub/X
+  if (sources.length === 0 && username) {
+    sources.push({ platform: "github", url: `https://github.com/${username}.png?size=400`, isPrimary: true });
+    sources.push({ platform: "x", url: `https://unavatar.io/x/${username}`, isPrimary: false });
+  }
+
+  const primaryUrl = avatarUrl || sources.find(s => s.isPrimary)?.url || sources[0]?.url;
+
   return (
     <div className="h-full overflow-y-auto">
       <PaneHeader>portrait</PaneHeader>
@@ -41,12 +49,12 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
       <div className="px-6 py-6 space-y-0 max-w-xl">
         {/* Primary portrait */}
         <SectionLabel>current portrait -- @{username}</SectionLabel>
-        {avatarUrl ? (
+        {primaryUrl ? (
           <div
             className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 mb-2 overflow-hidden"
             style={{ borderRadius: "2px" }}
           >
-            <AsciiAvatar src={avatarUrl} cols={80} canvasWidth={400} className="w-full" />
+            <AsciiAvatar src={primaryUrl} cols={80} canvasWidth={400} className="w-full" />
           </div>
         ) : (
           <div
@@ -116,7 +124,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
             { label: "style", value: "block · 80 col" },
             { label: "detail level", value: "high" },
             { label: "characters", value: "$@B%8&#*oahkbd..." },
-            { label: "source", value: avatarUrl ? (primaryImage || "profile image") : "none" },
+            { label: "source", value: primaryUrl ? (primaryImage || "auto-detected") : "none" },
             { label: "sources available", value: String(sources.length) },
           ].map((s) => (
             <div key={s.label} className="flex items-center justify-between font-mono text-[11px]">

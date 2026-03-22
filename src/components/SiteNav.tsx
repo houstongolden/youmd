@@ -96,18 +96,13 @@ export function SiteNav() {
                   href="/dashboard"
                   className="hidden md:flex items-center gap-2 group"
                 >
-                  {user?.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={user.imageUrl}
-                      alt=""
-                      className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors"
-                    />
-                  ) : (
-                    <span className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[9px] text-accent group-hover:border-accent transition-colors">
-                      {username?.[0] ?? ">"}
-                    </span>
-                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={user?.imageUrl || (username ? `https://github.com/${username}.png?size=40` : undefined)}
+                    alt=""
+                    className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
                   <span className="font-mono text-[10px] text-muted-foreground/60 group-hover:text-accent transition-colors">
                     @{username ?? "you"}
                   </span>
