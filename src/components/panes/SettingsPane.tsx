@@ -3,6 +3,8 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useState } from "react";
+import { useUser, useClerk } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
 
@@ -11,12 +13,25 @@ interface SettingsPaneProps {
   username: string;
 }
 
+function SettingRow({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="flex items-center justify-between font-mono text-[11px] py-2 border-b border-[hsl(var(--border))]/50 last:border-0">
+      <span className="text-[hsl(var(--text-secondary))] opacity-60">{label}</span>
+      <span className={accent ? "text-[hsl(var(--accent-mid))]" : "text-[hsl(var(--text-primary))] opacity-70"}>{value}</span>
+    </div>
+  );
+}
+
 export function SettingsPane({ clerkId, username }: SettingsPaneProps) {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const router = useRouter();
   const links = useQuery(api.contextLinks.listLinks, clerkId ? { clerkId } : "skip");
   const createLink = useMutation(api.contextLinks.createLink);
   const revokeLink = useMutation(api.contextLinks.revokeLink);
   const [creating, setCreating] = useState(false);
   const [newLink, setNewLink] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const handleCreateLink = async () => {
     setCreating(true);
@@ -29,6 +44,10 @@ export function SettingsPane({ clerkId, username }: SettingsPaneProps) {
     setCreating(false);
   };
 
+  const handleSignOut = () => {
+    signOut({ redirectUrl: "/" });
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       <PaneHeader>settings</PaneHeader>
@@ -37,17 +56,27 @@ export function SettingsPane({ clerkId, username }: SettingsPaneProps) {
         {/* Account info */}
         <SectionLabel>account</SectionLabel>
         <div
-          className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] font-mono text-xs space-y-2"
+          className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] font-mono text-xs space-y-0"
           style={{ borderRadius: "2px" }}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-[hsl(var(--text-secondary))] opacity-60">username</span>
-            <span className="text-[hsl(var(--text-primary))] opacity-70">@{username}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[hsl(var(--text-secondary))] opacity-60">profile</span>
-            <span className="text-[hsl(var(--accent-mid))]">you.md/{username}</span>
-          </div>
+          <SettingRow label="username" value={`@${username}`} />
+          <SettingRow label="email" value={user?.emailAddresses?.[0]?.emailAddress || "--"} />
+          <SettingRow label="plan" value="free" />
+          <SettingRow label="profile" value={`you.md/${username}`} accent />
+        </div>
+
+        <Divider />
+
+        {/* Identity preferences */}
+        <SectionLabel>identity preferences</SectionLabel>
+        <div
+          className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] font-mono text-xs space-y-0"
+          style={{ borderRadius: "2px" }}
+        >
+          <SettingRow label="default context" value="public" />
+          <SettingRow label="agent access" value="all agents" />
+          <SettingRow label="update mode" value="auto-publish" />
+          <SettingRow label="portrait style" value="ascii 120-col" />
         </div>
 
         <Divider />
@@ -138,6 +167,44 @@ export function SettingsPane({ clerkId, username }: SettingsPaneProps) {
             no context links yet.
           </p>
         )}
+
+        <Divider />
+
+        {/* Actions */}
+        <SectionLabel>actions</SectionLabel>
+        <div className="space-y-3">
+          <button
+            onClick={handleSignOut}
+            className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-60 hover:text-[hsl(var(--text-primary))] transition-colors"
+          >
+            &gt; sign out
+          </button>
+
+          <div>
+            <button
+              onClick={() => {
+                if (!confirmDelete) {
+                  setConfirmDelete(true);
+                  return;
+                }
+                // TODO: implement profile deletion mutation
+                router.push("/");
+              }}
+              className="font-mono text-[11px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
+            >
+              {confirmDelete ? "confirm permanent deletion" : "> delete profile"}
+            </button>
+            {confirmDelete && (
+              <p className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-50 mt-1">
+                this will permanently delete your profile, sources, tokens, and private data. click again to confirm.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-30">
+          tip: update settings via terminal -- <span className="text-[hsl(var(--accent))] opacity-60">set context private</span>
+        </div>
       </div>
     </div>
   );

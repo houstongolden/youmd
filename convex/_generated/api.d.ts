@@ -13,7 +13,6 @@ import type * as bundles from "../bundles.js";
 import type * as chat from "../chat.js";
 import type * as cleanup from "../cleanup.js";
 import type * as contextLinks from "../contextLinks.js";
-import type * as debug_check from "../debug_check.js";
 import type * as http from "../http.js";
 import type * as lib_compile from "../lib/compile.js";
 import type * as me from "../me.js";
@@ -45,7 +44,6 @@ declare const fullApi: ApiFromModules<{
   chat: typeof chat;
   cleanup: typeof cleanup;
   contextLinks: typeof contextLinks;
-  debug_check: typeof debug_check;
   http: typeof http;
   "lib/compile": typeof lib_compile;
   me: typeof me;
