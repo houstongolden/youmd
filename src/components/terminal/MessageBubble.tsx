@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { DisplayMessage } from "@/hooks/useYouAgent";
+import { RichTerminalContent } from "./TerminalBlocks";
 
 interface MessageBubbleProps {
   message: DisplayMessage;
@@ -53,8 +54,8 @@ export function MessageBubble({ message, isLatest = false }: MessageBubbleProps)
 
   return (
     <div className="pl-3 border-l-2 border-[hsl(var(--accent))]/25">
-      <div className="text-[14px] font-mono whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-secondary))]">
-        {renderTerminalContent(message.content)}
+      <div className="text-[14px] font-mono leading-relaxed text-[hsl(var(--text-secondary))]">
+        <RichTerminalContent content={message.content} />
       </div>
     </div>
   );
