@@ -1,5 +1,23 @@
 # You.md — Changelog
 
+## 2026-03-24 — Real-Time Progress Indicators (Claude Code-style)
+
+### Activity Log System
+- **ActivityLog component** — Claude Code-style step-by-step progress display showing what the agent is doing in real-time (fetching sources, researching context, generating response, saving updates, publishing)
+- **ProgressStep tracking** — each async operation (scrape, research, LLM call, save, publish) gets its own progress step with running/done/error status and elapsed time
+- **ThinkingIndicator enhanced** — now shows the activity log underneath the thinking phrase when steps are active
+- **Typewriter effect** — latest assistant message streams in character-by-character with a blinking cursor for a natural terminal feel
+- **Init flow progress** — session initialization (auto-scrape, auto-research, greeting generation) now shows step-by-step progress instead of going silent
+- **Per-source scrape tracking** — each source being scraped gets its own progress line that completes independently as results come in
+
+### UX Improvements
+- Users always see exactly what the agent is working on — no more silent waiting
+- Progress steps show elapsed time per operation
+- Failed steps clearly marked with error indicator
+- Steps auto-clear after completion with a brief delay to show final state
+
+---
+
 ## 2026-03-24 — Dashboard Simplification & Share UX
 
 ### Dashboard Tab Consolidation (12 -> 4)
