@@ -17,6 +17,7 @@ interface ActivityLogProps {
 /**
  * Claude Code-style activity log showing real-time progress steps.
  * Each step shows a status icon, label, optional detail, and elapsed time.
+ * Completed steps fade out to keep focus on active work.
  */
 export function ActivityLog({ steps }: ActivityLogProps) {
   if (steps.length === 0) return null;
@@ -35,6 +36,8 @@ function ActivityStep({ step }: { step: ProgressStep }) {
 
   useEffect(() => {
     if (step.status !== "running") return;
+    // Set initial elapsed immediately
+    setElapsed(Math.floor((Date.now() - step.startedAt) / 1000));
     const interval = setInterval(() => {
       setElapsed(Math.floor((Date.now() - step.startedAt) / 1000));
     }, 1000);

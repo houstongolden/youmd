@@ -184,12 +184,13 @@ function detectSourcesInMessage(text: string): DetectedSource[] {
 async function scrapeSource(source: DetectedSource): Promise<string> {
   try {
     if (source.platform === "linkedin") {
-      // Try Apify-powered LinkedIn scrape
+      // Try Apify-powered LinkedIn scrape with normalized URL
+      const normalizedLinkedInUrl = `https://www.linkedin.com/in/${source.username}/`;
       const res = await fetch(`${CONVEX_SITE_URL}/api/v1/enrich-linkedin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ linkedinUrl: `https://www.linkedin.com/in/${source.username}/` }),
-        signal: AbortSignal.timeout(30_000),
+        body: JSON.stringify({ linkedinUrl: normalizedLinkedInUrl }),
+        signal: AbortSignal.timeout(60_000), // LinkedIn scraping can take longer via Apify
       });
       if (res.ok) {
         const data = await res.json();
@@ -215,9 +216,18 @@ async function scrapeSource(source: DetectedSource): Promise<string> {
             parts.push(`education: ${eduStr}`);
           }
           if (Array.isArray(p.skills) && p.skills.length > 0) {
-            parts.push(`skills: ${p.skills.slice(0, 10).join(", ")}`);
+            const skillNames = p.skills.map((s: unknown) =>
+              typeof s === "string" ? s : (s as Record<string, unknown>)?.name || null
+            ).filter(Boolean);
+            if (skillNames.length > 0) parts.push(`skills: ${skillNames.slice(0, 10).join(", ")}`);
           }
+          // Profile image — check multiple field names from Apify
+          const profileImg = p.profilePicture || p.profileImageUrl || p.imgUrl || p.profilePic || p.avatar;
+          if (profileImg) parts.push(`profile_image: ${profileImg}`);
           if (data.voiceAnalysis) parts.push(`voice analysis: ${String(data.voiceAnalysis).slice(0, 300)}`);
+          if (Array.isArray(data.posts) && data.posts.length > 0) {
+            parts.push(`recent posts: ${data.posts.length} posts found`);
+          }
           return parts.join("\n");
         }
       }
@@ -1275,16 +1285,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         if (shouldAutoScrape) {
           setThinkingPhrase(randomThinking("sync"));
           setThinkingCategory("sync");
-          setDisplayMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              role: "system-notice",
-              content: `[auto-scraping: ${existingLinks.map((s) => `${s.platform}${s.username ? ` @${s.username}` : ""}`).join(", ")}]`,
-            },
-          ]);
 
-          // Add progress steps for each source
+          // Add progress steps for each source (activity shown via ThinkingIndicator at bottom)
           const initScrapeStepIds = existingLinks.map((s) => {
             const sourceLabel = s.username ? `${s.platform}/${s.username}` : s.url;
             return addStep(`fetching ${sourceLabel}`);
@@ -1795,17 +1797,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     try {
       // If we detected new sources, scrape them FIRST and inject results
       if (newSources.length > 0) {
-        // Show scraping status
-        setDisplayMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "system-notice",
-            content: `[scraping: ${newSources.map((s) => `${s.platform}${s.username ? ` @${s.username}` : ""}`).join(", ")}]`,
-          },
-        ]);
-
-        // Add progress steps for each source
+        // Add progress steps for each source (activity shown via ThinkingIndicator at bottom)
         const scrapeStepIds = newSources.map((s) => {
           const sourceLabel = s.username ? `${s.platform}/${s.username}` : s.url;
           return addStep(`fetching ${sourceLabel}`);
@@ -1816,6 +1808,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           newSources.map((s, i) =>
             scrapeSource(s).then((result) => {
               completeStep(scrapeStepIds[i], result ? "data received" : "no data");
+              // Rotate thinking phrase as each source completes
+              setThinkingPhrase(randomThinking("discovery"));
               return result;
             }).catch(() => {
               failStep(scrapeStepIds[i], "failed");
@@ -1894,6 +1888,12 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           setThinkingPhrase(randomThinking("analysis"));
           setThinkingCategory("analysis");
         }
+      }
+
+      // Transition to identity/analysis phase
+      if (newSources.length > 0) {
+        setThinkingPhrase(randomThinking("identity"));
+        setThinkingCategory("identity");
       }
 
       // LLM call with progress step

@@ -475,6 +475,14 @@ http.route({
         );
       }
 
+      // Normalize LinkedIn URL to ensure consistent format for Apify
+      const slugMatch = linkedinUrl.match(/linkedin\.com\/in\/([a-zA-Z0-9_-]+)/);
+      const normalizedUrl = slugMatch
+        ? `https://www.linkedin.com/in/${slugMatch[1]}/`
+        : linkedinUrl;
+
+      console.log(`LinkedIn enrichment: normalizing ${linkedinUrl} -> ${normalizedUrl}`);
+
       // If userId provided, look up user; otherwise run without pipeline storage
       let userId = body.userId;
 
@@ -497,14 +505,14 @@ http.route({
       const profileActorId = "VhxlqQXRwhW8H5hNV";
       const postsActorId = "Wpp1BZ6yGWjySadk3";
 
-      // Run both actors in parallel
+      // Run both actors in parallel with normalized URL
       const [profileRes, postsRes] = await Promise.all([
         fetch(
           `https://api.apify.com/v2/acts/${profileActorId}/run-sync-get-dataset-items?token=${apiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ profileUrls: [linkedinUrl] }),
+            body: JSON.stringify({ profileUrls: [normalizedUrl] }),
             signal: AbortSignal.timeout(120_000),
           }
         ),
@@ -514,7 +522,7 @@ http.route({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              profileUrl: linkedinUrl,
+              profileUrl: normalizedUrl,
               maxPosts: 20,
               rawData: true,
             }),
@@ -532,7 +540,22 @@ http.route({
       }
 
       const profileData = await profileRes.json();
-      const profile = Array.isArray(profileData) ? profileData[0] ?? null : profileData;
+      const rawProfile = Array.isArray(profileData) ? profileData[0] ?? null : profileData;
+
+      if (rawProfile) {
+        console.log(`LinkedIn enrichment: got profile for ${rawProfile.fullName || rawProfile.firstName || "unknown"}, headline: ${rawProfile.headline || rawProfile.title || "none"}`);
+      } else {
+        console.log("LinkedIn enrichment: no profile data returned from Apify");
+      }
+
+      // Normalize profile data to ensure consistent field names
+      const profile = rawProfile ? {
+        ...rawProfile,
+        // Ensure profileImageUrl is always present if any image field exists
+        profileImageUrl: rawProfile.profilePicture || rawProfile.profileImageUrl || rawProfile.imgUrl || rawProfile.profilePic || rawProfile.avatar || null,
+        // Ensure fullName is populated
+        fullName: rawProfile.fullName || (rawProfile.firstName && rawProfile.lastName ? `${rawProfile.firstName} ${rawProfile.lastName}`.trim() : null),
+      } : null;
 
       let posts: unknown[] = [];
       if (postsRes.ok) {
