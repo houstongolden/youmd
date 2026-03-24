@@ -1231,6 +1231,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const [thinkingCategory, setThinkingCategory] = useState<ThinkingCategory | undefined>();
   const [initialized, setInitialized] = useState(false);
   const [progressSteps, setProgressSteps] = useState<ProgressStep[]>([]);
+  const [sessionRestored, setSessionRestored] = useState(false);
 
   // Progress step helpers
   const addStep = useCallback((label: string, detail?: string): string => {
@@ -1262,6 +1263,13 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     setProgressSteps([]);
   }, []);
 
+  // Chat message persistence
+  const saveChatMessages = useMutation(api.memories.saveChatMessages);
+  const latestChatMessages = useQuery(
+    api.memories.loadLatestChatMessages,
+    convexUser?._id ? { userId: convexUser._id } : "skip"
+  );
+
   // Session tracking
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const messageCountRef = useRef<number>(0);
@@ -1290,6 +1298,74 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }, 2500);
     return () => clearInterval(interval);
   }, [isThinking]);
+
+  // Restore session from Convex on mount
+  useEffect(() => {
+    if (sessionRestored || isOnboarding) return;
+    if (latestChatMessages === undefined) return; // still loading
+    if (latestChatMessages === null) {
+      setSessionRestored(true);
+      return;
+    }
+
+    // Only restore if the session is recent (within 24h)
+    const isRecent = Date.now() - latestChatMessages.updatedAt < 24 * 60 * 60 * 1000;
+    if (!isRecent) {
+      setSessionRestored(true);
+      return;
+    }
+
+    // Restore the session
+    sessionIdRef.current = latestChatMessages.sessionId;
+    messageCountRef.current = latestChatMessages.messageCount || 0;
+    const restoredDisplay = latestChatMessages.displayMessages.map(m => ({
+      id: m.id,
+      role: m.role as DisplayMessage["role"],
+      content: m.content,
+    }));
+    const restoredLLM = latestChatMessages.llmMessages.map(m => ({
+      role: m.role as ChatMessage["role"],
+      content: m.content,
+    }));
+
+    if (restoredDisplay.length > 0) {
+      setDisplayMessages(restoredDisplay);
+      setMessages(restoredLLM);
+      setInitialized(true); // skip the init conversation — we have history
+    }
+    setSessionRestored(true);
+  }, [latestChatMessages, sessionRestored, isOnboarding]);
+
+  // Debounced save — persist messages after every change
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!user?.id || !initialized || isOnboarding) return;
+    if (displayMessages.length === 0) return;
+
+    // Debounce: save 1s after the last change
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveChatMessages({
+        clerkId: user.id,
+        sessionId: sessionIdRef.current,
+        displayMessages: displayMessages.map(m => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+        })),
+        llmMessages: messages.map(m => ({
+          role: m.role,
+          content: m.content,
+        })),
+      }).catch(() => {
+        // Non-fatal — session save failure shouldn't break the chat
+      });
+    }, 1000);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [displayMessages, messages, user?.id, initialized, isOnboarding, saveChatMessages]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -1478,6 +1554,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   // Initialize conversation with context + auto-scrape existing links
   useEffect(() => {
     if (initialized || !convexUser) return;
+    // Wait for session restore to complete before initializing a new conversation
+    if (!isOnboarding && !sessionRestored) return;
     // For onboarding, we use a custom greeting prompt
     // For dashboard, we wait for latestBundle to be defined (can be null)
     if (!isOnboarding && latestBundle === undefined) return;
@@ -1729,7 +1807,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }
 
     initConversation();
-  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps]);
+  }, [initialized, sessionRestored, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps]);
 
   // Slash commands
   const handleSlashCommand = useCallback(

@@ -297,3 +297,81 @@ export const upsertSession = mutation({
     }
   },
 });
+
+// ── Chat message persistence ──────────────────────────────────────
+
+/** Save display + LLM messages for a session (upsert) */
+export const saveChatMessages = mutation({
+  args: {
+    clerkId: v.string(),
+    sessionId: v.string(),
+    displayMessages: v.array(v.object({
+      id: v.string(),
+      role: v.string(),
+      content: v.string(),
+    })),
+    llmMessages: v.array(v.object({
+      role: v.string(),
+      content: v.string(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("not authenticated");
+
+    const existing = await ctx.db
+      .query("chatMessages")
+      .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        displayMessages: args.displayMessages,
+        llmMessages: args.llmMessages,
+        updatedAt: Date.now(),
+      });
+    } else {
+      await ctx.db.insert("chatMessages", {
+        userId: user._id,
+        sessionId: args.sessionId,
+        displayMessages: args.displayMessages,
+        llmMessages: args.llmMessages,
+        updatedAt: Date.now(),
+      });
+    }
+  },
+});
+
+/** Load chat messages for the most recent session */
+export const loadLatestChatMessages = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const sessions = await ctx.db
+      .query("chatSessions")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .take(1);
+
+    if (sessions.length === 0) return null;
+    const latestSession = sessions[0];
+
+    const messages = await ctx.db
+      .query("chatMessages")
+      .withIndex("by_sessionId", (q) => q.eq("sessionId", latestSession.sessionId))
+      .first();
+
+    if (!messages) return null;
+
+    return {
+      sessionId: latestSession.sessionId,
+      displayMessages: messages.displayMessages,
+      llmMessages: messages.llmMessages,
+      messageCount: latestSession.messageCount,
+      summary: latestSession.summary,
+      updatedAt: messages.updatedAt,
+    };
+  },
+});

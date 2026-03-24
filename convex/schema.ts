@@ -288,4 +288,25 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_sessionId", ["sessionId"]),
+
+  // ── Chat messages (persisted conversation for session restore) ───
+  chatMessages: defineTable({
+    userId: v.id("users"),
+    sessionId: v.string(),
+    // Store the full display messages array as JSON — simpler than individual rows
+    // and supports the exact shape the frontend needs (DisplayMessage[])
+    displayMessages: v.array(v.object({
+      id: v.string(),
+      role: v.string(), // "user" | "assistant" | "system-notice"
+      content: v.string(),
+    })),
+    // Also store the LLM conversation messages for context restoration
+    llmMessages: v.array(v.object({
+      role: v.string(), // "system" | "user" | "assistant"
+      content: v.string(),
+    })),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_sessionId", ["sessionId"]),
 });
