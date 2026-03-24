@@ -598,6 +598,12 @@ export const scrapeLinkedInFull = action({
       };
     }
 
+    // Normalize LinkedIn URL for consistent Apify input
+    const slugMatch = args.linkedinUrl.match(/linkedin\.com\/in\/([a-zA-Z0-9_-]+)/);
+    const normalizedUrl = slugMatch
+      ? `https://www.linkedin.com/in/${slugMatch[1]}/`
+      : args.linkedinUrl;
+
     const profileActorId = "VhxlqQXRwhW8H5hNV"; // apimaestro/linkedin-profile-detail
 
     try {
@@ -607,7 +613,7 @@ export const scrapeLinkedInFull = action({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            profileUrls: [args.linkedinUrl],
+            profileUrls: [normalizedUrl],
           }),
           signal: AbortSignal.timeout(120_000),
         }
