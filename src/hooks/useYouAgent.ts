@@ -520,7 +520,7 @@ export interface PrivateUpdate {
   project?: Record<string, string>;
 }
 
-export type RightPane = "preview" | "files" | "settings" | "billing" | "tokens" | "json" | "sources" | "portrait" | "publish" | "agents" | "activity" | "help";
+export type RightPane = "profile" | "edit" | "share" | "settings";
 
 // ---------------------------------------------------------------------------
 // Helpers (exported for reuse)
@@ -1359,18 +1359,19 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       // Pane-switching commands
       // Note: /publish and /help are handled separately below with special logic
       const paneCommands: Record<string, RightPane> = {
-        "/preview": "preview",
-        "/profile": "preview",
+        "/preview": "profile",
+        "/profile": "profile",
+        "/portrait": "profile",
         "/settings": "settings",
-        "/billing": "billing",
-        "/tokens": "tokens",
-        "/json": "json",
-        "/sources": "sources",
-        "/portrait": "portrait",
-        "/files": "files",
-        "/vault": "files",
-        "/agents": "agents",
-        "/activity": "activity",
+        "/billing": "settings",
+        "/tokens": "settings",
+        "/activity": "settings",
+        "/json": "edit",
+        "/sources": "edit",
+        "/files": "edit",
+        "/vault": "edit",
+        "/edit": "edit",
+        "/agents": "share",
       };
 
       if (paneCommands[trimmed] && onPaneSwitch) {
@@ -1434,7 +1435,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         };
 
         tryPlatforms();
-        if (onPaneSwitch) onPaneSwitch("portrait");
+        if (onPaneSwitch) onPaneSwitch("profile");
         return true;
       }
 
@@ -1454,10 +1455,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       if (trimmed === "/help") {
         if (onPaneSwitch) {
-          onPaneSwitch("help");
+          onPaneSwitch("settings");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/preview -- live profile preview\n/files -- browse your identity bundle as files\n/json -- raw you.json\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n/settings -- account + context links\n/tokens -- api key management\n/billing -- plan info\n/sources -- connected data sources\n/portrait -- ascii portrait settings\n/agents -- agent network & access\n/activity -- security & activity log\n/publish -- publish your latest bundle\n/status -- bundle status\n/help -- show this reference"
+          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/profile -- your identity profile + portrait\n/edit -- edit your identity bundle (files, json, sources)\n/publish -- publish your latest bundle\n/settings -- account, api keys, billing\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n/portrait --regenerate -- regenerate ascii portrait\n/status -- bundle status\n/help -- show this reference"
           : "available commands:\n/share -- create a shareable identity link\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/memory -- memory summary\n/recall -- show recent memories\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
 
         setDisplayMessages((prev) => [
@@ -1488,7 +1489,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       if (trimmed === "/publish") {
         if (onPaneSwitch) {
-          onPaneSwitch("publish");
+          onPaneSwitch("share");
         }
         if (!user?.id || !latestBundle) {
           setDisplayMessages((prev) => [
@@ -1535,6 +1536,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       // /share — create a context link and generate copyable block
       if (trimmed === "/share" || trimmed.startsWith("/share ")) {
+        if (onPaneSwitch) onPaneSwitch("share");
         if (!user?.id) {
           setDisplayMessages((prev) => [
             ...prev,
@@ -1632,7 +1634,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       // /memory — show memory summary
       if (trimmed === "/memory" || trimmed === "/memories") {
-        if (onPaneSwitch) onPaneSwitch("files");
+        if (onPaneSwitch) onPaneSwitch("edit");
         const mems = recentMemories ?? [];
         const grouped = new Map<string, number>();
         for (const m of mems) grouped.set(m.category, (grouped.get(m.category) || 0) + 1);

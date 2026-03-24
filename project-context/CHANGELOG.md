@@ -1,5 +1,27 @@
 # You.md — Changelog
 
+## 2026-03-24 — Dashboard Simplification & Share UX
+
+### Dashboard Tab Consolidation (12 -> 4)
+- **ProfilePane** — merged preview + portrait into single identity view
+- **EditPane** — thin wrapper with sub-tabs for files, json, sources
+- **SharePane** — NEW hero pane: publish status, agent-specific prompt templates (Claude/ChatGPT/Cursor/Copilot/Universal), one-click copy of link + prompt, context link generation + management, agent activity stats
+- **SettingsPane** — merged account, api keys, billing, activity log, help/commands reference into single scrollable pane
+
+### Share UX Improvements
+- **Agent-specific prompt templates** — select Claude, ChatGPT, Cursor, Copilot, or Universal and get a tailored prompt with your identity link
+- **One-click copy** — prominent "copy prompt + link" button copies the full share block to clipboard
+- **Expiring link generation** — generate scoped 7-day context links directly from the Share pane
+- **/share command** — now also switches to Share pane for visual confirmation
+- **/publish command** — switches to Share pane (was separate publish pane)
+
+### Terminal Command Updates
+- All legacy slash commands (/preview, /agents, /billing, /tokens, /activity, /portrait) still work via aliases
+- /help text updated to reflect new 4-tab structure
+- /profile, /edit, /share as new primary navigation commands
+
+---
+
 ## 2026-03-22 — Memory System v2 (Full Brain)
 
 ### Memory Recall

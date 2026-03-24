@@ -8,35 +8,22 @@ import { useRouter } from "next/navigation";
 import { useYouAgent, type RightPane } from "@/hooks/useYouAgent";
 import { TerminalShell } from "@/components/terminal/TerminalShell";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
-import { ProfilePreviewPane } from "@/components/panes/ProfilePreviewPane";
+import { ProfilePane } from "@/components/panes/ProfilePane";
+import { EditPane } from "@/components/panes/EditPane";
+import { SharePane } from "@/components/panes/SharePane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
-import { BillingPane } from "@/components/panes/BillingPane";
-import { TokensPane } from "@/components/panes/TokensPane";
-import { JsonPane } from "@/components/panes/JsonPane";
-import { SourcesPane } from "@/components/panes/SourcesPane";
-import { PortraitPane } from "@/components/panes/PortraitPane";
-import { PublishPane } from "@/components/panes/PublishPane";
-import { AgentsPane } from "@/components/panes/AgentsPane";
-import { ActivityPane } from "@/components/panes/ActivityPane";
-import { HelpPane } from "@/components/panes/HelpPane";
-import { FilesPane } from "@/components/panes/FilesPane";
 
 // Mobile nav shows these panes as top-level tabs
 const MOBILE_PANES: Array<{ key: RightPane | "terminal"; label: string }> = [
   { key: "terminal", label: "terminal" },
-  { key: "preview", label: "preview" },
-  { key: "files", label: "files" },
-  { key: "json", label: "json" },
-  { key: "sources", label: "sources" },
-  { key: "publish", label: "publish" },
+  { key: "profile", label: "profile" },
+  { key: "edit", label: "edit" },
+  { key: "share", label: "share" },
   { key: "settings", label: "settings" },
 ];
 
 // Desktop pane tab row (shown inside the right panel)
-const DESKTOP_PANES: RightPane[] = [
-  "preview", "files", "json", "sources", "portrait", "publish",
-  "agents", "activity", "settings", "tokens", "billing", "help",
-];
+const DESKTOP_PANES: RightPane[] = ["profile", "edit", "share", "settings"];
 
 export function DashboardContent() {
   const { user } = useUser();
@@ -54,7 +41,7 @@ export function DashboardContent() {
     convexUser?._id ? { ownerId: convexUser._id } : "skip"
   );
 
-  const [rightPane, setRightPane] = useState<RightPane>("preview");
+  const [rightPane, setRightPane] = useState<RightPane>("profile");
   const [mobileView, setMobileView] = useState<"terminal" | "preview">("terminal");
 
   const agent = useYouAgent({
@@ -196,36 +183,24 @@ export function DashboardContent() {
 
               {/* Active pane */}
               <div className="flex-1 min-h-0 overflow-y-auto">
-                {rightPane === "preview" && (
-                  <ProfilePreviewPane userId={convexUser._id} username={username} ownerId={convexUser._id} />
+                {rightPane === "profile" && (
+                  <ProfilePane userId={convexUser._id} username={username} ownerId={convexUser._id} />
                 )}
-                {rightPane === "files" && <FilesPane userId={convexUser._id} />}
-                {rightPane === "json" && <JsonPane userId={convexUser._id} />}
+                {rightPane === "edit" && (
+                  <EditPane userId={convexUser._id} username={username} />
+                )}
+                {rightPane === "share" && user?.id && (
+                  <SharePane
+                    username={username}
+                    userId={convexUser._id}
+                    clerkId={user.id}
+                    profileId={userProfile?._id}
+                    plan={plan}
+                  />
+                )}
                 {rightPane === "settings" && user?.id && (
-                  <SettingsPane clerkId={user.id} username={username} />
+                  <SettingsPane clerkId={user.id} username={username} plan={plan} />
                 )}
-                {rightPane === "tokens" && user?.id && (
-                  <TokensPane clerkId={user.id} />
-                )}
-                {rightPane === "billing" && (
-                  <BillingPane plan={plan} username={username} />
-                )}
-                {rightPane === "sources" && (
-                  <SourcesPane username={username} />
-                )}
-                {rightPane === "portrait" && (
-                  <PortraitPane username={username} ownerId={convexUser._id} />
-                )}
-                {rightPane === "publish" && (
-                  <PublishPane username={username} userId={convexUser._id} />
-                )}
-                {rightPane === "agents" && (
-                  <AgentsPane username={username} profileId={userProfile?._id} />
-                )}
-                {rightPane === "activity" && (
-                  <ActivityPane username={username} />
-                )}
-                {rightPane === "help" && <HelpPane />}
               </div>
             </div>
           </div>
