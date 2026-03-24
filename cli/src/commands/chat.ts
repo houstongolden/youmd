@@ -778,9 +778,8 @@ export async function chatCommand(): Promise<void> {
 
 function printAgentMessage(text: string): void {
   if (!text) return;
-  const lines = text.split("\n");
-  for (const line of lines) {
-    console.log("  " + line);
-  }
+  // Use rich terminal renderer for structured content
+  const { renderRichResponse } = require("../lib/render");
+  console.log(renderRichResponse(text));
   console.log("");
 }

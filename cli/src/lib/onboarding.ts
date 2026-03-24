@@ -1027,10 +1027,8 @@ generate initial profile sections from what you know, show a brief summary, and 
 
 function printAgentMessage(text: string): void {
   if (!text) return;
-  const lines = text.split("\n");
-  for (const line of lines) {
-    console.log("  " + line);
-  }
+  const { renderRichResponse } = require("./render");
+  console.log(renderRichResponse(text));
   console.log("");
 }
 
