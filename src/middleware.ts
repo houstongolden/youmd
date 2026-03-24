@@ -3,20 +3,24 @@ import { NextResponse } from "next/server";
 
 const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/initialize(.*)"]);
 
-// Known bot/agent User-Agent patterns
-const BOT_UA_PATTERNS = [
-  /bot/i, /crawl/i, /spider/i, /curl/i, /wget/i, /httpie/i,
-  /python-requests/i, /python-urllib/i, /node-fetch/i, /undici/i, /axios/i, /go-http/i,
-  /claudebot/i, /chatgpt/i, /gptbot/i, /openai/i, /anthropic/i,
-  /perplexity/i, /cohere/i, /google-extended/i, /bingbot/i,
+// AI agent/LLM User-Agent patterns — these get plain text identity context.
+// EXCLUDES social card crawlers (need OG tags from HTML) and search engines (need to index HTML).
+const AI_AGENT_UA_PATTERNS = [
+  /claudebot/i, /chatgpt-user/i, /gptbot/i, /openai/i, /anthropic/i,
+  /perplexity/i, /cohere/i, /google-extended/i,
   /gemini/i, /google-gemini/i, /googleother/i,
-  /applebot/i, /facebookexternalhit/i, /twitterbot/i,
-  /linkedinbot/i, /slackbot/i, /discordbot/i,
-  /ia_archiver/i, /semrush/i, /ahref/i, /mj12bot/i,
   /dify/i, /langchain/i, /llama/i, /mistral/i,
-  /phind/i, /you\.com/i, /brave/i, /meta-externalagent/i,
+  /phind/i, /you\.com/i, /meta-externalagent/i,
   /copilot/i, /github-copilot/i,
+  // Programmatic fetchers (developers, agents, scripts)
+  /python-requests/i, /python-urllib/i, /node-fetch/i, /undici/i, /axios/i, /go-http/i,
+  /httpie/i, /wget/i,
 ];
+
+// These crawlers MUST get HTML (for OG cards, SEO indexing).
+// Do NOT intercept them with plain text.
+// Includes: facebookexternalhit, twitterbot, linkedinbot, googlebot, bingbot,
+// applebot, slackbot, discordbot, curl (often used for testing HTML)
 
 // Routes that are definitely NOT profile usernames
 const RESERVED_PATHS = new Set([
@@ -31,9 +35,9 @@ function isAgentRequest(req: Request): boolean {
     // But not if they also want text/html (normal browser)
     if (!accept.includes("text/html")) return true;
   }
-  // Check User-Agent for known bots
+  // Check User-Agent for known AI agent bots (NOT social/SEO crawlers)
   const ua = req.headers.get("user-agent") || "";
-  return BOT_UA_PATTERNS.some((p) => p.test(ua));
+  return AI_AGENT_UA_PATTERNS.some((p) => p.test(ua));
 }
 
 export default clerkMiddleware(async (auth, req) => {

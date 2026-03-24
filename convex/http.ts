@@ -26,7 +26,7 @@ function json(data: unknown, status = 200, extraHeaders?: Record<string, string>
 // PUBLIC ENDPOINTS
 // ============================================================
 
-// GET /api/v1/profiles?username=xxx — Public you.json
+// GET /api/v1/profiles — List all profiles (no params) or get single profile (?username=xxx)
 http.route({
   path: "/api/v1/profiles",
   method: "GET",
@@ -34,8 +34,14 @@ http.route({
     const url = new URL(request.url);
     const username = url.searchParams.get("username");
 
+    // No username param — return list of all public profiles (for sitemap, directory)
     if (!username) {
-      return json({ error: "Username parameter required" }, 400);
+      const profiles = await ctx.runQuery(api.profiles.listAll);
+      const usernames = profiles.map((p: { username: string }) => ({
+        username: p.username,
+        updatedAt: (p as any).updatedAt || (p as any).createdAt || null,
+      }));
+      return json(usernames, 200, { "Cache-Control": "public, max-age=300" });
     }
 
     const profile = await ctx.runQuery(api.profiles.getPublicProfile, {
