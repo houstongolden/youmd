@@ -97,6 +97,7 @@ function getCategoryIcon(category?: ThinkingCategory): string | null {
     case "identity": return "#";
     case "portrait": return "@";
     case "sync": return "&";
+    case "building": return ">";
     default: return null;
   }
 }

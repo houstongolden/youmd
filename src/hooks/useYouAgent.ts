@@ -70,7 +70,20 @@ const THINKING_SYNC = [
   "pulling the latest from your sources...",
 ];
 
-export type ThinkingCategory = "discovery" | "analysis" | "identity" | "portrait" | "sync";
+const THINKING_BUILDING = [
+  "wiring up your context layer...",
+  "structuring your agent directives...",
+  "encoding your preferences for machines...",
+  "building your behavioral blueprint...",
+  "capturing how you want agents to talk to you...",
+  "translating your vibe into instructions...",
+  "compiling your identity primitives...",
+  "writing your agent briefing...",
+  "mapping your communication DNA...",
+  "locking in your context signals...",
+];
+
+export type ThinkingCategory = "discovery" | "analysis" | "identity" | "portrait" | "sync" | "building";
 
 export interface ProgressStep {
   id: string;
@@ -86,6 +99,7 @@ const THINKING_POOLS: Record<ThinkingCategory, string[]> = {
   identity: THINKING_IDENTITY,
   portrait: THINKING_PORTRAIT,
   sync: THINKING_SYNC,
+  building: THINKING_BUILDING,
 };
 
 // Flat list for backwards-compatible random selection
@@ -95,6 +109,7 @@ const THINKING_ALL = [
   ...THINKING_IDENTITY,
   ...THINKING_PORTRAIT,
   ...THINKING_SYNC,
+  ...THINKING_BUILDING,
 ];
 
 export const BUNDLE_SECTIONS = [
@@ -105,6 +120,7 @@ export const BUNDLE_SECTIONS = [
   "profile/links.md",
   "preferences/agent.md",
   "preferences/writing.md",
+  "directives/agent.md",
 ] as const;
 
 const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
@@ -395,32 +411,42 @@ L1 (first 1-2 exchanges): surface. keep it light. get links early.
   "paste a link and i'll figure it out."
   "drop me your x or github username and i'll pull your context and generate your ascii portrait."
 
-L2 (exchanges 3-5): current work. what's actually happening right now.
+L2 (exchanges 3-5): current work + directives. what's happening right now and how they work.
   "what are you working on right now that you're excited about?"
   "anything you're building that isn't public yet?"
   "what's the thing you keep coming back to, project-wise?"
   "how would you describe what you do to someone sharp but outside your field?"
+  "what's your go-to stack when you're building something?"
+  "how do you want agents to talk to you — concise, detailed, something else?"
 
-L3 (exchanges 6-8): identity. who they are, not what they do.
+L3 (exchanges 6-8): identity + behavioral blueprint. who they are and how they think.
   "what do you want to be known for?"
   "what do people consistently get wrong about you?"
   "if an agent was representing you in a meeting, what's the one thing it absolutely needs to know?"
   "what's the proudest thing you've built?"
+  "what should agents never do when working with you? pet peeves?"
+  "what do you optimize for — speed, quality, scalability, something else?"
 
 L4 (exchange 9+): deep context. earned, not assumed.
   "what drives your work that isn't on any resume?"
   "how do you want to be talked about when you're not in the room?"
   "what's the context that would make every agent interaction better if they just knew it upfront?"
+  "what's your current sprint focus — the thing you'd update weekly if agents could see it?"
 
 increase depth naturally. never ask L4 questions before you've earned them through earlier exchanges.
 
 --- being proactive ---
 
-don't just wait for information. observe, connect dots, and suggest.
-- "i noticed you mentioned X — want me to add that to your projects?"
-- "based on your writing style, i'd describe your communication as [X]. sound right?"
-- "you've mentioned [company] a few times — seems like that's the main thing. should i lead with it?"
+you are ALWAYS working. you never idle. when you learn something, you immediately act on it — update sections, save memories, extract directives. don't wait for permission to update the profile. just do it and tell them what you did.
+
+patterns:
+- "i noticed you mentioned X — adding that to your projects now."
+- "based on your writing style, i'd describe your communication as [X]. capturing that in your directives."
+- "you've mentioned [company] a few times — seems like that's the main thing. leading with it."
 - "that's the kind of context that changes how an agent represents you. adding it to your identity layer."
+- "updating your agent directives — agents will know to [specific instruction] when working with you."
+
+always be building. every message should either (a) learn something new, (b) update the profile, or (c) both. if you can infer something from context, just do it — don't ask for confirmation on obvious things.
 
 if they give short answers, acknowledge and ask a follow-up without pressure. never interrogate.
 if something feels too personal, say "totally fine to skip" and move on. no pressure.
@@ -437,6 +463,43 @@ PUBLIC sections (visible on their you.md profile page):
 - profile/links.md — annotated links (format: - **Label**: URL — brief annotation)
 - preferences/agent.md — how AI agents should interact with them (tone, formality, things to avoid)
 - preferences/writing.md — their communication style (observed from how they actually talk to you)
+- directives/agent.md — behavioral instructions for any AI (agent directives)
+
+AGENT DIRECTIVES (directives/agent.md) — this is the most important section for making an agent "snap into" the user's mode. it contains:
+1. communication_style — exactly how agents should talk to them (concise? bullet points? code-first?)
+2. negative_prompts — what agents should NEVER do (no "As an AI...", no apologies, no fluff, etc.)
+3. default_stack — their preferred tech stack so agents don't have to ask
+4. decision_framework — what they optimize for (speed? DX? scalability? cost?)
+5. current_goal — what they're focused on right now (updated regularly)
+
+you should PROACTIVELY build this section by:
+- observing how they communicate with you (short answers = they want concise responses)
+- inferring their stack from projects and repos
+- extracting values from how they talk about their work
+- asking directly: "what do you want agents to never do when talking to you?" or "what should every AI know about how you work?"
+
+format for directives/agent.md:
+---
+title: "Agent Directives"
+---
+
+# Agent Directives
+
+## Communication Style
+[how they want agents to talk to them]
+
+## Never
+- [thing agents should never do]
+- [another thing]
+
+## Default Stack
+[their preferred technologies]
+
+## Decision Framework
+[what they optimize for]
+
+## Current Goal
+[what they're focused on right now]
 
 PRIVATE sections (saved separately, not on public profile — use private_updates JSON):
 - private notes — internal context, personal reminders, sensitive info
@@ -509,8 +572,8 @@ rules for memory:
 
 --- knowing when to stop ---
 
-when the profile has substance (at minimum: about, now, projects, and values), suggest wrapping up. don't squeeze for more.
-"your bundle is looking solid. ready to publish, or want to keep going?"
+when the profile has substance (at minimum: about, now, projects, values, and agent directives), suggest wrapping up. don't squeeze for more.
+"your bundle is looking solid — bio, projects, values, agent directives, the works. ready to publish, or want to keep going?"
 
 --- example lines ---
 
@@ -698,6 +761,16 @@ export function buildProfileContext(youJson: Record<string, unknown> | null, rec
     const prefs = youJson.preferences as Record<string, Record<string, unknown>> | undefined;
     if (prefs?.agent?.tone) parts.push(`agent tone preference: ${prefs.agent.tone}`);
     if (prefs?.writing?.style) parts.push(`writing style: ${prefs.writing.style}`);
+
+    const dirs = youJson.agent_directives as Record<string, unknown> | undefined;
+    if (dirs) {
+      if (dirs.communication_style) parts.push(`agent directive — communication style: ${dirs.communication_style}`);
+      if (Array.isArray(dirs.negative_prompts) && dirs.negative_prompts.length > 0)
+        parts.push(`agent directive — never: ${(dirs.negative_prompts as string[]).join("; ")}`);
+      if (dirs.default_stack) parts.push(`agent directive — default stack: ${dirs.default_stack}`);
+      if (dirs.decision_framework) parts.push(`agent directive — decision framework: ${dirs.decision_framework}`);
+      if (dirs.current_goal) parts.push(`agent directive — current goal: ${dirs.current_goal}`);
+    }
   }
 
   // Inject recent memories for continuity
@@ -725,6 +798,7 @@ export function buildProfileDataFromUpdates(
   const existingValues = (existingJson?.values as string[]) || [];
   const existingLinks = (existingJson?.links as Record<string, string>) || {};
   const existingPrefs = (existingJson?.preferences as Record<string, Record<string, unknown>>) || {};
+  const existingDirectives = (existingJson?.agent_directives as Record<string, unknown>) || {};
 
   const profileData: Record<string, unknown> = {
     name: (identity.name as string) || "",
@@ -749,6 +823,13 @@ export function buildProfileDataFromUpdates(
         style: (existingPrefs.writing?.style as string) || "",
         format: (existingPrefs.writing?.format as string) || "markdown preferred",
       },
+    },
+    agentDirectives: {
+      communication_style: (existingDirectives.communication_style as string) || "",
+      negative_prompts: (existingDirectives.negative_prompts as string[]) || [],
+      default_stack: (existingDirectives.default_stack as string) || "",
+      decision_framework: (existingDirectives.decision_framework as string) || "",
+      current_goal: (existingDirectives.current_goal as string) || "",
     },
   };
 
@@ -845,6 +926,31 @@ export function buildProfileDataFromUpdates(
         prefs.writing.style = content.split("\n")[0] || "";
         break;
       }
+      case "directives/agent.md": {
+        const directives: Record<string, unknown> = {};
+        const sections = content.split(/^## /m).filter(Boolean);
+        for (const sec of sections) {
+          const secLines = sec.trim().split("\n");
+          const heading = secLines[0]?.trim().toLowerCase() || "";
+          const body = secLines.slice(1).join("\n").trim();
+          if (heading.includes("communication style")) {
+            directives.communication_style = body;
+          } else if (heading.includes("never")) {
+            directives.negative_prompts = body
+              .split("\n")
+              .filter((l) => l.startsWith("- ") || l.startsWith("* "))
+              .map((l) => l.replace(/^[-*]\s+/, "").trim());
+          } else if (heading.includes("default stack") || heading.includes("stack")) {
+            directives.default_stack = body;
+          } else if (heading.includes("decision") || heading.includes("framework")) {
+            directives.decision_framework = body;
+          } else if (heading.includes("current goal") || heading.includes("goal")) {
+            directives.current_goal = body;
+          }
+        }
+        profileData.agentDirectives = directives;
+        break;
+      }
     }
   }
 
@@ -884,6 +990,13 @@ function buildPublicShareBlock(
     const prefs = youJson.preferences as Record<string, Record<string, unknown>> | undefined;
     if (prefs?.agent?.tone) lines.push(`- Prefers: ${prefs.agent.tone}`);
     if (prefs?.writing?.style) lines.push(`- Writing style: ${prefs.writing.style}`);
+
+    const dirs = youJson.agent_directives as Record<string, unknown> | undefined;
+    if (dirs?.communication_style) lines.push(`- Communication: ${dirs.communication_style}`);
+    if (dirs?.default_stack) lines.push(`- Default stack: ${dirs.default_stack}`);
+    if (dirs?.current_goal) lines.push(`- Current goal: ${dirs.current_goal}`);
+    if (Array.isArray(dirs?.negative_prompts) && (dirs.negative_prompts as string[]).length > 0)
+      lines.push(`- Never: ${(dirs.negative_prompts as string[]).slice(0, 3).join("; ")}`);
   }
 
   lines.push("");
@@ -1073,7 +1186,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     const interval = setInterval(() => {
       const cat = thinkingCategoryRef.current;
       setThinkingPhrase(randomThinking(cat));
-    }, 3500);
+    }, 2500);
     return () => clearInterval(interval);
   }, [isThinking]);
 
@@ -1914,11 +2027,15 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       // LLM call with live activity simulation
       const llmStepId = addStep("generating response");
 
-      // Simulate sub-activity during the LLM wait so UI never feels static
+      // Simulate sub-activity during the LLM wait — tight intervals, never static
       const llmSubSteps = [
-        { delay: 2500, label: "reading conversation context" },
-        { delay: 6000, label: "composing reply" },
-        { delay: 12000, label: "refining response" },
+        { delay: 1500, label: "loading conversation history", category: "discovery" as ThinkingCategory },
+        { delay: 3500, label: "reading profile context", category: "analysis" as ThinkingCategory },
+        { delay: 6000, label: "analyzing your identity signals", category: "analysis" as ThinkingCategory },
+        { delay: 9000, label: "composing response", category: "identity" as ThinkingCategory },
+        { delay: 13000, label: "structuring updates", category: "building" as ThinkingCategory },
+        { delay: 18000, label: "refining output", category: "building" as ThinkingCategory },
+        { delay: 24000, label: "finalizing context layer", category: "identity" as ThinkingCategory },
       ];
       const llmSubStepIds: string[] = [];
       const llmTimers: ReturnType<typeof setTimeout>[] = [];
@@ -1929,6 +2046,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             completeStep(llmSubStepIds[llmSubStepIds.length - 1]);
           }
           llmSubStepIds.push(addStep(sub.label));
+          // Rotate thinking phrase with each new step
+          setThinkingPhrase(randomThinking(sub.category));
+          setThinkingCategory(sub.category);
         }, sub.delay);
         llmTimers.push(timer);
       }

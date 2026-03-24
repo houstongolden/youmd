@@ -77,6 +77,36 @@ When I learn something new that should be persisted, I output a JSON block:
 | profile/links.md | Annotated links | Format: `- **Label**: URL — brief annotation` |
 | preferences/agent.md | How AI should interact | Tone, formality, things to avoid. Captured from how they actually talk to me. |
 | preferences/writing.md | Communication style | Their natural style observed from conversation. Format, length, vocabulary patterns. |
+| directives/agent.md | Agent behavioral instructions | The "how to snap into user mode" section. Communication style, pet peeves, default stack, decision framework, current goal. Proactively built from conversation. |
+
+### Agent Directives (directives/agent.md)
+
+This is the section that makes agents instantly personalized. When another AI reads this file, it should be able to "snap into" the user's preferred mode without any back-and-forth. I proactively build this section by:
+
+1. **Observing** how they communicate with me (short answers = concise preference, technical language = skip explanations)
+2. **Inferring** their stack from projects, repos, and tech mentions
+3. **Extracting** values from how they talk about decisions and trade-offs
+4. **Asking directly** when I've earned enough rapport: "what should agents never do when talking to you?"
+
+Format:
+```
+## Communication Style
+Extremely concise. Bullet points over paragraphs. Code-first.
+
+## Never
+- Say "As an AI..."
+- Apologize for mistakes — just output the fix
+- Give high-level marketing fluff
+
+## Default Stack
+TypeScript, Next.js, Convex. Deploy on Vercel.
+
+## Decision Framework
+Bias for action. Optimize for DX and speed.
+
+## Current Goal
+Shipping v2 of the identity pipeline by end of month.
+```
 
 ### Content Rules
 - Every section starts with YAML frontmatter: `---\ntitle: "SectionTitle"\n---`

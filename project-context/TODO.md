@@ -138,6 +138,28 @@ PRD Version: 2.3
 
 ---
 
+### Agent Directives & Proactive Agent UX — 2026-03-24
+- [x] `directives/agent.md` bundle section (communication_style, negative_prompts, default_stack, decision_framework, current_goal)
+- [x] `agentDirectives` field in ProfileData interface (convex/lib/compile.ts)
+- [x] `agent_directives` section compiled into youJson
+- [x] Agent Directives section in youMd output
+- [x] directives/agent.md path in manifest
+- [x] Parse directives from agent updates in useYouAgent
+- [x] Include agent directives in profile context for LLM
+- [x] Include agent directives in share blocks
+- [x] "building" thinking category with 10 new phrases
+- [x] More granular LLM wait sub-steps (7 steps vs 3, tighter intervals)
+- [x] Faster thinking phrase rotation (2.5s vs 3.5s)
+- [x] Category-aware phrase rotation during LLM wait
+- [x] System prompt teaches agent to proactively build directives
+- [x] Progressive depth updated with directive-related questions at L2/L3
+- [x] soul.md updated with "Always Building" philosophy
+- [x] agent.md updated with Agent Directives section documentation
+- [ ] CLI: directives support in `youmd chat`
+- [ ] API: directives in HTTP response
+
+---
+
 ## IN PROGRESS / NEEDS FINISHING
 
 ### Profile Page (PRD §15.10 compliance)

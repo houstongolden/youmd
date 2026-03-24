@@ -61,6 +61,18 @@ Last Updated: 2026-03-19
 | POST /api/v1/me/build | Done |
 | GET /api/v1/me/build/status | Done |
 
+## Agent Directives
+
+| Feature | Status | Notes |
+|---|---|---|
+| directives/agent.md bundle section | Done | Communication style, negative prompts, default stack, decision framework, current goal |
+| agent_directives in youJson | Done | Compiled from ProfileData.agentDirectives |
+| Agent Directives in youMd | Done | Human-readable section |
+| Proactive directive building | Done | Agent observes and infers directives from conversation |
+| Directives in share blocks | Done | Context links include directive summary |
+| "building" thinking category | Done | 10 new phrases for directive/identity construction |
+| Enhanced activity simulation | Done | 7 granular sub-steps during LLM wait (vs 3), faster rotation |
+
 ## Security
 
 | Feature | Status | Notes |

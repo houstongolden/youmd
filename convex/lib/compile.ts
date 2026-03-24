@@ -48,6 +48,13 @@ export interface ProfileData {
     linkedin?: string;
     custom?: string;
   };
+  agentDirectives?: {
+    communication_style?: string;
+    negative_prompts?: string[];
+    default_stack?: string;
+    decision_framework?: string;
+    current_goal?: string;
+  };
 }
 
 export function compileYouJson(data: ProfileData): Record<string, unknown> {
@@ -115,18 +122,28 @@ export function compileYouJson(data: ProfileData): Record<string, unknown> {
 
     social_images: data.socialImages ?? {},
 
+    // Agent directives — behavioral instructions for any AI interacting with this person
+    agent_directives: {
+      communication_style: data.agentDirectives?.communication_style ?? "",
+      negative_prompts: data.agentDirectives?.negative_prompts ?? [],
+      default_stack: data.agentDirectives?.default_stack ?? "",
+      decision_framework: data.agentDirectives?.decision_framework ?? "",
+      current_goal: data.agentDirectives?.current_goal ?? "",
+    },
+
     // Agent navigation guide — tells agents where to find specific context
     agent_guide: {
       summary: "this is a you-md/v1 identity bundle. use it to understand who this person is before working with them.",
       quick_context: [
         "identity.bio.short — one-line summary",
         "now.focus — what they're working on right now",
-        "preferences.agent — how they want you to communicate",
+        "agent_directives — behavioral instructions for how to interact",
+        "preferences.agent — communication tone preferences",
         "projects — their active projects with context",
         "voice.overall — their communication style",
       ],
       for_writing: "check preferences.writing and voice.platforms for platform-specific style",
-      for_coding: "check projects for tech stack context and preferences.agent for tone",
+      for_coding: "check projects for tech stack context, agent_directives.default_stack for preferred stack",
       for_research: "check analysis.topics and links for their areas of expertise",
     },
 
@@ -200,6 +217,24 @@ generated_at: ${now}
     }
   }
 
+  // Agent Directives
+  if (data.agentDirectives) {
+    const dirs: string[] = [];
+    if (data.agentDirectives.communication_style)
+      dirs.push(`Communication Style: ${data.agentDirectives.communication_style}`);
+    if (data.agentDirectives.negative_prompts && data.agentDirectives.negative_prompts.length > 0)
+      dirs.push(`Never: ${data.agentDirectives.negative_prompts.join(". ")}`);
+    if (data.agentDirectives.default_stack)
+      dirs.push(`Default Stack: ${data.agentDirectives.default_stack}`);
+    if (data.agentDirectives.decision_framework)
+      dirs.push(`Decision Framework: ${data.agentDirectives.decision_framework}`);
+    if (data.agentDirectives.current_goal)
+      dirs.push(`Current Goal: ${data.agentDirectives.current_goal}`);
+    if (dirs.length > 0) {
+      sections.push(`## Agent Directives\n\n${dirs.join("\n")}`);
+    }
+  }
+
   // Links
   if (data.links) {
     const linkEntries = Object.entries(data.links).filter(
@@ -247,6 +282,8 @@ export function compileManifest(
     publicPaths.push("profile/links.md");
   if (data.preferences?.agent) publicPaths.push("preferences/agent.md");
   if (data.preferences?.writing) publicPaths.push("preferences/writing.md");
+  if (data.agentDirectives?.communication_style || data.agentDirectives?.negative_prompts?.length || data.agentDirectives?.default_stack)
+    publicPaths.push("directives/agent.md");
 
   // Voice artifacts
   if (data.analysis?.voice_summary) publicPaths.push("voice/voice.md");
