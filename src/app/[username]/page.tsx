@@ -163,6 +163,31 @@ function SsrProfileText({ username, data }: { username: string; data: Record<str
   );
 }
 
+// ── Build JSON-LD structured data for SEO ──
+function buildJsonLd(username: string, data: Record<string, any>) {
+  const name = data.identity?.name || username;
+  const tagline = data.identity?.tagline || "";
+  const location = data.identity?.location || "";
+  const bio = data.identity?.bio?.long || data.identity?.bio?.medium || data.identity?.bio?.short || "";
+
+  const sameAsLinks: string[] = [];
+  if (data.links?.website) sameAsLinks.push(data.links.website);
+  if (data.links?.linkedin) sameAsLinks.push(data.links.linkedin);
+  if (data.links?.x) sameAsLinks.push(data.links.x);
+  if (data.links?.github) sameAsLinks.push(data.links.github);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name,
+    url: `https://you.md/${username}`,
+    ...(tagline ? { jobTitle: tagline } : {}),
+    ...(location ? { address: { "@type": "PostalAddress", addressLocality: location } } : {}),
+    ...(bio ? { description: bio } : {}),
+    ...(sameAsLinks.length > 0 ? { sameAs: sameAsLinks } : {}),
+  };
+}
+
 export default async function ProfilePage({
   params,
 }: {
@@ -171,11 +196,21 @@ export default async function ProfilePage({
   const { username } = await params;
   const ssrData = await fetchProfileData(username);
 
+  // Build JSON-LD server-side so it's in the initial HTML for crawlers
+  const jsonLd = ssrData ? buildJsonLd(username, ssrData) : null;
+
   return (
     <>
+      {/* JSON-LD structured data — rendered server-side for SEO */}
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       {/* SSR plain-text fallback — always in HTML for agents that parse DOM without JS */}
       {ssrData && <SsrProfileText username={username} data={ssrData} />}
-      {/* Client-side interactive profile */}
+      {/* Client-side interactive profile — ssrData used for instant first paint */}
       <ProfileContent ssrData={ssrData} />
     </>
   );

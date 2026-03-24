@@ -52,6 +52,14 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const hasRecordedView = useRef(false);
   const [copied, setCopied] = useState(false);
 
+  // SSR fallback shape matching the Convex query return type
+  const ssrProfile = ssrData ? {
+    youJson: ssrData,
+    displayName: ssrData.identity?.name || username,
+    avatarUrl: ssrData.meta?.avatarUrl as string | undefined,
+    isClaimed: (ssrData.meta?.isClaimed as boolean) ?? true,
+  } : null;
+
   useEffect(() => {
     if (hasRecordedView.current) return;
     if (profile === undefined || profile === null) return;
@@ -69,35 +77,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  // Loading — show skeleton but include noscript fallback for agents
-  if (profile === undefined) {
-    return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))]">
-        <p className="text-[hsl(var(--text-secondary))] font-mono text-sm animate-pulse">
-          loading...
-        </p>
-        {/* noscript fallback for agents that don't execute JS */}
-        <noscript>
-          <div style={{ padding: "2rem", fontFamily: "monospace", maxWidth: "680px", margin: "0 auto" }}>
-            {ssrData ? (
-              <>
-                <h1>{ssrData.identity?.name || username}</h1>
-                {ssrData.identity?.tagline && <p>{ssrData.identity.tagline}</p>}
-                {(ssrData.identity?.bio?.long || ssrData.identity?.bio?.medium || ssrData.identity?.bio?.short) && (
-                  <p>{ssrData.identity.bio.long || ssrData.identity.bio.medium || ssrData.identity.bio.short}</p>
-                )}
-                <p>For machine-readable access, use: https://you.md/{username}/you.json or https://you.md/{username}/you.txt</p>
-              </>
-            ) : (
-              <p>Profile: you.md/{username} -- For agent access use: https://you.md/{username}/you.json</p>
-            )}
-          </div>
-        </noscript>
-      </div>
-    );
-  }
-
-  // Not found
+  // Not found — only trust the live Convex response
   if (profile === null) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))] p-4">
@@ -127,7 +107,21 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
     );
   }
 
-  const data = profile.youJson as Record<string, any> | null;
+  // Use live Convex data when available, fall back to SSR data for instant first paint
+  const resolvedProfile = profile ?? ssrProfile;
+
+  // Loading — only show spinner if no data at all (neither SSR nor Convex)
+  if (!resolvedProfile) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))]">
+        <p className="text-[hsl(var(--text-secondary))] font-mono text-sm animate-pulse">
+          loading...
+        </p>
+      </div>
+    );
+  }
+
+  const data = resolvedProfile.youJson as Record<string, any> | null;
 
   // Profile exists but no youJson yet
   if (!data) {
@@ -136,14 +130,14 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         <ProfileHeader username={username} />
         <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
-            {profile.avatarUrl && (
-              <PortraitFrame src={profile.avatarUrl} />
+            {resolvedProfile.avatarUrl && (
+              <PortraitFrame src={resolvedProfile.avatarUrl} />
             )}
             <div className="min-w-0 text-center sm:text-left">
               <h1 className="text-xl sm:text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
-                {profile.displayName || `@${username}`}
+                {resolvedProfile.displayName || `@${username}`}
               </h1>
-              {profile.displayName && (
+              {resolvedProfile.displayName && (
                 <p className="text-[hsl(var(--text-secondary))] opacity-50 text-xs font-mono mt-1">@{username}</p>
               )}
             </div>
@@ -152,7 +146,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
             <p className="text-[hsl(var(--text-secondary))] opacity-50 font-mono text-[13px]">
               this identity is being built. check back soon.
             </p>
-            {!profile.isClaimed && (
+            {!resolvedProfile.isClaimed && (
               <Link href="/sign-up" className="block mt-3 text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] transition-colors font-mono text-[13px]">
                 &gt; claim this identity
               </Link>
@@ -162,13 +156,13 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         <ProfileFooter username={username} />
 
         {/* Claim banner */}
-        {!profile.isClaimed && <ClaimBanner username={username} />}
+        {!resolvedProfile.isClaimed && <ClaimBanner username={username} />}
       </div>
     );
   }
 
   // Full profile
-  const name = data.identity?.name || profile.displayName || username;
+  const name = data.identity?.name || resolvedProfile.displayName || username;
   const tagline = data.identity?.tagline || "";
   const location = data.identity?.location || "";
   const bio = data.identity?.bio?.long || data.identity?.bio?.medium || data.identity?.bio?.short || "";
@@ -176,29 +170,8 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const voice = data.analysis?.voice_summary || "";
   const preferences = data.preferences || {};
 
-  const sameAsLinks: string[] = [];
-  if (data.links?.website) sameAsLinks.push(data.links.website);
-  if (data.links?.linkedin) sameAsLinks.push(data.links.linkedin);
-  if (data.links?.x) sameAsLinks.push(data.links.x);
-  if (data.links?.github) sameAsLinks.push(data.links.github);
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    name,
-    url: `https://you.md/${username}`,
-    ...(tagline ? { jobTitle: tagline } : {}),
-    ...(location ? { address: { "@type": "PostalAddress", addressLocality: location } } : {}),
-    ...(bio ? { description: bio } : {}),
-    ...(sameAsLinks.length > 0 ? { sameAs: sameAsLinks } : {}),
-  };
-
   return (
     <div className="min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
 
       <ProfileHeader username={username} />
 
@@ -207,8 +180,8 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         {/* ═══ SYSTEM HEADER ═══ */}
         <motion.section {...delay(0)} className="mb-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-4">
-            {profile.avatarUrl && (
-              <PortraitFrame src={profile.avatarUrl} />
+            {resolvedProfile.avatarUrl && (
+              <PortraitFrame src={resolvedProfile.avatarUrl} />
             )}
             <div className="min-w-0 text-center sm:text-left flex-1">
               <h1 className="text-xl sm:text-2xl font-mono tracking-tight text-[hsl(var(--text-primary))]">{name}</h1>
@@ -397,8 +370,8 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                   username,
                   name: name as string,
                   youJson: data,
-                  isClaimed: profile.isClaimed,
-                  avatarUrl: profile.avatarUrl,
+                  isClaimed: resolvedProfile.isClaimed,
+                  avatarUrl: resolvedProfile.avatarUrl,
                 });
                 downloadFile(JSON.stringify(json, null, 2), `${username}.you.json`, "application/json");
               }}
@@ -452,7 +425,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
       <ProfileFooter username={username} />
 
       {/* Claim banner for unclaimed profiles */}
-      {!profile.isClaimed && <ClaimBanner username={username} />}
+      {!resolvedProfile.isClaimed && <ClaimBanner username={username} />}
     </div>
   );
 }
