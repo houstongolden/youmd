@@ -31,31 +31,31 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     agent: "Universal",
     icon: "[*]",
     prompt: (url) =>
-      `Read my identity context before we start:\n${url}\n\nThis is my you.md profile -- it contains my bio, projects, values, preferences, and how I like to communicate. Use it to understand who I am so we can skip the intro and get straight to work.`,
+      `Fetch this URL and read my identity context before we start:\n${url}\n\nIt returns plain text (not HTML) with my bio, projects, values, preferences, and communication style. Use it to understand who I am so we can skip the intro and get straight to work.`,
   },
   {
     agent: "Claude",
     icon: "[cl]",
     prompt: (url) =>
-      `Before responding, read my identity context:\n${url}\n\nThis is my you.md identity bundle. It has my background, current projects, values, and communication preferences. Reference it throughout our conversation.`,
+      `Before responding, fetch and read my identity context from this URL:\n${url}\n\nThe URL returns plain text (not a webpage). It's my you.md identity bundle with my background, current projects, values, and communication preferences. Reference it throughout our conversation.`,
   },
   {
     agent: "ChatGPT",
     icon: "[gp]",
     prompt: (url) =>
-      `Before we begin, read my you.md profile for context about who I am:\n${url}\n\nIt contains my bio, projects, values, and preferences. Use this context to personalize our conversation.`,
+      `Before we begin, browse to this URL and read my you.md profile:\n${url}\n\nThe page returns a plain-text identity file with my bio, projects, values, and preferences. Use this context to personalize our conversation.`,
   },
   {
     agent: "Cursor",
     icon: "[|>]",
     prompt: (url) =>
-      `Add this to your context -- my developer identity:\n${url}\n\nThis is my you.md profile with my tech stack, projects, coding preferences, and communication style.`,
+      `Fetch this URL and add it to your context -- my developer identity:\n${url}\n\nIt returns plain text with my tech stack, projects, coding preferences, and communication style.`,
   },
   {
     agent: "Copilot",
     icon: "[cp]",
     prompt: (url) =>
-      `Read my developer context before assisting:\n${url}\n\nThis you.md profile contains my projects, preferred technologies, and coding style. Use it to tailor your suggestions.`,
+      `Fetch this URL and read my developer context before assisting:\n${url}\n\nThis returns a plain-text identity file with my projects, preferred technologies, and coding style. Use it to tailor your suggestions.`,
   },
 ];
 
