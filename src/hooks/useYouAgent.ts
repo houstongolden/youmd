@@ -1062,6 +1062,21 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     messagesRef.current = messages;
   }, [messages]);
 
+  // Auto-rotate thinking phrases while agent is working
+  const thinkingCategoryRef = useRef<ThinkingCategory | undefined>();
+  useEffect(() => {
+    thinkingCategoryRef.current = thinkingCategory;
+  }, [thinkingCategory]);
+
+  useEffect(() => {
+    if (!isThinking) return;
+    const interval = setInterval(() => {
+      const cat = thinkingCategoryRef.current;
+      setThinkingPhrase(randomThinking(cat));
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [isThinking]);
+
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1896,9 +1911,33 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         setThinkingCategory("identity");
       }
 
-      // LLM call with progress step
+      // LLM call with live activity simulation
       const llmStepId = addStep("generating response");
+
+      // Simulate sub-activity during the LLM wait so UI never feels static
+      const llmSubSteps = [
+        { delay: 2500, label: "reading conversation context" },
+        { delay: 6000, label: "composing reply" },
+        { delay: 12000, label: "refining response" },
+      ];
+      const llmSubStepIds: string[] = [];
+      const llmTimers: ReturnType<typeof setTimeout>[] = [];
+      for (const sub of llmSubSteps) {
+        const timer = setTimeout(() => {
+          // Complete previous sub-step if any
+          if (llmSubStepIds.length > 0) {
+            completeStep(llmSubStepIds[llmSubStepIds.length - 1]);
+          }
+          llmSubStepIds.push(addStep(sub.label));
+        }, sub.delay);
+        llmTimers.push(timer);
+      }
+
       const response = await callLLM(updatedMessages);
+
+      // Clean up: clear pending timers, complete any active sub-steps
+      for (const t of llmTimers) clearTimeout(t);
+      for (const id of llmSubStepIds) completeStep(id);
       completeStep(llmStepId);
       const { display, updates } = parseUpdatesFromResponse(response);
 
@@ -2061,7 +2100,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
+      // Show messages first, then fade out thinking so typewriter starts while indicator is still visible
       setDisplayMessages((prev) => [...prev, ...newDisplayMsgs]);
+      // Brief overlap: thinking indicator stays visible as typewriter begins
+      await new Promise((r) => setTimeout(r, 300));
     } catch (err) {
       setDisplayMessages((prev) => [
         ...prev,
@@ -2075,7 +2117,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
     setIsThinking(false);
     // Clear steps after a brief delay so user sees final state
-    setTimeout(() => clearSteps(), 1500);
+    setTimeout(() => clearSteps(), 800);
     textareaRef.current?.focus();
   }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps]);
 
