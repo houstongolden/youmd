@@ -74,8 +74,8 @@ PRD Version: 2.3
 - [x] Terminal components (TerminalShell, MessageBubble, ThinkingIndicator, TerminalInput, TerminalStatusBar)
 - [x] /initialize route — auto-claim + boot sequence + onboarding terminal
 - [x] Split-screen dashboard — 35% terminal left, 65% preview right
-- [x] Right pane system (11 panes: preview, json, sources, portrait, publish, agents, activity, settings, tokens, billing, help)
-- [x] Slash commands switch right pane (/preview, /settings, /billing, /tokens, /json)
+- [x] Right pane system — SIMPLIFIED from 12 panes to 4: profile, edit, share, settings
+- [x] Slash commands switch right pane (/profile, /edit, /share, /settings + legacy aliases)
 - [x] Shared pane primitives (PaneSectionLabel, PaneDivider, PaneHeader, PaneEmptyState)
 - [x] PublishPane wired to real Convex data (listRecentBundles)
 - [x] Auto-scrape existing links on session init for returning users
