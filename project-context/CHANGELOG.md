@@ -1,5 +1,44 @@
 # You.md — Changelog
 
+## 2026-03-24 — Intelligent Model Routing & Portrait System
+
+### Model Routing
+- **Named model config** — `MODELS` map in chat.ts routes tasks to the right model: Claude Sonnet 4.6 for chat, Perplexity Sonar for research, Sonar Pro for identity verification, Grok-3-mini for X enrichment, Haiku for summaries/classification
+- **Identity verification** — new `verifyIdentity` action uses Perplexity Sonar Pro to cross-reference scraped profiles and confirm they belong to the same person. Returns confidence score, matching signals, and discrepancies
+- **Parallel execution** — verification runs alongside research during scraping, both injected into agent context for informed conversation
+- **HTTP endpoint** — POST /api/v1/verify-identity for external use
+
+### Portrait System
+- **Multi-image storage** — ALL scraped images saved to `socialImages` field (x, github, linkedin, custom). Previously only saved the best one to avatarUrl
+- **Tap-to-select** — click any source image in PortraitPane to make it primary. Calls `setProfileImages` mutation
+- **Real photo + ASCII** — each source shows actual photo preview alongside ASCII conversion
+- **4 ASCII formats** — Classic ($@B%...), Braille (⣿⣷⣶⣦⣤), Block (█▓▒░), Minimal (@%#*+=-:.)
+- **Detail picker** — 60/80/100/120/160 column presets. Default bumped to 120 (was 80)
+- **Format picker** — grid selector for switching between ASCII formats in real-time
+- **Public profile** — now renders at 120 columns desktop / 60 mobile (was 60/40)
+
+---
+
+## 2026-03-24 — Agent Directives & Proactive Agent UX
+
+### Agent Directives (directives/agent.md)
+- **New bundle section** — `directives/agent.md` gives any AI behavioral instructions for how to interact with the user: communication style, pet peeves (negative prompts), default tech stack, decision-making framework, and current goal
+- **Compiled into youJson** — `agent_directives` object with `communication_style`, `negative_prompts`, `default_stack`, `decision_framework`, `current_goal`
+- **Compiled into youMd** — human-readable "Agent Directives" section
+- **Share block integration** — context links now include directive summary so agents get behavioral instructions immediately
+- **Proactive extraction** — agent observes how users communicate and infers directives without being asked (short answers = concise preference, technical language = skip explanations)
+- **Progressive depth updated** — L2 questions now include stack and communication preferences, L3 includes pet peeves and decision framework
+
+### "Always Building" Agent UX
+- **"building" thinking category** — 10 new thinking phrases for when the agent is constructing identity primitives, encoding preferences, structuring directives
+- **More granular activity simulation** — 7 sub-steps during LLM wait (vs 3), with tighter intervals (1.5s, 3.5s, 6s, 9s, 13s, 18s, 24s) so the UI never feels static
+- **Faster phrase rotation** — thinking phrases rotate every 2.5s (was 3.5s) for a more dynamic feel
+- **Category-aware rotation** — each simulated sub-step rotates both the phrase AND category, so the thinking indicator shows contextual work (discovery -> analysis -> identity -> building)
+- **soul.md "Always Building" philosophy** — agent now acts on inferences immediately instead of asking permission for obvious updates
+- **Proactive update language** — "adding that to your projects now" instead of "want me to add that?"
+
+---
+
 ## 2026-03-24 — Real-Time Progress Indicators (Claude Code-style)
 
 ### Activity Log System

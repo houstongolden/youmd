@@ -429,6 +429,28 @@ http.route({
   }),
 });
 
+// POST /api/v1/verify-identity — Cross-reference scraped profiles via Perplexity Sonar Pro
+http.route({
+  path: "/api/v1/verify-identity",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const body = await request.json();
+      const result = await ctx.runAction(api.chat.verifyIdentity, {
+        name: body.name,
+        username: body.username,
+        scrapedSources: body.scrapedSources || [],
+      });
+      return json(result);
+    } catch (err) {
+      return json(
+        { success: false, error: err instanceof Error ? err.message : "Verification failed" },
+        500
+      );
+    }
+  }),
+});
+
 // POST /api/v1/enrich-x — Enrich X profile via XAI/Grok
 http.route({
   path: "/api/v1/enrich-x",

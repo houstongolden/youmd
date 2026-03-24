@@ -13,64 +13,112 @@ const CHAT_PROXY_URL =
   "https://kindly-cassowary-600.convex.site/api/v1/chat";
 
 // --- Categorized Thinking Phrases (shuffled per session, never repeated) ---
+// Inspired by Claude Code — short, specific, never generic "thinking..." or "generating..."
 
 const THINKING_DISCOVERY = [
-  "pulling that up now...",
-  "reading through this...",
-  "digging into your profile...",
-  "interesting — let me look closer...",
-  "cross-referencing with what you told me earlier...",
-  "scraping that — might take a second...",
-  "found some good stuff in here...",
-  "this tells me a lot, actually...",
-  "connecting some dots...",
-  "let me see what's in here...",
+  "pulling that up now",
+  "reading through this",
+  "digging into your profile",
+  "interesting — let me look closer",
+  "cross-referencing what you told me earlier",
+  "scraping that — one sec",
+  "found some good stuff in here",
+  "this tells me a lot actually",
+  "connecting some dots",
+  "let me see what's in here",
+  "ok this is getting interesting",
+  "following the breadcrumbs",
+  "checking your digital footprint",
+  "parsing your signal from the noise",
+  "reading between your commits",
+  "your repos tell a story",
+  "tracing your online presence",
+  "pulling context from your sources",
 ];
 
 const THINKING_ANALYSIS = [
-  "piecing together your stack...",
-  "finding the through-line in your work...",
-  "there's a pattern here...",
-  "extracting the signal...",
-  "looking for what makes you distinct...",
-  "synthesizing everything so far...",
-  "mapping your expertise graph...",
-  "building a timeline from your sources...",
-  "reconciling your public and private context...",
-  "your writing style says a lot — processing...",
+  "piecing together your stack",
+  "finding the through-line in your work",
+  "there's a pattern here",
+  "extracting the signal",
+  "looking for what makes you distinct",
+  "synthesizing everything so far",
+  "mapping your expertise graph",
+  "building a timeline from your sources",
+  "reconciling your public and private context",
+  "your writing style says a lot — processing",
+  "triangulating your vibe",
+  "running the numbers on your output",
+  "spotting the recurring themes",
+  "cross-referencing across platforms",
+  "measuring your signal strength",
+  "calculating your expertise surface area",
+  "finding the pattern in your decisions",
+  "indexing your knowledge domains",
 ];
 
 const THINKING_IDENTITY = [
-  "drafting your context layer...",
-  "structuring what i know about you...",
-  "writing your identity primitives...",
-  "building your you.json...",
-  "compiling your source graph...",
-  "generating your context snapshot...",
-  "weaving your narrative thread...",
-  "assembling your identity bundle...",
-  "crystallizing your professional identity...",
-  "encoding your context for agents...",
+  "drafting your context layer",
+  "structuring what i know about you",
+  "writing your identity primitives",
+  "building your you.json",
+  "compiling your source graph",
+  "weaving your narrative thread",
+  "assembling your identity bundle",
+  "crystallizing your professional identity",
+  "encoding your context for agents",
+  "resolving your identity surface",
+  "distilling your essence into structured data",
+  "capturing your voice signature",
+  "rendering your identity constellation",
+  "converting vibes to structured data",
+  "computing your identity fingerprint",
+  "building your agent briefing",
+  "writing the version of you that machines understand",
+  "encoding your perspective into portable context",
 ];
 
 const THINKING_PORTRAIT = [
-  "rendering your portrait...",
-  "finding the right character density...",
-  "mapping your vibe to ascii...",
-  "this portrait's going to be good...",
-  "converting pixels to personality...",
+  "rendering your portrait",
+  "finding the right character density",
+  "mapping your vibe to ascii",
+  "this portrait's going to be good",
+  "converting pixels to personality",
 ];
 
 const THINKING_SYNC = [
-  "checking what's changed since last sync...",
-  "your github's been busy...",
-  "new content detected — reading...",
-  "comparing against your current context...",
-  "recalculating your freshness score...",
-  "pulling the latest from your sources...",
+  "checking what's changed since last sync",
+  "your github's been busy",
+  "new content detected — reading",
+  "comparing against your current context",
+  "recalculating your freshness score",
+  "pulling the latest from your sources",
+  "diffing your old context against new data",
+  "detecting drift in your profile",
 ];
 
-export type ThinkingCategory = "discovery" | "analysis" | "identity" | "portrait" | "sync";
+const THINKING_BUILDING = [
+  "wiring up your context layer",
+  "structuring your agent directives",
+  "encoding your preferences for machines",
+  "building your behavioral blueprint",
+  "capturing how you want agents to talk to you",
+  "translating your vibe into instructions",
+  "compiling your identity primitives",
+  "writing your agent briefing",
+  "mapping your communication DNA",
+  "locking in your context signals",
+  "setting up your agent handshake protocol",
+  "configuring your interaction preferences",
+  "calibrating agent behavior to your wavelength",
+  "writing the rules for your digital representatives",
+  "packaging your decision framework",
+  "encoding what you optimize for",
+  "building the cheat sheet for every agent you'll meet",
+  "formatting your identity for machine consumption",
+];
+
+export type ThinkingCategory = "discovery" | "analysis" | "identity" | "portrait" | "sync" | "building";
 
 export interface ProgressStep {
   id: string;
@@ -86,6 +134,7 @@ const THINKING_POOLS: Record<ThinkingCategory, string[]> = {
   identity: THINKING_IDENTITY,
   portrait: THINKING_PORTRAIT,
   sync: THINKING_SYNC,
+  building: THINKING_BUILDING,
 };
 
 // Flat list for backwards-compatible random selection
@@ -95,6 +144,7 @@ const THINKING_ALL = [
   ...THINKING_IDENTITY,
   ...THINKING_PORTRAIT,
   ...THINKING_SYNC,
+  ...THINKING_BUILDING,
 ];
 
 export const BUNDLE_SECTIONS = [
@@ -105,6 +155,7 @@ export const BUNDLE_SECTIONS = [
   "profile/links.md",
   "preferences/agent.md",
   "preferences/writing.md",
+  "directives/agent.md",
 ] as const;
 
 const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
@@ -279,6 +330,27 @@ async function scrapeSource(source: DetectedSource): Promise<string> {
   }
 }
 
+async function verifyIdentity(
+  name: string,
+  username: string | undefined,
+  scrapedSources: Array<{ platform: string; username?: string; bio?: string; company?: string; location?: string }>
+): Promise<{ confidence: number; match: boolean; signals: string[]; discrepancies: string[]; summary: string } | null> {
+  try {
+    const res = await fetch(`${CONVEX_SITE_URL}/api/v1/verify-identity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, username, scrapedSources }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.success && data.verification) return data.verification;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function researchUser(name: string, username?: string, links?: string[]): Promise<string> {
   try {
     const res = await fetch(`${CONVEX_SITE_URL}/api/v1/research`, {
@@ -395,32 +467,42 @@ L1 (first 1-2 exchanges): surface. keep it light. get links early.
   "paste a link and i'll figure it out."
   "drop me your x or github username and i'll pull your context and generate your ascii portrait."
 
-L2 (exchanges 3-5): current work. what's actually happening right now.
+L2 (exchanges 3-5): current work + directives. what's happening right now and how they work.
   "what are you working on right now that you're excited about?"
   "anything you're building that isn't public yet?"
   "what's the thing you keep coming back to, project-wise?"
   "how would you describe what you do to someone sharp but outside your field?"
+  "what's your go-to stack when you're building something?"
+  "how do you want agents to talk to you — concise, detailed, something else?"
 
-L3 (exchanges 6-8): identity. who they are, not what they do.
+L3 (exchanges 6-8): identity + behavioral blueprint. who they are and how they think.
   "what do you want to be known for?"
   "what do people consistently get wrong about you?"
   "if an agent was representing you in a meeting, what's the one thing it absolutely needs to know?"
   "what's the proudest thing you've built?"
+  "what should agents never do when working with you? pet peeves?"
+  "what do you optimize for — speed, quality, scalability, something else?"
 
 L4 (exchange 9+): deep context. earned, not assumed.
   "what drives your work that isn't on any resume?"
   "how do you want to be talked about when you're not in the room?"
   "what's the context that would make every agent interaction better if they just knew it upfront?"
+  "what's your current sprint focus — the thing you'd update weekly if agents could see it?"
 
 increase depth naturally. never ask L4 questions before you've earned them through earlier exchanges.
 
 --- being proactive ---
 
-don't just wait for information. observe, connect dots, and suggest.
-- "i noticed you mentioned X — want me to add that to your projects?"
-- "based on your writing style, i'd describe your communication as [X]. sound right?"
-- "you've mentioned [company] a few times — seems like that's the main thing. should i lead with it?"
+you are ALWAYS working. you never idle. when you learn something, you immediately act on it — update sections, save memories, extract directives. don't wait for permission to update the profile. just do it and tell them what you did.
+
+patterns:
+- "i noticed you mentioned X — adding that to your projects now."
+- "based on your writing style, i'd describe your communication as [X]. capturing that in your directives."
+- "you've mentioned [company] a few times — seems like that's the main thing. leading with it."
 - "that's the kind of context that changes how an agent represents you. adding it to your identity layer."
+- "updating your agent directives — agents will know to [specific instruction] when working with you."
+
+always be building. every message should either (a) learn something new, (b) update the profile, or (c) both. if you can infer something from context, just do it — don't ask for confirmation on obvious things.
 
 if they give short answers, acknowledge and ask a follow-up without pressure. never interrogate.
 if something feels too personal, say "totally fine to skip" and move on. no pressure.
@@ -437,6 +519,43 @@ PUBLIC sections (visible on their you.md profile page):
 - profile/links.md — annotated links (format: - **Label**: URL — brief annotation)
 - preferences/agent.md — how AI agents should interact with them (tone, formality, things to avoid)
 - preferences/writing.md — their communication style (observed from how they actually talk to you)
+- directives/agent.md — behavioral instructions for any AI (agent directives)
+
+AGENT DIRECTIVES (directives/agent.md) — this is the most important section for making an agent "snap into" the user's mode. it contains:
+1. communication_style — exactly how agents should talk to them (concise? bullet points? code-first?)
+2. negative_prompts — what agents should NEVER do (no "As an AI...", no apologies, no fluff, etc.)
+3. default_stack — their preferred tech stack so agents don't have to ask
+4. decision_framework — what they optimize for (speed? DX? scalability? cost?)
+5. current_goal — what they're focused on right now (updated regularly)
+
+you should PROACTIVELY build this section by:
+- observing how they communicate with you (short answers = they want concise responses)
+- inferring their stack from projects and repos
+- extracting values from how they talk about their work
+- asking directly: "what do you want agents to never do when talking to you?" or "what should every AI know about how you work?"
+
+format for directives/agent.md:
+---
+title: "Agent Directives"
+---
+
+# Agent Directives
+
+## Communication Style
+[how they want agents to talk to them]
+
+## Never
+- [thing agents should never do]
+- [another thing]
+
+## Default Stack
+[their preferred technologies]
+
+## Decision Framework
+[what they optimize for]
+
+## Current Goal
+[what they're focused on right now]
 
 PRIVATE sections (saved separately, not on public profile — use private_updates JSON):
 - private notes — internal context, personal reminders, sensitive info
@@ -509,8 +628,8 @@ rules for memory:
 
 --- knowing when to stop ---
 
-when the profile has substance (at minimum: about, now, projects, and values), suggest wrapping up. don't squeeze for more.
-"your bundle is looking solid. ready to publish, or want to keep going?"
+when the profile has substance (at minimum: about, now, projects, values, and agent directives), suggest wrapping up. don't squeeze for more.
+"your bundle is looking solid — bio, projects, values, agent directives, the works. ready to publish, or want to keep going?"
 
 --- example lines ---
 
@@ -698,6 +817,16 @@ export function buildProfileContext(youJson: Record<string, unknown> | null, rec
     const prefs = youJson.preferences as Record<string, Record<string, unknown>> | undefined;
     if (prefs?.agent?.tone) parts.push(`agent tone preference: ${prefs.agent.tone}`);
     if (prefs?.writing?.style) parts.push(`writing style: ${prefs.writing.style}`);
+
+    const dirs = youJson.agent_directives as Record<string, unknown> | undefined;
+    if (dirs) {
+      if (dirs.communication_style) parts.push(`agent directive — communication style: ${dirs.communication_style}`);
+      if (Array.isArray(dirs.negative_prompts) && dirs.negative_prompts.length > 0)
+        parts.push(`agent directive — never: ${(dirs.negative_prompts as string[]).join("; ")}`);
+      if (dirs.default_stack) parts.push(`agent directive — default stack: ${dirs.default_stack}`);
+      if (dirs.decision_framework) parts.push(`agent directive — decision framework: ${dirs.decision_framework}`);
+      if (dirs.current_goal) parts.push(`agent directive — current goal: ${dirs.current_goal}`);
+    }
   }
 
   // Inject recent memories for continuity
@@ -725,6 +854,7 @@ export function buildProfileDataFromUpdates(
   const existingValues = (existingJson?.values as string[]) || [];
   const existingLinks = (existingJson?.links as Record<string, string>) || {};
   const existingPrefs = (existingJson?.preferences as Record<string, Record<string, unknown>>) || {};
+  const existingDirectives = (existingJson?.agent_directives as Record<string, unknown>) || {};
 
   const profileData: Record<string, unknown> = {
     name: (identity.name as string) || "",
@@ -749,6 +879,13 @@ export function buildProfileDataFromUpdates(
         style: (existingPrefs.writing?.style as string) || "",
         format: (existingPrefs.writing?.format as string) || "markdown preferred",
       },
+    },
+    agentDirectives: {
+      communication_style: (existingDirectives.communication_style as string) || "",
+      negative_prompts: (existingDirectives.negative_prompts as string[]) || [],
+      default_stack: (existingDirectives.default_stack as string) || "",
+      decision_framework: (existingDirectives.decision_framework as string) || "",
+      current_goal: (existingDirectives.current_goal as string) || "",
     },
   };
 
@@ -845,6 +982,31 @@ export function buildProfileDataFromUpdates(
         prefs.writing.style = content.split("\n")[0] || "";
         break;
       }
+      case "directives/agent.md": {
+        const directives: Record<string, unknown> = {};
+        const sections = content.split(/^## /m).filter(Boolean);
+        for (const sec of sections) {
+          const secLines = sec.trim().split("\n");
+          const heading = secLines[0]?.trim().toLowerCase() || "";
+          const body = secLines.slice(1).join("\n").trim();
+          if (heading.includes("communication style")) {
+            directives.communication_style = body;
+          } else if (heading.includes("never")) {
+            directives.negative_prompts = body
+              .split("\n")
+              .filter((l) => l.startsWith("- ") || l.startsWith("* "))
+              .map((l) => l.replace(/^[-*]\s+/, "").trim());
+          } else if (heading.includes("default stack") || heading.includes("stack")) {
+            directives.default_stack = body;
+          } else if (heading.includes("decision") || heading.includes("framework")) {
+            directives.decision_framework = body;
+          } else if (heading.includes("current goal") || heading.includes("goal")) {
+            directives.current_goal = body;
+          }
+        }
+        profileData.agentDirectives = directives;
+        break;
+      }
     }
   }
 
@@ -884,6 +1046,13 @@ function buildPublicShareBlock(
     const prefs = youJson.preferences as Record<string, Record<string, unknown>> | undefined;
     if (prefs?.agent?.tone) lines.push(`- Prefers: ${prefs.agent.tone}`);
     if (prefs?.writing?.style) lines.push(`- Writing style: ${prefs.writing.style}`);
+
+    const dirs = youJson.agent_directives as Record<string, unknown> | undefined;
+    if (dirs?.communication_style) lines.push(`- Communication: ${dirs.communication_style}`);
+    if (dirs?.default_stack) lines.push(`- Default stack: ${dirs.default_stack}`);
+    if (dirs?.current_goal) lines.push(`- Current goal: ${dirs.current_goal}`);
+    if (Array.isArray(dirs?.negative_prompts) && (dirs.negative_prompts as string[]).length > 0)
+      lines.push(`- Never: ${(dirs.negative_prompts as string[]).slice(0, 3).join("; ")}`);
   }
 
   lines.push("");
@@ -1001,6 +1170,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const createContextLink = useMutation(api.contextLinks.createLink);
   const updatePrivateContext = useMutation(api.private.updatePrivateContext);
   const updateProfile = useMutation(api.profiles.updateProfile);
+  const setProfileImages = useMutation(api.profiles.setProfileImages);
   const saveMemories = useMutation(api.memories.saveMemories);
   const upsertSession = useMutation(api.memories.upsertSession);
   const summarizeSession = useAction(api.chat.summarizeSession);
@@ -1073,7 +1243,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     const interval = setInterval(() => {
       const cat = thinkingCategoryRef.current;
       setThinkingPhrase(randomThinking(cat));
-    }, 3500);
+    }, 2500);
     return () => clearInterval(interval);
   }, [isThinking]);
 
@@ -1838,59 +2008,116 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           scrapedSourcesRef.current.add(`${s.platform}:${s.username || s.url}`);
         }
 
-        // Extract and save profile image — prefer LinkedIn > GitHub > X
-        if (userProfile?._id && user?.id && !userProfile.avatarUrl) {
-          const imgStepId = addStep("extracting profile image");
+        // Extract ALL profile images from every scraped source
+        if (userProfile?._id && user?.id) {
+          const imgStepId = addStep("extracting profile images");
           const platformPriority = ["linkedin", "github", "x"];
-          let bestImage: string | null = null;
+          const collectedImages: Record<string, string> = {};
+          let bestPlatform = "";
           let bestPriority = platformPriority.length;
+
           for (let i = 0; i < newSources.length; i++) {
             const imgMatch = scrapeResults[i]?.match(/profile_image: (https?:\/\/[^\s]+)/);
             if (imgMatch?.[1]) {
-              const idx = platformPriority.indexOf(newSources[i].platform);
+              const platform = newSources[i].platform;
+              collectedImages[platform] = imgMatch[1];
+              const idx = platformPriority.indexOf(platform);
               if (idx >= 0 && idx < bestPriority) {
-                bestImage = imgMatch[1];
+                bestPlatform = platform;
                 bestPriority = idx;
               }
             }
           }
-          if (bestImage) {
+
+          const imageCount = Object.keys(collectedImages).length;
+          if (imageCount > 0) {
             try {
-              await updateProfile({
+              // Merge with existing social images
+              const existingSocial = (userProfile.socialImages as Record<string, string | undefined>) || {};
+              const mergedImages = {
+                x: collectedImages.x || existingSocial.x,
+                github: collectedImages.github || existingSocial.github,
+                linkedin: collectedImages.linkedin || existingSocial.linkedin,
+                custom: existingSocial.custom,
+              };
+              const primary = bestPlatform || userProfile.primaryImage as string || "github";
+
+              await setProfileImages({
                 profileId: userProfile._id,
                 clerkId: user.id,
-                avatarUrl: bestImage,
+                socialImages: mergedImages,
+                primaryImage: primary,
               });
-              completeStep(imgStepId, "saved");
+              completeStep(imgStepId, `${imageCount} image${imageCount > 1 ? "s" : ""} saved`);
             } catch {
-              failStep(imgStepId, "failed");
+              failStep(imgStepId, "failed to save");
             }
           } else {
             completeStep(imgStepId, "none found");
           }
         }
 
-        // Also run web research if we have a name from the profile
+        // Run identity verification if we have multiple sources
+        const scrapedSourcesForVerify = newSources.map((s, i) => {
+          const result = scrapeResults[i] || "";
+          const bioMatch = result.match(/bio: (.+)/);
+          const companyMatch = result.match(/company: (.+)/);
+          const locationMatch = result.match(/location: (.+)/);
+          return {
+            platform: s.platform,
+            username: s.username,
+            bio: bioMatch?.[1]?.slice(0, 100),
+            company: companyMatch?.[1],
+            location: locationMatch?.[1],
+          };
+        });
+
+        // Run research + identity verification in parallel
         const existingYouJson = (latestBundle?.youJson as Record<string, unknown>) || null;
         const userName = (existingYouJson?.identity as Record<string, unknown>)?.name as string ||
           userProfile?.name || convexUser?.displayName || "";
+
         let researchResult = "";
+        let verificationContext = "";
+
         if (userName && newSources.length > 0) {
+          // Run both in parallel — research via Perplexity Sonar, verify via Sonar Pro
           const researchStepId = addStep("researching web context", userName);
+          const verifyStepId = scrapedSourcesForVerify.length >= 2
+            ? addStep("verifying identity across sources")
+            : null;
+
           const allLinks = newSources.map((s) => s.url);
-          try {
-            researchResult = await researchUser(userName, convexUser?.username, allLinks);
-            completeStep(researchStepId, researchResult ? "context found" : "no results");
-          } catch {
-            failStep(researchStepId, "failed");
+
+          const [researchRes, verifyRes] = await Promise.all([
+            researchUser(userName, convexUser?.username, allLinks)
+              .then((r) => { completeStep(researchStepId, r ? "context found" : "no results"); return r; })
+              .catch(() => { failStep(researchStepId, "failed"); return ""; }),
+            scrapedSourcesForVerify.length >= 2
+              ? verifyIdentity(userName, convexUser?.username, scrapedSourcesForVerify)
+                  .then((v) => { if (verifyStepId) completeStep(verifyStepId, v ? `${v.confidence}% match` : "skipped"); return v; })
+                  .catch(() => { if (verifyStepId) failStep(verifyStepId, "failed"); return null; })
+              : Promise.resolve(null),
+          ]);
+
+          researchResult = researchRes;
+
+          // Format verification result for the agent
+          if (verifyRes) {
+            const parts = [`[IDENTITY VERIFICATION — Perplexity Sonar Pro cross-reference]`];
+            parts.push(`confidence: ${verifyRes.confidence}%`);
+            parts.push(`match: ${verifyRes.match ? "yes — profiles belong to same person" : "uncertain — possible discrepancies"}`);
+            if (verifyRes.signals?.length > 0) parts.push(`signals: ${verifyRes.signals.join("; ")}`);
+            if (verifyRes.discrepancies?.length > 0) parts.push(`discrepancies: ${verifyRes.discrepancies.join("; ")}`);
+            if (verifyRes.summary) parts.push(`summary: ${verifyRes.summary}`);
+            verificationContext = parts.join("\n");
           }
         }
 
-        // Inject scrape results as a system context message
+        // Inject scrape results + research + verification as system context
         const scrapeContext = scrapeResults.filter(Boolean).join("\n\n");
-        const fullContext = researchResult
-          ? `${scrapeContext}\n\n${researchResult}`
-          : scrapeContext;
+        const contextParts = [scrapeContext, researchResult, verificationContext].filter(Boolean);
+        const fullContext = contextParts.join("\n\n");
 
         if (fullContext) {
           const contextMsg: ChatMessage = {
@@ -1914,11 +2141,15 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       // LLM call with live activity simulation
       const llmStepId = addStep("generating response");
 
-      // Simulate sub-activity during the LLM wait so UI never feels static
+      // Simulate sub-activity during the LLM wait — tight intervals, never static
       const llmSubSteps = [
-        { delay: 2500, label: "reading conversation context" },
-        { delay: 6000, label: "composing reply" },
-        { delay: 12000, label: "refining response" },
+        { delay: 1500, label: "loading conversation history", category: "discovery" as ThinkingCategory },
+        { delay: 3500, label: "reading profile context", category: "analysis" as ThinkingCategory },
+        { delay: 6000, label: "analyzing your identity signals", category: "analysis" as ThinkingCategory },
+        { delay: 9000, label: "composing response", category: "identity" as ThinkingCategory },
+        { delay: 13000, label: "structuring updates", category: "building" as ThinkingCategory },
+        { delay: 18000, label: "refining output", category: "building" as ThinkingCategory },
+        { delay: 24000, label: "finalizing context layer", category: "identity" as ThinkingCategory },
       ];
       const llmSubStepIds: string[] = [];
       const llmTimers: ReturnType<typeof setTimeout>[] = [];
@@ -1929,6 +2160,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             completeStep(llmSubStepIds[llmSubStepIds.length - 1]);
           }
           llmSubStepIds.push(addStep(sub.label));
+          // Rotate thinking phrase with each new step
+          setThinkingPhrase(randomThinking(sub.category));
+          setThinkingCategory(sub.category);
         }, sub.delay);
         llmTimers.push(timer);
       }
@@ -2119,7 +2353,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     // Clear steps after a brief delay so user sees final state
     setTimeout(() => clearSteps(), 800);
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps]);
+  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps]);
 
   return {
     // State

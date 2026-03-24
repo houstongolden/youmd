@@ -504,8 +504,8 @@ function ClaimBanner({ username }: { username: string }) {
 function PortraitFrame({ src }: { src: string }) {
   return (
     <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "2px" }}>
-      <AsciiAvatar src={src} cols={60} canvasWidth={120} className="hidden sm:block" />
-      <AsciiAvatar src={src} cols={40} canvasWidth={80} className="block sm:hidden" />
+      <AsciiAvatar src={src} cols={120} canvasWidth={240} className="hidden sm:block" />
+      <AsciiAvatar src={src} cols={60} canvasWidth={120} className="block sm:hidden" />
     </div>
   );
 }
