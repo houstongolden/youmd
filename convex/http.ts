@@ -376,6 +376,154 @@ http.route({
   }),
 });
 
+// POST /api/v1/chat/stream — Streaming chat via SSE
+// Bypasses Convex actions to stream directly from Anthropic API.
+http.route({
+  path: "/api/v1/chat/stream",
+  method: "POST",
+  handler: httpAction(async (_ctx, request) => {
+    const body = await request.json();
+    const messages: { role: string; content: string }[] = body.messages || [];
+
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    const openrouterKey = process.env.OPENROUTER_API_KEY;
+
+    if (!anthropicKey && !openrouterKey) {
+      return json({ error: "No LLM API key configured" }, 500);
+    }
+
+    const systemMessage = messages.find((m) => m.role === "system");
+    const conversationMessages = messages.filter((m) => m.role !== "system");
+
+    // Helper: create SSE response from a ReadableStream
+    function sseResponse(stream: ReadableStream): Response {
+      return new Response(stream, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+          ...CORS_HEADERS,
+        },
+      });
+    }
+
+    // Helper: transform upstream SSE into our simplified format
+    function transformStream(
+      upstream: ReadableStream<Uint8Array>,
+      extractText: (parsed: any) => string | null
+    ): ReadableStream {
+      const reader = upstream.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      return new ReadableStream({
+        async pull(controller) {
+          try {
+            const { done, value } = await reader.read();
+            if (done) {
+              controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+              controller.close();
+              return;
+            }
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop() || "";
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const data = line.slice(6).trim();
+              if (data === "[DONE]") {
+                controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+                continue;
+              }
+              try {
+                const parsed = JSON.parse(data);
+                const text = extractText(parsed);
+                if (text) {
+                  controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ text })}\n\n`));
+                }
+              } catch { /* skip */ }
+            }
+          } catch (err) {
+            controller.error(err);
+          }
+        },
+      });
+    }
+
+    // Try Anthropic streaming first
+    if (anthropicKey) {
+      try {
+        const upstreamRes = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": anthropicKey,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-6-20250520",
+            max_tokens: 4096,
+            temperature: 0.7,
+            stream: true,
+            system: systemMessage?.content || "",
+            messages: conversationMessages.map((m) => ({
+              role: m.role as "user" | "assistant",
+              content: m.content,
+            })),
+          }),
+          signal: AbortSignal.timeout(90_000),
+        });
+
+        if (upstreamRes.ok && upstreamRes.body) {
+          return sseResponse(transformStream(upstreamRes.body, (parsed) => {
+            if (parsed.type === "content_block_delta" && parsed.delta?.text) return parsed.delta.text;
+            if (parsed.type === "message_stop") return null;
+            return null;
+          }));
+        }
+        // Anthropic failed — fall through to OpenRouter
+        await upstreamRes.text();
+      } catch {
+        // Fall through to OpenRouter
+      }
+    }
+
+    // Fallback: OpenRouter streaming
+    if (openrouterKey) {
+      try {
+        const upstreamRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${openrouterKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "anthropic/claude-sonnet-4",
+            messages,
+            max_tokens: 4096,
+            temperature: 0.7,
+            stream: true,
+          }),
+          signal: AbortSignal.timeout(90_000),
+        });
+
+        if (upstreamRes.ok && upstreamRes.body) {
+          return sseResponse(transformStream(upstreamRes.body, (parsed) => {
+            return parsed.choices?.[0]?.delta?.content || null;
+          }));
+        }
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : "Stream failed" }, 500);
+      }
+    }
+
+    return json({ error: "No API key or all providers failed" }, 500);
+  }),
+});
+
+// OPTIONS for /api/v1/chat/stream is registered below with other CORS preflight routes
+
 // ============================================================
 // PROFILE SCRAPING
 // ============================================================
@@ -665,6 +813,7 @@ http.route({ path: "/api/v1/me/build", method: "OPTIONS", handler: corsPreflight
 http.route({ path: "/api/v1/me/build/status", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/memories", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/chat/stream", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/scrape", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/research", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/enrich-x", method: "OPTIONS", handler: corsPreflight });

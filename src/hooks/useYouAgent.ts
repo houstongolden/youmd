@@ -1306,6 +1306,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   }, [input]);
 
   // LLM call
+  // Non-streaming LLM call (used for init where we need the full response before displaying)
   const callLLM = useCallback(async (msgs: ChatMessage[]): Promise<string> => {
     const res = await fetch(CHAT_PROXY_URL, {
       method: "POST",
@@ -1323,6 +1324,74 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     if (!data.content) throw new Error("the agent returned an empty response. try again.");
     return data.content;
   }, []);
+
+  // Streaming LLM call — streams tokens into a display message in real-time
+  const callLLMStreaming = useCallback(async (
+    msgs: ChatMessage[],
+    displayMessageId: string,
+  ): Promise<string> => {
+    const streamUrl = CHAT_PROXY_URL.replace("/chat", "/chat/stream");
+
+    try {
+      const res = await fetch(streamUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: msgs }),
+        signal: AbortSignal.timeout(90_000),
+      });
+
+      if (!res.ok || !res.body) {
+        // Fall back to non-streaming
+        const fallback = await callLLM(msgs);
+        setDisplayMessages(prev => prev.map(m =>
+          m.id === displayMessageId ? { ...m, content: fallback } : m
+        ));
+        return fallback;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.text) {
+              fullText += parsed.text;
+              // Update the display message with streamed content
+              setDisplayMessages(prev => prev.map(m =>
+                m.id === displayMessageId ? { ...m, content: fullText } : m
+              ));
+            }
+          } catch {
+            // Skip unparseable chunks
+          }
+        }
+      }
+
+      return fullText || "";
+    } catch {
+      // Fall back to non-streaming on any error
+      const fallback = await callLLM(msgs);
+      setDisplayMessages(prev => prev.map(m =>
+        m.id === displayMessageId ? { ...m, content: fallback } : m
+      ));
+      return fallback;
+    }
+  }, [callLLM]);
 
   // Save updates to Convex
   const saveUpdates = useCallback(
@@ -2182,42 +2251,34 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         setThinkingCategory("identity");
       }
 
-      // LLM call with live activity simulation
+      // LLM call — stream tokens into a live display message
       const llmStepId = addStep("generating response");
 
-      // Simulate sub-activity during the LLM wait — tight intervals, never static
-      const llmSubSteps = [
-        { delay: 1500, label: "loading conversation history", category: "discovery" as ThinkingCategory },
-        { delay: 3500, label: "reading profile context", category: "analysis" as ThinkingCategory },
-        { delay: 6000, label: "analyzing your identity signals", category: "analysis" as ThinkingCategory },
-        { delay: 9000, label: "composing response", category: "identity" as ThinkingCategory },
-        { delay: 13000, label: "structuring updates", category: "building" as ThinkingCategory },
-        { delay: 18000, label: "refining output", category: "building" as ThinkingCategory },
-        { delay: 24000, label: "finalizing context layer", category: "identity" as ThinkingCategory },
-      ];
-      const llmSubStepIds: string[] = [];
-      const llmTimers: ReturnType<typeof setTimeout>[] = [];
-      for (const sub of llmSubSteps) {
-        const timer = setTimeout(() => {
-          // Complete previous sub-step if any
-          if (llmSubStepIds.length > 0) {
-            completeStep(llmSubStepIds[llmSubStepIds.length - 1]);
-          }
-          llmSubStepIds.push(addStep(sub.label));
-          // Rotate thinking phrase with each new step
-          setThinkingPhrase(randomThinking(sub.category));
-          setThinkingCategory(sub.category);
-        }, sub.delay);
-        llmTimers.push(timer);
-      }
+      // Create a placeholder assistant message for streaming
+      const streamMsgId = crypto.randomUUID();
+      setDisplayMessages(prev => [...prev, {
+        id: streamMsgId,
+        role: "assistant" as const,
+        content: "",
+      }]);
 
-      const response = await callLLM(updatedMessages);
+      // Stop showing thinking indicator — the streaming text IS the indicator now
+      setIsThinking(false);
 
-      // Clean up: clear pending timers, complete any active sub-steps
-      for (const t of llmTimers) clearTimeout(t);
-      for (const id of llmSubStepIds) completeStep(id);
+      // Stream response into the display message
+      const response = await callLLMStreaming(updatedMessages, streamMsgId);
+
       completeStep(llmStepId);
+
+      // Strip JSON blocks from the streamed display (they may have streamed in)
       const { display, updates } = parseUpdatesFromResponse(response);
+
+      // Update the streamed message with the clean display text (strip JSON blocks)
+      if (display !== response) {
+        setDisplayMessages(prev => prev.map(m =>
+          m.id === streamMsgId ? { ...m, content: display } : m
+        ));
+      }
 
       const assistantMsg: ChatMessage = {
         role: "assistant",

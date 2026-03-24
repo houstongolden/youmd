@@ -47,15 +47,14 @@ export function MessageBubble({ message, isLatest = false }: MessageBubbleProps)
     );
   }
 
-  // assistant — terminal-style with typewriter effect for latest message
-  if (isLatest) {
-    return <TypewriterMessage content={message.content} />;
-  }
-
+  // assistant — rich terminal content with streaming cursor for latest
   return (
     <div className="pl-3 border-l-2 border-[hsl(var(--accent))]/25">
       <div className="text-[14px] font-mono leading-relaxed text-[hsl(var(--text-secondary))]">
         <RichTerminalContent content={message.content} />
+        {isLatest && message.content.length > 0 && (
+          <span className="inline-block w-1.5 h-3.5 bg-[hsl(var(--accent))] opacity-70 animate-pulse ml-0.5 align-text-bottom" />
+        )}
       </div>
     </div>
   );
