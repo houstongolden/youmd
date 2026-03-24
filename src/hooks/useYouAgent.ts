@@ -261,6 +261,7 @@ async function scrapeSource(source: DetectedSource): Promise<string> {
       } catch { /* ignore */ }
     }
     if (d.extras?.languages) parts.push(`languages: ${d.extras.languages}`);
+    if (d.extras?.bodyText) parts.push(`page content: ${d.extras.bodyText}`);
     if (d.profileImageUrl) parts.push(`profile_image: ${d.profileImageUrl}`);
     return parts.join("\n");
   } catch (err) {

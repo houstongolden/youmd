@@ -376,6 +376,98 @@ async function fetchLinkedInProfile(slug: string): Promise<ProfileResult> {
 }
 
 // ============================================================
+// Generic website scraper — fetches HTML, extracts meta tags
+// ============================================================
+
+async function fetchWebsite(url: string): Promise<ProfileResult> {
+  const result = emptyResult("website");
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml",
+      },
+      redirect: "follow",
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!res.ok) {
+      console.log(`Website ${url} returned ${res.status}`);
+      return result;
+    }
+
+    const html = await res.text();
+
+    // Title
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (titleMatch?.[1]) result.displayName = titleMatch[1].trim();
+
+    // Meta description
+    const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*name=["']description["']/i);
+    if (descMatch?.[1]) result.bio = descMatch[1].trim();
+
+    // OG title / description (fallback)
+    if (!result.displayName) {
+      const ogTitle = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i);
+      if (ogTitle?.[1]) result.displayName = ogTitle[1].trim();
+    }
+    if (!result.bio) {
+      const ogDesc = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i);
+      if (ogDesc?.[1]) result.bio = ogDesc[1].trim();
+    }
+
+    // OG image
+    const ogImage = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+    if (ogImage?.[1]) result.profileImageUrl = ogImage[1].trim();
+
+    // Favicon as fallback image
+    if (!result.profileImageUrl) {
+      try {
+        const domain = new URL(url).hostname;
+        result.profileImageUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+      } catch { /* ignore */ }
+    }
+
+    // Extract any visible text for context (first 2000 chars of body text)
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    if (bodyMatch?.[1]) {
+      const stripped = bodyMatch[1]
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<nav[\s\S]*?<\/nav>/gi, "")
+        .replace(/<footer[\s\S]*?<\/footer>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 2000);
+      if (stripped.length > 50) {
+        result.extras.bodyText = stripped;
+      }
+    }
+
+    // Extract links from the page
+    const linkRegex = /href=["'](https?:\/\/[^"']+)["']/gi;
+    const foundLinks: string[] = [];
+    let linkMatch;
+    while ((linkMatch = linkRegex.exec(html)) !== null && foundLinks.length < 20) {
+      const href = linkMatch[1];
+      if (!href.includes(new URL(url).hostname)) {
+        foundLinks.push(href);
+      }
+    }
+    result.links = Array.from(new Set(foundLinks)).slice(0, 10);
+
+    result.website = url;
+  } catch (e) {
+    console.log(`Website fetch failed for ${url}:`, e);
+  }
+
+  return result;
+}
+
+// ============================================================
 // Platform detection
 // ============================================================
 
@@ -398,6 +490,11 @@ function detectPlatform(
 
   const liMatch = lower.match(/linkedin\.com\/in\/([a-zA-Z0-9_-]+)/i);
   if (liMatch) return { platform: "linkedin", identifier: liMatch[1] };
+
+  // Generic website — any URL with a known protocol
+  if (lower.startsWith("http://") || lower.startsWith("https://")) {
+    return { platform: "website", identifier: url.trim() };
+  }
 
   return null;
 }
@@ -451,6 +548,9 @@ export const scrapeProfile = action({
         break;
       case "linkedin":
         result = await fetchLinkedInProfile(detected.identifier);
+        break;
+      case "website":
+        result = await fetchWebsite(detected.identifier);
         break;
       default:
         return {
