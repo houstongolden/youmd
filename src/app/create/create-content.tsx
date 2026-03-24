@@ -68,9 +68,8 @@ function CreateContentInner() {
     return () => timers.forEach(clearTimeout);
   }, [addLine]);
 
-  // Username handler
+  // Username handler — validates format AND checks availability via Convex
   const handleUsername = useCallback(async (val: string) => {
-    // TODO: Add Cloudflare Turnstile before public launch to prevent username squatting
     const clean = val.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30);
     if (!clean || clean.length < 3) {
       addLine(
@@ -88,7 +87,25 @@ function CreateContentInner() {
       </span>
     );
 
-    // Username will be validated by createProfile mutation (checks both tables)
+    // Check availability server-side before proceeding
+    try {
+      const convexUrl = (process.env.NEXT_PUBLIC_CONVEX_URL || "https://kindly-cassowary-600.convex.cloud").replace(".cloud", ".site");
+      const res = await fetch(`${convexUrl}/api/v1/check-username?username=${encodeURIComponent(clean)}`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.available) {
+          addLine(
+            <span className="text-[hsl(var(--accent))]">ERR: @{clean} is {data.reason || "already taken"}</span>
+          );
+          return;
+        }
+      }
+    } catch {
+      // If check fails, proceed and let createProfile mutation handle it
+    }
+
     addLine(
       <span className="text-[hsl(var(--success))]">{"\u2713"} @{clean} is available</span>
     );

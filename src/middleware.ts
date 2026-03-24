@@ -21,7 +21,7 @@ const BOT_UA_PATTERNS = [
 // Routes that are definitely NOT profile usernames
 const RESERVED_PATHS = new Set([
   "", "api", "create", "claim", "dashboard", "docs", "initialize",
-  "profiles", "sign-in", "sign-up", "ctx", "_next", "icon.svg",
+  "profiles", "reset-password", "sign-in", "sign-up", "ctx", "_next", "icon.svg",
 ]);
 
 function isAgentRequest(req: Request): boolean {

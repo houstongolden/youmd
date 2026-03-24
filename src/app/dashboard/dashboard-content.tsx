@@ -12,6 +12,7 @@ import { ProfilePane } from "@/components/panes/ProfilePane";
 import { EditPane } from "@/components/panes/EditPane";
 import { SharePane } from "@/components/panes/SharePane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Mobile nav shows these panes as top-level tabs
 const MOBILE_PANES: Array<{ key: RightPane | "terminal"; label: string }> = [
@@ -184,24 +185,26 @@ export function DashboardContent() {
 
               {/* Active pane */}
               <div className="flex-1 min-h-0 overflow-y-auto">
-                {rightPane === "profile" && (
-                  <ProfilePane userId={convexUser._id} username={username} ownerId={convexUser._id} />
-                )}
-                {rightPane === "edit" && (
-                  <EditPane userId={convexUser._id} username={username} />
-                )}
-                {rightPane === "share" && user?.id && (
-                  <SharePane
-                    username={username}
-                    userId={convexUser._id}
-                    clerkId={user.id}
-                    profileId={userProfile?._id}
-                    plan={plan}
-                  />
-                )}
-                {rightPane === "settings" && user?.id && (
-                  <SettingsPane clerkId={user.id} username={username} plan={plan} />
-                )}
+                <ErrorBoundary>
+                  {rightPane === "profile" && (
+                    <ProfilePane userId={convexUser._id} username={username} ownerId={convexUser._id} />
+                  )}
+                  {rightPane === "edit" && (
+                    <EditPane userId={convexUser._id} username={username} />
+                  )}
+                  {rightPane === "share" && user?.id && (
+                    <SharePane
+                      username={username}
+                      userId={convexUser._id}
+                      clerkId={user.id}
+                      profileId={userProfile?._id}
+                      plan={plan}
+                    />
+                  )}
+                  {rightPane === "settings" && user?.id && (
+                    <SettingsPane clerkId={user.id} username={username} plan={plan} />
+                  )}
+                </ErrorBoundary>
               </div>
             </div>
           </div>

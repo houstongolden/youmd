@@ -296,9 +296,9 @@ export default function SignInPage() {
           )}
         </div>
 
-        {/* Link below terminal */}
+        {/* Links below terminal */}
         {!isInputStep && (
-          <div className="mt-3 text-center shrink-0">
+          <div className="mt-3 text-center shrink-0 flex flex-col gap-1">
             <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
               need to initialize?{" "}
               <Link
@@ -306,6 +306,15 @@ export default function SignInPage() {
                 className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
               >
                 sign up
+              </Link>
+            </span>
+            <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
+              forgot password?{" "}
+              <Link
+                href="/reset-password"
+                className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
+              >
+                reset
               </Link>
             </span>
           </div>

@@ -51,120 +51,16 @@ function emptyResult(platform: string): ProfileResult {
 async function fetchXProfile(username: string): Promise<ProfileResult> {
   const result = emptyResult("x");
 
-  // Strategy: Twitter syndication API — rich HTML with embedded JSON
-  try {
-    const res = await fetch(
-      `https://syndication.twitter.com/srv/timeline-profile/screen-name/${username}`,
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-          Accept: "text/html",
-        },
-        redirect: "follow",
-      }
-    );
-    if (res.ok) {
-      const html = await res.text();
+  // The Twitter syndication API no longer returns profile data (as of March 2026).
+  // We use unavatar for the profile image and signal that Grok enrichment should be
+  // used for full X context (handled by the /api/v1/enrich-x endpoint separately).
 
-      // Profile image
-      const imgMatch = html.match(
-        /https:\/\/pbs\.twimg\.com\/profile_images\/[^"'\s]+/
-      );
-      if (imgMatch?.[0]) {
-        result.profileImageUrl = imgMatch[0]
-          .replace(/_normal\.(jpg|jpeg|png|gif|webp)/i, "_400x400.$1")
-          .replace(/_bigger\.(jpg|jpeg|png|gif|webp)/i, "_400x400.$1")
-          .replace(/_mini\.(jpg|jpeg|png|gif|webp)/i, "_400x400.$1");
-      }
+  // Try to get the actual profile image via unavatar (redirects to real X avatar)
+  result.profileImageUrl = `https://unavatar.io/x/${username}`;
 
-      // Display name
-      const nameMatch = html.match(/"name"\s*:\s*"([^"]+)"/);
-      if (nameMatch?.[1]) result.displayName = nameMatch[1];
-
-      // Bio / description
-      const bioMatch = html.match(/"description"\s*:\s*"([^"]*?)"/);
-      if (bioMatch?.[1] && bioMatch[1].length > 0) {
-        result.bio = bioMatch[1]
-          .replace(/\\n/g, " ")
-          .replace(/\\u[\dA-Fa-f]{4}/g, (m) => {
-            try {
-              return JSON.parse(`"${m}"`);
-            } catch {
-              return m;
-            }
-          });
-      }
-
-      // Location
-      const locMatch = html.match(/"location"\s*:\s*"([^"]+)"/);
-      if (locMatch?.[1]) result.location = locMatch[1];
-
-      // Follower / following counts from embedded data
-      const followersMatch = html.match(/"followers_count"\s*:\s*(\d+)/);
-      if (followersMatch?.[1])
-        result.followers = parseInt(followersMatch[1]);
-
-      const followingMatch =
-        html.match(/"friends_count"\s*:\s*(\d+)/) ||
-        html.match(/"following_count"\s*:\s*(\d+)/);
-      if (followingMatch?.[1])
-        result.following = parseInt(followingMatch[1]);
-
-      const tweetsMatch = html.match(/"statuses_count"\s*:\s*(\d+)/);
-      if (tweetsMatch?.[1]) result.posts = parseInt(tweetsMatch[1]);
-
-      // Website/URL from entities
-      const urlMatch = html.match(
-        /"expanded_url"\s*:\s*"(https?:\/\/[^"]+)"/
-      );
-      if (
-        urlMatch?.[1] &&
-        !urlMatch[1].includes("twitter.com") &&
-        !urlMatch[1].includes("x.com")
-      ) {
-        result.website = urlMatch[1];
-        result.links.push(urlMatch[1]);
-      }
-
-      // Additional expanded URLs
-      const urlRegex = /"expanded_url"\s*:\s*"(https?:\/\/[^"]+)"/g;
-      let urlExec: RegExpExecArray | null;
-      while ((urlExec = urlRegex.exec(html)) !== null) {
-        if (
-          urlExec[1] &&
-          !urlExec[1].includes("twitter.com") &&
-          !urlExec[1].includes("x.com") &&
-          !result.links.includes(urlExec[1])
-        ) {
-          result.links.push(urlExec[1]);
-        }
-      }
-
-      // Created at / join date
-      const createdMatch = html.match(/"created_at"\s*:\s*"([^"]+)"/);
-      if (createdMatch?.[1]) result.joinedDate = createdMatch[1];
-
-      // Verified status
-      const verifiedMatch = html.match(/"verified"\s*:\s*(true|false)/);
-      if (verifiedMatch?.[1]) result.extras.verified = verifiedMatch[1];
-
-      // Banner image
-      const bannerMatch = html.match(
-        /https:\/\/pbs\.twimg\.com\/profile_banners\/[^"'\s]+/
-      );
-      if (bannerMatch?.[0]) result.extras.bannerUrl = bannerMatch[0];
-    } else {
-      await res.text(); // consume body
-    }
-  } catch (e) {
-    console.log("X syndication failed:", e);
-  }
-
-  // Fallback image via unavatar
-  if (!result.profileImageUrl) {
-    result.profileImageUrl = `https://unavatar.io/x/${username}`;
-  }
+  // Signal that this is a minimal scrape — the frontend should trigger Grok enrichment
+  result.extras.needsEnrichment = true;
+  result.extras.enrichmentEndpoint = "/api/v1/enrich-x";
 
   return result;
 }

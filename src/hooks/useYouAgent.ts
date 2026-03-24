@@ -285,7 +285,31 @@ async function scrapeSource(source: DetectedSource): Promise<string> {
       // Fallback to basic scrape
     }
 
-    // Use the general scrape endpoint for x, github, linkedin fallback
+    // X/Twitter: use Grok enrichment as primary (syndication API is dead as of March 2026)
+    if (source.platform === "x" && source.username) {
+      try {
+        const res = await fetch(`${CONVEX_SITE_URL}/api/v1/enrich-x`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ xUsername: source.username, profileData: {} }),
+          signal: AbortSignal.timeout(30_000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.analysis) {
+            const parts = [`[SCRAPE RESULT: x @${source.username}]`];
+            parts.push(`x analysis via grok:\n${data.analysis}`);
+            // Also get the profile image via unavatar
+            parts.push(`profile_image: https://unavatar.io/x/${source.username}`);
+            return parts.join("\n");
+          }
+        }
+      } catch {
+        // Fall through to basic scrape
+      }
+    }
+
+    // Use the general scrape endpoint for github, linkedin fallback, websites
     const res = await fetch(`${CONVEX_SITE_URL}/api/v1/scrape`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

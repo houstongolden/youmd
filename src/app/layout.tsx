@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono, Inter } from "next/font/google";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { SiteNav } from "@/components/SiteNav";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -50,7 +51,9 @@ export default function RootLayout({
       >
         <ConvexClientProvider>
           <SiteNav />
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </ConvexClientProvider>
       </body>
     </html>
