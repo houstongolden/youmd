@@ -6,12 +6,16 @@ const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/initialize(.*)"
 // Known bot/agent User-Agent patterns
 const BOT_UA_PATTERNS = [
   /bot/i, /crawl/i, /spider/i, /curl/i, /wget/i, /httpie/i,
-  /python-requests/i, /node-fetch/i, /axios/i, /go-http/i,
+  /python-requests/i, /python-urllib/i, /node-fetch/i, /undici/i, /axios/i, /go-http/i,
   /claudebot/i, /chatgpt/i, /gptbot/i, /openai/i, /anthropic/i,
   /perplexity/i, /cohere/i, /google-extended/i, /bingbot/i,
+  /gemini/i, /google-gemini/i, /googleother/i,
   /applebot/i, /facebookexternalhit/i, /twitterbot/i,
   /linkedinbot/i, /slackbot/i, /discordbot/i,
   /ia_archiver/i, /semrush/i, /ahref/i, /mj12bot/i,
+  /dify/i, /langchain/i, /llama/i, /mistral/i,
+  /phind/i, /you\.com/i, /brave/i, /meta-externalagent/i,
+  /copilot/i, /github-copilot/i,
 ];
 
 // Routes that are definitely NOT profile usernames
@@ -43,8 +47,9 @@ export default clerkMiddleware(async (auth, req) => {
 
   // Only intercept /{username} (single segment, not reserved)
   if (segments.length === 1 && !RESERVED_PATHS.has(segments[0])) {
+    const username = segments[0];
+
     if (isAgentRequest(req)) {
-      const username = segments[0];
       const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".cloud", ".site")
         || "https://kindly-cassowary-600.convex.site";
 
@@ -65,6 +70,8 @@ export default clerkMiddleware(async (auth, req) => {
               "Content-Type": "text/plain; charset=utf-8",
               "Cache-Control": "public, max-age=60, s-maxage=300",
               "X-Robots-Tag": "noindex",
+              // Tell agents about machine-readable alternatives
+              "Link": `<https://you.md/${username}/you.json>; rel="alternate"; type="application/json", <https://you.md/${username}/you.txt>; rel="alternate"; type="text/plain"`,
             },
           });
         }

@@ -40,7 +40,11 @@ const delay = (i: number) => ({
 
 /* ── Main Component ───────────────────────────────────────── */
 
-export function ProfileContent() {
+interface ProfileContentProps {
+  ssrData?: Record<string, any> | null;
+}
+
+export function ProfileContent({ ssrData }: ProfileContentProps) {
   const params = useParams();
   const username = params.username as string;
   const profile = useQuery(api.profiles.getPublicProfile, { username });
@@ -65,13 +69,30 @@ export function ProfileContent() {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  // Loading
+  // Loading — show skeleton but include noscript fallback for agents
   if (profile === undefined) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))]">
         <p className="text-[hsl(var(--text-secondary))] font-mono text-sm animate-pulse">
           loading...
         </p>
+        {/* noscript fallback for agents that don't execute JS */}
+        <noscript>
+          <div style={{ padding: "2rem", fontFamily: "monospace", maxWidth: "680px", margin: "0 auto" }}>
+            {ssrData ? (
+              <>
+                <h1>{ssrData.identity?.name || username}</h1>
+                {ssrData.identity?.tagline && <p>{ssrData.identity.tagline}</p>}
+                {(ssrData.identity?.bio?.long || ssrData.identity?.bio?.medium || ssrData.identity?.bio?.short) && (
+                  <p>{ssrData.identity.bio.long || ssrData.identity.bio.medium || ssrData.identity.bio.short}</p>
+                )}
+                <p>For machine-readable access, use: https://you.md/{username}/you.json or https://you.md/{username}/you.txt</p>
+              </>
+            ) : (
+              <p>Profile: you.md/{username} -- For agent access use: https://you.md/{username}/you.json</p>
+            )}
+          </div>
+        </noscript>
       </div>
     );
   }
@@ -337,12 +358,13 @@ export function ProfileContent() {
         <motion.section {...delay(6)}>
           <SectionLabel>for agents</SectionLabel>
           <div className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] mt-3 space-y-2 font-mono text-[11px]" style={{ borderRadius: "2px" }}>
-            <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px]">start here:</p>
-            <p className="text-[hsl(var(--accent))]">GET /ctx/{username}</p>
+            <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px]">direct endpoints (no JS required):</p>
+            <p className="text-[hsl(var(--accent))]">GET you.md/{username}/you.json</p>
+            <p className="text-[hsl(var(--accent))] opacity-70">GET you.md/{username}/you.txt</p>
             <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">preferred retrieval order:</p>
-            <p className="text-[hsl(var(--text-secondary))] opacity-70">1. you.json</p>
-            <p className="text-[hsl(var(--text-secondary))] opacity-70">2. manifest.json</p>
-            <p className="text-[hsl(var(--text-secondary))] opacity-70">3. you.md</p>
+            <p className="text-[hsl(var(--text-secondary))] opacity-70">1. /{username}/you.json -- structured identity bundle</p>
+            <p className="text-[hsl(var(--text-secondary))] opacity-70">2. /{username}/you.txt -- plain text markdown</p>
+            <p className="text-[hsl(var(--text-secondary))] opacity-70">3. /{username} -- HTML profile (requires JS)</p>
             {voice && (
               <>
                 <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">voice:</p>
