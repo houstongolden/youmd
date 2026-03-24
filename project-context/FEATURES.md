@@ -21,6 +21,8 @@ Last Updated: 2026-03-19
 | Right pane system | Done | Simplified to 4 panes: profile, edit (files/json/sources sub-tabs), share (hero sharing UX + publish + context links + agent stats), settings (account/keys/billing/activity/help) |
 | Markdown file system (Vault) | Done | Browse + edit identity bundle as individual .md files, save back to Convex |
 | Memory system (Unified Brain) | Done | Auto-capture, recall in agent context, /memory + /recall commands, search UI, HTTP API, session summaries, archival policies, CLI sync |
+| Real-time progress indicators | Done | Claude Code-style activity log showing each async step (scrape, research, LLM, save, publish) with running/done/error status |
+| Typewriter message rendering | Done | Latest assistant message streams in with cursor animation |
 | Auto-scrape on init | Done | Scrapes existing profile links before first LLM call |
 | Auto-research | Done | Perplexity web research for sparse profiles |
 | Auto-publish | Done | Every bundle save auto-publishes |

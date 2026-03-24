@@ -72,6 +72,14 @@ const THINKING_SYNC = [
 
 export type ThinkingCategory = "discovery" | "analysis" | "identity" | "portrait" | "sync";
 
+export interface ProgressStep {
+  id: string;
+  label: string;
+  status: "running" | "done" | "error";
+  detail?: string;
+  startedAt: number;
+}
+
 const THINKING_POOLS: Record<ThinkingCategory, string[]> = {
   discovery: THINKING_DISCOVERY,
   analysis: THINKING_ANALYSIS,
@@ -983,6 +991,37 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const [thinkingPhrase, setThinkingPhrase] = useState("");
   const [thinkingCategory, setThinkingCategory] = useState<ThinkingCategory | undefined>();
   const [initialized, setInitialized] = useState(false);
+  const [progressSteps, setProgressSteps] = useState<ProgressStep[]>([]);
+
+  // Progress step helpers
+  const addStep = useCallback((label: string, detail?: string): string => {
+    const id = crypto.randomUUID();
+    setProgressSteps((prev) => [
+      ...prev,
+      { id, label, status: "running", detail, startedAt: Date.now() },
+    ]);
+    return id;
+  }, []);
+
+  const completeStep = useCallback((id: string, detail?: string) => {
+    setProgressSteps((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, status: "done" as const, ...(detail !== undefined ? { detail } : {}) } : s
+      )
+    );
+  }, []);
+
+  const failStep = useCallback((id: string, detail?: string) => {
+    setProgressSteps((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, status: "error" as const, ...(detail !== undefined ? { detail } : {}) } : s
+      )
+    );
+  }, []);
+
+  const clearSteps = useCallback(() => {
+    setProgressSteps([]);
+  }, []);
 
   // Session tracking
   const sessionIdRef = useRef<string>(crypto.randomUUID());
@@ -1001,7 +1040,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [displayMessages, isThinking]);
+  }, [displayMessages, isThinking, progressSteps]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -1190,6 +1229,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
     setInitialized(true);
     setIsThinking(true);
+    clearSteps();
     setThinkingPhrase(randomThinking("identity"));
     setThinkingCategory("identity");
 
@@ -1229,8 +1269,22 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             },
           ]);
 
+          // Add progress steps for each source
+          const initScrapeStepIds = existingLinks.map((s) => {
+            const sourceLabel = s.username ? `${s.platform}/${s.username}` : s.url;
+            return addStep(`fetching ${sourceLabel}`);
+          });
+
           const scrapeResults = await Promise.all(
-            existingLinks.map((s) => scrapeSource(s))
+            existingLinks.map((s, i) =>
+              scrapeSource(s).then((result) => {
+                completeStep(initScrapeStepIds[i], result ? "data received" : "no data");
+                return result;
+              }).catch(() => {
+                failStep(initScrapeStepIds[i], "failed");
+                return "";
+              })
+            )
           );
 
           // Mark as scraped so sendMessage won't re-scrape
@@ -1279,23 +1333,33 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
         // Auto-research for sparse profiles (Perplexity web search)
         if (shouldAutoResearch) {
+          const researchStepId = addStep("researching web context", displayName);
           const allLinks = existingLinks.map((s) => s.url);
-          const researchResult = await researchUser(
-            displayName,
-            convexUser?.username,
-            allLinks.length > 0 ? allLinks : undefined
-          );
-          if (researchResult) {
-            allMessages.push({
-              role: "user",
-              content: `[PLATFORM AUTO-RESEARCH — web research about this user. use any relevant findings to personalize your greeting.]\n\n${researchResult}`,
-            });
+          try {
+            const researchResult = await researchUser(
+              displayName,
+              convexUser?.username,
+              allLinks.length > 0 ? allLinks : undefined
+            );
+            if (researchResult) {
+              allMessages.push({
+                role: "user",
+                content: `[PLATFORM AUTO-RESEARCH — web research about this user. use any relevant findings to personalize your greeting.]\n\n${researchResult}`,
+              });
+              completeStep(researchStepId, "context found");
+            } else {
+              completeStep(researchStepId, "no results");
+            }
+          } catch {
+            failStep(researchStepId, "failed");
           }
         }
 
         setMessages(allMessages);
 
+        const initLlmStepId = addStep("generating greeting");
         const response = await callLLM(allMessages);
+        completeStep(initLlmStepId);
         const { display, updates } = parseUpdatesFromResponse(response);
 
         const assistantMsg: ChatMessage = {
@@ -1335,6 +1399,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
         setDisplayMessages((prev) => [...prev, ...newDisplay]);
         setIsThinking(false);
+        setTimeout(() => clearSteps(), 1500);
       } catch (err) {
         setDisplayMessages((prev) => [
           ...prev,
@@ -1349,7 +1414,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }
 
     initConversation();
-  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates, userProfile, user?.id, updateProfile, recentMemories]);
+  }, [initialized, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps]);
 
   // Slash commands
   const handleSlashCommand = useCallback(
@@ -1705,8 +1770,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     let updatedMessages = [...messagesRef.current, userMsg];
     setMessages(updatedMessages);
 
-    // Start thinking
+    // Start thinking with progress steps
     setIsThinking(true);
+    clearSteps();
     const cat: ThinkingCategory = newSources.length > 0 ? "discovery" : "analysis";
     setThinkingPhrase(randomThinking(cat));
     setThinkingCategory(cat);
@@ -1724,9 +1790,23 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           },
         ]);
 
-        // Scrape all sources in parallel
+        // Add progress steps for each source
+        const scrapeStepIds = newSources.map((s) => {
+          const sourceLabel = s.username ? `${s.platform}/${s.username}` : s.url;
+          return addStep(`fetching ${sourceLabel}`);
+        });
+
+        // Scrape all sources in parallel, completing steps as they finish
         const scrapeResults = await Promise.all(
-          newSources.map((s) => scrapeSource(s))
+          newSources.map((s, i) =>
+            scrapeSource(s).then((result) => {
+              completeStep(scrapeStepIds[i], result ? "data received" : "no data");
+              return result;
+            }).catch(() => {
+              failStep(scrapeStepIds[i], "failed");
+              return "";
+            })
+          )
         );
 
         // Mark sources as scraped
@@ -1736,6 +1816,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
         // Extract and save profile image — prefer LinkedIn > GitHub > X
         if (userProfile?._id && user?.id && !userProfile.avatarUrl) {
+          const imgStepId = addStep("extracting profile image");
           const platformPriority = ["linkedin", "github", "x"];
           let bestImage: string | null = null;
           let bestPriority = platformPriority.length;
@@ -1756,7 +1837,12 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
                 clerkId: user.id,
                 avatarUrl: bestImage,
               });
-            } catch { /* non-fatal */ }
+              completeStep(imgStepId, "saved");
+            } catch {
+              failStep(imgStepId, "failed");
+            }
+          } else {
+            completeStep(imgStepId, "none found");
           }
         }
 
@@ -1766,8 +1852,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           userProfile?.name || convexUser?.displayName || "";
         let researchResult = "";
         if (userName && newSources.length > 0) {
+          const researchStepId = addStep("researching web context", userName);
           const allLinks = newSources.map((s) => s.url);
-          researchResult = await researchUser(userName, convexUser?.username, allLinks);
+          try {
+            researchResult = await researchUser(userName, convexUser?.username, allLinks);
+            completeStep(researchStepId, researchResult ? "context found" : "no results");
+          } catch {
+            failStep(researchStepId, "failed");
+          }
         }
 
         // Inject scrape results as a system context message
@@ -1789,7 +1881,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
+      // LLM call with progress step
+      const llmStepId = addStep("generating response");
       const response = await callLLM(updatedMessages);
+      completeStep(llmStepId);
       const { display, updates } = parseUpdatesFromResponse(response);
 
       const assistantMsg: ChatMessage = {
@@ -1818,8 +1913,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           content: `[updated: ${sectionNames}]`,
         });
 
+        const saveStepId = addStep("saving profile updates", sectionNames);
         const result = await saveUpdates(updates);
         if (result) {
+          completeStep(saveStepId, `v${result.version}`);
           newDisplayMsgs.push({
             id: crypto.randomUUID(),
             role: "system-notice",
@@ -1828,23 +1925,28 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
           // Auto-publish after saving
           if (user?.id) {
+            const pubStepId = addStep("publishing changes");
             try {
               await publishLatest({ clerkId: user.id });
+              completeStep(pubStepId);
               newDisplayMsgs.push({
                 id: crypto.randomUUID(),
                 role: "system-notice",
                 content: `[published]`,
               });
             } catch {
-              // Non-fatal — publishing can fail silently
+              failStep(pubStepId, "failed");
             }
           }
+        } else {
+          failStep(saveStepId, "no changes");
         }
       }
 
       // Handle private updates from agent
       const privUpdates = parsePrivateUpdatesFromResponse(response);
       if (privUpdates.length > 0 && user?.id && userProfile?._id) {
+        const privStepId = addStep("saving private context");
         for (const pu of privUpdates) {
           try {
             if (pu.field === "privateNotes" && pu.content) {
@@ -1859,7 +1961,6 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
                 content: "[saved private note]",
               });
             } else if (pu.field === "privateProjects" && pu.action === "add" && pu.project) {
-              // Get existing private projects and append
               const existing = (privateContext as Record<string, unknown> | null);
               const existingProjects = (existing?.privateProjects as Array<Record<string, string>>) || [];
               const updatedProjects = [...existingProjects, pu.project];
@@ -1882,11 +1983,13 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             });
           }
         }
+        completeStep(privStepId);
       }
 
       // Handle memory saves from agent
       const memorySaves = parseMemorySavesFromResponse(response);
       if (memorySaves.length > 0 && user?.id) {
+        const memStepId = addStep("saving memories", `${memorySaves.length} ${memorySaves.length === 1 ? "memory" : "memories"}`);
         try {
           await saveMemories({
             clerkId: user.id,
@@ -1898,13 +2001,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
               sessionId: sessionIdRef.current,
             })),
           });
+          completeStep(memStepId);
           newDisplayMsgs.push({
             id: crypto.randomUUID(),
             role: "system-notice",
             content: `[saved ${memorySaves.length} ${memorySaves.length === 1 ? "memory" : "memories"}]`,
           });
         } catch {
-          // Non-fatal — memory saving can fail silently
+          failStep(memStepId, "failed");
         }
       }
 
@@ -1912,7 +2016,6 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       messageCountRef.current += 2; // user + assistant
       if (user?.id) {
         try {
-          // Generate session summary every 10 messages (with guard against re-summarizing)
           let summary: string | undefined;
           const shouldSummarize = messageCountRef.current % 10 === 0 && messageCountRef.current >= 10 && messageCountRef.current !== lastSummarizedAtRef.current;
           if (shouldSummarize) {
@@ -1956,8 +2059,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }
 
     setIsThinking(false);
+    // Clear steps after a brief delay so user sees final state
+    setTimeout(() => clearSteps(), 1500);
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, saveMemories, upsertSession, summarizeSession]);
+  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps]);
 
   return {
     // State
@@ -1967,6 +2072,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     isThinking,
     thinkingPhrase,
     thinkingCategory,
+    progressSteps,
     initialized,
     // Refs
     messagesEndRef,

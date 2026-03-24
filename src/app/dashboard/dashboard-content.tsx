@@ -151,6 +151,7 @@ export function DashboardContent() {
                 isThinking={agent.isThinking}
                 thinkingPhrase={agent.thinkingPhrase}
                 thinkingCategory={agent.thinkingCategory}
+                progressSteps={agent.progressSteps}
                 messagesEndRef={agent.messagesEndRef}
                 textareaRef={agent.textareaRef}
                 sendMessage={agent.sendMessage}

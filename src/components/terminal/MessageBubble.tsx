@@ -1,8 +1,14 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import type { DisplayMessage } from "@/hooks/useYouAgent";
 
-export function MessageBubble({ message }: { message: DisplayMessage }) {
+interface MessageBubbleProps {
+  message: DisplayMessage;
+  isLatest?: boolean;
+}
+
+export function MessageBubble({ message, isLatest = false }: MessageBubbleProps) {
   if (message.role === "system-notice") {
     const content = message.content;
     const isUpdate = content.startsWith("[updated:") || content.startsWith("[saved") || content.startsWith("[published");
@@ -40,11 +46,67 @@ export function MessageBubble({ message }: { message: DisplayMessage }) {
     );
   }
 
-  // assistant — terminal-style with mono font, left accent border
+  // assistant — terminal-style with typewriter effect for latest message
+  if (isLatest) {
+    return <TypewriterMessage content={message.content} />;
+  }
+
   return (
     <div className="pl-3 border-l-2 border-[hsl(var(--accent))]/25">
       <div className="text-[14px] font-mono whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-secondary))]">
         {renderTerminalContent(message.content)}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Typewriter effect for the most recent assistant message.
+ * Streams text in at ~20ms per character for a natural feel.
+ */
+function TypewriterMessage({ content }: { content: string }) {
+  const [displayedLength, setDisplayedLength] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const rafRef = useRef<number | null>(null);
+  const startTimeRef = useRef(Date.now());
+
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+    setDisplayedLength(0);
+    setIsComplete(false);
+
+    const charsPerMs = 0.06; // ~60 chars/second, fast but readable
+
+    const animate = () => {
+      const elapsed = Date.now() - startTimeRef.current;
+      const targetLength = Math.min(
+        Math.floor(elapsed * charsPerMs),
+        content.length
+      );
+      setDisplayedLength(targetLength);
+
+      if (targetLength < content.length) {
+        rafRef.current = requestAnimationFrame(animate);
+      } else {
+        setIsComplete(true);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [content]);
+
+  const visibleText = content.slice(0, displayedLength);
+
+  return (
+    <div className="pl-3 border-l-2 border-[hsl(var(--accent))]/25">
+      <div className="text-[14px] font-mono whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-secondary))]">
+        {renderTerminalContent(visibleText)}
+        {!isComplete && (
+          <span className="inline-block w-1.5 h-3.5 bg-[hsl(var(--accent))] opacity-70 animate-pulse ml-0.5 align-text-bottom" />
+        )}
       </div>
     </div>
   );
