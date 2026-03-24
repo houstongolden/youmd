@@ -1063,7 +1063,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   }, [messages]);
 
   // Auto-rotate thinking phrases while agent is working
-  const thinkingCategoryRef = useRef<ThinkingCategory | undefined>();
+  const thinkingCategoryRef = useRef<ThinkingCategory | undefined>(undefined);
   useEffect(() => {
     thinkingCategoryRef.current = thinkingCategory;
   }, [thinkingCategory]);
