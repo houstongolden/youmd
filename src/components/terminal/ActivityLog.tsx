@@ -14,16 +14,20 @@ interface ActivityLogProps {
   steps: ProgressStep[];
 }
 
+// Braille spinner — same as ThinkingIndicator
+const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
 /**
- * Claude Code-style activity log showing real-time progress steps.
- * Each step shows a status icon, label, optional detail, and elapsed time.
- * Completed steps fade out to keep focus on active work.
+ * Claude Code-style activity log.
+ * Running: braille spinner + label + elapsed time
+ * Done: dimmed checkmark + label + final time
+ * Error: x + label in accent color
  */
 export function ActivityLog({ steps }: ActivityLogProps) {
   if (steps.length === 0) return null;
 
   return (
-    <div className="space-y-0.5">
+    <div className="space-y-0">
       {steps.map((step) => (
         <ActivityStep key={step.id} step={step} />
       ))}
@@ -33,10 +37,10 @@ export function ActivityLog({ steps }: ActivityLogProps) {
 
 function ActivityStep({ step }: { step: ProgressStep }) {
   const [elapsed, setElapsed] = useState(0);
+  const [spinnerFrame, setSpinnerFrame] = useState(0);
 
   useEffect(() => {
     if (step.status !== "running") return;
-    // Set initial elapsed immediately
     setElapsed(Math.floor((Date.now() - step.startedAt) / 1000));
     const interval = setInterval(() => {
       setElapsed(Math.floor((Date.now() - step.startedAt) / 1000));
@@ -44,7 +48,14 @@ function ActivityStep({ step }: { step: ProgressStep }) {
     return () => clearInterval(interval);
   }, [step.status, step.startedAt]);
 
-  // Compute final elapsed for completed steps
+  useEffect(() => {
+    if (step.status !== "running") return;
+    const interval = setInterval(() => {
+      setSpinnerFrame((prev) => (prev + 1) % SPINNER_FRAMES.length);
+    }, 80);
+    return () => clearInterval(interval);
+  }, [step.status]);
+
   const displayElapsed =
     step.status === "running"
       ? elapsed
@@ -53,17 +64,19 @@ function ActivityStep({ step }: { step: ProgressStep }) {
         : 0;
 
   return (
-    <div className="flex items-start gap-2 py-0.5 font-mono text-[12px]">
+    <div className="flex items-center gap-2 py-px font-mono text-[12px] leading-5">
       {/* Status icon */}
-      <span className="shrink-0 mt-px w-3.5 text-center">
+      <span className="shrink-0 w-3 text-center">
         {step.status === "running" && (
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--accent))] animate-pulse" />
+          <span className="text-[hsl(var(--accent))]">
+            {SPINNER_FRAMES[spinnerFrame]}
+          </span>
         )}
         {step.status === "done" && (
-          <span className="text-[hsl(var(--success))] opacity-70">+</span>
+          <span className="text-[hsl(var(--success))] opacity-50">✓</span>
         )}
         {step.status === "error" && (
-          <span className="text-[hsl(var(--accent))] opacity-70">x</span>
+          <span className="text-[hsl(var(--accent))] opacity-60">✗</span>
         )}
       </span>
 
@@ -72,16 +85,16 @@ function ActivityStep({ step }: { step: ProgressStep }) {
         <span
           className={
             step.status === "running"
-              ? "text-[hsl(var(--text-secondary))] opacity-80"
+              ? "text-[hsl(var(--text-secondary))] opacity-70"
               : step.status === "done"
-                ? "text-[hsl(var(--text-secondary))] opacity-40"
-                : "text-[hsl(var(--accent))] opacity-60"
+                ? "text-[hsl(var(--text-secondary))] opacity-30"
+                : "text-[hsl(var(--accent))] opacity-50"
           }
         >
           {step.label}
         </span>
         {step.detail && (
-          <span className="text-[hsl(var(--text-secondary))] opacity-30 ml-1.5">
+          <span className="text-[hsl(var(--text-secondary))] opacity-20 ml-1.5">
             {step.detail}
           </span>
         )}
@@ -89,12 +102,12 @@ function ActivityStep({ step }: { step: ProgressStep }) {
 
       {/* Elapsed time */}
       {step.status === "running" && elapsed >= 1 && (
-        <span className="shrink-0 text-[10px] text-[hsl(var(--text-secondary))] opacity-25 tabular-nums">
+        <span className="shrink-0 text-[10px] text-[hsl(var(--text-secondary))] opacity-20 tabular-nums">
           {displayElapsed}s
         </span>
       )}
       {step.status === "done" && displayElapsed >= 1 && (
-        <span className="shrink-0 text-[10px] text-[hsl(var(--text-secondary))] opacity-20 tabular-nums">
+        <span className="shrink-0 text-[10px] text-[hsl(var(--text-secondary))] opacity-15 tabular-nums">
           {displayElapsed}s
         </span>
       )}
