@@ -154,11 +154,25 @@ function detectSourcesInMessage(text: string): DetectedSource[] {
     }
   }
 
-  // Generic website URLs (not social platforms)
+  // Generic website URLs (with protocol)
   const urlRegex = /https?:\/\/[^\s<>"']+/gi;
   while ((match = urlRegex.exec(text)) !== null) {
     const url = match[0].replace(/[.,;:)\]]+$/, ""); // trim trailing punctuation
     if (!url.includes("x.com") && !url.includes("twitter.com") && !url.includes("github.com") && !url.includes("linkedin.com") && !seen.has(url)) {
+      seen.add(url);
+      sources.push({ platform: "website", url });
+    }
+  }
+
+  // Bare domains without protocol (e.g. "hubify.com", "example.co")
+  // Match word-boundary domain patterns that aren't already captured
+  const bareDomainRegex = /(?<![/\w])([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.(?:com|co|io|ai|dev|org|net|app|xyz|me|info|biz|us|uk|gg|so|sh|fm|tv|cc|to)(?:\/[^\s<>"']*)?)/gi;
+  while ((match = bareDomainRegex.exec(text)) !== null) {
+    let domain = match[1].replace(/[.,;:)\]]+$/, "");
+    // Skip social platforms already handled
+    if (domain.includes("x.com") || domain.includes("twitter.com") || domain.includes("github.com") || domain.includes("linkedin.com")) continue;
+    const url = `https://${domain}`;
+    if (!seen.has(url)) {
       seen.add(url);
       sources.push({ platform: "website", url });
     }
