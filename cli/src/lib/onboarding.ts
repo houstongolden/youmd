@@ -355,29 +355,37 @@ function displayScrapeResult(label: string, data: ScrapeResult): void {
 
 class Spinner {
   private interval: ReturnType<typeof setInterval> | null = null;
-  private frames = ["   ", ".  ", ".. ", "..."];
+  private frames = ["\u280B", "\u2819", "\u2839", "\u2838", "\u283C", "\u2834", "\u2826", "\u2827", "\u2807", "\u280F"];
   private frameIndex = 0;
   private label: string;
+  private startTime = 0;
 
   constructor(label?: string) {
     this.label = label || randomThinking();
   }
 
   start(): void {
-    process.stdout.write(chalk.dim(`  ${this.label}...`));
+    this.startTime = Date.now();
     this.interval = setInterval(() => {
       this.frameIndex = (this.frameIndex + 1) % this.frames.length;
-      const f = this.frames[this.frameIndex];
-      process.stdout.write(`\r${chalk.dim(`  ${this.label}${f}`)}`);
-    }, 300);
+      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      const time = elapsed >= 2 ? chalk.dim(` ${elapsed}s`) : "";
+      process.stdout.write(`\r  ${chalk.hex("#C46A3A")(this.frames[this.frameIndex])} ${chalk.dim(this.label)}${time}  `);
+    }, 80);
   }
 
-  stop(): void {
+  stop(result?: string): void {
     if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
     }
-    process.stdout.write("\r" + " ".repeat(80) + "\r");
+    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+    const time = elapsed >= 1 ? chalk.dim(` ${elapsed}s`) : "";
+    if (result) {
+      process.stdout.write(`\r  ${chalk.green("\u2713")} ${chalk.dim(this.label)}${time} ${chalk.dim(result)}\n`);
+    } else {
+      process.stdout.write("\r" + " ".repeat(80) + "\r");
+    }
   }
 }
 
