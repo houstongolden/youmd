@@ -158,6 +158,24 @@ PRD Version: 2.3
 - [ ] CLI: directives support in `youmd chat`
 - [ ] API: directives in HTTP response
 
+### Intelligent Model Routing & Portrait System — 2026-03-24
+- [x] Model routing config map in convex/chat.ts (chat, research, verify, x_enrichment, summary, classify)
+- [x] `verifyIdentity` action — Perplexity Sonar Pro cross-references scraped profiles to confirm same person
+- [x] `/api/v1/verify-identity` HTTP endpoint
+- [x] Identity verification runs in parallel with research during scraping
+- [x] Verification context injected into agent conversation
+- [x] Save ALL scraped images to `socialImages` (not just best one to avatarUrl)
+- [x] Merge new images with existing socialImages on each scrape
+- [x] AsciiAvatar: 4 format modes — classic, braille, block, minimal
+- [x] AsciiAvatar: 120 columns default (was 80)
+- [x] PortraitPane: tap-to-select primary image from all scraped sources
+- [x] PortraitPane: real photo preview + ASCII preview side by side per source
+- [x] PortraitPane: format picker (classic/braille/block/minimal)
+- [x] PortraitPane: detail level picker (60/80/100/120/160 columns)
+- [x] Public profile page: 120 col portraits (was 60)
+- [ ] Custom image upload to socialImages.custom
+- [ ] Download ASCII portrait as PNG
+
 ---
 
 ## IN PROGRESS / NEEDS FINISHING

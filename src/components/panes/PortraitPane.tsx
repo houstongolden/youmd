@@ -1,22 +1,45 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useState, useCallback } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import AsciiAvatar from "@/components/AsciiAvatar";
+import type { AsciiFormat } from "@/components/AsciiAvatar";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
-import { CopyableCommand } from "./CopyableCommand";
 
 interface PortraitPaneProps {
   username: string;
   ownerId?: Id<"users">;
 }
 
+const FORMAT_OPTIONS: { value: AsciiFormat; label: string; desc: string }[] = [
+  { value: "classic", label: "classic", desc: "$@B%8&#*oahkbd..." },
+  { value: "braille", label: "braille", desc: "⣿⣷⣶⣦⣤⣄⣀⡀⠀" },
+  { value: "block", label: "block", desc: "█▓▒░" },
+  { value: "minimal", label: "minimal", desc: "@%#*+=-:." },
+];
+
+const DETAIL_PRESETS = [
+  { value: 60, label: "60" },
+  { value: 80, label: "80" },
+  { value: 100, label: "100" },
+  { value: 120, label: "120" },
+  { value: 160, label: "160" },
+];
+
 export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
+  const { user } = useUser();
   const userProfile = useQuery(
     api.profiles.getByOwnerId,
     ownerId ? { ownerId } : "skip"
   );
+  const setProfileImages = useMutation(api.profiles.setProfileImages);
+
+  const [format, setFormat] = useState<AsciiFormat>("classic");
+  const [cols, setCols] = useState(120);
+  const [saving, setSaving] = useState(false);
 
   const avatarUrl = userProfile?.avatarUrl;
   const socialImages = (userProfile?.socialImages as Record<string, string | undefined>) || {};
@@ -36,43 +59,53 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
 
   // Fallback: auto-generate URLs from username
   if (sources.length === 0 && username) {
-    // Use avatars.githubusercontent.com directly (CORS-enabled, no redirect)
     sources.push({ platform: "github", url: `https://avatars.githubusercontent.com/${username}?s=400`, isPrimary: true });
   }
 
   const primaryUrl = avatarUrl || sources.find(s => s.isPrimary)?.url || sources[0]?.url;
+
+  // Handle selecting a different primary image
+  const handleSelectPrimary = useCallback(async (platform: string) => {
+    if (!userProfile?._id || !user?.id) return;
+    setSaving(true);
+    try {
+      await setProfileImages({
+        profileId: userProfile._id,
+        clerkId: user.id,
+        socialImages: {
+          x: socialImages.x,
+          github: socialImages.github,
+          linkedin: socialImages.linkedin,
+          custom: socialImages.custom,
+        },
+        primaryImage: platform,
+      });
+    } catch {
+      // fail silently
+    }
+    setSaving(false);
+  }, [userProfile?._id, user?.id, socialImages, setProfileImages]);
 
   return (
     <div className="h-full overflow-y-auto">
       <PaneHeader>portrait</PaneHeader>
 
       <div className="px-6 py-6 space-y-0 max-w-xl">
-        {/* Primary portrait */}
+        {/* Primary portrait — large ASCII */}
         <SectionLabel>current portrait -- @{username}</SectionLabel>
         {primaryUrl ? (
-          <>
-            {/* ASCII portrait from canvas */}
-            <div
-              className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 mb-2 overflow-hidden"
-              style={{ borderRadius: "2px" }}
-            >
-              <AsciiAvatar src={primaryUrl} cols={80} canvasWidth={400} className="w-full" />
-            </div>
-            {/* Debug: show source URL and direct img */}
-            <p className="font-mono text-[8px] text-[hsl(var(--text-secondary))] opacity-20 mb-1 break-all">
-              src: {primaryUrl}
-            </p>
-            {/* Direct img tag as proof the URL works */}
-            <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-1 mb-2 overflow-hidden" style={{ borderRadius: "2px" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={primaryUrl}
-                alt=""
-                className="w-full max-w-[200px] opacity-70"
-                style={{ filter: "sepia(1) saturate(2) hue-rotate(-10deg) brightness(0.7)" }}
-              />
-            </div>
-          </>
+          <div
+            className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 mb-2 overflow-hidden"
+            style={{ borderRadius: "2px" }}
+          >
+            <AsciiAvatar
+              src={primaryUrl}
+              cols={cols}
+              canvasWidth={Math.min(500, cols * 4)}
+              format={format}
+              className="w-full"
+            />
+          </div>
         ) : (
           <div
             className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-6 mb-2 text-center"
@@ -89,58 +122,119 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
 
         <Divider />
 
-        {/* All social portraits */}
-        {sources.length > 1 && (
-          <>
-            <SectionLabel>all portraits</SectionLabel>
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {sources.map((src) => (
-                <div
-                  key={src.platform}
-                  className={`border p-2 overflow-hidden ${
-                    src.isPrimary
-                      ? "border-[hsl(var(--accent))]/40 bg-[hsl(var(--accent-wash))]"
-                      : "border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]"
-                  }`}
-                  style={{ borderRadius: "2px" }}
-                >
-                  <AsciiAvatar src={src.url} cols={40} canvasWidth={180} className="w-full" />
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-1.5">
-                      <img
-                        src={`https://www.google.com/s2/favicons?domain=${src.platform === "x" ? "x.com" : src.platform === "github" ? "github.com" : src.platform === "linkedin" ? "linkedin.com" : "you.md"}&sz=16`}
-                        alt=""
-                        width={12}
-                        height={12}
-                        className="shrink-0"
-                      />
-                      <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60">
-                        {src.platform}
-                      </span>
-                    </div>
-                    {src.isPrimary && (
-                      <span className="font-mono text-[8px] text-[hsl(var(--accent))] uppercase tracking-wider">
-                        primary
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Divider />
-          </>
-        )}
+        {/* Format picker */}
+        <SectionLabel>format</SectionLabel>
+        <div className="grid grid-cols-4 gap-1.5 mb-3">
+          {FORMAT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setFormat(opt.value)}
+              className={`border p-2 font-mono text-[10px] text-center transition-colors ${
+                format === opt.value
+                  ? "border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent-wash))] text-[hsl(var(--accent))]"
+                  : "border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-80"
+              }`}
+              style={{ borderRadius: "2px" }}
+            >
+              <span className="block text-[14px] mb-0.5">{opt.desc.slice(0, 4)}</span>
+              {opt.label}
+            </button>
+          ))}
+        </div>
 
-        {/* Settings */}
+        {/* Detail level picker */}
+        <SectionLabel>detail (columns)</SectionLabel>
+        <div className="flex gap-1.5 mb-3">
+          {DETAIL_PRESETS.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => setCols(p.value)}
+              className={`flex-1 border py-1.5 font-mono text-[11px] text-center transition-colors ${
+                cols === p.value
+                  ? "border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent-wash))] text-[hsl(var(--accent))]"
+                  : "border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-80"
+              }`}
+              style={{ borderRadius: "2px" }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        <Divider />
+
+        {/* All source images — tap to select primary */}
+        <SectionLabel>
+          source images{sources.length > 1 ? ` (${sources.length})` : ""} -- tap to select
+        </SectionLabel>
+        <div className="grid grid-cols-2 gap-2.5 mb-2">
+          {sources.map((src) => (
+            <button
+              key={src.platform}
+              onClick={() => handleSelectPrimary(src.platform)}
+              disabled={saving}
+              className={`border overflow-hidden text-left transition-all ${
+                src.isPrimary
+                  ? "border-[hsl(var(--accent))]/50 bg-[hsl(var(--accent-wash))] ring-1 ring-[hsl(var(--accent))]/20"
+                  : "border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] hover:border-[hsl(var(--text-secondary))]/30"
+              }`}
+              style={{ borderRadius: "2px" }}
+            >
+              {/* Real photo preview */}
+              <div className="relative overflow-hidden bg-black/20" style={{ aspectRatio: "1" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src.url}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  style={{ filter: src.isPrimary ? "none" : "grayscale(0.5) brightness(0.8)" }}
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    if (img.crossOrigin) { img.crossOrigin = ""; img.src = src.url; }
+                  }}
+                />
+                {src.isPrimary && (
+                  <div className="absolute top-1.5 right-1.5">
+                    <span className="font-mono text-[8px] bg-[hsl(var(--accent))] text-white px-1.5 py-0.5 uppercase tracking-wider">
+                      primary
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* ASCII preview below photo */}
+              <div className="p-1.5 border-t border-[hsl(var(--border))]/50">
+                <AsciiAvatar
+                  src={src.url}
+                  cols={40}
+                  canvasWidth={160}
+                  format={format}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Platform label */}
+              <div className="flex items-center gap-1.5 px-2 py-1.5 border-t border-[hsl(var(--border))]/30">
+                <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60">
+                  {src.platform}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <Divider />
+
+        {/* Settings summary */}
         <SectionLabel>settings</SectionLabel>
         <div
           className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] space-y-2"
           style={{ borderRadius: "2px" }}
         >
           {[
-            { label: "style", value: "block · 80 col" },
-            { label: "detail level", value: "high" },
-            { label: "characters", value: "$@B%8&#*oahkbd..." },
+            { label: "format", value: format },
+            { label: "detail", value: `${cols} columns` },
+            { label: "characters", value: RAMPS_SHORT[format] },
             { label: "source", value: primaryUrl ? (primaryImage || "auto-detected") : "none" },
             { label: "sources available", value: String(sources.length) },
           ].map((s) => (
@@ -160,15 +254,34 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
           style={{ borderRadius: "2px" }}
         >
           <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">
-            regenerate your portrait via terminal:
+            regenerate via terminal or add more source images:
           </p>
-          <div className="mt-2 space-y-1">
-            <CopyableCommand command="/portrait --regenerate" />
-            <CopyableCommand command="scrape my x profile photo and regenerate" dimmed />
-            <CopyableCommand command="pull my github avatar and make it primary" dimmed />
+          <div className="mt-2 space-y-1.5">
+            {[
+              "/portrait --regenerate",
+              "scrape my x profile photo",
+              "pull my github avatar",
+              "pull my linkedin photo",
+            ].map((cmd) => (
+              <button
+                key={cmd}
+                onClick={() => navigator.clipboard.writeText(cmd)}
+                className="block w-full text-left font-mono text-[11px] text-[hsl(var(--accent))] opacity-60 hover:opacity-90 transition-opacity"
+              >
+                &gt; {cmd}
+              </button>
+            ))}
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+// Short ramp labels for settings display
+const RAMPS_SHORT: Record<AsciiFormat, string> = {
+  classic: "$@B%8&#*oahkbd...",
+  braille: "⣿⣷⣶⣦⣤⣄⣀⡀⠀",
+  block: "█▓▒░ ",
+  minimal: "@%#*+=-:.",
+};

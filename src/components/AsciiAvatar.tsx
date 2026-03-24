@@ -2,7 +2,18 @@
 
 import { useRef, useEffect, useState } from "react";
 
-const RAMP = `$@B%8&#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/|()1{}?-_+~<>i!lI;:,". `;
+// ---------------------------------------------------------------------------
+// ASCII character ramps — different visual styles
+// ---------------------------------------------------------------------------
+
+export type AsciiFormat = "classic" | "braille" | "block" | "minimal";
+
+const RAMPS: Record<AsciiFormat, string> = {
+  classic: `$@B%8&#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/|()1{}?-_+~<>i!lI;:,". `,
+  braille: "⣿⣷⣶⣦⣤⣄⣀⡀⠀",
+  block: "█▓▒░ ",
+  minimal: "@%#*+=-:. ",
+};
 
 function lumToColor(l: number): string {
   if (l < 25) return "transparent";
@@ -18,9 +29,12 @@ function lumToColor(l: number): string {
 
 type AsciiCell = { ch: string; lum: number };
 
-function imgToAscii(imgEl: HTMLImageElement, cols: number): AsciiCell[][] {
+function imgToAscii(imgEl: HTMLImageElement, cols: number, format: AsciiFormat): AsciiCell[][] {
+  const ramp = RAMPS[format];
   const c = document.createElement("canvas");
-  const rows = Math.floor(cols * (imgEl.naturalHeight / imgEl.naturalWidth) * 0.46);
+  // Braille characters are taller, adjust aspect ratio
+  const aspectFactor = format === "braille" ? 0.55 : 0.46;
+  const rows = Math.floor(cols * (imgEl.naturalHeight / imgEl.naturalWidth) * aspectFactor);
   c.width = cols;
   c.height = rows;
   const ctx = c.getContext("2d");
@@ -32,17 +46,17 @@ function imgToAscii(imgEl: HTMLImageElement, cols: number): AsciiCell[][] {
     Array.from({ length: cols }, (_, x) => {
       const i = (y * cols + x) * 4;
       const lum = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
-      return { ch: RAMP[Math.floor((lum / 255) * (RAMP.length - 1))], lum };
+      return { ch: ramp[Math.floor((lum / 255) * (ramp.length - 1))], lum };
     })
   );
 }
 
-function renderToCanvas(canvas: HTMLCanvasElement, data: AsciiCell[][], width: number) {
+function renderToCanvas(canvas: HTMLCanvasElement, data: AsciiCell[][], width: number, format: AsciiFormat) {
   const rows = data.length;
   const cols = data[0].length;
   canvas.width = width;
   const cellW = width / cols;
-  const cellH = cellW * 2.1;
+  const cellH = cellW * (format === "braille" ? 1.8 : 2.1);
   canvas.height = Math.ceil(rows * cellH);
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -58,31 +72,40 @@ function renderToCanvas(canvas: HTMLCanvasElement, data: AsciiCell[][], width: n
     }
 }
 
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 interface AsciiAvatarProps {
   src: string;
   cols?: number;
   canvasWidth?: number;
+  format?: AsciiFormat;
   className?: string;
 }
 
-const AsciiAvatar = ({ src, cols = 120, canvasWidth = 200, className = "" }: AsciiAvatarProps) => {
+const AsciiAvatar = ({
+  src,
+  cols = 120,
+  canvasWidth = 200,
+  format = "classic",
+  className = "",
+}: AsciiAvatarProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     if (!src) { setStatus("error"); return; }
     setStatus("loading");
-    console.log("[AsciiAvatar] loading src:", src);
 
     const img = new Image();
     img.crossOrigin = "anonymous";
 
     img.onload = () => {
-      console.log("[AsciiAvatar] image loaded:", img.naturalWidth, "x", img.naturalHeight);
       try {
-        const data = imgToAscii(img, cols);
+        const data = imgToAscii(img, cols, format);
         if (data.length && canvasRef.current) {
-          renderToCanvas(canvasRef.current, data, canvasWidth);
+          renderToCanvas(canvasRef.current, data, canvasWidth, format);
           setStatus("ready");
         } else {
           setStatus("error");
@@ -92,15 +115,14 @@ const AsciiAvatar = ({ src, cols = 120, canvasWidth = 200, className = "" }: Asc
       }
     };
 
-    img.onerror = (e) => {
-      console.error("[AsciiAvatar] image load error:", e);
+    img.onerror = () => {
       // Try without CORS as last resort
       const img2 = new Image();
       img2.onload = () => {
         try {
-          const data = imgToAscii(img2, cols);
+          const data = imgToAscii(img2, cols, format);
           if (data.length && canvasRef.current) {
-            renderToCanvas(canvasRef.current, data, canvasWidth);
+            renderToCanvas(canvasRef.current, data, canvasWidth, format);
             setStatus("ready");
           } else {
             setStatus("error");
@@ -114,7 +136,7 @@ const AsciiAvatar = ({ src, cols = 120, canvasWidth = 200, className = "" }: Asc
     };
 
     img.src = src;
-  }, [src, cols, canvasWidth]);
+  }, [src, cols, canvasWidth, format]);
 
   return (
     <div className={`relative ${className}`}>
@@ -134,7 +156,6 @@ const AsciiAvatar = ({ src, cols = 120, canvasWidth = 200, className = "" }: Asc
             className="w-full opacity-60"
             style={{ filter: "sepia(1) saturate(2) hue-rotate(-10deg) brightness(0.7)" }}
             onError={(e) => {
-              // If crossOrigin fails, try without it
               const img = e.target as HTMLImageElement;
               if (img.crossOrigin) {
                 img.crossOrigin = "";
@@ -148,7 +169,7 @@ const AsciiAvatar = ({ src, cols = 120, canvasWidth = 200, className = "" }: Asc
       {status === "loading" && (
         <div className="flex items-center justify-center py-8">
           <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-30 animate-pulse">
-            generating portrait...
+            rendering portrait...
           </span>
         </div>
       )}

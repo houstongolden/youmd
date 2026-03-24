@@ -3,6 +3,26 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 
+// ---------------------------------------------------------------------------
+// Model routing configuration — right model for the right task
+// ---------------------------------------------------------------------------
+
+const MODELS = {
+  // Primary chat — best quality for identity conversations
+  chat_primary: { provider: "anthropic", model: "claude-sonnet-4-6-20250520" },
+  chat_fallback: { provider: "openrouter", model: "anthropic/claude-sonnet-4" },
+  // Research — Perplexity Sonar for fast web search with citations
+  research: { provider: "perplexity", model: "sonar" },
+  // Identity verification — Sonar Pro for deeper cross-referencing
+  verify: { provider: "perplexity", model: "sonar-pro" },
+  // X/Twitter enrichment — Grok has native X context
+  x_enrichment: { provider: "xai", model: "grok-3-mini" },
+  // Session summaries — Haiku for cost-efficient background tasks
+  summary: { provider: "anthropic", model: "claude-haiku-4-5-20251001" },
+  // Fast classification — Haiku for quick routing decisions
+  classify: { provider: "anthropic", model: "claude-haiku-4-5-20251001" },
+} as const;
+
 /**
  * Chat proxy — routes LLM calls through the backend.
  * Uses Claude Sonnet 4.6 via Anthropic API (best quality).
@@ -109,6 +129,95 @@ export const researchUser = action({
       return { success: true, research: content || "No results found." };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : "Research failed" };
+    }
+  },
+});
+
+/**
+ * Identity verification — cross-references scraped data against web results.
+ * Uses Perplexity Sonar Pro for deeper search + smart matching to confirm
+ * that the person in the scraped profiles is actually the same person.
+ * Returns a confidence score and any discrepancies found.
+ */
+export const verifyIdentity = action({
+  args: {
+    name: v.string(),
+    username: v.optional(v.string()),
+    scrapedSources: v.array(
+      v.object({
+        platform: v.string(),
+        username: v.optional(v.string()),
+        bio: v.optional(v.string()),
+        company: v.optional(v.string()),
+        location: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (_ctx, args) => {
+    const perplexityKey = process.env.PERPLEXITY_API_KEY;
+    if (!perplexityKey) {
+      return { success: false, error: "PERPLEXITY_API_KEY not configured" };
+    }
+
+    // Build cross-reference query from all scraped sources
+    const sourceDetails = args.scrapedSources
+      .map((s) => {
+        const parts = [`${s.platform}: @${s.username || "unknown"}`];
+        if (s.bio) parts.push(`bio: "${s.bio.slice(0, 100)}"`);
+        if (s.company) parts.push(`company: ${s.company}`);
+        if (s.location) parts.push(`location: ${s.location}`);
+        return parts.join(", ");
+      })
+      .join("\n");
+
+    try {
+      const response = await fetch("https://api.perplexity.ai/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${perplexityKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: MODELS.verify.model,
+          messages: [
+            {
+              role: "system",
+              content: `You are an identity verification specialist. Given a name and scraped social profiles, determine if they all belong to the same person. Return a JSON object with:
+- "confidence": number 0-100 (how confident these profiles belong to the same person)
+- "match": boolean (true if likely same person)
+- "signals": string[] (evidence supporting the match)
+- "discrepancies": string[] (anything that doesn't match)
+- "summary": string (1 sentence about who this person is)
+Respond ONLY with valid JSON, no markdown.`,
+            },
+            {
+              role: "user",
+              content: `Verify if these social profiles all belong to "${args.name}"${args.username ? ` (username: @${args.username})` : ""}:\n\n${sourceDetails}`,
+            },
+          ],
+          max_tokens: 400,
+          temperature: 0.1,
+        }),
+        signal: AbortSignal.timeout(20_000),
+      });
+
+      if (!response.ok) {
+        return { success: false, error: `Verification failed: ${response.status}` };
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) return { success: false, error: "Empty verification response" };
+
+      try {
+        const result = JSON.parse(content);
+        return { success: true, verification: result };
+      } catch {
+        // If not valid JSON, return the raw text as summary
+        return { success: true, verification: { confidence: 50, match: true, signals: [], discrepancies: [], summary: content } };
+      }
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : "Verification failed" };
     }
   },
 });

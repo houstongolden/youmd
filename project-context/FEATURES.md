@@ -73,6 +73,27 @@ Last Updated: 2026-03-19
 | "building" thinking category | Done | 10 new phrases for directive/identity construction |
 | Enhanced activity simulation | Done | 7 granular sub-steps during LLM wait (vs 3), faster rotation |
 
+## Intelligent Model Routing
+
+| Feature | Status | Notes |
+|---|---|---|
+| Model routing config | Done | Named model map: chat, research, verify, x_enrichment, summary, classify |
+| Identity verification | Done | Perplexity Sonar Pro cross-references scraped profiles, returns confidence score |
+| Parallel verification | Done | Runs alongside research during scraping, injected into agent context |
+| Verify HTTP endpoint | Done | POST /api/v1/verify-identity |
+
+## Portrait System
+
+| Feature | Status | Notes |
+|---|---|---|
+| Multi-image scraping | Done | ALL scraped images saved to socialImages (not just best) |
+| Tap-to-select primary | Done | Click any source image to make it primary |
+| Real photo + ASCII preview | Done | Each source shows actual photo and ASCII conversion side by side |
+| ASCII format modes | Done | Classic ($@B%...), Braille (⣿⣷⣶...), Block (█▓▒░), Minimal (@%#*...) |
+| Detail level picker | Done | 60/80/100/120/160 columns |
+| 120 col default | Done | High-detail portraits by default (was 80) |
+| Format picker UI | Done | Grid selector in PortraitPane |
+
 ## Security
 
 | Feature | Status | Notes |

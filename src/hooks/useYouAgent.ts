@@ -330,6 +330,27 @@ async function scrapeSource(source: DetectedSource): Promise<string> {
   }
 }
 
+async function verifyIdentity(
+  name: string,
+  username: string | undefined,
+  scrapedSources: Array<{ platform: string; username?: string; bio?: string; company?: string; location?: string }>
+): Promise<{ confidence: number; match: boolean; signals: string[]; discrepancies: string[]; summary: string } | null> {
+  try {
+    const res = await fetch(`${CONVEX_SITE_URL}/api/v1/verify-identity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, username, scrapedSources }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.success && data.verification) return data.verification;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function researchUser(name: string, username?: string, links?: string[]): Promise<string> {
   try {
     const res = await fetch(`${CONVEX_SITE_URL}/api/v1/research`, {
@@ -1149,6 +1170,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const createContextLink = useMutation(api.contextLinks.createLink);
   const updatePrivateContext = useMutation(api.private.updatePrivateContext);
   const updateProfile = useMutation(api.profiles.updateProfile);
+  const setProfileImages = useMutation(api.profiles.setProfileImages);
   const saveMemories = useMutation(api.memories.saveMemories);
   const upsertSession = useMutation(api.memories.upsertSession);
   const summarizeSession = useAction(api.chat.summarizeSession);
@@ -1986,59 +2008,116 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           scrapedSourcesRef.current.add(`${s.platform}:${s.username || s.url}`);
         }
 
-        // Extract and save profile image — prefer LinkedIn > GitHub > X
-        if (userProfile?._id && user?.id && !userProfile.avatarUrl) {
-          const imgStepId = addStep("extracting profile image");
+        // Extract ALL profile images from every scraped source
+        if (userProfile?._id && user?.id) {
+          const imgStepId = addStep("extracting profile images");
           const platformPriority = ["linkedin", "github", "x"];
-          let bestImage: string | null = null;
+          const collectedImages: Record<string, string> = {};
+          let bestPlatform = "";
           let bestPriority = platformPriority.length;
+
           for (let i = 0; i < newSources.length; i++) {
             const imgMatch = scrapeResults[i]?.match(/profile_image: (https?:\/\/[^\s]+)/);
             if (imgMatch?.[1]) {
-              const idx = platformPriority.indexOf(newSources[i].platform);
+              const platform = newSources[i].platform;
+              collectedImages[platform] = imgMatch[1];
+              const idx = platformPriority.indexOf(platform);
               if (idx >= 0 && idx < bestPriority) {
-                bestImage = imgMatch[1];
+                bestPlatform = platform;
                 bestPriority = idx;
               }
             }
           }
-          if (bestImage) {
+
+          const imageCount = Object.keys(collectedImages).length;
+          if (imageCount > 0) {
             try {
-              await updateProfile({
+              // Merge with existing social images
+              const existingSocial = (userProfile.socialImages as Record<string, string | undefined>) || {};
+              const mergedImages = {
+                x: collectedImages.x || existingSocial.x,
+                github: collectedImages.github || existingSocial.github,
+                linkedin: collectedImages.linkedin || existingSocial.linkedin,
+                custom: existingSocial.custom,
+              };
+              const primary = bestPlatform || userProfile.primaryImage as string || "github";
+
+              await setProfileImages({
                 profileId: userProfile._id,
                 clerkId: user.id,
-                avatarUrl: bestImage,
+                socialImages: mergedImages,
+                primaryImage: primary,
               });
-              completeStep(imgStepId, "saved");
+              completeStep(imgStepId, `${imageCount} image${imageCount > 1 ? "s" : ""} saved`);
             } catch {
-              failStep(imgStepId, "failed");
+              failStep(imgStepId, "failed to save");
             }
           } else {
             completeStep(imgStepId, "none found");
           }
         }
 
-        // Also run web research if we have a name from the profile
+        // Run identity verification if we have multiple sources
+        const scrapedSourcesForVerify = newSources.map((s, i) => {
+          const result = scrapeResults[i] || "";
+          const bioMatch = result.match(/bio: (.+)/);
+          const companyMatch = result.match(/company: (.+)/);
+          const locationMatch = result.match(/location: (.+)/);
+          return {
+            platform: s.platform,
+            username: s.username,
+            bio: bioMatch?.[1]?.slice(0, 100),
+            company: companyMatch?.[1],
+            location: locationMatch?.[1],
+          };
+        });
+
+        // Run research + identity verification in parallel
         const existingYouJson = (latestBundle?.youJson as Record<string, unknown>) || null;
         const userName = (existingYouJson?.identity as Record<string, unknown>)?.name as string ||
           userProfile?.name || convexUser?.displayName || "";
+
         let researchResult = "";
+        let verificationContext = "";
+
         if (userName && newSources.length > 0) {
+          // Run both in parallel — research via Perplexity Sonar, verify via Sonar Pro
           const researchStepId = addStep("researching web context", userName);
+          const verifyStepId = scrapedSourcesForVerify.length >= 2
+            ? addStep("verifying identity across sources")
+            : null;
+
           const allLinks = newSources.map((s) => s.url);
-          try {
-            researchResult = await researchUser(userName, convexUser?.username, allLinks);
-            completeStep(researchStepId, researchResult ? "context found" : "no results");
-          } catch {
-            failStep(researchStepId, "failed");
+
+          const [researchRes, verifyRes] = await Promise.all([
+            researchUser(userName, convexUser?.username, allLinks)
+              .then((r) => { completeStep(researchStepId, r ? "context found" : "no results"); return r; })
+              .catch(() => { failStep(researchStepId, "failed"); return ""; }),
+            scrapedSourcesForVerify.length >= 2
+              ? verifyIdentity(userName, convexUser?.username, scrapedSourcesForVerify)
+                  .then((v) => { if (verifyStepId) completeStep(verifyStepId, v ? `${v.confidence}% match` : "skipped"); return v; })
+                  .catch(() => { if (verifyStepId) failStep(verifyStepId, "failed"); return null; })
+              : Promise.resolve(null),
+          ]);
+
+          researchResult = researchRes;
+
+          // Format verification result for the agent
+          if (verifyRes) {
+            const parts = [`[IDENTITY VERIFICATION — Perplexity Sonar Pro cross-reference]`];
+            parts.push(`confidence: ${verifyRes.confidence}%`);
+            parts.push(`match: ${verifyRes.match ? "yes — profiles belong to same person" : "uncertain — possible discrepancies"}`);
+            if (verifyRes.signals?.length > 0) parts.push(`signals: ${verifyRes.signals.join("; ")}`);
+            if (verifyRes.discrepancies?.length > 0) parts.push(`discrepancies: ${verifyRes.discrepancies.join("; ")}`);
+            if (verifyRes.summary) parts.push(`summary: ${verifyRes.summary}`);
+            verificationContext = parts.join("\n");
           }
         }
 
-        // Inject scrape results as a system context message
+        // Inject scrape results + research + verification as system context
         const scrapeContext = scrapeResults.filter(Boolean).join("\n\n");
-        const fullContext = researchResult
-          ? `${scrapeContext}\n\n${researchResult}`
-          : scrapeContext;
+        const contextParts = [scrapeContext, researchResult, verificationContext].filter(Boolean);
+        const fullContext = contextParts.join("\n\n");
 
         if (fullContext) {
           const contextMsg: ChatMessage = {
@@ -2274,7 +2353,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     // Clear steps after a brief delay so user sees final state
     setTimeout(() => clearSteps(), 800);
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps]);
+  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps]);
 
   return {
     // State
