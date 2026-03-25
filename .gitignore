@@ -50,3 +50,4 @@ convex/**/*.js
 # cli build output
 cli/dist/
 cli/node_modules/
+.youmd/
