@@ -16,10 +16,14 @@ interface DirectoryEntry {
   username: string;
   name: string | null;
   tagline: string | null;
+  bio: string | null;
   location: string | null;
   avatarUrl: string | null;
   isClaimed: boolean;
   source: "profiles" | "legacy";
+  projectCount: number;
+  nowItems: string[];
+  links: Record<string, string>;
 }
 
 /* ── Profile Card ─────────────────────────────────────────── */
@@ -95,13 +99,43 @@ function ProfileCard({ entry, index }: { entry: DirectoryEntry; index: number })
                 {entry.tagline}
               </p>
             )}
-            {entry.location && (
-              <div className="flex items-center gap-3 mt-1.5">
+            {!entry.tagline && entry.bio && (
+              <p className="text-[hsl(var(--text-secondary))] opacity-60 text-[11px] mt-0.5 truncate">
+                {entry.bio}
+              </p>
+            )}
+            {/* Meta line — location, projects, now */}
+            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+              {entry.location && (
                 <span className="flex items-center gap-1 text-[hsl(var(--text-secondary))]/60 font-mono text-[10px]">
                   <MapPin size={9} /> {entry.location}
                 </span>
-              </div>
-            )}
+              )}
+              {entry.projectCount > 0 && (
+                <span className="text-[hsl(var(--accent))]/60 font-mono text-[9px]">
+                  {entry.projectCount} project{entry.projectCount !== 1 ? "s" : ""}
+                </span>
+              )}
+              {entry.nowItems.length > 0 && (
+                <span className="text-[hsl(var(--text-secondary))]/40 font-mono text-[9px] truncate max-w-[200px]">
+                  now: {entry.nowItems[0]}
+                </span>
+              )}
+              {/* Social link icons */}
+              {Object.entries(entry.links).filter(([, url]) => url).length > 0 && (
+                <span className="flex items-center gap-1.5">
+                  {entry.links.github && (
+                    <span className="text-[hsl(var(--text-secondary))]/30 font-mono text-[9px]">gh</span>
+                  )}
+                  {(entry.links.x || entry.links["x/twitter"]) && (
+                    <span className="text-[hsl(var(--text-secondary))]/30 font-mono text-[9px]">x</span>
+                  )}
+                  {entry.links.linkedin && (
+                    <span className="text-[hsl(var(--text-secondary))]/30 font-mono text-[9px]">li</span>
+                  )}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </Link>
@@ -120,14 +154,22 @@ export function ProfilesDirectoryContent() {
   if (profiles) {
     for (const p of profiles) {
       const youJson = p.youJson as Record<string, any> | undefined;
+      const bio = youJson?.identity?.bio?.short || youJson?.identity?.bio?.medium || "";
+      const projects = youJson?.projects as Array<Record<string, string>> | undefined;
+      const now = youJson?.now?.focus as string[] | undefined;
+      const links = (youJson?.links || {}) as Record<string, string>;
       entries.push({
         username: p.username,
         name: p.name ?? null,
         tagline: p.tagline ?? youJson?.identity?.tagline ?? null,
+        bio: bio ? (bio.length > 120 ? bio.slice(0, 120) + "..." : bio) : null,
         location: p.location ?? youJson?.identity?.location ?? null,
         avatarUrl: p.avatarUrl ?? null,
         isClaimed: p.isClaimed,
         source: "profiles",
+        projectCount: projects?.length ?? 0,
+        nowItems: (now || []).slice(0, 2),
+        links,
       });
     }
   }
@@ -138,10 +180,14 @@ export function ProfilesDirectoryContent() {
         username: u.username,
         name: u.displayName ?? null,
         tagline: null,
+        bio: null,
         location: null,
         avatarUrl: null,
         isClaimed: true,
         source: "legacy",
+        projectCount: 0,
+        nowItems: [],
+        links: {},
       });
     }
   }
