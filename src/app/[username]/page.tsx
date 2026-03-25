@@ -64,25 +64,60 @@ export async function generateMetadata({
     "";
 
   const title = `${name} — you.md/${username}`;
-  const description = tagline || bio || `${name}'s profile on you.md`;
+  const description = tagline
+    ? `${tagline}${bio ? ` — ${bio.slice(0, 120)}` : ""}`
+    : bio
+      ? bio.slice(0, 200)
+      : `${name}'s identity file for the agent internet on you.md`;
+  const avatarUrl = data?._profile?.avatarUrl || data?.social_images?.github || data?.social_images?.x || "";
+  const location = data?.identity?.location || "";
+  const firstName = name.split(" ")[0];
+  const lastName = name.split(" ").slice(1).join(" ");
+  const projects = (data?.projects as Array<{ name: string }>) || [];
 
   return {
     title,
     description,
+    keywords: [
+      name,
+      username,
+      "identity",
+      "agent",
+      "AI",
+      "you.md",
+      ...(projects.slice(0, 5).map(p => p.name)),
+    ].filter(Boolean),
+    authors: [{ name, url: `https://you.md/${username}` }],
     openGraph: {
       title,
       description,
       url: `https://you.md/${username}`,
       siteName: "you.md",
       type: "profile",
+      ...(avatarUrl ? { images: [{ url: avatarUrl, width: 400, height: 400, alt: `${name} profile photo` }] } : {}),
+      ...(firstName ? { firstName } : {}),
+      ...(lastName ? { lastName } : {}),
+      username,
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      ...(avatarUrl ? { images: [avatarUrl] } : {}),
     },
     alternates: {
       canonical: `https://you.md/${username}`,
+      types: {
+        "application/json": `https://you.md/${username}/you.json`,
+        "text/plain": `https://you.md/${username}/you.txt`,
+      },
+    },
+    other: {
+      // Profile-specific OG tags
+      "profile:username": username,
+      ...(firstName ? { "profile:first_name": firstName } : {}),
+      ...(lastName ? { "profile:last_name": lastName } : {}),
+      ...(location ? { "geo.placename": location } : {}),
     },
   };
 }
@@ -191,7 +226,11 @@ function buildJsonLd(username: string, data: Record<string, any>) {
 
   const avatarUrl = data._profile?.avatarUrl || data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || "";
 
-  return {
+  // Build worksFor from projects
+  const projects = (data.projects || []) as Array<{ name: string; description?: string; url?: string; role?: string }>;
+  const worksFor = projects.length > 0 ? projects[0] : null;
+
+  const personSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Person",
     name,
@@ -201,18 +240,38 @@ function buildJsonLd(username: string, data: Record<string, any>) {
     ...(location ? { address: { "@type": "PostalAddress", addressLocality: location } } : {}),
     ...(bio ? { description: bio } : {}),
     ...(sameAsLinks.length > 0 ? { sameAs: sameAsLinks } : {}),
-    // Additional SEO-rich fields
-    ...(data.projects?.length > 0 ? {
-      knowsAbout: data.projects.map((p: { name: string }) => p.name),
+    ...(projects.length > 0 ? {
+      knowsAbout: projects.map(p => p.name),
     } : {}),
     ...(data.values?.length > 0 ? {
       seeks: data.values,
+    } : {}),
+    ...(worksFor ? {
+      worksFor: {
+        "@type": "Organization",
+        name: worksFor.name,
+        ...(worksFor.url ? { url: worksFor.url } : {}),
+        ...(worksFor.description ? { description: worksFor.description } : {}),
+      },
     } : {}),
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": `https://you.md/${username}`,
     },
   };
+
+  // BreadcrumbList for navigation
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "you.md", item: "https://you.md" },
+      { "@type": "ListItem", position: 2, name: "Profiles", item: "https://you.md/profiles" },
+      { "@type": "ListItem", position: 3, name, item: `https://you.md/${username}` },
+    ],
+  };
+
+  return [personSchema, breadcrumbSchema];
 }
 
 export default async function ProfilePage({
@@ -242,12 +301,23 @@ export default async function ProfilePage({
         title={`${username}'s identity (plain text)`}
       />
       {/* JSON-LD structured data — rendered server-side for SEO */}
-      {jsonLd && (
+      {jsonLd && Array.isArray(jsonLd) && jsonLd.map((schema, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
+      {jsonLd && !Array.isArray(jsonLd) && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
+      {/* rel=me links for IndieWeb verification — associates profile with social accounts */}
+      {ssrData?.links && Object.entries(ssrData.links as Record<string, string>).filter(([, url]) => url).map(([platform, url]) => (
+        <link key={platform} rel="me" href={url} />
+      ))}
       {/* SSR plain-text fallback — always in HTML for agents that parse DOM without JS */}
       {ssrData && <SsrProfileText username={username} data={ssrData} />}
       {/* Client-side interactive profile — ssrData used for instant first paint */}
