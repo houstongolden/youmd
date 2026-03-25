@@ -193,6 +193,56 @@ function parsePrivateUpdates(text: string): Array<{ field: string; content?: str
 
 const scrapedSources = new Set<string>();
 
+// ─── Image/File handling ──────────────────────────────────────────────
+
+function detectFilePath(input: string): string | null {
+  const trimmed = input.trim();
+  // Detect dragged file paths (terminals add quotes or escape spaces)
+  // Strip surrounding quotes
+  const unquoted = trimmed.replace(/^['"]|['"]$/g, "");
+  // Check if it looks like a file path
+  if (
+    (unquoted.startsWith("/") || unquoted.startsWith("~") || unquoted.startsWith("./")) &&
+    fs.existsSync(unquoted)
+  ) {
+    return unquoted;
+  }
+  return null;
+}
+
+function isImageFile(filePath: string): boolean {
+  const ext = path.extname(filePath).toLowerCase();
+  return [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"].includes(ext);
+}
+
+function fileToBase64DataUrl(filePath: string): string | null {
+  try {
+    const buffer = fs.readFileSync(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeMap: Record<string, string> = {
+      ".png": "image/png",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".gif": "image/gif",
+      ".webp": "image/webp",
+      ".bmp": "image/bmp",
+      ".svg": "image/svg+xml",
+    };
+    const mime = mimeMap[ext] || "application/octet-stream";
+    return `data:${mime};base64,${buffer.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+function readTextFile(filePath: string): string | null {
+  try {
+    return fs.readFileSync(filePath, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
 // ─── Constants ────────────────────────────────────────────────────────
 
 const CHAT_SYSTEM_PROMPT = `you are the you.md agent — the first AI that truly knows people. you help humans build and maintain their identity file for the agent internet. not a chatbot. not an assistant. an identity specialist with a personality.
@@ -263,6 +313,7 @@ const SLASH_COMMANDS: Record<string, string> = {
   "/memory": "show memory summary + stats",
   "/recall": "show recent memories (or /recall query)",
   "/private": "show private context (notes, links, projects)",
+  "/image <path>": "attach an image or file",
   "/rebuild": "recompile the bundle",
   "/help": "show available commands",
   "/done": "exit chat",
@@ -979,6 +1030,99 @@ export async function chatCommand(): Promise<void> {
     if (lower === "/rebuild") {
       handleRebuild(bundleDir);
       continue;
+    }
+
+    // ── Handle /image command ──
+    if (lower.startsWith("/image ")) {
+      const imgPath = userInput.slice(7).trim().replace(/^['"]|['"]$/g, "");
+      if (!fs.existsSync(imgPath)) {
+        console.log(chalk.hex("#C46A3A")(`  file not found: ${imgPath}`));
+        console.log("");
+        continue;
+      }
+      if (isImageFile(imgPath)) {
+        const dataUrl = fileToBase64DataUrl(imgPath);
+        if (dataUrl) {
+          console.log(chalk.green(`  ✓`) + chalk.dim(` attached image: ${path.basename(imgPath)}`));
+          messages.push({
+            role: "user",
+            content: `[USER ATTACHED IMAGE: ${path.basename(imgPath)}]\nthe user attached an image file. describe or use it as needed.\n![${path.basename(imgPath)}](${dataUrl})`,
+          });
+        }
+      } else {
+        const text = readTextFile(imgPath);
+        if (text) {
+          console.log(chalk.green(`  ✓`) + chalk.dim(` attached file: ${path.basename(imgPath)} (${text.length} chars)`));
+          messages.push({
+            role: "user",
+            content: `[USER ATTACHED FILE: ${path.basename(imgPath)}]\n\`\`\`\n${text.slice(0, 10000)}\n\`\`\``,
+          });
+        }
+      }
+      const thinkSp = new BrailleSpinner(randomThinking());
+      thinkSp.start();
+      try {
+        response = await callLLM(apiKey, messages);
+      } catch (err) {
+        thinkSp.fail(err instanceof Error ? err.message : "failed");
+        messages.pop();
+        continue;
+      }
+      thinkSp.stop();
+      messages.push({ role: "assistant", content: response });
+      printAgentMessage(parseUpdatesFromResponse(response).display);
+      continue;
+    }
+
+    // ── Detect dragged/pasted file paths ──
+    const detectedFile = detectFilePath(userInput);
+    if (detectedFile) {
+      if (isImageFile(detectedFile)) {
+        const dataUrl = fileToBase64DataUrl(detectedFile);
+        if (dataUrl) {
+          console.log(chalk.green(`  ✓`) + chalk.dim(` detected image: ${path.basename(detectedFile)}`));
+          messages.push({
+            role: "user",
+            content: `[USER DROPPED IMAGE: ${path.basename(detectedFile)}]\nthe user dropped an image file into the chat.\n![${path.basename(detectedFile)}](${dataUrl})`,
+          });
+          const thinkSp = new BrailleSpinner(randomThinking());
+          thinkSp.start();
+          try {
+            response = await callLLM(apiKey, messages);
+          } catch (err) {
+            thinkSp.fail(err instanceof Error ? err.message : "failed");
+            messages.pop();
+            continue;
+          }
+          thinkSp.stop();
+          messages.push({ role: "assistant", content: response });
+          printAgentMessage(parseUpdatesFromResponse(response).display);
+          continue;
+        }
+      } else {
+        // Text file — inject content
+        const text = readTextFile(detectedFile);
+        if (text) {
+          console.log(chalk.green(`  ✓`) + chalk.dim(` detected file: ${path.basename(detectedFile)} (${text.length} chars)`));
+          messages.push({
+            role: "user",
+            content: `[USER DROPPED FILE: ${path.basename(detectedFile)}]\n\`\`\`\n${text.slice(0, 10000)}\n\`\`\`\n\nreview this file and suggest how it relates to my identity or profile.`,
+          });
+          const thinkSp = new BrailleSpinner(randomThinking());
+          thinkSp.start();
+          try {
+            response = await callLLM(apiKey, messages);
+          } catch (err) {
+            thinkSp.fail(err instanceof Error ? err.message : "failed");
+            messages.pop();
+            continue;
+          }
+          thinkSp.stop();
+          messages.push({ role: "assistant", content: response });
+          printAgentMessage(parseUpdatesFromResponse(response).display);
+          continue;
+        }
+      }
     }
 
     // ── Auto-detect URLs and scrape before sending to LLM ──
