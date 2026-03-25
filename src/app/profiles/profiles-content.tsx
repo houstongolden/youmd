@@ -164,28 +164,8 @@ export function ProfilesDirectoryContent() {
 
   return (
     <div className="min-h-[100dvh] bg-[hsl(var(--bg))]">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-4 pt-3 md:pt-4">
-        <div className="max-w-[680px] mx-auto flex items-center justify-between px-4 py-2 glass-nav rounded">
-          <Link href="/" className="text-[hsl(var(--accent))] font-mono text-[12px] tracking-tight hover:opacity-80 transition-opacity">
-            you.md
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/create"
-              className="text-[hsl(var(--accent))] font-mono text-[10px] hover:opacity-80 transition-opacity"
-            >
-              + create
-            </Link>
-            <span className="text-[hsl(var(--text-secondary))]/60 font-mono text-[10px]">
-              /profiles
-            </span>
-          </div>
-        </div>
-      </nav>
-
-      {/* Content */}
-      <div className="pt-20 pb-20 px-6">
+      {/* Content — SiteNav handles navigation */}
+      <div className="pt-8 pb-20 px-6">
         <div className="max-w-[680px] mx-auto">
           {/* Header */}
           <FadeUp>

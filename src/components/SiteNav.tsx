@@ -55,7 +55,7 @@ export function SiteNav() {
   }, [mobileOpen]);
 
   // Hide on pages that have their own nav or don't need one
-  const hiddenPaths = ["/", "/create", "/sign-in", "/sign-up", "/initialize", "/reset-password", "/docs", "/profiles"];
+  const hiddenPaths = ["/", "/create", "/sign-in", "/sign-up", "/initialize", "/reset-password", "/docs"];
   if (hiddenPaths.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p)))) {
     return null;
   }

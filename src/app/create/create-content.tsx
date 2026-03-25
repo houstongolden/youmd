@@ -545,7 +545,7 @@ function CreateContentInner() {
           <span className="text-[hsl(var(--success))]">{"\u2713"} account created</span>
         );
         setPhase("finalizing");
-        await signUp.finalize({ navigate: () => router.push("/initialize") });
+        await signUp.finalize({ navigate: () => router.push("/dashboard") });
         return;
       }
 
@@ -607,11 +607,11 @@ function CreateContentInner() {
         addLine(<span className="text-[hsl(var(--success))]">{"\u2713"} verified</span>);
         addLine(
           <span className="text-[hsl(var(--text-secondary))] opacity-60">
-            {"\u2192"} redirecting to dashboard...
+            {"\u2192"} launching dashboard...
           </span>
         );
         setPhase("done");
-        await signUp.finalize({ navigate: () => router.push("/initialize") });
+        await signUp.finalize({ navigate: () => router.push("/dashboard") });
       } else {
         addLine(<span className="text-[hsl(var(--accent))]">ERR: verification incomplete. try again.</span>);
         addLine("\u00A0");

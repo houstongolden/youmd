@@ -1,10 +1,11 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useYouAgent, type RightPane } from "@/hooks/useYouAgent";
 import { TerminalShell } from "@/components/terminal/TerminalShell";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
@@ -12,19 +13,21 @@ import { ProfilePane } from "@/components/panes/ProfilePane";
 import { EditPane } from "@/components/panes/EditPane";
 import { SharePane } from "@/components/panes/SharePane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
+import { PortraitPane } from "@/components/panes/PortraitPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Mobile nav shows these panes as top-level tabs
 const MOBILE_PANES: Array<{ key: RightPane | "terminal"; label: string }> = [
   { key: "terminal", label: "terminal" },
   { key: "profile", label: "profile" },
+  { key: "portrait", label: "portrait" },
   { key: "edit", label: "edit" },
   { key: "share", label: "share" },
   { key: "settings", label: "settings" },
 ];
 
 // Desktop pane tab row (shown inside the right panel)
-const DESKTOP_PANES: RightPane[] = ["profile", "edit", "share", "settings"];
+const DESKTOP_PANES: RightPane[] = ["profile", "portrait", "edit", "share", "settings"];
 
 export function DashboardContent() {
   const { user } = useUser();
@@ -45,6 +48,10 @@ export function DashboardContent() {
   const [rightPane, setRightPane] = useState<RightPane>("profile");
   const [mobileView, setMobileView] = useState<"terminal" | "preview">("terminal");
 
+  const createUser = useMutation(api.users.createUser);
+  const claimProfile = useMutation(api.profiles.claimProfile);
+  const autoCreateAttempted = useRef(false);
+
   const agent = useYouAgent({
     onPaneSwitch: (pane) => {
       setRightPane(pane);
@@ -52,11 +59,41 @@ export function DashboardContent() {
     },
   });
 
+  // Auto-create Convex user for /create flow (session cookie present),
+  // or redirect to /initialize for /sign-up flow users
   useEffect(() => {
-    if (convexUser === null) {
-      router.replace("/initialize");
+    if (convexUser === null && user && !autoCreateAttempted.current) {
+      // Check for session cookie from /create flow
+      const sessionMatch = document.cookie.match(/(?:^|; )youmd_session=([^;]*)/);
+      const sessionToken = sessionMatch ? decodeURIComponent(sessionMatch[1]) : null;
+
+      if (sessionToken) {
+        // /create flow — auto-create Convex user + claim profile
+        autoCreateAttempted.current = true;
+        const username = user.username || user.firstName?.toLowerCase().replace(/[^a-z0-9-]/g, "") || "user";
+
+        (async () => {
+          try {
+            await createUser({
+              clerkId: user.id,
+              username: username.toLowerCase(),
+              email: user.emailAddresses[0]?.emailAddress ?? "",
+              displayName: user.fullName ?? undefined,
+            });
+            // Clear session cookie
+            document.cookie = "youmd_session=;path=/;max-age=0";
+          } catch (err) {
+            console.error("auto-create user failed:", err);
+            // Fallback: redirect to /initialize
+            router.replace("/initialize");
+          }
+        })();
+      } else {
+        // /sign-up flow — redirect to /initialize for full boot sequence
+        router.replace("/initialize");
+      }
     }
-  }, [convexUser, router]);
+  }, [convexUser, user, createUser, claimProfile, router]);
 
   if (!convexUser) {
     return (
@@ -103,6 +140,13 @@ export function DashboardContent() {
                 {isPublished ? "published" : "draft"}
               </span>
             </div>
+            <Link
+              href={`/${username}`}
+              target="_blank"
+              className="text-[11px] font-mono text-[hsl(var(--accent))] opacity-50 hover:opacity-90 transition-opacity"
+            >
+              view live &rarr;
+            </Link>
           </div>
 
           {/* Mobile nav — single row: scrollable pane tabs + compact status */}
@@ -212,6 +256,9 @@ export function DashboardContent() {
                 <ErrorBoundary>
                   {rightPane === "profile" && (
                     <ProfilePane userId={convexUser._id} username={username} ownerId={convexUser._id} />
+                  )}
+                  {rightPane === "portrait" && (
+                    <PortraitPane username={username} ownerId={convexUser._id} />
                   )}
                   {rightPane === "edit" && (
                     <EditPane userId={convexUser._id} username={username} />

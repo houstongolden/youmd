@@ -60,7 +60,7 @@ export function InitializeContent() {
     sessionToken ? { sessionToken } : "skip"
   );
 
-  const [phase, setPhase] = useState<"boot" | "claim" | "portrait" | "ready" | "error">("boot");
+  const [phase, setPhase] = useState<"boot" | "claim" | "ready" | "error">("boot");
   const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const claimAttempted = useRef(false);
@@ -156,37 +156,13 @@ export function InitializeContent() {
         );
         addLine("\u00A0");
 
-        // Portrait phase
+        // Proceed to onboarding agent
         setTimeout(() => {
-          setPhase("portrait");
-          addLine("generating ascii portrait...", "text-[hsl(var(--text-secondary))] opacity-50");
-
-          setTimeout(() => {
-            const art = [
-              "    \u2591\u2591\u2592\u2592\u2593\u2593\u2588\u2588\u2593\u2593\u2592\u2592\u2591\u2591    ",
-              "  \u2591\u2592\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2592\u2591  ",
-              "  \u2592\u2588\u2588\u2588    \u2588\u2588\u2588\u2588    \u2588\u2588\u2588\u2592  ",
-              "  \u2593\u2588\u2588  \u25CF  \u2588\u2588\u2588\u2588  \u25CF  \u2588\u2588\u2593  ",
-              "  \u2592\u2588\u2588\u2588    \u2588\u2588\u2588\u2588    \u2588\u2588\u2588\u2592  ",
-              "  \u2591\u2592\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2592\u2591  ",
-              "    \u2591\u2591\u2592\u2592\u2593\u2593\u2588\u2588\u2588\u2588\u2593\u2593\u2592\u2592\u2591\u2591    ",
-            ];
-            art.forEach((line) => addLine(
-              <span className="text-[hsl(var(--accent-mid))]">{line}</span>
-            ));
-            addLine("\u00A0");
-
-            setTimeout(() => {
-              addLine(
-                <span>
-                  <span className="text-[hsl(var(--success))]">{"\u2713"}</span>{" "}
-                  portrait generated {"\u2014"} 120 col detail
-                </span>
-              );
-              addLine("\u00A0");
-              setTimeout(() => setPhase("ready"), 400);
-            }, 400);
-          }, 600);
+          addLine(
+            <span className="text-[hsl(var(--success))]">{"\u2713"} identity engine ready</span>
+          );
+          addLine("\u00A0");
+          setTimeout(() => setPhase("ready"), 400);
         }, 800);
       } catch (err) {
         setError(err instanceof Error ? err.message : "failed to claim username");
@@ -206,7 +182,7 @@ export function InitializeContent() {
     );
   }
 
-  // Boot/claim/portrait phase — show centered terminal
+  // Boot/claim phase — show centered terminal
   if (phase !== "ready") {
     return (
       <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">

@@ -1,7 +1,19 @@
 import * as fs from "fs";
+import * as path from "path";
+import * as readline from "readline";
 import chalk from "chalk";
-import { getLocalBundleDir } from "../lib/config";
+import {
+  getLocalBundleDir,
+  detectProjectContext,
+  ensureProjectDirs,
+  YoumdProjectFile,
+} from "../lib/config";
 import { runOnboarding, createBundle } from "../lib/onboarding";
+import {
+  findProjectsRoot,
+  initProjectFiles,
+  getProjectDir,
+} from "../lib/project";
 
 export async function initCommand(options: {
   skipPrompts?: boolean;
@@ -34,5 +46,50 @@ export async function initCommand(options: {
       process.exit(0);
     }
     throw err;
+  }
+
+  // After onboarding, check if we're in a project directory and offer project context
+  const projectCtx = detectProjectContext();
+  if (projectCtx) {
+    const youmdProjectPath = path.join(projectCtx.root, ".youmd-project");
+    if (!fs.existsSync(youmdProjectPath)) {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+
+      const answer = await new Promise<string>((resolve) => {
+        rl.question(
+          chalk.dim(`\n  detected project: ${projectCtx.name}. create project-specific context? [Y/n]: `),
+          (a) => resolve(a.trim())
+        );
+      });
+
+      rl.close();
+
+      if (!answer || answer.toLowerCase() !== "n") {
+        // Create .youmd-project marker
+        const projectFile: YoumdProjectFile = {
+          name: projectCtx.name,
+          createdAt: new Date().toISOString(),
+        };
+        fs.writeFileSync(youmdProjectPath, JSON.stringify(projectFile, null, 2) + "\n");
+
+        // Create project dirs in global .youmd
+        ensureProjectDirs(projectCtx.name);
+
+        // Also create file-based project context if projects root exists
+        const projectsRoot = findProjectsRoot();
+        if (projectsRoot) {
+          const projectDir = getProjectDir(projectsRoot, projectCtx.name);
+          if (!fs.existsSync(path.join(projectDir, "project.json"))) {
+            initProjectFiles(projectDir, projectCtx.name, "");
+          }
+        }
+
+        console.log(chalk.green("  project context initialized."));
+        console.log(chalk.dim(`  ${youmdProjectPath}`));
+      }
+    }
   }
 }
