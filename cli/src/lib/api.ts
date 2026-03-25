@@ -253,6 +253,104 @@ export async function getAnalytics(): Promise<ApiResponse<any>> {
   });
 }
 
+// ─── Context links ──────────────────────────────────────────────────
+
+export interface ContextLink {
+  id: string;
+  token: string;
+  url: string;
+  scope: string;
+  expiresAt: string;
+  maxUses: number | string;
+  useCount: number;
+  createdAt: string;
+  isExpired: boolean;
+}
+
+export interface CreateLinkResult {
+  id: string;
+  token: string;
+  url: string;
+  scope: string;
+  expiresAt: string;
+}
+
+export async function createContextLink(opts: {
+  scope?: string;
+  ttl?: string;
+  maxUses?: number;
+}): Promise<ApiResponse<CreateLinkResult>> {
+  return request<CreateLinkResult>("/api/v1/me/context-links", {
+    method: "POST",
+    token: getToken(),
+    body: {
+      scope: opts.scope || "public",
+      ttl: opts.ttl || "7d",
+      maxUses: opts.maxUses,
+    },
+  });
+}
+
+export async function listContextLinks(): Promise<ApiResponse<ContextLink[]>> {
+  return request<ContextLink[]>("/api/v1/me/context-links", {
+    token: getToken(),
+  });
+}
+
+export async function revokeContextLink(linkId: string): Promise<ApiResponse<{ success: boolean }>> {
+  return request<{ success: boolean }>("/api/v1/me/context-links", {
+    method: "DELETE",
+    token: getToken(),
+    body: { linkId },
+  });
+}
+
+// ─── API keys ───────────────────────────────────────────────────────
+
+export interface ApiKeyInfo {
+  id: string;
+  label: string | null;
+  scopes: string[];
+  lastUsedAt: string | null;
+  createdAt: string;
+  isRevoked: boolean;
+  keyPrefix: string;
+}
+
+export interface CreateKeyResult {
+  key: string;
+  scopes: string[];
+  label?: string;
+}
+
+export async function createApiKey(opts: {
+  label?: string;
+  scopes?: string[];
+}): Promise<ApiResponse<CreateKeyResult>> {
+  return request<CreateKeyResult>("/api/v1/me/api-keys", {
+    method: "POST",
+    token: getToken(),
+    body: {
+      label: opts.label,
+      scopes: opts.scopes || ["read:public"],
+    },
+  });
+}
+
+export async function listApiKeys(): Promise<ApiResponse<ApiKeyInfo[]>> {
+  return request<ApiKeyInfo[]>("/api/v1/me/api-keys", {
+    token: getToken(),
+  });
+}
+
+export async function revokeApiKey(keyId: string): Promise<ApiResponse<{ success: boolean }>> {
+  return request<{ success: boolean }>("/api/v1/me/api-keys", {
+    method: "DELETE",
+    token: getToken(),
+    body: { keyId },
+  });
+}
+
 // ─── Private context ────────────────────────────────────────────────
 
 export interface PrivateContext {

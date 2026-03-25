@@ -3,7 +3,8 @@ import * as path from "path";
 import chalk from "chalk";
 import { readGlobalConfig, getLocalBundleDir, localBundleExists } from "../lib/config";
 import { compileBundle, writeBundle } from "../lib/compiler";
-import { uploadBundle, publishLatest } from "../lib/api";
+import { uploadBundle, publishLatest, updatePrivateContext } from "../lib/api";
+import { readPrivateContextFromLocal } from "./private";
 
 export async function pushCommand(options: { publish?: boolean }) {
   const config = readGlobalConfig();
@@ -88,6 +89,33 @@ export async function pushCommand(options: { publish?: boolean }) {
         console.log(
           chalk.hex("#C46A3A")(`  publish failed: ${JSON.stringify(pubResult.data)}`)
         );
+      }
+    }
+
+    // Push private context if local private/ directory exists
+    const privateDir = path.join(bundleDir, "private");
+    if (fs.existsSync(privateDir)) {
+      const privateUpdates = readPrivateContextFromLocal(bundleDir);
+      if (Object.keys(privateUpdates).length > 0) {
+        console.log(chalk.dim("  pushing private context..."));
+        try {
+          const privateRes = await updatePrivateContext(privateUpdates);
+          if (privateRes.ok) {
+            console.log(
+              chalk.green("  \u2713") + chalk.dim(" private context synced")
+            );
+          } else {
+            console.log(
+              chalk.hex("#C46A3A")(`  private context push failed: ${JSON.stringify(privateRes.data)}`)
+            );
+          }
+        } catch (privateErr) {
+          console.log(
+            chalk.hex("#C46A3A")(
+              `  private context push failed: ${privateErr instanceof Error ? privateErr.message : String(privateErr)}`
+            )
+          );
+        }
       }
     }
 

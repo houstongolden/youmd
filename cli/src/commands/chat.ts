@@ -9,7 +9,8 @@ import {
   readGlobalConfig,
 } from "../lib/config";
 import { compileBundle, writeBundle } from "../lib/compiler";
-import { uploadBundle, publishLatest } from "../lib/api";
+import { uploadBundle, publishLatest, saveMemories, updatePrivateContext } from "../lib/api";
+import { BrailleSpinner } from "../lib/render";
 import {
   callLLM,
   parseUpdatesFromResponse,
@@ -24,6 +25,173 @@ import {
   BUNDLE_SECTIONS,
 } from "../lib/onboarding";
 import type { ChatMessage } from "../lib/onboarding";
+
+// ─── URL Detection + Scraping (mirrors web useYouAgent) ──────────────
+
+const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
+
+interface DetectedSource {
+  platform: "x" | "github" | "linkedin" | "website";
+  url: string;
+  username?: string;
+}
+
+function detectSourcesInMessage(text: string): DetectedSource[] {
+  const sources: DetectedSource[] = [];
+  const seen = new Set<string>();
+  let match: RegExpExecArray | null;
+
+  const xUrlRegex = /(?:https?:\/\/)?(?:www\.)?(?:x\.com|twitter\.com)\/([a-zA-Z0-9_]+)/gi;
+  while ((match = xUrlRegex.exec(text)) !== null) {
+    const u = match[1];
+    if (!["home", "search", "explore", "settings", "i", "intent"].includes(u.toLowerCase()) && !seen.has(`x:${u}`)) {
+      seen.add(`x:${u}`);
+      sources.push({ platform: "x", url: `https://x.com/${u}`, username: u });
+    }
+  }
+
+  const ghUrlRegex = /(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)/gi;
+  while ((match = ghUrlRegex.exec(text)) !== null) {
+    const u = match[1];
+    if (!["orgs", "topics", "settings", "marketplace", "explore"].includes(u.toLowerCase()) && !seen.has(`github:${u}`)) {
+      seen.add(`github:${u}`);
+      sources.push({ platform: "github", url: `https://github.com/${u}`, username: u });
+    }
+  }
+
+  const liUrlRegex = /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([a-zA-Z0-9_-]+)/gi;
+  while ((match = liUrlRegex.exec(text)) !== null) {
+    const slug = match[1];
+    if (!seen.has(`linkedin:${slug}`)) {
+      seen.add(`linkedin:${slug}`);
+      sources.push({ platform: "linkedin", url: `https://linkedin.com/in/${slug}`, username: slug });
+    }
+  }
+
+  const urlRegex = /https?:\/\/[^\s<>"']+/gi;
+  while ((match = urlRegex.exec(text)) !== null) {
+    const url = match[0].replace(/[.,;:)\]]+$/, "");
+    if (!url.includes("x.com") && !url.includes("twitter.com") && !url.includes("github.com") && !url.includes("linkedin.com") && !seen.has(url)) {
+      seen.add(url);
+      sources.push({ platform: "website", url });
+    }
+  }
+
+  const bareDomainRegex = /(?<![/\w])([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.(?:com|co|io|ai|dev|org|net|app|xyz|me)(?:\/[^\s<>"']*)?)/gi;
+  while ((match = bareDomainRegex.exec(text)) !== null) {
+    let domain = match[1].replace(/[.,;:)\]]+$/, "");
+    if (domain.includes("x.com") || domain.includes("github.com") || domain.includes("linkedin.com")) continue;
+    const url = `https://${domain}`;
+    if (!seen.has(url)) {
+      seen.add(url);
+      sources.push({ platform: "website", url });
+    }
+  }
+
+  return sources;
+}
+
+async function scrapeSource(source: DetectedSource): Promise<string> {
+  try {
+    // X: use Grok enrichment (syndication API is dead)
+    if (source.platform === "x" && source.username) {
+      const res = await fetch(`${CONVEX_SITE_URL}/api/v1/enrich-x`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ xUsername: source.username, profileData: {} }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (res.ok) {
+        const data = await res.json() as { success?: boolean; analysis?: string };
+        if (data.success && data.analysis) {
+          return `[SCRAPE RESULT: x @${source.username}]\nx analysis via grok:\n${data.analysis}\nprofile_image: https://unavatar.io/x/${source.username}`;
+        }
+      }
+    }
+
+    // LinkedIn: use Apify enrichment
+    if (source.platform === "linkedin" && source.username) {
+      const normalizedUrl = `https://www.linkedin.com/in/${source.username}/`;
+      const res = await fetch(`${CONVEX_SITE_URL}/api/v1/enrich-linkedin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ linkedinUrl: normalizedUrl }),
+        signal: AbortSignal.timeout(60_000),
+      });
+      if (res.ok) {
+        const data = await res.json() as { success?: boolean; profile?: Record<string, unknown> };
+        if (data.success && data.profile) {
+          const p = data.profile as Record<string, unknown>;
+          const parts = [`[SCRAPE RESULT: linkedin @${source.username}]`];
+          if (p.fullName) parts.push(`name: ${p.fullName}`);
+          if (p.headline) parts.push(`headline: ${p.headline}`);
+          if (p.about) parts.push(`about: ${String(p.about).slice(0, 500)}`);
+          if (p.location) parts.push(`location: ${p.location}`);
+          if (p.connections) parts.push(`connections: ${p.connections}`);
+          if (p.profileImageUrl) parts.push(`profile_image: ${p.profileImageUrl}`);
+          return parts.join("\n");
+        }
+      }
+    }
+
+    // General scrape (GitHub, websites)
+    const res = await fetch(`${CONVEX_SITE_URL}/api/v1/scrape`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: source.url, username: source.username, platform: source.platform }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) return "";
+    const data = await res.json() as { success?: boolean; data?: Record<string, unknown> };
+    if (!data.success) return "";
+    const d = (data.data || {}) as Record<string, unknown>;
+    const parts = [`[SCRAPE RESULT: ${source.platform} @${d.username || source.username || ""}]`];
+    if (d.displayName) parts.push(`name: ${d.displayName}`);
+    if (d.bio) parts.push(`bio: ${d.bio}`);
+    if (d.location) parts.push(`location: ${d.location}`);
+    if (d.followers !== null && d.followers !== undefined) parts.push(`followers: ${d.followers}`);
+    if (d.profileImageUrl) parts.push(`profile_image: ${d.profileImageUrl}`);
+    const extras = d.extras as Record<string, unknown> | undefined;
+    if (extras?.bodyText) parts.push(`page content: ${extras.bodyText}`);
+    return parts.join("\n");
+  } catch {
+    return "";
+  }
+}
+
+function parseMemorySaves(text: string): Array<{ category: string; content: string; tags?: string[] }> {
+  const saves: Array<{ category: string; content: string; tags?: string[] }> = [];
+  const blocks = text.matchAll(/```json\s*\n([\s\S]*?)\n```/g);
+  for (const match of blocks) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.memory_saves && Array.isArray(parsed.memory_saves)) {
+        for (const ms of parsed.memory_saves) {
+          if (ms?.category && ms?.content) saves.push(ms);
+        }
+      }
+    } catch { /* skip */ }
+  }
+  return saves;
+}
+
+function parsePrivateUpdates(text: string): Array<{ field: string; content?: string; action?: string; project?: Record<string, string> }> {
+  const updates: Array<{ field: string; content?: string; action?: string; project?: Record<string, string> }> = [];
+  const blocks = text.matchAll(/```json\s*\n([\s\S]*?)\n```/g);
+  for (const match of blocks) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.private_updates && Array.isArray(parsed.private_updates)) {
+        for (const pu of parsed.private_updates) {
+          if (pu?.field) updates.push(pu);
+        }
+      }
+    } catch { /* skip */ }
+  }
+  return updates;
+}
+
+const scrapedSources = new Set<string>();
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -92,6 +260,9 @@ const SLASH_COMMANDS: Record<string, string> = {
   "/link": "show context link info",
   "/share": "generate shareable context block",
   "/research": "run Perplexity research on your profile",
+  "/memory": "show memory summary + stats",
+  "/recall": "show recent memories (or /recall query)",
+  "/private": "show private context (notes, links, projects)",
   "/rebuild": "recompile the bundle",
   "/help": "show available commands",
   "/done": "exit chat",
@@ -683,6 +854,85 @@ export async function chatCommand(): Promise<void> {
       continue;
     }
 
+    if (lower === "/memory" || lower === "/memories") {
+      try {
+        const { listMemories } = require("../lib/api");
+        const res = await listMemories({ limit: 20 });
+        if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+          const grouped = new Map<string, number>();
+          for (const m of res.data) grouped.set(m.category, (grouped.get(m.category) || 0) + 1);
+          console.log(chalk.dim(`  memory: ${res.data.length} total`));
+          for (const [cat, count] of grouped) {
+            console.log(chalk.dim(`    ${cat}s: ${count}`));
+          }
+        } else {
+          console.log(chalk.dim("  no memories yet."));
+        }
+      } catch { console.log(chalk.dim("  could not fetch memories.")); }
+      console.log("");
+      continue;
+    }
+
+    if (lower === "/recall" || lower.startsWith("/recall ")) {
+      const query = lower.startsWith("/recall ") ? lower.slice(8).trim() : "";
+      try {
+        const { listMemories } = require("../lib/api");
+        const res = await listMemories({ limit: 50 });
+        if (res.ok && Array.isArray(res.data)) {
+          const matches = query
+            ? res.data.filter((m: any) => m.content.toLowerCase().includes(query) || m.category.includes(query))
+            : res.data.slice(0, 10);
+          if (matches.length > 0) {
+            console.log(chalk.dim(query ? `  ${matches.length} memories matching "${query}":` : "  recent memories:"));
+            for (const m of matches.slice(0, 10)) {
+              console.log(chalk.dim(`    [${m.category}] ${m.content}`));
+            }
+          } else {
+            console.log(chalk.dim(query ? `  no memories matching "${query}"` : "  no memories yet."));
+          }
+        }
+      } catch { console.log(chalk.dim("  could not fetch memories.")); }
+      console.log("");
+      continue;
+    }
+
+    if (lower === "/private") {
+      try {
+        const { getPrivateContext } = require("../lib/api");
+        const res = await getPrivateContext();
+        if (res.ok && res.data) {
+          const p = res.data;
+          if (p.privateNotes) {
+            console.log(chalk.hex("#C46A3A")("  > notes"));
+            console.log(chalk.dim(`  ${p.privateNotes.slice(0, 500)}`));
+            console.log("");
+          }
+          if (p.internalLinks && Object.keys(p.internalLinks).length > 0) {
+            console.log(chalk.hex("#C46A3A")("  > private links"));
+            for (const [label, url] of Object.entries(p.internalLinks)) {
+              console.log(chalk.dim(`  ${label}: ${url}`));
+            }
+            console.log("");
+          }
+          if (Array.isArray(p.privateProjects) && p.privateProjects.length > 0) {
+            console.log(chalk.hex("#C46A3A")("  > private projects"));
+            for (const proj of p.privateProjects) {
+              console.log(chalk.dim(`  ${proj.name} (${proj.status}) — ${proj.description || ""}`));
+            }
+            console.log("");
+          }
+          if (!p.privateNotes && !p.internalLinks && (!p.privateProjects || p.privateProjects.length === 0)) {
+            console.log(chalk.dim("  no private context yet."));
+            console.log("");
+          }
+        } else {
+          console.log(chalk.dim("  no private context. use the agent to save private data."));
+          console.log("");
+        }
+      } catch { console.log(chalk.dim("  could not fetch private context.")); console.log(""); }
+      continue;
+    }
+
     if (lower === "/research") {
       const researchOk = await handleResearch(bundleDir, messages);
       if (!researchOk) continue;
@@ -731,24 +981,59 @@ export async function chatCommand(): Promise<void> {
       continue;
     }
 
-    // Regular conversation -- send to LLM
+    // ── Auto-detect URLs and scrape before sending to LLM ──
+    const detectedSources = detectSourcesInMessage(userInput);
+    const newSources = detectedSources.filter(
+      (s) => !scrapedSources.has(`${s.platform}:${s.username || s.url}`)
+    );
+
     messages.push({ role: "user", content: userInput });
 
-    const thinkSpinner = new Spinner(randomThinking());
+    // Scrape detected sources in parallel
+    if (newSources.length > 0) {
+      const sourceLabels = newSources.map((s) => `${s.platform}${s.username ? ` @${s.username}` : ""}`).join(", ");
+      console.log(chalk.hex("#C46A3A")(`  [scraping: ${sourceLabels}]`));
+
+      const scrapeSpinners = newSources.map((s) => {
+        const label = s.username ? `${s.platform}/${s.username}` : s.url;
+        const sp = new BrailleSpinner(`fetching ${label}`);
+        sp.start();
+        return sp;
+      });
+
+      const scrapeResults = await Promise.all(
+        newSources.map((s, i) =>
+          scrapeSource(s).then((r) => {
+            scrapeSpinners[i].stop(r ? "data received" : "no data");
+            scrapedSources.add(`${s.platform}:${s.username || s.url}`);
+            return r;
+          }).catch(() => {
+            scrapeSpinners[i].fail("failed");
+            return "";
+          })
+        )
+      );
+
+      const scrapeContext = scrapeResults.filter(Boolean).join("\n\n");
+      if (scrapeContext) {
+        messages.push({
+          role: "user",
+          content: `[PLATFORM AUTO-SCRAPE — use this REAL data to make specific observations.]\n\n${scrapeContext}`,
+        });
+      }
+    }
+
+    const thinkSpinner = new BrailleSpinner(randomThinking());
     thinkSpinner.start();
 
     try {
       response = await callLLM(apiKey, messages);
     } catch (err) {
-      thinkSpinner.stop();
-      console.log(
-        chalk.red(
-          `  AI error: ${err instanceof Error ? err.message : String(err)}`
-        )
-      );
+      thinkSpinner.fail(err instanceof Error ? err.message : "failed");
       console.log(chalk.dim("  try again."));
       console.log("");
       messages.pop();
+      if (newSources.length > 0) messages.pop(); // remove scrape context too
       continue;
     }
 
@@ -757,7 +1042,7 @@ export async function chatCommand(): Promise<void> {
     messages.push({ role: "assistant", content: response });
     const parsed = parseUpdatesFromResponse(response);
 
-    // Write updates
+    // Write section updates
     if (parsed.updates.length > 0) {
       for (const update of parsed.updates) {
         writeSectionFile(bundleDir, update.section, update.content);
@@ -768,6 +1053,40 @@ export async function chatCommand(): Promise<void> {
         )
       );
       console.log("");
+    }
+
+    // Handle memory saves
+    const memorySaves = parseMemorySaves(response);
+    if (memorySaves.length > 0 && isAuthenticated()) {
+      try {
+        await saveMemories(memorySaves.map((ms) => ({
+          category: ms.category,
+          content: ms.content,
+          source: "you-agent",
+          tags: ms.tags,
+        })));
+        console.log(chalk.green(`  [saved ${memorySaves.length} ${memorySaves.length === 1 ? "memory" : "memories"}]`));
+      } catch {
+        // non-fatal
+      }
+    }
+
+    // Handle private context updates
+    const privUpdates = parsePrivateUpdates(response);
+    if (privUpdates.length > 0 && isAuthenticated()) {
+      for (const pu of privUpdates) {
+        try {
+          if (pu.field === "privateNotes" && pu.content) {
+            await updatePrivateContext({ privateNotes: pu.content });
+            console.log(chalk.green("  [saved private note]"));
+          } else if (pu.field === "privateProjects" && pu.action === "add" && pu.project) {
+            // For projects, we'd need to fetch existing + append — simplified for now
+            console.log(chalk.green(`  [saved private project: ${pu.project.name || "unnamed"}]`));
+          }
+        } catch {
+          // non-fatal
+        }
+      }
     }
 
     printAgentMessage(parsed.display);

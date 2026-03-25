@@ -1,5 +1,15 @@
 import chalk from "chalk";
-import { isAuthenticated, readGlobalConfig } from "../lib/config";
+import { isAuthenticated } from "../lib/config";
+import {
+  createContextLink,
+  listContextLinks,
+  revokeContextLink,
+} from "../lib/api";
+import { BrailleSpinner } from "../lib/render";
+
+const ACCENT = chalk.hex("#C46A3A");
+const DIM = chalk.dim;
+const SUCCESS = chalk.green;
 
 /**
  * Context link management.
@@ -7,29 +17,6 @@ import { isAuthenticated, readGlobalConfig } from "../lib/config";
  *
  * Context links are shareable URLs that give agents/LLMs access to your bundle.
  */
-
-const SITE_URL = "https://uncommon-chicken-142.convex.site";
-
-function getToken(): string {
-  const config = readGlobalConfig();
-  if (!config.token) {
-    throw new Error("Not authenticated");
-  }
-  return config.token;
-}
-
-async function apiRequest(path: string, options: RequestInit = {}): Promise<any> {
-  const token = getToken();
-  const res = await fetch(`${SITE_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  });
-  return res.json();
-}
 
 export async function linkCommand(
   subcommand?: string,
@@ -60,7 +47,7 @@ export async function linkCommand(
       console.log("you.md -- context links");
       console.log("");
       console.log("Usage:");
-      console.log("  youmd link create [--scope public|full] [--ttl 24h|7d|30d|never] [--max-uses N]");
+      console.log("  youmd link create [--scope public|full] [--ttl 1h|24h|7d|30d|90d|never] [--max-uses N]");
       console.log("  youmd link list");
       console.log("  youmd link revoke --id <linkId>");
       console.log("");
@@ -75,71 +62,137 @@ async function linkCreate(options: {
   ttl?: string;
   maxUses?: string;
 }): Promise<void> {
-  console.log("you.md -- creating context link");
-  console.log("");
-
   const scope = options.scope || "public";
   const ttl = options.ttl || "7d";
   const maxUses = options.maxUses ? parseInt(options.maxUses, 10) : undefined;
 
   if (scope !== "public" && scope !== "full") {
-    console.log(chalk.yellow("invalid scope") + " -- must be 'public' or 'full'");
+    console.log(ACCENT("invalid scope") + " -- must be 'public' or 'full'");
     console.log("");
     return;
   }
 
+  const validTtl = ["1h", "24h", "7d", "30d", "90d", "never"];
+  if (!validTtl.includes(ttl)) {
+    console.log(ACCENT("invalid ttl") + " -- must be one of: " + validTtl.join(", "));
+    console.log("");
+    return;
+  }
+
+  if (maxUses !== undefined && (isNaN(maxUses) || maxUses < 1)) {
+    console.log(ACCENT("invalid max-uses") + " -- must be a positive number");
+    console.log("");
+    return;
+  }
+
+  const spinner = new BrailleSpinner("creating context link");
+  spinner.start();
+
   try {
-    const config = readGlobalConfig();
-    // We need the clerkId; for now we pass through the API key auth
-    // The server endpoint doesn't exist yet for context links via API key
-    // This is a placeholder that shows the intended flow
-    console.log(
-      chalk.yellow("note") +
-        " -- context link management from CLI requires the web dashboard"
-    );
+    const res = await createContextLink({ scope, ttl, maxUses });
+
+    if (!res.ok) {
+      spinner.fail((res.data as any)?.error || `HTTP ${res.status}`);
+      console.log("");
+      return;
+    }
+
+    const data = res.data;
+    spinner.stop();
+
     console.log("");
-    console.log(
-      "  Visit " +
-        chalk.cyan("https://you.md/settings/links") +
-        " to create context links."
-    );
-    console.log("");
-    console.log("Requested:");
-    console.log("  scope:    " + scope);
-    console.log("  ttl:      " + ttl);
+    console.log(DIM("  scope     ") + chalk.white(data.scope));
+    console.log(DIM("  ttl       ") + chalk.white(ttl));
+    console.log(DIM("  expires   ") + chalk.white(data.expiresAt === "never" ? "never" : data.expiresAt.split("T")[0]));
     if (maxUses) {
-      console.log("  maxUses:  " + maxUses);
+      console.log(DIM("  max uses  ") + chalk.white(String(maxUses)));
     }
     console.log("");
+    console.log(DIM("  url       ") + ACCENT(data.url));
+    console.log("");
+
+    // Try to copy to clipboard
+    try {
+      const { execSync } = await import("child_process");
+      if (process.platform === "darwin") {
+        execSync(`echo ${JSON.stringify(data.url)} | pbcopy`, { stdio: "pipe" });
+        console.log(SUCCESS("  copied to clipboard"));
+      } else if (process.platform === "linux") {
+        execSync(`echo ${JSON.stringify(data.url)} | xclip -selection clipboard`, { stdio: "pipe" });
+        console.log(SUCCESS("  copied to clipboard"));
+      }
+    } catch {
+      // Clipboard not available -- not fatal
+    }
+
+    console.log("");
   } catch (err) {
-    console.log(chalk.red("error") + " -- failed to create link");
+    spinner.fail("failed to create link");
     if (err instanceof Error) {
-      console.log("  " + err.message);
+      console.log("  " + DIM(err.message));
     }
     console.log("");
   }
 }
 
 async function linkList(): Promise<void> {
-  console.log("you.md -- context links");
-  console.log("");
+  const spinner = new BrailleSpinner("fetching context links");
+  spinner.start();
 
   try {
-    console.log(
-      chalk.yellow("note") +
-        " -- context link listing from CLI requires the web dashboard"
-    );
+    const res = await listContextLinks();
+
+    if (!res.ok) {
+      spinner.fail((res.data as any)?.error || `HTTP ${res.status}`);
+      console.log("");
+      return;
+    }
+
+    const links = res.data;
+    spinner.stop(`${links.length} link${links.length !== 1 ? "s" : ""}`);
     console.log("");
-    console.log(
-      "  Visit " +
-        chalk.cyan("https://you.md/settings/links") +
-        " to manage your context links."
-    );
-    console.log("");
+
+    if (links.length === 0) {
+      console.log(DIM("  no context links yet."));
+      console.log("");
+      console.log(DIM("  create one with: ") + chalk.cyan("youmd link create"));
+      console.log("");
+      return;
+    }
+
+    const active = links.filter((l) => !l.isExpired);
+    const expired = links.filter((l) => l.isExpired);
+
+    if (active.length > 0) {
+      console.log(DIM("  ACTIVE"));
+      console.log("");
+      for (const link of active) {
+        const scopeLabel = link.scope === "full" ? ACCENT("full") : DIM("public");
+        const uses = DIM(`${link.useCount} use${link.useCount !== 1 ? "s" : ""}`);
+        const expires = link.expiresAt === "never"
+          ? DIM("no expiry")
+          : DIM("expires " + (typeof link.expiresAt === "string" ? link.expiresAt.split("T")[0] : "?"));
+
+        console.log(`  ${ACCENT(link.url)}`);
+        console.log(`    ${scopeLabel} -- ${uses} -- ${expires}`);
+        console.log(`    ${DIM("id: " + link.id)}`);
+        console.log("");
+      }
+    }
+
+    if (expired.length > 0) {
+      console.log(DIM("  EXPIRED"));
+      console.log("");
+      for (const link of expired) {
+        console.log(DIM(`  ${link.url}`));
+        console.log(DIM(`    ${link.scope} -- ${link.useCount} uses -- expired`));
+        console.log("");
+      }
+    }
   } catch (err) {
-    console.log(chalk.red("error") + " -- failed to list links");
+    spinner.fail("failed to list links");
     if (err instanceof Error) {
-      console.log("  " + err.message);
+      console.log("  " + DIM(err.message));
     }
     console.log("");
   }
@@ -147,29 +200,33 @@ async function linkList(): Promise<void> {
 
 async function linkRevoke(id?: string): Promise<void> {
   if (!id) {
-    console.log(chalk.yellow("missing --id flag"));
+    console.log(ACCENT("missing --id flag"));
     console.log("");
     console.log("Usage: youmd link revoke --id <linkId>");
+    console.log("");
+    console.log(DIM("Tip: run ") + chalk.cyan("youmd link list") + DIM(" to see link IDs."));
     console.log("");
     return;
   }
 
+  const spinner = new BrailleSpinner("revoking context link");
+  spinner.start();
+
   try {
-    console.log(
-      chalk.yellow("note") +
-        " -- context link revocation from CLI requires the web dashboard"
-    );
-    console.log("");
-    console.log(
-      "  Visit " +
-        chalk.cyan("https://you.md/settings/links") +
-        " to revoke context links."
-    );
+    const res = await revokeContextLink(id);
+
+    if (!res.ok) {
+      spinner.fail((res.data as any)?.error || `HTTP ${res.status}`);
+      console.log("");
+      return;
+    }
+
+    spinner.stop("link revoked");
     console.log("");
   } catch (err) {
-    console.log(chalk.red("error") + " -- failed to revoke link");
+    spinner.fail("failed to revoke link");
     if (err instanceof Error) {
-      console.log("  " + err.message);
+      console.log("  " + DIM(err.message));
     }
     console.log("");
   }

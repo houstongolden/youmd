@@ -815,6 +815,149 @@ http.route({
 });
 
 // ============================================================
+// CONTEXT LINK MANAGEMENT (authenticated)
+// ============================================================
+
+// POST /api/v1/me/context-links — Create a context link
+http.route({
+  path: "/api/v1/me/context-links",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const body = await request.json();
+      const result = await ctx.runMutation(api.contextLinks.createLink, {
+        clerkId: auth.userId,
+        scope: body.scope || "public",
+        ttl: body.ttl || "7d",
+        maxUses: body.maxUses,
+      });
+      return json(result);
+    } catch (err) {
+      return json(
+        { error: err instanceof Error ? err.message : "Failed to create context link" },
+        500
+      );
+    }
+  }),
+});
+
+// GET /api/v1/me/context-links — List context links
+http.route({
+  path: "/api/v1/me/context-links",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const links = await ctx.runQuery(api.contextLinks.listLinks, {
+      clerkId: auth.userId,
+    });
+    return json(links);
+  }),
+});
+
+// DELETE /api/v1/me/context-links — Revoke a context link
+http.route({
+  path: "/api/v1/me/context-links",
+  method: "DELETE",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const body = await request.json();
+      if (!body.linkId) {
+        return json({ error: "linkId is required" }, 400);
+      }
+      await ctx.runMutation(api.contextLinks.revokeLink, {
+        clerkId: auth.userId,
+        linkId: body.linkId,
+      });
+      return json({ success: true });
+    } catch (err) {
+      return json(
+        { error: err instanceof Error ? err.message : "Failed to revoke link" },
+        500
+      );
+    }
+  }),
+});
+
+// ============================================================
+// API KEY MANAGEMENT (authenticated)
+// ============================================================
+
+// POST /api/v1/me/api-keys — Create an API key
+http.route({
+  path: "/api/v1/me/api-keys",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const body = await request.json();
+      const result = await ctx.runMutation(api.apiKeys.createKey, {
+        clerkId: auth.userId,
+        label: body.label,
+        scopes: body.scopes || ["read:public"],
+      });
+      return json(result);
+    } catch (err) {
+      return json(
+        { error: err instanceof Error ? err.message : "Failed to create API key" },
+        500
+      );
+    }
+  }),
+});
+
+// GET /api/v1/me/api-keys — List API keys
+http.route({
+  path: "/api/v1/me/api-keys",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const keys = await ctx.runQuery(api.apiKeys.listKeys, {
+      clerkId: auth.userId,
+    });
+    return json(keys);
+  }),
+});
+
+// DELETE /api/v1/me/api-keys — Revoke an API key
+http.route({
+  path: "/api/v1/me/api-keys",
+  method: "DELETE",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const body = await request.json();
+      if (!body.keyId) {
+        return json({ error: "keyId is required" }, 400);
+      }
+      await ctx.runMutation(api.apiKeys.revokeKey, {
+        clerkId: auth.userId,
+        keyId: body.keyId,
+      });
+      return json({ success: true });
+    } catch (err) {
+      return json(
+        { error: err instanceof Error ? err.message : "Failed to revoke API key" },
+        500
+      );
+    }
+  }),
+});
+
+// ============================================================
 // CORS PREFLIGHT (catch-all for OPTIONS)
 // ============================================================
 
@@ -833,6 +976,8 @@ http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPrefl
 http.route({ path: "/api/v1/me/build", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/build/status", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/memories", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/context-links", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/api-keys", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat/stream", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/scrape", method: "OPTIONS", handler: corsPreflight });

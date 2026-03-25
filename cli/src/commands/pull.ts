@@ -1,8 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
-import { getMe, getPublicProfile } from "../lib/api";
+import { getMe, getPublicProfile, getPrivateContext } from "../lib/api";
 import { readGlobalConfig, getLocalBundleDir, localBundleExists } from "../lib/config";
+import { writePrivateContextToLocal } from "./private";
 
 export async function pullCommand() {
   const config = readGlobalConfig();
@@ -183,6 +184,28 @@ ${(voice.overall as string) || (analysis.voice_summary as string) || ""}
     fs.writeFileSync(path.join(bundleDir, "you.md"), profile.youMd);
     filesWritten++;
     console.log(chalk.green("  ✓") + chalk.dim(" you.md"));
+  }
+
+  // Pull private context
+  try {
+    const privateRes = await getPrivateContext();
+    if (privateRes.ok && privateRes.data) {
+      const privateFiles = writePrivateContextToLocal(bundleDir, privateRes.data);
+      if (privateFiles > 0) {
+        filesWritten += privateFiles;
+        if (privateRes.data.privateNotes) {
+          console.log(chalk.green("  \u2713") + chalk.dim(" private/notes.md"));
+        }
+        if (privateRes.data.internalLinks && Object.keys(privateRes.data.internalLinks).length > 0) {
+          console.log(chalk.green("  \u2713") + chalk.dim(" private/links.json"));
+        }
+        if (privateRes.data.privateProjects && privateRes.data.privateProjects.length > 0) {
+          console.log(chalk.green("  \u2713") + chalk.dim(" private/projects.json"));
+        }
+      }
+    }
+  } catch {
+    console.log(chalk.dim("  skipped private context (not available)"));
   }
 
   console.log("");

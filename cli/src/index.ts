@@ -18,6 +18,7 @@ import { pullCommand } from "./commands/pull";
 import { pushCommand } from "./commands/push";
 import { syncCommand } from "./commands/sync";
 import { memoriesCommand } from "./commands/memories";
+import { privateCommand } from "./commands/private";
 
 const program = new Command();
 
@@ -118,6 +119,7 @@ const keysCmd = program
   .command("keys [subcommand]")
   .description("Manage API keys (list, create, revoke)")
   .option("--label <label>", "Label for new key")
+  .option("--scopes <scopes>", "Comma-separated scopes (e.g. read:public)", "read:public")
   .option("--id <id>", "Key ID (for revoke)");
 
 keysCmd.action((subcommand, options) => {
@@ -129,6 +131,13 @@ program
   .description("Manage your memory brain (list, add, stats)")
   .action((subcommand, args) => {
     return memoriesCommand(subcommand, ...(args || []));
+  });
+
+program
+  .command("private [subcommand] [args...]")
+  .description("Manage private context (notes, links, projects)")
+  .action((subcommand, args) => {
+    return privateCommand(subcommand, ...(args || []));
   });
 
 program.parse(process.argv);
