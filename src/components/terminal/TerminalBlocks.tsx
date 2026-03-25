@@ -10,6 +10,7 @@
  */
 
 import { type ReactNode } from "react";
+import AsciiAvatar from "@/components/AsciiAvatar";
 
 /* ── Block Types ──────────────────────────────────────────── */
 
@@ -22,7 +23,8 @@ type Block =
   | { type: "callout"; kind: "info" | "warn" | "success"; content: string }
   | { type: "heading"; level: number; text: string }
   | { type: "divider" }
-  | { type: "list"; items: string[] };
+  | { type: "list"; items: string[] }
+  | { type: "image"; alt: string; url: string };
 
 /* ── Parser ───────────────────────────────────────────────── */
 
@@ -112,6 +114,14 @@ export function parseBlocks(content: string): Block[] {
       continue;
     }
 
+    // Image — ![alt](url)
+    const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);
+    if (imgMatch) {
+      blocks.push({ type: "image", alt: imgMatch[1], url: imgMatch[2] });
+      i++;
+      continue;
+    }
+
     // Bullet list — consecutive lines starting with - or *
     if (line.match(/^\s*[-*]\s/)) {
       const items: string[] = [];
@@ -197,6 +207,8 @@ function BlockRenderer({ block }: { block: Block }): ReactNode {
       return <div className="h-px bg-[hsl(var(--border))] my-2" />;
     case "list":
       return <ListBlock items={block.items} />;
+    case "image":
+      return <ImageBlock alt={block.alt} url={block.url} />;
     default:
       return null;
   }
@@ -332,6 +344,33 @@ function ListBlock({ items }: { items: string[] }) {
           <span>{formatInline(item)}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function ImageBlock({ alt, url }: { alt: string; url: string }) {
+  return (
+    <div className="my-3 border border-[hsl(var(--border))] overflow-hidden inline-block" style={{ borderRadius: "2px" }}>
+      {/* Label */}
+      <div className="bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-3 py-1 flex items-center justify-between">
+        <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-50">{alt || "image"}</span>
+      </div>
+      {/* Image + ASCII side by side */}
+      <div className="flex items-start gap-0">
+        {/* Real photo */}
+        <div className="shrink-0 w-24 h-24 bg-[hsl(var(--bg))]">
+          <img
+            src={url}
+            alt={alt}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+        {/* ASCII portrait */}
+        <div className="shrink-0 border-l border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+          <AsciiAvatar src={url} cols={40} canvasWidth={96} className="block" />
+        </div>
+      </div>
     </div>
   );
 }

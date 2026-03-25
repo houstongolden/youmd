@@ -408,13 +408,46 @@ what you CAN do:
 
 what you CANNOT do:
 - you cannot browse the web yourself. if scraped data hasn't arrived yet, say "the platform is pulling that data — give me a sec" rather than pretending you read it.
-- you cannot generate ascii portraits. the portrait is generated from their profile photo by a separate component. if they ask about portraits, tell them to use the /portrait command or that the platform generates it from their social profile photo.
 - you cannot access APIs directly. the platform does that for you.
+
+--- portrait management ---
+
+YOU manage portraits. you ARE the system. when a user asks about portraits, you handle it directly:
+
+to show portraits or images in chat, use this markdown format:
+![alt text](image_url)
+
+the platform renders images inline in the chat. use this to:
+- show the user their current portrait: ![your portrait](their_avatarUrl)
+- show scraped profile images: ![x profile](image_url_from_scrape)
+- compare images from different platforms
+
+to update the user's portrait, output a special JSON block:
+\`\`\`json
+{"portrait_update": {"source": "x", "url": "https://..."}}
+\`\`\`
+
+valid sources: "x", "github", "linkedin", "custom"
+the url should be the profile_image URL from scrape results.
+
+when the user says "show my portraits" or "update my portrait":
+1. list all known images from their scraped sources (you have these from [SCRAPE RESULT] data)
+2. show each one inline using ![platform](url) format
+3. tell them which one is currently active
+4. ask which one they want to use, or offer to re-scrape a specific platform
+
+when the user says "use my x profile pic" or "switch to github avatar":
+1. output the portrait_update JSON block with the correct source + url
+2. confirm "updated your portrait to use your [platform] photo"
+3. show the new portrait inline: ![updated portrait](url)
+
+NEVER say "the system handles portraits" or "use the /portrait command" — YOU are the system. handle it directly.
 
 CRITICAL RULES:
 - NEVER pretend you scraped something if you don't have the actual data in the conversation. if you don't have real scraped results, say so honestly.
-- NEVER generate ASCII art or text-art portraits in your responses. no boxes, no character art, no fake portraits. the platform handles portrait generation from actual photos.
+- NEVER generate ASCII art or text-art portraits in your responses. no boxes, no character art, no fake text-art portraits.
 - NEVER claim you "can't access" an API or "don't have credentials" — the platform handles all API calls. just say "let me pull that up" and wait for results.
+- NEVER say "the system does that" or "that's handled by the backend" — YOU are the system. if you can see the data, you can act on it.
 - when you DO have scraped data, reference SPECIFIC details: actual repo names, actual bio text, actual job titles, actual follower counts. this is what makes you feel personal and real vs generic.
 
 --- voice ---
@@ -457,8 +490,9 @@ what makes you NOT generic:
 - never ask "what else would you like to add to your profile?"
 - never tell the user to edit markdown files themselves — you handle all of that.
 - never dump a list of questions. one at a time, always.
-- never generate ASCII art, text portraits, or character drawings. the platform does this.
+- never generate ASCII art or text-art character drawings in your responses. use ![image](url) to show real images instead.
 - never say "i can't scrape" or "i don't have web access" — the platform handles scraping. just acknowledge the request.
+- never say "the system handles that" or "use the /command instead" — you ARE the system. do it yourself.
 - never make up information you don't have. if scrape data hasn't arrived, say so and wait.
 
 --- how you think ---
@@ -808,6 +842,28 @@ export function parseMemorySavesFromResponse(text: string): MemorySave[] {
   }
 
   return memorySaves;
+}
+
+export interface PortraitUpdate {
+  source: string; // "x" | "github" | "linkedin" | "custom"
+  url: string;
+}
+
+export function parsePortraitUpdateFromResponse(text: string): PortraitUpdate | null {
+  const allJsonBlocks = text.matchAll(/```json\s*\n([\s\S]*?)\n```/g);
+
+  for (const match of allJsonBlocks) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.portrait_update && typeof parsed.portrait_update.url === "string") {
+        return parsed.portrait_update as PortraitUpdate;
+      }
+    } catch {
+      // not a valid portrait_update block
+    }
+  }
+
+  return null;
 }
 
 function sectionLabel(section: string): string {
@@ -1614,14 +1670,37 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     const hasSubstantialProfile = profileContext !== "the user has no existing profile data yet." &&
       profileContext.split("\n").length > 3;
 
+    // Inject portrait/image context so the agent knows what images are available
+    const socialImgs = (userProfile as Record<string, unknown> | null)?.socialImages as Record<string, string> | undefined;
+    const currentAvatar = (userProfile as Record<string, unknown> | null)?.avatarUrl as string | undefined;
+    const primaryImg = (userProfile as Record<string, unknown> | null)?.primaryImage as string | undefined;
+
+    let portraitContext = "";
+    if (currentAvatar || socialImgs) {
+      const parts = ["\n--- portrait context ---"];
+      if (currentAvatar) parts.push(`current portrait url: ${currentAvatar}`);
+      if (primaryImg) parts.push(`primary source: ${primaryImg}`);
+      if (socialImgs) {
+        const entries = Object.entries(socialImgs).filter(([, v]) => v);
+        if (entries.length > 0) {
+          parts.push("available images from scraped sources:");
+          for (const [platform, url] of entries) {
+            parts.push(`  ${platform}: ${url}`);
+          }
+        }
+      }
+      parts.push("you can show these images inline using ![alt](url) format and update the portrait using portrait_update JSON blocks.");
+      portraitContext = parts.join("\n");
+    }
+
     // Determine if this is a returning user (has existing profile data)
     const isReturning = hasSubstantialProfile;
 
     const contextContent = isOnboarding && onboardingGreeting
       ? onboardingGreeting
       : hasSubstantialProfile
-        ? `${profileContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them by name. reference something SPECIFIC from their profile data above — a project name, a value, something from their bio. show them you actually know who they are. ask what they want to work on or update.`
-        : `${profileContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them${displayName ? ` by name (${displayName})` : ""}. their profile is sparse — proactively suggest building it out. ask for their x, github, or linkedin handle so you can pull real context. mention that the platform will auto-scrape their profiles.`;
+        ? `${profileContext}${portraitContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them by name. reference something SPECIFIC from their profile data above — a project name, a value, something from their bio. show them you actually know who they are. ask what they want to work on or update.`
+        : `${profileContext}${portraitContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them${displayName ? ` by name (${displayName})` : ""}. their profile is sparse — proactively suggest building it out. ask for their x, github, or linkedin handle so you can pull real context. mention that the platform will auto-scrape their profiles.`;
 
     const contextMessage: ChatMessage = {
       role: "user",
@@ -2480,6 +2559,27 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           });
         } catch {
           failStep(memStepId, "failed");
+        }
+      }
+
+      // Handle portrait updates from agent
+      const portraitUpdate = parsePortraitUpdateFromResponse(response);
+      if (portraitUpdate && user?.id && userProfile?._id) {
+        const portraitStepId = addStep("updating portrait", portraitUpdate.source);
+        try {
+          await updateProfile({
+            profileId: userProfile._id,
+            clerkId: user.id,
+            avatarUrl: portraitUpdate.url,
+          });
+          completeStep(portraitStepId);
+          newDisplayMsgs.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[portrait updated from ${portraitUpdate.source}]`,
+          });
+        } catch {
+          failStep(portraitStepId, "failed");
         }
       }
 
