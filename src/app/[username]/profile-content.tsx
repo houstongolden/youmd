@@ -10,6 +10,7 @@ import { useUser } from "@clerk/nextjs";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import AsciiAvatar from "@/components/AsciiAvatar";
+import type { PreRenderedPortrait } from "@/components/AsciiAvatar";
 import { generateYouJson, generateYouMd, downloadFile } from "@/lib/exportProfile";
 
 /* ── Types ────────────────────────────────────────────────── */
@@ -268,23 +269,28 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
       )}
 
       {/* ASCII Portrait Header — full-width above content */}
-      {resolvedProfile.avatarUrl && viewMode !== "agent" && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          className="w-full flex justify-center pt-4 pb-2"
-        >
-          <div className="max-w-[680px] w-full px-4 md:px-6">
-            <AsciiAvatar
-              src={resolvedProfile.avatarUrl}
-              cols={140}
-              canvasWidth={680}
-              className="w-full opacity-80"
-            />
-          </div>
-        </motion.div>
-      )}
+      {resolvedProfile.avatarUrl && viewMode !== "agent" && (() => {
+        const portrait = (resolvedProfile as Record<string, unknown>).asciiPortrait as PreRenderedPortrait | undefined;
+        const preRendered = portrait && portrait.sourceUrl === resolvedProfile.avatarUrl ? portrait : undefined;
+        return (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="w-full flex justify-center pt-4 pb-2"
+          >
+            <div className="max-w-[680px] w-full px-4 md:px-6">
+              <AsciiAvatar
+                src={resolvedProfile.avatarUrl}
+                cols={140}
+                canvasWidth={680}
+                className="w-full opacity-80"
+                preRendered={preRendered}
+              />
+            </div>
+          </motion.div>
+        );
+      })()}
 
       <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pb-20 relative z-10">
 
@@ -803,10 +809,10 @@ function ClaimBanner({ username }: { username: string }) {
   );
 }
 
-function PortraitFrame({ src }: { src: string }) {
+function PortraitFrame({ src, preRendered }: { src: string; preRendered?: PreRenderedPortrait | null }) {
   return (
     <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "2px" }}>
-      <AsciiAvatar src={src} cols={120} canvasWidth={240} className="hidden sm:block" />
+      <AsciiAvatar src={src} cols={120} canvasWidth={240} className="hidden sm:block" preRendered={preRendered && preRendered.sourceUrl === src ? preRendered : undefined} />
       <AsciiAvatar src={src} cols={60} canvasWidth={120} className="block sm:hidden" />
     </div>
   );

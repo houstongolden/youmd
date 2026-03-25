@@ -63,6 +63,7 @@ export const getPublicProfile = query({
         username: profile.username,
         displayName: profile.name,
         avatarUrl: profile.avatarUrl,
+        asciiPortrait: profile.asciiPortrait ?? null,
         youJson,
         youMd,
         isClaimed: profile.isClaimed,
@@ -78,6 +79,7 @@ export const getPublicProfile = query({
           username: profile.username,
           displayName: profile.name,
           avatarUrl: profile.avatarUrl,
+          asciiPortrait: profile.asciiPortrait ?? null,
           youJson: null,
           youMd: null,
           isClaimed: profile.isClaimed,
@@ -93,6 +95,7 @@ export const getPublicProfile = query({
       source: "legacy" as const,
       username: user.username,
       displayName: user.displayName,
+      asciiPortrait: profile?.asciiPortrait ?? null,
       youJson: publishedBundle.youJson,
       youMd: publishedBundle.youMd,
       isClaimed: true,
@@ -560,6 +563,59 @@ export const updateLinks = mutation({
     });
 
     return { success: true, links: mergedLinks };
+  },
+});
+
+/** Save a pre-rendered ASCII portrait to a profile */
+export const savePortrait = mutation({
+  args: {
+    profileId: v.id("profiles"),
+    clerkId: v.optional(v.string()),
+    sessionToken: v.optional(v.string()),
+    portrait: v.object({
+      lines: v.array(v.string()),
+      coloredLines: v.optional(v.any()),
+      cols: v.number(),
+      rows: v.number(),
+      format: v.string(),
+      sourceUrl: v.string(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile) throw new Error("profile not found");
+
+    // Auth: session token for unclaimed, clerkId for claimed
+    if (!profile.isClaimed) {
+      if (args.sessionToken !== profile.sessionToken) {
+        throw new Error("invalid session token");
+      }
+    } else {
+      const clerkId = args.clerkId;
+      if (!clerkId) throw new Error("authentication required");
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+        .first();
+      if (!user || profile.ownerId !== user._id) {
+        throw new Error("not the profile owner");
+      }
+    }
+
+    await ctx.db.patch(args.profileId, {
+      asciiPortrait: {
+        lines: args.portrait.lines,
+        coloredLines: args.portrait.coloredLines,
+        cols: args.portrait.cols,
+        rows: args.portrait.rows,
+        format: args.portrait.format,
+        sourceUrl: args.portrait.sourceUrl,
+        generatedAt: Date.now(),
+      },
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
   },
 });
 

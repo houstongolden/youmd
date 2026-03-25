@@ -48,6 +48,17 @@ export default defineSchema({
     youJson: v.optional(v.any()),
     youMd: v.optional(v.string()),
 
+    // Pre-rendered ASCII portrait (generated client-side, stored server-side)
+    asciiPortrait: v.optional(v.object({
+      lines: v.array(v.string()),           // plain text ASCII lines
+      coloredLines: v.optional(v.any()),     // array of [{char, color}] for rich rendering
+      cols: v.number(),
+      rows: v.number(),
+      format: v.string(),                   // "classic" | "braille" | "block" | "minimal"
+      sourceUrl: v.string(),
+      generatedAt: v.number(),
+    })),
+
     // Profile data from agent conversation
     now: v.optional(v.array(v.string())),
     projects: v.optional(v.array(v.any())),

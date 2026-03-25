@@ -6,7 +6,7 @@ import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import AsciiAvatar from "@/components/AsciiAvatar";
-import type { AsciiFormat } from "@/components/AsciiAvatar";
+import type { AsciiFormat, RenderedResult, PreRenderedPortrait } from "@/components/AsciiAvatar";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
 
 interface PortraitPaneProps {
@@ -16,8 +16,8 @@ interface PortraitPaneProps {
 
 const FORMAT_OPTIONS: { value: AsciiFormat; label: string; desc: string }[] = [
   { value: "classic", label: "classic", desc: "$@B%8&#*oahkbd..." },
-  { value: "braille", label: "braille", desc: "⣿⣷⣶⣦⣤⣄⣀⡀⠀" },
-  { value: "block", label: "block", desc: "█▓▒░" },
+  { value: "braille", label: "braille", desc: "\u28FF\u28F7\u28F6\u28E6\u28E4\u2884\u2880\u2840\u2800" },
+  { value: "block", label: "block", desc: "\u2588\u2593\u2592\u2591" },
   { value: "minimal", label: "minimal", desc: "@%#*+=-:." },
 ];
 
@@ -36,6 +36,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
     ownerId ? { ownerId } : "skip"
   );
   const setProfileImages = useMutation(api.profiles.setProfileImages);
+  const savePortrait = useMutation(api.profiles.savePortrait);
 
   const [format, setFormat] = useState<AsciiFormat>("classic");
   const [cols, setCols] = useState(120);
@@ -49,6 +50,15 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
   const avatarUrl = userProfile?.avatarUrl;
   const socialImages = (userProfile?.socialImages as Record<string, string | undefined>) || {};
   const primaryImage = (userProfile?.primaryImage as string) || "";
+
+  // Pre-rendered portrait from DB
+  const storedPortrait = userProfile?.asciiPortrait as PreRenderedPortrait | undefined;
+
+  // Check if stored portrait matches current settings
+  const portraitMatchesSettings = storedPortrait &&
+    storedPortrait.format === format &&
+    storedPortrait.cols === cols &&
+    storedPortrait.sourceUrl === avatarUrl;
 
   // Collect all available portrait sources
   const sources: { platform: string; url: string; isPrimary: boolean }[] = [];
@@ -68,6 +78,27 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
   }
 
   const primaryUrl = avatarUrl || sources.find(s => s.isPrimary)?.url || sources[0]?.url;
+
+  // Save portrait to DB when first rendered client-side
+  const handlePortraitRendered = useCallback(async (result: RenderedResult) => {
+    if (!userProfile?._id || !user?.id) return;
+    try {
+      await savePortrait({
+        profileId: userProfile._id,
+        clerkId: user.id,
+        portrait: {
+          lines: result.lines,
+          coloredLines: result.coloredLines,
+          cols: result.cols,
+          rows: result.rows,
+          format: result.format,
+          sourceUrl: result.sourceUrl,
+        },
+      });
+    } catch {
+      // Fail silently — portrait will regenerate next time
+    }
+  }, [userProfile?._id, user?.id, savePortrait]);
 
   // Handle selecting a different primary image
   const handleSelectPrimary = useCallback(async (platform: string) => {
@@ -171,6 +202,8 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
               canvasWidth={Math.min(500, cols * 4)}
               format={format}
               className="w-full"
+              preRendered={portraitMatchesSettings ? storedPortrait : undefined}
+              onRendered={handlePortraitRendered}
             />
           </div>
         ) : (
@@ -362,6 +395,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
             { label: "characters", value: RAMPS_SHORT[format] },
             { label: "source", value: primaryUrl ? (primaryImage || "auto-detected") : "none" },
             { label: "sources available", value: String(sources.length) },
+            { label: "cached", value: storedPortrait ? "yes" : "no" },
           ].map((s) => (
             <div key={s.label} className="flex items-center justify-between font-mono text-[11px]">
               <span className="text-[hsl(var(--text-secondary))] opacity-60">{s.label}</span>
@@ -406,7 +440,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
 // Short ramp labels for settings display
 const RAMPS_SHORT: Record<AsciiFormat, string> = {
   classic: "$@B%8&#*oahkbd...",
-  braille: "⣿⣷⣶⣦⣤⣄⣀⡀⠀",
-  block: "█▓▒░ ",
+  braille: "\u28FF\u28F7\u28F6\u28E6\u28E4\u2884\u2880\u2840\u2800",
+  block: "\u2588\u2593\u2592\u2591 ",
   minimal: "@%#*+=-:.",
 };

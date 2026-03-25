@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { CopyButton } from "@/components/ui/CopyButton";
 import AsciiAvatar from "@/components/AsciiAvatar";
+import type { PreRenderedPortrait } from "@/components/AsciiAvatar";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { PaneDivider, PaneEmptyState } from "./shared";
 
@@ -33,6 +34,7 @@ export function ProfilePreviewPane({ userId, username, ownerId }: ProfilePreview
 
   const data = latestBundle?.youJson;
   const avatarUrl = userProfile?.avatarUrl || `https://avatars.githubusercontent.com/${username}?s=400`;
+  const storedPortrait = userProfile?.asciiPortrait as PreRenderedPortrait | undefined;
 
   if (!data) {
     return <PaneEmptyState>no bundle yet. talk to the agent to build your profile.</PaneEmptyState>;
@@ -93,6 +95,7 @@ export function ProfilePreviewPane({ userId, username, ownerId }: ProfilePreview
                   cols={50}
                   canvasWidth={100}
                   className="block"
+                  preRendered={storedPortrait && storedPortrait.sourceUrl === avatarUrl ? storedPortrait : undefined}
                 />
               </div>
             )}

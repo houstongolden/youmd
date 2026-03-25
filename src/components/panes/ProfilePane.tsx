@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { CopyButton } from "@/components/ui/CopyButton";
 import AsciiAvatar from "@/components/AsciiAvatar";
+import type { PreRenderedPortrait } from "@/components/AsciiAvatar";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { PaneDivider, PaneEmptyState } from "./shared";
 import { CopyableCommand } from "./CopyableCommand";
@@ -35,6 +36,7 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
   const data = latestBundle?.youJson;
   const avatarUrl = userProfile?.avatarUrl || `https://avatars.githubusercontent.com/${username}?s=400`;
   const socialImages = (userProfile?.socialImages as Record<string, string | undefined>) || {};
+  const storedPortrait = userProfile?.asciiPortrait as PreRenderedPortrait | undefined;
 
   // Collect portrait sources
   const sources: { platform: string; url: string }[] = [];
@@ -102,6 +104,7 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
                   cols={50}
                   canvasWidth={100}
                   className="block"
+                  preRendered={storedPortrait && storedPortrait.sourceUrl === avatarUrl ? storedPortrait : undefined}
                 />
               </div>
             )}

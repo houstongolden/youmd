@@ -26,6 +26,7 @@ import type * as pipeline_linkedin from "../pipeline/linkedin.js";
 import type * as pipeline_mutations from "../pipeline/mutations.js";
 import type * as pipeline_orchestrator from "../pipeline/orchestrator.js";
 import type * as pipeline_prompts from "../pipeline/prompts.js";
+import type * as portrait from "../portrait.js";
 import type * as private_ from "../private.js";
 import type * as profiles from "../profiles.js";
 import type * as scrape from "../scrape.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   "pipeline/mutations": typeof pipeline_mutations;
   "pipeline/orchestrator": typeof pipeline_orchestrator;
   "pipeline/prompts": typeof pipeline_prompts;
+  portrait: typeof portrait;
   private: typeof private_;
   profiles: typeof profiles;
   scrape: typeof scrape;
