@@ -51,6 +51,8 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const recordView = useMutation(api.profiles.recordView);
   const hasRecordedView = useRef(false);
   const [copied, setCopied] = useState(false);
+  const [showRawJson, setShowRawJson] = useState(false);
+  const [rawCopied, setRawCopied] = useState(false);
 
   // SSR fallback shape matching the Convex query return type
   const ssrProfile = ssrData ? {
@@ -122,6 +124,13 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   }
 
   const data = resolvedProfile.youJson as Record<string, any> | null;
+
+  const handleCopyRawJson = () => {
+    if (!data) return;
+    navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+    setRawCopied(true);
+    setTimeout(() => setRawCopied(false), 1500);
+  };
 
   // Profile exists but no youJson yet
   if (!data) {
@@ -224,19 +233,33 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
           {/* Status panel */}
           <div className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] space-y-1.5" style={{ borderRadius: "2px" }}>
             <div className="flex items-center justify-between">
-              <button onClick={handleCopy} className="flex items-center gap-1.5 text-[hsl(var(--accent))] font-mono text-[12px] hover:opacity-80 transition-opacity">
-                you.md/{username}
-                {copied ? (
-                  <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor" className="text-[hsl(var(--success))]">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                  </svg>
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={handleCopy} className="flex items-center gap-1.5 text-[hsl(var(--accent))] font-mono text-[12px] hover:opacity-80 transition-opacity">
+                  you.md/{username}
+                  {copied ? (
+                    <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor" className="text-[hsl(var(--success))]">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowRawJson(!showRawJson)}
+                  className={`font-mono text-[10px] px-1.5 py-0.5 border transition-colors ${
+                    showRawJson
+                      ? "border-[hsl(var(--accent))]/40 text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/5"
+                      : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-50 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30"
+                  }`}
+                  style={{ borderRadius: "2px" }}
+                  title={showRawJson ? "show rendered profile" : "show raw JSON"}
+                >
+                  {"<>"}
+                </button>
+              </div>
               <span className="font-mono text-[10px] text-[hsl(var(--success))] uppercase tracking-wider flex items-center gap-1.5">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--success))] status-dot-pulse" />
                 active
@@ -256,210 +279,333 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
 
         <Divider />
 
-        {/* ═══ IDENTITY ═══ */}
-        <motion.section {...delay(1)}>
-          <SectionLabel>identity</SectionLabel>
-          {bio && <p className="text-[hsl(var(--text-secondary))] text-[14px] leading-[1.7] mt-3 mb-4">{bio}</p>}
-          {topics.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
-              {topics.map((t: string) => (
-                <span key={t} className="font-mono text-[10px] px-2 py-0.5 border border-[hsl(var(--accent))]/20 text-[hsl(var(--accent))]/70" style={{ borderRadius: "2px" }}>
-                  {t}
-                </span>
-              ))}
+        {/* ═══ RAW JSON VIEW ═══ */}
+        {showRawJson ? (
+          <motion.section {...delay(1)}>
+            <div className="flex items-center justify-between mb-3">
+              <SectionLabel>raw you.json</SectionLabel>
+              <button
+                onClick={handleCopyRawJson}
+                className="flex items-center gap-1.5 font-mono text-[10px] px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-60 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30 transition-colors"
+                style={{ borderRadius: "2px" }}
+              >
+                {rawCopied ? "copied" : "copy"}
+              </button>
             </div>
-          )}
-        </motion.section>
-
-        {/* ═══ NOW ═══ */}
-        {data.now?.focus && data.now.focus.length > 0 && (
+            <div
+              className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 overflow-x-auto"
+              style={{ borderRadius: "2px" }}
+            >
+              <RawJsonRenderer json={data} />
+            </div>
+          </motion.section>
+        ) : (
           <>
-            <Divider />
-            <motion.section {...delay(2)}>
-              <SectionLabel>current activity</SectionLabel>
-              <div className="mt-3">
-                {data.now.focus.map((item: string, i: number) => (
-                  <p key={i} className="text-[hsl(var(--text-secondary))] font-mono text-[12px] leading-relaxed">- {item}</p>
-                ))}
-              </div>
+            {/* ═══ IDENTITY ═══ */}
+            <motion.section {...delay(1)}>
+              <SectionLabel>identity</SectionLabel>
+              {bio && <p className="text-[hsl(var(--text-secondary))] text-[14px] leading-[1.7] mt-3 mb-4">{bio}</p>}
+              {topics.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {topics.map((t: string) => (
+                    <span key={t} className="font-mono text-[10px] px-2 py-0.5 border border-[hsl(var(--accent))]/20 text-[hsl(var(--accent))]/70" style={{ borderRadius: "2px" }}>
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {/* Credibility signals — subtle list under identity */}
+              {data.analysis?.credibility_signals && data.analysis.credibility_signals.length > 0 && (
+                <div className="mt-4 space-y-1">
+                  {data.analysis.credibility_signals.map((signal: string, i: number) => (
+                    <p key={i} className="text-[hsl(var(--text-secondary))] opacity-40 font-mono text-[10px] flex items-center gap-1.5">
+                      <span className="text-[hsl(var(--accent))] opacity-50">--</span>
+                      {signal}
+                    </p>
+                  ))}
+                </div>
+              )}
             </motion.section>
-          </>
-        )}
 
-        {/* ═══ PROJECTS ═══ */}
-        {data.projects && data.projects.length > 0 && (
-          <>
-            <Divider />
-            <motion.section {...delay(3)}>
-              <SectionLabel>projects</SectionLabel>
-              <div className="grid gap-2 mt-3">
-                {data.projects.map((project: Project, i: number) => (
-                  <div
-                    key={i}
-                    className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] hover:border-[hsl(var(--accent))]/20 transition-colors group"
-                    style={{ borderRadius: "2px" }}
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono text-[13px] text-[hsl(var(--text-primary))]">{project.name}</span>
-                        {project.status && (
-                          <span className={`font-mono text-[9px] uppercase tracking-wider ${statusColor(project.status)}`}>
-                            {project.status}
-                          </span>
+            {/* ═══ VOICE ═══ */}
+            {(data.analysis?.voice_summary || data.voice?.overall) && (
+              <>
+                <Divider />
+                <motion.section {...delay(2)}>
+                  <SectionLabel>voice</SectionLabel>
+                  <div className="mt-3 space-y-3">
+                    {(data.analysis?.voice_summary || data.voice?.overall) && (
+                      <p className="text-[hsl(var(--text-secondary))] text-[13px] leading-[1.7]">
+                        {data.analysis?.voice_summary || data.voice?.overall}
+                      </p>
+                    )}
+                    {/* Per-platform voice breakdown */}
+                    {data.voice?.platforms && (
+                      <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] space-y-2" style={{ borderRadius: "2px" }}>
+                        {data.voice.platforms.linkedin && (
+                          <div>
+                            <span className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-60 uppercase tracking-wider">linkedin</span>
+                            <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[11px] mt-0.5">{data.voice.platforms.linkedin}</p>
+                          </div>
+                        )}
+                        {data.voice.platforms.x && (
+                          <div>
+                            <span className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-60 uppercase tracking-wider">x / twitter</span>
+                            <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[11px] mt-0.5">{data.voice.platforms.x}</p>
+                          </div>
+                        )}
+                        {data.voice.platforms.blog && (
+                          <div>
+                            <span className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-60 uppercase tracking-wider">blog</span>
+                            <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[11px] mt-0.5">{data.voice.platforms.blog}</p>
+                          </div>
                         )}
                       </div>
-                      {project.url && (
-                        <a href={project.url} target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--text-secondary))] opacity-30 group-hover:text-[hsl(var(--accent))] transition-colors shrink-0 text-xs">
-                          {"\u2197"}
-                        </a>
-                      )}
-                    </div>
-                    {project.role && (
-                      <span className="text-[hsl(var(--text-secondary))] opacity-50 font-mono text-[10px]">{project.role}</span>
-                    )}
-                    {project.description && (
-                      <p className="text-[hsl(var(--text-secondary))] opacity-60 text-[12px] mt-1.5 leading-relaxed">{project.description}</p>
                     )}
                   </div>
-                ))}
+                </motion.section>
+              </>
+            )}
+
+            {/* ═══ NOW ═══ */}
+            {data.now?.focus && data.now.focus.length > 0 && (
+              <>
+                <Divider />
+                <motion.section {...delay(3)}>
+                  <SectionLabel>current activity</SectionLabel>
+                  <div className="mt-3">
+                    {data.now.focus.map((item: string, i: number) => (
+                      <p key={i} className="text-[hsl(var(--text-secondary))] font-mono text-[12px] leading-relaxed">- {item}</p>
+                    ))}
+                  </div>
+                </motion.section>
+              </>
+            )}
+
+            {/* ═══ PROJECTS ═══ */}
+            {data.projects && data.projects.length > 0 && (
+              <>
+                <Divider />
+                <motion.section {...delay(4)}>
+                  <SectionLabel>projects</SectionLabel>
+                  <div className="grid gap-2 mt-3">
+                    {data.projects.map((project: Project, i: number) => (
+                      <div
+                        key={i}
+                        className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] hover:border-[hsl(var(--accent))]/20 transition-colors group"
+                        style={{ borderRadius: "2px" }}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-mono text-[13px] text-[hsl(var(--text-primary))]">{project.name}</span>
+                            {project.status && (
+                              <span className={`font-mono text-[9px] uppercase tracking-wider ${statusColor(project.status)}`}>
+                                {project.status}
+                              </span>
+                            )}
+                          </div>
+                          {project.url && (
+                            <a href={project.url} target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--text-secondary))] opacity-30 group-hover:text-[hsl(var(--accent))] transition-colors shrink-0 text-xs">
+                              {"\u2197"}
+                            </a>
+                          )}
+                        </div>
+                        {project.role && (
+                          <span className="text-[hsl(var(--text-secondary))] opacity-50 font-mono text-[10px]">{project.role}</span>
+                        )}
+                        {project.description && (
+                          <p className="text-[hsl(var(--text-secondary))] opacity-60 text-[12px] mt-1.5 leading-relaxed">{project.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </motion.section>
+              </>
+            )}
+
+            {/* ═══ VALUES ═══ */}
+            {data.values && data.values.length > 0 && (
+              <>
+                <Divider />
+                <motion.section {...delay(5)}>
+                  <SectionLabel>values</SectionLabel>
+                  <div className="space-y-0.5 mt-3">
+                    {data.values.map((value: string, i: number) => (
+                      <p key={i} className="text-[hsl(var(--text-secondary))] opacity-60 font-mono text-[11px]">{"\u203A"} {value}</p>
+                    ))}
+                  </div>
+                </motion.section>
+              </>
+            )}
+
+            {/* ═══ LINKS ═══ */}
+            {data.links && Object.keys(data.links).some((k: string) => data.links[k]) && (
+              <>
+                <Divider />
+                <motion.section {...delay(6)}>
+                  <SectionLabel>links</SectionLabel>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {Object.entries(data.links)
+                      .filter(([, url]) => url)
+                      .map(([platform, url]) => (
+                        <a
+                          key={platform}
+                          href={url as string}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-[hsl(var(--accent))]/80 hover:text-[hsl(var(--accent))] font-mono text-[11px] transition-colors border border-[hsl(var(--border))] px-3 py-1.5 hover:border-[hsl(var(--accent))]/30"
+                          style={{ borderRadius: "2px" }}
+                        >
+                          <LinkFavicon url={url as string} />
+                          {platform}
+                          <span className="text-[9px] opacity-50">{"\u2197"}</span>
+                        </a>
+                      ))}
+                  </div>
+                </motion.section>
+              </>
+            )}
+
+            {/* ═══ CONNECTED SOURCES ═══ */}
+            {data.meta?.sources_used && data.meta.sources_used.length > 0 && (
+              <>
+                <Divider />
+                <motion.section {...delay(7)}>
+                  <SectionLabel>connected sources</SectionLabel>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {data.meta.sources_used.map((source: string, i: number) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1.5 font-mono text-[10px] px-2.5 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-60"
+                        style={{ borderRadius: "2px" }}
+                      >
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--success))] opacity-60" />
+                        {source}
+                      </span>
+                    ))}
+                  </div>
+                </motion.section>
+              </>
+            )}
+
+            {/* ═══ FOR AGENTS ═══ */}
+            <Divider />
+            <motion.section {...delay(8)}>
+              <SectionLabel>for agents</SectionLabel>
+              <div className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] mt-3 space-y-2 font-mono text-[11px]" style={{ borderRadius: "2px" }}>
+                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px]">direct endpoints (no JS required):</p>
+                <p className="text-[hsl(var(--accent))]">GET you.md/{username}/you.json</p>
+                <p className="text-[hsl(var(--accent))] opacity-70">GET you.md/{username}/you.txt</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">preferred retrieval order:</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-70">1. /{username}/you.json -- structured identity bundle</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-70">2. /{username}/you.txt -- plain text markdown</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-70">3. /{username} -- HTML profile (requires JS)</p>
+                {voice && (
+                  <>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">voice:</p>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-70">{voice}</p>
+                  </>
+                )}
+                {preferences?.agent?.tone && (
+                  <>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">tone:</p>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-70">{preferences.agent.tone}</p>
+                  </>
+                )}
+                {preferences?.agent?.avoid?.length > 0 && (
+                  <>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">avoid:</p>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-70">{preferences.agent.avoid.join(", ")}</p>
+                  </>
+                )}
               </div>
             </motion.section>
-          </>
-        )}
 
-        {/* ═══ VALUES ═══ */}
-        {data.values && data.values.length > 0 && (
-          <>
+            {/* ═══ EXPORT ═══ */}
             <Divider />
-            <motion.section {...delay(4)}>
-              <SectionLabel>values</SectionLabel>
-              <div className="space-y-0.5 mt-3">
-                {data.values.map((value: string, i: number) => (
-                  <p key={i} className="text-[hsl(var(--text-secondary))] opacity-60 font-mono text-[11px]">{"\u203A"} {value}</p>
-                ))}
-              </div>
-            </motion.section>
-          </>
-        )}
-
-        {/* ═══ LINKS ═══ */}
-        {data.links && Object.keys(data.links).some((k: string) => data.links[k]) && (
-          <>
-            <Divider />
-            <motion.section {...delay(5)}>
-              <SectionLabel>links</SectionLabel>
+            <motion.section {...delay(9)}>
+              <SectionLabel>export</SectionLabel>
               <div className="flex flex-wrap gap-2 mt-3">
-                {Object.entries(data.links)
-                  .filter(([, url]) => url)
-                  .map(([platform, url]) => (
-                    <a
-                      key={platform}
-                      href={url as string}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-[hsl(var(--accent))]/80 hover:text-[hsl(var(--accent))] font-mono text-[11px] transition-colors border border-[hsl(var(--border))] px-3 py-1.5 hover:border-[hsl(var(--accent))]/30"
-                      style={{ borderRadius: "2px" }}
-                    >
-                      <LinkFavicon url={url as string} />
-                      {platform}
-                      <span className="text-[9px] opacity-50">{"\u2197"}</span>
-                    </a>
-                  ))}
+                <button
+                  onClick={() => {
+                    const json = generateYouJson({
+                      username,
+                      name: name as string,
+                      youJson: data,
+                      isClaimed: resolvedProfile.isClaimed,
+                      avatarUrl: resolvedProfile.avatarUrl,
+                    });
+                    downloadFile(JSON.stringify(json, null, 2), `${username}.you.json`, "application/json");
+                  }}
+                  className="flex items-center gap-1.5 font-mono text-[11px] px-3 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-70 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30 transition-colors"
+                  style={{ borderRadius: "2px" }}
+                >
+                  {"\u2193"} you.json
+                </button>
+                <button
+                  onClick={() => {
+                    const md = generateYouMd({ username, name: name as string, youJson: data });
+                    downloadFile(md, `${username}.you.md`, "text/markdown");
+                  }}
+                  className="flex items-center gap-1.5 font-mono text-[11px] px-3 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-70 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30 transition-colors"
+                  style={{ borderRadius: "2px" }}
+                >
+                  {"\u2193"} you.md
+                </button>
+              </div>
+            </motion.section>
+
+            {/* ═══ SHARE ═══ */}
+            <Divider />
+            <motion.section {...delay(10)}>
+              <SectionLabel>share</SectionLabel>
+              <div className="flex items-center gap-2 mt-3">
+                <CopyButton
+                  text={`https://you.md/${username}`}
+                  className="text-[10px] font-mono px-2.5 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
+                />
+                <a
+                  href={`https://x.com/intent/tweet?text=${encodeURIComponent(`my identity file for the agent internet: https://you.md/${username}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-mono px-2.5 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
+                  style={{ borderRadius: "2px" }}
+                >
+                  share on x
+                </a>
+              </div>
+            </motion.section>
+
+            {/* ═══ MAINTENANCE ═══ */}
+            <Divider />
+            <motion.section {...delay(11)}>
+              <SectionLabel>maintenance</SectionLabel>
+              <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] mt-3 space-y-1.5 font-mono text-[10px]" style={{ borderRadius: "2px" }}>
+                <p className="text-[hsl(var(--text-secondary))] opacity-50">
+                  maintained by: <span className="text-[hsl(var(--text-primary))] opacity-70">human + agent</span>
+                </p>
+                {data.meta?.last_updated && (
+                  <p className="text-[hsl(var(--text-secondary))] opacity-50">
+                    last updated: <span className="text-[hsl(var(--text-primary))] opacity-70">{formatTimestamp(data.meta.last_updated)}</span>
+                  </p>
+                )}
+                {data.meta?.compiler_version && (
+                  <p className="text-[hsl(var(--text-secondary))] opacity-50">
+                    compiler: <span className="text-[hsl(var(--text-primary))] opacity-70">v{data.meta.compiler_version}</span>
+                  </p>
+                )}
+                {data.schema && (
+                  <p className="text-[hsl(var(--text-secondary))] opacity-50">
+                    schema: <span className="text-[hsl(var(--text-primary))] opacity-70">{data.schema}</span>
+                  </p>
+                )}
               </div>
             </motion.section>
           </>
         )}
-
-        {/* ═══ FOR AGENTS ═══ */}
-        <Divider />
-        <motion.section {...delay(6)}>
-          <SectionLabel>for agents</SectionLabel>
-          <div className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] mt-3 space-y-2 font-mono text-[11px]" style={{ borderRadius: "2px" }}>
-            <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px]">direct endpoints (no JS required):</p>
-            <p className="text-[hsl(var(--accent))]">GET you.md/{username}/you.json</p>
-            <p className="text-[hsl(var(--accent))] opacity-70">GET you.md/{username}/you.txt</p>
-            <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">preferred retrieval order:</p>
-            <p className="text-[hsl(var(--text-secondary))] opacity-70">1. /{username}/you.json -- structured identity bundle</p>
-            <p className="text-[hsl(var(--text-secondary))] opacity-70">2. /{username}/you.txt -- plain text markdown</p>
-            <p className="text-[hsl(var(--text-secondary))] opacity-70">3. /{username} -- HTML profile (requires JS)</p>
-            {voice && (
-              <>
-                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">voice:</p>
-                <p className="text-[hsl(var(--text-secondary))] opacity-70">{voice}</p>
-              </>
-            )}
-            {preferences?.agent?.tone && (
-              <>
-                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">tone:</p>
-                <p className="text-[hsl(var(--text-secondary))] opacity-70">{preferences.agent.tone}</p>
-              </>
-            )}
-            {preferences?.agent?.avoid?.length > 0 && (
-              <>
-                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">avoid:</p>
-                <p className="text-[hsl(var(--text-secondary))] opacity-70">{preferences.agent.avoid.join(", ")}</p>
-              </>
-            )}
-          </div>
-        </motion.section>
-
-        {/* ═══ EXPORT ═══ */}
-        <Divider />
-        <motion.section {...delay(7)}>
-          <SectionLabel>export</SectionLabel>
-          <div className="flex flex-wrap gap-2 mt-3">
-            <button
-              onClick={() => {
-                const json = generateYouJson({
-                  username,
-                  name: name as string,
-                  youJson: data,
-                  isClaimed: resolvedProfile.isClaimed,
-                  avatarUrl: resolvedProfile.avatarUrl,
-                });
-                downloadFile(JSON.stringify(json, null, 2), `${username}.you.json`, "application/json");
-              }}
-              className="flex items-center gap-1.5 font-mono text-[11px] px-3 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-70 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30 transition-colors"
-              style={{ borderRadius: "2px" }}
-            >
-              {"\u2193"} you.json
-            </button>
-            <button
-              onClick={() => {
-                const md = generateYouMd({ username, name: name as string, youJson: data });
-                downloadFile(md, `${username}.you.md`, "text/markdown");
-              }}
-              className="flex items-center gap-1.5 font-mono text-[11px] px-3 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-70 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30 transition-colors"
-              style={{ borderRadius: "2px" }}
-            >
-              {"\u2193"} you.md
-            </button>
-          </div>
-        </motion.section>
-
-        {/* ═══ SHARE ═══ */}
-        <Divider />
-        <motion.section {...delay(8)}>
-          <SectionLabel>share</SectionLabel>
-          <div className="flex items-center gap-2 mt-3">
-            <CopyButton
-              text={`https://you.md/${username}`}
-              className="text-[10px] font-mono px-2.5 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-            />
-            <a
-              href={`https://x.com/intent/tweet?text=${encodeURIComponent(`my identity file for the agent internet: https://you.md/${username}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] font-mono px-2.5 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-              style={{ borderRadius: "2px" }}
-            >
-              share on x
-            </a>
-          </div>
-        </motion.section>
 
         {/* Footer tagline */}
-        <motion.div {...delay(9)} className="text-center mt-16 space-y-2">
+        <motion.div {...delay(12)} className="text-center mt-16 space-y-2">
           <p className="text-[hsl(var(--text-secondary))] opacity-30 font-mono text-[9px]">
             updated by the human. maintained by the system.
           </p>
@@ -586,5 +732,90 @@ function LinkFavicon({ url }: { url: string }) {
       className="shrink-0"
       style={{ imageRendering: "pixelated" }}
     />
+  );
+}
+
+function formatTimestamp(ts: string): string {
+  try {
+    const date = new Date(ts);
+    if (isNaN(date.getTime())) return ts;
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return ts;
+  }
+}
+
+/**
+ * Renders JSON with syntax highlighting using the design system colors.
+ * Keys in accent color, strings dimmed, numbers/booleans in primary.
+ */
+function RawJsonRenderer({ json }: { json: Record<string, any> }) {
+  const renderValue = (value: unknown, indent: number): React.ReactNode => {
+    if (value === null) {
+      return <span className="text-[hsl(var(--text-secondary))] opacity-40">null</span>;
+    }
+
+    if (typeof value === "string") {
+      return <span className="text-[hsl(var(--text-secondary))] opacity-60">&quot;{value}&quot;</span>;
+    }
+
+    if (typeof value === "number" || typeof value === "boolean") {
+      return <span className="text-[hsl(var(--text-primary))] opacity-80">{String(value)}</span>;
+    }
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) return <span className="text-[hsl(var(--text-secondary))] opacity-40">[]</span>;
+      const pad = " ".repeat(indent + 2);
+      const closePad = " ".repeat(indent);
+      return (
+        <>
+          <span className="text-[hsl(var(--text-secondary))] opacity-40">[</span>
+          {"\n"}
+          {value.map((item, i) => (
+            <span key={i}>
+              {pad}{renderValue(item, indent + 2)}
+              {i < value.length - 1 ? "," : ""}
+              {"\n"}
+            </span>
+          ))}
+          {closePad}<span className="text-[hsl(var(--text-secondary))] opacity-40">]</span>
+        </>
+      );
+    }
+
+    if (typeof value === "object") {
+      const entries = Object.entries(value as Record<string, unknown>);
+      if (entries.length === 0) return <span className="text-[hsl(var(--text-secondary))] opacity-40">{"{}"}</span>;
+      const pad = " ".repeat(indent + 2);
+      const closePad = " ".repeat(indent);
+      return (
+        <>
+          <span className="text-[hsl(var(--text-secondary))] opacity-40">{"{"}</span>
+          {"\n"}
+          {entries.map(([key, val], i) => (
+            <span key={key}>
+              {pad}<span className="text-[hsl(var(--accent))]">&quot;{key}&quot;</span>
+              <span className="text-[hsl(var(--text-secondary))] opacity-40">: </span>
+              {renderValue(val, indent + 2)}
+              {i < entries.length - 1 ? "," : ""}
+              {"\n"}
+            </span>
+          ))}
+          {closePad}<span className="text-[hsl(var(--text-secondary))] opacity-40">{"}"}</span>
+        </>
+      );
+    }
+
+    return <span className="text-[hsl(var(--text-secondary))] opacity-40">{String(value)}</span>;
+  };
+
+  return (
+    <pre className="font-mono text-[11px] leading-[1.6] whitespace-pre overflow-x-auto">
+      {renderValue(json, 0)}
+    </pre>
   );
 }

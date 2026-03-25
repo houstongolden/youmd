@@ -202,7 +202,7 @@ export function DashboardContent() {
                     />
                   )}
                   {rightPane === "settings" && user?.id && (
-                    <SettingsPane clerkId={user.id} username={username} plan={plan} />
+                    <SettingsPane clerkId={user.id} username={username} plan={plan} profileId={userProfile?._id} />
                   )}
                 </ErrorBoundary>
               </div>

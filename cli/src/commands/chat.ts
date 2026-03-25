@@ -799,6 +799,34 @@ export async function chatCommand(): Promise<void> {
   // Load current profile as context
   const currentBundle = loadCurrentBundle(bundleDir);
 
+  // Load agent directives from you.json if available
+  let directivesContext = "";
+  const youJsonPath = path.join(bundleDir, "you.json");
+  if (fs.existsSync(youJsonPath)) {
+    try {
+      const youJson = JSON.parse(fs.readFileSync(youJsonPath, "utf-8"));
+      const directives = youJson.agent_directives;
+      if (directives) {
+        const parts: string[] = [];
+        if (directives.communication_style)
+          parts.push(`communication style: ${directives.communication_style}`);
+        if (directives.default_stack)
+          parts.push(`default stack: ${directives.default_stack}`);
+        if (directives.current_goal)
+          parts.push(`current goal: ${directives.current_goal}`);
+        if (directives.decision_framework)
+          parts.push(`decision framework: ${directives.decision_framework}`);
+        if (directives.negative_prompts && directives.negative_prompts.length > 0)
+          parts.push(`never do: ${directives.negative_prompts.join("; ")}`);
+        if (parts.length > 0) {
+          directivesContext = `\n\n--- agent directives (follow these when interacting with me) ---\n${parts.join("\n")}`;
+        }
+      }
+    } catch {
+      // non-fatal — skip directives if you.json is malformed
+    }
+  }
+
   // Extract profile details for a personalized greeting prompt
   const profileHint = extractProfileHint(bundleDir);
   let greetingInstruction = "greet me briefly and ask what i'd like to update or work on. keep it short.";
@@ -810,7 +838,7 @@ export async function chatCommand(): Promise<void> {
     { role: "system", content: CHAT_SYSTEM_PROMPT },
     {
       role: "user",
-      content: `here is my current identity bundle:\n\n${currentBundle}\n\n${greetingInstruction}`,
+      content: `here is my current identity bundle:\n\n${currentBundle}${directivesContext}\n\n${greetingInstruction}`,
     },
   ];
 

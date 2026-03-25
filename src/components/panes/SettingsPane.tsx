@@ -2,7 +2,8 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useState, useEffect } from "react";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { useState } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
@@ -12,6 +13,7 @@ interface SettingsPaneProps {
   clerkId: string;
   username: string;
   plan: string;
+  profileId?: Id<"profiles">;
 }
 
 function SettingRow({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
@@ -26,31 +28,37 @@ function SettingRow({ label, value, accent }: { label: string; value: string; ac
 // ── Activity log types ──────────────────────────────────────
 
 const EVENT_ICONS: Record<string, string> = {
+  profile_created: "\u2295",
   profile_claimed: "\u2295",
   token_created: "\u25C7",
   token_used: "\u25C7",
   token_revoked: "\u2717",
   profile_updated: "\u25B3",
   source_added: "\u21BB",
+  private_context_updated: "\u25A0",
 };
 
 const EVENT_COLORS: Record<string, string> = {
+  profile_created: "text-[hsl(var(--success))]",
   profile_claimed: "text-[hsl(var(--success))]",
   token_created: "text-[hsl(var(--accent))]",
   token_used: "text-[hsl(var(--text-primary))] opacity-60",
   token_revoked: "text-red-500",
   profile_updated: "text-[hsl(var(--accent))]",
   source_added: "text-[hsl(var(--accent))]",
+  private_context_updated: "text-[hsl(var(--accent))]",
 };
 
-interface ActivityLog {
-  id: string;
-  event_type: string;
-  details?: { username?: string; token_name?: string };
-  created_at: string;
+function formatLogDetails(details: Record<string, unknown> | undefined): string {
+  if (!details) return "";
+  const parts: string[] = [];
+  if (details.username) parts.push(`@${details.username}`);
+  if (details.token_name) parts.push(`"${details.token_name}"`);
+  if (details.reason) parts.push(`${details.reason}`);
+  return parts.length > 0 ? ` -- ${parts.join(", ")}` : "";
 }
 
-export function SettingsPane({ clerkId, username, plan }: SettingsPaneProps) {
+export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPaneProps) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const router = useRouter();
@@ -63,20 +71,11 @@ export function SettingsPane({ clerkId, username, plan }: SettingsPaneProps) {
   const [creatingKey, setCreatingKey] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
 
-  // Activity logs (mock for now)
-  const [logs, setLogs] = useState<ActivityLog[]>([]);
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLogs([
-        { id: "1", event_type: "profile_updated", details: { username }, created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-        { id: "2", event_type: "token_created", details: { token_name: "cli-dev" }, created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString() },
-        { id: "3", event_type: "source_added", details: {}, created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString() },
-        { id: "4", event_type: "token_used", details: { token_name: "cli-dev" }, created_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString() },
-        { id: "5", event_type: "profile_claimed", details: { username }, created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString() },
-      ]);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [username]);
+  // Activity logs from Convex
+  const logs = useQuery(
+    api.profiles.getSecurityLogs,
+    profileId ? { profileId } : "skip"
+  );
 
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -249,25 +248,28 @@ export function SettingsPane({ clerkId, username, plan }: SettingsPaneProps) {
 
         {/* Activity */}
         <SectionLabel>activity log</SectionLabel>
-        {logs.length > 0 ? (
+        {logs === undefined ? (
+          <p className="text-[10px] text-[hsl(var(--text-secondary))] opacity-40 font-mono mb-2 animate-pulse">
+            loading...
+          </p>
+        ) : logs && logs.length > 0 ? (
           <div className="space-y-0 mb-2">
             {logs.map((log) => (
               <div
-                key={log.id}
+                key={log._id}
                 className="flex items-center gap-3 py-2 border-b border-[hsl(var(--border))] opacity-20 last:border-0"
               >
-                <span className={`font-mono text-[12px] w-4 text-center shrink-0 ${EVENT_COLORS[log.event_type] || "text-[hsl(var(--text-secondary))] opacity-50"}`}>
-                  {EVENT_ICONS[log.event_type] || "\u00B7"}
+                <span className={`font-mono text-[12px] w-4 text-center shrink-0 ${EVENT_COLORS[log.eventType] || "text-[hsl(var(--text-secondary))] opacity-50"}`}>
+                  {EVENT_ICONS[log.eventType] || "\u00B7"}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80 truncate">
-                    {log.event_type.replace(/_/g, " ")}
-                    {log.details?.username && ` -- @${log.details.username}`}
-                    {log.details?.token_name && ` -- "${log.details.token_name}"`}
+                    {log.eventType.replace(/_/g, " ")}
+                    {formatLogDetails(log.details as Record<string, unknown> | undefined)}
                   </p>
                 </div>
                 <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40 shrink-0">
-                  {new Date(log.created_at).toLocaleDateString("en-US", {
+                  {new Date(log.createdAt).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
                     hour: "2-digit",

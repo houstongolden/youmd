@@ -48,7 +48,7 @@ export function EditPane({ userId, username }: EditPaneProps) {
       <div className="flex-1 min-h-0 overflow-y-auto">
         {subTab === "files" && <FilesPane userId={userId} />}
         {subTab === "json" && <JsonPane userId={userId} />}
-        {subTab === "sources" && <SourcesPane username={username} />}
+        {subTab === "sources" && <SourcesPane userId={userId} username={username} />}
       </div>
     </div>
   );

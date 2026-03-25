@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
@@ -40,6 +40,11 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
   const [format, setFormat] = useState<AsciiFormat>("classic");
   const [cols, setCols] = useState(120);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const portraitContainerRef = useRef<HTMLDivElement>(null);
 
   const avatarUrl = userProfile?.avatarUrl;
   const socialImages = (userProfile?.socialImages as Record<string, string | undefined>) || {};
@@ -86,15 +91,77 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
     setSaving(false);
   }, [userProfile?._id, user?.id, socialImages, setProfileImages]);
 
+  // Handle custom image upload
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userProfile?._id || !user?.id) return;
+
+    setUploading(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("failed to read file"));
+        reader.readAsDataURL(file);
+      });
+
+      // Show preview immediately
+      setUploadPreview(dataUrl);
+
+      // Save to profile
+      await setProfileImages({
+        profileId: userProfile._id,
+        clerkId: user.id,
+        socialImages: {
+          x: socialImages.x,
+          github: socialImages.github,
+          linkedin: socialImages.linkedin,
+          custom: dataUrl,
+        },
+        primaryImage: "custom",
+      });
+    } catch {
+      // fail silently, clear preview
+      setUploadPreview(null);
+    }
+    setUploading(false);
+
+    // Reset file input so the same file can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, [userProfile?._id, user?.id, socialImages, setProfileImages]);
+
+  // Handle PNG export
+  const handleDownloadPng = useCallback(() => {
+    if (!portraitContainerRef.current) return;
+
+    const canvas = portraitContainerRef.current.querySelector("canvas") as HTMLCanvasElement | null;
+    if (!canvas) return;
+
+    try {
+      const dataUrl = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${username}-portrait.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      // Canvas may be tainted by cross-origin images
+    }
+  }, [username]);
+
   return (
     <div className="h-full overflow-y-auto">
       <PaneHeader>portrait</PaneHeader>
 
       <div className="px-6 py-6 space-y-0 max-w-xl">
-        {/* Primary portrait — large ASCII */}
+        {/* Primary portrait -- large ASCII */}
         <SectionLabel>current portrait -- @{username}</SectionLabel>
         {primaryUrl ? (
           <div
+            ref={portraitContainerRef}
             className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 mb-2 overflow-hidden"
             style={{ borderRadius: "2px" }}
           >
@@ -108,6 +175,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
           </div>
         ) : (
           <div
+            ref={portraitContainerRef}
             className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-6 mb-2 text-center"
             style={{ borderRadius: "2px" }}
           >
@@ -118,6 +186,17 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
               add your x or github username to generate one.
             </p>
           </div>
+        )}
+
+        {/* Download as PNG */}
+        {primaryUrl && (
+          <button
+            onClick={handleDownloadPng}
+            className="w-full border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-2 px-3 font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-90 hover:border-[hsl(var(--accent))]/40 transition-all mb-2"
+            style={{ borderRadius: "2px" }}
+          >
+            &gt; download as .png
+          </button>
         )}
 
         <Divider />
@@ -163,7 +242,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
 
         <Divider />
 
-        {/* All source images — tap to select primary */}
+        {/* All source images -- tap to select */}
         <SectionLabel>
           source images{sources.length > 1 ? ` (${sources.length})` : ""} -- tap to select
         </SectionLabel>
@@ -222,6 +301,52 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
             </button>
           ))}
         </div>
+
+        <Divider />
+
+        {/* Upload custom image */}
+        <SectionLabel>upload custom</SectionLabel>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading || !userProfile?._id || !user?.id}
+          className="w-full border border-dashed border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-4 px-3 font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-80 hover:border-[hsl(var(--accent))]/40 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+          style={{ borderRadius: "2px" }}
+        >
+          {uploading ? "uploading..." : "> select image file"}
+        </button>
+
+        {/* Upload preview */}
+        {(uploadPreview || socialImages.custom) && (
+          <div
+            className="mt-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 overflow-hidden"
+            style={{ borderRadius: "2px" }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40 uppercase tracking-wider">
+                custom upload preview
+              </span>
+              {primaryImage === "custom" && (
+                <span className="font-mono text-[8px] bg-[hsl(var(--accent))] text-white px-1.5 py-0.5 uppercase tracking-wider">
+                  active
+                </span>
+              )}
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={uploadPreview || socialImages.custom}
+              alt=""
+              className="w-full max-h-48 object-contain opacity-70"
+              style={{ borderRadius: "2px" }}
+            />
+          </div>
+        )}
 
         <Divider />
 

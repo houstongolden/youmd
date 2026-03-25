@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
@@ -145,6 +146,19 @@ export function ProfilesDirectoryContent() {
     }
   }
 
+  const [search, setSearch] = useState("");
+
+  const filteredEntries = useMemo(() => {
+    if (!search.trim()) return entries;
+    const q = search.toLowerCase();
+    return entries.filter(
+      (e) =>
+        e.username.toLowerCase().includes(q) ||
+        (e.name && e.name.toLowerCase().includes(q)) ||
+        (e.tagline && e.tagline.toLowerCase().includes(q))
+    );
+  }, [entries, search]);
+
   const isLoading = profiles === undefined || legacyUsers === undefined;
   const claimedCount = entries.filter((e) => e.isClaimed).length;
 
@@ -194,6 +208,30 @@ export function ProfilesDirectoryContent() {
             </div>
           </FadeUp>
 
+          {/* Search */}
+          {!isLoading && entries.length > 0 && (
+            <div className="mb-6">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--accent))]/50 font-mono text-[12px] pointer-events-none select-none">
+                  &gt;
+                </span>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="grep profiles..."
+                  className="w-full bg-[hsl(var(--raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-primary))] font-mono text-[12px] py-2 pl-7 pr-3 placeholder:text-[hsl(var(--text-secondary))]/30 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors caret-[hsl(var(--accent))]"
+                  style={{ borderRadius: "2px" }}
+                />
+              </div>
+              {search.trim() && (
+                <p className="text-[hsl(var(--text-secondary))]/40 font-mono text-[10px] mt-1.5 ml-1">
+                  {filteredEntries.length} {filteredEntries.length === 1 ? "match" : "matches"}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Loading */}
           {isLoading && (
             <div className="py-12">
@@ -212,10 +250,19 @@ export function ProfilesDirectoryContent() {
             </div>
           )}
 
+          {/* No search results */}
+          {!isLoading && entries.length > 0 && filteredEntries.length === 0 && (
+            <div className="py-12">
+              <span className="text-[hsl(var(--text-secondary))]/50 font-mono text-[12px]">
+                no matches for &quot;{search}&quot;
+              </span>
+            </div>
+          )}
+
           {/* Profile list */}
-          {!isLoading && entries.length > 0 && (
+          {!isLoading && filteredEntries.length > 0 && (
             <div>
-              {entries.map((entry, i) => (
+              {filteredEntries.map((entry, i) => (
                 <ProfileCard
                   key={`${entry.source}-${entry.username}`}
                   entry={entry}
