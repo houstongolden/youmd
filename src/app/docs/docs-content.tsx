@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import PixelYOU from "@/components/PixelYOU";
 
 /* ── Navigation structure ────────────────────────────────── */
 
@@ -320,8 +319,8 @@ export default function DocsContent() {
       <header className="sticky top-0 z-50 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))/0.9] backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 md:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link href="/" className="inline-block">
-              <PixelYOU />
+            <Link href="/" className="text-[hsl(var(--accent))] font-mono text-[13px] tracking-tight hover:opacity-80 transition-opacity">
+              you
             </Link>
             <span className="hidden sm:inline text-[13px] text-[hsl(var(--text-secondary))] opacity-50">
               /

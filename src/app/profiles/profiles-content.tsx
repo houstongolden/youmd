@@ -7,7 +7,7 @@ import { motion } from "motion/react";
 import { ArrowRight, MapPin } from "lucide-react";
 import AsciiAvatar from "@/components/AsciiAvatar";
 import FadeUp from "@/components/landing/FadeUp";
-import PixelYOU from "@/components/PixelYOU";
+// PixelYOU removed — too large for nav headers, use text logo instead
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -153,8 +153,8 @@ export function ProfilesDirectoryContent() {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 px-4 pt-3 md:pt-4">
         <div className="max-w-[680px] mx-auto flex items-center justify-between px-4 py-2 glass-nav rounded">
-          <Link href="/" className="inline-block">
-            <PixelYOU />
+          <Link href="/" className="text-[hsl(var(--accent))] font-mono text-[12px] tracking-tight hover:opacity-80 transition-opacity">
+            you.md
           </Link>
           <div className="flex items-center gap-3">
             <Link

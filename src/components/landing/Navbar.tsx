@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
+import AsciiAvatar from "@/components/AsciiAvatar";
 
 const sections = [
   { id: "how-it-works", label: "--how-it-works" },
@@ -90,11 +91,9 @@ const Navbar = () => {
                 className="hidden md:flex items-center gap-2 group"
               >
                 {user?.imageUrl ? (
-                  <img
-                    src={user.imageUrl}
-                    alt=""
-                    className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors"
-                  />
+                  <div className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden">
+                    <AsciiAvatar src={user.imageUrl} cols={12} canvasWidth={20} className="w-full h-full" />
+                  </div>
                 ) : (
                   <span className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[9px] text-accent group-hover:border-accent transition-colors">
                     {user?.username?.[0] ?? user?.firstName?.[0] ?? ">"}
@@ -164,11 +163,9 @@ const Navbar = () => {
               className="flex items-center gap-2 mt-4"
             >
               {user?.imageUrl ? (
-                <img
-                  src={user.imageUrl}
-                  alt=""
-                  className="w-6 h-6 rounded-sm border border-[hsl(var(--border))]"
-                />
+                <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] overflow-hidden">
+                  <AsciiAvatar src={user.imageUrl} cols={14} canvasWidth={24} className="w-full h-full" />
+                </div>
               ) : (
                 <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[10px] text-accent">
                   {user?.username?.[0] ?? user?.firstName?.[0] ?? ">"}

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { api } from "../../convex/_generated/api";
+import AsciiAvatar from "@/components/AsciiAvatar";
 
 /**
  * SiteNav — unified top navigation bar for all pages.
@@ -104,11 +105,9 @@ export function SiteNav() {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt=""
-                      className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors object-cover"
-                    />
+                    <div className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden">
+                      <AsciiAvatar src={avatarUrl} cols={12} canvasWidth={20} className="w-full h-full" />
+                    </div>
                   ) : (
                     <span className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[9px] text-accent">
                       {username?.[0]?.toUpperCase() ?? ">"}
@@ -172,13 +171,10 @@ export function SiteNav() {
               onClick={() => setMobileOpen(false)}
               className="flex items-center gap-2 mt-4"
             >
-              {user?.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.imageUrl}
-                  alt=""
-                  className="w-6 h-6 rounded-sm border border-[hsl(var(--border))]"
-                />
+              {avatarUrl ? (
+                <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] overflow-hidden">
+                  <AsciiAvatar src={avatarUrl} cols={14} canvasWidth={24} className="w-full h-full" />
+                </div>
               ) : (
                 <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[10px] text-accent">
                   {username?.[0] ?? ">"}
