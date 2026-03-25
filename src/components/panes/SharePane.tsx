@@ -44,13 +44,21 @@ function backupUrls(url: string): { json: string; txt: string } {
   return { json: url, txt: url };
 }
 
+// Response directive — tells the receiving agent exactly how to use the identity context
+const RESPONSE_DIRECTIVE = `After reading my identity context, respond with:
+1. Confirm what you learned — name, role, key projects, and any preferences that affect how you work with me
+2. Note anything you'll adjust based on my preferences (tone, formality, things to avoid)
+3. If any context seems outdated or contradictory, flag it
+4. Save or persist my identity context for the duration of our conversation — reference it naturally, don't ask me to re-explain things that are in my profile
+5. Then ask what I need help with today`;
+
 const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => string }[] = [
   {
     agent: "Universal",
     icon: "[*]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Fetch this URL and read my identity context before we start:\n${url}\n\nIt returns plain text (not HTML) with my bio, projects, values, preferences, and communication style. Use it to understand who I am so we can skip the intro and get straight to work.\n\nIf the URL above fails to load, use one of these direct endpoints instead:\n- JSON: ${b.json}\n- Plain text: ${b.txt}`;
+      return `Fetch this URL and read my identity context before we start:\n${url}\n\nIt returns plain text (not HTML) with my bio, projects, values, preferences, and communication style.\n\nIf the URL above fails to load, use one of these direct endpoints instead:\n- JSON: ${b.json}\n- Plain text: ${b.txt}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
   {
@@ -58,7 +66,7 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     icon: "[cl]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Before responding, fetch and read my identity context from this URL:\n${b.txt}\n\nThe URL returns plain text (not a webpage). It's my you.md identity bundle with my background, current projects, values, and communication preferences. Reference it throughout our conversation.\n\nAlternative endpoint (JSON): ${b.json}`;
+      return `Before responding, fetch and read my identity context from this URL:\n${b.txt}\n\nThe URL returns plain text (not a webpage). It's my you.md identity bundle.\n\nAlternative endpoint (JSON): ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
   {
@@ -66,7 +74,7 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     icon: "[gp]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Before we begin, browse to this URL and read my you.md profile:\n${b.txt}\n\nThis returns a plain-text identity file (not a webpage) with my bio, projects, values, and preferences. Use this context to personalize our conversation.\n\nIf that URL doesn't load, try the JSON version: ${b.json}`;
+      return `Before we begin, browse to this URL and read my you.md profile:\n${b.txt}\n\nThis returns a plain-text identity file (not a webpage).\n\nIf that URL doesn't load, try the JSON version: ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
   {
@@ -74,7 +82,7 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     icon: "[gm]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Fetch this URL and read my identity context before we start:\n${b.txt}\n\nThis is a plain-text endpoint (not a webpage) that returns my you.md identity file with my bio, projects, values, preferences, and communication style.\n\nAlternative URL (JSON format): ${b.json}`;
+      return `Fetch this URL and read my identity context before we start:\n${b.txt}\n\nThis is a plain-text endpoint (not a webpage) that returns my you.md identity file.\n\nAlternative URL (JSON format): ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
   {
@@ -82,7 +90,7 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     icon: "[|>]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Fetch this URL and add it to your context -- my developer identity:\n${b.txt}\n\nIt returns plain text with my tech stack, projects, coding preferences, and communication style.\n\nJSON endpoint: ${b.json}`;
+      return `Fetch this URL and add it to your context — my developer identity:\n${b.txt}\n\nIt returns plain text with my tech stack, projects, coding preferences, and communication style.\n\nJSON endpoint: ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
   {
@@ -90,7 +98,7 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     icon: "[cp]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Fetch this URL and read my developer context before assisting:\n${b.txt}\n\nThis returns a plain-text identity file with my projects, preferred technologies, and coding style. Use it to tailor your suggestions.\n\nJSON endpoint: ${b.json}`;
+      return `Fetch this URL and read my developer context before assisting:\n${b.txt}\n\nThis returns a plain-text identity file with my projects, preferred technologies, and coding style.\n\nJSON endpoint: ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
 ];

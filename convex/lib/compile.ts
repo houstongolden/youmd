@@ -55,6 +55,12 @@ export interface ProfileData {
     decision_framework?: string;
     current_goal?: string;
   };
+  // Dynamic custom sections — user can add any section they want
+  customSections?: Array<{
+    id: string;      // slug like "speaking", "investments", "reading-list"
+    title: string;   // display title like "Speaking", "Investment Thesis"
+    content: string; // markdown content
+  }>;
 }
 
 export function compileYouJson(data: ProfileData): Record<string, unknown> {
@@ -147,10 +153,17 @@ export function compileYouJson(data: ProfileData): Record<string, unknown> {
       for_research: "check analysis.topics and links for their areas of expertise",
     },
 
+    // Custom sections — dynamic user-defined content
+    custom_sections: (data.customSections ?? []).map((s) => ({
+      id: s.id,
+      title: s.title,
+      content: s.content,
+    })),
+
     meta: {
       sources_used: [],
       last_updated: now,
-      compiler_version: "0.2.0",
+      compiler_version: "0.3.0",
     },
 
     verification: null,
@@ -250,6 +263,13 @@ generated_at: ${now}
   // Voice
   if (data.analysis?.voice_summary) {
     sections.push(`## Voice\n\n${data.analysis.voice_summary}`);
+  }
+
+  // Custom sections
+  if (data.customSections && data.customSections.length > 0) {
+    for (const section of data.customSections) {
+      sections.push(`## ${section.title}\n\n${section.content}`);
+    }
   }
 
   // Footer with agent navigation guide

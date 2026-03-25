@@ -488,9 +488,26 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               </>
             )}
 
+            {/* ═══ CUSTOM SECTIONS ═══ */}
+            {data.custom_sections && Array.isArray(data.custom_sections) && data.custom_sections.length > 0 && (
+              <>
+                {(data.custom_sections as Array<{ id: string; title: string; content: string }>).map((cs, idx) => (
+                  <div key={cs.id}>
+                    <Divider />
+                    <motion.section {...delay(8 + idx)}>
+                      <SectionLabel>{cs.title.toLowerCase()}</SectionLabel>
+                      <div className="text-[hsl(var(--text-secondary))] text-[14px] leading-[1.7] mt-3 whitespace-pre-wrap">
+                        {cs.content}
+                      </div>
+                    </motion.section>
+                  </div>
+                ))}
+              </>
+            )}
+
             {/* ═══ FOR AGENTS ═══ */}
             <Divider />
-            <motion.section {...delay(8)}>
+            <motion.section {...delay(8 + ((data.custom_sections as unknown[])?.length || 0))}>
               <SectionLabel>for agents</SectionLabel>
               <div className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] mt-3 space-y-2 font-mono text-[11px]" style={{ borderRadius: "2px" }}>
                 <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px]">direct endpoints (no JS required):</p>

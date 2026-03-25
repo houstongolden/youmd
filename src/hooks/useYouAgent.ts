@@ -635,6 +635,21 @@ title: "Agent Directives"
 ## Current Goal
 [what they're focused on right now]
 
+CUSTOM SECTIONS — the profile is NOT limited to the standard sections above. if a user wants a section for speaking engagements, investment thesis, reading list, tech stack details, or ANYTHING else — create it. use the custom_sections format:
+\`\`\`json
+{"custom_sections": [{"id": "speaking", "title": "Speaking", "content": "markdown content here"}]}
+\`\`\`
+you can emit custom_sections alongside regular updates. the id should be a slug (lowercase, hyphens). the content is free-form markdown. examples of custom sections users might want:
+- speaking — conferences, talks, topics
+- investment-thesis — what they invest in and why
+- tech-stack — detailed stack breakdown beyond what fits in projects
+- reading-list — books, papers, influences
+- principles — how they think about building
+- hiring — what they look for in people
+- anti-resume — failures and lessons learned
+- open-source — contributions and philosophy
+if a user says "add a section about X" — just create it. don't ask permission. the profile is THEIR identity, not a template.
+
 PRIVATE sections (saved separately, not on public profile — use private_updates JSON):
 - private notes — internal context, personal reminders, sensitive info
 - private projects — stealth projects, internal company work, things not ready to share
@@ -654,12 +669,18 @@ after each exchange where you learn something new, output structured updates:
 {"updates": [{"section": "profile/about.md", "content": "---\\ntitle: \\"About\\"\\n---\\n\\n# Name Here\\n\\nBio content here..."}]}
 \`\`\`
 
+you can also emit custom sections in the same response:
+\`\`\`json
+{"custom_sections": [{"id": "tech-stack", "title": "Tech Stack", "content": "## Tech Stack\\n\\n- Frontend: Next.js, TypeScript, Tailwind\\n- Backend: Convex, Vercel\\n- AI: Claude, OpenRouter"}]}
+\`\`\`
+
 rules for update content:
 - each section starts with YAML frontmatter: --- title: "SectionTitle" ---
 - real markdown, never placeholders or HTML comments
 - be substantive — write real prose based on what you actually know
 - output the FULL section content each time (not diffs)
 - when you have scraped data, USE IT. write bios from real information, not generic descriptions.
+- when you create custom sections, make them substantive — not single sentences. write real content.
 
 --- private content ---
 
@@ -869,6 +890,30 @@ export function parsePortraitUpdateFromResponse(text: string): PortraitUpdate | 
 function sectionLabel(section: string): string {
   const name = section.replace(/\.md$/, "").split("/").pop() || section;
   return name;
+}
+
+export interface CustomSection {
+  id: string;
+  title: string;
+  content: string;
+}
+
+export function parseCustomSectionsFromResponse(text: string): CustomSection[] {
+  const sections: CustomSection[] = [];
+  const blocks = text.matchAll(/```json\s*\n([\s\S]*?)\n```/g);
+  for (const match of blocks) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.custom_sections && Array.isArray(parsed.custom_sections)) {
+        for (const cs of parsed.custom_sections) {
+          if (cs?.id && cs?.title && cs?.content) {
+            sections.push({ id: cs.id, title: cs.title, content: cs.content });
+          }
+        }
+      }
+    } catch { /* skip */ }
+  }
+  return sections;
 }
 
 export function buildProfileContext(youJson: Record<string, unknown> | null, recentMemories?: Array<{ category: string; content: string; tags?: string[] }>): string {
@@ -2654,6 +2699,43 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           });
         } catch {
           failStep(portraitStepId, "failed");
+        }
+      }
+
+      // Handle custom sections from agent
+      const customSections = parseCustomSectionsFromResponse(response);
+      if (customSections.length > 0 && user?.id && userProfile?._id) {
+        const csStepId = addStep("saving custom sections", `${customSections.length} section${customSections.length > 1 ? "s" : ""}`);
+        try {
+          // Merge with existing custom sections on the profile
+          const existingCustom = ((userProfile as Record<string, unknown>)?.youJson as Record<string, unknown>)?.custom_sections as CustomSection[] || [];
+          const merged = [...existingCustom];
+          for (const cs of customSections) {
+            const idx = merged.findIndex(e => e.id === cs.id);
+            if (idx >= 0) {
+              merged[idx] = cs; // update existing
+            } else {
+              merged.push(cs); // add new
+            }
+          }
+          // Save via the profile update (youJson field)
+          await updateProfile({
+            profileId: userProfile._id,
+            clerkId: user.id,
+            youJson: {
+              ...((userProfile as Record<string, unknown>)?.youJson as Record<string, unknown> || {}),
+              custom_sections: merged,
+            },
+          });
+          completeStep(csStepId);
+          const titles = customSections.map(cs => cs.title).join(", ");
+          newDisplayMsgs.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[added custom section${customSections.length > 1 ? "s" : ""}: ${titles}]`,
+          });
+        } catch {
+          failStep(csStepId, "failed");
         }
       }
 
