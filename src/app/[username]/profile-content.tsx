@@ -129,16 +129,22 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
       <div className="min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
         <ProfileHeader username={username} />
         <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+          <div className="flex items-end gap-4 mb-4">
             {resolvedProfile.avatarUrl && (
-              <PortraitFrame src={resolvedProfile.avatarUrl} />
+              <img
+                src={resolvedProfile.avatarUrl}
+                alt={resolvedProfile.displayName || username}
+                className="w-16 h-16 border-2 border-[hsl(var(--bg))] object-cover"
+                style={{ borderRadius: "4px" }}
+                loading="lazy"
+              />
             )}
-            <div className="min-w-0 text-center sm:text-left">
-              <h1 className="text-xl sm:text-2xl font-mono tracking-tight text-[hsl(var(--accent))]">
+            <div className="pb-1 flex-1 min-w-0">
+              <h1 className="text-[hsl(var(--text-primary))] font-mono text-lg font-medium tracking-tight truncate">
                 {resolvedProfile.displayName || `@${username}`}
               </h1>
               {resolvedProfile.displayName && (
-                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-xs font-mono mt-1">@{username}</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-xs font-mono mt-0.5">@{username}</p>
               )}
             </div>
           </div>
@@ -175,17 +181,43 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
 
       <ProfileHeader username={username} />
 
-      <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-20">
+      {/* ASCII Portrait Header — full-width above content */}
+      {resolvedProfile.avatarUrl && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          className="w-full flex justify-center pt-4 pb-2"
+        >
+          <div className="max-w-[680px] w-full px-4 md:px-6">
+            <AsciiAvatar
+              src={resolvedProfile.avatarUrl}
+              cols={140}
+              canvasWidth={680}
+              className="w-full opacity-80"
+            />
+          </div>
+        </motion.div>
+      )}
+
+      <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pb-20 relative z-10">
 
         {/* ═══ SYSTEM HEADER ═══ */}
-        <motion.section {...delay(0)} className="mb-6">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-4">
+        <motion.section {...delay(0)} className="mt-4 mb-6">
+          {/* Name + real photo + tagline */}
+          <div className="flex items-end gap-4 mb-4">
             {resolvedProfile.avatarUrl && (
-              <PortraitFrame src={resolvedProfile.avatarUrl} />
+              <img
+                src={resolvedProfile.avatarUrl}
+                alt={name as string}
+                className="w-16 h-16 md:w-20 md:h-20 border-2 border-[hsl(var(--bg))] object-cover"
+                style={{ borderRadius: "4px" }}
+                loading="lazy"
+              />
             )}
-            <div className="min-w-0 text-center sm:text-left flex-1">
-              <h1 className="text-xl sm:text-2xl font-mono tracking-tight text-[hsl(var(--text-primary))]">{name}</h1>
-              {tagline && <p className="text-[hsl(var(--text-secondary))] text-[13px] mt-1 leading-relaxed">{tagline}</p>}
+            <div className="pb-1 flex-1 min-w-0">
+              <h1 className="text-[hsl(var(--text-primary))] font-mono text-lg md:text-xl font-medium tracking-tight truncate">{name}</h1>
+              {tagline && <p className="text-[hsl(var(--text-secondary))] text-[12px] mt-0.5 truncate">{tagline}</p>}
             </div>
           </div>
 
@@ -194,15 +226,27 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
             <div className="flex items-center justify-between">
               <button onClick={handleCopy} className="flex items-center gap-1.5 text-[hsl(var(--accent))] font-mono text-[12px] hover:opacity-80 transition-opacity">
                 you.md/{username}
-                <span className="text-[9px]">{copied ? "copied" : ""}</span>
+                {copied ? (
+                  <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor" className="text-[hsl(var(--success))]">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                )}
               </button>
               <span className="font-mono text-[10px] text-[hsl(var(--success))] uppercase tracking-wider flex items-center gap-1.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--success))]" />
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--success))] status-dot-pulse" />
                 active
               </span>
             </div>
             {location && (
-              <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60">{location}</p>
+              <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60 flex items-center gap-1">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                {location}
+              </p>
             )}
             <p className="font-mono text-[11px]">
               <span className="text-[hsl(var(--text-secondary))] opacity-50">@{username}</span>
