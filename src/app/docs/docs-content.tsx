@@ -22,6 +22,15 @@ const navigation: NavItem[] = [
     ],
   },
   {
+    id: "claude-code",
+    label: "Claude Code Integration",
+    children: [
+      { id: "cc-setup", label: "Setup" },
+      { id: "cc-commands", label: "Commands" },
+      { id: "cc-workflow", label: "Workflow" },
+    ],
+  },
+  {
     id: "share",
     label: "Share Your Identity",
     children: [
@@ -441,6 +450,109 @@ export default function DocsContent() {
                 <InlineCode>/share</InlineCode> to get your context link
               </Step>
             </StepList>
+
+            {/* ── Claude Code Integration ────────────────── */}
+            <H2 id="claude-code">Claude Code Integration</H2>
+            <P>
+              Most you.md users work inside Claude Code, Cursor, or similar AI
+              coding tools. Here's how to use you.md directly from your coding
+              environment.
+            </P>
+
+            <Callout type="tip">
+              The <InlineCode>youmd</InlineCode> CLI works in any terminal,
+              including Claude Code's shell. Interactive commands (
+              <InlineCode>init</InlineCode>, <InlineCode>chat</InlineCode>)
+              need a regular terminal, but everything else works inside your
+              coding agent.
+            </Callout>
+
+            <H3 id="cc-setup">Setup</H3>
+            <StepList>
+              <Step n={1}>
+                Open a regular terminal (not inside Claude Code) and run{" "}
+                <InlineCode>npx youmd init</InlineCode> to create your identity
+              </Step>
+              <Step n={2}>
+                Run <InlineCode>youmd login</InlineCode> to authenticate
+              </Step>
+              <Step n={3}>
+                Run <InlineCode>youmd push</InlineCode> to publish your profile
+              </Step>
+              <Step n={4}>
+                Now switch to Claude Code — all non-interactive commands work
+                from here
+              </Step>
+            </StepList>
+
+            <H3 id="cc-commands">Commands That Work Inside Claude Code</H3>
+            <P>
+              These commands are non-interactive and work perfectly in Claude
+              Code, Cursor, Copilot, and any AI coding tool:
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "youmd status", desc: "Check your bundle status and version" },
+                { cmd: "youmd whoami", desc: "See who you're logged in as" },
+                { cmd: "youmd pull", desc: "Download your profile from cloud" },
+                { cmd: "youmd push", desc: "Upload local changes and publish" },
+                { cmd: "youmd sync", desc: "Pull + push in one command" },
+                { cmd: "youmd private", desc: "View your private context" },
+                { cmd: "youmd private notes append \"text\"", desc: "Add to private notes" },
+                { cmd: "youmd private projects add name desc", desc: "Add a private project" },
+                { cmd: "youmd memories list", desc: "See saved memories" },
+                { cmd: "youmd memories add fact \"content\"", desc: "Add a memory manually" },
+                { cmd: "youmd link create", desc: "Create a shareable context link" },
+                { cmd: "youmd keys list", desc: "List your API keys" },
+                { cmd: "youmd build", desc: "Compile local bundle" },
+                { cmd: "youmd publish", desc: "Publish to you.md" },
+              ]}
+            />
+            <Callout type="info">
+              <InlineCode>youmd init</InlineCode> and{" "}
+              <InlineCode>youmd chat</InlineCode> are interactive and need a
+              regular terminal (they use readline prompts). Run those first, then
+              switch to Claude Code for everything else.
+            </Callout>
+
+            <H3 id="cc-workflow">Recommended Workflow</H3>
+            <P>
+              The most powerful workflow: let your coding agent update your
+              identity context as you work together.
+            </P>
+            <StepList>
+              <Step n={1}>
+                Tell Claude Code: "add my preference for terminal-native UI to
+                my you.md private context" — it can run{" "}
+                <InlineCode>
+                  youmd private notes append "prefers terminal-native UI"
+                </InlineCode>
+              </Step>
+              <Step n={2}>
+                After a coding session, tell your agent: "extract any
+                preferences or facts about me from this conversation and save
+                them to my you.md" — it can run{" "}
+                <InlineCode>youmd memories add</InlineCode> commands
+              </Step>
+              <Step n={3}>
+                Edit your <InlineCode>.youmd/</InlineCode> files directly (they're
+                just markdown) and run{" "}
+                <InlineCode>youmd push</InlineCode> to sync
+              </Step>
+              <Step n={4}>
+                Use <InlineCode>youmd sync --watch</InlineCode> in a regular
+                terminal to auto-push on every file save
+              </Step>
+              <Step n={5}>
+                Share your context with any new agent:{" "}
+                <InlineCode>youmd link create</InlineCode> generates a URL you
+                can paste into any AI conversation
+              </Step>
+            </StepList>
+            <P>
+              Your identity stays up to date across every tool. Every agent
+              knows who you are from the first message.
+            </P>
 
             {/* ── Share ────────────────────────────────────── */}
             <H2 id="share">Share Your Identity</H2>
