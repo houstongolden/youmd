@@ -10,6 +10,7 @@ import { buildCommand } from "./commands/build";
 import { publishCommand } from "./commands/publish";
 import { addCommand } from "./commands/add";
 import { diffCommand } from "./commands/diff";
+import { exportCommand } from "./commands/export";
 import { previewCommand } from "./commands/preview";
 import { linkCommand } from "./commands/link";
 import { keysCommand } from "./commands/keys";
@@ -72,8 +73,16 @@ program
 
 program
   .command("diff")
-  .description("Show changes since last publish")
-  .action(diffCommand);
+  .description("Show changes between local bundle and published version")
+  .action(() => diffCommand());
+
+program
+  .command("export")
+  .description("Export profile to you.json and/or you.md")
+  .option("--json", "Export only you.json")
+  .option("--md", "Export only you.md")
+  .option("-o, --output <path>", "Output directory")
+  .action((options) => exportCommand(options));
 
 program
   .command("preview")

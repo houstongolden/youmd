@@ -1696,10 +1696,44 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     // Determine if this is a returning user (has existing profile data)
     const isReturning = hasSubstantialProfile;
 
+    // --- Proactive Stale Source Detection ---
+    // Check if any linked sources haven't been refreshed in >7 days
+    let staleSourceNote = "";
+    if (hasSubstantialProfile) {
+      const youJson = (latestBundle?.youJson as Record<string, unknown>) || null;
+      const meta = youJson?.meta as Record<string, unknown> | undefined;
+      const sourcesUsed = meta?.sources_used as Record<string, string | number> | undefined;
+      const lastUpdated = meta?.last_updated as string | number | undefined;
+      const now = Date.now();
+      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+      const staleSources: string[] = [];
+
+      if (sourcesUsed) {
+        for (const [source, timestamp] of Object.entries(sourcesUsed)) {
+          const ts = typeof timestamp === "string" ? new Date(timestamp).getTime() : Number(timestamp);
+          if (!isNaN(ts) && ts > 0 && now - ts > SEVEN_DAYS_MS) {
+            const daysAgo = Math.floor((now - ts) / (24 * 60 * 60 * 1000));
+            staleSources.push(`${source} last synced ${daysAgo} days ago`);
+          }
+        }
+      } else if (lastUpdated) {
+        // Fallback: check the global last_updated timestamp
+        const ts = typeof lastUpdated === "string" ? new Date(lastUpdated).getTime() : Number(lastUpdated);
+        if (!isNaN(ts) && ts > 0 && now - ts > SEVEN_DAYS_MS) {
+          const daysAgo = Math.floor((now - ts) / (24 * 60 * 60 * 1000));
+          staleSources.push(`profile last updated ${daysAgo} days ago`);
+        }
+      }
+
+      if (staleSources.length > 0) {
+        staleSourceNote = `\n\n[STALE SOURCES DETECTED: ${staleSources.join(", ")}. suggest the user re-scrape these.]`;
+      }
+    }
+
     const contextContent = isOnboarding && onboardingGreeting
       ? onboardingGreeting
       : hasSubstantialProfile
-        ? `${profileContext}${portraitContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them by name. reference something SPECIFIC from their profile data above — a project name, a value, something from their bio. show them you actually know who they are. ask what they want to work on or update.`
+        ? `${profileContext}${portraitContext}${staleSourceNote}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them by name. reference something SPECIFIC from their profile data above — a project name, a value, something from their bio. show them you actually know who they are. ask what they want to work on or update.`
         : `${profileContext}${portraitContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them${displayName ? ` by name (${displayName})` : ""}. their profile is sparse — proactively suggest building it out. ask for their x, github, or linkedin handle so you can pull real context. mention that the platform will auto-scrape their profiles.`;
 
     const contextMessage: ChatMessage = {
@@ -2589,6 +2623,55 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           });
         } catch {
           failStep(portraitStepId, "failed");
+        }
+      }
+
+      // --- Session Compaction ---
+      // When conversation gets too long (~30k tokens / 120k chars), summarize older
+      // messages and replace them with a single summary to keep context window lean.
+      const COMPACTION_THRESHOLD = 120_000; // ~30k tokens at 4 chars/token
+      const KEEP_RECENT = 10; // always keep the last 10 messages + system prompt
+      const currentMessages = messagesRef.current;
+      const totalChars = currentMessages.reduce((sum, m) => sum + m.content.length, 0);
+
+      if (totalChars > COMPACTION_THRESHOLD && currentMessages.length > KEEP_RECENT + 2) {
+        try {
+          // Split: keep system prompt (index 0), compact middle, keep last N
+          const systemPromptMsg = currentMessages[0]?.role === "system" ? currentMessages[0] : null;
+          const startIdx = systemPromptMsg ? 1 : 0;
+          const cutoff = currentMessages.length - KEEP_RECENT;
+
+          if (cutoff > startIdx) {
+            const oldMessages = currentMessages.slice(startIdx, cutoff);
+            const recentMessages = currentMessages.slice(cutoff);
+
+            // Summarize old messages using the existing summarizeSession action
+            const compactionResult = await summarizeSession({
+              sessionId: sessionIdRef.current,
+              messages: oldMessages.map((m) => ({
+                role: m.role,
+                content: m.content,
+              })),
+            });
+
+            if (compactionResult.summary) {
+              const summaryMsg: ChatMessage = {
+                role: "system",
+                content: `[CONVERSATION SUMMARY: ${compactionResult.summary}]`,
+              };
+
+              const compactedMessages: ChatMessage[] = [
+                ...(systemPromptMsg ? [systemPromptMsg] : []),
+                summaryMsg,
+                ...recentMessages,
+              ];
+
+              setMessages(compactedMessages);
+              messagesRef.current = compactedMessages;
+            }
+          }
+        } catch {
+          // Non-fatal — compaction failure shouldn't break the chat
         }
       }
 

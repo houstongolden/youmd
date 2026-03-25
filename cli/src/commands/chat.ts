@@ -29,6 +29,140 @@ import type { ChatMessage } from "../lib/onboarding";
 // ─── URL Detection + Scraping (mirrors web useYouAgent) ──────────────
 
 const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
+const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
+
+// ─── Streaming LLM client ─────────────────────────────────────────────
+
+async function streamLLM(
+  _apiKey: string | null,
+  messages: ChatMessage[],
+  onToken: (text: string) => void
+): Promise<string> {
+  const res = await fetch(STREAM_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages }),
+    signal: AbortSignal.timeout(120_000),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Stream error (${res.status}): ${body}`);
+  }
+
+  if (!res.body) {
+    throw new Error("No response body from stream endpoint");
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = "";
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    // Process complete SSE lines
+    const lines = buffer.split("\n");
+    // Keep the last potentially incomplete line in the buffer
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      if (trimmed.startsWith("data: ")) {
+        const data = trimmed.slice(6);
+
+        if (data === "[DONE]") {
+          continue;
+        }
+
+        try {
+          const parsed = JSON.parse(data) as { text?: string };
+          if (parsed.text) {
+            fullText += parsed.text;
+            onToken(parsed.text);
+          }
+        } catch {
+          // Skip malformed JSON chunks
+        }
+      }
+    }
+  }
+
+  // Process any remaining buffer
+  if (buffer.trim()) {
+    const trimmed = buffer.trim();
+    if (trimmed.startsWith("data: ")) {
+      const data = trimmed.slice(6);
+      if (data !== "[DONE]") {
+        try {
+          const parsed = JSON.parse(data) as { text?: string };
+          if (parsed.text) {
+            fullText += parsed.text;
+            onToken(parsed.text);
+          }
+        } catch {
+          // Skip
+        }
+      }
+    }
+  }
+
+  return fullText;
+}
+
+/**
+ * Call LLM with streaming, falling back to blocking callLLM on failure.
+ * Returns the full response text.
+ */
+async function callLLMWithStreaming(
+  apiKey: string | null,
+  messages: ChatMessage[],
+  spinnerLabel: string
+): Promise<string> {
+  const thinkSpinner = new BrailleSpinner(spinnerLabel);
+  thinkSpinner.start();
+
+  try {
+    let firstToken = true;
+    const response = await streamLLM(apiKey, messages, (token) => {
+      if (firstToken) {
+        // Clear the spinner line before writing streamed text
+        thinkSpinner.stop();
+        process.stdout.write("  ");
+        firstToken = false;
+      }
+      process.stdout.write(token);
+    });
+
+    if (!firstToken) {
+      // We streamed something -- add trailing newline
+      process.stdout.write("\n");
+    } else {
+      // No tokens received -- clear spinner
+      thinkSpinner.stop();
+    }
+
+    return response;
+  } catch {
+    // Streaming failed -- fall back to blocking call
+    thinkSpinner.update("streaming unavailable, waiting for response");
+
+    try {
+      const response = await callLLM(apiKey, messages);
+      thinkSpinner.stop();
+      return response;
+    } catch (err) {
+      thinkSpinner.fail(err instanceof Error ? err.message : "failed");
+      throw err;
+    }
+  }
+}
 
 interface DetectedSource {
   platform: "x" | "github" | "linkedin" | "website";
@@ -843,14 +977,10 @@ export async function chatCommand(): Promise<void> {
   ];
 
   // Initial greeting from agent
-  const spinner = new Spinner(randomThinking());
-  spinner.start();
-
   let response: string;
   try {
-    response = await callLLM(apiKey, messages);
+    response = await callLLMWithStreaming(apiKey, messages, randomThinking());
   } catch (err) {
-    spinner.stop();
     console.log(
       chalk.red(
         `  failed to connect: ${err instanceof Error ? err.message : String(err)}`
@@ -865,8 +995,6 @@ export async function chatCommand(): Promise<void> {
     rl.close();
     return;
   }
-
-  spinner.stop();
 
   messages.push({ role: "assistant", content: response });
   const initial = parseUpdatesFromResponse(response);
@@ -884,6 +1012,9 @@ export async function chatCommand(): Promise<void> {
     console.log("");
   }
 
+  // Only print via rich renderer if we didn't stream (streaming already wrote output)
+  // But we still need to display parsed output for non-streamed fallback
+  // Since streaming writes raw text, print formatted version for updates parsing
   printAgentMessage(initial.display);
 
   // ── Conversation loop ──────────────────────────────────────────────
@@ -1016,13 +1147,9 @@ export async function chatCommand(): Promise<void> {
       const researchOk = await handleResearch(bundleDir, messages);
       if (!researchOk) continue;
       // After research, get an LLM response with the injected context
-      const researchSpinner = new Spinner(randomThinking());
-      researchSpinner.start();
-
       try {
-        response = await callLLM(apiKey, messages);
+        response = await callLLMWithStreaming(apiKey, messages, randomThinking());
       } catch (err) {
-        researchSpinner.stop();
         console.log(
           chalk.red(
             `  AI error: ${err instanceof Error ? err.message : String(err)}`
@@ -1033,8 +1160,6 @@ export async function chatCommand(): Promise<void> {
         messages.pop();
         continue;
       }
-
-      researchSpinner.stop();
 
       messages.push({ role: "assistant", content: response });
       const researchParsed = parseUpdatesFromResponse(response);
@@ -1087,16 +1212,13 @@ export async function chatCommand(): Promise<void> {
           });
         }
       }
-      const thinkSp = new BrailleSpinner(randomThinking());
-      thinkSp.start();
       try {
-        response = await callLLM(apiKey, messages);
+        response = await callLLMWithStreaming(apiKey, messages, randomThinking());
       } catch (err) {
-        thinkSp.fail(err instanceof Error ? err.message : "failed");
+        console.log(chalk.red(`  ${err instanceof Error ? err.message : "failed"}`));
         messages.pop();
         continue;
       }
-      thinkSp.stop();
       messages.push({ role: "assistant", content: response });
       printAgentMessage(parseUpdatesFromResponse(response).display);
       continue;
@@ -1113,16 +1235,13 @@ export async function chatCommand(): Promise<void> {
             role: "user",
             content: `[USER DROPPED IMAGE: ${path.basename(detectedFile)}]\nthe user dropped an image file into the chat.\n![${path.basename(detectedFile)}](${dataUrl})`,
           });
-          const thinkSp = new BrailleSpinner(randomThinking());
-          thinkSp.start();
           try {
-            response = await callLLM(apiKey, messages);
+            response = await callLLMWithStreaming(apiKey, messages, randomThinking());
           } catch (err) {
-            thinkSp.fail(err instanceof Error ? err.message : "failed");
+            console.log(chalk.red(`  ${err instanceof Error ? err.message : "failed"}`));
             messages.pop();
             continue;
           }
-          thinkSp.stop();
           messages.push({ role: "assistant", content: response });
           printAgentMessage(parseUpdatesFromResponse(response).display);
           continue;
@@ -1136,16 +1255,13 @@ export async function chatCommand(): Promise<void> {
             role: "user",
             content: `[USER DROPPED FILE: ${path.basename(detectedFile)}]\n\`\`\`\n${text.slice(0, 10000)}\n\`\`\`\n\nreview this file and suggest how it relates to my identity or profile.`,
           });
-          const thinkSp = new BrailleSpinner(randomThinking());
-          thinkSp.start();
           try {
-            response = await callLLM(apiKey, messages);
+            response = await callLLMWithStreaming(apiKey, messages, randomThinking());
           } catch (err) {
-            thinkSp.fail(err instanceof Error ? err.message : "failed");
+            console.log(chalk.red(`  ${err instanceof Error ? err.message : "failed"}`));
             messages.pop();
             continue;
           }
-          thinkSp.stop();
           messages.push({ role: "assistant", content: response });
           printAgentMessage(parseUpdatesFromResponse(response).display);
           continue;
@@ -1195,21 +1311,16 @@ export async function chatCommand(): Promise<void> {
       }
     }
 
-    const thinkSpinner = new BrailleSpinner(randomThinking());
-    thinkSpinner.start();
-
     try {
-      response = await callLLM(apiKey, messages);
+      response = await callLLMWithStreaming(apiKey, messages, randomThinking());
     } catch (err) {
-      thinkSpinner.fail(err instanceof Error ? err.message : "failed");
+      console.log(chalk.red(`  ${err instanceof Error ? err.message : "failed"}`));
       console.log(chalk.dim("  try again."));
       console.log("");
       messages.pop();
       if (newSources.length > 0) messages.pop(); // remove scrape context too
       continue;
     }
-
-    thinkSpinner.stop();
 
     messages.push({ role: "assistant", content: response });
     const parsed = parseUpdatesFromResponse(response);

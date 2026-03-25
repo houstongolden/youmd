@@ -142,9 +142,21 @@ export function DashboardContent() {
           </div>
 
           {/* Content — split on desktop, toggled on mobile */}
-          <div className="flex-1 flex min-h-0">
-            {/* Terminal */}
-            <div className={`${mobileView === "preview" ? "hidden md:flex" : "flex"} w-full md:w-[35%] flex-col md:border-r md:border-[hsl(var(--border))] min-h-0`}>
+          <div className="flex-1 flex min-h-0 relative">
+            {/* Terminal — always rendered on desktop; on mobile only when active */}
+            <div
+              className={[
+                "flex flex-col min-h-0",
+                // Desktop: always visible at 35%
+                "md:w-[35%] md:border-r md:border-[hsl(var(--border))] md:relative md:opacity-100 md:translate-x-0",
+                // Mobile: full width, absolute positioned for transitions
+                "w-full",
+                mobileView === "terminal"
+                  ? "relative opacity-100 translate-x-0"
+                  : "absolute inset-0 opacity-0 -translate-x-4 pointer-events-none md:pointer-events-auto md:relative md:inset-auto",
+              ].join(" ")}
+              style={{ transition: "opacity 200ms ease, transform 200ms ease" }}
+            >
               <TerminalShell
                 displayMessages={agent.displayMessages}
                 input={agent.input}
@@ -159,8 +171,20 @@ export function DashboardContent() {
               />
             </div>
 
-            {/* Panes — visible on desktop always, toggled on mobile */}
-            <div className={`${mobileView === "terminal" ? "hidden md:flex" : "flex"} w-full md:w-[65%] flex-col min-h-0`}>
+            {/* Panes — always rendered on desktop; on mobile only when active */}
+            <div
+              className={[
+                "flex flex-col min-h-0",
+                // Desktop: always visible at 65%
+                "md:w-[65%] md:relative md:opacity-100 md:translate-x-0",
+                // Mobile: full width, absolute positioned for transitions
+                "w-full",
+                mobileView === "preview"
+                  ? "relative opacity-100 translate-x-0"
+                  : "absolute inset-0 opacity-0 translate-x-4 pointer-events-none md:pointer-events-auto md:relative md:inset-auto",
+              ].join(" ")}
+              style={{ transition: "opacity 200ms ease, transform 200ms ease" }}
+            >
               {/* Desktop pane tabs — hidden on mobile (mobile nav handles it) */}
               <div className="hidden md:block relative shrink-0 border-b border-[hsl(var(--border))]">
                 <div className="flex items-center px-4 py-1.5 overflow-x-auto scrollbar-none">

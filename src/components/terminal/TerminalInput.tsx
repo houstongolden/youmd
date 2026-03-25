@@ -121,6 +121,10 @@ export function TerminalInput({
           /help
         </span>
         <span className="text-[hsl(var(--text-secondary))] opacity-10">|</span>
+        <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-20 hidden sm:inline">
+          cmd+k commands
+        </span>
+        <span className="text-[hsl(var(--text-secondary))] opacity-10 hidden sm:inline">|</span>
         <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-20">
           paste images
         </span>
