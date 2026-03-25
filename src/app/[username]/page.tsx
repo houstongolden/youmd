@@ -100,8 +100,8 @@ function SsrProfileText({ username, data }: { username: string; data: Record<str
   const preferences = data.preferences || {};
   const voice = data.analysis?.voice_summary || "";
 
-  // Get avatar URL from the data
-  const avatarUrl = data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || data.meta?.avatarUrl || "";
+  // Get avatar URL from the data — check _profile first (from Convex profile table), then social_images
+  const avatarUrl = data._profile?.avatarUrl || data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || "";
 
   return (
     <div
@@ -189,7 +189,7 @@ function buildJsonLd(username: string, data: Record<string, any>) {
   if (data.links?.x) sameAsLinks.push(data.links.x);
   if (data.links?.github) sameAsLinks.push(data.links.github);
 
-  const avatarUrl = data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || data.meta?.avatarUrl || "";
+  const avatarUrl = data._profile?.avatarUrl || data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || "";
 
   return {
     "@context": "https://schema.org",

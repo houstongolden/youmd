@@ -73,7 +73,17 @@ http.route({
       });
     }
 
-    return json(profile.youJson, 200, { "Cache-Control": "public, max-age=60" });
+    // Merge profile-level fields into youJson for richer SEO data
+    const enrichedJson = {
+      ...(profile.youJson as Record<string, unknown>),
+      _profile: {
+        avatarUrl: profile.avatarUrl ?? null,
+        displayName: profile.displayName ?? null,
+        isClaimed: profile.isClaimed ?? false,
+        source: profile.source,
+      },
+    };
+    return json(enrichedJson, 200, { "Cache-Control": "public, max-age=60" });
   }),
 });
 
