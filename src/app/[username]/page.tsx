@@ -100,15 +100,25 @@ function SsrProfileText({ username, data }: { username: string; data: Record<str
   const preferences = data.preferences || {};
   const voice = data.analysis?.voice_summary || "";
 
+  // Get avatar URL from the data
+  const avatarUrl = data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || data.meta?.avatarUrl || "";
+
   return (
     <div
       id="you-md-profile-data"
       data-username={username}
       data-format="you-md/v1"
-      style={{ position: "absolute", left: "-9999px", width: "1px", height: "1px", overflow: "hidden" }}
-      aria-hidden="true"
+      className="sr-only"
     >
       <h1>{name}</h1>
+      {avatarUrl && (
+        <img
+          src={avatarUrl}
+          alt={`${name} — profile photo on you.md`}
+          width={200}
+          height={200}
+        />
+      )}
       {tagline && <p>{tagline}</p>}
       {location && <p>Location: {location}</p>}
       {bio && <p>{bio}</p>}
@@ -179,15 +189,29 @@ function buildJsonLd(username: string, data: Record<string, any>) {
   if (data.links?.x) sameAsLinks.push(data.links.x);
   if (data.links?.github) sameAsLinks.push(data.links.github);
 
+  const avatarUrl = data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || data.meta?.avatarUrl || "";
+
   return {
     "@context": "https://schema.org",
     "@type": "Person",
     name,
     url: `https://you.md/${username}`,
+    ...(avatarUrl ? { image: avatarUrl } : {}),
     ...(tagline ? { jobTitle: tagline } : {}),
     ...(location ? { address: { "@type": "PostalAddress", addressLocality: location } } : {}),
     ...(bio ? { description: bio } : {}),
     ...(sameAsLinks.length > 0 ? { sameAs: sameAsLinks } : {}),
+    // Additional SEO-rich fields
+    ...(data.projects?.length > 0 ? {
+      knowsAbout: data.projects.map((p: { name: string }) => p.name),
+    } : {}),
+    ...(data.values?.length > 0 ? {
+      seeks: data.values,
+    } : {}),
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://you.md/${username}`,
+    },
   };
 }
 
