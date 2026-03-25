@@ -682,13 +682,17 @@ http.route({
       const postsActorId = "Wpp1BZ6yGWjySadk3";
 
       // Run both actors in parallel with normalized URL
-      // Try multiple input field names — Apify actors vary
+      // Match the exact input format from the working BAMF implementation
+      const slug = normalizedUrl.match(/\/in\/([^/]+)/)?.[1] || "";
       const profileInput = {
         profileUrls: [normalizedUrl],
+        profileUrl: normalizedUrl,
         urls: [normalizedUrl],
-        startUrls: [{ url: normalizedUrl }],
+        username: slug,
+        ignoreCache: true,
+        forceFresh: true,
       };
-      console.log(`LinkedIn enrichment: sending to Apify actor ${profileActorId} with URL: ${normalizedUrl}`);
+      console.log(`LinkedIn enrichment: sending to Apify actor ${profileActorId} with URL: ${normalizedUrl}, slug: ${slug}`);
       const [profileRes, postsRes] = await Promise.all([
         fetch(
           `https://api.apify.com/v2/acts/${profileActorId}/run-sync-get-dataset-items?token=${apiKey}`,
