@@ -122,11 +122,11 @@ const Navbar = () => {
                   className="flex items-center gap-2 group"
                 >
                   {user?.imageUrl ? (
-                    <div className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[#e8e5e0]">
+                    <div className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))]">
                       <AsciiAvatar src={user.imageUrl} cols={12} canvasWidth={20} className="w-full h-full" />
                     </div>
                   ) : (
-                    <span className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] bg-[#e8e5e0] flex items-center justify-center font-mono text-[9px] text-accent group-hover:border-accent transition-colors">
+                    <span className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent group-hover:border-accent transition-colors">
                       {username?.[0]?.toUpperCase() ?? user?.firstName?.[0] ?? ">"}
                     </span>
                   )}
@@ -213,11 +213,11 @@ const Navbar = () => {
                 className="flex items-center gap-2 group"
               >
                 {user?.imageUrl ? (
-                  <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] overflow-hidden bg-[#e8e5e0]">
+                  <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))]">
                     <AsciiAvatar src={user.imageUrl} cols={14} canvasWidth={24} className="w-full h-full" />
                   </div>
                 ) : (
-                  <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-[#e8e5e0] flex items-center justify-center font-mono text-[10px] text-accent">
+                  <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[10px] text-accent">
                     {username?.[0]?.toUpperCase() ?? user?.firstName?.[0] ?? ">"}
                   </span>
                 )}

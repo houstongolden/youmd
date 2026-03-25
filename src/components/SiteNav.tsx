@@ -119,11 +119,11 @@ export function SiteNav() {
                   className="flex items-center gap-2 group"
                 >
                   {avatarUrl ? (
-                    <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[#e8e5e0]">
+                    <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))]">
                       <AsciiAvatar src={avatarUrl} cols={14} canvasWidth={24} className="w-full h-full" />
                     </div>
                   ) : (
-                    <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-[#e8e5e0] flex items-center justify-center font-mono text-[9px] text-accent">
+                    <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent">
                       {username?.[0]?.toUpperCase() ?? ">"}
                     </span>
                   )}
