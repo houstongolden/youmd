@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import FounderQuote from "@/components/landing/FounderQuote";
@@ -10,6 +11,29 @@ import OpenSpec from "@/components/landing/OpenSpec";
 import Integrations from "@/components/landing/Integrations";
 import Pricing from "@/components/landing/Pricing";
 import CTAFooter from "@/components/landing/CTAFooter";
+
+export const metadata: Metadata = {
+  title: "you.md — Your identity file for the agent internet",
+  description:
+    "Claim your identity. Onboard any AI in seconds. The structured, portable identity bundle that gives every agent context about who you are.",
+  openGraph: {
+    title: "you.md — Identity as Code",
+    description:
+      "Your identity file for the agent internet. Onboard any AI in seconds.",
+    url: "https://you.md",
+    siteName: "you.md",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "you.md — Identity as Code",
+    description:
+      "Your identity file for the agent internet. Onboard any AI in seconds.",
+  },
+  alternates: {
+    canonical: "https://you.md",
+  },
+};
 
 export default function Home() {
   return (

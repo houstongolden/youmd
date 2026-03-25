@@ -43,9 +43,12 @@ export async function generateMetadata({
       type: "profile",
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: `${username} — you.md`,
       description: `${username}'s profile on you.md`,
+    },
+    alternates: {
+      canonical: `https://you.md/${username}`,
     },
   };
 
@@ -74,7 +77,7 @@ export async function generateMetadata({
       type: "profile",
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title,
       description,
     },
@@ -201,6 +204,19 @@ export default async function ProfilePage({
 
   return (
     <>
+      {/* Alternate format links — help agents discover machine-readable versions */}
+      <link
+        rel="alternate"
+        type="application/json"
+        href={`https://you.md/${username}/you.json`}
+        title={`${username}'s identity (JSON)`}
+      />
+      <link
+        rel="alternate"
+        type="text/plain"
+        href={`https://you.md/${username}/you.txt`}
+        title={`${username}'s identity (plain text)`}
+      />
       {/* JSON-LD structured data — rendered server-side for SEO */}
       {jsonLd && (
         <script

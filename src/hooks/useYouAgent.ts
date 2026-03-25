@@ -2044,7 +2044,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
                   });
                   setDisplayMessages((prev) => [
                     ...prev,
-                    { id: crypto.randomUUID(), role: "system-notice", content: `[portrait updated from ${platform} — refresh to see it]` },
+                    { id: crypto.randomUUID(), role: "system-notice", content: `[portrait updated from ${platform}]` },
+                    { id: crypto.randomUUID(), role: "assistant", content: `![your new portrait from ${platform}](${imgUrl})` },
                   ]);
                   return;
                 }
@@ -2696,6 +2697,12 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             id: crypto.randomUUID(),
             role: "system-notice",
             content: `[portrait updated from ${portraitUpdate.source}]`,
+          });
+          // Show the new portrait inline in the chat
+          newDisplayMsgs.push({
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: `![updated portrait from ${portraitUpdate.source}](${portraitUpdate.url})`,
           });
         } catch {
           failStep(portraitStepId, "failed");
