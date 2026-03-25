@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { useSignUp } from "@clerk/nextjs";
+import { useSignUp, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { TerminalAuthInput } from "@/components/terminal/TerminalAuthInput";
@@ -29,9 +29,15 @@ export function CreateContent() {
 }
 
 function CreateContentInner() {
+  const { isSignedIn } = useUser();
   const router = useRouter();
   const signUpHook = useSignUp();
   const signUp = signUpHook.signUp;
+
+  // Redirect signed-in users to dashboard
+  useEffect(() => {
+    if (isSignedIn) router.replace("/dashboard");
+  }, [isSignedIn, router]);
   const createProfileMut = useConvexMutation(api.profiles.createProfile);
   const updateProfileMut = useConvexMutation(api.profiles.updateProfile);
   const [email, setEmail] = useState("");

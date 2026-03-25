@@ -22,6 +22,10 @@ export function SiteNav() {
     api.users.getByClerkId,
     user?.id ? { clerkId: user.id } : "skip"
   );
+  const userProfile = useQuery(
+    api.profiles.getByOwnerId,
+    convexUser?._id ? { ownerId: convexUser._id } : "skip"
+  );
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -35,12 +39,14 @@ export function SiteNav() {
   }, [mobileOpen]);
 
   // Hide on pages that have their own nav or don't need one
-  const hiddenPaths = ["/", "/create", "/sign-in", "/sign-up", "/initialize", "/reset-password", "/docs"];
+  const hiddenPaths = ["/", "/create", "/sign-in", "/sign-up", "/initialize", "/reset-password", "/docs", "/profiles"];
   if (hiddenPaths.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p)))) {
     return null;
   }
 
   const username = convexUser?.username ?? user?.username;
+  const avatarUrl = (userProfile as Record<string, unknown> | null | undefined)?.avatarUrl as string | undefined
+    || user?.imageUrl;
   const isOnDashboard = pathname === "/dashboard";
   const isOnProfiles = pathname === "/profiles";
   const isOnDocs = pathname === "/docs";
@@ -97,20 +103,17 @@ export function SiteNav() {
                   className="hidden md:flex items-center gap-2 group"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={username ? `https://avatars.githubusercontent.com/${username}?s=40` : user?.imageUrl}
-                    alt=""
-                    className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors object-cover"
-                    onError={(e) => {
-                      // Fall back to Clerk avatar if GitHub fails
-                      const img = e.target as HTMLImageElement;
-                      if (user?.imageUrl && img.src !== user.imageUrl) {
-                        img.src = user.imageUrl;
-                      } else {
-                        img.style.display = 'none';
-                      }
-                    }}
-                  />
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt=""
+                      className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors object-cover"
+                    />
+                  ) : (
+                    <span className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[9px] text-accent">
+                      {username?.[0]?.toUpperCase() ?? ">"}
+                    </span>
+                  )}
                   <span className="font-mono text-[10px] text-muted-foreground/60 group-hover:text-accent transition-colors">
                     @{username ?? "you"}
                   </span>

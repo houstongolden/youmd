@@ -1,6 +1,6 @@
 "use client";
 
-import { useSignIn } from "@clerk/nextjs";
+import { useSignIn, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import Link from "next/link";
@@ -27,9 +27,15 @@ function extractError(err: unknown): string {
 type Step = "boot" | "email" | "password" | "authenticating" | "verify" | "verifying" | "done";
 
 export default function SignInPage() {
+  const { isSignedIn } = useUser();
   const signInHook = useSignIn();
   const signIn = signInHook.signIn;
   const router = useRouter();
+
+  // Redirect to dashboard if already signed in
+  useEffect(() => {
+    if (isSignedIn) router.replace("/dashboard");
+  }, [isSignedIn, router]);
 
   const [step, setStep] = useState<Step>("boot");
   const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);

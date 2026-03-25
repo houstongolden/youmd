@@ -231,7 +231,7 @@ const Hero = () => {
           {/* RIGHT -- ASCII portrait */}
           <div className="flex-1 flex justify-center">
             <Link
-              href="/houston"
+              href="/houstongolden"
               className="block w-full max-w-md group"
             >
               <motion.div
