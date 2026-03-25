@@ -2214,21 +2214,30 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const scrapedSourcesRef = useRef<Set<string>>(new Set());
 
   // Send message
-  const sendMessage = useCallback(async () => {
+  const sendMessage = useCallback(async (pastedImageUrl?: string) => {
     const trimmed = input.trim();
-    if (!trimmed || isThinking) return;
+    if (!trimmed && !pastedImageUrl) return;
+    if (isThinking) return;
 
     setInput("");
 
-    // Handle slash commands
+    // Handle slash commands (no image for slash commands)
     if (trimmed.startsWith("/")) {
       if (handleSlashCommand(trimmed)) return;
     }
 
-    // Add user message to display
+    // Build the user message content — include pasted image if present
+    let userContent = trimmed;
+    if (pastedImageUrl) {
+      userContent = trimmed
+        ? `${trimmed}\n\n![pasted image](${pastedImageUrl})`
+        : `![pasted image](${pastedImageUrl})`;
+    }
+
+    // Add user message to display (show image inline via TerminalBlocks)
     setDisplayMessages((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), role: "user", content: trimmed },
+      { id: crypto.randomUUID(), role: "user", content: userContent },
     ]);
 
     // Detect URLs/usernames in the message for auto-scraping

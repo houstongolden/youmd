@@ -35,14 +35,15 @@ export function MessageBubble({ message, isLatest = false }: MessageBubbleProps)
   }
 
   if (message.role === "user") {
+    const hasImage = message.content.includes("![");
     return (
       <div className="flex items-start gap-2">
         <span className="text-[hsl(var(--accent))] font-mono text-xs mt-0.5 shrink-0 select-none">
           &gt;
         </span>
-        <p className="text-[14px] font-mono whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-primary))]">
-          {message.content}
-        </p>
+        <div className="text-[14px] font-mono whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-primary))]">
+          {hasImage ? <RichTerminalContent content={message.content} /> : message.content}
+        </div>
       </div>
     );
   }

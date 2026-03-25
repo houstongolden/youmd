@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useCallback, useMemo } from "react";
+import { KeyboardEvent, useCallback, useMemo, useState } from "react";
 import type { DisplayMessage, ThinkingCategory, ProgressStep } from "@/hooks/useYouAgent";
 import { MessageBubble } from "./MessageBubble";
 import { ThinkingIndicator } from "./ThinkingIndicator";
@@ -16,7 +16,7 @@ interface TerminalShellProps {
   progressSteps?: ProgressStep[];
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  sendMessage: () => void;
+  sendMessage: (pastedImageUrl?: string) => void;
   className?: string;
 }
 
@@ -33,15 +33,23 @@ export function TerminalShell({
   sendMessage,
   className = "",
 }: TerminalShellProps) {
+  const [pastedImageUrl, setPastedImageUrl] = useState<string | null>(null);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        sendMessage();
+        sendMessage(pastedImageUrl || undefined);
+        setPastedImageUrl(null);
       }
     },
-    [sendMessage]
+    [sendMessage, pastedImageUrl]
   );
+
+  const handleSend = useCallback(() => {
+    sendMessage(pastedImageUrl || undefined);
+    setPastedImageUrl(null);
+  }, [sendMessage, pastedImageUrl]);
 
   // Find the ID of the last assistant message for typewriter effect
   const latestAssistantId = useMemo(() => {
@@ -71,7 +79,8 @@ export function TerminalShell({
         isThinking={isThinking}
         textareaRef={textareaRef}
         onKeyDown={handleKeyDown}
-        onSend={sendMessage}
+        onSend={handleSend}
+        onImagePaste={setPastedImageUrl}
       />
     </div>
   );
