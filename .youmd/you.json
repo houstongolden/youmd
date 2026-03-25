@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generatedAt": "2026-03-25T23:10:34.561Z",
+  "profile": [
+    {
+      "slug": "about",
+      "title": "About",
+      "content": "",
+      "metadata": {
+        "title": "About"
+      }
+    },
+    {
+      "slug": "links",
+      "title": "Links",
+      "content": "",
+      "metadata": {
+        "title": "Links"
+      }
+    },
+    {
+      "slug": "now",
+      "title": "Now",
+      "content": "",
+      "metadata": {
+        "title": "Now"
+      }
+    },
+    {
+      "slug": "projects",
+      "title": "Projects",
+      "content": "",
+      "metadata": {
+        "title": "Projects"
+      }
+    },
+    {
+      "slug": "values",
+      "title": "Values",
+      "content": "",
+      "metadata": {
+        "title": "Values"
+      }
+    }
+  ],
+  "preferences": [
+    {
+      "slug": "agent",
+      "title": "Agent",
+      "content": "",
+      "metadata": {
+        "title": "Agent"
+      }
+    },
+    {
+      "slug": "writing",
+      "title": "Writing",
+      "content": "",
+      "metadata": {
+        "title": "Writing"
+      }
+    }
+  ]
+}

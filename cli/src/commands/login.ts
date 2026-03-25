@@ -77,7 +77,7 @@ async function loginWithKey(key: string): Promise<void> {
   // Save the key first
   const config = readGlobalConfig();
   config.token = key;
-  config.apiUrl = "https://uncommon-chicken-142.convex.site";
+  config.apiUrl = "https://kindly-cassowary-600.convex.site";
   writeGlobalConfig(config);
 
   console.log("");
