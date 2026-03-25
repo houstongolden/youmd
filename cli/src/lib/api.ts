@@ -252,3 +252,28 @@ export async function getAnalytics(): Promise<ApiResponse<any>> {
     token: getToken(),
   });
 }
+
+// ─── Private context ────────────────────────────────────────────────
+
+export interface PrivateContext {
+  privateNotes?: string;
+  privateProjects?: Array<{ name: string; description: string; status: string }>;
+  internalLinks?: Record<string, string>;
+  customData?: unknown;
+}
+
+export async function getPrivateContext(): Promise<ApiResponse<PrivateContext | null>> {
+  return request<PrivateContext | null>("/api/v1/me/private", {
+    token: getToken(),
+  });
+}
+
+export async function updatePrivateContext(
+  updates: Partial<PrivateContext>
+): Promise<ApiResponse<{ success: boolean }>> {
+  return request<{ success: boolean }>("/api/v1/me/private", {
+    method: "POST",
+    token: getToken(),
+    body: updates,
+  });
+}

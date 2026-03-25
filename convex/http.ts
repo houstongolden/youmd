@@ -682,13 +682,20 @@ http.route({
       const postsActorId = "Wpp1BZ6yGWjySadk3";
 
       // Run both actors in parallel with normalized URL
+      // Try multiple input field names — Apify actors vary
+      const profileInput = {
+        profileUrls: [normalizedUrl],
+        urls: [normalizedUrl],
+        startUrls: [{ url: normalizedUrl }],
+      };
+      console.log(`LinkedIn enrichment: sending to Apify actor ${profileActorId} with URL: ${normalizedUrl}`);
       const [profileRes, postsRes] = await Promise.all([
         fetch(
           `https://api.apify.com/v2/acts/${profileActorId}/run-sync-get-dataset-items?token=${apiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ profileUrls: [normalizedUrl] }),
+            body: JSON.stringify(profileInput),
             signal: AbortSignal.timeout(120_000),
           }
         ),
@@ -724,14 +731,24 @@ http.route({
         console.log("LinkedIn enrichment: no profile data returned from Apify");
       }
 
-      // Normalize profile data to ensure consistent field names
+      // Normalize profile data — handle both flat and nested (basic_info) formats
+      const bi = rawProfile?.basic_info || {};
       const profile = rawProfile ? {
         ...rawProfile,
-        // Ensure profileImageUrl is always present if any image field exists
-        profileImageUrl: rawProfile.profilePicture || rawProfile.profileImageUrl || rawProfile.imgUrl || rawProfile.profilePic || rawProfile.avatar || null,
-        // Ensure fullName is populated
-        fullName: rawProfile.fullName || (rawProfile.firstName && rawProfile.lastName ? `${rawProfile.firstName} ${rawProfile.lastName}`.trim() : null),
+        // Flatten basic_info fields to top level for consistent access
+        fullName: rawProfile.fullName || bi.fullname || bi.full_name || (rawProfile.firstName && rawProfile.lastName ? `${rawProfile.firstName} ${rawProfile.lastName}`.trim() : (bi.first_name && bi.last_name ? `${bi.first_name} ${bi.last_name}`.trim() : null)),
+        headline: rawProfile.headline || rawProfile.title || bi.headline || null,
+        about: rawProfile.about || rawProfile.summary || bi.about || null,
+        location: rawProfile.location || (typeof bi.location === 'object' ? bi.location?.full : bi.location) || rawProfile.geoLocation || null,
+        profileImageUrl: rawProfile.profilePicture || rawProfile.profileImageUrl || rawProfile.imgUrl || bi.profile_picture_url || rawProfile.profilePic || rawProfile.avatar || null,
+        connections: rawProfile.connections || rawProfile.connectionsCount || bi.connection_count || null,
+        followers: rawProfile.followersCount || rawProfile.followers || bi.follower_count || null,
+        publicIdentifier: rawProfile.publicIdentifier || bi.public_identifier || null,
       } : null;
+
+      if (rawProfile && profile) {
+        console.log(`LinkedIn enrichment: normalized — name: ${profile.fullName}, headline: ${(profile.headline || "none").slice(0, 60)}, public_id: ${profile.publicIdentifier}`);
+      }
 
       let posts: unknown[] = [];
       if (postsRes.ok) {
@@ -818,6 +835,63 @@ http.route({ path: "/api/v1/scrape", method: "OPTIONS", handler: corsPreflight }
 http.route({ path: "/api/v1/research", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/enrich-x", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/enrich-linkedin", method: "OPTIONS", handler: corsPreflight });
+
+// ============================================================
+// PRIVATE CONTEXT API (authenticated)
+// ============================================================
+
+// GET /api/v1/me/private — Get private context
+http.route({
+  path: "/api/v1/me/private",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    if (!user) return json({ error: "User not found" }, 404);
+
+    // Find the user's profile
+    const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
+    if (!profile) return json(null);
+
+    const privateCtx = await ctx.runQuery(api.private.getPrivateContext, {
+      clerkId: auth.userId,
+      profileId: profile._id,
+    });
+    return json(privateCtx);
+  }),
+});
+
+// POST /api/v1/me/private — Update private context
+http.route({
+  path: "/api/v1/me/private",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    if (!user) return json({ error: "User not found" }, 404);
+
+    const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
+    if (!profile) return json({ error: "Profile not found" }, 404);
+
+    const body = await request.json();
+    await ctx.runMutation(api.private.updatePrivateContext, {
+      clerkId: auth.userId,
+      profileId: profile._id,
+      privateNotes: body.privateNotes,
+      privateProjects: body.privateProjects,
+      internalLinks: body.internalLinks,
+      customData: body.customData,
+    });
+
+    return json({ success: true });
+  }),
+});
+
+http.route({ path: "/api/v1/me/private", method: "OPTIONS", handler: corsPreflight });
 
 // ============================================================
 // MEMORY API (authenticated — API key or access token)
