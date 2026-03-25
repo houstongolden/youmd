@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser, SignOutButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { usePathname } from "next/navigation";
@@ -18,6 +18,8 @@ export function SiteNav() {
   const { isSignedIn, user } = useUser();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [avatarDropdown, setAvatarDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const convexUser = useQuery(
     api.users.getByClerkId,
@@ -28,10 +30,23 @@ export function SiteNav() {
     convexUser?._id ? { ownerId: convexUser._id } : "skip"
   );
 
-  // Close mobile menu on route change
+  // Close menus on route change
   useEffect(() => {
     setMobileOpen(false);
+    setAvatarDropdown(false);
   }, [pathname]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!avatarDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setAvatarDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [avatarDropdown]);
 
   // Lock body scroll when menu is open
   useEffect(() => {
@@ -98,31 +113,43 @@ export function SiteNav() {
           {/* Right: user info (desktop) + mobile toggle */}
           <div className="flex items-center gap-3 shrink-0">
             {isSignedIn && (
-              <>
-                <Link
-                  href="/dashboard"
-                  className="hidden md:flex items-center gap-2 group"
+              <div className="hidden md:block relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setAvatarDropdown(!avatarDropdown)}
+                  className="flex items-center gap-2 group"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   {avatarUrl ? (
-                    <div className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden">
-                      <AsciiAvatar src={avatarUrl} cols={12} canvasWidth={20} className="w-full h-full" />
+                    <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[#e8e5e0]">
+                      <AsciiAvatar src={avatarUrl} cols={14} canvasWidth={24} className="w-full h-full" />
                     </div>
                   ) : (
-                    <span className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[9px] text-accent">
+                    <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-[#e8e5e0] flex items-center justify-center font-mono text-[9px] text-accent">
                       {username?.[0]?.toUpperCase() ?? ">"}
                     </span>
                   )}
                   <span className="font-mono text-[10px] text-muted-foreground/60 group-hover:text-accent transition-colors">
                     @{username ?? "you"}
                   </span>
-                </Link>
-                <SignOutButton>
-                  <button className="hidden md:inline font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-70 hover:text-accent transition-all">
-                    sign out
-                  </button>
-                </SignOutButton>
-              </>
+                </button>
+                {avatarDropdown && (
+                  <div className="absolute right-0 top-full mt-2 w-44 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-1 z-50" style={{ borderRadius: "2px" }}>
+                    <Link href="/dashboard" className="block px-3 py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--accent))]/5 transition-colors">
+                      &gt; dashboard
+                    </Link>
+                    {username && (
+                      <Link href={`/${username}`} className="block px-3 py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--accent))]/5 transition-colors">
+                        &gt; my profile
+                      </Link>
+                    )}
+                    <div className="h-px bg-[hsl(var(--border))] my-1" />
+                    <SignOutButton>
+                      <button className="w-full text-left px-3 py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-100 hover:text-[hsl(var(--accent))] transition-all">
+                        &gt; sign out
+                      </button>
+                    </SignOutButton>
+                  </div>
+                )}
+              </div>
             )}
             {!isSignedIn && (
               <Link
