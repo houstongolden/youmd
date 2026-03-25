@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { useUser, SignOutButton } from "@clerk/nextjs";
-import AsciiAvatar from "@/components/AsciiAvatar";
+
 
 const sections = [
   { id: "how-it-works", label: "--how-it-works" },
@@ -122,8 +122,15 @@ const Navbar = () => {
                   className="flex items-center gap-2 group"
                 >
                   {user?.imageUrl ? (
-                    <div className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))]">
-                      <AsciiAvatar src={user.imageUrl} cols={12} canvasWidth={20} className="w-full h-full" />
+                    <div className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))] relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={user.imageUrl}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        style={{ filter: "sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.85) contrast(1.3)" }}
+                      />
+                      <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                     </div>
                   ) : (
                     <span className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent group-hover:border-accent transition-colors">
@@ -213,8 +220,15 @@ const Navbar = () => {
                 className="flex items-center gap-2 group"
               >
                 {user?.imageUrl ? (
-                  <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))]">
-                    <AsciiAvatar src={user.imageUrl} cols={14} canvasWidth={24} className="w-full h-full" />
+                  <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))] relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={user.imageUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      style={{ filter: "sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.85) contrast(1.3)" }}
+                    />
+                    <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                   </div>
                 ) : (
                   <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[10px] text-accent">

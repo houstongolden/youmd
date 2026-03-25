@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { api } from "../../convex/_generated/api";
-import AsciiAvatar from "@/components/AsciiAvatar";
+
 
 /**
  * SiteNav — unified top navigation bar for all pages.
@@ -119,8 +119,15 @@ export function SiteNav() {
                   className="flex items-center gap-2 group"
                 >
                   {avatarUrl ? (
-                    <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))]">
-                      <AsciiAvatar src={avatarUrl} cols={14} canvasWidth={24} className="w-full h-full" />
+                    <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))] relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={avatarUrl}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        style={{ filter: "sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.85) contrast(1.3)" }}
+                      />
+                      <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                     </div>
                   ) : (
                     <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent">
@@ -199,8 +206,15 @@ export function SiteNav() {
               className="flex items-center gap-2 mt-4"
             >
               {avatarUrl ? (
-                <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] overflow-hidden">
-                  <AsciiAvatar src={avatarUrl} cols={14} canvasWidth={24} className="w-full h-full" />
+                <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] overflow-hidden relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    style={{ filter: "sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.85) contrast(1.3)" }}
+                  />
+                  <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                 </div>
               ) : (
                 <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[10px] text-accent">
