@@ -4,14 +4,17 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "motion/react";
+import { useUser } from "@clerk/nextjs";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import AsciiAvatar from "@/components/AsciiAvatar";
 import { generateYouJson, generateYouMd, downloadFile } from "@/lib/exportProfile";
 
 /* ── Types ────────────────────────────────────────────────── */
+
+type ViewMode = "public" | "private" | "agent";
 
 interface Project {
   name: string;
@@ -53,6 +56,53 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const [copied, setCopied] = useState(false);
   const [showRawJson, setShowRawJson] = useState(false);
   const [rawCopied, setRawCopied] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("public");
+  const [agentPreview, setAgentPreview] = useState<string | null>(null);
+  const [agentPreviewLoading, setAgentPreviewLoading] = useState(false);
+
+  // ── Ownership detection ──────────────────────────────────────
+  const { user: clerkUser } = useUser();
+  const convexUser = useQuery(
+    api.users.getByClerkId,
+    clerkUser?.id ? { clerkId: clerkUser.id } : "skip"
+  );
+  const ownedProfile = useQuery(
+    api.profiles.getByOwnerId,
+    convexUser?._id ? { ownerId: convexUser._id } : "skip"
+  );
+  const isOwner = ownedProfile?.username === username;
+
+  // ── Private context (only fetched for owner) ─────────────────
+  const privateContext = useQuery(
+    api.private.getPrivateContext,
+    isOwner && clerkUser?.id && ownedProfile?._id
+      ? { clerkId: clerkUser.id, profileId: ownedProfile._id }
+      : "skip"
+  );
+
+  // ── Agent preview fetch ──────────────────────────────────────
+  const fetchAgentPreview = useCallback(async () => {
+    if (agentPreview !== null) return;
+    setAgentPreviewLoading(true);
+    try {
+      const res = await fetch(`/${username}/you.txt`);
+      if (res.ok) {
+        setAgentPreview(await res.text());
+      } else {
+        setAgentPreview("-- failed to load agent preview --");
+      }
+    } catch {
+      setAgentPreview("-- failed to load agent preview --");
+    } finally {
+      setAgentPreviewLoading(false);
+    }
+  }, [username, agentPreview]);
+
+  useEffect(() => {
+    if (viewMode === "agent" && agentPreview === null && !agentPreviewLoading) {
+      fetchAgentPreview();
+    }
+  }, [viewMode, agentPreview, agentPreviewLoading, fetchAgentPreview]);
 
   // SSR fallback shape matching the Convex query return type
   const ssrProfile = ssrData ? {
@@ -190,8 +240,35 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
 
       <ProfileHeader username={username} />
 
+      {/* ═══ OWNER VIEW MODE TOGGLE ═══ */}
+      {isOwner && (
+        <div className="w-full flex justify-center pt-3 pb-1">
+          <div className="max-w-[680px] w-full px-4 md:px-6">
+            <div
+              className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-1 inline-flex gap-1 font-mono text-[11px]"
+              style={{ borderRadius: "2px" }}
+            >
+              {(["public", "private", "agent"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`px-3 py-1.5 transition-colors ${
+                    viewMode === mode
+                      ? "border border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))]"
+                      : "border border-transparent text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-80"
+                  }`}
+                  style={{ borderRadius: "2px" }}
+                >
+                  {mode === "agent" ? "agent preview" : mode}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ASCII Portrait Header — full-width above content */}
-      {resolvedProfile.avatarUrl && (
+      {resolvedProfile.avatarUrl && viewMode !== "agent" && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -210,6 +287,16 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
       )}
 
       <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pb-20 relative z-10">
+
+        {/* ═══ AGENT PREVIEW MODE ═══ */}
+        {viewMode === "agent" ? (
+          <AgentPreviewPane
+            username={username}
+            agentPreview={agentPreview}
+            agentPreviewLoading={agentPreviewLoading}
+          />
+        ) : (
+        <>
 
         {/* ═══ SYSTEM HEADER ═══ */}
         <motion.section {...delay(0)} className="mt-4 mb-6">
@@ -621,12 +708,20 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
           </>
         )}
 
+        {/* ═══ PRIVATE CONTEXT (owner only, private mode) ═══ */}
+        {viewMode === "private" && isOwner && (
+          <PrivateContextPane privateContext={privateContext} />
+        )}
+
         {/* Footer tagline */}
         <motion.div {...delay(12)} className="text-center mt-16 space-y-2">
           <p className="text-[hsl(var(--text-secondary))] opacity-30 font-mono text-[9px]">
             updated by the human. maintained by the system.
           </p>
         </motion.div>
+
+        </>
+        )}
       </main>
 
       <ProfileFooter username={username} />
@@ -834,5 +929,251 @@ function RawJsonRenderer({ json }: { json: Record<string, any> }) {
     <pre className="font-mono text-[11px] leading-[1.6] whitespace-pre overflow-x-auto">
       {renderValue(json, 0)}
     </pre>
+  );
+}
+
+/* ── Agent Preview Pane ────────────────────────────────────── */
+
+function AgentPreviewPane({
+  username,
+  agentPreview,
+  agentPreviewLoading,
+}: {
+  username: string;
+  agentPreview: string | null;
+  agentPreviewLoading: boolean;
+}) {
+  return (
+    <div className="mt-6">
+      <h2 className="text-[hsl(var(--accent))] font-mono text-[11px] uppercase tracking-wider mb-3">
+        &gt; agent preview
+      </h2>
+      <p className="text-[hsl(var(--text-secondary))] opacity-50 font-mono text-[10px] mb-4">
+        this is what agents see when they fetch you.md/{username}/you.txt
+      </p>
+      <div
+        className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden"
+        style={{ borderRadius: "2px" }}
+      >
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-[hsl(var(--border))]">
+          <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">
+            GET /{username}/you.txt
+          </span>
+          <span className="font-mono text-[9px] text-[hsl(var(--success))] opacity-60 ml-auto">
+            200 OK
+          </span>
+        </div>
+        <div className="p-4 overflow-x-auto max-h-[600px] overflow-y-auto">
+          {agentPreviewLoading ? (
+            <p className="text-[hsl(var(--text-secondary))] font-mono text-[11px] animate-pulse">
+              fetching agent view...
+            </p>
+          ) : (
+            <pre className="font-mono text-[11px] leading-[1.7] text-[hsl(var(--text-secondary))] opacity-80 whitespace-pre-wrap">
+              {agentPreview}
+            </pre>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Private Context Pane ──────────────────────────────────── */
+
+interface PrivateProject {
+  name?: string;
+  description?: string;
+  status?: string;
+  url?: string;
+  [key: string]: unknown;
+}
+
+function PrivateContextPane({
+  privateContext,
+}: {
+  privateContext: {
+    privateNotes?: string | null;
+    privateProjects?: PrivateProject[] | null;
+    internalLinks?: Record<string, string> | null;
+    calendarContext?: string | null;
+    communicationPrefs?: Record<string, unknown> | null;
+    investmentThesis?: string | null;
+    customData?: unknown;
+  } | null | undefined;
+}) {
+  if (privateContext === undefined) {
+    return (
+      <>
+        <Divider />
+        <div className="mt-2">
+          <SectionLabel>private context</SectionLabel>
+          <p className="text-[hsl(var(--text-secondary))] opacity-40 font-mono text-[11px] mt-3 animate-pulse">
+            loading private data...
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  const hasContent = privateContext && (
+    privateContext.privateNotes ||
+    (privateContext.privateProjects && privateContext.privateProjects.length > 0) ||
+    (privateContext.internalLinks && Object.keys(privateContext.internalLinks).length > 0) ||
+    privateContext.calendarContext ||
+    privateContext.investmentThesis
+  );
+
+  return (
+    <>
+      <Divider />
+      <div
+        className="border-l-2 border-[hsl(var(--accent))]/40 pl-4 mt-2"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <SectionLabel>private context</SectionLabel>
+          <span
+            className="font-mono text-[9px] px-1.5 py-0.5 border border-[hsl(var(--accent))]/30 text-[hsl(var(--accent))] opacity-70 uppercase tracking-wider"
+            style={{ borderRadius: "2px" }}
+          >
+            private
+          </span>
+        </div>
+
+        {!hasContent ? (
+          <div
+            className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4"
+            style={{ borderRadius: "2px" }}
+          >
+            <p className="text-[hsl(var(--text-secondary))] opacity-40 font-mono text-[11px]">
+              no private context yet. add private notes, projects, and links from your dashboard.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Private Notes */}
+            {privateContext.privateNotes && (
+              <div>
+                <h3 className="text-[hsl(var(--text-secondary))] opacity-60 font-mono text-[10px] uppercase tracking-wider mb-2">
+                  notes
+                </h3>
+                <div
+                  className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4"
+                  style={{ borderRadius: "2px" }}
+                >
+                  <p className="text-[hsl(var(--text-secondary))] opacity-70 text-[13px] leading-[1.7] whitespace-pre-wrap">
+                    {privateContext.privateNotes}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Private Projects */}
+            {privateContext.privateProjects && privateContext.privateProjects.length > 0 && (
+              <div>
+                <h3 className="text-[hsl(var(--text-secondary))] opacity-60 font-mono text-[10px] uppercase tracking-wider mb-2">
+                  private projects
+                </h3>
+                <div className="grid gap-2">
+                  {privateContext.privateProjects.map((project: PrivateProject, i: number) => (
+                    <div
+                      key={i}
+                      className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
+                      style={{ borderRadius: "2px" }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[12px] text-[hsl(var(--text-primary))]">
+                          {project.name || "untitled"}
+                        </span>
+                        {project.status && (
+                          <span className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-60 uppercase">
+                            {project.status}
+                          </span>
+                        )}
+                      </div>
+                      {project.description && (
+                        <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[11px] mt-1">
+                          {project.description}
+                        </p>
+                      )}
+                      {project.url && (
+                        <a
+                          href={project.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[hsl(var(--accent))] opacity-60 font-mono text-[10px] mt-1 inline-block hover:opacity-100 transition-opacity"
+                        >
+                          {project.url}
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Internal Links */}
+            {privateContext.internalLinks && Object.keys(privateContext.internalLinks).length > 0 && (
+              <div>
+                <h3 className="text-[hsl(var(--text-secondary))] opacity-60 font-mono text-[10px] uppercase tracking-wider mb-2">
+                  internal links
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(privateContext.internalLinks as Record<string, string>).map(
+                    ([label, url]) => (
+                      <a
+                        key={label}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[hsl(var(--accent))]/70 hover:text-[hsl(var(--accent))] font-mono text-[11px] transition-colors border border-[hsl(var(--border))] px-3 py-1.5 hover:border-[hsl(var(--accent))]/30"
+                        style={{ borderRadius: "2px" }}
+                      >
+                        {label}
+                        <span className="text-[9px] opacity-50">{"\u2197"}</span>
+                      </a>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Calendar Context */}
+            {privateContext.calendarContext && (
+              <div>
+                <h3 className="text-[hsl(var(--text-secondary))] opacity-60 font-mono text-[10px] uppercase tracking-wider mb-2">
+                  calendar context
+                </h3>
+                <div
+                  className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3"
+                  style={{ borderRadius: "2px" }}
+                >
+                  <p className="text-[hsl(var(--text-secondary))] opacity-60 font-mono text-[11px] whitespace-pre-wrap">
+                    {privateContext.calendarContext}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Investment Thesis */}
+            {privateContext.investmentThesis && (
+              <div>
+                <h3 className="text-[hsl(var(--text-secondary))] opacity-60 font-mono text-[10px] uppercase tracking-wider mb-2">
+                  investment thesis
+                </h3>
+                <div
+                  className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3"
+                  style={{ borderRadius: "2px" }}
+                >
+                  <p className="text-[hsl(var(--text-secondary))] opacity-60 text-[12px] leading-[1.7] whitespace-pre-wrap">
+                    {privateContext.investmentThesis}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
   );
 }

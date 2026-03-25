@@ -7,7 +7,17 @@ import {
   localBundleExists,
   isAuthenticated,
   readGlobalConfig,
+  detectProjectContext,
+  readProjectPrivateNotes,
 } from "../lib/config";
+import {
+  findProjectsRoot,
+  detectCurrentProject,
+  getProjectDir,
+  buildProjectContextInjection,
+  parseProjectUpdates,
+  updateProjectFile,
+} from "../lib/project";
 import { compileBundle, writeBundle } from "../lib/compiler";
 import { uploadBundle, publishLatest, saveMemories, updatePrivateContext } from "../lib/api";
 import { BrailleSpinner } from "../lib/render";
@@ -435,7 +445,16 @@ your job:
 5. be proactive: "looks like your projects section could use an update — want to add that?"
 6. when they share something sensitive, ask: "want me to keep that private or add it to your public profile?"
 
-rules: each section starts with YAML frontmatter. real markdown, not placeholders. output FULL section content each time. be substantive — write from what you actually know.`;
+rules: each section starts with YAML frontmatter. real markdown, not placeholders. output FULL section content each time. be substantive — write from what you actually know.
+
+--- project context updates ---
+
+if the user is working in a project (you'll see a [PROJECT CONTEXT] block), you can update project files. when you learn something about the project — a decision made, a task completed, a feature shipped, a new requirement — output:
+\`\`\`json
+{"project_updates": [{"file": "context/todo.md", "content": "updated content..."}]}
+\`\`\`
+allowed files: context/todo.md, context/features.md, context/changelog.md, context/decisions.md, context/prd.md, agent/instructions.md, agent/memory.json, private/notes.md
+only output project_updates when something actually changed. the system will write these files and show a notice to the user.`;
 
 const SLASH_COMMANDS: Record<string, string> = {
   "/status": "show bundle status",
@@ -921,6 +940,46 @@ export async function chatCommand(): Promise<void> {
   const apiKey = getOpenRouterKey();
   const rl = createRL();
 
+  // Detect project context (legacy detection from config.ts)
+  const projectCtx = detectProjectContext();
+  let projectContextBlock = "";
+  let activeProjectDir: string | null = null;
+
+  if (projectCtx) {
+    console.log("");
+    console.log(
+      "  " + chalk.hex("#C46A3A")("project:") + " " + chalk.white(projectCtx.name) +
+      chalk.dim(` (${projectCtx.root})`)
+    );
+
+    // Try the new file-system project context first
+    const projectsRoot = findProjectsRoot();
+    if (projectsRoot) {
+      const detected = detectCurrentProject(projectsRoot);
+      if (detected) {
+        activeProjectDir = getProjectDir(projectsRoot, detected);
+        const injection = buildProjectContextInjection(activeProjectDir);
+        if (injection) {
+          projectContextBlock = `\n\n--- project context ---\n${injection}`;
+        }
+      }
+    }
+
+    // Fallback to legacy project context if new system didn't produce anything
+    if (!projectContextBlock) {
+      const projectNotes = readProjectPrivateNotes(projectCtx.name);
+      const parts: string[] = [];
+      parts.push(`the user is currently working in project: ${projectCtx.name} at ${projectCtx.root}`);
+      if (projectCtx.youmdProject?.description) {
+        parts.push(`project description: ${projectCtx.youmdProject.description}`);
+      }
+      if (projectNotes) {
+        parts.push(`project-specific private notes:\n${projectNotes}`);
+      }
+      projectContextBlock = `\n\n--- project context ---\n${parts.join("\n")}`;
+    }
+  }
+
   console.log("");
   console.log("  " + chalk.bold("you.md chat"));
   console.log(
@@ -972,7 +1031,7 @@ export async function chatCommand(): Promise<void> {
     { role: "system", content: CHAT_SYSTEM_PROMPT },
     {
       role: "user",
-      content: `here is my current identity bundle:\n\n${currentBundle}${directivesContext}\n\n${greetingInstruction}`,
+      content: `here is my current identity bundle:\n\n${currentBundle}${directivesContext}${projectContextBlock}\n\n${greetingInstruction}`,
     },
   ];
 
@@ -1368,6 +1427,21 @@ export async function chatCommand(): Promise<void> {
           }
         } catch {
           // non-fatal
+        }
+      }
+    }
+
+    // Handle project context updates
+    if (activeProjectDir) {
+      const projUpdates = parseProjectUpdates(response);
+      if (projUpdates.length > 0) {
+        for (const pu of projUpdates) {
+          try {
+            updateProjectFile(activeProjectDir, pu.file, pu.content);
+            console.log(chalk.hex("#C46A3A")(`  [updated project context: ${pu.file}]`));
+          } catch {
+            // non-fatal
+          }
         }
       }
     }

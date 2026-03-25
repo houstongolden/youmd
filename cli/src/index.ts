@@ -20,6 +20,7 @@ import { pushCommand } from "./commands/push";
 import { syncCommand } from "./commands/sync";
 import { memoriesCommand } from "./commands/memories";
 import { privateCommand } from "./commands/private";
+import { projectCommand } from "./commands/project";
 
 const program = new Command();
 
@@ -113,15 +114,15 @@ program
   .action(syncCommand);
 
 const linkCmd = program
-  .command("link [subcommand]")
-  .description("Manage context links (create, list, revoke)")
+  .command("link [subcommand] [arg]")
+  .description("Manage context links (create, list, revoke, preview)")
   .option("--scope <scope>", "Link scope: public or full", "public")
   .option("--ttl <ttl>", "Time to live: 1h, 24h, 7d, 30d, 90d, never", "7d")
   .option("--max-uses <n>", "Maximum number of uses")
-  .option("--id <id>", "Link ID (for revoke)");
+  .option("--id <id>", "Link ID or token (for revoke/preview)");
 
-linkCmd.action((subcommand, options) => {
-  return linkCommand(subcommand, options);
+linkCmd.action((subcommand, arg, options) => {
+  return linkCommand(subcommand, { ...options, arg });
 });
 
 const keysCmd = program
@@ -147,6 +148,13 @@ program
   .description("Manage private context (notes, links, projects)")
   .action((subcommand, args) => {
     return privateCommand(subcommand, ...(args || []));
+  });
+
+program
+  .command("project [subcommand] [args...]")
+  .description("Manage project agent context (init, list, show, memories)")
+  .action((subcommand, args) => {
+    return projectCommand(subcommand, ...(args || []));
   });
 
 program.parse(process.argv);

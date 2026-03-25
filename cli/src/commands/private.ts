@@ -2,11 +2,26 @@ import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
 import chalk from "chalk";
-import { isAuthenticated } from "../lib/config";
+import {
+  isAuthenticated,
+  detectProjectContext,
+  readProjectPrivateNotes,
+  writeProjectPrivateNotes,
+  getProjectPrivateDir,
+} from "../lib/config";
 import { getPrivateContext, updatePrivateContext, PrivateContext } from "../lib/api";
 import { BrailleSpinner } from "../lib/render";
 
 const ACCENT = chalk.hex("#C46A3A");
+
+/**
+ * Check if --global flag is present in args and strip it.
+ */
+function extractGlobalFlag(args: string[]): { isGlobal: boolean; cleanArgs: string[] } {
+  const isGlobal = args.includes("--global");
+  const cleanArgs = args.filter((a) => a !== "--global");
+  return { isGlobal, cleanArgs };
+}
 
 export async function privateCommand(subcommand?: string, ...args: string[]) {
   if (!isAuthenticated()) {
@@ -14,27 +29,38 @@ export async function privateCommand(subcommand?: string, ...args: string[]) {
     process.exit(1);
   }
 
+  const { isGlobal, cleanArgs } = extractGlobalFlag(args);
+  const projectCtx = isGlobal ? null : detectProjectContext();
+
   const cmd = subcommand || "show";
 
   switch (cmd) {
     case "show": {
-      await showAll();
+      await showAll(projectCtx?.name || null);
       break;
     }
 
     case "notes": {
-      const notesSub = args[0];
+      const notesSub = cleanArgs[0];
       if (!notesSub) {
-        await showNotes();
+        await showNotes(projectCtx?.name || null);
       } else if (notesSub === "set") {
-        await setNotes();
+        if (projectCtx && !isGlobal) {
+          await setProjectNotes(projectCtx.name);
+        } else {
+          await setNotes();
+        }
       } else if (notesSub === "append") {
-        const text = args.slice(1).join(" ");
+        const text = cleanArgs.slice(1).join(" ");
         if (!text) {
           console.log(chalk.red("usage: youmd private notes append \"text to append\""));
           process.exit(1);
         }
-        await appendNotes(text);
+        if (projectCtx && !isGlobal) {
+          await appendProjectNotes(projectCtx.name, text);
+        } else {
+          await appendNotes(text);
+        }
       } else {
         console.log(chalk.red(`unknown notes subcommand: ${notesSub}`));
         printUsage();
@@ -43,19 +69,19 @@ export async function privateCommand(subcommand?: string, ...args: string[]) {
     }
 
     case "links": {
-      const linksSub = args[0];
+      const linksSub = cleanArgs[0];
       if (!linksSub) {
         await showLinks();
       } else if (linksSub === "add") {
-        const label = args[1];
-        const url = args[2];
+        const label = cleanArgs[1];
+        const url = cleanArgs[2];
         if (!label || !url) {
           console.log(chalk.red("usage: youmd private links add <label> <url>"));
           process.exit(1);
         }
         await addLink(label, url);
       } else if (linksSub === "remove") {
-        const label = args[1];
+        const label = cleanArgs[1];
         if (!label) {
           console.log(chalk.red("usage: youmd private links remove <label>"));
           process.exit(1);
@@ -69,19 +95,19 @@ export async function privateCommand(subcommand?: string, ...args: string[]) {
     }
 
     case "projects": {
-      const projectsSub = args[0];
+      const projectsSub = cleanArgs[0];
       if (!projectsSub) {
         await showProjects();
       } else if (projectsSub === "add") {
-        const name = args[1];
+        const name = cleanArgs[1];
         if (!name) {
           console.log(chalk.red("usage: youmd private projects add <name> [description]"));
           process.exit(1);
         }
-        const description = args.slice(2).join(" ") || "";
+        const description = cleanArgs.slice(2).join(" ") || "";
         await addProject(name, description);
       } else if (projectsSub === "remove") {
-        const name = args[1];
+        const name = cleanArgs[1];
         if (!name) {
           console.log(chalk.red("usage: youmd private projects remove <name>"));
           process.exit(1);
@@ -112,6 +138,9 @@ function printUsage() {
   console.log("  youmd private projects                     list private projects");
   console.log("  youmd private projects add <name> [desc]   add a project");
   console.log("  youmd private projects remove <name>       remove a project");
+  console.log("");
+  console.log(chalk.dim("  in a project directory, notes are project-scoped by default."));
+  console.log(chalk.dim("  use --global to target global private context instead."));
 }
 
 // ── Fetch helper ──────────────────────────────────────────────
@@ -134,7 +163,23 @@ async function fetchPrivateContext(): Promise<PrivateContext> {
 
 // ── Show all ──────────────────────────────────────────────────
 
-async function showAll() {
+async function showAll(projectName: string | null) {
+  // Show project-scoped notes if in a project
+  if (projectName) {
+    const projectNotes = readProjectPrivateNotes(projectName);
+    if (projectNotes) {
+      console.log(ACCENT(`  project notes [${projectName}]`));
+      for (const line of projectNotes.split("\n")) {
+        console.log(chalk.white(`    ${line}`));
+      }
+      console.log();
+    } else {
+      console.log(chalk.dim(`  no project-specific notes for ${projectName}.`));
+      console.log();
+    }
+  }
+
+  // Always show global private context
   const ctx = await fetchPrivateContext();
 
   const hasNotes = !!ctx.privateNotes;
@@ -142,9 +187,18 @@ async function showAll() {
   const hasProjects = ctx.privateProjects && ctx.privateProjects.length > 0;
 
   if (!hasNotes && !hasLinks && !hasProjects) {
-    console.log(chalk.dim("  no private context yet."));
-    console.log(chalk.dim("  use `youmd private notes set`, `youmd private links add`, or `youmd private projects add` to get started."));
+    if (!projectName) {
+      console.log(chalk.dim("  no private context yet."));
+      console.log(chalk.dim("  use `youmd private notes set`, `youmd private links add`, or `youmd private projects add` to get started."));
+    } else {
+      console.log(chalk.dim("  no global private context."));
+    }
     return;
+  }
+
+  if (projectName) {
+    console.log(ACCENT("  global private context"));
+    console.log();
   }
 
   if (hasNotes) {
@@ -176,16 +230,39 @@ async function showAll() {
 
 // ── Notes ─────────────────────────────────────────────────────
 
-async function showNotes() {
+async function showNotes(projectName: string | null) {
+  // Show project-scoped notes if in a project
+  if (projectName) {
+    const projectNotes = readProjectPrivateNotes(projectName);
+    if (projectNotes) {
+      console.log(ACCENT(`  project notes [${projectName}]`));
+      for (const line of projectNotes.split("\n")) {
+        console.log(chalk.white(`    ${line}`));
+      }
+    } else {
+      console.log(chalk.dim(`  no project-specific notes for ${projectName}.`));
+    }
+    console.log();
+  }
+
+  // Always show global notes
   const ctx = await fetchPrivateContext();
 
   if (!ctx.privateNotes) {
-    console.log(chalk.dim("  no private notes set."));
-    console.log(chalk.dim("  use `youmd private notes set` to add notes."));
+    if (!projectName) {
+      console.log(chalk.dim("  no private notes set."));
+      console.log(chalk.dim("  use `youmd private notes set` to add notes."));
+    } else {
+      console.log(chalk.dim("  no global private notes."));
+    }
     return;
   }
 
-  console.log(ACCENT("  notes"));
+  if (projectName) {
+    console.log(ACCENT("  global notes"));
+  } else {
+    console.log(ACCENT("  notes"));
+  }
   for (const line of ctx.privateNotes.split("\n")) {
     console.log(chalk.white(`    ${line}`));
   }
@@ -250,6 +327,43 @@ async function appendNotes(text: string) {
 
   spinner.stop();
   console.log(chalk.green("  appended to notes."));
+}
+
+// ── Project-scoped notes ──────────────────────────────────────
+
+async function setProjectNotes(projectName: string) {
+  let text: string;
+
+  if (!process.stdin.isTTY) {
+    text = await readStdin();
+  } else {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    text = await new Promise<string>((resolve) => {
+      console.log(chalk.dim(`  enter private notes for project ${projectName} (press Ctrl+D when done):`));
+      const lines: string[] = [];
+      rl.on("line", (line) => lines.push(line));
+      rl.on("close", () => resolve(lines.join("\n")));
+    });
+  }
+
+  if (!text.trim()) {
+    console.log(chalk.red("  empty input, notes not updated."));
+    return;
+  }
+
+  writeProjectPrivateNotes(projectName, text);
+  console.log(chalk.green(`  project notes saved [${projectName}].`));
+}
+
+async function appendProjectNotes(projectName: string, text: string) {
+  const existing = readProjectPrivateNotes(projectName) || "";
+  const updated = existing ? `${existing}\n${text}` : text;
+  writeProjectPrivateNotes(projectName, updated);
+  console.log(chalk.green(`  appended to project notes [${projectName}].`));
 }
 
 // ── Links ─────────────────────────────────────────────────────

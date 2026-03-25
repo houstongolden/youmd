@@ -5,7 +5,7 @@ import {
   listContextLinks,
   revokeContextLink,
 } from "../lib/api";
-import { BrailleSpinner } from "../lib/render";
+import { BrailleSpinner, renderRichResponse } from "../lib/render";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -20,7 +20,7 @@ const SUCCESS = chalk.green;
 
 export async function linkCommand(
   subcommand?: string,
-  options: { scope?: string; ttl?: string; maxUses?: string; id?: string } = {}
+  options: { scope?: string; ttl?: string; maxUses?: string; id?: string; arg?: string } = {}
 ): Promise<void> {
   console.log("");
 
@@ -43,12 +43,16 @@ export async function linkCommand(
     case "revoke":
       await linkRevoke(options.id);
       break;
+    case "preview":
+      await linkPreview(options.arg || options.id);
+      break;
     default:
       console.log("you.md -- context links");
       console.log("");
       console.log("Usage:");
       console.log("  youmd link create [--scope public|full] [--ttl 1h|24h|7d|30d|90d|never] [--max-uses N]");
       console.log("  youmd link list");
+      console.log("  youmd link preview <token>     preview what the agent sees");
       console.log("  youmd link revoke --id <linkId>");
       console.log("");
       console.log("Context links are shareable URLs that give agents access to your identity bundle.");
@@ -191,6 +195,100 @@ async function linkList(): Promise<void> {
     }
   } catch (err) {
     spinner.fail("failed to list links");
+    if (err instanceof Error) {
+      console.log("  " + DIM(err.message));
+    }
+    console.log("");
+  }
+}
+
+const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
+
+async function linkPreview(token?: string): Promise<void> {
+  if (!token) {
+    console.log(ACCENT("missing token"));
+    console.log("");
+    console.log("Usage: youmd link preview <token>");
+    console.log("       youmd link preview --id <token>");
+    console.log("");
+    console.log(DIM("Tip: run ") + chalk.cyan("youmd link list") + DIM(" to see your links and tokens."));
+    console.log("");
+    return;
+  }
+
+  const spinner = new BrailleSpinner("resolving context link");
+  spinner.start();
+
+  try {
+    // First, fetch link metadata from the list to show scope/expiry info
+    let linkMeta: { scope?: string; useCount?: number; expiresAt?: string; url?: string } = {};
+    try {
+      const linksRes = await listContextLinks();
+      if (linksRes.ok && Array.isArray(linksRes.data)) {
+        const match = linksRes.data.find((l) => l.token === token || l.url?.includes(token));
+        if (match) {
+          linkMeta = {
+            scope: match.scope,
+            useCount: match.useCount,
+            expiresAt: match.expiresAt,
+            url: match.url,
+          };
+        }
+      }
+    } catch {
+      // metadata fetch is best-effort
+    }
+
+    // Resolve the context link — fetch what an agent would see
+    const res = await fetch(`${CONVEX_SITE_URL}/ctx?token=${encodeURIComponent(token)}`, {
+      headers: { Accept: "text/plain" },
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      spinner.fail(`HTTP ${res.status}: ${errText}`);
+      console.log("");
+      return;
+    }
+
+    const content = await res.text();
+    spinner.stop(`${content.length} chars`);
+
+    // Show link metadata
+    console.log("");
+    console.log(DIM("  token     ") + chalk.white(token));
+    if (linkMeta.scope) {
+      const scopeLabel = linkMeta.scope === "full" ? ACCENT("full (private)") : DIM("public");
+      console.log(DIM("  scope     ") + scopeLabel);
+    }
+    if (linkMeta.useCount !== undefined) {
+      console.log(DIM("  uses      ") + chalk.white(String(linkMeta.useCount)));
+    }
+    if (linkMeta.expiresAt) {
+      const exp = linkMeta.expiresAt === "never"
+        ? DIM("no expiry")
+        : DIM("expires " + linkMeta.expiresAt.split("T")[0]);
+      console.log(DIM("  expires   ") + exp);
+    }
+    if (linkMeta.url) {
+      console.log(DIM("  url       ") + ACCENT(linkMeta.url));
+    }
+    console.log("");
+    console.log(DIM("  " + "\u2500".repeat(50)));
+    console.log(DIM("  AGENT VIEW:"));
+    console.log(DIM("  " + "\u2500".repeat(50)));
+    console.log("");
+
+    // Render the content using the rich renderer
+    const rendered = renderRichResponse(content);
+    console.log(rendered);
+    console.log("");
+    console.log(DIM("  " + "\u2500".repeat(50)));
+    console.log(DIM(`  ${content.length.toLocaleString()} chars -- this is what the agent sees`));
+    console.log("");
+  } catch (err) {
+    spinner.fail("failed to resolve context link");
     if (err instanceof Error) {
       console.log("  " + DIM(err.message));
     }

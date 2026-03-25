@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
 import { CopyableLink, CopyableCommand } from "./CopyableCommand";
@@ -103,6 +103,215 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
   },
 ];
 
+interface PreviewLink {
+  token: string;
+  scope: string;
+  useCount: number;
+  expiresAt: string;
+  isExpired: boolean;
+}
+
+function LinkPreviewModal({
+  link,
+  username,
+  onClose,
+}: {
+  link: PreviewLink;
+  username: string;
+  onClose: () => void;
+}) {
+  const [content, setContent] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [copiedContent, setCopiedContent] = useState(false);
+
+  const fullUrl = `https://you.md/ctx/${username}/${link.token}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchPreview() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/ctx/${username}/${link.token}`, {
+          headers: { Accept: "text/plain" },
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+        }
+        const text = await res.text();
+        if (!cancelled) setContent(text);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "failed to fetch preview");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchPreview();
+    return () => { cancelled = true; };
+  }, [link.token, username]);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  const handleCopyContent = () => {
+    if (content) {
+      navigator.clipboard.writeText(content);
+      setCopiedContent(true);
+      setTimeout(() => setCopiedContent(false), 2000);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/80" />
+
+      {/* Modal panel */}
+      <div
+        className="relative w-full max-w-2xl max-h-[80vh] mx-4 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] flex flex-col"
+        style={{ borderRadius: "2px" }}
+      >
+        {/* Terminal 3-dot header */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-[hsl(var(--border))]">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[hsl(var(--accent))]/60" />
+            <span className="w-2 h-2 rounded-full bg-[hsl(var(--text-secondary))]/20" />
+            <span className="w-2 h-2 rounded-full bg-[hsl(var(--text-secondary))]/20" />
+            <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 ml-2">
+              link preview
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="font-mono text-[10px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] transition-colors px-1.5 py-0.5"
+          >
+            [esc]
+          </button>
+        </div>
+
+        {/* Link metadata */}
+        <div className="px-4 py-3 border-b border-[hsl(var(--border))] space-y-1.5">
+          <div className="flex items-center gap-2">
+            <code className="font-mono text-[11px] text-[hsl(var(--accent-mid))] truncate flex-1">
+              {fullUrl}
+            </code>
+            <CopyButton
+              text={fullUrl}
+              className="shrink-0 px-1.5 py-0.5 text-[9px] font-mono border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
+              label="copy url"
+            />
+          </div>
+          <div className="flex items-center gap-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">
+            <span>
+              token: <span className="text-[hsl(var(--text-primary))] opacity-70">{link.token}</span>
+            </span>
+            <span>
+              scope:{" "}
+              <span
+                className={
+                  link.scope === "full"
+                    ? "text-[hsl(var(--accent))]"
+                    : "text-[hsl(var(--text-primary))] opacity-70"
+                }
+              >
+                {link.scope}
+              </span>
+            </span>
+            <span>
+              uses: <span className="text-[hsl(var(--text-primary))] opacity-70">{link.useCount}</span>
+            </span>
+            <span>
+              expires:{" "}
+              <span className="text-[hsl(var(--text-primary))] opacity-70">
+                {link.isExpired
+                  ? "expired"
+                  : typeof link.expiresAt === "string"
+                    ? link.expiresAt === "never"
+                      ? "never"
+                      : link.expiresAt.split("T")[0]
+                    : "never"}
+              </span>
+            </span>
+          </div>
+        </div>
+
+        {/* Content area */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
+          {loading && (
+            <div className="flex items-center gap-2 py-8 justify-center">
+              <span className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40 animate-pulse">
+                fetching context link resolution...
+              </span>
+            </div>
+          )}
+          {error && (
+            <div className="py-4">
+              <p className="font-mono text-[11px] text-[hsl(var(--accent))]">
+                error: {error}
+              </p>
+            </div>
+          )}
+          {content && (
+            <pre className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-70 whitespace-pre-wrap leading-relaxed">
+              {content}
+            </pre>
+          )}
+        </div>
+
+        {/* Footer with copy button */}
+        {content && (
+          <div className="px-4 py-2.5 border-t border-[hsl(var(--border))] flex items-center justify-between">
+            <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30">
+              {content.length.toLocaleString()} chars -- this is what the agent sees
+            </span>
+            <button
+              onClick={handleCopyContent}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-mono border transition-colors ${
+                copiedContent
+                  ? "border-[hsl(var(--success))]/40 text-[hsl(var(--success))] bg-[hsl(var(--success))]/5"
+                  : "border-[hsl(var(--accent))]/30 text-[hsl(var(--accent))] hover:bg-[hsl(var(--accent-wash))]"
+              }`}
+              style={{ borderRadius: "2px" }}
+            >
+              {copiedContent ? (
+                <>
+                  <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  copied
+                </>
+              ) : (
+                <>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  copy agent text
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function SharePane({ username, userId, clerkId, profileId, plan }: SharePaneProps) {
   const recentBundles = useQuery(
     api.bundles.listRecentBundles,
@@ -121,6 +330,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
   const [selectedTemplate, setSelectedTemplate] = useState(0);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [previewLink, setPreviewLink] = useState<PreviewLink | null>(null);
 
   const liveBundle = recentBundles?.find((b) => b.isPublished);
   const publicUrl = `https://you.md/${username}`;
@@ -353,12 +563,28 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                   </div>
                 </div>
                 {!link.isExpired && (
-                  <button
-                    onClick={() => revokeLink({ clerkId, linkId: link.id })}
-                    className="text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-dark))] transition-colors"
-                  >
-                    revoke
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() =>
+                        setPreviewLink({
+                          token: link.token,
+                          scope: link.scope,
+                          useCount: link.useCount,
+                          expiresAt: typeof link.expiresAt === "string" ? link.expiresAt : "never",
+                          isExpired: link.isExpired,
+                        })
+                      }
+                      className="text-[10px] font-mono text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] transition-colors"
+                    >
+                      preview
+                    </button>
+                    <button
+                      onClick={() => revokeLink({ clerkId, linkId: link.id })}
+                      className="text-[10px] font-mono text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-dark))] transition-colors"
+                    >
+                      revoke
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -401,6 +627,15 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
           </>
         )}
       </div>
+
+      {/* Link preview modal */}
+      {previewLink && (
+        <LinkPreviewModal
+          link={previewLink}
+          username={username}
+          onClose={() => setPreviewLink(null)}
+        />
+      )}
     </div>
   );
 }

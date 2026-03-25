@@ -76,3 +76,204 @@ export function isAuthenticated(): boolean {
   const config = readGlobalConfig();
   return !!config.token;
 }
+
+// ─── Project Context Detection ────────────────────────────────────────
+
+export interface YoumdProjectFile {
+  name: string;
+  description?: string;
+  createdAt?: string;
+}
+
+export interface ProjectContext {
+  root: string;
+  name: string;
+  marker: string; // which file triggered detection
+  youmdProject?: YoumdProjectFile; // contents of .youmd-project if present
+}
+
+const PROJECT_MARKERS = [
+  ".youmd-project",
+  ".git",
+  "package.json",
+  "Cargo.toml",
+  "go.mod",
+  "pyproject.toml",
+  "Makefile",
+];
+
+/**
+ * Walk up from cwd looking for project markers.
+ * Returns project context if found, null otherwise.
+ */
+export function detectProjectContext(): ProjectContext | null {
+  let dir = process.cwd();
+  const root = path.parse(dir).root;
+
+  while (dir !== root) {
+    for (const marker of PROJECT_MARKERS) {
+      const markerPath = path.join(dir, marker);
+      const isDir = marker === ".git";
+
+      if (isDir) {
+        if (fs.existsSync(markerPath) && fs.statSync(markerPath).isDirectory()) {
+          return buildProjectContext(dir, marker);
+        }
+      } else {
+        if (fs.existsSync(markerPath) && fs.statSync(markerPath).isFile()) {
+          return buildProjectContext(dir, marker);
+        }
+      }
+    }
+
+    dir = path.dirname(dir);
+  }
+
+  return null;
+}
+
+function buildProjectContext(projectRoot: string, marker: string): ProjectContext {
+  // Check for .youmd-project first (highest priority for name/description)
+  const youmdProjectPath = path.join(projectRoot, ".youmd-project");
+  let youmdProject: YoumdProjectFile | undefined;
+
+  if (fs.existsSync(youmdProjectPath)) {
+    try {
+      youmdProject = JSON.parse(fs.readFileSync(youmdProjectPath, "utf-8"));
+    } catch {
+      // malformed — ignore
+    }
+  }
+
+  // Determine project name
+  let name = youmdProject?.name || "";
+
+  if (!name) {
+    // Try package.json
+    const pkgPath = path.join(projectRoot, "package.json");
+    if (fs.existsSync(pkgPath)) {
+      try {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+        if (pkg.name && typeof pkg.name === "string") {
+          name = pkg.name;
+        }
+      } catch {
+        // skip
+      }
+    }
+  }
+
+  // Fallback to directory name
+  if (!name) {
+    name = path.basename(projectRoot);
+  }
+
+  return {
+    root: projectRoot,
+    name,
+    marker,
+    youmdProject,
+  };
+}
+
+/**
+ * Sanitize a project name for use as a directory name.
+ */
+function sanitizeProjectName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/**
+ * Get the global .youmd/projects/{project-name}/ directory for project-specific files.
+ */
+export function getProjectBundleDir(projectName: string): string {
+  return path.join(GLOBAL_CONFIG_DIR, "projects", sanitizeProjectName(projectName));
+}
+
+/**
+ * Get the private context directory for a project.
+ */
+export function getProjectPrivateDir(projectName: string): string {
+  return path.join(getProjectBundleDir(projectName), "private");
+}
+
+/**
+ * Ensure the project bundle directory structure exists.
+ */
+export function ensureProjectDirs(projectName: string): string {
+  const projectDir = getProjectBundleDir(projectName);
+  const privateDir = path.join(projectDir, "private");
+  fs.mkdirSync(privateDir, { recursive: true });
+  return projectDir;
+}
+
+/**
+ * Read project-specific private notes from .youmd/projects/{name}/private/notes.md
+ */
+export function readProjectPrivateNotes(projectName: string): string | null {
+  const notesPath = path.join(getProjectPrivateDir(projectName), "notes.md");
+  if (!fs.existsSync(notesPath)) return null;
+  try {
+    return fs.readFileSync(notesPath, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Write project-specific private notes.
+ */
+export function writeProjectPrivateNotes(projectName: string, content: string): void {
+  const privateDir = getProjectPrivateDir(projectName);
+  fs.mkdirSync(privateDir, { recursive: true });
+  fs.writeFileSync(path.join(privateDir, "notes.md"), content);
+}
+
+/**
+ * Read project-specific config/context from .youmd/projects/{name}/context.json
+ */
+export function readProjectContext(projectName: string): Record<string, unknown> | null {
+  const contextPath = path.join(getProjectBundleDir(projectName), "context.json");
+  if (!fs.existsSync(contextPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(contextPath, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Write project-specific context.
+ */
+export function writeProjectContext(projectName: string, context: Record<string, unknown>): void {
+  const projectDir = getProjectBundleDir(projectName);
+  fs.mkdirSync(projectDir, { recursive: true });
+  fs.writeFileSync(path.join(projectDir, "context.json"), JSON.stringify(context, null, 2) + "\n");
+}
+
+/**
+ * List all known projects from .youmd/projects/
+ */
+export function listProjects(): Array<{ name: string; dir: string }> {
+  const projectsDir = path.join(GLOBAL_CONFIG_DIR, "projects");
+  if (!fs.existsSync(projectsDir)) return [];
+
+  try {
+    return fs
+      .readdirSync(projectsDir)
+      .filter((entry) => {
+        const entryPath = path.join(projectsDir, entry);
+        return fs.statSync(entryPath).isDirectory();
+      })
+      .map((entry) => ({
+        name: entry,
+        dir: path.join(projectsDir, entry),
+      }));
+  } catch {
+    return [];
+  }
+}
