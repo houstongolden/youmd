@@ -397,7 +397,11 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
             {/* ═══ IDENTITY ═══ */}
             <motion.section {...delay(1)}>
               <SectionLabel>identity</SectionLabel>
-              {bio && <p className="text-[hsl(var(--text-secondary))] text-[14px] leading-[1.7] mt-3 mb-4">{bio}</p>}
+              {bio && (
+                <p className="text-[hsl(var(--text-secondary))] text-[14px] leading-[1.7] mt-3 mb-4">
+                  <RenderInlineMarkdown text={bio} />
+                </p>
+              )}
               {topics.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {topics.map((t: string) => (
@@ -482,7 +486,9 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                 <motion.section {...delay(4)}>
                   <SectionLabel>projects</SectionLabel>
                   <div className="grid gap-2 mt-3">
-                    {data.projects.map((project: Project, i: number) => (
+                    {data.projects
+                      .filter((p: Project) => p.name && !p.name.startsWith("#"))
+                      .map((project: Project, i: number) => (
                       <div
                         key={i}
                         className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] hover:border-[hsl(var(--accent))]/20 transition-colors group"
@@ -490,7 +496,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                       >
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-mono text-[13px] text-[hsl(var(--text-primary))]">{project.name}</span>
+                            <span className="font-mono text-[13px] text-[hsl(var(--text-primary))]">{cleanMarkdown(project.name)}</span>
                             {project.status && (
                               <span className={`font-mono text-[9px] uppercase tracking-wider ${statusColor(project.status)}`}>
                                 {project.status}
@@ -504,10 +510,12 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                           )}
                         </div>
                         {project.role && (
-                          <span className="text-[hsl(var(--text-secondary))] opacity-50 font-mono text-[10px]">{project.role}</span>
+                          <span className="text-[hsl(var(--text-secondary))] opacity-50 font-mono text-[10px]">{cleanMarkdown(project.role)}</span>
                         )}
                         {project.description && (
-                          <p className="text-[hsl(var(--text-secondary))] opacity-60 text-[12px] mt-1.5 leading-relaxed">{project.description}</p>
+                          <p className="text-[hsl(var(--text-secondary))] opacity-60 text-[12px] mt-1.5 leading-relaxed">
+                            <RenderInlineMarkdown text={project.description} />
+                          </p>
                         )}
                       </div>
                     ))}
@@ -828,6 +836,59 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function Divider() {
   return <div className="h-px bg-[hsl(var(--border))] my-8" />;
+}
+
+/** Strip markdown syntax from plain text (for names, roles, etc.) */
+function cleanMarkdown(text: string): string {
+  return text
+    .replace(/^#+\s*/gm, "")      // # headings
+    .replace(/\*\*(.+?)\*\*/g, "$1") // **bold**
+    .replace(/\*(.+?)\*/g, "$1")     // *italic*
+    .replace(/`([^`]+)`/g, "$1")     // `code`
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // [link](url)
+    .trim();
+}
+
+/** Render inline markdown as React elements (for descriptions) */
+function RenderInlineMarkdown({ text }: { text: string }) {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    const match = remaining.match(/(\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`)/);
+    if (!match || match.index === undefined) {
+      parts.push(<span key={key++}>{remaining}</span>);
+      break;
+    }
+
+    if (match.index > 0) {
+      parts.push(<span key={key++}>{remaining.slice(0, match.index)}</span>);
+    }
+
+    if (match[2]) {
+      // **bold**
+      parts.push(
+        <span key={key++} className="text-[hsl(var(--text-primary))] opacity-80 font-medium">
+          {match[2]}
+        </span>
+      );
+    } else if (match[3]) {
+      // *italic*
+      parts.push(<em key={key++} className="opacity-80">{match[3]}</em>);
+    } else if (match[4]) {
+      // `code`
+      parts.push(
+        <code key={key++} className="px-1 py-0.5 text-[11px] bg-[hsl(var(--bg))]/50 text-[hsl(var(--accent-mid))] border border-[hsl(var(--border))]" style={{ borderRadius: "2px" }}>
+          {match[4]}
+        </code>
+      );
+    }
+
+    remaining = remaining.slice(match.index + match[0].length);
+  }
+
+  return <>{parts}</>;
 }
 
 function extractDomain(url: string): string | null {
