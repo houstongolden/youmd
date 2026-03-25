@@ -1461,6 +1461,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const callLLMStreaming = useCallback(async (
     msgs: ChatMessage[],
     displayMessageId: string,
+    onFirstToken?: () => void,
   ): Promise<string> => {
     const streamUrl = CHAT_PROXY_URL.replace("/chat", "/chat/stream");
 
@@ -1474,6 +1475,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       if (!res.ok || !res.body) {
         // Fall back to non-streaming
+        onFirstToken?.();
         const fallback = await callLLM(msgs);
         setDisplayMessages(prev => prev.map(m =>
           m.id === displayMessageId ? { ...m, content: fallback } : m
@@ -1485,6 +1487,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       const decoder = new TextDecoder();
       let fullText = "";
       let buffer = "";
+      let notifiedFirstToken = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1502,6 +1505,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           try {
             const parsed = JSON.parse(data);
             if (parsed.text) {
+              // Notify on first token — triggers thinking indicator dismissal
+              if (!notifiedFirstToken) {
+                notifiedFirstToken = true;
+                onFirstToken?.();
+              }
               fullText += parsed.text;
               // Update the display message with streamed content
               setDisplayMessages(prev => prev.map(m =>
@@ -1517,6 +1525,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       return fullText || "";
     } catch {
       // Fall back to non-streaming on any error
+      onFirstToken?.();
       const fallback = await callLLM(msgs);
       setDisplayMessages(prev => prev.map(m =>
         m.id === displayMessageId ? { ...m, content: fallback } : m
@@ -2456,19 +2465,41 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       // Create a placeholder assistant message for streaming
       const streamMsgId = crypto.randomUUID();
-      setDisplayMessages(prev => [...prev, {
-        id: streamMsgId,
-        role: "assistant" as const,
-        content: "",
-      }]);
+      let firstTokenReceived = false;
 
-      // Stop showing thinking indicator — the streaming text IS the indicator now
-      setIsThinking(false);
+      // Keep thinking/progress visible until first token arrives
+      const onFirstToken = () => {
+        if (!firstTokenReceived) {
+          firstTokenReceived = true;
+          completeStep(llmStepId);
+          // Brief overlap — show progress completion before hiding
+          setTimeout(() => {
+            setIsThinking(false);
+            setTimeout(() => clearSteps(), 500);
+          }, 300);
+          // Add the placeholder message now that streaming has started
+          setDisplayMessages(prev => [...prev, {
+            id: streamMsgId,
+            role: "assistant" as const,
+            content: "",
+          }]);
+        }
+      };
 
-      // Stream response into the display message
-      const response = await callLLMStreaming(updatedMessages, streamMsgId);
+      // Stream response — thinking stays visible until first token
+      const response = await callLLMStreaming(updatedMessages, streamMsgId, onFirstToken);
 
-      completeStep(llmStepId);
+      // If no tokens came through (fallback path), clean up
+      if (!firstTokenReceived) {
+        completeStep(llmStepId);
+        setIsThinking(false);
+        setTimeout(() => clearSteps(), 500);
+        setDisplayMessages(prev => [...prev, {
+          id: streamMsgId,
+          role: "assistant" as const,
+          content: response,
+        }]);
+      }
 
       // Strip JSON blocks from the streamed display (they may have streamed in)
       const { display, updates } = parseUpdatesFromResponse(response);
