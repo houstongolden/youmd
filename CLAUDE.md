@@ -79,11 +79,22 @@ you-agent/                  The You Agent system (soul.md, skills, tools) — SE
 ```bash
 npx next build              # Build web app
 cd cli && npm run build     # Build CLI
-cd cli && npm publish       # Publish CLI (auto-bumps version)
 vercel --prod               # Deploy to production
 npx convex deploy           # Deploy Convex to prod (needs CONVEX_DEPLOY_KEY)
 git push                    # Triggers Vercel auto-deploy from GitHub
 ```
+
+### CLI Publishing (npm)
+**ALWAYS bump the version before publishing.** npm rejects republishing the same version.
+```bash
+cd cli
+npm version patch --no-git-tag-version   # bump 0.3.3 → 0.3.4
+npm run build                            # compile TypeScript
+npm publish --otp=CODE                   # publish (requires 2FA OTP)
+```
+- Use `patch` for fixes, `minor` for new features, `major` for breaking changes.
+- Commit the version bump to git after publishing.
+- The CLI package name is `youmd` on npm.
 
 ## Lovable Design Reference
 
