@@ -142,6 +142,37 @@ export function parseBlocks(content: string): Block[] {
   return blocks;
 }
 
+/** Word-wrap text to fit terminal width, preserving indent */
+function wordWrap(text: string, maxWidth: number, indent: string = "  "): string {
+  if (!text.trim()) return "";
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = indent;
+
+  for (const word of words) {
+    // Strip ANSI codes for length calculation
+    const plainCurrent = currentLine.replace(/\x1b\[[0-9;]*m/g, "");
+    const plainWord = word.replace(/\x1b\[[0-9;]*m/g, "");
+
+    if (plainCurrent.length + plainWord.length + 1 > maxWidth && plainCurrent.trim().length > 0) {
+      lines.push(currentLine);
+      currentLine = indent + word;
+    } else {
+      currentLine += (plainCurrent.trim().length > 0 ? " " : "") + word;
+    }
+  }
+  if (currentLine.trim().length > 0) lines.push(currentLine);
+  return lines.join("\n");
+}
+
+function getTerminalWidth(): number {
+  try {
+    return process.stdout.columns || 80;
+  } catch {
+    return 80;
+  }
+}
+
 function parseTable(lines: string[]): TableBlock | null {
   if (lines.length < 2) return null;
   const parseCells = (line: string) => line.split("|").map(c => c.trim()).filter(c => c.length > 0);
@@ -233,9 +264,15 @@ export function renderRichResponse(content: string): string {
 
   for (const block of blocks) {
     switch (block.type) {
-      case "text":
-        parts.push(block.lines.map(l => l.trim() ? `  ${formatInline(l)}` : "").join("\n"));
+      case "text": {
+        const width = getTerminalWidth() - 2; // account for indent
+        parts.push(block.lines.map(l => {
+          if (!l.trim()) return "";
+          const formatted = formatInline(l);
+          return wordWrap(formatted, width);
+        }).join("\n"));
         break;
+      }
       case "code":
         parts.push(renderCodeBlock(block.content, block.lang));
         break;
@@ -245,9 +282,11 @@ export function renderRichResponse(content: string): string {
       case "stats":
         parts.push(renderStats(block.items));
         break;
-      case "callout":
-        parts.push(`  ${ACCENT(BOX.v)} ${formatInline(block.content)}`);
+      case "callout": {
+        const cw = getTerminalWidth() - 6;
+        parts.push(wordWrap(`${ACCENT(BOX.v)} ${formatInline(block.content)}`, cw, `  ${ACCENT(BOX.v)} `));
         break;
+      }
       case "heading":
         if (block.level === 1) {
           parts.push(`\n  ${chalk.white.bold(block.text)}`);
@@ -255,9 +294,11 @@ export function renderRichResponse(content: string): string {
           parts.push(`\n  ${ACCENT(">")} ${ACCENT(block.text.toUpperCase())}`);
         }
         break;
-      case "list":
-        parts.push(block.items.map(item => `  ${ACCENT("\u203A")} ${formatInline(item)}`).join("\n"));
+      case "list": {
+        const lw = getTerminalWidth() - 6;
+        parts.push(block.items.map(item => wordWrap(`${ACCENT("\u203A")} ${formatInline(item)}`, lw, `    `)).join("\n"));
         break;
+      }
       case "divider":
         parts.push(DIM("  " + BOX.h.repeat(40)));
         break;

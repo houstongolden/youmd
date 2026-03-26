@@ -1276,8 +1276,13 @@ generate initial profile sections from what you know, show a brief summary, and 
 
 function printAgentMessage(text: string): void {
   if (!text) return;
+  // Ensure paragraphs have proper blank line separation
+  const normalizedText = text
+    .replace(/\n{3,}/g, "\n\n")  // collapse 3+ newlines to 2
+    .replace(/([.?!])\n([a-z])/g, "$1\n\n$2");  // add blank line between sentences that run together
+
   const { renderRichResponse } = require("./render");
-  const rendered = renderRichResponse(text) as string;
+  const rendered = renderRichResponse(normalizedText) as string;
 
   // Find the last line that ends with "?" and highlight it in accent color
   const lines = rendered.split("\n");
