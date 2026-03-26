@@ -1,6 +1,6 @@
 {
   "name": "youmd",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Your identity file for the agent internet. CLI for the You.md platform.",
   "bin": {
     "youmd": "./dist/index.js",
@@ -38,7 +38,8 @@
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
-    "gray-matter": "^4.0.3"
+    "gray-matter": "^4.0.3",
+    "jimp": "^0.22.12"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

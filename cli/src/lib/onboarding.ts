@@ -11,6 +11,7 @@ import {
 } from "./config";
 import { compileBundle, writeBundle } from "./compiler";
 import { BrailleSpinner } from "./render";
+import { renderAsciiPortrait, printYouLogo } from "./ascii";
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -149,7 +150,7 @@ async function multiSelectPrompt(
   console.log("");
   const answer = await ask(
     rl,
-    chalk.green("  > ") + chalk.dim("type numbers separated by commas (e.g. 1,3,5): ")
+    chalk.hex("#C46A3A")("  > ") + chalk.dim("type numbers separated by commas (e.g. 1,3,5): ")
   );
   if (!answer.trim()) return [];
   const indices = answer
@@ -160,7 +161,7 @@ async function multiSelectPrompt(
   if (selected.length > 0) {
     console.log(
       "  " +
-        chalk.green("\u2713") +
+        chalk.hex("#C46A3A")("\u2713") +
         " " +
         chalk.dim(selected.join(", "))
     );
@@ -775,23 +776,23 @@ async function runFallbackMode(
 
   const tagline = await ask(
     rl,
-    chalk.green("  > ") + "give me your one-liner. what do you do? "
+    chalk.hex("#C46A3A")("  > ") + "give me your one-liner. what do you do? "
   );
   const nowFocus = await ask(
     rl,
-    chalk.green("  > ") + "what are you focused on right now? "
+    chalk.hex("#C46A3A")("  > ") + "what are you focused on right now? "
   );
   const projects = await ask(
     rl,
-    chalk.green("  > ") + "name your top projects (comma-separated): "
+    chalk.hex("#C46A3A")("  > ") + "name your top projects (comma-separated): "
   );
   const values = await ask(
     rl,
-    chalk.green("  > ") + "what principles guide your work? "
+    chalk.hex("#C46A3A")("  > ") + "what principles guide your work? "
   );
   const agentPrefs = await ask(
     rl,
-    chalk.green("  > ") +
+    chalk.hex("#C46A3A")("  > ") +
       "how should AI agents talk to you? (e.g., direct, casual, formal): "
   );
 
@@ -1056,7 +1057,7 @@ generate initial profile sections from what you know, show a brief summary, and 
   let skipCount = 0;
 
   while (true) {
-    const userInput = await ask(rl, chalk.green("  > ") + "");
+    const userInput = await ask(rl, chalk.hex("#C46A3A")("  > ") + "");
 
     if (isDonePhrase(userInput)) {
       break;
@@ -1219,7 +1220,7 @@ generate initial profile sections from what you know, show a brief summary, and 
       lowerDisplay.includes("bundle is looking solid") ||
       lowerDisplay.includes("ready to go")
     ) {
-      const answer = await ask(rl, chalk.green("  > ") + "");
+      const answer = await ask(rl, chalk.hex("#C46A3A")("  > ") + "");
       if (
         isDonePhrase(answer) ||
         answer.toLowerCase().includes("publish") ||
@@ -1324,7 +1325,7 @@ async function finishBundle(
 
   console.log(
     "  " +
-      chalk.green("done") +
+      chalk.hex("#C46A3A")("done") +
       chalk.dim(` -- bundle compiled (v${result.bundle.version})`)
   );
 
@@ -1386,7 +1387,8 @@ export async function runOnboarding(): Promise<void> {
   const rl = createRL();
 
   // ── ASCII logo splash ──────────────────────────────────────────────
-  await showAsciiLogo();
+  // Real YOU logo — same block-character font as the homepage hero
+  printYouLogo();
 
   // ── Phase 1: Identity basics (fast, no LLM) ────────────────────────
 
@@ -1397,7 +1399,7 @@ export async function runOnboarding(): Promise<void> {
   while (!usernameValid) {
     username = await ask(
       rl,
-      chalk.green("  > ") + "pick a username: "
+      chalk.hex("#C46A3A")("  > ") + "pick a username: "
     );
 
     if (!username) {
@@ -1453,32 +1455,32 @@ export async function runOnboarding(): Promise<void> {
 
   const name = await ask(
     rl,
-    chalk.green("  > ") + "what's your name? "
+    chalk.hex("#C46A3A")("  > ") + "what's your name? "
   );
   const website = await ask(
     rl,
-    chalk.green("  > ") +
+    chalk.hex("#C46A3A")("  > ") +
       "website URL " +
       chalk.dim("(optional)") +
       ": "
   );
   const twitter = await ask(
     rl,
-    chalk.green("  > ") +
+    chalk.hex("#C46A3A")("  > ") +
       "X/Twitter username " +
       chalk.dim("(optional, e.g. @houston)") +
       ": "
   );
   const github = await ask(
     rl,
-    chalk.green("  > ") +
+    chalk.hex("#C46A3A")("  > ") +
       "GitHub username " +
       chalk.dim("(optional)") +
       ": "
   );
   const linkedin = await ask(
     rl,
-    chalk.green("  > ") +
+    chalk.hex("#C46A3A")("  > ") +
       "LinkedIn URL " +
       chalk.dim("(optional)") +
       ": "
@@ -1486,17 +1488,74 @@ export async function runOnboarding(): Promise<void> {
 
   console.log("");
 
-  // ── Show ASCII portrait after first social handle ─────────────────
-  const firstHandle = twitter || github || linkedin;
+  // ── Render REAL ASCII portrait from first social handle ──────────
+  const earlyTwitter = (twitter || "").replace(/^@/, "").trim();
+  const earlyGithub = (github || "").trim();
+  const firstHandle = earlyTwitter || earlyGithub;
   if (firstHandle) {
-    const cleanHandle = (twitter || "").replace(/^@/, "").trim() ||
-      (github || "").trim() ||
-      (linkedin || "").replace(/.*\/in\//, "").replace(/\/$/, "").trim();
-    const portraitSpinner = new BrailleSpinner("generating your ascii portrait");
+    // Get the profile image URL — GitHub is most reliable for direct image access
+    const imageUrl = earlyGithub
+      ? `https://avatars.githubusercontent.com/${earlyGithub}?s=200`
+      : `https://unavatar.io/x/${earlyTwitter}`;
+
+    const portraitSpinner = new BrailleSpinner("fetching your profile image");
     portraitSpinner.start();
-    await delay(800);
-    portraitSpinner.stop();
-    showPortraitPlaceholder(cleanHandle);
+
+    // Preload the image silently, then stop spinner before rendering
+    let portraitLines: string[] | null = null;
+    try {
+      const Jimp = (await import("jimp")).default;
+      const img = await Jimp.read(imageUrl);
+      portraitSpinner.stop("got it — rendering portrait");
+      console.log("");
+
+      // Now render the portrait line by line (the actual wow moment)
+      const RAMP = `$@B%8&#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/|()1{}?-_+~<>i!lI;:,". `;
+      const cols = 60;
+      const rows = Math.floor(cols * (img.getHeight() / img.getWidth()) * 0.46);
+      img.resize(cols, rows);
+      img.contrast(0.3);
+      img.brightness(0.05);
+
+      portraitLines = [];
+      for (let y = 0; y < rows; y++) {
+        let coloredLine = "";
+        let plainLine = "";
+        for (let x = 0; x < cols; x++) {
+          const pixel = Jimp.intToRGBA(img.getPixelColor(x, y));
+          const lum = 0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b;
+          const ch = RAMP[Math.floor((lum / 255) * (RAMP.length - 1))];
+          plainLine += ch;
+          // Orange-tinted colors based on luminance
+          const brightness = Math.floor((lum / 255) * 100);
+          if (brightness < 10) {
+            coloredLine += chalk.hidden(ch);
+          } else if (brightness < 30) {
+            coloredLine += chalk.hex("#5A3018")(ch);
+          } else if (brightness < 50) {
+            coloredLine += chalk.hex("#8A4828")(ch);
+          } else if (brightness < 70) {
+            coloredLine += chalk.hex("#B06038")(ch);
+          } else if (brightness < 85) {
+            coloredLine += chalk.hex("#C46A3A")(ch);
+          } else {
+            coloredLine += chalk.hex("#E09060")(ch);
+          }
+        }
+        portraitLines.push(plainLine);
+        process.stdout.write(`  ${coloredLine}\n`);
+      }
+    } catch {
+      portraitSpinner.stop("couldn't fetch image — we'll try again later");
+    }
+
+    if (portraitLines) {
+      console.log("");
+      console.log("  " + chalk.hex("#C46A3A")(randomPortraitComment()));
+      console.log("");
+    } else {
+      portraitSpinner.stop("couldn't render — no worries, we'll try again later");
+    }
   }
 
   // ── Multi-select: coding agents and AI apps ───────────────────────
@@ -1696,7 +1755,7 @@ export async function createBundle(
 
   console.log(
     "  " +
-      chalk.green("done") +
+      chalk.hex("#C46A3A")("done") +
       chalk.dim(` -- bundle compiled (v${result.bundle.version})`)
   );
   console.log("");
