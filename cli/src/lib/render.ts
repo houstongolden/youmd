@@ -308,13 +308,23 @@ export function renderRichResponse(content: string): string {
   return parts.join("\n");
 }
 
+// Orange color palette for spinner rotation (dark to light)
+const ORANGE_SHADES = [
+  "#7A3A1A", "#8A4220", "#9A4A28", "#AA5230", "#BA5A35",
+  "#C46A3A", "#D07040", "#DC7848", "#E88050", "#F0885A",
+  "#E88050", "#DC7848", "#D07040", "#C46A3A", "#BA5A35",
+  "#AA5230", "#9A4A28", "#8A4220",
+];
+
 /**
- * Braille spinner — matches the web ThinkingIndicator.
- * Use for showing progress during async operations.
+ * Braille spinner with color rotation + text lightsweep.
+ * Inspired by Claude Code's spinner aesthetic.
  */
 export class BrailleSpinner {
   private frames = ["\u280B", "\u2819", "\u2839", "\u2838", "\u283C", "\u2834", "\u2826", "\u2827", "\u2807", "\u280F"];
   private frameIndex = 0;
+  private colorIndex = 0;
+  private sweepPos = 0;
   private interval: ReturnType<typeof setInterval> | null = null;
   private label: string;
   private startTime: number = 0;
@@ -327,9 +337,31 @@ export class BrailleSpinner {
     this.startTime = Date.now();
     this.interval = setInterval(() => {
       this.frameIndex = (this.frameIndex + 1) % this.frames.length;
+      this.colorIndex = (this.colorIndex + 1) % ORANGE_SHADES.length;
+      this.sweepPos = (this.sweepPos + 1) % (this.label.length + 6);
+
       const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
       const time = elapsed >= 2 ? DIM(` ${elapsed}s`) : "";
-      process.stdout.write(`\r  ${ACCENT(this.frames[this.frameIndex])} ${DIM(this.label)}${time}  `);
+
+      // Rotating color on the braille character
+      const spinnerChar = chalk.hex(ORANGE_SHADES[this.colorIndex])(this.frames[this.frameIndex]);
+
+      // Lightsweep on label text — a bright spot that moves across
+      let labelStr = "";
+      for (let i = 0; i < this.label.length; i++) {
+        const dist = Math.abs(i - this.sweepPos);
+        if (dist === 0) {
+          labelStr += chalk.hex("#F0885A")(this.label[i]); // brightest
+        } else if (dist === 1) {
+          labelStr += chalk.hex("#D07040")(this.label[i]); // medium bright
+        } else if (dist === 2) {
+          labelStr += chalk.hex("#AA5230")(this.label[i]); // slight glow
+        } else {
+          labelStr += DIM(this.label[i]); // base dim
+        }
+      }
+
+      process.stdout.write(`\r  ${spinnerChar} ${labelStr}${time}  `);
     }, 80);
   }
 

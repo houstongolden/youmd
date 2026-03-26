@@ -7,6 +7,7 @@ import {
   getLocalBundleDir,
   writeLocalConfig,
   readGlobalConfig,
+  writeGlobalConfig,
   isAuthenticated,
 } from "./config";
 import { compileBundle, writeBundle } from "./compiler";
@@ -1558,6 +1559,30 @@ export async function runOnboarding(): Promise<void> {
       console.log("");
       console.log("  " + chalk.hex("#C46A3A")(randomPortraitComment()));
       console.log("");
+
+      // Save portrait data locally for push to web API
+      const bundleDir = getLocalBundleDir();
+      try {
+        const portraitData = {
+          lines: portraitLines,
+          cols: 60,
+          rows: portraitLines.length,
+          format: "classic",
+          sourceUrl: imageUrl,
+          generatedAt: Date.now(),
+        };
+        fs.mkdirSync(bundleDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(bundleDir, "portrait.json"),
+          JSON.stringify(portraitData, null, 2)
+        );
+        // Also save the source image URL as avatarUrl in config
+        const config = readGlobalConfig();
+        config.avatarUrl = imageUrl;
+        writeGlobalConfig(config);
+      } catch {
+        // non-fatal — portrait save failed silently
+      }
     } else {
       portraitSpinner.stop("couldn't render — no worries, we'll try again later");
     }

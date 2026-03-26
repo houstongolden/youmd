@@ -15,9 +15,13 @@ After completing any significant work (features, fixes, design changes, PRD upda
 4. **Commit with descriptive messages** — use conventional commits (feat:, fix:, docs:, etc.)
 
 When the user provides a long prompt with feature requests or design feedback:
-- Extract ALL actionable items into `project-context/FEATURES.md`
+- **Break down EVERY part of the message into individual requests** — do NOT cherry-pick one thing and ignore the rest
+- Extract ALL actionable items into `project-context/feature-requests-active.md` with status tracking
+- Each request gets: description, status (TODO/IN PROGRESS/DONE/VERIFIED), and verification criteria
 - Update `project-context/TODO.md` with new tasks
 - Save key decisions to memory if they affect future work
+- **NEVER make the user repeat themselves** — if they asked for 5 things, track and do all 5
+- Don't mark anything DONE until deployed AND the user has verified it works
 
 ## Design System (PRD v2.3 — STRICT ADHERENCE)
 

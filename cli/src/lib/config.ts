@@ -11,6 +11,8 @@ export interface GlobalConfig {
   username?: string;
   email?: string;
   apiUrl?: string;
+  avatarUrl?: string;
+  openrouterKey?: string;
 }
 
 export interface LocalConfig {

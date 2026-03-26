@@ -1,6 +1,6 @@
 {
   "name": "youmd",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "Your identity file for the agent internet. CLI for the You.md platform.",
   "bin": {
     "youmd": "./dist/index.js",
