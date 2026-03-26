@@ -10,6 +10,7 @@ import {
   isAuthenticated,
 } from "./config";
 import { compileBundle, writeBundle } from "./compiler";
+import { BrailleSpinner } from "./render";
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -184,7 +185,13 @@ rules for content in updates:
 
 when you think the profile is rich enough (at least about, now, projects, and values have substance), suggest finishing by saying something like "your bundle is looking solid. ready to publish, or want to keep going?"
 
-important: keep responses concise. 2-4 sentences max per turn. ask one good question at a time, not a list. be a conversation, not a questionnaire.`;
+important rules:
+- keep responses concise. 2-4 sentences max per turn. be a conversation, not a questionnaire.
+- ALWAYS ask ONE question at a time. never two questions in one message.
+- keep your analysis/observations to 2-3 sentences MAX, then ask your single question.
+- the question should be on its OWN LINE, separated by a blank line from the analysis.
+- if the user sends "skip" or just presses Enter with no text, move on to the next topic without pushing.
+- after 3 skips in a row, wrap up and show what you've built so far.`;
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -337,7 +344,13 @@ async function researchUser(params: {
   }
 }
 
+function hasScrapeData(data: ScrapeResult): boolean {
+  return !!(data.name || data.bio || data.followers !== undefined || data.location || data.website);
+}
+
 function displayScrapeResult(label: string, data: ScrapeResult): void {
+  if (!hasScrapeData(data)) return;
+
   console.log("");
   console.log("  " + chalk.bold(`${label} profile:`));
   if (data.name) console.log("    name:      " + chalk.cyan(data.name));
@@ -351,43 +364,7 @@ function displayScrapeResult(label: string, data: ScrapeResult): void {
   console.log("");
 }
 
-// ─── Spinner ──────────────────────────────────────────────────────────
-
-class Spinner {
-  private interval: ReturnType<typeof setInterval> | null = null;
-  private frames = ["\u280B", "\u2819", "\u2839", "\u2838", "\u283C", "\u2834", "\u2826", "\u2827", "\u2807", "\u280F"];
-  private frameIndex = 0;
-  private label: string;
-  private startTime = 0;
-
-  constructor(label?: string) {
-    this.label = label || randomThinking();
-  }
-
-  start(): void {
-    this.startTime = Date.now();
-    this.interval = setInterval(() => {
-      this.frameIndex = (this.frameIndex + 1) % this.frames.length;
-      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
-      const time = elapsed >= 2 ? chalk.dim(` ${elapsed}s`) : "";
-      process.stdout.write(`\r  ${chalk.hex("#C46A3A")(this.frames[this.frameIndex])} ${chalk.dim(this.label)}${time}  `);
-    }, 80);
-  }
-
-  stop(result?: string): void {
-    if (this.interval) {
-      clearInterval(this.interval);
-      this.interval = null;
-    }
-    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
-    const time = elapsed >= 1 ? chalk.dim(` ${elapsed}s`) : "";
-    if (result) {
-      process.stdout.write(`\r  ${chalk.green("\u2713")} ${chalk.dim(this.label)}${time} ${chalk.dim(result)}\n`);
-    } else {
-      process.stdout.write("\r" + " ".repeat(80) + "\r");
-    }
-  }
-}
+// ─── Spinner (uses BrailleSpinner from render.ts) ─────────────────────
 
 // ─── LLM client ──────────────────────────────────────────────────────
 
@@ -730,7 +707,7 @@ async function runAIMode(
   // ── Fetch website content if provided ──────────────────────────────
   let websiteContent = "";
   if (info.website) {
-    const fetchSpinner = new Spinner("reading your site");
+    const fetchSpinner = new BrailleSpinner("reading your site");
     fetchSpinner.start();
     websiteContent = await fetchWebsiteContent(info.website);
     fetchSpinner.stop();
@@ -825,7 +802,7 @@ generate initial profile sections from what you know, show a brief summary, and 
   ];
 
   // ── Initial LLM call ──────────────────────────────────────────────
-  let spinner = new Spinner(randomThinking());
+  let spinner = new BrailleSpinner(randomThinking());
   spinner.start();
 
   let response: string;
@@ -901,20 +878,103 @@ generate initial profile sections from what you know, show a brief summary, and 
 
   // ── Conversation loop ──────────────────────────────────────────────
   let exchangeCount = 0;
+  let skipCount = 0;
 
   while (true) {
     const userInput = await ask(rl, chalk.green("  > ") + "");
-
-    if (!userInput) continue;
 
     if (isDonePhrase(userInput)) {
       break;
     }
 
-    messages.push({ role: "user", content: userInput });
+    // Handle skip: empty input or "skip"
+    const isSkip = !userInput || userInput.toLowerCase().trim() === "skip";
+    if (isSkip) {
+      skipCount++;
+      if (skipCount >= 3) {
+        // After 3 skips, wrap up automatically
+        console.log(chalk.dim("  wrapping up with what we have so far."));
+        console.log("");
+        break;
+      }
+      // Inject system message telling the agent to move on
+      messages.push({
+        role: "user",
+        content: "(skip)",
+      });
+      messages.push({
+        role: "system",
+        content:
+          "the user skipped this question. ask about the next topic on your list (projects, values, preferences, now, etc.) without dwelling on the skipped one. keep moving forward.",
+      });
+    } else {
+      skipCount = 0;
+      messages.push({ role: "user", content: userInput });
+
+      // ── Auto-detect and auto-crawl URLs in user message ──
+      const urlRegex = /(?:https?:\/\/[^\s<>"']+|(?<![/\w])([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.(?:com|co|io|ai|dev|org|net|app|xyz|me))(?:\/[^\s<>"']*)?)/gi;
+      const detectedUrls: string[] = [];
+      let urlMatch: RegExpExecArray | null;
+      const seenUrls = new Set<string>();
+      while ((urlMatch = urlRegex.exec(userInput)) !== null) {
+        let url = urlMatch[0].replace(/[.,;:)\]]+$/, "");
+        if (!url.startsWith("http")) url = `https://${url}`;
+        if (!seenUrls.has(url)) {
+          seenUrls.add(url);
+          detectedUrls.push(url);
+        }
+      }
+
+      if (detectedUrls.length > 0) {
+        console.log("");
+        const scrapeResults: string[] = [];
+        for (const url of detectedUrls) {
+          const domain = url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+          const sp = new BrailleSpinner(`crawling ${domain}`);
+          sp.start();
+          try {
+            const res = await fetch(SCRAPE_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url, platform: "website" }),
+              signal: AbortSignal.timeout(30_000),
+            });
+            if (res.ok) {
+              const data = (await res.json()) as { success?: boolean; data?: Record<string, unknown> };
+              if (data.success && data.data) {
+                const d = data.data;
+                const parts = [`[SCRAPE RESULT: ${domain}]`];
+                if (d.displayName) parts.push(`title: ${d.displayName}`);
+                if (d.bio) parts.push(`description: ${d.bio}`);
+                if (d.extras && (d.extras as Record<string, unknown>).bodyText) {
+                  parts.push(`content: ${String((d.extras as Record<string, unknown>).bodyText).slice(0, 1500)}`);
+                }
+                scrapeResults.push(parts.join("\n"));
+                sp.stop(`${domain} scraped`);
+              } else {
+                sp.stop(`${domain} — no data`);
+              }
+            } else {
+              sp.fail(`${domain} — failed`);
+            }
+          } catch {
+            sp.fail(`${domain} — timeout`);
+          }
+        }
+
+        if (scrapeResults.length > 0) {
+          messages.push({
+            role: "user",
+            content: `[PLATFORM AUTO-SCRAPE — real data from URLs the user mentioned. use this to describe their projects accurately. never ask the user to repeat information that was just scraped.]\n\n${scrapeResults.join("\n\n")}`,
+          });
+        }
+        console.log("");
+      }
+    }
     exchangeCount++;
 
     // After 3+ exchanges, hint to the agent it can suggest wrapping up
+    let ephemeralCount = 0;
     if (exchangeCount >= 3) {
       const hintMsg: ChatMessage = {
         role: "system",
@@ -922,9 +982,13 @@ generate initial profile sections from what you know, show a brief summary, and 
           "the user has provided several rounds of input. if the profile feels rich enough (about, now, projects, values all have substance), you can suggest wrapping up. but if there are obvious gaps, keep asking.",
       };
       messages.push(hintMsg);
+      ephemeralCount++;
     }
 
-    spinner = new Spinner(randomThinking());
+    // Also count the skip system message as ephemeral
+    if (isSkip) ephemeralCount++;
+
+    spinner = new BrailleSpinner(randomThinking());
     spinner.start();
 
     try {
@@ -940,17 +1004,18 @@ generate initial profile sections from what you know, show a brief summary, and 
         chalk.dim("  try again, or type 'done' to finish.")
       );
       console.log("");
-      // Remove failed messages
-      messages.pop(); // remove hint if added
-      if (exchangeCount >= 3) messages.pop();
+      // Remove all ephemeral + user messages from this failed turn
+      for (let j = 0; j < ephemeralCount + 1; j++) messages.pop();
+      if (isSkip) messages.pop(); // also remove the "(skip)" user message
       continue;
     }
 
     spinner.stop();
 
-    // Remove the hint message from history (don't pollute context)
-    if (exchangeCount >= 3) {
-      messages.pop(); // remove the hint
+    // Remove ephemeral system messages from history (don't pollute context)
+    // They sit between the user message and the response we're about to push
+    for (let j = 0; j < ephemeralCount; j++) {
+      messages.pop();
     }
 
     messages.push({ role: "assistant", content: response });
@@ -991,7 +1056,7 @@ generate initial profile sections from what you know, show a brief summary, and 
       } else {
         messages.push({ role: "user", content: answer });
 
-        spinner = new Spinner(randomThinking());
+        spinner = new BrailleSpinner(randomThinking());
         spinner.start();
 
         try {
@@ -1036,7 +1101,30 @@ generate initial profile sections from what you know, show a brief summary, and 
 function printAgentMessage(text: string): void {
   if (!text) return;
   const { renderRichResponse } = require("./render");
-  console.log(renderRichResponse(text));
+  const rendered = renderRichResponse(text) as string;
+
+  // Find the last line that ends with "?" and highlight it in accent color
+  const lines = rendered.split("\n");
+  let lastQuestionIdx = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    // Strip ANSI codes to check for trailing "?"
+    const stripped = lines[i].replace(/\x1b\[[0-9;]*m/g, "").trim();
+    if (stripped.endsWith("?")) {
+      lastQuestionIdx = i;
+      break;
+    }
+  }
+
+  if (lastQuestionIdx >= 0) {
+    // Replace that line with accent-colored version (strip existing styling, re-apply accent)
+    const raw = lines[lastQuestionIdx].replace(/\x1b\[[0-9;]*m/g, "");
+    // Preserve leading whitespace
+    const leadingSpace = raw.match(/^(\s*)/)?.[1] || "";
+    const content = raw.trim();
+    lines[lastQuestionIdx] = leadingSpace + chalk.hex("#C46A3A")(content);
+  }
+
+  console.log(lines.join("\n"));
   console.log("");
 }
 
@@ -1049,7 +1137,7 @@ async function finishBundle(
 ): Promise<void> {
   console.log("");
 
-  const compileSpinner = new Spinner("compiling your context bundle");
+  const compileSpinner = new BrailleSpinner("compiling your context bundle");
   compileSpinner.start();
 
   await new Promise((r) => setTimeout(r, 600));
@@ -1075,6 +1163,25 @@ async function finishBundle(
   );
   console.log("");
 
+  const accent = chalk.hex("#C46A3A");
+
+  // What's next guide
+  console.log("  " + accent("what's next:"));
+  console.log("");
+  console.log(`    1. ${chalk.cyan("youmd login")}          ${chalk.dim("-- connect to you.md (get an API key from the dashboard)")}`);
+  console.log(`    2. ${chalk.cyan("youmd push")}           ${chalk.dim("-- publish your profile to you.md/" + username)}`);
+  console.log(`    3. ${chalk.cyan("youmd sync --watch")}   ${chalk.dim("-- auto-sync changes as you edit files")}`);
+  console.log(`    4. ${chalk.cyan("youmd chat")}           ${chalk.dim("-- talk to the agent to update your profile")}`);
+  console.log("");
+  console.log("  " + accent("using with claude code or other agents:"));
+  console.log("");
+  console.log(`    ${chalk.cyan("youmd status")}            ${chalk.dim("-- check your bundle")}`);
+  console.log(`    ${chalk.cyan("youmd private notes append \"...\"")}`);
+  console.log(`    ${chalk.dim("                        -- save agent preferences")}`);
+  console.log(`    ${chalk.cyan("youmd link create")}       ${chalk.dim("-- create a shareable context link")}`);
+  console.log(`    ${chalk.cyan("youmd project init")}      ${chalk.dim("-- set up project-specific context")}`);
+  console.log("");
+
   // Context link
   console.log("  " + chalk.bold("your context file is ready:"));
   console.log(
@@ -1082,44 +1189,6 @@ async function finishBundle(
   );
   console.log("");
 
-  // Publish flow
-  if (isAuthenticated()) {
-    console.log(
-      "  you're authenticated. publish with: " +
-        chalk.cyan("youmd publish")
-    );
-  } else {
-    console.log("  " + chalk.bold("to go live:"));
-    console.log(
-      "    1. claim your username at " +
-        chalk.cyan("https://you.md/claim")
-    );
-    console.log(
-      "    2. " + chalk.cyan("youmd login --key <your-api-key>")
-    );
-    console.log("    3. " + chalk.cyan("youmd publish"));
-  }
-
-  console.log("");
-  console.log("  " + chalk.bold("using your identity with AI agents:"));
-  console.log(
-    "    add this to your system prompt or CLAUDE.md:"
-  );
-  console.log(
-    chalk.dim(
-      `    "my identity file: https://you.md/${username}/context"`
-    )
-  );
-  console.log("");
-  console.log(
-    "  " +
-      chalk.dim("run ") +
-      chalk.cyan("youmd build") +
-      chalk.dim(" anytime to recompile, or ") +
-      chalk.cyan("youmd chat") +
-      chalk.dim(" to keep editing with AI.")
-  );
-  console.log("");
   console.log(
     "  " + chalk.bold(`welcome to the agent internet, ${name}.`)
   );
@@ -1177,7 +1246,29 @@ export async function runOnboarding(): Promise<void> {
     const result = await checkUsernameRemote(username);
 
     if (result.available) {
-      console.log(chalk.green(username + " is yours."));
+      // Check if a profile already exists on you.md for this username
+      let profileExists = false;
+      try {
+        const profileRes = await fetch(
+          `https://you.md/${encodeURIComponent(username)}/context`,
+          { method: "HEAD", signal: AbortSignal.timeout(5_000) }
+        );
+        profileExists = profileRes.ok;
+      } catch {
+        // ignore -- assume no profile
+      }
+
+      if (profileExists) {
+        console.log(chalk.green(username + " is available."));
+        console.log(
+          chalk.dim(`    a profile for @${username} already exists on you.md -- you can claim it after login with `) +
+          chalk.cyan("youmd login") +
+          chalk.dim(" then ") +
+          chalk.cyan("youmd pull")
+        );
+      } else {
+        console.log(chalk.green(username + " is yours."));
+      }
       usernameValid = true;
     } else {
       console.log(
@@ -1232,7 +1323,7 @@ export async function runOnboarding(): Promise<void> {
   let githubData: ScrapeResult | null = null;
 
   if (twitterHandle) {
-    const scrapeSpinner = new Spinner("scanning your X profile");
+    const scrapeSpinner = new BrailleSpinner("scanning your X profile");
     scrapeSpinner.start();
     twitterData = await scrapeProfile(`https://x.com/${twitterHandle}`);
     scrapeSpinner.stop();
@@ -1246,7 +1337,7 @@ export async function runOnboarding(): Promise<void> {
   }
 
   if (githubHandle) {
-    const scrapeSpinner = new Spinner("reading your GitHub");
+    const scrapeSpinner = new BrailleSpinner("reading your GitHub");
     scrapeSpinner.start();
     githubData = await scrapeProfile(`https://github.com/${githubHandle}`);
     scrapeSpinner.stop();
@@ -1269,7 +1360,7 @@ export async function runOnboarding(): Promise<void> {
   let researchData: ResearchResult | null = null;
 
   if (name || twitterHandle || githubHandle) {
-    const researchSpinner = new Spinner("researching you across the internet");
+    const researchSpinner = new BrailleSpinner("researching you across the internet");
     researchSpinner.start();
     researchData = await researchUser({
       name: name || username,
@@ -1418,7 +1509,7 @@ export {
   scrapeProfile,
   researchUser,
   getOpenRouterKey,
-  Spinner,
+  BrailleSpinner as Spinner,
   randomThinking,
   SYSTEM_PROMPT,
   BUNDLE_SECTIONS,
