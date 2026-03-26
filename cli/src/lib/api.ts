@@ -61,6 +61,30 @@ async function request<T = unknown>(
   };
 }
 
+// ─── Auth endpoints (no token needed) ────────────────────────────────
+
+export async function loginWithEmail(
+  email: string,
+  password: string
+): Promise<ApiResponse<{ success: boolean; username: string; apiKey: string; plan: string }>> {
+  return request<{ success: boolean; username: string; apiKey: string; plan: string }>(
+    "/api/v1/auth/login",
+    { method: "POST", body: { email, password } }
+  );
+}
+
+export async function registerWithEmail(
+  email: string,
+  password: string,
+  username: string,
+  name: string
+): Promise<ApiResponse<{ success: boolean; username: string; apiKey: string; clerkId: string }>> {
+  return request<{ success: boolean; username: string; apiKey: string; clerkId: string }>(
+    "/api/v1/auth/register",
+    { method: "POST", body: { email, password, username, name } }
+  );
+}
+
 // ─── Public endpoints ────────────────────────────────────────────────
 
 export async function checkUsername(

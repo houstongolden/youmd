@@ -968,6 +968,209 @@ http.route({
 });
 
 // ============================================================
+// CLI AUTHENTICATION (email/password via Clerk Backend API)
+// ============================================================
+
+// POST /api/v1/auth/register — Create account from CLI
+http.route({
+  path: "/api/v1/auth/register",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const body = await request.json();
+      const { email, password, username, name } = body;
+
+      if (!email || !password || !username) {
+        return json({ error: "email, password, and username are required" }, 400);
+      }
+
+      // 1. Check username availability
+      const usernameCheck = await ctx.runQuery(api.users.checkUsername, { username });
+      if (!usernameCheck.available) {
+        return json({ error: usernameCheck.reason || "Username not available" }, 409);
+      }
+
+      // 2. Create Clerk user via Backend API
+      const clerkKey = process.env.CLERK_SECRET_KEY;
+      if (!clerkKey) {
+        return json({ error: "Auth service not configured" }, 500);
+      }
+
+      const clerkRes = await fetch("https://api.clerk.com/v1/users", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${clerkKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email_address: [email],
+          password,
+          username,
+          first_name: name || username,
+        }),
+      });
+
+      if (!clerkRes.ok) {
+        const clerkError = await clerkRes.json();
+        // Extract user-friendly error message from Clerk
+        const errors = (clerkError as any).errors || [];
+        const message =
+          errors.length > 0
+            ? errors.map((e: any) => e.long_message || e.message).join("; ")
+            : "Failed to create account";
+        return json({ error: message }, clerkRes.status === 422 ? 422 : 400);
+      }
+
+      const clerkUser = await clerkRes.json();
+      const clerkId = (clerkUser as any).id;
+
+      // 3. Create Convex user record (also creates profile)
+      await ctx.runMutation(api.users.createUser, {
+        clerkId,
+        username: username.toLowerCase(),
+        email,
+        displayName: name || undefined,
+      });
+
+      // 4. Generate an API key for CLI access
+      const keyResult = await ctx.runMutation(api.apiKeys.createKey, {
+        clerkId,
+        label: "cli-auth",
+        scopes: ["read:public"],
+      });
+
+      return json({
+        success: true,
+        username: username.toLowerCase(),
+        apiKey: keyResult.key,
+        clerkId,
+      });
+    } catch (err) {
+      return json(
+        { error: err instanceof Error ? err.message : "Registration failed" },
+        500
+      );
+    }
+  }),
+});
+
+// POST /api/v1/auth/login — Login from CLI with email/password
+http.route({
+  path: "/api/v1/auth/login",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const body = await request.json();
+      const { email, password } = body;
+
+      if (!email || !password) {
+        return json({ error: "email and password are required" }, 400);
+      }
+
+      const clerkKey = process.env.CLERK_SECRET_KEY;
+      if (!clerkKey) {
+        return json({ error: "Auth service not configured" }, 500);
+      }
+
+      // 1. Look up user by email in Clerk
+      const lookupRes = await fetch(
+        `https://api.clerk.com/v1/users?email_address=${encodeURIComponent(email)}`,
+        {
+          headers: { Authorization: `Bearer ${clerkKey}` },
+        }
+      );
+
+      if (!lookupRes.ok) {
+        return json({ error: "Failed to look up user" }, 500);
+      }
+
+      const users = (await lookupRes.json()) as any[];
+      if (!users || users.length === 0) {
+        return json({ error: "No account found with that email. Run `youmd register` to create one." }, 401);
+      }
+
+      const clerkUser = users[0];
+      const clerkUserId = clerkUser.id;
+
+      // 2. Verify password via Clerk Backend API
+      const verifyRes = await fetch(
+        `https://api.clerk.com/v1/users/${clerkUserId}/verify_password`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${clerkKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ password }),
+        }
+      );
+
+      if (!verifyRes.ok) {
+        const verifyBody = await verifyRes.json();
+        const verified = (verifyBody as any).verified;
+        if (verified === false) {
+          return json({ error: "Incorrect password" }, 401);
+        }
+        return json({ error: "Password verification failed" }, 401);
+      }
+
+      const verifyBody = await verifyRes.json();
+      if (!(verifyBody as any).verified) {
+        return json({ error: "Incorrect password" }, 401);
+      }
+
+      // 3. Find the Convex user by clerkId
+      const convexUser = await ctx.runQuery(api.users.getByClerkId, { clerkId: clerkUserId });
+
+      if (!convexUser) {
+        // User exists in Clerk but not in Convex — create the Convex record
+        const clerkUsername =
+          clerkUser.username ||
+          email.split("@")[0].toLowerCase().replace(/[^a-z0-9-]/g, "-");
+
+        await ctx.runMutation(api.users.createUser, {
+          clerkId: clerkUserId,
+          username: clerkUsername,
+          email,
+          displayName: clerkUser.first_name || undefined,
+        });
+      }
+
+      // Re-fetch to get the user with _id
+      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: clerkUserId });
+      if (!user) {
+        return json({ error: "Failed to resolve user account" }, 500);
+      }
+
+      // 4. Generate or find existing API key
+      const keyResult = await ctx.runMutation(api.apiKeys.createKey, {
+        clerkId: clerkUserId,
+        label: "cli-auth",
+        scopes: ["read:public"],
+      });
+
+      return json({
+        success: true,
+        username: user.username,
+        apiKey: keyResult.key,
+        plan: user.plan,
+      });
+    } catch (err) {
+      // If the error is about free plan key limits, find and return existing key info
+      const errMsg = err instanceof Error ? err.message : "Login failed";
+      if (errMsg.includes("Free plan allows 1 API key")) {
+        // User already has a key — tell them to use it or revoke the old one
+        return json(
+          { error: "You already have an API key. Use `youmd login --key YOUR_KEY` or revoke the old key at you.md/dashboard and try again." },
+          409
+        );
+      }
+      return json({ error: errMsg }, 500);
+    }
+  }),
+});
+
+// ============================================================
 // CORS PREFLIGHT (catch-all for OPTIONS)
 // ============================================================
 
@@ -975,6 +1178,8 @@ const corsPreflight = httpAction(async () => {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 });
 
+http.route({ path: "/api/v1/auth/register", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/auth/login", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/profiles", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/check-username", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/ctx", method: "OPTIONS", handler: corsPreflight });

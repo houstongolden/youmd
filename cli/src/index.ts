@@ -27,7 +27,7 @@ const program = new Command();
 program
   .name("youmd")
   .description("your identity file for the agent internet")
-  .version("0.3.0");
+  .version("0.4.6");
 
 program
   .command("init")
