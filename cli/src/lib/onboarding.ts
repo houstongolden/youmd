@@ -25,6 +25,170 @@ const OPENROUTER_MODEL = "anthropic/claude-sonnet-4";
 
 const USERNAME_RE = /^[a-z0-9][a-z0-9_-]{1,38}[a-z0-9]$/;
 
+// ─── Categorized spinner labels ──────────────────────────────────────
+
+const SPINNER_LABELS = {
+  llm: [
+    "reading between your lines",
+    "connecting the dots",
+    "processing your essence",
+    "building your identity constellation",
+    "decoding your professional DNA",
+    "triangulating your vibe",
+    "computing your main character energy",
+    "calibrating to your wavelength",
+    "reverse-engineering your personality",
+    "translating you into agent-speak",
+  ],
+  scrape: [
+    "pulling your digital footprint",
+    "scanning your corner of the internet",
+    "downloading your online soul",
+    "harvesting your web presence",
+    "reading your digital tea leaves",
+    "indexing your online persona",
+  ],
+  compile: [
+    "assembling your identity bundle",
+    "weaving your narrative thread",
+    "crystallizing who you are",
+    "forging your identity file",
+    "encoding your identity bundle",
+    "compiling your context mosaic",
+  ],
+  research: [
+    "researching you across the internet",
+    "asking the internet about you",
+    "mining your digital trail",
+    "running background checks (the fun kind)",
+    "interviewing your web presence",
+    "surveying your corner of the internet",
+  ],
+};
+
+function randomLabel(category: keyof typeof SPINNER_LABELS): string {
+  const labels = SPINNER_LABELS[category];
+  return labels[Math.floor(Math.random() * labels.length)];
+}
+
+// ─── ASCII portrait placeholder ──────────────────────────────────────
+
+const PORTRAIT_COMMENTS = [
+  "looking sharp in monochrome.",
+  "not bad for a pile of unicode characters.",
+  "your pixels have good energy.",
+  "the internet looks good on you.",
+  "a face only a terminal could love. (that's a compliment.)",
+  "you render well at low resolution.",
+];
+
+function randomPortraitComment(): string {
+  return PORTRAIT_COMMENTS[Math.floor(Math.random() * PORTRAIT_COMMENTS.length)];
+}
+
+function showPortraitPlaceholder(handle: string): void {
+  const accent = chalk.hex("#C46A3A");
+  const dim = chalk.dim;
+  const displayHandle = handle.startsWith("@") ? handle : `@${handle}`;
+  const innerWidth = Math.max(displayHandle.length + 4, 28);
+  const portraitLine = "\u2591\u2592\u2593\u2588 portrait loaded \u2588\u2593\u2592\u2591";
+  const portraitPad = Math.max(0, innerWidth - portraitLine.length);
+  const handlePad = Math.max(0, innerWidth - displayHandle.length);
+
+  console.log("");
+  console.log("  " + dim("\u250C" + "\u2500".repeat(innerWidth + 2) + "\u2510"));
+  console.log("  " + dim("\u2502") + "  " + accent(portraitLine) + " ".repeat(portraitPad) + dim("\u2502"));
+  console.log("  " + dim("\u2502") + "  " + chalk.white(displayHandle) + " ".repeat(handlePad) + dim("\u2502"));
+  console.log("  " + dim("\u2514" + "\u2500".repeat(innerWidth + 2) + "\u2518"));
+  console.log("");
+  console.log("  " + accent(randomPortraitComment()));
+  console.log("");
+}
+
+// ─── ASCII logo ──────────────────────────────────────────────────────
+
+const ASCII_LOGO_LINES = [
+  "  \u2566 \u2566 \u2554\u2550\u2557 \u2566 \u2566   \u2554\u2566\u2557 \u2554\u2566\u2557",
+  "  \u255A\u2566\u255D \u2551 \u2551 \u2551 \u2551   \u2551\u2551\u2551  \u2551\u2551",
+  "   \u2569  \u255A\u2550\u255D \u255A\u2550\u255D  \u2550\u2569\u255D \u2550\u2569\u255D",
+];
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function showAsciiLogo(): Promise<void> {
+  const accent = chalk.hex("#C46A3A");
+  console.log("");
+  for (const line of ASCII_LOGO_LINES) {
+    console.log("  " + accent(line));
+    await delay(100);
+  }
+  console.log("");
+  console.log("  " + chalk.dim("the identity file for the agent internet"));
+  console.log("");
+}
+
+// ─── Multi-select for agents/tools ───────────────────────────────────
+
+interface MultiSelectOption {
+  label: string;
+  value: string;
+}
+
+async function multiSelectPrompt(
+  rl: readline.Interface,
+  question: string,
+  options: MultiSelectOption[]
+): Promise<string[]> {
+  console.log("  " + chalk.hex("#C46A3A")(question));
+  console.log("");
+  for (let i = 0; i < options.length; i++) {
+    console.log(`    ${chalk.dim(`${i + 1}.`)} ${options[i].label}`);
+  }
+  console.log("");
+  const answer = await ask(
+    rl,
+    chalk.green("  > ") + chalk.dim("type numbers separated by commas (e.g. 1,3,5): ")
+  );
+  if (!answer.trim()) return [];
+  const indices = answer
+    .split(",")
+    .map((s) => parseInt(s.trim(), 10))
+    .filter((n) => !isNaN(n) && n >= 1 && n <= options.length);
+  const selected = indices.map((i) => options[i - 1].value);
+  if (selected.length > 0) {
+    console.log(
+      "  " +
+        chalk.green("\u2713") +
+        " " +
+        chalk.dim(selected.join(", "))
+    );
+  }
+  console.log("");
+  return selected;
+}
+
+const CODING_AGENTS: MultiSelectOption[] = [
+  { label: "Claude Code", value: "Claude Code" },
+  { label: "Codex CLI", value: "Codex CLI" },
+  { label: "Cursor", value: "Cursor" },
+  { label: "OpenClaw", value: "OpenClaw" },
+  { label: "Windsurf", value: "Windsurf" },
+  { label: "Other", value: "Other" },
+];
+
+const AI_APPS: MultiSelectOption[] = [
+  { label: "ChatGPT", value: "ChatGPT" },
+  { label: "Claude (web/app)", value: "Claude" },
+  { label: "Grok", value: "Grok" },
+  { label: "Gemini", value: "Gemini" },
+  { label: "Perplexity", value: "Perplexity" },
+  { label: "Other", value: "Other" },
+];
+
+// ─── Constants ────────────────────────────────────────────────────────
+
 const THINKING_PHRASES = [
   "reading your about page like a respectful detective",
   "absorbing your linkedin energy",
@@ -142,6 +306,11 @@ personality:
 - proactive — don't just wait for answers, connect dots, make observations, suggest things.
 - reference specific things you learn about them. make them feel seen.
 - you're like a sharp coworker who's also a great listener.
+- you have dry, sharp humor. make the user smile at least once per exchange.
+- when you see something impressive in their profile, react genuinely — not with fake enthusiasm, but with specific appreciation.
+- use lowercase always, no exclamation marks, but occasionally drop a witty aside or self-aware joke about being an AI building someone's identity.
+- reference pop culture, tech culture, or internet humor when it fits naturally.
+- when showing scraped data, react to specific details with personality — e.g. "bamf.com? bold domain choice. respect."
 
 you're building a you-md/v1 identity bundle. the sections are:
 - profile/about.md — bio, background, narrative
@@ -694,7 +863,8 @@ async function runAIMode(
   info: BasicInfo,
   apiKey: string | null,
   scraped?: { twitter?: ScrapeResult | null; github?: ScrapeResult | null },
-  research?: ResearchResult | null
+  research?: ResearchResult | null,
+  agentContext?: string[]
 ): Promise<void> {
   const bundleDir = getLocalBundleDir();
   const profileDir = path.join(bundleDir, "profile");
@@ -707,7 +877,7 @@ async function runAIMode(
   // ── Fetch website content if provided ──────────────────────────────
   let websiteContent = "";
   if (info.website) {
-    const fetchSpinner = new BrailleSpinner("reading your site");
+    const fetchSpinner = new BrailleSpinner(randomLabel("scrape"));
     fetchSpinner.start();
     websiteContent = await fetchWebsiteContent(info.website);
     fetchSpinner.stop();
@@ -740,6 +910,11 @@ async function runAIMode(
 - name: ${info.name}
 - username: ${info.username}
 ${linksInfo.length > 0 ? linksInfo.map((l) => `- ${l}`).join("\n") : "- no links provided"}`;
+
+  // Inject agent/tool selections
+  if (agentContext && agentContext.length > 0) {
+    initialUserMessage += `\n\nagent/tool preferences:\n${agentContext.map((c) => `- ${c}`).join("\n")}`;
+  }
 
   // Add scraped social profile data
   if (scraped?.twitter) {
@@ -802,7 +977,7 @@ generate initial profile sections from what you know, show a brief summary, and 
   ];
 
   // ── Initial LLM call ──────────────────────────────────────────────
-  let spinner = new BrailleSpinner(randomThinking());
+  let spinner = new BrailleSpinner(randomLabel("llm"));
   spinner.start();
 
   let response: string;
@@ -930,7 +1105,7 @@ generate initial profile sections from what you know, show a brief summary, and 
         const scrapeResults: string[] = [];
         for (const url of detectedUrls) {
           const domain = url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-          const sp = new BrailleSpinner(`crawling ${domain}`);
+          const sp = new BrailleSpinner(`${randomLabel("scrape")} (${domain})`);
           sp.start();
           try {
             const res = await fetch(SCRAPE_URL, {
@@ -988,7 +1163,7 @@ generate initial profile sections from what you know, show a brief summary, and 
     // Also count the skip system message as ephemeral
     if (isSkip) ephemeralCount++;
 
-    spinner = new BrailleSpinner(randomThinking());
+    spinner = new BrailleSpinner(randomLabel("llm"));
     spinner.start();
 
     try {
@@ -1056,7 +1231,7 @@ generate initial profile sections from what you know, show a brief summary, and 
       } else {
         messages.push({ role: "user", content: answer });
 
-        spinner = new BrailleSpinner(randomThinking());
+        spinner = new BrailleSpinner(randomLabel("llm"));
         spinner.start();
 
         try {
@@ -1137,7 +1312,7 @@ async function finishBundle(
 ): Promise<void> {
   console.log("");
 
-  const compileSpinner = new BrailleSpinner("compiling your context bundle");
+  const compileSpinner = new BrailleSpinner(randomLabel("compile"));
   compileSpinner.start();
 
   await new Promise((r) => setTimeout(r, 600));
@@ -1210,12 +1385,8 @@ export interface OnboardingResult {
 export async function runOnboarding(): Promise<void> {
   const rl = createRL();
 
-  console.log("");
-  console.log("  " + chalk.bold("you.md"));
-  console.log(
-    "  " + chalk.dim("your identity file for the agent internet")
-  );
-  console.log("");
+  // ── ASCII logo splash ──────────────────────────────────────────────
+  await showAsciiLogo();
 
   // ── Phase 1: Identity basics (fast, no LLM) ────────────────────────
 
@@ -1315,6 +1486,32 @@ export async function runOnboarding(): Promise<void> {
 
   console.log("");
 
+  // ── Show ASCII portrait after first social handle ─────────────────
+  const firstHandle = twitter || github || linkedin;
+  if (firstHandle) {
+    const cleanHandle = (twitter || "").replace(/^@/, "").trim() ||
+      (github || "").trim() ||
+      (linkedin || "").replace(/.*\/in\//, "").replace(/\/$/, "").trim();
+    const portraitSpinner = new BrailleSpinner("generating your ascii portrait");
+    portraitSpinner.start();
+    await delay(800);
+    portraitSpinner.stop();
+    showPortraitPlaceholder(cleanHandle);
+  }
+
+  // ── Multi-select: coding agents and AI apps ───────────────────────
+  const selectedAgents = await multiSelectPrompt(
+    rl,
+    "which coding agents do you use?",
+    CODING_AGENTS
+  );
+
+  const selectedApps = await multiSelectPrompt(
+    rl,
+    "which AI apps do you regularly use?",
+    AI_APPS
+  );
+
   // ── Scrape social profiles ────────────────────────────────────────
   const twitterHandle = (twitter || "").replace(/^@/, "").trim();
   const githubHandle = (github || "").trim();
@@ -1323,7 +1520,7 @@ export async function runOnboarding(): Promise<void> {
   let githubData: ScrapeResult | null = null;
 
   if (twitterHandle) {
-    const scrapeSpinner = new BrailleSpinner("scanning your X profile");
+    const scrapeSpinner = new BrailleSpinner(randomLabel("scrape"));
     scrapeSpinner.start();
     twitterData = await scrapeProfile(`https://x.com/${twitterHandle}`);
     scrapeSpinner.stop();
@@ -1337,7 +1534,7 @@ export async function runOnboarding(): Promise<void> {
   }
 
   if (githubHandle) {
-    const scrapeSpinner = new BrailleSpinner("reading your GitHub");
+    const scrapeSpinner = new BrailleSpinner(randomLabel("scrape"));
     scrapeSpinner.start();
     githubData = await scrapeProfile(`https://github.com/${githubHandle}`);
     scrapeSpinner.stop();
@@ -1360,7 +1557,7 @@ export async function runOnboarding(): Promise<void> {
   let researchData: ResearchResult | null = null;
 
   if (name || twitterHandle || githubHandle) {
-    const researchSpinner = new BrailleSpinner("researching you across the internet");
+    const researchSpinner = new BrailleSpinner(randomLabel("research"));
     researchSpinner.start();
     researchData = await researchUser({
       name: name || username,
@@ -1411,13 +1608,23 @@ export async function runOnboarding(): Promise<void> {
   );
   console.log("");
 
+  // Build agent context from multi-select
+  const agentContext: string[] = [];
+  if (selectedAgents.length > 0) {
+    agentContext.push(`coding agents they use: ${selectedAgents.join(", ")}`);
+  }
+  if (selectedApps.length > 0) {
+    agentContext.push(`AI apps they regularly use: ${selectedApps.join(", ")}`);
+  }
+
   try {
     await runAIMode(
       rl,
       basicInfo,
       userApiKey,
       { twitter: twitterData, github: githubData },
-      researchData
+      researchData,
+      agentContext.length > 0 ? agentContext : undefined
     );
   } catch {
     console.log(chalk.dim("  switching to manual mode."));
@@ -1511,6 +1718,7 @@ export {
   getOpenRouterKey,
   BrailleSpinner as Spinner,
   randomThinking,
+  randomLabel,
   SYSTEM_PROMPT,
   BUNDLE_SECTIONS,
   CHAT_PROXY_URL,
