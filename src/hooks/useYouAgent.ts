@@ -2694,10 +2694,15 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       // Strip JSON blocks from the streamed display (they stream in raw during typing)
       const { display, updates } = parseUpdatesFromResponse(response);
 
-      // Always update the streamed message with clean display text
-      // This ensures JSON blocks are stripped even if they were visible during streaming
+      // Clean display text: strip JSON blocks + collapse excessive blank lines
+      const cleanDisplay = display
+        .replace(/\n{3,}/g, "\n\n")  // collapse 3+ newlines to 2
+        .replace(/^\n+/, "")          // strip leading blank lines
+        .replace(/\n+$/, "")          // strip trailing blank lines
+        .trim();
+
       setDisplayMessages(prev => prev.map(m =>
-        m.id === streamMsgId ? { ...m, content: display } : m
+        m.id === streamMsgId ? { ...m, content: cleanDisplay } : m
       ));
 
       const assistantMsg: ChatMessage = {

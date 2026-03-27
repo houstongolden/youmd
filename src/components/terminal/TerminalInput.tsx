@@ -77,7 +77,7 @@ export function TerminalInput({
       )}
 
       <div className="flex items-end gap-2">
-        <span className="text-[hsl(var(--accent))] font-mono text-[16px] pb-2 select-none shrink-0">
+        <span className="text-[hsl(var(--accent))] font-mono text-[12px] pb-1.5 select-none shrink-0">
           &gt;
         </span>
         <textarea
@@ -88,11 +88,10 @@ export function TerminalInput({
           onPaste={handlePaste}
           placeholder={pastedImage ? "add a message with this image..." : "ask anything, or type /help for commands"}
           rows={1}
-          disabled={isThinking}
           autoComplete="off"
           spellCheck={false}
           enterKeyHint="send"
-          className="flex-1 px-0 py-1.5 text-[16px] font-mono bg-transparent border-none outline-none resize-none text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/15 disabled:opacity-50"
+          className="flex-1 px-0 py-1.5 text-[12px] font-mono bg-transparent border-none outline-none resize-none text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/15"
           style={{ maxHeight: "160px" }}
         />
         <button
@@ -101,7 +100,7 @@ export function TerminalInput({
             onSend();
             setPastedImage(null);
           }}
-          disabled={isThinking || (!input.trim() && !pastedImage)}
+          disabled={!input.trim() && !pastedImage}
           className="shrink-0 h-7 w-9 flex items-center justify-center bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform disabled:opacity-30"
           style={{ borderRadius: "3px" }}
           aria-label="Send"
