@@ -491,7 +491,7 @@ http.route({
               content: m.content,
             })),
           }),
-          signal: AbortSignal.timeout(90_000),
+          signal: AbortSignal.timeout(45_000),
         });
 
         if (upstreamRes.ok && upstreamRes.body) {
@@ -524,7 +524,7 @@ http.route({
             temperature: 0.7,
             stream: true,
           }),
-          signal: AbortSignal.timeout(90_000),
+          signal: AbortSignal.timeout(45_000),
         });
 
         if (upstreamRes.ok && upstreamRes.body) {

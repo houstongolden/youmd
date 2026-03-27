@@ -1469,14 +1469,22 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     thinkingCategoryRef.current = thinkingCategory;
   }, [thinkingCategory]);
 
+  // Auto-rotate thinking phrases while agent is working
+  // Rotates every 5s (was 2.5s — slower feels more intentional, less fake)
   useEffect(() => {
     if (!isThinking) return;
     const interval = setInterval(() => {
       const cat = thinkingCategoryRef.current;
-      setThinkingPhrase(randomThinking(cat));
-    }, 2500);
+      // Use the active step label if one exists, otherwise random phrase
+      const activeStep = progressSteps.find((s) => s.status === "running");
+      if (activeStep && activeStep.label !== "thinking") {
+        setThinkingPhrase(activeStep.label);
+      } else {
+        setThinkingPhrase(randomThinking(cat));
+      }
+    }, 5000);
     return () => clearInterval(interval);
-  }, [isThinking]);
+  }, [isThinking, progressSteps]);
 
   // Restore session from Convex on mount
   useEffect(() => {
@@ -2600,7 +2608,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       }
 
       // LLM call — stream tokens into a live display message
-      const llmStepId = addStep("generating response");
+      setThinkingPhrase("thinking about your message");
+      const llmStepId = addStep("thinking");
 
       // Create a placeholder assistant message for streaming
       const streamMsgId = crypto.randomUUID();

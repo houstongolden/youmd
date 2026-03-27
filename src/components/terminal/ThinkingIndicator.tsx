@@ -61,10 +61,10 @@ export function ThinkingIndicator({ phrase, category, progressSteps = [] }: Thin
         )}
       </div>
 
-      {/* Activity log — step-by-step progress */}
+      {/* Activity log — only show real operational steps, not generic "thinking" */}
       {hasSteps && (
         <div className="ml-5">
-          <ActivityLog steps={progressSteps} />
+          <ActivityLog steps={progressSteps.filter((s) => s.label !== "thinking")} />
         </div>
       )}
     </div>
