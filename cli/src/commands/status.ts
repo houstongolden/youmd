@@ -174,7 +174,8 @@ async function showRemoteStatus(): Promise<void> {
     }
 
     const me = res.data;
-    console.log("  user:    " + chalk.green(me.username));
+    const remoteUsername = me.user?.username || me.username;
+    console.log("  user:    " + chalk.green(remoteUsername || "unknown"));
     console.log("  bundles: " + me.bundleCount);
 
     if (me.publishedBundle) {
@@ -201,7 +202,7 @@ async function showRemoteStatus(): Promise<void> {
 
     console.log(
       "  url:     " +
-        chalk.cyan("https://you.md/" + me.username)
+        chalk.cyan("https://you.md/" + (me.user?.username || me.username || "unknown"))
     );
     console.log("");
   } catch (err) {

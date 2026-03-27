@@ -117,11 +117,20 @@ function getToken(): string {
 }
 
 export interface MeResponse {
-  username: string;
-  email: string;
+  // Legacy flat fields (kept for backward compat)
+  username?: string;
+  email?: string;
   displayName?: string;
-  plan: string;
-  createdAt: number;
+  plan?: string;
+  createdAt?: number;
+  // New nested user field (actual API response shape)
+  user?: {
+    username: string;
+    email: string;
+    displayName?: string;
+    plan: string;
+    createdAt: number;
+  };
   latestBundle: {
     version: number;
     isPublished: boolean;

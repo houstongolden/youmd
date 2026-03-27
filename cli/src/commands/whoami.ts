@@ -61,20 +61,23 @@ export async function whoamiCommand(): Promise<void> {
     }
 
     const me = res.data;
+    const u = me.user || { username: me.username, email: me.email, displayName: me.displayName, plan: me.plan, createdAt: me.createdAt };
 
     // Clear and reprint with server data
     console.log("");
-    console.log("  user:    " + chalk.green(me.username));
-    if (me.displayName) {
-      console.log("  name:    " + me.displayName);
+    console.log("  user:    " + chalk.green(u.username || "unknown"));
+    if (u.displayName) {
+      console.log("  name:    " + u.displayName);
     }
-    if (me.email) {
-      console.log("  email:   " + me.email);
+    if (u.email) {
+      console.log("  email:   " + u.email);
     }
-    console.log("  plan:    " + me.plan);
-    console.log(
-      "  joined:  " + new Date(me.createdAt).toISOString().split("T")[0]
-    );
+    console.log("  plan:    " + (u.plan || "free"));
+    if (u.createdAt) {
+      console.log(
+        "  joined:  " + new Date(u.createdAt).toISOString().split("T")[0]
+      );
+    }
     console.log("  bundles: " + me.bundleCount);
 
     if (me.publishedBundle) {
@@ -84,14 +87,14 @@ export async function whoamiCommand(): Promise<void> {
       );
     }
 
-    const profileUrl = "https://you.md/" + me.username;
+    const profileUrl = "https://you.md/" + (u.username || config.username || "unknown");
     console.log("");
     console.log("  \u250C" + "\u2500".repeat(profileUrl.length + 4) + "\u2510");
     console.log("  \u2502  " + chalk.cyan.bold(profileUrl) + "  \u2502");
     console.log("  \u2514" + "\u2500".repeat(profileUrl.length + 4) + "\u2518");
     console.log("");
 
-    const displayName = me.displayName || me.username;
+    const displayName = u.displayName || u.username || config.username;
     console.log(
       "  " + chalk.bold(`you are ${displayName}.`) +
         chalk.dim(" the agent internet knows you.")
@@ -99,8 +102,8 @@ export async function whoamiCommand(): Promise<void> {
     console.log("");
 
     // Update cached config
-    config.username = me.username;
-    config.email = me.email;
+    if (u.username) config.username = u.username;
+    if (u.email) config.email = u.email;
 
     // Avoid circular import -- just write directly
     const { writeGlobalConfig } = require("../lib/config");
