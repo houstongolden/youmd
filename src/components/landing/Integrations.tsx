@@ -49,11 +49,12 @@ const Integrations = () => (
               viewport={{ once: true }}
               transition={{ duration: 0.3, delay: i * 0.04 }}
               whileHover={{ scale: 1.05, y: -1 }}
-              className={`font-mono text-[11px] transition-colors duration-300 cursor-default select-none px-3 py-1.5 rounded border ${
+              className={`font-mono text-[11px] transition-colors duration-300 cursor-default select-none px-3 py-1.5 border ${
                 agent.tier === "primary"
                   ? "text-accent/80 border-accent/20 hover:border-accent/40 hover:text-accent bg-accent-wash/30"
                   : "text-muted-foreground/60 border-border/60 hover:border-accent/20 hover:text-accent/80"
               }`}
+              style={{ borderRadius: "2px" }}
             >
               {agent.name}
             </motion.span>
@@ -131,7 +132,8 @@ const Integrations = () => (
           {methods.map((method, i) => (
             <motion.div
               key={method.label}
-              className="text-center px-3 py-3 border border-border/40 rounded bg-[hsl(var(--bg-raised))]/50"
+              className="text-center px-3 py-3 border border-border/40 bg-[hsl(var(--bg-raised))]/50"
+              style={{ borderRadius: "2px" }}
               whileInView={{ opacity: [0, 1], y: [8, 0] }}
               viewport={{ once: true }}
               transition={{ delay: 0.35 + i * 0.06 }}

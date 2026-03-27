@@ -100,7 +100,8 @@ const OpenSpec = () => (
           {principles.map((p, i) => (
             <motion.span
               key={p}
-              className="font-mono text-[10px] text-accent/60 border border-accent/15 px-3 py-1 rounded"
+              className="font-mono text-[10px] text-accent/60 border border-accent/15 px-3 py-1"
+              style={{ borderRadius: "2px" }}
               whileInView={{ opacity: [0, 1] }}
               viewport={{ once: true }}
               transition={{ delay: 0.3 + i * 0.08 }}
@@ -114,7 +115,7 @@ const OpenSpec = () => (
       {/* Self-host callout */}
       <FadeUp delay={0.3}>
         <div className="mt-8 text-center">
-          <div className="inline-block border border-border/40 rounded px-4 py-3 bg-[hsl(var(--bg-raised))]/50">
+          <div className="inline-block border border-border/40 px-4 py-3 bg-[hsl(var(--bg-raised))]/50" style={{ borderRadius: "2px" }}>
             <p className="font-mono text-[11px] text-muted-foreground/60 mb-1">
               self-host your identity:
             </p>

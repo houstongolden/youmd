@@ -59,7 +59,8 @@ const ProblemStrip = () => {
             {painPoints.map((item, i) => (
               <motion.div
                 key={item}
-                className="flex items-start gap-2 font-mono text-[11px] text-destructive/70 px-3 py-2 border border-destructive/15 rounded bg-destructive/[0.03]"
+                className="flex items-start gap-2 font-mono text-[11px] text-destructive/70 px-3 py-2 border border-destructive/15 bg-destructive/[0.03]"
+                style={{ borderRadius: "2px" }}
                 whileInView={{ opacity: [0, 1], x: [-8, 0] }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 + i * 0.06 }}

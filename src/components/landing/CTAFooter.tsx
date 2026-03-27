@@ -94,7 +94,7 @@ const CTAFooter = () => {
                 <Link href="/create" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; create</Link>
                 <Link href="/profiles" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; profiles</Link>
                 <a href="#pricing" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; pricing</a>
-                <a href="#portrait" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; portraits</a>
+                <Link href="/docs#skills" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; skills</Link>
               </div>
             </div>
             <div>

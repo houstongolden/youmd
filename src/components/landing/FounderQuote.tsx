@@ -44,7 +44,7 @@ const FounderQuote = () => (
 
           <div className="mt-8 pt-6 border-t border-[hsl(var(--border))]">
             <a href="/houstongolden" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded overflow-hidden border border-[hsl(var(--border))] group-hover:border-accent/30 transition-colors">
+              <div className="w-10 h-10 overflow-hidden border border-[hsl(var(--border))] group-hover:border-accent/30 transition-colors" style={{ borderRadius: "2px" }}>
                 <AsciiAvatar
                   src="/assets/houston-portrait.jpeg"
                   cols={40}

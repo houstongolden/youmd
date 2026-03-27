@@ -152,7 +152,7 @@ src/components/ui/          UI primitives
 src/hooks/useYouAgent.ts    Shared agent logic (2000+ lines)
 src/data/                   Sample profiles
 
-convex/                     Backend (17 tables, 30+ HTTP routes)
+convex/                     Backend (21 tables, 38+ HTTP routes)
 convex/schema.ts            Complete data model
 convex/http.ts              All HTTP API endpoints
 convex/chat.ts              LLM proxy (OpenRouter)
@@ -162,8 +162,8 @@ convex/me.ts                Authenticated profile operations
 convex/memories.ts          Memory system
 convex/portrait.ts          Server-side ASCII generation
 
-cli/                        CLI package (npm: youmd, v0.4.9)
-cli/src/index.ts            Entry point (20 commands)
+cli/                        CLI package (npm: youmd, v0.5.0)
+cli/src/index.ts            Entry point (21 commands + skill subcommands)
 cli/src/lib/onboarding.ts   Conversational AI onboarding (1000+ lines)
 cli/src/commands/chat.ts    Ongoing chat with You Agent
 cli/src/lib/render.ts       BrailleSpinner, rich terminal rendering
@@ -230,8 +230,8 @@ npm publish --otp=CODE                   # Publish (requires 2FA OTP)
 
 **Full details:** `project-context/ARCHITECTURE.md`
 
-- 17 Convex tables (users, profiles, bundles, sources, memories, chatMessages, etc.)
-- 30+ HTTP API endpoints in convex/http.ts
+- 21 Convex tables (users, profiles, bundles, sources, memories, skills, skillInstalls, chatMessages, etc.)
+- 38+ HTTP API endpoints in convex/http.ts
 - Auth: Clerk (web) + email/password via Clerk Backend API (CLI) + API keys (agents)
 - Pipeline: discover → fetch → extract → analyze → compile → review
 - LLM routing: Claude Sonnet (chat), Perplexity (research), Grok (X enrichment)

@@ -184,7 +184,7 @@ Terminal-native, not SaaS. Infrastructure with soul. Every pixel should feel lik
 
 ## 7. Data Model
 
-See ARCHITECTURE.md for the complete 17-table schema. Key relationships:
+See ARCHITECTURE.md for the complete 21-table schema. Key relationships:
 
 ```
 users (1:1 Clerk) → profiles (1:1, claimable)

@@ -28,7 +28,7 @@ const program = new Command();
 program
   .name("youmd")
   .description("identity context protocol for the agent internet — an MCP where the context is you")
-  .version("0.4.6");
+  .version("0.5.0");
 
 program
   .command("init")

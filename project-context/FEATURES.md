@@ -104,7 +104,7 @@ Last Updated: 2026-03-26
 | Private vault encryption | Not started | AES-256-GCM, deferred |
 | Rate limiting | Not started | Per plan |
 
-## CLI (npm: youmd v0.4.9)
+## CLI (npm: youmd v0.5.0)
 
 | Feature | Status | Notes |
 |---|---|---|
