@@ -184,9 +184,9 @@ interface AsciiAvatarProps {
 
 const AsciiAvatar = ({
   src,
-  cols = 120,
+  cols = 160,
   canvasWidth = 200,
-  format = "classic",
+  format = "block",
   className = "",
   preRendered,
   onRendered,
@@ -309,7 +309,7 @@ function AsciiAvatarCanvas({
             alt=""
             crossOrigin="anonymous"
             className="w-full opacity-60"
-            style={{ filter: "sepia(1) saturate(2) hue-rotate(-10deg) brightness(0.7)" }}
+            style={{ filter: "grayscale(1) brightness(0.9) contrast(1.1)" }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               if (target.crossOrigin) {

@@ -53,7 +53,7 @@ const HeroPortrait = () => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      const cols = 120;
+      const cols = 160;
       const data = imgToAscii(img, cols);
       if (!data.length || !canvasRef.current) return;
 

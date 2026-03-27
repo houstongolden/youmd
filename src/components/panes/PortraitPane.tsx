@@ -38,8 +38,8 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
   const setProfileImages = useMutation(api.profiles.setProfileImages);
   const savePortrait = useMutation(api.profiles.savePortrait);
 
-  const [format, setFormat] = useState<AsciiFormat>("classic");
-  const [cols, setCols] = useState(120);
+  const [format, setFormat] = useState<AsciiFormat>("block");
+  const [cols, setCols] = useState(160);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);

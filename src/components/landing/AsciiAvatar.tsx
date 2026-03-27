@@ -79,7 +79,7 @@ interface AsciiAvatarProps {
 
 const AsciiAvatar = ({
   src,
-  cols = 120,
+  cols = 160,
   canvasWidth = 200,
   className = "",
 }: AsciiAvatarProps) => {

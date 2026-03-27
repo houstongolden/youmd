@@ -129,7 +129,7 @@ const Navbar = () => {
                         src={user.imageUrl}
                         alt=""
                         className="w-full h-full object-cover"
-                        style={{ filter: "sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.85) contrast(1.3)" }}
+                        style={{ filter: "grayscale(1) brightness(0.9) contrast(1.1)" }}
                       />
                       <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                     </div>
@@ -227,7 +227,7 @@ const Navbar = () => {
                       src={user.imageUrl}
                       alt=""
                       className="w-full h-full object-cover"
-                      style={{ filter: "sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.85) contrast(1.3)" }}
+                      style={{ filter: "grayscale(1) brightness(0.9) contrast(1.1)" }}
                     />
                     <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                   </div>
