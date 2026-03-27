@@ -215,13 +215,22 @@ http.route({
       const result = await ctx.runMutation(api.me.saveBundleFromForm, {
         clerkId: auth.userId, // We'll need to adapt this
         profileData: body.profileData,
+        parentHash: body.parentHash, // content-addressed version control
       });
       return json(result);
     } catch (err) {
-      return json(
-        { error: err instanceof Error ? err.message : "Failed to save bundle" },
-        500
-      );
+      const message = err instanceof Error ? err.message : "Failed to save bundle";
+      // Return 409 Conflict for ancestor mismatch (client needs to pull first)
+      if (message.includes("ANCESTOR_MISMATCH")) {
+        return json(
+          {
+            error: "ANCESTOR_MISMATCH",
+            message,
+          },
+          409
+        );
+      }
+      return json({ error: message }, 500);
     }
   }),
 });

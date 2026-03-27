@@ -146,7 +146,7 @@ export const saveBundleFromForm = mutation({
       await ctx.db.patch(profile._id, profileUpdates);
     }
 
-    return { bundleId, version: maxVersion + 1 };
+    return { bundleId, version: maxVersion + 1, contentHash };
   },
 });
 
@@ -195,6 +195,9 @@ export const saveYouJsonDirect = mutation({
     const youMd = compileYouMd(data);
     const manifest = compileManifest(data);
 
+    // Compute content hash for version control
+    const contentHash = await computeContentHash(args.youJson, youMd);
+
     // Get next version
     const existing = await ctx.db
       .query("bundles")
@@ -206,6 +209,10 @@ export const saveYouJsonDirect = mutation({
       0
     );
 
+    // Auto-set parentHash from latest bundle
+    const latestBundle = existing.sort((a, b) => b.version - a.version)[0];
+    const parentHash = latestBundle?.contentHash ?? undefined;
+
     const bundleId = await ctx.db.insert("bundles", {
       userId: user._id,
       version: maxVersion + 1,
@@ -215,6 +222,8 @@ export const saveYouJsonDirect = mutation({
       youMd,
       isPublished: false,
       createdAt: Date.now(),
+      contentHash,
+      parentHash,
     });
 
     // Sync to profiles table
@@ -243,7 +252,7 @@ export const saveYouJsonDirect = mutation({
       await ctx.db.patch(profile._id, profileUpdates);
     }
 
-    return { bundleId, version: maxVersion + 1 };
+    return { bundleId, version: maxVersion + 1, contentHash };
   },
 });
 
