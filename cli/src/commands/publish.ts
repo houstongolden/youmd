@@ -9,7 +9,7 @@ import {
   readLocalConfig,
   writeLocalConfig,
 } from "../lib/config";
-import { uploadBundle, publishLatest } from "../lib/api";
+import { uploadBundle, publishLatest, getMe } from "../lib/api";
 import { Spinner } from "../lib/onboarding";
 
 export async function publishCommand(): Promise<void> {
@@ -63,6 +63,50 @@ export async function publishCommand(): Promise<void> {
   console.log("  \u251C\u2500\u2500 " + chalk.dim("reading") + " you.json (v" + (youJson.version || "?") + ")");
   console.log("  \u251C\u2500\u2500 " + chalk.dim("reading") + " you.md (" + youMd.length + " bytes)");
   console.log("  \u251C\u2500\u2500 " + chalk.dim("reading") + " manifest.json");
+
+  // Safety check: compare local version against remote to prevent overwriting richer data
+  const localVersion = youJson.version || 0;
+  const localConfig = readLocalConfig();
+  const lastKnownRemoteVersion = localConfig?.lastKnownRemoteVersion || 0;
+
+  try {
+    const meRes = await getMe();
+    if (meRes.ok) {
+      const remoteVersion = meRes.data.publishedBundle?.version || meRes.data.latestBundle?.version || 0;
+      const remoteSize = JSON.stringify(meRes.data.latestBundle?.youJson || {}).length;
+      const localSize = JSON.stringify(youJson).length;
+
+      if (remoteVersion > lastKnownRemoteVersion && remoteSize > localSize * 1.5) {
+        console.log("");
+        console.log(chalk.yellow("  warning: remote bundle (v" + remoteVersion + ", " + remoteSize + " bytes) is larger than local (v" + localVersion + ", " + localSize + " bytes)"));
+        console.log(chalk.yellow("  this may overwrite richer data from the web agent or other sources."));
+        console.log("");
+        console.log(chalk.dim("  to sync safely:"));
+        console.log(chalk.cyan("    youmd pull") + chalk.dim("     -- download remote data first"));
+        console.log(chalk.cyan("    youmd build") + chalk.dim("    -- rebuild from merged files"));
+        console.log(chalk.cyan("    youmd publish") + chalk.dim("  -- then publish"));
+        console.log("");
+        console.log(chalk.dim("  to force publish anyway:"));
+        console.log(chalk.cyan("    youmd publish --force"));
+        console.log("");
+
+        // Check if --force was used (via process.argv since Commander doesn't pass it here)
+        if (!process.argv.includes("--force") && !process.argv.includes("-f")) {
+          return;
+        }
+        console.log(chalk.yellow("  --force detected, proceeding..."));
+      }
+
+      // Save the remote version we checked against
+      if (localConfig) {
+        localConfig.lastKnownRemoteVersion = remoteVersion;
+        writeLocalConfig(localConfig);
+      }
+    }
+  } catch {
+    // Network error — proceed but warn
+    console.log(chalk.dim("  could not check remote version — proceeding"));
+  }
 
   // Upload the bundle with a thinking spinner
   const spinner = new Spinner("beaming you up to the agent internet");

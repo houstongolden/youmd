@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
 import { getMe, getPublicProfile, getPrivateContext } from "../lib/api";
-import { readGlobalConfig, getLocalBundleDir, localBundleExists } from "../lib/config";
+import { readGlobalConfig, getLocalBundleDir, localBundleExists, readLocalConfig, writeLocalConfig } from "../lib/config";
 import { writePrivateContextToLocal } from "./private";
 
 export async function pullCommand() {
@@ -227,6 +227,19 @@ ${(voice.overall as string) || (analysis.voice_summary as string) || ""}
     }
   } catch {
     console.log(chalk.dim("  skipped private context (not available)"));
+  }
+
+  // Track the remote version we pulled so push/publish can detect divergence
+  try {
+    const meRes = await getMe();
+    if (meRes.ok) {
+      const remoteVersion = meRes.data.publishedBundle?.version || meRes.data.latestBundle?.version || 0;
+      const lc = readLocalConfig() || { version: 1, sources: [] };
+      lc.lastKnownRemoteVersion = remoteVersion;
+      writeLocalConfig(lc);
+    }
+  } catch {
+    // non-fatal
   }
 
   console.log("");

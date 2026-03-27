@@ -65,6 +65,7 @@ program
 program
   .command("publish")
   .description("Push compiled bundle to the platform API")
+  .option("-f, --force", "Publish even if remote has richer data")
   .action(publishCommand);
 
 program
@@ -105,6 +106,7 @@ program
   .command("push")
   .description("Upload local .youmd/ files to you.md and publish")
   .option("--no-publish", "Upload without publishing")
+  .option("-f, --force", "Push even if remote has richer data")
   .action(pushCommand);
 
 program

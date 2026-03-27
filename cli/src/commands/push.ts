@@ -1,12 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
-import { readGlobalConfig, getLocalBundleDir, localBundleExists } from "../lib/config";
+import { readGlobalConfig, getLocalBundleDir, localBundleExists, readLocalConfig, writeLocalConfig } from "../lib/config";
 import { compileBundle, writeBundle } from "../lib/compiler";
-import { uploadBundle, publishLatest, updatePrivateContext } from "../lib/api";
+import { uploadBundle, publishLatest, updatePrivateContext, getMe } from "../lib/api";
 import { readPrivateContextFromLocal } from "./private";
 
-export async function pushCommand(options: { publish?: boolean }) {
+export async function pushCommand(options: { publish?: boolean; force?: boolean }) {
   const config = readGlobalConfig();
 
   if (!config.token) {
@@ -51,7 +51,48 @@ export async function pushCommand(options: { publish?: boolean }) {
     ? JSON.parse(fs.readFileSync(manifestPath, "utf-8"))
     : {};
 
-  // Step 2: Upload to Convex
+  // Step 2: Safety check — compare local vs remote to prevent overwriting richer data
+  const localConfig = readLocalConfig();
+  const lastKnownRemoteVersion = localConfig?.lastKnownRemoteVersion || 0;
+  const localSize = JSON.stringify(youJson).length;
+
+  try {
+    const meRes = await getMe();
+    if (meRes.ok) {
+      const remoteVersion = meRes.data.publishedBundle?.version || meRes.data.latestBundle?.version || 0;
+      const remoteSize = JSON.stringify(meRes.data.latestBundle?.youJson || {}).length;
+
+      if (remoteVersion > lastKnownRemoteVersion && remoteSize > localSize * 1.5) {
+        console.log("");
+        console.log(chalk.yellow("  remote is ahead — v" + remoteVersion + " (" + remoteSize + "b) vs local (" + localSize + "b)"));
+        console.log(chalk.yellow("  pushing would overwrite richer data from other sources."));
+        console.log("");
+        console.log(chalk.dim("  safe workflow:"));
+        console.log(chalk.cyan("    youmd pull") + chalk.dim("   -- download remote data"));
+        console.log(chalk.cyan("    youmd push") + chalk.dim("   -- push merged result"));
+        console.log("");
+        console.log(chalk.dim("  or: ") + chalk.cyan("youmd push --force") + chalk.dim(" to override"));
+        console.log("");
+
+        if (!options.force) {
+          return;
+        }
+        console.log(chalk.yellow("  --force detected, proceeding..."));
+        console.log("");
+      }
+
+      // Track the remote version we've seen
+      if (localConfig) {
+        localConfig.lastKnownRemoteVersion = remoteVersion;
+        writeLocalConfig(localConfig);
+      }
+    }
+  } catch {
+    // Network error — proceed but warn
+    console.log(chalk.dim("  could not verify remote version — proceeding"));
+  }
+
+  // Step 3: Upload to Convex
   console.log(chalk.dim("  pushing to you.md..."));
 
   try {

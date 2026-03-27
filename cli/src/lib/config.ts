@@ -19,6 +19,7 @@ export interface LocalConfig {
   version: number;
   sources: Array<{ type: string; url: string; addedAt: string }>;
   lastPublished?: string;
+  lastKnownRemoteVersion?: number;
 }
 
 export function getGlobalConfigDir(): string {
