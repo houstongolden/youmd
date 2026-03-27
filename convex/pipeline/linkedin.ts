@@ -26,7 +26,7 @@ async function callLLM(
     try {
       return await callAnthropic(anthropicKey, systemPrompt, userContent);
     } catch (e) {
-      console.log("Anthropic API failed, falling back to OpenRouter:", e);
+      // console.log("Anthropic API failed, falling back to OpenRouter:", e);
     }
   }
 

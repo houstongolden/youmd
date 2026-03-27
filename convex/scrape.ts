@@ -107,7 +107,7 @@ async function fetchGitHubProfile(username: string): Promise<ProfileResult> {
       await res.text(); // consume body
     }
   } catch (e) {
-    console.log("GitHub API failed:", e);
+    // console.log("GitHub API failed:", e);
   }
 
   // Fetch top repos for extra context
@@ -145,7 +145,7 @@ async function fetchGitHubProfile(username: string): Promise<ProfileResult> {
         }
       }
     } catch (e) {
-      console.log("GitHub repos fetch failed:", e);
+      // console.log("GitHub repos fetch failed:", e);
     }
   }
 
@@ -257,10 +257,10 @@ async function fetchLinkedInProfile(slug: string): Promise<ProfileResult> {
         result.followers = parseInt(followersLiMatch[1]);
     } else {
       await res.text(); // consume body
-      console.log(`LinkedIn returned ${res.status}`);
+      // console.log(`LinkedIn returned ${res.status}`);
     }
   } catch (e) {
-    console.log("LinkedIn fetch failed:", e);
+    // console.log("LinkedIn fetch failed:", e);
   }
 
   // Fallback image
@@ -289,7 +289,7 @@ async function fetchWebsite(url: string): Promise<ProfileResult> {
     });
 
     if (!res.ok) {
-      console.log(`Website ${url} returned ${res.status}`);
+      // console.log(`Website ${url} returned ${res.status}`);
       return result;
     }
 
@@ -357,7 +357,7 @@ async function fetchWebsite(url: string): Promise<ProfileResult> {
 
     result.website = url;
   } catch (e) {
-    console.log(`Website fetch failed for ${url}:`, e);
+    // console.log(`Website fetch failed for ${url}:`, e);
   }
 
   return result;
@@ -430,9 +430,7 @@ export const scrapeProfile = action({
       };
     }
 
-    console.log(
-      `Scraping ${detected.platform} profile for: ${detected.identifier}`
-    );
+    // console.log(`Scraping ${detected.platform} profile for: ${detected.identifier}`);
 
     let result: ProfileResult;
     switch (detected.platform) {
@@ -455,9 +453,7 @@ export const scrapeProfile = action({
         };
     }
 
-    console.log(
-      `Result -- platform: ${result.platform}, image: ${result.profileImageUrl ? "found" : "none"}, name: ${result.displayName || "unknown"}, bio: ${result.bio ? "yes" : "no"}, location: ${result.location || "none"}, followers: ${result.followers ?? "none"}`
-    );
+    // console.log(`Result -- platform: ${result.platform}, image: ${result.profileImageUrl ? "found" : "none"}, name: ${result.displayName || "unknown"}`);
 
     return {
       success: true as const,

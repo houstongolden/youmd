@@ -73,7 +73,7 @@ const ProfilesShowcase = () => {
                       }`} />
 
                       {/* Avatar placeholder */}
-                      <div className="w-8 h-8 rounded overflow-hidden border border-[hsl(var(--border))] shrink-0 bg-[hsl(var(--bg))] flex items-center justify-center">
+                      <div className="w-8 h-8 overflow-hidden border border-[hsl(var(--border))] shrink-0 bg-[hsl(var(--bg))] flex items-center justify-center">
                         {profile.avatarUrl ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
                           <img

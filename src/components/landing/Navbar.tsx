@@ -75,9 +75,10 @@ const Navbar = () => {
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 px-4 pt-3 md:pt-4">
         <div
-          className={`max-w-xl mx-auto flex items-center justify-between gap-6 px-4 py-2 transition-all duration-500 rounded ${
+          className={`max-w-xl mx-auto flex items-center justify-between gap-6 px-4 py-2 transition-all duration-500 ${
             scrolled ? "glass-nav" : "bg-transparent"
           }`}
+          style={{ borderRadius: "2px" }}
         >
           <a
             href="/"
@@ -122,7 +123,7 @@ const Navbar = () => {
                   className="flex items-center gap-2 group"
                 >
                   {user?.imageUrl ? (
-                    <div className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))] relative">
+                    <div className="w-5 h-5 border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))] relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={user.imageUrl}
@@ -133,7 +134,7 @@ const Navbar = () => {
                       <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                     </div>
                   ) : (
-                    <span className="w-5 h-5 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent group-hover:border-accent transition-colors">
+                    <span className="w-5 h-5 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent group-hover:border-accent transition-colors">
                       {username?.[0]?.toUpperCase() ?? user?.firstName?.[0] ?? ">"}
                     </span>
                   )}
@@ -220,7 +221,7 @@ const Navbar = () => {
                 className="flex items-center gap-2 group"
               >
                 {user?.imageUrl ? (
-                  <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))] relative">
+                  <div className="w-6 h-6 border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))] relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={user.imageUrl}
@@ -231,7 +232,7 @@ const Navbar = () => {
                     <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                   </div>
                 ) : (
-                  <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[10px] text-accent">
+                  <span className="w-6 h-6 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[10px] text-accent">
                     {username?.[0]?.toUpperCase() ?? user?.firstName?.[0] ?? ">"}
                   </span>
                 )}

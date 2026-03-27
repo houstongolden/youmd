@@ -70,7 +70,8 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
 
   return (
     <div
-      className={`pointer-events-auto px-4 py-3 rounded-lg border text-sm font-medium backdrop-blur-sm transition-all duration-300 ease-out ${colorMap[toast.type]} ${
+      style={{ borderRadius: "2px" }}
+      className={`pointer-events-auto px-4 py-3 border text-sm font-medium backdrop-blur-sm transition-all duration-300 ease-out ${colorMap[toast.type]} ${
         visible && !exiting
           ? "opacity-100 translate-x-0"
           : "opacity-0 translate-x-4"

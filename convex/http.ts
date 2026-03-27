@@ -559,8 +559,8 @@ http.route({
         username: body.username,
         platform: body.platform,
       });
-      if (!result.success) {
-        return json({ success: false, error: result.error }, 400);
+      if (!result || !result.success) {
+        return json({ success: false, error: (result as any)?.error || "Scrape returned no data" }, 400);
       }
       return json(result);
     } catch (err) {
@@ -676,7 +676,7 @@ http.route({
         ? `https://www.linkedin.com/in/${slugMatch[1]}/`
         : linkedinUrl;
 
-      console.log(`LinkedIn enrichment: normalizing ${linkedinUrl} -> ${normalizedUrl}`);
+      // console.log(`LinkedIn enrichment: normalizing ${linkedinUrl} -> ${normalizedUrl}`);
 
       // If userId provided, look up user; otherwise run without pipeline storage
       let userId = body.userId;
@@ -711,7 +711,7 @@ http.route({
         ignoreCache: true,
         forceFresh: true,
       };
-      console.log(`LinkedIn enrichment: sending to Apify actor ${profileActorId} with URL: ${normalizedUrl}, slug: ${slug}`);
+      // console.log(`LinkedIn enrichment: sending to Apify actor ${profileActorId} with URL: ${normalizedUrl}, slug: ${slug}`);
       const [profileRes, postsRes] = await Promise.all([
         fetch(
           `https://api.apify.com/v2/acts/${profileActorId}/run-sync-get-dataset-items?token=${apiKey}`,
@@ -749,9 +749,9 @@ http.route({
       const rawProfile = Array.isArray(profileData) ? profileData[0] ?? null : profileData;
 
       if (rawProfile) {
-        console.log(`LinkedIn enrichment: got profile for ${rawProfile.fullName || rawProfile.firstName || "unknown"}, headline: ${rawProfile.headline || rawProfile.title || "none"}`);
+        // console.log(`LinkedIn enrichment: got profile for ${rawProfile.fullName || rawProfile.firstName || "unknown"}, headline: ${rawProfile.headline || rawProfile.title || "none"}`);
       } else {
-        console.log("LinkedIn enrichment: no profile data returned from Apify");
+        // console.log("LinkedIn enrichment: no profile data returned from Apify");
       }
 
       // Normalize profile data — handle both flat and nested (basic_info) formats
@@ -770,7 +770,7 @@ http.route({
       } : null;
 
       if (rawProfile && profile) {
-        console.log(`LinkedIn enrichment: normalized — name: ${profile.fullName}, headline: ${(profile.headline || "none").slice(0, 60)}, public_id: ${profile.publicIdentifier}`);
+        // console.log(`LinkedIn enrichment: normalized — name: ${profile.fullName}, headline: ${(profile.headline || "none").slice(0, 60)}, public_id: ${profile.publicIdentifier}`);
       }
 
       let posts: unknown[] = [];
@@ -779,7 +779,7 @@ http.route({
         posts = Array.isArray(postsData) ? postsData : [];
       } else {
         // Posts fetch is non-fatal
-        console.log("Posts fetch failed, continuing with profile only");
+        // console.log("Posts fetch failed, continuing with profile only");
         await postsRes.text(); // consume body
       }
 
@@ -810,7 +810,7 @@ http.route({
             );
           }
         } catch (e) {
-          console.log("Voice analysis failed:", e);
+          // console.log("Voice analysis failed:", e);
           // Non-fatal — still return the profile/posts data
         }
       }
