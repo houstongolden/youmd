@@ -110,27 +110,32 @@ const Pricing = () => (
             </div>
             <div className="space-y-2 font-mono text-[11px] text-muted-foreground mb-5">
               <p>
-                {"  "}&rsaquo; Unlimited auto-syncs -- identity
-                always current
+                {"  "}&rsaquo; Unlimited auto-syncs -- your identity
+                stays fresh across every tool
               </p>
               <p>
-                {"  "}&rsaquo; BYOK -- OpenRouter, Perplexity,
-                Apify
+                {"  "}&rsaquo; Bring your own keys -- use your
+                OpenRouter, Perplexity, or Apify API keys
               </p>
               <p>
-                {"  "}&rsaquo; Private encrypted vault for
-                sensitive context
+                {"  "}&rsaquo; Private encrypted vault -- store
+                sensitive context only trusted agents can access
               </p>
               <p>
-                {"  "}&rsaquo; Version history -- roll back any
-                change
+                {"  "}&rsaquo; Version history -- revert any change,
+                see how your identity evolved
               </p>
               <p>
-                {"  "}&rsaquo; Custom domain -- your identity,
-                your URL
+                {"  "}&rsaquo; Custom domain -- host your identity
+                at your own URL
               </p>
               <p>
-                {"  "}&rsaquo; Analytics & scoped API keys
+                {"  "}&rsaquo; Analytics -- see which agents read
+                your profile, and how often
+              </p>
+              <p>
+                {"  "}&rsaquo; Scoped API keys -- granular access
+                control per agent or project
               </p>
             </div>
             <Link
@@ -148,7 +153,7 @@ const Pricing = () => (
 
       <FadeUp delay={0.15}>
         <p className="text-muted-foreground/60 font-mono text-[10px] text-center mt-10">
-          we gate on usage intensity -- never on core identity.
+          you pay for features, not for being yourself. core identity is always free.
         </p>
       </FadeUp>
     </div>
