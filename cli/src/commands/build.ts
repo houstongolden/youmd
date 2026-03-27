@@ -1,9 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
-import { getLocalBundleDir, localBundleExists, readGlobalConfig } from "../lib/config";
+import { getLocalBundleDir, localBundleExists, readGlobalConfig, readLocalConfig, writeLocalConfig } from "../lib/config";
 import { compileBundle, writeBundle } from "../lib/compiler";
 import { randomThinking, Spinner } from "../lib/onboarding";
+import { computeContentHash, shortHash } from "../lib/hash";
 
 export async function buildCommand(): Promise<void> {
   if (!localBundleExists()) {
@@ -61,6 +62,18 @@ export async function buildCommand(): Promise<void> {
   // Write output files
   writeBundle(bundleDir, result);
 
+  // Compute and store the local content hash
+  const youJsonPath = path.join(bundleDir, "you.json");
+  const youMdPath = path.join(bundleDir, "you.md");
+  if (fs.existsSync(youJsonPath)) {
+    const youJson = JSON.parse(fs.readFileSync(youJsonPath, "utf-8"));
+    const youMdContent = fs.existsSync(youMdPath) ? fs.readFileSync(youMdPath, "utf-8") : "";
+    const localHash = computeContentHash(youJson, youMdContent);
+    const localConfig = readLocalConfig() || { version: 1, sources: [] };
+    localConfig.localContentHash = localHash;
+    writeLocalConfig(localConfig);
+  }
+
   // Calculate summary stats
   const filledSections = result.bundle.profile.filter(
     (s) => s.content.split("\n").filter((l) => l.trim() && !l.startsWith("<!--")).length > 0
@@ -69,7 +82,6 @@ export async function buildCommand(): Promise<void> {
   ).length;
   const totalSections = result.bundle.profile.length + result.bundle.preferences.length;
 
-  const youMdPath = path.join(bundleDir, "you.md");
   const contentSize = fs.existsSync(youMdPath) ? fs.statSync(youMdPath).size : 0;
   const sizeLabel = contentSize > 1024
     ? (contentSize / 1024).toFixed(1) + " KB"

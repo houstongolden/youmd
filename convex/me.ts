@@ -6,6 +6,7 @@ import {
   compileManifest,
   type ProfileData,
 } from "./lib/compile";
+import { computeContentHash } from "./lib/hash";
 
 /**
  * Authenticated user endpoints (/me/*).
@@ -45,6 +46,7 @@ export const saveBundleFromForm = mutation({
   args: {
     clerkId: v.string(),
     profileData: v.any(), // ProfileData shape
+    parentHash: v.optional(v.string()), // contentHash of the parent bundle (for conflict detection)
   },
   handler: async (ctx, args) => {
     const user = await ctx.db
@@ -85,6 +87,22 @@ export const saveBundleFromForm = mutation({
       0
     );
 
+    // Compute content hash for version control
+    const contentHash = await computeContentHash(youJson, youMd as string);
+
+    // Determine parent hash (ancestry tracking)
+    const latestBundle = existing.sort((a, b) => b.version - a.version)[0];
+    const autoParentHash = args.parentHash || latestBundle?.contentHash || undefined;
+
+    // Push guard: if client sends parentHash, verify it matches current head
+    if (args.parentHash && latestBundle?.contentHash && args.parentHash !== latestBundle.contentHash) {
+      throw new Error(
+        `ANCESTOR_MISMATCH:remote has changed since your last pull. ` +
+        `Remote head: ${latestBundle.contentHash.slice(0, 12)} (v${latestBundle.version}). ` +
+        `Your parent: ${args.parentHash.slice(0, 12)}. Run 'youmd pull' first.`
+      );
+    }
+
     const bundleId = await ctx.db.insert("bundles", {
       userId: user._id,
       version: maxVersion + 1,
@@ -94,6 +112,8 @@ export const saveBundleFromForm = mutation({
       youMd,
       isPublished: false,
       createdAt: Date.now(),
+      contentHash,
+      parentHash: autoParentHash,
     });
 
     // Also sync youJson/youMd to the profiles table so public profile stays current

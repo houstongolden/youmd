@@ -5,6 +5,7 @@ import { readGlobalConfig, getLocalBundleDir, localBundleExists, readLocalConfig
 import { compileBundle, writeBundle } from "../lib/compiler";
 import { uploadBundle, publishLatest, updatePrivateContext, getMe } from "../lib/api";
 import { readPrivateContextFromLocal } from "./private";
+import { computeContentHash, shortHash } from "../lib/hash";
 
 export async function pushCommand(options: { publish?: boolean; force?: boolean }) {
   const config = readGlobalConfig();
@@ -51,33 +52,36 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
     ? JSON.parse(fs.readFileSync(manifestPath, "utf-8"))
     : {};
 
-  // Step 2: Safety check — compare local vs remote to prevent overwriting richer data
+  // Step 2: Hash-based ancestry check — prevent overwriting diverged remote
+  const localHash = computeContentHash(youJson, youMd);
   const localConfig = readLocalConfig();
-  const lastKnownRemoteVersion = localConfig?.lastKnownRemoteVersion || 0;
-  const localSize = JSON.stringify(youJson).length;
+  const parentHash = localConfig?.lastPulledHash;
+
+  let remoteHash: string | undefined;
+  let remoteVersion = 0;
 
   try {
     const meRes = await getMe();
     if (meRes.ok) {
-      const remoteVersion = meRes.data.publishedBundle?.version || meRes.data.latestBundle?.version || 0;
-      const remoteSize = JSON.stringify(meRes.data.latestBundle?.youJson || {}).length;
+      remoteVersion = meRes.data.publishedBundle?.version || meRes.data.latestBundle?.version || 0;
+      remoteHash = meRes.data.latestBundle?.contentHash;
 
-      if (remoteVersion > lastKnownRemoteVersion && remoteSize > localSize * 1.5) {
+      // If remote has a hash and it differs from our last-pulled hash, remote has changed
+      if (remoteHash && parentHash && remoteHash !== parentHash && !options.force) {
         console.log("");
-        console.log(chalk.yellow("  remote is ahead — v" + remoteVersion + " (" + remoteSize + "b) vs local (" + localSize + "b)"));
-        console.log(chalk.yellow("  pushing would overwrite richer data from other sources."));
+        console.log(chalk.yellow("  remote has changed since your last pull."));
         console.log("");
-        console.log(chalk.dim("  safe workflow:"));
-        console.log(chalk.cyan("    youmd pull") + chalk.dim("   -- download remote data"));
-        console.log(chalk.cyan("    youmd push") + chalk.dim("   -- push merged result"));
+        console.log(chalk.dim("    local:  ") + chalk.cyan(shortHash(localHash)));
+        console.log(chalk.dim("    remote: ") + chalk.cyan(shortHash(remoteHash)) + chalk.dim(` (v${remoteVersion})`));
         console.log("");
-        console.log(chalk.dim("  or: ") + chalk.cyan("youmd push --force") + chalk.dim(" to override"));
+        console.log(chalk.dim("  run ") + chalk.cyan("youmd pull") + chalk.dim(" first, then push."));
+        console.log(chalk.dim("  or: ") + chalk.cyan("youmd push --force") + chalk.dim(" to override."));
         console.log("");
+        return;
+      }
 
-        if (!options.force) {
-          return;
-        }
-        console.log(chalk.yellow("  --force detected, proceeding..."));
+      if (options.force && remoteHash && parentHash && remoteHash !== parentHash) {
+        console.log(chalk.yellow("  --force detected, overriding remote changes..."));
         console.log("");
       }
 
@@ -100,7 +104,23 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
       manifest,
       youJson,
       youMd,
+      parentHash,
     });
+
+    if (uploadResult.status === 409) {
+      // Server rejected due to hash conflict
+      const errData = uploadResult.data as any;
+      console.log("");
+      console.log(chalk.yellow("  remote has changed since your last pull."));
+      console.log("");
+      console.log(chalk.dim("    local:  ") + chalk.cyan(shortHash(localHash)));
+      console.log(chalk.dim("    remote: ") + chalk.cyan(shortHash(errData?.remoteHash || "unknown")) + chalk.dim(` (v${errData?.remoteVersion || "?"})`));
+      console.log("");
+      console.log(chalk.dim("  run ") + chalk.cyan("youmd pull") + chalk.dim(" first, then push."));
+      console.log(chalk.dim("  or: ") + chalk.cyan("youmd push --force") + chalk.dim(" to override."));
+      console.log("");
+      return;
+    }
 
     if (!uploadResult.ok) {
       console.log(
@@ -109,9 +129,18 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
       return;
     }
 
+    // Update local config with hash tracking
+    if (localConfig) {
+      localConfig.lastPushedHash = localHash;
+      localConfig.lastPulledHash = localHash;
+      localConfig.localContentHash = localHash;
+      writeLocalConfig(localConfig);
+    }
+
     console.log(
       chalk.green("  ✓") +
-        chalk.dim(` bundle uploaded (v${(uploadResult.data as any)?.version || "?"})`)
+        chalk.dim(` bundle uploaded (v${(uploadResult.data as any)?.version || "?"})`) +
+        chalk.dim(` [${shortHash(localHash)}]`)
     );
 
     // Step 3: Auto-publish if --publish flag

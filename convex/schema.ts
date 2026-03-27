@@ -163,10 +163,14 @@ export default defineSchema({
     isPublished: v.boolean(),
     createdAt: v.number(),
     publishedAt: v.optional(v.number()),
+    // Content-addressed version control
+    contentHash: v.optional(v.string()), // SHA-256 of canonical(youJson) + youMd
+    parentHash: v.optional(v.string()),  // contentHash of the parent bundle
   })
     .index("by_userId", ["userId"])
     .index("by_userId_version", ["userId", "version"])
-    .index("by_profileId", ["profileId"]),
+    .index("by_profileId", ["profileId"])
+    .index("by_contentHash", ["contentHash"]),
 
   sources: defineTable({
     userId: v.id("users"),

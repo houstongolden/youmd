@@ -20,6 +20,9 @@ export interface LocalConfig {
   sources: Array<{ type: string; url: string; addedAt: string }>;
   lastPublished?: string;
   lastKnownRemoteVersion?: number;
+  lastPulledHash?: string;      // contentHash of last bundle pulled from remote
+  lastPushedHash?: string;      // contentHash of last bundle pushed to remote
+  localContentHash?: string;    // contentHash of current local compiled bundle
 }
 
 export function getGlobalConfigDir(): string {

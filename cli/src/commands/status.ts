@@ -9,6 +9,7 @@ import {
   readGlobalConfig,
 } from "../lib/config";
 import { getMe } from "../lib/api";
+import { shortHash } from "../lib/hash";
 
 export async function statusCommand(): Promise<void> {
   console.log("");
@@ -198,6 +199,47 @@ async function showRemoteStatus(): Promise<void> {
           me.latestBundle.version +
           " (unpublished)"
       );
+    }
+
+    // Hash-based sync status
+    const localConfig = readLocalConfig();
+    const localHash = localConfig?.localContentHash;
+    const remoteHash = me.latestBundle?.contentHash;
+
+    if (localHash || remoteHash) {
+      console.log("");
+      console.log("  " + chalk.dim("--- sync ---"));
+      if (localHash) {
+        console.log("  local:   " + chalk.cyan(shortHash(localHash)));
+      } else {
+        console.log("  local:   " + chalk.dim("no hash (run youmd build)"));
+      }
+      if (remoteHash) {
+        console.log("  remote:  " + chalk.cyan(shortHash(remoteHash)));
+      } else {
+        console.log("  remote:  " + chalk.dim("no hash"));
+      }
+
+      // Determine sync status
+      const lastPulledHash = localConfig?.lastPulledHash;
+      let syncStatus: string;
+
+      if (!localHash || !remoteHash) {
+        syncStatus = chalk.dim("unknown");
+      } else if (localHash === remoteHash) {
+        syncStatus = chalk.green("in sync");
+      } else if (lastPulledHash === remoteHash) {
+        // Remote hasn't changed since pull, but local has — local is ahead
+        syncStatus = chalk.yellow("local ahead");
+      } else if (lastPulledHash === localHash || !lastPulledHash) {
+        // Local hasn't changed since pull, but remote has — remote is ahead
+        syncStatus = chalk.yellow("remote ahead");
+      } else {
+        // Both have changed since last pull
+        syncStatus = chalk.red("diverged");
+      }
+
+      console.log("  status:  " + syncStatus);
     }
 
     console.log(

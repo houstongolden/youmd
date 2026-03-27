@@ -138,10 +138,12 @@ export interface MeResponse {
     publishedAt?: number;
     youJson?: unknown;
     youMd?: string;
+    contentHash?: string;
   } | null;
   publishedBundle: {
     version: number;
     publishedAt?: number;
+    contentHash?: string;
   } | null;
   bundleCount: number;
 }
@@ -191,7 +193,7 @@ export async function saveBundle(
 }
 
 export async function uploadBundle(
-  args: SaveBundleArgs
+  args: SaveBundleArgs & { parentHash?: string }
 ): Promise<ApiResponse<any>> {
   // Upload raw bundle data - manifest, youJson, youMd
   // The /api/v1/me/bundle endpoint expects profileData for server-side compilation.
@@ -206,6 +208,7 @@ export async function uploadBundle(
         youJson: args.youJson,
         youMd: args.youMd,
       },
+      parentHash: args.parentHash,
     },
   });
 }

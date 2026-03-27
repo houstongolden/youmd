@@ -4,6 +4,7 @@ import chalk from "chalk";
 import { getMe, getPublicProfile, getPrivateContext } from "../lib/api";
 import { readGlobalConfig, getLocalBundleDir, localBundleExists, readLocalConfig, writeLocalConfig } from "../lib/config";
 import { writePrivateContextToLocal } from "./private";
+import { computeContentHash, shortHash } from "../lib/hash";
 
 export async function pullCommand() {
   const config = readGlobalConfig();
@@ -229,14 +230,26 @@ ${(voice.overall as string) || (analysis.voice_summary as string) || ""}
     console.log(chalk.dim("  skipped private context (not available)"));
   }
 
-  // Track the remote version we pulled so push/publish can detect divergence
+  // Track the remote hash we pulled so push/publish can detect divergence
   try {
     const meRes = await getMe();
     if (meRes.ok) {
       const remoteVersion = meRes.data.publishedBundle?.version || meRes.data.latestBundle?.version || 0;
+      const remoteContentHash = meRes.data.latestBundle?.contentHash;
       const lc = readLocalConfig() || { version: 1, sources: [] };
       lc.lastKnownRemoteVersion = remoteVersion;
+      if (remoteContentHash) {
+        lc.lastPulledHash = remoteContentHash;
+      }
       writeLocalConfig(lc);
+
+      // Save base.json — the "common ancestor" for future merges
+      const baseJsonPath = path.join(bundleDir, "base.json");
+      fs.writeFileSync(baseJsonPath, JSON.stringify(youJson, null, 2));
+
+      if (remoteContentHash) {
+        console.log(chalk.dim(`  remote hash: ${shortHash(remoteContentHash)}`));
+      }
     }
   } catch {
     // non-fatal
