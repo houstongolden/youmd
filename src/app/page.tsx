@@ -41,13 +41,13 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       <Hero />
+      <FounderQuote />
+      <ProfilesShowcase />
       <ProblemStrip />
       <HowItWorks />
       <WhatsInside />
       <Integrations />
       <ForDevelopers />
-      <ProfilesShowcase />
-      <FounderQuote />
       <OpenSpec />
       <FAQ />
       <Pricing />

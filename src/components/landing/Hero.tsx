@@ -5,8 +5,9 @@ import Link from "next/link";
 import { motion, useScroll, useTransform } from "motion/react";
 import { Copy, Check } from "lucide-react";
 import PixelYOU from "./PixelYOU";
+import HeroPortrait from "./HeroPortrait";
 
-/* -- Agent logos as monochrome text marks (terminal-native, no decorative images) -- */
+/* -- Agent pills (shown below CTA) -- */
 const AGENTS = [
   { name: "Claude Code", tier: "primary" },
   { name: "Cursor", tier: "primary" },
@@ -86,6 +87,15 @@ const CliPill = () => {
   );
 };
 
+/* -- CLI commands list -- */
+const commands = [
+  ["you init", "build your identity via AI conversation"],
+  ["you push", "publish to you.md/username"],
+  ["you skill init-project", "CLAUDE.md + project-context/ in any repo"],
+  ["you skill link claude", "sync identity skills to your agent"],
+  ["you link create", "scoped context link for any agent"],
+];
+
 const Hero = () => {
   const sectionRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end start"] });
@@ -103,107 +113,107 @@ const Hero = () => {
         </p>
       </div>
 
-      <motion.div className="relative z-10 w-full max-w-4xl px-4" style={{ opacity: contentOpacity }}>
-        {/* Agent logos — above the fold */}
+      <motion.div className="relative z-10 w-full max-w-5xl px-4" style={{ opacity: contentOpacity }}>
+        {/* Two-column layout — branding left, ASCII portrait right */}
+        <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+          {/* LEFT — branding & commands */}
+          <div className="flex-1 text-left">
+            {/* Pixel YOU */}
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.3 }} className="mb-6">
+              <PixelYOU />
+            </motion.div>
+
+            {/* Boot sequence */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.8 }} className="mb-6">
+              <BootSequence />
+            </motion.div>
+
+            {/* Value prop */}
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 1.1 }}
+              className="font-mono text-[11px] leading-relaxed text-muted-foreground/60 mb-6 max-w-sm space-y-1.5"
+            >
+              <p>
+                every agent starts from scratch.{" "}
+                <span className="text-accent">you.md fixes that.</span>
+              </p>
+              <p className="text-[10px] text-muted-foreground/40">
+                public profile + private file system + agent skills.
+                your identity, preferences, and best practices sync across
+                Claude Code, Cursor, and every tool you use.
+              </p>
+            </motion.div>
+
+            {/* Divider */}
+            <div className="w-full h-px bg-border mb-6" />
+
+            {/* Commands */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 1.5 }} className="space-y-1.5 mb-8">
+              {commands.map(([cmd, desc]) => (
+                <div key={cmd} className="font-mono text-[10px] leading-relaxed">
+                  <span className="text-muted-foreground/50">$ </span>
+                  <span className="text-accent">{cmd}</span>
+                  <span className="text-muted-foreground/30 ml-3"># {desc}</span>
+                </div>
+              ))}
+            </motion.div>
+
+            {/* Dual CTA */}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 1.8 }} className="mb-6 flex items-center gap-3">
+              <CliPill />
+              <Link href="/create" className="cta-primary px-5 py-3 text-[13px] font-mono shrink-0 whitespace-nowrap">
+                &gt; start now
+              </Link>
+            </motion.div>
+
+            {/* Badge */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 2.1 }} className="flex items-center gap-3 font-mono text-[8px] text-muted-foreground/30 uppercase tracking-widest">
+              <span>YOU/V1 &middot; OPEN SPEC &middot; FREE</span>
+            </motion.div>
+          </div>
+
+          {/* RIGHT — ASCII portrait */}
+          <div className="flex-1 flex justify-center">
+            <Link href="/houstongolden" className="block w-full max-w-md group">
+              <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 1.2 }}>
+                <HeroPortrait />
+                <p className="text-center font-mono text-[9px] text-muted-foreground/40 mt-2 group-hover:text-accent/60 transition-colors">
+                  &gt; view live profile
+                </p>
+              </motion.div>
+            </Link>
+          </div>
+        </div>
+
+        {/* Agent pills — BELOW the main hero content */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="flex flex-wrap items-center justify-center gap-2 mb-10"
+          transition={{ duration: 0.5, delay: 2.3 }}
+          className="mt-12 flex flex-wrap items-center justify-center gap-1.5"
         >
-          <span className="font-mono text-[8px] text-muted-foreground/30 uppercase tracking-widest mr-2">
+          <span className="font-mono text-[8px] text-muted-foreground/25 uppercase tracking-widest mr-1.5">
             works with
           </span>
-          {AGENTS.map((agent, i) => (
-            <motion.span
+          {AGENTS.map((agent) => (
+            <span
               key={agent.name}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2, delay: 0.15 + i * 0.03 }}
-              className={`font-mono text-[10px] px-2.5 py-1 border transition-colors cursor-default select-none ${
+              className={`font-mono text-[9px] px-2 py-0.5 border cursor-default select-none ${
                 agent.tier === "primary"
-                  ? "text-accent/80 border-accent/20 bg-accent-wash/30"
-                  : "text-muted-foreground/50 border-border/50"
+                  ? "text-accent/60 border-accent/15"
+                  : "text-muted-foreground/30 border-border/30"
               }`}
               style={{ borderRadius: "2px" }}
             >
               {agent.name}
-            </motion.span>
+            </span>
           ))}
         </motion.div>
 
-        {/* Center-aligned hero content */}
-        <div className="text-center">
-          {/* Pixel YOU */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.3 }} className="mb-6 flex justify-center">
-            <PixelYOU />
-          </motion.div>
-
-          {/* Boot sequence */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.8 }} className="mb-6 flex justify-center">
-            <BootSequence />
-          </motion.div>
-
-          {/* Value prop — focused on what devs get */}
-          <motion.div
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 1.1 }}
-            className="font-mono text-[12px] leading-relaxed text-muted-foreground/60 mb-8 max-w-lg mx-auto space-y-2"
-          >
-            <p>
-              every agent you use starts from scratch.{" "}
-              <span className="text-accent">you.md fixes that.</span>
-            </p>
-            <p className="text-[11px] text-muted-foreground/40">
-              public profile for instant agent onboarding. private file system for
-              deep context. skills that sync your identity, preferences, and best
-              practices across Claude Code, Cursor, and every agent you use.
-            </p>
-          </motion.div>
-
-          {/* Key features — 3 pillars */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 1.4 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-10"
-          >
-            {[
-              { label: "identity context", desc: "bio, voice, preferences, directives -- agents know you from the first message" },
-              { label: "agent skills", desc: "CLAUDE.md generation, project scaffolding, voice sync -- travels with you across tools" },
-              { label: "private + scoped", desc: "you control what's public vs private. context links with TTL, scope, and usage limits" },
-            ].map((item, i) => (
-              <motion.div
-                key={item.label}
-                className="text-left border border-border/30 p-3"
-                style={{ borderRadius: "2px" }}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.5 + i * 0.1 }}
-              >
-                <p className="font-mono text-[10px] text-accent/80 mb-1">{item.label}</p>
-                <p className="font-mono text-[9px] text-muted-foreground/40 leading-relaxed">{item.desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Dual CTA */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 1.8 }} className="mb-6 flex items-center justify-center gap-3">
-            <CliPill />
-            <Link href="/create" className="cta-primary px-5 py-3 text-[13px] font-mono shrink-0 whitespace-nowrap">
-              &gt; start now
-            </Link>
-          </motion.div>
-
-          {/* Badge */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 2.1 }} className="flex items-center justify-center gap-3 font-mono text-[8px] text-muted-foreground/30 uppercase tracking-widest mb-8">
-            <span>YOU/V1 &middot; OPEN SPEC &middot; FREE &middot; CLI + WEB + API</span>
-          </motion.div>
-        </div>
-
         {/* Quick links */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 2.3 }} className="flex items-center justify-center gap-8 font-mono text-[12px]">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 2.5 }} className="flex items-center justify-center gap-8 font-mono text-[12px] mt-8">
           <Link href="/create" className="text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; get started</Link>
           <Link href="/docs" className="text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; docs</Link>
           <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; github</a>
