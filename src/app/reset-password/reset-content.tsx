@@ -307,7 +307,7 @@ export default function ResetPasswordContent() {
 
         // If the sign-in is complete, finalize and go to dashboard
         if (signIn.status === "complete") {
-          await signIn.finalize({ navigate: () => router.push("/dashboard") });
+          await signIn.finalize({ navigate: () => router.push("/shell") });
         } else {
           // Otherwise redirect to sign-in so they can log in with new password
           setTimeout(() => router.push("/sign-in"), 1500);

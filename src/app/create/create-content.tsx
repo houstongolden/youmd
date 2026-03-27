@@ -36,7 +36,7 @@ function CreateContentInner() {
 
   // Redirect signed-in users to dashboard
   useEffect(() => {
-    if (isSignedIn) router.replace("/dashboard");
+    if (isSignedIn) router.replace("/shell");
   }, [isSignedIn, router]);
   const createProfileMut = useConvexMutation(api.profiles.createProfile);
   const updateProfileMut = useConvexMutation(api.profiles.updateProfile);
@@ -545,7 +545,7 @@ function CreateContentInner() {
           <span className="text-[hsl(var(--success))]">{"\u2713"} account created</span>
         );
         setPhase("finalizing");
-        await signUp.finalize({ navigate: () => router.push("/dashboard") });
+        await signUp.finalize({ navigate: () => router.push("/shell") });
         return;
       }
 
@@ -611,7 +611,7 @@ function CreateContentInner() {
           </span>
         );
         setPhase("done");
-        await signUp.finalize({ navigate: () => router.push("/dashboard") });
+        await signUp.finalize({ navigate: () => router.push("/shell") });
       } else {
         addLine(<span className="text-[hsl(var(--accent))]">ERR: verification incomplete. try again.</span>);
         addLine("\u00A0");

@@ -140,7 +140,7 @@ export function SiteNav() {
                 </button>
                 {avatarDropdown && (
                   <div className="absolute right-0 top-full mt-2 w-44 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-1 z-50" style={{ borderRadius: "2px" }}>
-                    <Link href="/dashboard" className="block px-3 py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--accent))]/5 transition-colors">
+                    <Link href="/shell" className="block px-3 py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--accent))]/5 transition-colors">
                       &gt; shell
                     </Link>
                     {username && (
@@ -201,7 +201,7 @@ export function SiteNav() {
           ))}
           {isSignedIn ? (
             <Link
-              href="/dashboard"
+              href="/shell"
               onClick={() => setMobileOpen(false)}
               className="flex items-center gap-2 mt-4"
             >

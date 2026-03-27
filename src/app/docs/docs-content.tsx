@@ -429,7 +429,7 @@ export default function DocsContent() {
               <Step n={4}>
                 Open the{" "}
                 <Link
-                  href="/dashboard"
+                  href="/shell"
                   className="text-[hsl(var(--accent))] hover:opacity-80"
                 >
                   dashboard

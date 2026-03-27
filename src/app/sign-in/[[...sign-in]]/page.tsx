@@ -34,7 +34,7 @@ export default function SignInPage() {
 
   // Redirect to dashboard if already signed in
   useEffect(() => {
-    if (isSignedIn) router.replace("/dashboard");
+    if (isSignedIn) router.replace("/shell");
   }, [isSignedIn, router]);
 
   const [step, setStep] = useState<Step>("boot");
@@ -125,7 +125,7 @@ export default function SignInPage() {
           </span>
         );
         setStep("done");
-        await signIn.finalize({ navigate: () => router.push("/dashboard") });
+        await signIn.finalize({ navigate: () => router.push("/shell") });
       } else if (signIn.status === "needs_first_factor" || signIn.status === "needs_second_factor") {
         // Email verification required — send code
         try {
@@ -221,7 +221,7 @@ export default function SignInPage() {
           </span>
         );
         setStep("done");
-        await signIn.finalize({ navigate: () => router.push("/dashboard") });
+        await signIn.finalize({ navigate: () => router.push("/shell") });
       } else {
         addLine(
           <span className="text-[hsl(var(--accent))]">

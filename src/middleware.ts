@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/initialize(.*)"]);
+const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/shell(.*)", "/initialize(.*)"]);
 
 // AI agent/LLM User-Agent patterns — these get plain text identity context.
 // EXCLUDES social card crawlers (need OG tags from HTML) and search engines (need to index HTML).

@@ -33,7 +33,7 @@ export default function SignUpPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (isSignedIn) router.replace("/dashboard");
+    if (isSignedIn) router.replace("/shell");
   }, [isSignedIn, router]);
 
   const [step, setStep] = useState<Step>("boot");

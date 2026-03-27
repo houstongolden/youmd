@@ -1,18 +1,8 @@
-import type { Metadata } from "next";
-import { DashboardContent } from "./dashboard-content";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Shell — you.md",
-  description:
-    "Your identity shell. Manage context, edit profile, configure agent preferences.",
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
-
-export default function DashboardPage() {
-  return <DashboardContent />;
+// Redirect /dashboard → /shell (shell is the new canonical route)
+export default function DashboardRedirect() {
+  redirect("/shell");
 }

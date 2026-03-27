@@ -80,7 +80,7 @@ export function InitializeContent() {
   // Redirect if user already exists
   useEffect(() => {
     if (existingUser && existingUser.username) {
-      router.replace("/dashboard");
+      router.replace("/shell");
     }
   }, [existingUser, router]);
 
@@ -255,7 +255,7 @@ instructions for this greeting:
   const agent = useYouAgent({
     isOnboarding: true,
     onboardingGreeting,
-    onDone: () => router.push("/dashboard"),
+    onDone: () => router.push("/shell"),
   });
 
   if (!convexUser) {
@@ -283,7 +283,7 @@ instructions for this greeting:
               onboarding @{username}
             </span>
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/shell")}
               className="text-[11px] font-mono text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] transition-colors"
             >
               skip {"\u2192"}
