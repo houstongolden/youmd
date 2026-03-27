@@ -1142,12 +1142,32 @@ http.route({
         return json({ error: "Failed to resolve user account" }, 500);
       }
 
-      // 4. Generate or find existing API key
-      const keyResult = await ctx.runMutation(api.apiKeys.createKey, {
-        clerkId: clerkUserId,
-        label: "cli-auth",
-        scopes: ["read:public"],
-      });
+      // 4. Generate API key — revoke old CLI keys first to avoid free-plan limit
+      let keyResult;
+      try {
+        // Try to revoke any existing cli-auth keys first
+        // For free plan: revoke all existing keys so we can create a fresh one
+        const existingKeys = await ctx.runQuery(api.apiKeys.listKeys, { clerkId: clerkUserId });
+        for (const k of existingKeys) {
+          if (!k.isRevoked) {
+            await ctx.runMutation(api.apiKeys.revokeKey, { clerkId: clerkUserId, keyId: k.id });
+          }
+        }
+        keyResult = await ctx.runMutation(api.apiKeys.createKey, {
+          clerkId: clerkUserId,
+          label: "cli-auth",
+          scopes: ["read:public"],
+        });
+      } catch {
+        // If key creation still fails (non-cli key exists), return without a key
+        return json({
+          success: true,
+          username: user.username,
+          plan: user.plan,
+          apiKey: null,
+          message: "Logged in but could not generate API key. You already have an active key — use it with `youmd login --key YOUR_KEY`.",
+        });
+      }
 
       return json({
         success: true,
