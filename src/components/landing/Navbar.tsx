@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { useUser, SignOutButton } from "@clerk/nextjs";
+import AsciiAvatar from "@/components/AsciiAvatar";
 
 
 const sections = [
@@ -123,18 +124,16 @@ const Navbar = () => {
                   className="flex items-center gap-2 group"
                 >
                   {user?.imageUrl ? (
-                    <div className="w-5 h-5 border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))] relative">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                    <div className="w-5 h-5 border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+                      <AsciiAvatar
                         src={user.imageUrl}
-                        alt=""
+                        cols={160}
+                        canvasWidth={40}
                         className="w-full h-full object-cover"
-                        style={{ filter: "grayscale(1) brightness(0.9) contrast(1.1)" }}
                       />
-                      <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                     </div>
                   ) : (
-                    <span className="w-5 h-5 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent group-hover:border-accent transition-colors">
+                    <span className="w-5 h-5 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent group-hover:border-accent transition-colors" style={{ borderRadius: "2px" }}>
                       {username?.[0]?.toUpperCase() ?? user?.firstName?.[0] ?? ">"}
                     </span>
                   )}
@@ -221,18 +220,16 @@ const Navbar = () => {
                 className="flex items-center gap-2 group"
               >
                 {user?.imageUrl ? (
-                  <div className="w-6 h-6 border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))] relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                  <div className="w-6 h-6 border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+                    <AsciiAvatar
                       src={user.imageUrl}
-                      alt=""
+                      cols={160}
+                      canvasWidth={48}
                       className="w-full h-full object-cover"
-                      style={{ filter: "grayscale(1) brightness(0.9) contrast(1.1)" }}
                     />
-                    <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                   </div>
                 ) : (
-                  <span className="w-6 h-6 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[10px] text-accent">
+                  <span className="w-6 h-6 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[10px] text-accent" style={{ borderRadius: "2px" }}>
                     {username?.[0]?.toUpperCase() ?? user?.firstName?.[0] ?? ">"}
                   </span>
                 )}

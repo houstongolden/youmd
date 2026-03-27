@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { api } from "../../convex/_generated/api";
+import AsciiAvatar from "./AsciiAvatar";
 
 
 /**
@@ -63,14 +64,14 @@ export function SiteNav() {
   const username = convexUser?.username ?? user?.username;
   const avatarUrl = (userProfile as Record<string, unknown> | null | undefined)?.avatarUrl as string | undefined
     || user?.imageUrl;
-  const isOnDashboard = pathname === "/dashboard";
+  const isOnShell = pathname === "/shell" || pathname === "/dashboard";
   const isOnProfiles = pathname === "/profiles";
   const isOnDocs = pathname === "/docs";
   const isOnMyProfile = username ? pathname === `/${username}` : false;
 
   const navLinks = isSignedIn
     ? [
-        { href: "/dashboard", label: "--dashboard", active: isOnDashboard },
+        { href: "/shell", label: "--shell", active: isOnShell },
         ...(username ? [{ href: `/${username}`, label: "--profile", active: isOnMyProfile }] : []),
         { href: "/profiles", label: "--profiles", active: isOnProfiles },
         { href: "/docs", label: "--docs", active: isOnDocs },
@@ -119,18 +120,17 @@ export function SiteNav() {
                   className="flex items-center gap-2 group"
                 >
                   {avatarUrl ? (
-                    <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))] relative">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                    <div className="w-6 h-6 border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+                      <AsciiAvatar
                         src={avatarUrl}
-                        alt=""
+                        cols={160}
+                        format="block"
+                        canvasWidth={48}
                         className="w-full h-full object-cover"
-                        style={{ filter: "grayscale(1) brightness(0.9) contrast(1.1)" }}
                       />
-                      <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                     </div>
                   ) : (
-                    <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent">
+                    <span className="w-6 h-6 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent" style={{ borderRadius: "2px" }}>
                       {username?.[0]?.toUpperCase() ?? ">"}
                     </span>
                   )}
@@ -206,18 +206,17 @@ export function SiteNav() {
               className="flex items-center gap-2 mt-4"
             >
               {avatarUrl ? (
-                <div className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] overflow-hidden relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                <div className="w-6 h-6 border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+                  <AsciiAvatar
                     src={avatarUrl}
-                    alt=""
+                    cols={160}
+                    format="block"
+                    canvasWidth={48}
                     className="w-full h-full object-cover"
-                    style={{ filter: "grayscale(1) brightness(0.9) contrast(1.1)" }}
                   />
-                  <div className="absolute inset-0 bg-[hsl(var(--accent))]/15 mix-blend-overlay" />
                 </div>
               ) : (
-                <span className="w-6 h-6 rounded-sm border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[10px] text-accent">
+                <span className="w-6 h-6 border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[10px] text-accent" style={{ borderRadius: "2px" }}>
                   {username?.[0] ?? ">"}
                 </span>
               )}
