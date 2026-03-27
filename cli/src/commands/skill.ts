@@ -176,9 +176,59 @@ async function installSkillCmd(args: string[]): Promise<void> {
   const entry = findSkill(catalog, name);
 
   if (!entry) {
+    // Not in local catalog — check the registry
+    if (isAuthenticated()) {
+      console.log("");
+      const regSpinner = new BrailleSpinner("checking the skill registry");
+      regSpinner.start();
+      await new Promise((r) => setTimeout(r, 200));
+
+      try {
+        const regRes = await browseSkills();
+        if (regRes.ok) {
+          const regSkill = regRes.data.skills.find((s) => s.name === name);
+          if (regSkill) {
+            regSpinner.stop(`found "${name}" in registry`);
+            // Auto-add to catalog from registry
+            addSkillEntry(readSkillCatalog(), {
+              name: regSkill.name,
+              description: regSkill.description,
+              version: regSkill.version,
+              source: `registry:${regSkill.name}`,
+              scope: regSkill.scope as SkillScope,
+              identity_fields: regSkill.identityFields,
+              requires: [],
+            });
+            // Now fetch the content and install
+            // Get the full skill with content via a direct API call
+            const { default: fetchFn } = await import("node:https" as any).catch(() => ({ default: null }));
+            const contentRes = await browseSkills(); // registry has content in the listing
+            // For now, the content needs to come from the publish endpoint
+            // Install from catalog (now that it's registered)
+            const freshCatalog = readSkillCatalog();
+            const freshEntry = findSkill(freshCatalog, name);
+            if (freshEntry) {
+              const installRes = installSkill(freshEntry.name);
+              if (installRes.ok) {
+                console.log(chalk.green("  \u2713") + ` ${chalk.bold(name)} installed from registry`);
+              } else {
+                console.log(DIM(`  added to catalog. install the source manually.`));
+              }
+            }
+            console.log("");
+            return;
+          }
+        }
+        regSpinner.stop("not found in registry either");
+      } catch {
+        regSpinner.fail("registry check failed");
+      }
+    }
+
     console.log("");
-    console.log(chalk.yellow(`  skill "${name}" not found in catalog.`));
+    console.log(chalk.yellow(`  skill "${name}" not found in catalog or registry.`));
     console.log(DIM("  run ") + chalk.cyan("youmd skill list") + DIM(" to see available skills."));
+    console.log(DIM("  or:  ") + chalk.cyan("youmd skill browse") + DIM(" to check the registry."));
     console.log("");
     return;
   }
@@ -528,8 +578,20 @@ function pushSkillCmd(args: string[]): void {
 }
 
 async function linkSkillsCmd(args: string[]): Promise<void> {
-  const target = (args[0] || "claude").toLowerCase() as AgentTarget;
+  let target = (args[0] || "").toLowerCase() as AgentTarget;
   const validTargets: AgentTarget[] = ["claude", "cursor", "codex"];
+
+  // Auto-detect agent if no target specified
+  if (!target) {
+    const cwd = process.cwd();
+    if (fs.existsSync(path.join(cwd, ".claude")) || fs.existsSync(path.join(cwd, "CLAUDE.md"))) {
+      target = "claude";
+    } else if (fs.existsSync(path.join(cwd, ".cursor"))) {
+      target = "cursor";
+    } else {
+      target = "claude"; // default
+    }
+  }
 
   if (!validTargets.includes(target)) {
     console.log("");
@@ -1023,7 +1085,24 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       console.log("");
 
       if (installed.length > 0) {
-        console.log("  " + ACCENT("installed:"));
+        // Quick identity coverage
+        const identity = loadIdentityData();
+        const allFields = new Set<string>();
+        for (const s of catalog.skills) {
+          for (const f of s.identity_fields) allFields.add(f);
+        }
+        let filledCount = 0;
+        for (const field of allFields) {
+          if (resolveVariable(field, identity)) filledCount++;
+        }
+        const pct = allFields.size > 0 ? Math.round((filledCount / allFields.size) * 100) : 0;
+
+        console.log(
+          "  " + ACCENT("installed:") +
+          DIM(` ${installed.length}/${catalog.skills.length}`) +
+          DIM("  identity: ") +
+          (pct === 100 ? chalk.green(`${pct}%`) : ACCENT(`${pct}%`))
+        );
         for (const s of installed) {
           console.log(`    ${chalk.green("\u2713")} ${chalk.cyan(s.name)} ${DIM("v" + s.version)}`);
         }
