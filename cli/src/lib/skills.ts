@@ -23,6 +23,12 @@ import {
   SkillCatalog,
 } from "./skill-catalog";
 import { renderSkillTemplate, loadIdentityData, checkTemplateReadiness, IdentityData } from "./skill-renderer";
+import { isAuthenticated } from "./config";
+import {
+  recordSkillInstall as apiRecordInstall,
+  trackSkillUsage as apiTrackUsage,
+  removeSkillInstall as apiRemoveInstall,
+} from "./api";
 
 // ─── Skill File I/O ───────────────────────────────────────────────────
 
@@ -200,6 +206,9 @@ export function installSkill(skillName: string): { ok: boolean; error?: string }
   // Track metrics
   trackSkillEvent(entry.name, "install");
 
+  // Sync to Convex (non-blocking)
+  syncInstallToRemote(entry);
+
   return { ok: true };
 }
 
@@ -236,6 +245,7 @@ export async function installSkillAsync(skillName: string): Promise<{ ok: boolea
 
   setSkillInstalled(catalog, entry.name, true);
   trackSkillEvent(entry.name, "install");
+  syncInstallToRemote(entry);
 
   return { ok: true };
 }
@@ -258,6 +268,11 @@ export function removeSkill(skillName: string): { ok: boolean; error?: string } 
 
   setSkillInstalled(catalog, entry.name, false);
   trackSkillEvent(entry.name, "remove");
+
+  // Sync removal to Convex (non-blocking)
+  if (isAuthenticated()) {
+    apiRemoveInstall(entry.name).catch(() => {});
+  }
 
   return { ok: true };
 }
@@ -296,6 +311,11 @@ export function useSkill(skillName: string): { ok: boolean; content?: string; re
   fs.writeFileSync(path.join(skillDir, "RENDERED.md"), rendered);
 
   trackSkillEvent(entry.name, "use");
+
+  // Sync usage to Convex (non-blocking)
+  if (isAuthenticated()) {
+    apiTrackUsage(entry.name).catch(() => {});
+  }
 
   return { ok: true, content: rendered, readiness };
 }
@@ -625,6 +645,21 @@ function scaffoldProjectContext(dir: string, identity: IdentityData, projectName
       fs.writeFileSync(filePath, content);
     }
   }
+}
+
+// ─── Remote Sync (non-blocking) ───────────────────────────────────────
+
+/**
+ * Sync a local skill install to Convex. Fire-and-forget.
+ */
+function syncInstallToRemote(entry: SkillEntry): void {
+  if (!isAuthenticated()) return;
+  apiRecordInstall({
+    skillName: entry.name,
+    source: entry.source,
+    scope: entry.scope,
+    identityFields: entry.identity_fields,
+  }).catch(() => {});
 }
 
 // ─── Metrics Tracking ─────────────────────────────────────────────────

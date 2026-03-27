@@ -30,6 +30,9 @@ import {
 } from "../lib/skills";
 import { loadIdentityData, resolveVariable, IdentityData } from "../lib/skill-renderer";
 import { BrailleSpinner } from "../lib/render";
+import { isAuthenticated } from "../lib/config";
+import { browseSkills, publishSkill as apiPublishSkill, getMySkills } from "../lib/api";
+import { readSkillFile } from "../lib/skills";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -794,6 +797,161 @@ function searchCmd(args: string[]): void {
   console.log("");
 }
 
+async function browseCmd(): Promise<void> {
+  if (!isAuthenticated()) {
+    console.log("");
+    console.log(chalk.yellow("  not authenticated. run: youmd login"));
+    console.log("");
+    return;
+  }
+
+  console.log("");
+  const spinner = new BrailleSpinner("scanning the skill registry");
+  spinner.start();
+  await new Promise((r) => setTimeout(r, 300));
+
+  try {
+    const res = await browseSkills();
+    if (!res.ok) {
+      spinner.fail("could not reach registry");
+      console.log("");
+      return;
+    }
+
+    const skills = res.data.skills;
+    spinner.stop(`${skills.length} skill${skills.length === 1 ? "" : "s"} in registry`);
+
+    if (skills.length === 0) {
+      console.log(DIM("  no skills published yet."));
+      console.log(DIM("  be the first: ") + chalk.cyan("youmd skill publish <name>"));
+      console.log("");
+      return;
+    }
+
+    console.log("");
+    const maxName = Math.max(...skills.map((s) => s.name.length));
+    for (const s of skills) {
+      const dl = s.downloads > 0 ? ACCENT(` ${s.downloads} dl`) : "";
+      console.log(
+        `  ${chalk.cyan(s.name.padEnd(maxName + 2))}` +
+        `${DIM(s.description)}${dl}`
+      );
+      console.log(`    ${DIM("v" + s.version)} ${DIM(s.scope)} ${DIM(`[${s.identityFields.join(", ")}]`)}`);
+    }
+    console.log("");
+    console.log(DIM(`  install with: youmd skill add <name> registry:<name>`));
+  } catch {
+    spinner.fail("registry unreachable");
+  }
+  console.log("");
+}
+
+async function publishSkillCmd(args: string[]): Promise<void> {
+  const name = args[0];
+  if (!name) {
+    console.log("");
+    console.log(chalk.yellow("  usage: youmd skill publish <name>"));
+    console.log(DIM("  publishes an installed skill to the you.md registry."));
+    console.log("");
+    return;
+  }
+
+  if (!isAuthenticated()) {
+    console.log("");
+    console.log(chalk.yellow("  not authenticated. run: youmd login"));
+    console.log("");
+    return;
+  }
+
+  const catalog = readSkillCatalog();
+  const entry = findSkill(catalog, name);
+
+  if (!entry) {
+    console.log("");
+    console.log(chalk.yellow(`  skill "${name}" not found in catalog.`));
+    console.log("");
+    return;
+  }
+
+  const skillFile = readSkillFile(entry.name);
+  if (!skillFile) {
+    console.log("");
+    console.log(chalk.yellow(`  SKILL.md not found for "${name}". install first.`));
+    console.log("");
+    return;
+  }
+
+  console.log("");
+  const spinner = new BrailleSpinner("publishing to the skill registry");
+  spinner.start();
+  await new Promise((r) => setTimeout(r, 400));
+
+  try {
+    const res = await apiPublishSkill({
+      name: entry.name,
+      description: entry.description,
+      version: entry.version,
+      scope: entry.scope,
+      identityFields: entry.identity_fields,
+      content: skillFile.content,
+    });
+
+    if (res.ok) {
+      spinner.stop(res.data.updated ? "updated" : "published");
+      console.log("");
+      console.log(
+        chalk.green("  \u2713") + ` ${chalk.bold(entry.name)} is live on the registry`
+      );
+      console.log(DIM(`  others can install with: youmd skill add ${entry.name} registry:${entry.name}`));
+    } else {
+      spinner.fail(String((res.data as any)?.error || "publish failed"));
+    }
+  } catch (err) {
+    spinner.fail(err instanceof Error ? err.message : "failed");
+  }
+  console.log("");
+}
+
+async function remoteStatusCmd(): Promise<void> {
+  if (!isAuthenticated()) {
+    console.log("");
+    console.log(chalk.yellow("  not authenticated. run: youmd login"));
+    console.log("");
+    return;
+  }
+
+  console.log("");
+  const spinner = new BrailleSpinner("fetching your skill profile from the cloud");
+  spinner.start();
+  await new Promise((r) => setTimeout(r, 300));
+
+  try {
+    const res = await getMySkills();
+    if (!res.ok) {
+      spinner.fail("could not fetch");
+      console.log("");
+      return;
+    }
+
+    const skills = res.data.skills;
+    spinner.stop(`${skills.length} synced to you.md`);
+
+    if (skills.length === 0) {
+      console.log(DIM("  no skills synced to your account yet."));
+      console.log(DIM("  install skills locally and they'll auto-sync."));
+    } else {
+      console.log("");
+      for (const s of skills) {
+        const uses = s.useCount > 0 ? ACCENT(` ${s.useCount} uses`) : "";
+        console.log(`  ${chalk.green("\u2713")} ${chalk.cyan(s.skillName)} ${DIM(s.source)}${uses}`);
+      }
+    }
+  } catch {
+    spinner.fail("unreachable");
+  }
+  console.log("");
+}
+
 // ─── Main command router ──────────────────────────────────────────────
 
 export async function skillCommand(subcommand?: string, ...args: string[]): Promise<void> {
@@ -845,6 +1003,17 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
     case "search":
       searchCmd(args);
       break;
+    case "browse":
+    case "registry":
+      await browseCmd();
+      break;
+    case "publish":
+      await publishSkillCmd(args);
+      break;
+    case "remote":
+    case "cloud":
+      await remoteStatusCmd();
+      break;
     default: {
       const catalog = readSkillCatalog();
       const installed = catalog.skills.filter((s) => s.installed);
@@ -876,6 +1045,9 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       console.log(`    ${chalk.cyan("improve".padEnd(28))} ${DIM("review metrics, find gaps, propose changes")}`);
       console.log(`    ${chalk.cyan("metrics".padEnd(28))} ${DIM("usage stats and effectiveness scores")}`);
       console.log(`    ${chalk.cyan("search <query>".padEnd(28))} ${DIM("search skills by name or description")}`);
+      console.log(`    ${chalk.cyan("browse".padEnd(28))} ${DIM("browse the public skill registry")}`);
+      console.log(`    ${chalk.cyan("publish <name>".padEnd(28))} ${DIM("publish a skill to the registry")}`);
+      console.log(`    ${chalk.cyan("remote".padEnd(28))} ${DIM("show skills synced to your you.md account")}`);
       console.log("");
       console.log(DIM("  skills are identity-aware markdown templates."));
       console.log(DIM("  {{voice.overall}} and {{preferences.agent}} resolve from your bundle."));

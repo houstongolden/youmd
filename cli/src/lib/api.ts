@@ -411,3 +411,82 @@ export async function updatePrivateContext(
     body: updates,
   });
 }
+
+// ─── Skills API ──────────────────────────────────────────────────────
+
+export interface SkillRegistryEntry {
+  _id: string;
+  name: string;
+  description: string;
+  version: string;
+  scope: string;
+  identityFields: string[];
+  downloads: number;
+  authorId: string;
+  createdAt: number;
+}
+
+export interface SkillInstallEntry {
+  _id: string;
+  skillName: string;
+  source: string;
+  scope: string;
+  identityFields: string[];
+  installedAt: number;
+  lastUsedAt?: number;
+  useCount: number;
+}
+
+export async function browseSkills(): Promise<ApiResponse<{ skills: SkillRegistryEntry[]; count: number }>> {
+  return request<{ skills: SkillRegistryEntry[]; count: number }>("/api/v1/skills");
+}
+
+export async function getMySkills(): Promise<ApiResponse<{ skills: SkillInstallEntry[]; count: number }>> {
+  return request<{ skills: SkillInstallEntry[]; count: number }>("/api/v1/me/skills", {
+    token: getToken(),
+  });
+}
+
+export async function publishSkill(skill: {
+  name: string;
+  description: string;
+  version: string;
+  scope: string;
+  identityFields: string[];
+  content: string;
+}): Promise<ApiResponse<{ id: string; updated: boolean }>> {
+  return request<{ id: string; updated: boolean }>("/api/v1/me/skills", {
+    method: "POST",
+    token: getToken(),
+    body: skill,
+  });
+}
+
+export async function recordSkillInstall(install: {
+  skillName: string;
+  source: string;
+  scope: string;
+  identityFields: string[];
+}): Promise<ApiResponse<{ id: string; updated: boolean }>> {
+  return request<{ id: string; updated: boolean }>("/api/v1/me/skills/install", {
+    method: "POST",
+    token: getToken(),
+    body: install,
+  });
+}
+
+export async function trackSkillUsage(skillName: string): Promise<ApiResponse<{ success: boolean }>> {
+  return request<{ success: boolean }>("/api/v1/me/skills/usage", {
+    method: "POST",
+    token: getToken(),
+    body: { skillName },
+  });
+}
+
+export async function removeSkillInstall(skillName: string): Promise<ApiResponse<{ success: boolean }>> {
+  return request<{ success: boolean }>("/api/v1/me/skills/remove", {
+    method: "POST",
+    token: getToken(),
+    body: { skillName },
+  });
+}
