@@ -47,11 +47,27 @@ const navigation: NavItem[] = [
   },
   { id: "cli", label: "CLI Reference" },
   {
+    id: "skills",
+    label: "Skills",
+    children: [
+      { id: "skills-overview", label: "Overview" },
+      { id: "skills-cli", label: "CLI Commands" },
+      { id: "skills-bundled", label: "Bundled Skills" },
+      { id: "skills-init-project", label: "init-project" },
+      { id: "skills-sync", label: "Skill Sync" },
+    ],
+  },
+  {
+    id: "directives",
+    label: "Agent Directives",
+  },
+  {
     id: "api",
     label: "API",
     children: [
       { id: "public-endpoints", label: "Public Endpoints" },
       { id: "authenticated-endpoints", label: "Authenticated" },
+      { id: "skills-api", label: "Skills API" },
     ],
   },
   { id: "privacy", label: "Privacy" },
@@ -651,7 +667,8 @@ preferences: terminal-native, monochrome
             <P>
               Install globally with <InlineCode>npm i -g youmd</InlineCode> or
               run commands directly with <InlineCode>npx youmd</InlineCode>.
-              The CLI has 20 commands covering the full identity lifecycle.
+              The CLI covers the full identity lifecycle -- identity, auth,
+              sync, sharing, memory, projects, and skills.
             </P>
 
             <P>
@@ -755,8 +772,44 @@ preferences: terminal-native, monochrome
                 { cmd: "youmd private notes set", desc: "Set private notes (stdin or interactive)" },
                 { cmd: "youmd private notes append \"text\"", desc: "Append to private notes" },
                 { cmd: "youmd private projects add NAME", desc: "Add a private project" },
-                { cmd: "youmd project init NAME", desc: "Initialize project-specific context" },
+              ]}
+            />
+
+            <P>
+              <strong className="text-[hsl(var(--text-primary))]">Projects</strong>
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "youmd project init NAME", desc: "Initialize project-specific context (CLAUDE.md + project-context/ + .claude/skills/)" },
                 { cmd: "youmd project list", desc: "List known projects" },
+                { cmd: "youmd project show NAME", desc: "Display project details and context paths" },
+                { cmd: "youmd project memories NAME", desc: "List memories for a specific project" },
+                { cmd: "youmd project remember NAME \"content\"", desc: "Save a memory scoped to a project" },
+                { cmd: "youmd project edit NAME", desc: "Open project context files for editing" },
+              ]}
+            />
+
+            <P>
+              <strong className="text-[hsl(var(--text-primary))]">Skills</strong>
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "youmd skill list", desc: "List installed skills" },
+                { cmd: "youmd skill install NAME", desc: "Install a skill from the registry" },
+                { cmd: "youmd skill remove NAME", desc: "Remove an installed skill" },
+                { cmd: "youmd skill use NAME", desc: "Run a skill with {{var}} interpolation" },
+                { cmd: "youmd skill sync", desc: "Sync skills with your published bundle" },
+                { cmd: "youmd skill create", desc: "Scaffold a new skill from a template" },
+                { cmd: "youmd skill publish", desc: "Publish a skill to the registry" },
+                { cmd: "youmd skill browse", desc: "Browse the public skill registry" },
+                { cmd: "youmd skill remote NAME", desc: "Fetch and preview a remote skill" },
+                { cmd: "youmd skill link NAME PATH", desc: "Symlink a local skill for development" },
+                { cmd: "youmd skill init-project", desc: "Generate CLAUDE.md + project-context/ + .claude/skills/ for current repo" },
+                { cmd: "youmd skill improve NAME", desc: "Use AI to improve a skill's template" },
+                { cmd: "youmd skill metrics NAME", desc: "View usage stats for a published skill" },
+                { cmd: "youmd skill search QUERY", desc: "Search the registry by keyword" },
+                { cmd: "youmd skill export NAME", desc: "Export a skill as a standalone markdown file" },
+                { cmd: "youmd skill info NAME", desc: "Show full metadata for an installed skill" },
               ]}
             />
 
@@ -766,6 +819,166 @@ preferences: terminal-native, monochrome
               need a regular terminal (not inside Claude Code). All other
               commands are non-interactive.
             </Callout>
+
+            {/* ── Skills ──────────────────────────────────── */}
+            <H2 id="skills">Skills</H2>
+            <P>
+              Skills are identity-aware markdown templates that turn your you.md
+              profile into actionable outputs. They use{" "}
+              <InlineCode>{"{{var}}"}</InlineCode> interpolation to inject your
+              identity data at runtime -- so the output is always personalized
+              to you.
+            </P>
+
+            <H3 id="skills-overview">Overview</H3>
+            <P>
+              A skill is a <InlineCode>.md</InlineCode> file with template
+              variables. When you run a skill, the CLI resolves each{" "}
+              <InlineCode>{"{{var}}"}</InlineCode> against your you.json bundle
+              and renders the final output. Skills can generate CLAUDE.md files,
+              project scaffolding, cover letters, outreach messages, or anything
+              else that benefits from knowing who you are.
+            </P>
+            <CodeBlock title="example skill template">{`# {{name}}'s Project Context
+
+## Who You Are
+{{bio}}
+
+## Your Stack
+{{preferences.tools}}
+
+## Communication Style
+{{voice.style}}
+
+## Current Focus
+{{now}}`}</CodeBlock>
+            <P>
+              Install skills from the public registry, create your own, or
+              publish them for others. The skill system is fully local-first --
+              installed skills live in <InlineCode>.youmd/skills/</InlineCode>{" "}
+              and sync with push/pull.
+            </P>
+
+            <H3 id="skills-cli">CLI Commands</H3>
+            <P>
+              The <InlineCode>youmd skill</InlineCode> namespace has 16
+              subcommands covering the full skill lifecycle:
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "skill list", desc: "List all installed skills" },
+                { cmd: "skill install NAME", desc: "Install from the registry" },
+                { cmd: "skill remove NAME", desc: "Uninstall a skill" },
+                { cmd: "skill use NAME", desc: "Run a skill -- resolves {{vars}} and outputs the result" },
+                { cmd: "skill sync", desc: "Sync installed skills with your cloud bundle" },
+                { cmd: "skill create", desc: "Scaffold a new skill template" },
+                { cmd: "skill publish", desc: "Publish to the public registry" },
+                { cmd: "skill browse", desc: "Browse available skills in the registry" },
+                { cmd: "skill remote NAME", desc: "Preview a remote skill before installing" },
+                { cmd: "skill link NAME PATH", desc: "Symlink a local skill for dev iteration" },
+                { cmd: "skill init-project", desc: "Generate CLAUDE.md + project-context/ + .claude/skills/" },
+                { cmd: "skill improve NAME", desc: "AI-powered template improvement" },
+                { cmd: "skill metrics NAME", desc: "View installs and usage stats" },
+                { cmd: "skill search QUERY", desc: "Search registry by keyword" },
+                { cmd: "skill export NAME", desc: "Export as standalone markdown" },
+                { cmd: "skill info NAME", desc: "Full metadata for an installed skill" },
+              ]}
+            />
+
+            <H3 id="skills-bundled">Bundled Skills</H3>
+            <P>
+              Every you.md install ships with four built-in skills. These are
+              always available and kept in sync with CLI updates.
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "claude-md-generator", desc: "Generate a CLAUDE.md file from your identity -- persona, preferences, coding style, all baked in" },
+                { cmd: "project-context-init", desc: "Scaffold a project-context/ directory with TODO.md, FEATURES.md, ARCHITECTURE.md, and more" },
+                { cmd: "voice-sync", desc: "Export your voice profile as agent instructions for consistent tone across tools" },
+                { cmd: "meta-improve", desc: "Feed a skill back through the LLM to improve its template quality" },
+              ]}
+            />
+
+            <H3 id="skills-init-project">init-project</H3>
+            <P>
+              The <InlineCode>youmd skill init-project</InlineCode> command is
+              the fastest way to make a repo identity-aware. It generates three
+              things:
+            </P>
+            <StepList>
+              <Step n={1}>
+                <InlineCode>CLAUDE.md</InlineCode> -- a coding agent operating
+                manual, pre-filled with your identity, preferences, and project
+                context
+              </Step>
+              <Step n={2}>
+                <InlineCode>project-context/</InlineCode> -- a directory with
+                TODO.md, FEATURES.md, CHANGELOG.md, ARCHITECTURE.md, and
+                STYLE_GUIDE.md templates
+              </Step>
+              <Step n={3}>
+                <InlineCode>.claude/skills/</InlineCode> -- local skill
+                overrides scoped to the project
+              </Step>
+            </StepList>
+            <CodeBlock title="terminal">{`$ youmd skill init-project
+  creating CLAUDE.md ...
+  creating project-context/TODO.md ...
+  creating project-context/FEATURES.md ...
+  creating project-context/CHANGELOG.md ...
+  creating project-context/ARCHITECTURE.md ...
+  creating project-context/STYLE_GUIDE.md ...
+  creating .claude/skills/ ...
+  done -- your repo is identity-aware`}</CodeBlock>
+
+            <H3 id="skills-sync">Skill Sync</H3>
+            <P>
+              Installed skills are stored in your local{" "}
+              <InlineCode>.youmd/skills/</InlineCode> directory and tracked in
+              your bundle manifest. When you run{" "}
+              <InlineCode>youmd push</InlineCode>, your skill installs are
+              synced to the cloud. When you run{" "}
+              <InlineCode>youmd pull</InlineCode> on another machine, your
+              skills come with it.
+            </P>
+            <P>
+              Use <InlineCode>youmd skill sync</InlineCode> to explicitly
+              reconcile local and remote skill state without a full push/pull
+              cycle.
+            </P>
+
+            {/* ── Agent Directives ───────────────────────────── */}
+            <H2 id="directives">Agent Directives</H2>
+            <P>
+              Directives are instructions embedded in your you.md identity that
+              tell AI agents how to behave when working with you. They live in
+              your preferences layer and are included in every context share.
+            </P>
+            <P>
+              Unlike skills (which are templates you run), directives are
+              passive -- they ride along with your identity and shape how agents
+              respond to you. Think of them as persistent system prompts keyed
+              to your identity.
+            </P>
+            <CodeBlock title=".youmd/preferences/agent.md">{`# Agent Directives
+
+## Tone
+Direct and concise. No filler. No corporate speak.
+
+## Code Style
+Prefer functional patterns. Use TypeScript strict mode.
+Never add comments that restate the code.
+
+## Workflow
+Act decisively -- don't ask permission for obvious next steps.
+Show progress, don't go silent.
+Address every part of multi-part messages.`}</CodeBlock>
+            <P>
+              When an agent reads your context (via{" "}
+              <InlineCode>/share</InlineCode>, a context link, or the API), your
+              directives are included automatically. Any agent that respects
+              your you.md will follow them.
+            </P>
 
             {/* ── API ──────────────────────────────────────── */}
             <H2 id="api">API</H2>
@@ -843,6 +1056,37 @@ POST /api/v1/research           # Web research via Perplexity
 POST /api/v1/enrich-x           # X/Twitter enrichment
 POST /api/v1/enrich-linkedin    # LinkedIn enrichment`}</CodeBlock>
 
+            <H3 id="skills-api">Skills API</H3>
+            <P>
+              Programmatic access to the skill registry and your installed
+              skills. Public endpoints are unauthenticated. Install, usage, and
+              publish endpoints require a Bearer token.
+            </P>
+            <CodeBlock title="HTTP">{`# Browse the public skill registry
+GET /api/v1/skills
+
+# Fetch a single skill by name (includes full template content)
+GET /api/v1/skills?name=claude-md-generator
+
+# List your installed skills (authenticated)
+GET /api/v1/me/skills
+
+# Publish a skill to the registry (authenticated)
+POST /api/v1/me/skills
+{ "name": "...", "description": "...", "template": "...", "tags": [...] }
+
+# Record a skill install (authenticated)
+POST /api/v1/me/skills/install
+{ "skillName": "..." }
+
+# Track skill usage (authenticated)
+POST /api/v1/me/skills/usage
+{ "skillName": "...", "context": "cli" }
+
+# Remove an installed skill (authenticated)
+POST /api/v1/me/skills/remove
+{ "skillName": "..." }`}</CodeBlock>
+
             {/* ── Privacy ──────────────────────────────────── */}
             <H2 id="privacy">Privacy</H2>
             <P>You.md uses a two-layer privacy model:</P>
@@ -904,6 +1148,10 @@ POST /api/v1/enrich-linkedin    # LinkedIn enrichment`}</CodeBlock>
                 {
                   cmd: "/publish",
                   desc: "Publish latest changes to your public profile",
+                },
+                {
+                  cmd: "/skills",
+                  desc: "Browse and manage installed skills",
                 },
                 { cmd: "/help", desc: "Show all available commands" },
               ]}
