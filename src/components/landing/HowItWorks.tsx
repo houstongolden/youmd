@@ -8,7 +8,7 @@ const steps = [
   {
     num: "01",
     cmd: "$ npx youmd init",
-    desc: "A conversational AI builds your identity through dialogue -- not a form. Projects, values, preferences, voice. Your data stays local. No account needed.",
+    desc: "Sign up in seconds, then a conversational AI builds your identity through dialogue -- not a form. Projects, values, preferences, voice. Your data is encrypted and yours.",
   },
   {
     num: "02",
@@ -68,7 +68,7 @@ const HowItWorks = () => (
           -- how it works --
         </p>
         <p className="text-muted-foreground text-[13px] font-body mb-10">
-          Three commands. No signup. Your identity travels with you from the first message.
+          Sign up in seconds. Your identity is ready to share from the first message.
         </p>
       </FadeUp>
 

@@ -388,28 +388,13 @@ export default function DocsContent() {
             </P>
 
             <Callout type="tip">
-              No account required to start. Pick a username, build your profile,
-              and sign up later to claim ownership.
+              Create an account in seconds. Your data is encrypted and you
+              control who sees what.
             </Callout>
 
             <H3 id="web-quickstart">Web Quickstart</H3>
             <StepList>
               <Step n={1}>
-                Go to{" "}
-                <Link
-                  href="/create"
-                  className="text-[hsl(var(--accent))] hover:opacity-80"
-                >
-                  you.md/create
-                </Link>
-              </Step>
-              <Step n={2}>
-                Pick a username and enter your name
-              </Step>
-              <Step n={3}>
-                Your profile is created instantly -- no account needed
-              </Step>
-              <Step n={4}>
                 Sign up at{" "}
                 <Link
                   href="/sign-up"
@@ -417,9 +402,15 @@ export default function DocsContent() {
                 >
                   you.md/sign-up
                 </Link>{" "}
-                to claim ownership
+                -- takes 30 seconds
               </Step>
-              <Step n={5}>
+              <Step n={2}>
+                Pick a username and claim your profile
+              </Step>
+              <Step n={3}>
+                The You Agent builds your identity through conversation
+              </Step>
+              <Step n={4}>
                 Open the{" "}
                 <Link
                   href="/dashboard"
@@ -433,13 +424,16 @@ export default function DocsContent() {
             </StepList>
 
             <H3 id="cli-quickstart">CLI Quickstart</H3>
-            <CodeBlock title="terminal">{`$ npx youmd init`}</CodeBlock>
+            <CodeBlock title="terminal">{`$ npx youmd register`}</CodeBlock>
             <StepList>
               <Step n={1}>
-                The agent walks you through creating your identity interactively
+                Run <InlineCode>youmd register</InlineCode> to create your
+                account (or <InlineCode>youmd login</InlineCode> if you already
+                have one)
               </Step>
               <Step n={2}>
-                Run <InlineCode>youmd login</InlineCode> to connect to you.md
+                Run <InlineCode>youmd init</InlineCode> -- the agent builds your
+                identity through conversation
               </Step>
               <Step n={3}>
                 Run <InlineCode>youmd push</InlineCode> to publish your profile

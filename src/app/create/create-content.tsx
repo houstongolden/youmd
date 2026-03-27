@@ -66,7 +66,7 @@ function CreateContentInner() {
       setTimeout(() => addLine("you.md v0.1.0", "text-[hsl(var(--accent))]"), 200),
       setTimeout(() => addLine("identity context protocol for the agent internet", "text-[hsl(var(--text-secondary))] opacity-60"), 500),
       setTimeout(() => addLine("\u00A0"), 700),
-      setTimeout(() => addLine("no account needed — just pick a username to start.", "text-[hsl(var(--text-secondary))] opacity-50"), 900),
+      setTimeout(() => addLine("pick a username and create your account to get started.", "text-[hsl(var(--text-secondary))] opacity-50"), 900),
       setTimeout(() => addLine("\u00A0"), 1100),
       setTimeout(() => addLine("choose a username.", "text-[hsl(var(--text-secondary))] opacity-70"), 1200),
       setTimeout(() => setPhase("username"), 1300),

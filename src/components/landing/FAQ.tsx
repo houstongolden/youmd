@@ -23,7 +23,7 @@ const faqs = [
   },
   {
     q: "do i need to sign up?",
-    a: "no. run npx youmd init and your identity bundle is generated locally. sign up only if you want a hosted profile at you.md/username.",
+    a: "yes, but it takes 30 seconds. sign up with email + password, then the AI builds your identity through conversation. your data is encrypted and you control who sees what.",
   },
   {
     q: "which agents work with you.md?",

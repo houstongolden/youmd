@@ -66,6 +66,12 @@ Last Commit: e6955b4 (2026-03-25)
 
 ---
 
+## Auth Strategy Pivot (2026-03-26)
+
+MVP now requires account creation before profile building. The "no signup required" / anonymous profile creation messaging has been removed from all surfaces (landing page, FAQ, docs, PRD). Core users care about security and data ownership — auth-first reinforces trust. Anonymous onboarding is deferred to v2 as a growth feature, not an MVP priority.
+
+---
+
 ## Known Issues
 
 ### Clerk v7 Compatibility

@@ -68,14 +68,16 @@ The compiled output — a portable identity file containing:
 
 ### Journey 1: CLI-First Onboarding
 ```
-npx youmd init
+npx youmd register (or youmd login)
+→ Create account with email + password (30 seconds)
+→ youmd init
 → ASCII YOU logo renders
 → Agent asks for username → name → first social handle
 → Agent immediately shows ASCII portrait ("you look good in pixels")
 → Agent scrapes social profiles, shows BrailleSpinner + personality
 → Conversational Q&A builds identity progressively
 → Agent compiles you.json + you.md
-→ "done" → shows next steps (login, push, sync, chat)
+→ "done" → shows next steps (push, sync, chat)
 ```
 
 ### Journey 2: Web-First Onboarding
@@ -225,7 +227,7 @@ profiles → contextLinks (1:many)
 ## 9. CLI Requirements
 
 ### Core Philosophy
-The CLI is the PRIMARY experience, not a secondary tool. It should feel like Claude Code — alive, intelligent, responsive.
+The CLI is the PRIMARY experience, not a secondary tool. It should feel like Claude Code — alive, intelligent, responsive. Auth is required — users register or login before building their identity. Anonymous/no-signup profile creation is deferred to v2 growth strategy.
 
 ### UX Requirements
 - BrailleSpinner on EVERY async operation (LLM calls, scrapes, compiles, saves)
@@ -298,8 +300,9 @@ Platform-specific prompts for Claude, ChatGPT, Cursor, Copilot, and universal fo
 5. MCP endpoint (mcp.you.md/{username})
 
 ### Future (v2.0)
-1. Agent-to-agent communication protocol
-2. Team/org bundles
-3. Plugin marketplace
-4. Autonomous refresh (youmd refresh)
-5. Interview mode (youmd interview)
+1. Anonymous profile creation (no-signup onboarding) — deferred growth feature
+2. Agent-to-agent communication protocol
+3. Team/org bundles
+4. Plugin marketplace
+5. Autonomous refresh (youmd refresh)
+6. Interview mode (youmd interview)
