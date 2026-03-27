@@ -87,7 +87,7 @@ export function MessageBubble({ message, isLatest = false }: MessageBubbleProps)
         <span className="text-[hsl(var(--accent))] font-mono text-xs mt-0.5 shrink-0 select-none">
           &gt;
         </span>
-        <div className="text-[14px] font-mono whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-primary))]">
+        <div className="text-[12px] font-mono whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-primary))]">
           {hasImage ? <RichTerminalContent content={message.content} /> : message.content}
         </div>
       </div>
@@ -97,7 +97,7 @@ export function MessageBubble({ message, isLatest = false }: MessageBubbleProps)
   // assistant — rich terminal content with streaming cursor for latest
   return (
     <div className="pl-3 border-l-2 border-[hsl(var(--accent))]/25">
-      <div className="text-[14px] font-mono leading-relaxed text-[hsl(var(--text-secondary))]">
+      <div className="text-[12px] font-mono leading-relaxed text-[hsl(var(--text-secondary))]">
         <RichTerminalContent content={message.content} />
         {isLatest && message.content.length > 0 && (
           <span className="inline-block w-1.5 h-3.5 bg-[hsl(var(--accent))] opacity-70 animate-pulse ml-0.5 align-text-bottom" />

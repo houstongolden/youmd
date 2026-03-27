@@ -65,7 +65,7 @@ function ActivityStep({ step }: { step: ProgressStep }) {
 
   return (
     <div
-      className={`flex items-center gap-2 py-px font-mono text-[12px] leading-5 transition-opacity duration-300 ${
+      className={`flex items-center gap-2 py-px font-mono text-[10px] leading-5 transition-opacity duration-300 ${
         step.status === "done" ? "opacity-40" : step.status === "error" ? "opacity-60" : "opacity-100"
       }`}
     >

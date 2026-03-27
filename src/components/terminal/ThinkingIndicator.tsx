@@ -47,7 +47,7 @@ export function ThinkingIndicator({ phrase, category, progressSteps = [] }: Thin
   return (
     <div className="space-y-1 animate-in fade-in duration-150">
       {/* Main thinking phrase — Claude Code style: spinner + text */}
-      <div className="flex items-center gap-2 font-mono text-[13px]">
+      <div className="flex items-center gap-2 font-mono text-[11px]">
         <span className="text-[hsl(var(--accent))] shrink-0 w-3 text-center">
           {SPINNER_FRAMES[spinnerFrame]}
         </span>

@@ -2471,21 +2471,16 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         if (ackRes.ok) {
           const ackData = await ackRes.json();
           const ackText = ackData.ack || "";
-          const plan: string[] = ackData.plan || [];
 
           if (ackText) {
             // Show the fast ack as an assistant message immediately
+            // The ACK is the plan — no need for separate activity log steps
             setDisplayMessages((prev) => [
               ...prev,
               { id: ackMsgId, role: "assistant", content: ackText },
             ]);
-          }
-
-          // Show the plan as progress steps
-          if (plan.length > 0) {
-            for (const step of plan) {
-              addStep(step);
-            }
+            // Use ACK as the thinking phrase (replaces random rotation)
+            setThinkingPhrase(ackText);
           }
         }
       } catch {
@@ -2652,8 +2647,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       }
 
       // ─── PHASE 3: FULL RESPONSE (streaming) ────────────────
-      setThinkingPhrase("composing response");
-      const llmStepId = addStep("composing full response");
+      // No step added here — the thinking indicator is sufficient.
+      // Real steps (scraping, researching) already show in the activity log.
+      const llmStepId = "";
 
       // Reuse the ack message ID if we showed an ack, otherwise create new
       const streamMsgId = ackMsgId;
@@ -2663,7 +2659,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       const onFirstToken = () => {
         if (!firstTokenReceived) {
           firstTokenReceived = true;
-          completeStep(llmStepId);
+          if (llmStepId) completeStep(llmStepId);
           setIsThinking(false);
           // Replace the ack message with streaming content, or add new
           setDisplayMessages(prev => {

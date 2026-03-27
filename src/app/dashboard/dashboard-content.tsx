@@ -49,6 +49,7 @@ export function DashboardContent() {
 
   const [rightPane, setRightPane] = useState<RightPane>("profile");
   const [mobileView, setMobileView] = useState<"terminal" | "preview">("terminal");
+  const [panelOpen, setPanelOpen] = useState(false); // collapsed by default
 
   const createUser = useMutation(api.users.createUser);
   const claimProfile = useMutation(api.profiles.claimProfile);
@@ -183,13 +184,21 @@ export function DashboardContent() {
                 {isPublished ? "published" : "draft"}
               </span>
             </div>
-            <Link
-              href={`/${username}`}
-              target="_blank"
-              className="text-[11px] font-mono text-[hsl(var(--accent))] opacity-50 hover:opacity-90 transition-opacity"
-            >
-              view live &rarr;
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/${username}`}
+                target="_blank"
+                className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60 transition-opacity"
+              >
+                live &rarr;
+              </Link>
+              <button
+                onClick={() => setPanelOpen(!panelOpen)}
+                className="text-[10px] font-mono text-[hsl(var(--accent))] opacity-50 hover:opacity-90 transition-opacity"
+              >
+                {panelOpen ? "close panel" : "open panel"}
+              </button>
+            </div>
           </div>
 
           {/* Mobile nav — single row: scrollable pane tabs + compact status */}
@@ -234,15 +243,18 @@ export function DashboardContent() {
             <div
               className={[
                 "flex flex-col min-h-0",
-                // Desktop: always visible at 35%
-                "md:w-[35%] md:border-r md:border-[hsl(var(--border))] md:relative md:opacity-100 md:translate-x-0",
+                // Desktop: full width when panel closed, 35% when open
+                panelOpen
+                  ? "md:w-[35%] md:border-r md:border-[hsl(var(--border))]"
+                  : "md:w-full",
+                "md:relative md:opacity-100 md:translate-x-0",
                 // Mobile: full width, absolute positioned for transitions
                 "w-full",
                 mobileView === "terminal"
                   ? "relative opacity-100 translate-x-0"
                   : "absolute inset-0 opacity-0 -translate-x-4 pointer-events-none md:pointer-events-auto md:relative md:inset-auto",
               ].join(" ")}
-              style={{ transition: "opacity 200ms ease, transform 200ms ease" }}
+              style={{ transition: "width 200ms ease, opacity 200ms ease, transform 200ms ease" }}
             >
               <TerminalShell
                 displayMessages={agent.displayMessages}
@@ -262,8 +274,10 @@ export function DashboardContent() {
             <div
               className={[
                 "flex flex-col min-h-0",
-                // Desktop: always visible at 65%
-                "md:w-[65%] md:relative md:opacity-100 md:translate-x-0",
+                // Desktop: hidden when panel is closed
+                panelOpen
+                  ? "md:w-[65%] md:relative md:opacity-100 md:translate-x-0"
+                  : "md:hidden",
                 // Mobile: full width, absolute positioned for transitions
                 "w-full",
                 mobileView === "preview"
