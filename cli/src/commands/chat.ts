@@ -1426,7 +1426,7 @@ export async function chatCommand(): Promise<void> {
             console.log(chalk.green(`  [saved private project: ${pu.project.name || "unnamed"}]`));
           }
         } catch {
-          // non-fatal
+          console.log(chalk.yellow("  [private context update failed]"));
         }
       }
     }
@@ -1440,7 +1440,7 @@ export async function chatCommand(): Promise<void> {
             updateProjectFile(activeProjectDir, pu.file, pu.content);
             console.log(chalk.hex("#C46A3A")(`  [updated project context: ${pu.file}]`));
           } catch {
-            // non-fatal
+            console.log(chalk.yellow(`  [project context update failed: ${pu.file}]`));
           }
         }
       }

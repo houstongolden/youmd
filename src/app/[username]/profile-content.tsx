@@ -27,6 +27,23 @@ interface Project {
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
+function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  const years = Math.floor(months / 12);
+  return `${years}y ago`;
+}
+
 const statusColor = (s: string) => {
   switch (s) {
     case "active": return "text-[hsl(var(--success))]";
@@ -366,6 +383,11 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
             )}
             <p className="font-mono text-[11px]">
               <span className="text-[hsl(var(--text-secondary))] opacity-50">@{username}</span>
+              {"updatedAt" in resolvedProfile && resolvedProfile.updatedAt && (
+                <span className="text-[hsl(var(--text-secondary))] opacity-30 ml-2 text-[10px]">
+                  updated {formatRelativeTime(resolvedProfile.updatedAt as number)}
+                </span>
+              )}
             </p>
           </div>
         </motion.section>
@@ -727,8 +749,20 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
           <PrivateContextPane privateContext={privateContext} />
         )}
 
+        {/* CTA for non-owners */}
+        {!isOwner && (
+          <motion.div {...delay(12)} className="mt-12 text-center">
+            <p className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40">
+              want your own identity file?{" "}
+              <Link href="/create" className="text-[hsl(var(--accent))] opacity-80 hover:opacity-100 transition-opacity">
+                &gt; create yours
+              </Link>
+            </p>
+          </motion.div>
+        )}
+
         {/* Footer tagline */}
-        <motion.div {...delay(12)} className="text-center mt-16 space-y-2">
+        <motion.div {...delay(13)} className="text-center mt-16 space-y-2">
           <p className="text-[hsl(var(--text-secondary))] opacity-30 font-mono text-[9px]">
             updated by the human. maintained by the system.
           </p>

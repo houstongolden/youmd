@@ -64,7 +64,11 @@ function ActivityStep({ step }: { step: ProgressStep }) {
         : 0;
 
   return (
-    <div className="flex items-center gap-2 py-px font-mono text-[12px] leading-5">
+    <div
+      className={`flex items-center gap-2 py-px font-mono text-[12px] leading-5 transition-opacity duration-300 ${
+        step.status === "done" ? "opacity-40" : step.status === "error" ? "opacity-60" : "opacity-100"
+      }`}
+    >
       {/* Status icon */}
       <span className="shrink-0 w-3 text-center">
         {step.status === "running" && (
@@ -73,10 +77,10 @@ function ActivityStep({ step }: { step: ProgressStep }) {
           </span>
         )}
         {step.status === "done" && (
-          <span className="text-[hsl(var(--success))] opacity-50">✓</span>
+          <span className="text-[hsl(var(--success))]">✓</span>
         )}
         {step.status === "error" && (
-          <span className="text-[hsl(var(--accent))] opacity-60">✗</span>
+          <span className="text-[hsl(var(--accent))]">✗</span>
         )}
       </span>
 
@@ -85,16 +89,20 @@ function ActivityStep({ step }: { step: ProgressStep }) {
         <span
           className={
             step.status === "running"
-              ? "text-[hsl(var(--text-secondary))] opacity-70"
+              ? "text-[hsl(var(--accent))]"
               : step.status === "done"
-                ? "text-[hsl(var(--text-secondary))] opacity-30"
-                : "text-[hsl(var(--accent))] opacity-50"
+                ? "text-[hsl(var(--text-secondary))]"
+                : "text-[hsl(var(--accent))]"
           }
         >
           {step.label}
         </span>
         {step.detail && (
-          <span className="text-[hsl(var(--text-secondary))] opacity-20 ml-1.5">
+          <span className={`ml-1.5 ${
+            step.status === "running"
+              ? "text-[hsl(var(--text-secondary))] opacity-50"
+              : "text-[hsl(var(--text-secondary))] opacity-30"
+          }`}>
             {step.detail}
           </span>
         )}
@@ -102,12 +110,12 @@ function ActivityStep({ step }: { step: ProgressStep }) {
 
       {/* Elapsed time */}
       {step.status === "running" && elapsed >= 1 && (
-        <span className="shrink-0 text-[10px] text-[hsl(var(--text-secondary))] opacity-20 tabular-nums">
+        <span className="shrink-0 text-[10px] text-[hsl(var(--text-secondary))] opacity-40 tabular-nums">
           {displayElapsed}s
         </span>
       )}
       {step.status === "done" && displayElapsed >= 1 && (
-        <span className="shrink-0 text-[10px] text-[hsl(var(--text-secondary))] opacity-15 tabular-nums">
+        <span className="shrink-0 text-[10px] text-[hsl(var(--text-secondary))] opacity-30 tabular-nums">
           {displayElapsed}s
         </span>
       )}

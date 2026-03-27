@@ -9,7 +9,7 @@
  * feel like a real CLI with rich formatted output.
  */
 
-import { type ReactNode } from "react";
+import { type ReactNode, useState, useCallback } from "react";
 import AsciiAvatar from "@/components/AsciiAvatar";
 
 /* ── Block Types ──────────────────────────────────────────── */
@@ -226,12 +226,34 @@ function TextBlock({ lines }: { lines: string[] }) {
 }
 
 function CodeBlock({ lang, content }: { lang?: string; content: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [content]);
+
   return (
-    <div className="my-2 border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "2px" }}>
+    <div className="my-2 border border-[hsl(var(--border))] overflow-hidden relative group" style={{ borderRadius: "2px" }}>
       {lang && (
-        <div className="bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-3 py-1">
+        <div className="bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-3 py-1 flex items-center justify-between">
           <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-40">{lang}</span>
+          <button
+            onClick={handleCopy}
+            className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-0 group-hover:opacity-50 hover:!opacity-80 transition-opacity cursor-pointer"
+          >
+            {copied ? "copied" : "copy"}
+          </button>
         </div>
+      )}
+      {!lang && (
+        <button
+          onClick={handleCopy}
+          className="absolute top-1.5 right-2 text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-0 group-hover:opacity-50 hover:!opacity-80 transition-opacity cursor-pointer"
+        >
+          {copied ? "copied" : "copy"}
+        </button>
       )}
       <pre className="bg-[hsl(var(--bg))] px-3 py-2 text-[12px] font-mono text-[hsl(var(--accent-mid))] overflow-x-auto leading-relaxed">
         {content}
@@ -377,12 +399,15 @@ function ImageBlock({ alt, url }: { alt: string; url: string }) {
 
 /* ── Inline Formatter ─────────────────────────────────────── */
 
+type InlinePart = string | { type: "bold" | "italic" | "code" | "link" | "bare-link"; text: string; href?: string };
+
 function formatInline(text: string): ReactNode {
-  const parts: (string | { type: "bold" | "italic" | "code" | "accent"; text: string })[] = [];
+  const parts: InlinePart[] = [];
   let remaining = text;
 
   while (remaining.length > 0) {
-    const match = remaining.match(/(\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`)/);
+    // Match markdown link [text](url), **bold**, *italic*, `code`, or bare URLs
+    const match = remaining.match(/(\[([^\]]+)\]\((https?:\/\/[^)]+)\)|\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|(https?:\/\/[^\s<>)]+))/);
     if (!match || match.index === undefined) {
       parts.push(remaining);
       break;
@@ -392,12 +417,21 @@ function formatInline(text: string): ReactNode {
       parts.push(remaining.slice(0, match.index));
     }
 
-    if (match[2]) {
-      parts.push({ type: "bold", text: match[2] });
-    } else if (match[3]) {
-      parts.push({ type: "italic", text: match[3] });
+    if (match[2] && match[3]) {
+      // [text](url)
+      parts.push({ type: "link", text: match[2], href: match[3] });
     } else if (match[4]) {
-      parts.push({ type: "code", text: match[4] });
+      // **bold**
+      parts.push({ type: "bold", text: match[4] });
+    } else if (match[5]) {
+      // *italic*
+      parts.push({ type: "italic", text: match[5] });
+    } else if (match[6]) {
+      // `code`
+      parts.push({ type: "code", text: match[6] });
+    } else if (match[7]) {
+      // bare URL
+      parts.push({ type: "bare-link", text: match[7], href: match[7] });
     }
 
     remaining = remaining.slice(match.index + match[0].length);
@@ -422,6 +456,19 @@ function formatInline(text: string): ReactNode {
             <code key={i} className="px-1 py-0.5 text-[12px] bg-[hsl(var(--bg))]/50 text-[hsl(var(--accent-mid))] border border-[hsl(var(--border))]" style={{ borderRadius: "2px" }}>
               {part.text}
             </code>
+          );
+        }
+        if (part.type === "link" || part.type === "bare-link") {
+          return (
+            <a
+              key={i}
+              href={part.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[hsl(var(--accent))] hover:underline"
+            >
+              {part.text}
+            </a>
           );
         }
         return null;

@@ -211,6 +211,13 @@ function promptInput(prompt: string): Promise<string> {
   });
 }
 
+// Ensure raw mode is restored if the process exits unexpectedly during password input
+process.on('exit', () => {
+  if (process.stdin.isTTY) {
+    try { process.stdin.setRawMode(false); } catch {}
+  }
+});
+
 function promptPassword(prompt: string): Promise<string> {
   return new Promise((resolve) => {
     // Write the prompt manually

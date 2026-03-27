@@ -146,15 +146,16 @@ function renderTerminalContent(content: string) {
 
 /**
  * Handles inline formatting: **bold** → accent, *italic* → dim italic, `code` → code style
+ * Also parses [text](url) markdown links and bare https:// URLs into clickable <a> tags.
  */
 function formatInline(text: string) {
   // Split by formatting markers
-  const parts: (string | { type: "bold" | "italic" | "code"; text: string })[] = [];
+  const parts: (string | { type: "bold" | "italic" | "code" | "link" | "bare-link"; text: string; href?: string })[] = [];
   let remaining = text;
 
   while (remaining.length > 0) {
-    // Match **bold**, *italic*, or `code`
-    const match = remaining.match(/(\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`)/) ;
+    // Match [text](url), **bold**, *italic*, `code`, or bare URLs
+    const match = remaining.match(/(\[([^\]]+)\]\((https?:\/\/[^)]+)\)|\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|(https?:\/\/[^\s<>)]+))/);
     if (!match || match.index === undefined) {
       parts.push(remaining);
       break;
@@ -165,15 +166,21 @@ function formatInline(text: string) {
       parts.push(remaining.slice(0, match.index));
     }
 
-    if (match[2]) {
-      // **bold**
-      parts.push({ type: "bold", text: match[2] });
-    } else if (match[3]) {
-      // *italic*
-      parts.push({ type: "italic", text: match[3] });
+    if (match[2] && match[3]) {
+      // [text](url)
+      parts.push({ type: "link", text: match[2], href: match[3] });
     } else if (match[4]) {
+      // **bold**
+      parts.push({ type: "bold", text: match[4] });
+    } else if (match[5]) {
+      // *italic*
+      parts.push({ type: "italic", text: match[5] });
+    } else if (match[6]) {
       // `code`
-      parts.push({ type: "code", text: match[4] });
+      parts.push({ type: "code", text: match[6] });
+    } else if (match[7]) {
+      // bare URL
+      parts.push({ type: "bare-link", text: match[7], href: match[7] });
     }
 
     remaining = remaining.slice(match.index + match[0].length);
@@ -210,6 +217,19 @@ function formatInline(text: string) {
             >
               {part.text}
             </code>
+          );
+        }
+        if (part.type === "link" || part.type === "bare-link") {
+          return (
+            <a
+              key={i}
+              href={part.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[hsl(var(--accent))] hover:underline"
+            >
+              {part.text}
+            </a>
           );
         }
         return null;

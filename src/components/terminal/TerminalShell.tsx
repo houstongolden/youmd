@@ -163,16 +163,42 @@ export function TerminalShell({
     return null;
   }, [displayMessages]);
 
+  // Scroll-up indicator: show when user has scrolled away from top
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [hasScrolledDown, setHasScrolledDown] = useState(false);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (el) {
+      setHasScrolledDown(el.scrollTop > 32);
+    }
+  }, []);
+
   return (
     <div className={`flex flex-col h-full ${className}`}>
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
-        <div className="space-y-3">
-          {displayMessages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} isLatest={msg.id === latestAssistantId} />
-          ))}
-          {isThinking && <ThinkingIndicator phrase={thinkingPhrase} category={thinkingCategory} progressSteps={progressSteps} />}
-          <div ref={messagesEndRef} />
+      <div className="relative flex-1 min-h-0">
+        {/* Scroll-up indicator — dim gradient at top when scrolled */}
+        {hasScrolledDown && (
+          <div
+            className="absolute top-0 left-0 right-0 h-8 z-10 pointer-events-none"
+            style={{
+              background: "linear-gradient(to bottom, hsl(var(--bg-raised)) 0%, transparent 100%)",
+            }}
+          />
+        )}
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="h-full overflow-y-auto px-4 py-4"
+        >
+          <div className="space-y-3">
+            {displayMessages.map((msg) => (
+              <MessageBubble key={msg.id} message={msg} isLatest={msg.id === latestAssistantId} />
+            ))}
+            {isThinking && <ThinkingIndicator phrase={thinkingPhrase} category={thinkingCategory} progressSteps={progressSteps} />}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       </div>
 

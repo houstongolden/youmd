@@ -650,7 +650,19 @@ function writeSectionFile(
   section: string,
   content: string
 ): void {
+  // Validate section against known sections and prevent path traversal
+  if (!BUNDLE_SECTIONS.includes(section as BundleSection)) {
+    return; // silently reject unknown sections
+  }
+  if (section.includes("..") || path.isAbsolute(section)) {
+    return; // reject path traversal attempts
+  }
   const filePath = path.join(bundleDir, section);
+  const resolved = path.resolve(filePath);
+  const resolvedBundle = path.resolve(bundleDir);
+  if (!resolved.startsWith(resolvedBundle + path.sep)) {
+    return; // resolved path escapes bundle directory
+  }
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });

@@ -25,20 +25,22 @@ export function EditPane({ userId, username }: EditPaneProps) {
   return (
     <div className="h-full flex flex-col min-h-0">
       {/* Sub-tab bar */}
-      <div className="flex items-center px-4 py-1.5 border-b border-[hsl(var(--border))] shrink-0">
-        <div className="flex items-center gap-0.5">
+      <div className="flex items-center px-4 border-b border-[hsl(var(--border))] shrink-0">
+        <div className="flex items-center gap-3">
           {SUB_TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setSubTab(tab.key)}
-              className={`px-2.5 py-1 text-[10px] font-mono transition-colors whitespace-nowrap ${
+              className={`relative px-1 py-2 text-[10px] font-mono transition-colors whitespace-nowrap ${
                 subTab === tab.key
-                  ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))]"
+                  ? "text-[hsl(var(--text-primary))]"
                   : "text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"
               }`}
-              style={{ borderRadius: "2px" }}
             >
               {tab.label}
+              {subTab === tab.key && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[hsl(var(--accent))]" />
+              )}
             </button>
           ))}
         </div>
