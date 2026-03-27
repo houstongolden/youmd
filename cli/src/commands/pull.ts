@@ -24,7 +24,28 @@ export async function pullCommand() {
   // Fetch the published profile from the API
   const profile = await getPublicProfile(username);
 
-  if (!profile || !profile.youJson) {
+  // If public profile has no youJson, fall back to /me endpoint (latest bundle)
+  let youJsonSource: { youJson: unknown; youMd?: string | null } | null = null;
+
+  if (profile && profile.youJson) {
+    youJsonSource = { youJson: profile.youJson, youMd: profile.youMd };
+  } else {
+    console.log(chalk.dim("  no published profile found, checking your latest bundle..."));
+    try {
+      const meRes = await getMe();
+      if (meRes.ok && meRes.data?.latestBundle?.youJson) {
+        youJsonSource = {
+          youJson: meRes.data.latestBundle.youJson,
+          youMd: meRes.data.latestBundle.youMd ?? null,
+        };
+        console.log(chalk.dim(`  found bundle v${meRes.data.latestBundle.version} (${meRes.data.latestBundle.isPublished ? "published" : "draft"})`));
+      }
+    } catch {
+      // getMe failed — fall through to error
+    }
+  }
+
+  if (!youJsonSource) {
     console.log(chalk.hex("#C46A3A")("  no published bundle found on you.md"));
     console.log(chalk.dim("  publish your local bundle first: youmd build && youmd publish"));
     return;
@@ -40,7 +61,7 @@ export async function pullCommand() {
   fs.mkdirSync(prefsDir, { recursive: true });
   fs.mkdirSync(voiceDir, { recursive: true });
 
-  const youJson = profile.youJson as Record<string, unknown>;
+  const youJson = youJsonSource.youJson as Record<string, unknown>;
   const identity = youJson.identity as Record<string, unknown> || {};
   const bio = identity.bio as Record<string, string> || {};
   const now = youJson.now as Record<string, unknown> || {};
@@ -180,8 +201,8 @@ ${(voice.overall as string) || (analysis.voice_summary as string) || ""}
   console.log(chalk.green("  ✓") + chalk.dim(" you.json"));
 
   // Write you.md
-  if (profile.youMd) {
-    fs.writeFileSync(path.join(bundleDir, "you.md"), profile.youMd);
+  if (youJsonSource.youMd) {
+    fs.writeFileSync(path.join(bundleDir, "you.md"), youJsonSource.youMd);
     filesWritten++;
     console.log(chalk.green("  ✓") + chalk.dim(" you.md"));
   }

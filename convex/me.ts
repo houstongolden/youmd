@@ -54,12 +54,25 @@ export const saveBundleFromForm = mutation({
 
     if (!user) throw new Error("User not found");
 
-    const data = args.profileData as ProfileData;
-    data.username = user.username;
+    const raw = args.profileData as Record<string, unknown>;
 
-    const youJson = compileYouJson(data);
-    const youMd = compileYouMd(data);
-    const manifest = compileManifest(data);
+    // CLI uploads send pre-compiled bundles with _rawBundle: true
+    // Use them directly instead of recompiling (which would shred the data)
+    let youJson: Record<string, unknown>;
+    let youMd: string;
+    let manifest: Record<string, unknown>;
+
+    if (raw._rawBundle) {
+      youJson = (raw.youJson as Record<string, unknown>) ?? {};
+      youMd = (raw.youMd as string) ?? "";
+      manifest = (raw.manifest as Record<string, unknown>) ?? {};
+    } else {
+      const data = raw as unknown as ProfileData;
+      data.username = user.username;
+      youJson = compileYouJson(data);
+      youMd = compileYouMd(data);
+      manifest = compileManifest(data);
+    }
 
     // Get next version
     const existing = await ctx.db
@@ -246,10 +259,22 @@ export const publishLatest = mutation({
     });
 
     // Sync published bundle's youJson/youMd to profiles table so public page is current
-    const profile = await ctx.db
+    let profile = await ctx.db
       .query("profiles")
       .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
       .first();
+
+    // Fallback: look up by username if profile wasn't claimed yet
+    if (!profile) {
+      profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_username", (q) => q.eq("username", user.username))
+        .first();
+      // Auto-claim the profile if found
+      if (profile && !profile.ownerId) {
+        await ctx.db.patch(profile._id, { ownerId: user._id, isClaimed: true, claimedAt: Date.now() });
+      }
+    }
 
     if (profile && latest.youJson) {
       const profileUpdates: Record<string, unknown> = {

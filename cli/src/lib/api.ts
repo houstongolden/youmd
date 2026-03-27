@@ -136,6 +136,8 @@ export interface MeResponse {
     isPublished: boolean;
     createdAt: number;
     publishedAt?: number;
+    youJson?: unknown;
+    youMd?: string;
   } | null;
   publishedBundle: {
     version: number;
