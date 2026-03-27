@@ -269,9 +269,12 @@ export function removeSkill(skillName: string): { ok: boolean; error?: string } 
   setSkillInstalled(catalog, entry.name, false);
   trackSkillEvent(entry.name, "remove");
 
-  // Sync removal to Convex (non-blocking)
+  // Sync removal to Convex (non-blocking, log failures)
   if (isAuthenticated()) {
-    apiRemoveInstall(entry.name).catch(() => {});
+    apiRemoveInstall(entry.name).catch((err) => {
+      // Non-fatal: remote sync failed but local removal succeeded
+      if (process.env.DEBUG) console.error(`[skill sync] remove failed: ${err}`);
+    });
   }
 
   return { ok: true };
@@ -312,9 +315,11 @@ export function useSkill(skillName: string): { ok: boolean; content?: string; re
 
   trackSkillEvent(entry.name, "use");
 
-  // Sync usage to Convex (non-blocking)
+  // Sync usage to Convex (non-blocking, log failures)
   if (isAuthenticated()) {
-    apiTrackUsage(entry.name).catch(() => {});
+    apiTrackUsage(entry.name).catch((err) => {
+      if (process.env.DEBUG) console.error(`[skill sync] usage tracking failed: ${err}`);
+    });
   }
 
   return { ok: true, content: rendered, readiness };
@@ -669,7 +674,9 @@ function syncInstallToRemote(entry: SkillEntry): void {
     source: entry.source,
     scope: entry.scope,
     identityFields: entry.identity_fields,
-  }).catch(() => {});
+  }).catch((err) => {
+    if (process.env.DEBUG) console.error(`[skill sync] install sync failed: ${err}`);
+  });
 }
 
 // ─── Metrics Tracking ─────────────────────────────────────────────────

@@ -1397,19 +1397,34 @@ http.route({
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
 
+    let body: any;
     try {
-      const body = await request.json();
-      if (!body.name || !body.content) {
-        return json({ error: "name and content are required" }, 400);
+      body = await request.json();
+    } catch {
+      return json({ error: "Invalid JSON body" }, 400);
+    }
+
+    try {
+      if (typeof body.name !== "string" || !body.name.trim()) {
+        return json({ error: "name is required (string)" }, 400);
+      }
+      if (typeof body.content !== "string" || !body.content.trim()) {
+        return json({ error: "content is required (string)" }, 400);
+      }
+      if (body.name.length > 100) {
+        return json({ error: "name must be 100 characters or less" }, 400);
+      }
+      if (body.content.length > 50000) {
+        return json({ error: "content must be 50KB or less" }, 400);
       }
 
       const result = await ctx.runMutation(api.skills.publish, {
         clerkId: auth.userId,
-        name: body.name,
-        description: body.description || "",
-        version: body.version || "1.0.0",
-        scope: body.scope || "shared",
-        identityFields: body.identityFields || [],
+        name: body.name.trim(),
+        description: typeof body.description === "string" ? body.description.slice(0, 500) : "",
+        version: typeof body.version === "string" ? body.version.slice(0, 20) : "1.0.0",
+        scope: ["shared", "project", "private"].includes(body.scope) ? body.scope : "shared",
+        identityFields: Array.isArray(body.identityFields) ? body.identityFields.filter((f: unknown) => typeof f === "string").slice(0, 20) : [],
         content: body.content,
       });
 
@@ -1437,18 +1452,24 @@ http.route({
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
 
+    let body: any;
     try {
-      const body = await request.json();
-      if (!body.skillName) {
-        return json({ error: "skillName is required" }, 400);
+      body = await request.json();
+    } catch {
+      return json({ error: "Invalid JSON body" }, 400);
+    }
+
+    try {
+      if (typeof body.skillName !== "string" || !body.skillName.trim()) {
+        return json({ error: "skillName is required (string)" }, 400);
       }
 
       const result = await ctx.runMutation(api.skills.recordInstall, {
         clerkId: auth.userId,
-        skillName: body.skillName,
-        source: body.source || "cli",
-        scope: body.scope || "shared",
-        identityFields: body.identityFields || [],
+        skillName: body.skillName.trim().slice(0, 100),
+        source: typeof body.source === "string" ? body.source.slice(0, 200) : "cli",
+        scope: typeof body.scope === "string" ? body.scope.slice(0, 20) : "shared",
+        identityFields: Array.isArray(body.identityFields) ? body.identityFields.filter((f: unknown) => typeof f === "string").slice(0, 20) : [],
       });
 
       return json(result);
@@ -1472,15 +1493,21 @@ http.route({
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
 
+    let body: any;
     try {
-      const body = await request.json();
-      if (!body.skillName) {
-        return json({ error: "skillName is required" }, 400);
+      body = await request.json();
+    } catch {
+      return json({ error: "Invalid JSON body" }, 400);
+    }
+
+    try {
+      if (typeof body.skillName !== "string" || !body.skillName.trim()) {
+        return json({ error: "skillName is required (string)" }, 400);
       }
 
       const result = await ctx.runMutation(api.skills.trackUsage, {
         clerkId: auth.userId,
-        skillName: body.skillName,
+        skillName: body.skillName.trim(),
       });
 
       return json(result);
@@ -1504,15 +1531,21 @@ http.route({
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
 
+    let body: any;
     try {
-      const body = await request.json();
-      if (!body.skillName) {
-        return json({ error: "skillName is required" }, 400);
+      body = await request.json();
+    } catch {
+      return json({ error: "Invalid JSON body" }, 400);
+    }
+
+    try {
+      if (typeof body.skillName !== "string" || !body.skillName.trim()) {
+        return json({ error: "skillName is required (string)" }, 400);
       }
 
       const result = await ctx.runMutation(api.skills.removeInstall, {
         clerkId: auth.userId,
-        skillName: body.skillName,
+        skillName: body.skillName.trim(),
       });
 
       return json(result);

@@ -1,7 +1,7 @@
 # You.md — Current State
 
-Last Updated: 2026-03-26
-Last Commit: e6955b4 (2026-03-25)
+Last Updated: 2026-03-27
+Last Commit: 4e952ec (2026-03-27)
 
 ---
 
@@ -27,8 +27,10 @@ Last Commit: e6955b4 (2026-03-25)
 - Sources pane with real mutations (add URL, view status, pipeline stats)
 - Files pane with keyboard shortcuts (Cmd+S), markdown preview, create new file
 
-### CLI (youmd v0.4.9 on npm)
-- 20 commands all functional
+### CLI (youmd v0.5.0 — npm publish pending)
+- 21 commands (added `skill` with 19 subcommands)
+- Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
+- CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
 - Conversational AI onboarding with BrailleSpinners, ASCII logo, portrait rendering
 - Email/password auth (no API token required for own account)
 - Chat command with slash commands, project awareness, directive injection
@@ -44,8 +46,8 @@ Last Commit: e6955b4 (2026-03-25)
 - Multi-select UI for platform/tool selection during onboarding
 
 ### Backend (Convex — kindly-cassowary-600)
-- 17-table schema fully deployed
-- 30+ HTTP API endpoints
+- 19-table schema fully deployed (added skills + skillInstalls)
+- 38+ HTTP API endpoints (added 9 skill endpoints)
 - LLM chat proxy (OpenRouter → Claude Sonnet 4.6)
 - Ingestion pipeline (fetch, extract, analyze, compile)
 - LinkedIn scraping via Apify
@@ -146,13 +148,38 @@ MVP now requires account creation before profile building. The "no signup requir
 
 ---
 
+## What Was Built March 27
+
+### Skill System (6 commits)
+- Full skill system: 19 CLI subcommands, Convex registry (2 tables, 9 endpoints), web SkillsPane
+- Identity-aware template engine ({{var}} interpolation from live identity data)
+- 4 bundled skills published to production registry
+- CLI ↔ Convex auto-sync on install/use/remove
+- CLAUDE.md merge, init-project, agent linking (Claude/Cursor/Codex)
+
+### Identity Context Protocol Rebrand (48 files)
+- "identity file" → "identity context protocol" across entire codebase
+- New tagline: "an MCP where the context is you"
+- Agent system prompts updated
+
+### Chat Fixes
+- Fixed duplicate message bug (streaming message was being added twice)
+- Fixed thinking indicator not clearing properly
+- JSON blocks now always stripped from display after streaming
+
+### Web
+- ForDevelopers "for AI builders" landing section (cold start, personalization, API/MCP)
+- SkillsPane dashboard tab with live Convex queries
+- /skills slash command + agent response
+
+---
+
 ## Next Priorities (Houston's Order)
 
-1. **This overhaul** — CLAUDE.md, PRD, ARCHITECTURE, CURRENT_STATE, TODO, feature tracking, memory cleanup
-2. **CLI ↔ Web sync verification** — ensure portraits, images, and all data round-trips correctly
-3. **Agent intelligence** — tune You Agent personality, ensure it acts (not asks), show portraits in chat
-4. **Profile flexibility** — custom sections via conversation, not just default 13 sections
+1. **Chat agent reliability** — slow responses, streaming improvements, session quality
+2. **CLI ↔ Web sync verification** — portraits, images, full data round-trip
+3. **Agent intelligence** — tune personality, ensure it acts (not asks), show portraits in chat
+4. **MCP server** — working MCP endpoint for agent-to-agent identity sharing
 5. **End-to-end flow testing** — full journey from CLI init to web dashboard to agent share
-6. **Remaining design polish** — consistent animations, mobile, text formatting
-7. **Billing + Pro plan** — Stripe integration
-8. **Growth features** — verified badges, analytics, MCP endpoint
+6. **Billing + Pro plan** — Stripe integration
+7. **Growth features** — verified badges, analytics, rate limiting
