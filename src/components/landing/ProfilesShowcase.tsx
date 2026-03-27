@@ -7,6 +7,16 @@ import { sampleProfiles } from "./sampleProfiles";
 import FadeUp from "./FadeUp";
 import AsciiAvatar from "./AsciiAvatar";
 
+function timeAgo(ts: number): string {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 const ProfilesShowcase = () => {
   const featured = sampleProfiles.slice(0, 6);
 
@@ -18,8 +28,7 @@ const ProfilesShowcase = () => {
             -- live on the network --
           </p>
           <p className="text-muted-foreground text-[13px] font-body mb-10">
-            Real identities, always current. Maintained by humans and
-            agents together.
+            every identity here is readable by any AI agent. see who&apos;s on the network.
           </p>
         </FadeUp>
 
@@ -92,7 +101,7 @@ const ProfilesShowcase = () => {
                         reads
                       </span>
                       <span className="text-muted-foreground/50 font-mono text-[9px]">
-                        {profile.freshness.score}/100
+                        {timeAgo(profile.updatedAt)}
                       </span>
                     </div>
 
@@ -115,12 +124,20 @@ const ProfilesShowcase = () => {
                 }{" "}
                 verified
               </span>
-              <Link
-                href="/profiles"
-                className="text-accent/70 hover:text-accent font-mono text-[10px] transition-colors"
-              >
-                &gt; view all
-              </Link>
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/profiles"
+                  className="text-accent/70 hover:text-accent font-mono text-[10px] transition-colors"
+                >
+                  &gt; view all
+                </Link>
+                <Link
+                  href="/create"
+                  className="text-muted-foreground/50 hover:text-accent font-mono text-[10px] transition-colors"
+                >
+                  &gt; build your own
+                </Link>
+              </div>
             </div>
           </div>
         </FadeUp>

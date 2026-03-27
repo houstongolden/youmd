@@ -24,6 +24,7 @@ interface DirectoryEntry {
   projectCount: number;
   nowItems: string[];
   links: Record<string, string>;
+  updatedAt: number | null;
 }
 
 /* ── Profile Card ─────────────────────────────────────────── */
@@ -170,6 +171,7 @@ export function ProfilesDirectoryContent() {
         projectCount: projects?.length ?? 0,
         nowItems: (now || []).slice(0, 2),
         links,
+        updatedAt: ((p as Record<string, unknown>).updatedAt as number | undefined) ?? ((p as Record<string, unknown>).createdAt as number | undefined) ?? null,
       });
     }
   }
@@ -188,6 +190,7 @@ export function ProfilesDirectoryContent() {
         projectCount: 0,
         nowItems: [],
         links: {},
+        updatedAt: null,
       });
     }
   }
@@ -195,9 +198,10 @@ export function ProfilesDirectoryContent() {
   const [search, setSearch] = useState("");
 
   const filteredEntries = useMemo(() => {
-    if (!search.trim()) return entries;
+    const sorted = [...entries].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+    if (!search.trim()) return sorted;
     const q = search.toLowerCase();
-    return entries.filter(
+    return sorted.filter(
       (e) =>
         e.username.toLowerCase().includes(q) ||
         (e.name && e.name.toLowerCase().includes(q)) ||
@@ -279,9 +283,15 @@ export function ProfilesDirectoryContent() {
           {/* No search results */}
           {!isLoading && entries.length > 0 && filteredEntries.length === 0 && (
             <div className="py-12">
-              <span className="text-[hsl(var(--text-secondary))]/50 font-mono text-[12px]">
+              <p className="text-[hsl(var(--text-secondary))]/50 font-mono text-[12px]">
                 no matches for &quot;{search}&quot;
-              </span>
+              </p>
+              <Link
+                href="/create"
+                className="text-[hsl(var(--accent))] font-mono text-[11px] hover:opacity-80 transition-opacity mt-3 inline-block"
+              >
+                &gt; create your own
+              </Link>
             </div>
           )}
 
