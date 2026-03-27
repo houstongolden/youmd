@@ -605,30 +605,34 @@ preferences: terminal-native, monochrome
             </P>
 
             <H3 id="web-cli-sync">Connecting Web + CLI</H3>
+            <P>
+              The CLI uses the same email and password as the web app -- no
+              separate API token needed for your own account.
+            </P>
             <StepList>
               <Step n={1}>Create your profile on either web or CLI</Step>
               <Step n={2}>
-                Get an API key from the dashboard (
-                <InlineCode>/tokens</InlineCode>)
+                <InlineCode>youmd login</InlineCode> -- enter the same email and
+                password you use on the web
               </Step>
               <Step n={3}>
-                <InlineCode>youmd login -k YOUR_KEY</InlineCode> or{" "}
-                <InlineCode>youmd login --web</InlineCode>
-              </Step>
-              <Step n={4}>
                 <InlineCode>youmd pull</InlineCode> downloads your web profile to
                 local files
               </Step>
-              <Step n={5}>Edit files in any editor (Cursor, Obsidian, VS Code)</Step>
-              <Step n={6}>
+              <Step n={4}>Edit files in any editor (Cursor, Obsidian, VS Code)</Step>
+              <Step n={5}>
                 <InlineCode>youmd push</InlineCode> compiles and publishes back
                 to you.md
               </Step>
-              <Step n={7}>
+              <Step n={6}>
                 <InlineCode>youmd sync --watch</InlineCode> auto-syncs on every
                 file save
               </Step>
             </StepList>
+            <Callout type="tip">
+              API keys are for giving OTHER agents and apps access to your data,
+              not for authenticating yourself. Your own CLI uses email/password auth.
+            </Callout>
 
             <H3 id="file-structure">Local File Structure</H3>
             <CodeBlock title=".youmd/">{`.youmd/
@@ -653,16 +657,62 @@ preferences: terminal-native, monochrome
             <P>
               Install globally with <InlineCode>npm i -g youmd</InlineCode> or
               run commands directly with <InlineCode>npx youmd</InlineCode>.
+              The CLI has 20 commands covering the full identity lifecycle.
+            </P>
+
+            <P>
+              <strong className="text-[hsl(var(--text-primary))]">Identity</strong>
             </P>
             <CommandTable
               commands={[
                 {
                   cmd: "youmd init",
-                  desc: "Create your identity bundle (interactive AI onboarding)",
+                  desc: "Conversational AI onboarding -- builds your identity through dialogue",
+                },
+                { cmd: "youmd chat", desc: "Ongoing conversation with the You Agent to evolve your profile" },
+                {
+                  cmd: "youmd build",
+                  desc: "Compile local markdown files into you.json + you.md",
                 },
                 {
+                  cmd: "youmd publish",
+                  desc: "Upload and publish compiled bundle to you.md",
+                },
+                {
+                  cmd: "youmd status",
+                  desc: "Show bundle version, publish status, and auth state",
+                },
+                {
+                  cmd: "youmd diff",
+                  desc: "Show changes between local files and published version",
+                },
+                {
+                  cmd: "youmd export",
+                  desc: "Export you.json and/or you.md to disk (--json, --md, -o path)",
+                },
+                {
+                  cmd: "youmd add TYPE URL",
+                  desc: "Add a source (website, linkedin, x, blog, github)",
+                },
+              ]}
+            />
+
+            <P>
+              <strong className="text-[hsl(var(--text-primary))]">Auth & Sync</strong>
+            </P>
+            <CommandTable
+              commands={[
+                {
                   cmd: "youmd login",
-                  desc: "Authenticate (--web to open browser, -k KEY)",
+                  desc: "Email/password login (or --key KEY, --web to open browser)",
+                },
+                {
+                  cmd: "youmd register",
+                  desc: "Create a new account from the CLI",
+                },
+                {
+                  cmd: "youmd whoami",
+                  desc: "Show current authenticated user",
                 },
                 {
                   cmd: "youmd pull",
@@ -674,71 +724,130 @@ preferences: terminal-native, monochrome
                 },
                 {
                   cmd: "youmd sync",
-                  desc: "Pull + push (--watch for auto-sync on file save)",
-                },
-                { cmd: "youmd chat", desc: "Talk to the you agent" },
-                {
-                  cmd: "youmd build",
-                  desc: "Compile local bundle from profile files",
-                },
-                {
-                  cmd: "youmd publish",
-                  desc: "Publish compiled bundle to you.md",
-                },
-                {
-                  cmd: "youmd status",
-                  desc: "Show bundle and pipeline status",
-                },
-                {
-                  cmd: "youmd whoami",
-                  desc: "Show current authenticated user",
-                },
-                {
-                  cmd: "youmd add TYPE URL",
-                  desc: "Add a source (website, linkedin, x, blog, github)",
-                },
-                {
-                  cmd: "youmd link",
-                  desc: "Manage context links (create, list, revoke)",
-                },
-                {
-                  cmd: "youmd keys",
-                  desc: "Manage API keys (list, create, revoke)",
+                  desc: "Pull + push in one command (--watch for auto-sync on save)",
                 },
               ]}
             />
+
+            <P>
+              <strong className="text-[hsl(var(--text-primary))]">Access & Sharing</strong>
+            </P>
+            <CommandTable
+              commands={[
+                {
+                  cmd: "youmd link create",
+                  desc: "Generate shareable context link (--scope, --ttl, --max-uses)",
+                },
+                { cmd: "youmd link list", desc: "List active context links" },
+                { cmd: "youmd link preview TOKEN", desc: "Preview what an agent sees for a link" },
+                { cmd: "youmd link revoke ID", desc: "Revoke a context link" },
+                {
+                  cmd: "youmd keys list",
+                  desc: "List API keys",
+                },
+                { cmd: "youmd keys create", desc: "Create a new API key" },
+              ]}
+            />
+
+            <P>
+              <strong className="text-[hsl(var(--text-primary))]">Memory & Context</strong>
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "youmd memories list", desc: "List saved memories" },
+                { cmd: "youmd memories add CATEGORY \"content\"", desc: "Add a memory (fact, preference, goal, etc.)" },
+                { cmd: "youmd memories stats", desc: "Memory count by category" },
+                { cmd: "youmd private", desc: "View all private context" },
+                { cmd: "youmd private notes set", desc: "Set private notes (stdin or interactive)" },
+                { cmd: "youmd private notes append \"text\"", desc: "Append to private notes" },
+                { cmd: "youmd private projects add NAME", desc: "Add a private project" },
+                { cmd: "youmd project init NAME", desc: "Initialize project-specific context" },
+                { cmd: "youmd project list", desc: "List known projects" },
+              ]}
+            />
+
             <Callout type="info">
-              The <InlineCode>init</InlineCode> command runs a conversational AI
-              onboarding -- it asks about your work, projects, values, and
-              preferences, then builds your identity file automatically.
+              The <InlineCode>init</InlineCode> and <InlineCode>chat</InlineCode>{" "}
+              commands are interactive and use a conversational AI agent. They
+              need a regular terminal (not inside Claude Code). All other
+              commands are non-interactive.
             </Callout>
 
             {/* ── API ──────────────────────────────────────── */}
             <H2 id="api">API</H2>
             <P>
-              You.md exposes HTTP endpoints for programmatic access to identity
-              context.
+              You.md has 30+ HTTP endpoints for programmatic access. All
+              authenticated endpoints use Bearer token auth with{" "}
+              <InlineCode>ym_</InlineCode> prefixed API keys.
             </P>
 
             <H3 id="public-endpoints">Public Endpoints</H3>
-            <CodeBlock title="HTTP">{`# Fetch a public profile
-GET /api/v1/profiles?username=houston
+            <CodeBlock title="HTTP">{`# Fetch a public profile (JSON)
+GET /api/v1/profiles?username=houstongolden
 
-# Public context (agent-readable, plain text)
-GET /ctx/[username]
+# List all profiles
+GET /api/v1/profiles
 
-# JSON context
-GET /ctx/[username].json`}</CodeBlock>
+# Check username availability
+GET /api/v1/check-username?username=newuser
+
+# Resolve a context link (plain text for agents)
+GET /ctx/{username}/{token}
+
+# Register a new account
+POST /api/v1/auth/register
+{ "email": "...", "password": "...", "username": "...", "name": "..." }
+
+# Login
+POST /api/v1/auth/login
+{ "email": "...", "password": "..." }`}</CodeBlock>
             <P>
-              Context links at <InlineCode>/ctx/[username]</InlineCode> return a
-              plain-text identity block optimized for AI consumption. Agents can
-              fetch this URL directly.
+              Context links at <InlineCode>/ctx/username/token</InlineCode>{" "}
+              return identity bundles optimized for AI consumption. Use
+              scope &quot;full&quot; to include private context.
             </P>
 
             <H3 id="authenticated-endpoints">Authenticated Endpoints</H3>
-            <P>For private context, include an access token:</P>
-            <CodeBlock title="HTTP">{`GET /ctx/[username]?scope=private
-Authorization: Bearer your_access_token`}</CodeBlock>
+            <P>
+              Include your API key as a Bearer token. Generate keys from the
+              dashboard (<InlineCode>/settings</InlineCode>) or via CLI (
+              <InlineCode>youmd keys create</InlineCode>).
+            </P>
+            <CodeBlock title="HTTP">{`Authorization: Bearer ym_your_api_key_here
+
+# Your profile
+GET  /api/v1/me
+
+# Bundle management
+POST /api/v1/me/bundle          # Save bundle
+POST /api/v1/me/publish         # Publish latest
+
+# Sources
+GET  /api/v1/me/sources         # List connected sources
+POST /api/v1/me/sources         # Add a source URL
+
+# Memories
+GET  /api/v1/me/memories        # List (optional: ?category=fact&limit=10)
+POST /api/v1/me/memories        # Save from external agent
+
+# Context links
+POST /api/v1/me/context-links   # Create
+GET  /api/v1/me/context-links   # List
+DELETE /api/v1/me/context-links # Revoke
+
+# Private context
+GET  /api/v1/me/private         # Read private data
+POST /api/v1/me/private         # Update private data
+
+# LLM Chat
+POST /api/v1/chat               # Non-streaming
+POST /api/v1/chat/stream        # SSE streaming
+
+# Enrichment
+POST /api/v1/scrape             # Scrape a URL
+POST /api/v1/research           # Web research via Perplexity
+POST /api/v1/enrich-x           # X/Twitter enrichment
+POST /api/v1/enrich-linkedin    # LinkedIn enrichment`}</CodeBlock>
 
             {/* ── Privacy ──────────────────────────────────── */}
             <H2 id="privacy">Privacy</H2>

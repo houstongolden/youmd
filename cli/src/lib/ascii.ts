@@ -85,58 +85,29 @@ export async function renderAsciiPortrait(
 }
 
 /**
- * The YOU logo from the homepage — rendered as block characters in the terminal.
- * Uses the same pixel font data as the web PixelYOU component.
+ * The YOU logo — large, clean block art inspired by the Vercel PLUGINS banner.
+ * Brand is just "YOU" — not "YOU.MD". The .md is the format, not the brand.
  */
-const FONT: Record<string, number[][]> = {
-  Y: [
-    [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
-    [0, 1, 0, 1, 0],
-    [0, 0, 1, 0, 0],
-    [0, 0, 1, 0, 0],
-    [0, 0, 1, 0, 0],
-    [0, 0, 1, 0, 0],
-  ],
-  O: [
-    [0, 1, 1, 1, 0],
-    [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
-    [0, 1, 1, 1, 0],
-  ],
-  U: [
-    [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
-    [0, 1, 1, 1, 0],
-  ],
-};
+
+const LOGO_LINES = [
+  "  ██╗   ██╗   ██████╗   ██╗   ██╗",
+  "  ╚██╗ ██╔╝  ██╔═══██╗  ██║   ██║",
+  "   ╚████╔╝   ██║   ██║  ██║   ██║",
+  "    ╚██╔╝    ██║   ██║  ██║   ██║",
+  "     ██║     ╚██████╔╝  ╚██████╔╝",
+  "     ╚═╝      ╚═════╝    ╚═════╝ ",
+];
 
 export function printYouLogo(): void {
-  const letters = ["Y", "O", "U"];
-  const rows = 7;
-  const cellChar = "\u2588"; // Full block █
-  const emptyChar = " ";
+  const dim = chalk.dim;
 
   console.log("");
 
-  for (let row = 0; row < rows; row++) {
-    let line = "  ";
-    for (let li = 0; li < letters.length; li++) {
-      const letter = FONT[letters[li]];
-      for (let col = 0; col < 5; col++) {
-        line += letter[row][col] ? ACCENT(cellChar + cellChar) : emptyChar + emptyChar;
-      }
-      if (li < letters.length - 1) line += "  "; // gap between letters
-    }
-    console.log(line);
+  for (const line of LOGO_LINES) {
+    console.log(ACCENT(line));
   }
 
+  console.log(dim("  ──────────────────────────────────"));
+  console.log(dim("  you.md") + dim(" — identity for the agent internet"));
   console.log("");
 }
