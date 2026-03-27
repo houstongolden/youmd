@@ -250,7 +250,7 @@ export function decompileBundle(youJson: any, youMd: string): VirtualFile[] {
     path: "FOLDER.md",
     content: `# you.md/${username} — Directory Structure
 
-This is a you-md/v1 identity bundle. It contains structured context
+This is a you-md/v1 identity context protocol. It contains structured context
 about who you are, what you do, and how you communicate.
 
 ## Directory Layout

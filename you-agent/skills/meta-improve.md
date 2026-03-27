@@ -8,7 +8,7 @@ description: "Self-improvement protocol — agents review their own effectivenes
 
 # meta-improve
 
-The feedback loop that makes your identity smarter over time. Agents review what worked and what didn't, then propose updates to your identity bundle.
+The feedback loop that makes your identity smarter over time. Agents review what worked and what didn't, then propose updates to your identity context.
 
 ## Identity Context (resolved at review time)
 

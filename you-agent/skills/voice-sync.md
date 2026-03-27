@@ -18,7 +18,7 @@ Keep your voice profile in sync across every agent tool you use. When your voice
 
 ## What This Skill Does
 
-1. Read your current voice profile from the identity bundle
+1. Read your current voice profile from the identity context
 2. Generate agent-specific voice instructions for:
    - **Claude Code** (.claude/skills/youmd/voice.md)
    - **Cursor** (.cursor/rules/youmd-voice.md)

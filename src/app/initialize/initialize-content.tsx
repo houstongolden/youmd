@@ -246,7 +246,7 @@ function OnboardingTerminal() {
   const onboardingGreeting = `${profileContext}\n\nthe user just signed up and claimed the username "${username}". this is their first time here.
 
 instructions for this greeting:
-1. greet them warmly by username. introduce yourself in one sentence — you're the you.md agent, you help build identity files for the agent internet.
+1. greet them warmly by username. introduce yourself in one sentence — you're the you.md agent, you help build identity context protocols for the agent internet.
 2. immediately ask for their x (twitter) or github username so you can generate their ascii portrait. say something like: "first things first — drop me your x or github username and i'll generate your ascii portrait. it's your identity in code."
 3. be genuinely curious and specific, not generic. make them feel like this is going to be a real conversation, not a form.
 4. keep it to 3-4 sentences max. no lists. no "here's what we'll do" — just start the conversation.

@@ -6,7 +6,7 @@ const CONVEX_SITE_URL =
 
 /**
  * GET /[username]/you.txt — Plain text endpoint for agent access.
- * Returns the you.md markdown identity file without requiring JS execution.
+ * Returns the you.md markdown identity context without requiring JS execution.
  */
 export async function GET(
   _request: NextRequest,

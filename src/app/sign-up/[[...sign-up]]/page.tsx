@@ -110,7 +110,7 @@ export default function SignUpPage() {
     // Clerk will validate the username, and createUser will check both tables
     addLine("checking username availability...", "text-[hsl(var(--text-secondary))] opacity-50");
 
-    addLine("initializing identity bundle...", "text-[hsl(var(--text-secondary))] opacity-50");
+    addLine("initializing identity context...", "text-[hsl(var(--text-secondary))] opacity-50");
 
     try {
       const result = await signUp.password({

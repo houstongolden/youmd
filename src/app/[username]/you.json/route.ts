@@ -6,7 +6,7 @@ const CONVEX_SITE_URL =
 
 /**
  * GET /[username]/you.json — Direct JSON endpoint for agent access.
- * Returns the full you.json identity bundle without requiring JS execution.
+ * Returns the full you.json identity context without requiring JS execution.
  */
 export async function GET(
   _request: NextRequest,

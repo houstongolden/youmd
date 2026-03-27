@@ -2,7 +2,7 @@
  * Skill renderer — identity-aware template interpolation.
  *
  * Resolves {{var}} template variables in skill markdown against
- * the user's live identity bundle data.
+ * the user's live identity context data.
  *
  * Variable paths use dot notation:
  *   {{voice.overall}}       → preferences/voice.md or profile section

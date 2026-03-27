@@ -111,7 +111,7 @@ export const sampleProfiles: Profile[] = [
     coverUrl: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=300&fit=crop",
     bio: {
       short: "Founder building identity infrastructure for the agent internet.",
-      medium: "Founded BAMF Media (8-figure growth agency), LinkedIn growth pioneer. Now building You.md \u2014 the identity file standard for the agent internet. I ship fast and build in public.",
+      medium: "Founded BAMF Media (8-figure growth agency), LinkedIn growth pioneer. Now building You.md \u2014 the identity context protocol for the agent internet. I ship fast and build in public.",
     },
     now: ["Building You.md", "Scaling BAMF Media", "Refining identity protocol"],
     projects: [
@@ -182,7 +182,7 @@ export const sampleProfiles: Profile[] = [
     },
     recentChanges: [
       "Refreshed voice profile",
-      "Republished identity bundle v1.3",
+      "Republished identity context v1.3",
       "Connected GitHub + LinkedIn OAuth",
       "Updated project metadata",
       "Synced latest YouTube activity",
@@ -191,9 +191,9 @@ export const sampleProfiles: Profile[] = [
     publicSections: ["identity", "projects", "values", "voice summary", "current focus"],
     privateSections: ["preferences", "internal context", "working notes", "private memory"],
     activity: [
-      { date: "2026-03-18", action: "agent_read", detail: "claude-code accessed identity bundle" },
+      { date: "2026-03-18", action: "agent_read", detail: "claude-code accessed identity context" },
       { date: "2026-03-18", action: "updated", detail: "Synced LinkedIn activity via OAuth" },
-      { date: "2026-03-17", action: "published", detail: "Updated identity bundle to v1.3" },
+      { date: "2026-03-17", action: "published", detail: "Updated identity context to v1.3" },
       { date: "2026-03-15", action: "connected", detail: "Connected GitHub OAuth source" },
       { date: "2026-03-12", action: "updated", detail: "Added new project: You.md" },
       { date: "2026-03-08", action: "initialized", detail: "Created you.md/houstong" },
@@ -468,7 +468,7 @@ export const sampleProfiles: Profile[] = [
     publicSections: ["identity", "projects", "values", "technical writing"],
     privateSections: ["RFC drafts", "internal architecture notes", "book manuscript"],
     activity: [
-      { date: "2026-03-17", action: "agent_read", detail: "aider accessed identity bundle" },
+      { date: "2026-03-17", action: "agent_read", detail: "aider accessed identity context" },
       { date: "2026-03-17", action: "updated", detail: "Added book project to profile" },
       { date: "2026-03-13", action: "published", detail: "Updated agent preferences" },
       { date: "2026-03-07", action: "connected", detail: "Linked Aider agent" },
@@ -655,7 +655,7 @@ export const sampleProfiles: Profile[] = [
     publicSections: ["identity", "projects", "values", "tutorials"],
     privateSections: ["talk proposals", "internal docs strategy", "sponsor rates"],
     activity: [
-      { date: "2026-03-18", action: "agent_read", detail: "cursor accessed identity bundle" },
+      { date: "2026-03-18", action: "agent_read", detail: "cursor accessed identity context" },
       { date: "2026-03-18", action: "updated", detail: "Added React Conf keynote to Now" },
       { date: "2026-03-14", action: "published", detail: "Updated agent preferences" },
       { date: "2026-03-10", action: "connected", detail: "Connected YouTube OAuth source" },

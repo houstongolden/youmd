@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 /**
- * Context links — shareable URLs that return identity bundles.
+ * Context links — shareable URLs that return identity context.
  * GET /ctx/:username/:token returns public or full bundle depending on scope.
  */
 
