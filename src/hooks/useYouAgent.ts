@@ -158,6 +158,11 @@ export const BUNDLE_SECTIONS = [
   "preferences/agent.md",
   "preferences/writing.md",
   "directives/agent.md",
+  // Source profile scrapes
+  "sources/linkedin",
+  "sources/github",
+  "sources/x",
+  "sources/website",
 ] as const;
 
 const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
@@ -2637,6 +2642,28 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
           setThinkingPhrase(randomThinking("analysis"));
           setThinkingCategory("analysis");
+
+          // Auto-save scrape results as source files (sources/linkedin.md, etc.)
+          const sourceUpdates: SectionUpdate[] = [];
+          for (let i = 0; i < newSources.length; i++) {
+            const result = scrapeResults[i];
+            if (result && result.length > 50) {
+              const platform = newSources[i].platform;
+              const slug = `sources/${platform}`;
+              // Format as markdown with frontmatter
+              const md = `---\ntitle: "${platform} profile"\nscraped_at: "${new Date().toISOString()}"\nplatform: "${platform}"\n---\n\n${result}`;
+              sourceUpdates.push({ section: slug, content: md });
+            }
+          }
+          if (sourceUpdates.length > 0 && user?.id) {
+            const saveSourceStepId = addStep("saving source profiles");
+            try {
+              await saveUpdates(sourceUpdates);
+              completeStep(saveSourceStepId, `${sourceUpdates.length} source${sourceUpdates.length > 1 ? "s" : ""} saved`);
+            } catch {
+              failStep(saveSourceStepId, "save failed");
+            }
+          }
         }
       }
 
