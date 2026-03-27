@@ -1014,6 +1014,73 @@ async function remoteStatusCmd(): Promise<void> {
   console.log("");
 }
 
+function exportSkillsCmd(args: string[]): void {
+  const outputDir = args[0] || path.join(process.cwd(), "youmd-skills");
+  const catalog = readSkillCatalog();
+  const installed = catalog.skills.filter((s) => s.installed);
+
+  if (installed.length === 0) {
+    console.log("");
+    console.log(DIM("  no skills installed to export."));
+    console.log("");
+    return;
+  }
+
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  console.log("");
+  let exported = 0;
+  for (const entry of installed) {
+    const skillFile = readSkillFile(entry.name);
+    if (!skillFile) continue;
+
+    // Export the raw SKILL.md
+    const outPath = path.join(outputDir, `${entry.name}.md`);
+    const raw = fs.readFileSync(
+      path.join(require("os").homedir(), ".youmd", "skills", entry.name, "SKILL.md"),
+      "utf-8"
+    );
+    fs.writeFileSync(outPath, raw);
+
+    // Also export the rendered version
+    const renderedPath = path.join(
+      require("os").homedir(), ".youmd", "skills", entry.name, "RENDERED.md"
+    );
+    if (fs.existsSync(renderedPath)) {
+      fs.writeFileSync(
+        path.join(outputDir, `${entry.name}.rendered.md`),
+        fs.readFileSync(renderedPath, "utf-8")
+      );
+    }
+
+    console.log(`  ${chalk.green("\u2713")} ${entry.name}`);
+    exported++;
+  }
+
+  // Write catalog.yaml
+  const yaml = require("js-yaml");
+  const exportCatalog = {
+    version: 1,
+    exported: new Date().toISOString(),
+    skills: installed.map((s) => ({
+      name: s.name,
+      description: s.description,
+      version: s.version,
+      scope: s.scope,
+      identity_fields: s.identity_fields,
+    })),
+  };
+  fs.writeFileSync(
+    path.join(outputDir, "catalog.yaml"),
+    yaml.dump(exportCatalog, { lineWidth: 120, noRefs: true })
+  );
+
+  console.log("");
+  console.log(chalk.green(`  exported ${exported} skills to ${outputDir}/`));
+  console.log(DIM("  share this directory or publish individual skills."));
+  console.log("");
+}
+
 // ─── Main command router ──────────────────────────────────────────────
 
 export async function skillCommand(subcommand?: string, ...args: string[]): Promise<void> {
@@ -1076,6 +1143,9 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
     case "cloud":
       await remoteStatusCmd();
       break;
+    case "export":
+      exportSkillsCmd(args);
+      break;
     default: {
       const catalog = readSkillCatalog();
       const installed = catalog.skills.filter((s) => s.installed);
@@ -1127,6 +1197,7 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       console.log(`    ${chalk.cyan("browse".padEnd(28))} ${DIM("browse the public skill registry")}`);
       console.log(`    ${chalk.cyan("publish <name>".padEnd(28))} ${DIM("publish a skill to the registry")}`);
       console.log(`    ${chalk.cyan("remote".padEnd(28))} ${DIM("show skills synced to your you.md account")}`);
+      console.log(`    ${chalk.cyan("export [dir]".padEnd(28))} ${DIM("export all installed skills to a directory")}`);
       console.log("");
       console.log(DIM("  skills are identity-aware markdown templates."));
       console.log(DIM("  {{voice.overall}} and {{preferences.agent}} resolve from your bundle."));

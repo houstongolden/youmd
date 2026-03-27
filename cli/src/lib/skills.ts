@@ -538,6 +538,16 @@ export function initProject(): {
     detail: linkResult.error || linkResult.path,
   });
 
+  // Step 5: Also link to Cursor if .cursor/ exists
+  if (fs.existsSync(path.join(cwd, ".cursor"))) {
+    const cursorResult = linkToAgent("cursor");
+    steps.push({
+      name: "link .cursor/rules/youmd.md",
+      ok: cursorResult.ok,
+      detail: cursorResult.error || cursorResult.path,
+    });
+  }
+
   return { ok: steps.every((s) => s.ok), steps };
 }
 
