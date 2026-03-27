@@ -15,6 +15,52 @@ export function MessageBubble({ message, isLatest = false }: MessageBubbleProps)
     const isUpdate = content.startsWith("[updated:") || content.startsWith("[saved") || content.startsWith("[published");
     const isScraping = content.startsWith("[scraping:");
     const isError = content.includes("failed") || content.includes("ERR");
+    const isShareBlock = content.includes("context link created") && content.includes("---");
+
+    // Share artifact — special rendering with copy CTA button
+    if (isShareBlock) {
+      const shareMatch = content.match(/---\n([\s\S]*?)\n---/);
+      const shareContent = shareMatch?.[1] || "";
+      const headerText = content.split("---")[0].trim();
+      const footerText = content.split("---").slice(2).join("---").trim();
+
+      return (
+        <div className="space-y-2">
+          <div
+            className="px-3 py-1.5 text-xs font-mono text-[hsl(var(--success))] bg-[hsl(var(--success))]/5 border border-[hsl(var(--success))]/15"
+            style={{ borderRadius: "2px" }}
+          >
+            {headerText}
+          </div>
+          {shareContent && (
+            <div className="border border-[hsl(var(--accent))]/20 bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-[hsl(var(--border))]">
+                <span className="font-mono text-[9px] text-[hsl(var(--accent))]/60 uppercase tracking-wider">
+                  agent prompt + context link
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(shareContent).catch(() => {});
+                  }}
+                  className="font-mono text-[10px] text-[hsl(var(--accent))] border border-[hsl(var(--accent))]/30 px-2.5 py-1 hover:bg-[hsl(var(--accent))]/10 transition-colors cursor-pointer"
+                  style={{ borderRadius: "2px" }}
+                >
+                  copy prompt
+                </button>
+              </div>
+              <div className="px-3 py-2 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-70 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                {shareContent}
+              </div>
+            </div>
+          )}
+          {footerText && (
+            <div className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 px-1">
+              {footerText}
+            </div>
+          )}
+        </div>
+      );
+    }
 
     return (
       <div
