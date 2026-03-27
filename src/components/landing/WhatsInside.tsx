@@ -94,7 +94,7 @@ const TypewriterCode = () => {
         <div className="terminal-dot" />
         <div className="terminal-dot" />
         <span className="ml-2 text-muted-foreground/50 font-mono text-[10px]">
-          you.md identity bundle
+          you.md identity context
         </span>
       </div>
       <div className="p-5">

@@ -1,7 +1,7 @@
 # Skill: Identity Building
 
 ## Description
-Guide a user through creating their complete you-md/v1 identity bundle via natural conversation. This is the core skill — the thing that makes You.md feel different from every other profile tool.
+Guide a user through creating their complete you-md/v1 identity context via natural conversation. This is the core skill — the thing that makes You.md feel different from every other profile tool.
 
 ## Trigger
 - CLI: `youmd init`
@@ -21,7 +21,7 @@ Guide a user through creating their complete you-md/v1 identity bundle via natur
 
 ### Phase 1: First Contact
 - Greet by name/username
-- Introduce yourself: "i'm the you.md agent. i help people build their identity file for the agent internet."
+- Introduce yourself: "i'm the you.md agent. i help people build their identity context protocol for the agent internet."
 - Ask what they do — be specific: "not the linkedin version. the real version. what gets you out of bed?"
 
 ### Phase 2: Context Gathering

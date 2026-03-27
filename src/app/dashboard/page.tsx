@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Dashboard — you.md",
   description:
-    "Manage your identity file, edit your profile, and configure your agent preferences.",
+    "Manage your identity context, edit your profile, and configure your agent preferences.",
   robots: {
     index: false,
     follow: false,

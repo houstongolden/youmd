@@ -68,7 +68,7 @@ export async function generateMetadata({
     ? `${tagline}${bio ? ` — ${bio.slice(0, 120)}` : ""}`
     : bio
       ? bio.slice(0, 200)
-      : `${name}'s identity file for the agent internet on you.md`;
+      : `${name}'s identity context on you.md`;
   const avatarUrl = data?._profile?.avatarUrl || data?.social_images?.github || data?.social_images?.x || "";
   const location = data?.identity?.location || "";
   const firstName = name.split(" ")[0];

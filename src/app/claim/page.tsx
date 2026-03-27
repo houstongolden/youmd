@@ -4,11 +4,11 @@ import { redirect } from "next/navigation";
 export const metadata: Metadata = {
   title: "Claim Your Username — you.md",
   description:
-    "Claim your unique username on the you.md network. Your identity file for the agent internet.",
+    "Claim your unique username on the you.md network. Your identity protocol for the agent internet.",
   openGraph: {
     title: "Claim Your Username — you.md",
     description:
-      "Claim your unique username on the you.md network. Your identity file for the agent internet.",
+      "Claim your unique username on the you.md network. Your identity protocol for the agent internet.",
     url: "https://you.md/claim",
     siteName: "you.md",
     type: "website",
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Claim Your Username — you.md",
     description:
-      "Claim your unique username on the you.md network. Your identity file for the agent internet.",
+      "Claim your unique username on the you.md network. Your identity protocol for the agent internet.",
   },
 };
 

@@ -663,7 +663,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                 <p className="text-[hsl(var(--accent))]">GET you.md/{username}/you.json</p>
                 <p className="text-[hsl(var(--accent))] opacity-70">GET you.md/{username}/you.txt</p>
                 <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">preferred retrieval order:</p>
-                <p className="text-[hsl(var(--text-secondary))] opacity-70">1. /{username}/you.json -- structured identity bundle</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-70">1. /{username}/you.json -- structured identity context</p>
                 <p className="text-[hsl(var(--text-secondary))] opacity-70">2. /{username}/you.txt -- plain text markdown</p>
                 <p className="text-[hsl(var(--text-secondary))] opacity-70">3. /{username} -- HTML profile (requires JS)</p>
                 {voice && (
@@ -731,7 +731,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                   className="text-[10px] font-mono px-2.5 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
                 />
                 <a
-                  href={`https://x.com/intent/tweet?text=${encodeURIComponent(`my identity file for the agent internet: https://you.md/${username}`)}`}
+                  href={`https://x.com/intent/tweet?text=${encodeURIComponent(`my identity context for the agent internet: https://you.md/${username}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[10px] font-mono px-2.5 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
@@ -779,7 +779,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         {!isOwner && (
           <motion.div {...delay(12)} className="mt-12 text-center">
             <p className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40">
-              want your own identity file?{" "}
+              want your own identity context?{" "}
               <Link href="/create" className="text-[hsl(var(--accent))] opacity-80 hover:opacity-100 transition-opacity">
                 &gt; create yours
               </Link>

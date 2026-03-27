@@ -139,7 +139,7 @@ export function compileYouJson(data: ProfileData): Record<string, unknown> {
 
     // Agent navigation guide — tells agents where to find specific context
     agent_guide: {
-      summary: "this is a you-md/v1 identity bundle. use it to understand who this person is before working with them.",
+      summary: "this is a you-md/v1 identity context protocol. use it to understand who this person is before working with them.",
       quick_context: [
         "identity.bio.short — one-line summary",
         "now.focus — what they're working on right now",
@@ -275,7 +275,7 @@ generated_at: ${now}
   // Footer with agent navigation guide
   sections.push(`---
 
-> **For agents**: this is a you-md/v1 identity bundle.
+> **For agents**: this is a you-md/v1 identity context protocol.
 > Quick context: check identity.bio.short, now.focus, and preferences.agent.
 > For writing help: check voice section and preferences.writing.
 > Full structured data: see you.json. Directory: see manifest.json.`);

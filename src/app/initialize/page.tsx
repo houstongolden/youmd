@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Initialize — you.md",
   description:
-    "Set up your identity file for the agent internet. Guided onboarding for your you.md profile.",
+    "Set up your identity context for the agent internet. Guided onboarding for your you.md profile.",
   robots: {
     index: false,
     follow: false,

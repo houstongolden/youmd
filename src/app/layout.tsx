@@ -18,21 +18,21 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "you.md — Your identity file for the agent internet",
+  title: "you.md — Identity context protocol for the agent internet",
   description:
-    "Claim your identity. Onboard any AI in seconds. The structured, portable identity bundle that gives every agent context about who you are.",
+    "An MCP where the context is you. The identity protocol that gives every AI agent full context about who you are — zero-setup onboarding across every tool.",
   openGraph: {
-    title: "you.md — Identity as Code",
+    title: "you.md — Identity Context Protocol",
     description:
-      "Your identity file for the agent internet. Onboard any AI in seconds.",
+      "An MCP where the context is you. Zero-setup agent onboarding across every tool.",
     siteName: "you.md",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "you.md — Identity as Code",
+    title: "you.md — Identity Context Protocol",
     description:
-      "Your identity file for the agent internet. Onboard any AI in seconds.",
+      "An MCP where the context is you. Zero-setup agent onboarding across every tool.",
   },
 };
 

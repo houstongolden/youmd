@@ -96,7 +96,7 @@ const CliPill = () => {
 
 /* -- CLI commands list -- */
 const commands = [
-  ["you init", "create your identity bundle"],
+  ["you init", "create your identity context"],
   ["you sync", "pull from linkedin / github / x"],
   ["you publish", "go live at you.md/username"],
   ["you share", "give any agent your context"],
@@ -168,11 +168,11 @@ const Hero = () => {
               className="font-mono text-[11px] leading-relaxed text-muted-foreground/60 mb-6 max-w-sm"
             >
               <p>
-                help agents find you, know you, work with you --
-                instantly.
+                an mcp where the context is you. agents get full
+                context about who you are -- instantly.
               </p>
               <p className="mt-1">
-                one file. public or private context. scoped,
+                public profile + private file system. scoped,
                 shareable, managed via cli.
               </p>
             </motion.div>

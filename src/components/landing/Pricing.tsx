@@ -47,7 +47,7 @@ const Pricing = () => (
             </div>
             <div className="space-y-2 font-mono text-[11px] text-muted-foreground mb-5">
               <p>
-                {"  "}&check; Full identity bundle -- generated
+                {"  "}&check; Full identity context -- generated
                 locally via CLI
               </p>
               <p>
@@ -110,7 +110,7 @@ const Pricing = () => (
             </div>
             <div className="space-y-2 font-mono text-[11px] text-muted-foreground mb-5">
               <p>
-                {"  "}&rsaquo; Unlimited auto-syncs -- your identity
+                {"  "}&rsaquo; Unlimited auto-syncs -- your context
                 stays fresh across every tool
               </p>
               <p>
@@ -123,10 +123,10 @@ const Pricing = () => (
               </p>
               <p>
                 {"  "}&rsaquo; Version history -- revert any change,
-                see how your identity evolved
+                see how your context evolved
               </p>
               <p>
-                {"  "}&rsaquo; Custom domain -- host your identity
+                {"  "}&rsaquo; Custom domain -- host your context
                 at your own URL
               </p>
               <p>
@@ -153,7 +153,7 @@ const Pricing = () => (
 
       <FadeUp delay={0.15}>
         <p className="text-muted-foreground/60 font-mono text-[10px] text-center mt-10">
-          you pay for features, not for being yourself. core identity is always free.
+          you pay for features, not for being yourself. core identity context is always free.
         </p>
       </FadeUp>
     </div>

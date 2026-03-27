@@ -371,16 +371,16 @@ export default function DocsContent() {
               </p>
               <H1>you.md</H1>
               <P>
-                The identity file for the agent internet. A structured, portable
-                identity bundle that gives every AI agent context about who you
-                are.
+                The identity context protocol for the agent internet. An MCP where
+                the context is you -- giving every AI agent full context about who
+                you are.
               </P>
             </div>
 
             {/* ── Getting Started ──────────────────────────── */}
             <H2 id="getting-started">Getting Started</H2>
             <P>
-              you.md creates a persistent identity context that any AI agent can
+              you.md is an identity context protocol that any AI agent can
               read. Think of it as a{" "}
               <InlineCode>.env</InlineCode> file for your identity -- your bio,
               projects, values, communication style, and preferences, all in one
@@ -797,7 +797,7 @@ POST /api/v1/auth/login
 { "email": "...", "password": "..." }`}</CodeBlock>
             <P>
               Context links at <InlineCode>/ctx/username/token</InlineCode>{" "}
-              return identity bundles optimized for AI consumption. Use
+              return identity context optimized for AI consumption. Use
               scope &quot;full&quot; to include private context.
             </P>
 
@@ -912,7 +912,7 @@ POST /api/v1/enrich-linkedin    # LinkedIn enrichment`}</CodeBlock>
             {/* Footer */}
             <div className="border-t border-[hsl(var(--border))] mt-16 pt-8 flex items-center justify-between">
               <span className="text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
-                you.md -- the identity file for the agent internet
+                you.md -- identity context protocol for the agent internet
               </span>
               <Link
                 href="/create"

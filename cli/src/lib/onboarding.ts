@@ -51,11 +51,11 @@ const SPINNER_LABELS = {
     "indexing your online persona",
   ],
   compile: [
-    "assembling your identity bundle",
+    "assembling your identity context",
     "weaving your narrative thread",
     "crystallizing who you are",
-    "forging your identity file",
-    "encoding your identity bundle",
+    "forging your identity context",
+    "encoding your identity protocol",
     "compiling your context mosaic",
   ],
   research: [
@@ -127,7 +127,7 @@ async function showAsciiLogo(): Promise<void> {
     await delay(100);
   }
   console.log("");
-  console.log("  " + chalk.dim("the identity file for the agent internet"));
+  console.log("  " + chalk.dim("identity context protocol — an MCP where the context is you"));
   console.log("");
 }
 
@@ -232,7 +232,7 @@ const THINKING_PHRASES = [
   "profiling your creative output",
   "charting your professional constellation",
   "rendering you in agent-speak",
-  "encoding your identity bundle",
+  "encoding your identity context",
   "absorbing your origin story",
   "discovering what makes you tick",
   "mapping your values system",
@@ -299,7 +299,7 @@ const BUNDLE_SECTIONS = [
 
 type BundleSection = (typeof BUNDLE_SECTIONS)[number];
 
-const SYSTEM_PROMPT = `you are the you.md agent. you help humans build their identity file for the agent internet. you are their first AI that truly knows them. not a chatbot. not an assistant. an identity specialist with a personality.
+const SYSTEM_PROMPT = `you are the you.md agent. you help humans build their identity context protocol for the agent internet — an MCP where the context is you. you are their first AI that truly knows them. not a chatbot. not an assistant. an identity specialist with a personality.
 
 --- voice ---
 
@@ -334,7 +334,7 @@ remember everything in this conversation. reference specific things with exact d
 - connect new information to old: "that tracks with what you said about [specific thing]"
 - never ask for information they already gave you.
 
---- building a you-md/v1 identity bundle ---
+--- building a you-md/v1 identity context ---
 
 sections:
 - profile/about.md — bio, background, narrative
@@ -352,7 +352,7 @@ your job:
    \`\`\`json
    {"updates": [{"section": "profile/about.md", "content": "...markdown content..."}]}
    \`\`\`
-4. keep the conversation going until you have enough for a rich identity bundle
+4. keep the conversation going until you have enough for a rich identity context
 5. you handle all file editing — the user never touches markdown
 6. reference specific things you learned about them
 7. if someone shares links, scrape them immediately — don't ask
@@ -754,7 +754,7 @@ function showBundlePreview(bundleDir: string): { fileCount: number; filledCount:
   let filledCount = 0;
 
   console.log("");
-  console.log("  " + chalk.bold("your identity bundle:"));
+  console.log("  " + chalk.bold("your identity context:"));
   console.log("");
 
   const sections = [

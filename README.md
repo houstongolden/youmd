@@ -1,6 +1,6 @@
 # `you.md`
 
-**Your identity file for the agent internet.**
+**Identity context protocol for the agent internet — an MCP where the context is you.**
 
 Claim your username. Build your profile from the CLI. Instantly give every AI agent on earth the context to know you, work with you, and represent you accurately.
 
@@ -14,7 +14,7 @@ Every time you use a new AI tool, you re-explain yourself. Your tone, your role,
 
 ## The Solution
 
-You.md is a structured, portable identity bundle that agents can consume directly. Written in `.md` — the native format of agent instructions. Served via API endpoints designed for retrieval-augmented generation.
+You.md is a structured, portable identity context protocol that agents can consume directly. Written in `.md` — the native format of agent instructions. Served via API endpoints designed for retrieval-augmented generation.
 
 ```
 agent.md  — the agent's instructions
@@ -31,7 +31,7 @@ You.md completes the handshake.
 ```bash
 npm install -g youmd
 
-youmd init          # Create a local identity bundle
+youmd init          # Create a local identity context
 youmd build         # Compile your bundle
 youmd publish       # Push to you.md/<username>
 ```
@@ -43,7 +43,7 @@ Visit [you.md](https://you.md) to claim your username and build your profile thr
 ## How It Works
 
 1. **Claim** your username at `you.md/<yourname>`
-2. **Build** your identity bundle — bio, projects, values, agent preferences
+2. **Build** your identity context — bio, projects, values, agent preferences
 3. **Share** via URL, context link, or API. Any agent can read your `you.json` instantly
 
 ## Open Spec: `you-md/v1`
@@ -145,4 +145,4 @@ MIT
 
 ---
 
-Built by [Houston Golden](https://houstongolden.com). Identity as code.
+Built by [Houston Golden](https://houstongolden.com). Identity context protocol.

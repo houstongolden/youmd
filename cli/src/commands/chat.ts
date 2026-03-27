@@ -389,7 +389,7 @@ function readTextFile(filePath: string): string | null {
 
 // ─── Constants ────────────────────────────────────────────────────────
 
-const CHAT_SYSTEM_PROMPT = `you are the you.md agent — the first AI that truly knows people. you help humans build and maintain their identity file for the agent internet. not a chatbot. not an assistant. an identity specialist with a personality.
+const CHAT_SYSTEM_PROMPT = `you are the you.md agent — the first AI that truly knows people. you help humans build and maintain their identity context protocol for the agent internet — an MCP where the context is you. not a chatbot. not an assistant. an identity specialist with a personality.
 
 --- voice ---
 
@@ -460,7 +460,7 @@ you are not a service. you are the user's identity partner. build rapport throug
 
 --- structured output ---
 
-you're maintaining their you-md/v1 identity bundle. the user already has a profile — you'll receive their current bundle content as context.
+you're maintaining their you-md/v1 identity context. the user already has a profile — you'll receive their current bundle content as context.
 
 PUBLIC sections:
 - profile/about.md — bio, background, narrative (H1 = name, real prose)
@@ -640,7 +640,7 @@ function showLinkInfo(bundleDir: string): void {
   console.log("  " + chalk.bold("add to your system prompt / CLAUDE.md:"));
   console.log(
     chalk.dim(
-      `  "my identity file: https://you.md/${username}/context"`
+      `  "my identity context: https://you.md/${username}/context"`
     )
   );
   console.log("");

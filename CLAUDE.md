@@ -2,7 +2,7 @@
 
 ## What This Project Is
 
-You.md is the identity file for the agent internet. A structured, portable identity bundle that gives every AI agent context about who you are — so they don't start from scratch.
+You.md is the identity context protocol for the agent internet — an MCP where the context is you. A structured, portable identity context that gives every AI agent context about who you are — so they don't start from scratch.
 
 **Domain:** you.md | **npm:** youmd | **Founder:** Houston Golden
 

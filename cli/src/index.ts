@@ -27,12 +27,12 @@ const program = new Command();
 
 program
   .name("youmd")
-  .description("your identity file for the agent internet")
+  .description("identity context protocol for the agent internet — an MCP where the context is you")
   .version("0.4.6");
 
 program
   .command("init")
-  .description("Initialize a local .youmd/ identity bundle (interactive)")
+  .description("Initialize a local .youmd/ identity context (interactive)")
   .option("--skip-prompts", "Skip interactive prompts and create empty bundle")
   .action(initCommand);
 

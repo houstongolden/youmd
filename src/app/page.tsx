@@ -9,27 +9,28 @@ import WhatsInside from "@/components/landing/WhatsInside";
 import PortraitSection from "@/components/landing/PortraitSection";
 import OpenSpec from "@/components/landing/OpenSpec";
 import Integrations from "@/components/landing/Integrations";
+import ForDevelopers from "@/components/landing/ForDevelopers";
 import FAQ from "@/components/landing/FAQ";
 import Pricing from "@/components/landing/Pricing";
 import CTAFooter from "@/components/landing/CTAFooter";
 
 export const metadata: Metadata = {
-  title: "you.md — Your identity file for the agent internet",
+  title: "you.md — Identity context protocol for the agent internet",
   description:
-    "Claim your identity. Onboard any AI in seconds. The structured, portable identity bundle that gives every agent context about who you are.",
+    "An MCP where the context is you. The identity protocol that gives every AI agent full context about who you are — zero-setup onboarding across every tool.",
   openGraph: {
-    title: "you.md — Identity as Code",
+    title: "you.md — Identity Context Protocol",
     description:
-      "Your identity file for the agent internet. Onboard any AI in seconds.",
+      "An MCP where the context is you. Zero-setup agent onboarding across every tool.",
     url: "https://you.md",
     siteName: "you.md",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "you.md — Identity as Code",
+    title: "you.md — Identity Context Protocol",
     description:
-      "Your identity file for the agent internet. Onboard any AI in seconds.",
+      "An MCP where the context is you. Zero-setup agent onboarding across every tool.",
   },
   alternates: {
     canonical: "https://you.md",
@@ -49,6 +50,7 @@ export default function Home() {
       <PortraitSection />
       <OpenSpec />
       <Integrations />
+      <ForDevelopers />
       <FAQ />
       <Pricing />
       <CTAFooter />

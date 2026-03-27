@@ -7,23 +7,23 @@ import FadeUp from "./FadeUp";
 const faqs = [
   {
     q: "what is you.md exactly?",
-    a: "a structured identity file that gives AI agents context about who you are. your name, projects, values, preferences, voice -- all in one portable bundle any agent can read.",
+    a: "an identity context protocol -- an MCP where the context is you. your name, projects, values, preferences, voice -- structured so any agent can onboard instantly.",
   },
   {
     q: "how is this different from a system prompt?",
-    a: "system prompts are per-tool, per-session, and forgotten. you.md is persistent, portable, and works across every agent. write once, share everywhere.",
+    a: "system prompts are per-tool, per-session, and forgotten. you.md is a protocol -- persistent, portable, and works across every agent. write once, share everywhere.",
   },
   {
-    q: "what data does my bundle include?",
+    q: "what data does my identity context include?",
     a: "your public profile (bio, projects, values, links), voice analysis (how you write), agent directives (how you want AI to talk to you), and optionally private context for trusted agents.",
   },
   {
     q: "is my data private?",
-    a: "you control everything. public profiles live at you.md/username. private context requires scoped tokens. you can self-host with youmd export. your API keys are hashed, never stored raw.",
+    a: "you control everything. public profiles live at you.md/username. private context requires scoped tokens. you can self-host with youmd export. API keys are hashed, never stored raw.",
   },
   {
     q: "do i need to sign up?",
-    a: "yes, but it takes 30 seconds. sign up with email + password, then the AI builds your identity through conversation. your data is encrypted and you control who sees what.",
+    a: "yes, but it takes 30 seconds. sign up with email + password, then the AI builds your identity context through conversation. your data is encrypted and you control who sees what.",
   },
   {
     q: "which agents work with you.md?",
@@ -31,7 +31,7 @@ const faqs = [
   },
   {
     q: "what's the you/v1 spec?",
-    a: "an open protocol for structured identity bundles. plain markdown files that compile to JSON. no vendor lock-in. fork it, self-host it, build on it.",
+    a: "an open protocol for structured identity context. plain markdown files that compile to JSON. no vendor lock-in. fork it, self-host it, build on it.",
   },
   {
     q: "is there an API?",

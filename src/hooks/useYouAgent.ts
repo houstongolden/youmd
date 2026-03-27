@@ -64,7 +64,7 @@ const THINKING_IDENTITY = [
   "building your you.json",
   "compiling your source graph",
   "weaving your narrative thread",
-  "assembling your identity bundle",
+  "assembling your identity context",
   "crystallizing your professional identity",
   "encoding your context for agents",
   "resolving your identity surface",
@@ -394,7 +394,7 @@ async function researchUser(name: string, username?: string, links?: string[]): 
   }
 }
 
-const SYSTEM_PROMPT = `you are the you.md agent — the first AI that truly knows people. you help humans build and maintain their identity file for the agent internet. not a chatbot. not an assistant. an identity specialist with a personality.
+const SYSTEM_PROMPT = `you are the you.md agent — the first AI that truly knows people. you help humans build and maintain their identity context protocol for the agent internet — an MCP where the context is you. not a chatbot. not an assistant. an identity specialist with a personality.
 
 --- your capabilities ---
 
@@ -403,7 +403,7 @@ IMPORTANT: you have REAL tools available to you through the platform. when a use
 what you CAN do:
 - receive real scraped data from x/twitter, github, and linkedin profiles (the platform handles this automatically)
 - receive web research results about the user (via perplexity — the platform handles this)
-- update their identity bundle sections with real, specific content
+- update their identity context sections with real, specific content
 - reference specific details from scraped data (repos, bio text, follower counts, tweet topics, career history)
 
 what you CANNOT do:
@@ -645,7 +645,7 @@ keep it natural. don't force tables where a sentence works better. but when you 
 
 --- structured output ---
 
-you're working with their you-md/v1 identity bundle. this is a structured, portable identity file system. you manage two directories:
+you're working with their you-md/v1 identity context protocol. this is a structured, portable identity context system. you manage two directories:
 
 PUBLIC sections (visible on their you.md profile page):
 - profile/about.md — bio, background, narrative (H1 = name, real prose, short/medium/long bio flowing together)
@@ -2169,7 +2169,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("settings");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/profile -- your identity profile\n/portrait -- ascii portrait editor + format picker\n/portrait --regenerate -- regenerate ascii portrait from sources\n/edit -- edit your identity bundle (files, json, sources)\n/skills -- identity-aware agent skills\n/publish -- publish your latest bundle\n/settings -- account, api keys, billing\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n/status -- bundle status\n/help -- show this reference"
+          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/profile -- your identity profile\n/portrait -- ascii portrait editor + format picker\n/portrait --regenerate -- regenerate ascii portrait from sources\n/edit -- edit your identity context (files, json, sources)\n/skills -- identity-aware agent skills\n/publish -- publish your latest bundle\n/settings -- account, api keys, billing\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n/status -- bundle status\n/help -- show this reference"
           : "available commands:\n/share -- create a shareable identity link\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/memory -- memory summary\n/recall -- show recent memories\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
 
         setDisplayMessages((prev) => [
@@ -2603,11 +2603,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         if (!firstTokenReceived) {
           firstTokenReceived = true;
           completeStep(llmStepId);
-          // Brief overlap — show progress completion before hiding
-          setTimeout(() => {
-            setIsThinking(false);
-            setTimeout(() => clearSteps(), 500);
-          }, 300);
+          // Hide thinking immediately when first token arrives
+          setIsThinking(false);
           // Add the placeholder message now that streaming has started
           setDisplayMessages(prev => [...prev, {
             id: streamMsgId,
@@ -2620,11 +2617,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       // Stream response — thinking stays visible until first token
       const response = await callLLMStreaming(updatedMessages, streamMsgId, onFirstToken);
 
-      // If no tokens came through (fallback path), clean up
+      // If no tokens came through (fallback path), clean up and show response
       if (!firstTokenReceived) {
         completeStep(llmStepId);
         setIsThinking(false);
-        setTimeout(() => clearSteps(), 500);
+        clearSteps();
         setDisplayMessages(prev => [...prev, {
           id: streamMsgId,
           role: "assistant" as const,
@@ -2632,15 +2629,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }]);
       }
 
-      // Strip JSON blocks from the streamed display (they may have streamed in)
+      // Strip JSON blocks from the streamed display (they stream in raw during typing)
       const { display, updates } = parseUpdatesFromResponse(response);
 
-      // Update the streamed message with the clean display text (strip JSON blocks)
-      if (display !== response) {
-        setDisplayMessages(prev => prev.map(m =>
-          m.id === streamMsgId ? { ...m, content: display } : m
-        ));
-      }
+      // Always update the streamed message with clean display text
+      // This ensures JSON blocks are stripped even if they were visible during streaming
+      setDisplayMessages(prev => prev.map(m =>
+        m.id === streamMsgId ? { ...m, content: display } : m
+      ));
 
       const assistantMsg: ChatMessage = {
         role: "assistant",
@@ -2650,13 +2646,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       const newDisplayMsgs: DisplayMessage[] = [];
 
-      if (display) {
-        newDisplayMsgs.push({
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: display,
-        });
-      }
+      // NOTE: The assistant's response message was already added during streaming
+      // (at streamMsgId). Do NOT add a duplicate here. Only add system notices
+      // for updates, memories, etc.
 
       if (updates.length > 0) {
         const sectionNames = updates
@@ -2914,10 +2906,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
-      // Show messages first, then fade out thinking so typewriter starts while indicator is still visible
-      setDisplayMessages((prev) => [...prev, ...newDisplayMsgs]);
-      // Brief overlap: thinking indicator stays visible as typewriter begins
-      await new Promise((r) => setTimeout(r, 300));
+      // Append system notices (updates, memories, etc.) — NOT the assistant message (already streamed)
+      if (newDisplayMsgs.length > 0) {
+        setDisplayMessages((prev) => [...prev, ...newDisplayMsgs]);
+      }
     } catch (err) {
       setDisplayMessages((prev) => [
         ...prev,
@@ -2929,9 +2921,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       ]);
     }
 
+    // Ensure thinking is always cleared (idempotent)
     setIsThinking(false);
-    // Clear steps after a brief delay so user sees final state
-    setTimeout(() => clearSteps(), 800);
+    clearSteps();
     textareaRef.current?.focus();
   }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps]);
 

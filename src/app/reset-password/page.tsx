@@ -3,10 +3,10 @@ import ResetPasswordContent from "./reset-content";
 
 export const metadata: Metadata = {
   title: "Reset Password — you.md",
-  description: "Reset your you.md password and regain access to your identity file.",
+  description: "Reset your you.md password and regain access to your identity.",
   openGraph: {
     title: "Reset Password — you.md",
-    description: "Reset your you.md password and regain access to your identity file.",
+    description: "Reset your you.md password and regain access to your identity.",
     url: "https://you.md/reset-password",
     siteName: "you.md",
     type: "website",
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Reset Password — you.md",
-    description: "Reset your you.md password and regain access to your identity file.",
+    description: "Reset your you.md password and regain access to your identity.",
   },
 };
 

@@ -58,7 +58,7 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     icon: "[*]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Fetch this URL and read my identity context before we start:\n${url}\n\nIt returns plain text (not HTML) with my bio, projects, values, preferences, and communication style.\n\nIf the URL above fails to load, use one of these direct endpoints instead:\n- JSON: ${b.json}\n- Plain text: ${b.txt}\n\n${RESPONSE_DIRECTIVE}`;
+      return `Fetch this URL and load my identity context before we start:\n${url}\n\nIt returns plain text (not HTML) -- my you.md identity context with bio, projects, values, preferences, and communication style.\n\nIf the URL above fails to load, use one of these direct endpoints instead:\n- JSON: ${b.json}\n- Plain text: ${b.txt}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
   {
@@ -66,7 +66,7 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     icon: "[cl]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Before responding, fetch and read my identity context from this URL:\n${b.txt}\n\nThe URL returns plain text (not a webpage). It's my you.md identity bundle.\n\nAlternative endpoint (JSON): ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
+      return `Before responding, fetch and read my identity context from this URL:\n${b.txt}\n\nThe URL returns plain text (not a webpage). It's my you.md identity context.\n\nAlternative endpoint (JSON): ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
   {
@@ -74,7 +74,7 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     icon: "[gp]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Before we begin, browse to this URL and read my you.md profile:\n${b.txt}\n\nThis returns a plain-text identity file (not a webpage).\n\nIf that URL doesn't load, try the JSON version: ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
+      return `Before we begin, browse to this URL and read my you.md identity context:\n${b.txt}\n\nThis returns plain text (not a webpage) -- my identity context protocol.\n\nIf that URL doesn't load, try the JSON version: ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
   {
@@ -82,7 +82,7 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     icon: "[gm]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Fetch this URL and read my identity context before we start:\n${b.txt}\n\nThis is a plain-text endpoint (not a webpage) that returns my you.md identity file.\n\nAlternative URL (JSON format): ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
+      return `Fetch this URL and read my identity context before we start:\n${b.txt}\n\nThis is a plain-text endpoint (not a webpage) that returns my you.md identity context.\n\nAlternative URL (JSON format): ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
   {
@@ -90,7 +90,7 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     icon: "[|>]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Fetch this URL and add it to your context — my developer identity:\n${b.txt}\n\nIt returns plain text with my tech stack, projects, coding preferences, and communication style.\n\nJSON endpoint: ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
+      return `Fetch this URL and load my developer identity context:\n${b.txt}\n\nIt returns plain text with my tech stack, projects, coding preferences, and communication style.\n\nJSON endpoint: ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
   {
@@ -98,7 +98,7 @@ const PROMPT_TEMPLATES: { agent: string; icon: string; prompt: (url: string) => 
     icon: "[cp]",
     prompt: (url) => {
       const b = backupUrls(url);
-      return `Fetch this URL and read my developer context before assisting:\n${b.txt}\n\nThis returns a plain-text identity file with my projects, preferred technologies, and coding style.\n\nJSON endpoint: ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
+      return `Fetch this URL and read my developer identity context before assisting:\n${b.txt}\n\nThis returns plain-text identity context with my projects, preferred technologies, and coding style.\n\nJSON endpoint: ${b.json}\n\n${RESPONSE_DIRECTIVE}`;
     },
   },
 ];

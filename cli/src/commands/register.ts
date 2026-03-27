@@ -143,7 +143,7 @@ export async function registerCommand(): Promise<void> {
     console.log("  key:   " + apiKey.slice(0, 8) + "..." + apiKey.slice(-4));
     console.log("");
     console.log(
-      "  run " + ACCENT("youmd init") + " to build your identity file"
+      "  run " + ACCENT("youmd init") + " to build your identity context"
     );
     console.log(
       "  or  " + ACCENT("youmd chat") + " to talk to the You agent"

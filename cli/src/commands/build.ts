@@ -7,10 +7,10 @@ import { BrailleSpinner } from "../lib/render";
 import { computeContentHash, shortHash } from "../lib/hash";
 
 const BUILD_SPINNERS = [
-  "assembling your identity bundle",
+  "assembling your identity context",
   "weaving your narrative thread",
   "crystallizing who you are",
-  "forging your identity file",
+  "forging your identity context",
   "encoding your context mosaic",
   "compiling your digital twin",
 ];
@@ -35,7 +35,7 @@ export async function buildCommand(): Promise<void> {
   const isFirstBuild = !fs.existsSync(path.join(bundleDir, "manifest.json"));
 
   console.log("");
-  console.log("  " + chalk.bold("you.md") + chalk.dim(" -- building identity bundle"));
+  console.log("  " + chalk.bold("you.md") + chalk.dim(" -- building identity context"));
   console.log("");
 
   // Show a personality spinner while compiling

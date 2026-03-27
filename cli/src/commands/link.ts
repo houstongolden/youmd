@@ -55,7 +55,7 @@ export async function linkCommand(
       console.log("  youmd link preview <token>     preview what the agent sees");
       console.log("  youmd link revoke --id <linkId>");
       console.log("");
-      console.log("Context links are shareable URLs that give agents access to your identity bundle.");
+      console.log("Context links are shareable URLs that give agents access to your identity context.");
       console.log("");
       break;
   }

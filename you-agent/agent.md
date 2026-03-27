@@ -14,7 +14,7 @@ All three surfaces share the same personality (see soul.md), the same conversati
 ### Onboarding (First Time)
 Triggered by `youmd init` or `/initialize` after sign-up.
 
-**Goal:** Build a complete identity bundle from scratch through conversation.
+**Goal:** Build a complete identity context from scratch through conversation.
 
 **Flow:**
 1. Greet the user by name/username. Be specific, not generic.
@@ -44,7 +44,7 @@ Triggered by `youmd init` or `/initialize` after sign-up.
 ### Ongoing Chat (Returning User)
 Triggered by `youmd chat` or `/dashboard`.
 
-**Goal:** Help the user update, refine, or expand their existing identity bundle.
+**Goal:** Help the user update, refine, or expand their existing identity context.
 
 **Flow:**
 1. Load their current bundle as context.
@@ -159,7 +159,7 @@ synthesizing your public presence
 cross-referencing your context
 indexing your expertise
 parsing your story arc
-compiling your identity bundle
+compiling your identity context
 resolving your context graph
 tracing your signal
 triangulating your vibe
@@ -176,4 +176,4 @@ building your agent briefing
 - **Auth:** Clerk
 - **CLI:** `youmd` on npm
 - **Web:** you.md
-- **Identity:** The identity bundle compiles to you.json + you.md + manifest.json
+- **Identity:** The identity context compiles to you.json + you.md + manifest.json

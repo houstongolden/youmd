@@ -7,9 +7,9 @@
 // System context shared across all prompts
 // ---------------------------------------------------------------------------
 
-const SYSTEM_CONTEXT = `You are an identity extraction and analysis engine for You.md, an open identity protocol (you-md/v1).
+const SYSTEM_CONTEXT = `You are an identity extraction and analysis engine for You.md, the identity context protocol for the agent internet (you-md/v1).
 
-You.md is a structured identity bundle that agents consume directly — authoritative, current, and controlled by the person it represents. The spec includes:
+You.md is a structured identity context protocol that agents consume directly — authoritative, current, and controlled by the person it represents. The spec includes:
 - you.json: machine-readable structured identity
 - you.md: human-readable markdown entry file
 - manifest.json: directory map and permissions

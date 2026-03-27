@@ -28,14 +28,14 @@ const SAMPLE_PROFILES: SeedProfile[] = [
     location: "Miami, FL",
     bio: {
       short:
-        "Founder building identity infrastructure for the agent internet.",
+        "Founder building the identity context protocol for the agent internet.",
       medium:
-        "Founded BAMF Media (8-figure growth agency), LinkedIn growth pioneer. Now building You.md \u2014 the identity file standard for the agent internet. I ship fast and build in public.",
+        "Founded BAMF Media (8-figure growth agency), LinkedIn growth pioneer. Now building You.md \u2014 the identity context protocol for the agent internet. I ship fast and build in public.",
     },
     now: [
       "Building You.md",
       "Scaling BAMF Media",
-      "Refining identity protocol",
+      "Refining identity context protocol",
     ],
     projects: [
       {

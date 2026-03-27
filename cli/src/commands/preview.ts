@@ -18,6 +18,6 @@ export function previewCommand(options: { port?: string }): void {
   console.log("");
   console.log(chalk.yellow("preview server is not yet implemented"));
   console.log("");
-  console.log("This will start a local server at " + chalk.cyan("http://localhost:" + port) + " to preview your identity bundle.");
+  console.log("This will start a local server at " + chalk.cyan("http://localhost:" + port) + " to preview your identity context.");
   console.log("");
 }
