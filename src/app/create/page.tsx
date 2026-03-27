@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { CreateContent } from "./create-content";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Create Your Identity — you.md",
   description:
