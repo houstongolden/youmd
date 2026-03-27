@@ -1581,6 +1581,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   }, []);
 
   // Streaming LLM call — streams tokens into a display message in real-time
+  // Uses requestAnimationFrame batching to avoid excessive React re-renders
   const callLLMStreaming = useCallback(async (
     msgs: ChatMessage[],
     displayMessageId: string,
@@ -1593,16 +1594,12 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: msgs }),
-        signal: AbortSignal.timeout(90_000),
+        signal: AbortSignal.timeout(60_000), // 60s — fail faster than 90s
       });
 
       if (!res.ok || !res.body) {
-        // Fall back to non-streaming
-        onFirstToken?.();
+        // Fall back to non-streaming (DON'T call onFirstToken — let caller handle)
         const fallback = await callLLM(msgs);
-        setDisplayMessages(prev => prev.map(m =>
-          m.id === displayMessageId ? { ...m, content: fallback } : m
-        ));
         return fallback;
       }
 
@@ -1611,6 +1608,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       let fullText = "";
       let buffer = "";
       let notifiedFirstToken = false;
+      let rafPending = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1620,6 +1618,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
 
+        let textAdded = false;
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6).trim();
@@ -1628,31 +1627,40 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           try {
             const parsed = JSON.parse(data);
             if (parsed.text) {
-              // Notify on first token — triggers thinking indicator dismissal
               if (!notifiedFirstToken) {
                 notifiedFirstToken = true;
                 onFirstToken?.();
               }
               fullText += parsed.text;
-              // Update the display message with streamed content
-              setDisplayMessages(prev => prev.map(m =>
-                m.id === displayMessageId ? { ...m, content: fullText } : m
-              ));
+              textAdded = true;
             }
           } catch {
-            // Skip unparseable chunks
+            // Unparseable SSE chunk — skip
           }
+        }
+
+        // Batch display updates via requestAnimationFrame to reduce React re-renders
+        if (textAdded && !rafPending) {
+          rafPending = true;
+          const currentText = fullText;
+          requestAnimationFrame(() => {
+            rafPending = false;
+            setDisplayMessages(prev => prev.map(m =>
+              m.id === displayMessageId ? { ...m, content: currentText } : m
+            ));
+          });
         }
       }
 
+      // Final update to ensure all text is displayed
+      setDisplayMessages(prev => prev.map(m =>
+        m.id === displayMessageId ? { ...m, content: fullText } : m
+      ));
+
       return fullText || "";
     } catch {
-      // Fall back to non-streaming on any error
-      onFirstToken?.();
+      // Fall back to non-streaming on any error (DON'T call onFirstToken)
       const fallback = await callLLM(msgs);
-      setDisplayMessages(prev => prev.map(m =>
-        m.id === displayMessageId ? { ...m, content: fallback } : m
-      ));
       return fallback;
     }
   }, [callLLM]);
