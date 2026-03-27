@@ -10,13 +10,13 @@ export interface Profile {
 
 export const sampleProfiles: Profile[] = [
   {
-    username: "houstong",
+    username: "houstongolden",
     name: "Houston Golden",
-    tagline: "Founder, BAMF Media. Building You.md.",
+    tagline: "Founder. Building identity infrastructure for the agent internet.",
     avatarUrl: "/assets/houston-portrait.jpeg",
     verification: { verified: true },
     agentMetrics: { totalReads: 12842 },
-    freshness: { score: 92 },
+    freshness: { score: 96 },
   },
   {
     username: "priya",
