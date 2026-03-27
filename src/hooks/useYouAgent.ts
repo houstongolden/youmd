@@ -149,21 +149,38 @@ const THINKING_ALL = [
   ...THINKING_BUILDING,
 ];
 
+// Known section paths (exact match)
 export const BUNDLE_SECTIONS = [
   "profile/about.md",
   "profile/now.md",
   "profile/projects.md",
   "profile/values.md",
   "profile/links.md",
+  "profile/skills.md",
+  "profile/experience.md",
   "preferences/agent.md",
   "preferences/writing.md",
+  "preferences/tools.md",
   "directives/agent.md",
-  // Source profile scrapes
   "sources/linkedin",
   "sources/github",
   "sources/x",
   "sources/website",
 ] as const;
+
+// Prefixes that allow dynamic sub-paths (projects/*, skills/*, etc.)
+const BUNDLE_SECTION_PREFIXES = [
+  "projects/",
+  "skills/",
+  "sources/",
+  "private/",
+] as const;
+
+/** Check if a section path is valid (exact match OR starts with allowed prefix) */
+export function isValidSection(section: string): boolean {
+  if ((BUNDLE_SECTIONS as readonly string[]).includes(section)) return true;
+  return BUNDLE_SECTION_PREFIXES.some(prefix => section.startsWith(prefix));
+}
 
 const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
 
@@ -700,6 +717,21 @@ title: "Agent Directives"
 ## Current Goal
 [what they're focused on right now]
 
+PROJECT SUBDIRECTORIES — when you detect or learn about a user's projects, create a subdirectory for each one under projects/:
+projects/{project-slug}/README.md — project overview, status, stack
+projects/{project-slug}/context.md — agent-specific context for working on this project
+projects/{project-slug}/todo.md — task tracking
+projects/{project-slug}/prd.md — product requirements (if applicable)
+
+the project slug should be lowercase, hyphenated (e.g., "you-md", "bamf-ai", "hubify").
+output project files using the same JSON update format with section paths like "projects/you-md/README.md".
+
+SOURCE PROFILES — when scraping social profiles, results auto-save to:
+sources/linkedin — full LinkedIn profile data
+sources/github — GitHub profile and repos
+sources/x — X/Twitter profile via Grok analysis
+sources/website — scraped website content
+
 CUSTOM SECTIONS — the profile is NOT limited to the standard sections above. if a user wants a section for speaking engagements, investment thesis, reading list, tech stack details, or ANYTHING else — create it. use the custom_sections format:
 \`\`\`json
 {"custom_sections": [{"id": "speaking", "title": "Speaking", "content": "markdown content here"}]}
@@ -890,7 +922,7 @@ export function parseUpdatesFromResponse(text: string): {
           u &&
           typeof u.section === "string" &&
           typeof u.content === "string" &&
-          (BUNDLE_SECTIONS as readonly string[]).includes(u.section as string)
+          isValidSection(u.section as string)
       );
     } catch {
       // Failed to parse JSON updates

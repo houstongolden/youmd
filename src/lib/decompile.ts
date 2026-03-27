@@ -227,8 +227,17 @@ export function decompileBundle(youJson: any, youMd: string): VirtualFile[] {
     { path: "private/context.md", content: "---\ntitle: Private Context\nvisibility: private\n---\n\n# Private Context\n\nAdditional context for trusted agents: priorities, preferences, working style details.\n", section: "private.context", editable: true },
     { path: "private/calendar.md", content: "---\ntitle: Calendar Context\nvisibility: private\n---\n\n# Calendar Context\n\nAvailability signals, meeting preferences, timezone.\n", section: "private.calendar", editable: true },
 
+    // Directives
+    { path: "directives/agent.md", content: "---\ntitle: Agent Directives\n---\n\n# Agent Directives\n\nRules and constraints for how agents should behave with you.\n\n- act decisively, don't ask permission\n- be direct, no fluff\n", section: "directives.agent", editable: true },
+
+    // Sources (scraped social profiles — auto-populated by the agent)
+    { path: "sources/README.md", content: "---\ntitle: Sources Directory\n---\n\n# Sources\n\nScraped social profile data. Auto-populated when the agent scrapes your LinkedIn, GitHub, X, or website.\nEach platform gets its own file: sources/linkedin.md, sources/github.md, etc.\n", section: "sources.index", editable: false },
+
     // Projects (individual project directories)
-    { path: "projects/README.md", content: "---\ntitle: Projects Directory\n---\n\n# Projects\n\nEach project can have its own directory with context files.\nCreate a folder per project: projects/project-name/\n", section: "projects.index", editable: true },
+    { path: "projects/README.md", content: "---\ntitle: Projects Directory\n---\n\n# Projects\n\nEach project gets its own subdirectory with context files.\nStructure: projects/{project-name}/README.md, prd.md, todo.md, etc.\n", section: "projects.index", editable: true },
+
+    // Skills
+    { path: "skills/README.md", content: "---\ntitle: Skills Directory\n---\n\n# Skills\n\nIdentity-aware agent skills installed via CLI.\nManaged by: youmd skill install, youmd skill sync\n\nBundled skills: claude-md-generator, project-context-init, voice-sync, meta-improve\n", section: "skills.index", editable: false },
 
     // Memory
     { path: "memory/index.md", content: "---\ntitle: Memory Index\n---\n\n# Memory\n\nAgent memories and learned context. Managed automatically.\n", section: "memory", editable: false },
@@ -259,10 +268,25 @@ about who you are, what you do, and how you communicate.
 profile/        public identity (bio, projects, values, links, skills)
 preferences/    how agents should interact with you (tone, tools, writing)
 voice/          platform-specific communication styles
+directives/     rules and constraints for agent behavior
+sources/        scraped social profiles (linkedin, github, x, website)
+projects/       per-project subdirectories with context files
+skills/         identity-aware agent skills (managed via CLI)
 private/        owner-only context (never shared publicly)
-projects/       individual project directories
 memory/         agent-learned context (auto-managed)
 sessions/       conversation history
+\`\`\`
+
+## Project Structure
+
+Each project gets its own subdirectory:
+\`\`\`
+projects/
+  {project-name}/
+    README.md       project overview
+    prd.md          product requirements
+    todo.md         task tracking
+    context.md      project-specific agent context
 \`\`\`
 
 ## Visibility
@@ -270,8 +294,11 @@ sessions/       conversation history
 - **profile/** — always public, readable by any agent
 - **preferences/** — public, guides agent behavior
 - **voice/** — public, helps agents write like you
+- **directives/** — public, rules agents must follow
+- **sources/** — private, raw scraped data from social profiles
+- **projects/** — public by default, can contain private subdirectories
+- **skills/** — public, agent skill definitions
 - **private/** — NEVER public, only shared via scoped tokens
-- **projects/** — public by default, can be scoped private
 - **memory/** — private, auto-managed by the agent
 - **sessions/** — private, conversation logs
 
@@ -279,7 +306,9 @@ sessions/       conversation history
 
 Read this file first. Check profile/about.md for identity context.
 Check preferences/agent.md for communication preferences.
+Check directives/agent.md for behavioral rules.
 Check voice/ for platform-specific writing style.
+Check sources/ for raw social profile data.
 
 Full structured data: see you.json
 `,
@@ -297,8 +326,9 @@ Full structured data: see you.json
       generated_at: youJson?.generated_at || new Date().toISOString(),
       compiler_version: youJson?.meta?.compiler_version || "0.2.0",
       paths: {
-        public: allPaths.filter((p) => !p.startsWith("private/") && !p.startsWith("memory/") && !p.startsWith("sessions/")),
+        public: allPaths.filter((p) => !p.startsWith("private/") && !p.startsWith("memory/") && !p.startsWith("sessions/") && !p.startsWith("sources/")),
         private: allPaths.filter((p) => p.startsWith("private/")),
+        sources: allPaths.filter((p) => p.startsWith("sources/")),
         managed: allPaths.filter((p) => p.startsWith("memory/") || p.startsWith("sessions/")),
       },
     }, null, 2),
