@@ -8,15 +8,19 @@ const bundleTree = [
   { path: "profile/about.md", indent: 1, type: "file" as const, desc: "who you are" },
   { path: "profile/now.md", indent: 1, type: "file" as const, desc: "what you're working on" },
   { path: "profile/projects.md", indent: 1, type: "file" as const, desc: "your portfolio" },
-  { path: "profile/stack.md", indent: 1, type: "file" as const, desc: "tools + languages" },
-  { path: "preferences/agent.md", indent: 1, type: "file" as const, desc: "how agents should behave" },
+  { path: "preferences/agent.md", indent: 1, type: "file" as const, desc: "how agents should talk to you" },
+  { path: "voice/voice.md", indent: 1, type: "file" as const, desc: "your communication style" },
+  { path: "directives/agent.md", indent: 1, type: "file" as const, desc: "rules agents must follow" },
+  { path: "private/notes.md", indent: 1, type: "file" as const, desc: "context only you control" },
+  { path: "skills/", indent: 1, type: "dir" as const, desc: "agent skills that travel with you" },
   { path: "you.json", indent: 1, type: "file" as const, desc: "compiled structured data" },
   { path: "you.md", indent: 1, type: "file" as const, desc: "human-readable identity" },
 ];
 
 const principles = [
   "plain markdown files",
-  "compile to JSON",
+  "compile to JSON + API",
+  "skills sync across agents",
   "host anywhere",
   "no vendor lock-in",
 ];

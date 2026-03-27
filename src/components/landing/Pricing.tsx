@@ -46,21 +46,13 @@ const Pricing = () => (
               </span>
             </div>
             <div className="space-y-2 font-mono text-[11px] text-muted-foreground mb-5">
-              <p>
-                {"  "}&check; Full identity context -- generated
-                locally via CLI
-              </p>
-              <p>
-                {"  "}&check; Public profile at you.md/username
-              </p>
-              <p>
-                {"  "}&check; Shareable context link -- works with
-                any agent
-              </p>
-              <p>
-                {"  "}&check; 3 auto-syncs/month from connected
-                sources
-              </p>
+              <p>{"  "}&check; Full identity context via CLI or web</p>
+              <p>{"  "}&check; Public profile at you.md/username</p>
+              <p>{"  "}&check; 4 bundled agent skills (CLAUDE.md gen, project scaffold, voice sync, meta-improve)</p>
+              <p>{"  "}&check; Skill sync across Claude Code, Cursor, Codex</p>
+              <p>{"  "}&check; Shareable context links with scoping</p>
+              <p>{"  "}&check; Agent directives + voice profile</p>
+              <p>{"  "}&check; API access for any agent</p>
             </div>
             <Link
               href="/create"
@@ -109,34 +101,16 @@ const Pricing = () => (
               </span>
             </div>
             <div className="space-y-2 font-mono text-[11px] text-muted-foreground mb-5">
-              <p>
-                {"  "}&rsaquo; Unlimited auto-syncs -- your context
-                stays fresh across every tool
-              </p>
-              <p>
-                {"  "}&rsaquo; Bring your own keys -- use your
-                OpenRouter, Perplexity, or Apify API keys
-              </p>
-              <p>
-                {"  "}&rsaquo; Private encrypted vault -- store
-                sensitive context only trusted agents can access
-              </p>
-              <p>
-                {"  "}&rsaquo; Version history -- revert any change,
-                see how your context evolved
-              </p>
-              <p>
-                {"  "}&rsaquo; Custom domain -- host your context
-                at your own URL
-              </p>
-              <p>
-                {"  "}&rsaquo; Analytics -- see which agents read
-                your profile, and how often
-              </p>
-              <p>
-                {"  "}&rsaquo; Scoped API keys -- granular access
-                control per agent or project
-              </p>
+              <p>{"  "}&rsaquo; Everything in free, plus:</p>
+              <p>{"  "}&rsaquo; Unlimited auto-syncs from connected sources</p>
+              <p>{"  "}&rsaquo; Private encrypted vault for sensitive context</p>
+              <p>{"  "}&rsaquo; Skill registry publishing + community skills</p>
+              <p>{"  "}&rsaquo; Project-aware context management</p>
+              <p>{"  "}&rsaquo; Version history + rollback</p>
+              <p>{"  "}&rsaquo; Analytics -- which agents read your profile</p>
+              <p>{"  "}&rsaquo; Scoped API keys per agent or project</p>
+              <p>{"  "}&rsaquo; Custom domain hosting</p>
+              <p>{"  "}&rsaquo; Bring your own API keys (OpenRouter, Perplexity)</p>
             </div>
             <Link
               href="/create"

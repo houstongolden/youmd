@@ -8,17 +8,22 @@ const steps = [
   {
     num: "01",
     cmd: "$ npx youmd init",
-    desc: "Sign up in seconds, then a conversational AI builds your identity through dialogue -- not a form. Projects, values, preferences, voice. Your data is encrypted and yours.",
+    desc: "a conversational AI builds your identity through dialogue -- not a form. bio, projects, preferences, voice, directives. your agent learns how you think and what you care about.",
   },
   {
     num: "02",
     cmd: "$ youmd push",
-    desc: "Your identity goes live at you.md/username. Now any agent can read it instantly. No more copy-pasting system prompts.",
+    desc: "your identity goes live at you.md/username. any agent can read it instantly -- public profile + API + context links. skills auto-sync across all your tools.",
   },
   {
     num: "03",
-    cmd: "$ youmd link create",
-    desc: "Generate scoped context links. Give Claude Code your full identity. Give ChatGPT just the public view. You control every scope.",
+    cmd: "$ youmd skill init-project",
+    desc: "start any new project with full identity context. generates CLAUDE.md from your preferences, scaffolds project-context/, and links skills to Claude Code, Cursor, or Codex.",
+  },
+  {
+    num: "04",
+    cmd: "$ youmd skill link claude",
+    desc: "your identity skills -- voice sync, agent preferences, directives -- render into .claude/skills/youmd/ or .cursor/rules/. every coding agent knows who you are from the first prompt.",
   },
 ];
 
