@@ -8,17 +8,17 @@ const steps = [
   {
     num: "01",
     cmd: "$ npx youmd init",
-    desc: "Answer a few prompts. Your identity bundle is generated locally -- who you are, what you build, how you like to work. No signup required.",
+    desc: "A conversational AI builds your identity through dialogue -- not a form. Projects, values, preferences, voice. Your data stays local. No account needed.",
   },
   {
     num: "02",
-    cmd: "$ youmd publish",
-    desc: "Your context goes live at you.md/username. Any agent can read it -- no re-introductions, no copy-pasting system prompts.",
+    cmd: "$ youmd push",
+    desc: "Your identity goes live at you.md/username. Now any agent can read it instantly. No more copy-pasting system prompts.",
   },
   {
     num: "03",
     cmd: "$ youmd link create",
-    desc: "Generate scoped, shareable links. Control exactly what each agent sees -- public identity or full private context.",
+    desc: "Generate scoped context links. Give Claude Code your full identity. Give ChatGPT just the public view. You control every scope.",
   },
 ];
 
@@ -68,7 +68,7 @@ const HowItWorks = () => (
           -- how it works --
         </p>
         <p className="text-muted-foreground text-[13px] font-body mb-10">
-          Three commands. No signup. No blank slate ever again.
+          Three commands. No signup. Your identity travels with you from the first message.
         </p>
       </FadeUp>
 
