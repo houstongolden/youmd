@@ -422,13 +422,16 @@ http.route({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 200,
           temperature: 0.5,
-          system: `you are the you.md agent. respond with ONLY valid JSON. given the user's message, return:
-1. "ack": a casual 1-sentence acknowledgment of what they said (direct, no fluff, match their energy)
-2. "plan": an array of 2-4 short step descriptions for what you'll do next
+          system: `you are the you.md identity agent. you MUST respond with ONLY a raw JSON object — no markdown, no code fences, no explanation. the you.md platform handles scraping, research, and profile updates for you — so acknowledge what the user wants and describe the steps the platform will take.
 
-example response: {"ack":"got it — pulling your linkedin now.","plan":["scraping linkedin profile","analyzing your professional context","updating identity sections"]}
+format: {"ack":"<1 casual sentence acknowledging their request>","plan":["<step 1>","<step 2>","<step 3>"]}
 
-${context ? `user context: ${context.slice(0, 500)}` : ""}`,
+rules:
+- ack must be casual, direct, 1 sentence max
+- plan should have 2-4 steps describing what will happen
+- never say you can't do something — the platform handles scraping, research, etc.
+- never wrap in code fences or markdown
+${context ? `\nuser context: ${context.slice(0, 500)}` : ""}`,
           messages: [{ role: "user", content: userMessage.slice(0, 500) }],
         }),
         signal: AbortSignal.timeout(8_000),
@@ -442,13 +445,17 @@ ${context ? `user context: ${context.slice(0, 500)}` : ""}`,
       const text = data.content?.[0]?.text || "";
 
       try {
-        const parsed = JSON.parse(text);
+        // Strip code fences if model wrapped the JSON
+        const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+        const parsed = JSON.parse(cleaned);
         return json({
-          ack: parsed.ack || "on it.",
-          plan: Array.isArray(parsed.plan) ? parsed.plan.slice(0, 5) : [],
+          ack: typeof parsed.ack === "string" ? parsed.ack : "on it.",
+          plan: Array.isArray(parsed.plan) ? parsed.plan.filter((s: unknown) => typeof s === "string").slice(0, 5) : [],
         }, 200, CORS_HEADERS);
       } catch {
-        return json({ ack: text.slice(0, 100) || "on it.", plan: [] }, 200, CORS_HEADERS);
+        // If JSON parse fails, use the raw text as ack
+        const cleanAck = text.replace(/```[\s\S]*```/g, "").replace(/[{}"\[\]]/g, "").trim();
+        return json({ ack: cleanAck.slice(0, 100) || "on it.", plan: [] }, 200, CORS_HEADERS);
       }
     } catch {
       return json({ ack: "on it.", plan: [] }, 200, CORS_HEADERS);
