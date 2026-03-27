@@ -292,15 +292,20 @@ Platform-specific prompts for Claude, ChatGPT, Cursor, Copilot, and universal fo
 3. SEO/AEO fully optimized (SSR, JSON-LD, OG, sitemap)
 4. Agent integration proven (context links work, agents respond intelligently)
 
-### Next (v1.1)
-1. Verified badges (domain, social, DNS TXT)
-2. Profile analytics dashboard
-3. Custom domains
-4. Stripe Pro plan
-5. MCP endpoint (mcp.you.md/{username})
+### Next (v1.1) — Identity Version Control
+The identity bundle is a collaborative document. Multiple agents, devices, and surfaces edit it concurrently. Needs git-like semantics:
+1. Content-hash-based version tracking (not just incrementing numbers)
+2. Pull-before-push enforcement (implemented in v1.0 as safety guard)
+3. Merge strategies for concurrent edits from web, CLI, and external APIs
+4. Commit history / changelog per identity bundle
+5. "PR" model — external agents propose changes, owner approves/rejects
+6. `youmd skill` — installable agent skill (via skills.sh / npx) for automated identity management
+7. MCP endpoint for real-time sync between agents (mcp.you.md/{username})
+8. Verified badges, profile analytics, custom domains
+9. Stripe Pro plan
 
 ### Future (v2.0)
-1. Anonymous profile creation (no-signup onboarding) — deferred growth feature
+1. Anonymous profile creation / SEO knowledge panels — deferred growth feature
 2. Agent-to-agent communication protocol
 3. Team/org bundles
 4. Plugin marketplace
