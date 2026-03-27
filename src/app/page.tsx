@@ -6,7 +6,6 @@ import ProfilesShowcase from "@/components/landing/ProfilesShowcase";
 import ProblemStrip from "@/components/landing/ProblemStrip";
 import HowItWorks from "@/components/landing/HowItWorks";
 import WhatsInside from "@/components/landing/WhatsInside";
-import PortraitSection from "@/components/landing/PortraitSection";
 import OpenSpec from "@/components/landing/OpenSpec";
 import Integrations from "@/components/landing/Integrations";
 import ForDevelopers from "@/components/landing/ForDevelopers";
@@ -42,15 +41,14 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       <Hero />
-      <FounderQuote />
-      <ProfilesShowcase />
       <ProblemStrip />
       <HowItWorks />
       <WhatsInside />
-      <PortraitSection />
-      <OpenSpec />
       <Integrations />
       <ForDevelopers />
+      <ProfilesShowcase />
+      <FounderQuote />
+      <OpenSpec />
       <FAQ />
       <Pricing />
       <CTAFooter />

@@ -5,41 +5,39 @@ import { motion, useScroll, useTransform } from "motion/react";
 import FadeUp from "./FadeUp";
 
 const painPoints = [
-  "re-explaining your tech stack to every new agent",
-  "re-listing your projects in every conversation",
-  "re-sharing your communication preferences",
-  "agents asking your name, role, and timezone -- again",
-  "copy-pasting the same context into system prompts",
-  "losing continuity when switching between tools",
+  "re-explaining your stack, role, and preferences to every new agent",
+  "copy-pasting system prompts between Claude Code, Cursor, ChatGPT",
+  "new projects start cold -- no CLAUDE.md, no context, no preferences",
+  "agents can't match your voice because they don't know how you write",
+  "switching tools means losing all the context you built up",
+  "spending 10 minutes onboarding yourself before you can start working",
 ];
 
 const beforeSnippets = [
-  {
-    role: "agent" as const,
-    text: "What programming languages do you work with?",
-  },
-  { role: "you" as const, text: "TypeScript, Python, Rust. I've told you this before." },
-  {
-    role: "agent" as const,
-    text: "What's your preferred coding style? Do you use tabs or spaces?",
-  },
-  { role: "you" as const, text: "..." },
+  { role: "agent" as const, text: "What do you do? What technologies do you use?" },
+  { role: "you" as const, text: "I'm a founder building AI tools. TypeScript, Next.js, Convex..." },
+  { role: "agent" as const, text: "Got it. And what's your communication preference? Formal or casual?" },
+  { role: "you" as const, text: "Direct. No fluff. I've said this 100 times across 10 tools." },
+  { role: "agent" as const, text: "What project are you working on currently?" },
+  { role: "you" as const, text: "[closes tab]" },
 ];
 
 const afterSnippets = [
+  { role: "ctx" as const, text: "loading you.md/houston..." },
   {
     role: "agent" as const,
-    text: "I see you're a TypeScript-first dev who prefers functional patterns, uses Convex + Next.js, and likes concise responses. Let's get to work.",
+    text: "Houston -- you're building You.md (Next.js + Convex + Clerk), prefer terminal-native design, ship fast, no emoji. I see your CLAUDE.md generator skill and your project-context setup. You have 3 active projects. What are we working on?",
   },
-  { role: "you" as const, text: "Finally." },
+  { role: "you" as const, text: "new feature for the skill system." },
+  {
+    role: "agent" as const,
+    text: "on it. i'll follow your directives: act decisively, no forms, terminal-first. pulling in your project context now.",
+  },
 ];
 
 const ProblemStrip = () => {
   const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], [30, -30]);
 
   return (
@@ -51,9 +49,7 @@ const ProblemStrip = () => {
           </p>
           <p className="text-foreground/90 font-mono text-[15px] md:text-[17px] font-light leading-[1.8] tracking-tight text-center">
             every agent starts from scratch.{" "}
-            <span className="text-accent">
-              you re-explain yourself endlessly.
-            </span>
+            <span className="text-accent">you re-explain yourself endlessly.</span>
           </p>
         </FadeUp>
 
@@ -77,37 +73,27 @@ const ProblemStrip = () => {
 
         {/* Before / After comparison */}
         <FadeUp delay={0.25}>
-          <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+          <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
             {/* BEFORE */}
             <div className="terminal-panel">
               <div className="terminal-panel-header">
                 <div className="terminal-dot" />
                 <div className="terminal-dot" />
                 <div className="terminal-dot" />
-                <span className="ml-2 text-destructive/60 font-mono text-[9px]">
-                  before you.md
-                </span>
+                <span className="ml-2 text-destructive/60 font-mono text-[9px]">before you.md</span>
               </div>
-              <div className="p-4 space-y-3">
+              <div className="p-4 space-y-2.5">
                 {beforeSnippets.map((line, i) => (
                   <motion.div
                     key={i}
                     className={`font-mono text-[10px] leading-relaxed ${
-                      line.role === "agent"
-                        ? "text-muted-foreground/60"
-                        : "text-foreground/70"
+                      line.role === "agent" ? "text-muted-foreground/60" : "text-foreground/70"
                     }`}
                     whileInView={{ opacity: [0, 1] }}
                     viewport={{ once: true }}
-                    transition={{ delay: 0.4 + i * 0.12 }}
+                    transition={{ delay: 0.4 + i * 0.1 }}
                   >
-                    <span
-                      className={
-                        line.role === "agent"
-                          ? "text-muted-foreground/40"
-                          : "text-destructive/50"
-                      }
-                    >
+                    <span className={line.role === "agent" ? "text-muted-foreground/40" : "text-destructive/50"}>
                       {line.role === "agent" ? "agent" : "  you"}
                     </span>
                     <span className="text-muted-foreground/20"> | </span>
@@ -116,7 +102,7 @@ const ProblemStrip = () => {
                 ))}
                 <div className="pt-2 border-t border-border/50">
                   <span className="font-mono text-[9px] text-destructive/40">
-                    -- repeat for every tool, every session --
+                    -- repeat for every tool, every session, every project --
                   </span>
                 </div>
               </div>
@@ -128,43 +114,31 @@ const ProblemStrip = () => {
                 <div className="terminal-dot" />
                 <div className="terminal-dot" />
                 <div className="terminal-dot" />
-                <span className="ml-2 text-accent/60 font-mono text-[9px]">
-                  with you.md
-                </span>
+                <span className="ml-2 text-accent/60 font-mono text-[9px]">with you.md</span>
               </div>
-              <div className="p-4 space-y-3">
-                <motion.div
-                  className="font-mono text-[10px] text-muted-foreground/50 leading-relaxed"
-                  whileInView={{ opacity: [0, 1] }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <span className="text-accent/40">ctx</span>
-                  <span className="text-muted-foreground/20"> | </span>
-                  <span className="text-accent/60">
-                    loading you.md/houston...
-                  </span>
-                </motion.div>
+              <div className="p-4 space-y-2.5">
                 {afterSnippets.map((line, i) => (
                   <motion.div
                     key={i}
                     className={`font-mono text-[10px] leading-relaxed ${
-                      line.role === "agent"
+                      line.role === "ctx"
+                        ? "text-accent/50"
+                        : line.role === "agent"
                         ? "text-muted-foreground/70"
                         : "text-foreground/80"
                     }`}
                     whileInView={{ opacity: [0, 1] }}
                     viewport={{ once: true }}
-                    transition={{ delay: 0.65 + i * 0.15 }}
+                    transition={{ delay: 0.5 + i * 0.12 }}
                   >
-                    <span
-                      className={
-                        line.role === "agent"
-                          ? "text-accent/50"
-                          : "text-accent/70"
-                      }
-                    >
-                      {line.role === "agent" ? "agent" : "  you"}
+                    <span className={
+                      line.role === "ctx"
+                        ? "text-accent/40"
+                        : line.role === "agent"
+                        ? "text-accent/50"
+                        : "text-accent/70"
+                    }>
+                      {line.role === "ctx" ? "  ctx" : line.role === "agent" ? "agent" : "  you"}
                     </span>
                     <span className="text-muted-foreground/20"> | </span>
                     <span>{line.text}</span>
@@ -172,7 +146,7 @@ const ProblemStrip = () => {
                 ))}
                 <div className="pt-2 border-t border-border/50">
                   <span className="font-mono text-[9px] text-accent/40">
-                    -- zero onboarding. full context. every time --
+                    -- full context from identity + skills + directives. zero onboarding --
                   </span>
                 </div>
               </div>
