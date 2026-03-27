@@ -24,30 +24,27 @@ const FounderQuote = () => (
 
           <blockquote className="font-mono text-sm md:text-base leading-relaxed text-[hsl(var(--text-primary)/0.85)] space-y-4">
             <p>
-              <span className="text-accent">&gt;</span> I got sick of
-              re-introducing myself to every new agent I started
-              working with. Who I am, what I&apos;m building, what
-              matters, my preferences -- every session started from a
-              blank slate.
+              <span className="text-accent">&gt;</span> I run 6 AI agents
+              daily across 4 projects. every one of them starts from
+              scratch. who am I, what am I building, what do I care
+              about, how do I like to work -- every single time.
             </p>
             <p>
-              <span className="text-accent">&gt;</span> I realized
-              there needed to be a simple, agent-driven identity
-              context protocol -- one link that gives any agent full
-              context about you instantly. Turns out others had the
-              same problem and had hacked together their own systems
-              or just dealt with it.
+              <span className="text-accent">&gt;</span> I needed one
+              link that gives any agent full context instantly. no
+              more copy-pasting system prompts. no more re-explaining
+              myself. turns out a lot of people have the same problem.
             </p>
             <p>
-              <span className="text-accent">&gt;</span> So I created{" "}
+              <span className="text-accent">&gt;</span> so I built{" "}
               <span className="text-accent font-medium">you.md</span>
-              .
+              {" "}-- an open identity protocol for the agent internet.
             </p>
           </blockquote>
 
           <div className="mt-8 pt-6 border-t border-[hsl(var(--border))]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded overflow-hidden border border-[hsl(var(--border))]">
+            <a href="/houstongolden" className="flex items-center gap-3 group">
+              <div className="w-10 h-10 rounded overflow-hidden border border-[hsl(var(--border))] group-hover:border-accent/30 transition-colors">
                 <AsciiAvatar
                   src="/assets/houston-portrait.jpeg"
                   cols={40}
@@ -56,14 +53,14 @@ const FounderQuote = () => (
                 />
               </div>
               <div>
-                <div className="font-mono text-xs text-[hsl(var(--text-primary)/0.8)]">
+                <div className="font-mono text-xs text-[hsl(var(--text-primary)/0.8)] group-hover:text-accent transition-colors">
                   Houston Golden
                 </div>
                 <div className="font-mono text-[10px] text-muted-foreground/50">
-                  founder &middot; you.md
+                  founder &middot; you.md/houstongolden
                 </div>
               </div>
-            </div>
+            </a>
           </div>
         </div>
       </div>
