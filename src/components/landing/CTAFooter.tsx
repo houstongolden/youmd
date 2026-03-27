@@ -84,48 +84,56 @@ const CTAFooter = () => {
         </motion.div>
       </section>
 
-      <footer className="py-8 px-6">
-        <div className="section-divider mb-8" />
-        <div className="max-w-xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <Link
-            href="/"
-            className="text-accent font-mono text-[11px] hover:text-accent-light transition-colors"
-          >
-            you
-          </Link>
-          <div className="flex items-center gap-5">
-            <a
-              href="#spec"
-              className="text-muted-foreground/60 font-mono text-[10px] hover:text-accent transition-colors"
-            >
-              &gt; spec
-            </a>
-            <a
-              href="https://github.com/houstongolden/youmd"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground/60 font-mono text-[10px] hover:text-accent transition-colors"
-            >
-              &gt; github
-            </a>
-            <a
-              href="#pricing"
-              className="text-muted-foreground/60 font-mono text-[10px] hover:text-accent transition-colors"
-            >
-              &gt; pricing
-            </a>
-            <Link
-              href="/profiles"
-              className="text-muted-foreground/60 font-mono text-[10px] hover:text-accent transition-colors"
-            >
-              &gt; profiles
-            </Link>
+      <footer className="py-10 px-6">
+        <div className="section-divider mb-10" />
+        <div className="max-w-2xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+            <div>
+              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-3">product</p>
+              <div className="space-y-2">
+                <Link href="/create" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; create</Link>
+                <Link href="/profiles" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; profiles</Link>
+                <a href="#pricing" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; pricing</a>
+                <a href="#portrait" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; portraits</a>
+              </div>
+            </div>
+            <div>
+              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-3">developers</p>
+              <div className="space-y-2">
+                <Link href="/docs" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; docs</Link>
+                <Link href="/docs#api" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; api</Link>
+                <Link href="/docs#cli" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; cli</Link>
+                <a href="#spec" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; spec</a>
+              </div>
+            </div>
+            <div>
+              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-3">open source</p>
+              <div className="space-y-2">
+                <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; github</a>
+                <a href="https://www.npmjs.com/package/youmd" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; npm</a>
+              </div>
+            </div>
+            <div>
+              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-3">connect</p>
+              <div className="space-y-2">
+                <a href="https://x.com/haborngolden" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; x</a>
+                <a href="https://linkedin.com/in/houstongolden" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; linkedin</a>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <span className="text-muted-foreground/50 font-mono text-[9px]">
-              you/v1
-            </span>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-border/30">
+            <Link
+              href="/"
+              className="text-accent font-mono text-[11px] hover:text-accent-light transition-colors"
+            >
+              you
+            </Link>
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <span className="text-muted-foreground/50 font-mono text-[9px]">
+                you/v1
+              </span>
+            </div>
           </div>
         </div>
       </footer>

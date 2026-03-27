@@ -7,28 +7,31 @@ import FadeUp from "./FadeUp";
 const codeLines = [
   "---",
   "schema: you/v1",
-  "name: Alex Chen",
-  "username: alexchen",
+  "name: Houston Golden",
+  "username: houstongolden",
   "---",
   "",
-  "# Alex Chen",
+  "# Houston Golden",
   "",
-  "Product designer & founder. San Francisco.",
+  "Founder. Building identity infrastructure",
+  "for the agent internet.",
   "",
   "## Now",
   "",
-  "- Ship v2 by March",
-  "- Close seed round",
+  "- Shipping you.md v1",
+  "- Scaling BAMF Media",
+  "- Cosmology research (bigbounce)",
   "",
   "## Agent Preferences",
   "",
-  "Tone: direct, warm, no jargon",
-  "Format: bullet points over paragraphs",
+  "Tone: direct, no fluff, terminal-native",
+  "Stack: TypeScript, Next.js, Convex",
+  "Never: forms, emoji, corporate speak",
   "",
   "## Links",
   "",
-  "- Website: https://alexchen.dev",
-  "- LinkedIn: /in/alexchen",
+  "- you.md/houstongolden",
+  "- github.com/houstongolden",
 ];
 
 const TypewriterCode = () => {
@@ -132,20 +135,20 @@ const WhatsInside = () => (
         <div className="mt-8 grid grid-cols-2 gap-4">
           {[
             {
-              label: "Identity",
-              desc: "Agents know who you are without asking",
+              label: "identity",
+              desc: "bio, role, projects -- agents skip the intro",
             },
             {
-              label: "Voice",
-              desc: "Responses match your tone automatically",
+              label: "voice",
+              desc: "how you write, per platform. responses match your tone.",
             },
             {
-              label: "Goals",
-              desc: "Context on what matters to you right now",
+              label: "directives",
+              desc: "your rules for AI: tone, never-do list, decision framework",
             },
             {
-              label: "Links",
-              desc: "Verified sources agents can trust",
+              label: "context",
+              desc: "what you're working on now. goals. private notes for trusted agents.",
             },
           ].map((item) => (
             <div
