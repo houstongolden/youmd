@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-03-26
+Last Updated: 2026-03-27
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -80,7 +80,8 @@ Last Updated: 2026-03-26
 **Verification:** Compare web chat UX side-by-side with Claude Code.
 
 ### 13. Share prompts should include directive for agent response
-**Status:** TODO
+**Status:** DONE (already implemented — RESPONSE_DIRECTIVE in SharePane.tsx)
+**Verified:** NO
 **Request:** When copying share prompt, include 1-2 directive lines telling the receiving agent HOW to respond after reading the you.md context. Agent should confirm what it received and how it will persist/use it.
 **Verification:** Copy share prompt → paste to ChatGPT → ChatGPT responds with specific acknowledgment of identity data.
 
@@ -216,8 +217,66 @@ Last Updated: 2026-03-26
 | Status | Count |
 |---|---|
 | VERIFIED | 3 |
-| DONE (not verified) | 22 |
-| PARTIALLY DONE | 2 |
-| TODO | 9 |
+| DONE (not verified) | 25 |
+| PARTIALLY DONE | 1 |
+| TODO | 7 |
 | BLOCKED | 2 |
 | **Total tracked** | **38** |
+
+## March 27 Session Additions
+
+### 39. Clickable links in MessageBubble
+**Status:** DONE (0fe89b6)
+**Request:** URLs in agent messages should be clickable. Both [text](url) and bare https:// URLs.
+
+### 40. Code block copy buttons
+**Status:** DONE (0fe89b6)
+**Request:** Copy button on code blocks in terminal chat.
+
+### 41. Dashboard skeleton loading
+**Status:** DONE (0fe89b6)
+**Request:** Proper skeleton layout instead of "loading..." text.
+
+### 42. Profile "updated X ago" timestamp
+**Status:** DONE (0fe89b6)
+**Request:** Show relative time since last update on profile pages.
+
+### 43. Visitor CTA on profile pages
+**Status:** DONE (0fe89b6)
+**Request:** "want your own identity file? > create yours" for non-owners.
+
+### 44. EditPane tab visual hierarchy
+**Status:** DONE (0fe89b6)
+**Request:** Accent bottom border on active sub-tab.
+
+### 45. Activity log progress step hierarchy
+**Status:** DONE (0fe89b6)
+**Request:** Running steps in accent color, completed steps dimmed.
+
+### 46. Terminal scroll indicator
+**Status:** DONE (0fe89b6)
+**Request:** Gradient at top when messages exist above viewport.
+
+### 47. CLI section validation (security)
+**Status:** DONE (0fe89b6)
+**Request:** Validate LLM section names before writing files, prevent path traversal.
+
+### 48. CLI crash-safe raw mode restore
+**Status:** DONE (0fe89b6)
+**Request:** Restore terminal raw mode on unexpected process exit during password input.
+
+### 49. Homepage FAQ section
+**Status:** DONE (403a7f6)
+**Request:** 8 expandable Q&As with terminal-native styling.
+
+### 50. Homepage before/after demo
+**Status:** DONE (403a7f6)
+**Request:** ProblemStrip shows real agent conversation before vs after you.md.
+
+### 51. Homepage integration demo
+**Status:** DONE (403a7f6)
+**Request:** Integrations section shows actual share prompt + agent response.
+
+### 52. CLI YOU logo upgrade
+**Status:** DONE (58ba376)
+**Request:** Clean block art matching Vercel PLUGINS banner style. Just "YOU" — not YOU.MD.
