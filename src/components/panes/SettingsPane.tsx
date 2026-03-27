@@ -257,7 +257,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
             {logs.map((log) => (
               <div
                 key={log._id}
-                className="flex items-center gap-3 py-2 border-b border-[hsl(var(--border))] opacity-20 last:border-0"
+                className="flex items-center gap-3 py-2 border-b border-[hsl(var(--border))] opacity-60 last:border-0"
               >
                 <span className={`font-mono text-[12px] w-4 text-center shrink-0 ${EVENT_COLORS[log.eventType] || "text-[hsl(var(--text-secondary))] opacity-50"}`}>
                   {EVENT_ICONS[log.eventType] || "\u00B7"}

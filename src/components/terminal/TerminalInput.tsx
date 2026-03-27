@@ -86,7 +86,7 @@ export function TerminalInput({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           onPaste={handlePaste}
-          placeholder={pastedImage ? "add a message with this image..." : "say something..."}
+          placeholder={pastedImage ? "add a message with this image..." : "ask anything, or type /help for commands"}
           rows={1}
           disabled={isThinking}
           autoComplete="off"

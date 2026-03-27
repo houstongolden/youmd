@@ -37,8 +37,13 @@ export async function renderAsciiPortrait(
   const colored = options?.colored ?? true;
 
   try {
-    // Fetch the image
-    const image = await Jimp.read(imageUrl);
+    // Fetch the image with a timeout to avoid hanging on slow CDNs
+    const image = await Promise.race([
+      Jimp.read(imageUrl),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("image fetch timed out")), 10000)
+      ),
+    ]);
 
     // Calculate rows maintaining aspect ratio (terminal chars are ~2x tall as wide)
     const rows = Math.floor(cols * (image.getHeight() / image.getWidth()) * 0.46);
