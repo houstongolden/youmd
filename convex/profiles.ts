@@ -619,6 +619,22 @@ export const savePortrait = mutation({
   },
 });
 
+/** Admin: delete a profile by username (for cleanup) */
+export const deleteByUsername = mutation({
+  args: { username: v.string() },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_username", (q) => q.eq("username", args.username.toLowerCase()))
+      .first();
+    if (profile) {
+      await ctx.db.delete(profile._id);
+      return { deleted: true, username: args.username };
+    }
+    return { deleted: false, username: args.username };
+  },
+});
+
 /** Internal: log a security event */
 export const logSecurityEvent = internalMutation({
   args: {
