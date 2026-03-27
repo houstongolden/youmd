@@ -1,271 +1,205 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-03-24
+Last Updated: 2026-03-26
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
 
-### Foundation (Milestone 0)
-- [x] Next.js 16 + Convex + Clerk + Tailwind v4
-- [x] Full Convex schema (users, bundles, sources, apiKeys, contextLinks, etc.)
-- [x] Auth flow (Clerk production: clerk.you.md)
-- [x] Git repo + GitHub sync
+### Foundation (March 16-17)
+- [x] Next.js 16 + Convex + Clerk + Tailwind v4 scaffold
+- [x] Full Convex schema (17 tables)
+- [x] Clerk auth (production: clerk.you.md)
 - [x] Vercel deployment (you.md custom domain)
 - [x] Convex production (kindly-cassowary-600) + dev (uncommon-chicken-142)
-
-### Backend (Milestones 1-3)
+- [x] Landing page with 12 sections
+- [x] CLI package scaffolded + published to npm
 - [x] Bundle compilation (convex/lib/compile.ts)
-- [x] Save + publish mutations
-- [x] Ingestion pipeline (fetch, extract, analyze, compile via OpenRouter)
-- [x] API key management (SHA-256 hashed, scoped, ym_ prefix)
+- [x] Ingestion pipeline (fetch, extract, analyze, compile)
+- [x] API key management (SHA-256 hashed, ym_ prefix)
 - [x] Context links (token-based, TTL, scope)
-- [x] Full HTTP API (public + authenticated endpoints)
-- [x] LLM chat proxy (convex/chat.ts)
-- [x] Pipeline orchestrator with job tracking
+- [x] HTTP API (public + authenticated endpoints)
+- [x] LLM chat proxy (convex/chat.ts via OpenRouter)
 
-### CLI (npm: youmd)
-- [x] Published on npm with auto-version-bump
-- [x] 13 commands (init, login, register, whoami, status, build, publish, add, diff, preview, chat, link, keys)
-- [x] Conversational AI onboarding agent (1014 lines, 72 thinking phrases)
-- [x] youmd chat command (522 lines, slash commands)
-- [x] Website fetching during onboarding with LLM commentary
-- [x] API client hitting production Convex
-
-### Design System Migration (PRD v2.3)
-- [x] CSS rewrite: monochrome + burnt orange (#C46A3A)
+### Design System Migration (March 18-19)
+- [x] PRD v2.3 monochrome + burnt orange (#C46A3A)
 - [x] JetBrains Mono + Inter typography
 - [x] Dark mode default, .light class toggle
-- [x] Terminal panel, CLI pill, glass nav styles
-- [x] All animation keyframes (fadeUp, blink, pulse, beam)
-
-### Components Ported from Lovable
+- [x] Terminal panels, CLI pills, glass nav
 - [x] PixelYOU canvas logo
 - [x] ASCII portrait system (HeroPortrait, AsciiAvatar, Generator)
-- [x] FadeUp animation
-- [x] Glass Navbar with --flag navigation
-- [x] ThemeToggle (dark/light/system)
+- [x] FadeUp animation, boot sequence typewriter
+- [x] Terminal-style auth pages (no forms — sequential prompts)
+- [x] Border radius standardized to 2px
 
-### Landing Page (12 sections)
-- [x] Hero (PixelYOU + boot sequence + CLI + ASCII portrait)
-- [x] Founder Quote (terminal panel)
-- [x] Profiles Showcase (hover-reveal)
-- [x] Problem Strip
-- [x] How It Works (3 CLI steps)
-- [x] What's Inside (typewriter code)
-- [x] Portrait Generator (upload → ASCII → PNG)
-- [x] Open Spec
-- [x] Integrations
-- [x] Pricing (Free + Pro)
-- [x] CTA Footer
+### Terminal-First Architecture (March 19-21)
+- [x] useYouAgent hook — extracted all agent logic (2000+ lines)
+- [x] Terminal components (Shell, MessageBubble, ThinkingIndicator, Input, StatusBar)
+- [x] /initialize route — boot sequence + onboarding
+- [x] Split-screen dashboard — 35% terminal left, 65% pane right
+- [x] 4-pane system: profile, edit (files/json/sources), share, settings
+- [x] Slash commands switch panes (/profile, /edit, /share, /settings)
+- [x] Unified SiteNav top bar (replaced AppNav side panel)
+- [x] Mobile responsiveness (terminal full-width, toggle for pane)
+- [x] Sign-up → /initialize → dashboard redirect chain
+- [x] Convex auto-deploy GitHub Action
 
-### Web App Pages
-- [x] Dashboard with tabs (Profile, Sources, Settings) — REPLACED by terminal split-screen
-- [x] Web chat agent (/dashboard/chat) — REPLACED: terminal IS the dashboard now
-- [x] Username claim page — REPLACED: /initialize auto-claims
-- [x] Sign-in/sign-up (Clerk branded)
-- [x] Public profile page with JSON-LD
-- [x] OG social card generation
-- [x] 404 page
+### Memory & File System (March 22)
+- [x] Markdown file vault (browse, edit, save identity files)
+- [x] Memory system (auto-capture, recall, /memory + /recall commands)
+- [x] Memory HTTP API (GET/POST /api/v1/me/memories)
+- [x] Session tracking + summaries
+- [x] Memory archival policies
+- [x] CLI memory sync (youmd memories list/add/stats)
 
-### Terminal-First UI Architecture (2026-03-19)
-- [x] useYouAgent hook — extracted all conversation logic from chat-content.tsx
-- [x] Terminal components (TerminalShell, MessageBubble, ThinkingIndicator, TerminalInput, TerminalStatusBar)
-- [x] /initialize route — auto-claim + boot sequence + onboarding terminal
-- [x] Split-screen dashboard — 35% terminal left, 65% preview right
-- [x] Right pane system — SIMPLIFIED from 12 panes to 4: profile, edit, share, settings
-- [x] Slash commands switch right pane (/profile, /edit, /share, /settings + legacy aliases)
-- [x] Shared pane primitives (PaneSectionLabel, PaneDivider, PaneHeader, PaneEmptyState)
-- [x] PublishPane wired to real Convex data (listRecentBundles)
-- [x] Auto-scrape existing links on session init for returning users
-- [x] Auto-research sparse profiles via Perplexity
-- [x] Auto-publish on every bundle save
-- [x] Smarter profile image selection (LinkedIn > GitHub > X priority)
-- [x] Claude Code-style thinking indicator with category icons
-- [x] Terminal-style message rendering with markdown support
-- [x] Persistent AppNav side panel for logged-in users — REPLACED by unified SiteNav top bar
-- [x] Unified SiteNav — compact top bar on all pages (dashboard, profiles, docs, profile pages)
-- [x] Dashboard navigation — links to home, profile, profiles, docs from dashboard
-- [x] Cleaned up unused nav components (duplicate Navbar.tsx, NavLink.tsx)
-- [x] Border radius standardized to 2px across entire app
-- [x] Mobile responsiveness for public profile (avatar stacking, responsive padding)
-- [x] Mobile status bar visible on dashboard
-- [x] Pricing section terminal-panel styling
-- [x] Sign-up redirects to /initialize (not /claim)
-- [x] /claim redirects to /sign-up
-- [x] Dashboard redirects to /initialize if no Convex user
-- [x] Mobile: terminal full-width with toggle button for preview
-- [x] Deleted /dashboard/chat (dead code)
-- [x] Deleted claim-form.tsx (dead code)
-- [x] All /claim links updated to /sign-up
+### Agent Intelligence (March 23-24)
+- [x] Claude Code-style progress indicators (step-by-step activity log)
+- [x] Streaming LLM responses via SSE
+- [x] Persistent chat sessions (survive page refresh)
+- [x] Dashboard simplified from 12 to 4 panes
+- [x] Share pane with agent-specific prompt templates
+- [x] Agent directives system (communication_style, negative_prompts, etc.)
+- [x] Intelligent model routing (Claude/Perplexity/Grok per task)
+- [x] Identity verification via Perplexity
+- [x] Proactive agent behavior ("always building" philosophy)
+- [x] Session compaction (120k char limit → summarize)
+- [x] Input history (arrow keys)
 
----
+### Portrait System (March 24)
+- [x] Multi-image scraping (all sources saved to socialImages)
+- [x] 4 ASCII formats (classic, braille, block, minimal)
+- [x] Detail picker (60/80/100/120/160 columns)
+- [x] Tap-to-select primary image source
+- [x] Real photo + ASCII preview side by side
+- [x] Server-side ASCII portrait generation + DB caching
+- [x] Portrait pane wired to real data
 
-### Markdown File System (Vault) — 2026-03-22
-- [x] File decompiler utility (youJson -> individual .md files)
-- [x] File recompiler utility (edited .md files -> patched youJson)
-- [x] FilesPane component with file tree + markdown editor
-- [x] `files` tab in dashboard right pane system
-- [x] `/files` and `/vault` slash commands
-- [x] `saveYouJsonDirect` Convex mutation for saving edited files
-- [x] Save/discard buttons with status feedback
-- [ ] Keyboard shortcuts (Ctrl+S to save)
-- [ ] Markdown preview toggle (edit / preview split)
-- [ ] Create new custom .md files
-- [ ] Private vault files (encrypted)
-- [ ] File diff view (compare versions)
-- [ ] Backlinks / bidirectional linking between files
+### SEO/AEO (March 24-25)
+- [x] SSR on all public pages (profiles, profile, landing, docs)
+- [x] JSON-LD structured data on profiles
+- [x] OG social cards per profile
+- [x] Dynamic sitemap.xml (all profiles)
+- [x] robots.txt
+- [x] Canonical URLs on all pages
+- [x] AI agent user-agent detection (serves plain text)
+- [x] Profile breadcrumbs + rel=me links
 
-### Memory System (Unified Brain) — 2026-03-22
-- [x] `memories` table in Convex schema (category, content, source, tags, sessionId)
-- [x] `chatSessions` table for conversation history tracking
-- [x] Memory CRUD mutations (save, archive, update, list, stats)
-- [x] Session tracking mutations (upsert, list)
-- [x] `memory_saves` JSON block parsing in useYouAgent
-- [x] Auto-session tracking (sessionId per page load, message counting)
-- [x] Agent system prompt: memory detection + save instructions
-- [x] Memory files in vault (memory/facts.md, memory/insights.md, etc.)
-- [x] Session history in vault (sessions/history.md)
-- [x] Memory stats in file tree sidebar
-- [x] Memory recall in agent context (inject recent memories into system prompt)
-- [x] Memory search / filter UI (search bar in vault file tree)
-- [x] Memory management commands (/memory, /recall, /recall {query})
-- [x] External agent memory ingestion (HTTP API: GET/POST /api/v1/me/memories)
-- [x] Session summaries (auto-generated via LLM every 10 messages)
-- [x] Memory expiration / archival policies (archiveStale mutation: max age + max count)
-- [x] CLI memory sync (`youmd memories list/add/stats`)
+### CLI Overhaul (March 24-25)
+- [x] 20 commands (init, login, register, whoami, status, build, publish, add, diff, export, preview, chat, link, keys, memories, private, project, pull, push, sync)
+- [x] Conversational AI onboarding with BrailleSpinners
+- [x] Email/password auth (no API token needed for own account)
+- [x] ASCII YOU logo on opening screen
+- [x] ASCII portrait rendering in terminal
+- [x] Multi-select UI for platform/tool selection
+- [x] BrailleSpinner color rotation + lightsweep
+- [x] Personality-rich spinner labels
+- [x] Rich terminal rendering (tables, stats, code blocks)
+- [x] Project-aware context (auto-detect, per-project files)
+- [x] Private context management
+- [x] Context link management (create, list, preview, revoke)
+- [x] Export command (you.json + you.md)
+- [x] Diff command (local vs published)
 
----
+### Audit Gap Closure (March 24)
+- [x] SourcesPane wired to real Convex mutations
+- [x] ActivityPane wired to real security logs
+- [x] SettingsPane wired to real data
+- [x] FilesPane keyboard shortcuts (Cmd+S)
+- [x] FilesPane markdown preview toggle
+- [x] FilesPane create new file
+- [x] Profiles directory search/filter
+- [x] CLI directives in chat context
+- [x] Profile page: raw JSON toggle, voice section, connected sources, maintenance
+- [x] Lovable-style profile page (real photo + ASCII header)
+- [x] Private profile preview (public/private/agent view toggle)
+- [x] Share link preview mode (web + CLI)
 
-### Agent Directives & Proactive Agent UX — 2026-03-24
-- [x] `directives/agent.md` bundle section (communication_style, negative_prompts, default_stack, decision_framework, current_goal)
-- [x] `agentDirectives` field in ProfileData interface (convex/lib/compile.ts)
-- [x] `agent_directives` section compiled into youJson
-- [x] Agent Directives section in youMd output
-- [x] directives/agent.md path in manifest
-- [x] Parse directives from agent updates in useYouAgent
-- [x] Include agent directives in profile context for LLM
-- [x] Include agent directives in share blocks
-- [x] "building" thinking category with 10 new phrases
-- [x] More granular LLM wait sub-steps (7 steps vs 3, tighter intervals)
-- [x] Faster thinking phrase rotation (2.5s vs 3.5s)
-- [x] Category-aware phrase rotation during LLM wait
-- [x] System prompt teaches agent to proactively build directives
-- [x] Progressive depth updated with directive-related questions at L2/L3
-- [x] soul.md updated with "Always Building" philosophy
-- [x] agent.md updated with Agent Directives section documentation
-- [ ] CLI: directives support in `youmd chat`
-- [ ] API: directives in HTTP response
-
-### Intelligent Model Routing & Portrait System — 2026-03-24
-- [x] Model routing config map in convex/chat.ts (chat, research, verify, x_enrichment, summary, classify)
-- [x] `verifyIdentity` action — Perplexity Sonar Pro cross-references scraped profiles to confirm same person
-- [x] `/api/v1/verify-identity` HTTP endpoint
-- [x] Identity verification runs in parallel with research during scraping
-- [x] Verification context injected into agent conversation
-- [x] Save ALL scraped images to `socialImages` (not just best one to avatarUrl)
-- [x] Merge new images with existing socialImages on each scrape
-- [x] AsciiAvatar: 4 format modes — classic, braille, block, minimal
-- [x] AsciiAvatar: 120 columns default (was 80)
-- [x] PortraitPane: tap-to-select primary image from all scraped sources
-- [x] PortraitPane: real photo preview + ASCII preview side by side per source
-- [x] PortraitPane: format picker (classic/braille/block/minimal)
-- [x] PortraitPane: detail level picker (60/80/100/120/160 columns)
-- [x] Public profile page: 120 col portraits (was 60)
-- [ ] Custom image upload to socialImages.custom
-- [ ] Download ASCII portrait as PNG
+### Fixes (March 24-25)
+- [x] CLI hitting prod Convex (was dev — 401 bug)
+- [x] Markdown rendering on profile page (no raw **bold**)
+- [x] Nav avatar uses photo (not tiny ASCII)
+- [x] LinkedIn scraper returning wrong profile (ignoreCache + forceFresh)
+- [x] Text formatting in CLI (word-wrap, paragraph spacing)
+- [x] Mobile dashboard navigation
+- [x] Profile images + richer directory cards
 
 ---
 
-## IN PROGRESS / NEEDS FINISHING
+## NEEDS VERIFICATION
 
-### Profile Page (PRD §15.10 compliance)
-- [ ] Port profile page from Lovable prototype (full terminal-panel layout)
-- [ ] ASCII portrait banner (full-width, from user photo)
-- [ ] System header in terminal panel (status pulse, metrics, verified badge)
-- [ ] Raw JSON toggle (<> raw button)
-- [ ] Count-up animations on metrics
-- [ ] Role icons (◆ Founder, ⟐ Engineer, ◈ Designer)
-- [ ] Section dividers with `── LABEL ──` format
-- [ ] All 13 profile sections per PRD §15.10
+These are implemented but Houston hasn't confirmed they work end-to-end:
 
-### Profiles Directory Page
-- [ ] Create /profiles route
-- [ ] `> ls /profiles` header
-- [ ] ASCII avatar hover-reveal (ASCII → photo on hover)
-- [ ] Agent reads + integrations metrics in accent color
-- [ ] Search/filter/sort
-
-### Landing Page Polish
-- [ ] Verify all sections match Lovable prototype exactly
-- [ ] Boot sequence typewriter timing
-- [ ] Scroll parallax on How It Works
-- [ ] Content opacity fade on hero scroll
-- [ ] Profiles showcase hover-reveal working
-- [ ] Portrait generator functional end-to-end
+- [ ] CLI → web portrait sync (ASCII portraits generated locally persist to server)
+- [ ] CLI → web image sync (scraped profile images upload to server storage)
+- [ ] Email/password auth works end-to-end (CLI register → web login with same creds)
+- [ ] Context link resolution by AI agents (do real agents parse the response correctly?)
+- [ ] CLI export produces valid you.json + you.md
+- [ ] CLI diff accurately shows changes vs published
+- [ ] Private profile preview shows correct scoped data
 
 ---
 
-## UP NEXT (v1 MVP)
+## IN PROGRESS
 
-### End-to-End Testing
-- [ ] Sign up → /initialize → boot sequence → agent → /done → dashboard
-- [ ] CLI: npx youmd init → build → publish → view live
-- [ ] Pipeline: add source URL → trigger build → review → approve
-- [ ] Context link: create → share → agent fetches → gets identity
-
-### Polish
-- [ ] Skeleton loaders on all async pages
-- [ ] Error boundaries with branded fallback
-- [ ] Empty state illustrations
-- [ ] Confirmation dialogs for destructive actions
-- [ ] Mobile hamburger menu on all pages
-- [ ] Custom scrollbar working across browsers
-
-### SEO / AEO
-- [ ] JSON-LD verified on all profile pages
-- [ ] OG cards verified (sharing on X, LinkedIn, Slack)
-- [ ] Canonical URLs set
-- [ ] Sitemap generation
-
-### Monitoring
-- [ ] Sentry error tracking
-- [ ] Vercel Analytics
-- [ ] Uptime monitoring
+- [ ] Project context overhaul (this task — CLAUDE.md, PRD, ARCHITECTURE, TODO, etc.)
 
 ---
 
-## FUTURE (Post-MVP / v1.1+)
+## UP NEXT (Priority Order)
 
-### The You Agent System
-- [ ] you-agent/ directory with soul.md, agent.md, skills/
-- [ ] Agent harness for platform operations
-- [ ] MCP endpoint (mcp.you.md/<username>)
-- [ ] Agent-to-agent communication protocol
+### Agent Intelligence Polish
+- [ ] You Agent personality tuning (more wit, less generic)
+- [ ] Agent acts directly, never says "the system handles that"
+- [ ] Show ASCII portrait in web chat when switched or created
+- [ ] Conversational portrait management working end-to-end
+- [ ] Custom sections via agent conversation (flexible, not rigid 13 sections)
 
-### Features
-- [ ] Verified badges (domain, LinkedIn, GitHub verification)
-- [ ] Private vault encryption (AES-256-GCM)
-- [ ] Stripe Pro plan ($12/mo)
-- [ ] Rate limiting per plan
-- [ ] Custom domains for profiles
-- [ ] Interview mode (youmd interview)
-- [ ] Autonomous refresh (youmd refresh)
-- [ ] Profile analytics dashboard
-- [ ] Profile page theming (v1.2+)
-- [ ] Team/org bundles (v2.0)
-- [ ] Plugin marketplace (v2.0+)
+### End-to-End Flow Testing
+- [ ] Full CLI → web journey: init → register → push → web dashboard sees data
+- [ ] Full web → CLI journey: web create → CLI login → pull → local files correct
+- [ ] Context link share: create → share with Claude → Claude responds with context
+- [ ] Pipeline: add source URL → scrape → extract → compile → auto-publish
 
-### Integrations
-- [ ] Composio OAuth for connected platforms
-- [ ] Apify API key configuration
-- [ ] Framework PRs (Aider, CrewAI, LangChain, etc.)
-- [ ] skills.sh / clawhub.ai skill submission
-- [ ] SKILL.md in repo
-
-### CLI Enhancements
-- [ ] youmd preview — local dev server
-- [ ] youmd diff — actual diff vs published
+### CLI Polish
+- [ ] Reveal/copy existing API key (instead of revoke-to-create-new)
+- [ ] Better error messages when auth fails
+- [ ] youmd preview (local dev server) — currently placeholder
 - [ ] Standalone binary (bun build --compile)
 - [ ] curl installer (you.md/install.sh)
+
+### Design Polish
+- [ ] Profile page custom sections (user-defined via conversation)
+- [ ] Count-up animations on all metrics
+- [ ] Status pulse (ACTIVE dot) on profiles
+- [ ] Role icons (Founder, Engineer, Designer)
+- [ ] Consistent animations across all pages
+
+---
+
+## BLOCKED
+
+- [ ] Stripe Pro plan ($12/mo) — needs Stripe account setup
+- [ ] Private vault encryption (AES-256-GCM) — needs crypto key management design
+- [ ] Composio OAuth — needs Composio partnership/API access
+
+---
+
+## FUTURE (Post-MVP)
+
+### v1.1
+- [ ] Verified badges (domain, social, DNS TXT)
+- [ ] Profile analytics dashboard (views, agent reads, top queries)
+- [ ] Custom domains for profiles
+- [ ] Rate limiting per plan
+- [ ] MCP endpoint (mcp.you.md/{username})
+- [ ] Activity timeline on profile page
+
+### v2.0
+- [ ] Agent-to-agent communication protocol
+- [ ] Team/org bundles
+- [ ] Plugin marketplace
+- [ ] Autonomous refresh (youmd refresh)
+- [ ] Interview mode (youmd interview)
+- [ ] Voice onboarding
+- [ ] Framework integration PRs (Aider, CrewAI, LangChain)
