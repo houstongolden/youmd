@@ -11,6 +11,8 @@ import { api } from "../../convex/_generated/api";
 
 const CHAT_PROXY_URL =
   "https://kindly-cassowary-600.convex.site/api/v1/chat";
+const CHAT_ACK_URL =
+  "https://kindly-cassowary-600.convex.site/api/v1/chat/ack";
 
 // --- Categorized Thinking Phrases (shuffled per session, never repeated) ---
 // Inspired by Claude Code — short, specific, never generic "thinking..." or "generating..."
@@ -2449,6 +2451,48 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     setThinkingCategory(cat);
 
     try {
+      // ─── PHASE 1: FAST ACK ───────────────────────────────────
+      // Quick Haiku call (~1-2s) to acknowledge the user's message
+      // and show what we'll do next. Makes the chat feel responsive.
+      const ackMsgId = crypto.randomUUID();
+      try {
+        const existingYouJson = (latestBundle?.youJson as Record<string, unknown>) || null;
+        const userName = (existingYouJson?.identity as Record<string, unknown>)?.name as string ||
+          userProfile?.name || convexUser?.displayName || "";
+        const contextHint = userName ? `user: ${userName}` : "";
+
+        const ackRes = await fetch(CHAT_ACK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: trimmed, context: contextHint }),
+          signal: AbortSignal.timeout(5_000),
+        });
+
+        if (ackRes.ok) {
+          const ackData = await ackRes.json();
+          const ackText = ackData.ack || "";
+          const plan: string[] = ackData.plan || [];
+
+          if (ackText) {
+            // Show the fast ack as an assistant message immediately
+            setDisplayMessages((prev) => [
+              ...prev,
+              { id: ackMsgId, role: "assistant", content: ackText },
+            ]);
+          }
+
+          // Show the plan as progress steps
+          if (plan.length > 0) {
+            for (const step of plan) {
+              addStep(step);
+            }
+          }
+        }
+      } catch {
+        // ACK failed — non-fatal, continue with full response
+      }
+
+      // ─── PHASE 2: SCRAPE + RESEARCH ──────────────────────────
       // If we detected new sources, scrape them FIRST and inject results
       if (newSources.length > 0) {
         // Add progress steps for each source (activity shown via ThinkingIndicator at bottom)
@@ -2607,12 +2651,12 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         setThinkingCategory("identity");
       }
 
-      // LLM call — stream tokens into a live display message
-      setThinkingPhrase("thinking about your message");
-      const llmStepId = addStep("thinking");
+      // ─── PHASE 3: FULL RESPONSE (streaming) ────────────────
+      setThinkingPhrase("composing response");
+      const llmStepId = addStep("composing full response");
 
-      // Create a placeholder assistant message for streaming
-      const streamMsgId = crypto.randomUUID();
+      // Reuse the ack message ID if we showed an ack, otherwise create new
+      const streamMsgId = ackMsgId;
       let firstTokenReceived = false;
 
       // Keep thinking/progress visible until first token arrives
@@ -2620,14 +2664,16 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         if (!firstTokenReceived) {
           firstTokenReceived = true;
           completeStep(llmStepId);
-          // Hide thinking immediately when first token arrives
           setIsThinking(false);
-          // Add the placeholder message now that streaming has started
-          setDisplayMessages(prev => [...prev, {
-            id: streamMsgId,
-            role: "assistant" as const,
-            content: "",
-          }]);
+          // Replace the ack message with streaming content, or add new
+          setDisplayMessages(prev => {
+            const hasAck = prev.some(m => m.id === streamMsgId);
+            if (hasAck) {
+              // Replace ack content with empty (will be filled by streaming)
+              return prev.map(m => m.id === streamMsgId ? { ...m, content: "" } : m);
+            }
+            return [...prev, { id: streamMsgId, role: "assistant" as const, content: "" }];
+          });
         }
       };
 
@@ -2639,11 +2685,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         completeStep(llmStepId);
         setIsThinking(false);
         clearSteps();
-        setDisplayMessages(prev => [...prev, {
-          id: streamMsgId,
-          role: "assistant" as const,
-          content: response,
-        }]);
+        // Replace ack or add new message with full response
+        setDisplayMessages(prev => {
+          const hasAck = prev.some(m => m.id === streamMsgId);
+          if (hasAck) {
+            return prev.map(m => m.id === streamMsgId ? { ...m, content: response } : m);
+          }
+          return [...prev, { id: streamMsgId, role: "assistant" as const, content: response }];
+        });
       }
 
       // Strip JSON blocks from the streamed display (they stream in raw during typing)

@@ -395,6 +395,73 @@ http.route({
   }),
 });
 
+// POST /api/v1/chat/ack — Fast acknowledgment via Haiku (~1-2s response)
+// Returns a quick 1-sentence ack + plan before the full response streams
+http.route({
+  path: "/api/v1/chat/ack",
+  method: "POST",
+  handler: httpAction(async (_ctx, request) => {
+    const body = await request.json();
+    const userMessage = body.message || "";
+    const context = body.context || "";
+
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (!anthropicKey) {
+      return json({ ack: "on it.", plan: [] });
+    }
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": anthropicKey,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 200,
+          temperature: 0.5,
+          system: `you are the you.md agent. respond with ONLY valid JSON. given the user's message, return:
+1. "ack": a casual 1-sentence acknowledgment of what they said (direct, no fluff, match their energy)
+2. "plan": an array of 2-4 short step descriptions for what you'll do next
+
+example response: {"ack":"got it — pulling your linkedin now.","plan":["scraping linkedin profile","analyzing your professional context","updating identity sections"]}
+
+${context ? `user context: ${context.slice(0, 500)}` : ""}`,
+          messages: [{ role: "user", content: userMessage.slice(0, 500) }],
+        }),
+        signal: AbortSignal.timeout(8_000),
+      });
+
+      if (!res.ok) {
+        return json({ ack: "on it.", plan: [] }, 200, CORS_HEADERS);
+      }
+
+      const data = await res.json();
+      const text = data.content?.[0]?.text || "";
+
+      try {
+        const parsed = JSON.parse(text);
+        return json({
+          ack: parsed.ack || "on it.",
+          plan: Array.isArray(parsed.plan) ? parsed.plan.slice(0, 5) : [],
+        }, 200, CORS_HEADERS);
+      } catch {
+        return json({ ack: text.slice(0, 100) || "on it.", plan: [] }, 200, CORS_HEADERS);
+      }
+    } catch {
+      return json({ ack: "on it.", plan: [] }, 200, CORS_HEADERS);
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/chat/ack",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
 // POST /api/v1/chat/stream — Streaming chat via SSE
 // Bypasses Convex actions to stream directly from Anthropic API.
 http.route({
