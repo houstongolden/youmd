@@ -5,13 +5,15 @@ export const alt = "you.md profile card";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// Brand colors from PRD §15.2
+// Brand colors from PRD v2.3 — monochrome + burnt orange
 const COLORS = {
-  coral: "#E8857A",
-  gold: "#F4D78C",
-  mist: "#8899AA",
-  void: "#0A0E1A",
-  ink: "#1A1F2E",
+  accent: "#C46A3A",
+  accentDim: "#A8552E",
+  bg: "#0D0D0D",
+  bgRaised: "#171717",
+  text: "#EAE6E1",
+  textSecondary: "#A89E91",
+  border: "#2E2E2E",
 };
 
 /**
@@ -87,13 +89,12 @@ export default async function OgImage({
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          // Gradient: ink at bottom -> void at top
-          background: `linear-gradient(to top, ${COLORS.ink} 0%, ${COLORS.void} 100%)`,
+          background: `linear-gradient(to top, ${COLORS.bgRaised} 0%, ${COLORS.bg} 100%)`,
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Subtle gold glow at center */}
+        {/* Subtle accent glow at center */}
         <div
           style={{
             position: "absolute",
@@ -103,7 +104,7 @@ export default async function OgImage({
             width: "600px",
             height: "600px",
             borderRadius: "50%",
-            background: `radial-gradient(circle, ${COLORS.gold}18 0%, ${COLORS.gold}08 40%, transparent 70%)`,
+            background: `radial-gradient(circle, ${COLORS.accent}15 0%, ${COLORS.accent}06 40%, transparent 70%)`,
             display: "flex",
           }}
         />
@@ -125,7 +126,7 @@ export default async function OgImage({
             style={{
               fontFamily: "monospace",
               fontSize: "28px",
-              color: COLORS.coral,
+              color: COLORS.accent,
               letterSpacing: "0.05em",
               marginBottom: "24px",
               display: "flex",
@@ -155,7 +156,7 @@ export default async function OgImage({
             <div
               style={{
                 fontSize: "28px",
-                color: COLORS.mist,
+                color: COLORS.textSecondary,
                 textAlign: "center",
                 maxWidth: "800px",
                 lineHeight: 1.4,
@@ -183,7 +184,7 @@ export default async function OgImage({
               width: "10px",
               height: "10px",
               borderRadius: "50%",
-              background: COLORS.coral,
+              background: COLORS.accent,
               display: "flex",
             }}
           />
@@ -191,7 +192,7 @@ export default async function OgImage({
             style={{
               fontFamily: "monospace",
               fontSize: "20px",
-              color: COLORS.mist,
+              color: COLORS.textSecondary,
               letterSpacing: "0.08em",
               display: "flex",
             }}
@@ -208,7 +209,7 @@ export default async function OgImage({
             left: "40px",
             right: "40px",
             height: "1px",
-            background: `linear-gradient(to right, transparent, ${COLORS.mist}30, transparent)`,
+            background: `linear-gradient(to right, transparent, ${COLORS.textSecondary}30, transparent)`,
             display: "flex",
           }}
         />
@@ -219,7 +220,7 @@ export default async function OgImage({
             left: "40px",
             right: "40px",
             height: "1px",
-            background: `linear-gradient(to right, transparent, ${COLORS.mist}30, transparent)`,
+            background: `linear-gradient(to right, transparent, ${COLORS.textSecondary}30, transparent)`,
             display: "flex",
           }}
         />
