@@ -132,7 +132,7 @@ const WhatsInside = () => (
       </FadeUp>
 
       <FadeUp delay={0.2}>
-        <div className="mt-8 grid grid-cols-2 gap-4">
+        <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-4">
           {[
             {
               label: "identity",
@@ -149,6 +149,14 @@ const WhatsInside = () => (
             {
               label: "context",
               desc: "what you're working on now. goals. private notes for trusted agents.",
+            },
+            {
+              label: "skills",
+              desc: "agent skills that travel with you. CLAUDE.md, project scaffolds, voice sync -- identity-aware.",
+            },
+            {
+              label: "preferences",
+              desc: "stack, tools, agent behavior rules. every agent adapts to how you work.",
             },
           ].map((item) => (
             <div

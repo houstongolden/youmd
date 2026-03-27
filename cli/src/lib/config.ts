@@ -261,6 +261,47 @@ export function writeProjectContext(projectName: string, context: Record<string,
   fs.writeFileSync(path.join(projectDir, "context.json"), JSON.stringify(context, null, 2) + "\n");
 }
 
+// ─── Skills Directories ──────────────────────────────────────────────
+
+/**
+ * Global skills directory: ~/.youmd/skills/
+ */
+export function getSkillsDir(): string {
+  return path.join(GLOBAL_CONFIG_DIR, "skills");
+}
+
+/**
+ * Global skill catalog path: ~/.youmd/skills/youmd-skills.yaml
+ */
+export function getSkillCatalogPath(): string {
+  return path.join(getSkillsDir(), "youmd-skills.yaml");
+}
+
+/**
+ * Skill metrics path: ~/.youmd/skills/skill-metrics.json
+ */
+export function getSkillMetricsPath(): string {
+  return path.join(getSkillsDir(), "skill-metrics.json");
+}
+
+/**
+ * Per-project skills directory: .youmd/skills/ in cwd
+ */
+export function getProjectSkillsDir(): string {
+  return path.resolve(process.cwd(), ".youmd", "skills");
+}
+
+/**
+ * Ensure the global skills directory exists.
+ */
+export function ensureSkillsDir(): string {
+  const dir = getSkillsDir();
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
+}
+
 /**
  * List all known projects from .youmd/projects/
  */

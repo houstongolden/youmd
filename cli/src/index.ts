@@ -21,6 +21,7 @@ import { syncCommand } from "./commands/sync";
 import { memoriesCommand } from "./commands/memories";
 import { privateCommand } from "./commands/private";
 import { projectCommand } from "./commands/project";
+import { skillCommand } from "./commands/skill";
 
 const program = new Command();
 
@@ -157,6 +158,13 @@ program
   .description("Manage project agent context (init, list, show, memories)")
   .action((subcommand, args) => {
     return projectCommand(subcommand, ...(args || []));
+  });
+
+program
+  .command("skill [subcommand] [args...]")
+  .description("Identity-aware agent skills (list, install, use, sync, init-project)")
+  .action((subcommand, args) => {
+    return skillCommand(subcommand, ...(args || []));
   });
 
 program.parse(process.argv);

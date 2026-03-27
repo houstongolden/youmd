@@ -6,6 +6,8 @@ import { compileBundle, writeBundle } from "../lib/compiler";
 import { uploadBundle, publishLatest, updatePrivateContext, getMe } from "../lib/api";
 import { readPrivateContextFromLocal } from "./private";
 import { computeContentHash, shortHash } from "../lib/hash";
+import { syncAllSkills } from "../lib/skills";
+import { readSkillCatalog } from "../lib/skill-catalog";
 
 export async function pushCommand(options: { publish?: boolean; force?: boolean }) {
   const config = readGlobalConfig();
@@ -219,8 +221,36 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
       }
     }
 
+    // Auto re-interpolate installed skills after push (identity may have changed)
+    const catalog = readSkillCatalog();
+    const installedCount = catalog.skills.filter((s) => s.installed).length;
+    if (installedCount > 0) {
+      console.log(chalk.dim("  syncing skills with updated identity..."));
+      const syncResult = syncAllSkills();
+      if (syncResult.synced.length > 0) {
+        console.log(
+          chalk.green("  \u2713") +
+          chalk.dim(` ${syncResult.synced.length} skill${syncResult.synced.length === 1 ? "" : "s"} re-interpolated`)
+        );
+      }
+    }
+
+    // Recommendations after push
+    const recs: string[] = [];
+    const claudeSkills = path.join(bundleDir, "..", ".claude", "skills", "youmd");
+    if (installedCount === 0) {
+      recs.push("run " + chalk.cyan("youmd skill install all") + " to set up agent skills");
+    } else if (!fs.existsSync(claudeSkills)) {
+      recs.push("run " + chalk.cyan("youmd skill link claude") + " to update this project's agent context");
+    }
+
     console.log("");
     console.log(chalk.green("  push complete."));
+    if (recs.length > 0) {
+      for (const r of recs) {
+        console.log(`  ${chalk.hex("#C46A3A")("\u203A")} ${r}`);
+      }
+    }
   } catch (err) {
     console.log(
       chalk.hex("#C46A3A")(

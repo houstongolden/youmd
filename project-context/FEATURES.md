@@ -128,6 +128,30 @@ Last Updated: 2026-03-26
 | youmd memories | Done | List, add, stats |
 | youmd private | Done | Private context management (10 subcommands) |
 | youmd project | Done | Per-project context (init, list, switch, context, memory) |
+| youmd skill | Done | 12 subcommands: list, install, remove, use, sync, add, push, link, init-project, improve, metrics, search |
+
+## Skill System (v1.0)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Skill catalog (YAML) | Done | youmd-skills.yaml with entries, scope, identity_fields |
+| Template engine | Done | {{var}} interpolation against live identity data |
+| Bundled skills (4) | Done | claude-md-generator, project-context-init, voice-sync, meta-improve |
+| Install / Remove | Done | Global ~/.youmd/skills/ + batch all |
+| Use (render) | Done | Interpolate + readiness check + display |
+| Sync (re-interpolate) | Done | Manual + auto on push/pull/sync |
+| Agent linking | Done | claude (.claude/skills/youmd/), cursor (.cursor/rules/youmd.md), codex |
+| init-project | Done | CLAUDE.md + project-context/ + .claude/skills/ in one command |
+| CLAUDE.md merge | Done | Appends identity section to existing files |
+| Meta-improvement | Done | Identity coverage bars, unused skill detection, actionable proposals |
+| Metrics tracking | Done | skill-metrics.json — uses, installs, identity field references |
+| npm packaging | Done | Skills shipped with package in cli/skills/ |
+| Push/pull hooks | Done | Auto re-interpolate installed skills on identity changes |
+| Onboarding integration | Done | youmd init offers skill init-project when project detected |
+| Status integration | Done | Skills count + identity coverage bar in status output |
+| Web: SkillsPane | Done | Dashboard tab with catalog, CLI commands, how-it-works |
+| Web: /skills command | Done | Slash command + help text |
+| Skill registry | Not started | Phase 6: Convex tables for public skill discovery |
 
 ## Design System (PRD v2.3)
 

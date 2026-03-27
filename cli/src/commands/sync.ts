@@ -4,6 +4,8 @@ import chalk from "chalk";
 import { readGlobalConfig, getLocalBundleDir, localBundleExists } from "../lib/config";
 import { pushCommand } from "./push";
 import { pullCommand } from "./pull";
+import { syncAllSkills } from "../lib/skills";
+import { readSkillCatalog } from "../lib/skill-catalog";
 
 export async function syncCommand(options: { watch?: boolean }) {
   const config = readGlobalConfig();
@@ -57,6 +59,20 @@ export async function syncCommand(options: { watch?: boolean }) {
             chalk.dim(`  change detected: ${filename}`)
           );
           await pushCommand({ publish: true });
+
+          // Also re-interpolate installed skills on identity changes
+          const catalog = readSkillCatalog();
+          const installedCount = catalog.skills.filter((s) => s.installed).length;
+          if (installedCount > 0) {
+            const syncResult = syncAllSkills();
+            if (syncResult.synced.length > 0) {
+              console.log(
+                chalk.green("  \u2713") +
+                chalk.dim(` ${syncResult.synced.length} skills re-interpolated`)
+              );
+            }
+          }
+
           console.log(chalk.dim("  watching for changes..."));
         }, 1000);
       });

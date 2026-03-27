@@ -1341,4 +1341,178 @@ http.route({
   }),
 });
 
+// ── Skills Registry ──────────────────────────────────────────
+
+// Browse published skills (public, no auth required)
+http.route({
+  path: "/api/v1/skills",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    const skills = await ctx.runQuery(api.skills.listPublished, { limit: 50 });
+    return json({ skills, count: skills.length });
+  }),
+});
+
+// CORS preflight for skills endpoints
+http.route({
+  path: "/api/v1/skills",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
+// Get my installed skills (authenticated)
+http.route({
+  path: "/api/v1/me/skills",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    if (!user) return json({ error: "User not found" }, 404);
+
+    const installs = await ctx.runQuery(api.skills.listInstalls, { userId: user._id });
+    return json({ skills: installs, count: installs.length });
+  }),
+});
+
+// Publish a skill to the registry (authenticated)
+http.route({
+  path: "/api/v1/me/skills",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const body = await request.json();
+      if (!body.name || !body.content) {
+        return json({ error: "name and content are required" }, 400);
+      }
+
+      const result = await ctx.runMutation(api.skills.publish, {
+        clerkId: auth.userId,
+        name: body.name,
+        description: body.description || "",
+        version: body.version || "1.0.0",
+        scope: body.scope || "shared",
+        identityFields: body.identityFields || [],
+        content: body.content,
+      });
+
+      return json(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to publish skill";
+      if (message.includes("already taken")) return json({ error: message }, 409);
+      return json({ error: message }, 500);
+    }
+  }),
+});
+
+// CORS preflight for me/skills
+http.route({
+  path: "/api/v1/me/skills",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
+// Record a skill install (authenticated)
+http.route({
+  path: "/api/v1/me/skills/install",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const body = await request.json();
+      if (!body.skillName) {
+        return json({ error: "skillName is required" }, 400);
+      }
+
+      const result = await ctx.runMutation(api.skills.recordInstall, {
+        clerkId: auth.userId,
+        skillName: body.skillName,
+        source: body.source || "cli",
+        scope: body.scope || "shared",
+        identityFields: body.identityFields || [],
+      });
+
+      return json(result);
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "Failed" }, 500);
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/skills/install",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
+// Track skill usage (authenticated)
+http.route({
+  path: "/api/v1/me/skills/usage",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const body = await request.json();
+      if (!body.skillName) {
+        return json({ error: "skillName is required" }, 400);
+      }
+
+      const result = await ctx.runMutation(api.skills.trackUsage, {
+        clerkId: auth.userId,
+        skillName: body.skillName,
+      });
+
+      return json(result);
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "Failed" }, 500);
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/skills/usage",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
+// Remove a skill install (authenticated)
+http.route({
+  path: "/api/v1/me/skills/remove",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const body = await request.json();
+      if (!body.skillName) {
+        return json({ error: "skillName is required" }, 400);
+      }
+
+      const result = await ctx.runMutation(api.skills.removeInstall, {
+        clerkId: auth.userId,
+        skillName: body.skillName,
+      });
+
+      return json(result);
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "Failed" }, 500);
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/skills/remove",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
 export default http;

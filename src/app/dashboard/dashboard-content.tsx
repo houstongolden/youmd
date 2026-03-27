@@ -14,6 +14,7 @@ import { EditPane } from "@/components/panes/EditPane";
 import { SharePane } from "@/components/panes/SharePane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
 import { PortraitPane } from "@/components/panes/PortraitPane";
+import { SkillsPane } from "@/components/panes/SkillsPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Mobile nav shows these panes as top-level tabs
@@ -23,11 +24,12 @@ const MOBILE_PANES: Array<{ key: RightPane | "terminal"; label: string }> = [
   { key: "portrait", label: "portrait" },
   { key: "edit", label: "edit" },
   { key: "share", label: "share" },
+  { key: "skills", label: "skills" },
   { key: "settings", label: "settings" },
 ];
 
 // Desktop pane tab row (shown inside the right panel)
-const DESKTOP_PANES: RightPane[] = ["profile", "portrait", "edit", "share", "settings"];
+const DESKTOP_PANES: RightPane[] = ["profile", "portrait", "edit", "share", "skills", "settings"];
 
 export function DashboardContent() {
   const { user } = useUser();
@@ -312,6 +314,9 @@ export function DashboardContent() {
                       profileId={userProfile?._id}
                       plan={plan}
                     />
+                  )}
+                  {rightPane === "skills" && (
+                    <SkillsPane userId={convexUser._id} />
                   )}
                   {rightPane === "settings" && user?.id && (
                     <SettingsPane clerkId={user.id} username={username} plan={plan} profileId={userProfile?._id} />

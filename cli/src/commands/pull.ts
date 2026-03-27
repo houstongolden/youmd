@@ -5,6 +5,8 @@ import { getMe, getPublicProfile, getPrivateContext } from "../lib/api";
 import { readGlobalConfig, getLocalBundleDir, localBundleExists, readLocalConfig, writeLocalConfig } from "../lib/config";
 import { writePrivateContextToLocal } from "./private";
 import { computeContentHash, shortHash } from "../lib/hash";
+import { syncAllSkills } from "../lib/skills";
+import { readSkillCatalog } from "../lib/skill-catalog";
 
 export async function pullCommand() {
   const config = readGlobalConfig();
@@ -253,6 +255,26 @@ ${(voice.overall as string) || (analysis.voice_summary as string) || ""}
     }
   } catch {
     // non-fatal
+  }
+
+  // Auto re-interpolate installed skills after identity pull
+  const catalog = readSkillCatalog();
+  const installedCount = catalog.skills.filter((s) => s.installed).length;
+  if (installedCount > 0) {
+    console.log("");
+    console.log(chalk.dim("  re-interpolating skills against updated identity..."));
+    const syncResult = syncAllSkills();
+    if (syncResult.synced.length > 0) {
+      console.log(
+        chalk.green("  \u2713") +
+        chalk.dim(` ${syncResult.synced.length} skill${syncResult.synced.length === 1 ? "" : "s"} synced`)
+      );
+    }
+    if (syncResult.errors.length > 0) {
+      for (const err of syncResult.errors) {
+        console.log(chalk.hex("#C46A3A")(`  skill sync error: ${err}`));
+      }
+    }
   }
 
   console.log("");

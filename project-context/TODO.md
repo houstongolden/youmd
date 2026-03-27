@@ -85,6 +85,24 @@ PRD Version: 2.3
 - [x] AI agent user-agent detection (serves plain text)
 - [x] Profile breadcrumbs + rel=me links
 
+### Skill System (March 27)
+- [x] 21 commands (added `skill` with 12 subcommands)
+- [x] Skill catalog (youmd-skills.yaml) with YAML parser/writer
+- [x] Identity-aware template engine ({{var}} → identity data)
+- [x] 4 bundled skills: claude-md-generator, project-context-init, voice-sync, meta-improve
+- [x] Install/remove/use/sync/link/init-project/improve/metrics/search commands
+- [x] Batch install/remove (youmd skill install all)
+- [x] Cross-project sync hooks (push/pull/sync auto re-interpolate)
+- [x] Agent linking (Claude Code, Cursor, Codex target directories)
+- [x] CLAUDE.md merge (appends identity section to existing files)
+- [x] Meta-improvement (identity coverage bars, actionable proposals)
+- [x] Skills integrated into onboarding flow (youmd init → skill init-project)
+- [x] Skills info in status command + identity coverage bar
+- [x] BrailleSpinner personality across all commands
+- [x] npm packaging (skills/ shipped with package)
+- [x] Web: SkillsPane dashboard tab + /skills slash command
+- [x] Nested you.json identity resolution (API + compiled bundle formats)
+
 ### CLI Overhaul (March 24-25)
 - [x] 20 commands (init, login, register, whoami, status, build, publish, add, diff, export, preview, chat, link, keys, memories, private, project, pull, push, sync)
 - [x] Conversational AI onboarding with BrailleSpinners
@@ -142,7 +160,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 
 ## IN PROGRESS
 
-- [ ] Project context overhaul (this task — CLAUDE.md, PRD, ARCHITECTURE, TODO, etc.)
+- [ ] Skill system registry (Convex tables for public skill discovery — Phase 6)
 
 ---
 

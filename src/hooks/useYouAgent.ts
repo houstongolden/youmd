@@ -849,7 +849,7 @@ export interface PrivateUpdate {
   project?: Record<string, string>;
 }
 
-export type RightPane = "profile" | "portrait" | "edit" | "share" | "settings";
+export type RightPane = "profile" | "portrait" | "edit" | "share" | "skills" | "settings";
 
 // ---------------------------------------------------------------------------
 // Helpers (exported for reuse)
@@ -2075,17 +2075,24 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         "/vault": "edit",
         "/edit": "edit",
         "/agents": "share",
+        "/skills": "skills",
       };
 
       if (paneCommands[trimmed] && onPaneSwitch) {
         onPaneSwitch(paneCommands[trimmed]);
+
+        // Custom message for /skills
+        const noticeContent = trimmed === "/skills"
+          ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\ninstall via CLI: `youmd skill install all`\nscaffold a project: `youmd skill init-project`"
+          : `[switched to ${paneCommands[trimmed]}]`;
+
         setDisplayMessages((prev) => [
           ...prev,
           { id: crypto.randomUUID(), role: "user", content: trimmed },
           {
             id: crypto.randomUUID(),
             role: "system-notice",
-            content: `[switched to ${paneCommands[trimmed]}]`,
+            content: noticeContent,
           },
         ]);
         return true;
@@ -2162,7 +2169,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("settings");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/profile -- your identity profile\n/portrait -- ascii portrait editor + format picker\n/portrait --regenerate -- regenerate ascii portrait from sources\n/edit -- edit your identity bundle (files, json, sources)\n/publish -- publish your latest bundle\n/settings -- account, api keys, billing\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n/status -- bundle status\n/help -- show this reference"
+          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/profile -- your identity profile\n/portrait -- ascii portrait editor + format picker\n/portrait --regenerate -- regenerate ascii portrait from sources\n/edit -- edit your identity bundle (files, json, sources)\n/skills -- identity-aware agent skills\n/publish -- publish your latest bundle\n/settings -- account, api keys, billing\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n/status -- bundle status\n/help -- show this reference"
           : "available commands:\n/share -- create a shareable identity link\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/memory -- memory summary\n/recall -- show recent memories\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
 
         setDisplayMessages((prev) => [

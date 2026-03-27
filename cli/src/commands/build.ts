@@ -3,8 +3,21 @@ import * as path from "path";
 import chalk from "chalk";
 import { getLocalBundleDir, localBundleExists, readGlobalConfig, readLocalConfig, writeLocalConfig } from "../lib/config";
 import { compileBundle, writeBundle } from "../lib/compiler";
-import { randomThinking, Spinner } from "../lib/onboarding";
+import { BrailleSpinner } from "../lib/render";
 import { computeContentHash, shortHash } from "../lib/hash";
+
+const BUILD_SPINNERS = [
+  "assembling your identity bundle",
+  "weaving your narrative thread",
+  "crystallizing who you are",
+  "forging your identity file",
+  "encoding your context mosaic",
+  "compiling your digital twin",
+];
+
+function randomBuildLabel(): string {
+  return BUILD_SPINNERS[Math.floor(Math.random() * BUILD_SPINNERS.length)];
+}
 
 export async function buildCommand(): Promise<void> {
   if (!localBundleExists()) {
@@ -25,8 +38,8 @@ export async function buildCommand(): Promise<void> {
   console.log("  " + chalk.bold("you.md") + chalk.dim(" -- building identity bundle"));
   console.log("");
 
-  // Show a thinking phrase while compiling
-  const spinner = new Spinner(randomThinking());
+  // Show a personality spinner while compiling
+  const spinner = new BrailleSpinner(randomBuildLabel());
   spinner.start();
 
   const result = compileBundle(bundleDir);

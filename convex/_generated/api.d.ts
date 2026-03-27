@@ -33,6 +33,7 @@ import type * as private_ from "../private.js";
 import type * as profiles from "../profiles.js";
 import type * as scrape from "../scrape.js";
 import type * as seed from "../seed.js";
+import type * as skills from "../skills.js";
 import type * as users from "../users.js";
 
 import type {
@@ -67,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   profiles: typeof profiles;
   scrape: typeof scrape;
   seed: typeof seed;
+  skills: typeof skills;
   users: typeof users;
 }>;
 

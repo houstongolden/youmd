@@ -1,5 +1,38 @@
 # You.md — Changelog
 
+## 2026-03-27 — Identity-Aware Skill System
+
+### CLI Skill System (Phase 1-5 complete)
+- **New command:** `youmd skill` with 12 subcommands (list, install, remove, use, sync, add, push, link, init-project, improve, metrics, search)
+- **Skill catalog:** YAML-based catalog (`youmd-skills.yaml`) with scope, identity_fields, version tracking
+- **Template engine:** `{{var}}` interpolation resolves against live identity data (profile, preferences, voice, directives)
+- **4 bundled skills:** claude-md-generator, project-context-init, voice-sync, meta-improve
+- **Agent linking:** Claude Code (.claude/skills/youmd/), Cursor (.cursor/rules/youmd.md), Codex targets
+- **init-project compound command:** CLAUDE.md + project-context/ + .claude/skills/ in one shot
+- **CLAUDE.md merge:** Appends identity section to existing CLAUDE.md files instead of skipping
+- **Cross-project sync:** push/pull/sync auto re-interpolate installed skills on identity changes
+- **Meta-improvement:** Identity coverage bars, unused skill detection, actionable proposals
+- **Metrics tracking:** Usage counts, identity field references, install history
+- **Batch operations:** `youmd skill install all` / `youmd skill remove all`
+- **npm packaging:** Skills shipped with package via cli/skills/
+
+### CLI Polish
+- BrailleSpinner personality labels on build, skill, and all async commands
+- Status command shows skills count, identity coverage bar, voice/ directory tree, actionable recommendations
+- Push completion shows "what's next" recommendations
+- Build command uses BrailleSpinner (was basic Spinner)
+- Onboarding flow offers skill init-project after project detection
+
+### Web Dashboard
+- **New:** SkillsPane — skills tab in dashboard with catalog, CLI commands, how-it-works, scope explanation
+- **New:** `/skills` slash command in CommandPalette + help text
+- **New:** "skills" tab in desktop + mobile nav
+
+### Files
+- 13 new files (4 CLI lib, 1 command, 4 bundled skills, 4 source skills)
+- 13 modified files (6 CLI commands, 2 CLI lib, 1 CLI config, 3 web components, 1 web hook)
+- 1 new dependency: js-yaml
+
 ## 2026-03-26 — Project Context & Agent Self-Improvement Overhaul
 
 ### New Files Created

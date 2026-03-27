@@ -10,6 +10,10 @@ import {
 } from "../lib/config";
 import { getMe } from "../lib/api";
 import { shortHash } from "../lib/hash";
+import { readSkillCatalog } from "../lib/skill-catalog";
+import { loadIdentityData, resolveVariable } from "../lib/skill-renderer";
+
+const ACCENT = chalk.hex("#C46A3A");
 
 export async function statusCommand(): Promise<void> {
   console.log("");
@@ -29,6 +33,25 @@ export async function statusCommand(): Promise<void> {
     "  bundle:  " +
       (hasBundle ? chalk.green("initialized") : chalk.yellow("not initialized"))
   );
+
+  // Skills summary (show regardless of bundle status — skills are global)
+  try {
+    const catalog = readSkillCatalog();
+    const installedSkills = catalog.skills.filter((s) => s.installed);
+    if (installedSkills.length > 0) {
+      console.log(
+        "  skills:  " + chalk.green(`${installedSkills.length} installed`) +
+        chalk.dim(` / ${catalog.skills.length} in catalog`)
+      );
+    } else {
+      console.log(
+        "  skills:  " + chalk.dim("none installed") +
+        chalk.dim(` (${catalog.skills.length} available)`)
+      );
+    }
+  } catch {
+    // skill catalog not initialized — skip
+  }
 
   if (!hasBundle) {
     console.log("");
@@ -89,6 +112,7 @@ export async function statusCommand(): Promise<void> {
   const dirs = [
     { dir: "profile", label: "profile" },
     { dir: "preferences", label: "preferences" },
+    { dir: "voice", label: "voice" },
   ];
 
   for (let d = 0; d < dirs.length; d++) {
@@ -133,6 +157,58 @@ export async function statusCommand(): Promise<void> {
         : chalk.dim(" (empty)");
 
       console.log("  " + dirPipe + fileConnector + " " + statusIcon + " " + nameStr + previewStr);
+    }
+  }
+
+  // Identity coverage for skills
+  try {
+    const catalog = readSkillCatalog();
+    const installedSkills = catalog.skills.filter((s) => s.installed);
+    if (installedSkills.length > 0) {
+      const identity = loadIdentityData();
+      const allFields = new Set<string>();
+      for (const s of catalog.skills) {
+        for (const f of s.identity_fields) allFields.add(f);
+      }
+
+      let filled = 0;
+      for (const field of allFields) {
+        if (resolveVariable(field, identity)) filled++;
+      }
+
+      if (allFields.size > 0) {
+        const pct = Math.round((filled / allFields.size) * 100);
+        const barWidth = 20;
+        const filledBar = Math.round((filled / allFields.size) * barWidth);
+        const bar = chalk.green("\u2588".repeat(filledBar)) + chalk.dim("\u2591".repeat(barWidth - filledBar));
+        console.log("");
+        console.log("  " + chalk.bold("identity coverage:"));
+        console.log(`    ${bar} ${pct}% (${filled}/${allFields.size} fields)`);
+      }
+    }
+  } catch {
+    // skip
+  }
+
+  // Recommendations
+  const recs: string[] = [];
+  if (!authed) recs.push("run " + chalk.cyan("youmd login") + " to authenticate");
+  try {
+    const catalog = readSkillCatalog();
+    if (catalog.skills.filter((s) => s.installed).length === 0) {
+      recs.push("run " + chalk.cyan("youmd skill install all") + " to set up agent skills");
+    }
+    const claudeSkills = path.join(process.cwd(), ".claude", "skills", "youmd");
+    if (catalog.skills.some((s) => s.installed) && !fs.existsSync(claudeSkills)) {
+      recs.push("run " + chalk.cyan("youmd skill link claude") + " to connect skills to this project");
+    }
+  } catch { /* skip */ }
+
+  if (recs.length > 0) {
+    console.log("");
+    console.log("  " + ACCENT("next:"));
+    for (const r of recs) {
+      console.log(`    ${ACCENT("\u203A")} ${r}`);
     }
   }
 

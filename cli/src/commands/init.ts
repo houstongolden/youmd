@@ -14,6 +14,8 @@ import {
   initProjectFiles,
   getProjectDir,
 } from "../lib/project";
+import { initProject as skillInitProject } from "../lib/skills";
+import { readSkillCatalog } from "../lib/skill-catalog";
 
 export async function initCommand(options: {
   skipPrompts?: boolean;
@@ -89,6 +91,43 @@ export async function initCommand(options: {
 
         console.log(chalk.green("  project context initialized."));
         console.log(chalk.dim(`  ${youmdProjectPath}`));
+      }
+    }
+  }
+
+  // After everything, offer to set up skills for this project
+  if (projectCtx) {
+    const claudeMdPath = path.join(projectCtx.root, "CLAUDE.md");
+    const pcDir = path.join(projectCtx.root, "project-context");
+    const needsSkills = !fs.existsSync(claudeMdPath) || !fs.existsSync(pcDir);
+
+    if (needsSkills) {
+      const rl2 = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+
+      const skillAnswer = await new Promise<string>((resolve) => {
+        rl2.question(
+          chalk.dim(`\n  set up agent skills? (CLAUDE.md + project-context/ + .claude/skills/) [Y/n]: `),
+          (a) => resolve(a.trim())
+        );
+      });
+
+      rl2.close();
+
+      if (!skillAnswer || skillAnswer.toLowerCase() !== "n") {
+        console.log("");
+        const result = skillInitProject();
+        for (const step of result.steps) {
+          const icon = step.ok ? chalk.green("\u2713") : chalk.hex("#C46A3A")("\u2717");
+          const detail = step.detail ? chalk.dim(` ${step.detail}`) : "";
+          console.log(`  ${icon} ${step.name}${detail}`);
+        }
+        if (result.ok) {
+          console.log("");
+          console.log(chalk.dim("  every agent that touches this repo now knows who you are."));
+        }
       }
     }
   }

@@ -611,6 +611,32 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               </>
             )}
 
+            {/* ═══ SKILLS ═══ */}
+            {data.identity?.skills && (Array.isArray(data.identity.skills) ? data.identity.skills.length > 0 : true) && (
+              <>
+                <Divider />
+                <motion.section {...delay(8)}>
+                  <SectionLabel>skills</SectionLabel>
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {(Array.isArray(data.identity.skills)
+                      ? data.identity.skills
+                      : typeof data.identity.skills === "string"
+                        ? data.identity.skills.split(",").map((s: string) => s.trim())
+                        : []
+                    ).map((skill: string, i: number) => (
+                      <span
+                        key={i}
+                        className="font-mono text-[10px] px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-60"
+                        style={{ borderRadius: "2px" }}
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </motion.section>
+              </>
+            )}
+
             {/* ═══ CUSTOM SECTIONS ═══ */}
             {data.custom_sections && Array.isArray(data.custom_sections) && data.custom_sections.length > 0 && (
               <>

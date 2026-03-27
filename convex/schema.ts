@@ -324,4 +324,35 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_sessionId", ["sessionId"]),
+
+  // ── Skills Registry ────────────────────────────────────────
+  skills: defineTable({
+    authorId: v.id("users"),
+    name: v.string(),
+    description: v.string(),
+    version: v.string(),
+    scope: v.union(v.literal("shared"), v.literal("project"), v.literal("private")),
+    identityFields: v.array(v.string()),
+    content: v.string(),
+    isPublished: v.boolean(),
+    downloads: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_name", ["name"])
+    .index("by_authorId", ["authorId"])
+    .index("by_isPublished", ["isPublished"]),
+
+  skillInstalls: defineTable({
+    userId: v.id("users"),
+    skillName: v.string(),
+    source: v.string(),
+    scope: v.string(),
+    identityFields: v.array(v.string()),
+    installedAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+    useCount: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_skillName", ["userId", "skillName"]),
 });

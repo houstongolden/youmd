@@ -1,6 +1,6 @@
 {
   "name": "youmd",
-  "version": "0.4.9",
+  "version": "0.5.0",
   "description": "Your identity file for the agent internet. CLI for the You.md platform.",
   "bin": {
     "youmd": "./dist/index.js",
@@ -8,7 +8,8 @@
   },
   "main": "dist/index.js",
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "skills/**/*"
   ],
   "scripts": {
     "build": "tsc",
@@ -39,9 +40,11 @@
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
     "gray-matter": "^4.0.3",
-    "jimp": "^0.22.12"
+    "jimp": "^0.22.12",
+    "js-yaml": "^4.1.1"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.0"

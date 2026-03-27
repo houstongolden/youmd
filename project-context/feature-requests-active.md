@@ -11,6 +11,22 @@ Last Updated: 2026-03-27
 
 ---
 
+## Skill System (from March 27 conversation)
+
+### 39. Identity-Aware Skill System — Full Implementation
+**Status:** DONE
+**Verified:** NO
+**Request:** Build The Library-inspired skill system with identity interpolation, YAML catalog, bundled skills, CLI commands, cross-project sync, agent linking, meta-improvement, web dashboard pane.
+**Verification:** Run `youmd skill list` (shows 4 skills), `youmd skill install all`, `youmd skill init-project` in fresh repo (generates CLAUDE.md + project-context/ + .claude/skills/), `youmd skill use claude-md-generator` with identity data populated (all {{var}} resolved), `youmd skill link claude`, web dashboard shows skills tab.
+
+### 40. Git Self-Hosting vs Convex Architecture Decision
+**Status:** DECIDED — Convex stays as source of truth, git as optional export channel in v2
+**Verified:** N/A (architecture decision, not code)
+**Request:** Should users self-host identity as GitHub repos?
+**Decision:** Keep Convex canonical. Content-hash version control already works. Git would add complexity without adding value. Future: `youmd export --github` as optional mirror.
+
+---
+
 ## CLI UX (from March 25 conversations)
 
 ### 1. BrailleSpinner color rotation + lightsweep effect
