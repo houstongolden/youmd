@@ -10,8 +10,8 @@ export interface Profile {
   isClaimed?: boolean;
 }
 
-// Real profiles — Houston is claimed, others are unclaimed placeholders
-// based on real public AI/SaaS founders for authenticity
+// Houston's profile is real and claimed. All others are unclaimed placeholders
+// based on real public AI/SaaS founders — their context SHOULD be here.
 export const sampleProfiles: Profile[] = [
   {
     username: "houstongolden",
@@ -25,9 +25,9 @@ export const sampleProfiles: Profile[] = [
     isClaimed: true,
   },
   {
-    username: "dariuslukas",
+    username: "darioamodei",
     name: "Dario Amodei",
-    tagline: "CEO, Anthropic. Building safe AI systems.",
+    tagline: "CEO, Anthropic. Building safe, beneficial AI.",
     avatarUrl: "",
     verification: { verified: false },
     agentMetrics: { totalReads: 0 },
@@ -47,6 +47,17 @@ export const sampleProfiles: Profile[] = [
     isClaimed: false,
   },
   {
+    username: "guillaumelaforge",
+    name: "Guillaume Lample",
+    tagline: "Co-founder, Mistral AI. Building open-weight foundation models.",
+    avatarUrl: "",
+    verification: { verified: false },
+    agentMetrics: { totalReads: 0 },
+    freshness: { score: 0 },
+    updatedAt: 0,
+    isClaimed: false,
+  },
+  {
     username: "swyx",
     name: "Shawn Wang",
     tagline: "Founder, smol.ai. AI engineer, writer, speaker.",
@@ -58,9 +69,42 @@ export const sampleProfiles: Profile[] = [
     isClaimed: false,
   },
   {
-    username: "jaredpalmer",
-    name: "Jared Palmer",
-    tagline: "CEO, Turborepo / Vercel. Building dev tools.",
+    username: "emilkowalski",
+    name: "Emil Kowalski",
+    tagline: "Design engineer. Creator of Sonner, Vaul, Motion. Vercel.",
+    avatarUrl: "",
+    verification: { verified: false },
+    agentMetrics: { totalReads: 0 },
+    freshness: { score: 0 },
+    updatedAt: 0,
+    isClaimed: false,
+  },
+  {
+    username: "raaborman",
+    name: "Amjad Masad",
+    tagline: "CEO, Replit. Making programming accessible to everyone.",
+    avatarUrl: "",
+    verification: { verified: false },
+    agentMetrics: { totalReads: 0 },
+    freshness: { score: 0 },
+    updatedAt: 0,
+    isClaimed: false,
+  },
+  {
+    username: "karpathy",
+    name: "Andrej Karpathy",
+    tagline: "AI researcher. Ex-Tesla AI, ex-OpenAI. Educator.",
+    avatarUrl: "",
+    verification: { verified: false },
+    agentMetrics: { totalReads: 0 },
+    freshness: { score: 0 },
+    updatedAt: 0,
+    isClaimed: false,
+  },
+  {
+    username: "shl",
+    name: "Sahil Lavingia",
+    tagline: "Founder, Gumroad. Investor. Writer.",
     avatarUrl: "",
     verification: { verified: false },
     agentMetrics: { totalReads: 0 },
@@ -72,6 +116,28 @@ export const sampleProfiles: Profile[] = [
     username: "disler",
     name: "Peter Disler",
     tagline: "Creator of The Library. AI-native development tools.",
+    avatarUrl: "",
+    verification: { verified: false },
+    agentMetrics: { totalReads: 0 },
+    freshness: { score: 0 },
+    updatedAt: 0,
+    isClaimed: false,
+  },
+  {
+    username: "levelsio",
+    name: "Pieter Levels",
+    tagline: "Indie maker. nomadlist, remoteok, photoai. Ships fast.",
+    avatarUrl: "",
+    verification: { verified: false },
+    agentMetrics: { totalReads: 0 },
+    freshness: { score: 0 },
+    updatedAt: 0,
+    isClaimed: false,
+  },
+  {
+    username: "alexalbert",
+    name: "Alex Albert",
+    tagline: "Head of Claude Relations, Anthropic.",
     avatarUrl: "",
     verification: { verified: false },
     agentMetrics: { totalReads: 0 },

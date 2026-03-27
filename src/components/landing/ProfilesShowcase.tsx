@@ -18,7 +18,7 @@ function timeAgo(ts: number): string {
 }
 
 const ProfilesShowcase = () => {
-  const featured = sampleProfiles.slice(0, 6);
+  const featured = sampleProfiles.slice(0, 12);
   const claimedCount = featured.filter(p => p.isClaimed).length;
 
   return (
