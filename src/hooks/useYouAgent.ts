@@ -2651,8 +2651,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       // Real steps (scraping, researching) already show in the activity log.
       const llmStepId = "";
 
-      // Reuse the ack message ID if we showed an ack, otherwise create new
-      const streamMsgId = ackMsgId;
+      // NEVER replace the ack — always stream into a NEW message below it
+      const streamMsgId = crypto.randomUUID();
       let firstTokenReceived = false;
 
       // Keep thinking/progress visible until first token arrives
@@ -2661,15 +2661,12 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           firstTokenReceived = true;
           if (llmStepId) completeStep(llmStepId);
           setIsThinking(false);
-          // Replace the ack message with streaming content, or add new
-          setDisplayMessages(prev => {
-            const hasAck = prev.some(m => m.id === streamMsgId);
-            if (hasAck) {
-              // Replace ack content with empty (will be filled by streaming)
-              return prev.map(m => m.id === streamMsgId ? { ...m, content: "" } : m);
-            }
-            return [...prev, { id: streamMsgId, role: "assistant" as const, content: "" }];
-          });
+          // Add a new message for the full response (ack stays above)
+          setDisplayMessages(prev => [...prev, {
+            id: streamMsgId,
+            role: "assistant" as const,
+            content: "",
+          }]);
         }
       };
 
@@ -2681,14 +2678,12 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         completeStep(llmStepId);
         setIsThinking(false);
         clearSteps();
-        // Replace ack or add new message with full response
-        setDisplayMessages(prev => {
-          const hasAck = prev.some(m => m.id === streamMsgId);
-          if (hasAck) {
-            return prev.map(m => m.id === streamMsgId ? { ...m, content: response } : m);
-          }
-          return [...prev, { id: streamMsgId, role: "assistant" as const, content: response }];
-        });
+        // Add full response as new message (ack stays above)
+        setDisplayMessages(prev => [...prev, {
+          id: streamMsgId,
+          role: "assistant" as const,
+          content: response,
+        }]);
       }
 
       // Strip JSON blocks from the streamed display (they stream in raw during typing)

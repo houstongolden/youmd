@@ -145,7 +145,7 @@ const Navbar = () => {
                 {avatarDropdown && (
                   <div className="absolute right-0 top-full mt-2 w-44 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-1 z-50" style={{ borderRadius: "2px" }}>
                     <Link href="/dashboard" onClick={() => setAvatarDropdown(false)} className="block px-3 py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--accent))]/5 transition-colors">
-                      &gt; dashboard
+                      &gt; shell
                     </Link>
                     {username && (
                       <Link href={`/${username}`} onClick={() => setAvatarDropdown(false)} className="block px-3 py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--accent))]/5 transition-colors">
@@ -243,7 +243,7 @@ const Navbar = () => {
               {mobileAvatarDropdown && (
                 <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-48 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-1 z-50" style={{ borderRadius: "2px" }}>
                   <Link href="/dashboard" onClick={() => { setMobileAvatarDropdown(false); setMobileOpen(false); }} className="block px-3 py-2 font-mono text-[12px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--accent))]/5 transition-colors">
-                    &gt; dashboard
+                    &gt; shell
                   </Link>
                   {username && (
                     <Link href={`/${username}`} onClick={() => { setMobileAvatarDropdown(false); setMobileOpen(false); }} className="block px-3 py-2 font-mono text-[12px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--accent))]/5 transition-colors">

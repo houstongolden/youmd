@@ -255,7 +255,7 @@ function CodeBlock({ lang, content }: { lang?: string; content: string }) {
           {copied ? "copied" : "copy"}
         </button>
       )}
-      <pre className="bg-[hsl(var(--bg))] px-3 py-2 text-[12px] font-mono text-[hsl(var(--accent-mid))] overflow-x-auto leading-relaxed">
+      <pre className="bg-[hsl(var(--bg))] px-3 py-2 text-[11px] font-mono text-[hsl(var(--accent-mid))] leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
         {content}
       </pre>
     </div>
