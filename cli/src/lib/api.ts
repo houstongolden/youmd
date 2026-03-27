@@ -201,8 +201,6 @@ export async function uploadBundle(
     token: getToken(),
     body: {
       profileData: {
-        // Map our compiled bundle back to profile data shape
-        // This is a workaround since the endpoint does server-side compilation
         _rawBundle: true,
         manifest: args.manifest,
         youJson: args.youJson,

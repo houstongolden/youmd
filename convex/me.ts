@@ -277,25 +277,42 @@ export const publishLatest = mutation({
     }
 
     if (profile && latest.youJson) {
+      const yj = latest.youJson as Record<string, unknown>;
       const profileUpdates: Record<string, unknown> = {
-        youJson: latest.youJson,
+        youJson: yj,
         youMd: latest.youMd,
         updatedAt: Date.now(),
       };
-      // Sync identity fields from the published bundle
-      const identity = latest.youJson?.identity as Record<string, unknown> | undefined;
+
+      // Handle web-compiled format (identity, projects, etc.)
+      const identity = yj.identity as Record<string, unknown> | undefined;
       if (identity?.name) profileUpdates.name = identity.name;
       if (identity?.tagline) profileUpdates.tagline = identity.tagline;
       if (identity?.location) profileUpdates.location = identity.location;
       if (identity?.bio) profileUpdates.bio = identity.bio;
-      if (latest.youJson?.links) profileUpdates.links = latest.youJson.links;
-      if (latest.youJson?.now) {
-        const now = latest.youJson.now as Record<string, unknown>;
+      if (yj.links) profileUpdates.links = yj.links;
+      if (yj.now) {
+        const now = yj.now as Record<string, unknown>;
         if (now?.focus) profileUpdates.now = now.focus;
       }
-      if (latest.youJson?.projects) profileUpdates.projects = latest.youJson.projects;
-      if (latest.youJson?.values) profileUpdates.values = latest.youJson.values;
-      if (latest.youJson?.preferences) profileUpdates.preferences = latest.youJson.preferences;
+      if (yj.projects) profileUpdates.projects = yj.projects;
+      if (yj.values) profileUpdates.values = yj.values;
+      if (yj.preferences) profileUpdates.preferences = yj.preferences;
+
+      // Handle CLI-compiled format (profile: [{slug, title, content}])
+      if (yj.profile && Array.isArray(yj.profile)) {
+        const sections = yj.profile as { slug: string; title: string; content: string }[];
+        const about = sections.find(s => s.slug === "about");
+        if (about?.content) {
+          // Extract name from first heading or title
+          const nameMatch = about.content.match(/^#\s+(.+)/m);
+          if (nameMatch) profileUpdates.name = nameMatch[1].trim();
+          // Use first paragraph as tagline
+          const lines = about.content.split("\n").filter(l => l.trim() && !l.startsWith("#") && !l.startsWith("---"));
+          if (lines[0]) profileUpdates.tagline = lines[0].trim();
+          profileUpdates.bio = { short: lines[0]?.trim() || "", medium: lines.slice(0, 2).join(" ").trim(), long: about.content };
+        }
+      }
 
       await ctx.db.patch(profile._id, profileUpdates);
     }
