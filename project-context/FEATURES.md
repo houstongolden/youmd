@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-03-19
+Last Updated: 2026-03-26
 
 ## Core Platform
 
@@ -104,22 +104,30 @@ Last Updated: 2026-03-19
 | Private vault encryption | Not started | AES-256-GCM, deferred |
 | Rate limiting | Not started | Per plan |
 
-## CLI (npm: youmd)
+## CLI (npm: youmd v0.4.9)
 
 | Feature | Status | Notes |
 |---|---|---|
-| youmd init | Done | Conversational AI onboarding |
-| youmd chat | Done | Ongoing agent conversation |
+| youmd init | Done | Conversational AI onboarding with BrailleSpinners, ASCII portrait, multi-select |
+| youmd chat | Done | Ongoing agent conversation with slash commands, project awareness |
 | youmd build | Done | Local compile + thinking phrases |
 | youmd publish | Done | Upload + publish to platform |
-| youmd login | Done | API key auth |
+| youmd login | Done | Email/password auth (was API key only) |
+| youmd register | Done | Create account from CLI |
 | youmd status | Done | Rich tree-style summary |
 | youmd whoami | Done | Profile display |
 | youmd add | Done | Add source URLs |
-| youmd link | Done | Context link management |
+| youmd link | Done | Context link management (create, list, preview, revoke) |
 | youmd keys | Done | API key management |
-| youmd diff | Placeholder | Show changes vs published |
+| youmd diff | Done | LCS-based diff vs published |
+| youmd export | Done | Export you.json + you.md to disk |
 | youmd preview | Placeholder | Local dev server |
+| youmd pull | Done | Pull from web to local |
+| youmd push | Done | Push local to web |
+| youmd sync | Done | Two-way sync |
+| youmd memories | Done | List, add, stats |
+| youmd private | Done | Private context management (10 subcommands) |
+| youmd project | Done | Per-project context (init, list, switch, context, memory) |
 
 ## Design System (PRD v2.3)
 
@@ -154,26 +162,48 @@ Last Updated: 2026-03-19
 | 11 | Pricing | Done |
 | 12 | CTA Footer | Done |
 
+## Recently Added (March 24-25)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Email/password CLI auth | Done | No API token required for own account |
+| Server-side ASCII portrait generation | Done | convex/portrait.ts + DB caching |
+| BrailleSpinner color rotation + lightsweep | Done | Orange shades, text lightsweep |
+| CLI ASCII YOU logo | Done | Block-char logo in burnt orange |
+| CLI multi-select UI | Done | Arrow keys + select for agents/tools |
+| Markdown rendering on profile | Done | No more raw bold/heading markup |
+| Richer profile cards in directory | Done | Bio, projects, social links |
+| SSR profiles directory | Done | SEO: no more empty loading state |
+| Profile breadcrumbs + rel=me | Done | SEO enhancement |
+| Dynamic custom sections | Done | Agent can add/modify sections via chat |
+| Persistent chat sessions | Done | Messages survive page refresh |
+| Streaming responses via SSE | Done | Real-time token output |
+| Portrait pane wired to real data | Done | Multi-source, format picker, detail picker |
+| CLI rich terminal renderer | Done | Tables, stats, code blocks, callouts |
+| Private context API + CLI | Done | Full CRUD on private identity data |
+| Image paste in chat | Done | Web chat accepts pasted images |
+
 ## Feature Requests (Backlog)
 
-- [ ] ASCII portrait upload during profile creation (web)
-- [ ] Download ASCII portrait as PNG from profile page
+- [ ] Custom image upload to socialImages.custom
+- [ ] Download ASCII portrait as PNG
+- [ ] Reveal/copy existing API key (not revoke-to-create)
+- [ ] Dynamic profile sections via conversation
+- [ ] Agent share prompt directives (tell receiving agent how to respond)
 - [ ] Verified badges (domain, social, DNS TXT)
 - [ ] Profile analytics dashboard (views, agent reads, top queries)
 - [ ] Freshness score (4-dimension state)
 - [ ] Activity timeline on profile
-- [ ] Agent network section (connected agents, top queries)
-- [ ] Role icons on profiles (◆ Founder, ⟐ Engineer, ◈ Designer)
-- [ ] Composio OAuth for platform connections
-- [ ] Profile page raw JSON toggle
+- [ ] Role icons on profiles (Founder, Engineer, Designer)
 - [ ] Count-up animations on all metrics
 - [ ] Status pulse (ACTIVE dot)
-- [ ] Profiles directory page (/profiles)
+- [ ] Composio OAuth for platform connections
 - [ ] Framework integration PRs (Aider, CrewAI, LangChain)
-- [ ] SKILL.md for skills.sh / clawhub.ai
-- [ ] MCP endpoint
-- [ ] Stripe Pro plan
+- [ ] MCP endpoint (mcp.you.md/{username})
+- [ ] Stripe Pro plan ($12/mo)
 - [ ] Interview mode (youmd interview)
+- [ ] Autonomous refresh (youmd refresh)
 - [ ] Voice onboarding
 - [ ] Team/org bundles
-- [ ] Self-host export (youmd export)
+- [ ] Standalone CLI binary (bun build --compile)
+- [ ] curl installer (you.md/install.sh)

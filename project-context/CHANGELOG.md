@@ -1,5 +1,59 @@
 # You.md — Changelog
 
+## 2026-03-26 — Project Context & Agent Self-Improvement Overhaul
+
+### New Files Created
+- **ARCHITECTURE.md** (~200 lines) — complete system diagram, all 17 Convex tables documented, 30+ API endpoints, auth flows, pipeline architecture, CLI structure, deployment reference
+- **CURRENT_STATE.md** (~150 lines) — what's deployed and working, known issues, what was built March 24-25, next priorities in Houston's order
+- **PRD.md** (~300 lines) — full product requirements rewrite: vision, target users, 4 core journeys, product surfaces, You Agent spec, design system, data model, security model, success metrics, roadmap
+
+### Files Rewritten
+- **CLAUDE.md** (~400 lines) — complete operating manual: Houston's profile/working style, quality bar, message handling protocol, 10 common mistakes, design system, tech stack with versions, project structure, session protocol, architecture quick reference
+- **TODO.md** (~250 lines) — cleared all stale items, added March 24-26 work, organized into COMPLETED / NEEDS VERIFICATION / IN PROGRESS / UP NEXT / BLOCKED / FUTURE
+- **feature-requests-active.md** (~150 lines) — 38 tracked requests with status, source, verification criteria
+
+### Files Updated
+- **FEATURES.md** — added 16 recently completed features, expanded CLI from 12 to 20 commands, updated backlog
+
+### Memory Consolidation
+- Created `feedback_cli_comprehensive.md` — consolidated 5 separate CLI feedback files
+- Created `feedback_common_mistakes.md` — 10 failure patterns compiled from all feedback
+- Expanded `user_houston.md` — full profile with working style, pet peeves, collaboration guidelines
+- Updated `project_youmd.md` — exact dependency versions, current architecture summary
+- Rebuilt `MEMORY.md` index — all 15 files listed, organized by type, superseded files noted
+
+---
+
+## 2026-03-25 — CLI Alive UX + Email Auth + Portrait System
+
+### CLI UX Overhaul
+- **BrailleSpinner color rotation** — spinner rotates through orange shades like Claude Code
+- **Text lightsweep effect** — brightness sweep across active text characters
+- **ASCII YOU logo** — block-char logo renders in burnt orange on youmd init
+- **ASCII portrait in terminal** — renders user's portrait after first social handle
+- **Multi-select UI** — arrow keys + right-to-select for agent/tool selection
+- **Personality-rich spinner labels** — "computing your main character energy...", "downloading your online soul..."
+- **Proper word-wrap** — terminal-width-aware text formatting, left-aligned, paragraph spacing
+
+### CLI Email/Password Auth
+- **youmd login** — email + password (no API token needed for own account)
+- **youmd register** — create account from CLI with email verification
+- **POST /api/v1/auth/login** and **POST /api/v1/auth/register** — Clerk Backend API endpoints
+- API tokens now reserved for agent/app access only
+
+### CLI → Web Improvements
+- **Prod Convex fix** — CLI was hitting dev instead of prod (401 on all keys)
+- **Richer profile cards** — directory shows bio, projects, social links
+- **Nav avatar** — uses duotone photo instead of unreadable tiny ASCII
+- **Markdown rendering** — profile page no longer shows raw **bold** or # headings
+
+### Portrait System
+- **Server-side generation** — convex/portrait.ts generates ASCII portraits on server
+- **DB caching** — portraits cached in profiles.asciiPortrait
+- **Portrait pane wired** — real data, flow consolidation, dead code cleanup
+
+---
+
 ## 2026-03-24 — Intelligent Model Routing & Portrait System
 
 ### Model Routing
