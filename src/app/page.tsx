@@ -9,6 +9,7 @@ import WhatsInside from "@/components/landing/WhatsInside";
 import PortraitSection from "@/components/landing/PortraitSection";
 import OpenSpec from "@/components/landing/OpenSpec";
 import Integrations from "@/components/landing/Integrations";
+import FAQ from "@/components/landing/FAQ";
 import Pricing from "@/components/landing/Pricing";
 import CTAFooter from "@/components/landing/CTAFooter";
 
@@ -48,6 +49,7 @@ export default function Home() {
       <PortraitSection />
       <OpenSpec />
       <Integrations />
+      <FAQ />
       <Pricing />
       <CTAFooter />
     </div>
