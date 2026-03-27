@@ -31,8 +31,8 @@ import {
 import { loadIdentityData, resolveVariable, IdentityData } from "../lib/skill-renderer";
 import { BrailleSpinner } from "../lib/render";
 import { isAuthenticated } from "../lib/config";
-import { browseSkills, publishSkill as apiPublishSkill, getMySkills } from "../lib/api";
-import { readSkillFile } from "../lib/skills";
+import { browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill } from "../lib/api";
+import { readSkillFile, getSkillDir } from "../lib/skills";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -189,31 +189,53 @@ async function installSkillCmd(args: string[]): Promise<void> {
           const regSkill = regRes.data.skills.find((s) => s.name === name);
           if (regSkill) {
             regSpinner.stop(`found "${name}" in registry`);
-            // Auto-add to catalog from registry
-            addSkillEntry(readSkillCatalog(), {
-              name: regSkill.name,
-              description: regSkill.description,
-              version: regSkill.version,
-              source: `registry:${regSkill.name}`,
-              scope: regSkill.scope as SkillScope,
-              identity_fields: regSkill.identityFields,
-              requires: [],
-            });
-            // Now fetch the content and install
-            // Get the full skill with content via a direct API call
-            const { default: fetchFn } = await import("node:https" as any).catch(() => ({ default: null }));
-            const contentRes = await browseSkills(); // registry has content in the listing
-            // For now, the content needs to come from the publish endpoint
-            // Install from catalog (now that it's registered)
-            const freshCatalog = readSkillCatalog();
-            const freshEntry = findSkill(freshCatalog, name);
-            if (freshEntry) {
-              const installRes = installSkill(freshEntry.name);
-              if (installRes.ok) {
-                console.log(chalk.green("  \u2713") + ` ${chalk.bold(name)} installed from registry`);
-              } else {
-                console.log(DIM(`  added to catalog. install the source manually.`));
+
+            // Fetch full skill content from registry
+            const contentRes = await getRegistrySkill(regSkill.name);
+            if (contentRes.ok && contentRes.data.content) {
+              // Write SKILL.md directly
+              const skillDir = getSkillDir(regSkill.name);
+              fs.mkdirSync(skillDir, { recursive: true });
+              fs.writeFileSync(path.join(skillDir, "SKILL.md"), contentRes.data.content);
+
+              // Render with identity
+              const { renderSkillTemplate, loadIdentityData: loadId } = require("../lib/skill-renderer");
+              const rendered = renderSkillTemplate(contentRes.data.content, loadId());
+              fs.writeFileSync(path.join(skillDir, "RENDERED.md"), rendered);
+
+              // Add to catalog and mark installed
+              addSkillEntry(readSkillCatalog(), {
+                name: regSkill.name,
+                description: regSkill.description,
+                version: regSkill.version,
+                source: `registry:${regSkill.name}`,
+                scope: regSkill.scope as SkillScope,
+                identity_fields: regSkill.identityFields,
+                requires: [],
+                installed: true,
+              });
+
+              console.log("");
+              console.log(
+                chalk.green("  \u2713") + ` ${chalk.bold(name)} installed from registry` +
+                DIM(` [${regSkill.scope}]`)
+              );
+              if (regSkill.identityFields.length > 0) {
+                console.log(DIM(`  identity fields: ${regSkill.identityFields.join(", ")}`));
               }
+            } else {
+              // Content not available, just add to catalog
+              addSkillEntry(readSkillCatalog(), {
+                name: regSkill.name,
+                description: regSkill.description,
+                version: regSkill.version,
+                source: `registry:${regSkill.name}`,
+                scope: regSkill.scope as SkillScope,
+                identity_fields: regSkill.identityFields,
+                requires: [],
+              });
+              console.log("");
+              console.log(DIM(`  added to catalog but content not available.`));
             }
             console.log("");
             return;
@@ -1014,6 +1036,76 @@ async function remoteStatusCmd(): Promise<void> {
   console.log("");
 }
 
+function infoCmd(args: string[]): void {
+  const name = args[0];
+  if (!name) {
+    console.log("");
+    console.log(chalk.yellow("  usage: youmd skill info <name>"));
+    console.log("");
+    return;
+  }
+
+  const catalog = readSkillCatalog();
+  const entry = findSkill(catalog, name);
+
+  if (!entry) {
+    console.log("");
+    console.log(chalk.yellow(`  skill "${name}" not found.`));
+    console.log("");
+    return;
+  }
+
+  const skillFile = readSkillFile(entry.name);
+  const metrics = getMetrics();
+  const m = metrics.skills[entry.name];
+  const identity = loadIdentityData();
+
+  console.log("");
+  console.log("  " + chalk.bold(entry.name) + DIM(` v${entry.version}`));
+  console.log(DIM(`  ${entry.description}`));
+  console.log("");
+
+  // Status
+  console.log(`  ${ACCENT("status:")}    ${entry.installed ? chalk.green("installed") : DIM("not installed")}`);
+  console.log(`  ${ACCENT("scope:")}     ${entry.scope}`);
+  console.log(`  ${ACCENT("source:")}    ${DIM(entry.source)}`);
+
+  // Metrics
+  if (m) {
+    console.log(`  ${ACCENT("uses:")}      ${m.uses}`);
+    console.log(`  ${ACCENT("installs:")}  ${m.installs}`);
+    if (m.lastUsed) console.log(`  ${ACCENT("last used:")} ${DIM(m.lastUsed.slice(0, 10))}`);
+  }
+
+  // Identity fields
+  if (entry.identity_fields.length > 0) {
+    console.log("");
+    console.log("  " + ACCENT("identity fields:"));
+    for (const field of entry.identity_fields) {
+      const val = resolveVariable(field, identity);
+      const status = val ? chalk.green("\u2713") : chalk.yellow("\u2022");
+      const preview = val ? DIM(` ${val.slice(0, 50)}${val.length > 50 ? "..." : ""}`) : DIM(" (empty)");
+      console.log(`    ${status} ${field}${preview}`);
+    }
+  }
+
+  // Content preview
+  if (skillFile) {
+    console.log("");
+    console.log("  " + ACCENT("content:"));
+    const lines = skillFile.content.split("\n").slice(0, 8);
+    for (const line of lines) {
+      console.log(DIM(`    ${line}`));
+    }
+    const total = skillFile.content.split("\n").length;
+    if (total > 8) {
+      console.log(DIM(`    ... ${total - 8} more lines`));
+    }
+  }
+
+  console.log("");
+}
+
 function exportSkillsCmd(args: string[]): void {
   const outputDir = args[0] || path.join(process.cwd(), "youmd-skills");
   const catalog = readSkillCatalog();
@@ -1146,6 +1238,10 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
     case "export":
       exportSkillsCmd(args);
       break;
+    case "info":
+    case "show":
+      infoCmd(args);
+      break;
     default: {
       const catalog = readSkillCatalog();
       const installed = catalog.skills.filter((s) => s.installed);
@@ -1198,6 +1294,7 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       console.log(`    ${chalk.cyan("publish <name>".padEnd(28))} ${DIM("publish a skill to the registry")}`);
       console.log(`    ${chalk.cyan("remote".padEnd(28))} ${DIM("show skills synced to your you.md account")}`);
       console.log(`    ${chalk.cyan("export [dir]".padEnd(28))} ${DIM("export all installed skills to a directory")}`);
+      console.log(`    ${chalk.cyan("info <name>".padEnd(28))} ${DIM("detailed info about a skill")}`);
       console.log("");
       console.log(DIM("  skills are identity-aware markdown templates."));
       console.log(DIM("  {{voice.overall}} and {{preferences.agent}} resolve from your bundle."));

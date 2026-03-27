@@ -441,6 +441,10 @@ export async function browseSkills(): Promise<ApiResponse<{ skills: SkillRegistr
   return request<{ skills: SkillRegistryEntry[]; count: number }>("/api/v1/skills");
 }
 
+export async function getRegistrySkill(name: string): Promise<ApiResponse<SkillRegistryEntry & { content: string }>> {
+  return request<SkillRegistryEntry & { content: string }>(`/api/v1/skills?name=${encodeURIComponent(name)}`);
+}
+
 export async function getMySkills(): Promise<ApiResponse<{ skills: SkillInstallEntry[]; count: number }>> {
   return request<{ skills: SkillInstallEntry[]; count: number }>("/api/v1/me/skills", {
     token: getToken(),

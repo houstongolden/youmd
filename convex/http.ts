@@ -1347,7 +1347,20 @@ http.route({
 http.route({
   path: "/api/v1/skills",
   method: "GET",
-  handler: httpAction(async (ctx) => {
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const name = url.searchParams.get("name");
+
+    // If ?name= provided, return single skill with content
+    if (name) {
+      const skill = await ctx.runQuery(api.skills.getByName, { name });
+      if (!skill || !skill.isPublished) {
+        return json({ error: "Skill not found" }, 404);
+      }
+      return json(skill);
+    }
+
+    // Otherwise list all published
     const skills = await ctx.runQuery(api.skills.listPublished, { limit: 50 });
     return json({ skills, count: skills.length });
   }),
