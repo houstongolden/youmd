@@ -1635,4 +1635,83 @@ http.route({
   handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
 });
 
+// ── Version History & Agent Activity ─────────────────────
+
+// Get bundle version history (authenticated)
+http.route({
+  path: "/api/v1/me/history",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    if (!user) return json({ error: "User not found" }, 404);
+
+    const history = await ctx.runQuery(api.bundles.getHistory, { userId: user._id });
+    return json({ history, count: history.length });
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/history",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
+// Rollback to a previous version (authenticated)
+http.route({
+  path: "/api/v1/me/rollback",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    let body: any;
+    try { body = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+
+    if (typeof body.version !== "number") {
+      return json({ error: "version is required (number)" }, 400);
+    }
+
+    try {
+      const result = await ctx.runMutation(api.bundles.rollbackToVersion, {
+        clerkId: auth.userId,
+        targetVersion: body.version,
+      });
+      return json(result);
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "Rollback failed" }, 500);
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/rollback",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
+// Get agent interaction stats (authenticated)
+http.route({
+  path: "/api/v1/me/agents",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    if (!user) return json({ error: "User not found" }, 404);
+
+    const stats = await ctx.runQuery(api.bundles.getAgentStats, { userId: user._id });
+    return json(stats);
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/agents",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
 export default http;

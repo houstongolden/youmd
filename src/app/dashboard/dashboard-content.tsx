@@ -15,6 +15,7 @@ import { SharePane } from "@/components/panes/SharePane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
 import { PortraitPane } from "@/components/panes/PortraitPane";
 import { SkillsPane } from "@/components/panes/SkillsPane";
+import { HistoryPane } from "@/components/panes/HistoryPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Mobile nav shows these panes as top-level tabs
@@ -24,6 +25,7 @@ const MOBILE_PANES: Array<{ key: RightPane | "terminal"; label: string }> = [
   { key: "edit", label: "files" },
   { key: "share", label: "share" },
   { key: "skills", label: "skills" },
+  { key: "history", label: "history" },
   { key: "portrait", label: "portrait" },
   { key: "settings", label: "settings" },
 ];
@@ -34,6 +36,7 @@ const DESKTOP_PANES: Array<{ key: RightPane; label: string }> = [
   { key: "edit", label: "files" },
   { key: "share", label: "share" },
   { key: "skills", label: "skills" },
+  { key: "history", label: "history" },
   { key: "portrait", label: "portrait" },
   { key: "settings", label: "settings" },
 ];
@@ -341,6 +344,9 @@ export function DashboardContent() {
                   )}
                   {rightPane === "skills" && (
                     <SkillsPane userId={convexUser._id} />
+                  )}
+                  {rightPane === "history" && user?.id && (
+                    <HistoryPane userId={convexUser._id} clerkId={user.id} />
                   )}
                   {rightPane === "settings" && user?.id && (
                     <SettingsPane clerkId={user.id} username={username} plan={plan} profileId={userProfile?._id} />

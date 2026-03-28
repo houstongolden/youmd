@@ -47,6 +47,7 @@ export const saveBundleFromForm = mutation({
     clerkId: v.string(),
     profileData: v.any(), // ProfileData shape
     parentHash: v.optional(v.string()), // contentHash of the parent bundle (for conflict detection)
+    source: v.optional(v.string()),     // "web-shell" | "cli" | "api" | "agent:<name>"
   },
   handler: async (ctx, args) => {
     const user = await ctx.db
@@ -114,6 +115,7 @@ export const saveBundleFromForm = mutation({
       createdAt: Date.now(),
       contentHash,
       parentHash: autoParentHash,
+      source: args.source || "api",
     });
 
     // Also sync youJson/youMd to the profiles table so public profile stays current

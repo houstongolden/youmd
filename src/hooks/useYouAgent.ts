@@ -896,7 +896,7 @@ export interface PrivateUpdate {
   project?: Record<string, string>;
 }
 
-export type RightPane = "profile" | "portrait" | "edit" | "share" | "skills" | "settings";
+export type RightPane = "profile" | "portrait" | "edit" | "share" | "skills" | "history" | "settings";
 
 // ---------------------------------------------------------------------------
 // Helpers (exported for reuse)
@@ -1735,6 +1735,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         const result = await saveBundleFromForm({
           clerkId: user.id,
           profileData,
+          source: "web-shell",
         });
 
         return result;

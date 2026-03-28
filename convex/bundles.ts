@@ -119,3 +119,163 @@ export const publishBundle = mutation({
     });
   },
 });
+
+/**
+ * Get full version history for a user's bundles.
+ * Returns version, timestamp, hash, source, changed sections, publish status.
+ */
+export const getHistory = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const bundles = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    return bundles
+      .sort((a, b) => b.version - a.version)
+      .slice(0, 50)
+      .map((b) => ({
+        _id: b._id,
+        version: b.version,
+        isPublished: b.isPublished,
+        createdAt: b.createdAt,
+        publishedAt: b.publishedAt,
+        contentHash: b.contentHash?.slice(0, 12),
+        parentHash: b.parentHash?.slice(0, 12),
+        source: (b as any).source || "unknown",
+        changeNote: (b as any).changeNote || null,
+        changedSections: (b as any).changedSections || null,
+      }));
+  },
+});
+
+/**
+ * Rollback to a specific version — creates a new version from an old one.
+ */
+export const rollbackToVersion = mutation({
+  args: {
+    clerkId: v.string(),
+    targetVersion: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+
+    const bundles = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const target = bundles.find((b) => b.version === args.targetVersion);
+    if (!target) throw new Error(`Version ${args.targetVersion} not found`);
+
+    const maxVersion = bundles.reduce((max, b) => Math.max(max, b.version), 0);
+
+    // Create a new version with the old content
+    const bundleId = await ctx.db.insert("bundles", {
+      userId: user._id,
+      version: maxVersion + 1,
+      schemaVersion: target.schemaVersion,
+      manifest: target.manifest,
+      youJson: target.youJson,
+      youMd: target.youMd,
+      isPublished: false,
+      createdAt: Date.now(),
+      contentHash: target.contentHash,
+      parentHash: target.contentHash,
+      source: "rollback",
+      changeNote: `rolled back to v${args.targetVersion}`,
+    });
+
+    return { bundleId, version: maxVersion + 1 };
+  },
+});
+
+/**
+ * Track an agent interaction (read or write).
+ */
+export const trackAgentInteraction = mutation({
+  args: {
+    profileId: v.optional(v.id("profiles")),
+    userId: v.optional(v.id("users")),
+    agentName: v.string(),
+    agentType: v.string(), // "read" | "write" | "chat"
+    metadata: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    // Find profile by userId if not provided directly
+    let profileId = args.profileId;
+    if (!profileId && args.userId) {
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_ownerId", (q) => q.eq("ownerId", args.userId))
+        .first();
+      profileId = profile?._id;
+    }
+
+    if (!profileId) return;
+
+    // Check if this agent already has an interaction record
+    const existing = await ctx.db
+      .query("agentInteractions")
+      .withIndex("by_profileId", (q) => q.eq("profileId", profileId))
+      .collect();
+
+    const match = existing.find((e) => e.agentName === args.agentName && e.agentType === args.agentType);
+
+    if (match) {
+      await ctx.db.patch(match._id, {
+        interactionCount: match.interactionCount + 1,
+        lastInteractionAt: Date.now(),
+        metadata: args.metadata ?? match.metadata,
+      });
+    } else {
+      await ctx.db.insert("agentInteractions", {
+        profileId,
+        agentName: args.agentName,
+        agentType: args.agentType,
+        interactionCount: 1,
+        lastInteractionAt: Date.now(),
+        metadata: args.metadata,
+        createdAt: Date.now(),
+      });
+    }
+  },
+});
+
+/**
+ * Get agent interaction stats for a profile.
+ */
+export const getAgentStats = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", args.userId))
+      .first();
+
+    if (!profile) return { interactions: [], totalReads: 0, totalWrites: 0 };
+
+    const interactions = await ctx.db
+      .query("agentInteractions")
+      .withIndex("by_profileId", (q) => q.eq("profileId", profile._id))
+      .collect();
+
+    const totalReads = interactions
+      .filter((i) => i.agentType === "read")
+      .reduce((sum, i) => sum + i.interactionCount, 0);
+    const totalWrites = interactions
+      .filter((i) => i.agentType === "write" || i.agentType === "chat")
+      .reduce((sum, i) => sum + i.interactionCount, 0);
+
+    return {
+      interactions: interactions.sort((a, b) => b.lastInteractionAt - a.lastInteractionAt),
+      totalReads,
+      totalWrites,
+    };
+  },
+});

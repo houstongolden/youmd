@@ -166,6 +166,10 @@ export default defineSchema({
     // Content-addressed version control
     contentHash: v.optional(v.string()), // SHA-256 of canonical(youJson) + youMd
     parentHash: v.optional(v.string()),  // contentHash of the parent bundle
+    // Change tracking
+    source: v.optional(v.string()),      // "web-shell" | "cli" | "api" | "agent:<name>"
+    changeNote: v.optional(v.string()),  // human-readable description of what changed
+    changedSections: v.optional(v.array(v.string())), // which sections were modified
   })
     .index("by_userId", ["userId"])
     .index("by_userId_version", ["userId", "version"])
