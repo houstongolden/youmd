@@ -21,15 +21,22 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 const MOBILE_PANES: Array<{ key: RightPane | "terminal"; label: string }> = [
   { key: "terminal", label: "terminal" },
   { key: "profile", label: "profile" },
-  { key: "portrait", label: "portrait" },
-  { key: "edit", label: "edit" },
+  { key: "edit", label: "files" },
   { key: "share", label: "share" },
   { key: "skills", label: "skills" },
+  { key: "portrait", label: "portrait" },
   { key: "settings", label: "settings" },
 ];
 
 // Desktop pane tab row (shown inside the right panel)
-const DESKTOP_PANES: RightPane[] = ["profile", "portrait", "edit", "share", "skills", "settings"];
+const DESKTOP_PANES: Array<{ key: RightPane; label: string }> = [
+  { key: "profile", label: "profile" },
+  { key: "edit", label: "files" },
+  { key: "share", label: "share" },
+  { key: "skills", label: "skills" },
+  { key: "portrait", label: "portrait" },
+  { key: "settings", label: "settings" },
+];
 
 export function DashboardContent() {
   const { user } = useUser();
@@ -185,13 +192,12 @@ export function DashboardContent() {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <Link
-                href={`/${username}`}
-                target="_blank"
+              <button
+                onClick={() => { setPanelOpen(true); setRightPane("profile"); }}
                 className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60 transition-opacity"
               >
-                live &rarr;
-              </Link>
+                profile
+              </button>
               <button
                 onClick={() => setPanelOpen(!panelOpen)}
                 className="text-[10px] font-mono text-[hsl(var(--accent))] opacity-50 hover:opacity-90 transition-opacity"
@@ -292,16 +298,16 @@ export function DashboardContent() {
                   <div className="flex items-center gap-0.5">
                     {DESKTOP_PANES.map((pane) => (
                       <button
-                        key={pane}
-                        onClick={() => setRightPane(pane)}
+                        key={pane.key}
+                        onClick={() => setRightPane(pane.key)}
                         className={`px-2.5 py-1 text-[10px] font-mono transition-colors whitespace-nowrap ${
-                          rightPane === pane
+                          rightPane === pane.key
                             ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))]"
                             : "text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"
                         }`}
                         style={{ borderRadius: "2px" }}
                       >
-                        {pane}
+                        {pane.label}
                       </button>
                     ))}
                   </div>
@@ -312,7 +318,11 @@ export function DashboardContent() {
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <ErrorBoundary>
                   {rightPane === "profile" && (
-                    <ProfilePane userId={convexUser._id} username={username} ownerId={convexUser._id} />
+                    <iframe
+                      src={`/${username}`}
+                      className="w-full h-full border-0"
+                      title="profile preview"
+                    />
                   )}
                   {rightPane === "portrait" && (
                     <PortraitPane username={username} ownerId={convexUser._id} />
