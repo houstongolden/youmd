@@ -257,6 +257,19 @@ function extractFromYouJson(youJson: Record<string, unknown>, data: IdentityData
       if (val && !data.directives[key]) data.directives[key] = val;
     }
   }
+
+  // Nested format: agent_directives (underscore convention from compile.ts)
+  const agentDir = youJson.agent_directives as Record<string, unknown> | undefined;
+  if (agentDir && !data.directives.agent) {
+    const parts: string[] = [];
+    if (agentDir.communication_style) parts.push(`Communication Style: ${agentDir.communication_style}`);
+    const negPrompts = agentDir.negative_prompts as string[] | undefined;
+    if (negPrompts?.length) parts.push(`Never: ${negPrompts.join(". ")}`);
+    if (agentDir.default_stack) parts.push(`Default Stack: ${agentDir.default_stack}`);
+    if (agentDir.decision_framework) parts.push(`Decision Framework: ${agentDir.decision_framework}`);
+    if (agentDir.current_goal) parts.push(`Current Goal: ${agentDir.current_goal}`);
+    if (parts.length > 0) data.directives.agent = parts.join("\n");
+  }
 }
 
 /**

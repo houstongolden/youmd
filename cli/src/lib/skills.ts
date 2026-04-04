@@ -206,7 +206,7 @@ export function installSkill(skillName: string): { ok: boolean; error?: string }
   // Track metrics
   trackSkillEvent(entry.name, "install");
 
-  // Sync to Convex (non-blocking)
+  // Sync to Convex (non-blocking, warn on failure)
   syncInstallToRemote(entry);
 
   return { ok: true };
@@ -269,10 +269,11 @@ export function removeSkill(skillName: string): { ok: boolean; error?: string } 
   setSkillInstalled(catalog, entry.name, false);
   trackSkillEvent(entry.name, "remove");
 
-  // Sync removal to Convex (non-blocking, log failures)
+  // Sync removal to Convex (non-blocking, warn on failure)
   if (isAuthenticated()) {
     apiRemoveInstall(entry.name).catch((err) => {
-      // Non-fatal: remote sync failed but local removal succeeded
+      const chalk = require("chalk");
+      console.log(chalk.dim(`  sync: ${entry.name} remote removal sync failed (non-fatal)`));
       if (process.env.DEBUG) console.error(`[skill sync] remove failed: ${err}`);
     });
   }
@@ -315,9 +316,11 @@ export function useSkill(skillName: string): { ok: boolean; content?: string; re
 
   trackSkillEvent(entry.name, "use");
 
-  // Sync usage to Convex (non-blocking, log failures)
+  // Sync usage to Convex (non-blocking, warn on failure)
   if (isAuthenticated()) {
     apiTrackUsage(entry.name).catch((err) => {
+      const chalk = require("chalk");
+      console.log(chalk.dim(`  sync: usage tracking failed for ${entry.name} (non-fatal)`));
       if (process.env.DEBUG) console.error(`[skill sync] usage tracking failed: ${err}`);
     });
   }
@@ -675,6 +678,9 @@ function syncInstallToRemote(entry: SkillEntry): void {
     scope: entry.scope,
     identityFields: entry.identity_fields,
   }).catch((err) => {
+    // Dim warning instead of silent swallow
+    const chalk = require("chalk");
+    console.log(chalk.dim(`  sync: ${entry.name} remote sync failed (non-fatal)`));
     if (process.env.DEBUG) console.error(`[skill sync] install sync failed: ${err}`);
   });
 }

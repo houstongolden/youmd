@@ -671,7 +671,7 @@ async function handlePublish(bundleDir: string): Promise<void> {
 
   console.log(
     chalk.dim(
-      `  compiled bundle v${result.bundle.version}`
+      `  compiled bundle v${result.stats.version}`
     )
   );
 
@@ -757,7 +757,7 @@ function handleRebuild(bundleDir: string): void {
   console.log(
     "  " +
       chalk.green("rebuilt") +
-      chalk.dim(` -- bundle v${result.bundle.version}`)
+      chalk.dim(` -- bundle v${result.stats.version}`)
   );
   console.log("");
 }

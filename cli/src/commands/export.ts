@@ -31,7 +31,7 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
     console.log(chalk.dim("  bundle not compiled -- compiling now..."));
     const result = compileBundle(bundleDir);
     writeBundle(bundleDir, result);
-    console.log(chalk.dim(`  compiled bundle v${result.bundle.version}`));
+    console.log(chalk.dim(`  compiled bundle v${result.stats.version}`));
     console.log("");
   }
 

@@ -113,6 +113,7 @@ export async function statusCommand(): Promise<void> {
     { dir: "profile", label: "profile" },
     { dir: "preferences", label: "preferences" },
     { dir: "voice", label: "voice" },
+    { dir: "directives", label: "directives" },
   ];
 
   for (let d = 0; d < dirs.length; d++) {

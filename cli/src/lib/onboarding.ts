@@ -861,10 +861,14 @@ async function runFallbackMode(
     `---\ntitle: "About"\n---\n\n# ${info.name}\n\n${tagline}\n`
   );
 
+  // Format now.md as list items so the compiler can parse them
+  const nowFormatted = nowFocus
+    ? nowFocus.split(",").map((f) => f.trim()).filter(Boolean).map((f) => `- ${f}`).join("\n")
+    : "<!-- What are you working on right now? -->";
   writeSectionFile(
     bundleDir,
     "profile/now.md",
-    `---\ntitle: "Now"\n---\n\n${nowFocus || "<!-- What are you working on right now? -->"}\n`
+    `---\ntitle: "Now"\n---\n\n${nowFormatted}\n`
   );
 
   const projectList = projects
@@ -882,10 +886,14 @@ async function runFallbackMode(
     `---\ntitle: "Projects"\n---\n\n${projectList}`
   );
 
+  // Format values.md as list items so the compiler can parse them
+  const valuesFormatted = values
+    ? values.split(",").map((v) => v.trim()).filter(Boolean).map((v) => `- ${v}`).join("\n")
+    : "<!-- What do you care about? -->";
   writeSectionFile(
     bundleDir,
     "profile/values.md",
-    `---\ntitle: "Values"\n---\n\n${values || "<!-- What do you care about? -->"}\n`
+    `---\ntitle: "Values"\n---\n\n${valuesFormatted}\n`
   );
 
   const linkLines: string[] = [];
@@ -1390,7 +1398,7 @@ async function finishBundle(
   console.log(
     "  " +
       chalk.hex("#C46A3A")("done") +
-      chalk.dim(` -- bundle compiled (v${result.bundle.version})`)
+      chalk.dim(` -- bundle compiled (v${result.stats.version})`)
   );
 
   // Show final preview with stats
@@ -1843,7 +1851,7 @@ export async function createBundle(
   console.log(
     "  " +
       chalk.hex("#C46A3A")("done") +
-      chalk.dim(` -- bundle compiled (v${result.bundle.version})`)
+      chalk.dim(` -- bundle compiled (v${result.stats.version})`)
   );
   console.log("");
 

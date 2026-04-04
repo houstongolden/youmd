@@ -14,7 +14,7 @@ import {
   initProjectFiles,
   getProjectDir,
 } from "../lib/project";
-import { initProject as skillInitProject } from "../lib/skills";
+import { initProject as skillInitProject, installSkill, installSkillAsync } from "../lib/skills";
 import { readSkillCatalog } from "../lib/skill-catalog";
 
 export async function initCommand(options: {
@@ -117,6 +117,22 @@ export async function initCommand(options: {
       rl2.close();
 
       if (!skillAnswer || skillAnswer.toLowerCase() !== "n") {
+        // Auto-install all bundled skills before init-project
+        const catalog = readSkillCatalog();
+        const toInstall = catalog.skills.filter((s) => !s.installed);
+        if (toInstall.length > 0) {
+          console.log(chalk.dim(`\n  installing ${toInstall.length} bundled skills...`));
+          for (const entry of toInstall) {
+            let result = installSkill(entry.name);
+            if (!result.ok && (entry.source.startsWith("github:") || entry.source.startsWith("https://"))) {
+              result = await installSkillAsync(entry.name);
+            }
+            if (result.ok) {
+              console.log(chalk.green("  \u2713") + chalk.dim(` ${entry.name}`));
+            }
+          }
+        }
+
         console.log("");
         const result = skillInitProject();
         for (const step of result.steps) {

@@ -61,7 +61,7 @@ export async function publishCommand(): Promise<void> {
     ? JSON.parse(fs.readFileSync(manifestPath, "utf-8"))
     : { version: youJson.version || 1, entries: [] };
 
-  console.log("  \u251C\u2500\u2500 " + chalk.dim("reading") + " you.json (v" + (youJson.version || "?") + ")");
+  console.log("  \u251C\u2500\u2500 " + chalk.dim("reading") + " you.json (v" + (manifest.version || youJson.version || "?") + ")");
   console.log("  \u251C\u2500\u2500 " + chalk.dim("reading") + " you.md (" + youMd.length + " bytes)");
   console.log("  \u251C\u2500\u2500 " + chalk.dim("reading") + " manifest.json");
 

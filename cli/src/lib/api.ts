@@ -103,7 +103,24 @@ export async function getPublicProfile(
     `/api/v1/profiles?username=${encodeURIComponent(username)}`
   );
   if (!res.ok) return null;
-  return res.data;
+
+  const data = res.data;
+
+  // The /api/v1/profiles endpoint spreads youJson flat into the response
+  // (not wrapped in a youJson property). Detect and wrap it.
+  if (data && !data.youJson) {
+    // If the response has profile[] or identity{}, the entire response IS the youJson
+    if (Array.isArray(data.profile) || data.identity) {
+      return {
+        youJson: data,
+        youMd: data.youMd || data._youMd || "",
+        username: data._profile?.username || data.username || username,
+        displayName: data._profile?.displayName,
+      };
+    }
+  }
+
+  return data;
 }
 
 // ─── Authenticated endpoints ─────────────────────────────────────────

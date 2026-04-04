@@ -63,7 +63,25 @@ Update these files (REQUIRED, not optional):
 2. `project-context/FEATURES.md` — track feature completion
 3. `project-context/CHANGELOG.md` — log what changed and when
 4. `project-context/feature-requests-active.md` — update request status
-5. Commit with conventional commits (feat:, fix:, docs:, chore:)
+5. `project-context/PROMPTS.md` — append all of Houston's messages from this session (see below)
+6. Commit with conventional commits (feat:, fix:, docs:, chore:)
+
+### Prompt Archival (PROMPTS.md)
+
+Houston's exact messages are archived in `project-context/PROMPTS.md` so he can search his own words across sessions. At the end of every session:
+
+1. Read the current session's JSONL transcript from `~/.claude/projects/-Users-houstongolden-Desktop-CODE-2026-youmd/`
+2. Extract all entries where `type == "user"` and the message content has actual text (skip empty tool-result confirmations and `<task-notification>` blocks)
+3. Append them to `project-context/PROMPTS.md` under a new `## Session:` heading with timestamps
+4. Update the totals in the file header
+
+Format per message:
+```
+**{YYYY-MM-DD HH:MM:SS UTC}**
+> {full message text, blockquoted}
+```
+
+Do NOT include: tool results, assistant messages, system reminders, or task-notification XML. Only Houston's actual typed messages.
 
 ---
 
@@ -270,6 +288,7 @@ Read these before significant work:
 | `project-context/STYLE_GUIDE.md` | Design system reference |
 | `project-context/BRANDING.md` | Brand guidelines |
 | `project-context/LOVABLE_REFERENCE.md` | Lovable repo usage rules |
+| `project-context/PROMPTS.md` | All of Houston's messages/prompts across sessions (searchable) |
 
 ---
 
@@ -292,5 +311,6 @@ Read these before significant work:
 2. Update FEATURES.md if features were added/changed
 3. Update CHANGELOG.md with a dated entry
 4. Update feature-requests-active.md status
-5. Commit with conventional commit messages
-6. Note any known issues for the next session
+5. Append Houston's messages from this session to PROMPTS.md
+6. Commit with conventional commit messages
+7. Note any known issues for the next session

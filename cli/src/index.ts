@@ -21,6 +21,7 @@ import { syncCommand } from "./commands/sync";
 import { memoriesCommand } from "./commands/memories";
 import { privateCommand } from "./commands/private";
 import { projectCommand } from "./commands/project";
+import { promptsCommand } from "./commands/prompts";
 import { skillCommand } from "./commands/skill";
 
 const program = new Command();
@@ -158,6 +159,13 @@ program
   .description("Manage project agent context (init, list, show, memories)")
   .action((subcommand, args) => {
     return projectCommand(subcommand, ...(args || []));
+  });
+
+program
+  .command("prompts [subcommand] [args...]")
+  .description("Search and browse your past messages across agent sessions")
+  .action((subcommand, args) => {
+    return promptsCommand(subcommand, ...(args || []));
   });
 
 program

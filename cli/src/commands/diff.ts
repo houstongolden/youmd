@@ -8,6 +8,7 @@ import {
   readGlobalConfig,
 } from "../lib/config";
 import { getPublicProfile } from "../lib/api";
+import { detectFormat } from "../lib/decompile";
 
 // ─── Simple line diff ─────────────────────────────────────────────────
 
@@ -117,7 +118,7 @@ function printDiff(sectionName: string, diff: DiffLine[]): void {
 
 function loadLocalSections(bundleDir: string): Map<string, string> {
   const sections = new Map<string, string>();
-  const dirs = ["profile", "preferences"];
+  const dirs = ["profile", "preferences", "voice", "directives"];
 
   for (const dir of dirs) {
     const dirPath = path.join(bundleDir, dir);
@@ -138,32 +139,132 @@ function loadLocalSections(bundleDir: string): Map<string, string> {
   return sections;
 }
 
-// ─── Extract sections from remote bundle ─────────────────────────────
+// ─── Extract sections from remote bundle (handles both formats) ──────
 
 function extractRemoteSections(
   remoteData: { youJson: unknown; youMd: string }
 ): Map<string, string> {
   const sections = new Map<string, string>();
+  const youJson = remoteData.youJson as Record<string, unknown>;
 
-  const bundle = remoteData.youJson as {
-    profile?: Array<{ slug: string; title: string; content: string; metadata?: Record<string, unknown> }>;
-    preferences?: Array<{ slug: string; title: string; content: string; metadata?: Record<string, unknown> }>;
-  };
+  const format = detectFormat(youJson);
 
-  if (bundle.profile) {
-    for (const section of bundle.profile) {
-      // Reconstruct the markdown file with frontmatter
-      const frontmatter = section.metadata && Object.keys(section.metadata).length > 0
-        ? `---\ntitle: "${section.title}"\n---\n\n`
-        : `---\ntitle: "${section.title}"\n---\n\n`;
-      sections.set(`profile/${section.slug}.md`, frontmatter + section.content + "\n");
+  if (format === "array") {
+    // Legacy array format: {profile: [{slug, title, content}], preferences: [...]}
+    const bundle = youJson as {
+      profile?: Array<{ slug: string; title: string; content: string; metadata?: Record<string, unknown> }>;
+      preferences?: Array<{ slug: string; title: string; content: string; metadata?: Record<string, unknown> }>;
+    };
+
+    if (bundle.profile) {
+      for (const section of bundle.profile) {
+        const frontmatter = `---\ntitle: "${section.title}"\n---\n\n`;
+        sections.set(`profile/${section.slug}.md`, frontmatter + section.content + "\n");
+      }
     }
-  }
 
-  if (bundle.preferences) {
-    for (const section of bundle.preferences) {
-      const frontmatter = `---\ntitle: "${section.title}"\n---\n\n`;
-      sections.set(`preferences/${section.slug}.md`, frontmatter + section.content + "\n");
+    if (bundle.preferences) {
+      for (const section of bundle.preferences) {
+        const frontmatter = `---\ntitle: "${section.title}"\n---\n\n`;
+        sections.set(`preferences/${section.slug}.md`, frontmatter + section.content + "\n");
+      }
+    }
+  } else {
+    // Nested server format — reconstruct markdown files
+    const identity = (youJson.identity as Record<string, unknown>) || {};
+    const bio = (identity.bio as Record<string, string>) || {};
+
+    // profile/about.md
+    if (identity.name || bio.long) {
+      const lines = [`---\ntitle: "About"\n---\n`, `# ${identity.name || ""}`, ""];
+      if (identity.tagline) lines.push(`${identity.tagline}`, "");
+      if (identity.location) lines.push(`*${identity.location}*`, "");
+      if (bio.long) lines.push(bio.long, "");
+      sections.set("profile/about.md", lines.join("\n"));
+    }
+
+    // profile/now.md
+    const now = (youJson.now as Record<string, unknown>) || {};
+    const focus = (now.focus as string[]) || [];
+    if (focus.length > 0) {
+      sections.set("profile/now.md", `---\ntitle: "Now"\n---\n\n${focus.map((f) => `- ${f}`).join("\n")}\n`);
+    }
+
+    // profile/projects.md
+    const projects = (youJson.projects as Array<Record<string, string>>) || [];
+    if (projects.length > 0) {
+      const lines = [`---\ntitle: "Projects"\n---\n`];
+      for (const p of projects) {
+        lines.push(`## ${p.name}`);
+        if (p.role) lines.push(`**Role:** ${p.role}`);
+        if (p.status) lines.push(`**Status:** ${p.status}`);
+        if (p.url) lines.push(`**URL:** ${p.url}`);
+        if (p.description) lines.push(`\n${p.description}`);
+        lines.push("");
+      }
+      sections.set("profile/projects.md", lines.join("\n"));
+    }
+
+    // profile/values.md
+    const values = (youJson.values as string[]) || [];
+    if (values.length > 0) {
+      sections.set("profile/values.md", `---\ntitle: "Values"\n---\n\n${values.map((v) => `- ${v}`).join("\n")}\n`);
+    }
+
+    // profile/links.md
+    const links = (youJson.links as Record<string, string>) || {};
+    const linkEntries = Object.entries(links).filter(([, url]) => url);
+    if (linkEntries.length > 0) {
+      sections.set("profile/links.md", `---\ntitle: "Links"\n---\n\n${linkEntries.map(([p, u]) => `- **${p}**: ${u}`).join("\n")}\n`);
+    }
+
+    // preferences/agent.md
+    const prefs = (youJson.preferences as Record<string, Record<string, unknown>>) || {};
+    if (prefs.agent) {
+      const lines = [`---\ntitle: "Agent Preferences"\n---\n`];
+      if (prefs.agent.tone) lines.push(`**Tone:** ${prefs.agent.tone}`);
+      if (prefs.agent.formality) lines.push(`**Formality:** ${prefs.agent.formality}`);
+      const avoid = (prefs.agent.avoid as string[]) || [];
+      if (avoid.length > 0) lines.push(`**Avoid:** ${avoid.join(", ")}`);
+      lines.push("");
+      sections.set("preferences/agent.md", lines.join("\n"));
+    }
+
+    // preferences/writing.md
+    if (prefs.writing) {
+      const lines = [`---\ntitle: "Writing Preferences"\n---\n`];
+      if (prefs.writing.style) lines.push(`**Style:** ${prefs.writing.style}`);
+      if (prefs.writing.format) lines.push(`**Format:** ${prefs.writing.format}`);
+      lines.push("");
+      sections.set("preferences/writing.md", lines.join("\n"));
+    }
+
+    // voice/voice.md
+    const voice = (youJson.voice as Record<string, unknown>) || {};
+    if (voice.overall) {
+      sections.set("voice/voice.md", `---\ntitle: "Voice Profile"\n---\n\n${voice.overall}\n`);
+    }
+
+    // voice/voice.{platform}.md
+    const platforms = (voice.platforms as Record<string, string>) || {};
+    for (const [platform, content] of Object.entries(platforms)) {
+      if (content) {
+        sections.set(`voice/voice.${platform}.md`, `---\ntitle: "${platform} Voice"\n---\n\n${content}\n`);
+      }
+    }
+
+    // directives/agent.md
+    const ad = (youJson.agent_directives as Record<string, unknown>) || {};
+    if (ad.communication_style || (ad.negative_prompts as string[])?.length || ad.default_stack) {
+      const lines = [`---\ntitle: "Agent Directives"\n---\n`];
+      if (ad.communication_style) lines.push(`**Communication Style:** ${ad.communication_style}`);
+      const np = (ad.negative_prompts as string[]) || [];
+      if (np.length > 0) lines.push(`**Never:** ${np.join(". ")}`);
+      if (ad.default_stack) lines.push(`**Default Stack:** ${ad.default_stack}`);
+      if (ad.decision_framework) lines.push(`**Decision Framework:** ${ad.decision_framework}`);
+      if (ad.current_goal) lines.push(`**Current Goal:** ${ad.current_goal}`);
+      lines.push("");
+      sections.set("directives/agent.md", lines.join("\n"));
     }
   }
 

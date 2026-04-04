@@ -29,7 +29,7 @@ import {
   AgentTarget,
 } from "../lib/skills";
 import { loadIdentityData, resolveVariable, IdentityData } from "../lib/skill-renderer";
-import { BrailleSpinner } from "../lib/render";
+import { BrailleSpinner, renderRichResponse } from "../lib/render";
 import { isAuthenticated } from "../lib/config";
 import { browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill } from "../lib/api";
 import { readSkillFile, getSkillDir } from "../lib/skills";
@@ -81,6 +81,14 @@ const SKILL_SPINNERS = {
 function randomSpinner(category: keyof typeof SKILL_SPINNERS): string {
   const labels = SKILL_SPINNERS[category];
   return labels[Math.floor(Math.random() * labels.length)];
+}
+
+/** Truncate at word boundary instead of mid-word */
+function truncateAtWord(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const truncated = text.slice(0, max);
+  const lastSpace = truncated.lastIndexOf(" ");
+  return (lastSpace > max * 0.5 ? truncated.slice(0, lastSpace) : truncated) + "...";
 }
 
 // ─── Subcommands ──────────────────────────────────────────────────────
@@ -385,16 +393,18 @@ async function useSkillCmd(args: string[]): Promise<void> {
     }
   }
 
-  // Show rendered output
+  // Show rendered output with rich terminal formatting
   if (result.content) {
     console.log("");
     console.log(DIM("  " + "\u2500".repeat(50)));
-    for (const line of result.content.split("\n").slice(0, 40)) {
+    const rendered = renderRichResponse(result.content);
+    // Limit output to ~40 visual lines
+    const renderedLines = rendered.split("\n");
+    for (const line of renderedLines.slice(0, 40)) {
       console.log(`  ${line}`);
     }
-    const totalLines = result.content.split("\n").length;
-    if (totalLines > 40) {
-      console.log(DIM(`  ... ${totalLines - 40} more lines`));
+    if (renderedLines.length > 40) {
+      console.log(DIM(`  ... ${renderedLines.length - 40} more lines`));
     }
     console.log(DIM("  " + "\u2500".repeat(50)));
   }
@@ -642,7 +652,34 @@ async function linkSkillsCmd(args: string[]): Promise<void> {
 async function initProjectCmd(): Promise<void> {
   console.log("");
   console.log("  " + chalk.bold("youmd skill init-project"));
-  console.log(DIM("  scaffolding identity-aware project structure...\n"));
+
+  // Detect existing .youmd-project
+  const youmdProjectPath = path.join(process.cwd(), ".youmd-project");
+  if (fs.existsSync(youmdProjectPath)) {
+    console.log(DIM("  .youmd-project already exists -- re-running will update...\n"));
+  } else {
+    console.log(DIM("  scaffolding identity-aware project structure...\n"));
+  }
+
+  // Auto-install all catalog skills first (not just 2)
+  const catalog = readSkillCatalog();
+  const toInstall = catalog.skills.filter((s) => !s.installed);
+  if (toInstall.length > 0) {
+    const installSpinner = new BrailleSpinner(randomSpinner("install"));
+    installSpinner.start();
+    await new Promise((r) => setTimeout(r, 300));
+
+    let installed = 0;
+    for (const entry of toInstall) {
+      let result = installSkill(entry.name);
+      if (!result.ok && (entry.source.startsWith("github:") || entry.source.startsWith("https://"))) {
+        result = await installSkillAsync(entry.name);
+      }
+      if (result.ok) installed++;
+    }
+
+    installSpinner.stop(`${installed} skills installed`);
+  }
 
   const spinner = new BrailleSpinner(randomSpinner("init"));
   spinner.start();
@@ -1084,7 +1121,7 @@ function infoCmd(args: string[]): void {
     for (const field of entry.identity_fields) {
       const val = resolveVariable(field, identity);
       const status = val ? chalk.green("\u2713") : chalk.yellow("\u2022");
-      const preview = val ? DIM(` ${val.slice(0, 50)}${val.length > 50 ? "..." : ""}`) : DIM(" (empty)");
+      const preview = val ? DIM(` ${truncateAtWord(val, 50)}`) : DIM(" (empty)");
       console.log(`    ${status} ${field}${preview}`);
     }
   }
