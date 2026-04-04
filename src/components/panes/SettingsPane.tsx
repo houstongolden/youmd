@@ -70,6 +70,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
   const [newKey, setNewKey] = useState<string | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
+  const [confirmRevokeKey, setConfirmRevokeKey] = useState<string | null>(null);
 
   // Activity logs from Convex
   const logs = useQuery(
@@ -201,10 +202,18 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
                 </div>
                 {!k.isRevoked ? (
                   <button
-                    onClick={() => revokeKey({ clerkId, keyId: k.id })}
-                    className="text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-dark))] transition-colors"
+                    onClick={() => {
+                      if (confirmRevokeKey === k.id) {
+                        revokeKey({ clerkId, keyId: k.id });
+                        setConfirmRevokeKey(null);
+                      } else {
+                        setConfirmRevokeKey(k.id);
+                        setTimeout(() => setConfirmRevokeKey((c) => c === k.id ? null : c), 3000);
+                      }
+                    }}
+                    className={`transition-colors ${confirmRevokeKey === k.id ? "text-red-400 hover:text-red-300" : "text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-dark))]"}`}
                   >
-                    revoke
+                    {confirmRevokeKey === k.id ? "confirm?" : "revoke"}
                   </button>
                 ) : (
                   <span className="text-[hsl(var(--text-secondary))] opacity-25">

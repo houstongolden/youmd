@@ -331,6 +331,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [previewLink, setPreviewLink] = useState<PreviewLink | null>(null);
+  const [confirmRevokeLink, setConfirmRevokeLink] = useState<string | null>(null);
 
   const liveBundle = recentBundles?.find((b) => b.isPublished);
   const publicUrl = `https://you.md/${username}`;
@@ -579,10 +580,18 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                       preview
                     </button>
                     <button
-                      onClick={() => revokeLink({ clerkId, linkId: link.id })}
-                      className="text-[10px] font-mono text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-dark))] transition-colors"
+                      onClick={() => {
+                        if (confirmRevokeLink === link.id) {
+                          revokeLink({ clerkId, linkId: link.id });
+                          setConfirmRevokeLink(null);
+                        } else {
+                          setConfirmRevokeLink(link.id);
+                          setTimeout(() => setConfirmRevokeLink((c) => c === link.id ? null : c), 3000);
+                        }
+                      }}
+                      className={`text-[10px] font-mono transition-colors ${confirmRevokeLink === link.id ? "text-red-400 hover:text-red-300" : "text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-dark))]"}`}
                     >
-                      revoke
+                      {confirmRevokeLink === link.id ? "confirm?" : "revoke"}
                     </button>
                   </div>
                 )}

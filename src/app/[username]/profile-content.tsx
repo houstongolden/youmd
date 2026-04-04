@@ -252,6 +252,9 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const topics: string[] = data.analysis?.topics || [];
   const voice = data.analysis?.voice_summary || "";
   const preferences = data.preferences || {};
+  const roles: string[] = data.identity?.roles || [];
+  const sourceCount = data.sources?.length || Object.keys(data.identity?.links || {}).length || 0;
+  const projectCount = data.now?.projects?.length || 0;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
@@ -389,6 +392,36 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                 </span>
               )}
             </p>
+            {/* Metrics row */}
+            {(sourceCount > 0 || topics.length > 0 || projectCount > 0) && (
+              <div className="flex items-center gap-4 mt-2 pt-2 border-t border-[hsl(var(--border))]/30">
+                {sourceCount > 0 && (
+                  <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40">
+                    {sourceCount} source{sourceCount !== 1 ? "s" : ""}
+                  </span>
+                )}
+                {topics.length > 0 && (
+                  <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40">
+                    {topics.length} topic{topics.length !== 1 ? "s" : ""}
+                  </span>
+                )}
+                {projectCount > 0 && (
+                  <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40">
+                    {projectCount} project{projectCount !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+            )}
+            {/* Role badges */}
+            {roles.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {roles.map((role: string) => (
+                  <span key={role} className="font-mono text-[9px] px-1.5 py-0.5 border border-[hsl(var(--accent))]/15 text-[hsl(var(--accent))] opacity-60" style={{ borderRadius: "2px" }}>
+                    {role}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </motion.section>
 
@@ -888,8 +921,10 @@ function PortraitFrame({ src, preRendered }: { src: string; preRendered?: PreRen
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-[hsl(var(--accent))] font-mono text-[11px] uppercase tracking-wider">
-      &gt; {children}
+    <h2 className="text-[hsl(var(--accent))] font-mono text-[10px] uppercase tracking-widest flex items-center gap-3 my-1">
+      <span className="text-[hsl(var(--border))]">{"\u2500\u2500"}</span>
+      {children}
+      <span className="flex-1 h-px bg-[hsl(var(--border))]" />
     </h2>
   );
 }
