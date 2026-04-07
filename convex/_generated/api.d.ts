@@ -16,6 +16,7 @@ import type * as contextLinks from "../contextLinks.js";
 import type * as http from "../http.js";
 import type * as lib_compile from "../lib/compile.js";
 import type * as lib_hash from "../lib/hash.js";
+import type * as lib_openrouter from "../lib/openrouter.js";
 import type * as me from "../me.js";
 import type * as memories from "../memories.js";
 import type * as migrations_backfillContentHash from "../migrations/backfillContentHash.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/compile": typeof lib_compile;
   "lib/hash": typeof lib_hash;
+  "lib/openrouter": typeof lib_openrouter;
   me: typeof me;
   memories: typeof memories;
   "migrations/backfillContentHash": typeof migrations_backfillContentHash;
