@@ -1918,20 +1918,21 @@ http.route({
   path: "/api/v1/me/verifications",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return json({ error: "Authorization required" }, 401);
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+      if (!user) return json({ error: "User not found" }, 404);
+
+      const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
+      if (!profile) return json({ verifications: [], message: "No profile found" });
+
+      const verifications = await ctx.runQuery(api.profiles.listVerifications, { profileId: profile._id });
+      return json({ verifications });
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "Failed to get verifications" }, 500);
     }
-    const clerkId = authHeader.slice(7);
-
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId });
-    if (!user) return json({ error: "User not found" }, 404);
-
-    const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
-    if (!profile) return json({ error: "Profile not found" }, 404);
-
-    const verifications = await ctx.runQuery(api.profiles.listVerifications, { profileId: profile._id });
-    return json(verifications);
   }),
 });
 
