@@ -526,3 +526,47 @@ export async function savePortrait(portrait: {
     body: { portrait },
   });
 }
+
+// ─── Private vault (encrypted) ──────────────────────────────────────
+
+export interface VaultData {
+  initialized: boolean;
+  encryptedMd?: string | null;   // base64
+  encryptedJson?: string | null; // base64
+  iv?: string | null;            // base64
+  wrappedVaultKey?: string | null; // base64
+  vaultSalt?: string | null;     // base64
+  vaultKeyIv?: string | null;    // base64
+  createdAt?: number | null;
+  updatedAt?: number | null;
+}
+
+export async function initVault(wrapped: {
+  wrappedVaultKey: string; // base64
+  vaultSalt: string;       // base64
+  vaultKeyIv: string;      // base64
+}): Promise<ApiResponse<{ success: boolean }>> {
+  return request<{ success: boolean }>("/api/v1/me/vault/init", {
+    method: "POST",
+    token: getToken(),
+    body: wrapped,
+  });
+}
+
+export async function saveVaultData(data: {
+  encryptedMd: string;   // base64
+  encryptedJson: string;  // base64
+  iv: string;             // base64
+}): Promise<ApiResponse<{ success: boolean }>> {
+  return request<{ success: boolean }>("/api/v1/me/vault", {
+    method: "POST",
+    token: getToken(),
+    body: data,
+  });
+}
+
+export async function getVaultData(): Promise<ApiResponse<VaultData>> {
+  return request<VaultData>("/api/v1/me/vault", {
+    token: getToken(),
+  });
+}

@@ -435,16 +435,62 @@ export const getAnalytics = query({
     const totalViews = views.length;
     const agentReads = views.filter((v) => v.isAgentRead).length;
     const webViews = totalViews - agentReads;
+    const contextLinkViews = views.filter((v) => v.isContextLink).length;
 
     // Last 7 days
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const recentViews = views.filter((v) => v.viewedAt > weekAgo);
+
+    // Daily breakdown for last 30 days
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const recentAllViews = views.filter((v) => v.viewedAt > thirtyDaysAgo);
+
+    const dailyMap: Record<string, { total: number; agents: number; web: number }> = {};
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      const key = d.toISOString().slice(0, 10);
+      dailyMap[key] = { total: 0, agents: 0, web: 0 };
+    }
+    for (const view of recentAllViews) {
+      const key = new Date(view.viewedAt).toISOString().slice(0, 10);
+      if (dailyMap[key]) {
+        dailyMap[key].total++;
+        if (view.isAgentRead) {
+          dailyMap[key].agents++;
+        } else {
+          dailyMap[key].web++;
+        }
+      }
+    }
+    const dailyViews = Object.entries(dailyMap)
+      .map(([date, counts]) => ({ date, ...counts }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Top referrers
+    const referrerMap: Record<string, number> = {};
+    for (const view of views) {
+      if (view.referrer) {
+        try {
+          const host = new URL(view.referrer).hostname;
+          referrerMap[host] = (referrerMap[host] || 0) + 1;
+        } catch {
+          referrerMap[view.referrer] = (referrerMap[view.referrer] || 0) + 1;
+        }
+      }
+    }
+    const topReferrers = Object.entries(referrerMap)
+      .map(([referrer, count]) => ({ referrer, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
 
     return {
       totalViews,
       agentReads,
       webViews,
       last7Days: recentViews.length,
+      dailyViews,
+      topReferrers,
+      contextLinkViews,
     };
   },
 });

@@ -78,6 +78,16 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const [agentPreview, setAgentPreview] = useState<string | null>(null);
   const [agentPreviewLoading, setAgentPreviewLoading] = useState(false);
 
+  // ── Verifications ─────────────────────────────────────────
+  const profileForVerification = useQuery(
+    api.profiles.getByUsername,
+    { username }
+  );
+  const verifications = useQuery(
+    api.profiles.listVerifications,
+    profileForVerification?._id ? { profileId: profileForVerification._id } : "skip"
+  );
+
   // ── Ownership detection ──────────────────────────────────────
   const { user: clerkUser } = useUser();
   const convexUser = useQuery(
@@ -338,8 +348,29 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               />
             )}
             <div className="pb-1 flex-1 min-w-0">
-              <h1 className="text-[hsl(var(--text-primary))] font-mono text-lg md:text-xl font-medium tracking-tight truncate">{name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-[hsl(var(--text-primary))] font-mono text-lg md:text-xl font-medium tracking-tight truncate">{name}</h1>
+                {verifications && verifications.length > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[hsl(var(--success))] opacity-80 shrink-0" title={`Verified via: ${verifications.map((v: { method: string; platform?: string }) => v.platform ? `${v.method}:${v.platform}` : v.method).join(", ")}`}>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--success))]" />
+                    [verified]
+                  </span>
+                )}
+              </div>
               {tagline && <p className="text-[hsl(var(--text-secondary))] text-[12px] mt-0.5 truncate">{tagline}</p>}
+              {verifications && verifications.length > 0 && (
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  {verifications.map((v: { _id: string; method: string; platform?: string }) => (
+                    <span
+                      key={v._id}
+                      className="inline-flex items-center gap-1 text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-40 border border-[hsl(var(--border))] px-1.5 py-0.5"
+                      style={{ borderRadius: "2px" }}
+                    >
+                      {v.platform ? `${v.method}:${v.platform}` : v.method}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

@@ -619,6 +619,109 @@ export const savePortrait = mutation({
   },
 });
 
+// ── Verification Mutations ────────────────────────────────
+
+/** Create a verification record for a profile */
+export const createVerification = mutation({
+  args: {
+    clerkId: v.string(),
+    method: v.string(), // "domain" | "social" | "email" | "manual"
+    platform: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("user not found");
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
+      .first();
+    if (!profile) throw new Error("profile not found");
+
+    // Check for existing active verification of same method+platform
+    const existing = await ctx.db
+      .query("profileVerifications")
+      .withIndex("by_profileId", (q) => q.eq("profileId", profile._id))
+      .collect();
+    const duplicate = existing.find(
+      (v) => v.method === args.method && v.platform === args.platform && v.isActive
+    );
+    if (duplicate) {
+      return { verificationId: duplicate._id, alreadyExists: true };
+    }
+
+    const verificationId = await ctx.db.insert("profileVerifications", {
+      profileId: profile._id,
+      method: args.method,
+      platform: args.platform,
+      verifiedAt: Date.now(),
+      isActive: true,
+      metadata: args.metadata,
+    });
+
+    await ctx.db.insert("securityLogs", {
+      eventType: "verification_created",
+      profileId: profile._id,
+      userId: user._id,
+      details: { method: args.method, platform: args.platform },
+      createdAt: Date.now(),
+    });
+
+    return { verificationId, alreadyExists: false };
+  },
+});
+
+/** List active verifications for a profile */
+export const listVerifications = query({
+  args: { profileId: v.id("profiles") },
+  handler: async (ctx, args) => {
+    const all = await ctx.db
+      .query("profileVerifications")
+      .withIndex("by_profileId", (q) => q.eq("profileId", args.profileId))
+      .collect();
+    return all.filter((v) => v.isActive);
+  },
+});
+
+/** Revoke (deactivate) a verification */
+export const revokeVerification = mutation({
+  args: {
+    clerkId: v.string(),
+    verificationId: v.id("profileVerifications"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("user not found");
+
+    const verification = await ctx.db.get(args.verificationId);
+    if (!verification) throw new Error("verification not found");
+
+    const profile = await ctx.db.get(verification.profileId);
+    if (!profile || profile.ownerId !== user._id) {
+      throw new Error("not the profile owner");
+    }
+
+    await ctx.db.patch(args.verificationId, { isActive: false });
+
+    await ctx.db.insert("securityLogs", {
+      eventType: "verification_revoked",
+      profileId: verification.profileId,
+      userId: user._id,
+      details: { method: verification.method, platform: verification.platform },
+      createdAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
 /** Admin: delete a profile by username (for cleanup) */
 export const deleteByUsername = mutation({
   args: { username: v.string() },
@@ -632,6 +735,44 @@ export const deleteByUsername = mutation({
       return { deleted: true, username: args.username };
     }
     return { deleted: false, username: args.username };
+  },
+});
+
+/** Internal: create social verification after identity cross-reference */
+export const createSocialVerification = internalMutation({
+  args: {
+    username: v.string(),
+    platforms: v.array(v.string()),
+    confidence: v.number(),
+    signals: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_username", (q) => q.eq("username", args.username.toLowerCase()))
+      .first();
+    if (!profile) return;
+
+    // Create a verification for each platform
+    for (const platform of args.platforms) {
+      const existing = await ctx.db
+        .query("profileVerifications")
+        .withIndex("by_profileId", (q) => q.eq("profileId", profile._id))
+        .collect();
+      const dup = existing.find(
+        (v) => v.method === "social" && v.platform === platform && v.isActive
+      );
+      if (dup) continue;
+
+      await ctx.db.insert("profileVerifications", {
+        profileId: profile._id,
+        method: "social",
+        platform,
+        verifiedAt: Date.now(),
+        isActive: true,
+        metadata: { confidence: args.confidence, signals: args.signals },
+      });
+    }
   },
 });
 

@@ -1787,4 +1787,154 @@ http.route({
   handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
 });
 
+// ============================================================
+// PRIVATE VAULT (encrypted, client-side encryption)
+// ============================================================
+
+// POST /api/v1/me/vault/init — Initialize vault with wrapped key
+http.route({
+  path: "/api/v1/me/vault/init",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const body = await request.json();
+      if (!body.wrappedVaultKey || !body.vaultSalt || !body.vaultKeyIv) {
+        return json({ error: "Missing wrappedVaultKey, vaultSalt, or vaultKeyIv" }, 400);
+      }
+
+      // Convert base64 strings to ArrayBuffer for Convex bytes fields
+      const wrappedVaultKey = new ArrayBuffer(Buffer.from(body.wrappedVaultKey, "base64").length);
+      new Uint8Array(wrappedVaultKey).set(Buffer.from(body.wrappedVaultKey, "base64"));
+
+      const vaultSalt = new ArrayBuffer(Buffer.from(body.vaultSalt, "base64").length);
+      new Uint8Array(vaultSalt).set(Buffer.from(body.vaultSalt, "base64"));
+
+      const vaultKeyIv = new ArrayBuffer(Buffer.from(body.vaultKeyIv, "base64").length);
+      new Uint8Array(vaultKeyIv).set(Buffer.from(body.vaultKeyIv, "base64"));
+
+      const result = await ctx.runMutation(api.vault.initVault, {
+        clerkId: auth.userId,
+        wrappedVaultKey,
+        vaultSalt,
+        vaultKeyIv,
+      });
+      return json(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to initialize vault";
+      return json({ error: message }, 500);
+    }
+  }),
+});
+
+http.route({ path: "/api/v1/me/vault/init", method: "OPTIONS", handler: corsPreflight });
+
+// POST /api/v1/me/vault — Save encrypted vault data
+http.route({
+  path: "/api/v1/me/vault",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const body = await request.json();
+      if (!body.encryptedMd || !body.encryptedJson || !body.iv) {
+        return json({ error: "Missing encryptedMd, encryptedJson, or iv" }, 400);
+      }
+
+      const encryptedMd = new ArrayBuffer(Buffer.from(body.encryptedMd, "base64").length);
+      new Uint8Array(encryptedMd).set(Buffer.from(body.encryptedMd, "base64"));
+
+      const encryptedJson = new ArrayBuffer(Buffer.from(body.encryptedJson, "base64").length);
+      new Uint8Array(encryptedJson).set(Buffer.from(body.encryptedJson, "base64"));
+
+      const iv = new ArrayBuffer(Buffer.from(body.iv, "base64").length);
+      new Uint8Array(iv).set(Buffer.from(body.iv, "base64"));
+
+      const result = await ctx.runMutation(api.vault.saveEncryptedVault, {
+        clerkId: auth.userId,
+        encryptedMd,
+        encryptedJson,
+        iv,
+      });
+      return json(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to save vault data";
+      return json({ error: message }, 500);
+    }
+  }),
+});
+
+// GET /api/v1/me/vault — Get encrypted vault data
+http.route({
+  path: "/api/v1/me/vault",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const vault = await ctx.runQuery(api.vault.getEncryptedVault, {
+        clerkId: auth.userId,
+      });
+
+      if (!vault) {
+        return json({ initialized: false });
+      }
+
+      // Convert ArrayBuffer fields to base64 for JSON transport
+      const toB64 = (ab: ArrayBuffer | null) =>
+        ab ? Buffer.from(ab).toString("base64") : null;
+
+      return json({
+        initialized: true,
+        encryptedMd: toB64(vault.encryptedMd),
+        encryptedJson: toB64(vault.encryptedJson),
+        iv: toB64(vault.iv),
+        wrappedVaultKey: toB64(vault.wrappedVaultKey),
+        vaultSalt: toB64(vault.vaultSalt),
+        vaultKeyIv: toB64(vault.vaultKeyIv),
+        createdAt: vault.createdAt,
+        updatedAt: vault.updatedAt,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to get vault data";
+      return json({ error: message }, 500);
+    }
+  }),
+});
+
+http.route({ path: "/api/v1/me/vault", method: "OPTIONS", handler: corsPreflight });
+
+// ============================================================
+// VERIFICATIONS
+// ============================================================
+
+// GET /api/v1/me/verifications — list user's active verifications
+http.route({
+  path: "/api/v1/me/verifications",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Authorization required" }, 401);
+    }
+    const clerkId = authHeader.slice(7);
+
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId });
+    if (!user) return json({ error: "User not found" }, 404);
+
+    const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
+    if (!profile) return json({ error: "Profile not found" }, 404);
+
+    const verifications = await ctx.runQuery(api.profiles.listVerifications, { profileId: profile._id });
+    return json(verifications);
+  }),
+});
+
+http.route({ path: "/api/v1/me/verifications", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+
 export default http;

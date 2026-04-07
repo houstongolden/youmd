@@ -221,9 +221,15 @@ export default defineSchema({
 
   privateVault: defineTable({
     userId: v.id("users"),
-    encryptedMd: v.bytes(),
-    encryptedJson: v.bytes(),
-    iv: v.bytes(),
+    encryptedMd: v.optional(v.bytes()),
+    encryptedJson: v.optional(v.bytes()),
+    iv: v.optional(v.bytes()),
+    // Vault key wrapped with user's passphrase (for web recovery)
+    wrappedVaultKey: v.optional(v.bytes()),
+    vaultSalt: v.optional(v.bytes()),
+    vaultKeyIv: v.optional(v.bytes()),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   }).index("by_userId", ["userId"]),
 
   pipelineJobs: defineTable({

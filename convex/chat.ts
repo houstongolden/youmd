@@ -2,6 +2,7 @@
 
 import { v } from "convex/values";
 import { action } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 // ---------------------------------------------------------------------------
 // Model routing configuration — right model for the right task
@@ -153,7 +154,7 @@ export const verifyIdentity = action({
       })
     ),
   },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
     const perplexityKey = process.env.PERPLEXITY_API_KEY;
     if (!perplexityKey) {
       return { success: false, error: "PERPLEXITY_API_KEY not configured" };
@@ -211,6 +212,22 @@ Respond ONLY with valid JSON, no markdown.`,
 
       try {
         const result = JSON.parse(content);
+
+        // Auto-create social verification if confidence > 80
+        if (result.confidence > 80 && result.match && args.username) {
+          try {
+            // Look up profile by username and create verification
+            await ctx.runMutation(internal.profiles.createSocialVerification, {
+              username: args.username,
+              platforms: args.scrapedSources.map((s: { platform: string }) => s.platform),
+              confidence: result.confidence,
+              signals: result.signals || [],
+            });
+          } catch {
+            // Non-fatal: verification creation failed, result still valid
+          }
+        }
+
         return { success: true, verification: result };
       } catch {
         // If not valid JSON, return the raw text as summary

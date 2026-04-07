@@ -136,13 +136,33 @@ export const createUser = mutation({
       });
     } else if (!existingProfile) {
       // Create a new profile entry linked to this user
-      await ctx.db.insert("profiles", {
+      const newProfileId = await ctx.db.insert("profiles", {
         username,
         name: args.displayName || username,
         isClaimed: true,
         ownerId: userId,
         claimedAt: Date.now(),
         createdAt: Date.now(),
+      });
+
+      // Auto-create email verification (Clerk verifies email at sign-up)
+      await ctx.db.insert("profileVerifications", {
+        profileId: newProfileId,
+        method: "email",
+        verifiedAt: Date.now(),
+        isActive: true,
+        metadata: { email: args.email, source: "clerk_signup" },
+      });
+    }
+
+    // If claiming an existing profile, also create email verification
+    if (existingProfile && !existingProfile.isClaimed) {
+      await ctx.db.insert("profileVerifications", {
+        profileId: existingProfile._id,
+        method: "email",
+        verifiedAt: Date.now(),
+        isActive: true,
+        metadata: { email: args.email, source: "clerk_signup" },
       });
     }
 
