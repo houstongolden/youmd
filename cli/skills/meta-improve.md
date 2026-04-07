@@ -50,6 +50,33 @@ The feedback loop that makes your identity smarter over time. Agents review what
 }
 ```
 
+## MCP Server Health Check
+
+As part of the self-improvement review, meta-improve should also check MCP server health:
+
+1. **Is the MCP server configured?** Check if `youmd mcp --json` output exists in the user's MCP client config (e.g., `~/.claude/claude_desktop_config.json` or `.claude/settings.json`).
+2. **Is the server reachable?** Call `get_remote_status` to verify authentication and sync state.
+3. **Are tools being used?** Check if agents are actively calling MCP tools. Low usage may indicate misconfiguration.
+
+### Suggesting MCP Setup
+
+If the MCP server is NOT configured, meta-improve should propose setup as an improvement:
+
+```
+Proposal: Configure You.md MCP server
+Reason: Your identity context is only available via static files. With the MCP server,
+agents get live access to memories, project context, and can save learnings in real time.
+
+Setup:
+  1. Run: youmd mcp --json
+  2. Add the output to your MCP client config
+  3. Restart your agent (Claude Code, Cursor, etc.)
+
+Impact: All agents get live identity context instead of stale snapshots.
+```
+
+If the MCP server IS configured but `get_remote_status` shows the local bundle is out of sync with remote, propose a `compile_bundle` + `push_bundle` cycle.
+
 ## When To Use
 
 - Periodically via `youmd skill improve`

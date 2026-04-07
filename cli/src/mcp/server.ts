@@ -8,7 +8,8 @@
  * Resources: identity, profile sections, preferences, voice, directives,
  *            memories, projects, skills
  * Tools:     add_memory, update_section, search_memories, use_skill,
- *            compile_bundle, push_bundle, get_project_context
+ *            compile_bundle, push_bundle, get_project_context,
+ *            add_source, create_context_link, list_projects, get_remote_status
  *
  * Transport: stdio (for Claude Code, Cursor, any MCP client)
  *
@@ -402,7 +403,7 @@ export async function startMcpServer(): Promise<void> {
       tools: [
         {
           name: "get_identity",
-          description: "Get the user's complete you.md identity bundle — who they are, how they work, their voice, preferences, and directives. Start here to understand who you're working with.",
+          description: "Get the user's complete you.md identity bundle — who they are, how they work, their voice, preferences, and directives. Returns structured JSON or human-readable markdown. Call this FIRST when starting a new conversation to understand who you're working with before taking any action.",
           inputSchema: {
             type: "object" as const,
             properties: {
@@ -416,7 +417,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "get_section",
-          description: "Read a specific identity section (about, projects, now, values, links, agent preferences, writing preferences, voice, directives)",
+          description: "Read a specific identity section by path. Use when you need just ONE section rather than the full bundle. Returns markdown content for the requested section. Available paths: profile/about, profile/projects, profile/now, profile/values, profile/links, preferences/agent, preferences/writing, voice/voice, directives/agent.",
           inputSchema: {
             type: "object" as const,
             properties: {
@@ -430,7 +431,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "update_section",
-          description: "Update a section of the user's identity. Writes the content to the local .youmd/ directory.",
+          description: "Update a section of the user's identity. Writes markdown content to the local .youmd/ directory. Use after the user explicitly asks to change their profile, preferences, voice, or directives. Always confirm changes with the user before calling. Does NOT auto-push — call push_bundle afterward if the user wants to publish.",
           inputSchema: {
             type: "object" as const,
             properties: {
@@ -448,7 +449,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "add_memory",
-          description: "Save a memory about the user — facts, preferences, decisions, or context learned during this conversation. Memories persist across sessions and inform all future agent interactions.",
+          description: "Save a memory about the user — facts, preferences, decisions, or context learned during this conversation. Memories persist across sessions and inform ALL future agent interactions. Use proactively when you learn something important about the user (a preference, a decision, a project detail). Requires authentication.",
           inputSchema: {
             type: "object" as const,
             properties: {
@@ -471,7 +472,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "search_memories",
-          description: "Search the user's memories by category or list all active memories",
+          description: "Search the user's memories by category or list all active memories. Returns an array of memory objects with category, content, tags, and timestamps. Use to check what you already know before asking the user a question they may have answered before.",
           inputSchema: {
             type: "object" as const,
             properties: {
@@ -488,7 +489,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "get_project_context",
-          description: "Get the full project context for the current or named project — PRD, TODO, features, decisions, changelog, and project memories",
+          description: "Get the full project context for the current or named project — PRD, TODO, features, decisions, changelog, and project memories. Returns a JSON object with all project-context/ files. Use when starting work on a project to understand what has been built, what is planned, and what decisions have been made.",
           inputSchema: {
             type: "object" as const,
             properties: {
@@ -501,7 +502,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "add_project_memory",
-          description: "Save a memory scoped to a specific project",
+          description: "Save a memory scoped to a specific project. Unlike add_memory (which is global), project memories are stored locally in the project-context/ directory and only surface when working on that project. Use for architecture decisions, bug context, and feature-specific learnings.",
           inputSchema: {
             type: "object" as const,
             properties: {
@@ -523,7 +524,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "use_skill",
-          description: "Render an identity-aware skill — returns the skill content with the user's identity interpolated into {{var}} placeholders",
+          description: "Render an identity-aware skill — returns the skill content with the user's identity interpolated into {{var}} placeholders. Returns rendered markdown with instructions the agent should follow. Use when the user asks to generate a CLAUDE.md, sync voice, scaffold a project, or run a self-improvement review.",
           inputSchema: {
             type: "object" as const,
             properties: {
@@ -537,7 +538,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "compile_bundle",
-          description: "Recompile the local identity bundle from profile/, preferences/, voice/, directives/ files into you.json + you.md",
+          description: "Recompile the local identity bundle from profile/, preferences/, voice/, directives/ files into you.json + you.md. Call after update_section to regenerate the compiled bundle. Returns compilation stats including version, section count, and files read.",
           inputSchema: {
             type: "object" as const,
             properties: {},
@@ -545,7 +546,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "push_bundle",
-          description: "Push the local identity bundle to you.md servers and publish the profile. Requires authentication.",
+          description: "Push the local identity bundle to you.md servers and publish the profile. Requires authentication. Call after compile_bundle when the user wants their changes live. Returns the published version number.",
           inputSchema: {
             type: "object" as const,
             properties: {
@@ -558,7 +559,61 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "list_skills",
-          description: "List all installed identity-aware skills with their status",
+          description: "List all installed identity-aware skills with their names. Use to discover what skills are available before calling use_skill. Returns a simple list of installed skill names.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {},
+          },
+        },
+        {
+          name: "add_source",
+          description: "Register an identity data source (LinkedIn, GitHub, X, website, blog, YouTube). Links an external profile to the user's identity so it can be scraped and indexed. Requires authentication. Use when the user wants to connect a new social profile or website to their identity.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {
+              sourceType: {
+                type: "string",
+                enum: ["website", "linkedin", "x", "github", "blog", "youtube"],
+                description: "Type of source to register",
+              },
+              sourceUrl: {
+                type: "string",
+                description: "Full URL to the source (e.g., https://github.com/username)",
+              },
+            },
+            required: ["sourceType", "sourceUrl"],
+          },
+        },
+        {
+          name: "create_context_link",
+          description: "Generate a shareable context link for agents. The link gives any agent temporary or permanent read access to the user's identity context. Use when the user wants to share their identity with a third-party agent or service. Returns a URL that can be passed to any agent.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {
+              scope: {
+                type: "string",
+                enum: ["public", "full"],
+                description: "Access scope: public (profile only) or full (includes memories, preferences, directives). Default: public",
+              },
+              ttl: {
+                type: "string",
+                enum: ["1h", "24h", "7d", "30d", "never"],
+                description: "Time-to-live for the link. Default: 24h",
+              },
+            },
+          },
+        },
+        {
+          name: "list_projects",
+          description: "List all detected projects with their metadata. Returns project names found in the projects root directory. Use to discover available projects before calling get_project_context with a specific project name.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {},
+          },
+        },
+        {
+          name: "get_remote_status",
+          description: "Check sync status between local identity bundle and the remote you.md server. Returns whether the user is authenticated, whether the local bundle exists, and the current version info. Use to diagnose sync issues or confirm a push was successful.",
           inputSchema: {
             type: "object" as const,
             properties: {},
@@ -771,6 +826,89 @@ export async function startMcpServer(): Promise<void> {
         }
         const list = skills.map((s) => `- ${s.name}`).join("\n");
         return { content: [{ type: "text" as const, text: `installed skills:\n${list}` }] };
+      }
+
+      case "add_source": {
+        if (!isAuthenticated()) {
+          return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
+        }
+        const { sourceType, sourceUrl } = args as { sourceType: string; sourceUrl: string };
+        try {
+          const result = await apiRequest("/api/v1/me/sources", {
+            method: "POST",
+            body: { sourceType, sourceUrl },
+          });
+          return { content: [{ type: "text" as const, text: `source registered: [${sourceType}] ${sourceUrl}` }] };
+        } catch (err) {
+          return { content: [{ type: "text" as const, text: `failed to add source: ${err instanceof Error ? err.message : "unknown error"}` }], isError: true };
+        }
+      }
+
+      case "create_context_link": {
+        if (!isAuthenticated()) {
+          return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
+        }
+        const { scope, ttl } = (args || {}) as { scope?: string; ttl?: string };
+        try {
+          const result = await apiRequest("/api/v1/me/context-links", {
+            method: "POST",
+            body: { scope: scope || "public", ttl: ttl || "24h" },
+          }) as Record<string, unknown>;
+          const link = result.url || result.link || JSON.stringify(result);
+          return { content: [{ type: "text" as const, text: `context link created: ${link}\nscope: ${scope || "public"}, ttl: ${ttl || "24h"}` }] };
+        } catch (err) {
+          return { content: [{ type: "text" as const, text: `failed to create context link: ${err instanceof Error ? err.message : "unknown error"}` }], isError: true };
+        }
+      }
+
+      case "list_projects": {
+        try {
+          const root = findProjectsRoot();
+          if (!root) {
+            return { content: [{ type: "text" as const, text: "no projects directory found" }], isError: true };
+          }
+          const projects = listProjects(root);
+          if (projects.length === 0) {
+            return { content: [{ type: "text" as const, text: "no projects detected. create one with: youmd project init <name>" }] };
+          }
+          const current = getCurrentProject();
+          const list = projects.map((p) => {
+            const marker = current && current.name === p ? " (current)" : "";
+            return `- ${p}${marker}`;
+          }).join("\n");
+          return { content: [{ type: "text" as const, text: `projects:\n${list}` }] };
+        } catch (err) {
+          return { content: [{ type: "text" as const, text: `error listing projects: ${err instanceof Error ? err.message : "unknown"}` }], isError: true };
+        }
+      }
+
+      case "get_remote_status": {
+        const authenticated = isAuthenticated();
+        const bundleExists = localBundleExists();
+        const youJson = getYouJson();
+        const version = (youJson as Record<string, unknown>)?.version || "unknown";
+
+        const status: Record<string, unknown> = {
+          authenticated,
+          localBundleExists: bundleExists,
+          localVersion: version,
+        };
+
+        if (authenticated) {
+          try {
+            const remote = await apiRequest("/api/v1/me/status") as Record<string, unknown>;
+            status.remote = remote;
+          } catch {
+            status.remote = "unreachable";
+          }
+        }
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify(status, null, 2),
+          }],
+        };
       }
 
       default:

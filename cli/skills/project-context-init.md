@@ -44,6 +44,32 @@ project-context/
 └── feature-requests-active.md
 ```
 
+## Analytics & Verified Badges
+
+Projects tracked by You.md can leverage the analytics pane and verified badge system:
+
+### Analytics Pane
+
+Once a project is registered and pushed, the You.md dashboard shows:
+
+- **Activity timeline** — commits, memory additions, context updates over time
+- **Agent usage** — which agents accessed this project's context and how often
+- **Identity field coverage** — which sections of your identity are referenced by project agents
+- **Skill usage** — which skills are triggered in this project's context
+
+To enable analytics, ensure the project is linked via `youmd project init <name>` and that you push regularly with `youmd push`.
+
+### Verified Badges
+
+Projects with complete context (PRD, architecture, and at least 5 memories) earn a verified badge on your public profile. The badge signals to other agents and collaborators that this project has rich, maintained context. Badge criteria:
+
+- PRD.md exists and is non-empty
+- ARCHITECTURE.md exists and is non-empty
+- At least 5 project memories recorded
+- Last push within the past 30 days
+
+The badge appears on your you.md profile page and in context links shared via `create_context_link`.
+
 ## When To Use
 
 - Starting any new project

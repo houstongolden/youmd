@@ -58,6 +58,31 @@ Generate a CLAUDE.md for the current project, pre-loaded with your identity so e
 (auto-detected directory listing)
 ```
 
+## MCP Server Integration
+
+The generated CLAUDE.md should include a section about the You.md MCP server, so the coding agent can use it for live identity context, memory storage, and project awareness:
+
+```markdown
+## MCP Tools (You.md)
+
+This project has `youmd mcp` configured as an MCP server. Use these tools:
+
+- `get_identity` — Load the user's identity context at the start of each session
+- `add_memory` — Save important facts, decisions, and preferences learned during work
+- `search_memories` — Check existing memories before asking questions the user may have answered before
+- `get_project_context` — Load PRD, TODO, features, and decisions for the current project
+- `add_project_memory` — Save project-specific decisions and architectural context
+- `compile_bundle` / `push_bundle` — Recompile and publish after identity changes
+
+To configure: add `youmd mcp --json` output to your MCP client config.
+```
+
+When generating the CLAUDE.md, check if the user has the MCP server configured (look for `youmd` in MCP configs) and include this section if so. If not configured, add a comment suggesting setup:
+
+```markdown
+<!-- Tip: Run `youmd mcp --json` to get MCP config for live identity context -->
+```
+
 ## When To Use
 
 - Starting a new project

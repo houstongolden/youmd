@@ -34,6 +34,54 @@ Keep your voice profile in sync across every agent tool you use. When your voice
 | Cursor | .cursor/rules/youmd-voice.md | Single markdown file |
 | Generic | .youmd/skills/voice-context.md | Universal format |
 
+## Template Variables
+
+In addition to the core voice fields, the following variables are available for fine-grained voice control:
+
+- `{{voice.overall}}` — Full voice description (tone, cadence, personality)
+- `{{voice.writing}}` — Written communication style (emails, docs, comments)
+- `{{voice.speaking}}` — Verbal communication style (meetings, presentations)
+- `{{voice.tone}}` — Short tone descriptor (e.g., "direct, no fluff")
+- `{{voice.formality}}` — Formality level (e.g., "casual-professional")
+- `{{voice.avoid}}` — Patterns to avoid (e.g., "corporate speak, emoji, verbose explanations")
+- `{{profile.about}}` — Brief identity context for attribution
+
+## Usage Examples
+
+### Claude Code agent config
+
+After rendering, paste the output into `.claude/skills/youmd/voice.md`:
+
+```markdown
+# Voice Rules
+
+Write all responses in this voice: {{voice.overall}}
+
+When writing code comments: {{voice.writing}}
+
+Avoid: {{voice.avoid}}
+```
+
+### Cursor rules file
+
+Use in `.cursor/rules/youmd-voice.md`:
+
+```markdown
+# Communication Style
+Tone: {{voice.tone}}
+Formality: {{voice.formality}}
+Writing style: {{voice.writing}}
+Never use: {{voice.avoid}}
+```
+
+### Custom agent system prompt snippet
+
+```
+You are working with {{profile.about}}.
+Match this voice: {{voice.overall}}
+Formality: {{voice.formality}}
+```
+
 ## When To Use
 
 - After updating your voice via `youmd chat`

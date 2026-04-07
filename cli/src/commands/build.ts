@@ -4,7 +4,10 @@ import chalk from "chalk";
 import { getLocalBundleDir, localBundleExists, readGlobalConfig, readLocalConfig, writeLocalConfig } from "../lib/config";
 import { compileBundle, writeBundle } from "../lib/compiler";
 import { BrailleSpinner } from "../lib/render";
-import { computeContentHash } from "../lib/hash";
+import { computeContentHash, shortHash } from "../lib/hash";
+
+const ACCENT = chalk.hex("#C46A3A");
+const DIM = chalk.dim;
 
 const BUILD_SPINNERS = [
   "assembling your identity context",
@@ -22,7 +25,7 @@ function randomBuildLabel(): string {
 export async function buildCommand(): Promise<void> {
   if (!localBundleExists()) {
     console.log("");
-    console.log(chalk.yellow("  no .youmd/ directory found"));
+    console.log(chalk.yellow("  no .youmd/ directory found."));
     console.log("");
     console.log("  run " + chalk.cyan("youmd init") + " to create one.");
     console.log("");
@@ -31,10 +34,10 @@ export async function buildCommand(): Promise<void> {
 
   const bundleDir = getLocalBundleDir();
 
-  // Detect if this is the first build (no manifest.json yet)
+  // Detect if this is the first build
   const isFirstBuild = !fs.existsSync(path.join(bundleDir, "manifest.json"));
 
-  // Check for empty profile/ directory — warn before compiling
+  // Check for empty profile/
   const profileDir = path.join(bundleDir, "profile");
   const profileFiles = fs.existsSync(profileDir)
     ? fs.readdirSync(profileDir).filter((f) => f.endsWith(".md"))
@@ -42,28 +45,27 @@ export async function buildCommand(): Promise<void> {
   if (profileFiles.length === 0) {
     console.log("");
     console.log(chalk.yellow("  warning: profile/ directory is empty or missing"));
-    console.log(chalk.dim("  run " + chalk.cyan("youmd pull") + " to fetch your profile, or add .md files to .youmd/profile/"));
+    console.log(DIM("  run " + chalk.cyan("youmd pull") + " to fetch your profile, or add .md files to .youmd/profile/"));
     console.log("");
   }
 
   console.log("");
-  console.log("  " + chalk.bold("you.md") + chalk.dim(" -- building identity context"));
+  console.log("  " + chalk.bold("you.md") + DIM(" -- build"));
   console.log("");
 
-  // Show a personality spinner while compiling
+  // Personality spinner
   const spinner = new BrailleSpinner(randomBuildLabel());
   spinner.start();
 
   const result = compileBundle(bundleDir);
 
-  // Brief pause for the spinner to feel real
   await new Promise((r) => setTimeout(r, 400));
 
   spinner.stop();
 
   // Print each file read, organized by directory
   const allDirs = ["profile", "preferences", "voice", "directives"];
-  const totalSteps = result.filesRead.length + 3; // +3 for compile, generate, manifest
+  const totalSteps = result.filesRead.length + 3;
   let step = 0;
 
   for (const dir of allDirs) {
@@ -71,30 +73,30 @@ export async function buildCommand(): Promise<void> {
     for (const entry of dirFiles) {
       step++;
       const prefix = step < totalSteps ? "\u251C\u2500\u2500" : "\u2514\u2500\u2500";
-      console.log(`  ${prefix} ${chalk.dim("reading")} ${dir}/${entry.file}`);
+      console.log(`  ${prefix} ${DIM("read")} ${ACCENT(dir + "/")}${entry.file}`);
     }
   }
 
-  // Also log any files from unexpected types
+  // Unexpected types
   for (const entry of result.filesRead) {
     if (!allDirs.includes(entry.type) && entry.type !== "preference" && entry.type !== "directive") {
       step++;
       const prefix = step < totalSteps ? "\u251C\u2500\u2500" : "\u2514\u2500\u2500";
-      console.log(`  ${prefix} ${chalk.dim("reading")} ${entry.type}/${entry.file}`);
+      console.log(`  ${prefix} ${DIM("read")} ${ACCENT(entry.type + "/")}${entry.file}`);
     }
   }
 
   // Compile step
   step++;
-  console.log(`  ${step < totalSteps ? "\u251C\u2500\u2500" : "\u2514\u2500\u2500"} ${chalk.dim("compiling")} you.json ${chalk.dim("(nested format)")}`);
+  console.log(`  ${step < totalSteps ? "\u251C\u2500\u2500" : "\u2514\u2500\u2500"} ${DIM("compile")} you.json`);
 
   // Generate step
   step++;
-  console.log(`  ${step < totalSteps ? "\u251C\u2500\u2500" : "\u2514\u2500\u2500"} ${chalk.dim("generating")} you.md`);
+  console.log(`  ${step < totalSteps ? "\u251C\u2500\u2500" : "\u2514\u2500\u2500"} ${DIM("generate")} you.md`);
 
   // Write manifest
   step++;
-  console.log(`  \u2514\u2500\u2500 ${chalk.dim("writing")} manifest.json`);
+  console.log(`  \u2514\u2500\u2500 ${DIM("write")} manifest.json`);
 
   // Write output files
   writeBundle(bundleDir, result);
@@ -102,16 +104,17 @@ export async function buildCommand(): Promise<void> {
   // Compute and store the local content hash
   const youJsonPath = path.join(bundleDir, "you.json");
   const youMdPath = path.join(bundleDir, "you.md");
+  let localHash = "";
   if (fs.existsSync(youJsonPath)) {
     const youJson = JSON.parse(fs.readFileSync(youJsonPath, "utf-8"));
     const youMdContent = fs.existsSync(youMdPath) ? fs.readFileSync(youMdPath, "utf-8") : "";
-    const localHash = computeContentHash(youJson, youMdContent);
+    localHash = computeContentHash(youJson, youMdContent);
     const localConfig = readLocalConfig() || { version: 1, sources: [] };
     localConfig.localContentHash = localHash;
     writeLocalConfig(localConfig);
   }
 
-  // Use stats from compiler
+  // Stats
   const { filledSections, totalSections, version, directories } = result.stats;
 
   const contentSize = fs.existsSync(youMdPath) ? fs.statSync(youMdPath).size : 0;
@@ -123,20 +126,25 @@ export async function buildCommand(): Promise<void> {
   console.log(
     "  " + chalk.green("\u2713") +
     " bundle compiled" +
-    chalk.dim(` (v${version})`)
+    DIM(` -- v${version}`)
   );
   console.log(
-    chalk.dim(`  ${filledSections}/${totalSections} sections filled, ${sizeLabel} total`)
+    DIM(`    ${result.filesRead.length} files read, ${filledSections}/${totalSections} sections filled, ${sizeLabel}`)
   );
+  if (localHash) {
+    console.log(
+      DIM(`    content hash: ${shortHash(localHash)}`)
+    );
+  }
   if (directories.length > 0) {
-    console.log(chalk.dim(`  directories: ${directories.join(", ")}`));
+    console.log(DIM(`    directories: ${directories.join(", ")}`));
   }
 
-  // Content-aware summary — shows what's actually in the bundle
+  // Content summary
   const yj = result.youJson as Record<string, unknown>;
   const summaryParts: string[] = [];
   const identity = yj.identity as Record<string, unknown> | undefined;
-  if (identity?.name) summaryParts.push(chalk.hex("#C46A3A")(String(identity.name)));
+  if (identity?.name) summaryParts.push(ACCENT(String(identity.name)));
   const projects = yj.projects as unknown[] | undefined;
   if (projects?.length) summaryParts.push(`${projects.length} project${projects.length === 1 ? "" : "s"}`);
   const values = yj.values as unknown[] | undefined;
@@ -148,7 +156,7 @@ export async function buildCommand(): Promise<void> {
   const ad = yj.agent_directives as Record<string, unknown> | undefined;
   if (ad?.communication_style || (ad?.negative_prompts as unknown[])?.length) summaryParts.push("directives");
   if (summaryParts.length > 0) {
-    console.log(chalk.dim(`  ${summaryParts.join(chalk.dim(" / "))}`));
+    console.log(DIM(`    ${summaryParts.join(DIM(" / "))}`));
   }
   console.log("");
 
