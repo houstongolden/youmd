@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-03-27
+Last Updated: 2026-04-06
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -233,11 +233,13 @@ Last Updated: 2026-03-27
 | Status | Count |
 |---|---|
 | VERIFIED | 3 |
-| DONE (not verified) | 25 |
-| PARTIALLY DONE | 1 |
-| TODO | 7 |
-| BLOCKED | 2 |
-| **Total tracked** | **38** |
+| DONE (not verified) | 37 |
+| DECIDED | 1 |
+| PARTIALLY DONE | 2 |
+| IN PROGRESS | 1 |
+| TODO | 9 |
+| BLOCKED | 1 |
+| **Total tracked** | **54** |
 
 ## March 27 Session Additions
 

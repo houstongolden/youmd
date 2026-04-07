@@ -202,7 +202,9 @@ async function linkList(): Promise<void> {
   }
 }
 
-const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
+import { getConvexSiteUrl } from "../lib/config";
+
+const CONVEX_SITE_URL = getConvexSiteUrl();
 
 async function linkPreview(token?: string): Promise<void> {
   if (!token) {

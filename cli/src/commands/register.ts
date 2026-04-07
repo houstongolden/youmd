@@ -1,7 +1,7 @@
 import * as readline from "readline";
 import chalk from "chalk";
 import { checkUsername, registerWithEmail } from "../lib/api";
-import { readGlobalConfig, writeGlobalConfig } from "../lib/config";
+import { readGlobalConfig, writeGlobalConfig, getConvexSiteUrl } from "../lib/config";
 import { BrailleSpinner } from "../lib/render";
 
 const ACCENT = chalk.hex("#C46A3A");
@@ -126,7 +126,7 @@ export async function registerCommand(): Promise<void> {
     config.token = apiKey;
     config.username = registeredUsername;
     config.email = email;
-    config.apiUrl = "https://kindly-cassowary-600.convex.site";
+    config.apiUrl = getConvexSiteUrl();
     writeGlobalConfig(config);
 
     spinner.stop();

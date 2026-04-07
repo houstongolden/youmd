@@ -11,6 +11,7 @@ import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 import { ConvexReactClient } from "convex/react";
 import { ConvexProvider, useMutation as useConvexMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { CONVEX_SITE_URL } from "@/lib/constants";
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL || "https://kindly-cassowary-600.convex.cloud";
 const publicConvex = typeof window !== "undefined"
@@ -95,8 +96,7 @@ function CreateContentInner() {
 
     // Check availability server-side before proceeding
     try {
-      const convexUrl = (process.env.NEXT_PUBLIC_CONVEX_URL || "https://kindly-cassowary-600.convex.cloud").replace(".cloud", ".site");
-      const res = await fetch(`${convexUrl}/api/v1/check-username?username=${encodeURIComponent(clean)}`, {
+      const res = await fetch(`${CONVEX_SITE_URL}/api/v1/check-username?username=${encodeURIComponent(clean)}`, {
         signal: AbortSignal.timeout(5000),
       });
       if (res.ok) {
@@ -223,7 +223,7 @@ function CreateContentInner() {
 
     try {
       const res = await fetch(
-        "https://kindly-cassowary-600.convex.site/api/v1/scrape",
+        `${CONVEX_SITE_URL}/api/v1/scrape`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -323,7 +323,7 @@ function CreateContentInner() {
           p === "x" ? `https://x.com/${handle}` : `https://github.com/${handle}`
         );
         const researchRes = await fetch(
-          "https://kindly-cassowary-600.convex.site/api/v1/research",
+          `${CONVEX_SITE_URL}/api/v1/research`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -357,7 +357,7 @@ function CreateContentInner() {
         addLine("analyzing x profile...", "text-[hsl(var(--text-secondary))] opacity-50");
         try {
           const enrichRes = await fetch(
-            "https://kindly-cassowary-600.convex.site/api/v1/enrich-x",
+            `${CONVEX_SITE_URL}/api/v1/enrich-x`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

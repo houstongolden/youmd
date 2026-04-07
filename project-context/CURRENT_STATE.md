@@ -1,6 +1,6 @@
 # You.md — Current State
 
-Last Updated: 2026-03-27
+Last Updated: 2026-04-06
 Last Commit: 4e952ec (2026-03-27)
 
 ---
@@ -46,7 +46,7 @@ Last Commit: 4e952ec (2026-03-27)
 - Multi-select UI for platform/tool selection during onboarding
 
 ### Backend (Convex — kindly-cassowary-600)
-- 19-table schema fully deployed (added skills + skillInstalls)
+- 21-table schema fully deployed (added skills + skillInstalls)
 - 38+ HTTP API endpoints (added 9 skill endpoints)
 - LLM chat proxy (OpenRouter → Claude Sonnet 4.6)
 - Ingestion pipeline (fetch, extract, analyze, compile)
@@ -96,6 +96,10 @@ MVP now requires account creation before profile building. The "no signup requir
 - Some text formatting issues in CLI (wrapping, alignment) — partially fixed in 0.4.8
 - Mobile dashboard navigation could be smoother
 - Profile page sections are somewhat rigid (custom sections possible but not intuitive)
+
+### Next.js / Middleware
+- Next.js 16.1.6 has moderate vulnerabilities (upgrade to 16.2.2 pending testing)
+- Middleware deprecation warning (cosmetic, not blocking)
 
 ### Missing/Incomplete
 - Private vault encryption (AES-256-GCM) — not started
@@ -171,6 +175,27 @@ MVP now requires account creation before profile building. The "no signup requir
 - ForDevelopers "for AI builders" landing section (cold start, personalization, API/MCP)
 - SkillsPane dashboard tab with live Convex queries
 - /skills slash command + agent response
+
+---
+
+## What Was Built April 6
+
+### Build & Deploy Fixes
+- Fixed /claim build error (added force-dynamic export)
+- Fixed CLI postinstall hook (inline echo instead of external script)
+- Removed hardcoded deploy keys from convex-deploy.sh
+- Fixed npm vulnerabilities (picomatch ReDoS)
+- Removed deprecated @clerk/clerk-react
+
+### Code Quality & DRY
+- Centralized all hardcoded Convex URLs (src/lib/constants.ts for web, getConvexSiteUrl() for CLI)
+- DRYed pipeline OpenRouter utilities (convex/lib/openrouter.ts)
+
+### Bug Fixes
+- Fixed profile view tracking for unclaimed profiles (userId now optional)
+
+### Environment
+- Created .env.local with all API keys
 
 ---
 

@@ -54,8 +54,9 @@ export default clerkMiddleware(async (auth, req) => {
     const username = segments[0];
 
     if (isAgentRequest(req)) {
-      const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".cloud", ".site")
-        || "https://kindly-cassowary-600.convex.site";
+      const convexSiteUrl =
+        process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".cloud", ".site") ||
+        "https://kindly-cassowary-600.convex.site";
 
       try {
         const res = await fetch(

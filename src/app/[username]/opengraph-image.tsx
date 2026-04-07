@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { CONVEX_SITE_URL } from "@/lib/constants";
 
 export const runtime = "edge";
 export const alt = "you.md profile card";
@@ -15,20 +16,6 @@ const COLORS = {
   textSecondary: "#A89E91",
   border: "#2E2E2E",
 };
-
-/**
- * Derive the Convex HTTP Actions (site) URL from the cloud URL.
- * NEXT_PUBLIC_CONVEX_URL = https://<slug>.convex.cloud
- * Site URL              = https://<slug>.convex.site
- */
-function getConvexSiteUrl(): string {
-  const cloudUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (cloudUrl) {
-    return cloudUrl.replace(/\.convex\.cloud$/, ".convex.site");
-  }
-  // Fallback for the known deployment
-  return "https://kindly-cassowary-600.convex.site";
-}
 
 interface ProfileResponse {
   username: string;
@@ -51,9 +38,8 @@ async function fetchProfile(
   username: string
 ): Promise<ProfileResponse | null> {
   try {
-    const siteUrl = getConvexSiteUrl();
     const res = await fetch(
-      `${siteUrl}/api/v1/profiles?username=${encodeURIComponent(username)}`,
+      `${CONVEX_SITE_URL}/api/v1/profiles?username=${encodeURIComponent(username)}`,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { next: { revalidate: 60 } } as any
     );

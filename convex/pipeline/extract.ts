@@ -6,74 +6,11 @@ import { internal } from "../_generated/api";
 import { EXTRACTION_PROMPTS } from "./prompts";
 
 // ---------------------------------------------------------------------------
-// OpenRouter LLM call helper
+// OpenRouter LLM call helpers (shared via convex/lib/openrouter.ts)
 // ---------------------------------------------------------------------------
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const EXTRACTION_MODEL = "anthropic/claude-sonnet-4";
-
-async function callOpenRouter(
-  apiKey: string,
-  systemPrompt: string,
-  userContent: string,
-  model: string = EXTRACTION_MODEL
-): Promise<string> {
-  const response = await fetch(OPENROUTER_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://you.md",
-      "X-Title": "You.md Pipeline",
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userContent },
-      ],
-      temperature: 0.2,
-      max_tokens: 4096,
-      response_format: { type: "json_object" },
-    }),
-    signal: AbortSignal.timeout(60_000),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(
-      `OpenRouter API error ${response.status}: ${errorBody.slice(0, 500)}`
-    );
-  }
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-
-  if (!content) {
-    throw new Error("No content in OpenRouter response");
-  }
-
-  return content;
-}
-
-// ---------------------------------------------------------------------------
-// Parse JSON from LLM response (handles markdown fences)
-// ---------------------------------------------------------------------------
-
-function parseJsonResponse(raw: string): Record<string, unknown> {
-  let cleaned = raw.trim();
-
-  // Strip markdown code fences if present
-  if (cleaned.startsWith("```")) {
-    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
-  }
-
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    throw new Error(`Failed to parse LLM JSON response: ${cleaned.slice(0, 200)}...`);
-  }
-}
+import { callOpenRouter, parseJsonResponse } from "../lib/openrouter";
+export { callOpenRouter, parseJsonResponse };
 
 // ---------------------------------------------------------------------------
 // extractFromSource — LLM extraction for a single source

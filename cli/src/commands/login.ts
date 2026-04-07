@@ -1,7 +1,7 @@
 import * as readline from "readline";
 import { exec } from "child_process";
 import chalk from "chalk";
-import { readGlobalConfig, writeGlobalConfig } from "../lib/config";
+import { readGlobalConfig, writeGlobalConfig, getConvexSiteUrl } from "../lib/config";
 import { getMe, loginWithEmail } from "../lib/api";
 import { BrailleSpinner } from "../lib/render";
 
@@ -94,7 +94,7 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
     config.token = apiKey;
     config.username = username;
     config.email = email;
-    config.apiUrl = "https://kindly-cassowary-600.convex.site";
+    config.apiUrl = getConvexSiteUrl();
     writeGlobalConfig(config);
 
     spinner.stop();
@@ -125,7 +125,7 @@ async function loginWithKey(key: string): Promise<void> {
   // Save the key first
   const config = readGlobalConfig();
   config.token = key;
-  config.apiUrl = "https://kindly-cassowary-600.convex.site";
+  config.apiUrl = getConvexSiteUrl();
   writeGlobalConfig(config);
 
   console.log("");

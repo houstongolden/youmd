@@ -9,6 +9,7 @@ import {
   readGlobalConfig,
   writeGlobalConfig,
   isAuthenticated,
+  getConvexSiteUrl,
 } from "./config";
 import { compileBundle, writeBundle } from "./compiler";
 import { BrailleSpinner } from "./render";
@@ -16,12 +17,10 @@ import { renderAsciiPortrait, printYouLogo } from "./ascii";
 
 // ─── Constants ────────────────────────────────────────────────────────
 
-const CHAT_PROXY_URL =
-  "https://kindly-cassowary-600.convex.site/api/v1/chat";
-const SCRAPE_URL =
-  "https://kindly-cassowary-600.convex.site/api/v1/scrape";
-const RESEARCH_URL =
-  "https://kindly-cassowary-600.convex.site/api/v1/research";
+const _SITE = getConvexSiteUrl();
+const CHAT_PROXY_URL = `${_SITE}/api/v1/chat`;
+const SCRAPE_URL = `${_SITE}/api/v1/scrape`;
+const RESEARCH_URL = `${_SITE}/api/v1/research`;
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "anthropic/claude-sonnet-4";
 
@@ -451,7 +450,7 @@ async function checkUsernameRemote(
   username: string
 ): Promise<{ available: boolean; reason: string | null }> {
   try {
-    const url = `https://kindly-cassowary-600.convex.site/api/v1/check-username?username=${encodeURIComponent(username)}`;
+    const url = `${getConvexSiteUrl()}/api/v1/check-username?username=${encodeURIComponent(username)}`;
     const res = await fetch(url);
     if (!res.ok) return { available: true, reason: null };
     const data = await res.json();

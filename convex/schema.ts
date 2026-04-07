@@ -251,7 +251,7 @@ export default defineSchema({
     .index("by_status", ["status"]),
 
   profileViews: defineTable({
-    userId: v.id("users"),
+    userId: v.optional(v.id("users")),
     profileId: v.optional(v.id("profiles")),
     viewedAt: v.number(),
     referrer: v.optional(v.string()),
@@ -260,7 +260,8 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_userId_date", ["userId", "viewedAt"])
-    .index("by_profileId", ["profileId"]),
+    .index("by_profileId", ["profileId"])
+    .index("by_profileId_date", ["profileId", "viewedAt"]),
 
   contextLinks: defineTable({
     userId: v.id("users"),
@@ -325,6 +326,9 @@ export default defineSchema({
       content: v.string(),
     })),
     updatedAt: v.number(),
+    // Context compaction tracking (Claude Code-style)
+    compactedAt: v.optional(v.number()),
+    originalMessageCount: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
     .index("by_sessionId", ["sessionId"]),

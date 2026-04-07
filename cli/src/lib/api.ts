@@ -3,9 +3,9 @@
  * Uses the HTTP action endpoints at the Convex site URL.
  */
 
-import { readGlobalConfig } from "./config";
+import { readGlobalConfig, getConvexSiteUrl } from "./config";
 
-const SITE_URL = "https://kindly-cassowary-600.convex.site";
+const SITE_URL = getConvexSiteUrl();
 
 interface ApiResponse<T = unknown> {
   ok: boolean;

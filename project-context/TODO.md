@@ -1,6 +1,6 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-03-26
+Last Updated: 2026-04-06
 PRD Version: 2.3
 
 ---
@@ -9,7 +9,7 @@ PRD Version: 2.3
 
 ### Foundation (March 16-17)
 - [x] Next.js 16 + Convex + Clerk + Tailwind v4 scaffold
-- [x] Full Convex schema (17 tables)
+- [x] Full Convex schema (21 tables)
 - [x] Clerk auth (production: clerk.you.md)
 - [x] Vercel deployment (you.md custom domain)
 - [x] Convex production (kindly-cassowary-600) + dev (uncommon-chicken-142)
@@ -102,6 +102,18 @@ PRD Version: 2.3
 - [x] npm packaging (skills/ shipped with package)
 - [x] Web: SkillsPane dashboard tab + /skills slash command
 - [x] Nested you.json identity resolution (API + compiled bundle formats)
+- [x] Skill system registry (Convex tables skills + skillInstalls, 9 HTTP endpoints, web SkillsPane)
+
+### Build & Deploy Fixes (April 6)
+- [x] Fixed /claim build error (force-dynamic)
+- [x] Fixed CLI postinstall hook (inline echo)
+- [x] Removed hardcoded deploy keys from convex-deploy.sh
+- [x] Fixed npm vulnerabilities (picomatch ReDoS)
+- [x] Removed deprecated @clerk/clerk-react
+- [x] Centralized all hardcoded Convex URLs (src/lib/constants.ts for web, getConvexSiteUrl() for CLI)
+- [x] DRYed pipeline OpenRouter utilities (convex/lib/openrouter.ts)
+- [x] Fixed profile view tracking for unclaimed profiles (userId now optional)
+- [x] Created .env.local with all API keys
 
 ### CLI Overhaul (March 24-25)
 - [x] 20 commands (init, login, register, whoami, status, build, publish, add, diff, export, preview, chat, link, keys, memories, private, project, pull, push, sync)
@@ -160,11 +172,16 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 
 ## IN PROGRESS
 
-- [ ] Skill system registry (Convex tables for public skill discovery — Phase 6)
+(Nothing currently in progress)
 
 ---
 
 ## UP NEXT (Priority Order)
+
+### Near-Term
+- [ ] Chat context compaction (Claude Code-style)
+- [ ] Memory lifecycle improvements
+- [ ] Next.js 16.2.2 upgrade evaluation
 
 ### Agent Intelligence Polish
 - [ ] You Agent personality tuning (more wit, less generic)

@@ -617,6 +617,36 @@ http.route({
 
 // OPTIONS for /api/v1/chat/stream is registered below with other CORS preflight routes
 
+// POST /api/v1/chat/compact — Claude Code-style context compaction
+http.route({
+  path: "/api/v1/chat/compact",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const body = await request.json();
+      const { sessionId, messages, keepRecent } = body;
+
+      if (!sessionId || !messages || !Array.isArray(messages)) {
+        return json({ error: "sessionId and messages[] required" }, 400);
+      }
+
+      const result = await ctx.runAction(api.chat.compactSession, {
+        sessionId,
+        messages,
+        keepRecent: keepRecent ?? 8,
+      });
+
+      return json(result);
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "compaction failed" }, 500);
+    }
+  }),
+});
+
+http.route({ path: "/api/v1/chat/compact", method: "OPTIONS", handler: httpAction(async () => {
+  return new Response(null, { status: 204, headers: { ...CORS_HEADERS } });
+}) });
+
 // ============================================================
 // PROFILE SCRAPING
 // ============================================================

@@ -38,7 +38,9 @@ import type { ChatMessage } from "../lib/onboarding";
 
 // ─── URL Detection + Scraping (mirrors web useYouAgent) ──────────────
 
-const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
+import { getConvexSiteUrl } from "../lib/config";
+
+const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
 
 // ─── Streaming LLM client ─────────────────────────────────────────────
@@ -795,7 +797,7 @@ function showShareBlock(bundleDir: string): void {
     }
   }
 
-  const contextUrl = `https://kindly-cassowary-600.convex.site/api/v1/profiles?username=${username}`;
+  const contextUrl = `${CONVEX_SITE_URL}/api/v1/profiles?username=${username}`;
   const profileUrl = `https://you.md/${username}`;
 
   const lines: string[] = [];
@@ -1483,6 +1485,56 @@ export async function chatCommand(): Promise<void> {
             console.log(chalk.yellow(`  [project context update failed: ${pu.file}]`));
           }
         }
+      }
+    }
+
+    // --- Context Compaction (Claude Code-style) ---
+    const turnCount = messages.filter((m) => m.role === "user").length;
+    if (turnCount >= 15 && messages.length > 10) {
+      try {
+        const compactRes = await fetch(`${CONVEX_SITE_URL}/api/v1/chat/compact`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: `cli-${Date.now()}`,
+            messages,
+            keepRecent: 8,
+          }),
+          signal: AbortSignal.timeout(25_000),
+        });
+
+        if (compactRes.ok) {
+          const result = await compactRes.json() as {
+            compacted: boolean;
+            messages?: ChatMessage[];
+            extractedMemories?: Array<{ category: string; content: string; tags?: string[] }>;
+            stats?: { messagesRemoved: number; memoriesExtracted: number };
+          };
+          if (result.compacted && result.messages) {
+            messages.length = 0;
+            messages.push(...result.messages);
+
+            // Save extracted memories
+            if (result.extractedMemories?.length && isAuthenticated()) {
+              try {
+                await saveMemories(result.extractedMemories.map((m) => ({
+                  category: m.category,
+                  content: m.content,
+                  source: "compaction",
+                  tags: m.tags,
+                })));
+              } catch {
+                // non-fatal
+              }
+            }
+
+            console.log(
+              chalk.dim(`  context compacted -- ${result.stats?.messagesRemoved} turns summarized${result.stats?.memoriesExtracted ? `, ${result.stats.memoriesExtracted} memories saved` : ""}`)
+            );
+          }
+        }
+      } catch {
+        // non-fatal
       }
     }
 

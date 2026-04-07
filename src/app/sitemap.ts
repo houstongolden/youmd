@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
+import { CONVEX_SITE_URL } from "@/lib/constants";
 
 const BASE_URL = "https://you.md";
-const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
 
 interface ProfileEntry {
   username: string;

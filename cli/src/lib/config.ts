@@ -37,6 +37,11 @@ export function getLocalBundleDir(): string {
   return path.resolve(process.cwd(), LOCAL_BUNDLE_DIR);
 }
 
+export function getConvexSiteUrl(): string {
+  const config = readGlobalConfig();
+  return config.apiUrl || "https://kindly-cassowary-600.convex.site";
+}
+
 export function readGlobalConfig(): GlobalConfig {
   if (!fs.existsSync(GLOBAL_CONFIG_FILE)) {
     return {};

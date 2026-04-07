@@ -290,6 +290,153 @@ Keep each point to 1-2 sentences. Be specific, not generic.`,
   },
 });
 
+/**
+ * Compact a chat session — Claude Code-style context compaction.
+ * Summarizes older messages into a context block + extracts durable facts
+ * into the memory system. Keeps last N turns verbatim for continuity.
+ *
+ * Trigger: when turn count exceeds threshold (called by web/CLI after each response).
+ * Uses Haiku for cost-efficient summarization + memory extraction.
+ */
+export const compactSession = action({
+  args: {
+    sessionId: v.string(),
+    messages: v.array(
+      v.object({
+        role: v.string(),
+        content: v.string(),
+      })
+    ),
+    keepRecent: v.optional(v.number()), // default 8
+  },
+  handler: async (ctx, args) => {
+    const KEEP_RECENT = args.keepRecent ?? 8;
+    const messages = args.messages;
+
+    // Not enough to compact
+    if (messages.length <= KEEP_RECENT + 2) {
+      return { compacted: false, reason: "not enough messages" };
+    }
+
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (!anthropicKey) {
+      return { compacted: false, reason: "no ANTHROPIC_API_KEY" };
+    }
+
+    // Split: system prompt (index 0) + old messages + recent messages
+    const systemMsg = messages[0]?.role === "system" ? messages[0] : null;
+    const startIdx = systemMsg ? 1 : 0;
+    const cutoff = messages.length - KEEP_RECENT;
+
+    if (cutoff <= startIdx) {
+      return { compacted: false, reason: "nothing to compact" };
+    }
+
+    const oldMessages = messages.slice(startIdx, cutoff);
+    const recentMessages = messages.slice(cutoff);
+
+    // Build conversation text for summarization
+    const conversationText = oldMessages
+      .map((m) => `${m.role}: ${m.content.slice(0, 500)}`)
+      .join("\n");
+
+    try {
+      // Single Haiku call: summarize + extract memories
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": anthropicKey,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 800,
+          temperature: 0,
+          system: `You are a conversation compactor. Given a conversation history, produce TWO things:
+
+1. A concise context summary (3-5 sentences) capturing what was discussed, decided, and any open threads. Write it as a briefing for someone continuing this conversation.
+
+2. Key facts to remember as a JSON array. Each fact has: category (one of: "fact", "preference", "decision", "project", "goal"), content (the fact itself), tags (1-3 relevant keywords).
+
+Respond in this exact format:
+SUMMARY:
+<your summary here>
+
+MEMORIES:
+<JSON array of memory objects>
+
+Be specific. Reference names, projects, and decisions by name. No filler.`,
+          messages: [
+            {
+              role: "user",
+              content: `Compact this conversation (${oldMessages.length} messages being summarized, ${recentMessages.length} recent messages retained):\n\n${conversationText}`,
+            },
+          ],
+        }),
+        signal: AbortSignal.timeout(20_000),
+      });
+
+      if (!response.ok) {
+        return { compacted: false, reason: `haiku error: ${response.status}` };
+      }
+
+      const data = await response.json();
+      const raw = data.content?.[0]?.text?.trim();
+      if (!raw) return { compacted: false, reason: "empty haiku response" };
+
+      // Parse summary and memories
+      const summaryMatch = raw.match(/SUMMARY:\s*([\s\S]*?)(?=MEMORIES:|$)/);
+      const memoriesMatch = raw.match(/MEMORIES:\s*(\[[\s\S]*\])/);
+
+      const summary = summaryMatch?.[1]?.trim() || raw.split("\n").slice(0, 3).join(" ");
+
+      let extractedMemories: Array<{ category: string; content: string; tags: string[] }> = [];
+      if (memoriesMatch?.[1]) {
+        try {
+          let jsonStr = memoriesMatch[1].trim();
+          if (jsonStr.startsWith("```")) {
+            jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+          }
+          extractedMemories = JSON.parse(jsonStr);
+        } catch {
+          // Non-fatal: memories extraction failed, summary still works
+        }
+      }
+
+      // Build compacted message array
+      const summaryMsg = {
+        role: "system" as const,
+        content: `[Session Context — ${oldMessages.length} earlier messages compacted]\n${summary}`,
+      };
+
+      const compactedMessages = [
+        ...(systemMsg ? [systemMsg] : []),
+        summaryMsg,
+        ...recentMessages,
+      ];
+
+      return {
+        compacted: true,
+        messages: compactedMessages,
+        summary,
+        extractedMemories,
+        stats: {
+          originalCount: messages.length,
+          compactedCount: compactedMessages.length,
+          messagesRemoved: oldMessages.length,
+          memoriesExtracted: extractedMemories.length,
+        },
+      };
+    } catch (err) {
+      return {
+        compacted: false,
+        reason: err instanceof Error ? err.message : "compaction failed",
+      };
+    }
+  },
+});
+
 /** Call Anthropic API directly — Claude Sonnet 4.6 */
 async function callAnthropic(
   apiKey: string,

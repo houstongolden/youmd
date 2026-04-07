@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CONVEX_SITE_URL } from "@/lib/constants";
 import { ProfilesDirectoryContent } from "./profiles-content";
 
 export const dynamic = "force-dynamic";
@@ -52,8 +53,7 @@ interface SsrProfile {
 
 async function fetchProfiles(): Promise<SsrProfile[]> {
   try {
-    const convexUrl = (process.env.NEXT_PUBLIC_CONVEX_URL || "https://kindly-cassowary-600.convex.cloud").replace(".cloud", ".site");
-    const res = await fetch(`${convexUrl}/api/v1/profiles`, {
+    const res = await fetch(`${CONVEX_SITE_URL}/api/v1/profiles`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return [];

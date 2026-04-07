@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const CONVEX_SITE_URL =
-  process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".cloud", ".site") ||
-  "https://kindly-cassowary-600.convex.site";
+import { CONVEX_SITE_URL } from "@/lib/constants";
 
 /**
  * GET /[username]/you.txt — Plain text endpoint for agent access.

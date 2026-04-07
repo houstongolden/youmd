@@ -1,6 +1,6 @@
 # You.md — Architecture Reference
 
-Last Updated: 2026-03-26
+Last Updated: 2026-04-06
 
 ## System Overview
 
@@ -40,11 +40,12 @@ Last Updated: 2026-03-26
 │  │  Apify (LinkedIn), native fetch (web), OpenRouter (LLM extraction)  │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                            │
-│  DATA LAYER: 17 Convex tables                                             │
+│  DATA LAYER: 21 Convex tables                                             │
 │  users, profiles, bundles, sources, analysisArtifacts, apiKeys,           │
 │  privateVault, pipelineJobs, profileViews, contextLinks, memories,        │
 │  chatSessions, chatMessages, privateContext, accessTokens,                │
-│  securityLogs, profileReports, profileVerifications, agentInteractions    │
+│  securityLogs, profileReports, profileVerifications, agentInteractions,   │
+│  skills, skillInstalls                                                     │
 │                                                                            │
 │  ───────────────────────────────────────────────────────────────────────  │
 │                                                                            │
@@ -60,7 +61,7 @@ Last Updated: 2026-03-26
 
 ---
 
-## Data Model (17 Tables)
+## Data Model (21 Tables)
 
 ### Identity Core
 

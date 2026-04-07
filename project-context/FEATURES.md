@@ -151,7 +151,7 @@ Last Updated: 2026-03-26
 | Status integration | Done | Skills count + identity coverage bar in status output |
 | Web: SkillsPane | Done | Dashboard tab with catalog, CLI commands, how-it-works |
 | Web: /skills command | Done | Slash command + help text |
-| Skill registry | Not started | Phase 6: Convex tables for public skill discovery |
+| Skill registry | Done | Convex tables (skills + skillInstalls), 9 HTTP endpoints, web SkillsPane — completed 2026-03-27 |
 
 ## Design System (PRD v2.3)
 

@@ -471,17 +471,14 @@ export const recordView = mutation({
 
     if (!user && !profile) return;
 
-    // We need a userId for the profileViews table — use dummy if only profile exists
-    if (user) {
-      await ctx.db.insert("profileViews", {
-        userId: user._id,
-        profileId: profile?._id,
-        viewedAt: Date.now(),
-        referrer: args.referrer,
-        isAgentRead: args.isAgentRead,
-        isContextLink: args.isContextLink,
-      });
-    }
+    await ctx.db.insert("profileViews", {
+      userId: user?._id,
+      profileId: profile?._id,
+      viewedAt: Date.now(),
+      referrer: args.referrer,
+      isAgentRead: args.isAgentRead,
+      isContextLink: args.isContextLink,
+    });
   },
 });
 

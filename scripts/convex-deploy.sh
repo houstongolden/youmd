@@ -43,9 +43,10 @@ if $REMOTE; then
   exit $?
 fi
 
-# Local deploy
-PROD_KEY="${CONVEX_PROD_DEPLOY_KEY:-prod:kindly-cassowary-600|eyJ2MiI6ImY0NWYyN2I3NGFkMjRiYjBiNDkxYTNiNWU0NzdmM2VlIn0=}"
-DEV_KEY="${CONVEX_DEV_DEPLOY_KEY:-dev:uncommon-chicken-142|eyJ2MiI6ImUxMjI0MzkzMGM2ODQ4ZWM5NzE2YjIwNzlhZWM1NmMzIn0=}"
+# Local deploy — keys MUST be set via environment variables.
+# Export CONVEX_PROD_DEPLOY_KEY or CONVEX_DEV_DEPLOY_KEY before running.
+PROD_KEY="${CONVEX_PROD_DEPLOY_KEY:-}"
+DEV_KEY="${CONVEX_DEV_DEPLOY_KEY:-}"
 
 case "$ENV" in
   prod)
@@ -57,6 +58,12 @@ case "$ENV" in
     DEPLOY_KEY="$DEV_KEY"
     ;;
 esac
+
+if [[ -z "$DEPLOY_KEY" ]]; then
+  echo "ERROR: Deploy key not set for $ENV environment."
+  echo "Export CONVEX_PROD_DEPLOY_KEY or CONVEX_DEV_DEPLOY_KEY and try again."
+  exit 1
+fi
 
 export CONVEX_DEPLOY_KEY="$DEPLOY_KEY"
 

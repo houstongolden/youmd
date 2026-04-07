@@ -9,10 +9,10 @@ import { api } from "../../convex/_generated/api";
 // Constants
 // ---------------------------------------------------------------------------
 
-const CHAT_PROXY_URL =
-  "https://kindly-cassowary-600.convex.site/api/v1/chat";
-const CHAT_ACK_URL =
-  "https://kindly-cassowary-600.convex.site/api/v1/chat/ack";
+import { CONVEX_SITE_URL } from "@/lib/constants";
+
+const CHAT_PROXY_URL = `${CONVEX_SITE_URL}/api/v1/chat`;
+const CHAT_ACK_URL = `${CONVEX_SITE_URL}/api/v1/chat/ack`;
 
 // --- Categorized Thinking Phrases (shuffled per session, never repeated) ---
 // Inspired by Claude Code — short, specific, never generic "thinking..." or "generating..."
@@ -181,8 +181,6 @@ export function isValidSection(section: string): boolean {
   if ((BUNDLE_SECTIONS as readonly string[]).includes(section)) return true;
   return BUNDLE_SECTION_PREFIXES.some(prefix => section.startsWith(prefix));
 }
-
-const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
 
 // ---------------------------------------------------------------------------
 // URL/username detection helpers for auto-scraping
@@ -1099,11 +1097,19 @@ export function buildProfileContext(youJson: Record<string, unknown> | null, rec
     }
   }
 
-  // Inject recent memories for continuity
+  // Inject memories with relevance-based ordering
+  // Priority: preference > decision > goal > fact > project > session_summary > other
   if (recentMemories && recentMemories.length > 0) {
+    const PRIORITY: Record<string, number> = {
+      preference: 0, decision: 1, goal: 2, fact: 3, project: 4,
+      insight: 5, relationship: 6, context: 7, session_summary: 8,
+    };
+    const sorted = [...recentMemories].sort(
+      (a, b) => (PRIORITY[a.category] ?? 9) - (PRIORITY[b.category] ?? 9)
+    );
     parts.push("");
     parts.push("--- your memory ---");
-    for (const m of recentMemories) {
+    for (const m of sorted) {
       parts.push(`- [${m.category}] ${m.content}`);
     }
     parts.push("reference these memories to be personal and specific.");
@@ -1444,9 +1450,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const saveMemories = useMutation(api.memories.saveMemories);
   const upsertSession = useMutation(api.memories.upsertSession);
   const summarizeSession = useAction(api.chat.summarizeSession);
+  const compactSession = useAction(api.chat.compactSession);
   const recentMemories = useQuery(
     api.memories.listMemories,
-    convexUser?._id ? { userId: convexUser._id, limit: 50 } : "skip"
+    convexUser?._id ? { userId: convexUser._id, limit: 30 } : "skip"
   );
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -2176,7 +2183,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           for (const platform of ["x", "github"]) {
             const url = platform === "x" ? `https://x.com/${username}` : `https://github.com/${username}`;
             try {
-              const res = await fetch("https://kindly-cassowary-600.convex.site/api/v1/scrape", {
+              const res = await fetch(`${CONVEX_SITE_URL}/api/v1/scrape`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url }),
@@ -2953,49 +2960,52 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
-      // --- Session Compaction ---
-      // When conversation gets too long (~30k tokens / 120k chars), summarize older
-      // messages and replace them with a single summary to keep context window lean.
-      const COMPACTION_THRESHOLD = 120_000; // ~30k tokens at 4 chars/token
-      const KEEP_RECENT = 10; // always keep the last 10 messages + system prompt
+      // --- Context Compaction (Claude Code-style) ---
+      // After 15+ turns, summarize older messages + extract durable facts into memory.
+      // Turn-based trigger (more predictable than char-based).
+      const COMPACTION_TURN_THRESHOLD = 15;
       const currentMessages = messagesRef.current;
-      const totalChars = currentMessages.reduce((sum, m) => sum + m.content.length, 0);
+      const turnCount = currentMessages.filter((m) => m.role === "user").length;
 
-      if (totalChars > COMPACTION_THRESHOLD && currentMessages.length > KEEP_RECENT + 2) {
+      if (turnCount >= COMPACTION_TURN_THRESHOLD && currentMessages.length > 10) {
         try {
-          // Split: keep system prompt (index 0), compact middle, keep last N
-          const systemPromptMsg = currentMessages[0]?.role === "system" ? currentMessages[0] : null;
-          const startIdx = systemPromptMsg ? 1 : 0;
-          const cutoff = currentMessages.length - KEEP_RECENT;
+          const result = await compactSession({
+            sessionId: sessionIdRef.current,
+            messages: currentMessages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+            keepRecent: 8,
+          });
 
-          if (cutoff > startIdx) {
-            const oldMessages = currentMessages.slice(startIdx, cutoff);
-            const recentMessages = currentMessages.slice(cutoff);
+          if (result.compacted && result.messages) {
+            setMessages(result.messages as ChatMessage[]);
+            messagesRef.current = result.messages as ChatMessage[];
 
-            // Summarize old messages using the existing summarizeSession action
-            const compactionResult = await summarizeSession({
-              sessionId: sessionIdRef.current,
-              messages: oldMessages.map((m) => ({
-                role: m.role,
-                content: m.content,
-              })),
-            });
-
-            if (compactionResult.summary) {
-              const summaryMsg: ChatMessage = {
-                role: "system",
-                content: `[CONVERSATION SUMMARY: ${compactionResult.summary}]`,
-              };
-
-              const compactedMessages: ChatMessage[] = [
-                ...(systemPromptMsg ? [systemPromptMsg] : []),
-                summaryMsg,
-                ...recentMessages,
-              ];
-
-              setMessages(compactedMessages);
-              messagesRef.current = compactedMessages;
+            // Save extracted memories
+            if (result.extractedMemories?.length && user?.id) {
+              try {
+                await saveMemories({
+                  clerkId: user.id,
+                  memories: result.extractedMemories.map((m: { category: string; content: string; tags?: string[] }) => ({
+                    category: m.category,
+                    content: m.content,
+                    source: "compaction",
+                    tags: m.tags,
+                    sessionId: sessionIdRef.current,
+                  })),
+                });
+              } catch {
+                // Non-fatal: memory save failed
+              }
             }
+
+            // Show compaction notice
+            newDisplayMsgs.push({
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: `[context compacted -- ${result.stats?.messagesRemoved} turns summarized${result.stats?.memoriesExtracted ? `, ${result.stats.memoriesExtracted} memories saved` : ""}]`,
+            });
           }
         } catch {
           // Non-fatal — compaction failure shouldn't break the chat

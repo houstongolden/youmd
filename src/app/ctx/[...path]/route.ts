@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const CONVEX_SITE_URL = "https://kindly-cassowary-600.convex.site";
+import { CONVEX_SITE_URL } from "@/lib/constants";
 
 /**
  * Context link handler — proxies /ctx/{username}/{token} to Convex.
