@@ -23,6 +23,7 @@ import { privateCommand } from "./commands/private";
 import { projectCommand } from "./commands/project";
 import { promptsCommand } from "./commands/prompts";
 import { skillCommand } from "./commands/skill";
+import { mcpCommand } from "./commands/mcp";
 
 const program = new Command();
 
@@ -174,5 +175,12 @@ program
   .action((subcommand, args) => {
     return skillCommand(subcommand, ...(args || []));
   });
+
+program
+  .command("mcp")
+  .description("Start the You.md MCP server (identity context for Claude, Cursor, any MCP client)")
+  .option("--json", "Output MCP config JSON for agent settings")
+  .option("--install <target>", "Show setup instructions for an agent (claude, cursor)")
+  .action(mcpCommand);
 
 program.parse(process.argv);
