@@ -228,28 +228,44 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
       }
     }
 
-    // Push portrait + avatarUrl if portrait.json exists locally
+    // Push portrait to server if portrait.json exists locally
     const portraitPath = path.join(bundleDir, "portrait.json");
     if (fs.existsSync(portraitPath)) {
       try {
         const portraitData = JSON.parse(fs.readFileSync(portraitPath, "utf-8"));
         const avatarUrl = config.avatarUrl || portraitData.sourceUrl;
 
-        if (avatarUrl && config.token) {
-          console.log(chalk.dim("  pushing portrait + avatar..."));
-          if (youJson && avatarUrl) {
-            if (!youJson.social_images) youJson.social_images = {};
-            const si = youJson.social_images as Record<string, string>;
-            if (!si.github && typeof avatarUrl === "string" && avatarUrl.includes("github")) {
-              si.github = avatarUrl;
-            }
+        // Include avatarUrl in social_images
+        if (youJson && avatarUrl) {
+          if (!youJson.social_images) youJson.social_images = {};
+          const si = youJson.social_images as Record<string, string>;
+          if (!si.github && typeof avatarUrl === "string" && avatarUrl.includes("github")) {
+            si.github = avatarUrl;
           }
-          console.log(
-            chalk.green("  \u2713") + chalk.dim(" portrait data included in bundle")
-          );
+        }
+
+        // Push portrait data to server for web display persistence
+        if (config.token && portraitData.lines) {
+          console.log(chalk.dim("  pushing portrait..."));
+          const { savePortrait } = await import("../lib/api");
+          const portraitRes = await savePortrait({
+            lines: portraitData.lines,
+            coloredLines: portraitData.coloredLines,
+            cols: portraitData.cols || 80,
+            rows: portraitData.rows || portraitData.lines.length,
+            format: portraitData.format || "block",
+            sourceUrl: portraitData.sourceUrl || avatarUrl || "",
+          });
+          if (portraitRes.ok) {
+            console.log(
+              chalk.green("  \u2713") + chalk.dim(" portrait synced to web profile")
+            );
+          } else {
+            console.log(chalk.dim("  portrait sync skipped (no profile yet)"));
+          }
         }
       } catch {
-        // non-fatal
+        // non-fatal — portrait sync failure shouldn't block push
       }
     }
 

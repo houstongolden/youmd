@@ -1,3 +1,11 @@
+---
+name: identity-building
+version: 1.0.0
+scope: shared
+identity_fields: [profile.about, profile.projects, profile.values, preferences.agent, preferences.writing]
+description: "Guide a user through creating their complete you-md/v1 identity context via natural conversation."
+---
+
 # Skill: Identity Building
 
 ## Description

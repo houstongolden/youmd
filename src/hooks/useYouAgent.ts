@@ -1577,6 +1577,17 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     setSessionRestored(true);
   }, [latestChatMessages, sessionRestored, isOnboarding]);
 
+  // Auto-archival: clean up stale + old archived memories on session start
+  const maintenanceRanRef = useRef(false);
+  const sessionMaintenance = useMutation(api.memories.sessionMaintenance);
+  useEffect(() => {
+    if (maintenanceRanRef.current || !user?.id || !sessionRestored) return;
+    maintenanceRanRef.current = true;
+    sessionMaintenance({ clerkId: user.id }).catch(() => {
+      // non-fatal background task
+    });
+  }, [user?.id, sessionRestored, sessionMaintenance]);
+
   // Debounced save — persist messages after every change
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {

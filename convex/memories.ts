@@ -224,6 +224,91 @@ export const archiveStale = mutation({
   },
 });
 
+/**
+ * Clean up old archived memories to prevent unbounded growth.
+ * Deletes archived memories older than maxArchiveDays (default 180).
+ */
+export const purgeOldArchived = mutation({
+  args: {
+    clerkId: v.string(),
+    maxArchiveDays: v.optional(v.number()), // default 180
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("not authenticated");
+
+    const maxAge = (args.maxArchiveDays ?? 180) * 86400000;
+    const cutoff = Date.now() - maxAge;
+
+    const memories = await ctx.db
+      .query("memories")
+      .withIndex("by_userId_archived", (q) =>
+        q.eq("userId", user._id).eq("isArchived", true)
+      )
+      .collect();
+
+    let purged = 0;
+    for (const m of memories) {
+      if (m.createdAt < cutoff) {
+        await ctx.db.delete(m._id);
+        purged++;
+      }
+    }
+
+    return { purged };
+  },
+});
+
+/**
+ * Session-start maintenance: archive stale + purge old archived.
+ * Call this once when a chat session begins (web or CLI).
+ */
+export const sessionMaintenance = mutation({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return { archived: 0, purged: 0 };
+
+    const memories = await ctx.db
+      .query("memories")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const active = memories.filter((m) => !m.isArchived);
+    const archived = memories.filter((m) => m.isArchived);
+
+    // Archive stale active memories (>90 days or >200 active)
+    const ageCutoff = Date.now() - 90 * 86400000;
+    let archivedCount = 0;
+
+    const sorted = active.sort((a, b) => b.createdAt - a.createdAt);
+    for (let i = 0; i < sorted.length; i++) {
+      if (sorted[i].createdAt < ageCutoff || i >= 200) {
+        await ctx.db.patch(sorted[i]._id, { isArchived: true, updatedAt: Date.now() });
+        archivedCount++;
+      }
+    }
+
+    // Purge archived memories older than 180 days
+    const purgeCutoff = Date.now() - 180 * 86400000;
+    let purgedCount = 0;
+    for (const m of archived) {
+      if (m.createdAt < purgeCutoff) {
+        await ctx.db.delete(m._id);
+        purgedCount++;
+      }
+    }
+
+    return { archived: archivedCount, purged: purgedCount };
+  },
+});
+
 /** Save memories from an external agent (no clerkId — caller must validate userId) */
 export const saveFromAgent = mutation({
   args: {

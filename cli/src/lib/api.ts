@@ -511,3 +511,18 @@ export async function removeSkillInstall(skillName: string): Promise<ApiResponse
     body: { skillName },
   });
 }
+
+export async function savePortrait(portrait: {
+  lines: string[];
+  coloredLines?: unknown;
+  cols: number;
+  rows: number;
+  format: string;
+  sourceUrl: string;
+}): Promise<ApiResponse<{ success: boolean }>> {
+  return request<{ success: boolean }>("/api/v1/me/portrait", {
+    method: "POST",
+    token: getToken(),
+    body: { portrait },
+  });
+}

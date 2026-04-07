@@ -257,6 +257,49 @@ http.route({
   }),
 });
 
+// POST /api/v1/me/portrait — Save pre-rendered ASCII portrait (from CLI push)
+http.route({
+  path: "/api/v1/me/portrait",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    try {
+      const body = await request.json();
+      const { portrait } = body;
+
+      if (!portrait || !portrait.lines || !portrait.cols || !portrait.rows) {
+        return json({ error: "portrait object with lines, cols, rows, format, sourceUrl required" }, 400);
+      }
+
+      // Find user's profile
+      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+      if (!user) return json({ error: "user not found" }, 404);
+
+      const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
+      if (!profile) return json({ error: "profile not found" }, 404);
+
+      await ctx.runMutation(api.profiles.savePortrait, {
+        profileId: profile._id,
+        clerkId: auth.userId,
+        portrait: {
+          lines: portrait.lines,
+          coloredLines: portrait.coloredLines,
+          cols: portrait.cols,
+          rows: portrait.rows,
+          format: portrait.format || "block",
+          sourceUrl: portrait.sourceUrl || "",
+        },
+      });
+
+      return json({ success: true });
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "Failed to save portrait" }, 500);
+    }
+  }),
+});
+
 // GET /api/v1/me — Get current user profile
 http.route({
   path: "/api/v1/me",
