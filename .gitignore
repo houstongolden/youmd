@@ -51,3 +51,4 @@ convex/**/*.js
 cli/dist/
 cli/node_modules/
 .youmd/
+.gstack/

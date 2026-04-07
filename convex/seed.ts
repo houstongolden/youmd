@@ -476,9 +476,82 @@ export const seedSampleProfiles = mutation({
         publishedAt: Date.now(),
       });
 
+      // Create profile record (so profiles directory + public page work)
+      await ctx.db.insert("profiles", {
+        username: profile.username,
+        name: profile.name,
+        tagline: profile.tagline,
+        location: profile.location,
+        bio: profile.bio,
+        links: profile.links,
+        ownerId: userId,
+        isClaimed: true,
+        claimedAt: Date.now(),
+        youJson,
+        youMd,
+        createdAt: Date.now(),
+      });
+
       results.push(
-        `${profile.username}: created user + published bundle`
+        `${profile.username}: created user + profile + published bundle`
       );
+    }
+
+    return results;
+  },
+});
+
+/** Backfill profile records for existing sample users that only have bundles */
+export const backfillSampleProfiles = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const results: string[] = [];
+    const allUsers = await ctx.db.query("users").collect();
+    const sampleUsers = allUsers.filter((u) => u.isSample === true);
+
+    for (const user of sampleUsers) {
+      // Check if profile already exists
+      const existingProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_username", (q) => q.eq("username", user.username))
+        .first();
+
+      if (existingProfile) {
+        results.push(`${user.username}: profile already exists`);
+        continue;
+      }
+
+      // Get published bundle
+      const bundle = await ctx.db
+        .query("bundles")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .first();
+
+      if (!bundle || !bundle.youJson) {
+        results.push(`${user.username}: no bundle found`);
+        continue;
+      }
+
+      const youJson = bundle.youJson as Record<string, unknown>;
+      const identity = (youJson.identity || {}) as Record<string, unknown>;
+      const bio = identity.bio as Record<string, string> | undefined;
+
+      await ctx.db.insert("profiles", {
+        username: user.username,
+        name: user.displayName || (identity.name as string) || user.username,
+        tagline: (identity.tagline as string) || undefined,
+        location: (identity.location as string) || undefined,
+        bio: bio ? { short: bio.short, medium: bio.medium } : undefined,
+        links: youJson.links as Record<string, string> | undefined,
+        ownerId: user._id,
+        isClaimed: true,
+        claimedAt: Date.now(),
+        youJson: bundle.youJson,
+        youMd: bundle.youMd,
+        createdAt: Date.now(),
+      });
+
+      results.push(`${user.username}: profile created from bundle`);
     }
 
     return results;
