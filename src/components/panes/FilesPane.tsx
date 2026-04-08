@@ -498,6 +498,16 @@ export function FilesPane({ userId }: FilesPaneProps) {
   const createCustomDirectory = useMutation(api.me.createCustomDirectory);
   const memories = useQuery(api.memories.listMemories, userId ? { userId } : "skip");
   const sessions = useQuery(api.memories.listSessions, userId ? { userId, limit: 20 } : "skip");
+  const userProfile = useQuery(
+    api.profiles.getByOwnerId,
+    userId ? { ownerId: userId } : "skip"
+  );
+  const privateContext = useQuery(
+    api.private.getPrivateContext,
+    user?.id && userProfile?._id
+      ? { clerkId: user.id, profileId: userProfile._id }
+      : "skip"
+  );
 
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [editedFiles, setEditedFiles] = useState<Record<string, string>>({});
@@ -510,21 +520,91 @@ export function FilesPane({ userId }: FilesPaneProps) {
   const [creatingDirBusy, setCreatingDirBusy] = useState(false);
   const [customFiles, setCustomFiles] = useState<VirtualFile[]>([]);
 
+  // Convert privateContext table data into virtual files under private/
+  const privateContextFiles = useMemo<VirtualFile[]>(() => {
+    if (!privateContext) return [];
+    const out: VirtualFile[] = [];
+    const pc = privateContext as Record<string, unknown>;
+
+    if (pc.privateNotes && typeof pc.privateNotes === "string") {
+      out.push({
+        path: "private/notes.md",
+        content: `---\ntitle: Private Notes\nvisibility: private\n---\n\n# Private Notes\n\n${pc.privateNotes}\n`,
+        section: "private.notes",
+        editable: true,
+      });
+    }
+    if (Array.isArray(pc.privateProjects) && pc.privateProjects.length > 0) {
+      const lines = ["---", "title: Private Projects", "visibility: private", "---", "", "# Private Projects", ""];
+      for (const p of pc.privateProjects as Array<Record<string, string>>) {
+        lines.push(`## ${p.name || "Untitled"}`);
+        if (p.status) lines.push(`**Status:** ${p.status}`);
+        if (p.description) lines.push("", p.description);
+        lines.push("");
+      }
+      out.push({
+        path: "private/projects.md",
+        content: lines.join("\n"),
+        section: "private.projects",
+        editable: true,
+      });
+    }
+    if (pc.internalLinks && typeof pc.internalLinks === "object") {
+      const entries = Object.entries(pc.internalLinks as Record<string, string>).filter(
+        ([, v]) => v
+      );
+      if (entries.length > 0) {
+        const lines = [
+          "---",
+          "title: Internal Links",
+          "visibility: private",
+          "---",
+          "",
+          "# Internal Links",
+          "",
+        ];
+        for (const [k, v] of entries) lines.push(`- **${k}:** ${v}`);
+        out.push({
+          path: "private/internal-links.md",
+          content: lines.join("\n"),
+          section: "private.links",
+          editable: true,
+        });
+      }
+    }
+    if (pc.calendarContext && typeof pc.calendarContext === "string") {
+      out.push({
+        path: "private/calendar.md",
+        content: `---\ntitle: Calendar Context\nvisibility: private\n---\n\n# Calendar Context\n\n${pc.calendarContext}\n`,
+        section: "private.calendar",
+        editable: true,
+      });
+    }
+    if (pc.investmentThesis && typeof pc.investmentThesis === "string") {
+      out.push({
+        path: "private/investment-thesis.md",
+        content: `---\ntitle: Investment Thesis\nvisibility: private\n---\n\n# Investment Thesis\n\n${pc.investmentThesis}\n`,
+        section: "private.investmentThesis",
+        editable: true,
+      });
+    }
+    return out;
+  }, [privateContext]);
+
   const files = useMemo(() => {
     const bundleFiles = latestBundle?.youJson
       ? decompileBundle(latestBundle.youJson, latestBundle.youMd ?? "")
       : [];
     const memoryFiles = generateMemoryFiles(memories ?? [], sessions ?? []);
 
-    // Dedupe by path: memory/session files take priority over scaffold placeholders.
-    // This fixes duplicate sessions/history.md and memory/index.md issues.
+    // Dedupe by path: real content beats scaffold placeholders, customFiles win all.
     const seen = new Map<string, VirtualFile>();
-    // Priority order: customFiles > memoryFiles > bundleFiles (scaffold)
     for (const f of bundleFiles) seen.set(f.path, f);
-    for (const f of memoryFiles) seen.set(f.path, f); // overrides scaffold
+    for (const f of memoryFiles) seen.set(f.path, f);
+    for (const f of privateContextFiles) seen.set(f.path, f); // real private data
     for (const f of customFiles) seen.set(f.path, f);
     return Array.from(seen.values());
-  }, [latestBundle, memories, sessions, customFiles]);
+  }, [latestBundle, memories, sessions, privateContextFiles, customFiles]);
 
   // ── Custom directories ──
   // A "custom directory" is any directory backed by a youJson.custom_files entry,
