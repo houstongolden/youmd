@@ -26,6 +26,19 @@ function json(data: unknown, status = 200, extraHeaders?: Record<string, string>
 // PUBLIC ENDPOINTS
 // ============================================================
 
+// Stable hash helper for ETag generation when contentHash is unavailable
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+// Link header pointing agents at the you-md/v1 JSON Schema
+const SCHEMA_LINK_HEADER =
+  '<https://you.md/schema/you-md/v1.json>; rel="describedby"; type="application/schema+json"';
+
 // GET /api/v1/profiles — List all profiles (no params) or get single profile (?username=xxx)
 http.route({
   path: "/api/v1/profiles",
@@ -52,6 +65,33 @@ http.route({
       return json({ error: "Profile not found" }, 404);
     }
 
+    // Compute a stable ETag.
+    // Prefer the bundle's contentHash (already SHA-256 of canonicalized
+    // youJson+youMd); fall back to a hash of profileId + updatedAt so it
+    // still changes across saves.
+    const profileAny = profile as Record<string, unknown>;
+    const explicitHash = profileAny.contentHash as string | undefined;
+    const etagValue =
+      explicitHash ||
+      (await sha256Hex(
+        `${profileAny.profileId ?? username}:${profileAny.updatedAt ?? ""}`
+      ));
+    const etag = `"${etagValue}"`;
+
+    // Honor If-None-Match — return 304 without body
+    const ifNoneMatch = request.headers.get("if-none-match");
+    if (ifNoneMatch && ifNoneMatch === etag) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          ETag: etag,
+          Link: SCHEMA_LINK_HEADER,
+          "Cache-Control": "public, max-age=60",
+          ...CORS_HEADERS,
+        },
+      });
+    }
+
     // Record the view as an agent read
     await ctx.runMutation(api.profiles.recordView, {
       username,
@@ -66,7 +106,9 @@ http.route({
       return new Response(profile.youMd, {
         status: 200,
         headers: {
-          "Content-Type": "text/markdown; charset=utf-8",
+          "Content-Type": "text/plain; charset=utf-8",
+          Link: SCHEMA_LINK_HEADER,
+          ETag: etag,
           ...CORS_HEADERS,
           "Cache-Control": "public, max-age=60",
         },
@@ -83,7 +125,16 @@ http.route({
         source: profile.source,
       },
     };
-    return json(enrichedJson, 200, { "Cache-Control": "public, max-age=60" });
+    return new Response(JSON.stringify(enrichedJson, null, 2), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/vnd.you-md.v1+json",
+        Link: SCHEMA_LINK_HEADER,
+        ETag: etag,
+        ...CORS_HEADERS,
+        "Cache-Control": "public, max-age=60",
+      },
+    });
   }),
 });
 
@@ -999,6 +1050,7 @@ http.route({
         scope: body.scope || "public",
         ttl: body.ttl || "7d",
         maxUses: body.maxUses,
+        name: body.name,
       });
       return json(result);
     } catch (err) {

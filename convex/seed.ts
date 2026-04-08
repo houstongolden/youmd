@@ -665,3 +665,88 @@ export const cleanupSampleProfiles = mutation({
     };
   },
 });
+
+/**
+ * One-shot data hygiene pass for existing bundles.
+ *
+ * Scans every bundle in the database and strips out bad string values
+ * that slipped in before bundle validation existed — specifically:
+ *   - preferences.agent.tone starting with '#' (markdown leaking into
+ *     a plain-text field)
+ *   - project names starting with '#'
+ *
+ * Usage:
+ *   npx convex run seed:cleanupBadProfileData
+ */
+export const cleanupBadProfileData = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const bundles = await ctx.db.query("bundles").collect();
+
+    let fixedBundles = 0;
+    let fixedTones = 0;
+    let fixedProjectNames = 0;
+
+    for (const bundle of bundles) {
+      const youJson = bundle.youJson as Record<string, unknown> | undefined;
+      if (!youJson) continue;
+
+      let dirty = false;
+      const patched: Record<string, unknown> = { ...youJson };
+
+      // Fix preferences.agent.tone
+      const prefs = patched.preferences as Record<string, unknown> | undefined;
+      if (prefs && typeof prefs === "object") {
+        const agent = prefs.agent as Record<string, unknown> | undefined;
+        if (agent && typeof agent === "object") {
+          const tone = agent.tone;
+          if (typeof tone === "string" && tone.trim().startsWith("#")) {
+            const newAgent = { ...agent, tone: "" };
+            const newPrefs = { ...prefs, agent: newAgent };
+            patched.preferences = newPrefs;
+            dirty = true;
+            fixedTones++;
+          }
+        }
+      }
+
+      // Fix project names
+      const projects = patched.projects;
+      if (Array.isArray(projects)) {
+        let projectsDirty = false;
+        const newProjects = projects.map((p) => {
+          if (p && typeof p === "object") {
+            const proj = p as Record<string, unknown>;
+            const name = proj.name;
+            if (typeof name === "string" && name.trim().startsWith("#")) {
+              projectsDirty = true;
+              fixedProjectNames++;
+              return { ...proj, name: "" };
+            }
+          }
+          return p;
+        });
+        if (projectsDirty) {
+          patched.projects = newProjects;
+          dirty = true;
+        }
+      }
+
+      if (dirty) {
+        await ctx.db.patch(bundle._id, { youJson: patched });
+        fixedBundles++;
+      }
+    }
+
+    return {
+      scanned: bundles.length,
+      fixedBundles,
+      fixedTones,
+      fixedProjectNames,
+      message:
+        fixedBundles > 0
+          ? `Fixed ${fixedBundles} bundles (${fixedTones} tones, ${fixedProjectNames} project names)`
+          : "No bad data found",
+    };
+  },
+});

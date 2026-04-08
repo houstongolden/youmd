@@ -11,6 +11,23 @@ const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
 const SUCCESS = chalk.green;
 
+function relativeTime(iso: string): string {
+  const t = Date.parse(iso);
+  if (isNaN(t)) return iso;
+  const diff = Date.now() - t;
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return `${mo}mo ago`;
+  return `${Math.floor(mo / 12)}y ago`;
+}
+
 /**
  * Context link management.
  * Subcommands: create, list, revoke
@@ -20,7 +37,7 @@ const SUCCESS = chalk.green;
 
 export async function linkCommand(
   subcommand?: string,
-  options: { scope?: string; ttl?: string; maxUses?: string; id?: string; arg?: string } = {}
+  options: { scope?: string; ttl?: string; maxUses?: string; id?: string; arg?: string; name?: string } = {}
 ): Promise<void> {
   console.log("");
 
@@ -50,7 +67,7 @@ export async function linkCommand(
       console.log("you.md -- context links");
       console.log("");
       console.log("Usage:");
-      console.log("  youmd link create [--scope public|full] [--ttl 1h|24h|7d|30d|90d|never] [--max-uses N]");
+      console.log("  youmd link create [--name \"label\"] [--scope public|full] [--ttl 1h|24h|7d|30d|90d|never] [--max-uses N]");
       console.log("  youmd link list");
       console.log("  youmd link preview <token>     preview what the agent sees");
       console.log("  youmd link revoke --id <linkId>");
@@ -65,10 +82,12 @@ async function linkCreate(options: {
   scope?: string;
   ttl?: string;
   maxUses?: string;
+  name?: string;
 }): Promise<void> {
   const scope = options.scope || "public";
   const ttl = options.ttl || "7d";
   const maxUses = options.maxUses ? parseInt(options.maxUses, 10) : undefined;
+  const name = options.name && options.name.trim().length > 0 ? options.name.trim() : undefined;
 
   if (scope !== "public" && scope !== "full") {
     console.log(ACCENT("invalid scope") + " -- must be 'public' or 'full'");
@@ -93,7 +112,7 @@ async function linkCreate(options: {
   spinner.start();
 
   try {
-    const res = await createContextLink({ scope, ttl, maxUses });
+    const res = await createContextLink({ scope, ttl, maxUses, name });
 
     if (!res.ok) {
       spinner.fail((res.data as any)?.error || `HTTP ${res.status}`);
@@ -105,6 +124,9 @@ async function linkCreate(options: {
     spinner.stop();
 
     console.log("");
+    if (data.name || name) {
+      console.log(DIM("  name      ") + chalk.white(data.name || name || ""));
+    }
     console.log(DIM("  scope     ") + chalk.white(data.scope));
     console.log(DIM("  ttl       ") + chalk.white(ttl));
     console.log(DIM("  expires   ") + chalk.white(data.expiresAt === "never" ? "never" : data.expiresAt.split("T")[0]));
@@ -176,9 +198,15 @@ async function linkList(): Promise<void> {
         const expires = link.expiresAt === "never"
           ? DIM("no expiry")
           : DIM("expires " + (typeof link.expiresAt === "string" ? link.expiresAt.split("T")[0] : "?"));
+        const lastUsed = link.lastUsedAt
+          ? DIM("last " + relativeTime(link.lastUsedAt))
+          : DIM("never used");
 
-        console.log(`  ${ACCENT(link.url)}`);
-        console.log(`    ${scopeLabel} -- ${uses} -- ${expires}`);
+        const heading = link.name
+          ? `${chalk.bold(link.name)} ${DIM("-- ")}${ACCENT(link.url)}`
+          : ACCENT(link.url);
+        console.log(`  ${heading}`);
+        console.log(`    ${scopeLabel} -- ${uses} -- ${lastUsed} -- ${expires}`);
         console.log(`    ${DIM("id: " + link.id)}`);
         console.log("");
       }
@@ -188,7 +216,10 @@ async function linkList(): Promise<void> {
       console.log(DIM("  EXPIRED"));
       console.log("");
       for (const link of expired) {
-        console.log(DIM(`  ${link.url}`));
+        const label = link.name
+          ? `${link.name} -- ${link.url}`
+          : link.url;
+        console.log(DIM(`  ${label}`));
         console.log(DIM(`    ${link.scope} -- ${link.useCount} uses -- expired`));
         console.log("");
       }
@@ -206,35 +237,56 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 
-async function linkPreview(token?: string): Promise<void> {
-  if (!token) {
+async function linkPreview(tokenArg?: string): Promise<void> {
+  if (!tokenArg) {
     console.log(ACCENT("missing token"));
     console.log("");
-    console.log("Usage: youmd link preview <token>");
+    console.log("Usage: youmd link preview <token|name|id>");
     console.log("       youmd link preview --id <token>");
     console.log("");
     console.log(DIM("Tip: run ") + chalk.cyan("youmd link list") + DIM(" to see your links and tokens."));
     console.log("");
     return;
   }
+  let token = tokenArg;
 
   const spinner = new BrailleSpinner("resolving context link");
   spinner.start();
 
   try {
     // First, fetch link metadata from the list to show scope/expiry info
-    let linkMeta: { scope?: string; useCount?: number; expiresAt?: string; url?: string } = {};
+    // Allow lookup by token, by link id, or by memorable name.
+    let linkMeta: {
+      name?: string | null;
+      scope?: string;
+      useCount?: number;
+      lastUsedAt?: string | null;
+      expiresAt?: string;
+      url?: string;
+      token?: string;
+    } = {};
     try {
       const linksRes = await listContextLinks();
       if (linksRes.ok && Array.isArray(linksRes.data)) {
-        const match = linksRes.data.find((l) => l.token === token || l.url?.includes(token));
+        const match = linksRes.data.find(
+          (l) =>
+            l.token === token ||
+            l.id === token ||
+            l.name === token ||
+            l.url?.includes(token)
+        );
         if (match) {
           linkMeta = {
+            name: match.name,
             scope: match.scope,
             useCount: match.useCount,
+            lastUsedAt: match.lastUsedAt,
             expiresAt: match.expiresAt,
             url: match.url,
+            token: match.token,
           };
+          // If the caller passed a name or id, resolve to the actual token for the fetch
+          token = match.token;
         }
       }
     } catch {
@@ -259,6 +311,9 @@ async function linkPreview(token?: string): Promise<void> {
 
     // Show link metadata
     console.log("");
+    if (linkMeta.name) {
+      console.log(DIM("  name      ") + chalk.bold(linkMeta.name));
+    }
     console.log(DIM("  token     ") + chalk.white(token));
     if (linkMeta.scope) {
       const scopeLabel = linkMeta.scope === "full" ? ACCENT("full (private)") : DIM("public");
@@ -266,6 +321,9 @@ async function linkPreview(token?: string): Promise<void> {
     }
     if (linkMeta.useCount !== undefined) {
       console.log(DIM("  uses      ") + chalk.white(String(linkMeta.useCount)));
+    }
+    if (linkMeta.lastUsedAt) {
+      console.log(DIM("  last used ") + DIM(relativeTime(linkMeta.lastUsedAt)));
     }
     if (linkMeta.expiresAt) {
       const exp = linkMeta.expiresAt === "never"
@@ -282,9 +340,21 @@ async function linkPreview(token?: string): Promise<void> {
     console.log(DIM("  " + "\u2500".repeat(50)));
     console.log("");
 
-    // Render the content using the rich renderer
-    const rendered = renderRichResponse(content);
+    // Render the content using the rich renderer.
+    // Truncate if huge so the terminal stays usable.
+    const MAX_PREVIEW = 8000;
+    let displayContent = content;
+    let truncated = false;
+    if (content.length > MAX_PREVIEW) {
+      displayContent = content.slice(0, MAX_PREVIEW);
+      truncated = true;
+    }
+    const rendered = renderRichResponse(displayContent);
     console.log(rendered);
+    if (truncated) {
+      console.log("");
+      console.log(DIM(`  ... truncated ${(content.length - MAX_PREVIEW).toLocaleString()} chars`));
+    }
     console.log("");
     console.log(DIM("  " + "\u2500".repeat(50)));
     console.log(DIM(`  ${content.length.toLocaleString()} chars -- this is what the agent sees`));

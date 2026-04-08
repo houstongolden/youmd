@@ -272,11 +272,13 @@ export default defineSchema({
   contextLinks: defineTable({
     userId: v.id("users"),
     profileId: v.optional(v.id("profiles")),
+    name: v.optional(v.string()), // optional memorable name (e.g. "hiring" or "for-acme")
     token: v.string(),
     scope: v.union(v.literal("public"), v.literal("full")),
     expiresAt: v.optional(v.number()),
     maxUses: v.optional(v.number()),
     useCount: v.number(),
+    lastUsedAt: v.optional(v.number()),
     revokedAt: v.optional(v.number()),
     createdAt: v.number(),
   })

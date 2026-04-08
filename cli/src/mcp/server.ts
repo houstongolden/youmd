@@ -168,6 +168,135 @@ async function apiRequest(path: string, opts?: { method?: string; body?: unknown
   return res.json();
 }
 
+// Valid memory categories enforced by add_memory
+const MEMORY_CATEGORIES = [
+  "fact",
+  "preference",
+  "decision",
+  "project",
+  "goal",
+  "insight",
+  "context",
+  "relationship",
+] as const;
+
+/**
+ * Build a compact (~500 char) identity summary. This is what the whoami tool
+ * and the `compact` format of get_identity return. Designed to be the very
+ * first call an agent makes so it can orient on the user in <1 tool round.
+ */
+function buildWhoamiSummary(): string {
+  const youJson = getYouJson() as Record<string, any>;
+
+  const identity = youJson.identity || {};
+  const preferences = youJson.preferences || {};
+  const agentPrefs = preferences.agent || {};
+  const directives = youJson.agent_directives || {};
+  const projects = Array.isArray(youJson.projects) ? youJson.projects : [];
+
+  const name = identity.name || youJson.username || "(unknown)";
+  const role = identity.tagline || identity.bio?.short || "";
+  const stack = directives.default_stack || "";
+  const tone = agentPrefs.tone || "";
+  const avoidList = Array.isArray(agentPrefs.avoid) ? agentPrefs.avoid : [];
+  const avoid = avoidList.join(", ");
+  const topProjects = projects
+    .slice(0, 3)
+    .map((p: any) => (typeof p === "string" ? p : p?.name || ""))
+    .filter(Boolean)
+    .join(", ");
+  const goal = directives.current_goal || "";
+
+  const lines: string[] = [];
+  lines.push(`Name: ${name}`);
+  if (role) lines.push(`Role: ${role}`);
+  if (stack) lines.push(`Stack: ${stack}`);
+  if (tone) lines.push(`Tone: ${tone}`);
+  if (avoid) lines.push(`Avoid: ${avoid}`);
+  if (topProjects) lines.push(`Top projects: ${topProjects}`);
+  if (goal) lines.push(`Goal: ${goal}`);
+
+  let summary = lines.join("\n");
+  // Hard cap at ~500 chars to keep it cheap for agents
+  if (summary.length > 500) {
+    summary = summary.slice(0, 497) + "...";
+  }
+  return summary;
+}
+
+/**
+ * Build a human-readable markdown version of the identity bundle.
+ * Used by get_identity format=markdown.
+ */
+function buildIdentityMarkdown(): string {
+  const md = getYouMd();
+  if (md) return md;
+
+  // Fallback: synthesize from youJson if you.md is missing
+  const youJson = getYouJson() as Record<string, any>;
+  const identity = youJson.identity || {};
+  const parts: string[] = [];
+  parts.push(`# ${identity.name || youJson.username || "Identity"}`);
+  if (identity.tagline) parts.push(identity.tagline);
+  if (identity.bio?.long || identity.bio?.medium || identity.bio?.short) {
+    parts.push(`\n## About\n\n${identity.bio.long || identity.bio.medium || identity.bio.short}`);
+  }
+  return parts.join("\n") + "\n";
+}
+
+/**
+ * Find the nearest project-context/ directory by walking up from cwd.
+ * Also treats a `.youmd-project` marker file as a valid project root.
+ * Returns the directory that contains project-context/ or the marker.
+ */
+function findLocalProjectContextRoot(startDir: string = process.cwd()): string | null {
+  let dir = startDir;
+  // Walk up at most 8 levels to avoid runaway searches
+  for (let i = 0; i < 8; i++) {
+    const contextDir = path.join(dir, "project-context");
+    const marker = path.join(dir, ".youmd-project");
+    if (fs.existsSync(contextDir) && fs.statSync(contextDir).isDirectory()) {
+      return dir;
+    }
+    if (fs.existsSync(marker)) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+/**
+ * Returns true if the current cwd has local project context available
+ * (either via project-context/ directory or a .youmd-project marker).
+ */
+function hasLocalProjectContext(): boolean {
+  return findLocalProjectContextRoot() !== null;
+}
+
+/**
+ * Read a single project-context markdown file. Tries project-context/<name>.md
+ * in the detected project root. Returns empty string if not found.
+ */
+function readLocalProjectContextFile(name: string): string {
+  const root = findLocalProjectContextRoot();
+  if (!root) return "";
+  const candidates = [
+    path.join(root, "project-context", `${name}.md`),
+    path.join(root, "project-context", `${name.toUpperCase()}.md`),
+    path.join(root, `${name}.md`),
+    path.join(root, `${name.toUpperCase()}.md`),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return readFileOr(candidate, "");
+    }
+  }
+  return "";
+}
+
 // ---------------------------------------------------------------------------
 // MCP Server
 // ---------------------------------------------------------------------------
@@ -230,6 +359,53 @@ export async function startMcpServer(): Promise<void> {
         description: "Active memories — facts, preferences, decisions, and context the agent has learned about you",
         mimeType: "application/json",
       });
+
+      // All active memories as JSON (alias to the base memories resource, but
+      // exposed explicitly so agents can discover a stable "all" URI).
+      resources.push({
+        uri: "youmd://memories/all",
+        name: "memories/all",
+        description: "All active memories as JSON (every category combined)",
+        mimeType: "application/json",
+      });
+
+      // Per-category memory resources. Agents can load only the slice they need
+      // instead of pulling the full memory firehose.
+      const memoryCategories: Array<{ slug: string; desc: string }> = [
+        { slug: "preference", desc: "Preferences learned about the user (tone, format, defaults)" },
+        { slug: "decision", desc: "Decisions the user has made (architecture, product, stack)" },
+        { slug: "fact", desc: "Facts about the user (bio, stack, constraints)" },
+        { slug: "project", desc: "Project-related memories" },
+        { slug: "goal", desc: "Current goals and objectives" },
+      ];
+      for (const { slug, desc } of memoryCategories) {
+        resources.push({
+          uri: `youmd://memories/${slug}`,
+          name: `memories/${slug}`,
+          description: desc,
+          mimeType: "application/json",
+        });
+      }
+    }
+
+    // Local project context auto-loaded from cwd (project-context/*.md).
+    // Only surfaced when a project-context/ dir or .youmd-project marker exists.
+    if (hasLocalProjectContext()) {
+      const localFiles: Array<{ slug: string; desc: string }> = [
+        { slug: "prd", desc: "Current project PRD (from local project-context/prd.md)" },
+        { slug: "todo", desc: "Current project TODO list (from local project-context/todo.md)" },
+        { slug: "features", desc: "Current project feature list (from local project-context/features.md)" },
+        { slug: "decisions", desc: "Current project decisions log (from local project-context/decisions.md)" },
+        { slug: "changelog", desc: "Current project changelog (from local project-context/changelog.md)" },
+      ];
+      for (const { slug, desc } of localFiles) {
+        resources.push({
+          uri: `youmd://project/current/${slug}`,
+          name: `project/current/${slug}`,
+          description: desc,
+          mimeType: "text/markdown",
+        });
+      }
     }
 
     // Projects
@@ -308,7 +484,7 @@ export async function startMcpServer(): Promise<void> {
     }
 
     // youmd://memories
-    if (uri === "youmd://memories") {
+    if (uri === "youmd://memories" || uri === "youmd://memories/all") {
       const memories = await fetchMemories(undefined, 50);
       return {
         contents: [{
@@ -328,6 +504,22 @@ export async function startMcpServer(): Promise<void> {
           uri,
           mimeType: "application/json",
           text: JSON.stringify(memories, null, 2),
+        }],
+      };
+    }
+
+    // youmd://project/current/{file} — local project-context files from cwd
+    const localProjMatch = uri.match(/^youmd:\/\/project\/current\/(prd|todo|features|decisions|changelog)$/);
+    if (localProjMatch) {
+      const content = readLocalProjectContextFile(localProjMatch[1]);
+      if (!content) {
+        throw new Error(`no local project-context/${localProjMatch[1]}.md found in current directory or parents`);
+      }
+      return {
+        contents: [{
+          uri,
+          mimeType: "text/markdown",
+          text: content,
         }],
       };
     }
@@ -402,15 +594,23 @@ export async function startMcpServer(): Promise<void> {
     return {
       tools: [
         {
+          name: "whoami",
+          description: "Return a compact ~500-char identity summary: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation — it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSON.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {},
+          },
+        },
+        {
           name: "get_identity",
-          description: "Get the user's complete you.md identity bundle — who they are, how they work, their voice, preferences, and directives. Returns structured JSON or human-readable markdown. Call this FIRST when starting a new conversation to understand who you're working with before taking any action.",
+          description: "Get the user's complete you.md identity bundle. Returns compact (default), full JSON, or human-readable markdown. For the fastest orient, call whoami first; call get_identity when you need full detail (preferences, voice, directives, projects).",
           inputSchema: {
             type: "object" as const,
             properties: {
               format: {
                 type: "string",
-                enum: ["json", "markdown"],
-                description: "Output format: json (structured) or markdown (human-readable). Default: json",
+                enum: ["compact", "full", "json", "markdown"],
+                description: "Output format: compact (500-char summary, default — same as whoami), full/json (complete identity bundle as JSON), markdown (human-readable markdown).",
               },
             },
           },
@@ -455,7 +655,8 @@ export async function startMcpServer(): Promise<void> {
             properties: {
               category: {
                 type: "string",
-                description: "Memory category: fact, preference, decision, project, goal, insight, context",
+                enum: [...MEMORY_CATEGORIES],
+                description: "Memory category. Must be one of: fact, preference, decision, project, goal, insight, context, relationship.",
               },
               content: {
                 type: "string",
@@ -558,6 +759,14 @@ export async function startMcpServer(): Promise<void> {
           },
         },
         {
+          name: "compile_and_push",
+          description: "Combo tool that compiles the local .youmd bundle, writes it to disk, uploads it, and publishes it in one call. Replaces having to call compile_bundle + push_bundle + publish separately. Requires authentication. Returns the new version number and bundle content hash.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {},
+          },
+        },
+        {
           name: "list_skills",
           description: "List all installed identity-aware skills with their names. Use to discover what skills are available before calling use_skill. Returns a simple list of installed skill names.",
           inputSchema: {
@@ -629,15 +838,33 @@ export async function startMcpServer(): Promise<void> {
     const { name, arguments: args } = request.params;
 
     switch (name) {
-      case "get_identity": {
-        const format = (args as Record<string, unknown>)?.format || "json";
-        if (format === "markdown") {
-          return { content: [{ type: "text" as const, text: getYouMd() }] };
-        }
+      case "whoami": {
         return {
           content: [{
             type: "text" as const,
-            text: JSON.stringify(getYouJson(), null, 2),
+            text: buildWhoamiSummary(),
+          }],
+        };
+      }
+
+      case "get_identity": {
+        const format = ((args as Record<string, unknown>)?.format as string) || "compact";
+        if (format === "markdown") {
+          return { content: [{ type: "text" as const, text: buildIdentityMarkdown() }] };
+        }
+        if (format === "full" || format === "json") {
+          return {
+            content: [{
+              type: "text" as const,
+              text: JSON.stringify(getYouJson(), null, 2),
+            }],
+          };
+        }
+        // compact (default) — matches whoami output
+        return {
+          content: [{
+            type: "text" as const,
+            text: buildWhoamiSummary(),
           }],
         };
       }
@@ -682,6 +909,19 @@ export async function startMcpServer(): Promise<void> {
 
         if (!isAuthenticated()) {
           return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
+        }
+
+        // Validate category against known enum. Reject unknown categories so
+        // we don't pollute the memory store with one-off tags masquerading as
+        // categories.
+        if (!category || !(MEMORY_CATEGORIES as readonly string[]).includes(category)) {
+          return {
+            content: [{
+              type: "text" as const,
+              text: `invalid category: ${category || "(missing)"}. valid categories: ${MEMORY_CATEGORIES.join(", ")}`,
+            }],
+            isError: true,
+          };
         }
 
         try {
@@ -816,6 +1056,66 @@ export async function startMcpServer(): Promise<void> {
           };
         } catch (err) {
           return { content: [{ type: "text" as const, text: `push error: ${err instanceof Error ? err.message : "unknown"}` }], isError: true };
+        }
+      }
+
+      case "compile_and_push": {
+        if (!isAuthenticated()) {
+          return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
+        }
+        try {
+          const { compileBundle, writeBundle } = await import("../lib/compiler");
+          const { uploadBundle, publishLatest } = await import("../lib/api");
+          const bundleDir = getBundleDir();
+
+          // 1. Compile from the local .youmd directory
+          const result = compileBundle(bundleDir);
+
+          // 2. Write the compiled bundle to disk (you.json, you.md, manifest.json)
+          writeBundle(bundleDir, result);
+
+          // 3. Upload the bundle via the API
+          const uploadRes = await uploadBundle({
+            manifest: result.manifest,
+            youJson: result.youJson,
+            youMd: result.markdown,
+          });
+          if (!uploadRes.ok) {
+            return {
+              content: [{ type: "text" as const, text: `upload failed: ${JSON.stringify(uploadRes.data)}` }],
+              isError: true,
+            };
+          }
+
+          // 4. Publish the latest bundle
+          const publishRes = await publishLatest();
+          if (!publishRes.ok) {
+            return {
+              content: [{ type: "text" as const, text: `publish failed: ${JSON.stringify(publishRes.data)}` }],
+              isError: true,
+            };
+          }
+
+          // 5. Return version + content hash. Pull hash from upload response
+          //    when available, otherwise fall back to whatever the manifest has.
+          const uploadData = (uploadRes.data || {}) as Record<string, unknown>;
+          const contentHash =
+            (uploadData.contentHash as string | undefined) ||
+            (uploadData.hash as string | undefined) ||
+            ((result.manifest as Record<string, unknown>).contentHash as string | undefined) ||
+            "unknown";
+
+          return {
+            content: [{
+              type: "text" as const,
+              text: `compiled + pushed + published v${result.stats.version} (hash: ${contentHash})`,
+            }],
+          };
+        } catch (err) {
+          return {
+            content: [{ type: "text" as const, text: `compile_and_push error: ${err instanceof Error ? err.message : "unknown"}` }],
+            isError: true,
+          };
         }
       }
 

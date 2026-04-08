@@ -94,7 +94,11 @@ export async function statusCommand(): Promise<void> {
 
   if (!hasBundle) {
     console.log("");
-    console.log("  run " + chalk.cyan("youmd init") + " to create a local bundle.");
+    if (!authed) {
+      console.log("  " + ACCENT("\u2192") + " Run " + chalk.cyan("youmd login") + " to get started");
+    } else {
+      console.log("  " + ACCENT("\u2192") + " Run " + chalk.cyan("youmd init") + " to create your identity");
+    }
     console.log("");
     if (authed) {
       await showRemoteStatus();
@@ -220,23 +224,37 @@ export async function statusCommand(): Promise<void> {
 
   // ── Recommendations ───────────────────────────────────────────────
   const recs: string[] = [];
-  if (!authed) recs.push("run " + chalk.cyan("youmd login") + " to authenticate");
+  if (!authed) {
+    recs.push("Run " + chalk.cyan("youmd login") + " to get started");
+  } else if (!localConfig?.lastPublished) {
+    recs.push("Run " + chalk.cyan("youmd push") + " to publish your profile");
+  }
   try {
     const catalog = readSkillCatalog();
     if (catalog.skills.filter((s) => s.installed).length === 0) {
-      recs.push("run " + chalk.cyan("youmd skill install all") + " to set up agent skills");
+      recs.push("Run " + chalk.cyan("youmd skill install all") + " to set up agent skills");
     }
     const claudeSkills = path.join(process.cwd(), ".claude", "skills", "youmd");
     if (catalog.skills.some((s) => s.installed) && !fs.existsSync(claudeSkills)) {
-      recs.push("run " + chalk.cyan("youmd skill link claude") + " to connect skills to this project");
+      recs.push("Run " + chalk.cyan("youmd skill link claude") + " to connect skills to this project");
     }
   } catch { /* skip */ }
+
+  // If everything looks healthy, celebrate.
+  if (recs.length === 0 && authed && hasBundle && localConfig?.lastPublished) {
+    console.log("");
+    const remoteUsername = config.username || "you";
+    console.log(
+      "  " + chalk.green("\u2713") + " Profile live at " +
+      chalk.cyan("https://you.md/@" + remoteUsername)
+    );
+  }
 
   if (recs.length > 0) {
     console.log("");
     console.log("  " + ACCENT("next:"));
     for (const r of recs) {
-      console.log(`    ${ACCENT("\u203A")} ${r}`);
+      console.log(`    ${ACCENT("\u2192")} ${r}`);
     }
   }
 

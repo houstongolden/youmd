@@ -68,6 +68,7 @@ export const getPublicProfile = query({
         youMd,
         isClaimed: profile.isClaimed,
         profileId: profile._id,
+        contentHash: publishedBundle?.contentHash ?? null,
         updatedAt: profile.updatedAt ?? profile.createdAt ?? null,
       };
     }
@@ -102,6 +103,7 @@ export const getPublicProfile = query({
       youMd: publishedBundle.youMd,
       isClaimed: true,
       profileId: profile?._id ?? null,
+      contentHash: publishedBundle.contentHash ?? null,
       updatedAt: publishedBundle.createdAt ?? null,
     };
   },

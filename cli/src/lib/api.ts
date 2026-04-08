@@ -310,18 +310,21 @@ export async function getAnalytics(): Promise<ApiResponse<any>> {
 
 export interface ContextLink {
   id: string;
+  name?: string | null;
   token: string;
   url: string;
   scope: string;
   expiresAt: string;
   maxUses: number | string;
   useCount: number;
+  lastUsedAt?: string | null;
   createdAt: string;
   isExpired: boolean;
 }
 
 export interface CreateLinkResult {
   id: string;
+  name?: string | null;
   token: string;
   url: string;
   scope: string;
@@ -332,6 +335,7 @@ export async function createContextLink(opts: {
   scope?: string;
   ttl?: string;
   maxUses?: number;
+  name?: string;
 }): Promise<ApiResponse<CreateLinkResult>> {
   return request<CreateLinkResult>("/api/v1/me/context-links", {
     method: "POST",
@@ -340,6 +344,7 @@ export async function createContextLink(opts: {
       scope: opts.scope || "public",
       ttl: opts.ttl || "7d",
       maxUses: opts.maxUses,
+      name: opts.name,
     },
   });
 }

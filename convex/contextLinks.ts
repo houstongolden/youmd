@@ -24,6 +24,7 @@ export const createLink = mutation({
     ttl: v.optional(v.string()), // "1h", "24h", "7d", "30d", "90d", "never"
     maxUses: v.optional(v.number()),
     profileId: v.optional(v.id("profiles")),
+    name: v.optional(v.string()), // optional memorable name for the link
   },
   handler: async (ctx, args) => {
     const user = await ctx.db
@@ -72,6 +73,7 @@ export const createLink = mutation({
     const linkId = await ctx.db.insert("contextLinks", {
       userId: user._id,
       profileId,
+      name: args.name,
       token,
       scope: args.scope,
       expiresAt,
@@ -83,6 +85,7 @@ export const createLink = mutation({
     return {
       id: linkId,
       token,
+      name: args.name,
       url: `https://you.md/ctx/${user.username}/${token}`,
       scope: args.scope,
       expiresAt: expiresAt
@@ -112,6 +115,7 @@ export const listLinks = query({
       .filter((link) => !link.revokedAt)
       .map((link) => ({
         id: link._id,
+        name: link.name ?? null,
         token: link.token,
         url: `https://you.md/ctx/${user.username}/${link.token}`,
         scope: link.scope,
@@ -120,6 +124,9 @@ export const listLinks = query({
           : "never",
         maxUses: link.maxUses ?? "unlimited",
         useCount: link.useCount,
+        lastUsedAt: link.lastUsedAt
+          ? new Date(link.lastUsedAt).toISOString()
+          : null,
         createdAt: new Date(link.createdAt).toISOString(),
         isExpired: link.expiresAt ? link.expiresAt < Date.now() : false,
       }));
@@ -262,7 +269,10 @@ export const incrementUseCount = mutation({
       .first();
 
     if (link) {
-      await ctx.db.patch(link._id, { useCount: link.useCount + 1 });
+      await ctx.db.patch(link._id, {
+        useCount: link.useCount + 1,
+        lastUsedAt: Date.now(),
+      });
     }
   },
 });

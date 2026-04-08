@@ -1,3 +1,5 @@
+import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import chalk from "chalk";
 import { localBundleExists, readGlobalConfig, isAuthenticated } from "../lib/config";
@@ -5,7 +7,7 @@ import { localBundleExists, readGlobalConfig, isAuthenticated } from "../lib/con
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
 
-export async function mcpCommand(options: { json?: boolean; install?: string }): Promise<void> {
+export async function mcpCommand(options: { json?: boolean; install?: string; auto?: boolean }): Promise<void> {
   // --json: output MCP config for agent settings
   if (options.json) {
     const config = getMcpConfig();
@@ -13,9 +15,9 @@ export async function mcpCommand(options: { json?: boolean; install?: string }):
     return;
   }
 
-  // --install: show setup instructions for a specific agent
+  // --install: show setup instructions for a specific agent (or auto-write)
   if (options.install) {
-    await installMcp(options.install);
+    await installMcp(options.install, options.auto);
     return;
   }
 
@@ -49,10 +51,133 @@ function getMcpConfig(): Record<string, unknown> {
   };
 }
 
-async function installMcp(target: string): Promise<void> {
+const YOUMD_MCP_ENTRY = {
+  command: "npx",
+  args: ["youmd", "mcp"],
+};
+
+function mergeMcpServers(
+  existing: Record<string, unknown> | undefined
+): Record<string, unknown> {
+  return { ...(existing || {}), youmd: YOUMD_MCP_ENTRY };
+}
+
+function backupAndWrite(filePath: string, content: string): string {
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const backupPath = `${filePath}.bak.${ts}`;
+  if (fs.existsSync(filePath)) {
+    fs.copyFileSync(filePath, backupPath);
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, content);
+  return backupPath;
+}
+
+function installClaudeAuto(): boolean {
+  const settingsPath = path.join(os.homedir(), ".claude", "settings.json");
+
+  let settings: Record<string, unknown> = {};
+  const existed = fs.existsSync(settingsPath);
+  if (existed) {
+    try {
+      const raw = fs.readFileSync(settingsPath, "utf-8");
+      settings = raw.trim().length > 0 ? JSON.parse(raw) : {};
+    } catch (err) {
+      console.log("");
+      console.log(chalk.yellow("  could not parse ~/.claude/settings.json:"));
+      console.log("  " + DIM(err instanceof Error ? err.message : String(err)));
+      console.log(DIM("  falling back to manual instructions."));
+      console.log("");
+      return false;
+    }
+  }
+
+  const mcpServers = mergeMcpServers(
+    settings.mcpServers as Record<string, unknown> | undefined
+  );
+  const next = { ...settings, mcpServers };
+
+  const json = JSON.stringify(next, null, 2) + "\n";
+  const backupPath = backupAndWrite(settingsPath, json);
+
+  console.log("");
+  console.log("  " + ACCENT("you.md mcp") + DIM(" -- claude code (auto)"));
+  console.log("");
+  console.log(
+    "  " + chalk.green("\u2713") + " merged youmd into " + chalk.cyan(settingsPath)
+  );
+  if (existed) {
+    console.log("  " + DIM("backup: " + backupPath));
+  }
+  console.log("");
+  console.log("  " + chalk.bold("Installed. Restart Claude Code to activate."));
+  console.log("");
+  return true;
+}
+
+function installCursorAuto(): boolean {
+  const settingsPath = path.join(process.cwd(), ".cursor", "mcp.json");
+
+  let settings: Record<string, unknown> = {};
+  const existed = fs.existsSync(settingsPath);
+  if (existed) {
+    try {
+      const raw = fs.readFileSync(settingsPath, "utf-8");
+      settings = raw.trim().length > 0 ? JSON.parse(raw) : {};
+    } catch (err) {
+      console.log("");
+      console.log(chalk.yellow("  could not parse .cursor/mcp.json:"));
+      console.log("  " + DIM(err instanceof Error ? err.message : String(err)));
+      console.log(DIM("  falling back to manual instructions."));
+      console.log("");
+      return false;
+    }
+  }
+
+  const mcpServers = mergeMcpServers(
+    settings.mcpServers as Record<string, unknown> | undefined
+  );
+  const next = { ...settings, mcpServers };
+
+  const json = JSON.stringify(next, null, 2) + "\n";
+  const backupPath = backupAndWrite(settingsPath, json);
+
+  console.log("");
+  console.log("  " + ACCENT("you.md mcp") + DIM(" -- cursor (auto)"));
+  console.log("");
+  console.log(
+    "  " + chalk.green("\u2713") + " merged youmd into " + chalk.cyan(settingsPath)
+  );
+  if (existed) {
+    console.log("  " + DIM("backup: " + backupPath));
+  } else {
+    console.log("  " + DIM("created new .cursor/mcp.json"));
+  }
+  console.log("");
+  console.log("  " + chalk.bold("Installed. Restart Cursor to activate."));
+  console.log("");
+  return true;
+}
+
+async function installMcp(target: string, auto?: boolean): Promise<void> {
   const config = readGlobalConfig();
   const username = config.username || "user";
   const authed = isAuthenticated();
+
+  if (auto) {
+    if (target === "claude") {
+      if (installClaudeAuto()) return;
+      // fall through to manual instructions on error
+    } else if (target === "cursor") {
+      if (installCursorAuto()) return;
+    } else {
+      console.log("");
+      console.log(chalk.yellow(`  --auto not supported for target: ${target}`));
+      console.log(DIM("  supported: claude, cursor"));
+      console.log("");
+      return;
+    }
+  }
 
   if (target === "claude") {
     console.log("");

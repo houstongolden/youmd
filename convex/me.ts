@@ -13,6 +13,39 @@ import { computeContentHash } from "./lib/hash";
  * These require a valid Clerk session.
  */
 
+/**
+ * Validate profile data before save to catch common data-quality
+ * mistakes (e.g. agents pasting markdown into string fields).
+ */
+function validateProfileData(data: any): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  // Check tone field doesn't start with markdown heading
+  const tone = data?.preferences?.agent?.tone;
+  if (tone && typeof tone === "string" && tone.trim().startsWith("#")) {
+    errors.push(
+      `preferences.agent.tone cannot start with '#' (got: "${tone.slice(0, 50)}")`
+    );
+  }
+
+  // Check project names don't start with #
+  if (Array.isArray(data?.projects)) {
+    data.projects.forEach((p: any, i: number) => {
+      const name = p?.name || p?.title;
+      if (name && typeof name === "string" && name.trim().startsWith("#")) {
+        errors.push(
+          `projects[${i}].name cannot start with '#' (got: "${name.slice(0, 50)}")`
+        );
+      }
+    });
+  }
+
+  // Auto-clean: trim whitespace from string fields
+  // (this is mutation, but acceptable for data hygiene)
+
+  return { valid: errors.length === 0, errors };
+}
+
 export const getMyProfile = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
@@ -75,6 +108,15 @@ export const saveBundleFromForm = mutation({
       youJson = compileYouJson(data);
       youMd = compileYouMd(data);
       manifest = compileManifest(data);
+    }
+
+    // Validate compiled youJson before saving (data quality guard).
+    // Catches agents that paste markdown into plain string fields.
+    const validation = validateProfileData(youJson);
+    if (!validation.valid) {
+      throw new Error(
+        `VALIDATION_FAILED: ${validation.errors.join("; ")}`
+      );
     }
 
     // Get next version

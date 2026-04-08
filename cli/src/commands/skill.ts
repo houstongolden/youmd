@@ -93,7 +93,9 @@ function truncateAtWord(text: string, max: number): string {
 
 // ─── Subcommands ──────────────────────────────────────────────────────
 
-function listSkills(): void {
+const RECOMMENDED_SKILLS = new Set(["claude-md-generator", "voice-sync"]);
+
+async function listSkills(): Promise<void> {
   const catalog = readSkillCatalog();
 
   console.log("");
@@ -107,12 +109,28 @@ function listSkills(): void {
     return;
   }
 
+  // Best-effort: fetch registry metadata for download counts.
+  // Network failures are silent — list still works offline.
+  const downloads: Record<string, number> = {};
+  try {
+    const reg = await browseSkills();
+    if (reg.ok && reg.data?.skills) {
+      for (const s of reg.data.skills) {
+        if (typeof s.downloads === "number") {
+          downloads[s.name] = s.downloads;
+        }
+      }
+    }
+  } catch {
+    /* offline is fine */
+  }
+
   const maxName = Math.max(...catalog.skills.map((s) => s.name.length));
 
   for (const skill of catalog.skills) {
     const status = skill.installed
-      ? chalk.green("\u2713")
-      : DIM("\u2022");
+      ? chalk.green("\u2713 installed")
+      : DIM("\u25CB available");
     const scope = skill.scope === "shared"
       ? DIM("shared")
       : skill.scope === "project"
@@ -121,13 +139,20 @@ function listSkills(): void {
     const fields = skill.identity_fields.length > 0
       ? DIM(` [${skill.identity_fields.join(", ")}]`)
       : "";
+    const recommended = RECOMMENDED_SKILLS.has(skill.name)
+      ? " " + ACCENT("recommended")
+      : "";
+    const dl = downloads[skill.name];
+    const dlLabel = typeof dl === "number"
+      ? DIM(` \u2193 ${dl.toLocaleString()}`)
+      : "";
 
     console.log(
-      `  ${status} ${chalk.cyan(skill.name.padEnd(maxName + 2))}` +
-      `${DIM(skill.description)}`
+      `  ${status}  ${chalk.cyan(skill.name.padEnd(maxName + 2))}` +
+      `${DIM(skill.description)}${recommended}`
     );
     console.log(
-      `    ${DIM("v" + skill.version)} ${scope}${fields}`
+      `    ${DIM("v" + skill.version)} ${scope}${dlLabel}${fields}`
     );
   }
 
@@ -135,6 +160,13 @@ function listSkills(): void {
 
   const installed = catalog.skills.filter((s) => s.installed).length;
   console.log(DIM(`  ${installed}/${catalog.skills.length} installed`));
+  if (installed === 0) {
+    console.log("");
+    console.log(
+      DIM("  get started: ") +
+      chalk.cyan("youmd skill install claude-md-generator")
+    );
+  }
   console.log("");
 }
 
@@ -1218,7 +1250,7 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
   switch (sub) {
     case "list":
     case "ls":
-      listSkills();
+      await listSkills();
       break;
     case "install":
       await installSkillCmd(args);
