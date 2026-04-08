@@ -206,6 +206,78 @@ The whole point of you.md is **share one URL → agent fetches structured identi
   - Streaming responses for slower operations
   - **Pass criteria:** First agent message appears within 2 seconds of starting `youmd init`
 
+### Tier 9 — File System & UX Restructure (CRITICAL INFORMATION ARCHITECTURE)
+
+Houston feedback (2026-04-08) revealed deep IA issues. This tier fixes the file system, public/private clarity, and the proactive agent harness.
+
+**The new mental model:**
+- **Public layer (root):** `you.json`, `you.md`, `manifest.json`, `profile/` directory
+- **Private layer (`private/` directory):** Everything else nested inside, requires token or auth
+  - `private/preferences/`
+  - `private/projects/` (the actual content with subdirectories per project)
+  - `private/sessions/`
+  - `private/skills/`
+  - `private/sources/`
+  - `private/voice/`
+  - `private/directives/`
+  - `private/memory/`
+  - `private/notes.md`, `private/calendar.md`, etc.
+  - User-created directories (default to private)
+- **User-created directories** default to private. Files placed in `profile/` directly become public.
+
+- [ ] **9.1 File system restructure**
+  - Move `directives/`, `memory/`, `preferences/`, `projects/`, `sessions/`, `skills/`, `sources/`, `voice/` INTO `private/`
+  - Migration mutation for existing bundles
+  - Update compiler to write to new paths
+  - Update decompiler to read from new paths
+  - **Pass criteria:** `youmd build` produces the new structure; existing bundles migrated
+
+- [ ] **9.2 Rename README.md → agent.md in subdirectories**
+  - `agent.md` is the standard for agent instructions in subdirectories (vs README.md for humans)
+  - Update all bundled skills that reference these
+  - Update the projects/ directory scaffold
+  - **Pass criteria:** All `README.md` in subdirectories renamed to `agent.md`
+
+- [ ] **9.3 Public/private globe icon UI in /shell files pane**
+  - Globe icon for `you.json`, `you.md`, `manifest.json`, `profile/`
+  - Lock icon for `private/` and everything inside
+  - Hover tooltip on public: "accessible by any agent with your you.md profile URL"
+  - Hover tooltip on private: "requires context link with token or authenticated CLI"
+  - **Pass criteria:** Visual distinction is immediately clear
+
+- [ ] **9.4 Activity log: token visibility + verified indicator (anti-fake)**
+  - Show which API key OR context link token was used for each event
+  - "verified" badge for anonymous external fetches (User-Agent detected, no auth)
+  - "self-attributed" badge for events where the requester was authenticated as the owner
+  - "third-party agent" badge for context-link-resolved events
+  - **Pass criteria:** Houston can audit which events came from real external agents vs his own API calls
+
+- [ ] **9.5 Sync /shell history tab with agents tab**
+  - history tab shows 0 reads/0 writes while agents tab shows 5 connected
+  - Both should read from the same `agentActivity` table
+  - **Pass criteria:** Both tabs show consistent counts
+
+- [ ] **9.6 Proactive YOU agent**
+  - Agent detects empty/minimal directories on session start
+  - Proactively offers to fill them based on profile data + minimal Q&A
+  - Doesn't wait for user to ask "look at the README and follow the instructions"
+  - System prompt update + new built-in skill: `proactive-context-fill`
+  - **Pass criteria:** New session with empty `projects/` triggers agent to offer to populate it
+
+- [ ] **9.7 User-created directories**
+  - "+ new directory" button in /shell files pane
+  - Default to `private/` location
+  - User can drag files into `profile/` to make them public
+  - **Pass criteria:** User can create custom dirs and they're respected by compile/decompile
+
+- [ ] **9.8 Share page UX**
+  - Easy project selection dropdown when generating share link
+  - "share project context" generates project-scoped link
+  - Customize prompt + link in one place
+  - **Pass criteria:** Houston can generate a project-scoped share in 3 clicks
+
+---
+
 ### Tier 8 — Cross-Agent Activity Visibility (THE BIG ONE)
 
 **Full plan: [CROSS_AGENT_ACTIVITY_PLAN.md](./CROSS_AGENT_ACTIVITY_PLAN.md)**
@@ -329,8 +401,9 @@ After completing the fixes, run THIS test sequence (not the paste-blob version I
 | 5 — Web UX | 7 | 1 | 0 |
 | 6 — Bundle + Vault | 2 | 0 | 0 |
 | 7 — Onboarding | 2 | 0 | 0 |
-| 8 — Cross-Agent Activity | 8 | 0 | 0 |
-| **Total** | **40** | **22** | **0** |
+| 8 — Cross-Agent Activity | 8 | 8 | 0 |
+| 9 — File System & UX Restructure | 8 | 0 | 0 |
+| **Total** | **48** | **30** | **0** |
 
 ---
 

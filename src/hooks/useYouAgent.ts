@@ -601,10 +601,87 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       }
     }
 
+    // --- Proactive Empty/Thin Section Detection ---
+    // Scan the bundle for empty or thin sections the agent should offer to fill.
+    // This drives the proactive context-fill behavior described in the system prompt.
+    let emptySectionNote = "";
+    if (hasSubstantialProfile) {
+      const youJson = (latestBundle?.youJson as Record<string, unknown>) || null;
+      const gaps: string[] = [];
+
+      // 1) profile/projects.md lists projects, but project subdirectories are missing
+      const publicProjects = (youJson?.projects as Array<Record<string, string>> | undefined) || [];
+      const projectSubdirs = (youJson?.project_subdirs as Record<string, unknown> | undefined) || {};
+      const projectSubdirsCount = Object.keys(projectSubdirs).length;
+      if (publicProjects.length > 0 && projectSubdirsCount < publicProjects.length) {
+        gaps.push(
+          `projects/ subdirectories are empty or incomplete (profile lists ${publicProjects.length} project${publicProjects.length === 1 ? "" : "s"}, but only ${projectSubdirsCount} subdirector${projectSubdirsCount === 1 ? "y exists" : "ies exist"})`
+        );
+      }
+
+      // 2) profile/about.md is sparse (under 100 chars)
+      const identity = youJson?.identity as Record<string, unknown> | undefined;
+      const bio = identity?.bio as Record<string, string> | undefined;
+      const aboutLen = (bio?.long || bio?.medium || bio?.short || "").length;
+      if (aboutLen > 0 && aboutLen < 100) {
+        gaps.push(`profile/about.md is sparse (~${aboutLen} chars, typical 300+)`);
+      } else if (aboutLen === 0) {
+        gaps.push("profile/about.md is empty");
+      }
+
+      // 3) preferences/agent.md is empty
+      const prefs = youJson?.preferences as Record<string, Record<string, unknown>> | undefined;
+      const agentTone = (prefs?.agent?.tone as string) || "";
+      const agentAvoid = (prefs?.agent?.avoid as string[]) || [];
+      if (!agentTone && agentAvoid.length === 0) {
+        gaps.push("preferences/agent.md is empty (no tone or avoid rules set)");
+      }
+
+      // 4) voice/voice.md has no content
+      const voice = youJson?.voice as Record<string, unknown> | undefined;
+      const voiceOverall = (voice?.overall as string) || "";
+      if (voiceOverall.length < 100) {
+        gaps.push(
+          voiceOverall.length === 0
+            ? "voice/voice.md is empty"
+            : `voice profile is thin (~${voiceOverall.length} chars vs typical 300+)`
+        );
+      }
+
+      // 5) sources/ has no entries
+      const meta = youJson?.meta as Record<string, unknown> | undefined;
+      const sourcesUsed = (meta?.sources_used as Record<string, unknown> | undefined) || {};
+      if (Object.keys(sourcesUsed).length === 0) {
+        gaps.push("sources/ has no entries");
+      }
+
+      // 6) directives/agent.md is empty
+      const dirs = youJson?.agent_directives as Record<string, unknown> | undefined;
+      const hasDirectives =
+        (dirs?.communication_style as string)?.length ||
+        (Array.isArray(dirs?.negative_prompts) && (dirs?.negative_prompts as unknown[]).length > 0) ||
+        (dirs?.default_stack as string)?.length ||
+        (dirs?.decision_framework as string)?.length ||
+        (dirs?.current_goal as string)?.length;
+      if (!hasDirectives) {
+        gaps.push("directives/agent.md is empty (no agent directives set)");
+      }
+
+      // 7) memory has fewer than 5 items
+      const memCount = recentMemories?.length ?? 0;
+      if (memCount < 5) {
+        gaps.push(`memory has only ${memCount} item${memCount === 1 ? "" : "s"} (typical 5+)`);
+      }
+
+      if (gaps.length > 0) {
+        emptySectionNote = `\n\n[EMPTY/THIN SECTIONS DETECTED — proactively mention ONE of these in your greeting and offer to fill it. don't list everything, pick the most impactful gap. always offer YES/SKIP/ASK_LATER. gaps:\n- ${gaps.join("\n- ")}\n]`;
+      }
+    }
+
     const contextContent = isOnboarding && onboardingGreeting
       ? onboardingGreeting
       : hasSubstantialProfile
-        ? `${profileContext}${portraitContext}${staleSourceNote}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them by name. reference something SPECIFIC from their profile data above — a project name, a value, something from their bio. show them you actually know who they are. ask what they want to work on or update.`
+        ? `${profileContext}${portraitContext}${staleSourceNote}${emptySectionNote}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. write a short greeting (2-3 sentences MAX). do three things: (1) greet them by name, (2) reference ONE specific recent thing from their profile data above (a project, a value, a bio detail), (3) IF empty/thin sections were detected above, mention the most impactful one and offer to fill it. don't make this a wall of text. example: "hey houston. saw you pushed v49 yesterday. one thing — your projects/ dir is empty even though your profile lists 6 projects. want me to scaffold them out?"`
         : `${profileContext}${portraitContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them${displayName ? ` by name (${displayName})` : ""}. their profile is sparse — proactively suggest building it out. ask for their x, github, or linkedin handle so you can pull real context. mention that the platform will auto-scrape their profiles.`;
 
     const contextMessage: ChatMessage = {

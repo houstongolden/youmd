@@ -312,10 +312,36 @@ function LinkPreviewModal({
   );
 }
 
+// ── Format mode ─────────────────────────────────────────────────────────
+//
+// The share block supports three formats:
+//   - link    : just the one-line URL
+//   - prompt  : the recommended prompt + link block (default)
+//   - custom  : user-edited freeform text
+type ShareFormat = "link" | "prompt" | "custom";
+
+// Slugify a project name to a project-scope hint suitable for URL/prompt use
+function projectSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+interface ProjectOption {
+  slug: string;
+  name: string;
+}
+
 export function SharePane({ username, userId, clerkId, profileId, plan }: SharePaneProps) {
   const recentBundles = useQuery(
     api.bundles.listRecentBundles,
     userId ? { userId, limit: 3 } : "skip"
+  );
+  // Pull latest bundle so we can list projects for the project-scope selector.
+  const latestBundle = useQuery(
+    api.bundles.getLatestBundle,
+    userId ? { userId } : "skip"
   );
   const links = useQuery(api.contextLinks.listLinks, clerkId ? { clerkId } : "skip");
   const createLink = useMutation(api.contextLinks.createLink);
@@ -333,8 +359,38 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
   const [previewLink, setPreviewLink] = useState<PreviewLink | null>(null);
   const [confirmRevokeLink, setConfirmRevokeLink] = useState<string | null>(null);
 
+  // Project scope selector — empty string means "Full identity"
+  const [projectScope, setProjectScope] = useState<string>("");
+  // Format mode for the share block
+  const [shareFormat, setShareFormat] = useState<ShareFormat>("prompt");
+  // Custom-text buffer when shareFormat === "custom"
+  const [customText, setCustomText] = useState<string>("");
+  // "Preview as agent" panel — shows what the agent will see
+  const [agentPreviewOpen, setAgentPreviewOpen] = useState(false);
+  const [agentPreviewLoading, setAgentPreviewLoading] = useState(false);
+  const [agentPreviewContent, setAgentPreviewContent] = useState<string | null>(null);
+  const [agentPreviewError, setAgentPreviewError] = useState<string | null>(null);
+
   const liveBundle = recentBundles?.find((b) => b.isPublished);
   const publicUrl = `https://you.md/${username}`;
+
+  // Extract projects from the latest bundle's youJson for the scope dropdown
+  const projectOptions: ProjectOption[] = (() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const projects: any[] = (latestBundle?.youJson as any)?.projects ?? [];
+    if (!Array.isArray(projects)) return [];
+    const seen = new Set<string>();
+    const out: ProjectOption[] = [];
+    for (const p of projects) {
+      const name = typeof p === "string" ? p : p?.name;
+      if (!name || typeof name !== "string") continue;
+      const slug = projectSlug(name);
+      if (!slug || seen.has(slug)) continue;
+      seen.add(slug);
+      out.push({ slug, name });
+    }
+    return out;
+  })();
 
   const handleGenerateLink = async () => {
     setCreating(true);
@@ -347,8 +403,59 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
     setCreating(false);
   };
 
-  const activeUrl = generatedUrl || publicUrl;
-  const activePrompt = PROMPT_TEMPLATES[selectedTemplate].prompt(activeUrl);
+  // Build the active URL, optionally tagged with a project-scope hint.
+  // We use a query parameter so it stays valid against existing routes
+  // (the prompt also mentions the project so the agent can scope itself).
+  const baseUrl = generatedUrl || publicUrl;
+  const activeUrl = projectScope
+    ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}project=${encodeURIComponent(projectScope)}`
+    : baseUrl;
+
+  const selectedProject = projectOptions.find((p) => p.slug === projectScope);
+  const projectHintLine = selectedProject
+    ? `\n\nFocus on the project "${selectedProject.name}" — prioritize project-specific context, goals, and constraints from my profile.`
+    : "";
+
+  const basePrompt = PROMPT_TEMPLATES[selectedTemplate].prompt(activeUrl);
+  const activePrompt = `${basePrompt}${projectHintLine}`;
+
+  // Resolve what text the user will actually copy/preview based on format
+  const shareText: string =
+    shareFormat === "link" ? activeUrl : shareFormat === "custom" ? customText : activePrompt;
+
+  // Reset custom buffer to the current prompt when entering custom mode
+  // so the user has something to edit.
+  useEffect(() => {
+    if (shareFormat === "custom" && customText === "") {
+      setCustomText(activePrompt);
+    }
+    // We intentionally only depend on shareFormat — switching modes seeds once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shareFormat]);
+
+  // ── Preview as agent ─────────────────────────────────────────────────
+  //
+  // Hits the same plain-text endpoint that an agent would fetch and shows
+  // the user the actual content the agent will receive.
+  const handlePreviewAsAgent = useCallback(async () => {
+    setAgentPreviewOpen(true);
+    setAgentPreviewLoading(true);
+    setAgentPreviewError(null);
+    setAgentPreviewContent(null);
+    try {
+      // Fetch the plain-text identity endpoint the agent would actually hit.
+      // Note: relative path keeps it environment-agnostic.
+      const url = `/${username}/you.txt`;
+      const res = await fetch(url, { headers: { Accept: "text/plain" } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      setAgentPreviewContent(text);
+    } catch (err) {
+      setAgentPreviewError(err instanceof Error ? err.message : "failed to load preview");
+    } finally {
+      setAgentPreviewLoading(false);
+    }
+  }, [username]);
 
   const hasRealStats = agentStats && agentStats.agents.length > 0;
   const totalInteractions = hasRealStats ? agentStats.totalInteractions : 0;
@@ -418,12 +525,49 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
           copy your identity link + prompt and paste it into any AI conversation.
         </p>
 
+        {/* Project scope selector — defaults to full identity */}
+        <div className="flex items-center gap-2 mb-3">
+          <label
+            htmlFor="share-project-scope"
+            className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60 shrink-0"
+          >
+            scope:
+          </label>
+          <select
+            id="share-project-scope"
+            value={projectScope}
+            onChange={(e) => {
+              setProjectScope(e.target.value);
+              // If we were in custom mode, drop the buffer so it re-seeds with
+              // the newly-scoped prompt the next time the user enters custom.
+              if (shareFormat === "custom") setCustomText("");
+            }}
+            className="flex-1 bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[10px] px-2 py-1 border border-[hsl(var(--border))] focus:border-[hsl(var(--accent))]/40 focus:outline-none"
+            style={{ borderRadius: "2px" }}
+          >
+            <option value="">Full identity</option>
+            {projectOptions.map((p) => (
+              <option key={p.slug} value={p.slug}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          {projectOptions.length === 0 && (
+            <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 shrink-0">
+              no projects yet
+            </span>
+          )}
+        </div>
+
         {/* Agent template selector */}
         <div className="flex items-center gap-1 mb-3 flex-wrap">
           {PROMPT_TEMPLATES.map((t, i) => (
             <button
               key={t.agent}
-              onClick={() => setSelectedTemplate(i)}
+              onClick={() => {
+                setSelectedTemplate(i);
+                if (shareFormat === "custom") setCustomText("");
+              }}
               className={`px-2 py-1 text-[10px] font-mono border transition-colors ${
                 selectedTemplate === i
                   ? "text-[hsl(var(--text-primary))] border-[hsl(var(--accent))]/40 bg-[hsl(var(--bg))]"
@@ -437,62 +581,150 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
           ))}
         </div>
 
-        {/* The copyable prompt block */}
+        {/* Format mode selector — link / prompt / custom */}
+        <div className="flex items-center gap-1 mb-2">
+          {(["prompt", "link", "custom"] as const).map((mode) => {
+            const labels: Record<ShareFormat, string> = {
+              prompt: "prompt + link",
+              link: "one-line url",
+              custom: "custom",
+            };
+            const active = shareFormat === mode;
+            return (
+              <button
+                key={mode}
+                onClick={() => setShareFormat(mode)}
+                className={`px-2 py-1 text-[10px] font-mono border transition-colors ${
+                  active
+                    ? "text-[hsl(var(--accent))] border-[hsl(var(--accent))]/40 bg-[hsl(var(--accent))]/5"
+                    : "text-[hsl(var(--text-secondary))] opacity-40 border-[hsl(var(--border))] hover:opacity-70"
+                }`}
+                style={{ borderRadius: "2px" }}
+              >
+                {labels[mode]}
+                {mode === "prompt" && (
+                  <span className="ml-1 opacity-50">(recommended)</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* The copyable share block */}
         <div
           className="border border-[hsl(var(--accent))]/20 bg-[hsl(var(--bg))] p-3 space-y-3"
           style={{ borderRadius: "2px" }}
         >
-          <pre className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-70 whitespace-pre-wrap leading-relaxed select-all">
-            {activePrompt}
-          </pre>
+          {shareFormat === "custom" ? (
+            <textarea
+              value={customText}
+              onChange={(e) => setCustomText(e.target.value)}
+              spellCheck={false}
+              className="w-full bg-transparent text-[hsl(var(--text-primary))] opacity-80 font-mono text-[11px] leading-relaxed p-0 resize-y min-h-[140px] focus:outline-none"
+            />
+          ) : (
+            <pre className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-70 whitespace-pre-wrap leading-relaxed select-all">
+              {shareText}
+            </pre>
+          )}
+
+          {/* Primary action: big copy button */}
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(shareText);
+              setCopiedPrompt(true);
+              setTimeout(() => setCopiedPrompt(false), 2000);
+            }}
+            className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 text-[12px] font-mono font-semibold border-2 transition-colors ${
+              copiedPrompt
+                ? "border-[hsl(var(--success))]/60 text-[hsl(var(--success))] bg-[hsl(var(--success))]/10"
+                : "border-[hsl(var(--accent))]/60 text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/5 hover:bg-[hsl(var(--accent-wash))]"
+            }`}
+            style={{ borderRadius: "2px" }}
+          >
+            {copiedPrompt ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                copied
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+                {shareFormat === "link"
+                  ? "copy link"
+                  : shareFormat === "custom"
+                    ? "copy custom text"
+                    : "copy prompt + link"}
+              </>
+            )}
+          </button>
+
+          {/* Secondary actions */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(activePrompt);
-                setCopiedPrompt(true);
-                setTimeout(() => setCopiedPrompt(false), 2000);
-              }}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-[11px] font-mono border transition-colors ${
-                copiedPrompt
-                  ? "border-[hsl(var(--success))]/40 text-[hsl(var(--success))] bg-[hsl(var(--success))]/5"
-                  : "border-[hsl(var(--accent))]/30 text-[hsl(var(--accent))] hover:bg-[hsl(var(--accent-wash))]"
-              }`}
-              style={{ borderRadius: "2px" }}
-            >
-              {copiedPrompt ? (
-                <>
-                  <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  copied
-                </>
-              ) : (
-                <>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                  </svg>
-                  copy prompt + link
-                </>
-              )}
-            </button>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(activeUrl);
                 setCopiedLink(true);
                 setTimeout(() => setCopiedLink(false), 2000);
               }}
-              className={`px-3 py-2 text-[11px] font-mono border transition-colors ${
+              className={`flex-1 px-3 py-1.5 text-[10px] font-mono border transition-colors ${
                 copiedLink
                   ? "border-[hsl(var(--success))]/40 text-[hsl(var(--success))] bg-[hsl(var(--success))]/5"
                   : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40"
               }`}
               style={{ borderRadius: "2px" }}
             >
-              {copiedLink ? "copied" : "link only"}
+              {copiedLink ? "copied" : "copy url only"}
+            </button>
+            <button
+              onClick={handlePreviewAsAgent}
+              className="flex-1 px-3 py-1.5 text-[10px] font-mono border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/40 transition-colors"
+              style={{ borderRadius: "2px" }}
+            >
+              preview as agent
             </button>
           </div>
         </div>
+
+        {/* Preview-as-agent collapsible panel */}
+        {agentPreviewOpen && (
+          <div
+            className="mt-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3"
+            style={{ borderRadius: "2px" }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60">
+                this is what the agent will see
+              </span>
+              <button
+                onClick={() => setAgentPreviewOpen(false)}
+                className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-100"
+              >
+                [close]
+              </button>
+            </div>
+            {agentPreviewLoading && (
+              <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 animate-pulse">
+                fetching agent view...
+              </p>
+            )}
+            {agentPreviewError && (
+              <p className="font-mono text-[10px] text-[hsl(var(--accent))]">
+                error: {agentPreviewError}
+              </p>
+            )}
+            {agentPreviewContent && (
+              <pre className="font-mono text-[10px] text-[hsl(var(--text-primary))] opacity-70 whitespace-pre-wrap leading-relaxed max-h-[260px] overflow-y-auto">
+                {agentPreviewContent}
+              </pre>
+            )}
+          </div>
+        )}
 
         {/* Generate a scoped/expiring link */}
         <div className="mt-3">

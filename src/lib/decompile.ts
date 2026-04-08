@@ -340,11 +340,52 @@ Full structured data: see you.json
 }
 
 /**
+ * Public root files and directories — everything else is presented under private/.
+ */
+const PUBLIC_ROOT_FILES_TREE = new Set(["you.json", "you.md", "manifest.json"]);
+const PUBLIC_DIRS_TREE = new Set(["profile"]);
+
+function isTopLevelPublic(name: string, isFile: boolean): boolean {
+  if (isFile) return PUBLIC_ROOT_FILES_TREE.has(name);
+  return PUBLIC_DIRS_TREE.has(name);
+}
+
+/**
+ * Display name for files inside subdirectories. README.md is renamed to
+ * agent.md visually because agent.md is the standard convention for AI
+ * agent instructions in subdirectories. Underlying path stays README.md
+ * for backwards compat.
+ */
+function displayName(filename: string): string {
+  if (filename === "README.md") return "agent.md";
+  return filename;
+}
+
+/**
  * Build a file tree structure from a flat list of virtual files.
+ *
+ * Visual hierarchy:
+ * - Public root: you.json, you.md, manifest.json, profile/ (with all its contents)
+ * - private/ (synthetic directory containing everything else)
+ *   - private/projects/, private/sessions/, private/voice/, etc.
+ *   - private/preferences/, private/directives/, private/memory/
+ *   - User-created directories
+ *
+ * This is a PRESENTATION-only restructure. Underlying paths in the bundle
+ * stay the same for backwards compatibility — when reading/writing files,
+ * the FilesPane uses `realPath` (the original path) not the visual path.
  */
 export function buildFileTree(files: VirtualFile[]): FileTreeNode[] {
   const root: FileTreeNode[] = [];
   const dirs = new Map<string, FileTreeNode>();
+
+  // Synthetic private/ container
+  const privateNode: FileTreeNode = {
+    name: "private",
+    path: "private",
+    type: "directory",
+    children: [],
+  };
 
   // Sort files so directories come first, then alphabetically
   const sorted = [...files].sort((a, b) => {
@@ -358,11 +399,26 @@ export function buildFileTree(files: VirtualFile[]): FileTreeNode[] {
     const parts = file.path.split("/");
 
     if (parts.length === 1) {
-      // Root-level file
-      root.push({ name: parts[0], path: file.path, type: "file" });
+      // Root-level file — public root files only at the top
+      const node: FileTreeNode = {
+        name: parts[0],
+        path: file.path,
+        type: "file",
+      };
+      if (isTopLevelPublic(parts[0], true)) {
+        root.push(node);
+      } else {
+        // Non-public root file — nest under private/
+        privateNode.children!.push(node);
+      }
     } else {
-      // Ensure parent directories exist
+      // File inside a directory
+      const topDir = parts[0];
       const dirPath = parts.slice(0, -1).join("/");
+      const fileName = parts[parts.length - 1];
+      const isPublicDir = isTopLevelPublic(topDir, false);
+
+      // Get or create the dir node
       if (!dirs.has(dirPath)) {
         const dirNode: FileTreeNode = {
           name: parts[parts.length - 2],
@@ -371,17 +427,30 @@ export function buildFileTree(files: VirtualFile[]): FileTreeNode[] {
           children: [],
         };
         dirs.set(dirPath, dirNode);
-        root.push(dirNode);
+
+        if (parts.length === 2) {
+          // Top-level directory: place under root or under private/
+          if (isPublicDir) {
+            root.push(dirNode);
+          } else {
+            privateNode.children!.push(dirNode);
+          }
+        }
       }
 
-      // Add file to directory
+      // Add file to its parent dir
       const dir = dirs.get(dirPath)!;
       dir.children!.push({
-        name: parts[parts.length - 1],
-        path: file.path,
+        name: displayName(fileName),
+        path: file.path, // keep real path for I/O
         type: "file",
       });
     }
+  }
+
+  // Only show private/ if it has children
+  if (privateNode.children && privateNode.children.length > 0) {
+    root.push(privateNode);
   }
 
   return root;

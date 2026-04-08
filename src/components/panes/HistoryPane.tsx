@@ -40,7 +40,9 @@ interface HistoryPaneProps {
 
 export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
   const history = useQuery(api.bundles.getHistory, { userId });
-  const agentStats = useQuery(api.bundles.getAgentStats, { userId });
+  // Use the new activity table (same source as agents tab) instead of legacy bundles.getAgentStats
+  const userStats = useQuery((api as any).activity.userActivityStats, { clerkId });
+  const agentSummary = useQuery((api as any).activity.agentSummary, { clerkId });
   const rollback = useMutation(api.bundles.rollbackToVersion);
   const publishBundle = useMutation(api.bundles.publishBundle);
   const [rolling, setRolling] = useState(false);
@@ -63,33 +65,45 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
       {/* Agent Activity */}
       <div>
         <PaneSectionLabel>agent activity</PaneSectionLabel>
-        {agentStats === undefined ? (
+        {userStats === undefined ? (
           <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-40 animate-pulse">loading...</p>
         ) : (
           <div className="space-y-3">
             <div className="flex items-center gap-4 text-[11px] font-mono">
-              <span className="text-[hsl(var(--success))]">{agentStats.totalReads} reads</span>
+              <span className="text-[hsl(var(--success))]">{userStats.reads} reads</span>
               <span className="text-[hsl(var(--text-secondary))] opacity-20">|</span>
-              <span className="text-[hsl(var(--accent))]">{agentStats.totalWrites} writes</span>
+              <span className="text-[hsl(var(--accent))]">{userStats.writes} writes</span>
+              <span className="text-[hsl(var(--text-secondary))] opacity-20">|</span>
+              <span className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px]">
+                {userStats.verifiedReads} verified · {userStats.selfReads} self
+              </span>
             </div>
-            {agentStats.interactions.length > 0 && (
+            {agentSummary && agentSummary.length > 0 && (
               <div className="space-y-1">
-                {agentStats.interactions.slice(0, 10).map((i: any) => (
-                  <div key={i._id} className="flex items-center justify-between text-[10px] font-mono">
-                    <span className="text-[hsl(var(--text-primary))] opacity-70">
-                      {i.agentName}
-                      <span className="text-[hsl(var(--text-secondary))] opacity-30 ml-1.5">
-                        {i.agentType}
+                {agentSummary.slice(0, 10).map((a: any) => {
+                  const trustBadge =
+                    a.trustLevel === "verified-third-party" ? (
+                      <span className="text-[hsl(var(--success))] text-[9px] ml-1.5" title="External agent fetched anonymously or via context-link token">verified</span>
+                    ) : a.trustLevel === "self-attributed" ? (
+                      <span className="text-yellow-500 text-[9px] ml-1.5" title="Authenticated as you (API key) — agent name is self-reported">self</span>
+                    ) : a.trustLevel === "mixed" ? (
+                      <span className="text-cyan-400 text-[9px] ml-1.5" title="Mix of verified third-party and self-attributed events">mixed</span>
+                    ) : null;
+                  return (
+                    <div key={a.agentName} className="flex items-center justify-between text-[10px] font-mono">
+                      <span className="text-[hsl(var(--text-primary))] opacity-70">
+                        {a.agentName}
+                        {trustBadge}
                       </span>
-                    </span>
-                    <span className="text-[hsl(var(--text-secondary))] opacity-30">
-                      {i.interactionCount}x &middot; {timeAgo(i.lastInteractionAt)}
-                    </span>
-                  </div>
-                ))}
+                      <span className="text-[hsl(var(--text-secondary))] opacity-30">
+                        {a.reads}r {a.writes}w &middot; {timeAgo(a.lastSeen)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
-            {agentStats.interactions.length === 0 && (
+            {userStats.total === 0 && (
               <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30">
                 no agent interactions tracked yet.
               </p>

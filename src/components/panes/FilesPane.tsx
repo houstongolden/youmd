@@ -19,6 +19,61 @@ function getExtLabel(path: string): string {
   return "text";
 }
 
+// ── Visibility helpers ──────────────────────────────────────────────────
+//
+// Public  = accessible by any agent that hits your you.md profile URL
+// Private = requires a context link with token, or authenticated CLI access
+//
+// Public surfaces:
+//   - root: you.json, you.md, manifest.json
+//   - profile/ (and everything inside it)
+// Everything else (sessions/, sources/, voice/, projects/, skills/,
+// directives/, memory/, preferences/, private/, custom dirs) is private.
+
+const PUBLIC_ROOT_FILES = new Set(["you.json", "you.md", "manifest.json"]);
+const PUBLIC_DIRS = new Set(["profile"]);
+
+function isPublicPath(path: string): boolean {
+  if (!path) return false;
+  // Strip a leading slash if it ever exists
+  const p = path.startsWith("/") ? path.slice(1) : path;
+  // Root-level files
+  if (!p.includes("/")) return PUBLIC_ROOT_FILES.has(p);
+  // Directory-rooted files
+  const top = p.split("/")[0];
+  return PUBLIC_DIRS.has(top);
+}
+
+const PUBLIC_TOOLTIP = "Public — accessible by any agent with your you.md profile URL";
+const PRIVATE_TOOLTIP = "Private — requires context link with token or authenticated CLI access";
+
+function VisibilityIcon({ isPublic }: { isPublic: boolean }) {
+  // Globe for public, lock for private. Sized + colored to match the
+  // monochrome + burnt orange terminal aesthetic.
+  if (isPublic) {
+    return (
+      <span
+        title={PUBLIC_TOOLTIP}
+        aria-label="public"
+        className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-70 shrink-0 leading-none select-none"
+        style={{ width: "10px", display: "inline-flex", justifyContent: "center" }}
+      >
+        {"\u25CB"}
+      </span>
+    );
+  }
+  return (
+    <span
+      title={PRIVATE_TOOLTIP}
+      aria-label="private"
+      className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 shrink-0 leading-none select-none"
+      style={{ width: "10px", display: "inline-flex", justifyContent: "center" }}
+    >
+      {"\u25CF"}
+    </span>
+  );
+}
+
 // ── Simple Markdown Renderer ────────────────────────────────────────────
 
 function renderMarkdown(source: string): string {
@@ -151,16 +206,21 @@ function FileTreeItem({
   const indent = depth * 12;
 
   if (node.type === "directory") {
+    // A directory's visibility is determined by checking a synthetic file
+    // path inside it. profile/ is public; everything else is private.
+    const dirPublic = isPublicPath(`${node.path}/_`);
     return (
       <div>
         <button
           onClick={() => setExpanded(!expanded)}
+          title={dirPublic ? PUBLIC_TOOLTIP : PRIVATE_TOOLTIP}
           className="w-full flex items-center gap-1.5 px-2 py-1 text-left hover:bg-[hsl(var(--bg))] transition-colors"
           style={{ paddingLeft: `${8 + indent}px` }}
         >
           <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 w-3">
             {expanded ? "v" : ">"}
           </span>
+          <VisibilityIcon isPublic={dirPublic} />
           <span className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-70">
             {node.name}/
           </span>
@@ -178,9 +238,11 @@ function FileTreeItem({
     );
   }
 
+  const filePublic = isPublicPath(node.path);
   return (
     <button
       onClick={() => onSelect(node.path)}
+      title={filePublic ? PUBLIC_TOOLTIP : PRIVATE_TOOLTIP}
       className={`w-full flex items-center gap-1.5 px-2 py-1 text-left transition-colors ${
         node.path === selectedPath
           ? "bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]"
@@ -188,6 +250,7 @@ function FileTreeItem({
       }`}
       style={{ paddingLeft: `${20 + indent}px` }}
     >
+      <VisibilityIcon isPublic={filePublic} />
       <span className="font-mono text-[10px] opacity-30">-</span>
       <span className="font-mono text-[10px] truncate">{node.name}</span>
     </button>
@@ -231,6 +294,7 @@ function FileViewer({
               {"<"} back
             </button>
           )}
+          <VisibilityIcon isPublic={isPublicPath(file.path)} />
           <span className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80 truncate">
             {file.path}
           </span>
