@@ -170,6 +170,23 @@ export const createUser = mutation({
   },
 });
 
+/** Admin: set a user's plan (for testing pro features without billing) */
+export const setUserPlan = mutation({
+  args: {
+    username: v.string(),
+    plan: v.union(v.literal("free"), v.literal("pro")),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_username", (q) => q.eq("username", args.username.toLowerCase()))
+      .first();
+    if (!user) throw new Error("user not found");
+    await ctx.db.patch(user._id, { plan: args.plan });
+    return { username: user.username, plan: args.plan };
+  },
+});
+
 export const getByClerkId = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {

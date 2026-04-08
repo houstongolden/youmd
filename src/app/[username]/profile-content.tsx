@@ -456,6 +456,79 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
           </div>
         </motion.section>
 
+        {/* ═══ FOR AGENTS (prominent, above the fold) ═══ */}
+        {!showRawJson && (
+          <motion.section
+            {...delay(1)}
+            id="for-agents"
+            className="mb-6 scroll-mt-20"
+          >
+            <div
+              className="relative border border-[hsl(var(--accent))]/40 bg-[hsl(var(--accent))]/[0.03] p-4 font-mono text-[11px]"
+              style={{ borderRadius: "2px" }}
+            >
+              {/* Accent stripe */}
+              <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[hsl(var(--accent))]/60" />
+
+              {/* Header row: AGENT-READY tag + label */}
+              <div className="flex items-center justify-between mb-3 pl-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-[hsl(var(--accent))] font-medium border border-[hsl(var(--accent))]/40 bg-[hsl(var(--accent))]/10 px-1.5 py-0.5" style={{ borderRadius: "2px" }}>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--accent))] status-dot-pulse" />
+                    agent-ready
+                  </span>
+                  <span className="text-[10px] text-[hsl(var(--text-secondary))] opacity-60">
+                    this profile has structured endpoints
+                  </span>
+                </div>
+              </div>
+
+              {/* Endpoints */}
+              <div className="pl-2 space-y-1">
+                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px]">direct endpoints (no JS required):</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[hsl(var(--accent))]">GET you.md/{username}/you.json</p>
+                  <CopyButton
+                    text={`https://you.md/${username}/you.json`}
+                    className="text-[9px] font-mono px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-60 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30 transition-colors"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-[hsl(var(--accent))] opacity-70">GET you.md/{username}/you.txt</p>
+                  <CopyButton
+                    text={`https://you.md/${username}/you.txt`}
+                    className="text-[9px] font-mono px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-60 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30 transition-colors"
+                  />
+                </div>
+
+                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">preferred retrieval order:</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-70">1. /{username}/you.json -- structured identity context</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-70">2. /{username}/you.txt -- plain text markdown</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-70">3. /{username} -- HTML profile (requires JS)</p>
+
+                {voice && (
+                  <>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">voice:</p>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-70">{voice}</p>
+                  </>
+                )}
+                {preferences?.agent?.tone && (
+                  <>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">tone:</p>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-70">{preferences.agent.tone}</p>
+                  </>
+                )}
+                {preferences?.agent?.avoid?.length > 0 && (
+                  <>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">avoid:</p>
+                    <p className="text-[hsl(var(--text-secondary))] opacity-70">{preferences.agent.avoid.join(", ")}</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </motion.section>
+        )}
+
         <Divider />
 
         {/* ═══ RAW JSON VIEW ═══ */}
@@ -717,39 +790,6 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                 ))}
               </>
             )}
-
-            {/* ═══ FOR AGENTS ═══ */}
-            <Divider />
-            <motion.section {...delay(8 + ((data.custom_sections as unknown[])?.length || 0))}>
-              <SectionLabel>for agents</SectionLabel>
-              <div className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] mt-3 space-y-2 font-mono text-[11px]" style={{ borderRadius: "2px" }}>
-                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px]">direct endpoints (no JS required):</p>
-                <p className="text-[hsl(var(--accent))]">GET you.md/{username}/you.json</p>
-                <p className="text-[hsl(var(--accent))] opacity-70">GET you.md/{username}/you.txt</p>
-                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">preferred retrieval order:</p>
-                <p className="text-[hsl(var(--text-secondary))] opacity-70">1. /{username}/you.json -- structured identity context</p>
-                <p className="text-[hsl(var(--text-secondary))] opacity-70">2. /{username}/you.txt -- plain text markdown</p>
-                <p className="text-[hsl(var(--text-secondary))] opacity-70">3. /{username} -- HTML profile (requires JS)</p>
-                {voice && (
-                  <>
-                    <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">voice:</p>
-                    <p className="text-[hsl(var(--text-secondary))] opacity-70">{voice}</p>
-                  </>
-                )}
-                {preferences?.agent?.tone && (
-                  <>
-                    <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">tone:</p>
-                    <p className="text-[hsl(var(--text-secondary))] opacity-70">{preferences.agent.tone}</p>
-                  </>
-                )}
-                {preferences?.agent?.avoid?.length > 0 && (
-                  <>
-                    <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">avoid:</p>
-                    <p className="text-[hsl(var(--text-secondary))] opacity-70">{preferences.agent.avoid.join(", ")}</p>
-                  </>
-                )}
-              </div>
-            </motion.section>
 
             {/* ═══ EXPORT ═══ */}
             <Divider />

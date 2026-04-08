@@ -202,13 +202,29 @@ http.route({
       });
     }
 
-    return json({
-      schema: "you-md/v1",
-      username: result.username,
-      scope: result.scope,
-      ...(result.bundle as Record<string, unknown>),
-      ...(result.privateContext ? { privateContext: result.privateContext } : {}),
-    });
+    return new Response(
+      JSON.stringify(
+        {
+          schema: "you-md/v1",
+          username: result.username,
+          scope: result.scope,
+          ...(result.bundle as Record<string, unknown>),
+          ...(result.privateContext
+            ? { _privateContext: result.privateContext }
+            : {}),
+        },
+        null,
+        2
+      ),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/vnd.you-md.v1+json",
+          Link: SCHEMA_LINK_HEADER,
+          ...CORS_HEADERS,
+        },
+      }
+    );
   }),
 });
 

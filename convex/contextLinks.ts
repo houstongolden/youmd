@@ -248,7 +248,7 @@ export const resolveLink = query({
 
     if (!published) return { error: "No published bundle", status: 404 };
 
-    return {
+    const fallbackResult: Record<string, unknown> = {
       bundle: {
         ...published.youJson,
         _scope: link.scope,
@@ -257,6 +257,32 @@ export const resolveLink = query({
       username: user.username,
       scope: link.scope,
     };
+
+    // Include private context for full-scope links (look up by user's profile)
+    if (link.scope === "full") {
+      const userProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
+        .first();
+      if (userProfile) {
+        const privateCtx = await ctx.db
+          .query("privateContext")
+          .withIndex("by_profileId", (q) => q.eq("profileId", userProfile._id))
+          .first();
+        if (privateCtx) {
+          fallbackResult.privateContext = {
+            privateNotes: privateCtx.privateNotes,
+            privateProjects: privateCtx.privateProjects,
+            internalLinks: privateCtx.internalLinks,
+            calendarContext: privateCtx.calendarContext,
+            communicationPrefs: privateCtx.communicationPrefs,
+            customData: privateCtx.customData,
+          };
+        }
+      }
+    }
+
+    return fallbackResult;
   },
 });
 
