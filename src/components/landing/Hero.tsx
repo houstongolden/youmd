@@ -106,8 +106,12 @@ const Hero = () => {
       {/* Beam glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[80%] beam-glow pointer-events-none" />
 
-      {/* BG texture */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none select-none opacity-[0.02]">
+      {/* BG texture — decorative, hidden from screen readers */}
+      <div
+        aria-hidden="true"
+        role="presentation"
+        className="absolute inset-0 overflow-hidden pointer-events-none select-none opacity-[0.02]"
+      >
         <p className="font-mono text-[6px] leading-none text-[hsl(var(--text-primary))] break-all whitespace-pre-wrap">
           {`$@B%8&#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/|()1{}?-_+~<>i!lI;:,". `.repeat(300)}
         </p>

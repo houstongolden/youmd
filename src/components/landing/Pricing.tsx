@@ -46,13 +46,13 @@ const Pricing = () => (
               </span>
             </div>
             <div className="space-y-2 font-mono text-[11px] text-muted-foreground mb-5">
-              <p>{"  "}&check; Full identity context via CLI or web</p>
-              <p>{"  "}&check; Public profile at you.md/username</p>
-              <p>{"  "}&check; 4 bundled agent skills (CLAUDE.md gen, project scaffold, voice sync, meta-improve)</p>
-              <p>{"  "}&check; Skill sync across Claude Code, Cursor, Codex</p>
-              <p>{"  "}&check; Shareable context links with scoping</p>
-              <p>{"  "}&check; Agent directives + voice profile</p>
-              <p>{"  "}&check; API access for any agent</p>
+              <p>{"  "}✓ Full identity context via CLI or web</p>
+              <p>{"  "}✓ Public profile at you.md/username</p>
+              <p>{"  "}✓ 4 bundled agent skills (CLAUDE.md gen, project scaffold, voice sync, meta-improve)</p>
+              <p>{"  "}✓ Skill sync across Claude Code, Cursor, Codex</p>
+              <p>{"  "}✓ Shareable context links with scoping</p>
+              <p>{"  "}✓ Agent directives + voice profile</p>
+              <p>{"  "}✓ API access for any agent</p>
             </div>
             <Link
               href="/create"

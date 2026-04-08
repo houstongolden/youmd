@@ -59,7 +59,10 @@ const FAQItem = ({
       style={{ borderRadius: "2px" }}
     >
       <button
+        type="button"
         onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={`faq-panel-${index}`}
         className="w-full text-left px-5 py-4 flex items-center justify-between gap-4 cursor-pointer"
       >
         <span className="font-mono text-[12px] text-accent leading-relaxed">
@@ -76,6 +79,7 @@ const FAQItem = ({
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
+            id={`faq-panel-${index}`}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
