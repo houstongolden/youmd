@@ -122,10 +122,13 @@ const Hero = () => {
         <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
           {/* LEFT — branding & commands */}
           <div className="flex-1 text-left">
-            {/* Pixel YOU */}
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.3 }} className="mb-6">
-              <PixelYOU />
-            </motion.div>
+            {/* Pixel YOU — wrapped in h1 for SEO + a11y. Visible glyph is decorative; sr-only text gives semantic meaning. */}
+            <motion.h1 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.3 }} className="mb-6">
+              <span className="sr-only">you.md — identity context protocol for the agent internet</span>
+              <span aria-hidden="true">
+                <PixelYOU />
+              </span>
+            </motion.h1>
 
             {/* Boot sequence */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.8 }} className="mb-6">

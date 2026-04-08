@@ -75,3 +75,32 @@ Issues found go BOTH here (with full context) AND to `audit/improvements.md` (as
 - Console errors: 0
 
 ---
+
+## Cycle 2 — Fix P0: missing h1 on landing — 2026-04-08 16:56 UTC
+
+**Tool:** Edit + tsc
+**Status:** DONE — fix applied, type-check passes
+
+### What was done
+Wrapped the PixelYOU visual in `<motion.h1>` with screen-reader-only text:
+
+```tsx
+<motion.h1 ... className="mb-6">
+  <span className="sr-only">you.md — identity context protocol for the agent internet</span>
+  <span aria-hidden="true">
+    <PixelYOU />
+  </span>
+</motion.h1>
+```
+
+The visual pixel "YOU" is now decorative (aria-hidden) and the h1 has semantic
+text for SEO and screen readers. Tailwind v4 ships `sr-only` as a built-in utility.
+
+### Verification
+- Type-check: PASS (`npx tsc --noEmit` clean)
+- Live verification deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: top P0 from improvements.md
+- Moved to DONE in improvements.md
+- Lock held throughout

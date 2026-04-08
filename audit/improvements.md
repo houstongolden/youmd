@@ -13,13 +13,6 @@ Severity:
 
 ## TODO
 
-### [P0] Landing page has 0 h1 elements (cycle 1)
-- File: `src/components/landing/Hero.tsx`
-- Issue: PixelYOU big "YOU" logo is rendered as DIV/spans, not wrapped in `<h1>`
-- Fix: Wrap PixelYOU in an `<h1>` with `sr-only` text "you.md — identity context protocol"
-- Why P0: critical SEO issue + a11y. Search engines have no semantic page title, screen readers can't navigate by heading
-- Found by: cycle 1 page semantics check (h1Count: 0)
-
 ### [P1] Landing page has 0 main element (cycle 1)
 - File: `src/app/page.tsx` (or wherever the landing page root is)
 - Issue: Sections are wrapped in plain `<div>` not `<main>`
@@ -35,6 +28,11 @@ Severity:
 - Found by: cycle 1 page semantics check (h2Count: 1)
 
 ## DONE
+
+### [P0] Landing page has 0 h1 elements — cycle 2, 2026-04-08
+- File: `src/components/landing/Hero.tsx:125-131`
+- Fix: wrapped PixelYOU in `<motion.h1>` with `sr-only` text "you.md — identity context protocol for the agent internet" for screen readers, and `aria-hidden="true"` on the visual PixelYOU span so it's not double-announced
+- Commit: pending
 
 ### [P1] &check; rendered as literal text in pricing — cycle 1, 2026-04-08
 - File: `src/components/landing/Pricing.tsx:49-55`
