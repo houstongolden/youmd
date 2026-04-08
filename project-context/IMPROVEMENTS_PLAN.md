@@ -398,12 +398,12 @@ After completing the fixes, run THIS test sequence (not the paste-blob version I
 | 2 — MCP Server | 6 | 6 | 0 |
 | 3 — Context Links | 5 | 5 | 0 |
 | 4 — CLI UX | 5 | 5 | 0 |
-| 5 — Web UX | 7 | 1 | 0 |
-| 6 — Bundle + Vault | 2 | 0 | 0 |
-| 7 — Onboarding | 2 | 0 | 0 |
+| 5 — Web UX | 7 | 7 | 0 |
+| 6 — Bundle + Vault | 2 | 2 | 0 |
+| 7 — Onboarding | 2 | 2 | 0 |
 | 8 — Cross-Agent Activity | 8 | 8 | 0 |
-| 9 — File System & UX Restructure | 8 | 0 | 0 |
-| **Total** | **48** | **30** | **0** |
+| 9 — File System & UX Restructure | 8 | 8 | 0 |
+| **Total** | **48** | **48 (100%)** | **0** |
 
 ---
 
