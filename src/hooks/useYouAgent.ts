@@ -250,12 +250,55 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     };
   }, [displayMessages, messages, user?.id, initialized, isOnboarding, saveChatMessages]);
 
-  // Auto-scroll to bottom — but only if the user is already near the bottom.
-  // Otherwise streaming chunks would yank the user away from a message
-  // they're trying to read further up.
+  // Track whether the initial scroll-to-bottom has happened, and whether the
+  // user has actively scrolled up since the last assistant message started.
+  // - On first load: ALWAYS jump to the bottom (the user wants to see the
+  //   most recent state)
+  // - During streaming: ALWAYS follow the bottom unless the user manually
+  //   scrolled up
+  // - After scroll-up: respect their position until they scroll back to bottom
+  const hasInitialScrolledRef = useRef(false);
+  const userScrolledUpRef = useRef(false);
+  const lastScrollTopRef = useRef(0);
+
+  // Track manual user scroll-up to detach from auto-follow
   useEffect(() => {
     const endEl = messagesEndRef.current;
     if (!endEl) return;
+
+    let scrollContainer: HTMLElement | null = endEl.parentElement;
+    while (scrollContainer) {
+      const overflowY = getComputedStyle(scrollContainer).overflowY;
+      if (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") break;
+      scrollContainer = scrollContainer.parentElement;
+    }
+    if (!scrollContainer) return;
+    const container = scrollContainer;
+
+    const onScroll = () => {
+      const currentTop = container.scrollTop;
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+      // If the user is now within 80px of the bottom, re-attach to auto-follow
+      if (distanceFromBottom < 80) {
+        userScrolledUpRef.current = false;
+      } else if (currentTop < lastScrollTopRef.current - 5) {
+        // Detected manual upward scroll (>5px) — detach from auto-follow
+        userScrolledUpRef.current = true;
+      }
+      lastScrollTopRef.current = currentTop;
+    };
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Auto-scroll to bottom.
+  // - First render with messages: ALWAYS scroll to bottom (force jump, no smooth)
+  // - During streaming / new messages: ALWAYS follow unless user manually scrolled up
+  useEffect(() => {
+    const endEl = messagesEndRef.current;
+    if (!endEl) return;
+    if (displayMessages.length === 0) return;
 
     // Walk up to find the nearest scrollable ancestor
     let scrollContainer: HTMLElement | null = endEl.parentElement;
@@ -266,17 +309,42 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }
 
     if (!scrollContainer) {
-      endEl.scrollIntoView({ behavior: "smooth" });
+      if (!userScrolledUpRef.current) {
+        endEl.scrollIntoView({ behavior: hasInitialScrolledRef.current ? "smooth" : "auto" });
+      }
+      hasInitialScrolledRef.current = true;
       return;
     }
 
-    // If the user has scrolled up more than ~120px from the bottom, leave them alone
-    const distanceFromBottom =
-      scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight;
-    if (distanceFromBottom > 120) return;
+    // FIRST render with messages: force jump to bottom (defer to next frame
+    // so the DOM has actually painted the messages)
+    if (!hasInitialScrolledRef.current) {
+      requestAnimationFrame(() => {
+        scrollContainer!.scrollTop = scrollContainer!.scrollHeight;
+        requestAnimationFrame(() => {
+          scrollContainer!.scrollTop = scrollContainer!.scrollHeight;
+          lastScrollTopRef.current = scrollContainer!.scrollTop;
+        });
+      });
+      hasInitialScrolledRef.current = true;
+      return;
+    }
+
+    // Subsequent updates (streaming or new messages): follow bottom UNLESS
+    // the user has manually scrolled up. This fixes Houston's complaint that
+    // streaming responses weren't auto-scrolling.
+    if (userScrolledUpRef.current) return;
 
     scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    lastScrollTopRef.current = scrollContainer.scrollTop;
   }, [displayMessages, isThinking, progressSteps]);
+
+  // Whenever the user sends a new message, re-attach to auto-follow
+  useEffect(() => {
+    if (isThinking) {
+      userScrolledUpRef.current = false;
+    }
+  }, [isThinking]);
 
   // Auto-resize textarea
   useEffect(() => {
