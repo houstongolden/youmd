@@ -302,3 +302,26 @@ export const incrementUseCount = mutation({
     }
   },
 });
+
+/**
+ * Lightweight lookup — returns only the link's ids/scope metadata for the
+ * cross-agent activity logger. Does NOT return bundle content (use
+ * `resolveLink` for that).
+ */
+export const getLinkMeta = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const link = await ctx.db
+      .query("contextLinks")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .first();
+    if (!link) return null;
+    return {
+      _id: link._id,
+      userId: link.userId,
+      profileId: link.profileId,
+      scope: link.scope,
+      name: link.name,
+    };
+  },
+});

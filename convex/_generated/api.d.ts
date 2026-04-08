@@ -8,12 +8,14 @@
  * @module
  */
 
+import type * as activity from "../activity.js";
 import type * as apiKeys from "../apiKeys.js";
 import type * as bundles from "../bundles.js";
 import type * as chat from "../chat.js";
 import type * as cleanup from "../cleanup.js";
 import type * as contextLinks from "../contextLinks.js";
 import type * as http from "../http.js";
+import type * as lib_agentDetect from "../lib/agentDetect.js";
 import type * as lib_compile from "../lib/compile.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as lib_openrouter from "../lib/openrouter.js";
@@ -45,12 +47,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  activity: typeof activity;
   apiKeys: typeof apiKeys;
   bundles: typeof bundles;
   chat: typeof chat;
   cleanup: typeof cleanup;
   contextLinks: typeof contextLinks;
   http: typeof http;
+  "lib/agentDetect": typeof lib_agentDetect;
   "lib/compile": typeof lib_compile;
   "lib/hash": typeof lib_hash;
   "lib/openrouter": typeof lib_openrouter;

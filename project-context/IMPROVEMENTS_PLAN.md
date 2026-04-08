@@ -4,6 +4,12 @@
 **Source:** Critical QA review revealed many "passing" tests were actually weak.
 **Goal:** Fix every gap, retest with REAL one-line context link flow (not paste blobs), and ship a product that actually delivers the "share one URL, agent knows everything" value prop.
 
+## Related Plans
+
+- **[CROSS_AGENT_ACTIVITY_PLAN.md](./CROSS_AGENT_ACTIVITY_PLAN.md)** — The universal visibility layer. Every agent action logged, viewable in real-time across web/CLI/in-IDE. This is what makes you.md verifiable. **(Tier 8 below)**
+- **[G2M_TESTING_PLAN.md](./G2M_TESTING_PLAN.md)** — Comprehensive testing across 16 agent platforms.
+- **[TEST_RESULTS_REAL.md](./TEST_RESULTS_REAL.md)** — Real one-line context link test results.
+
 ---
 
 ## The Critical Realization
@@ -200,6 +206,58 @@ The whole point of you.md is **share one URL → agent fetches structured identi
   - Streaming responses for slower operations
   - **Pass criteria:** First agent message appears within 2 seconds of starting `youmd init`
 
+### Tier 8 — Cross-Agent Activity Visibility (THE BIG ONE)
+
+**Full plan: [CROSS_AGENT_ACTIVITY_PLAN.md](./CROSS_AGENT_ACTIVITY_PLAN.md)**
+
+The universal visibility layer. Every agent interaction with your identity is logged, versioned, and visible in real-time across web shell, CLI, and in-IDE slash commands. This is the verification layer that makes you.md provable.
+
+- [ ] **8.1 New `agentActivity` schema + activity.ts mutations/queries**
+  - Unified table for all agent actions across MCP/API/context-link/CLI
+  - `logActivity`, `listActivity`, `agentSummary` functions
+  - **Pass criteria:** Activity table populated when any endpoint called
+
+- [ ] **8.2 User-Agent detection library**
+  - `convex/lib/agentDetect.ts` parses User-Agent strings
+  - Identifies Claude Code, Cursor, ChatGPT, Gemini, Grok, Perplexity, Codex, etc.
+  - **Pass criteria:** Different agents show distinct names in logs
+
+- [ ] **8.3 Wire activity logging into all endpoints**
+  - Every read/write/push/publish/memory/skill action logs to `agentActivity`
+  - Captures bundle version diffs (before/after)
+  - **Pass criteria:** Real curl test shows activity in DB
+
+- [ ] **8.4 MCP server activity logging**
+  - Every MCP tool call logs activity (whoami, get_identity, update_section, etc.)
+  - New `get_activity_log` MCP tool agents can call
+  - **Pass criteria:** MCP tools each create activity entries
+
+- [ ] **8.5 Web `AgentsPane` in /shell with real-time feed**
+  - New tab alongside profile/files/share/skills/etc.
+  - Shows connected agents (active/idle)
+  - Live activity feed (auto-updates via Convex)
+  - Filters: by agent, by action
+  - **Pass criteria:** Browser pane updates within 1s of activity
+
+- [ ] **8.6 CLI `youmd logs` and `youmd agents` commands**
+  - `youmd logs` shows recent activity
+  - `youmd logs --tail` polls for live updates
+  - `youmd agents` shows connected agents summary
+  - Filters with `--agent` and `--action`
+  - **Pass criteria:** Same data as web pane, terminal-formatted
+
+- [ ] **8.7 `/you-logs` slash command skill**
+  - New skill in `cli/skills/you-logs.md`
+  - Renders activity log inline in any CLI agent (Claude Code, Cursor)
+  - Linked via `youmd skill install you-logs && youmd skill link claude`
+  - **Pass criteria:** `/you-logs` in Claude Code returns formatted activity
+
+- [ ] **8.8 End-to-end test: trigger from 3 sources, verify in 3 surfaces**
+  - Trigger activity from MCP, context link, and CLI
+  - Verify it appears in /shell, `youmd logs`, and `/you-logs`
+  - Verify real-time updates work
+  - **Pass criteria:** All 3 surfaces show all 3 events within 2s
+
 ---
 
 ## Real Testing Plan (After Fixes)
@@ -264,14 +322,15 @@ After completing the fixes, run THIS test sequence (not the paste-blob version I
 
 | Tier | Total | Done | In Progress |
 |---|---|---|---|
-| 1 — Data + Protocol | 5 | 0 | 0 |
-| 2 — MCP Server | 6 | 0 | 0 |
-| 3 — Context Links | 5 | 0 | 0 |
-| 4 — CLI UX | 5 | 0 | 0 |
-| 5 — Web UX | 7 | 0 | 0 |
+| 1 — Data + Protocol | 5 | 5 | 0 |
+| 2 — MCP Server | 6 | 6 | 0 |
+| 3 — Context Links | 5 | 5 | 0 |
+| 4 — CLI UX | 5 | 5 | 0 |
+| 5 — Web UX | 7 | 1 | 0 |
 | 6 — Bundle + Vault | 2 | 0 | 0 |
 | 7 — Onboarding | 2 | 0 | 0 |
-| **Total** | **32** | **0** | **0** |
+| 8 — Cross-Agent Activity | 8 | 0 | 0 |
+| **Total** | **40** | **22** | **0** |
 
 ---
 

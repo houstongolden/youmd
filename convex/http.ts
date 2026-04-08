@@ -1,6 +1,7 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
+import { detectAgent } from "./lib/agentDetect";
 
 const http = httpRouter();
 
@@ -99,6 +100,31 @@ http.route({
       isAgentRead: true,
     });
 
+    // Log cross-agent activity (best-effort — skip silently if user lookup fails)
+    try {
+      const agent = detectAgent(request.headers.get("user-agent"));
+      const ownerUser = await ctx.runQuery(api.users.getByUsername, { username });
+      if (ownerUser) {
+        const profileIdRaw = (profileAny.profileId as any) ?? undefined;
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: ownerUser._id,
+          profileId: profileIdRaw,
+          agentName: agent.name,
+          agentSource: agent.source,
+          agentVersion: agent.version,
+          action: "read",
+          resource: "identity",
+          status: "success",
+          details: {
+            username,
+            accept: request.headers.get("accept") ?? undefined,
+          },
+        });
+      }
+    } catch {
+      // swallow logging errors — never break the main request
+    }
+
     const accept = request.headers.get("accept") ?? "";
 
     // Return markdown if requested
@@ -189,6 +215,34 @@ http.route({
       isContextLink: true,
     });
 
+    // Log cross-agent activity for context-link resolution
+    try {
+      const linkMeta = await ctx.runQuery(api.contextLinks.getLinkMeta, { token });
+      if (linkMeta) {
+        const uaAgent = detectAgent(request.headers.get("user-agent"));
+        // Always mark source as "context-link" regardless of UA, since the
+        // caller reached us via a shareable link. Keep the parsed name though.
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: linkMeta.userId,
+          profileId: linkMeta.profileId,
+          agentName: uaAgent.name,
+          agentSource: "context-link",
+          agentVersion: uaAgent.version,
+          action: "read",
+          resource: "identity",
+          scope: linkMeta.scope,
+          tokenId: linkMeta._id,
+          status: "success",
+          details: {
+            username: result.username,
+            linkName: linkMeta.name,
+          },
+        });
+      }
+    } catch {
+      // swallow logging errors
+    }
+
     const accept = request.headers.get("accept") ?? "";
 
     // Return markdown if requested
@@ -277,16 +331,85 @@ http.route({
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
 
+    const startedAt = Date.now();
+    const agent = detectAgent(request.headers.get("user-agent"));
+    // Auth reached here means a valid API key was used. Prefer "api-key" as
+    // the source unless the UA tells us it's an MCP client.
+    const agentSource = agent.source === "mcp" ? "mcp" : "api-key";
+
     try {
       const body = await request.json();
+
+      // Capture the previous head before the save (for diffs in activity log)
+      let bundleVersionBefore: number | undefined;
+      let contentHashBefore: string | undefined;
+      try {
+        const before = await ctx.runQuery(api.me.getMyProfile, { clerkId: auth.userId });
+        if (before?.latestBundle) {
+          bundleVersionBefore = before.latestBundle.version;
+          contentHashBefore = before.latestBundle.contentHash ?? undefined;
+        }
+      } catch {
+        // best-effort
+      }
+
       const result = await ctx.runMutation(api.me.saveBundleFromForm, {
         clerkId: auth.userId, // We'll need to adapt this
         profileData: body.profileData,
         parentHash: body.parentHash, // content-addressed version control
       });
+
+      // Log successful bundle write
+      try {
+        const ownerUser = await ctx.runQuery(api.users.getByClerkId, {
+          clerkId: auth.userId,
+        });
+        if (ownerUser) {
+          await ctx.runMutation(internal.activity.logActivity, {
+            userId: ownerUser._id,
+            agentName: agent.name,
+            agentSource,
+            agentVersion: agent.version,
+            action: "write",
+            resource: "bundle",
+            status: "success",
+            bundleVersionBefore,
+            bundleVersionAfter: result.version,
+            contentHashBefore,
+            contentHashAfter: result.contentHash ?? undefined,
+            durationMs: Date.now() - startedAt,
+          });
+        }
+      } catch {
+        // swallow
+      }
+
       return json(result);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save bundle";
+
+      // Log failed bundle write
+      try {
+        const ownerUser = await ctx.runQuery(api.users.getByClerkId, {
+          clerkId: auth.userId,
+        });
+        if (ownerUser) {
+          await ctx.runMutation(internal.activity.logActivity, {
+            userId: ownerUser._id,
+            agentName: agent.name,
+            agentSource,
+            agentVersion: agent.version,
+            action: "write",
+            resource: "bundle",
+            status: message.includes("ANCESTOR_MISMATCH") ? "denied" : "error",
+            details: { message },
+            durationMs: Date.now() - startedAt,
+          });
+        }
+      } catch {
+        // swallow
+      }
+
       // Return 409 Conflict for ancestor mismatch (client needs to pull first)
       if (message.includes("ANCESTOR_MISMATCH")) {
         return json(
@@ -310,10 +433,36 @@ http.route({
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
 
+    const startedAt = Date.now();
+    const agent = detectAgent(request.headers.get("user-agent"));
+    const agentSource = agent.source === "mcp" ? "mcp" : "api-key";
+
     try {
       const result = await ctx.runMutation(api.me.publishLatest, {
         clerkId: auth.userId,
       });
+
+      try {
+        const ownerUser = await ctx.runQuery(api.users.getByClerkId, {
+          clerkId: auth.userId,
+        });
+        if (ownerUser) {
+          await ctx.runMutation(internal.activity.logActivity, {
+            userId: ownerUser._id,
+            agentName: agent.name,
+            agentSource,
+            agentVersion: agent.version,
+            action: "publish",
+            resource: "bundle",
+            status: "success",
+            bundleVersionAfter: result.version,
+            durationMs: Date.now() - startedAt,
+          });
+        }
+      } catch {
+        // swallow
+      }
+
       return json(result);
     } catch (err) {
       return json(
@@ -359,6 +508,29 @@ http.route({
           sourceUrl: portrait.sourceUrl || "",
         },
       });
+
+      // Log activity
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        const agentSource = agent.source === "mcp" ? "mcp" : "api-key";
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: user._id,
+          profileId: profile._id,
+          agentName: agent.name,
+          agentSource,
+          agentVersion: agent.version,
+          action: "write",
+          resource: "portrait",
+          status: "success",
+          details: {
+            format: portrait.format || "block",
+            cols: portrait.cols,
+            rows: portrait.rows,
+          },
+        });
+      } catch {
+        // swallow
+      }
 
       return json({ success: true });
     } catch (err) {
@@ -1495,6 +1667,25 @@ http.route({
       customData: body.customData,
     });
 
+    // Log activity
+    try {
+      const agent = detectAgent(request.headers.get("user-agent"));
+      const agentSource = agent.source === "mcp" ? "mcp" : "api-key";
+      await ctx.runMutation(internal.activity.logActivity, {
+        userId: user._id,
+        profileId: profile._id,
+        agentName: agent.name,
+        agentSource,
+        agentVersion: agent.version,
+        action: "write",
+        resource: "private",
+        scope: "full",
+        status: "success",
+      });
+    } catch {
+      // swallow
+    }
+
     return json({ success: true });
   }),
 });
@@ -1551,6 +1742,26 @@ http.route({
       agentName: body.agentName || auth.username || "API",
       memories: body.memories,
     });
+
+    // Log activity
+    try {
+      const agent = detectAgent(request.headers.get("user-agent"));
+      const agentSource = agent.source === "mcp" ? "mcp" : "api-key";
+      await ctx.runMutation(internal.activity.logActivity, {
+        userId: user._id,
+        agentName: body.agentName || agent.name,
+        agentSource,
+        agentVersion: agent.version,
+        action: "memory_add",
+        resource: "memories",
+        status: "success",
+        details: {
+          count: Array.isArray(body.memories) ? body.memories.length : 0,
+        },
+      });
+    } catch {
+      // swallow
+    }
 
     return json(result);
   }),
@@ -1833,7 +2044,9 @@ http.route({
   handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
 });
 
-// Get agent interaction stats (authenticated)
+// Get agent interaction summary (authenticated)
+// Returns aggregated stats for each agent that has touched this user's
+// identity, powered by the cross-agent activity log.
 http.route({
   path: "/api/v1/me/agents",
   method: "GET",
@@ -1841,16 +2054,126 @@ http.route({
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
 
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
-    if (!user) return json({ error: "User not found" }, 404);
-
-    const stats = await ctx.runQuery(api.bundles.getAgentStats, { userId: user._id });
-    return json(stats);
+    try {
+      const agents = await ctx.runQuery((api as any).activity.agentSummary, {
+        clerkId: auth.userId,
+      });
+      return json({ agents: agents ?? [] });
+    } catch {
+      // Backend may not have activity module yet -- return empty list
+      return json({ agents: [] });
+    }
   }),
 });
 
 http.route({
   path: "/api/v1/me/agents",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
+// Get raw agent activity log (authenticated)
+// GET /api/v1/me/activity?limit=30&agent=Claude%20Code&action=read
+http.route({
+  path: "/api/v1/me/activity",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const url = new URL(request.url);
+    const limitStr = url.searchParams.get("limit");
+    const agent = url.searchParams.get("agent") || undefined;
+    const action = url.searchParams.get("action") || undefined;
+    const limit = limitStr ? parseInt(limitStr, 10) : 30;
+
+    try {
+      const activity = await ctx.runQuery((api as any).activity.listActivity, {
+        clerkId: auth.userId,
+        limit: Number.isFinite(limit) ? limit : 30,
+        agentName: agent,
+        action,
+      });
+      return json({ activity: activity ?? [], count: (activity ?? []).length });
+    } catch {
+      // Backend may not have activity module yet -- return empty list
+      return json({ activity: [], count: 0 });
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/activity",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
+// POST /api/v1/me/activity/log — log an activity event (used by MCP server, CLI, agents)
+http.route({
+  path: "/api/v1/me/activity/log",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    let body: {
+      agentName?: string;
+      agentSource?: string;
+      agentVersion?: string;
+      action?: string;
+      resource?: string;
+      scope?: string;
+      status?: string;
+      details?: unknown;
+      bundleVersionBefore?: number;
+      bundleVersionAfter?: number;
+      contentHashBefore?: string;
+      contentHashAfter?: string;
+      durationMs?: number;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "Invalid JSON body" }, 400);
+    }
+
+    if (!body.agentName || !body.action) {
+      return json({ error: "agentName and action required" }, 400);
+    }
+
+    try {
+      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+      if (!user) return json({ error: "User not found" }, 404);
+
+      const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
+
+      await ctx.runMutation((internal as any).activity.logActivity, {
+        userId: user._id,
+        profileId: profile?._id,
+        agentName: body.agentName,
+        agentSource: body.agentSource || "unknown",
+        agentVersion: body.agentVersion,
+        action: body.action,
+        resource: body.resource,
+        scope: body.scope,
+        status: body.status || "success",
+        details: body.details,
+        bundleVersionBefore: body.bundleVersionBefore,
+        bundleVersionAfter: body.bundleVersionAfter,
+        contentHashBefore: body.contentHashBefore,
+        contentHashAfter: body.contentHashAfter,
+        durationMs: body.durationMs,
+      });
+
+      return json({ success: true });
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "Failed to log activity" }, 500);
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/activity/log",
   method: "OPTIONS",
   handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
 });

@@ -371,4 +371,36 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_userId_skillName", ["userId", "skillName"]),
+
+  // ── Cross-agent activity log (unified agent action feed) ──────
+  agentActivity: defineTable({
+    userId: v.id("users"),
+    profileId: v.optional(v.id("profiles")),
+    // Who/what
+    agentName: v.string(),
+    agentSource: v.string(), // "mcp" | "context-link" | "api-key" | "web-fetch" | "cli"
+    agentVersion: v.optional(v.string()),
+    // What action
+    action: v.string(), // "read" | "read_section" | "write" | "memory_add" | "skill_use" | "compile" | "push" | "publish" | "vault_read" | "vault_write" | "scope_change"
+    resource: v.optional(v.string()),
+    // Scope + auth
+    scope: v.optional(v.string()),
+    tokenId: v.optional(v.id("contextLinks")),
+    apiKeyId: v.optional(v.id("apiKeys")),
+    // Result
+    status: v.string(), // "success" | "denied" | "error"
+    details: v.optional(v.any()),
+    // For diffs
+    bundleVersionBefore: v.optional(v.number()),
+    bundleVersionAfter: v.optional(v.number()),
+    contentHashBefore: v.optional(v.string()),
+    contentHashAfter: v.optional(v.string()),
+    // Timing
+    durationMs: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_date", ["userId", "createdAt"])
+    .index("by_userId_agent", ["userId", "agentName"])
+    .index("by_action", ["action"]),
 });

@@ -26,6 +26,8 @@ import { projectCommand } from "./commands/project";
 import { promptsCommand } from "./commands/prompts";
 import { skillCommand } from "./commands/skill";
 import { mcpCommand } from "./commands/mcp";
+import { logsCommand } from "./commands/logs";
+import { agentsCommand } from "./commands/agents";
 
 const program = new Command();
 
@@ -76,6 +78,13 @@ const HELP_GROUPS: Array<{
     title: "SKILLS",
     commands: [
       { name: "skill", summary: "identity-aware agent skills (list/install/use/sync)" },
+    ],
+  },
+  {
+    title: "MONITORING",
+    commands: [
+      { name: "logs", summary: "view agent activity log (who read/wrote what, when)" },
+      { name: "agents", summary: "list connected agents and their activity summary" },
     ],
   },
   {
@@ -287,6 +296,20 @@ program
   .option("--install <target>", "Show setup instructions for an agent (claude, cursor)")
   .option("--auto", "Auto-write the MCP config into the target's settings file")
   .action(mcpCommand);
+
+program
+  .command("logs")
+  .description("View agent activity log -- see what agents read/wrote and when")
+  .option("--limit <n>", "Max events to show (default 30)")
+  .option("--agent <name>", "Filter by agent name (e.g. 'Claude Code')")
+  .option("--action <type>", "Filter by action (read|write|push|publish|memory_add)")
+  .option("--tail", "Live mode -- poll every 2s for new events")
+  .action(logsCommand);
+
+program
+  .command("agents")
+  .description("List connected agents and their activity summary")
+  .action(agentsCommand);
 
 // ─── Guided tutorial when invoked with no args ─────────────────────
 // `youmd` (bare) shows a short contextual welcome / next-step guide.

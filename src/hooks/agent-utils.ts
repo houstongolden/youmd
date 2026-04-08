@@ -901,7 +901,7 @@ export interface PrivateUpdate {
   project?: Record<string, string>;
 }
 
-export type RightPane = "profile" | "portrait" | "edit" | "share" | "skills" | "history" | "settings" | "analytics";
+export type RightPane = "profile" | "portrait" | "edit" | "share" | "skills" | "history" | "settings" | "analytics" | "agents";
 
 // ---------------------------------------------------------------------------
 // Helpers (exported for reuse)

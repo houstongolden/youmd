@@ -168,6 +168,38 @@ async function apiRequest(path: string, opts?: { method?: string; body?: unknown
   return res.json();
 }
 
+/**
+ * Fire-and-forget activity logger. Logs every MCP tool call so the user can
+ * see which agents are using their you.md identity via `youmd logs` or the
+ * web shell. Non-fatal — failures are swallowed so logging can't break tool
+ * calls.
+ */
+async function logMcpActivity(action: string, resource?: string, details?: Record<string, unknown>): Promise<void> {
+  if (!isAuthenticated()) return;
+  try {
+    const config = readGlobalConfig();
+    await fetch(`${getConvexSiteUrl()}/api/v1/me/activity/log`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.token}`,
+        "Content-Type": "application/json",
+        "User-Agent": "youmd-mcp/0.6.0",
+      },
+      body: JSON.stringify({
+        agentName: process.env.YOUMD_AGENT_NAME || "Claude Code",
+        agentSource: "mcp",
+        action,
+        resource,
+        status: "success",
+        details,
+      }),
+      signal: AbortSignal.timeout(5_000),
+    });
+  } catch {
+    // non-fatal — logging shouldn't break tool calls
+  }
+}
+
 // Valid memory categories enforced by add_memory
 const MEMORY_CATEGORIES = [
   "fact",
@@ -828,6 +860,18 @@ export async function startMcpServer(): Promise<void> {
             properties: {},
           },
         },
+        {
+          name: "get_activity_log",
+          description: "Get the user's recent agent activity log. Use this to see which agents have connected to their you.md identity and what they did. Returns an array of activity events with agent name, action, resource, timestamp. Useful for: showing the user proof their identity context is being used by other agents, debugging integration issues, auditing access.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {
+              limit: { type: "number", description: "Max events (default 30)" },
+              agentName: { type: "string", description: "Filter by agent name (e.g. 'Claude Code')" },
+              action: { type: "string", description: "Filter by action (read|write|push|memory_add)" },
+            },
+          },
+        },
       ],
     };
   });
@@ -839,6 +883,7 @@ export async function startMcpServer(): Promise<void> {
 
     switch (name) {
       case "whoami": {
+        void logMcpActivity("read", "identity:compact");
         return {
           content: [{
             type: "text" as const,
@@ -849,6 +894,7 @@ export async function startMcpServer(): Promise<void> {
 
       case "get_identity": {
         const format = ((args as Record<string, unknown>)?.format as string) || "compact";
+        void logMcpActivity("read", "identity:" + format);
         if (format === "markdown") {
           return { content: [{ type: "text" as const, text: buildIdentityMarkdown() }] };
         }
@@ -880,6 +926,7 @@ export async function startMcpServer(): Promise<void> {
         if (!content) {
           return { content: [{ type: "text" as const, text: `section not found: ${section}` }], isError: true };
         }
+        void logMcpActivity("read_section", section);
         return { content: [{ type: "text" as const, text: content }] };
       }
 
@@ -897,6 +944,7 @@ export async function startMcpServer(): Promise<void> {
         }
         const filePath = path.join(dirPath, `${parts[1]}.md`);
         fs.writeFileSync(filePath, content);
+        void logMcpActivity("write", section);
         return { content: [{ type: "text" as const, text: `updated ${section}` }] };
       }
 
@@ -937,6 +985,7 @@ export async function startMcpServer(): Promise<void> {
               }],
             },
           });
+          void logMcpActivity("memory_add", category);
           return { content: [{ type: "text" as const, text: `memory saved: [${category}] ${memContent.slice(0, 80)}${memContent.length > 80 ? "..." : ""}` }] };
         } catch (err) {
           return { content: [{ type: "text" as const, text: `failed to save memory: ${err instanceof Error ? err.message : "unknown error"}` }], isError: true };
@@ -946,6 +995,7 @@ export async function startMcpServer(): Promise<void> {
       case "search_memories": {
         const { category, limit } = (args || {}) as { category?: string; limit?: number };
         const memories = await fetchMemories(category, limit || 30);
+        void logMcpActivity("read", "memories");
         return {
           content: [{
             type: "text" as const,
@@ -962,6 +1012,7 @@ export async function startMcpServer(): Promise<void> {
             if (!root) throw new Error("no projects directory found");
             const projDir = getProjectDir(root, projectName);
             const ctx = readProjectContext(projDir);
+            void logMcpActivity("read", "project/" + projectName);
             return { content: [{ type: "text" as const, text: JSON.stringify(ctx, null, 2) }] };
           }
           const current = getCurrentProject();
@@ -969,6 +1020,7 @@ export async function startMcpServer(): Promise<void> {
             return { content: [{ type: "text" as const, text: "no project detected in current directory" }], isError: true };
           }
           const ctx = readProjectContext(current.dir);
+          void logMcpActivity("read", "project/current");
           return { content: [{ type: "text" as const, text: JSON.stringify(ctx, null, 2) }] };
         } catch (err) {
           return { content: [{ type: "text" as const, text: `project error: ${err instanceof Error ? err.message : "unknown"}` }], isError: true };
@@ -993,6 +1045,7 @@ export async function startMcpServer(): Promise<void> {
             projDir = current.dir;
           }
           addProjectMemory(projDir, { category, content: memContent });
+          void logMcpActivity("memory_add", "project/" + (projName || "current"));
           return { content: [{ type: "text" as const, text: `project memory saved: [${category}] ${memContent.slice(0, 80)}` }] };
         } catch (err) {
           return { content: [{ type: "text" as const, text: `error: ${err instanceof Error ? err.message : "unknown"}` }], isError: true };
@@ -1007,6 +1060,7 @@ export async function startMcpServer(): Promise<void> {
           const available = skills.map((s) => s.name).join(", ") || "none installed";
           return { content: [{ type: "text" as const, text: `skill not found: ${skillName}. available: ${available}` }], isError: true };
         }
+        void logMcpActivity("skill_use", "skill/" + skillName);
         return { content: [{ type: "text" as const, text: skill.rendered || skill.raw }] };
       }
 
@@ -1016,6 +1070,7 @@ export async function startMcpServer(): Promise<void> {
           const bundleDir = getBundleDir();
           const result = compileBundle(bundleDir);
           writeBundle(bundleDir, result);
+          void logMcpActivity("compile", "bundle");
           return {
             content: [{
               type: "text" as const,
@@ -1048,6 +1103,7 @@ export async function startMcpServer(): Promise<void> {
           if (shouldPublish) {
             await publishLatest();
           }
+          void logMcpActivity("push", "bundle", { version: result.stats.version });
           return {
             content: [{
               type: "text" as const,
@@ -1105,6 +1161,8 @@ export async function startMcpServer(): Promise<void> {
             ((result.manifest as Record<string, unknown>).contentHash as string | undefined) ||
             "unknown";
 
+          void logMcpActivity("push", "bundle", { version: result.stats.version, hash: contentHash });
+
           return {
             content: [{
               type: "text" as const,
@@ -1125,6 +1183,7 @@ export async function startMcpServer(): Promise<void> {
           return { content: [{ type: "text" as const, text: "no skills installed. run: youmd skill install voice-sync" }] };
         }
         const list = skills.map((s) => `- ${s.name}`).join("\n");
+        void logMcpActivity("read", "skills");
         return { content: [{ type: "text" as const, text: `installed skills:\n${list}` }] };
       }
 
@@ -1138,6 +1197,7 @@ export async function startMcpServer(): Promise<void> {
             method: "POST",
             body: { sourceType, sourceUrl },
           });
+          void logMcpActivity("write", "source/" + sourceType);
           return { content: [{ type: "text" as const, text: `source registered: [${sourceType}] ${sourceUrl}` }] };
         } catch (err) {
           return { content: [{ type: "text" as const, text: `failed to add source: ${err instanceof Error ? err.message : "unknown error"}` }], isError: true };
@@ -1155,6 +1215,7 @@ export async function startMcpServer(): Promise<void> {
             body: { scope: scope || "public", ttl: ttl || "24h" },
           }) as Record<string, unknown>;
           const link = result.url || result.link || JSON.stringify(result);
+          void logMcpActivity("write", "context-link", { scope: scope || "public" });
           return { content: [{ type: "text" as const, text: `context link created: ${link}\nscope: ${scope || "public"}, ttl: ${ttl || "24h"}` }] };
         } catch (err) {
           return { content: [{ type: "text" as const, text: `failed to create context link: ${err instanceof Error ? err.message : "unknown error"}` }], isError: true };
@@ -1176,6 +1237,7 @@ export async function startMcpServer(): Promise<void> {
             const marker = current && current.name === p ? " (current)" : "";
             return `- ${p}${marker}`;
           }).join("\n");
+          void logMcpActivity("read", "projects");
           return { content: [{ type: "text" as const, text: `projects:\n${list}` }] };
         } catch (err) {
           return { content: [{ type: "text" as const, text: `error listing projects: ${err instanceof Error ? err.message : "unknown"}` }], isError: true };
@@ -1203,10 +1265,55 @@ export async function startMcpServer(): Promise<void> {
           }
         }
 
+        void logMcpActivity("read", "status");
+
         return {
           content: [{
             type: "text" as const,
             text: JSON.stringify(status, null, 2),
+          }],
+        };
+      }
+
+      case "get_activity_log": {
+        if (!isAuthenticated()) {
+          return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
+        }
+        const config = readGlobalConfig();
+        const params = new URLSearchParams();
+        const activityArgs = (args || {}) as { limit?: number; agentName?: string; action?: string };
+        if (activityArgs.limit) params.set("limit", String(activityArgs.limit));
+        if (activityArgs.agentName) params.set("agent", String(activityArgs.agentName));
+        if (activityArgs.action) params.set("action", String(activityArgs.action));
+
+        const res = await fetch(`${getConvexSiteUrl()}/api/v1/me/activity?${params}`, {
+          headers: { Authorization: `Bearer ${config.token}` },
+          signal: AbortSignal.timeout(10_000),
+        });
+
+        if (!res.ok) {
+          return { content: [{ type: "text" as const, text: `failed to fetch activity log: ${res.status}` }], isError: true };
+        }
+
+        const data = await res.json() as { activity?: any[] };
+        const events = data.activity || [];
+
+        if (events.length === 0) {
+          return { content: [{ type: "text" as const, text: "No activity yet. Agents will appear here when they connect to your you.md identity." }] };
+        }
+
+        const formatted = events.slice(0, 30).reverse().map((e: any) => {
+          const time = new Date(e.createdAt).toTimeString().slice(0, 5);
+          const versions = e.bundleVersionBefore && e.bundleVersionAfter
+            ? ` v${e.bundleVersionBefore}→v${e.bundleVersionAfter}`
+            : '';
+          return `${time}  ${e.agentName.padEnd(16)}  ${e.action.padEnd(12)}  ${e.resource || ''}${versions}`;
+        }).join('\n');
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: `── recent agent activity (${events.length} events) ──\n\n${formatted}`,
           }],
         };
       }

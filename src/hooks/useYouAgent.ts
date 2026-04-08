@@ -813,7 +813,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         "/files": "edit",
         "/vault": "edit",
         "/edit": "edit",
-        "/agents": "share",
+        "/agents": "agents",
         "/skills": "skills",
       };
 
