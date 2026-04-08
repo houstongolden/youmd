@@ -250,9 +250,32 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     };
   }, [displayMessages, messages, user?.id, initialized, isOnboarding, saveChatMessages]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom — but only if the user is already near the bottom.
+  // Otherwise streaming chunks would yank the user away from a message
+  // they're trying to read further up.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const endEl = messagesEndRef.current;
+    if (!endEl) return;
+
+    // Walk up to find the nearest scrollable ancestor
+    let scrollContainer: HTMLElement | null = endEl.parentElement;
+    while (scrollContainer) {
+      const overflowY = getComputedStyle(scrollContainer).overflowY;
+      if (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") break;
+      scrollContainer = scrollContainer.parentElement;
+    }
+
+    if (!scrollContainer) {
+      endEl.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    // If the user has scrolled up more than ~120px from the bottom, leave them alone
+    const distanceFromBottom =
+      scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight;
+    if (distanceFromBottom > 120) return;
+
+    scrollContainer.scrollTop = scrollContainer.scrollHeight;
   }, [displayMessages, isThinking, progressSteps]);
 
   // Auto-resize textarea
