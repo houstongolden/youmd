@@ -2005,6 +2005,44 @@ http.route({
   }),
 });
 
+// GET /api/v1/me/bundles?version=N — Fetch a specific bundle version
+http.route({
+  path: "/api/v1/me/bundles",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const url = new URL(request.url);
+    const versionParam = url.searchParams.get("version");
+    if (!versionParam) {
+      return json({ error: "version query parameter is required" }, 400);
+    }
+
+    const version = Number(versionParam);
+    if (!Number.isFinite(version) || !Number.isInteger(version) || version < 1) {
+      return json({ error: "version must be a positive integer" }, 400);
+    }
+
+    const bundle = await ctx.runQuery(api.bundles.getBundleByVersion, {
+      clerkId: auth.userId,
+      version,
+    });
+
+    if (!bundle) {
+      return json({ error: `Version ${version} not found` }, 404);
+    }
+
+    return json(bundle);
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/bundles",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
 http.route({
   path: "/api/v1/me/history",
   method: "OPTIONS",

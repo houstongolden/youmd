@@ -300,6 +300,127 @@ export const saveYouJsonDirect = mutation({
   },
 });
 
+/**
+ * Create a user-defined custom directory inside the bundle.
+ *
+ * Custom directories are stored in youJson.custom_files as an array of
+ * { path, content, isPublic } entries. Each entry is one virtual file.
+ * A new directory is seeded with a single agent.md placeholder so it shows
+ * up in the file tree (empty directories don't render).
+ *
+ * isPublic === true → file path is "profile/<dirName>/agent.md" (publicly visible)
+ * isPublic === false (default) → file path is "<dirName>/agent.md", which the
+ * FilesPane tree builder routes under the synthetic private/ container.
+ */
+export const createCustomDirectory = mutation({
+  args: {
+    clerkId: v.string(),
+    dirName: v.string(),
+    isPublic: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
+    // Validate directory name: lowercase alphanumeric + hyphens, max 30 chars
+    const dirName = args.dirName.trim().toLowerCase();
+    if (!dirName) throw new Error("Directory name required");
+    if (dirName.length > 30) throw new Error("Directory name max 30 chars");
+    if (!/^[a-z0-9-]+$/.test(dirName)) {
+      throw new Error("Directory name: lowercase alphanumeric + hyphens only");
+    }
+
+    // Reserved directory names that conflict with the standard layout
+    const RESERVED = new Set([
+      "profile", "preferences", "voice", "directives", "sources",
+      "projects", "skills", "private", "memory", "sessions", "custom",
+    ]);
+    if (RESERVED.has(dirName)) {
+      throw new Error(`'${dirName}' is a reserved directory name`);
+    }
+
+    // Get latest bundle to mutate its youJson
+    const existing = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const latestBundle = existing.sort((a, b) => b.version - a.version)[0];
+    if (!latestBundle) {
+      throw new Error("No bundle exists yet — talk to the agent first");
+    }
+
+    const isPublic = args.isPublic === true;
+    const baseDir = isPublic ? `profile/${dirName}` : dirName;
+    const filePath = `${baseDir}/agent.md`;
+
+    // Clone youJson and add custom_files entry
+    const yj = JSON.parse(JSON.stringify(latestBundle.youJson)) as Record<string, unknown>;
+    const customFiles = (Array.isArray(yj.custom_files) ? yj.custom_files : []) as Array<{
+      path: string;
+      content: string;
+      isPublic?: boolean;
+    }>;
+
+    // Reject if a custom file with the same dir already exists
+    const dirExists = customFiles.some((f) => f && typeof f.path === "string" && f.path.startsWith(`${baseDir}/`));
+    if (dirExists) {
+      throw new Error(`Directory '${dirName}' already exists`);
+    }
+
+    const placeholder = `---\ntitle: ${dirName}\n---\n\n# ${dirName}\n\nCustom directory created by user. Add your files here.\n`;
+
+    customFiles.push({ path: filePath, content: placeholder, isPublic });
+    yj.custom_files = customFiles;
+
+    // Recompile youMd via existing pipeline
+    const data: ProfileData = {
+      name: (yj?.identity as Record<string, unknown> | undefined)?.name as string ?? "",
+      username: user.username,
+      tagline: (yj?.identity as Record<string, unknown> | undefined)?.tagline as string | undefined,
+      location: (yj?.identity as Record<string, unknown> | undefined)?.location as string | undefined,
+      bio: (yj?.identity as Record<string, unknown> | undefined)?.bio as ProfileData["bio"],
+      now: ((yj?.now as Record<string, unknown> | undefined)?.focus as string[] | undefined),
+      projects: yj?.projects as ProfileData["projects"],
+      values: yj?.values as string[] | undefined,
+      links: yj?.links as Record<string, string> | undefined,
+      preferences: yj?.preferences as ProfileData["preferences"],
+    };
+
+    const youMd = compileYouMd(data);
+    const manifest = compileManifest(data);
+    const contentHash = await computeContentHash(yj, youMd);
+
+    const maxVersion = existing.reduce((max, b) => Math.max(max, b.version), 0);
+
+    const bundleId = await ctx.db.insert("bundles", {
+      userId: user._id,
+      version: maxVersion + 1,
+      schemaVersion: "you-md/v1",
+      manifest,
+      youJson: yj,
+      youMd,
+      isPublished: false,
+      createdAt: Date.now(),
+      contentHash,
+      parentHash: latestBundle.contentHash ?? undefined,
+      source: "web-shell",
+    });
+
+    return {
+      bundleId,
+      version: maxVersion + 1,
+      dirName,
+      filePath,
+      isPublic,
+    };
+  },
+});
+
 export const publishLatest = mutation({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {

@@ -200,6 +200,78 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
   );
 }
 
+/* ── Quick-start (30-second guide) ─────────────────────── */
+function QuickStart() {
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const copy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 1500);
+  };
+
+  const steps: { key: string; cmd: string; desc: string }[] = [
+    { key: "init", cmd: "npx youmd init", desc: "create your identity" },
+    { key: "push", cmd: "youmd push", desc: "publish to you.md/<your-username>" },
+    { key: "mcp", cmd: "youmd mcp --install claude --auto", desc: "wire into Claude Code" },
+  ];
+
+  return (
+    <div
+      className="my-6 border-2 border-[hsl(var(--accent))]/50 bg-[hsl(var(--accent))]/[0.04] overflow-hidden"
+      style={{ borderRadius: "4px" }}
+    >
+      {/* Title bar */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-[hsl(var(--accent))]/30 bg-[hsl(var(--accent))]/[0.06]">
+        <span className="font-mono text-[11px] uppercase tracking-widest text-[hsl(var(--accent))] flex items-center gap-2">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--accent))] status-dot-pulse" />
+          30-second guide
+        </span>
+        <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60">
+          fastest path to first agent read
+        </span>
+      </div>
+
+      {/* Steps */}
+      <ol className="divide-y divide-[hsl(var(--accent))]/15">
+        {steps.map((s, i) => (
+          <li key={s.key} className="flex items-start gap-3 px-4 py-3">
+            <span className="shrink-0 w-5 h-5 rounded-full bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))] text-[11px] font-mono flex items-center justify-center mt-0.5">
+              {i + 1}
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <code className="font-mono text-[13px] text-[hsl(var(--accent))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-2 py-0.5 rounded">
+                  $ {s.cmd}
+                </code>
+                <button
+                  onClick={() => copy(s.cmd, s.key)}
+                  className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-100 hover:text-[hsl(var(--accent))] transition-colors"
+                >
+                  {copied === s.key ? "copied" : "copy"}
+                </button>
+              </div>
+              <p className="text-[12px] text-[hsl(var(--text-secondary))] mt-1 leading-relaxed">
+                {s.desc}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      {/* Resulting URL */}
+      <div className="px-4 py-3 border-t border-[hsl(var(--accent))]/30 bg-[hsl(var(--bg))]/40">
+        <p className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))] opacity-50 mb-1">
+          you ship at
+        </p>
+        <p className="font-mono text-[13px] text-[hsl(var(--accent))]">
+          https://you.md/&lt;your-username&gt;
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function CommandTable({
   commands,
 }: {
@@ -392,6 +464,9 @@ export default function DocsContent() {
                 you are.
               </P>
             </div>
+
+            {/* ── 30-second guide (quick-start) ────────────── */}
+            <QuickStart />
 
             {/* ── Getting Started ──────────────────────────── */}
             <H2 id="getting-started">Getting Started</H2>

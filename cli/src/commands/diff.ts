@@ -7,7 +7,12 @@ import {
   isAuthenticated,
   readGlobalConfig,
 } from "../lib/config";
-import { getPublicProfile } from "../lib/api";
+import {
+  getPublicProfile,
+  getBundleByVersion,
+  getMe,
+  type BundleVersionData,
+} from "../lib/api";
 import { detectFormat } from "../lib/decompile";
 
 // ─── Simple line diff ─────────────────────────────────────────────────
@@ -271,11 +276,279 @@ function extractRemoteSections(
   return sections;
 }
 
-// ─── Main diff command ───────────────────────────────────────────────
+// ─── Section-by-section structured diff helpers ──────────────────────
 
-export async function diffCommand(): Promise<void> {
+function extractIdentity(youJson: Record<string, unknown>): {
+  name: string;
+  tagline: string;
+  bio: string;
+} {
+  const identity = (youJson.identity as Record<string, unknown>) || {};
+  const bio = (identity.bio as Record<string, unknown>) || {};
+  return {
+    name: String(identity.name || ""),
+    tagline: String(identity.tagline || ""),
+    bio: String(bio.long || bio.medium || bio.short || ""),
+  };
+}
+
+function extractProjects(youJson: Record<string, unknown>): Array<Record<string, string>> {
+  const projects = (youJson.projects as Array<Record<string, string>>) || [];
+  return projects.map((p) => ({
+    name: String(p.name || ""),
+    role: String(p.role || ""),
+    status: String(p.status || ""),
+    description: String(p.description || ""),
+    url: String(p.url || ""),
+  }));
+}
+
+function extractValues(youJson: Record<string, unknown>): string[] {
+  const values = (youJson.values as unknown) || [];
+  if (Array.isArray(values)) return values.map((v) => String(v));
+  return [];
+}
+
+function extractAgentPrefs(youJson: Record<string, unknown>): Record<string, string> {
+  const prefs = (youJson.preferences as Record<string, Record<string, unknown>>) || {};
+  const agent = prefs.agent || {};
+  return {
+    tone: String(agent.tone || ""),
+    formality: String(agent.formality || ""),
+    avoid: Array.isArray(agent.avoid) ? (agent.avoid as string[]).join(", ") : "",
+  };
+}
+
+function diffField(
+  label: string,
+  oldVal: string,
+  newVal: string
+): boolean {
+  if (oldVal === newVal) return false;
+
+  if (!oldVal && newVal) {
+    console.log("  " + chalk.green("+ " + label + ": " + truncate(newVal, 80)));
+  } else if (oldVal && !newVal) {
+    console.log("  " + chalk.red("- " + label + ": " + truncate(oldVal, 80)));
+  } else {
+    console.log("  " + chalk.yellow("~ " + label + ":"));
+    console.log("    " + chalk.red("- " + truncate(oldVal, 100)));
+    console.log("    " + chalk.green("+ " + truncate(newVal, 100)));
+  }
+  return true;
+}
+
+function truncate(s: string, n: number): string {
+  if (s.length <= n) return s;
+  return s.slice(0, n - 1) + "\u2026";
+}
+
+function diffStructured(
+  oldData: BundleVersionData,
+  newData: BundleVersionData
+): { changes: number } {
+  let changes = 0;
+  const oldJson = (oldData.youJson as Record<string, unknown>) || {};
+  const newJson = (newData.youJson as Record<string, unknown>) || {};
+
+  // Identity
+  const oldId = extractIdentity(oldJson);
+  const newId = extractIdentity(newJson);
+  const idChanged =
+    oldId.name !== newId.name ||
+    oldId.tagline !== newId.tagline ||
+    oldId.bio !== newId.bio;
+
+  if (idChanged) {
+    console.log("");
+    console.log("  " + chalk.bold("identity"));
+    console.log(chalk.dim("  " + "\u2500".repeat(40)));
+    if (diffField("name", oldId.name, newId.name)) changes++;
+    if (diffField("tagline", oldId.tagline, newId.tagline)) changes++;
+    if (diffField("bio", oldId.bio, newId.bio)) changes++;
+  }
+
+  // Projects: added / removed / modified by name
+  const oldProjects = extractProjects(oldJson);
+  const newProjects = extractProjects(newJson);
+  const oldByName = new Map(oldProjects.map((p) => [p.name, p]));
+  const newByName = new Map(newProjects.map((p) => [p.name, p]));
+
+  const projectAdds: Array<Record<string, string>> = [];
+  const projectRemoves: Array<Record<string, string>> = [];
+  const projectMods: Array<{ name: string; before: Record<string, string>; after: Record<string, string> }> = [];
+
+  for (const [name, p] of newByName) {
+    if (!oldByName.has(name)) {
+      projectAdds.push(p);
+    } else {
+      const before = oldByName.get(name)!;
+      if (JSON.stringify(before) !== JSON.stringify(p)) {
+        projectMods.push({ name, before, after: p });
+      }
+    }
+  }
+  for (const [name, p] of oldByName) {
+    if (!newByName.has(name)) {
+      projectRemoves.push(p);
+    }
+  }
+
+  if (projectAdds.length || projectRemoves.length || projectMods.length) {
+    console.log("");
+    console.log("  " + chalk.bold("projects"));
+    console.log(chalk.dim("  " + "\u2500".repeat(40)));
+
+    for (const p of projectAdds) {
+      console.log("  " + chalk.green("+ added: " + p.name));
+      if (p.role) console.log(chalk.green("      role: " + p.role));
+      if (p.description) console.log(chalk.green("      desc: " + truncate(p.description, 80)));
+      changes++;
+    }
+    for (const p of projectRemoves) {
+      console.log("  " + chalk.red("- removed: " + p.name));
+      changes++;
+    }
+    for (const m of projectMods) {
+      console.log("  " + chalk.yellow("~ modified: " + m.name));
+      for (const key of ["role", "status", "url", "description"]) {
+        const oldV = m.before[key] || "";
+        const newV = m.after[key] || "";
+        if (oldV !== newV) {
+          if (oldV) console.log("      " + chalk.red("- " + key + ": " + truncate(oldV, 80)));
+          if (newV) console.log("      " + chalk.green("+ " + key + ": " + truncate(newV, 80)));
+        }
+      }
+      changes++;
+    }
+  }
+
+  // Values
+  const oldValues = extractValues(oldJson);
+  const newValues = extractValues(newJson);
+  const oldValSet = new Set(oldValues);
+  const newValSet = new Set(newValues);
+  const addedValues = newValues.filter((v) => !oldValSet.has(v));
+  const removedValues = oldValues.filter((v) => !newValSet.has(v));
+
+  if (addedValues.length || removedValues.length) {
+    console.log("");
+    console.log("  " + chalk.bold("values"));
+    console.log(chalk.dim("  " + "\u2500".repeat(40)));
+    for (const v of addedValues) {
+      console.log("  " + chalk.green("+ " + v));
+      changes++;
+    }
+    for (const v of removedValues) {
+      console.log("  " + chalk.red("- " + v));
+      changes++;
+    }
+  }
+
+  // Preferences (agent block)
+  const oldPrefs = extractAgentPrefs(oldJson);
+  const newPrefs = extractAgentPrefs(newJson);
+  const prefsChanged =
+    oldPrefs.tone !== newPrefs.tone ||
+    oldPrefs.formality !== newPrefs.formality ||
+    oldPrefs.avoid !== newPrefs.avoid;
+
+  if (prefsChanged) {
+    console.log("");
+    console.log("  " + chalk.bold("preferences"));
+    console.log(chalk.dim("  " + "\u2500".repeat(40)));
+    if (diffField("tone", oldPrefs.tone, newPrefs.tone)) changes++;
+    if (diffField("formality", oldPrefs.formality, newPrefs.formality)) changes++;
+    if (diffField("avoid", oldPrefs.avoid, newPrefs.avoid)) changes++;
+  }
+
+  return { changes };
+}
+
+// ─── Version-vs-version diff (youmd diff <v1> <v2>) ──────────────────
+
+async function diffTwoVersions(v1: number, v2: number): Promise<void> {
+  if (!isAuthenticated()) {
+    console.log(chalk.yellow("  not authenticated -- cannot fetch bundle versions."));
+    console.log("  run " + chalk.cyan("youmd login") + " to authenticate.");
+    console.log("");
+    return;
+  }
+
+  // Resolve "latest" semantics: -1 means use the latest from /api/v1/me
+  const resolveVersion = async (v: number): Promise<number> => {
+    if (v >= 1) return v;
+    const me = await getMe();
+    if (!me.ok || !me.data.latestBundle) {
+      throw new Error("could not determine latest version");
+    }
+    return me.data.latestBundle.version;
+  };
+
+  let resolvedV1: number;
+  let resolvedV2: number;
+  try {
+    resolvedV1 = await resolveVersion(v1);
+    resolvedV2 = await resolveVersion(v2);
+  } catch (err) {
+    console.log(chalk.red("  " + (err instanceof Error ? err.message : String(err))));
+    console.log("");
+    return;
+  }
+
+  process.stdout.write(
+    chalk.dim(`  fetching v${resolvedV1} and v${resolvedV2}...`)
+  );
+
+  const [a, b] = await Promise.all([
+    getBundleByVersion(resolvedV1),
+    getBundleByVersion(resolvedV2),
+  ]);
+
+  process.stdout.write("\r" + " ".repeat(60) + "\r");
+
+  if (!a.ok || !a.data) {
+    console.log(chalk.red(`  could not fetch v${resolvedV1}`));
+    if (a.status === 404) {
+      console.log(chalk.dim("  version not found -- try `youmd status` to see available versions"));
+    }
+    console.log("");
+    return;
+  }
+  if (!b.ok || !b.data) {
+    console.log(chalk.red(`  could not fetch v${resolvedV2}`));
+    if (b.status === 404) {
+      console.log(chalk.dim("  version not found -- try `youmd status` to see available versions"));
+    }
+    console.log("");
+    return;
+  }
+
+  console.log(
+    "  " +
+      chalk.bold("you.md diff") +
+      chalk.dim(` -- v${resolvedV1} \u2192 v${resolvedV2}`)
+  );
+
+  const { changes } = diffStructured(a.data, b.data);
+
+  if (changes === 0) {
+    console.log("");
+    console.log(
+      chalk.green("  no changes") + chalk.dim(` -- v${resolvedV1} matches v${resolvedV2}`)
+    );
+  } else {
+    console.log("");
+    console.log(chalk.dim("  " + "\u2500".repeat(40)));
+    console.log(chalk.dim(`  ${changes} change${changes === 1 ? "" : "s"}`));
+  }
+
   console.log("");
+}
 
+// ─── Local-vs-remote diff (youmd diff with no args) ──────────────────
+
+async function diffLocalVsRemote(): Promise<void> {
   if (!localBundleExists()) {
     console.log(chalk.yellow("  no .youmd/ directory found"));
     console.log("");
@@ -393,4 +666,50 @@ export async function diffCommand(): Promise<void> {
   }
 
   console.log("");
+}
+
+// ─── Main diff command ───────────────────────────────────────────────
+
+function parseVersionArg(arg: string): number | null {
+  const trimmed = arg.trim().toLowerCase();
+  if (trimmed === "latest" || trimmed === "head") return -1;
+  // Allow "v3" or "3"
+  const stripped = trimmed.startsWith("v") ? trimmed.slice(1) : trimmed;
+  const n = Number(stripped);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n < 1) return null;
+  return n;
+}
+
+export async function diffCommand(v1?: string, v2?: string): Promise<void> {
+  console.log("");
+
+  // Two version args -> compare two bundle versions
+  if (v1 && v2) {
+    const parsedV1 = parseVersionArg(v1);
+    const parsedV2 = parseVersionArg(v2);
+    if (parsedV1 === null) {
+      console.log(chalk.red(`  invalid version: ${v1}`));
+      console.log(chalk.dim("  use a number, 'v3', or 'latest'"));
+      console.log("");
+      return;
+    }
+    if (parsedV2 === null) {
+      console.log(chalk.red(`  invalid version: ${v2}`));
+      console.log(chalk.dim("  use a number, 'v3', or 'latest'"));
+      console.log("");
+      return;
+    }
+    await diffTwoVersions(parsedV1, parsedV2);
+    return;
+  }
+
+  if (v1 && !v2) {
+    console.log(chalk.yellow("  pass two versions: ") + chalk.cyan("youmd diff <v1> <v2>"));
+    console.log(chalk.dim("  example: ") + chalk.cyan("youmd diff 3 5"));
+    console.log("");
+    return;
+  }
+
+  // No args -> local vs remote
+  await diffLocalVsRemote();
 }

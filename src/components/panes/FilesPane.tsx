@@ -264,11 +264,15 @@ function FileViewer({
   onContentChange,
   editedContent,
   onBack,
+  isCustomDir,
+  onAddFileInDir,
 }: {
   file: VirtualFile;
   onContentChange: (path: string, content: string) => void;
   editedContent: string | undefined;
   onBack?: () => void;
+  isCustomDir: boolean;
+  onAddFileInDir?: () => void;
 }) {
   const content = editedContent ?? file.content;
   const isModified = editedContent !== undefined && editedContent !== file.content;
@@ -336,6 +340,16 @@ function FileViewer({
             <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 uppercase border border-[hsl(var(--border))] px-1.5 py-0.5" style={{ borderRadius: "2px" }}>
               read-only
             </span>
+          )}
+          {isCustomDir && onAddFileInDir && (
+            <button
+              onClick={onAddFileInDir}
+              className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100 border border-[hsl(var(--accent))]/40 px-1.5 py-0.5 hover:bg-[hsl(var(--accent))]/10 transition-colors"
+              style={{ borderRadius: "2px" }}
+              title="add a new markdown file inside this custom directory"
+            >
+              + new file in dir
+            </button>
           )}
         </div>
       </div>
@@ -410,12 +424,78 @@ function NewFileInput({
   );
 }
 
+// ── New Directory Input ─────────────────────────────────────────────────
+
+function NewDirectoryInput({
+  onCreateDirectory,
+  onCancel,
+  busy,
+  error,
+}: {
+  onCreateDirectory: (dirName: string) => void;
+  onCancel: () => void;
+  busy: boolean;
+  error: string | null;
+}) {
+  const [value, setValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleSubmit = () => {
+    const name = value.trim().toLowerCase();
+    if (!name) { onCancel(); return; }
+    if (busy) return;
+    onCreateDirectory(name);
+  };
+
+  // Live validation hint
+  const validName = /^[a-z0-9-]+$/.test(value.trim()) && value.trim().length > 0 && value.trim().length <= 30;
+
+  return (
+    <div className="px-2 py-1.5 border-t border-[hsl(var(--border))]">
+      <div className="flex items-center gap-1">
+        <span className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-60 shrink-0">+</span>
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSubmit();
+            if (e.key === "Escape") onCancel();
+          }}
+          disabled={busy}
+          placeholder="my-notes"
+          maxLength={30}
+          className="flex-1 bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[10px] px-1.5 py-0.5 border border-[hsl(var(--accent))]/40 focus:outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-30 disabled:opacity-40"
+          style={{ borderRadius: "2px" }}
+        />
+      </div>
+      <div className="font-mono text-[8px] mt-0.5 pl-3">
+        {error ? (
+          <span className="text-[hsl(var(--accent))] opacity-80">{error}</span>
+        ) : value.trim() && !validName ? (
+          <span className="text-[hsl(var(--accent))] opacity-60">lowercase, hyphens only, max 30 chars</span>
+        ) : (
+          <span className="text-[hsl(var(--text-secondary))] opacity-30">
+            {busy ? "creating..." : "new private directory / enter to create / esc to cancel"}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main ────────────────────────────────────────────────────────────────
 
 export function FilesPane({ userId }: FilesPaneProps) {
   const { user } = useUser();
   const latestBundle = useQuery(api.bundles.getLatestBundle, userId ? { userId } : "skip");
   const saveYouJson = useMutation(api.me.saveYouJsonDirect);
+  const createCustomDirectory = useMutation(api.me.createCustomDirectory);
   const memories = useQuery(api.memories.listMemories, userId ? { userId } : "skip");
   const sessions = useQuery(api.memories.listSessions, userId ? { userId, limit: 20 } : "skip");
 
@@ -425,6 +505,9 @@ export function FilesPane({ userId }: FilesPaneProps) {
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [creatingFile, setCreatingFile] = useState(false);
+  const [creatingDirectory, setCreatingDirectory] = useState(false);
+  const [creatingDirError, setCreatingDirError] = useState<string | null>(null);
+  const [creatingDirBusy, setCreatingDirBusy] = useState(false);
   const [customFiles, setCustomFiles] = useState<VirtualFile[]>([]);
 
   const files = useMemo(() => {
@@ -434,6 +517,33 @@ export function FilesPane({ userId }: FilesPaneProps) {
     const memoryFiles = generateMemoryFiles(memories ?? [], sessions ?? []);
     return [...bundleFiles, ...memoryFiles, ...customFiles];
   }, [latestBundle, memories, sessions, customFiles]);
+
+  // ── Custom directories ──
+  // A "custom directory" is any directory backed by a youJson.custom_files entry,
+  // OR any unsaved customFiles entry that lives 2+ levels deep.
+  const customDirSet = useMemo(() => {
+    const set = new Set<string>();
+    // From persisted bundle
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const persisted = (latestBundle?.youJson as any)?.custom_files as Array<{ path?: string }> | undefined;
+    if (Array.isArray(persisted)) {
+      for (const cf of persisted) {
+        if (cf?.path && typeof cf.path === "string") {
+          const parts = cf.path.split("/");
+          if (parts.length >= 2) {
+            // Strip the filename, keep the dir path
+            set.add(parts.slice(0, -1).join("/"));
+          }
+        }
+      }
+    }
+    // From in-memory unsaved files
+    for (const cf of customFiles) {
+      const parts = cf.path.split("/");
+      if (parts.length >= 2) set.add(parts.slice(0, -1).join("/"));
+    }
+    return set;
+  }, [latestBundle, customFiles]);
 
   const filteredFiles = useMemo(() => {
     if (!searchQuery.trim()) return files;
@@ -510,6 +620,69 @@ export function FilesPane({ userId }: FilesPaneProps) {
     setSelectedPath(path);
     setCreatingFile(false);
   }, [files]);
+
+  // ── Create new custom directory ───────────────────────────────────────
+
+  const handleCreateDirectory = useCallback(async (dirName: string) => {
+    if (!user?.id) {
+      setCreatingDirError("not signed in");
+      return;
+    }
+    setCreatingDirBusy(true);
+    setCreatingDirError(null);
+    try {
+      const result = await createCustomDirectory({
+        clerkId: user.id,
+        dirName,
+        // default = private
+      });
+      setCreatingDirectory(false);
+      setSaveStatus(`created /${result.filePath}`);
+      setSelectedPath(result.filePath);
+      setTimeout(() => setSaveStatus(null), 3000);
+    } catch (err) {
+      setCreatingDirError(err instanceof Error ? err.message : "failed to create directory");
+    } finally {
+      setCreatingDirBusy(false);
+    }
+  }, [user, createCustomDirectory]);
+
+  // ── Add a new file inside the directory of the currently-selected file ─
+
+  const handleAddFileInCurrentDir = useCallback(() => {
+    if (!selectedPath) return;
+    const parts = selectedPath.split("/");
+    if (parts.length < 2) return;
+    const dirPath = parts.slice(0, -1).join("/");
+
+    // Find an unused filename
+    let idx = 1;
+    let candidate = `${dirPath}/note.md`;
+    const taken = new Set(files.map((f) => f.path));
+    while (taken.has(candidate)) {
+      idx += 1;
+      candidate = `${dirPath}/note-${idx}.md`;
+    }
+
+    const newFile: VirtualFile = {
+      path: candidate,
+      content: `---\ntitle: ${candidate.split("/").pop()?.replace(".md", "") || "Note"}\n---\n\n`,
+      section: `custom_files.${candidate}`,
+      editable: true,
+    };
+    setCustomFiles((prev) => [...prev, newFile]);
+    setEditedFiles((prev) => ({ ...prev, [candidate]: newFile.content }));
+    setSelectedPath(candidate);
+  }, [selectedPath, files]);
+
+  // Helper: is the currently selected file inside a custom directory?
+  const selectedFileIsInCustomDir = useMemo(() => {
+    if (!selectedPath) return false;
+    const parts = selectedPath.split("/");
+    if (parts.length < 2) return false;
+    const dirPath = parts.slice(0, -1).join("/");
+    return customDirSet.has(dirPath);
+  }, [selectedPath, customDirSet]);
 
   // ── Keyboard shortcut: Cmd+S / Ctrl+S ────────────────────────────────
 
@@ -618,10 +791,28 @@ export function FilesPane({ userId }: FilesPaneProps) {
             />
           ) : (
             <button
-              onClick={() => setCreatingFile(true)}
+              onClick={() => { setCreatingFile(true); setCreatingDirectory(false); }}
               className="w-full px-3 py-1.5 border-t border-[hsl(var(--border))] font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-70 hover:text-[hsl(var(--accent))] transition-colors text-left"
             >
               + new file
+            </button>
+          )}
+
+          {/* New directory button / input */}
+          {creatingDirectory ? (
+            <NewDirectoryInput
+              onCreateDirectory={handleCreateDirectory}
+              onCancel={() => { setCreatingDirectory(false); setCreatingDirError(null); }}
+              busy={creatingDirBusy}
+              error={creatingDirError}
+            />
+          ) : (
+            <button
+              onClick={() => { setCreatingDirectory(true); setCreatingFile(false); setCreatingDirError(null); }}
+              className="w-full px-3 py-1.5 border-t border-[hsl(var(--border))] font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-70 hover:text-[hsl(var(--accent))] transition-colors text-left"
+              title="create a custom directory (private by default)"
+            >
+              + new directory
             </button>
           )}
         </div>
@@ -630,7 +821,13 @@ export function FilesPane({ userId }: FilesPaneProps) {
         <div className="hidden md:flex flex-1 min-w-0">
           {selectedFile ? (
             <div className="flex-1">
-              <FileViewer file={selectedFile} onContentChange={handleContentChange} editedContent={editedFiles[selectedFile.path]} />
+              <FileViewer
+                file={selectedFile}
+                onContentChange={handleContentChange}
+                editedContent={editedFiles[selectedFile.path]}
+                isCustomDir={selectedFileIsInCustomDir}
+                onAddFileInDir={handleAddFileInCurrentDir}
+              />
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
@@ -651,6 +848,8 @@ export function FilesPane({ userId }: FilesPaneProps) {
               onContentChange={handleContentChange}
               editedContent={editedFiles[selectedFile!.path]}
               onBack={() => setSelectedPath(null)}
+              isCustomDir={selectedFileIsInCustomDir}
+              onAddFileInDir={handleAddFileInCurrentDir}
             />
           </div>
         </div>

@@ -148,6 +148,7 @@ program
   .command("init")
   .description("Initialize a local .youmd/ identity context (interactive)")
   .option("--skip-prompts", "Skip interactive prompts and create empty bundle")
+  .option("--example <name>", "Scaffold from a sample bundle (houston, priya, jordan)")
   .action(initCommand);
 
 program
@@ -189,9 +190,9 @@ program
   .action(addCommand);
 
 program
-  .command("diff")
-  .description("Show changes between local bundle and published version")
-  .action(() => diffCommand());
+  .command("diff [v1] [v2]")
+  .description("Compare bundle versions: `youmd diff` (local vs remote) or `youmd diff <v1> <v2>`")
+  .action((v1, v2) => diffCommand(v1, v2));
 
 program
   .command("export")

@@ -18,6 +18,7 @@ import { SkillsPane } from "@/components/panes/SkillsPane";
 import { HistoryPane } from "@/components/panes/HistoryPane";
 import { AnalyticsPane } from "@/components/panes/AnalyticsPane";
 import { AgentsPane } from "@/components/panes/AgentsPane";
+import { VaultPane } from "@/components/panes/VaultPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Mobile nav shows these panes as top-level tabs
@@ -29,6 +30,7 @@ const MOBILE_PANES: Array<{ key: RightPane | "terminal"; label: string }> = [
   { key: "agents", label: "agents" },
   { key: "analytics", label: "analytics" },
   { key: "skills", label: "skills" },
+  { key: "vault", label: "vault" },
   { key: "history", label: "history" },
   { key: "portrait", label: "portrait" },
   { key: "settings", label: "settings" },
@@ -42,6 +44,7 @@ const DESKTOP_PANES: Array<{ key: RightPane; label: string }> = [
   { key: "agents", label: "agents" },
   { key: "analytics", label: "analytics" },
   { key: "skills", label: "skills" },
+  { key: "vault", label: "vault" },
   { key: "history", label: "history" },
   { key: "portrait", label: "portrait" },
   { key: "settings", label: "settings" },
@@ -358,6 +361,9 @@ export function DashboardContent() {
                     <AnalyticsPane clerkId={user.id} profileId={userProfile?._id} />
                   )}
                   {rightPane === "agents" && <AgentsPane />}
+                  {rightPane === "vault" && user?.id && (
+                    <VaultPane clerkId={user.id} />
+                  )}
                   {rightPane === "settings" && user?.id && (
                     <SettingsPane clerkId={user.id} username={username} plan={plan} profileId={userProfile?._id} />
                   )}

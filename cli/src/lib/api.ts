@@ -171,6 +171,50 @@ export async function getMe(): Promise<ApiResponse<MeResponse>> {
   });
 }
 
+export interface BundleVersionData {
+  version: number;
+  isPublished: boolean;
+  createdAt: number;
+  publishedAt?: number;
+  contentHash?: string;
+  manifest?: unknown;
+  youJson: unknown;
+  youMd: string;
+}
+
+/**
+ * Fetch a specific bundle by version number for the authenticated user.
+ * Powers `youmd diff <v1> <v2>`.
+ */
+export async function getBundleByVersion(
+  version: number
+): Promise<ApiResponse<BundleVersionData>> {
+  return request<BundleVersionData>(`/api/v1/me/bundles?version=${version}`, {
+    token: getToken(),
+  });
+}
+
+export interface HistoryEntry {
+  _id: string;
+  version: number;
+  isPublished: boolean;
+  createdAt: number;
+  publishedAt?: number;
+  contentHash?: string;
+  parentHash?: string;
+  source?: string;
+  changeNote?: string | null;
+  changedSections?: string[] | null;
+}
+
+export async function getBundleHistory(): Promise<
+  ApiResponse<{ history: HistoryEntry[]; count: number }>
+> {
+  return request<{ history: HistoryEntry[]; count: number }>("/api/v1/me/history", {
+    token: getToken(),
+  });
+}
+
 export interface RemoteStatus {
   username: string;
   bundleCount: number;

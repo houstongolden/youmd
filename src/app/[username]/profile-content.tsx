@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "motion/react";
 import { useUser } from "@clerk/nextjs";
 import { CopyButton } from "@/components/ui/CopyButton";
@@ -59,6 +59,12 @@ const delay = (i: number) => ({
   transition: { duration: 0.3, delay: i * 0.06 },
 });
 
+/* ── Owner edit context ───────────────────────────────────────
+ * Provides ownership flag down the tree so that <SectionLabel>
+ * can render an edit affordance for the owner without prop drilling.
+ */
+const OwnerContext = createContext<boolean>(false);
+
 /* ── Main Component ───────────────────────────────────────── */
 
 interface ProfileContentProps {
@@ -99,6 +105,9 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
     convexUser?._id ? { ownerId: convexUser._id } : "skip"
   );
   const isOwner = ownedProfile?.username === username;
+
+  // ── Public stats (social proof) ──────────────────────────────
+  const publicStats = useQuery(api.profiles.getPublicStats, { username });
 
   // ── Private context (only fetched for owner) ─────────────────
   const privateContext = useQuery(
@@ -213,7 +222,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   // Profile exists but no youJson yet
   if (!data) {
     return (
-      <div className="min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
+      <div className="profile-page min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
         <ProfileHeader username={username} />
         <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
           <div className="flex items-end gap-4 mb-4">
@@ -267,7 +276,8 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const projectCount = data.now?.projects?.length || 0;
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
+    <OwnerContext.Provider value={isOwner}>
+    <div className="profile-page min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
 
       <ProfileHeader username={username} />
 
@@ -357,7 +367,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                   </span>
                 )}
               </div>
-              {tagline && <p className="text-[hsl(var(--text-secondary))] text-[12px] mt-0.5 truncate">{tagline}</p>}
+              {tagline && <p className="text-[hsl(var(--text-secondary))] text-[13px] md:text-[12px] mt-0.5 truncate opacity-90 md:opacity-100">{tagline}</p>}
               {verifications && verifications.length > 0 && (
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {verifications.map((v: { _id: string; method: string; platform?: string }) => (
@@ -373,6 +383,13 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               )}
             </div>
           </div>
+
+          {/* ── Social proof row ─────────────────────────────── */}
+          <SocialProofRow
+            stats={publicStats ?? null}
+            updatedAt={"updatedAt" in resolvedProfile ? (resolvedProfile.updatedAt as number | null) : null}
+            verifiedCount={verifications ? verifications.length : 0}
+          />
 
           {/* Status panel */}
           <div className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] space-y-1.5" style={{ borderRadius: "2px" }}>
@@ -555,9 +572,9 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
           <>
             {/* ═══ IDENTITY ═══ */}
             <motion.section {...delay(1)}>
-              <SectionLabel>identity</SectionLabel>
+              <SectionLabel editKey="identity">identity</SectionLabel>
               {bio && (
-                <p className="text-[hsl(var(--text-secondary))] text-[14px] leading-[1.7] mt-3 mb-4">
+                <p className="text-[hsl(var(--text-secondary))] text-[14px] leading-[1.7] mt-3 mb-4 opacity-90 md:opacity-100">
                   <RenderInlineMarkdown text={bio} />
                 </p>
               )}
@@ -588,7 +605,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               <>
                 <Divider />
                 <motion.section {...delay(2)}>
-                  <SectionLabel>voice</SectionLabel>
+                  <SectionLabel editKey="voice">voice</SectionLabel>
                   <div className="mt-3 space-y-3">
                     {(data.analysis?.voice_summary || data.voice?.overall) && (
                       <p className="text-[hsl(var(--text-secondary))] text-[13px] leading-[1.7]">
@@ -628,7 +645,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               <>
                 <Divider />
                 <motion.section {...delay(3)}>
-                  <SectionLabel>current activity</SectionLabel>
+                  <SectionLabel editKey="now">current activity</SectionLabel>
                   <div className="mt-3">
                     {data.now.focus.map((item: string, i: number) => (
                       <p key={i} className="text-[hsl(var(--text-secondary))] font-mono text-[12px] leading-relaxed">- {item}</p>
@@ -643,7 +660,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               <>
                 <Divider />
                 <motion.section {...delay(4)}>
-                  <SectionLabel>projects</SectionLabel>
+                  <SectionLabel editKey="projects">projects</SectionLabel>
                   <div className="grid gap-2 mt-3">
                     {data.projects
                       .filter((p: Project) => p.name && !p.name.startsWith("#"))
@@ -688,7 +705,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               <>
                 <Divider />
                 <motion.section {...delay(5)}>
-                  <SectionLabel>values</SectionLabel>
+                  <SectionLabel editKey="values">values</SectionLabel>
                   <div className="space-y-0.5 mt-3">
                     {data.values.map((value: string, i: number) => (
                       <p key={i} className="text-[hsl(var(--text-secondary))] opacity-60 font-mono text-[11px]">{"\u203A"} {value}</p>
@@ -703,7 +720,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               <>
                 <Divider />
                 <motion.section {...delay(6)}>
-                  <SectionLabel>links</SectionLabel>
+                  <SectionLabel editKey="links">links</SectionLabel>
                   <div className="flex flex-wrap gap-2 mt-3">
                     {Object.entries(data.links)
                       .filter(([, url]) => url)
@@ -731,7 +748,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               <>
                 <Divider />
                 <motion.section {...delay(7)}>
-                  <SectionLabel>connected sources</SectionLabel>
+                  <SectionLabel editKey="sources">connected sources</SectionLabel>
                   <div className="flex flex-wrap gap-2 mt-3">
                     {data.meta.sources_used.map((source: string, i: number) => (
                       <span
@@ -753,7 +770,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               <>
                 <Divider />
                 <motion.section {...delay(8)}>
-                  <SectionLabel>skills</SectionLabel>
+                  <SectionLabel editKey="skills">skills</SectionLabel>
                   <div className="flex flex-wrap gap-1.5 mt-3">
                     {(Array.isArray(data.identity.skills)
                       ? data.identity.skills
@@ -781,7 +798,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                   <div key={cs.id}>
                     <Divider />
                     <motion.section {...delay(8 + idx)}>
-                      <SectionLabel>{cs.title.toLowerCase()}</SectionLabel>
+                      <SectionLabel editKey={`custom:${cs.id}`}>{cs.title.toLowerCase()}</SectionLabel>
                       <div className="text-[hsl(var(--text-secondary))] text-[14px] leading-[1.7] mt-3 whitespace-pre-wrap">
                         {cs.content}
                       </div>
@@ -907,10 +924,70 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
       {/* Claim banner for unclaimed profiles */}
       {!resolvedProfile.isClaimed && <ClaimBanner username={username} />}
     </div>
+    </OwnerContext.Provider>
   );
 }
 
 /* ── Sub-components ───────────────────────────────────────── */
+
+interface SocialProofRowProps {
+  stats: { totalViews: number; agentReads: number; webViews: number } | null;
+  updatedAt: number | null;
+  verifiedCount: number;
+}
+
+function SocialProofRow({ stats, updatedAt, verifiedCount }: SocialProofRowProps) {
+  // Hide entirely when there's nothing meaningful to render
+  const hasViews = stats && stats.totalViews > 0;
+  const hasAgentReads = stats && stats.agentReads > 0;
+  const hasUpdated = !!updatedAt;
+  const hasVerified = verifiedCount > 0;
+
+  if (!hasViews && !hasAgentReads && !hasUpdated && !hasVerified) return null;
+
+  const items: React.ReactNode[] = [];
+
+  if (hasViews) {
+    items.push(
+      <span key="views" className="text-[hsl(var(--text-secondary))]">
+        {stats.totalViews} view{stats.totalViews !== 1 ? "s" : ""}
+      </span>
+    );
+  }
+  if (hasAgentReads) {
+    items.push(
+      <span key="agent" className="text-[hsl(var(--text-secondary))]">
+        {stats.agentReads} agent read{stats.agentReads !== 1 ? "s" : ""}
+      </span>
+    );
+  }
+  if (hasUpdated) {
+    items.push(
+      <span key="updated" className="text-[hsl(var(--text-secondary))]">
+        updated {formatRelativeTime(updatedAt)}
+      </span>
+    );
+  }
+  if (hasVerified) {
+    items.push(
+      <span key="verified" className="text-[hsl(var(--success))] inline-flex items-center gap-1">
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--success))]" />
+        verified
+      </span>
+    );
+  }
+
+  return (
+    <div className="font-mono text-[10px] opacity-60 mb-3 flex items-center gap-2 flex-wrap">
+      {items.map((node, i) => (
+        <span key={i} className="inline-flex items-center gap-2">
+          {i > 0 && <span className="text-[hsl(var(--text-secondary))]/40">{"\u00B7"}</span>}
+          {node}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function ProfileHeader({ username }: { username: string }) {
   return (
@@ -990,11 +1067,30 @@ function PortraitFrame({ src, preRendered }: { src: string; preRendered?: PreRen
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({
+  children,
+  editKey,
+}: {
+  children: React.ReactNode;
+  /** When set and the viewer is the profile owner, render a small pencil
+   *  icon that links to /shell?tab=files&section=<editKey> */
+  editKey?: string;
+}) {
+  const isOwner = useContext(OwnerContext);
   return (
-    <h2 className="text-[hsl(var(--accent))] font-mono text-[10px] uppercase tracking-widest flex items-center gap-3 my-1">
+    <h2 className="group text-[hsl(var(--accent))] font-mono text-[10px] uppercase tracking-widest flex items-center gap-3 my-1">
       <span className="text-[hsl(var(--border))]">{"\u2500\u2500"}</span>
       {children}
+      {isOwner && editKey && (
+        <Link
+          href={`/shell?tab=files&section=${encodeURIComponent(editKey)}`}
+          aria-label={`edit ${editKey}`}
+          title={`edit ${editKey}`}
+          className="opacity-0 group-hover:opacity-80 focus:opacity-100 transition-opacity duration-150 text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-light))] inline-flex items-center justify-center min-w-[24px] min-h-[24px] -my-1 text-[12px] leading-none"
+        >
+          {"\u270E"}
+        </Link>
+      )}
       <span className="flex-1 h-px bg-[hsl(var(--border))]" />
     </h2>
   );

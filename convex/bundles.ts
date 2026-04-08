@@ -39,6 +39,41 @@ export const getLatestBundle = query({
   },
 });
 
+/**
+ * Get a specific bundle by version number for the authenticated user.
+ * Returns the full bundle (manifest, youJson, youMd) so callers can diff
+ * two arbitrary versions.
+ */
+export const getBundleByVersion = query({
+  args: { clerkId: v.string(), version: v.number() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return null;
+
+    const bundles = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const target = bundles.find((b) => b.version === args.version);
+    if (!target) return null;
+
+    return {
+      version: target.version,
+      isPublished: target.isPublished,
+      createdAt: target.createdAt,
+      publishedAt: target.publishedAt,
+      contentHash: target.contentHash,
+      manifest: target.manifest,
+      youJson: target.youJson,
+      youMd: target.youMd,
+    };
+  },
+});
+
 export const saveBundle = mutation({
   args: {
     userId: v.id("users"),

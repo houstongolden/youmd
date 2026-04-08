@@ -192,6 +192,23 @@ export function decompileBundle(youJson: any, youMd: string): VirtualFile[] {
     }
   }
 
+  // ── User-created custom files ──
+  // Stored in youJson.custom_files as an array of { path, content, isPublic }
+  // The path determines the directory placement (e.g. "my-notes/agent.md").
+  // isPublic=true → path stays as-is (e.g. "profile/my-notes/agent.md")
+  // isPublic=false → path stays as-is and the tree builder routes it under private/
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const customFiles = (youJson?.custom_files as Array<any>) || [];
+  for (const cf of customFiles) {
+    if (!cf || typeof cf.path !== "string") continue;
+    files.push({
+      path: cf.path,
+      content: typeof cf.content === "string" ? cf.content : "",
+      section: `custom_files.${cf.path}`,
+      editable: true,
+    });
+  }
+
   // ── Scaffold: ensure all standard directories + files exist ──
   // Even when empty, these should appear in the file tree so users
   // know the structure and can fill them in.

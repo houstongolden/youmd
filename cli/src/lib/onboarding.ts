@@ -121,9 +121,10 @@ function delay(ms: number): Promise<void> {
 async function showAsciiLogo(): Promise<void> {
   const accent = chalk.hex("#C46A3A");
   console.log("");
+  // Print all logo lines instantly — the staggered delay added ~300ms
+  // of dead air before any prompt appeared.
   for (const line of ASCII_LOGO_LINES) {
     console.log("  " + accent(line));
-    await delay(100);
   }
   console.log("");
   console.log("  " + chalk.dim("identity context protocol — an MCP where the context is you"));
@@ -376,6 +377,7 @@ these phrases are banned. they make you sound generic:
 --- rules ---
 
 - keep responses concise. 2-4 sentences max per turn.
+- your VERY FIRST message must be tight: max ~2 short lines. one quick observation + one question. do not dump a full bio summary on the first response — that comes later, after they answer something.
 - ALWAYS ask ONE question at a time. never two questions in one message.
 - keep analysis to 2-3 sentences MAX, then your single question on its OWN LINE.
 - if the user sends "skip" or empty input, move to the next topic without pressure.
@@ -587,6 +589,63 @@ function displayScrapeResult(label: string, data: ScrapeResult): void {
 interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
+}
+
+/**
+ * Stream a chat response token-by-token via the you.md SSE proxy.
+ * Calls onChunk for each text delta. Returns the full assembled response.
+ *
+ * Throws if streaming fails — callers should catch and fall back to callLLM.
+ */
+async function streamLLM(
+  messages: ChatMessage[],
+  onChunk: (chunk: string) => void
+): Promise<string> {
+  const streamUrl = `${_SITE}/api/v1/chat/stream`;
+  const res = await fetch(streamUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages }),
+    signal: AbortSignal.timeout(60_000),
+  });
+
+  if (!res.ok || !res.body) {
+    throw new Error(`stream failed: ${res.status}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let full = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split("\n");
+    buf = lines.pop() || "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const data = line.slice(6).trim();
+      if (!data) continue;
+      if (data === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.text) {
+          full += parsed.text;
+          onChunk(parsed.text);
+        }
+      } catch {
+        // skip malformed line
+      }
+    }
+  }
+
+  if (!full) {
+    throw new Error("empty stream response");
+  }
+
+  return full;
 }
 
 async function callLLM(
@@ -1044,26 +1103,43 @@ generate initial profile sections from what you know, show a brief summary, and 
   ];
 
   // ── Initial LLM call ──────────────────────────────────────────────
-  let spinner = new BrailleSpinner(randomLabel("llm"));
-  spinner.start();
+  // Print an instant short greeting so the user has something to read while
+  // the model warms up. Then stream the actual first response token-by-token
+  // so first-token-time is the gating factor, not full completion time.
+  const accent = chalk.hex("#C46A3A");
+  const firstName = (info.name || "").split(" ")[0] || info.username;
+  console.log("  " + accent(`hey ${firstName.toLowerCase()}. let me get to know you.`));
+  console.log("");
 
   let response: string;
+  let spinner: BrailleSpinner;
   try {
-    response = await callLLM(apiKey, messages);
-  } catch (err) {
+    // Try streaming first — first response feels alive instead of stalled.
+    process.stdout.write("  ");
+    response = await streamLLM(messages, (chunk) => {
+      process.stdout.write(chunk);
+    });
+    process.stdout.write("\n\n");
+  } catch {
+    // Stream failed — fall back to non-streaming with a spinner.
+    spinner = new BrailleSpinner(randomLabel("llm"));
+    spinner.start();
+    try {
+      response = await callLLM(apiKey, messages);
+    } catch (err) {
+      spinner.stop();
+      console.log(
+        chalk.red(
+          `  failed to connect to AI: ${err instanceof Error ? err.message : String(err)}`
+        )
+      );
+      console.log(chalk.dim("  falling back to manual mode."));
+      console.log("");
+      await runFallbackMode(rl, info);
+      return;
+    }
     spinner.stop();
-    console.log(
-      chalk.red(
-        `  failed to connect to AI: ${err instanceof Error ? err.message : String(err)}`
-      )
-    );
-    console.log(chalk.dim("  falling back to manual mode."));
-    console.log("");
-    await runFallbackMode(rl, info);
-    return;
   }
-
-  spinner.stop();
 
   messages.push({ role: "assistant", content: response });
   const initial = parseUpdatesFromResponse(response);
@@ -1387,8 +1463,8 @@ async function finishBundle(
   const compileSpinner = new BrailleSpinner(randomLabel("compile"));
   compileSpinner.start();
 
-  await new Promise((r) => setTimeout(r, 600));
-
+  // Compile is fast (sync, ~5-20ms). We used to sleep 600ms here so the
+  // spinner felt "real" — that's wasted time on the user's first run.
   const result = compileBundle(bundleDir);
   writeBundle(bundleDir, result);
 

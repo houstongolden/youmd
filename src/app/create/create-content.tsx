@@ -61,16 +61,16 @@ function CreateContentInner() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [lines, phase]);
 
-  // Boot sequence
+  // Boot sequence — fast (<1.5s to first input)
   useEffect(() => {
     const timers = [
-      setTimeout(() => addLine("you.md v0.1.0", "text-[hsl(var(--accent))]"), 200),
-      setTimeout(() => addLine("identity context protocol for the agent internet", "text-[hsl(var(--text-secondary))] opacity-60"), 500),
-      setTimeout(() => addLine("\u00A0"), 700),
-      setTimeout(() => addLine("pick a username and create your account to get started.", "text-[hsl(var(--text-secondary))] opacity-50"), 900),
-      setTimeout(() => addLine("\u00A0"), 1100),
-      setTimeout(() => addLine("choose a username.", "text-[hsl(var(--text-secondary))] opacity-70"), 1200),
-      setTimeout(() => setPhase("username"), 1300),
+      setTimeout(() => addLine("you.md v0.1.0", "text-[hsl(var(--accent))]"), 50),
+      setTimeout(() => addLine("identity context protocol for the agent internet", "text-[hsl(var(--text-secondary))] opacity-60"), 180),
+      setTimeout(() => addLine("\u00A0"), 260),
+      setTimeout(() => addLine("pick a username and create your account to get started.", "text-[hsl(var(--text-secondary))] opacity-50"), 340),
+      setTimeout(() => addLine("\u00A0"), 420),
+      setTimeout(() => addLine("choose a username.", "text-[hsl(var(--text-secondary))] opacity-70"), 500),
+      setTimeout(() => setPhase("username"), 580),
     ];
     return () => timers.forEach(clearTimeout);
   }, [addLine]);

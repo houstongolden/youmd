@@ -350,6 +350,46 @@ input[type="password"]:focus-visible {
   }
 }
 
+/* ── Mobile contrast + tap targets (Tier 5.4) ─────────────────
+ * On small screens, dimmed body text (opacity 0.4–0.7) becomes
+ * unreadable. Boost it for the profile pages while leaving the
+ * desktop terminal aesthetic intact above the md breakpoint. */
+@media screen and (max-width: 767px) {
+  /* Bump dim body text on profile pages so it stays readable */
+  .profile-page [class*="opacity-30"],
+  .profile-page [class*="opacity-40"] {
+    opacity: 0.7 !important;
+  }
+  .profile-page [class*="opacity-50"],
+  .profile-page [class*="opacity-60"] {
+    opacity: 0.85 !important;
+  }
+  .profile-page [class*="opacity-70"] {
+    opacity: 0.9 !important;
+  }
+
+  /* Larger tap targets — every <a>, <button>, [role="button"] inside
+   * the profile page gets at least 44x44 hit area via padding box.
+   * We use min-height + inline-block fallback to keep layout intact. */
+  .profile-page a,
+  .profile-page button,
+  .profile-page [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Restore inline behaviour for content links inside paragraphs so
+   * they don't break flow. Block-level wrappers keep their tap area. */
+  .profile-page p a {
+    min-height: 0;
+    min-width: 0;
+    display: inline;
+  }
+}
+
 /* ── Mobile keyboard: keep input visible ──────────────────── */
 @supports (height: 100dvh) {
   .terminal-input-sticky {

@@ -888,7 +888,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         "/json": "edit",
         "/sources": "edit",
         "/files": "edit",
-        "/vault": "edit",
+        "/vault": "vault",
         "/edit": "edit",
         "/agents": "agents",
         "/skills": "skills",

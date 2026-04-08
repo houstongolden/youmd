@@ -215,6 +215,56 @@ export const getReports = query({
   },
 });
 
+/** Public profile stats — view counts + agent reads, no auth required.
+ *  Used by the social-proof row on profile pages. */
+export const getPublicStats = query({
+  args: { username: v.string() },
+  handler: async (ctx, args) => {
+    const uname = args.username.toLowerCase();
+
+    // Try profiles table first
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_username", (q) => q.eq("username", uname))
+      .first();
+
+    // Fall back to users table for legacy
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_username", (q) => q.eq("username", uname))
+      .first();
+
+    if (!profile && !user) return null;
+
+    // Collect views by either profileId or userId index
+    let views: Array<{ isAgentRead: boolean }> = [];
+    if (profile?._id) {
+      const profileViews = await ctx.db
+        .query("profileViews")
+        .withIndex("by_profileId", (q) => q.eq("profileId", profile._id))
+        .collect();
+      views = views.concat(profileViews as Array<{ isAgentRead: boolean }>);
+    }
+    if (user?._id) {
+      const userViews = await ctx.db
+        .query("profileViews")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect();
+      views = views.concat(userViews as Array<{ isAgentRead: boolean }>);
+    }
+
+    const totalViews = views.length;
+    const agentReads = views.filter((v) => v.isAgentRead).length;
+    const webViews = totalViews - agentReads;
+
+    return {
+      totalViews,
+      agentReads,
+      webViews,
+    };
+  },
+});
+
 // ── Mutations ────────────────────────────────────────────────
 
 /** Create a profile (no auth required) */

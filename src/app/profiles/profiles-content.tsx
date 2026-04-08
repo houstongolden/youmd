@@ -196,18 +196,46 @@ export function ProfilesDirectoryContent() {
   }
 
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "verified" | "has-projects">("all");
+  const [sort, setSort] = useState<"recent" | "projects" | "alpha">("recent");
 
   const filteredEntries = useMemo(() => {
-    const sorted = [...entries].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
-    if (!search.trim()) return sorted;
-    const q = search.toLowerCase();
-    return sorted.filter(
-      (e) =>
-        e.username.toLowerCase().includes(q) ||
-        (e.name && e.name.toLowerCase().includes(q)) ||
-        (e.tagline && e.tagline.toLowerCase().includes(q))
-    );
-  }, [entries, search]);
+    let result = [...entries];
+
+    // Filter
+    if (filter === "verified") {
+      result = result.filter((e) => e.isClaimed);
+    } else if (filter === "has-projects") {
+      result = result.filter((e) => e.projectCount > 0);
+    }
+
+    // Search across name, tagline, location, username
+    const q = search.trim().toLowerCase();
+    if (q) {
+      result = result.filter(
+        (e) =>
+          e.username.toLowerCase().includes(q) ||
+          (e.name && e.name.toLowerCase().includes(q)) ||
+          (e.tagline && e.tagline.toLowerCase().includes(q)) ||
+          (e.location && e.location.toLowerCase().includes(q))
+      );
+    }
+
+    // Sort
+    if (sort === "recent") {
+      result.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+    } else if (sort === "projects") {
+      result.sort((a, b) => b.projectCount - a.projectCount);
+    } else if (sort === "alpha") {
+      result.sort((a, b) => {
+        const an = (a.name || a.username).toLowerCase();
+        const bn = (b.name || b.username).toLowerCase();
+        return an.localeCompare(bn);
+      });
+    }
+
+    return result;
+  }, [entries, search, filter, sort]);
 
   const isLoading = profiles === undefined || legacyUsers === undefined;
   const claimedCount = entries.filter((e) => e.isClaimed).length;
@@ -238,9 +266,10 @@ export function ProfilesDirectoryContent() {
             </div>
           </FadeUp>
 
-          {/* Search */}
+          {/* Search + Filter + Sort */}
           {!isLoading && entries.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-6 space-y-3">
+              {/* Search input */}
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--accent))]/50 font-mono text-[12px] pointer-events-none select-none">
                   &gt;
@@ -249,13 +278,54 @@ export function ProfilesDirectoryContent() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="grep profiles..."
+                  placeholder="grep name, tagline, location..."
                   className="w-full bg-[hsl(var(--raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-primary))] font-mono text-[12px] py-2 pl-7 pr-3 placeholder:text-[hsl(var(--text-secondary))]/30 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors caret-[hsl(var(--accent))]"
                   style={{ borderRadius: "2px" }}
                 />
               </div>
-              {search.trim() && (
-                <p className="text-[hsl(var(--text-secondary))]/40 font-mono text-[10px] mt-1.5 ml-1">
+
+              {/* Filter buttons + Sort dropdown */}
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  {([
+                    { key: "all", label: "all" },
+                    { key: "verified", label: "verified" },
+                    { key: "has-projects", label: "has-projects" },
+                  ] as const).map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => setFilter(f.key)}
+                      className={`font-mono text-[10px] px-2 py-1 border transition-colors ${
+                        filter === f.key
+                          ? "border-[hsl(var(--accent))]/60 text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
+                          : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))]/70 hover:border-[hsl(var(--accent))]/30 hover:text-[hsl(var(--accent))]"
+                      }`}
+                      style={{ borderRadius: "2px" }}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[hsl(var(--text-secondary))]/40 font-mono text-[10px] uppercase tracking-wider">
+                    sort
+                  </span>
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as "recent" | "projects" | "alpha")}
+                    className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] font-mono text-[10px] px-2 py-1 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30"
+                    style={{ borderRadius: "2px" }}
+                  >
+                    <option value="recent">recently active</option>
+                    <option value="projects">most projects</option>
+                    <option value="alpha">alphabetical</option>
+                  </select>
+                </div>
+              </div>
+
+              {(search.trim() || filter !== "all") && (
+                <p className="text-[hsl(var(--text-secondary))]/40 font-mono text-[10px] ml-1">
                   {filteredEntries.length} {filteredEntries.length === 1 ? "match" : "matches"}
                 </p>
               )}

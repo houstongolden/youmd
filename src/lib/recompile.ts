@@ -19,12 +19,69 @@ function parseBulletList(content: string): string[] {
     .filter(Boolean);
 }
 
+// Known structured paths that get parsed back into youJson fields.
+// Anything else gets stored in custom_files as an opaque markdown blob.
+const STRUCTURED_PATHS = new Set([
+  "profile/about.md",
+  "profile/now.md",
+  "profile/projects.md",
+  "profile/values.md",
+  "profile/links.md",
+  "preferences/agent.md",
+  "preferences/writing.md",
+  "voice/voice.md",
+  "voice/voice.linkedin.md",
+  "voice/voice.x.md",
+  "voice/voice.blog.md",
+]);
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function recompileYouJson(originalYouJson: any, editedFiles: Record<string, string>): any {
   // Deep clone to avoid mutation
   const yj = JSON.parse(JSON.stringify(originalYouJson));
 
+  // Ensure custom_files array exists for unstructured edits
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!Array.isArray(yj.custom_files)) yj.custom_files = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const customFiles: Array<{ path: string; content: string; isPublic?: boolean }> =
+    yj.custom_files;
+
+  // Helper: upsert a custom file by path
+  const upsertCustomFile = (path: string, rawContent: string) => {
+    const existingIdx = customFiles.findIndex((f) => f && f.path === path);
+    const isPublic = path.startsWith("profile/");
+    if (existingIdx >= 0) {
+      customFiles[existingIdx] = {
+        ...customFiles[existingIdx],
+        path,
+        content: rawContent,
+        isPublic,
+      };
+    } else {
+      customFiles.push({ path, content: rawContent, isPublic });
+    }
+  };
+
   for (const [path, rawContent] of Object.entries(editedFiles)) {
+    // Anything outside the known structured paths is treated as a custom file
+    // (user-created or otherwise). Skip the known managed/read-only files.
+    if (!STRUCTURED_PATHS.has(path)) {
+      // Don't persist read-only managed paths via custom_files
+      const isManaged =
+        path === "you.md" ||
+        path === "you.json" ||
+        path === "manifest.json" ||
+        path === "FOLDER.md" ||
+        path.startsWith("memory/") ||
+        path.startsWith("sessions/") ||
+        path.startsWith("sources/");
+      if (!isManaged) {
+        upsertCustomFile(path, rawContent);
+      }
+      continue;
+    }
+
     const content = stripFrontmatter(rawContent);
 
     switch (path) {
