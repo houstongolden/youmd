@@ -7,7 +7,6 @@ import { useState } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
-import { CopyableCommand } from "./CopyableCommand";
 
 interface SettingsPaneProps {
   clerkId: string;
@@ -71,6 +70,22 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
   const [creatingKey, setCreatingKey] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
   const [confirmRevokeKey, setConfirmRevokeKey] = useState<string | null>(null);
+  const [showAllKeys, setShowAllKeys] = useState(false);
+
+  // Sort: active (not revoked) first, then revoked. Within each group, newest first.
+  const sortedKeys = keys
+    ? [...keys].sort((a, b) => {
+        if (a.isRevoked !== b.isRevoked) return a.isRevoked ? 1 : -1;
+        // newer createdAt first
+        const aTs = a.createdAt ? Date.parse(a.createdAt) : 0;
+        const bTs = b.createdAt ? Date.parse(b.createdAt) : 0;
+        return bTs - aTs;
+      })
+    : [];
+
+  const KEY_LIMIT = 5;
+  const visibleKeys = showAllKeys ? sortedKeys : sortedKeys.slice(0, KEY_LIMIT);
+  const hiddenKeyCount = Math.max(0, sortedKeys.length - KEY_LIMIT);
 
   // Activity logs from Convex
   const logs = useQuery(
@@ -175,9 +190,9 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
           </div>
         )}
 
-        {keys && keys.length > 0 ? (
+        {keys && sortedKeys.length > 0 ? (
           <div className="space-y-2">
-            {keys.map((k) => (
+            {visibleKeys.map((k) => (
               <div
                 key={k.id}
                 className="flex items-center justify-between px-3 py-2.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[10px] font-mono"
@@ -222,6 +237,23 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
                 )}
               </div>
             ))}
+
+            {/* Footer: count + load more / collapse */}
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30">
+                {visibleKeys.length} of {sortedKeys.length} keys shown
+              </p>
+              {hiddenKeyCount > 0 && (
+                <button
+                  onClick={() => setShowAllKeys((v) => !v)}
+                  className="text-[10px] font-mono text-[hsl(var(--accent))] opacity-60 hover:opacity-100 transition-opacity"
+                >
+                  {showAllKeys
+                    ? "[show less]"
+                    : `[load more keys (${hiddenKeyCount} hidden)]`}
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <p className="text-[10px] text-[hsl(var(--text-secondary))] opacity-25 font-mono">
@@ -293,23 +325,6 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
             no activity recorded yet.
           </p>
         )}
-
-        <Divider />
-
-        {/* Help / Commands */}
-        <SectionLabel>commands reference</SectionLabel>
-        <div className="space-y-1 mb-2">
-          <CopyableCommand command="/share" />
-          <CopyableCommand command="/share --private" dimmed />
-          <CopyableCommand command="/publish" dimmed />
-          <CopyableCommand command="/portrait --regenerate" dimmed />
-          <CopyableCommand command="/status" dimmed />
-          <CopyableCommand command="/memory" dimmed />
-          <CopyableCommand command="/recall" dimmed />
-        </div>
-        <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-30 mb-2">
-          you can also type naturally -- the agent understands free-form input.
-        </p>
 
         <Divider />
 

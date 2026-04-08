@@ -403,6 +403,56 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
       </PaneHeader>
 
       <div className="px-6 py-4 space-y-4">
+        {/* ── Always-visible explainer ─────────────────────────── */}
+        <div
+          className="border border-[hsl(var(--accent))] border-opacity-40 bg-[hsl(var(--accent))] bg-opacity-[0.03] p-4 space-y-3"
+          style={{ borderRadius: "2px" }}
+        >
+          <div className="text-[11px] font-mono text-[hsl(var(--accent))] uppercase tracking-wider">
+            the vault
+          </div>
+          <p className="text-[11px] font-mono text-[hsl(var(--text-primary))] opacity-80 leading-relaxed">
+            Encrypted private notes that NEVER leave your control unencrypted.
+            Only you can read them — even you.md servers can&apos;t.
+          </p>
+
+          <div className="space-y-1.5">
+            <div className="text-[10px] font-mono text-[hsl(var(--accent))] uppercase tracking-wider opacity-80">
+              when to use
+            </div>
+            <ul className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-70 leading-relaxed space-y-1 pl-3">
+              <li>
+                • Sensitive notes you don&apos;t want in normal private context
+                (passwords, account IDs, confidential client info, etc.)
+              </li>
+              <li>
+                • Items only YOU should see, not even agents with full-scope
+                context links
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="text-[10px] font-mono text-[hsl(var(--accent))] uppercase tracking-wider opacity-80">
+              how it works
+            </div>
+            <ol className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-70 leading-relaxed space-y-1 pl-3">
+              <li>
+                1. Create vault with a passphrase (only known to you — we
+                can&apos;t recover it)
+              </li>
+              <li>2. Add encrypted notes/keys/anything</li>
+              <li>3. Unlock with passphrase to read</li>
+              <li>4. Lock to clear from memory</li>
+            </ol>
+          </div>
+
+          <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-50 leading-relaxed pt-1 border-t border-[hsl(var(--accent))] border-opacity-20">
+            Vault is separate from &quot;private context&quot; (which IS shared
+            with full-scope agents).
+          </p>
+        </div>
+
         {error && (
           <div className="text-[11px] font-mono text-[hsl(var(--destructive))] border border-[hsl(var(--destructive))] border-opacity-30 rounded px-2 py-1">
             {error}
@@ -415,10 +465,10 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
         )}
 
         {!unlocked && !initialized && (
-          <div className="space-y-3">
-            <SectionLabel>create vault</SectionLabel>
+          <div className="space-y-3 border border-[hsl(var(--border))] p-4" style={{ borderRadius: "2px" }}>
+            <SectionLabel>set up vault</SectionLabel>
             <p className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-60">
-              choose a passphrase. only you can decrypt your vault — we never see it.
+              choose a passphrase to create your encrypted vault. only you can decrypt it — we never see it, and we can&apos;t recover it.
             </p>
             <input
               type="password"
@@ -445,7 +495,7 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
         )}
 
         {!unlocked && initialized && (
-          <div className="space-y-3">
+          <div className="space-y-3 border border-[hsl(var(--border))] p-4" style={{ borderRadius: "2px" }}>
             <SectionLabel>unlock vault</SectionLabel>
             <p className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-60">
               {hasCiphertext

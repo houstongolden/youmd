@@ -982,7 +982,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       if (trimmed === "/help") {
         if (onPaneSwitch) {
-          onPaneSwitch("settings");
+          onPaneSwitch("help");
         }
         const helpText = onPaneSwitch
           ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/profile -- your identity profile\n/portrait -- ascii portrait editor + format picker\n/portrait --regenerate -- regenerate ascii portrait from sources\n/edit -- edit your identity context (files, json, sources)\n/skills -- identity-aware agent skills\n/publish -- publish your latest bundle\n/settings -- account, api keys, billing\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n/status -- bundle status\n/help -- show this reference"

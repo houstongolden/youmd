@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useState } from "react";
-import { PaneSectionLabel, PaneDivider } from "./shared";
+import { PaneDivider } from "./shared";
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
@@ -62,9 +62,19 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Agent Activity */}
+      {/* Agent Contributions */}
       <div>
-        <PaneSectionLabel>agent activity</PaneSectionLabel>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-[10px] font-mono text-[hsl(var(--accent))] uppercase tracking-widest">
+            &gt; agent contributions
+          </h3>
+          <span
+            className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-70 transition-opacity cursor-help"
+            title="every time an agent reads or writes to your identity is tracked here, like commits to a git repo"
+          >
+            (?)
+          </span>
+        </div>
         {userStats === undefined ? (
           <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-40 animate-pulse">loading...</p>
         ) : (
@@ -114,13 +124,23 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
 
       <PaneDivider />
 
-      {/* Version History */}
+      {/* Commits / Version history */}
       <div>
-        <PaneSectionLabel>version history</PaneSectionLabel>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-[10px] font-mono text-[hsl(var(--accent))] uppercase tracking-widest">
+            &gt; commits
+          </h3>
+          <span
+            className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-70 transition-opacity cursor-help"
+            title="every published bundle is a commit on your identity. revert to any prior commit to roll back."
+          >
+            (?)
+          </span>
+        </div>
         {history === undefined ? (
           <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-40 animate-pulse">loading...</p>
         ) : history.length === 0 ? (
-          <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30">no versions yet.</p>
+          <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30">no commits yet.</p>
         ) : (
           <div className="space-y-0">
             {history.map((v: any, i: number) => (
@@ -142,7 +162,7 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
                   <div className="flex items-center gap-2">
                     {v.isPublished && (
                       <span className="text-[8px] font-mono text-[hsl(var(--success))] border border-[hsl(var(--success))]/20 px-1.5 py-0.5" style={{ borderRadius: "2px" }}>
-                        live
+                        HEAD
                       </span>
                     )}
                     <span className={`text-[9px] font-mono ${sourceColor(v.source)}`}>
@@ -154,24 +174,23 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
                       </span>
                     )}
                   </div>
-                  {v.changeNote && (
-                    <p className="text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-40 mt-0.5 truncate">
-                      {v.changeNote}
-                    </p>
-                  )}
+                  <p className="text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-40 mt-0.5 truncate">
+                    {v.changeNote || (v.isPublished ? "publish bundle" : "draft bundle")}
+                  </p>
                   <p className="text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-25 mt-0.5">
-                    {timeAgo(v.createdAt)}
+                    committed {timeAgo(v.createdAt)}
                   </p>
                 </div>
 
-                {/* Rollback button (not for current version) */}
+                {/* Revert button (not for current version) */}
                 {!v.isPublished && i > 0 && (
                   <button
                     onClick={() => handleRollback(v.version)}
                     disabled={rolling}
                     className="shrink-0 text-[9px] font-mono text-[hsl(var(--accent))] opacity-40 hover:opacity-80 transition-opacity disabled:opacity-20"
+                    title="revert HEAD to this commit"
                   >
-                    restore
+                    revert
                   </button>
                 )}
               </div>

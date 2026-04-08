@@ -19,6 +19,7 @@ import { HistoryPane } from "@/components/panes/HistoryPane";
 import { AnalyticsPane } from "@/components/panes/AnalyticsPane";
 import { AgentsPane } from "@/components/panes/AgentsPane";
 import { VaultPane } from "@/components/panes/VaultPane";
+import { HelpPane } from "@/components/panes/HelpPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Mobile nav shows these panes as top-level tabs
@@ -31,9 +32,10 @@ const MOBILE_PANES: Array<{ key: RightPane | "terminal"; label: string }> = [
   { key: "analytics", label: "analytics" },
   { key: "skills", label: "skills" },
   { key: "vault", label: "vault" },
-  { key: "history", label: "history" },
+  { key: "history", label: "versions" },
   { key: "portrait", label: "portrait" },
   { key: "settings", label: "settings" },
+  { key: "help", label: "help" },
 ];
 
 // Desktop pane tab row (shown inside the right panel)
@@ -45,9 +47,10 @@ const DESKTOP_PANES: Array<{ key: RightPane; label: string }> = [
   { key: "analytics", label: "analytics" },
   { key: "skills", label: "skills" },
   { key: "vault", label: "vault" },
-  { key: "history", label: "history" },
+  { key: "history", label: "versions" },
   { key: "portrait", label: "portrait" },
   { key: "settings", label: "settings" },
+  { key: "help", label: "help" },
 ];
 
 export function DashboardContent() {
@@ -366,6 +369,9 @@ export function DashboardContent() {
                   )}
                   {rightPane === "settings" && user?.id && (
                     <SettingsPane clerkId={user.id} username={username} plan={plan} profileId={userProfile?._id} />
+                  )}
+                  {rightPane === "help" && (
+                    <HelpPane username={username} />
                   )}
                 </ErrorBoundary>
               </div>
