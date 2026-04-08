@@ -1532,6 +1532,23 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       // (at streamMsgId). Do NOT add a duplicate here. Only add system notices
       // for updates, memories, etc.
 
+      // LYING DETECTION: if the assistant claimed past-tense actions but didn't
+      // emit any updates, warn the user. This catches the "done. created..." lie.
+      if (updates.length === 0) {
+        const lieIndicators = [
+          /\b(done|created|added|scaffolded|updated|saved|wrote|generated|set\s*up|infrastructure\s+is\s+now|properly\s+documented|i'?ve\s+(added|created|updated|scaffolded))\b/i,
+          /\bproject\s+(subdirectories|infrastructure)\b.*\b(now|created|done)\b/i,
+        ];
+        const claimsAction = lieIndicators.some((rx) => rx.test(cleanDisplay));
+        if (claimsAction && cleanDisplay.length > 50) {
+          newDisplayMsgs.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[warning: agent claimed actions but did NOT emit any file updates. nothing was actually written. ask it to "show the json updates block" or do it yourself in the files tab.]`,
+          });
+        }
+      }
+
       if (updates.length > 0) {
         const sectionNames = updates
           .map((u) => sectionLabel(u.section))

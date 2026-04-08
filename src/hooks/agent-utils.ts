@@ -818,6 +818,34 @@ rules for update content:
 - when you have scraped data, USE IT. write bios from real information, not generic descriptions.
 - when you create custom sections, make them substantive — not single sentences. write real content.
 
+--- ABSOLUTE TRUTHFULNESS RULE (NEVER LIE ABOUT FILE OPERATIONS) ---
+
+CRITICAL: You can ONLY write to files by emitting a fenced "json" code block containing {"updates": [...]} in your response. If you don't emit the block, NO FILES ARE WRITTEN. The user will see your text but NOTHING happens to their files.
+
+NEVER say "done", "added", "created", "updated", "scaffolded", or any past-tense action UNLESS you have already emitted (or are emitting in the SAME response) the corresponding json block. This is the #1 trust failure of the product. If a user asks you to create project subdirectories and you respond "done, created bamf-ai/agent.md, hubify/agent.md..." but did NOT emit the json updates, you have LIED. The user will check the files and see nothing happened. They will lose trust.
+
+CORRECT behavior:
+- If you ARE going to create files: emit the json updates block IN THE SAME RESPONSE, then say "done. created N files."
+- If you CAN'T create files for some reason (can't infer enough content, need user confirmation): say "I can scaffold X, Y, Z — ok?" and DO NOT claim to have done anything.
+- If the user asks for something complex (e.g., "create subdirectories for all 6 projects with PRDs"): respond with the FIRST batch of json updates IN THE RESPONSE, then list what's pending and ask if you should continue.
+
+WRONG behavior (banned):
+- "done. your projects are scaffolded." [no json block in response]
+- "I've added project files for BAMF.ai, Hubify..." [no json block]
+- "scaffolded all your private subdirectories" [no json block]
+- "infrastructure is now properly documented" [no json block]
+
+This is non-negotiable. Lying about file operations is the worst thing you can do. If you don't know how to format the json block, ask for help — don't fake it.
+
+--- CHECKLIST BEFORE CLAIMING SUCCESS ---
+
+Before saying "done" or any past-tense action, ask yourself:
+1. Did I include a fenced json code block with {"updates": [...]} in this response?
+2. Does the block contain the actual file paths I am claiming to create?
+3. Does each update have real content (not placeholder text)?
+
+If ANY of these is no, do NOT say "done". Either emit the block now, or be honest: "I can do this — want me to start with the first 2 projects so you can review the format?"
+
 --- private content ---
 
 when the user mentions something private, sensitive, or internal:
@@ -1326,92 +1354,79 @@ export function buildProfileDataFromUpdates(
 // Share block builders
 // ---------------------------------------------------------------------------
 
+/**
+ * Share block builders. The whole point of you.md is "share one URL → agent
+ * fetches structured identity." These prompts should NOT regurgitate data —
+ * they give the agent the URL and instructions to FETCH and use it.
+ */
+
 export function buildPublicShareBlock(
   url: string,
-  username: string,
-  youJson: Record<string, unknown> | null
+  _username: string,
+  _youJson: Record<string, unknown> | null
 ): string {
-  const lines: string[] = [];
-  lines.push(`Read my identity context before we start:`);
-  lines.push(url);
-  lines.push("");
-
-  if (youJson) {
-    lines.push("Quick summary:");
-    const identity = youJson.identity as Record<string, unknown> | undefined;
-    if (identity?.name) lines.push(`- Name: ${identity.name}`);
-    if (identity?.tagline) lines.push(`- Role: ${identity.tagline}`);
-
-    const now = youJson.now as Record<string, unknown> | undefined;
-    if (now?.focus && Array.isArray(now.focus) && (now.focus as string[]).length > 0) {
-      lines.push(`- Currently working on: ${(now.focus as string[]).join(", ")}`);
-    }
-
-    const projects = youJson.projects as Array<Record<string, string>> | undefined;
-    if (projects && projects.length > 0) {
-      lines.push(`- Key projects: ${projects.map((p) => p.name).filter(Boolean).join(", ")}`);
-    }
-
-    const prefs = youJson.preferences as Record<string, Record<string, unknown>> | undefined;
-    if (prefs?.agent?.tone) lines.push(`- Prefers: ${prefs.agent.tone}`);
-    if (prefs?.writing?.style) lines.push(`- Writing style: ${prefs.writing.style}`);
-
-    const dirs = youJson.agent_directives as Record<string, unknown> | undefined;
-    if (dirs?.communication_style) lines.push(`- Communication: ${dirs.communication_style}`);
-    if (dirs?.default_stack) lines.push(`- Default stack: ${dirs.default_stack}`);
-    if (dirs?.current_goal) lines.push(`- Current goal: ${dirs.current_goal}`);
-    if (Array.isArray(dirs?.negative_prompts) && (dirs.negative_prompts as string[]).length > 0)
-      lines.push(`- Never: ${(dirs.negative_prompts as string[]).slice(0, 3).join("; ")}`);
-  }
-
-  lines.push("");
-  lines.push(`Full context available at the URL above.`);
-  return lines.join("\n");
+  return [
+    `Fetch this URL and load my identity context before we start:`,
+    url,
+    ``,
+    `It returns structured you-md/v1 JSON with my bio, projects, values,`,
+    `preferences, and communication style. Apply everything you find.`,
+    ``,
+    `If the URL above fails to load, use these direct endpoints instead:`,
+    `- JSON: ${url.replace(/\/ctx\/.+$/, "")}/${_username}/you.json`,
+    `- Plain text: ${url.replace(/\/ctx\/.+$/, "")}/${_username}/you.txt`,
+    ``,
+    `After reading my identity context, respond with:`,
+    `1. Confirm what you learned — name, role, key projects, preferences`,
+    `2. Note anything you'll adjust (tone, formality, things to avoid)`,
+    `3. Reference my context naturally throughout the conversation`,
+    `4. Ask what I need help with today`,
+  ].join("\n");
 }
 
 export function buildPrivateShareBlock(
-  publicBlock: string,
-  privateCtx: Record<string, unknown> | null
+  _publicBlock: string,
+  _privateCtx: Record<string, unknown> | null,
+  url?: string,
+  username?: string
 ): string {
-  if (!privateCtx) return publicBlock;
-
-  const lines: string[] = [publicBlock, ""];
-  lines.push("Private context (for trusted agents only):");
-
-  if (privateCtx.privateNotes) {
-    lines.push(String(privateCtx.privateNotes));
-  }
-
-  const privateProjects = privateCtx.privateProjects as Array<Record<string, string>> | undefined;
-  if (privateProjects && privateProjects.length > 0) {
-    lines.push(`Private projects: ${privateProjects.map((p) => p.name || p.description || "unnamed").join(", ")}`);
-  }
-
-  const internalLinks = privateCtx.internalLinks as Record<string, string> | undefined;
-  if (internalLinks) {
-    const entries = Object.entries(internalLinks).filter(([, v]) => v);
-    if (entries.length > 0) {
-      lines.push(`Internal links: ${entries.map(([k, v]) => `${k}: ${v}`).join(", ")}`);
-    }
-  }
-
-  return lines.join("\n");
+  // The url and username may not always be passed; fall back gracefully.
+  const actualUrl = url || _publicBlock.split("\n").find((l) => l.startsWith("http")) || "";
+  const actualUsername = username || "user";
+  return [
+    `Fetch this FULL-CONTEXT URL and load my complete identity before we start:`,
+    actualUrl,
+    ``,
+    `This is a SECURE TOKENIZED LINK. It includes my private context:`,
+    `- Private notes (internal context, business state, sensitive details)`,
+    `- Private projects (stealth/internal projects not in my public profile)`,
+    `- Internal links (investor decks, dashboards, internal tools)`,
+    `- Vault notes (if I've added any)`,
+    `- All public profile data (bio, projects, preferences, voice, directives)`,
+    ``,
+    `The response is you-md/v1 JSON with both \`identity\` and \`_privateContext\``,
+    `fields. Treat all private fields as confidential — don't summarize them`,
+    `back publicly or share with anyone else.`,
+    ``,
+    `After reading, confirm what you learned and ask what I need help with.`,
+    `Reference my context naturally — don't make me re-explain things that`,
+    `are in my profile or private notes.`,
+  ].join("\n");
 }
 
 export function buildProjectShareBlock(
   projectName: string,
-  username: string,
+  _username: string,
   url: string,
   youJson: Record<string, unknown> | null,
   privateCtx: Record<string, unknown> | null
 ): string | null {
   const searchName = projectName.toLowerCase();
 
-  // Search public projects
+  // Verify the project exists in either public or private
   const publicProjects = (youJson?.projects as Array<Record<string, string>> | undefined) || [];
   let found = publicProjects.find((p) => p.name?.toLowerCase().includes(searchName));
 
-  // Search private projects
   if (!found && privateCtx) {
     const privateProjects = (privateCtx.privateProjects as Array<Record<string, string>> | undefined) || [];
     found = privateProjects.find((p) => p.name?.toLowerCase().includes(searchName));
@@ -1419,22 +1434,18 @@ export function buildProjectShareBlock(
 
   if (!found) return null;
 
-  const lines: string[] = [];
-  lines.push(`Project context for "${found.name || projectName}":`);
-  if (found.role) lines.push(`- Role: ${found.role}`);
-  if (found.status) lines.push(`- Status: ${found.status}`);
-  if (found.description) lines.push(`- Description: ${found.description}`);
-  if (found.url) lines.push(`- URL: ${found.url}`);
-  lines.push("");
-  lines.push(`My identity context: ${url}`);
+  // Just give the URL with project scope hint — the URL already has ?project=
+  const projectUrl = url.includes("?") ? `${url}&project=${encodeURIComponent(found.name || projectName)}` : `${url}?project=${encodeURIComponent(found.name || projectName)}`;
 
-  const prefs = youJson?.preferences as Record<string, Record<string, unknown>> | undefined;
-  const prefParts: string[] = [];
-  if (prefs?.agent?.tone) prefParts.push(`tone: ${prefs.agent.tone}`);
-  if (prefs?.writing?.style) prefParts.push(`style: ${prefs.writing.style}`);
-  if (prefParts.length > 0) lines.push(`My preferences: ${prefParts.join(", ")}`);
-
-  return lines.join("\n");
+  return [
+    `Fetch this URL — it's scoped to my "${found.name || projectName}" project context:`,
+    projectUrl,
+    ``,
+    `It returns my full identity plus everything related to this specific project.`,
+    `Apply my preferences and reference the project context naturally throughout.`,
+    ``,
+    `After reading, confirm what you learned and ask what I need help with.`,
+  ].join("\n");
 }
 
 // ---------------------------------------------------------------------------

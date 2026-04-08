@@ -515,7 +515,15 @@ export function FilesPane({ userId }: FilesPaneProps) {
       ? decompileBundle(latestBundle.youJson, latestBundle.youMd ?? "")
       : [];
     const memoryFiles = generateMemoryFiles(memories ?? [], sessions ?? []);
-    return [...bundleFiles, ...memoryFiles, ...customFiles];
+
+    // Dedupe by path: memory/session files take priority over scaffold placeholders.
+    // This fixes duplicate sessions/history.md and memory/index.md issues.
+    const seen = new Map<string, VirtualFile>();
+    // Priority order: customFiles > memoryFiles > bundleFiles (scaffold)
+    for (const f of bundleFiles) seen.set(f.path, f);
+    for (const f of memoryFiles) seen.set(f.path, f); // overrides scaffold
+    for (const f of customFiles) seen.set(f.path, f);
+    return Array.from(seen.values());
   }, [latestBundle, memories, sessions, customFiles]);
 
   // ── Custom directories ──
