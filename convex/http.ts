@@ -1065,13 +1065,37 @@ http.route({ path: "/api/v1/chat/compact", method: "OPTIONS", handler: httpActio
 // ============================================================
 
 // POST /api/v1/scrape — Scrape a social profile by URL
+// Cycle 54: per-IP rate limit + daily spend cap added (paid Apify actors).
+// Underlying scrape.scrapeProfile is now internalAction, no longer reachable
+// via /api/action.
 http.route({
   path: "/api/v1/scrape",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     try {
       const body = await request.json();
-      const result = await ctx.runAction(api.scrape.scrapeProfile, {
+
+      // Cycle 54: per-IP rate limit
+      try {
+        await ctx.runMutation(internal.lib.rateLimit.checkAndRecord, {
+          bucket: `scrape:${getCallerIp(request)}`,
+          windowMs: 60_000,
+          maxCalls: 10,
+        });
+      } catch (err) {
+        return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+      }
+
+      // Cycle 54: daily spend cap
+      try {
+        await ctx.runMutation(internal.lib.spendCap.checkAndRecord, {
+          endpoint: "scrape",
+        });
+      } catch (err) {
+        return json({ success: false, error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+      }
+
+      const result = await ctx.runAction(internal.scrape.scrapeProfile, {
         url: body.url,
         username: body.username,
         platform: body.platform,
@@ -1228,6 +1252,8 @@ http.route({
 // ============================================================
 
 // POST /api/v1/enrich-linkedin — Full LinkedIn enrichment pipeline
+// Cycle 54: per-IP rate limit + daily spend cap added (the most expensive
+// public endpoint — runs TWO Apify actors per call with 120s timeouts).
 http.route({
   path: "/api/v1/enrich-linkedin",
   method: "POST",
@@ -1246,6 +1272,26 @@ http.route({
           { success: false, error: "Invalid LinkedIn URL. Expected format: https://linkedin.com/in/username" },
           400
         );
+      }
+
+      // Cycle 54: per-IP rate limit (5/min — more restrictive than scrape because runs are 2x)
+      try {
+        await ctx.runMutation(internal.lib.rateLimit.checkAndRecord, {
+          bucket: `linkedin:${getCallerIp(request)}`,
+          windowMs: 60_000,
+          maxCalls: 5,
+        });
+      } catch (err) {
+        return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+      }
+
+      // Cycle 54: daily spend cap (counts $0.10 per call since it runs 2 actors)
+      try {
+        await ctx.runMutation(internal.lib.spendCap.checkAndRecord, {
+          endpoint: "linkedin",
+        });
+      } catch (err) {
+        return json({ success: false, error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
       }
 
       // Normalize LinkedIn URL to ensure consistent format for Apify

@@ -43,6 +43,9 @@ const COST_ESTIMATES = {
   enrich: 0.005,    // xAI Grok-3-mini
   compact: 0.002,   // Haiku, longer prompt
   summarize: 0.001, // Haiku, short prompt
+  // Cycle 54: Apify scraping endpoints
+  scrape: 0.05,     // Apify single-actor run (varies by actor cost)
+  linkedin: 0.10,   // Apify LinkedIn enrichment runs TWO actors per call
 } as const;
 
 /**

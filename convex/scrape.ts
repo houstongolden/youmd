@@ -1,7 +1,20 @@
 "use node";
 
 import { v } from "convex/values";
-import { action } from "./_generated/server";
+import { internalAction } from "./_generated/server";
+
+/**
+ * Cycle 54: Both exports converted from `action` (public) to `internalAction`.
+ * They were anonymous-callable Apify-cost vectors — anyone could `curl /api/action`
+ * with `path: "scrape:scrapeProfile"` and trigger paid Apify scraping runs on
+ * Houston's API key.
+ *
+ * Now callable only via:
+ *   1. Other Convex functions
+ *   2. The httpAction wrappers in convex/http.ts (which now enforce per-IP
+ *      rate limits + per-day spend caps via convex/lib/rateLimit.ts and
+ *      convex/lib/spendCap.ts)
+ */
 
 // ============================================================
 // Profile Scraper — fetches public profile data from social platforms
@@ -404,7 +417,7 @@ function detectPlatform(
 // Convex action — public, stateless profile scraper
 // ============================================================
 
-export const scrapeProfile = action({
+export const scrapeProfile = internalAction({
   args: {
     url: v.optional(v.string()),
     username: v.optional(v.string()),
@@ -474,7 +487,7 @@ export const scrapeProfile = action({
 // scrapeLinkedInFull — Quick LinkedIn profile via Apify (for onboarding)
 // ============================================================
 
-export const scrapeLinkedInFull = action({
+export const scrapeLinkedInFull = internalAction({
   args: {
     linkedinUrl: v.string(),
   },

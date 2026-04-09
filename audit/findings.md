@@ -3682,3 +3682,89 @@ Defense-in-depth. Before cycle 53, a typo'd or legacy http:// URL would silently
 - Deployed
 - 5 tests + regression checks all green
 - Lock held throughout
+
+---
+
+## Cycle 54 — Apify scrape endpoints: rate limits + spend cap + internalize (Round 2 audit) — 2026-04-09 12:15 UTC
+
+**Tool:** route inventory + cycle 46 pattern reuse + curl rate-limit verification + spend cap check
+**Status:** **DONE — 2 P0 financial-loss vectors closed, same shape as cycle 46 chat.* but for Apify instead of LLMs.**
+
+### What this cycle did
+
+Improvements TODO had only the cycle 52 Houston-config item (still not actionable). Per protocol step 2, moved to queue.md and picked the top tractable Round 2 security item: **Rate limiting on API endpoints**. Cycle 46 covered the chat.* httpAction wrappers but didn't audit the rest. Two endpoints stood out as expensive + unauth + uncapped:
+
+1. **`/api/v1/scrape`** → calls `api.scrape.scrapeProfile` (paid Apify run)
+2. **`/api/v1/enrich-linkedin`** → makes TWO direct Apify fetches per call (profile + posts actors), 120s timeouts each
+
+Same shape as cycle 46's chat.* findings: anonymous attacker spams curl, drains Houston's Apify credits in hours.
+
+### Audit findings
+
+Both endpoints had:
+- ❌ NO rate limit
+- ❌ NO daily spend cap
+- ❌ Underlying actions were `action` (public) → also reachable via `/api/action` direct call
+
+Both `scrape.scrapeProfile` (1 caller in http.ts) and `scrape.scrapeLinkedInFull` (0 callers — dead-ish) were public actions.
+
+### The fix (same two-layer pattern as cycle 46)
+
+**Layer 1 — internalize the actions:**
+- `convex/scrape.ts`: `scrapeProfile` and `scrapeLinkedInFull` converted from `action` → `internalAction`. Cannot be called directly via `/api/action` anymore.
+- `convex/http.ts:1074`: caller switched from `api.scrape.scrapeProfile` → `internal.scrape.scrapeProfile`.
+
+**Layer 2 — per-IP rate limit + daily spend cap on httpAction wrappers:**
+- `/api/v1/scrape`: 10 calls/IP/min, $0.05/call against the daily cap
+- `/api/v1/enrich-linkedin`: 5 calls/IP/min (more restrictive — runs 2 actors per call), $0.10/call against the daily cap
+- Both use the cycle 46 `internal.lib.rateLimit.checkAndRecord` and cycle 48 `internal.lib.spendCap.checkAndRecord` helpers
+
+**New cost estimates added to `convex/lib/spendCap.ts`:**
+```ts
+scrape: 0.05,    // Apify single-actor run
+linkedin: 0.10,  // Apify LinkedIn enrichment runs TWO actors per call
+```
+
+At the $50/day cap, this allows ~1000 scrape calls/day or ~500 linkedin calls/day before tripping — far above any legitimate single-IP usage.
+
+### Verification (post-deploy)
+
+```
+Test 1: anonymous /api/action scrape:scrapeProfile       → Server Error  ✓ BLOCKED
+Test 2: anonymous /api/action scrape:scrapeLinkedInFull  → Server Error  ✓ BLOCKED
+Test 3: HTTP /api/v1/scrape valid GitHub URL              → 200 with full profile data  ✓ works
+Test 4: spam HTTP /api/v1/scrape 12x (one IP)            → 200×9, 429×3  ✓ rate limit at call 10
+Test 5: getSpendStatus after the scrape calls            → scrape: count=10, $0.50  ✓
+        (note: rate-limited calls correctly do NOT count toward spend cap —
+         the rate limit check throws BEFORE the spend cap check)
+
+Regression checks:
+- Cycle 42 (private:getPrivateContext) → still BLOCKED ✓
+- Cycle 53 (scrape with http:// URL)   → still rejected with "Could not detect platform" ✓
+```
+
+After verification I cleaned up the test rate limit + spend rows.
+
+### Files changed
+
+- `convex/scrape.ts` — `scrapeProfile` + `scrapeLinkedInFull` → `internalAction`
+- `convex/lib/spendCap.ts` — added `scrape: 0.05` and `linkedin: 0.10` cost estimates
+- `convex/http.ts` — `/api/v1/scrape` and `/api/v1/enrich-linkedin` httpAction wrappers got rate limits + spend caps; `/api/v1/scrape` switched from `api.scrape.*` → `internal.scrape.*`
+
+### What this means
+
+Before cycle 54: Houston's Apify budget was the next financial-loss vector after the chat.* one closed in cycle 46. An attacker could `curl` the scrape endpoints in a loop and drain ~$X/day depending on Apify rates. After cycle 54, both Apify-calling endpoints are bounded by the same cycle 46/48 defense-in-depth: per-IP rate limits + daily spend cap. Total Apify spend is now subject to the same $50/day cap as the chat endpoints (configurable via the same `CHAT_DAILY_SPEND_LIMIT_USD` env var — the spend cap is shared across all endpoints).
+
+The chat AND scrape vectors are now both economically defensible. The remaining queue items don't have an obvious financial-loss vector left to close.
+
+### Cycle bookkeeping
+- 2 P0 financial-loss vectors closed (Apify drain via /api/v1/scrape and /api/v1/enrich-linkedin)
+- 2 actions internalized (`scrapeProfile`, `scrapeLinkedInFull`)
+- 2 httpAction wrappers wired with rate limit + spend cap
+- 2 new cost estimates added to lib/spendCap.ts
+- 0 schema changes (reused cycle 46 + cycle 48 helpers)
+- 6 tests run (2 internal blocks + 1 happy path + 1 rate limit + 1 spend status + 1 cleanup)
+- 2 regression checks green
+- Type-check clean
+- Deployed
+- Lock held throughout
