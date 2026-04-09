@@ -87,44 +87,46 @@ const CTAFooter = () => {
       <footer className="py-10 px-6">
         <div className="section-divider mb-10" />
         <div className="max-w-2xl mx-auto">
+          {/* Cycle 65: bumped all 12 footer links from h:18 to inline-flex min-h-[44px].
+              Tightened space-y from 2 to 0 (the 44px tap area provides spacing). */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
             <div>
-              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-3">product</p>
-              <div className="space-y-2">
-                <Link href="/create" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; create</Link>
-                <Link href="/profiles" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; profiles</Link>
-                <a href="#pricing" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; pricing</a>
-                <Link href="/docs#skills" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; skills</Link>
+              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-2">product</p>
+              <div className="flex flex-col">
+                <Link href="/create" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; create</Link>
+                <Link href="/profiles" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; profiles</Link>
+                <a href="#pricing" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; pricing</a>
+                <Link href="/docs#skills" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; skills</Link>
               </div>
             </div>
             <div>
-              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-3">developers</p>
-              <div className="space-y-2">
-                <Link href="/docs" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; docs</Link>
-                <Link href="/docs#api" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; api</Link>
-                <Link href="/docs#cli" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; cli</Link>
-                <a href="#spec" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; spec</a>
+              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-2">developers</p>
+              <div className="flex flex-col">
+                <Link href="/docs" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; docs</Link>
+                <Link href="/docs#api" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; api</Link>
+                <Link href="/docs#cli" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; cli</Link>
+                <a href="#spec" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; spec</a>
               </div>
             </div>
             <div>
-              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-3">open source</p>
-              <div className="space-y-2">
-                <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; github</a>
-                <a href="https://www.npmjs.com/package/youmd" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; npm</a>
+              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-2">open source</p>
+              <div className="flex flex-col">
+                <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; github</a>
+                <a href="https://www.npmjs.com/package/youmd" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; npm</a>
               </div>
             </div>
             <div>
-              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-3">connect</p>
-              <div className="space-y-2">
-                <a href="https://x.com/haborngolden" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; x</a>
-                <a href="https://linkedin.com/in/houstongolden" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; linkedin</a>
+              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-2">connect</p>
+              <div className="flex flex-col">
+                <a href="https://x.com/haborngolden" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; x</a>
+                <a href="https://linkedin.com/in/houstongolden" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; linkedin</a>
               </div>
             </div>
           </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-border/30">
             <Link
               href="/"
-              className="text-accent font-mono text-[11px] hover:text-accent-light transition-colors"
+              className="inline-flex items-center min-h-[44px] px-3 text-accent font-mono text-[11px] hover:text-accent-light transition-colors"
             >
               you
             </Link>

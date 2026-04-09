@@ -81,9 +81,10 @@ const Navbar = () => {
           }`}
           style={{ borderRadius: "2px" }}
         >
+          {/* Cycle 65: bumped to 44x44 tap area, -my-2 keeps the visible nav compact */}
           <a
             href="/"
-            className="text-accent font-mono text-[12px] tracking-tight whitespace-nowrap"
+            className="text-accent font-mono text-[12px] tracking-tight whitespace-nowrap inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-2 px-2 -mx-2"
           >
             you
           </a>
@@ -168,10 +169,13 @@ const Navbar = () => {
                 &gt; create you
               </Link>
             )}
+            {/* Cycle 65: bumped from p-1 (21x21) to 44x44 tap area + proper aria */}
             <button
+              type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden text-muted-foreground p-1"
-              aria-label="Toggle menu"
+              className="md:hidden text-muted-foreground inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-2 -mr-2"
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
             >
               {mobileOpen ? (
                 <X size={16} />

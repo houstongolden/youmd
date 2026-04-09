@@ -53,12 +53,14 @@ const ThemeToggle = () => {
 
   return (
     <button
+      type="button"
       onClick={cycle}
-      className="text-muted-foreground/30 hover:text-accent transition-colors p-1"
+      // Cycle 65: bumped from 20x20 to 44x44 tap area
+      className="text-muted-foreground/30 hover:text-accent transition-colors inline-flex items-center justify-center h-11 w-11 -my-2"
       aria-label={`Theme: ${theme}`}
       title={`Theme: ${theme}`}
     >
-      <Icon size={12} />
+      <Icon size={14} />
     </button>
   );
 };

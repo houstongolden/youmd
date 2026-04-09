@@ -219,11 +219,11 @@ const Hero = () => {
           ))}
         </motion.div>
 
-        {/* Quick links */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 2.5 }} className="flex items-center justify-center gap-8 font-mono text-[12px] mt-8">
-          <Link href="/create" className="text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; get started</Link>
-          <Link href="/docs" className="text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; docs</Link>
-          <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; github</a>
+        {/* Quick links — cycle 65: bumped to min-h-[44px] inline-flex */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 2.5 }} className="flex items-center justify-center gap-4 font-mono text-[12px] mt-4">
+          <Link href="/create" className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; get started</Link>
+          <Link href="/docs" className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; docs</Link>
+          <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; github</a>
         </motion.div>
       </motion.div>
 

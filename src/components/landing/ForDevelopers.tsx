@@ -110,13 +110,19 @@ const ForDevelopers = () => (
       </FadeUp>
 
       <FadeUp delay={0.3}>
-        <p className="text-center mt-8 font-mono text-[10px] text-muted-foreground/40">
-          API docs at{" "}
-          <a href="/docs" className="text-accent/60 hover:text-accent transition-colors">
-            you.md/docs
+        {/* Cycle 65: promoted the inline 'you.md/docs' link to a standalone
+            min-h-[44px] block — was 66x13 inline. */}
+        <div className="text-center mt-8">
+          <p className="font-mono text-[10px] text-muted-foreground/40">
+            -- MCP server + OAuth coming soon
+          </p>
+          <a
+            href="/docs"
+            className="inline-flex items-center min-h-[44px] mt-1 px-3 text-accent/60 hover:text-accent transition-colors font-mono text-[10px]"
+          >
+            API docs at you.md/docs
           </a>
-          {" "}-- MCP server + OAuth coming soon
-        </p>
+        </div>
       </FadeUp>
     </div>
   </section>

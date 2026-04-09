@@ -137,7 +137,7 @@ const OpenSpec = () => (
             href="https://github.com/houstongolden/youmd"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors duration-200"
+            className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors duration-200"
           >
             &gt; github/youmd &rarr;
           </a>
@@ -145,7 +145,7 @@ const OpenSpec = () => (
             href="https://github.com/houstongolden/youmd/blob/main/you-agent/soul.md"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors duration-200"
+            className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors duration-200"
           >
             &gt; read the spec &rarr;
           </a>

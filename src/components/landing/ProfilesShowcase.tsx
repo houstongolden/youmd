@@ -60,10 +60,11 @@ const ProfilesShowcase = () => {
                     viewport={{ once: true, margin: "-40px" }}
                     transition={{ duration: 0.3, delay: i * 0.06 }}
                   >
+                    {/* Cycle 65: bumped from py-3.5 (40 tall) to min-h-[44px] */}
                     {/* @ts-expect-error — dynamic wrapper */}
                     <Wrapper
                       {...wrapperProps}
-                      className={`flex items-center gap-4 px-5 py-3.5 group transition-colors ${
+                      className={`flex items-center gap-4 px-5 py-3.5 min-h-[44px] group transition-colors ${
                         isClaimed ? "hover:bg-accent-wash/40 cursor-pointer" : "opacity-60"
                       }`}
                     >
@@ -138,16 +139,17 @@ const ProfilesShowcase = () => {
               <span className="font-mono text-[9px] text-muted-foreground/40">
                 {claimedCount} claimed &middot; {featured.length - claimedCount} unclaimed &middot; claim yours free
               </span>
-              <div className="flex items-center gap-4">
+              {/* Cycle 65: bumped both to inline-flex min-h-[44px] */}
+              <div className="flex items-center gap-2">
                 <Link
                   href="/profiles"
-                  className="font-mono text-[10px] text-muted-foreground/50 hover:text-accent transition-colors"
+                  className="inline-flex items-center min-h-[44px] px-2 font-mono text-[10px] text-muted-foreground/50 hover:text-accent transition-colors"
                 >
                   &gt; view all
                 </Link>
                 <Link
                   href="/create"
-                  className="font-mono text-[10px] text-accent/70 hover:text-accent transition-colors"
+                  className="inline-flex items-center min-h-[44px] px-2 font-mono text-[10px] text-accent/70 hover:text-accent transition-colors"
                 >
                   &gt; claim yours
                 </Link>
