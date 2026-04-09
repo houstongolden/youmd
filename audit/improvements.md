@@ -12,17 +12,20 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-
-### [P2] /docs has no <footer> landmark (cycle 8)
-- File: `src/app/docs/docs-content.tsx`
-- Issue: docs page has nav, main, but no footer landmark
-- Fix: add `<footer>` at the bottom with copyright/version/links (or wrap an existing element)
-- Why P2: not critical, but a "complete" landmark set helps screen readers and is best practice for top-level pages
-- Found by: cycle 8 audit (`footer: 0`)
+(empty — all known improvements cleared)
 
 ## DONE
 
-### [P1] /docs sidebar TOC used 27 buttons instead of 27 anchor links — cycle 8, 2026-04-08
+### [P2] /docs missing footer landmark — cycle 9, 2026-04-08
+- File: `src/app/docs/docs-content.tsx:1252-1267`
+- Found by: cycle 8 (`footer: 0` even though there was a div labeled "Footer")
+- Root cause: there was already a "Footer" div with copyright + Get Started link, but it was a `<div>` not a `<footer>` AND it was inside `<main>`. Per ARIA spec, `<footer>` only has `contentinfo` role when it is NOT a descendant of main/article/aside/nav/section.
+- Fix: moved the footer markup OUT of `<main>` and converted the wrapper from `<div>` to `<footer>`. Adjusted the layout wrapping to align with the docs content column (md:ml-56 to account for the sidebar offset).
+- Visual: identical
+- Commit: pending
+
+### [P1] /docs sidebar TOC used 27 buttons instead of 27 anchor links — cycle 8, 2026-04-08 (VERIFIED LIVE 18:00 UTC)
+- **Verified live:** `navLinkCount: 27, navButtonCount: 0`, aria-label "Documentation table of contents", anchors with `#section-id` href, aria-current="location" working on the active item
 - File: `src/app/docs/docs-content.tsx:317-361`
 - Found by: cycle 8 audit — `nav.linkCount: 0, nav.buttonCount: 27`
 - Impact: docs sidebar TOC was unusable for normal browser navigation:

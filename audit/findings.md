@@ -394,3 +394,36 @@ All 4 auth pages now have proper h1 + main landmark.
 - /docs h1 / h2 / h3 / main / nav: 1 / 10 / 17 / 1 / 1
 - /docs heading IDs coverage: 27/27 (100%)
 - Cycle 7 auth h1 verification: 4/4 pages pass
+
+## Cycle 9 — Fix P2: /docs footer landmark — 2026-04-08 18:00 UTC
+
+**Tool:** Edit + tsc + browse (verification of cycle 8)
+**Status:** DONE — fix applied, type-check passes, cycle 8 verified live
+
+### What was done
+
+1. **Verified cycle 8 fix is live on production:**
+   - /docs nav: 27 links (was 27 buttons), 0 buttons
+   - aria-label "Documentation table of contents" present
+   - Anchors use `#section-id` href
+   - aria-current="location" working ("Getting Started" is the default active item)
+
+2. **Fixed P2: /docs missing footer landmark:**
+   - The page had a `<div>` labeled "Footer" with copyright + Get Started link, but:
+     - It was a `<div>`, not a `<footer>` element
+     - It was nested inside `<main>` (which strips the contentinfo role per ARIA spec)
+   - Moved the footer markup OUT of `<main>` into a sibling position
+   - Converted the wrapper from `<div>` to `<footer>`
+   - Adjusted layout wrapping (md:ml-56 + max-w-2xl) so the footer aligns visually with the content column despite the sidebar offset
+   - Visual unchanged
+
+### Verification
+- Type-check: PASS
+- Cycle 8 verification: PASS (TOC anchors live, all working)
+- Cycle 9 verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: top P2 from improvements.md (only item)
+- Moved to DONE in improvements.md
+- Cycle 8 entry annotated with "VERIFIED LIVE" tag
+- Lock held throughout

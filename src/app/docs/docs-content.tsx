@@ -1248,22 +1248,26 @@ POST /api/v1/me/skills/remove
                 { cmd: "/help", desc: "Show all available commands" },
               ]}
             />
-
-            {/* Footer */}
-            <div className="border-t border-[hsl(var(--border))] mt-16 pt-8 flex items-center justify-between">
-              <span className="text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
-                you.md -- identity context protocol for the agent internet
-              </span>
-              <Link
-                href="/create"
-                className="text-[13px] text-[hsl(var(--accent))] hover:opacity-80 transition-opacity"
-              >
-                Get Started
-              </Link>
-            </div>
           </div>
         </main>
       </div>
+
+      {/* Page-level footer landmark (outside main so it gets contentinfo role) */}
+      <footer className="max-w-6xl mx-auto px-6 md:px-12 pb-12">
+        <div className="md:ml-56 md:pl-12">
+          <div className="max-w-2xl border-t border-[hsl(var(--border))] mt-16 pt-8 flex items-center justify-between">
+            <span className="text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
+              you.md -- identity context protocol for the agent internet
+            </span>
+            <Link
+              href="/create"
+              className="text-[13px] text-[hsl(var(--accent))] hover:opacity-80 transition-opacity"
+            >
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
