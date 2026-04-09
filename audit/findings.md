@@ -516,3 +516,70 @@ All 4 auth pages now have proper h1 + main landmark.
 - Moved to DONE
 - Cycle 10 entry annotated with "VERIFIED LIVE" tag
 - Lock held throughout
+
+## Cycle 12 — Audit /houstongolden public profile — 2026-04-08 18:30 UTC
+
+**Tool:** /browse skill (real Chromium), desktop 1440x900
+**Status:** DONE_WITH_FINDINGS — 2 P1 bugs fixed inline, cycle 11 verified live
+
+### What was tested
+- Profile page load (200, 1 console error to investigate)
+- Page semantics (h1, h2, main, nav, footer, article)
+- JSON-LD structured data (@context, @type, name, url)
+- All OG tags (og:title, description, url, site_name, image, type)
+- Twitter card
+- Body content (Houston, Miami, BAMF, Hubify, **NOT** Venice)
+- Image alt text
+- Network requests (looking for failed loads)
+
+### Cycle 11 verification (PASSED)
+- /profiles: footer=1 (was 0), main=1, h1=1 ✓
+
+### Pre-existing wins on /houstongolden
+- ✅ Title: "Houston Golden — you.md/houstongolden"
+- ✅ canonical link: https://you.md/houstongolden
+- ✅ h2=13 (full hierarchy: Current Focus, Projects, Values, Links, Agent Preferences, ──identity, ──current activity, ──projects, ──values, ──links, ──export, ──share, ──maintenance)
+- ✅ main=1, nav=1, footer=1 (full landmark set!)
+- ✅ 13 images, all with alt text
+- ✅ JSON-LD: 2 schemas (Person + BreadcrumbList)
+- ✅ OG tags: title, description, url, site_name, image (with width/height/alt), type=profile
+- ✅ Twitter card: summary_large_image
+- ✅ **Houston, Miami, BAMF, Hubify** all in body
+- ✅ **"Venice" NOT in body** — confirms the profile data cleanup (Venice→Miami) is fully landed and rendering correctly
+- ✅ Page height: 3606px (reasonable)
+
+### Issues found and fixed inline
+
+**P1 — Duplicate h1 ("Houston Golden" appears as both visible and sr-only)**
+- Inspection: `h1: 2`, both with text "Houston Golden"
+- Source #1: `src/app/[username]/page.tsx:148` — inside an sr-only "structured data" wrapper for SEO/agents, has `<h1>{name}</h1>` plus child `<h2>` sections
+- Source #2: visible inside profile-content.tsx (the canonical h1 that sighted users see)
+- Impact: bad SEO (search engines confused about page topic), broken heading-by-heading screen reader navigation
+- **STATUS: FIXED** — demoted sr-only h1 → h2, bumped child h2s → h3 in `src/app/[username]/page.tsx`. The visible h1 is now the canonical and only h1.
+
+**P1 — favicon 404 console error**
+- Source: `src/app/[username]/profile-content.tsx:1164-1177` LinkFavicon component
+- Network log: `https://t3.gstatic.com/faviconV2?...&url=http://bigbounce.hubify.app&size=16 → 404`
+- Cause: LinkFavicon uses `google.com/s2/favicons?domain=${domain}` which redirects to gstatic, returning 404 for domains without favicons (bigbounce.hubify.app)
+- Impact: console 404 on every profile page that links to a faviconless domain
+- **STATUS: FIXED** — added `useState` failure tracking and `onError` handler so the img element returns null on 404. Also added `aria-hidden="true"` (favicon is decorative) and `loading="lazy"`. Fix applied to both copies (profile-content.tsx and ProfilePane.tsx).
+
+### Verification
+- Type-check: PASS (3 file edits)
+- Cycle 11 verification: PASS
+- Cycle 12 fix verification: deferred to next cycle
+
+### Cycle bookkeeping
+- Picked: queue.md item 6 (/houstongolden public profile)
+- Found: 2 P1s (both fixed inline)
+- Cycle 11 entry annotated with "VERIFIED LIVE" tag
+- Lock held throughout
+
+### Numbers
+- /houstongolden h1 (before fix): 2
+- /houstongolden h1 (after fix): 1 (visible only)
+- /houstongolden h2: 13 → 12 (one demoted h2 from sr-only block, others bumped to h3)
+- /houstongolden console errors: 1 (favicon 404) → expected 0 after deploy
+- /houstongolden JSON-LD schemas: 2 (Person + BreadcrumbList)
+- /houstongolden OG tags: 8 (complete)
+- Body content: Houston ✓, Miami ✓, BAMF ✓, Hubify ✓, Venice ✗ (correct)

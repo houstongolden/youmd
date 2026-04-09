@@ -138,6 +138,9 @@ function SsrProfileText({ username, data }: { username: string; data: Record<str
   // Get avatar URL from the data — check _profile first (from Convex profile table), then social_images
   const avatarUrl = data._profile?.avatarUrl || data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || "";
 
+  // Note: this is a screen-reader-only structured-content block for SEO/agents.
+  // Headings here are h2/h3 (not h1) because the visible profile content
+  // already has the canonical h1 — having two h1s on one page is bad SEO.
   return (
     <div
       id="you-md-profile-data"
@@ -145,7 +148,7 @@ function SsrProfileText({ username, data }: { username: string; data: Record<str
       data-format="you-md/v1"
       className="sr-only"
     >
-      <h1>{name}</h1>
+      <h2>{name}</h2>
       {avatarUrl && (
         <img
           src={avatarUrl}
@@ -159,13 +162,13 @@ function SsrProfileText({ username, data }: { username: string; data: Record<str
       {bio && <p>{bio}</p>}
       {now.length > 0 && (
         <section>
-          <h2>Current Focus</h2>
+          <h3>Current Focus</h3>
           <ul>{now.map((item: string, i: number) => <li key={i}>{item}</li>)}</ul>
         </section>
       )}
       {projects.length > 0 && (
         <section>
-          <h2>Projects</h2>
+          <h3>Projects</h3>
           <ul>
             {projects.map((p: any, i: number) => (
               <li key={i}>
@@ -178,13 +181,13 @@ function SsrProfileText({ username, data }: { username: string; data: Record<str
       )}
       {values.length > 0 && (
         <section>
-          <h2>Values</h2>
+          <h3>Values</h3>
           <ul>{values.map((v: string, i: number) => <li key={i}>{v}</li>)}</ul>
         </section>
       )}
       {Object.keys(links).filter(k => links[k]).length > 0 && (
         <section>
-          <h2>Links</h2>
+          <h3>Links</h3>
           <ul>
             {Object.entries(links)
               .filter(([, url]) => url)
@@ -196,7 +199,7 @@ function SsrProfileText({ username, data }: { username: string; data: Record<str
       )}
       {(voice || preferences?.agent) && (
         <section>
-          <h2>Agent Preferences</h2>
+          <h3>Agent Preferences</h3>
           {voice && <p>Voice: {voice}</p>}
           {preferences?.agent?.tone && <p>Tone: {preferences.agent.tone}</p>}
           {preferences?.agent?.avoid?.length > 0 && <p>Avoid: {preferences.agent.avoid.join(", ")}</p>}

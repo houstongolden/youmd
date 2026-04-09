@@ -16,7 +16,15 @@ Severity:
 
 ## DONE
 
-### [P2] /profiles directory had no footer landmark — cycle 11, 2026-04-08
+### [P1] /houstongolden public profile had duplicate h1 + favicon 404 — cycle 12, 2026-04-08
+- Files: `src/app/[username]/page.tsx`, `src/app/[username]/profile-content.tsx`, `src/components/panes/ProfilePane.tsx`
+- Found by: cycle 12 audit — `h1: 2` (both "Houston Golden") + 1 console 404 from favicon proxy
+- Fix #1 (duplicate h1): the page renders TWO h1s — one in the visible profile content (correct, canonical) and one in a sr-only "structured data" block at `src/app/[username]/page.tsx:148`. Demoted the sr-only h1 to h2 and bumped its child h2s to h3 to maintain hierarchy. The visible h1 inside profile-content.tsx is now the only h1 on the page.
+- Fix #2 (favicon 404): `LinkFavicon` component used Google's favicon proxy (`google.com/s2/favicons?domain=...`) which returns 404 for domains without a favicon (e.g. `bigbounce.hubify.app`). Added `useState` for failure tracking and `onError` handler so the img element disappears silently on 404 instead of showing a broken icon and logging a console error. Also added `aria-hidden="true"` (favicon is decorative) and `loading="lazy"`. Applied to both copies of LinkFavicon (profile-content.tsx and ProfilePane.tsx — they were duplicate code, kept as-is for now since they're rendered in different contexts).
+- Commit: pending
+
+### [P2] /profiles directory had no footer landmark — cycle 11, 2026-04-08 (VERIFIED LIVE 18:31 UTC)
+- **Verified live:** /profiles now has `footer=1, main=1, h1=1`
 - File: `src/app/profiles/profiles-content.tsx:388-411`
 - Found by: cycle 10 (`footer: 0`)
 - Fix:

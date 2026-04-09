@@ -1162,16 +1162,20 @@ function extractDomain(url: string): string | null {
 }
 
 function LinkFavicon({ url }: { url: string }) {
+  const [failed, setFailed] = useState(false);
   const domain = extractDomain(url);
-  if (!domain) return null;
+  if (!domain || failed) return null;
   return (
     <img
       src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
-      alt={`${domain} favicon`}
+      alt=""
+      aria-hidden="true"
       width={16}
       height={16}
       className="shrink-0"
       style={{ imageRendering: "pixelated" }}
+      onError={() => setFailed(true)}
+      loading="lazy"
     />
   );
 }
