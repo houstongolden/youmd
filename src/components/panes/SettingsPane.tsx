@@ -95,6 +95,28 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
 
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Cycle 57: revoke-all-sessions panic button
+  const revokeAllSessions = useMutation(api.me.revokeAllSessions);
+  const [confirmRevokeAll, setConfirmRevokeAll] = useState(false);
+  const [revokeAllResult, setRevokeAllResult] = useState<{ counts: Record<string, number>; totalRevoked: number } | null>(null);
+  const [revokingAll, setRevokingAll] = useState(false);
+
+  const handleRevokeAll = async () => {
+    if (!confirmRevokeAll) {
+      setConfirmRevokeAll(true);
+      return;
+    }
+    setRevokingAll(true);
+    try {
+      const result = await revokeAllSessions({ clerkId });
+      setRevokeAllResult(result);
+      setConfirmRevokeAll(false);
+    } catch (err) {
+      console.error("revokeAllSessions failed:", err);
+    }
+    setRevokingAll(false);
+  };
+
   const handleCreateKey = async () => {
     setCreatingKey(true);
     setKeyError(null);
@@ -337,6 +359,31 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
           >
             &gt; sign out
           </button>
+
+          {/* Cycle 57: panic button — revokes all api keys, access tokens, context links */}
+          <div>
+            <button
+              onClick={handleRevokeAll}
+              disabled={revokingAll}
+              className="font-mono text-[11px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity disabled:opacity-30"
+            >
+              {revokingAll
+                ? "revoking..."
+                : confirmRevokeAll
+                ? "confirm revoke all sessions"
+                : "> revoke all sessions"}
+            </button>
+            {confirmRevokeAll && !revokingAll && (
+              <p className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-50 mt-1">
+                this will revoke every API key, access token, and share link you own. you can sign back in via clerk and create new ones. click again to confirm.
+              </p>
+            )}
+            {revokeAllResult && (
+              <p className="font-mono text-[9px] text-[hsl(var(--success))] opacity-70 mt-1">
+                revoked {revokeAllResult.totalRevoked} session{revokeAllResult.totalRevoked === 1 ? "" : "s"} ({revokeAllResult.counts.apiKeys} api keys, {revokeAllResult.counts.accessTokens} access tokens, {revokeAllResult.counts.contextLinks} share links)
+              </p>
+            )}
+          </div>
 
           <div>
             <button

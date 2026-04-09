@@ -686,3 +686,99 @@ export const getAnalytics = query({
     };
   },
 });
+
+/**
+ * Cycle 57: incident-response panic button.
+ *
+ * Bulk-revokes EVERY token type the authenticated user owns:
+ *   - apiKeys (CLI/MCP/3rd-party) → sets revokedAt = now
+ *   - accessTokens (private context tokens, scoped to user's profiles) → sets isRevoked = true
+ *   - contextLinks (share links) → sets revokedAt = now
+ *
+ * Already-revoked rows are skipped (idempotent).
+ *
+ * Use case: user lost a laptop, suspects credential compromise, or just
+ * wants to "log out everything" before handing the keys to a stranger.
+ *
+ * Does NOT delete the user record or any data — only revokes auth tokens.
+ * The user can still sign back in via Clerk and create fresh tokens.
+ *
+ * Logs `eventType: "panic_revoke_all"` to securityLogs with the per-table
+ * revoke counts.
+ *
+ * Wired to a button in `src/components/panes/SettingsPane.tsx`.
+ */
+export const revokeAllSessions = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("not authenticated");
+
+    const now = Date.now();
+    const counts: Record<string, number> = {
+      apiKeys: 0,
+      accessTokens: 0,
+      contextLinks: 0,
+    };
+
+    // 1. apiKeys (by_userId)
+    const apiKeys = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+    for (const k of apiKeys) {
+      if (!k.revokedAt) {
+        await ctx.db.patch(k._id, { revokedAt: now });
+        counts.apiKeys++;
+      }
+    }
+
+    // 2. contextLinks (by_userId)
+    const links = await ctx.db
+      .query("contextLinks")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+    for (const l of links) {
+      if (!l.revokedAt) {
+        await ctx.db.patch(l._id, { revokedAt: now });
+        counts.contextLinks++;
+      }
+    }
+
+    // 3. accessTokens — these are scoped by profileId, so look up the user's profiles first
+    const profiles = await ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
+      .collect();
+    for (const p of profiles) {
+      const tokens = await ctx.db
+        .query("accessTokens")
+        .withIndex("by_profileId", (q) => q.eq("profileId", p._id))
+        .collect();
+      for (const t of tokens) {
+        if (!t.isRevoked) {
+          await ctx.db.patch(t._id, { isRevoked: true });
+          counts.accessTokens++;
+        }
+      }
+    }
+
+    // Audit log
+    await ctx.db.insert("securityLogs", {
+      eventType: "panic_revoke_all",
+      userId: user._id,
+      details: { counts, totalRevoked: counts.apiKeys + counts.accessTokens + counts.contextLinks },
+      createdAt: now,
+    });
+
+    return { success: true, counts, totalRevoked: counts.apiKeys + counts.accessTokens + counts.contextLinks };
+  },
+});
