@@ -10,7 +10,7 @@ to `audit/improvements.md`.
 ### Web — Public Routes
 - [x] landing — `/` — render, hero CTAs, scroll, mobile + desktop, animations (cycle 1, 2026-04-08, 3 fixed inline + 3 queued — all 6 cleared by cycles 1-4)
 - [x] sign-up — `/sign-up` — Clerk widget loads, can submit, redirects correctly (cycle 5, 2026-04-08, 4 a11y bugs found + fixed inline)
-- [ ] sign-in — `/sign-in` — same as above
+- [x] sign-in — `/sign-in` — same as above (cycle 7, 2026-04-08, cycle 6 a11y verified live + 4 missing-h1/main bugs found across all 4 auth pages and fixed inline)
 - [ ] docs — `/docs` — content renders, links work, mobile
 - [ ] profiles directory — `/profiles` — list loads, search, click into profile
 - [ ] public profile — `/houstongolden` — avatar, bio, projects, JSON-LD, OG

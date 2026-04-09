@@ -274,3 +274,55 @@ text for SEO and screen readers. Tailwind v4 ships `sr-only` as a built-in utili
 - Moved to DONE in improvements.md
 - Cycle 5 entry annotated with "VERIFIED LIVE" tag
 - Lock held throughout
+
+## Cycle 7 — Audit /sign-in flow — 2026-04-08 17:40 UTC
+
+**Tool:** /browse skill (real Chromium), desktop 1440x900
+**Status:** DONE_WITH_FINDINGS — cycle 6 verified live + 1 new P1 found across all 4 auth pages, all fixed inline
+
+### What was tested
+- /sign-in page load (200, 0 console errors)
+- Boot animation (~5s, same as sign-up)
+- Email field a11y attributes (verifying cycle 6 fix)
+- Password step a11y attributes (after typing email + clicking submit)
+- ALL 4 auth pages checked for h1/h2/main (sign-in, sign-up, create, reset-password)
+
+### Cycle 6 verification (PASSED)
+**/sign-in email step:**
+- type=email ✓
+- name=email ✓
+- ariaLabel="email address" ✓
+- autocomplete=email ✓
+- inputMode=email ✓
+
+**/sign-in password step (after typing email + clicking submit):**
+- type=password ✓
+- name=current-password ✓ (correctly NOT new-password — this is sign-in)
+- ariaLabel="password" ✓
+- autocomplete=current-password ✓ (correctly NOT new-password)
+
+Cycle 6 password step transition works correctly across the boot animation.
+
+### New issue found and fixed inline
+
+**P1 — All 4 auth pages have 0 h1, 0 h2, 0 main**
+- Pages: /sign-in, /sign-up, /create, /reset-password
+- Same SEO/a11y issue cycles 2-4 fixed for the landing page
+- Inspection showed: `{h1:0, h2:0, main:0}` for every single page
+- Impact: critical SEO (search engines have no semantic page title), broken screen-reader navigation, missing main landmark for "skip to content" pattern
+- **STATUS: FIXED inline in cycle 7** — see DONE block in improvements.md
+
+### Verification
+- Type-check: PASS
+- Cycle 7 verification of new fixes: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Initially planned audit-only
+- Reverted to audit + inline fix when the missing h1 was found (consistent with cycles 1-4 pattern)
+- 5 file edits: TerminalHeader (component), sign-up, sign-in, reset-password, create
+- Lock held throughout
+
+### Numbers
+- Console errors: 0 (all 4 auth pages)
+- Boot animation: ~5s on sign-in (same as sign-up)
+- Network requests: 30+ on /sign-in, all 200

@@ -16,7 +16,19 @@ Severity:
 
 ## DONE
 
-### [P2] sign-in / create / reset-password TerminalAuthInput a11y — cycle 6, 2026-04-08
+### [P1] All 4 auth pages had 0 h1 + 0 main — cycle 7, 2026-04-08
+- Files: `src/components/terminal/TerminalHeader.tsx`, `src/app/sign-up/[[...sign-up]]/page.tsx`, `src/app/sign-in/[[...sign-in]]/page.tsx`, `src/app/reset-password/reset-content.tsx`, `src/app/create/create-content.tsx`
+- Found by: cycle 7 audit checking h1/h2/main on all 4 auth pages — every single page returned `h1: 0, h2: 0, main: 0` (same SEO issue landing had before cycles 2-4)
+- Fix:
+  1. Extended `TerminalHeader` with optional `asHeading` prop. When true, the title renders as `<h1>` instead of `<span>`. Visual unchanged (same className, font-normal added so h1 default styling doesn't override).
+  2. Updated sign-up, sign-in, reset-password to pass `asHeading` to TerminalHeader (3 pages, 1 line each).
+  3. Updated create page (which doesn't use TerminalHeader — has inline header) to convert its title `<span>` to `<h1>`.
+  4. Wrapped all 4 auth pages' root `<div>` in `<main>`.
+  5. Added `aria-hidden="true"` to the decorative red/yellow/green terminal dots in both TerminalHeader and create's inline header.
+- Commit: pending
+
+### [P2] sign-in / create / reset-password TerminalAuthInput a11y — cycle 6, 2026-04-08 (VERIFIED LIVE 17:41 UTC)
+- **Verified live:** /sign-in inputs at email step and password step both have correct a11y (type=email/password, name=email/current-password, ariaLabel="email address"/"password", autocomplete=email/current-password). Cycle 6's per-step config working correctly across the boot animation transition.
 - Files: `src/app/sign-in/[[...sign-in]]/page.tsx`, `src/app/create/create-content.tsx`, `src/app/reset-password/reset-content.tsx`
 - Fix: applied the same per-step `stepFieldConfig` / `phaseFieldConfig` map pattern from cycle 5 to all 3 remaining auth forms. Each step now passes correct type/autoComplete/inputMode/name/ariaLabel:
   - **sign-in**: email (type=email, autoComplete=email), password (autoComplete=current-password — note: NOT new-password since this is sign-in not sign-up), verify (one-time-code + numeric)

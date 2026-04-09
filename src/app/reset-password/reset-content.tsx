@@ -365,13 +365,13 @@ export default function ResetPasswordContent() {
           : null;
 
   return (
-    <div className="h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
+    <main className="h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4 min-h-0">
         <div
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden min-h-0"
           style={{ borderRadius: "2px" }}
         >
-          <TerminalHeader title="you.md -- reset password" />
+          <TerminalHeader title="you.md -- reset password" asHeading />
 
           {/* Scrollable output */}
           <div
@@ -421,6 +421,6 @@ export default function ResetPasswordContent() {
           </span>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

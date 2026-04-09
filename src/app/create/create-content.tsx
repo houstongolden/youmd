@@ -672,7 +672,7 @@ function CreateContentInner() {
   }, [lines.length, phase]);
 
   return (
-    <div
+    <main
       className="fixed inset-0 bg-[hsl(var(--bg))] flex flex-col"
       style={{ height: keyboardHeight > 0 ? `calc(100% - ${keyboardHeight}px)` : "100%" }}
     >
@@ -685,14 +685,14 @@ function CreateContentInner() {
           {/* Header with sign-in link */}
           <div className="flex items-center justify-between border-b border-[hsl(var(--border))] shrink-0">
             <div className="flex items-center gap-2 px-4 py-3">
-              <div className="flex gap-1.5">
+              <div className="flex gap-1.5" aria-hidden="true">
                 <span className="w-3 h-3 rounded-full" style={{ background: "rgba(239, 68, 68, 0.6)" }} />
                 <span className="w-3 h-3 rounded-full" style={{ background: "rgba(234, 179, 8, 0.6)" }} />
                 <span className="w-3 h-3 rounded-full" style={{ background: "rgba(34, 197, 94, 0.6)" }} />
               </div>
-              <span className="text-sm font-mono text-[hsl(var(--text-secondary))] opacity-60 ml-2">
+              <h1 className="text-sm font-mono text-[hsl(var(--text-secondary))] opacity-60 ml-2 font-normal">
                 you.md — create
-              </span>
+              </h1>
             </div>
             <Link
               href="/sign-in"
@@ -767,6 +767,6 @@ function CreateContentInner() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }
