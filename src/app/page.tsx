@@ -40,18 +40,20 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <Hero />
-      <FounderQuote />
-      <ProfilesShowcase />
-      <ProblemStrip />
-      <HowItWorks />
-      <WhatsInside />
-      <Integrations />
-      <ForDevelopers />
-      <OpenSpec />
-      <FAQ />
-      <Pricing />
-      <CTAFooter />
+      <main id="main">
+        <Hero />
+        <FounderQuote />
+        <ProfilesShowcase />
+        <ProblemStrip />
+        <HowItWorks />
+        <WhatsInside />
+        <Integrations />
+        <ForDevelopers />
+        <OpenSpec />
+        <FAQ />
+        <Pricing />
+        <CTAFooter />
+      </main>
     </div>
   );
 }

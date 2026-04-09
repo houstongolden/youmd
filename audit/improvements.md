@@ -13,13 +13,6 @@ Severity:
 
 ## TODO
 
-### [P1] Landing page has 0 main element (cycle 1)
-- File: `src/app/page.tsx` (or wherever the landing page root is)
-- Issue: Sections are wrapped in plain `<div>` not `<main>`
-- Fix: Add `<main>` landmark wrapping all content sections (everything between nav and footer)
-- Why P1: Missing accessibility landmark, breaks "skip to content" pattern
-- Found by: cycle 1 page semantics check (mainCount: 0)
-
 ### [P1] Landing page has only 1 h2 across 12 sections (cycle 1)
 - Files: `src/components/landing/*.tsx` (each section component)
 - Issue: Section titles like "-- the network --", "-- how it works --", "-- pricing --" are wrapped in `<p>` not `<h2>`
@@ -29,7 +22,17 @@ Severity:
 
 ## DONE
 
-### [P0] Landing page has 0 h1 elements — cycle 2, 2026-04-08
+### [P1] Landing page has 0 main element — cycle 3, 2026-04-08
+- File: `src/app/page.tsx:39-57`
+- Fix: wrapped all 12 section components in `<main id="main">` between Navbar and (no footer at root level — sections include CTAFooter inside main)
+- Commit: pending
+- Verify: pending next cron cycle
+
+### [P0] Landing page has 0 h1 elements — cycle 2, 2026-04-08 (VERIFIED LIVE 16:59 UTC)
+- File: `src/components/landing/Hero.tsx:125-131`
+- Fix: wrapped PixelYOU in `<motion.h1>` with `sr-only` text "you.md — identity context protocol for the agent internet" and `aria-hidden="true"` on the visual span
+- Commit: 2edb941
+- **Verified live:** `h1Count: 1, h1Texts: ["you.md — identity context protocol for the agent internet"]`
 - File: `src/components/landing/Hero.tsx:125-131`
 - Fix: wrapped PixelYOU in `<motion.h1>` with `sr-only` text "you.md — identity context protocol for the agent internet" for screen readers, and `aria-hidden="true"` on the visual PixelYOU span so it's not double-announced
 - Commit: pending

@@ -104,3 +104,30 @@ text for SEO and screen readers. Tailwind v4 ships `sr-only` as a built-in utili
 - Picked: top P0 from improvements.md
 - Moved to DONE in improvements.md
 - Lock held throughout
+
+## Cycle 3 — Fix P1: missing main landmark on landing — 2026-04-08 17:00 UTC
+
+**Tool:** Edit + tsc + browse (verification of cycle 2)
+**Status:** DONE — fix applied, type-check passes, cycle 2 h1 verified live
+
+### What was done
+
+1. **Fix applied:** wrapped all 12 landing page section components in `<main id="main">`
+   in `src/app/page.tsx`. Navbar stays outside main (correct landmark structure).
+
+2. **Verified cycle 2 fix is live on production:**
+   - Browsed to https://you.md/ (real Chromium)
+   - h1 count: 1 (was 0)
+   - h1 text: "you.md — identity context protocol for the agent internet" ✓
+   - sr-only working correctly (text in DOM, not visually rendered)
+
+### Verification
+- Type-check: PASS (`npx tsc --noEmit` clean)
+- Production verification of cycle 2: PASS (h1 live on you.md)
+- Cycle 3 main landmark verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: top P1 from improvements.md (after cycle 2 cleared the P0)
+- Moved to DONE in improvements.md
+- Cycle 2 entry annotated with "VERIFIED LIVE" tag
+- Lock held throughout
