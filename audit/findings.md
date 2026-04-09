@@ -4397,3 +4397,128 @@ None. Audit-only cycle.
 - 0 deploys
 - Cycle 58's monitoring window for the public surface area is effectively complete
 - Lock held throughout
+
+---
+
+## Cycle 61 — /docs mobile audit (390x844) — 2026-04-09 14:55 UTC
+
+**Tool:** /browse skill at iPhone 14 Pro viewport + JS introspection of touch targets and aria attributes
+**Status:** **DONE — 2 a11y fixes shipped (mobile menu button + 13 code-block copy buttons), all verified ≥44x44 in prod.**
+
+### What this cycle did
+
+Improvements TODO has only Houston-config items. Queue items are auth-gated. Picked a fresh angle: **/docs mobile audit**. The page was tested on desktop in cycle 8 (P1 buttons-not-anchors fix) and verified via curl in cycle 41's regression sweep, but cycle 36's mobile sweep covered /create + /sign-up and skipped /docs.
+
+### Audit results (BEFORE fix)
+
+Set viewport to 390x844 (iPhone 14 Pro) and ran metrics + interactive element introspection.
+
+**Layout** ✓ all clean:
+- innerWidth 390 = scrollWidth 390 → **no horizontal scroll**
+- scrollHeight 21,969px (very long doc, but no h-scroll)
+- h1=1, h2=10, main=1, nav=1, footer=1
+- 27 internal anchors
+- 0 images (no alt issues)
+- 0 console errors
+- CSP-Report-Only header present (cycle 58 stack still working)
+
+**Findings** (2 a11y issues):
+
+1. **Mobile menu button: 31×21 (too small) + missing ARIA**
+   - Button class `md:hidden` (visible only below 768px breakpoint)
+   - Text: "menu" / "close" toggling on click
+   - Tapped programmatically → DOES open a working drawer with all 27 nav links ✓
+   - **But**: 31×21 is well under WCAG 2.5.5 (Target Size, Level AAA) recommended 44×44 minimum. Apple HIG also says 44×44. Google Material says 48×48.
+   - **No `aria-label`, no `aria-expanded`, no `aria-controls`** — screen readers can't tell what's controlled or its state.
+
+2. **13 code-block "copy" buttons: 24×17 (too small) + missing ARIA**
+   - 12 instances of `CodeBlock` component + 3 in `QuickStart` component (the "30-second guide" steps)
+   - All had only "copy" text — screen readers say just "copy" with zero context about WHICH code is being copied
+   - 24×17 is barely 1/3 the recommended touch area
+
+3. **TOC `<aside class="hidden md:block">`**
+   - The 27 anchor links exist in DOM but the parent aside is `display:none` below 768px
+   - **This is intentional** — the mobile nav is the menu button drawer, NOT the desktop sidebar
+   - The cycle 41 regression sweep counted the 27 anchors via curl which doesn't render CSS, so it didn't notice they're hidden on mobile. Not a bug, just a gap in the curl-based test.
+
+### The fix
+
+**`src/app/docs/docs-content.tsx`** — 3 button updates:
+
+```tsx
+// Menu button (header) — was 31×21
+<button
+  type="button"
+  onClick={() => setMobileNavOpen(!mobileNavOpen)}
+  aria-label={mobileNavOpen ? "close docs navigation" : "open docs navigation"}
+  aria-expanded={mobileNavOpen}
+  aria-controls="docs-mobile-nav"
+  className="md:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] -mr-2 px-3 text-[hsl(var(--text-secondary))] text-[13px] font-mono"
+>
+  {mobileNavOpen ? "close" : "menu"}
+</button>
+
+// CodeBlock copy buttons — was 24×17
+<button
+  type="button"
+  onClick={copy}
+  aria-label={title ? `copy ${title}` : "copy code"}
+  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] font-mono ..."
+>
+  {copied ? "copied" : "copy"}
+</button>
+
+// QuickStart copy buttons — was 24×17
+<button
+  type="button"
+  onClick={() => copy(s.cmd, s.key)}
+  aria-label={`copy command: ${s.cmd}`}
+  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] font-mono ..."
+>
+  {copied === s.key ? "copied" : "copy"}
+</button>
+```
+
+Plus added `id="docs-mobile-nav"` to the mobile drawer container so the button's `aria-controls` resolves correctly.
+
+### Verification (post-deploy)
+
+```
+=== Menu button ===
+{
+  "text": "menu",
+  "w": 55, "h": 44,                    ✓ ≥ 44×44
+  "ariaLabel": "open docs navigation", ✓
+  "ariaExpanded": "false",             ✓
+  "ariaControls": "docs-mobile-nav",   ✓
+  "type": "button"                     ✓
+}
+
+=== Copy buttons ===
+{
+  "total": 12,
+  "tooSmall": 0,                       ✓ (was 12)
+  "sample": [
+    {"w": 44, "h": 44, "ariaLabel": "copy command: npx youmd init"},
+    {"w": 44, "h": 44, "ariaLabel": "copy command: youmd push"},
+    {"w": 44, "h": 44, "ariaLabel": "copy command: youmd mcp --install claude --auto"},
+  ]
+}
+
+=== Drawer click test ===
+Clicked button[aria-controls='docs-mobile-nav'] → drawer opens
+{"visible": true, "childLinks": 27}    ✓ all 27 nav links accessible
+```
+
+### Files changed
+
+- `src/app/docs/docs-content.tsx` — 3 button updates + 1 div id
+
+### Cycle bookkeeping
+- 1 P2 mobile a11y batch fix (13 buttons total)
+- 1 file changed
+- Type-check clean
+- Vercel auto-deploy (~60s)
+- 3 verification tests all green
+- /browse skill used for both audit + verification (iPhone viewport + JS introspection of touch targets + aria attributes + click test)
+- Lock held throughout
