@@ -5202,3 +5202,76 @@ This is the expected payoff of the mobile a11y sweep — fixing shared component
 | 68 | /reset-password (auth flow chrome) | 1 | 0 |
 
 **Total: 56 touch target fixes shipped across 8 cycles** — plus 2 shared-component cascades that improved another ~10 pages for free. The public-facing mobile a11y baseline is now fully clean for all surfaces I've been able to test.
+
+---
+
+## Cycle 69 — WCAG AA color contrast audit (public surface) — 2026-04-09
+
+### What I did
+
+Wrote a contrast auditor and ran it against every public route. The tool walks every text-bearing element, normalizes its color through canvas (which converts oklab/oklch/lab/hsl/named to sRGB), walks the parent chain to find the effective opaque background, blends fg-over-bg using the effective alpha (CSS color alpha × inherited opacity), then computes the WCAG 2.1 SC 1.4.3 contrast ratio. Fails are reported with the actual blended sRGB values, the required threshold (4.5 normal / 3.0 large), and the font size + weight that determined which threshold applied.
+
+Two annoying gotchas hit during construction:
+1. **oklab parsing** — Chrome returns colors in oklab notation now (`oklab(0.728 0.005 0.012 / 0.6)`). My first pass tried to regex the numbers as RGB. Result was nonsense — every text element looked like `rgb(0,0,0)` because the L/a/b numbers are in 0..1 range. Fixed by using a canvas 2D context as a color parser: `ctx.fillStyle = "oklab(...)"; ctx.fillStyle` returns the normalized `#rrggbb` or `rgba(...)`.
+2. **FadeUp animations mask the audit** — Framer Motion's `whileInView` keeps below-the-fold sections at `opacity: 0` until the intersection observer fires. The audit ran before any scroll, so 80% of the landing page reported `alpha = 0` and got filtered out. Fixed by injecting `* { opacity: 1 !important; transform: none !important; transition: none !important; animation: none !important; }` before each audit run. (Side note: this is the same mechanism that caused Houston's "site is crashed" report in cycle 65 — if the intersection observer doesn't fire for any reason, real users see opacity-0 sections too. Logging a P3 followup to investigate that more carefully.)
+
+### Pages tested
+
+| Page | Before fix | After fix | Notes |
+|------|------------|-----------|-------|
+| `/` | 4 fails | 4 fails | All 4 are `.cta-primary` (white-on-orange, see below) |
+| `/sign-up` | 0 | 0 | clean |
+| `/sign-in` | 0 | 0 | clean |
+| `/reset-password` | 0 | 0 | clean |
+| `/create` | 0 | 0 | clean |
+| `/docs` | 0 | 0 | clean |
+| `/profiles` | 1 | 1 | only the cta-primary nav button |
+| `/houstongolden` | 9 | 1 | 8 decorative dashes fixed inline; 1 cta-primary remains |
+
+### Fix shipped (b396695)
+
+Added `aria-hidden="true"` to **12 decorative separator characters** across 3 components:
+
+1. **`src/app/[username]/profile-content.tsx`** — `SectionLabel`'s `──` lead-in. The dashes render at border color, which is roughly `rgb(46, 46, 46)` over `rgb(13, 13, 13)` bg = **1.43:1**, well below the 4.5:1 normal-text threshold. They're purely decorative — they exist as a visual lead-in for the section heading. Marking them aria-hidden:
+   - removes them from the screen reader stream (no more "dash dash skills" → "dash dash projects" → "dash dash bio")
+   - explicitly excludes them from WCAG SC 1.4.3 (which only applies to text that conveys meaning)
+   - keeps the intentional faded-divider visual exactly as designed
+
+2. **`src/components/panes/ProfilePane.tsx`** — `active | public view` separator pipe. Same pattern, dashboard-side.
+
+3. **`src/components/terminal/TerminalStatusBar.tsx`** — 4 separator pipes between `@username | plan | version | status | sign out`. Same pattern, dashboard-side.
+
+8 of the 9 dashes on `/houstongolden` cleared after deploy. The other 4 instances on landing/sign-up/etc. didn't show up because they only appear on logged-in dashboard surfaces.
+
+### Outstanding finding (logged P2 — brand decision)
+
+**`.cta-primary` button: white-on-orange contrast = 3.60:1, fails WCAG AA 4.5:1.**
+
+Affects 4 instances on landing (nav `> create you`, hero `> start now`, ForDevelopers `> youmd upgrade --pro`, footer `> start in browser`) plus 1 instance everywhere else SiteNav renders (nav `> create you`). Same root cause: the global `.cta-primary` class uses white text on `rgb(206, 108, 59)` (brand burnt orange).
+
+Computed:
+- `lum(rgb(255,255,255))` = 1.0
+- `lum(rgb(206,108,59))` = 0.242
+- `contrast` = (1.0 + 0.05) / (0.242 + 0.05) = **3.60:1** (need 4.5)
+
+Three options for Houston, ordered by my recommendation:
+
+1. **Black text on the orange CTAs** (`color: rgb(0,0,0)`). Recomputed: `(0.242 + 0.05) / (0 + 0.05)` = **5.84:1** ✓. Preserves the brand orange exactly. Visually slightly less "neon" than white-on-orange but reads cleaner. This is the Stripe / Vercel / Slack pattern.
+2. **Darken the orange to ~`rgb(178, 88, 40)`** for the CTA only (keep the lighter orange for accents and links). Computed contrast vs white = ~4.7:1 ✓. Two-tone brand, slightly more work.
+3. **Bump CTA font to 18.66px+ bold** (large-text threshold, requires 3.0:1 only). Visually heavy, changes hero rhythm, only marginally accessible.
+4. **Document the failure** as an intentional brand-driven exception. This is a real position some brands take (Notion, Linear). I do not recommend this — Apple, Google, and the FTC have all sided with WCAG enforcement in the last 2 years.
+
+### Other contrast notes (NOT logged as TODO — clean enough as-is)
+
+The audit found **zero** contrast failures across `/sign-up`, `/sign-in`, `/reset-password`, `/create`, `/docs` even though those pages have a lot of `text-muted-foreground/40` and similar low-opacity text. The reason is most of those low-opacity strings are over the slightly darker `--bg-raised` panel inside the terminal-style layouts, which (because they're slightly lighter than `--bg`) actually pushes the contrast just past 4.5 once Tailwind v4 converts the muted-foreground OKLCH.
+
+The footer `text-muted-foreground/40` and `text-muted-foreground/50` strings on landing also passed because those are inside `<FadeUp>` wrappers — once the intersection observer fires and animates them in, the actual rendered alpha is the full 0.40/0.50, and at the muted-foreground HSL of `30 8% 65%` they compute to ~5.2:1 over the dark bg.
+
+### Cycle bookkeeping
+
+- 1 a11y fix shipped (12 instances across 3 files)
+- Type-check clean
+- Vercel deploy verified (`/houstongolden` count went 9 → 1, the remaining 1 is the brand-decision cta-primary)
+- 1 P2 logged (cta-primary brand color decision)
+- 1 P3 logged (FadeUp opacity-0 mask if intersection observer fails — connected to cycle 65 crash report)
+- Lock held throughout

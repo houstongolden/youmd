@@ -59,6 +59,9 @@ to `audit/improvements.md`.
 ## DONE
 (audited cycles will be moved here with date and result)
 
+### Round 6 — Accessibility deeper dimensions (added cycle 69)
+- [x] WCAG SC 1.4.3 color contrast — public surface (cycle 69, 2026-04-09 — built canvas-normalized contrast auditor, ran on 7 public routes; 1 brand decision finding [cta-primary white-on-orange 3.6:1] logged P2 + 12 decorative separators fixed inline via aria-hidden)
+
 ---
 
 ## ROUND 2 — Deeper audit dimensions (added cycle 31)

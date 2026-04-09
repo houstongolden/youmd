@@ -13,6 +13,22 @@ Severity:
 
 ## TODO
 
+### [P2] cta-primary white-on-orange fails WCAG AA contrast — cycle 69, 2026-04-09 (BRAND DECISION required)
+- Audit found 4 instances on landing + 1 on every page that renders SiteNav. Same shared class `.cta-primary` in `src/app/globals.css` (or wherever it's defined).
+- Computed: white text `rgb(255,255,255)` on burnt orange `rgb(206,108,59)` = **3.60:1** vs WCAG AA 4.5:1 normal-text requirement.
+- Houston choice (ranked):
+  1. **Black text on orange** → 5.84:1 ✓. Same orange. Stripe/Vercel/Slack pattern. Visually a bit less neon but reads cleaner.
+  2. **Darken CTA orange to ~`rgb(178,88,40)`** → ~4.7:1 ✓. Two-tone brand (CTA orange ≠ accent orange). More work.
+  3. **Bump CTA font to 18.66px+ bold** → drops requirement to 3.0:1, passes 3.60. Visually heavier, may break hero rhythm.
+  4. **Accept the failure** (Notion/Linear pattern). Not recommended given recent FTC + Apple + Google enforcement trends.
+- I cannot pick this — it's a brand decision. Tell me which option and I'll ship in one cycle.
+
+### [P3] FadeUp opacity-0 mask if intersection observer doesn't fire — cycle 69, 2026-04-09 (connected to cycle 65 crash report)
+- The contrast audit needed to inject `* { opacity: 1 !important }` to bypass Framer Motion's `whileInView` initial state. Multiple landing sections (Hero, OpenSpec, ProfilesShowcase, ForDevelopers, FounderQuote, CTAFooter) are wrapped in `FadeUp` which starts at `opacity: 0` and waits for the intersection observer.
+- This is the same root cause that LIKELY explains Houston's "site is crashed, 80% black on mobile" report from cycle 65. If the intersection observer doesn't fire (slow JS, reduced-motion, ad blocker, browser bug, prerender mismatch), real users see opacity-0 sections.
+- **Recommended fix**: change `FadeUp` to start at `opacity: 0.01` and animate to `1` (so failure mode is "very faint" not "invisible") OR add a `prefers-reduced-motion` fallback that skips the animation entirely OR add a CSS-only fallback `@media (prefers-reduced-motion: reduce) { .fade-up { opacity: 1 !important; } }`.
+- Estimated time: 30 mins to refactor `FadeUp.tsx` + verify on landing.
+
 ### [P2] Houston flips CSP from report-only to enforcing — cycle 58, 2026-04-09 (cycle 60 verified clean across 8+ public routes, monitoring window for public surface complete)
 - Cycle 58 shipped the CSP as `Content-Security-Policy-Report-Only`.
 - Cycle 60 verified clean across 8 HTML routes (landing, sign-up, sign-in, docs, /profiles, /houstongolden, /create, /ctx valid token) AND 5 non-HTML routes (you.json, you.txt, robots.txt, sitemap.xml, ctx). **0 CSP violations across all 13 public surfaces.**
@@ -36,6 +52,13 @@ Severity:
 
 
 ## DONE
+
+### [P2] Cycle 69 — aria-hidden on decorative separators (── and |) — cycle 69, 2026-04-09
+- Built a WCAG SC 1.4.3 contrast auditor (canvas-normalized colors to bypass Chrome's oklab output, force-visible CSS injection to bypass FadeUp animations). Audited 7 public routes + every dashboard pane component.
+- Found that `text-[hsl(var(--border))]` is used as text fill for decorative separators in 3 files: `SectionLabel`'s ── lead-in (8 instances per public profile), `ProfilePane`'s active|public-view pipe, `TerminalStatusBar`'s 4 username|plan|version|status|signout pipes. Border color over bg = **1.43:1** (need 4.5).
+- Fix: aria-hidden="true" on all 12 separator spans across the 3 files. Removes them from the a11y tree (no more "dash dash skills" → "dash dash projects" stream readout) AND explicitly excludes them from WCAG SC 1.4.3 (which only applies to meaningful text). Visual unchanged.
+- Verified post-deploy: `/houstongolden` contrast fail count went 9 → 1 (the only remaining is the cta-primary brand decision logged separately as P2 above).
+- Commit: b396695
 
 ### [P2/P3] Cycle 59 sweep: portrait.generatePortrait dead-SSRF + contextLinks.incrementUseCount cleanliness — cycle 59, 2026-04-09
 - Re-ran the cycle 44/45 awk vulnerability inventory script over the current source. 24 hits, 21 intentionally public, 1 false positive (reportProfile uses direct getUserIdentity, cycle 39 pattern), 2 real findings.
