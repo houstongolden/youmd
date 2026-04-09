@@ -417,12 +417,13 @@ export const updateProfile = mutation({
 export const claimProfile = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     profileId: v.id("profiles"),
     sessionToken: v.string(),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const profile = await ctx.db.get(args.profileId);
     if (!profile) throw new Error("profile not found");
@@ -595,6 +596,7 @@ export const setProfileImages = mutation({
   args: {
     profileId: v.id("profiles"),
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     socialImages: v.object({
       x: v.optional(v.string()),
       github: v.optional(v.string()),
@@ -605,7 +607,7 @@ export const setProfileImages = mutation({
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const profile = await ctx.db.get(args.profileId);
     if (!profile) throw new Error("profile not found");
@@ -684,6 +686,7 @@ export const savePortrait = mutation({
   args: {
     profileId: v.id("profiles"),
     clerkId: v.optional(v.string()),
+    _internalAuthToken: v.optional(v.string()),
     sessionToken: v.optional(v.string()),
     portrait: v.object({
       lines: v.array(v.string()),
@@ -707,7 +710,7 @@ export const savePortrait = mutation({
       const clerkId = args.clerkId;
       if (!clerkId) throw new Error("authentication required");
       // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-      await requireOwner(ctx, clerkId);
+      await requireOwner(ctx, clerkId, args._internalAuthToken);
       const user = await ctx.db
         .query("users")
         .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
@@ -740,13 +743,14 @@ export const savePortrait = mutation({
 export const createVerification = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     method: v.string(), // "domain" | "social" | "email" | "manual"
     platform: v.optional(v.string()),
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -809,11 +813,12 @@ export const listVerifications = query({
 export const revokeVerification = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     verificationId: v.id("profileVerifications"),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")

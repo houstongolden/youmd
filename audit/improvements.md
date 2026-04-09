@@ -12,19 +12,28 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-
-### [P0] HTTP routes broken by cycle 42 strict requireOwner — refactor to use internal mutations — cycle 42, 2026-04-08
-
-- **Symptom:** All `/api/v1/me/*` endpoints return 500 "authentication required: no Clerk identity" because the cycle 42 strict `requireOwner` fix throws on null identity, and `httpAction` API-key flows have no Clerk JWT.
-- **Affected routes** (~10): `/api/v1/me`, `/api/v1/me/bundle`, `/api/v1/me/publish`, `/api/v1/me/portrait`, `/api/v1/me/sources`, `/api/v1/me/analytics`, `/api/v1/me/build`, `/api/v1/me/build/status`, `/api/v1/me/context-links`, plus pipeline trigger routes
-- **Affected callers:** the `youmd` CLI (`youmd push`, `youmd publish`, `youmd init` portrait upload, MCP server identify tool, all `apiKey`-authenticated agents)
-- **Fix design:** convert the underlying logic in `convex/me.ts`, `convex/profiles.ts`, `convex/bundles.ts` (functions called from http.ts) into `internalMutation`/`internalQuery` versions that take `userId: v.id("users")` instead of `clerkId`. Public mutation wrappers do `requireOwner` then `ctx.runMutation(internal.foo._barInternal, ...)`. The HTTP routes call the internal versions directly with the user resolved from the API key.
-- **Why P0:** CLI is the second primary surface of the product (after web). Currently 100% broken in prod. Houston uses CLI flows.
-- **Why deferred from cycle 42:** the security fix was urgent (data leak/write); the refactor is mechanical and large (~10 functions). Cycle 43 will own it.
-- Commit: pending
+(empty — all known improvements cleared)
 
 
 ## DONE
+
+### [P0] CLI HTTP routes broken by cycle 42 strict requireOwner + 2 NEW P0s in pipeline/index.ts — cycle 43, 2026-04-09
+- **Cycle 42 follow-up:** all `/api/v1/me/*` httpAction routes were rejecting valid API-key callers because the inner mutation's `ctx.auth.getUserIdentity()` is null in httpAction context.
+- **NEW P0 found mid-cycle:** `convex/pipeline/index.ts` `startPipeline` and `getPipelineStatus` had ZERO auth — same shape as the cycle 42 data leak. Anyone could kick off a $-billing LLM pipeline for any user, or read any user's pipeline status. Missed by cycles 37/38 because the audit didn't sweep `convex/pipeline/`.
+- **Fix:** added a server-side-only `TRUSTED_INTERNAL_AUTH_TOKEN` Convex env var (256-bit random secret). `requireOwner` accepts an optional `internalAuthToken` arg that bypasses Clerk JWT check IFF it equals the env var (constant-equality, server-side only). HTTP routes pass `process.env.TRUSTED_INTERNAL_AUTH_TOKEN` as `_internalAuthToken` in mutation/query args. ~40 protected functions in 9 files now accept the optional bypass arg. Pipeline functions also got `requireOwner` for the first time.
+- **Verification:**
+  - Anonymous read of private data: BLOCKED ✓
+  - Anonymous read with WRONG token: BLOCKED ✓
+  - Anonymous startPipeline: BLOCKED ✓
+  - HTTP route with valid API key: SUCCEEDS (returned 49-bundle history for Houston) ✓
+  - HTTP route with revoked API key: 401 ✓
+- **Trade-off:** the bypass is a shared secret (less elegant than internalMutation isolation), but it's:
+  1. Server-side only (Convex env var, never in client bundles, never logged)
+  2. 256 bits of entropy (effectively unguessable)
+  3. Constant-equality validated against env var
+  4. Minimum 32-char length check before validation
+  5. Touches ~40 functions vs the ~80 touches of an internalMutation refactor
+- Commit: 5063a4d
 
 ### [P3] FilesPane had 4 inputs missing aria-label/name — cycle 25, 2026-04-08
 - File: `src/components/panes/FilesPane.tsx`

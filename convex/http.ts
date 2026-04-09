@@ -5,6 +5,24 @@ import { detectAgent } from "./lib/agentDetect";
 
 const http = httpRouter();
 
+/**
+ * Cycle 43 — Trusted internal auth token bypass for httpAction-→mutation calls.
+ *
+ * Background: cycles 37/38 added requireOwner; cycle 42 made it strict (throw
+ * on null Clerk identity) after a live exploit verified that anonymous public
+ * /api/query and /api/mutation callers could read+write any user's private
+ * data. The strict fix broke httpAction routes that authenticate via API key
+ * Bearer token, because the inner mutation's ctx.auth.getUserIdentity() is
+ * null in httpAction context (no Clerk JWT, only API key).
+ *
+ * Cycle 43 fix: HTTP routes pass this server-side-only token in
+ * `_internalAuthToken`. requireOwner accepts it as a bypass (validated against
+ * the same env var). Public /api/query and /api/mutation callers cannot guess
+ * the value (256 bits of entropy), and the token is never sent to clients or
+ * logged. See convex/lib/auth.ts for the full security analysis.
+ */
+const TRUSTED_INTERNAL_AUTH_TOKEN = process.env.TRUSTED_INTERNAL_AUTH_TOKEN;
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -368,7 +386,7 @@ http.route({
       let bundleVersionBefore: number | undefined;
       let contentHashBefore: string | undefined;
       try {
-        const before = await ctx.runQuery(api.me.getMyProfile, { clerkId: auth.userId });
+        const before = await ctx.runQuery(api.me.getMyProfile, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
         if (before?.latestBundle) {
           bundleVersionBefore = before.latestBundle.version;
           contentHashBefore = before.latestBundle.contentHash ?? undefined;
@@ -378,7 +396,8 @@ http.route({
       }
 
       const result = await ctx.runMutation(api.me.saveBundleFromForm, {
-        clerkId: auth.userId, // We'll need to adapt this
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         profileData: body.profileData,
         parentHash: body.parentHash, // content-addressed version control
       });
@@ -386,7 +405,7 @@ http.route({
       // Log successful bundle write
       try {
         const ownerUser = await ctx.runQuery(api.users.getByClerkId, {
-          clerkId: auth.userId,
+          clerkId: auth.userId,          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         });
         if (ownerUser) {
           await ctx.runMutation(internal.activity.logActivity, {
@@ -415,7 +434,7 @@ http.route({
       // Log failed bundle write
       try {
         const ownerUser = await ctx.runQuery(api.users.getByClerkId, {
-          clerkId: auth.userId,
+          clerkId: auth.userId,          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         });
         if (ownerUser) {
           await ctx.runMutation(internal.activity.logActivity, {
@@ -463,12 +482,12 @@ http.route({
 
     try {
       const result = await ctx.runMutation(api.me.publishLatest, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       });
 
       try {
         const ownerUser = await ctx.runQuery(api.users.getByClerkId, {
-          clerkId: auth.userId,
+          clerkId: auth.userId,          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         });
         if (ownerUser) {
           await ctx.runMutation(internal.activity.logActivity, {
@@ -522,7 +541,7 @@ http.route({
 
       await ctx.runMutation(api.profiles.savePortrait, {
         profileId: profile._id,
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         portrait: {
           lines: portrait.lines,
           coloredLines: portrait.coloredLines,
@@ -572,7 +591,7 @@ http.route({
     if (auth instanceof Response) return auth;
 
     const profile = await ctx.runQuery(api.me.getMyProfile, {
-      clerkId: auth.userId,
+      clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
     });
 
     return json(profile);
@@ -590,7 +609,7 @@ http.route({
     try {
       const body = await request.json();
       const sourceId = await ctx.runMutation(api.me.addSource, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         sourceType: body.sourceType,
         sourceUrl: body.sourceUrl,
       });
@@ -613,7 +632,7 @@ http.route({
     if (auth instanceof Response) return auth;
 
     const sources = await ctx.runQuery(api.me.getSources, {
-      clerkId: auth.userId,
+      clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
     });
 
     return json(sources);
@@ -629,7 +648,7 @@ http.route({
     if (auth instanceof Response) return auth;
 
     const analytics = await ctx.runQuery(api.me.getAnalytics, {
-      clerkId: auth.userId,
+      clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
     });
 
     return json(analytics);
@@ -650,7 +669,7 @@ http.route({
 
     try {
       const result = await ctx.runMutation(api.pipeline.index.startPipeline, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       });
       return json(result);
     } catch (err) {
@@ -671,7 +690,7 @@ http.route({
     if (auth instanceof Response) return auth;
 
     const status = await ctx.runQuery(api.pipeline.index.getPipelineStatus, {
-      clerkId: auth.userId,
+      clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
     });
 
     return json(status);
@@ -1258,7 +1277,7 @@ http.route({
     try {
       const body = await request.json();
       const result = await ctx.runMutation(api.contextLinks.createLink, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         scope: body.scope || "public",
         ttl: body.ttl || "7d",
         maxUses: body.maxUses,
@@ -1283,7 +1302,7 @@ http.route({
     if (auth instanceof Response) return auth;
 
     const links = await ctx.runQuery(api.contextLinks.listLinks, {
-      clerkId: auth.userId,
+      clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
     });
     return json(links);
   }),
@@ -1303,7 +1322,7 @@ http.route({
         return json({ error: "linkId is required" }, 400);
       }
       await ctx.runMutation(api.contextLinks.revokeLink, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         linkId: body.linkId,
       });
       return json({ success: true });
@@ -1331,7 +1350,7 @@ http.route({
     try {
       const body = await request.json();
       const result = await ctx.runMutation(api.apiKeys.createKey, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         label: body.label,
         scopes: body.scopes || ["read:public"],
       });
@@ -1354,7 +1373,7 @@ http.route({
     if (auth instanceof Response) return auth;
 
     const keys = await ctx.runQuery(api.apiKeys.listKeys, {
-      clerkId: auth.userId,
+      clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
     });
     return json(keys);
   }),
@@ -1374,7 +1393,7 @@ http.route({
         return json({ error: "keyId is required" }, 400);
       }
       await ctx.runMutation(api.apiKeys.revokeKey, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         keyId: body.keyId,
       });
       return json({ success: true });
@@ -1549,7 +1568,7 @@ http.route({
           email.split("@")[0].toLowerCase().replace(/[^a-z0-9-]/g, "-");
 
         await ctx.runMutation(api.users.createUser, {
-          clerkId: clerkUserId,
+          clerkId: clerkUserId,          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
           username: clerkUsername,
           email,
           displayName: clerkUser.first_name || undefined,
@@ -1567,14 +1586,14 @@ http.route({
       try {
         // Try to revoke any existing cli-auth keys first
         // For free plan: revoke all existing keys so we can create a fresh one
-        const existingKeys = await ctx.runQuery(api.apiKeys.listKeys, { clerkId: clerkUserId });
+        const existingKeys = await ctx.runQuery(api.apiKeys.listKeys, { clerkId: clerkUserId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
         for (const k of existingKeys) {
           if (!k.isRevoked) {
-            await ctx.runMutation(api.apiKeys.revokeKey, { clerkId: clerkUserId, keyId: k.id });
+            await ctx.runMutation(api.apiKeys.revokeKey, { clerkId: clerkUserId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN, keyId: k.id });
           }
         }
         keyResult = await ctx.runMutation(api.apiKeys.createKey, {
-          clerkId: clerkUserId,
+          clerkId: clerkUserId,          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
           label: "cli-auth",
           scopes: ["read:public"],
         });
@@ -1660,7 +1679,7 @@ http.route({
     if (!profile) return json(null);
 
     const privateCtx = await ctx.runQuery(api.private.getPrivateContext, {
-      clerkId: auth.userId,
+      clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       profileId: profile._id,
     });
     return json(privateCtx);
@@ -1683,7 +1702,7 @@ http.route({
 
     const body = await request.json();
     await ctx.runMutation(api.private.updatePrivateContext, {
-      clerkId: auth.userId,
+      clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       profileId: profile._id,
       privateNotes: body.privateNotes,
       privateProjects: body.privateProjects,
@@ -1869,7 +1888,7 @@ http.route({
       }
 
       const result = await ctx.runMutation(api.skills.publish, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         name: body.name.trim(),
         description: typeof body.description === "string" ? body.description.slice(0, 500) : "",
         version: typeof body.version === "string" ? body.version.slice(0, 20) : "1.0.0",
@@ -1915,7 +1934,7 @@ http.route({
       }
 
       const result = await ctx.runMutation(api.skills.recordInstall, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         skillName: body.skillName.trim().slice(0, 100),
         source: typeof body.source === "string" ? body.source.slice(0, 200) : "cli",
         scope: typeof body.scope === "string" ? body.scope.slice(0, 20) : "shared",
@@ -1956,7 +1975,7 @@ http.route({
       }
 
       const result = await ctx.runMutation(api.skills.trackUsage, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         skillName: body.skillName.trim(),
       });
 
@@ -1994,7 +2013,7 @@ http.route({
       }
 
       const result = await ctx.runMutation(api.skills.removeInstall, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         skillName: body.skillName.trim(),
       });
 
@@ -2049,7 +2068,7 @@ http.route({
     }
 
     const bundle = await ctx.runQuery(api.bundles.getBundleByVersion, {
-      clerkId: auth.userId,
+      clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       version,
     });
 
@@ -2090,7 +2109,7 @@ http.route({
 
     try {
       const result = await ctx.runMutation(api.bundles.rollbackToVersion, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         targetVersion: body.version,
       });
       return json(result);
@@ -2118,7 +2137,7 @@ http.route({
 
     try {
       const agents = await ctx.runQuery((api as any).activity.agentSummary, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       });
       return json({ agents: agents ?? [] });
     } catch {
@@ -2151,7 +2170,7 @@ http.route({
 
     try {
       const activity = await ctx.runQuery((api as any).activity.listActivity, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         limit: Number.isFinite(limit) ? limit : 30,
         agentName: agent,
         action,
@@ -2269,7 +2288,7 @@ http.route({
       new Uint8Array(vaultKeyIv).set(Buffer.from(body.vaultKeyIv, "base64"));
 
       const result = await ctx.runMutation(api.vault.initVault, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         wrappedVaultKey,
         vaultSalt,
         vaultKeyIv,
@@ -2308,7 +2327,7 @@ http.route({
       new Uint8Array(iv).set(Buffer.from(body.iv, "base64"));
 
       const result = await ctx.runMutation(api.vault.saveEncryptedVault, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         encryptedMd,
         encryptedJson,
         iv,
@@ -2331,7 +2350,7 @@ http.route({
 
     try {
       const vault = await ctx.runQuery(api.vault.getEncryptedVault, {
-        clerkId: auth.userId,
+        clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       });
 
       if (!vault) {

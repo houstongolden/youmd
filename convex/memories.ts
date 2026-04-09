@@ -62,6 +62,7 @@ export const getMemoryStats = query({
 export const saveMemories = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     memories: v.array(
       v.object({
         category: v.string(),
@@ -75,7 +76,7 @@ export const saveMemories = mutation({
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -107,11 +108,12 @@ export const saveMemories = mutation({
 export const archiveMemory = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     memoryId: v.id("memories"),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -133,6 +135,7 @@ export const archiveMemory = mutation({
 export const updateMemory = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     memoryId: v.id("memories"),
     content: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -140,7 +143,7 @@ export const updateMemory = mutation({
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -187,12 +190,13 @@ export const listSessions = query({
 export const archiveStale = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     maxAgeDays: v.optional(v.number()), // default 90
     maxActive: v.optional(v.number()), // default 200
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -244,11 +248,12 @@ export const archiveStale = mutation({
 export const purgeOldArchived = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     maxArchiveDays: v.optional(v.number()), // default 180
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -283,10 +288,10 @@ export const purgeOldArchived = mutation({
  * Call this once when a chat session begins (web or CLI).
  */
 export const sessionMaintenance = mutation({
-  args: { clerkId: v.string() },
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -364,6 +369,7 @@ export const saveFromAgent = mutation({
 export const upsertSession = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     sessionId: v.string(),
     surface: v.string(),
     summary: v.optional(v.string()),
@@ -371,7 +377,7 @@ export const upsertSession = mutation({
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -411,6 +417,7 @@ export const upsertSession = mutation({
 export const saveChatMessages = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     sessionId: v.string(),
     displayMessages: v.array(v.object({
       id: v.string(),
@@ -424,7 +431,7 @@ export const saveChatMessages = mutation({
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")

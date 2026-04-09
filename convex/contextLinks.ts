@@ -21,6 +21,7 @@ function generateToken(): string {
 export const createLink = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     scope: v.union(v.literal("public"), v.literal("full")),
     ttl: v.optional(v.string()), // "1h", "24h", "7d", "30d", "90d", "never"
     maxUses: v.optional(v.number()),
@@ -29,7 +30,7 @@ export const createLink = mutation({
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -100,10 +101,10 @@ export const createLink = mutation({
 });
 
 export const listLinks = query({
-  args: { clerkId: v.string() },
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -143,11 +144,12 @@ export const listLinks = query({
 export const revokeLink = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     linkId: v.id("contextLinks"),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -166,10 +168,10 @@ export const revokeLink = mutation({
 });
 
 export const revokeAllLinks = mutation({
-  args: { clerkId: v.string() },
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")

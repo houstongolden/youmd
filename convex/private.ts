@@ -90,11 +90,12 @@ function generateToken(): string {
 export const getPrivateContext = query({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     profileId: v.id("profiles"),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     // Then verify they own the profile
     const user = await ctx.db
@@ -119,6 +120,7 @@ export const getPrivateContext = query({
 export const updatePrivateContext = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     profileId: v.id("profiles"),
     privateNotes: v.optional(v.string()),
     privateProjects: v.optional(v.array(v.any())),
@@ -130,7 +132,7 @@ export const updatePrivateContext = mutation({
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     // Then verify they own the profile
     const user = await ctx.db
@@ -185,6 +187,7 @@ export const updatePrivateContext = mutation({
 export const createAccessToken = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     profileId: v.id("profiles"),
     name: v.string(),
     scopes: v.array(v.string()),
@@ -192,7 +195,7 @@ export const createAccessToken = mutation({
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     // Verify ownership
     const user = await ctx.db
@@ -239,12 +242,13 @@ export const createAccessToken = mutation({
 export const revokeAccessToken = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     profileId: v.id("profiles"),
     tokenId: v.id("accessTokens"),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -276,11 +280,12 @@ export const revokeAccessToken = mutation({
 export const listAccessTokens = query({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     profileId: v.id("profiles"),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")

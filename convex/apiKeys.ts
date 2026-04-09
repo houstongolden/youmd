@@ -29,12 +29,13 @@ async function hashKey(key: string): Promise<string> {
 export const createKey = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     label: v.optional(v.string()),
     scopes: v.array(v.string()),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -86,10 +87,10 @@ export const createKey = mutation({
 });
 
 export const listKeys = query({
-  args: { clerkId: v.string() },
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -121,11 +122,12 @@ export const listKeys = query({
 export const revokeKey = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     keyId: v.id("apiKeys"),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")

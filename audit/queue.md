@@ -124,6 +124,8 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 
 ### Convex public endpoint exploit testing
 - [x] **CRITICAL P0** — anonymous read+write via `/api/query` and `/api/mutation` (cycle 42, 2026-04-09 — exploit verified live, fix shipped strict requireOwner, victim data restored, exploit verified DEAD; CLI HTTP routes broken as side effect, P0 logged for cycle 43)
-- [ ] HTTP routes refactor — move ~10 me/bundles/profiles functions to internalMutation versions so API-key auth flows work again (cycle 43 will pick this up from improvements.md)
-- [ ] Per-table permissive `query`/`mutation` audit — sweep for any other "trust the args" patterns that bypass auth
+- [x] HTTP routes refactor — restored API-key callers via TRUSTED_INTERNAL_AUTH_TOKEN bypass pattern (cycle 43, 2026-04-09 — 40 functions in 9 files updated, ~32 http.ts call sites pass the token, CLI flow verified end-to-end with real API key)
+- [x] **Bonus P0** — `pipeline/index.ts` startPipeline + getPipelineStatus had ZERO auth (cycle 43, 2026-04-09 — found while doing http.ts type-check, added requireOwner inline; missed by cycles 37/38 because the audit didn't sweep convex/pipeline/)
+- [ ] Per-table permissive `query`/`mutation` audit — sweep for any OTHER "trust the args" patterns that bypass auth (similar to the pipeline finding)
 - [ ] Cron functions and scheduled actions — verify they don't accept untrusted args
+- [ ] Webhook endpoints — verify Clerk webhooks signature-validate properly

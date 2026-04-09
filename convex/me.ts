@@ -48,10 +48,10 @@ function validateProfileData(data: any): { valid: boolean; errors: string[] } {
 }
 
 export const getMyProfile = query({
-  args: { clerkId: v.string() },
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -82,13 +82,14 @@ export const getMyProfile = query({
 export const saveBundleFromForm = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     profileData: v.any(), // ProfileData shape
     parentHash: v.optional(v.string()), // contentHash of the parent bundle (for conflict detection)
     source: v.optional(v.string()),     // "web-shell" | "cli" | "api" | "agent:<name>"
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -208,11 +209,12 @@ export const saveBundleFromForm = mutation({
 export const saveYouJsonDirect = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     youJson: v.any(),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -325,12 +327,13 @@ export const saveYouJsonDirect = mutation({
 export const createCustomDirectory = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     dirName: v.string(),
     isPublic: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -435,10 +438,10 @@ export const createCustomDirectory = mutation({
 });
 
 export const publishLatest = mutation({
-  args: { clerkId: v.string() },
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -538,12 +541,13 @@ export const publishLatest = mutation({
 export const addSource = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     sourceType: v.string(),
     sourceUrl: v.string(),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -582,10 +586,10 @@ export const addSource = mutation({
 });
 
 export const getSources = query({
-  args: { clerkId: v.string() },
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -603,10 +607,10 @@ export const getSources = query({
 
 // Analytics
 export const getAnalytics = query({
-  args: { clerkId: v.string() },
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")

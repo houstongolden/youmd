@@ -72,8 +72,13 @@ export const checkUsername = query({
 });
 
 export const createUser = mutation({
+  // _internalAuthToken accepted but unused — createUser is the bootstrap path
+  // (called from sign-up webhooks and the auth/register HTTP route) and is
+  // intentionally callable without an existing Clerk session. The arg is here
+  // so http.ts can pass it uniformly (cycle 43).
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     username: v.string(),
     email: v.string(),
     displayName: v.optional(v.string()),
@@ -188,7 +193,10 @@ export const setUserPlan = mutation({
 });
 
 export const getByClerkId = query({
-  args: { clerkId: v.string() },
+  // _internalAuthToken accepted but unused — this is a public lookup. The arg
+  // is here so http.ts can pass it uniformly along with all other clerkId
+  // calls (cycle 43).
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("users")

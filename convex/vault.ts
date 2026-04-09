@@ -8,13 +8,14 @@ import { requireOwner } from "./lib/auth";
 export const initVault = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     wrappedVaultKey: v.bytes(),
     vaultSalt: v.bytes(),
     vaultKeyIv: v.bytes(),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -64,13 +65,14 @@ export const initVault = mutation({
 export const saveEncryptedVault = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     encryptedMd: v.bytes(),
     encryptedJson: v.bytes(),
     iv: v.bytes(),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -104,10 +106,11 @@ export const saveEncryptedVault = mutation({
 export const getEncryptedVault = query({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")

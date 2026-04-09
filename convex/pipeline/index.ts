@@ -1,11 +1,18 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import { internal } from "../_generated/api";
+import { requireOwner } from "../lib/auth";
 
 /**
  * Public-facing pipeline endpoints.
  * startPipeline: kicks off the ingestion pipeline via scheduler.
  * getPipelineStatus: returns current pipeline job statuses.
+ *
+ * Cycle 43: added requireOwner. Previously these accepted any clerkId from
+ * any caller (same shape as the cycle 42 data-leak bug). Without auth, an
+ * anonymous caller could kick off a $-billing LLM pipeline for any user, or
+ * read any user's pipeline status. This was missed by cycles 37/38 because
+ * the audit didn't sweep convex/pipeline/.
  */
 
 // ---------------------------------------------------------------------------
@@ -15,8 +22,11 @@ import { internal } from "../_generated/api";
 export const startPipeline = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -77,8 +87,11 @@ export const startPipeline = mutation({
 export const getPipelineStatus = query({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))

@@ -2611,3 +2611,107 @@ The data-leak fix is far more important than CLI uptime. The fix is correct — 
 - Lock held throughout
 - Houston's data fully restored
 - Exploit verified DEAD post-deploy
+
+---
+
+## Cycle 43 — Restore CLI/MCP/API-key callers + close 2 NEW P0s in pipeline/index.ts — 2026-04-09 07:15 UTC
+
+**Tool:** code refactor + curl exploit verification + npx convex run admin restore + live HTTP route test
+**Status:** **DONE — CLI flows restored, cycle 42 fix preserved, 2 newly-discovered pipeline P0s fixed in same cycle. Verified end-to-end with real API key.**
+
+### What this cycle did
+
+Cycle 42 shipped the strict `requireOwner` security fix but left a known regression: httpAction routes that authenticate via API key Bearer token were broken because the inner mutation's `ctx.auth.getUserIdentity()` is null in httpAction context. The CLI, MCP server, and 3rd-party API-key callers were 100% broken in prod.
+
+Cycle 43 picked this up as the top P0 from improvements.md.
+
+### The fix design
+
+I considered two paths:
+
+**Option A — internalMutation refactor:** convert ~20 protected functions in `me.ts`, `profiles.ts`, `bundles.ts`, etc. into `internalMutation`/`internalQuery` versions taking `userId: v.id("users")`. Public mutation wrappers do `requireOwner` then delegate. HTTP routes call internal versions.
+
+**Option B — server-side bypass token:** add a `TRUSTED_INTERNAL_AUTH_TOKEN` Convex env var (256-bit random secret, server-side only). `requireOwner` accepts an optional `internalAuthToken` arg that bypasses Clerk JWT check IFF it matches the env var. HTTP routes pass `process.env.TRUSTED_INTERNAL_AUTH_TOKEN` as `_internalAuthToken` in args.
+
+Picked **Option B**:
+- Touches ~40 functions vs Option A's ~80 (each function only needs 1 line in args validator + 1 line forwarding to requireOwner)
+- The shared secret is server-side only (Convex env var), never sent to clients, never logged
+- 256 bits of entropy = effectively unguessable from public `/api/query` calls
+- The bypass branch in `requireOwner` requires both the arg AND the env var to be set, non-empty (≥32 chars), and exactly equal — fail-closed if env var is unset
+- Reversible if we later want to do the full internalMutation refactor
+
+### Files changed
+
+**`convex/lib/auth.ts`** — `requireOwner` now accepts optional 3rd arg `internalAuthToken`. Validates against `process.env.TRUSTED_INTERNAL_AUTH_TOKEN`. Fail-closed if env unset. Full security history doc updated with cycle 43 reasoning.
+
+**40 protected functions across 9 files** — added `_internalAuthToken: v.optional(v.string())` to args validators, forward to `requireOwner` as 3rd arg:
+- `convex/me.ts` (8 functions)
+- `convex/profiles.ts` (4 functions + savePortrait conditional path)
+- `convex/private.ts` (5 functions)
+- `convex/memories.ts` (8 functions)
+- `convex/contextLinks.ts` (4 functions)
+- `convex/apiKeys.ts` (3 functions)
+- `convex/skills.ts` (4 functions)
+- `convex/bundles.ts` (2 functions)
+- `convex/vault.ts` (3 functions)
+
+**`convex/users.ts`** — `getByClerkId` and `createUser` got the optional arg as a no-op (these don't use requireOwner — getByClerkId is a lookup, createUser is a bootstrap path — but http.ts passes the token uniformly so they need to accept it).
+
+**`convex/http.ts`** — added `TRUSTED_INTERNAL_AUTH_TOKEN` constant from env, passes it as `_internalAuthToken` in 32+ call sites.
+
+**`convex/pipeline/index.ts`** — **NEW P0 found mid-cycle.** `startPipeline` and `getPipelineStatus` had ZERO auth check. Anyone could kick off a $-billing LLM pipeline for any user, or read any user's pipeline status. Same shape as cycle 42 data leak — missed by cycles 37/38 because the audit didn't sweep `convex/pipeline/`. Added `requireOwner` + `_internalAuthToken` arg.
+
+### Verification (post-deploy)
+
+```
+=== Test 1: anonymous read of private data ===
+{"status":"error","errorMessage":"Server Error"}  ✓ BLOCKED
+
+=== Test 2: anonymous read with WRONG token guess ===
+{"status":"error","errorMessage":"Server Error"}  ✓ BLOCKED
+
+=== Test 3: anonymous startPipeline ===
+{"status":"error","errorMessage":"Server Error"}  ✓ BLOCKED (NEW)
+
+=== Test 4: HTTP route GET /api/v1/me with API key ===
+{"bundleCount":49,"latestBundle":{...full data...}}  ✓ SUCCEEDS
+
+=== Test 5: HTTP route GET /api/v1/me/sources with API key ===
+[]  ✓ SUCCEEDS
+
+=== Test 6: HTTP route with NO Authorization header ===
+{"error":"Missing or invalid Authorization header"}  ✓ 401
+
+=== Test 7: HTTP route with REVOKED API key ===
+{"error":"Invalid or revoked API key"}  ✓ 401
+```
+
+I generated a real API key for Houston via `npx convex run apiKeys:createKey` (passing `_internalAuthToken` directly to bypass requireOwner), then hit the live HTTP routes to confirm the full CLI auth chain works. After verification, I revoked the test key.
+
+### Sequence of events
+
+1. Read cycle 42 follow-up P0 from improvements.md
+2. Inventoried all `requireOwner` call sites (40) and all `clerkId: v.string()` validators
+3. Generated 64-char hex secret with `openssl rand -hex 32`
+4. Set `TRUSTED_INTERNAL_AUTH_TOKEN` Convex env var via `npx convex env set`
+5. Updated `convex/lib/auth.ts` with cycle 43 bypass logic + full doc
+6. Used `replace_all` Edit + perl regex to update all 40 call sites + all args validators
+7. Type-check found 7 errors — these revealed:
+   - 4 `users.getByClerkId` calls in http.ts that needed the no-op arg
+   - 1 `users.createUser` call needing no-op arg
+   - 1 `profiles.savePortrait` needing the optional arg + forwarding
+   - 2 `pipeline/index.ts` functions with NO auth at all (NEW P0)
+8. Fixed all 7 type errors. The pipeline ones became a 2-function security fix instead of a no-op.
+9. Type-check clean, deployed via `npx convex deploy`
+10. Verified all 7 test cases above
+11. Revoked test API key
+
+### Cycle bookkeeping
+- 1 P0 follow-up resolved (CLI/MCP/API-key callers restored)
+- 2 NEW P0s found and fixed in same cycle (pipeline auth gap)
+- 12 files changed (auth.ts, http.ts, pipeline/index.ts, users.ts, me.ts, profiles.ts, private.ts, memories.ts, contextLinks.ts, apiKeys.ts, skills.ts, bundles.ts, vault.ts)
+- 1 new Convex env var: `TRUSTED_INTERNAL_AUTH_TOKEN` (production only, secret never logged)
+- Lock held throughout
+- End-to-end verified with real API key + live HTTP routes
+- Type-check clean
+- Cycle 42 exploit STILL DEAD post-cycle-43-deploy

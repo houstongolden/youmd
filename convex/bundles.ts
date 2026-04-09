@@ -46,10 +46,10 @@ export const getLatestBundle = query({
  * two arbitrary versions.
  */
 export const getBundleByVersion = query({
-  args: { clerkId: v.string(), version: v.number() },
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()), version: v.number() },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")
@@ -195,11 +195,12 @@ export const getHistory = query({
 export const rollbackToVersion = mutation({
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     targetVersion: v.number(),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-    await requireOwner(ctx, args.clerkId);
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const user = await ctx.db
       .query("users")

@@ -16,17 +16,29 @@
  *
  * Cycle 42 fix: `requireOwner` is now STRICT — throws on null identity.
  *
- * This means:
- *   - End-user clients (with Clerk JWT): work as expected
- *   - HTTP routes that call mutations from authenticated httpAction: BREAK
- *     unless they pass an identity. They should be refactored to use
- *     internalMutation/internalQuery wrappers, OR pass the JWT through.
- *   - `npx convex run`: BREAKS for these functions. Use the Convex Dashboard
- *     for ad-hoc data operations going forward.
+ * Cycle 43 follow-up: Closing the cycle 42 hole broke httpAction routes
+ * that authenticate via API key Bearer token (CLI, MCP, 3rd-party agents).
+ * Those httpActions have no Clerk JWT, so the inner mutation's
+ * `ctx.auth.getUserIdentity()` returns null and the call is rejected.
  *
- * The trade-off (lose admin CLI for security-critical functions) is
- * acceptable because the alternative was a complete data leak/write
- * vulnerability.
+ * Cycle 43 fix: `requireOwner` accepts an optional `internalAuthToken` arg.
+ * If it matches the `TRUSTED_INTERNAL_AUTH_TOKEN` Convex env var (256-bit
+ * random secret, set server-side via `npx convex env set`, never sent to
+ * clients), the auth check is bypassed. This is safe because:
+ *   1. The secret is server-side only (Convex env var, never in client bundles)
+ *   2. 256 bits of entropy = unguessable
+ *   3. Public `/api/query` and `/api/mutation` callers can pass any string,
+ *      but they don't know the value
+ *   4. The token never appears in returned data or error messages
+ *   5. If the env var is unset, the bypass branch is dead code (the check
+ *      requires both arg AND env to be non-empty AND equal)
+ *
+ * The httpAction routes pass `process.env.TRUSTED_INTERNAL_AUTH_TOKEN`
+ * as `_internalAuthToken` in their args. Public mutations/queries accept
+ * `_internalAuthToken: v.optional(v.string())` and forward it to `requireOwner`.
+ *
+ * This restores CLI/MCP/API-key flows while keeping the data leak fix intact.
+ * `npx convex run` for these functions still requires Convex Dashboard access.
  */
 
 import type { QueryCtx, MutationCtx } from "../_generated/server";
@@ -34,15 +46,31 @@ import type { QueryCtx, MutationCtx } from "../_generated/server";
 /**
  * Verify that the caller is authorized to act on behalf of the given clerkId.
  *
- * STRICT: throws if no identity is present. The previous "allow null"
- * behavior was exploitable by anonymous public callers.
+ * STRICT: throws if no identity is present, UNLESS a valid internal auth
+ * token is provided (used by httpActions that already authenticated via
+ * API key Bearer token).
  *
  * Returns the verified clerkId.
  */
 export async function requireOwner(
   ctx: QueryCtx | MutationCtx,
-  clerkId: string
+  clerkId: string,
+  internalAuthToken?: string
 ): Promise<string> {
+  // Path 1: trusted internal call (httpAction with API key auth)
+  // Both arg and env var must be set, non-empty, and exactly equal.
+  // The env var is server-side only — public callers cannot guess it.
+  const trustedToken = process.env.TRUSTED_INTERNAL_AUTH_TOKEN;
+  if (
+    internalAuthToken &&
+    trustedToken &&
+    internalAuthToken.length >= 32 &&
+    internalAuthToken === trustedToken
+  ) {
+    return clerkId;
+  }
+
+  // Path 2: end-user with Clerk JWT
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new Error(
