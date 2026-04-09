@@ -4191,3 +4191,115 @@ The header is currently `Content-Security-Policy-Report-Only`. To flip to enforc
 - /browse skill used for the live prod inventory + verification
 - 1 P2 follow-up logged (Houston flips to enforcing after monitoring)
 - Lock held throughout
+
+---
+
+## Cycle 59 — Post-deployment regression sweep + 2 small cleanliness fixes — 2026-04-09 14:25 UTC
+
+**Tool:** awk vulnerability inventory re-run + 23-test curl regression sweep + 2 internalize fixes
+**Status:** **DONE — 23/23 prior-cycle exploits still blocked, 2 P3 cleanliness fixes shipped (portrait + incrementUseCount).**
+
+### What this cycle did
+
+Improvements TODO had only Houston-config items (CLERK_WEBHOOK_SECRET, CSP enforcing flip, CLI key recreate). Queue remaining items are all auth-gated. Best high-value cycle: re-run the cycle 44/45 awk vulnerability inventory over the current source (cycles 52-58 added new public functions, e.g. `me.revokeAllSessions` from cycle 57, the webhook handler from cycle 52) AND run a comprehensive curl-based regression sweep against all prior-cycle exploit vectors.
+
+### Re-run of cycle 45 awk inventory
+
+Walked every exported `query`/`mutation`/`action` (excluding internal*) in `convex/` and flagged ones lacking `requireOwner`. Got 24 hits. Triaged:
+
+| Category | Count | Notes |
+|----------|-------|-------|
+| Intentionally public | 21 | Public profile lookups, sitemap, registry, token-validated paths |
+| Different auth pattern | 1 | `profiles.reportProfile` uses direct `getUserIdentity()` (cycle 39 pattern) — false positive |
+| **Real findings** | **2** | `portrait.generatePortrait` + `contextLinks.incrementUseCount` |
+
+### Finding #1: portrait.generatePortrait — dead code with SSRF (P2)
+
+```ts
+// convex/portrait.ts
+export const generatePortrait = action({
+  args: { imageUrl: v.string(), cols: v.optional(v.number()), format: v.optional(v.string()) },
+  handler: async (_ctx, args) => {
+    const response = await fetch(args.imageUrl); // <-- USER-PROVIDED URL, NO VALIDATION
+    // ... decodes the image, generates ASCII art
+  },
+});
+```
+
+**Risks**:
+- **SSRF**: `imageUrl` is unvalidated user input. An attacker could pass internal URLs (e.g., `http://<internal-service>/admin`) to make Convex's runtime fetch them. Convex's runtime probably doesn't have access to internal networks (it's hosted), but it could still hit OTHER public services and create attribution attacks.
+- **No rate limit**: same shape as cycles 46/54 — anonymous attacker spams image fetches, burns Convex egress.
+- **No payload size cap**: an attacker can pass a URL to a 100MB image. The fetch loads the entire body into memory.
+- **No content-type validation**: the function will decode whatever bytes come back as a PNG.
+- **Zero callers**: searched src/, convex/, cli/ — only the export line. **Dead code.**
+
+The cycle 40 audit comment claimed "9 actions across scrape/chat/portrait, all server-side called from mutations/queries that already auth-check". That was wrong for portrait — it had no callers at all.
+
+**Fix**: converted to `internalAction`. The function body is preserved in case Houston later wants to revive it; the security concerns are documented in a doc comment so anyone reviving it knows what to add (auth gate, rate limit, payload cap, host allowlist, content-type check).
+
+### Finding #2: contextLinks.incrementUseCount — public mutation with token guess vector (P3)
+
+Public `mutation` taking only a `token: v.string()`. Sole caller: `convex/http.ts:226` (the public `/ctx/<username>/<token>` httpAction route, after a successful link resolve, increments the use count toward the `maxUses` limit).
+
+**Practical attack**: an attacker who knew or guessed an existing context-link token could increment its `useCount` and exhaust its `maxUses` (a self-DOS on the link). Token is high-entropy (32-char base32), so guessing is infeasible. Attack value is near zero.
+
+But: same pattern as cycle 49's `apiKeys.updateLastUsed` cleanliness fix. Internal usage from a public route, no reason to expose via `/api/mutation`.
+
+**Fix**: converted to `internalMutation`. Updated the http.ts caller from `api.contextLinks.incrementUseCount` → `internal.contextLinks.incrementUseCount`.
+
+### Regression sweep (23 tests)
+
+Curl-tested every prior-cycle exploit vector to confirm none have regressed across the cycles 52-58 deploys:
+
+```
+✓ Cycle 42: anon private:getPrivateContext → blocked
+✓ Cycle 43: anon pipeline:startPipeline → blocked
+✓ Cycle 43: anon pipeline:getPipelineStatus → blocked
+✓ Cycle 44: anon memories:listMemories → blocked
+✓ Cycle 44: anon bundles:getLatestBundle → blocked
+✓ Cycle 44: anon bundles:publishBundle → blocked
+✓ Cycle 44: anon memories:saveFromAgent → blocked
+✓ Cycle 44: anon activity:listActivity → blocked
+✓ Cycle 45: anon cleanup:clearAllData → blocked (apocalyptic)
+✓ Cycle 45: anon users:setUserPlan → blocked
+✓ Cycle 45: anon profiles:deleteByUsername → blocked
+✓ Cycle 45: anon seed:seedSampleProfiles → blocked
+✓ Cycle 45: anon users:getByClerkId → blocked
+✓ Cycle 45: anon users:getByUsername → blocked
+✓ Cycle 46: anon chat:onboardingChat (/api/action) → blocked
+✓ Cycle 46: anon chat:summarizeSession (/api/action) → blocked
+✓ Cycle 47: anon createUser squat (openai) → blocked
+✓ Cycle 52: webhook missing-headers → 401 missing svix headers
+✓ Cycle 53: scrape with http:// URL → "Could not detect platform"
+✓ Cycle 54: anon scrape:scrapeProfile (/api/action) → blocked
+✓ Cycle 58: CSP-Report-Only header live in prod
+✓ Cycle 59 NEW: anon portrait:generatePortrait → blocked
+✓ Cycle 59 NEW: anon contextLinks:incrementUseCount → blocked
+
+23 of 23 regression checks pass.
+```
+
+### Public flow regression (legitimate paths still work)
+
+```
+✓ GET /api/v1/profiles?username=houstongolden → 200 with full profile
+✓ Created context link via createLink (returned token: UUI2yE69cqF7mdb3nDVjBBJHV8PlQr8k)
+✓ GET /ctx/houstongolden/<token> → 200 with profile bundle
+  (verifies the cycle 59 incrementUseCount internalize didn't break the public ctx route)
+```
+
+### Files changed
+
+- `convex/portrait.ts` — `generatePortrait` `action` → `internalAction`, doc comment with the SSRF + dead-code rationale
+- `convex/contextLinks.ts` — `incrementUseCount` `mutation` → `internalMutation`, added `internalMutation` to imports
+- `convex/http.ts` — caller switched from `api.contextLinks.incrementUseCount` → `internal.contextLinks.incrementUseCount`
+
+### Cycle bookkeeping
+- 2 P2/P3 cleanliness fixes shipped (portrait dead-code SSRF + incrementUseCount cleanliness)
+- 23 regression checks all green
+- 2 public flow checks all green (sitemap + ctx link)
+- 3 files changed
+- Type-check clean
+- Deployed
+- Lock held throughout
+- **The vulnerability inventory is now genuinely empty for the first time.** Every public function in convex/ either has explicit auth (`requireOwner` or `getUserIdentity`), is intentionally unauth (token-validated, public-by-design), or is now `internal*` (unreachable from public callers).

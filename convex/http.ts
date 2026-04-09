@@ -223,7 +223,8 @@ http.route({
     }
 
     // Increment use count
-    await ctx.runMutation(api.contextLinks.incrementUseCount, { token });
+    // Cycle 59: incrementUseCount is now internalMutation
+    await ctx.runMutation(internal.contextLinks.incrementUseCount, { token });
 
     // Record the view
     await ctx.runMutation(api.profiles.recordView, {

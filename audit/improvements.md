@@ -37,6 +37,14 @@ Severity:
 
 ## DONE
 
+### [P2/P3] Cycle 59 sweep: portrait.generatePortrait dead-SSRF + contextLinks.incrementUseCount cleanliness — cycle 59, 2026-04-09
+- Re-ran the cycle 44/45 awk vulnerability inventory script over the current source. 24 hits, 21 intentionally public, 1 false positive (reportProfile uses direct getUserIdentity, cycle 39 pattern), 2 real findings.
+- **Finding #1**: `portrait.generatePortrait` was a dead public action with SSRF (unvalidated user-provided imageUrl), no rate limit, no payload size cap. The cycle 40 audit comment was wrong (no callers anywhere). Converted to `internalAction` with full doc comment listing what to add if revived (auth, rate limit, payload cap, host allowlist, content-type check).
+- **Finding #2**: `contextLinks.incrementUseCount` — public mutation with negligible attack surface (token guess required, only damage is exhausting maxUses), but no reason to expose. Same pattern as cycle 49's apiKeys.updateLastUsed cleanliness fix. Converted to `internalMutation`, http.ts caller switched to `internal.*`.
+- Plus a **23-test regression sweep** against all prior-cycle exploit vectors (cycles 42-58). All 23 still blocked. Public profile + ctx link routes verified working post-fix.
+- **The vulnerability inventory is now genuinely empty for the first time.** Every public function in convex/ either has explicit auth, is intentionally unauth (token-validated or public-by-design), or is `internal*`.
+- Commit: pending
+
 ### [P2] Content-Security-Policy report-only — cycle 58, 2026-04-09
 - The long-deferred Round 4 CSP item, shipped after a /browse-driven inventory of the live prod site (landing, profile, sign-in pages) plus knowledge of the Convex client behavior used by /shell.
 - Built directives for default-src, script-src, worker-src, style-src, img-src, font-src, connect-src, frame-src, form-action, base-uri, object-src, frame-ancestors. Allowlisted: own origin, clerk.you.md, kindly-cassowary-600.convex.{cloud,site} (REST + wss).

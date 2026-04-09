@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 
 /**
@@ -301,7 +301,21 @@ export const resolveLink = query({
   },
 });
 
-export const incrementUseCount = mutation({
+/**
+ * Internal: increment use count on a context link.
+ *
+ * Cycle 59: converted from `mutation` (public) to `internalMutation`. The
+ * sole caller is `convex/http.ts:226` (the public /ctx/<username>/<token>
+ * httpAction route after a successful link resolve). Same pattern as
+ * cycle 49's apiKeys.updateLastUsed cleanliness fix — internal usage from
+ * a public route, no reason to expose via /api/mutation.
+ *
+ * Practical attack surface was negligible (an attacker would need to know
+ * an existing context-link token, which is a 32-char base32 random string,
+ * and the only "damage" is incrementing the use count toward the maxUses
+ * limit — a self-DOS on the link). But cleaner to remove the surface entirely.
+ */
+export const incrementUseCount = internalMutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
     const link = await ctx.db

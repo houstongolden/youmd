@@ -1,7 +1,7 @@
 "use node";
 
 import { v } from "convex/values";
-import { action } from "./_generated/server";
+import { internalAction } from "./_generated/server";
 
 // ---------------------------------------------------------------------------
 // ASCII character ramps — same as client-side AsciiAvatar component
@@ -268,7 +268,26 @@ function pixelsToAscii(
 // Convex action: generate ASCII portrait from image URL
 // ---------------------------------------------------------------------------
 
-export const generatePortrait = action({
+/**
+ * Cycle 59: converted from `action` (public) to `internalAction`. Has ZERO
+ * callers in src/, convex/, or cli/ — it was dead code that nonetheless
+ * exposed an anonymous SSRF vector: `args.imageUrl` is a user-provided
+ * string with no validation, then fetched directly. An attacker could:
+ *   1. Pass internal URLs (http://<convex-internal>/ ...) — server-side
+ *      request forgery
+ *   2. Spam expensive image fetches (no rate limit, no payload size cap)
+ *   3. Fetch huge payloads to OOM the function (no content-length check)
+ *
+ * The cycle 40 audit incorrectly claimed all portrait actions were "called
+ * from mutations/queries that already auth-check". That was wrong — this
+ * one had no callers at all.
+ *
+ * Now `internalAction`, so it cannot be reached via /api/action. If Houston
+ * later wants a server-side portrait generator, the function body is preserved
+ * — just convert back to `action` AND add: auth gate, rate limit, payload
+ * size cap, allowlist of trusted image hosts, and content-type check.
+ */
+export const generatePortrait = internalAction({
   args: {
     imageUrl: v.string(),
     cols: v.optional(v.number()),
