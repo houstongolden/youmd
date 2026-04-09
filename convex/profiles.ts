@@ -476,7 +476,13 @@ export const claimProfile = mutation({
   },
 });
 
-/** Report a profile (no auth required) */
+/** Report a profile — requires authentication and basic input validation
+ *
+ * Cycle 39 P3 fix: previously this mutation had no auth at all, allowing
+ * anonymous flooding of profileReports. Now requires a valid Clerk identity
+ * (verified via ctx.auth) and rate-limits per-reporter via the reporterId
+ * field. Reports include the reporter's user id so we can detect abuse.
+ */
 export const reportProfile = mutation({
   args: {
     profileId: v.id("profiles"),
@@ -484,9 +490,52 @@ export const reportProfile = mutation({
     details: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Auth: require verified Clerk identity
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("authentication required to report profiles");
+
+    // Look up the reporting user
+    const reporter = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .first();
+    if (!reporter) throw new Error("reporter user not found");
+
+    // Input validation: reason must be non-empty and reasonable length
+    const reason = args.reason.trim();
+    if (!reason) throw new Error("reason is required");
+    if (reason.length > 200) throw new Error("reason too long (max 200 chars)");
+    if (args.details && args.details.length > 2000) {
+      throw new Error("details too long (max 2000 chars)");
+    }
+
+    // Verify the reported profile exists
+    const target = await ctx.db.get(args.profileId);
+    if (!target) throw new Error("profile not found");
+
+    // Self-report check — don't allow reporting your own profile
+    if (target.ownerId === reporter._id) {
+      throw new Error("cannot report your own profile");
+    }
+
+    // Rate-limit: reject if this user already reported this profile in the
+    // last 24 hours (prevents spam-flooding the same target)
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    const existingReports = await ctx.db
+      .query("profileReports")
+      .withIndex("by_profileId", (q) => q.eq("profileId", args.profileId))
+      .collect();
+    const recent = existingReports.find(
+      (r) => r.reporterId === reporter._id && r.createdAt > cutoff
+    );
+    if (recent) {
+      throw new Error("you have already reported this profile recently — wait 24 hours");
+    }
+
     await ctx.db.insert("profileReports", {
       profileId: args.profileId,
-      reason: args.reason,
+      reporterId: reporter._id,
+      reason,
       details: args.details,
       status: "pending",
       createdAt: Date.now(),
@@ -495,7 +544,8 @@ export const reportProfile = mutation({
     await ctx.db.insert("securityLogs", {
       eventType: "profile_reported",
       profileId: args.profileId,
-      details: { reason: args.reason },
+      userId: reporter._id,
+      details: { reason },
       createdAt: Date.now(),
     });
 

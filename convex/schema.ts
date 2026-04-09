@@ -76,13 +76,15 @@ export default defineSchema({
   // ── Profile reports ────────────────────────────────────────
   profileReports: defineTable({
     profileId: v.id("profiles"),
+    reporterId: v.optional(v.id("users")), // cycle 39: track who reported (rate-limit + abuse detection)
     reason: v.string(), // "impersonation" | "spam" | "offensive" | "private_info" | "duplicate" | "other"
     details: v.optional(v.string()),
     status: v.string(), // "pending" | "reviewed" | "resolved"
     createdAt: v.number(),
   })
     .index("by_profileId", ["profileId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_reporterId", ["reporterId"]),
 
   // ── Security logs ──────────────────────────────────────────
   securityLogs: defineTable({

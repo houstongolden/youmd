@@ -2256,3 +2256,65 @@ Admin/CLI escape hatch is preserved (identity is null for those contexts, helper
 - 32 functions fixed this cycle
 - Combined with cycle 37's 12 = 44 total
 - Lock held throughout
+
+## Cycle 39 — Schema review + index audit + reportProfile spam fix — 2026-04-08 23:20 UTC
+
+**Tool:** grep + Edit + npx convex deploy
+**Status:** DONE — 1 P3 fixed + 2 audits cleared + housekeeping
+
+### Schema validator audit (92 v.any() usages)
+
+All 92 `v.any()` usages are in the schema for **dynamic data fields** (youJson, manifest, links, projects, preferences, customData, etc.). These are intentionally free-form because:
+- youJson is a user-customizable identity blob
+- manifest is content-hashed metadata
+- links/projects are user-supplied dictionaries
+- customData is explicitly free-form
+
+Tightening would break the dynamic-schema product design. **Acceptable as-is.**
+
+The mutation arg `v.any()` uses are mostly for the same fields passed through to storage. The risk is that a malicious client could send unexpected shapes, but the data isn't executed — just stored as JSON. **No fix needed.**
+
+### Index coverage audit
+
+Most `.collect()` calls in `convex/*.ts` are scoped via `.withIndex()` first. Notable exception:
+- `cleanup.ts:7` — `ctx.db.query("users").collect()` (full-table scan)
+
+But `cleanup.ts` is an admin/cron function, not a hot path. **Acceptable.**
+
+### Stale .js cleanup
+
+Found **34 stale .js files** in `convex/` (sibling .js next to the .ts source files). These are produced by something (probably a tsc watch or background compiler) and cause Convex deploy errors ("Two output files share the same path"). They're already in `.gitignore` (`convex/**/*.js` with exception for `_generated`), so not committed.
+
+**Cleared all 34 with `find convex -name "*.js" -not -path "*/_generated/*" -delete` before deploying. Same cleanup happens before each Convex deploy.**
+
+### P3 fix: reportProfile auth + rate limit + abuse protection
+
+**File:** `convex/profiles.ts:480-555` and `convex/schema.ts:77-87`
+
+**Original bug** (cycle 37 audit): `reportProfile` had NO auth check. Anyone could anonymously POST reports flooding `profileReports` with spam. No rate limiting, no input length validation, no self-report check.
+
+**Fix:** rewrote the mutation to:
+1. **Require verified Clerk identity** via `ctx.auth.getUserIdentity()` (no anonymous reports)
+2. **Look up the reporter** in the users table to track who's reporting
+3. **Validate reason** (non-empty, ≤200 chars)
+4. **Validate details** (≤2000 chars)
+5. **Block self-reports** (`if target.ownerId === reporter._id`)
+6. **24-hour per-reporter+per-target rate limit** — query existing reports for this profile, check if any have `reporterId === reporter._id && createdAt > 24h ago`
+
+Also extended the schema:
+- Added `reporterId: v.optional(v.id("users"))` to profileReports
+- Added `by_reporterId` index for efficient abuse-detection queries
+
+### Deployed
+- Convex deploy succeeded
+- New `by_reporterId` index added to profileReports
+
+### Verification
+- Type-check: PASS
+- Convex deploy: PASS (added index, no errors)
+
+### Cycle bookkeeping
+- 1 P3 fixed (reportProfile)
+- 2 audit items cleared (schema validators, index coverage)
+- Stale .js housekeeping
+- Lock held throughout

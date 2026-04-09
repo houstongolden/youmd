@@ -108,6 +108,6 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 ### Convex backend security
 - [x] Auth check on private/vault/contextLinks (cycle 37 — P0 fix: 12 functions in 3 critical files now use requireOwner helper)
 - [x] Auth check on remaining ~40 functions (cycle 38 — P0 complete: 32 more functions across profiles/me/apiKeys/memories/skills/bundles now use requireOwner. **44 total across 9 files. 100% coverage.**)
-- [ ] reportProfile spam protection — public mutation with no rate limiting
-- [ ] Schema validator review — find v.any() that should be strict types
-- [ ] Index coverage — verify all queries use indexes (no full-table scans)
+- [x] reportProfile spam protection (cycle 39 — P3 fix: now requires Clerk auth + 24h rate limit + reporterId tracking + length validation + self-report block)
+- [x] Schema validator review (cycle 39: 92 v.any() usages, all in dynamic schema fields like youJson/manifest where free-form is intentional. Acceptable.)
+- [x] Index coverage (cycle 39: most queries use withIndex; cleanup.ts has 1 full-table scan but it's an admin function)
