@@ -16,7 +16,23 @@ Severity:
 
 ## DONE
 
-### [P3] Clerk debug headers leaked on public agent API routes — cycle 14, 2026-04-08
+### [P2] /[username]/you.txt missing etag, link header, and 304 support — cycle 15, 2026-04-08
+- File: `src/app/[username]/you.txt/route.ts`
+- Found by: cycle 15 audit — same issues that cycle 13 fixed for you.json
+- Fix: applied the same cycle 13 pattern to the you.txt route handler:
+  - Forward `If-None-Match` from client to upstream
+  - Pass through 304 responses with no body
+  - Forward upstream `etag` header
+  - Forward upstream `link` rel="describedby" header
+  - Add `Access-Control-Allow-Origin` to all error paths
+- Content-Type stays `text/plain; charset=utf-8` (correct for plain text/markdown)
+- Commit: pending
+
+### [P3] Clerk debug headers leaked on public agent API routes — cycle 14, 2026-04-08 (VERIFIED LIVE 19:28 UTC)
+- **Verified live on both endpoints:**
+  - /houstongolden/you.json: only content-type + etag headers, NO x-clerk-* headers
+  - /houstongolden/you.txt: only content-type, NO x-clerk-* headers
+- The matcher exclusion regex worked correctly
 - File: `src/proxy.ts:90-96`
 - Found by: cycle 13 (`x-clerk-auth-reason: session-token-and-uat-missing`, `x-clerk-auth-status: signed-out` on /[username]/you.json)
 - Root cause: `clerkMiddleware()` always runs auth resolution on every matched request and adds those status headers regardless of whether `auth.protect()` is called. The matcher pattern was too permissive (included everything except _next + static files), so Clerk ran on the public agent API endpoints.

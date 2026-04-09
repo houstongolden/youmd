@@ -699,3 +699,54 @@ All 4 auth pages now have proper h1 + main landmark.
 - Cycle 13 entry annotated with "VERIFIED LIVE" tag
 - Cycle 12 entry annotated with "PARTIAL VERIFY" + explanation
 - Lock held throughout
+
+## Cycle 15 — Audit /houstongolden/you.txt — 2026-04-08 19:28 UTC
+
+**Tool:** curl
+**Status:** DONE_WITH_FINDINGS — 1 P2 fixed inline (3 issues bundled), cycle 14 verified live
+
+### What was tested
+- HTTP status (after 307 redirect from apex)
+- Response headers (cache-control, etag, content-type, link, clerk leaks)
+- Body content (markdown format, frontmatter, sections)
+- Cycle 14 verification (Clerk header fix on both you.json and you.txt)
+
+### Cycle 14 verification (PASSED — both endpoints)
+- /houstongolden/you.json: content-type + etag only, NO x-clerk-* headers ✓
+- /houstongolden/you.txt: content-type only, NO x-clerk-* headers ✓
+- The matcher exclusion regex (`[^/]+/you\.(?:json|txt|md)$`) works correctly
+
+### /houstongolden/you.txt body (excellent)
+- ✅ Valid YAML frontmatter (schema, name, username, generated_at)
+- ✅ Markdown sections: # Houston Golden, ## About, ## Now, ## Projects, ## Values, ## Links
+- ✅ Houston Golden, BAMF, Hubify, BAMF.ai, BigBounce all present
+- ✅ Miami location implicit in bio
+- ✅ Venice NOT present (cleanup verified at txt layer too)
+- ✅ 82 lines, 4226 bytes
+- ✅ All 11 links present
+- ⚠️ "# Projects [active]" is rendered as a project header — looks like a leftover seeded data noise (the "# Projects" section name is treated as a project itself). Minor.
+
+### /houstongolden/you.txt headers
+- ✅ HTTP 200 (after expected 307 to www)
+- ✅ Cache-Control: public, max-age=60
+- ✅ Access-Control-Allow-Origin: *
+- ✅ Content-Type: text/plain; charset=utf-8
+- ❌ **No ETag header** (same issue you.json had before cycle 13)
+- ❌ **No Link rel="describedby" header**
+- ❌ **No conditional request / 304 support**
+
+### Issues fixed inline
+
+**P2 — /[username]/you.txt missing etag, link header, 304 support**
+- Same fix pattern as cycle 13 applied to the you.txt route handler
+- **STATUS: FIXED**
+
+### Verification
+- Type-check: PASS
+- Cycle 14 verification: PASS (both endpoints)
+- Cycle 15 fix verification: deferred to next cycle
+
+### Cycle bookkeeping
+- Picked: queue.md item 8 (/houstongolden/you.txt)
+- Cycle 14 entry annotated with "VERIFIED LIVE"
+- Lock held throughout
