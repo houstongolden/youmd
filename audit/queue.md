@@ -130,7 +130,7 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [x] `users.getByClerkId` self-only refactor + **APOCALYPTIC P0 + 6 more** found via wider sweep (cycle 45, 2026-04-09 — `cleanup.clearAllData` was anonymous database wipe; 4 admin functions + 4 leak vectors all closed; 7 exploit vectors verified DEAD)
 - [x] `users.createUser` bootstrap audit — **was P1 username squatting vector** (cycle 47, 2026-04-09 — closed via requireOwner; verified anonymous squatting on `openai`/`anthropic` blocked, namespace still clean)
 - [x] `chat.*` actions rate-limit / abuse audit — **4 P0s closed** (cycle 46, 2026-04-09 — internalized 4 actions, auth-gated 2, added IP rate limits + payload caps to 5 httpAction wrappers; anonymous LLM cost vector now bounded to ~$100/day worst case from unbounded)
-- [ ] Per-day spend cap kill switch for chat.* (cycle 46 follow-up — P2 logged in improvements.md)
+- [x] Per-day spend cap kill switch for chat.* (cycle 48, 2026-04-09 — `chatSpendLog` table + `lib/spendCap.ts` helper + 5 httpAction wrappers wired; verified end-to-end by manipulating the cap; total chat-system spend now hard-capped at $50/day default, configurable via env)
 - [ ] `apiKeys.updateLastUsed` internalize cleanliness (cycle 45 follow-up — P3 logged)
 - [ ] `rateLimits` table cron cleanup (cycle 46 follow-up — P3 logged)
 - [ ] Cron functions and scheduled actions — verify they don't accept untrusted args

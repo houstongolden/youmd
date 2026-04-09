@@ -753,6 +753,15 @@ http.route({
         return json({ error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
       }
 
+      // Cycle 48: daily spend cap kill switch (defense-in-depth vs botnets)
+      try {
+        await ctx.runMutation(internal.lib.spendCap.checkAndRecord, {
+          endpoint: "chat",
+        });
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+      }
+
       const content = await ctx.runAction(internal.chat.onboardingChat, {
         messages: body.messages,
       });
@@ -1023,6 +1032,15 @@ http.route({
         return json({ error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
       }
 
+      // Cycle 48: daily spend cap (compact is cheap so it counts less)
+      try {
+        await ctx.runMutation(internal.lib.spendCap.checkAndRecord, {
+          endpoint: "compact",
+        });
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+      }
+
       const result = await ctx.runAction(api.chat.compactSession, {
         clerkId: auth.userId,
         _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -1097,6 +1115,15 @@ http.route({
         return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
       }
 
+      // Cycle 48: daily spend cap
+      try {
+        await ctx.runMutation(internal.lib.spendCap.checkAndRecord, {
+          endpoint: "research",
+        });
+      } catch (err) {
+        return json({ success: false, error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+      }
+
       const result = await ctx.runAction(internal.chat.researchUser, {
         name: body.name,
         username: body.username,
@@ -1132,6 +1159,14 @@ http.route({
         return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
       }
 
+      try {
+        await ctx.runMutation(internal.lib.spendCap.checkAndRecord, {
+          endpoint: "verify",
+        });
+      } catch (err) {
+        return json({ success: false, error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+      }
+
       const result = await ctx.runAction(internal.chat.verifyIdentity, {
         name: body.name,
         username: body.username,
@@ -1164,6 +1199,14 @@ http.route({
         });
       } catch (err) {
         return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+      }
+
+      try {
+        await ctx.runMutation(internal.lib.spendCap.checkAndRecord, {
+          endpoint: "enrich",
+        });
+      } catch (err) {
+        return json({ success: false, error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
       }
 
       const result = await ctx.runAction(internal.chat.enrichXProfile, {

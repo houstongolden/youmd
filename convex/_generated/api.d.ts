@@ -21,6 +21,7 @@ import type * as lib_compile from "../lib/compile.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as lib_openrouter from "../lib/openrouter.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
+import type * as lib_spendCap from "../lib/spendCap.js";
 import type * as me from "../me.js";
 import type * as memories from "../memories.js";
 import type * as migrations_backfillContentHash from "../migrations/backfillContentHash.js";
@@ -62,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   "lib/hash": typeof lib_hash;
   "lib/openrouter": typeof lib_openrouter;
   "lib/rateLimit": typeof lib_rateLimit;
+  "lib/spendCap": typeof lib_spendCap;
   me: typeof me;
   memories: typeof memories;
   "migrations/backfillContentHash": typeof migrations_backfillContentHash;

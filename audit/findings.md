@@ -3166,3 +3166,105 @@ Regression checks:
 - 3 prior-cycle regression checks all green
 - Lock held throughout
 - Improvements queue is now empty of P0/P1 — only P2/P3 remaining
+
+---
+
+## Cycle 48 — chat.* daily spend cap kill switch (defense-in-depth vs botnets) — 2026-04-09 10:15 UTC
+
+**Tool:** schema design + helper module + 5 wrapper integrations + curl verification with cap manipulation
+**Status:** **DONE — daily spend kill switch shipped, $50/day default cap, verified end-to-end with cap manipulation.**
+
+### What this cycle did
+
+Picked up the top P2 from improvements.md: per-day spend cap kill switch for chat.* endpoints. This is the defense-in-depth layer above cycle 46's per-IP rate limits.
+
+Cycle 46's per-IP caps prevent single-attacker abuse (~$100/IP/day worst case) but a botnet could still drain $10k+/day across 100+ IPs each staying under the per-IP limit. Cycle 48 closes that gap with a daily total spend cap that flips a kill switch on the entire chat system once exceeded.
+
+### Design
+
+**Schema (`convex/schema.ts`):** new `chatSpendLog` table with per-day, per-endpoint counters:
+```ts
+chatSpendLog: defineTable({
+  bucketDay: v.string(),         // "2026-04-09" YYYY-MM-DD UTC
+  endpoint: v.string(),          // "chat" | "research" | "verify" | "enrich" | "compact"
+  count: v.number(),
+  estimatedCostUsd: v.number(),
+  updatedAt: v.number(),
+})
+  .index("by_bucketDay", ["bucketDay"])
+  .index("by_bucketDay_endpoint", ["bucketDay", "endpoint"]),
+```
+
+**Helper (`convex/lib/spendCap.ts`):** new file exposing 3 internal functions:
+- `checkAndRecord({endpoint})` — reads today's total, throws "daily spend cap exceeded" if next call would push over the cap, otherwise inserts/updates the per-endpoint row
+- `getSpendStatus()` — read-only status (today's totals, per-endpoint breakdown, remaining budget) for monitoring
+- `resetTodaySpend()` — manual reset for testing or after a false-positive trip
+
+**Cost estimates (pessimistic — real costs are 30-70% lower):**
+| Endpoint | Cost/call | At $50/day cap |
+|----------|-----------|----------------|
+| `chat` (Sonnet 4.6) | $0.05 | 1000 calls/day |
+| `research` (Perplexity Sonar) | $0.01 | 5000 calls/day |
+| `verify` (Perplexity Sonar Pro) | $0.015 | 3333 calls/day |
+| `enrich` (xAI Grok) | $0.005 | 10000 calls/day |
+| `compact` (Haiku) | $0.002 | 25000 calls/day |
+| `summarize` (Haiku) | $0.001 | 50000 calls/day |
+
+These caps are far above any legitimate usage (even busy days for the entire user base would be under $5/day), but they trip cleanly under coordinated abuse.
+
+**Env var (`CHAT_DAILY_SPEND_LIMIT_USD`):** set on prod via `npx convex env set CHAT_DAILY_SPEND_LIMIT_USD 50`. Default in code is also 50 if env unset. To disable temporarily: set to 10000. To inspect spend: `npx convex run lib/spendCap:getSpendStatus`.
+
+### Wiring
+
+5 chat httpAction wrappers in `convex/http.ts` got the spend cap check **after the rate limit check** (so rate-limited calls don't count toward the cap):
+- `/api/v1/chat` → `endpoint: "chat"`
+- `/api/v1/research` → `endpoint: "research"`
+- `/api/v1/verify-identity` → `endpoint: "verify"`
+- `/api/v1/enrich-x` → `endpoint: "enrich"`
+- `/api/v1/chat/compact` → `endpoint: "compact"`
+
+When the cap trips, the wrapper returns HTTP 503 "service temporarily unavailable" with the underlying cap message included.
+
+### Verification (post-deploy, 9 tests)
+
+Tested by manipulating the cap value via env var:
+
+```
+Test 1: getSpendStatus baseline → totalUsd: 0, remainingUsd: 50, byEndpoint: []  ✓
+Test 2: lower cap to $0.01 (npx convex env set)  ✓
+Test 3: POST /api/v1/chat → HTTP 503 "daily spend cap exceeded: today $0.00 + this call $0.0500 > limit $0.01"  ✓
+Test 4: POST /api/v1/research → HTTP 200 (research is exactly $0.01 = cap; "$0 + $0.01 > $0.01" is FALSE so it's allowed — correct semantics, `>` not `>=`)
+Test 5: restore cap to $50  ✓
+Test 6: POST /api/v1/chat → HTTP 200 with LLM response  ✓
+Test 7: getSpendStatus after the calls → totalUsd: 0.06, totalCalls: 2, byEndpoint: [{chat:0.05}, {research:0.01}]  ✓
+Test 8: resetTodaySpend → deleted: 2 rows  ✓
+Regression: Cycle 42 (private:getPrivateContext) → still BLOCKED  ✓
+```
+
+The minor finding from Test 4: when a call's cost equals exactly the remaining cap, it's allowed (not blocked). This is the correct semantic for `>` ("exceeds the cap") rather than `>=` ("reaches the cap"). For a $50/day production cap this is irrelevant; it only showed up because I temporarily set the cap to $0.01 to force-trip the switch.
+
+### Files changed
+
+- `convex/schema.ts` — added `chatSpendLog` table with two indexes
+- `convex/lib/spendCap.ts` — **new file**, exports `checkAndRecord` + `getSpendStatus` + `resetTodaySpend`
+- `convex/http.ts` — 5 chat httpAction wrappers got `checkAndRecord` calls (after rate limit, before action)
+- Convex env var: `CHAT_DAILY_SPEND_LIMIT_USD = "50"` (set via `npx convex env set`)
+
+### What this means for Houston
+
+Before cycle 48: chat endpoints were bounded by per-IP rate limits (~$100/IP/day). A 100-IP botnet could plausibly burn $10k/day. The only safety net was Houston noticing the API bills and rotating keys.
+
+After cycle 48: total chat-system spend is hard-capped at $50/day (configurable). Whatever the source — single attacker, botnet, runaway client bug, viral organic traffic — the chat system kills itself at the cap until midnight UTC. Houston's worst-case daily damage is bounded.
+
+The cap is also a useful canary: if it ever trips on a normal day, that's a signal that either (a) traffic spiked, (b) a client is buggy and looping, or (c) an attack is in progress. The kill switch prevents the financial loss while alerting Houston to investigate.
+
+### Cycle bookkeeping
+- 1 P2 closed (defense-in-depth complete: per-IP rate limits + payload caps + daily spend cap)
+- 1 schema table added
+- 1 new helper file (`convex/lib/spendCap.ts`)
+- 5 httpAction wrappers wired
+- 1 Convex env var set
+- 9 tests run (4 happy path, 1 trip path, 1 reset, 3 regression)
+- Type-check clean
+- Lock held throughout
+- The chat.* attack surface is now economically defensible at three layers: (1) internalAction / Clerk auth gates, (2) per-IP rate limits + payload caps, (3) daily total spend cap

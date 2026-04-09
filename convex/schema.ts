@@ -415,4 +415,24 @@ export default defineSchema({
     timestamp: v.number(),  // Date.now() at call time
   })
     .index("by_bucket_ts", ["bucket", "timestamp"]),
+
+  // ── Daily LLM spend cap (cycle 48) ──────────────────────────
+  // Per-day, per-endpoint counters tracking total estimated cost across all
+  // chat.* endpoints. Acts as a kill switch: when today's cost exceeds the
+  // CHAT_DAILY_SPEND_LIMIT_USD env var, all further chat.* calls return 503
+  // until midnight UTC.
+  //
+  // Defense-in-depth above the per-IP rate limits. Per-IP caps prevent
+  // single-IP abuse (~$100/IP/day worst case) but a botnet could still
+  // accumulate $10k+/day. The spend cap caps the total damage at the env
+  // var value regardless of IP count.
+  chatSpendLog: defineTable({
+    bucketDay: v.string(),         // YYYY-MM-DD UTC, e.g. "2026-04-09"
+    endpoint: v.string(),          // "chat" | "research" | "verify" | "enrich" | "compact"
+    count: v.number(),             // total calls today for this endpoint
+    estimatedCostUsd: v.number(),  // running estimated cost
+    updatedAt: v.number(),
+  })
+    .index("by_bucketDay", ["bucketDay"])
+    .index("by_bucketDay_endpoint", ["bucketDay", "endpoint"]),
 });

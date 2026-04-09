@@ -13,11 +13,6 @@ Severity:
 
 ## TODO
 
-### [P2] Per-day spend cap kill switch for chat.* — cycle 46, 2026-04-09
-- Cycle 46 added per-IP rate limits (10-30 calls/min) and payload caps. This bounds single-IP abuse to ~$100/day, but a botnet (100+ IPs) could still theoretically reach $10k/day.
-- **Fix design:** Track total LLM-call count + estimated cost in a singleton convex table per day. If today's cost > $X (e.g. $50 default, configurable via Convex env), reject all chat.* httpAction calls with a 503. Reset at midnight UTC.
-- **Why P2:** the current rate limits already make casual abuse uneconomical. This is defense-in-depth for a sophisticated attacker.
-
 ### [P3] apiKeys.updateLastUsed is unauth'd — cleanliness fix — cycle 45, 2026-04-09
 - Public mutation taking only `keyId: v.id("apiKeys")`.
 - Practical attack surface: if attacker already knows an apiKeyId (32-char base32 random), they can mark it as used. No value to attacker.
@@ -29,6 +24,15 @@ Severity:
 
 
 ## DONE
+
+### [P2] Per-day spend cap kill switch for chat.* — cycle 48, 2026-04-09
+- Defense-in-depth above cycle 46's per-IP rate limits. Per-IP caps prevent single-attacker abuse (~$100/IP/day) but a botnet could still burn $10k/day across 100+ IPs.
+- New `chatSpendLog` schema table tracks per-day, per-endpoint count + estimated cost. New `convex/lib/spendCap.ts` helper exposes `checkAndRecord` (called from httpAction wrappers after rate limit), `getSpendStatus` (monitoring), and `resetTodaySpend` (manual reset). Daily limit configurable via `CHAT_DAILY_SPEND_LIMIT_USD` Convex env var (default $50).
+- 5 chat httpAction wrappers (chat, research, verify, enrich, compact) wired with the spend cap check. When cap is exceeded, returns HTTP 503 "service temporarily unavailable" until midnight UTC.
+- Pessimistic cost estimates per call: chat $0.05, research $0.01, verify $0.015, enrich $0.005, compact $0.002. At $50/day this allows ~1000 chat calls or ~5000 research calls before tripping — far above legitimate usage.
+- Verified by manipulating the cap: lowered to $0.01, chat call returned 503; restored to $50, chat succeeded; getSpendStatus showed accumulated $0.06 across 2 test calls; resetTodaySpend cleaned up.
+- Result: total chat-system spend is now hard-capped at $50/day regardless of IP count or attack vector. Houston's worst-case daily damage is bounded.
+- Commit: pending
 
 ### [P1] users.createUser was a username squatting vector — cycle 47, 2026-04-09
 - Logged as P2 in cycles 44/45 ("verify the bootstrap path"), audit revealed it was P1.
