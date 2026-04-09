@@ -286,7 +286,8 @@ export function ProfilesDirectoryContent() {
                   aria-label="search profiles by name, tagline, or location"
                   autoComplete="off"
                   spellCheck={false}
-                  className="w-full bg-[hsl(var(--raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-primary))] font-mono text-[12px] py-2 pl-7 pr-3 placeholder:text-[hsl(var(--text-secondary))]/30 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors caret-[hsl(var(--accent))]"
+                  // Cycle 62: bumped from py-2 (38px tall) to min-h-[44px] for WCAG touch target
+                  className="w-full bg-[hsl(var(--raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-primary))] font-mono text-[12px] min-h-[44px] py-2 pl-7 pr-3 placeholder:text-[hsl(var(--text-secondary))]/30 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors caret-[hsl(var(--accent))]"
                   style={{ borderRadius: "2px" }}
                 />
               </div>
@@ -301,8 +302,11 @@ export function ProfilesDirectoryContent() {
                   ] as const).map((f) => (
                     <button
                       key={f.key}
+                      type="button"
                       onClick={() => setFilter(f.key)}
-                      className={`font-mono text-[10px] px-2 py-1 border transition-colors ${
+                      aria-pressed={filter === f.key}
+                      // Cycle 62: bumped to min-h-[44px] (was 27px tall, half the WCAG min)
+                      className={`font-mono text-[10px] inline-flex items-center justify-center min-h-[44px] px-3 border transition-colors ${
                         filter === f.key
                           ? "border-[hsl(var(--accent))]/60 text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
                           : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))]/70 hover:border-[hsl(var(--accent))]/30 hover:text-[hsl(var(--accent))]"
@@ -321,7 +325,9 @@ export function ProfilesDirectoryContent() {
                   <select
                     value={sort}
                     onChange={(e) => setSort(e.target.value as "recent" | "projects" | "alpha")}
-                    className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] font-mono text-[10px] px-2 py-1 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30"
+                    aria-label="sort profiles"
+                    // Cycle 62: bumped to min-h-[44px] (was 25px tall) + added aria-label
+                    className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] font-mono text-[10px] min-h-[44px] px-2 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30"
                     style={{ borderRadius: "2px" }}
                   >
                     <option value="recent">recently active</option>
@@ -398,15 +404,16 @@ export function ProfilesDirectoryContent() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
+              {/* Cycle 62: bumped both footer links from 14px tall to min-h-[44px] */}
               <Link
                 href="/create"
-                className="text-[hsl(var(--accent))] font-mono text-[11px] hover:opacity-80 transition-opacity mr-4"
+                className="inline-flex items-center min-h-[44px] px-3 text-[hsl(var(--accent))] font-mono text-[11px] hover:opacity-80 transition-opacity mr-2"
               >
                 &gt; create your profile
               </Link>
               <Link
                 href="/"
-                className="text-[hsl(var(--text-secondary))]/50 font-mono text-[11px] hover:text-[hsl(var(--accent))] transition-colors"
+                className="inline-flex items-center min-h-[44px] px-3 text-[hsl(var(--text-secondary))]/50 font-mono text-[11px] hover:text-[hsl(var(--accent))] transition-colors"
               >
                 &gt; cd ~/you.md
               </Link>

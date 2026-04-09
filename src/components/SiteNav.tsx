@@ -87,9 +87,12 @@ export function SiteNav() {
         <div className="max-w-[1400px] mx-auto flex items-center justify-between px-3 md:px-4 h-9">
           {/* Left: brand + nav links (desktop) */}
           <div className="flex items-center gap-4 md:gap-5 min-w-0">
+            {/* Cycle 62: bumped tap area to ≥44x44 via inline-flex + min-h/min-w
+                while keeping the 12px text visually unchanged. The 44px height
+                exceeds the nav's h-9 (36px) so we use -my-1 to prevent layout shift. */}
             <Link
               href="/"
-              className="text-accent font-mono text-[12px] tracking-tight shrink-0"
+              className="text-accent font-mono text-[12px] tracking-tight shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-1 px-2 -mx-2"
             >
               you
             </Link>
@@ -166,11 +169,13 @@ export function SiteNav() {
                 &gt; create you
               </Link>
             )}
-            {/* Mobile menu toggle */}
+            {/* Mobile menu toggle — cycle 62: bumped to ≥44x44 tap area. */}
             <button
+              type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-1"
-              aria-label="Toggle menu"
+              className="md:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-1 -mr-2"
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
             >
               {mobileOpen ? (
                 <X size={16} className="text-muted-foreground" />
