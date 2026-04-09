@@ -243,7 +243,7 @@ export function ProfilesDirectoryContent() {
   return (
     <div className="min-h-[100dvh] bg-[hsl(var(--bg))]">
       {/* Content — SiteNav handles navigation */}
-      <main className="pt-8 pb-20 px-6">
+      <main className="pt-8 pb-8 px-6">
         <div className="max-w-[680px] mx-auto">
           {/* Header */}
           <FadeUp>
@@ -385,8 +385,13 @@ export function ProfilesDirectoryContent() {
             </div>
           )}
 
-          {/* Bottom CTAs */}
-          {!isLoading && (
+        </div>
+      </main>
+
+      {/* Page-level footer landmark — outside main so it gets contentinfo role */}
+      {!isLoading && (
+        <footer className="px-6 pb-20">
+          <div className="max-w-[680px] mx-auto">
             <motion.div
               className="text-center mt-10"
               initial={{ opacity: 0 }}
@@ -406,9 +411,9 @@ export function ProfilesDirectoryContent() {
                 &gt; cd ~/you.md
               </Link>
             </motion.div>
-          )}
-        </div>
-      </main>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

@@ -12,17 +12,24 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-
-### [P2] /profiles directory has no footer landmark (cycle 10)
-- File: `src/app/profiles/profiles-content.tsx`
-- Issue: directory page has no `<footer>` element. Page does have a CTA section at the bottom ("create your profile" / "cd ~/you.md") but it's a `<motion.div>` not a `<footer>`.
-- Fix: convert the bottom CTA wrapper to `<footer>` (or wrap it). May need layout adjustments.
-- Why P2: incomplete landmark set; not breaking anything but ideal a11y has all landmarks present
-- Found by: cycle 10 audit (`footer: 0`)
+(empty — all known improvements cleared)
 
 ## DONE
 
-### [P1] /profiles directory had no main + search input had no a11y — cycle 10, 2026-04-08
+### [P2] /profiles directory had no footer landmark — cycle 11, 2026-04-08
+- File: `src/app/profiles/profiles-content.tsx:388-411`
+- Found by: cycle 10 (`footer: 0`)
+- Fix:
+  1. Cut the "Bottom CTAs" `motion.div` block out of `<main>`
+  2. Wrapped it in a sibling `<footer className="px-6 pb-20">` after `</main>`
+  3. Adjusted main padding: `pb-20` → `pb-8` (since the spacing now lives on the footer)
+  4. Inner wrapping div with `max-w-[680px] mx-auto` keeps the footer content aligned with the directory list above it
+- Visual: identical
+- Conditional `!isLoading` preserved on the footer (no footer shown while still loading)
+- Commit: pending
+
+### [P1] /profiles directory had no main + search input had no a11y — cycle 10, 2026-04-08 (VERIFIED LIVE 18:21 UTC)
+- **Verified live:** main=1, h1=1, searchInput.type=search, searchInput.name=search, searchInput.ariaLabel="search profiles by name, tagline, or location", searchInput.autocomplete=off — all 5 cycle 10 fixes confirmed
 - File: `src/app/profiles/profiles-content.tsx:243-405`
 - Found by: cycle 10 audit — `main: 0`, search input had `name: "", ariaLabel: null, type: "text"`
 - Fixes applied:

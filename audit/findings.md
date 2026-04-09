@@ -481,3 +481,38 @@ All 4 auth pages now have proper h1 + main landmark.
 - /profiles search filter (houston): 16 results
 - /profiles console errors: 0
 - /profiles page height: 1322px (compact, no footer landmark issue is just incomplete semantics)
+
+## Cycle 11 — Fix P2: /profiles footer landmark — 2026-04-08 18:20 UTC
+
+**Tool:** Edit + tsc + browse (verification of cycle 10)
+**Status:** DONE — fix applied, type-check passes, cycle 10 verified live
+
+### What was done
+
+1. **Verified cycle 10 fix is live on production:**
+   - main=1 ✓ (was 0)
+   - h1=1 ✓
+   - searchInput.type="search" ✓
+   - searchInput.name="search" ✓
+   - searchInput.ariaLabel="search profiles by name, tagline, or location" ✓
+   - searchInput.autocomplete="off" ✓
+   - All 5 cycle 10 fixes confirmed in production
+
+2. **Fixed P2: /profiles footer landmark:**
+   - Cut the "Bottom CTAs" motion.div out of `<main>`
+   - Wrapped it in a sibling `<footer>` element after `</main>`
+   - Adjusted main padding (pb-20 → pb-8) to compensate for the footer absorbing the bottom space
+   - Wrapped footer content in `max-w-[680px] mx-auto` to keep alignment with the directory list
+   - Conditional `!isLoading` preserved
+   - Visual unchanged
+
+### Verification
+- Type-check: PASS
+- Cycle 10 verification: PASS (5 a11y attrs confirmed)
+- Cycle 11 verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: top P2 from improvements.md (only item)
+- Moved to DONE
+- Cycle 10 entry annotated with "VERIFIED LIVE" tag
+- Lock held throughout
