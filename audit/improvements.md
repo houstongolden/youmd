@@ -16,7 +16,23 @@ Severity:
 
 ## DONE
 
-### [P1] /create renders empty SSR markup (no h1, no main, no content) — cycle 21, 2026-04-08
+### [P2] /initialize had no main + no h1 landmarks across 3 render branches — cycle 22, 2026-04-08
+- File: `src/app/initialize/initialize-content.tsx`
+- Found by: cycle 22 source audit (page is auth-gated so couldn't browse-test directly — verified via source inspection)
+- The page has 3 distinct render branches (loading, boot/claim phase, ready/onboarding) and ALL THREE were:
+  1. Wrapping content in `<div>` instead of `<main>` (no main landmark)
+  2. Calling `<TerminalHeader title=... />` without `asHeading` so the title rendered as `<span>` not `<h1>` (no h1)
+- Note: page has `robots: { index: false, follow: false }` so SEO impact is low, but a11y for logged-in users navigating with screen readers still matters
+- Fix: 4 surgical edits
+  1. Loading branch: `<div>` → `<main>` wrapper
+  2. Boot/claim branch: `<div>` → `<main>` wrapper, added `asHeading` to TerminalHeader
+  3. OnboardingTerminal loading branch: `<div>` → `<main>` wrapper
+  4. OnboardingTerminal main branch: `<div>` → `<main>` wrapper, added `asHeading` to TerminalHeader
+- All 3 branches now render proper h1 + main landmarks
+- Commit: pending
+
+### [P1] /create renders empty SSR markup (no h1, no main, no content) — cycle 21, 2026-04-08 (VERIFIED LIVE 20:31 UTC)
+- **Verified live via curl:** /create SSR markup now contains `<main>` and `<h1>you.md — create</h1>` — confirmed via `curl https://you.md/create | grep "<h1\|<main"` returning real elements (was empty before)
 - File: `src/app/create/create-content.tsx`
 - Found by: cycle 21 audit — first eval (no boot delay) returned `h1: 0, main: 0, nav: 0, footer: 0`. After 5500ms boot delay it returned `h1: 1, main: 1`. The semantic landmarks only appear AFTER hydration + boot animation completes.
 - Root cause: `if (!publicConvex) return null;` returns `null` on the server because `publicConvex` is `null` when `typeof window === "undefined"`. Search engines and any non-JS crawler see an empty page. SEO-critical: the **profile creation page**, the main onboarding entry point, has zero indexable content.

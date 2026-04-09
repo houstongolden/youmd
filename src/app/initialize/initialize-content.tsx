@@ -174,24 +174,24 @@ export function InitializeContent() {
   // Loading state
   if (!user || existingUser === undefined) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))]">
+      <main className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))]">
         <p className="text-[hsl(var(--text-secondary))] font-mono text-sm animate-pulse">
           loading...
         </p>
-      </div>
+      </main>
     );
   }
 
   // Boot/claim phase — show centered terminal
   if (phase !== "ready") {
     return (
-      <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
+      <main className="min-h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
         <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4">
           <div
             className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
             style={{ borderRadius: "2px" }}
           >
-            <TerminalHeader title="you.md — initialize" />
+            <TerminalHeader title="you.md — initialize" asHeading />
             <div
               ref={scrollRef}
               className="flex-1 overflow-y-auto p-6 md:p-8 font-mono text-[14px] leading-relaxed"
@@ -215,7 +215,7 @@ export function InitializeContent() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -260,22 +260,22 @@ instructions for this greeting:
 
   if (!convexUser) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))]">
+      <main className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))]">
         <p className="text-[hsl(var(--text-secondary))] font-mono text-sm animate-pulse">
           loading...
         </p>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
+    <main className="min-h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4">
         <div
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
           style={{ borderRadius: "2px" }}
         >
-          <TerminalHeader title="you.md — agent" />
+          <TerminalHeader title="you.md — agent" asHeading />
 
           {/* Skip to dashboard */}
           <div className="flex items-center justify-between px-4 py-1.5 border-b border-[hsl(var(--border))]">
@@ -302,6 +302,6 @@ instructions for this greeting:
           />
         </div>
       </div>
-    </div>
+    </main>
   );
 }
