@@ -4522,3 +4522,105 @@ Clicked button[aria-controls='docs-mobile-nav'] → drawer opens
 - 3 verification tests all green
 - /browse skill used for both audit + verification (iPhone viewport + JS introspection of touch targets + aria attributes + click test)
 - Lock held throughout
+
+---
+
+## Cycle 62 — /profiles directory mobile audit + SiteNav header fixes — 2026-04-09 15:25 UTC
+
+**Tool:** /browse at 390x844 + JS introspection + sr-only filtering
+**Status:** **DONE — 9 touch target fixes shipped + 1 missing label fixed. SiteNav fix bumps tap targets across EVERY page using the shared header.**
+
+### What this cycle did
+
+Same playbook as cycle 61: pick a mobile-untested page, run touch-target/aria audit, fix what's broken. Cycle 10 audited /profiles on desktop with 3 inline fixes, but mobile (390x844) was never specifically checked.
+
+### Audit results (BEFORE fix)
+
+Set viewport to iPhone 14 Pro and ran the same JS introspection pattern as cycle 61.
+
+**Layout** ✓ all clean:
+- 390 width, no horizontal scroll, h1=1, h2=1, main=1, nav=1, footer=1
+- 22 links, 4 buttons, 1 input total
+- 0 console errors
+- CSP-Report-Only header still present
+
+**False positive caught and filtered**: my initial sweep found 17 too-small elements, but **8 of those were inside `<div class="sr-only">`** — a hidden screen-reader-only sitemap-style listing of all profiles. Tested the parent's computed style:
+
+```js
+{
+  "parentClipPath": "inset(50%)",
+  "parentPosition": "absolute",
+  "parentWidth": "1px",
+  "parentHeight": "1px",
+  "parentOverflow": "hidden"
+}
+```
+
+Properly clipped to 1×1 visually. The bounding box reflects layout size, not the visual clip-path. Re-ran with `if (el.closest('.sr-only')) return false` filter — the real count dropped from 17 to **9**.
+
+### 9 real touch target findings
+
+| # | Element | Before | Source |
+|---|---------|--------|--------|
+| 1 | "you" logo Link (header) | **21×44** (width=21) | `src/components/SiteNav.tsx:90` |
+| 2 | ">_" mobile menu toggle | **21×44** | `src/components/SiteNav.tsx:170` |
+| 3 | Search input | 342×**38** (h=38) | `profiles-content.tsx:280` |
+| 4 | Filter "all" | **36×27** | `profiles-content.tsx:302` |
+| 5 | Filter "verified" | 66×**27** | same |
+| 6 | Filter "has-projects" | 90×**27** | same |
+| 7 | Sort SELECT | 128×**25** + missing label | `profiles-content.tsx:321` |
+| 8 | "> create your profile" footer link | 139×**14** | `profiles-content.tsx:401` |
+| 9 | "> cd ~/you.md" footer link | 86×**14** | `profiles-content.tsx:407` |
+
+The footer links at **height 14** were the worst offenders — about 1/3 the WCAG min.
+
+### The fix
+
+**`src/components/SiteNav.tsx`** (shared header — affects every page that uses it):
+- "you" logo Link: bumped to `inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-1 px-2 -mx-2`. The `-my-1` cancels the layout shift inside the `h-9` (36px) nav.
+- ">_" mobile menu button: same treatment + added `type="button"`, `aria-expanded={mobileOpen}`, dynamic `aria-label` ("Open menu" / "Close menu" instead of constant "Toggle menu").
+
+**`src/app/profiles/profiles-content.tsx`** (page-specific):
+- Search input: added `min-h-[44px]` (was py-2 → 38px tall).
+- Filter buttons (3): bumped to `inline-flex items-center justify-center min-h-[44px] px-3`, added `type="button"`, added `aria-pressed={filter === f.key}` for state announcement.
+- Sort SELECT: bumped to `min-h-[44px]`, added `aria-label="sort profiles"`.
+- Footer links (2): bumped to `inline-flex items-center min-h-[44px] px-3`.
+
+### Verification (post-deploy)
+
+```
+=== Re-audit after fix (excluding sr-only) ===
+{"visibleCount": 18, "tooSmall": 0, "tooSmallList": []}
+
+=== Sort SELECT spot-check ===
+{"w": 128, "h": 44, "ariaLabel": "sort profiles"}
+```
+
+**0 of 18 visible interactive elements are now too small** (was 9). Sort select is 128×44 with proper aria-label.
+
+### What this cascades to
+
+The SiteNav fix is the biggest win: it bumps tap targets across **every page that uses the shared header** — not just /profiles. Pages that get this fix for free:
+- / (landing)
+- /profiles (this cycle's audit)
+- /houstongolden (any public profile)
+- /docs (cycle 61's audit)
+- /create
+- /sign-up, /sign-in
+- /shell (auth-gated dashboard — Houston should verify the header still looks right when he opens it)
+
+The header's `h-9` (36px) is preserved visually because the link/button uses `-my-1` to overflow upward and downward by 4px each — the visible nav height is unchanged.
+
+### Files changed
+
+- `src/components/SiteNav.tsx` — 2 button updates
+- `src/app/profiles/profiles-content.tsx` — 5 element updates (input + select + 3 filter buttons + 2 footer links)
+
+### Cycle bookkeeping
+- 9 touch target fixes + 1 missing label fix
+- 2 files changed (1 shared header → fixes cascade across all pages, 1 page-specific)
+- 1 false positive caught and properly filtered (sr-only screen-reader list)
+- Type-check clean
+- Vercel auto-deploy (~90s)
+- Re-audit confirmed 0/18 too-small post-fix
+- Lock held throughout
