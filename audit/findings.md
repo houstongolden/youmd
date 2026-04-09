@@ -750,3 +750,78 @@ All 4 auth pages now have proper h1 + main landmark.
 - Picked: queue.md item 8 (/houstongolden/you.txt)
 - Cycle 14 entry annotated with "VERIFIED LIVE"
 - Lock held throughout
+
+## Cycle 16 — Audit /ctx public link — 2026-04-08 19:30 UTC
+
+**Tool:** curl + node JSON inspection + convex run
+**Status:** DONE_WITH_FINDINGS — 1 P2 fixed inline (3 issues bundled), cycle 15 verified live
+
+### What was tested
+- HTTP status (after 307 redirect)
+- Response headers (cache-control, content-type, etag, link, x-clerk leaks)
+- JSON validity
+- All top-level keys
+- Scope enforcement (public scope must NOT include _privateContext)
+- Field correctness post data-cleanup
+- Cycle 15 verification
+
+### Cycle 15 verification (PASSED)
+- /houstongolden/you.txt: etag set ("f6cdd929...gzip"), link rel="describedby" set ✓
+- All cycle 15 fixes confirmed in production
+
+### Used context link
+- Token: `O3jh9bUyaSuR3QjXZiO1vQnDkrD1iVUt` (name: "QA Public Test")
+- Scope: public
+- Created: 2026-04-08, expires 2026-04-15
+- 9 context links found via `convex run contextLinks:listLinks` for Houston
+
+### /ctx public link metrics
+
+**Body content (excellent — scope enforcement works):**
+- ✅ schema: "you-md/v1"
+- ✅ username: "houstongolden"
+- ✅ scope: "public" (also _scope: "public" — duplicated for compatibility)
+- ✅ 20 top-level keys (one more than you.json — has both `scope` and `_scope`, plus the absence of `_privateContext` signals public scope)
+- ✅ identity.name: "Houston Golden"
+- ✅ identity.location: "Miami"
+- ✅ bio has Miami, NOT Venice
+- ✅ 6 projects, 6 values
+- ✅ **`_privateContext` NOT present** — public scope correctly enforced
+- ✅ byte length: 6585 (similar to you.json)
+
+**HTTP headers:**
+- ✅ HTTP 200 (after 307 redirect)
+- ✅ Content-Type: application/vnd.you-md.v1+json (correct, matches you.json)
+- ✅ Cache-Control: public, max-age=60
+- ✅ Access-Control-Allow-Origin: * (good for cross-origin agents)
+- ✅ **NO x-clerk-* headers** (cycle 14 fix covers /ctx/ too)
+- ❌ **No ETag header** (the /ctx/ proxy doesn't forward upstream etag)
+- ❌ **No Link rel="describedby" header**
+- ❌ **No conditional request / 304 support**
+
+### Issue fixed inline
+
+**P2 — /ctx proxy missing etag, link header, 304 support**
+- Same pattern as cycles 13 and 15
+- File: `src/app/ctx/[...path]/route.ts`
+- **STATUS: FIXED** — applied the same upstream-header-forwarding pattern:
+  - Forward If-None-Match → upstream
+  - Pass through 304 responses with no body
+  - Forward upstream etag and link headers
+  - Default Accept changed from application/json → application/vnd.you-md.v1+json
+  - CORS headers on all error paths
+
+### Verification
+- Type-check: PASS
+- Cycle 15 verification: PASS
+- Cycle 16 verification: deferred to next cycle (after deploy)
+
+### Cycle bookkeeping
+- Picked: queue.md item 9 (ctx link public)
+- Cycle 15 entry annotated with "VERIFIED LIVE"
+- Lock held throughout
+
+### Numbers
+- Context links found for Houston: 9 (some expired, 4 active)
+- Public ctx link byte length: 6585
+- _privateContext fields: 0 (correct enforcement)

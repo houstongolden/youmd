@@ -16,7 +16,21 @@ Severity:
 
 ## DONE
 
-### [P2] /[username]/you.txt missing etag, link header, and 304 support — cycle 15, 2026-04-08
+### [P2] /ctx proxy missing etag, link header, and 304 support — cycle 16, 2026-04-08
+- File: `src/app/ctx/[...path]/route.ts`
+- Found by: cycle 16 audit of public ctx link
+- Same fix pattern as cycles 13 and 15 — applied to the /ctx/[username]/{token} proxy route handler:
+  - Forward `If-None-Match` from client to upstream
+  - Pass through 304 with no body
+  - Forward upstream `etag` header
+  - Forward upstream `link` rel="describedby" header
+  - Add `Access-Control-Allow-Origin` to all error paths
+- Default Accept changed from `application/json` to `application/vnd.you-md.v1+json`
+- Pre-existing wins on the public ctx link: scope=public, _privateContext correctly absent, no x-clerk-* headers (cycle 14 covered /ctx too), Miami present, Venice gone
+- Commit: pending
+
+### [P2] /[username]/you.txt missing etag, link header, and 304 support — cycle 15, 2026-04-08 (VERIFIED LIVE 19:30 UTC)
+- **Verified live:** etag set, link rel="describedby" set on /houstongolden/you.txt
 - File: `src/app/[username]/you.txt/route.ts`
 - Found by: cycle 15 audit — same issues that cycle 13 fixed for you.json
 - Fix: applied the same cycle 13 pattern to the you.txt route handler:

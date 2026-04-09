@@ -16,7 +16,7 @@ to `audit/improvements.md`.
 - [x] public profile — `/houstongolden` — avatar, bio, projects, JSON-LD, OG (cycle 12, 2026-04-08, duplicate h1 + favicon 404 fixed inline)
 - [x] you.json — `/houstongolden/you.json` — valid JSON, all fields present (cycle 13, 2026-04-08, content-type/etag/link header proxy fix)
 - [x] you.txt — `/houstongolden/you.txt` — plain text format (cycle 15, 2026-04-08, applied cycle 13 etag/link header pattern)
-- [ ] ctx link (public) — `/ctx/houstongolden/<public-token>` — proper response
+- [x] ctx link (public) — `/ctx/houstongolden/<public-token>` — proper response (cycle 16, 2026-04-08, etag/link header proxy fix)
 - [ ] ctx link (full) — `/ctx/houstongolden/f32iTMuDrkOfQQrucy4AMfTYjAvN3boI` — _privateContext present
 - [ ] robots.txt — confirm /ctx/ allowed for AI bots
 - [ ] sitemap.xml — well-formed, includes all profiles
