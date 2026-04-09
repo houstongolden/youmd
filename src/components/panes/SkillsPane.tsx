@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "convex/react";
+import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { PaneSectionLabel, PaneDivider } from "./shared";
@@ -126,8 +127,10 @@ interface SkillsPaneProps {
 }
 
 export function SkillsPane({ userId }: SkillsPaneProps) {
+  const { user } = useUser();
+  const clerkId = user?.id;
   // Query user's installed skills from Convex
-  const installs = useQuery(api.skills.listInstalls, { userId });
+  const installs = useQuery(api.skills.listInstalls, clerkId ? { clerkId, userId } : "skip");
   // Query published skills from registry
   const registrySkills = useQuery(api.skills.listPublished, { limit: 20 });
 

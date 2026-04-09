@@ -12,10 +12,32 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-(empty — all known improvements cleared)
+
+### [P1] users.getByClerkId is the enumeration vector — refactor to self-only — cycle 44, 2026-04-09
+- Currently `users.getByClerkId({clerkId})` returns a full user record (including the Convex `_id`) for ANY clerkId, with no auth check.
+- This is the chained vector that makes any `userId: v.id("users")` arg attack possible: an attacker who knows a clerkId can resolve it to a user._id, then attack any function that trusts userId.
+- Cycle 44 closed all known userId-arg vulns by adding `requireOwner + ownership check`, so the chain is broken — but the enumeration leak remains.
+- **Fix design:** add `_internalAuthToken` bypass (for httpAction callers). For Clerk-authenticated calls, add `requireOwner` and require the called clerkId to match the authenticated user (self-only). httpAction callers and Clerk-authed web clients all already only look up themselves, so this should be a clean refactor — just need to verify each call site only ever passes its own clerkId.
+- **Why P1 not P0:** the chained attack is now broken, so the leak alone is information-only (lets attacker confirm a clerkId exists and learn the email). Still worth fixing.
+
+### [P2] users.createUser is callable without existing Clerk session — verify the bootstrap path — cycle 44, 2026-04-09
+- Intentionally unauth'd (sign-up flow needs to create the Convex user record before any session exists).
+- Risk: anonymous attacker could insert junk user records with fake clerkIds. They wouldn't match any real Clerk JWT, so they'd be orphaned, but the row would exist.
+- **Fix design:** add a check that the clerkId arg corresponds to a real Clerk user (call Clerk backend API). The auth/register HTTP route already does this. The webhook flow probably also does. Consolidate into a single "verified bootstrap" path.
 
 
 ## DONE
+
+### [P0×6 + P1×4] MASSIVE SWEEP: 13 unauth'd public functions across memories/activity/bundles/skills + 3 dead funcs deleted — cycle 44, 2026-04-09
+- **The smoking gun from cycle 43 was real.** Cycle 38 claimed "100% coverage" but only swept functions taking `clerkId: v.string()`. Functions taking `userId: v.id("users")` were entirely missed. So was `convex/activity.ts`. So was `convex/pipeline/`.
+- Found 13 unauth'd public functions (after filtering 3 dead-code deletes and false positives)
+- Worst chain: `bundles.saveBundle` (anonymous insert) + `bundles.publishBundle` (anonymous publish) = anonymous public profile defacement. Combined with `users.getByClerkId` enumeration, attacker could overwrite any user's live profile.
+- **Fixed all 13** with the cycle 43 `_internalAuthToken` bypass pattern + ownership check (`owner._id !== args.userId → throw`).
+- **Deleted 3 dead functions** (`saveBundle`, `trackAgentInteraction`, `getAgentStats` in `bundles.ts`) — saved ~115 lines and closed the dead-code attack surface.
+- 14 files changed (5 convex + 9 web client), all type-checked and verified end-to-end with curl.
+- 6 exploit vectors verified DEAD post-deploy. Cycles 42 + 43 regressions both green.
+- Logged 2 follow-ups (`users.getByClerkId` enumeration P1, `users.createUser` bootstrap audit P2).
+- Commit: 8df5e0e
 
 ### [P0] CLI HTTP routes broken by cycle 42 strict requireOwner + 2 NEW P0s in pipeline/index.ts — cycle 43, 2026-04-09
 - **Cycle 42 follow-up:** all `/api/v1/me/*` httpAction routes were rejecting valid API-key callers because the inner mutation's `ctx.auth.getUserIdentity()` is null in httpAction context.

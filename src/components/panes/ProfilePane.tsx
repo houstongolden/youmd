@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "convex/react";
+import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
 import { CopyButton } from "@/components/ui/CopyButton";
 import AsciiAvatar from "@/components/AsciiAvatar";
@@ -25,9 +26,11 @@ interface ProfilePaneProps {
 }
 
 export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
+  const { user } = useUser();
+  const clerkId = user?.id;
   const latestBundle = useQuery(
     api.bundles.getLatestBundle,
-    userId ? { userId } : "skip"
+    clerkId && userId ? { clerkId, userId } : "skip"
   );
   const userProfile = useQuery(
     api.profiles.getByOwnerId,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
 import { CopyButton } from "@/components/ui/CopyButton";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -10,9 +11,11 @@ interface JsonPaneProps {
 }
 
 export function JsonPane({ userId }: JsonPaneProps) {
+  const { user } = useUser();
+  const clerkId = user?.id;
   const latestBundle = useQuery(
     api.bundles.getLatestBundle,
-    userId ? { userId } : "skip"
+    clerkId && userId ? { clerkId, userId } : "skip"
   );
 
   const json = latestBundle?.youJson;

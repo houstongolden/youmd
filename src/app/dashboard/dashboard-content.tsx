@@ -62,7 +62,7 @@ export function DashboardContent() {
   );
   const latestBundle = useQuery(
     api.bundles.getLatestBundle,
-    convexUser?._id ? { userId: convexUser._id } : "skip"
+    user?.id && convexUser?._id ? { clerkId: user.id, userId: convexUser._id } : "skip"
   );
   const userProfile = useQuery(
     api.profiles.getByOwnerId,

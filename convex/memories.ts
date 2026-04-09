@@ -6,12 +6,25 @@ import { requireOwner } from "./lib/auth";
 
 /** Get all active memories for a user */
 export const listMemories = query({
+  // Cycle 44: added auth. Previously took only userId — leaked all memories.
   args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     userId: v.id("users"),
     category: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
     let q;
     if (args.category) {
       q = ctx.db
@@ -35,8 +48,23 @@ export const listMemories = query({
 
 /** Get memory count by category */
 export const getMemoryStats = query({
-  args: { userId: v.id("users") },
+  // Cycle 44: added auth. Previously leaked memory category counts.
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+  },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
     const memories = await ctx.db
       .query("memories")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -167,11 +195,24 @@ export const updateMemory = mutation({
 
 /** List recent chat sessions */
 export const listSessions = query({
+  // Cycle 44: added auth. Previously leaked all chat sessions for any user.
   args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     userId: v.id("users"),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
     const sessions = await ctx.db
       .query("chatSessions")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -333,9 +374,15 @@ export const sessionMaintenance = mutation({
   },
 });
 
-/** Save memories from an external agent (no clerkId — caller must validate userId) */
+/**
+ * Save memories from an external agent.
+ * Cycle 44: previously the comment said "no clerkId — caller must validate userId"
+ * but no caller ever did. This was an anonymous-write P0. Now requires auth.
+ */
 export const saveFromAgent = mutation({
   args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     userId: v.id("users"),
     agentName: v.string(),
     memories: v.array(
@@ -347,6 +394,16 @@ export const saveFromAgent = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
     const ids = [];
     for (const mem of args.memories) {
       const id = await ctx.db.insert("memories", {
@@ -464,8 +521,23 @@ export const saveChatMessages = mutation({
 
 /** Load chat messages for the most recent session */
 export const loadLatestChatMessages = query({
-  args: { userId: v.id("users") },
+  // Cycle 44: added auth. Previously leaked the FULL chat history of any user.
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+  },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
     const sessions = await ctx.db
       .query("chatSessions")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))

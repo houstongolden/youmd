@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, query } from "./_generated/server";
+import { requireOwner } from "./lib/auth";
 
 // Internal mutation — called by HTTP handlers and other server code
 export const logActivity = internalMutation({
@@ -47,13 +48,18 @@ function computeTrust(source: string, hasToken: boolean, hasApiKey: boolean): st
 
 // Public query — list activity for the authenticated user
 export const listActivity = query({
+  // Cycle 44: added auth. Previously took clerkId without verifying — anonymous
+  // callers could read any user's full agent activity log.
   args: {
     clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     limit: v.optional(v.number()),
     agentName: v.optional(v.string()),
     action: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -82,8 +88,14 @@ export const listActivity = query({
 
 // Public query — aggregate stats per agent
 export const agentSummary = query({
-  args: { clerkId: v.string() },
+  // Cycle 44: added auth. Previously leaked agent counts/types per user.
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -152,8 +164,14 @@ export const agentSummary = query({
 
 /** Aggregate counts by user — for the history tab summary */
 export const userActivityStats = query({
-  args: { clerkId: v.string() },
+  // Cycle 44: added auth. Previously leaked aggregate read/write counts.
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))

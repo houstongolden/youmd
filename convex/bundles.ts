@@ -29,8 +29,25 @@ export const getPublishedBundle = query({
 });
 
 export const getLatestBundle = query({
-  args: { userId: v.id("users") },
+  // Cycle 44: added auth. Previously this took only userId and returned the
+  // full latest bundle (youJson + youMd) for ANYONE — anonymous P0 read leak.
+  // Now requires the caller to authenticate as the owning user.
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+  },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
     const bundles = await ctx.db
       .query("bundles")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -78,43 +95,30 @@ export const getBundleByVersion = query({
   },
 });
 
-export const saveBundle = mutation({
-  args: {
-    userId: v.id("users"),
-    manifest: v.any(),
-    youJson: v.any(),
-    youMd: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // Get next version number
-    const existing = await ctx.db
-      .query("bundles")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-      .collect();
-
-    const maxVersion = existing.reduce(
-      (max, b) => Math.max(max, b.version),
-      0
-    );
-
-    const bundleId = await ctx.db.insert("bundles", {
-      userId: args.userId,
-      version: maxVersion + 1,
-      schemaVersion: "you-md/v1",
-      manifest: args.manifest,
-      youJson: args.youJson,
-      youMd: args.youMd,
-      isPublished: false,
-      createdAt: Date.now(),
-    });
-
-    return bundleId;
-  },
-});
+// Cycle 44: DELETED `saveBundle` (mutation, unauth'd, ZERO callers in src/cli/convex).
+// It was anonymous-write dead code that let any anonymous caller insert a new
+// bundle for any userId with arbitrary contents. The CLI's saveBundle function
+// goes through /api/v1/me/bundle → me.saveBundleFromForm (which has auth).
 
 export const listRecentBundles = query({
-  args: { userId: v.id("users"), limit: v.optional(v.number()) },
+  // Cycle 44: added auth. Previously took only userId — leaked bundle metadata.
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+    limit: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
     const bundles = await ctx.db
       .query("bundles")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -134,10 +138,27 @@ export const listRecentBundles = query({
 });
 
 export const publishBundle = mutation({
-  args: { bundleId: v.id("bundles") },
+  // Cycle 44: added auth. Previously took only bundleId — combined with the
+  // (now deleted) saveBundle, this allowed ANONYMOUS PUBLIC PROFILE DEFACEMENT:
+  // attacker could insert a malicious bundle and publish it as the live profile.
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    bundleId: v.id("bundles"),
+  },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
     const bundle = await ctx.db.get(args.bundleId);
     if (!bundle) throw new Error("Bundle not found.");
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || bundle.userId !== owner._id) {
+      throw new Error("not authorized: bundle is not owned by authenticated user");
+    }
 
     // Unpublish all previous bundles for this user
     const userBundles = await ctx.db
@@ -164,8 +185,23 @@ export const publishBundle = mutation({
  * Returns version, timestamp, hash, source, changed sections, publish status.
  */
 export const getHistory = query({
-  args: { userId: v.id("users") },
+  // Cycle 44: added auth. Previously took only userId — leaked bundle history.
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+  },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
     const bundles = await ctx.db
       .query("bundles")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -238,87 +274,10 @@ export const rollbackToVersion = mutation({
   },
 });
 
-/**
- * Track an agent interaction (read or write).
- */
-export const trackAgentInteraction = mutation({
-  args: {
-    profileId: v.optional(v.id("profiles")),
-    userId: v.optional(v.id("users")),
-    agentName: v.string(),
-    agentType: v.string(), // "read" | "write" | "chat"
-    metadata: v.optional(v.any()),
-  },
-  handler: async (ctx, args) => {
-    // Find profile by userId if not provided directly
-    let profileId = args.profileId;
-    if (!profileId && args.userId) {
-      const profile = await ctx.db
-        .query("profiles")
-        .withIndex("by_ownerId", (q) => q.eq("ownerId", args.userId))
-        .first();
-      profileId = profile?._id;
-    }
+// Cycle 44: DELETED `trackAgentInteraction` (mutation, unauth'd, ZERO callers).
+// It allowed anonymous writes to the agentInteractions table for any user.
+// The active interaction tracking lives in convex/private.ts:validateToken,
+// which writes only after API token validation.
 
-    if (!profileId) return;
-
-    // Check if this agent already has an interaction record
-    const existing = await ctx.db
-      .query("agentInteractions")
-      .withIndex("by_profileId", (q) => q.eq("profileId", profileId))
-      .collect();
-
-    const match = existing.find((e) => e.agentName === args.agentName && e.agentType === args.agentType);
-
-    if (match) {
-      await ctx.db.patch(match._id, {
-        interactionCount: match.interactionCount + 1,
-        lastInteractionAt: Date.now(),
-        metadata: args.metadata ?? match.metadata,
-      });
-    } else {
-      await ctx.db.insert("agentInteractions", {
-        profileId,
-        agentName: args.agentName,
-        agentType: args.agentType,
-        interactionCount: 1,
-        lastInteractionAt: Date.now(),
-        metadata: args.metadata,
-        createdAt: Date.now(),
-      });
-    }
-  },
-});
-
-/**
- * Get agent interaction stats for a profile.
- */
-export const getAgentStats = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_ownerId", (q) => q.eq("ownerId", args.userId))
-      .first();
-
-    if (!profile) return { interactions: [], totalReads: 0, totalWrites: 0 };
-
-    const interactions = await ctx.db
-      .query("agentInteractions")
-      .withIndex("by_profileId", (q) => q.eq("profileId", profile._id))
-      .collect();
-
-    const totalReads = interactions
-      .filter((i) => i.agentType === "read")
-      .reduce((sum, i) => sum + i.interactionCount, 0);
-    const totalWrites = interactions
-      .filter((i) => i.agentType === "write" || i.agentType === "chat")
-      .reduce((sum, i) => sum + i.interactionCount, 0);
-
-    return {
-      interactions: interactions.sort((a, b) => b.lastInteractionAt - a.lastInteractionAt),
-      totalReads,
-      totalWrites,
-    };
-  },
-});
+// Cycle 44: DELETED `getAgentStats` (query, unauth'd, ZERO callers).
+// Replaced by convex/private.ts:getAgentStats which has proper auth.

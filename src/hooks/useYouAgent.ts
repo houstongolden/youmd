@@ -60,7 +60,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   );
   const latestBundle = useQuery(
     api.bundles.getLatestBundle,
-    convexUser?._id ? { userId: convexUser._id } : "skip"
+    user?.id && convexUser?._id ? { clerkId: user.id, userId: convexUser._id } : "skip"
   );
   const userProfile = useQuery(
     api.profiles.getByOwnerId,
@@ -84,7 +84,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const compactSession = useAction(api.chat.compactSession);
   const recentMemories = useQuery(
     api.memories.listMemories,
-    convexUser?._id ? { userId: convexUser._id, limit: 30 } : "skip"
+    user?.id && convexUser?._id ? { clerkId: user.id, userId: convexUser._id, limit: 30 } : "skip"
   );
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -131,7 +131,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const saveChatMessages = useMutation(api.memories.saveChatMessages);
   const latestChatMessages = useQuery(
     api.memories.loadLatestChatMessages,
-    convexUser?._id ? { userId: convexUser._id } : "skip"
+    user?.id && convexUser?._id ? { clerkId: user.id, userId: convexUser._id } : "skip"
   );
 
   // Session tracking

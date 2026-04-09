@@ -2715,3 +2715,162 @@ I generated a real API key for Houston via `npx convex run apiKeys:createKey` (p
 - End-to-end verified with real API key + live HTTP routes
 - Type-check clean
 - Cycle 42 exploit STILL DEAD post-cycle-43-deploy
+
+---
+
+## Cycle 44 — MASSIVE SWEEP: 13 more unauth'd public functions found across memories/activity/bundles/skills — 2026-04-09 07:50 UTC
+
+**Tool:** awk-driven inventory + manual code review + curl exploit verification on 6 vectors
+**Status:** **DONE — 13 functions fixed (6 P0s, 4 P1s), 3 dead functions deleted, all exploits verified DEAD post-deploy. Cycle 38's "100% coverage" claim was wrong by half.**
+
+### What this cycle did
+
+Cycle 43's pipeline finding (`startPipeline` and `getPipelineStatus` had ZERO auth — missed by cycles 37/38 because they didn't sweep `convex/pipeline/`) was a smoking gun. Cycle 44 picked up the queue.md Round 5 item: "Per-table permissive query/mutation audit" and ran an exhaustive sweep across all of `convex/`.
+
+I wrote an awk script to find every exported `query`/`mutation`/`action` (excluding `internalMutation`/`internalQuery`/`internalAction`, which are protected by Convex runtime) that takes `clerkId: v.string()` or `userId: v.id("users")` but doesn't call `requireOwner`. The script flagged 17 public-facing functions across 5 files.
+
+After manual review (filtering out 1 legitimate unauth'd bootstrap path and a few false positives), the result was:
+
+**13 unauth'd public functions, of which ~6 are CRITICAL P0s.**
+
+### The exploit chain
+
+`users.getByClerkId` is also unauth'd (it's a public lookup that returns a full user record including the Convex `_id` given a `clerkId`). Combined with the `userId: v.id("users")` arg pattern, the exploit chain is:
+
+1. Attacker knows the target's `clerkId` (from any public profile, log, or guess)
+2. `curl /api/query` → `users:getByClerkId({clerkId})` → returns `{_id, ...}` (the Convex user._id)
+3. `curl /api/query` → `bundles:getLatestBundle({userId: <_id>})` → returns full latest bundle (`youJson`, `youMd`)
+4. `curl /api/mutation` → `bundles:saveBundle({userId: <_id>, manifest, youJson, youMd})` → inserts a new bundle with attacker payload
+5. `curl /api/mutation` → `bundles:publishBundle({bundleId})` → publishes the malicious bundle as the live profile
+
+Net effect: **anonymous public profile defacement** for any user. Same shape as cycle 42's data leak but with public-facing impact.
+
+### Inventory of findings
+
+| # | File | Function | Kind | Severity | Issue |
+|---|------|----------|------|----------|-------|
+| 1 | memories.ts | `listMemories` | query | **P0** | Leak: any user's full memories |
+| 2 | memories.ts | `getMemoryStats` | query | P1 | Leak: memory category counts |
+| 3 | memories.ts | `listSessions` | query | **P0** | Leak: chat session list |
+| 4 | memories.ts | `saveFromAgent` | mutation | **P0** | Write: anonymous memory injection |
+| 5 | memories.ts | `loadLatestChatMessages` | query | **P0** | Leak: full chat history |
+| 6 | activity.ts | `listActivity` | query | P1 | Leak: agent activity log |
+| 7 | activity.ts | `agentSummary` | query | P1 | Leak: per-agent stats |
+| 8 | activity.ts | `userActivityStats` | query | P1 | Leak: read/write counts |
+| 9 | bundles.ts | `getLatestBundle` | query | **P0** | Leak: full latest bundle (youJson + youMd) |
+| 10 | bundles.ts | `listRecentBundles` | query | P1 | Leak: bundle metadata |
+| 11 | bundles.ts | `getHistory` | query | P1 | Leak: bundle history |
+| 12 | bundles.ts | `publishBundle` | mutation | **P0** | Write: anonymous profile defacement (chained with #13) |
+| 13 | bundles.ts | `saveBundle` | mutation | **P0 (DELETED)** | Write: anonymous bundle insertion (no callers — dead code) |
+| 14 | bundles.ts | `trackAgentInteraction` | mutation | DELETED | Write to agentInteractions (no callers — dead) |
+| 15 | bundles.ts | `getAgentStats` | query | DELETED | Replaced by `private.getAgentStats` (no callers) |
+| 16 | skills.ts | `listInstalls` | query | P1 | Leak: installed-skills list |
+
+### Fix pattern
+
+Same shape as cycle 43's `_internalAuthToken` bypass:
+
+For functions taking `userId: v.id("users")`:
+```ts
+args: {
+  clerkId: v.string(),
+  _internalAuthToken: v.optional(v.string()),
+  userId: v.id("users"),
+  // ... rest
+}
+handler: async (ctx, args) => {
+  await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+  const owner = await ctx.db.query("users").withIndex(...).first();
+  if (!owner || owner._id !== args.userId) throw new Error("not authorized");
+  // ... rest
+}
+```
+
+For functions taking `clerkId: v.string()` (activity.ts):
+```ts
+args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) }
+handler: async (ctx, args) => {
+  await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+  // ... rest
+}
+```
+
+For `publishBundle({bundleId})`:
+```ts
+args: { clerkId, _internalAuthToken, bundleId }
+handler: async (ctx, args) => {
+  await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+  const bundle = await ctx.db.get(args.bundleId);
+  const owner = ...;
+  if (!owner || bundle.userId !== owner._id) throw new Error("not authorized");
+  // ... rest
+}
+```
+
+### Files changed
+
+**Convex:**
+- `convex/memories.ts` — 5 functions auth'd
+- `convex/activity.ts` — 3 functions auth'd
+- `convex/bundles.ts` — 4 functions auth'd, 3 dead functions deleted (~115 lines removed)
+- `convex/skills.ts` — 1 function auth'd
+- `convex/http.ts` — 4 call sites updated to pass `clerkId + TRUSTED_INTERNAL_AUTH_TOKEN`
+
+**Web client (TypeScript-driven discovery via type-check errors):**
+- `src/app/dashboard/dashboard-content.tsx` — 1 call site
+- `src/app/initialize/initialize-content.tsx` — 1 call site
+- `src/components/panes/FilesPane.tsx` — 3 call sites
+- `src/components/panes/HistoryPane.tsx` — 2 call sites
+- `src/components/panes/JsonPane.tsx` — 1 call site (added `useUser` import)
+- `src/components/panes/ProfilePane.tsx` — 1 call site (added `useUser` import)
+- `src/components/panes/SharePane.tsx` — 2 call sites
+- `src/components/panes/SkillsPane.tsx` — 1 call site (added `useUser` import)
+- `src/hooks/useYouAgent.ts` — 3 call sites
+
+### Verification (post-deploy)
+
+```
+Test 1: anonymous listMemories       → Server Error  ✓ BLOCKED (was P0 leak)
+Test 2: anonymous getLatestBundle    → Server Error  ✓ BLOCKED (was P0 leak)
+Test 3: anonymous publishBundle      → Server Error  ✓ BLOCKED (was P0 defacement)
+Test 4: anonymous saveFromAgent      → Server Error  ✓ BLOCKED (was P0 write)
+Test 5: anonymous activity.listActivity → Server Error  ✓ BLOCKED (was P1 leak)
+Test 6: WITH bypass token, listMemories → SUCCESS    ✓ (returns memories)
+
+Regression checks:
+- Cycle 42 exploit (private:getPrivateContext)         → still BLOCKED ✓
+- Cycle 43 HTTP route with revoked API key             → 401 ✓
+```
+
+### Why cycle 38's "100% coverage" claim was wrong
+
+Cycle 38's audit grep was:
+```
+grep "clerkId: v\.string" convex/*.ts
+```
+
+It found ~44 functions that take `clerkId` and added `requireOwner` to all of them. But this missed:
+1. Functions taking `userId: v.id("users")` instead of `clerkId` — bundles, memories, skills
+2. Functions in subdirectories (`convex/pipeline/*.ts`) — caught in cycle 43
+3. Functions in files the audit didn't sweep at all (`convex/activity.ts`)
+
+The cycle 44 awk script catches all three cases by walking each .ts file in `convex/` (excluding `_generated/` and `lib/`), parsing each export block, and checking for both arg patterns AND requireOwner presence.
+
+### What's still NOT covered
+
+- `users.getByClerkId` — still public, still returns a user record given a clerkId. This is the **enumeration vector** that makes the userId-arg attacks possible. Adding auth to it would break ~10 web client callers (each does `useUser → getByClerkId(user.id)` to bootstrap). Logged for cycle 45 — needs a careful refactor or a "self-only" auth check.
+- `users.createUser` — bootstrap path, intentionally callable without an existing Clerk session. The clerkId arg is validated only by the Clerk webhook in practice. Logged for cycle 45 review.
+- Any cron functions (none currently exist) and scheduled actions — most pipeline/* are internalActions, but a sweep would confirm.
+- Webhook signature validation (Clerk webhooks) — separate audit.
+
+### Cycle bookkeeping
+- 6 P0 fixes (4 read leaks + 2 write vulns)
+- 4 P1 fixes (information leaks)
+- 3 dead functions deleted (~115 lines removed)
+- 1 P0 chained-defacement vector closed (`saveBundle` + `publishBundle`)
+- 14 files changed
+- Type-check clean
+- 6 exploit vectors verified DEAD with curl
+- Cycles 42 + 43 regression checks both green
+- Lock held throughout
+- 2 new follow-ups logged for cycle 45 (`users.getByClerkId` enumeration, `users.createUser` audit)

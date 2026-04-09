@@ -234,7 +234,7 @@ function OnboardingTerminal() {
   );
   const latestBundle = useQuery(
     api.bundles.getLatestBundle,
-    convexUser?._id ? { userId: convexUser._id } : "skip"
+    user?.id && convexUser?._id ? { clerkId: user.id, userId: convexUser._id } : "skip"
   );
 
   const username = convexUser?.username || user?.username || "";

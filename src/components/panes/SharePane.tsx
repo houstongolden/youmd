@@ -265,9 +265,9 @@ function LinkPreviewModal({
 export function SharePane({ username, userId, clerkId, profileId, plan }: SharePaneProps) {
   const recentBundles = useQuery(
     api.bundles.listRecentBundles,
-    userId ? { userId, limit: 3 } : "skip"
+    clerkId && userId ? { clerkId, userId, limit: 3 } : "skip"
   );
-  const latestBundle = useQuery(api.bundles.getLatestBundle, userId ? { userId } : "skip");
+  const latestBundle = useQuery(api.bundles.getLatestBundle, clerkId && userId ? { clerkId, userId } : "skip");
   const links = useQuery(api.contextLinks.listLinks, clerkId ? { clerkId } : "skip");
   const createLink = useMutation(api.contextLinks.createLink);
   const revokeLink = useMutation(api.contextLinks.revokeLink);

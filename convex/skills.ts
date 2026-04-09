@@ -68,12 +68,25 @@ export const getByName = query({
 
 /**
  * Get user's installed skills.
+ * Cycle 44: added auth. Previously leaked installed-skills list per user.
  */
 export const listInstalls = query({
   args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
     const installs = await ctx.db
       .query("skillInstalls")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))

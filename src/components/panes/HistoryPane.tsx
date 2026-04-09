@@ -39,7 +39,7 @@ interface HistoryPaneProps {
 }
 
 export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
-  const history = useQuery(api.bundles.getHistory, { userId });
+  const history = useQuery(api.bundles.getHistory, { clerkId, userId });
   // Use the new activity table (same source as agents tab) instead of legacy bundles.getAgentStats
   const userStats = useQuery((api as any).activity.userActivityStats, { clerkId });
   const agentSummary = useQuery((api as any).activity.agentSummary, { clerkId });
@@ -53,7 +53,7 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
     try {
       const result = await rollback({ clerkId, targetVersion: version });
       // Auto-publish the rollback
-      await publishBundle({ bundleId: result.bundleId as any });
+      await publishBundle({ clerkId, bundleId: result.bundleId as any });
     } catch (err) {
       console.error("Rollback failed:", err);
     }

@@ -503,11 +503,12 @@ function NewDirectoryInput({
 
 export function FilesPane({ userId }: FilesPaneProps) {
   const { user } = useUser();
-  const latestBundle = useQuery(api.bundles.getLatestBundle, userId ? { userId } : "skip");
+  const clerkId = user?.id;
+  const latestBundle = useQuery(api.bundles.getLatestBundle, clerkId && userId ? { clerkId, userId } : "skip");
   const saveYouJson = useMutation(api.me.saveYouJsonDirect);
   const createCustomDirectory = useMutation(api.me.createCustomDirectory);
-  const memories = useQuery(api.memories.listMemories, userId ? { userId } : "skip");
-  const sessions = useQuery(api.memories.listSessions, userId ? { userId, limit: 20 } : "skip");
+  const memories = useQuery(api.memories.listMemories, clerkId && userId ? { clerkId, userId } : "skip");
+  const sessions = useQuery(api.memories.listSessions, clerkId && userId ? { clerkId, userId, limit: 20 } : "skip");
   const userProfile = useQuery(
     api.profiles.getByOwnerId,
     userId ? { ownerId: userId } : "skip"

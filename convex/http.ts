@@ -1755,6 +1755,8 @@ http.route({
     if (!user) return json({ error: "User not found" }, 404);
 
     const memories = await ctx.runQuery(api.memories.listMemories, {
+      clerkId: auth.userId,
+      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       userId: user._id,
       category,
       limit,
@@ -1781,6 +1783,8 @@ http.route({
     if (!user) return json({ error: "User not found" }, 404);
 
     const result = await ctx.runMutation(api.memories.saveFromAgent, {
+      clerkId: auth.userId,
+      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       userId: user._id,
       agentName: body.agentName || auth.username || "API",
       memories: body.memories,
@@ -1853,7 +1857,11 @@ http.route({
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
     if (!user) return json({ error: "User not found" }, 404);
 
-    const installs = await ctx.runQuery(api.skills.listInstalls, { userId: user._id });
+    const installs = await ctx.runQuery(api.skills.listInstalls, {
+      clerkId: auth.userId,
+      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+      userId: user._id,
+    });
     return json({ skills: installs, count: installs.length });
   }),
 });
@@ -2043,7 +2051,11 @@ http.route({
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
     if (!user) return json({ error: "User not found" }, 404);
 
-    const history = await ctx.runQuery(api.bundles.getHistory, { userId: user._id });
+    const history = await ctx.runQuery(api.bundles.getHistory, {
+      clerkId: auth.userId,
+      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+      userId: user._id,
+    });
     return json({ history, count: history.length });
   }),
 });
