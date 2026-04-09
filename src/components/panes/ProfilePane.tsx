@@ -74,7 +74,7 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
           <span className="text-[10px] font-mono text-[hsl(var(--success))] uppercase tracking-wider">
             active
           </span>
-          <span className="text-[hsl(var(--border))] mx-1">|</span>
+          <span className="text-[hsl(var(--border))] mx-1" aria-hidden="true">|</span>
           <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-40">
             public view
           </span>

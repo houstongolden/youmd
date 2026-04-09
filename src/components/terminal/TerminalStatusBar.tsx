@@ -24,13 +24,13 @@ export function TerminalStatusBar({
       </Link>
       <div className="flex items-center gap-3 text-xs font-mono text-[hsl(var(--text-secondary))]">
         <span className="text-[hsl(var(--text-primary))]">@{username}</span>
-        <span className="text-[hsl(var(--border))]">|</span>
+        <span className="text-[hsl(var(--border))]" aria-hidden="true">|</span>
         <span className={plan === "pro" ? "text-[hsl(var(--accent))]" : ""}>
           {plan}
         </span>
-        <span className="text-[hsl(var(--border))]">|</span>
+        <span className="text-[hsl(var(--border))]" aria-hidden="true">|</span>
         <span>{version !== null ? `v${version}` : "no bundle"}</span>
-        <span className="text-[hsl(var(--border))]">|</span>
+        <span className="text-[hsl(var(--border))]" aria-hidden="true">|</span>
         <span
           className={
             isPublished
@@ -40,7 +40,7 @@ export function TerminalStatusBar({
         >
           {isPublished ? "published" : "draft"}
         </span>
-        <span className="text-[hsl(var(--border))]">|</span>
+        <span className="text-[hsl(var(--border))]" aria-hidden="true">|</span>
         <SignOutButton>
           <button className="text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] transition-colors">
             sign out

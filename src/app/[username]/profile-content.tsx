@@ -1091,7 +1091,11 @@ function SectionLabel({
   const isOwner = useContext(OwnerContext);
   return (
     <h2 className="group text-[hsl(var(--accent))] font-mono text-[10px] uppercase tracking-widest flex items-center gap-3 my-1">
-      <span className="text-[hsl(var(--border))]">{"\u2500\u2500"}</span>
+      {/* Cycle 69: aria-hidden on the decorative ── lead-in. The dashes
+          render at border color (1.43:1 vs bg), which fails WCAG SC 1.4.3
+          when treated as text. They're purely visual section dividers, so
+          the right fix is to remove them from the a11y tree, not recolor. */}
+      <span className="text-[hsl(var(--border))]" aria-hidden="true">{"\u2500\u2500"}</span>
       {children}
       {isOwner && editKey && (
         <Link
