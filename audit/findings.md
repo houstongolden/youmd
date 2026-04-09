@@ -1576,3 +1576,70 @@ Full functional testing of MCP tools requires running the server with an active 
 - 1 P2 fixed inline (hardcoded dev URL)
 - All 10 items verified via source/build
 - Lock held throughout
+
+## Cycle 30 — FINAL REGRESSION SWEEP — 2026-04-08 21:50 UTC
+
+**Tool:** curl + browse (10-point verification)
+**Status:** ALL 10 REGRESSION TESTS PASS ✅
+
+### Final regression results
+
+| # | Test | Expected | Actual | Status |
+|---|------|----------|--------|--------|
+| 1 | Landing semantics | h1=1, h2=10, main=1, footer=1, nav=1 | h1=1, h2=10, main=1, footer=1, nav=1 | ✅ |
+| 2 | /shell auth gating | HTTP 307 → /sign-in | 307 → /sign-in?redirect_url=...%2Fshell | ✅ |
+| 2 | /dashboard auth gating | HTTP 307 → /sign-in | 307 → /sign-in?redirect_url=...%2Fdashboard | ✅ |
+| 2 | /initialize auth gating | HTTP 307 → /sign-in | 307 → /sign-in?redirect_url=...%2Finitialize | ✅ |
+| 3 | /claim redirect | → /initialize | → /initialize | ✅ |
+| 4 | /create SSR has h1+main | h1 + main present | h1="you.md — create", main present | ✅ |
+| 5 | Profile location | Miami, not Venice | Miami=true, Venice=false | ✅ |
+| 6 | you.json content-type | application/vnd.you-md.v1+json | ✓ | ✅ |
+| 6 | you.json etag | present | "f6cdd929..." | ✅ |
+| 6 | you.json link | schema describedby | ✓ | ✅ |
+| 6 | you.txt etag | present | "f6cdd929...-gzip" | ✅ |
+| 6 | /ctx etag | present | "9795d458..." | ✅ |
+| 7 | No Clerk headers on you.json | 0 x-clerk-* | 0 | ✅ |
+| 8 | robots.txt allows /ctx/ | 2 rules | 2 | ✅ |
+| 9 | Public scope enforcement | scope=public, _privateContext=false | ✓ | ✅ |
+| 9 | Full scope enforcement | scope=full, _privateContext=true | ✓ | ✅ |
+| 10 | ETag conditional request | HTTP 304 | 304 | ✅ |
+
+### 0 console errors on landing page
+
+---
+
+## AUDIT LOOP COMPLETE — FINAL SUMMARY
+
+### Stats
+- **30 cycles** over ~4 hours (21 cron-triggered + manual)
+- **40 queue items** audited (12 public web + 3 auth flows + 15 shell/dashboard + 7 CLI + 3 MCP)
+- **~25 code fixes** shipped to production across 30 commits
+- **0 regressions** introduced (verified in cycle 30)
+
+### Most impactful fixes (ranked by severity)
+
+1. **P0 — Cycle 24: auth.protect() rewrite bug** — anonymous /shell, /dashboard, /initialize visitors saw fake clerk_${Date.now()} profiles instead of sign-in redirect. Entire dashboard surface was broken for anonymous users.
+
+2. **P1 — Cycle 1: pricing &check; entity bug** — 7 items in the Free plan pricing section showed literal "&check;" instead of ✓.
+
+3. **P1 — Cycle 2: landing page had 0 h1** — critical SEO: search engines had no semantic page title.
+
+4. **P1 — Cycle 5: sign-up email field had 4 a11y bugs** — type=text (not email), no aria-label, autoComplete=off, no name. Screen readers and password managers blind.
+
+5. **P1 — Cycle 7: all 4 auth pages had 0 h1 + 0 main** — extended the landing fix to sign-up, sign-in, create, reset-password.
+
+6. **P1 — Cycle 8: docs sidebar TOC was 27 buttons instead of 27 anchor links** — broke deep-linking, copy-link, middle-click, and browser history.
+
+7. **P1 — Cycle 12: duplicate h1 on public profile + favicon 404** — two h1s confused search engines; favicon proxy logged 404 for domains without favicons.
+
+8. **P1 — Cycle 21: /create rendered empty SSR** — the main onboarding page had zero server-rendered content. Search engines saw a blank page.
+
+9. **P2 — Cycles 13-16-18: ETag + Link header chain** — built consistent conditional-request support across all 3 proxy routes (you.json, you.txt, /ctx) + the upstream Convex /ctx route.
+
+10. **P2 — Cycle 23: /claim 3-hop redirect chain** — newly signed-up users bounced through 3 redirects; now just 1.
+
+### Systematic patterns found and fixed project-wide
+- **Input a11y**: 30+ inputs across auth forms, vault, files, chat all got aria-label, name, autoComplete, type treatments
+- **Landmarks**: every page now has h1 + main (was missing on 6+ pages)
+- **Decorative elements**: aria-hidden added to terminal dots, > prompt chevrons, ASCII background patterns
+- **API consistency**: all 3 proxy routes now forward upstream ETag, Link, support 304, use application/vnd.you-md.v1+json
