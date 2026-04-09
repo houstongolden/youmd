@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Inter } from "next/font/google";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
+import { MotionConfigProvider } from "@/providers/motion-config-provider";
 import { SiteNav } from "@/components/SiteNav";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import "./globals.css";
@@ -50,10 +51,12 @@ export default function RootLayout({
         className={`${jetbrainsMono.variable} ${inter.variable} antialiased`}
       >
         <ConvexClientProvider>
-          <SiteNav />
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
+          <MotionConfigProvider>
+            <SiteNav />
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </MotionConfigProvider>
         </ConvexClientProvider>
       </body>
     </html>
