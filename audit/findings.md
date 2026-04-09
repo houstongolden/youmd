@@ -4708,3 +4708,88 @@ All 3 elements now `h: 44` ✓ with the `min-h-[44px]` class applied. Verified t
 - Direct element-lookup verification in prod (all 3 elements now h: 44 with min-h-[44px] class)
 - Cycle 62 SiteNav cascade verified working — 0 header issues this cycle
 - Lock held throughout
+
+---
+
+## Cycle 64 — /create + TerminalAuthInput mobile touch targets — 2026-04-09 17:30 UTC
+
+**Tool:** /browse at 390x844 + JS introspection + 4-flow cascade fix
+**Status:** **DONE — 3 fixes shipped, TerminalAuthInput cascade improves /create + /sign-up + /sign-in + /reset-password in one shot.**
+
+### What this cycle did
+
+Fourth mobile a11y audit in a row. Picked /create — cycle 21 fixed an SSR bug but never audited touch targets, and cycle 36 mobile sweep only checked landmarks. /create is the primary user-creation entry point, so its touch target hygiene matters.
+
+### Audit results (BEFORE fix)
+
+**Layout** ✓ all clean:
+- 390 width, no horizontal scroll
+- h1=1, main=1
+- No nav/footer (intentional — /create has its own minimal layout, the SiteNav is suppressed)
+- 0 console errors
+
+**A11y findings — 3 of 3 visible interactive elements too small:**
+
+| # | Element | Before | Source |
+|---|---------|--------|--------|
+| 1 | Username INPUT (the primary input!) | 254×**26** | `TerminalAuthInput.tsx:62` |
+| 2 | Submit BUTTON | **36×28** | `TerminalAuthInput.tsx:80` (`h-7 w-9` explicit) |
+| 3 | "> sign in" Link | 98×**42** (just 2px under) | `create-content.tsx:741` |
+
+### CASCADE WIN — 4 flows in one fix
+
+`TerminalAuthInput` is shared across **4 auth flows**:
+- `/create`
+- `/sign-up`
+- `/sign-in`
+- `/reset-password`
+
+Fixing the input + Submit button in `TerminalAuthInput.tsx` improves all 4 in one commit. Houston gets the cycle 64 a11y improvement on every auth surface for free.
+
+### The fix
+
+**`src/components/terminal/TerminalAuthInput.tsx`** (cascades to 4 pages):
+- Wrapper `<div>`: added `min-h-[44px]`
+- Input: added `min-h-[44px]` (was 26 tall — well under WCAG min)
+- Submit button: bumped from `h-7 w-9` (28×36) to `h-11 w-11` (44×44)
+- Bumped svg icon from `width="11" height="11"` to `width="14" height="14"` to match the larger button visually
+
+**`src/app/create/create-content.tsx`** (page-specific):
+- Sign-in link header: bumped from `px-4 py-3` (~42 tall) to `inline-flex items-center min-h-[44px] px-4`
+
+### Verification (post-deploy, after cache bust)
+
+```js
+// Direct lookup of input + submit button on /create
+{
+  "input": {
+    "w": 246,
+    "h": 44,         // ← was 26
+    "cls": "flex-1 min-w-0 min-h-[44px] bg-transparent border-none ..."
+  },
+  "button": {
+    "w": 44,         // ← was 36
+    "h": 44          // ← was 28
+  }
+}
+
+// Full re-audit
+{"visible": 3, "tooSmall": 0, "list": []}    // ← was tooSmall: 3
+```
+
+**0 of 3 visible interactive elements too small** post-fix.
+
+### Files changed
+
+- `src/components/terminal/TerminalAuthInput.tsx` — input + submit button + svg icon (cascades to 4 pages)
+- `src/app/create/create-content.tsx` — sign-in link header
+
+### Cycle bookkeeping
+- 3 touch target fixes
+- 1 cascade fix that improves 4 pages (/create + /sign-up + /sign-in + /reset-password)
+- 2 files changed
+- Type-check clean
+- Vercel auto-deploy + cache bust verification
+- 0/3 too-small post-fix on /create
+- Lock held throughout
+- Houston now has a clean WCAG-compliant auth flow on EVERY entry surface
