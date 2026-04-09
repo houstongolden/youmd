@@ -657,3 +657,45 @@ All 4 auth pages now have proper h1 + main landmark.
 - Projects: 6, Values: 6, Links: 11
 - Bio sample length: 115 chars
 - 307 → 200 redirect roundtrip on apex domain (expected)
+
+## Cycle 14 — Fix P3: Clerk debug headers + verify cycle 13 — 2026-04-08 19:24 UTC
+
+**Tool:** Edit + tsc + curl + browse (verification)
+**Status:** DONE — fix applied, type-check passes, cycle 13 verified live
+
+### What was done
+
+1. **Verified cycle 13 fix is live on production (PASSED):**
+   - /houstongolden/you.json content-type: `application/vnd.you-md.v1+json` ✓
+   - /houstongolden/you.json etag: `"f6cdd929f5c42e8300fb3e79dc353657190374ef01c5e5b4fa551eac0ef7e3b9"` ✓
+   - /houstongolden/you.json link: `<https://you.md/schema/you-md/v1.json>; rel="describedby"; type="application/schema+json"` ✓
+   - All 3 P2 fixes from cycle 13 confirmed in production
+
+2. **Verified cycle 12 favicon 404 fix (DOES NOT FIX CONSOLE ERROR):**
+   - Console still shows 404 — the HTTP request fires before onError can run
+   - This is unavoidable browser behavior. The img element IS being hidden (visible result is correct), but the network request happens regardless and the browser logs the 404.
+   - Decided to accept the harmless console message rather than build a more complex solution (server-side proxy or domain pre-validation).
+
+3. **Found the middleware:**
+   - File is `src/proxy.ts` (NOT middleware.ts) — Next.js 16.2 renamed middleware.ts → proxy.ts per their new convention
+   - Confirmed via git log `eeb346e: feat: ... proxy migration` which renamed the file
+
+4. **Fixed P3: Clerk debug headers on public API endpoints**
+   - Root cause: `clerkMiddleware()` always runs auth resolution on every matched request and adds debug headers regardless. The matcher was too broad.
+   - Fix: extended the negative lookahead in the matcher to also exclude:
+     - `/ctx/...` (has its own proxy)
+     - `/[^/]+/you\.(?:json|txt|md)$` (public agent endpoints with own handlers)
+   - Visible profile page `/[username]` (no extension) still matches because it intentionally does agent UA interception in the middleware
+
+### Verification
+- Type-check: PASS
+- Cycle 13 verification: PASS (3 of 3 fixes live)
+- Cycle 12 verification: 1 of 2 (h1 yes, favicon console error unfixable)
+- Cycle 14 verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: top P3 from improvements.md
+- Moved to DONE
+- Cycle 13 entry annotated with "VERIFIED LIVE" tag
+- Cycle 12 entry annotated with "PARTIAL VERIFY" + explanation
+- Lock held throughout

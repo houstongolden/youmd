@@ -89,7 +89,14 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Run middleware on everything except:
+    //   - _next internals
+    //   - /ctx/ routes (have their own proxy handler, never need Clerk auth)
+    //   - /[username]/you.{json,txt,md} public agent endpoints (have their own
+    //     route handlers, never need Clerk auth — excluding here keeps Clerk
+    //     debug headers off public agent-facing API responses)
+    //   - static asset extensions
+    "/((?!_next|ctx/|[^/]+/you\\.(?:json|txt|md)$|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     "/(api|trpc)(.*)",
   ],
 };

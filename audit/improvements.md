@@ -12,17 +12,28 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-
-### [P3] Clerk middleware leaks debug headers on public API endpoints (cycle 13)
-- Files: middleware/clerk config (need to find)
-- Issue: /[username]/you.json returns `x-clerk-auth-reason: session-token-and-uat-missing` and `x-clerk-auth-status: signed-out` headers — these are internal debug headers that should NOT be exposed on public endpoints
-- Impact: minor information disclosure (low severity); makes the endpoint look noisier than it is
-- Fix: configure Clerk middleware to not run on public profile/API routes, or strip these headers in a response handler
-- Found by: cycle 13 audit of /houstongolden/you.json
+(empty — all known improvements cleared)
 
 ## DONE
 
-### [P2] /[username]/you.json missing content-type, etag, and link header — cycle 13, 2026-04-08
+### [P3] Clerk debug headers leaked on public agent API routes — cycle 14, 2026-04-08
+- File: `src/proxy.ts:90-96`
+- Found by: cycle 13 (`x-clerk-auth-reason: session-token-and-uat-missing`, `x-clerk-auth-status: signed-out` on /[username]/you.json)
+- Root cause: `clerkMiddleware()` always runs auth resolution on every matched request and adds those status headers regardless of whether `auth.protect()` is called. The matcher pattern was too permissive (included everything except _next + static files), so Clerk ran on the public agent API endpoints.
+- Fix: tightened the middleware matcher to also exclude:
+  - `/ctx/...` (already has its own proxy handler, never needs Clerk)
+  - `/[username]/you.json`, `/[username]/you.txt`, `/[username]/you.md` (public agent endpoints with their own route handlers)
+- The negative lookahead was extended with `ctx/|[^/]+/you\.(?:json|txt|md)$` patterns
+- Static assets and other routes still match
+- Note: `[username]` route (the visible profile page) still matches because it has no extension — middleware still runs there, which is intentional (it does the agent UA interception logic)
+- Commit: pending
+
+### [P2] /[username]/you.json missing content-type, etag, and link header — cycle 13, 2026-04-08 (VERIFIED LIVE 19:24 UTC)
+- **Verified live:** content-type=application/vnd.you-md.v1+json, etag set, link header set with schema describedby. All 3 cycle 13 fixes confirmed in production.
+
+### [P1] /houstongolden public profile had duplicate h1 + favicon 404 — cycle 12, 2026-04-08 (PARTIAL VERIFY)
+- **h1 fix verified live:** h1=1 (was 2), h2=9 (was 13)
+- **favicon 404 fix:** the onError handler does fire and the img DOES disappear, but the underlying HTTP request still happens before onError can run, so the console 404 is logged regardless. This is unavoidable browser behavior — the only way to prevent the console error is to NOT make the request at all (e.g. server-side proxy that returns transparent pixel for 404 domains, or maintain a list of known-favicon-less domains). Decided to accept the harmless console 404 since the visible result is correct (no broken icon).
 - File: `src/app/[username]/you.json/route.ts`
 - Found by: cycle 13 curl audit
 - Issues found:
