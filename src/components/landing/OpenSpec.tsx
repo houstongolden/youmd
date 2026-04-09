@@ -31,9 +31,9 @@ const OpenSpec = () => (
       <div className="section-divider mb-12" />
 
       <FadeUp>
-        <p className="text-muted-foreground/60 font-mono text-[10px] mb-6 tracking-wider uppercase text-center">
+        <h2 className="text-muted-foreground/60 font-mono text-[10px] mb-6 tracking-wider uppercase text-center">
           -- open standard --
-        </p>
+        </h2>
         <p className="text-foreground/80 font-mono text-[14px] font-light leading-relaxed text-center">
           <motion.span
             className="text-accent inline-block"

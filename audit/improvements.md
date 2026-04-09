@@ -12,21 +12,30 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-
-### [P1] Landing page has only 1 h2 across 12 sections (cycle 1)
-- Files: `src/components/landing/*.tsx` (each section component)
-- Issue: Section titles like "-- the network --", "-- how it works --", "-- pricing --" are wrapped in `<p>` not `<h2>`
-- Fix: Convert each section title `<p>` to `<h2>` with the same styling
-- Why P1: broken heading hierarchy, screen readers can't skim sections, search engines can't index subtopics
-- Found by: cycle 1 page semantics check (h2Count: 1)
+(empty — landing page improvements all cleared)
 
 ## DONE
 
-### [P1] Landing page has 0 main element — cycle 3, 2026-04-08
+### [P1] Landing page has only 1 h2 across 12 sections — cycle 4, 2026-04-08
+- Files: 9 landing components
+- Fix: converted all 9 `<p>` section titles to `<h2>` with identical className (visual unchanged):
+  - ProfilesShowcase.tsx — "-- the network --"
+  - HowItWorks.tsx — "-- how it works --"
+  - WhatsInside.tsx — "-- what's inside --"
+  - Integrations.tsx — "-- works everywhere --"
+  - FAQ.tsx — "-- frequently asked --"
+  - Pricing.tsx — "-- pricing --"
+  - ProblemStrip.tsx — "-- the problem --"
+  - OpenSpec.tsx — "-- open standard --"
+  - CTAFooter.tsx — "-- get started --"
+- Pre-existing h2 in ForDevelopers.tsx (which is the "for AI builders" h2) brings the total to 10 h2 elements
+- Commit: pending
+
+### [P1] Landing page has 0 main element — cycle 3, 2026-04-08 (VERIFIED LIVE 17:10 UTC)
 - File: `src/app/page.tsx:39-57`
 - Fix: wrapped all 12 section components in `<main id="main">` between Navbar and (no footer at root level — sections include CTAFooter inside main)
-- Commit: pending
-- Verify: pending next cron cycle
+- Commit: f54e9fd
+- **Verified live:** `main: 1`
 
 ### [P0] Landing page has 0 h1 elements — cycle 2, 2026-04-08 (VERIFIED LIVE 16:59 UTC)
 - File: `src/components/landing/Hero.tsx:125-131`

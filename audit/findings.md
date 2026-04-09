@@ -131,3 +131,31 @@ text for SEO and screen readers. Tailwind v4 ships `sr-only` as a built-in utili
 - Moved to DONE in improvements.md
 - Cycle 2 entry annotated with "VERIFIED LIVE" tag
 - Lock held throughout
+
+## Cycle 4 — Fix P1: section title h2 hierarchy — 2026-04-08 17:10 UTC
+
+**Tool:** Edit (9 files) + tsc + browse (verification of cycle 3)
+**Status:** DONE — all section titles converted, type-check passes, cycle 3 main verified live
+
+### What was done
+
+1. **Verified cycle 3 fix is live on production:**
+   - h1 count: 1 (still good from cycle 2)
+   - main count: 1 (was 0 — cycle 3 fix is live ✓)
+
+2. **Converted 9 section title `<p>` elements to `<h2>`:**
+   - Pattern was identical across all sections — same classes, same dash-decorated style
+   - Visual unchanged (className kept verbatim, just changed tag p → h2)
+   - Pre-existing 1 h2 in ForDevelopers.tsx ("for AI builders") plus the 9 new = 10 total h2 on landing
+
+### Verification
+- Type-check: PASS (`npx tsc --noEmit` clean across 9 file edits)
+- Production verification of cycle 3: PASS (main landmark live on you.md)
+- Cycle 4 h2 count verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: top P1 from improvements.md (last one)
+- improvements.md TODO list: now EMPTY for landing page
+- Cycle 3 entry annotated with "VERIFIED LIVE" tag
+- Lock held throughout
+- **Next cycle will move to queue.md item 2: /sign-up flow audit** (no more landing improvements left)

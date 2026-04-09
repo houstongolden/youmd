@@ -25,9 +25,9 @@ const ProfilesShowcase = () => {
     <section className="py-24 md:py-32">
       <div className="max-w-2xl mx-auto px-6">
         <FadeUp>
-          <p className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
+          <h2 className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
             -- the network --
-          </p>
+          </h2>
           <p className="text-muted-foreground text-[13px] font-body mb-10">
             every identity is readable by any AI agent. claim yours or explore who&apos;s here.
           </p>

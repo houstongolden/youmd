@@ -119,9 +119,9 @@ const WhatsInside = () => (
   <section id="spec" className="py-24 md:py-32">
     <div className="max-w-xl mx-auto px-6">
       <FadeUp>
-        <p className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
+        <h2 className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
           -- what&apos;s inside --
-        </p>
+        </h2>
         <p className="text-muted-foreground text-[13px] font-body mb-10">
           Your identity, structured for machines and humans.
         </p>

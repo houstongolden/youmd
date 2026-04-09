@@ -36,9 +36,9 @@ const CTAFooter = () => {
           style={{ y: contentY }}
         >
           <FadeUp>
-            <p className="text-muted-foreground/60 font-mono text-[10px] mb-8 tracking-widest uppercase">
+            <h2 className="text-muted-foreground/60 font-mono text-[10px] mb-8 tracking-widest uppercase">
               -- get started --
-            </p>
+            </h2>
             <p className="text-[hsl(var(--text-primary))] font-mono text-[16px] md:text-[20px] font-light tracking-tight mb-4 leading-relaxed">
               Stop re-explaining yourself to machines.
             </p>

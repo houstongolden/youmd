@@ -69,9 +69,9 @@ const HowItWorks = () => (
   >
     <div className="max-w-xl mx-auto px-6">
       <FadeUp>
-        <p className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
+        <h2 className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
           -- how it works --
-        </p>
+        </h2>
         <p className="text-muted-foreground text-[13px] font-body mb-10">
           Sign up in seconds. Your identity is ready to share from the first message.
         </p>

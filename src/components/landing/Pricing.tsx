@@ -8,9 +8,9 @@ const Pricing = () => (
   <section id="pricing" className="py-24 md:py-32">
     <div className="max-w-xl mx-auto px-6">
       <FadeUp>
-        <p className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
+        <h2 className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
           -- pricing --
-        </p>
+        </h2>
         <p className="text-muted-foreground text-[13px] font-body mb-14">
           Your identity is free. Power features for power users.
         </p>

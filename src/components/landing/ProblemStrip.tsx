@@ -44,9 +44,9 @@ const ProblemStrip = () => {
     <section ref={ref} className="py-24 md:py-32 overflow-hidden">
       <motion.div className="max-w-3xl mx-auto px-6" style={{ y }}>
         <FadeUp>
-          <p className="text-muted-foreground/60 font-mono text-[10px] mb-8 tracking-widest uppercase text-center">
+          <h2 className="text-muted-foreground/60 font-mono text-[10px] mb-8 tracking-widest uppercase text-center">
             -- the problem --
-          </p>
+          </h2>
           <p className="text-foreground/90 font-mono text-[15px] md:text-[17px] font-light leading-[1.8] tracking-tight text-center">
             every agent starts from scratch.{" "}
             <span className="text-accent">you re-explain yourself endlessly.</span>

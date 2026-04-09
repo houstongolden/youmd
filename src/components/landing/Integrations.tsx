@@ -29,9 +29,9 @@ const Integrations = () => (
   <section className="py-16 md:py-24">
     <div className="max-w-2xl mx-auto px-6">
       <FadeUp>
-        <p className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-3 text-center">
+        <h2 className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-3 text-center">
           -- works everywhere --
-        </p>
+        </h2>
         <p className="text-muted-foreground/70 font-body text-[12px] mb-10 text-center max-w-md mx-auto">
           One link gives every agent your full context. No per-tool config, no
           system prompt hacks, no manual copy-paste.
