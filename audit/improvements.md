@@ -12,11 +12,36 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-(empty — all known improvements cleared)
+
+### [P3] Clerk middleware leaks debug headers on public API endpoints (cycle 13)
+- Files: middleware/clerk config (need to find)
+- Issue: /[username]/you.json returns `x-clerk-auth-reason: session-token-and-uat-missing` and `x-clerk-auth-status: signed-out` headers — these are internal debug headers that should NOT be exposed on public endpoints
+- Impact: minor information disclosure (low severity); makes the endpoint look noisier than it is
+- Fix: configure Clerk middleware to not run on public profile/API routes, or strip these headers in a response handler
+- Found by: cycle 13 audit of /houstongolden/you.json
 
 ## DONE
 
-### [P1] /houstongolden public profile had duplicate h1 + favicon 404 — cycle 12, 2026-04-08
+### [P2] /[username]/you.json missing content-type, etag, and link header — cycle 13, 2026-04-08
+- File: `src/app/[username]/you.json/route.ts`
+- Found by: cycle 13 curl audit
+- Issues found:
+  1. Content-Type was `application/json` (should be `application/vnd.you-md.v1+json` to match the canonical /api/v1/profiles endpoint and signal it's a structured you-md/v1 doc)
+  2. No ETag header (the upstream Convex endpoint computes one — was being dropped by `NextResponse.json()`)
+  3. No Link rel="describedby" header (upstream returns this for schema discovery)
+  4. No conditional request support (no If-None-Match → 304 path)
+- Fix: rewrote the route handler to:
+  - Use `new NextResponse(body, ...)` instead of `NextResponse.json(...)` so we control headers explicitly
+  - Set `Content-Type: application/vnd.you-md.v1+json`
+  - Forward upstream `etag` header
+  - Forward upstream `link` header (for schema discovery)
+  - Forward client `If-None-Match` header to upstream and pass through 304 responses
+  - Add Access-Control-Allow-Origin to all error paths (was missing)
+- Commit: pending
+
+### [P1] /houstongolden public profile had duplicate h1 + favicon 404 — cycle 12, 2026-04-08 (PARTIAL VERIFY 18:41 UTC)
+- **h1 fix verified live:** h1=1, h1Texts=["Houston Golden"], h2=9 (was 13 — the demoted-h1-to-h2 + bumped-h2s-to-h3 reduced h2 count by 4 as expected)
+- **favicon 404 fix:** still showing in console — likely cached / Vercel deploy not finished. Will re-verify next cycle.
 - Files: `src/app/[username]/page.tsx`, `src/app/[username]/profile-content.tsx`, `src/components/panes/ProfilePane.tsx`
 - Found by: cycle 12 audit — `h1: 2` (both "Houston Golden") + 1 console 404 from favicon proxy
 - Fix #1 (duplicate h1): the page renders TWO h1s — one in the visible profile content (correct, canonical) and one in a sr-only "structured data" block at `src/app/[username]/page.tsx:148`. Demoted the sr-only h1 to h2 and bumped its child h2s to h3 to maintain hierarchy. The visible h1 inside profile-content.tsx is now the only h1 on the page.

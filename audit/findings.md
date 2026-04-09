@@ -583,3 +583,77 @@ All 4 auth pages now have proper h1 + main landmark.
 - /houstongolden JSON-LD schemas: 2 (Person + BreadcrumbList)
 - /houstongolden OG tags: 8 (complete)
 - Body content: Houston ✓, Miami ✓, BAMF ✓, Hubify ✓, Venice ✗ (correct)
+
+## Cycle 13 — Audit /houstongolden/you.json API endpoint — 2026-04-08 18:40 UTC
+
+**Tool:** curl + node JSON inspection
+**Status:** DONE_WITH_FINDINGS — 1 P2 fixed inline (3 issues bundled), 1 P3 queued, cycle 12 partially verified
+
+### What was tested
+- HTTP status (after 307 redirect from apex to www)
+- Response headers (cache-control, etag, content-type, link)
+- ETag conditional request (If-None-Match → 304)
+- JSON validity
+- All top-level keys present
+- Field correctness post data-cleanup (Miami vs Venice)
+- Schema metadata (compiler_version, last_updated, _profile)
+- Cycle 12 verification
+
+### Cycle 12 verification (PARTIAL PASS)
+- /houstongolden h1 fix: ✅ VERIFIED (h1=1 was 2, h2=9 was 13 — math checks out)
+- /houstongolden favicon 404 fix: ⚠️ NOT YET VERIFIED — console still shows 404 (Vercel deploy may not be complete; will re-verify in next cycle)
+
+### /houstongolden/you.json metrics
+
+**JSON content (excellent — data layer is clean):**
+- ✅ Valid JSON
+- ✅ schema: "you-md/v1"
+- ✅ username: "houstongolden"
+- ✅ identity.name: "Houston Golden"
+- ✅ identity.location: "Miami" (cleanup verified at API level)
+- ✅ bio.long contains "Miami", does NOT contain "Venice"
+- ✅ 18 top-level keys: schema, username, identity, now, projects, values, links, preferences, voice, analysis, custom_sections, agent_directives, agent_guide, meta, _profile, social_images, generated_at, verification
+- ✅ 6 projects, 6 values, 11 links
+- ✅ agent_directives + agent_guide present (above-and-beyond schema fields)
+- ✅ meta.compiler_version: 0.3.0
+- ✅ meta.last_updated: 2026-04-08T23:41:19 (post-cleanup)
+- ✅ _profile present (avatarUrl, displayName, isClaimed, source)
+- ✅ _privateContext NOT present (correct — this is the public endpoint)
+
+**HTTP headers (issues found):**
+- ✅ HTTP 200 (after expected 307 you.md → www.you.md redirect)
+- ✅ Cache-Control: public, max-age=60
+- ✅ Access-Control-Allow-Origin: * (good for cross-origin agents)
+- ❌ **Content-Type: application/json** (should be `application/vnd.you-md.v1+json` to match /api/v1/profiles)
+- ❌ **No ETag header** (upstream Convex endpoint computes one but it was being dropped by NextResponse.json())
+- ❌ **No Link rel="describedby" header** (upstream returns this for schema discovery)
+- ❌ **No conditional request support** (no If-None-Match → 304 path)
+- ❌ **Clerk debug headers leaking**: `x-clerk-auth-reason: session-token-and-uat-missing`, `x-clerk-auth-status: signed-out` — these should not be exposed on public API endpoints
+
+### Issues fixed inline
+
+**P2 — Content-Type, ETag, Link header, and 304 support all missing on /[username]/you.json**
+- File: `src/app/[username]/you.json/route.ts`
+- Root cause: the route handler used `NextResponse.json(data, ...)` which always sets `content-type: application/json` and doesn't forward upstream headers
+- **STATUS: FIXED** — rewrote the handler to use `new NextResponse(body, ...)` with explicit headers. Now sets Content-Type to `application/vnd.you-md.v1+json`, forwards upstream ETag, forwards upstream Link header, supports conditional requests via If-None-Match → 304 passthrough.
+
+### Issue queued
+
+**P3 — Clerk middleware leaks debug headers on public profile endpoints**
+- `x-clerk-auth-reason: session-token-and-uat-missing`
+- `x-clerk-auth-status: signed-out`
+- Impact: minor information disclosure, not a security risk but unprofessional
+- **STATUS: queued to improvements.md**
+
+### Verification
+- Type-check: PASS
+- Cycle 12 verification (h1): PASS
+- Cycle 12 verification (favicon 404): pending (cache/deploy)
+- Cycle 13 verification: deferred to next cycle (after Vercel deploy)
+
+### Numbers
+- /houstongolden/you.json byte length: 6550
+- /houstongolden/you.json top-level keys: 18
+- Projects: 6, Values: 6, Links: 11
+- Bio sample length: 115 chars
+- 307 → 200 redirect roundtrip on apex domain (expected)

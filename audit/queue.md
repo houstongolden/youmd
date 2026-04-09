@@ -14,7 +14,7 @@ to `audit/improvements.md`.
 - [x] docs — `/docs` — content renders, links work, mobile (cycle 8, 2026-04-08, P1 buttons-not-anchors bug found + fixed inline)
 - [x] profiles directory — `/profiles` — list loads, search, click into profile (cycle 10, 2026-04-08, 3 fixes inline)
 - [x] public profile — `/houstongolden` — avatar, bio, projects, JSON-LD, OG (cycle 12, 2026-04-08, duplicate h1 + favicon 404 fixed inline)
-- [ ] you.json — `/houstongolden/you.json` — valid JSON, all fields present
+- [x] you.json — `/houstongolden/you.json` — valid JSON, all fields present (cycle 13, 2026-04-08, content-type/etag/link header proxy fix)
 - [ ] you.txt — `/houstongolden/you.txt` — plain text format
 - [ ] ctx link (public) — `/ctx/houstongolden/<public-token>` — proper response
 - [ ] ctx link (full) — `/ctx/houstongolden/f32iTMuDrkOfQQrucy4AMfTYjAvN3boI` — _privateContext present
