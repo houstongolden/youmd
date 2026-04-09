@@ -408,17 +408,19 @@ export default function ResetPasswordContent() {
           )}
         </div>
 
-        {/* Links below terminal */}
+        {/* Links below terminal — cycle 68: promoted inline link to standalone
+            min-h-[44px] block (was 50x16 inside text). Same pattern as cycle 63
+            on /houstongolden CTA. */}
         <div className="mt-3 text-center shrink-0">
-          <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
-            remember your password?{" "}
-            <Link
-              href="/sign-in"
-              className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
-            >
-              sign in
-            </Link>
-          </span>
+          <p className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
+            remember your password?
+          </p>
+          <Link
+            href="/sign-in"
+            className="inline-flex items-center justify-center min-h-[44px] mt-1 px-4 text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity font-mono text-[12px]"
+          >
+            sign in
+          </Link>
         </div>
       </div>
     </main>
