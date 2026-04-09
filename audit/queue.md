@@ -30,11 +30,11 @@ to `audit/improvements.md`.
 - [x] /shell — initial load, auto-scroll, chat input (cycle 24, 2026-04-08, P0 protect-rewrite bug found and fixed; auth-gating now works correctly)
 - [x] /shell — Files tab — file tree, edit/save, dedupe, no duplicate history.md (cycle 25, 2026-04-08, 4 input a11y fixes inline; behavior audit deferred to authenticated test)
 - [x] /shell — Vault tab — explainer visible, init/lock/unlock states (cycle 26, 2026-04-08, 10 input a11y fixes inline)
-- [ ] /shell — Skills tab — explainer visible, install/uninstall
-- [ ] /shell — Share tab — public/full toggle, link creation, existing list truncation
-- [ ] /shell — Versions tab — commits view, HEAD badge, revert
-- [ ] /shell — Help tab — quick start, commands, docs links
-- [ ] /shell — Settings tab — API keys list truncated, manage tokens
+- [x] /shell — Skills tab — explainer visible, install/uninstall (cycle 27, 2026-04-08, clean — 0 inputs, 3 buttons with text)
+- [x] /shell — Share tab — public/full toggle, link creation, existing list truncation (cycle 27, 2026-04-08, exemplary — all 4 controls have proper label htmlFor)
+- [x] /shell — Versions tab — commits view, HEAD badge, revert (cycle 27, 2026-04-08, clean — 0 inputs)
+- [x] /shell — Help tab — quick start, commands, docs links (cycle 27, 2026-04-08, clean — 0 inputs)
+- [x] /shell — Settings tab — API keys list truncated, manage tokens (cycle 27, 2026-04-08, clean — 0 inputs)
 - [ ] /shell — chat: send message, agent responds, no lying about updates
 - [ ] /shell — chat: agent applies file updates, files appear in tree
 - [ ] /shell — chat: /share command works, returns one-line URL

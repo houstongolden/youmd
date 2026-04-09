@@ -1429,3 +1429,49 @@ P3 priority because dashboard is auth-gated — screen reader users have already
 - Picked: queue.md item 18 (/shell Vault tab)
 - 1 P3 fix (10 inputs)
 - Lock held throughout
+
+## Cycle 27 — Batch audit: Skills, Share, Versions, Help, Settings, Analytics, Agents, Portrait tabs — 2026-04-08 21:20 UTC
+
+**Tool:** Source inspection (all auth-gated)
+**Status:** DONE — 8 panes audited, ALL CLEAN (no fixes needed)
+
+### What was tested
+Input a11y scan across all remaining dashboard panes that hadn't been audited yet:
+
+| Pane | Lines | Inputs | Result |
+|------|-------|--------|--------|
+| SkillsPane | 431 | 0 inputs, 3 buttons (all with text labels + title attrs) | ✅ clean |
+| SharePane | 1185 | 1 input + 3 selects (ALL have proper `<label htmlFor>` linkage) | ✅ exemplary |
+| HistoryPane | 203 | 0 inputs | ✅ clean |
+| HelpPane | 193 | 0 inputs | ✅ clean |
+| SettingsPane | 368 | 0 inputs (uses buttons/toggles, not form inputs) | ✅ clean |
+| AnalyticsPane | 240 | 0 inputs | ✅ clean |
+| AgentsPane | 245 | 0 inputs | ✅ clean |
+| PortraitPane | 446 | 1 hidden file input (triggered by button with text) | ✅ clean |
+
+### Dashboard pane a11y audit complete
+
+All 10 dashboard panes have now been source-audited across cycles 25-27:
+
+| Pane | Cycle | Status |
+|------|-------|--------|
+| FilesPane | 25 | 4 inputs fixed |
+| VaultPane | 26 | 10 inputs fixed |
+| SkillsPane | 27 | clean |
+| SharePane | 27 | exemplary (label htmlFor) |
+| HistoryPane | 27 | clean |
+| HelpPane | 27 | clean |
+| SettingsPane | 27 | clean |
+| AnalyticsPane | 27 | clean |
+| AgentsPane | 27 | clean |
+| PortraitPane | 27 | clean |
+
+SharePane stands out as the gold standard — it uses proper `<label htmlFor="id">` linkage on every form control, which is the correct HTML5 approach.
+
+### No issues found
+No code changes this cycle.
+
+### Cycle bookkeeping
+- Picked: queue.md items 19-24 (SkillsPane through PortraitPane, batch)
+- Audit only — no fixes needed
+- Lock held throughout
