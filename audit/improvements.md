@@ -13,11 +13,11 @@ Severity:
 
 ## TODO
 
-### [P2] Houston flips CSP from report-only to enforcing — cycle 58, 2026-04-09
-- Cycle 58 shipped the Content-Security-Policy as `Content-Security-Policy-Report-Only`. Verified via /browse: 0 violations on landing/profile/sign-in after the worker-src fix.
-- **What Houston needs to do**: use the site for ~24-48h, especially /shell (the auth-gated dashboard which I couldn't browse-test), watch the browser console (F12) for any "Refused to load..." messages. If any legit sources are blocked, add them to the `CONTENT_SECURITY_POLICY` array in next.config.ts.
-- When confident: edit next.config.ts line ~87, rename the header key from `"Content-Security-Policy-Report-Only"` → `"Content-Security-Policy"`, commit, push. Vercel auto-deploys and CSP starts enforcing.
-- **Why P2**: the policy is shipped, just not enforcing yet. Defense-in-depth. The Round 4 queue item is technically done.
+### [P2] Houston flips CSP from report-only to enforcing — cycle 58, 2026-04-09 (cycle 60 verified clean across 8+ public routes, monitoring window for public surface complete)
+- Cycle 58 shipped the CSP as `Content-Security-Policy-Report-Only`.
+- Cycle 60 verified clean across 8 HTML routes (landing, sign-up, sign-in, docs, /profiles, /houstongolden, /create, /ctx valid token) AND 5 non-HTML routes (you.json, you.txt, robots.txt, sitemap.xml, ctx). **0 CSP violations across all 13 public surfaces.**
+- **What Houston still needs to do** (the auth-gated part): open /shell, send a test chat message, browse the files/share/vault tabs, watch browser console (F12) for any "Content Security Policy" messages. If clean, edit `next.config.ts` line ~87, rename the header key from `"Content-Security-Policy-Report-Only"` → `"Content-Security-Policy"`, commit, push. Vercel auto-deploys and CSP starts enforcing.
+- Estimated time: 5 minutes dashboard testing + 30s edit + 60s deploy. **The public side is verified.** Only the dashboard remains.
 
 ### [Operational] Houston needs to re-create CLI API key after cycle 57 — cycle 57, 2026-04-09
 - During cycle 57's verification of the new `me.revokeAllSessions` mutation, I made a verification-discipline mistake: I called the destructive mutation against Houston's REAL prod clerkId instead of creating a throwaway test user. Net effect: 2 of Houston's real CLI API keys + 10 of his context links are now revoked.

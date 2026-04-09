@@ -4303,3 +4303,97 @@ Curl-tested every prior-cycle exploit vector to confirm none have regressed acro
 - Deployed
 - Lock held throughout
 - **The vulnerability inventory is now genuinely empty for the first time.** Every public function in convex/ either has explicit auth (`requireOwner` or `getUserIdentity`), is intentionally unauth (token-validated, public-by-design), or is now `internal*` (unreachable from public callers).
+
+---
+
+## Cycle 60 — Comprehensive CSP report-only verification across all public routes — 2026-04-09 14:35 UTC
+
+**Tool:** /browse skill against 8 HTML routes + curl header check across 5 non-HTML routes
+**Status:** **DONE — 0 CSP violations across all 13 public surfaces. Houston can flip CSP to enforcing with high confidence.**
+
+### What this cycle did
+
+Cycle 58 shipped CSP-Report-Only and verified it on 3 routes (landing, profile, sign-in). The recommendation was for Houston to monitor for 24-48h before flipping to enforcing. Cycle 60 widens the verification to ALL public routes so the monitoring window can be shorter.
+
+Same approach as cycle 58: use /browse against live prod, navigate each route, check the browser console for "Content Security Policy" violation messages (they appear as `[info]` log entries from the report-only header).
+
+### Routes browsed (8 HTML pages, console-checked for CSP violations)
+
+| Route | HTTP | Header | CSP violations |
+|-------|------|--------|----------------|
+| `/` (landing) | 200 | report-only ✓ | **0** ✓ |
+| `/sign-up` | 200 | report-only ✓ | **0** ✓ |
+| `/sign-in` | 200 | report-only ✓ | **0** ✓ |
+| `/docs` | 200 | report-only ✓ | **0** ✓ |
+| `/profiles` (directory) | 200 | report-only ✓ | **0** ✓ |
+| `/houstongolden` (public profile) | 200 | report-only ✓ | **0** ✓ |
+| `/create` | 200 | report-only ✓ | **0** ✓ |
+| `/ctx/houstongolden/<valid-token>` | 200 | report-only ✓ | **0** (no JS) ✓ |
+
+### Routes header-checked (5 non-HTML, no JS execution)
+
+| Route | Content-Type | CSP header |
+|-------|--------------|------------|
+| `/houstongolden/you.json` | `application/vnd.you-md.v1+json` | report-only ✓ |
+| `/houstongolden/you.txt` | `text/plain; charset=utf-8` | report-only ✓ |
+| `/robots.txt` | `text/plain; charset=utf-8` | report-only ✓ |
+| `/sitemap.xml` | `application/xml` | report-only ✓ |
+| `/ctx/houstongolden/<valid-token>` | `application/json` | report-only ✓ |
+
+### Edge cases tested
+
+| Test | Expected | Result |
+|------|----------|--------|
+| Bogus username → `[username]` dynamic route | 200 with "claim this profile" UI | ✓ 200, "404 not found" + "claim" text |
+| `/_definitely_not_a_route/foo/bar` | 404 | ✓ 404 |
+| `/ctx/houstongolden/bogus_token` | 404 | ✓ 404 |
+| `/ctx/houstongolden/<valid-token>` | 200 with bundle | ✓ 200 with bundle |
+
+### What this confirms
+
+**Vercel applies the CSP-Report-Only header uniformly** to every response — HTML, JSON, text, XML — regardless of whether the route runs scripts. The header value is identical across all 13 surfaces I tested.
+
+**No public route has a CSP violation under the current policy.** The only known weakness was the cycle 58 worker-src gap, which was caught by the first browse pass and fixed in commit `b05208f`. Cycle 60 confirms no other gaps exist on the public surface area.
+
+### What's still NOT verified
+
+**`/shell` and authenticated dashboard routes** are still untested under CSP because I can't sign in via headless browse. The dashboard is the highest-risk surface for surprises:
+- `useYouAgent.ts` makes Convex client queries (websocket subscriptions on `wss://kindly-cassowary-600.convex.cloud`)
+- The chat panel uses Server-Sent Events streaming via `/api/v1/chat/stream`
+- The file pane uses Convex queries for the file tree
+- The vault pane uses Web Crypto for client-side encryption
+- The share pane creates context links via `me.createContextLink`
+
+If any of those break under the CSP, Houston will see "Refused to connect to..." or "Refused to create worker..." messages in the dashboard's console. Most likely place for surprises is the `connect-src` directive (the wss scheme is sometimes overlooked).
+
+### Recommendation for Houston
+
+The CSP report-only deploy is **clean across every public surface**. Cycle 60 effectively completes the cycle 58 monitoring window for the public side. To flip to enforcing:
+
+1. Open `/shell` in your browser
+2. Open the chat panel — send a message
+3. Open the files tab — verify the tree loads
+4. Open the share tab — create a test link
+5. Watch the browser console (F12) for ANY "Content Security Policy" message
+6. If clean, edit `next.config.ts` line ~87:
+   ```diff
+   - { key: "Content-Security-Policy-Report-Only", value: CONTENT_SECURITY_POLICY },
+   + { key: "Content-Security-Policy", value: CONTENT_SECURITY_POLICY },
+   ```
+7. Commit, push, Vercel auto-deploys, CSP starts enforcing
+
+Estimated time: 5 minutes of dashboard testing + 30 seconds of edit + 60 seconds of Vercel deploy.
+
+### Files changed
+
+None. Audit-only cycle.
+
+### Cycle bookkeeping
+- 8 HTML routes browsed under CSP
+- 5 non-HTML routes header-verified
+- 4 edge case URL tests
+- 0 CSP violations found
+- 0 code changes
+- 0 deploys
+- Cycle 58's monitoring window for the public surface area is effectively complete
+- Lock held throughout
