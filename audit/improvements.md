@@ -12,11 +12,23 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-(empty — all known improvements cleared)
+
+### [P3] Convex /ctx HTTP route doesn't compute ETag (cycle 17)
+- File: `convex/http.ts` (the /ctx route, around line 189-220)
+- Issue: cycle 16 fixed the Next.js /ctx proxy to forward upstream etag, but the upstream Convex /ctx route itself doesn't compute or return one. Only /api/v1/profiles returns ETag (sha256 of contentHash + profileId).
+- Impact: ctx link clients can't do conditional requests; agents waste bandwidth re-fetching unchanged identity data
+- Fix: in convex/http.ts /ctx route, compute the same etag pattern as /api/v1/profiles:
+  - Use the bundle's contentHash if available, else hash(profileId + updatedAt)
+  - Honor If-None-Match → return 304 with ETag header
+  - Set ETag header on 200 responses
+- Why P3: this is an optimization, not breaking anything. The proxy correctly forwards link header which IS the more important header for schema discovery.
+- Found by: cycle 17 audit
 
 ## DONE
 
-### [P2] /ctx proxy missing etag, link header, and 304 support — cycle 16, 2026-04-08
+### [P2] /ctx proxy missing etag, link header, and 304 support — cycle 16, 2026-04-08 (PARTIAL VERIFY 19:40 UTC)
+- **Verified live (link header):** /ctx/houstongolden/{token} now serves `link: <https://you.md/schema/you-md/v1.json>; rel="describedby"; type="application/schema+json"` ✓
+- **NOT verified (etag):** etag still missing because the upstream Convex /ctx route doesn't compute one. The cycle 16 fix correctly forwards "whatever upstream sends" — link came through, etag did not, because upstream isn't sending it. Queued as P3 follow-up to add etag to the Convex /ctx route.
 - File: `src/app/ctx/[...path]/route.ts`
 - Found by: cycle 16 audit of public ctx link
 - Same fix pattern as cycles 13 and 15 — applied to the /ctx/[username]/{token} proxy route handler:

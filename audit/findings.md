@@ -825,3 +825,84 @@ All 4 auth pages now have proper h1 + main landmark.
 - Context links found for Houston: 9 (some expired, 4 active)
 - Public ctx link byte length: 6585
 - _privateContext fields: 0 (correct enforcement)
+
+## Cycle 17 — Audit /ctx full-scope link — 2026-04-08 19:40 UTC
+
+**Tool:** curl + node JSON inspection
+**Status:** DONE_WITH_FINDINGS — full-scope audit PASSED, cycle 16 partially verified, 1 P3 queued (Convex /ctx etag)
+
+### What was tested
+- /ctx/houstongolden/f32iTMuDrkOfQQrucy4AMfTYjAvN3boI (full scope)
+- HTTP status, response headers
+- Body schema and scope enforcement
+- _privateContext presence and contents
+- Cycle 16 verification
+
+### Cycle 16 verification (PARTIAL)
+- ✅ link rel="describedby" header now present on /ctx
+- ❌ etag still NOT present
+- **Root cause:** upstream Convex /ctx route doesn't compute an etag (only /api/v1/profiles does). My cycle 16 fix forwards "whatever upstream sends" — link came through, etag did not because upstream isn't sending it.
+- **STATUS: queued as P3** to add etag computation to the Convex /ctx route
+
+### /ctx full-scope link results (EXCELLENT — scope enforcement works end-to-end)
+
+**Body content:**
+- ✅ HTTP 200 (after 307 redirect)
+- ✅ schema: "you-md/v1"
+- ✅ username: "houstongolden"
+- ✅ **scope: "full"** (vs "public" on the public link)
+- ✅ 21 top-level keys (vs 20 on public — extra `_privateContext`)
+- ✅ identity.name: "Houston Golden"
+- ✅ identity.location: "Miami"
+- ✅ bio has Miami, NOT Venice
+- ✅ byte length: 6659 (vs 6585 public — 74 bytes for empty _privateContext structure)
+
+**`_privateContext` enforcement (CRITICAL):**
+- ✅ **`_privateContext` IS present** on full scope
+- ✅ `_privateContext` keys: internalLinks, privateNotes, privateProjects
+- ✅ `_privateContext.privateNotes`: `""` (empty after data cleanup — correct)
+- ✅ `_privateContext.privateProjects`: `[]` (empty after data cleanup — correct)
+- ✅ `_privateContext.internalLinks`: `{}` (empty after data cleanup — correct)
+
+**Comparison: public vs full scope**
+
+| Field | Public scope | Full scope |
+|-------|-------------|------------|
+| `scope` | "public" | "full" |
+| `_privateContext` | absent | present |
+| Top-level key count | 20 | 21 |
+| Byte length | 6585 | 6659 |
+
+✅ **Scope enforcement is working correctly end-to-end.** Public links cannot leak private context, full links include the private context fields.
+
+**HTTP headers (full scope):**
+- ✅ HTTP 200
+- ✅ Content-Type: application/vnd.you-md.v1+json
+- ✅ Cache-Control: public, max-age=60
+- ✅ Access-Control-Allow-Origin: *
+- ✅ link rel="describedby" present (cycle 16 forwarded it)
+- ❌ NO etag (upstream limitation, queued as P3)
+
+### Issue found
+
+**P3 — Convex upstream /ctx route doesn't compute ETag**
+- File: `convex/http.ts` /ctx route (~line 189-220)
+- The /api/v1/profiles route DOES compute an etag using sha256(contentHash + profileId + updatedAt)
+- The /ctx route does not — so the cycle 16 proxy fix has nothing to forward
+- **STATUS: queued** for follow-up (low severity — link header is more important and IS now flowing through)
+
+### Verification
+- Type-check: not needed (no edits)
+- Cycle 16 verification: PARTIAL (link yes, etag pending upstream fix)
+- Cycle 17 verification: not applicable (audit only)
+
+### Cycle bookkeeping
+- Picked: queue.md item 10 (full ctx link)
+- No code changes — audit only + 1 P3 queued
+- Lock held throughout
+
+### Numbers
+- Public ctx byte length: 6585
+- Full ctx byte length: 6659
+- Delta: 74 bytes for empty _privateContext object
+- _privateContext fields: 3 (internalLinks, privateNotes, privateProjects), all empty
