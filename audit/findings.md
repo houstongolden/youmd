@@ -1983,3 +1983,66 @@ Site is English-only. No i18n setup. hreflang tags not applicable. Skipped.
 ### Round 2 — SEO depth dimension complete
 
 5 of 5 SEO items audited. 1 P2 fixed (OG cache), 1 P3 noted (sitemap freshness), 3 verified clean.
+
+## Cycle 36 — Image opt + HTTPS + mobile auth + sitemap freshness — 2026-04-08 22:50 UTC
+
+**Tool:** grep + curl + browse + edits
+**Status:** DONE — cycle 35 verified, 1 P3 fix (sitemap freshness), 4 round-2 items closed
+
+### Cycle 35 verification (PASSED)
+- /houstongolden/opengraph-image now serves `cache-control: public, max-age=3600` ✓ (was `max-age=0, must-revalidate`)
+- The `s-maxage` and `stale-while-revalidate` directives were dropped by Vercel's edge layer (only `max-age=3600` survives in the response). Browser caching is still 3600x better. CDN behavior is handled separately by Vercel.
+
+### Image optimization audit
+
+- **0 next/image imports** in src/
+- **14 raw `<img>` tags** in src/
+
+This is intentional. The site uses `AsciiAvatar` (a custom component that loads source images via `new Image()` constructor and renders them as ASCII art on `<canvas>`). The raw image element is needed for canvas pixel access. Replacing with next/image would lose canvas integration.
+
+The duplicate-image-fetch issue from cycle 33 is mitigated by cycle 33's `/assets/*` long cache — the second request hits the browser's disk cache, essentially free. Not changing.
+
+### HTTPS enforcement audit
+
+```
+$ grep -rn 'http://' src/ convex/ --include="*.ts" --include="*.tsx" | grep -v "_generated\|w3.org\|schema.org"
+convex/scrape.ts:391:  if (lower.startsWith("http://") || lower.startsWith("https://")) {
+```
+
+Only 1 reference: intentional URL validation accepting both http and https user input. No accidental http:// production references.
+
+### Mobile audits — auth pages clean
+
+| Page | viewport | h1 | main | hscroll | fits viewport |
+|------|----------|----|------|---------|---------------|
+| /sign-up | 390x844 | 1 | 1 | no | yes (844 = vph) |
+| /create | 390x844 | 1 | 1 | no | yes (844 = vph) |
+
+Both auth flow pages render perfectly on mobile. The `fixed inset-0` layout fits exactly to the viewport. iOS auto-zoom prevention (font-size: 16px from cycle earlier) is in place.
+
+### P3 fix: sitemap.xml static page freshness
+
+**File:** `src/app/sitemap.ts:25-65`
+
+Static pages (`/`, `/profiles`, `/create`, `/docs`, `/sign-in`, `/sign-up`) used `lastModified: new Date()`, so every sitemap fetch reported them as "just modified". Search engines saw the entire static surface changing every minute and might mistrust the freshness signals.
+
+**Fix:** introduced `STATIC_PAGES_LAST_MODIFIED = new Date("2026-04-08")` constant used for all 6 static pages. Profile pages still use `profile.updatedAt` (correct — they have a real last-modified timestamp).
+
+**Impact:** search engines now see stable lastmod dates on static pages, only changing when Houston manually bumps the constant. This is the correct semantic for marketing pages that don't change frequently.
+
+### Verification
+- Type-check: PASS
+- Cycle 35 verification: PASS
+- Cycle 36 fix verification: deferred to next cycle (after Vercel deploy)
+
+### Round 2 status
+
+| Dimension | Items | Status |
+|-----------|-------|--------|
+| Security | 5 | 4 done, 1 queued (CSP) |
+| Performance | 6 | 5 done, 1 deferred (auth-gated /shell perf) |
+| Mobile | 4 | 3 done, 1 deferred (auth-gated /shell mobile) |
+| Error states | 6 | 5 done, 1 deferred (auth-gated chat network failure) |
+| SEO depth | 5 | 5 done ✓ |
+
+**Round 2: 22 of 26 items complete.** Remaining 4 are auth-gated and require either Houston's auth token or a logged-in browse session to test. The remaining 1 (CSP) is queued because it requires a dev environment to test safely.

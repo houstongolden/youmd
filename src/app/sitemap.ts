@@ -24,41 +24,47 @@ async function fetchProfiles(): Promise<ProfileEntry[]> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const profiles = await fetchProfiles();
 
-  // Static pages
+  // Stable lastModified for static pages — using `new Date()` made every
+  // sitemap fetch report static pages as "just modified", confusing crawlers
+  // into thinking the entire site changed every minute. Use a stable date
+  // pinned at deploy time (or a manually-bumped constant) so search engines
+  // can properly track when static content has actually changed.
+  const STATIC_PAGES_LAST_MODIFIED = new Date("2026-04-08");
+
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: BASE_URL,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGES_LAST_MODIFIED,
       changeFrequency: "weekly",
       priority: 1,
     },
     {
       url: `${BASE_URL}/profiles`,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGES_LAST_MODIFIED,
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
       url: `${BASE_URL}/create`,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGES_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
       url: `${BASE_URL}/docs`,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGES_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
       url: `${BASE_URL}/sign-in`,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGES_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.3,
     },
     {
       url: `${BASE_URL}/sign-up`,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGES_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.3,
     },

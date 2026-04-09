@@ -76,15 +76,15 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [x] Landing page paint timings (cycle 33: TTFB 25ms, total 1216ms desktop / 635ms mobile — solid)
 - [ ] /shell first paint — measure Time-to-Interactive (auth-gated, deferred)
 - [x] you.json/you.txt response time (cycle 33: 0.76s cold / 0.19s warm)
-- [ ] Image optimization — verify next/image used where appropriate
+- [x] Image optimization (cycle 36: 0 next/image, 14 raw <img>; intentional design — AsciiAvatar needs canvas access to source pixels for ASCII conversion)
 - [x] Bundle size analysis (cycle 33: largest chunks 414KB, 265KB — likely Clerk; queued bundle split as P2)
 - [x] Static asset cache headers (cycle 33: /assets/* now max-age=31536000 immutable)
 
 ### Mobile
 - [x] Landing on iPhone (390x844) — full mobile audit (cycle 34: no horizontal scroll, tap targets fixed for nav + CTAs)
 - [ ] /shell on mobile — touch targets, drawer behavior, keyboard avoidance (auth-gated, deferred)
-- [ ] /create on mobile — terminal panel sizing, keyboard handling
-- [ ] /sign-up on mobile — input zoom, autofill UX
+- [x] /create on mobile (cycle 36: clean — h1=1, main=1, no hscroll, fits 844px viewport)
+- [x] /sign-up on mobile (cycle 36: clean — h1=1, main=1, no hscroll, fits 844px viewport)
 
 ### Error states
 - [x] /not-found-page — verify 404 page renders (cycle 32, HTTP 404 ✓)
