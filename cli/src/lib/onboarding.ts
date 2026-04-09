@@ -483,11 +483,16 @@ function getOpenRouterKey(): string | null {
 
 async function fetchWebsiteContent(url: string): Promise<string> {
   try {
-    const normalizedUrl =
-      url.startsWith("http://") || url.startsWith("https://")
-        ? url
-        : "https://" + url;
-    const res = await fetch(normalizedUrl, {
+    // Cycle 53: always upgrade to HTTPS. Previously preserved user-typed http://
+    // which would silently fetch insecurely. Now we strip http:// (if present)
+    // and force https://.
+    let normalized = url.trim();
+    if (normalized.startsWith("http://")) {
+      normalized = "https://" + normalized.slice("http://".length);
+    } else if (!normalized.startsWith("https://")) {
+      normalized = "https://" + normalized;
+    }
+    const res = await fetch(normalized, {
       headers: { "User-Agent": "youmd-bot/1.0" },
       signal: AbortSignal.timeout(10_000),
     });

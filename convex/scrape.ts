@@ -387,8 +387,13 @@ function detectPlatform(
   const liMatch = lower.match(/linkedin\.com\/in\/([a-zA-Z0-9_-]+)/i);
   if (liMatch) return { platform: "linkedin", identifier: liMatch[1] };
 
-  // Generic website — any URL with a known protocol
-  if (lower.startsWith("http://") || lower.startsWith("https://")) {
+  // Generic website — HTTPS only.
+  // Cycle 53: previously accepted http:// as well. The scraper then fetches
+  // the URL over insecure HTTP, which is vulnerable to MITM injection of
+  // fake profile content. HTTPS-only is the safer default — modern profiles
+  // are virtually always HTTPS, and a typo'd http:// URL is better rejected
+  // than silently fetched insecurely.
+  if (lower.startsWith("https://")) {
     return { platform: "website", identifier: url.trim() };
   }
 

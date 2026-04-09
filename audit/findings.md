@@ -3601,3 +3601,84 @@ Until step 5, the webhook is using the cycle 52 test secret (`whsec_dGVzdHNlY3Jl
 - Type-check clean
 - Lock held throughout
 - Cycle 52 leaves the security sweep in a state where every known issue has been fixed AND verified end-to-end against prod
+
+---
+
+## Cycle 53 — HTTPS-only enforcement audit (Round 2 security) — 2026-04-09 11:55 UTC
+
+**Tool:** grep sweep + protocol-validation tightening + curl verification + HSTS header check
+**Status:** **DONE — 4 sites tightened to reject http://, HSTS confirmed live, no insecure fetch patterns found.**
+
+### What this cycle did
+
+Improvements TODO had only the cycle 52 Houston-config item (not actionable by me). Per protocol step 2, moved to queue.md and picked the top tractable Round 2 security item: **HTTPS-only enforcement**. Sweep + tighten any remaining places that accept http:// from user input.
+
+### Audit findings
+
+```
+$ grep -rEn 'fetch\([^)]*http://' src/ convex/ cli/src/
+(no results — no insecure fetches anywhere)
+
+$ grep -rEn 'http://' src/ convex/ cli/src/ | grep -v localhost | grep -v schema.org
+convex/scrape.ts:391       url.startsWith("http://") || url.startsWith("https://")
+cli/src/lib/onboarding.ts:487  url.startsWith("http://") || url.startsWith("https://")
+cli/src/lib/skills.ts:155      source.startsWith("https://") || source.startsWith("http://")
+cli/src/commands/add.ts:29     !url.startsWith("http://") && !url.startsWith("https://")
+cli/src/commands/add.ts:30     console.log("URL must start with http:// or https://")  // error msg
+
+$ curl -sI https://www.you.md/ | grep -i strict-transport-security
+strict-transport-security: max-age=63072000   # 2 years, cycle 31 fix still live ✓
+```
+
+**No insecure `fetch('http://...)` calls anywhere** — that's the most important thing. All actual network requests in the codebase are HTTPS by construction.
+
+The 4 protocol-validation sites all accepted both `http://` and `https://`. The user can paste a URL and it gets fetched. If they paste `http://example.com/me`, the request goes over insecure HTTP — vulnerable to MITM injection of fake profile content (or malicious skill code, in the case of `cli/src/lib/skills.ts`).
+
+### The fix
+
+Tightened all 4 sites to reject http:// (or transparently upgrade to https):
+
+1. **`convex/scrape.ts:detectPlatform`** — was: `startsWith("http://") || startsWith("https://")`. Now: `startsWith("https://")` only. http:// URLs return null → caller errors with "Could not detect platform".
+
+2. **`cli/src/lib/onboarding.ts:fetchWebsiteContent`** — was: kept user-typed http:// as-is, only added https:// if neither protocol present. Now: ALWAYS upgrades to https://, replacing the http:// prefix if present. Transparent — user might not even notice.
+
+3. **`cli/src/lib/skills.ts:fetchSkill`** — was: `startsWith("https://") || startsWith("http://")`. Now: `startsWith("https://")` only. **Most important of the 4** — skill installs are executable content, MITM-injected fake skills would run arbitrary code.
+
+4. **`cli/src/commands/add.ts`** — was: rejected if neither protocol present, accepted both. Now: requires `startsWith("https://")`. Error message updated: "URL must start with https:// (insecure http:// not allowed)".
+
+### Verification (post-deploy)
+
+```
+Test 1: scrapeProfile with http:// URL
+        → {"success": false, "error": "Could not detect platform from URL..."}  ✓ rejected
+
+Test 2: scrapeProfile with https:// URL
+        → {"success": true, "data": {...}}  ✓ works
+
+Test 3: HSTS header on prod
+        → strict-transport-security: max-age=63072000  ✓ live
+
+Regression checks:
+- Cycle 42 (private:getPrivateContext) → still BLOCKED ✓
+- Cycle 52 (webhook with no headers)   → 401 "missing svix headers" ✓
+```
+
+### What this means
+
+Defense-in-depth. Before cycle 53, a typo'd or legacy http:// URL would silently get fetched insecurely. After cycle 53, all user-provided URLs are either rejected (scraper, skills, add) or transparently upgraded (onboarding fetcher). Combined with the cycle 31 HSTS header (`max-age: 2 years`), the entire site is HTTPS-only end to end.
+
+### Files changed
+
+- `convex/scrape.ts` — `detectPlatform` rejects http://
+- `cli/src/lib/onboarding.ts` — `fetchWebsiteContent` upgrades http:// → https://
+- `cli/src/lib/skills.ts` — `fetchSkill` rejects http://
+- `cli/src/commands/add.ts` — `youmd add` command rejects http://
+
+### Cycle bookkeeping
+- 4 protocol-validation sites tightened
+- 0 actual `fetch('http://')` calls found (the codebase was already mostly HTTPS-clean)
+- HSTS header verified still live (cycle 31 fix is holding)
+- Type-check clean for both convex and cli
+- Deployed
+- 5 tests + regression checks all green
+- Lock held throughout

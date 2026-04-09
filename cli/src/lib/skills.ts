@@ -151,8 +151,11 @@ export async function resolveSkillSourceAsync(source: string): Promise<string | 
     return null;
   }
 
-  // Direct HTTPS URL to raw markdown
-  if (source.startsWith("https://") || source.startsWith("http://")) {
+  // Direct HTTPS URL to raw markdown.
+  // Cycle 53: was previously accepting http:// as well. Skill installs are
+  // executable content — fetching them over insecure HTTP allows MITM
+  // injection of malicious skill code. HTTPS-only.
+  if (source.startsWith("https://")) {
     try {
       const res = await fetch(source);
       if (res.ok) {

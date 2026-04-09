@@ -25,9 +25,12 @@ export function addCommand(source: string, url: string): void {
     return;
   }
 
-  // Basic URL validation
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    console.log(chalk.yellow("URL must start with http:// or https://"));
+  // Basic URL validation — HTTPS only.
+  // Cycle 53: previously accepted http:// as well. Sources get fetched by
+  // the pipeline and feed into the user's identity bundle, so insecure
+  // fetches are an injection vector. HTTPS-only.
+  if (!url.startsWith("https://")) {
+    console.log(chalk.yellow("URL must start with https:// (insecure http:// not allowed)"));
     console.log("");
     return;
   }

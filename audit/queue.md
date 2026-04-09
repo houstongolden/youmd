@@ -70,7 +70,7 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [ ] Content-Security-Policy — define and test (complex, needs all script/style/connect sources mapped)
 - [ ] Authentication token rotation — verify Clerk session tokens expire correctly
 - [ ] Rate limiting — check API endpoints for rate limits
-- [ ] HTTPS-only enforcement — verify no http:// references in code
+- [x] HTTPS-only enforcement (cycle 53, 2026-04-09 — 0 insecure fetches found, HSTS still live with max-age=2yr; tightened 4 protocol-validation sites in scrape/onboarding/skills/add to reject http://)
 
 ### Performance
 - [x] Landing page paint timings (cycle 33: TTFB 25ms, total 1216ms desktop / 635ms mobile — solid)
