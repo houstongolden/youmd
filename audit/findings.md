@@ -3086,3 +3086,83 @@ For a full kill: add a per-day budget cap that flips a kill switch on the entire
 - Regression checks for cycles 42, 45 both green
 - Lock held throughout
 - Logged 1 follow-up for cycle 47 (per-day spend cap kill switch)
+
+---
+
+## Cycle 47 — users.createUser bootstrap audit: was a P1 username squatting vector — 2026-04-09 09:50 UTC
+
+**Tool:** code review + caller-tracing + curl exploit verification + regression sweep
+**Status:** **DONE — was logged as P2 follow-up but turned out to be P1. Closed and verified.**
+
+### What this cycle did
+
+Picked up the top P2 from improvements.md: "users.createUser is callable without existing Clerk session — verify the bootstrap path." The cycle 43 comment in `convex/users.ts` had said "intentionally callable without an existing Clerk session" because it's the bootstrap path that mirrors a Clerk user into the Convex DB.
+
+**Audit found this was actually exploitable.** Anonymous attacker could:
+
+1. **Squat any unclaimed username.** Pick desirable usernames (`openai`, `anthropic`, `jane`, `john`, real-person names) and reserve them all by calling `createUser` with arbitrary fake clerkIds. The username uniqueness check then prevents real users from claiming them. This is a **denial-of-service on the entire username namespace** — a single attacker with a script could lock up the most desirable 1000 usernames in seconds.
+
+2. **Pollute the verification trust chain.** Each `createUser` call inserts a `profileVerifications` row with `source: "clerk_signup"` claiming the email was Clerk-verified. An attacker could fake verifications for emails they don't own. If any future logic ("agent: trust users with clerk_signup verification") relies on this, it would trust fake data.
+
+3. **Insert orphaned junk users** with fake clerkIds. They never resolve via real auth (no JWT will ever match), but they pollute the directory listing and the users table.
+
+### Caller analysis
+
+All 4 legitimate callers DO have a verifiable clerkId at the time of the call:
+
+| Caller | Auth context | How it qualifies |
+|--------|--------------|------------------|
+| `src/app/initialize/initialize-content.tsx:43` | Clerk JWT | User just signed up, JWT auto-attached by Convex client |
+| `src/app/dashboard/dashboard-content.tsx:76` | Clerk JWT | Same |
+| `convex/http.ts:1573` (`/api/v1/auth/register`) | Clerk Backend API | Clerk just created the user; we have the verified `clerkId` |
+| `convex/http.ts:1676` (`/api/v1/auth/login`) | Clerk Backend API | Clerk just verified the password |
+
+So there's no reason to leave it unauth'd. All real callers can satisfy `requireOwner` either via the JWT (web) or via the trusted bypass token (httpAction).
+
+### The fix
+
+Same pattern as the prior cycles:
+
+```ts
+export const createUser = mutation({
+  args: { clerkId, _internalAuthToken, username, email, displayName },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+    // ... existing logic unchanged
+  },
+});
+```
+
+Plus updated `convex/http.ts:1573` (the auth/register caller) to pass `_internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN`. The auth/login caller (`http.ts:1676`) already had it from cycle 43's perl regex pass.
+
+### Verification (post-deploy)
+
+```
+Test 1: anonymous createUser with junk clerkId, squatting "openai"
+        → Server Error  ✓ BLOCKED
+
+Test 2: anonymous createUser with WRONG bypass token guess
+        → Server Error  ✓ BLOCKED
+
+Test 3: verify no junk users were inserted (checkUsername "openai" + "anthropic")
+        → both available: true, reason: null  ✓ namespace clean
+
+Regression checks:
+- Cycle 42 (private:getPrivateContext)         → still BLOCKED ✓
+- Cycle 45 (cleanup:clearAllData)              → still BLOCKED ✓
+- Cycle 46 (chat:onboardingChat via /api/action) → still BLOCKED ✓
+```
+
+### Files changed
+
+- `convex/users.ts` — `createUser` now calls `requireOwner` first; updated doc comment with full security history
+- `convex/http.ts` — `/api/v1/auth/register`'s `createUser` call now passes `_internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN`
+
+### Cycle bookkeeping
+- 1 P1 closed (was logged as P2 — turned out to be a real namespace squatting vector)
+- 2 files changed (smallest cycle in a while — focused fix)
+- Type-check clean
+- Deployed and verified
+- 3 prior-cycle regression checks all green
+- Lock held throughout
+- Improvements queue is now empty of P0/P1 — only P2/P3 remaining

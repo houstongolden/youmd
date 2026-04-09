@@ -128,7 +128,7 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [x] **Bonus P0** — `pipeline/index.ts` startPipeline + getPipelineStatus had ZERO auth (cycle 43, 2026-04-09 — found while doing http.ts type-check, added requireOwner inline; missed by cycles 37/38 because the audit didn't sweep convex/pipeline/)
 - [x] Per-table permissive `query`/`mutation` audit — **MASSIVE SWEEP** found 13 unauth'd public functions (cycle 44, 2026-04-09 — 6 P0s + 4 P1s fixed, 3 dead funcs deleted, all exploits verified DEAD; cycle 38's "100% coverage" claim was wrong by half)
 - [x] `users.getByClerkId` self-only refactor + **APOCALYPTIC P0 + 6 more** found via wider sweep (cycle 45, 2026-04-09 — `cleanup.clearAllData` was anonymous database wipe; 4 admin functions + 4 leak vectors all closed; 7 exploit vectors verified DEAD)
-- [ ] `users.createUser` bootstrap audit (cycle 44/45 follow-up — P2 logged in improvements.md)
+- [x] `users.createUser` bootstrap audit — **was P1 username squatting vector** (cycle 47, 2026-04-09 — closed via requireOwner; verified anonymous squatting on `openai`/`anthropic` blocked, namespace still clean)
 - [x] `chat.*` actions rate-limit / abuse audit — **4 P0s closed** (cycle 46, 2026-04-09 — internalized 4 actions, auth-gated 2, added IP rate limits + payload caps to 5 httpAction wrappers; anonymous LLM cost vector now bounded to ~$100/day worst case from unbounded)
 - [ ] Per-day spend cap kill switch for chat.* (cycle 46 follow-up — P2 logged in improvements.md)
 - [ ] `apiKeys.updateLastUsed` internalize cleanliness (cycle 45 follow-up — P3 logged)

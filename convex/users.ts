@@ -72,11 +72,29 @@ export const checkUsername = query({
   },
 });
 
+/**
+ * Create a Convex user record. This is the bootstrap path that mirrors a
+ * Clerk user into our database the first time we see them.
+ *
+ * Cycle 47: was previously unauth'd (the cycle 43 comment said "intentionally
+ * callable without an existing Clerk session"). Audit revealed this was
+ * exploitable: anonymous attacker could reserve any unclaimed username, insert
+ * orphaned junk users with fake clerkIds, and create fake `profileVerifications`
+ * rows with `source: "clerk_signup"` polluting the verification trust chain.
+ *
+ * Worst attack: namespace squatting on desirable usernames (`openai`,
+ * `anthropic`, `jane`, etc.) preventing real users from claiming them.
+ *
+ * Now requires `requireOwner`. The 4 legitimate callers all qualify:
+ *   1. Web init flow: user just completed Clerk sign-up, has a fresh JWT.
+ *      Convex client auto-attaches the JWT. requireOwner sees JWT.sub == clerkId.
+ *   2. Web dashboard flow: same.
+ *   3. http.ts /api/v1/auth/register: calls Clerk Backend API first to create
+ *      the Clerk user, then mirrors into Convex via the trusted bypass token.
+ *   4. http.ts /api/v1/auth/login: verifies password via Clerk first, then
+ *      mirrors via the trusted bypass token.
+ */
 export const createUser = mutation({
-  // _internalAuthToken accepted but unused — createUser is the bootstrap path
-  // (called from sign-up webhooks and the auth/register HTTP route) and is
-  // intentionally callable without an existing Clerk session. The arg is here
-  // so http.ts can pass it uniformly (cycle 43).
   args: {
     clerkId: v.string(),
     _internalAuthToken: v.optional(v.string()),
@@ -85,6 +103,8 @@ export const createUser = mutation({
     displayName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
     const username = args.username.toLowerCase();
 
     // Validate username

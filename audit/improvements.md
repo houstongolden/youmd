@@ -13,11 +13,6 @@ Severity:
 
 ## TODO
 
-### [P2] users.createUser is callable without existing Clerk session — verify the bootstrap path — cycle 44, 2026-04-09
-- Intentionally unauth'd (sign-up flow needs to create the Convex user record before any session exists).
-- Risk: anonymous attacker could insert junk user records with fake clerkIds. They wouldn't match any real Clerk JWT, so they'd be orphaned, but the row would exist.
-- **Fix design:** add a check that the clerkId arg corresponds to a real Clerk user (call Clerk backend API). The auth/register HTTP route already does this. The webhook flow probably also does. Consolidate into a single "verified bootstrap" path.
-
 ### [P2] Per-day spend cap kill switch for chat.* — cycle 46, 2026-04-09
 - Cycle 46 added per-IP rate limits (10-30 calls/min) and payload caps. This bounds single-IP abuse to ~$100/day, but a botnet (100+ IPs) could still theoretically reach $10k/day.
 - **Fix design:** Track total LLM-call count + estimated cost in a singleton convex table per day. If today's cost > $X (e.g. $50 default, configurable via Convex env), reject all chat.* httpAction calls with a 503. Reset at midnight UTC.
@@ -34,6 +29,14 @@ Severity:
 
 
 ## DONE
+
+### [P1] users.createUser was a username squatting vector — cycle 47, 2026-04-09
+- Logged as P2 in cycles 44/45 ("verify the bootstrap path"), audit revealed it was P1.
+- Anonymous attacker could call `users:createUser` with arbitrary fake clerkIds and (a) reserve any unclaimed username (DOS the namespace — squat `openai`, `anthropic`, real names), (b) insert fake `profileVerifications` rows with `source: "clerk_signup"` polluting the verification trust chain, (c) insert orphaned junk users.
+- All 4 legitimate callers (web init/dashboard via Clerk JWT; http.ts auth/register and auth/login via Clerk Backend API) qualify under `requireOwner` either via the JWT or the trusted bypass token.
+- Fix: added `requireOwner(ctx, args.clerkId, args._internalAuthToken)` to the handler; updated the auth/register http.ts caller to pass the bypass token (auth/login already had it from cycle 43).
+- Verified: anonymous squat attempts on `openai` + `anthropic` blocked, `checkUsername` confirms namespace still clean. Cycles 42 + 45 + 46 regression checks all green.
+- Commit: pending
 
 ### [P0×4] chat.* anonymous LLM cost vector closed (internalAction + IP rate limits + payload caps + auth gates) — cycle 46, 2026-04-09
 - All 6 actions in `convex/chat.ts` were public with NO auth, NO rate limit, NO payload cap, calling Anthropic Sonnet 4.6 / Perplexity Sonar / Sonar Pro / xAI Grok-3-mini / Anthropic Haiku. Anonymous attacker could `curl /api/action` in a loop and drain Houston's API budgets in hours.

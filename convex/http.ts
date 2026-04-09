@@ -1570,8 +1570,12 @@ http.route({
       const clerkId = (clerkUser as any).id;
 
       // 3. Create Convex user record (also creates profile)
+      // Cycle 47: pass the bypass token because we just verified the Clerk
+      // user via Clerk Backend API but don't have a Clerk JWT in this
+      // httpAction context.
       await ctx.runMutation(api.users.createUser, {
         clerkId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         username: username.toLowerCase(),
         email,
         displayName: name || undefined,
