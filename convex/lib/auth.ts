@@ -41,19 +41,22 @@
  * `npx convex run` for these functions still requires Convex Dashboard access.
  */
 
-import type { QueryCtx, MutationCtx } from "../_generated/server";
+import type { QueryCtx, MutationCtx, ActionCtx } from "../_generated/server";
 
 /**
  * Verify that the caller is authorized to act on behalf of the given clerkId.
  *
  * STRICT: throws if no identity is present, UNLESS a valid internal auth
  * token is provided (used by httpActions that already authenticated via
- * API key Bearer token).
+ * API key Bearer token, or actions called via the bypass token).
+ *
+ * Cycle 46: now also accepts ActionCtx (in addition to QueryCtx/MutationCtx)
+ * so chat.* actions can require auth.
  *
  * Returns the verified clerkId.
  */
 export async function requireOwner(
-  ctx: QueryCtx | MutationCtx,
+  ctx: QueryCtx | MutationCtx | ActionCtx,
   clerkId: string,
   internalAuthToken?: string
 ): Promise<string> {

@@ -18,21 +18,30 @@ Severity:
 - Risk: anonymous attacker could insert junk user records with fake clerkIds. They wouldn't match any real Clerk JWT, so they'd be orphaned, but the row would exist.
 - **Fix design:** add a check that the clerkId arg corresponds to a real Clerk user (call Clerk backend API). The auth/register HTTP route already does this. The webhook flow probably also does. Consolidate into a single "verified bootstrap" path.
 
-### [P2] chat.* actions need rate limiting / abuse protection audit — cycle 45, 2026-04-09
-- `chat.onboardingChat`, `researchUser`, `verifyIdentity`, `enrichXProfile`, `compactSession`, `summarizeSession` are all public actions.
-- These call OpenRouter (LLM) which costs $$. Anonymous abuse → financial loss.
-- Need to verify each action has either: (a) auth gate, (b) rate limit, (c) is non-billing.
+### [P2] Per-day spend cap kill switch for chat.* — cycle 46, 2026-04-09
+- Cycle 46 added per-IP rate limits (10-30 calls/min) and payload caps. This bounds single-IP abuse to ~$100/day, but a botnet (100+ IPs) could still theoretically reach $10k/day.
+- **Fix design:** Track total LLM-call count + estimated cost in a singleton convex table per day. If today's cost > $X (e.g. $50 default, configurable via Convex env), reject all chat.* httpAction calls with a 503. Reset at midnight UTC.
+- **Why P2:** the current rate limits already make casual abuse uneconomical. This is defense-in-depth for a sophisticated attacker.
 
 ### [P3] apiKeys.updateLastUsed is unauth'd — cleanliness fix — cycle 45, 2026-04-09
 - Public mutation taking only `keyId: v.id("apiKeys")`.
 - Practical attack surface: if attacker already knows an apiKeyId (32-char base32 random), they can mark it as used. No value to attacker.
 - Worth fixing for cleanliness — convert to internalMutation, called only by `authenticateRequest` in http.ts.
 
-### [P3] chat.summarizeSession + compactSession arg trust audit — cycle 45, 2026-04-09
-- Verify these public actions don't trust user-supplied `userId`/`sessionId` to write into another user's session.
+### [P3] rateLimits table needs cron cleanup — cycle 46, 2026-04-09
+- The new `rateLimits` table (cycle 46) accumulates one row per call indefinitely. `cleanupOldRateLimits` exists but isn't called from a cron yet.
+- **Fix design:** add a Convex cron that runs hourly and deletes rows older than 1 hour. Or call `cleanupOldRateLimits` opportunistically on each rate-limit check. Low priority — table will grow but not catastrophically.
 
 
 ## DONE
+
+### [P0×4] chat.* anonymous LLM cost vector closed (internalAction + IP rate limits + payload caps + auth gates) — cycle 46, 2026-04-09
+- All 6 actions in `convex/chat.ts` were public with NO auth, NO rate limit, NO payload cap, calling Anthropic Sonnet 4.6 / Perplexity Sonar / Sonar Pro / xAI Grok-3-mini / Anthropic Haiku. Anonymous attacker could `curl /api/action` in a loop and drain Houston's API budgets in hours.
+- Two-layer fix: (1) `onboardingChat`, `researchUser`, `verifyIdentity`, `enrichXProfile` → `internalAction` (no longer reachable via `/api/action`); `compactSession` and `summarizeSession` kept `action` but added `clerkId + _internalAuthToken` args + `requireOwner` (web `useAction` callers updated to pass clerkId). (2) New `convex/lib/rateLimit.ts` + `rateLimits` schema table; 5 httpAction wrappers got per-IP rate limits (30/min for chat, 10/min for research/verify/enrich) + 50KB payload caps.
+- Verified end-to-end: anonymous `/api/action` calls return Server Error, 51KB payload returns 413, spamming `/api/v1/research` 12 times returns first 10 success then 11+12 with 429 "rate limit exceeded: 10/10 calls in last 60s". Cycles 42 + 45 regression checks both green.
+- Result: theoretical worst-case anonymous abuse from a single IP is now bounded to ~$100/day (down from unbounded).
+- Logged 1 follow-up for cycle 47 (per-day spend cap kill switch as defense-in-depth against botnets).
+- Commit: 9b1f0e3
 
 ### [APOCALYPTIC P0 + 3 P0 + 4 P1] cleanup.clearAllData was anonymous DB wipe + 6 more admin/financial/leak vulns — cycle 45, 2026-04-09
 - **THE WORST FINDING OF THE ENTIRE AUDIT.** `convex/cleanup.ts:clearAllData` was a public mutation. Any anonymous caller could `curl /api/mutation` and **delete every row in every table** in production. No auth, no rate limit, no warning. Closed by converting to `internalMutation` (Convex enforces unreachable from public callers).

@@ -405,4 +405,14 @@ export default defineSchema({
     .index("by_userId_date", ["userId", "createdAt"])
     .index("by_userId_agent", ["userId", "agentName"])
     .index("by_action", ["action"]),
+
+  // ── Rate limits (cycle 46) ──────────────────────────────────
+  // One row per call to a rate-limited endpoint. Counted within a sliding
+  // time window to enforce per-bucket maximums (typically per-IP for
+  // anonymous LLM endpoints, per-user for authenticated ones).
+  rateLimits: defineTable({
+    bucket: v.string(),     // e.g. "chat:1.2.3.4" or "research:anon"
+    timestamp: v.number(),  // Date.now() at call time
+  })
+    .index("by_bucket_ts", ["bucket", "timestamp"]),
 });

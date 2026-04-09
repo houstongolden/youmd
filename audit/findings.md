@@ -2987,3 +2987,102 @@ Regression checks:
 - Lock held throughout
 - Type-check clean
 - Logged 4 follow-ups for cycle 46
+
+---
+
+## Cycle 46 — chat.* actions: anonymous LLM cost vector closed (internalAction + IP rate limits + payload caps + auth gates) — 2026-04-09 09:15 UTC
+
+**Tool:** code review of convex/chat.ts → 6-action attack surface map → fix design → curl verification of rate limits, payload caps, and auth gates against prod
+**Status:** **DONE — 6 chat.* actions internalized OR auth-gated, 4 public httpAction wrappers got per-IP rate limits + payload size caps. Anonymous Anthropic/Perplexity/xAI billing vector closed.**
+
+### What this cycle did
+
+Picked up the top P2 from improvements.md: `chat.*` actions rate-limit/abuse audit. The findings turned out to be P0-shaped:
+
+**All 6 actions in `convex/chat.ts` were public with NO auth gate, NO rate limit, and NO payload size cap, calling paid LLM APIs:**
+
+| Function | Provider | Cost/call | Worst-case anonymous abuse |
+|----------|----------|-----------|----------------------------|
+| `onboardingChat` | Anthropic Sonnet 4.6 | ~$0.005-0.20 | Fill 200k token messages, drain $$$ |
+| `researchUser` | Perplexity Sonar | ~$0.005 | Spam queries |
+| `verifyIdentity` | Perplexity Sonar Pro | ~$0.01 | Spam queries |
+| `enrichXProfile` | xAI Grok-3-mini | ~$0.005 | Spam queries |
+| `compactSession` | Anthropic Haiku | ~$0.001 | Cheap but still abusable |
+| `summarizeSession` | Anthropic Haiku | ~$0.001 | Same |
+
+**Threat model:** an attacker writes a 5-line bash script looping `curl -X POST https://kindly-cassowary-600.convex.cloud/api/action` with `path: "chat:onboardingChat"`. They bury Houston's API budgets in hours: $200/hr easily, $5000/day plausibly. The "rate-limited by design" comment in http.ts was aspirational — there was no rate limit anywhere in the stack.
+
+### The fix
+
+**Two-layer defense:**
+
+**Layer 1: Internalize the actions.**
+- 4 actions called only via httpAction wrappers (`onboardingChat`, `researchUser`, `verifyIdentity`, `enrichXProfile`) → converted to `internalAction`. They can no longer be called directly via `/api/action`.
+- 2 actions called from web `useAction` (`compactSession`, `summarizeSession`) — kept as public `action` but now require `clerkId + _internalAuthToken` args + `requireOwner` check. Web clients pass `useUser().id`; httpAction wrapper passes the cycle 43 bypass token.
+
+**Layer 2: Per-IP rate limit + payload size cap on httpAction wrappers.**
+- New `convex/lib/rateLimit.ts` with `checkAndRecord` internalMutation backed by a new `rateLimits` schema table
+- New `convex/schema.ts` table: `rateLimits: { bucket: string, timestamp: number }` with `by_bucket_ts` compound index
+- 4 httpAction wrappers now check the rate limit (per-IP from `x-forwarded-for`) before calling the action
+- Caps:
+  - `/api/v1/chat`: 30 calls/IP/minute, 50KB payload max
+  - `/api/v1/research`: 10 calls/IP/minute
+  - `/api/v1/verify-identity`: 10 calls/IP/minute
+  - `/api/v1/enrich-x`: 10 calls/IP/minute
+  - `/api/v1/chat/compact`: 60 calls/user/minute (now requires API-key Bearer auth)
+
+### Why I had to widen requireOwner
+
+Convex `ActionCtx` has a different type from `QueryCtx`/`MutationCtx`. The cycle 42 `requireOwner` was typed `QueryCtx | MutationCtx`. To use it inside `compactSession` and `summarizeSession` (actions), I widened the type to `QueryCtx | MutationCtx | ActionCtx`. The function body only uses `ctx.auth.getUserIdentity()` which exists on all three.
+
+### Files changed
+
+- `convex/lib/auth.ts` — `requireOwner` widened to accept `ActionCtx`
+- `convex/lib/rateLimit.ts` — **new file**, exports `checkAndRecord` + `cleanupOldRateLimits` internal mutations
+- `convex/schema.ts` — added `rateLimits` table
+- `convex/chat.ts` — `onboardingChat`/`researchUser`/`verifyIdentity`/`enrichXProfile` → `internalAction`; `compactSession`/`summarizeSession` kept `action` but with `clerkId + _internalAuthToken` args + `requireOwner` check
+- `convex/http.ts` — added `getCallerIp` + `totalMessageChars` helpers; 5 chat httpAction wrappers got rate limits + payload caps + switched to `internal.chat.*`
+- `src/hooks/useYouAgent.ts` — `compactSession` and `summarizeSession` callers now pass `clerkId: user.id`
+
+### Verification (post-deploy, 7 tests)
+
+```
+Test 1: anonymous /api/action chat:onboardingChat       → Server Error  ✓ BLOCKED (was P0 LLM cost)
+Test 2: anonymous /api/action chat:summarizeSession     → Server Error  ✓ BLOCKED (was P0)
+Test 3: HTTP /api/v1/chat normal payload                → 200 with LLM response  ✓ works
+Test 4: HTTP /api/v1/chat 51KB payload                  → 413 "payload too large (51000 > 50000 chars)"  ✓
+Test 5: spam HTTP /api/v1/research 12x in a row         → first 10: 200, last 2: 429 "rate limit exceeded: 10/10 calls in last 60s"  ✓
+
+Regression checks:
+- Cycle 42 exploit (private:getPrivateContext)          → still BLOCKED ✓
+- Cycle 45 clearAllData                                 → still BLOCKED ✓
+```
+
+After verification I ran `lib/rateLimit:cleanupOldRateLimits '{"maxAgeMs":1000}'` to clear the test rows (deleted 11 rows).
+
+### What this means for Houston
+
+Before cycle 46: any anonymous attacker could drain Houston's Anthropic + Perplexity + xAI API budgets in hours by spamming `/api/action chat:onboardingChat`. There was no auth, no rate limit, no payload cap. A single curl loop = financial-loss event.
+
+After cycle 46:
+- The Convex `/api/action` direct attack is dead (4 actions are internalAction, 2 require Clerk auth)
+- The HTTP route attack is bounded: 30 calls/IP/min on /api/v1/chat, 10/IP/min on the others, 50KB payload max
+- 30 calls/min × $0.05 max/call × 60min × 24hrs = $2160/IP/day theoretical max for sustained attack. Realistic: <$100/day. From 100 IPs simultaneously: still <$10k/day. Recoverable, not catastrophic.
+- More sophisticated attacks (botnet → 1000 IPs → 30k calls/min × $0.05 = $1500/min) are still theoretically possible but require real effort and infrastructure.
+
+For a full kill: add a per-day budget cap that flips a kill switch on the entire chat system once spend exceeds $X/day. Logged for cycle 47.
+
+### Cycle bookkeeping
+- 4 P0 financial-loss vectors closed (anonymous LLM API drain)
+- 2 actions internalized to internalAction
+- 4 actions internalized + 2 auth-gated (6/6 chat.* covered)
+- 5 httpAction wrappers got rate limits + payload caps
+- 1 new helper file (`convex/lib/rateLimit.ts`)
+- 1 schema table added (`rateLimits`)
+- 1 type widened (`requireOwner` accepts `ActionCtx`)
+- 6 files changed total (including the new lib file)
+- Type-check clean
+- Deployed and verified end-to-end
+- Regression checks for cycles 42, 45 both green
+- Lock held throughout
+- Logged 1 follow-up for cycle 47 (per-day spend cap kill switch)

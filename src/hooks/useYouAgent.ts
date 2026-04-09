@@ -1797,9 +1797,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       const currentMessages = messagesRef.current;
       const turnCount = currentMessages.filter((m) => m.role === "user").length;
 
-      if (turnCount >= COMPACTION_TURN_THRESHOLD && currentMessages.length > 10) {
+      if (turnCount >= COMPACTION_TURN_THRESHOLD && currentMessages.length > 10 && user?.id) {
         try {
           const result = await compactSession({
+            clerkId: user.id,
             sessionId: sessionIdRef.current,
             messages: currentMessages.map((m) => ({
               role: m.role,
@@ -1852,6 +1853,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             lastSummarizedAtRef.current = messageCountRef.current;
             try {
               const summaryResult = await summarizeSession({
+                clerkId: user.id,
                 sessionId: sessionIdRef.current,
                 messages: messagesRef.current.map((m) => ({
                   role: m.role,

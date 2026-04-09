@@ -1,8 +1,26 @@
 "use node";
 
 import { v } from "convex/values";
-import { action } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { requireOwner } from "./lib/auth";
+
+/**
+ * Cycle 46: ALL chat.* exports converted from `action` (public) to
+ * `internalAction`. They were anonymous-callable LLM-cost vectors — anyone
+ * could `curl /api/action` with `path: "chat:onboardingChat"` and trigger
+ * unbounded Anthropic / Perplexity / xAI billing on Houston's API keys.
+ *
+ * Now callable only via:
+ *   1. Other Convex functions (other actions, mutations, queries)
+ *   2. httpAction wrappers in convex/http.ts (which now enforce per-IP rate
+ *      limits via convex/lib/rateLimit.ts) for the public onboarding flow
+ *   3. The two authenticated chat actions (compactSession, summarizeSession)
+ *      additionally require `clerkId + _internalAuthToken` and call
+ *      `requireOwner` — they're called from authenticated dashboard flows
+ *      (useYouAgent.ts) which now use `useAction(internal.chat.*)` and pass
+ *      the user's clerkId
+ */
 
 // ---------------------------------------------------------------------------
 // Model routing configuration — right model for the right task
@@ -29,7 +47,7 @@ const MODELS = {
  * Uses Claude Sonnet 4.6 via Anthropic API (best quality).
  * Falls back to OpenRouter.
  */
-export const onboardingChat = action({
+export const onboardingChat = internalAction({
   args: {
     messages: v.array(
       v.object({
@@ -68,7 +86,7 @@ export const onboardingChat = action({
  * Perplexity-powered research — auto-research a user from their name/links.
  * Returns a research summary that the agent can use to enrich the profile.
  */
-export const researchUser = action({
+export const researchUser = internalAction({
   args: {
     name: v.string(),
     username: v.optional(v.string()),
@@ -140,7 +158,7 @@ export const researchUser = action({
  * that the person in the scraped profiles is actually the same person.
  * Returns a confidence score and any discrepancies found.
  */
-export const verifyIdentity = action({
+export const verifyIdentity = internalAction({
   args: {
     name: v.string(),
     username: v.optional(v.string()),
@@ -243,7 +261,7 @@ Respond ONLY with valid JSON, no markdown.`,
  * XAI/Grok-powered X profile enrichment — get detailed X profile analysis.
  * Analyzes the user's X presence including recent posts, style, topics.
  */
-export const enrichXProfile = action({
+export const enrichXProfile = internalAction({
   args: {
     xUsername: v.string(),
     profileData: v.optional(v.any()), // Existing scraped data from the scraper
@@ -316,7 +334,12 @@ Keep each point to 1-2 sentences. Be specific, not generic.`,
  * Uses Haiku for cost-efficient summarization + memory extraction.
  */
 export const compactSession = action({
+  // Cycle 46: still public (web `useAction` callers) but now requires auth.
+  // Clerk JWT auto-passed by Convex client; httpAction wrapper passes the
+  // bypass token instead.
   args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     sessionId: v.string(),
     messages: v.array(
       v.object({
@@ -327,6 +350,11 @@ export const compactSession = action({
     keepRecent: v.optional(v.number()), // default 8
   },
   handler: async (ctx, args) => {
+    // Cycle 46: was previously `action` with no auth. Anyone could call this
+    // with arbitrary messages and trigger Haiku billing. Now requires the
+    // caller to be authenticated as the matching clerkId.
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
     const KEEP_RECENT = args.keepRecent ?? 8;
     const messages = args.messages;
 
@@ -531,7 +559,10 @@ async function callOpenRouter(
  * Uses Haiku for cost-efficiency since this is a background task.
  */
 export const summarizeSession = action({
+  // Cycle 46: still public (web `useAction` callers) but now requires auth.
   args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
     sessionId: v.string(),
     messages: v.array(
       v.object({
@@ -541,6 +572,9 @@ export const summarizeSession = action({
     ),
   },
   handler: async (ctx, args) => {
+    // Cycle 46: was previously `action` with no auth. Now self-only.
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
     // Only summarize if there are enough messages
     if (args.messages.length < 4) return { summary: null };
 

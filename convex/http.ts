@@ -698,8 +698,36 @@ http.route({
 });
 
 // ============================================================
-// ONBOARDING CHAT PROXY (no auth — public, rate-limited by design)
+// ONBOARDING CHAT PROXY (no auth — public, IP-rate-limited)
 // ============================================================
+//
+// Cycle 46: previously these public endpoints called paid LLM APIs (Anthropic,
+// Perplexity, xAI, OpenRouter) with NO rate limit and NO payload size cap. An
+// anonymous attacker could `curl` them in a loop and drain Houston's API
+// budgets in hours.
+//
+// Now: 30 calls per IP per minute, 50KB payload cap. Underlying actions are
+// `internalAction` so they can't be called directly via /api/action either.
+
+const CHAT_PUBLIC_RATE_LIMIT = { windowMs: 60_000, maxCalls: 30 };
+const CHAT_MAX_PAYLOAD_CHARS = 50_000;
+
+function getCallerIp(request: Request): string {
+  const xff = request.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+  return request.headers.get("x-real-ip")?.trim() || "anon";
+}
+
+function totalMessageChars(messages: unknown): number {
+  if (!Array.isArray(messages)) return 0;
+  let n = 0;
+  for (const m of messages) {
+    if (m && typeof m === "object" && typeof (m as any).content === "string") {
+      n += (m as any).content.length;
+    }
+  }
+  return n;
+}
 
 http.route({
   path: "/api/v1/chat",
@@ -707,7 +735,25 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     try {
       const body = await request.json();
-      const content = await ctx.runAction(api.chat.onboardingChat, {
+
+      // Cycle 46: payload size cap before any LLM call
+      const chars = totalMessageChars(body.messages);
+      if (chars > CHAT_MAX_PAYLOAD_CHARS) {
+        return json({ error: `payload too large (${chars} > ${CHAT_MAX_PAYLOAD_CHARS} chars)` }, 413);
+      }
+
+      // Cycle 46: per-IP rate limit
+      try {
+        await ctx.runMutation(internal.lib.rateLimit.checkAndRecord, {
+          bucket: `chat:${getCallerIp(request)}`,
+          windowMs: CHAT_PUBLIC_RATE_LIMIT.windowMs,
+          maxCalls: CHAT_PUBLIC_RATE_LIMIT.maxCalls,
+        });
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+      }
+
+      const content = await ctx.runAction(internal.chat.onboardingChat, {
         messages: body.messages,
       });
       return json({ content });
@@ -943,10 +989,15 @@ http.route({
 // OPTIONS for /api/v1/chat/stream is registered below with other CORS preflight routes
 
 // POST /api/v1/chat/compact — Claude Code-style context compaction
+// Cycle 46: requires API-key auth (Bearer token), and the action requires
+// the matching clerkId. Per-user rate limit applied.
 http.route({
   path: "/api/v1/chat/compact",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
     try {
       const body = await request.json();
       const { sessionId, messages, keepRecent } = body;
@@ -955,7 +1006,26 @@ http.route({
         return json({ error: "sessionId and messages[] required" }, 400);
       }
 
+      // Cycle 46: payload cap
+      const chars = totalMessageChars(messages);
+      if (chars > CHAT_MAX_PAYLOAD_CHARS * 4) {
+        return json({ error: `payload too large` }, 413);
+      }
+
+      // Cycle 46: per-user rate limit (more generous than anonymous endpoints)
+      try {
+        await ctx.runMutation(internal.lib.rateLimit.checkAndRecord, {
+          bucket: `compact:${auth.userId}`,
+          windowMs: 60_000,
+          maxCalls: 60,
+        });
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+      }
+
       const result = await ctx.runAction(api.chat.compactSession, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         sessionId,
         messages,
         keepRecent: keepRecent ?? 8,
@@ -1009,13 +1079,25 @@ http.route({
 // ============================================================
 
 // POST /api/v1/research — Auto-research a user via Perplexity
+// Cycle 46: per-IP rate limit added (paid Perplexity API).
 http.route({
   path: "/api/v1/research",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     try {
       const body = await request.json();
-      const result = await ctx.runAction(api.chat.researchUser, {
+
+      try {
+        await ctx.runMutation(internal.lib.rateLimit.checkAndRecord, {
+          bucket: `research:${getCallerIp(request)}`,
+          windowMs: 60_000,
+          maxCalls: 10,
+        });
+      } catch (err) {
+        return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+      }
+
+      const result = await ctx.runAction(internal.chat.researchUser, {
         name: body.name,
         username: body.username,
         email: body.email,
@@ -1032,13 +1114,25 @@ http.route({
 });
 
 // POST /api/v1/verify-identity — Cross-reference scraped profiles via Perplexity Sonar Pro
+// Cycle 46: per-IP rate limit added (paid Perplexity Sonar Pro API).
 http.route({
   path: "/api/v1/verify-identity",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     try {
       const body = await request.json();
-      const result = await ctx.runAction(api.chat.verifyIdentity, {
+
+      try {
+        await ctx.runMutation(internal.lib.rateLimit.checkAndRecord, {
+          bucket: `verify:${getCallerIp(request)}`,
+          windowMs: 60_000,
+          maxCalls: 10,
+        });
+      } catch (err) {
+        return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+      }
+
+      const result = await ctx.runAction(internal.chat.verifyIdentity, {
         name: body.name,
         username: body.username,
         scrapedSources: body.scrapedSources || [],
@@ -1054,13 +1148,25 @@ http.route({
 });
 
 // POST /api/v1/enrich-x — Enrich X profile via XAI/Grok
+// Cycle 46: per-IP rate limit added (paid xAI/Grok API).
 http.route({
   path: "/api/v1/enrich-x",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     try {
       const body = await request.json();
-      const result = await ctx.runAction(api.chat.enrichXProfile, {
+
+      try {
+        await ctx.runMutation(internal.lib.rateLimit.checkAndRecord, {
+          bucket: `enrich:${getCallerIp(request)}`,
+          windowMs: 60_000,
+          maxCalls: 10,
+        });
+      } catch (err) {
+        return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+      }
+
+      const result = await ctx.runAction(internal.chat.enrichXProfile, {
         xUsername: body.xUsername,
         profileData: body.profileData,
       });
