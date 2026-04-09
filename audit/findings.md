@@ -953,3 +953,59 @@ All 4 auth pages now have proper h1 + main landmark.
   - Forward upstream Link rel="describedby" header
   - Support conditional requests via If-None-Match → 304
 - AI agents that fetch the same identity context multiple times can now use 304 responses to save bandwidth
+
+## Cycle 19 — Verify robots.txt — 2026-04-08 20:00 UTC
+
+**Tool:** curl (apex + www)
+**Status:** DONE — all rules correct, no code changes needed. **The original P0 bug Houston was angry about is fully resolved.**
+
+### What was tested
+- robots.txt fetch on apex (you.md) — 307 redirect to www.you.md
+- robots.txt fetch on www.you.md — 200 with body
+- Allow rules for AI bot access to identity context
+- Disallow rules for auth-required routes
+- Cross-domain consistency
+
+### Results
+
+**Wildcard rule (`User-Agent: *`):**
+| Path | Rule | Correct? |
+|------|------|----------|
+| `/` | Allow | ✅ |
+| `/api/v1/profiles` | Allow | ✅ |
+| `/api/v1/skills` | Allow | ✅ |
+| **`/ctx/`** | **Allow** | ✅ **(the critical rule)** |
+| `/schema/` | Allow | ✅ |
+| `/shell` | Disallow | ✅ (needs auth) |
+| `/initialize` | Disallow | ✅ (needs auth) |
+| `/dashboard` | Disallow | ✅ (needs auth) |
+| `/api/v1/me` | Disallow | ✅ (needs auth) |
+
+**Explicit AI bot block (10 bots):**
+- ClaudeBot, Claude-Web, ChatGPT-User, GPTBot, OAI-SearchBot, PerplexityBot, Google-Extended, Gemini, Anthropic-AI, cohere-ai
+- Same Allow + Disallow rules as wildcard
+- Defensive but clear — makes intent crystal clear to bot operators reading the file
+
+**Sitemap:**
+- ✅ `Sitemap: https://you.md/sitemap.xml` (referenced — will audit in cycle 20)
+
+**Cross-domain consistency:**
+- ✅ apex and www serve identical robots.txt content (Vercel handles the apex → www redirect, both ultimately serve from the same Next.js route)
+
+### Historical context
+This is the file Houston was hammering me about during the recovery sprint. The original bug:
+- Old robots.txt had `Disallow: /ctx/` which blocked ALL AI bots from fetching context links
+- That broke the entire product premise ("agents fetch your identity from a URL")
+- Fixed in `src/app/robots.ts` to explicitly allow /ctx/ + 4 other paths in two rules (wildcard + explicit AI bot list)
+- ChatGPT confused everyone for hours by hallucinating "blocked by robots.txt" responses even after the fix went live (turned out ChatGPT was in non-browse mode and hallucinating an excuse)
+
+**Status: fully resolved.** Robots.txt is now serving exactly what AI agents need.
+
+### No issues found
+- No code changes
+- No queued improvements
+
+### Cycle bookkeeping
+- Picked: queue.md item 11 (robots.txt)
+- Audit only — verification cycle, no fixes needed
+- Lock held throughout

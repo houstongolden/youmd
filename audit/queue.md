@@ -18,7 +18,7 @@ to `audit/improvements.md`.
 - [x] you.txt — `/houstongolden/you.txt` — plain text format (cycle 15, 2026-04-08, applied cycle 13 etag/link header pattern)
 - [x] ctx link (public) — `/ctx/houstongolden/<public-token>` — proper response (cycle 16, 2026-04-08, etag/link header proxy fix)
 - [x] ctx link (full) — `/ctx/houstongolden/f32iTMuDrkOfQQrucy4AMfTYjAvN3boI` — _privateContext present (cycle 17, 2026-04-08, scope enforcement verified working end-to-end)
-- [ ] robots.txt — confirm /ctx/ allowed for AI bots
+- [x] robots.txt — confirm /ctx/ allowed for AI bots (cycle 19, 2026-04-08, fully verified — original P0 fully resolved)
 - [ ] sitemap.xml — well-formed, includes all profiles
 
 ### Web — Auth Flows
