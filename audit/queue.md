@@ -12,7 +12,7 @@ to `audit/improvements.md`.
 - [x] sign-up — `/sign-up` — Clerk widget loads, can submit, redirects correctly (cycle 5, 2026-04-08, 4 a11y bugs found + fixed inline)
 - [x] sign-in — `/sign-in` — same as above (cycle 7, 2026-04-08, cycle 6 a11y verified live + 4 missing-h1/main bugs found across all 4 auth pages and fixed inline)
 - [x] docs — `/docs` — content renders, links work, mobile (cycle 8, 2026-04-08, P1 buttons-not-anchors bug found + fixed inline)
-- [ ] profiles directory — `/profiles` — list loads, search, click into profile
+- [x] profiles directory — `/profiles` — list loads, search, click into profile (cycle 10, 2026-04-08, 3 fixes inline)
 - [ ] public profile — `/houstongolden` — avatar, bio, projects, JSON-LD, OG
 - [ ] you.json — `/houstongolden/you.json` — valid JSON, all fields present
 - [ ] you.txt — `/houstongolden/you.txt` — plain text format

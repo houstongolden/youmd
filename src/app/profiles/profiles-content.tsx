@@ -243,7 +243,7 @@ export function ProfilesDirectoryContent() {
   return (
     <div className="min-h-[100dvh] bg-[hsl(var(--bg))]">
       {/* Content — SiteNav handles navigation */}
-      <div className="pt-8 pb-20 px-6">
+      <main className="pt-8 pb-20 px-6">
         <div className="max-w-[680px] mx-auto">
           {/* Header */}
           <FadeUp>
@@ -271,14 +271,21 @@ export function ProfilesDirectoryContent() {
             <div className="mb-6 space-y-3">
               {/* Search input */}
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--accent))]/50 font-mono text-[12px] pointer-events-none select-none">
+                <span
+                  aria-hidden="true"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--accent))]/50 font-mono text-[12px] pointer-events-none select-none"
+                >
                   &gt;
                 </span>
                 <input
-                  type="text"
+                  type="search"
+                  name="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="grep name, tagline, location..."
+                  aria-label="search profiles by name, tagline, or location"
+                  autoComplete="off"
+                  spellCheck={false}
                   className="w-full bg-[hsl(var(--raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-primary))] font-mono text-[12px] py-2 pl-7 pr-3 placeholder:text-[hsl(var(--text-secondary))]/30 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors caret-[hsl(var(--accent))]"
                   style={{ borderRadius: "2px" }}
                 />
@@ -401,7 +408,7 @@ export function ProfilesDirectoryContent() {
             </motion.div>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

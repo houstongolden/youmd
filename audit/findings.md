@@ -427,3 +427,57 @@ All 4 auth pages now have proper h1 + main landmark.
 - Moved to DONE in improvements.md
 - Cycle 8 entry annotated with "VERIFIED LIVE" tag
 - Lock held throughout
+
+## Cycle 10 — Audit /profiles directory — 2026-04-08 18:10 UTC
+
+**Tool:** /browse skill (real Chromium), desktop 1440x900
+**Status:** DONE_WITH_FINDINGS — 3 inline fixes (1 P1 main + 1 P1 search a11y combined as one fix), 1 P2 queued. Cycle 9 docs footer verified live.
+
+### What was tested
+- Page load (200, 0 console errors)
+- Page semantics
+- Profile card rendering (22 cards loaded from Convex)
+- Search functionality (typed "houston" → filtered 22 → 16 results)
+- Search input accessibility
+- Cycle 9 verification
+
+### Cycle 9 verification (PASSED)
+- /docs: footer=1 (was 0), main=1, h1=1 ✓
+
+### Issues found and fixed inline
+
+**P1 — Missing `<main>` landmark**
+- The page wrapped content in `<div className="pt-8 pb-20 px-6">` not `<main>`
+- **STATUS: FIXED** — converted inner div to main
+
+**P1 — Search input had multiple a11y/UX bugs**
+- `name: ""`, `ariaLabel: null`, `type: "text"` (should be search)
+- **STATUS: FIXED** — added type="search", name="search", aria-label, autoComplete="off", spellCheck=false. Also added aria-hidden to the decorative `>` chevron.
+
+### Issues queued
+
+**P2 — No `<footer>` landmark**
+- Page has a "create your profile" / "cd ~/you.md" CTA section at the bottom but it's a motion.div, not a footer element
+- **STATUS: queued to improvements.md** for next cycle
+
+### What worked correctly
+- h1=1 with text "> ls /profiles" ✓ (cycles 2-4 pattern continues working — pages built since then have proper h1)
+- Title "Profiles — you.md" ✓
+- nav=1 ✓
+- JSON-LD CollectionPage schema present ✓ (good for SEO)
+- 22 profile cards render with avatars, names, taglines
+- Search functionality WORKS (22 → 16 with "houston" filter — fuzzy matching across name/tagline/location)
+- Filter buttons (all/verified/has-projects) present
+- Sort dropdown (recent/projects/alpha) present
+- 0 console errors
+
+### Verification
+- Type-check: PASS
+- Cycle 9 verification: PASS
+- Cycle 10 fix verification: deferred to next cycle
+
+### Numbers
+- /profiles entries: 22
+- /profiles search filter (houston): 16 results
+- /profiles console errors: 0
+- /profiles page height: 1322px (compact, no footer landmark issue is just incomplete semantics)

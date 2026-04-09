@@ -12,11 +12,33 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-(empty — all known improvements cleared)
+
+### [P2] /profiles directory has no footer landmark (cycle 10)
+- File: `src/app/profiles/profiles-content.tsx`
+- Issue: directory page has no `<footer>` element. Page does have a CTA section at the bottom ("create your profile" / "cd ~/you.md") but it's a `<motion.div>` not a `<footer>`.
+- Fix: convert the bottom CTA wrapper to `<footer>` (or wrap it). May need layout adjustments.
+- Why P2: incomplete landmark set; not breaking anything but ideal a11y has all landmarks present
+- Found by: cycle 10 audit (`footer: 0`)
 
 ## DONE
 
-### [P2] /docs missing footer landmark — cycle 9, 2026-04-08
+### [P1] /profiles directory had no main + search input had no a11y — cycle 10, 2026-04-08
+- File: `src/app/profiles/profiles-content.tsx:243-405`
+- Found by: cycle 10 audit — `main: 0`, search input had `name: "", ariaLabel: null, type: "text"`
+- Fixes applied:
+  1. **Wrapped content in `<main>`**: changed inner `<div className="pt-8 pb-20 px-6">` to `<main className="pt-8 pb-20 px-6">` (no visual change)
+  2. **Search input a11y/UX overhaul**:
+     - Changed `type="text"` → `type="search"` (better mobile keyboard, browser-native clear button on some browsers)
+     - Added `name="search"`
+     - Added `aria-label="search profiles by name, tagline, or location"`
+     - Added `autoComplete="off"` (was implicit, now explicit)
+     - Added `spellCheck={false}`
+     - Added `aria-hidden="true"` to the decorative `>` chevron (was being announced)
+- Pre-existing wins: h1=1 ("> ls /profiles"), nav=1, JSON-LD CollectionPage schema, 22 profile cards rendering correctly, search filtering works
+- Commit: pending
+
+### [P2] /docs missing footer landmark — cycle 9, 2026-04-08 (VERIFIED LIVE 18:11 UTC)
+- **Verified live:** /docs now has `footer: 1, main: 1, h1: 1` (was footer: 0)
 - File: `src/app/docs/docs-content.tsx:1252-1267`
 - Found by: cycle 8 (`footer: 0` even though there was a div labeled "Footer")
 - Root cause: there was already a "Footer" div with copyright + Get Started link, but it was a `<div>` not a `<footer>` AND it was inside `<main>`. Per ARIA spec, `<footer>` only has `contentinfo` role when it is NOT a descendant of main/article/aside/nav/section.
