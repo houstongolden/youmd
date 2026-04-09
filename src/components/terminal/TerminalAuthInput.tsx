@@ -55,7 +55,7 @@ export function TerminalAuthInput({
   };
 
   return (
-    <div className="flex items-center gap-2 font-mono text-[16px]">
+    <div className="flex items-center gap-2 font-mono text-[16px] min-h-[44px]">
       <span className="text-[hsl(var(--accent))] select-none shrink-0" aria-hidden="true">
         {prompt}
       </span>
@@ -66,7 +66,8 @@ export function TerminalAuthInput({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[16px] text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/15"
+        // Cycle 64: bumped to min-h-[44px] (was 26px tall — well under WCAG min)
+        className="flex-1 min-w-0 min-h-[44px] bg-transparent border-none outline-none font-mono text-[16px] text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/15"
         autoFocus={autoFocus}
         disabled={disabled}
         autoComplete={autoComplete}
@@ -76,15 +77,15 @@ export function TerminalAuthInput({
         aria-label={ariaLabel || placeholder || "input"}
         enterKeyHint="send"
       />
-      {/* Return/submit button */}
+      {/* Return/submit button — cycle 64: bumped from 28x36 to 44x44 */}
       <button
         type="button"
         onClick={handleSubmit}
-        className="shrink-0 h-7 w-9 flex items-center justify-center bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform"
+        className="shrink-0 h-11 w-11 flex items-center justify-center bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform"
         style={{ borderRadius: "3px" }}
         aria-label="Submit"
       >
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="9 10 4 15 9 20" />
           <path d="M20 4v7a4 4 0 0 1-4 4H4" />
         </svg>

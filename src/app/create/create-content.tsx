@@ -740,7 +740,8 @@ function CreateContentInner() {
             </div>
             <Link
               href="/sign-in"
-              className="px-4 py-3 font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40 hover:text-[hsl(var(--accent))] hover:opacity-100 transition-all"
+              // Cycle 64: bumped from py-3 (~42px tall) to inline-flex min-h-[44px]
+              className="inline-flex items-center min-h-[44px] px-4 font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40 hover:text-[hsl(var(--accent))] hover:opacity-100 transition-all"
             >
               &gt;_ sign in
             </Link>
