@@ -4624,3 +4624,87 @@ The header's `h-9` (36px) is preserved visually because the link/button uses `-m
 - Vercel auto-deploy (~90s)
 - Re-audit confirmed 0/18 too-small post-fix
 - Lock held throughout
+
+---
+
+## Cycle 63 — /houstongolden public profile mobile audit — 2026-04-09 17:15 UTC
+
+**Tool:** /browse at 390x844 + JS introspection
+**Status:** **DONE — 3 footer touch target fixes shipped. Page is otherwise clean. Cycle 62 SiteNav cascade was load-bearing — 0 header issues this cycle.**
+
+### What this cycle did
+
+Same playbook as cycles 61/62: pick a mobile-untested page, run touch-target/aria audit, fix what's broken. Cycle 12 audited /houstongolden on desktop only.
+
+### Audit results (BEFORE fix)
+
+**Layout** ✓ all clean:
+- 390 width, no horizontal scroll (scrollHeight 4385px)
+- h1=1, h2=9, h3=5, main=1, nav=1, footer=1
+- 22 links, 8 buttons total
+- 0 NEW console errors (1 unrelated 404 from cycle 12 favicon)
+
+**Real findings** (only 2 too-small touch targets after filtering false positives):
+
+| Element | Before | Source |
+|---------|--------|--------|
+| `> create yours` (CTA inline link) | 92×**14** | `profile-content.tsx:905` |
+| `you.md` (footer powered-by link) | 38×**12** | `profile-content.tsx:1021` |
+| `> create yours` (footer link) | 92×**14** | `profile-content.tsx:1025` |
+
+(Audit reported 2, but the fix touched 3 elements because the footer "create yours" was a different instance from the CTA "create yours".)
+
+**Cycle 62 SiteNav fix is load-bearing**: the audit found ZERO too-small elements in the header (cycle 62 fixed both the "you" logo and the ">_" mobile menu button). The cascade is doing its job.
+
+### False positive caught
+
+Initial audit reported `imgWithoutAlt: 11` (out of 13 images). Inspection showed all 11 are favicon images for external links (BAMF, BAMF.ai, GitHub, Hubify, etc.) with `alt=""`. **`alt=""` is the CORRECT a11y pattern for decorative images next to text labels** — it tells screen readers to ignore the redundant favicon since the link text already says what the link is.
+
+The audit's filter `!i.getAttribute('alt')` returns true for both `null` and `""`. Better filter: `i.getAttribute('alt') === null`. Re-running with the better filter:
+
+```
+{"total": 13, "missingAltAttribute": 0, "emptyAlt_decorative": 11}
+```
+
+**0 images actually missing alt.** All 13 are properly handled.
+
+### The fix
+
+**`src/app/[username]/profile-content.tsx`** — 2 link rewrites:
+
+1. CTA "want your own identity context" link (~line 900):
+   - Was an inline `<Link>` inside a `<p>` paragraph, inheriting the parent's text-[11px] font + opacity-40, rendering at 92×14
+   - Promoted to a standalone block link below the paragraph with `inline-flex items-center justify-center min-h-[44px] mt-2 px-4`
+   - Visual change: the CTA is now a 2-line layout (paragraph + button) instead of a single-line inline link
+
+2. ProfileFooter (~line 1015):
+   - Was 2 inline `<Link>` elements inside a `<p>` and floating sibling, both at 9-10px font with opacity-30
+   - Restructured the footer: wrapped both links + the "powered by" label in a `flex-wrap` row with `gap-2`
+   - Both links now `inline-flex items-center min-h-[44px] px-3`
+
+### Verification (post-deploy, after cache bust)
+
+```js
+// Direct lookup of the affected elements
+[
+  {"text": "> create yours", "cls": "inline-flex items-center justify-center min-h-[44px] mt-2 px-4 ...", "w": 124, "h": 44},
+  {"text": "you.md",         "cls": "inline-flex items-center min-h-[44px] px-3 text-[hsl(...)] opacity-60 ...", "w": 66,  "h": 44},
+  {"text": "> create yours", "cls": "inline-flex items-center min-h-[44px] px-3 text-[hsl(...)] ...", "w": 108, "h": 44}
+]
+```
+
+All 3 elements now `h: 44` ✓ with the `min-h-[44px]` class applied. Verified the post-fix HTML is in the deployed bundle via curl.
+
+### Files changed
+
+- `src/app/[username]/profile-content.tsx` — 2 link rewrites (CTA + ProfileFooter)
+
+### Cycle bookkeeping
+- 3 touch target fixes (2 audit findings, 3 actual elements after looking at the source)
+- 1 false positive caught (favicons with `alt=""` correctly handled as decorative)
+- 1 file changed
+- Type-check clean
+- Vercel auto-deploy (~10s — fast this time)
+- Direct element-lookup verification in prod (all 3 elements now h: 44 with min-h-[44px] class)
+- Cycle 62 SiteNav cascade verified working — 0 header issues this cycle
+- Lock held throughout
