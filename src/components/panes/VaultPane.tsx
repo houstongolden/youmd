@@ -472,6 +472,9 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
             </p>
             <input
               type="password"
+              name="vault-passphrase"
+              aria-label="vault passphrase (minimum 8 characters)"
+              autoComplete="new-password"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               placeholder="passphrase (min 8 chars)"
@@ -479,6 +482,9 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
             />
             <input
               type="password"
+              name="vault-passphrase-confirm"
+              aria-label="confirm vault passphrase"
+              autoComplete="new-password"
               value={confirmPassphrase}
               onChange={(e) => setConfirmPassphrase(e.target.value)}
               placeholder="confirm passphrase"
@@ -504,6 +510,9 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
             </p>
             <input
               type="password"
+              name="vault-unlock"
+              aria-label="vault passphrase"
+              autoComplete="current-password"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               placeholder="passphrase"
@@ -533,7 +542,10 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
                   setContents((c) => ({ ...c, notes: e.target.value }))
                 }
                 rows={6}
+                name="vault-notes"
+                aria-label="private notes (encrypted)"
                 placeholder="anything you want only you to see..."
+                spellCheck={false}
                 className="w-full text-[12px] font-mono px-3 py-2 bg-[hsl(var(--bg))] border border-[hsl(var(--border))] focus:outline-none focus:border-[hsl(var(--accent))] resize-y"
               />
             </div>
@@ -575,6 +587,9 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
                 <div className="flex flex-col gap-2 mt-2">
                   <input
                     type="text"
+                    name="new-project-name"
+                    aria-label="new private project name"
+                    autoComplete="off"
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
                     placeholder="project name"
@@ -582,6 +597,9 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
                   />
                   <input
                     type="text"
+                    name="new-project-description"
+                    aria-label="new private project description"
+                    autoComplete="off"
                     value={newProjectDesc}
                     onChange={(e) => setNewProjectDesc(e.target.value)}
                     placeholder="description"
@@ -632,13 +650,19 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
                 <div className="flex flex-col gap-2 mt-2">
                   <input
                     type="text"
+                    name="new-link-label"
+                    aria-label="new private link label"
+                    autoComplete="off"
                     value={newLinkLabel}
                     onChange={(e) => setNewLinkLabel(e.target.value)}
                     placeholder="label"
                     className="text-[11px] font-mono px-2 py-1.5 bg-[hsl(var(--bg))] border border-[hsl(var(--border))] focus:outline-none focus:border-[hsl(var(--accent))]"
                   />
                   <input
-                    type="text"
+                    type="url"
+                    name="new-link-url"
+                    aria-label="new private link URL"
+                    autoComplete="off"
                     value={newLinkUrl}
                     onChange={(e) => setNewLinkUrl(e.target.value)}
                     placeholder="https://..."

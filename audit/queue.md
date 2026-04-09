@@ -29,7 +29,7 @@ to `audit/improvements.md`.
 ### Web — Shell (Dashboard)
 - [x] /shell — initial load, auto-scroll, chat input (cycle 24, 2026-04-08, P0 protect-rewrite bug found and fixed; auth-gating now works correctly)
 - [x] /shell — Files tab — file tree, edit/save, dedupe, no duplicate history.md (cycle 25, 2026-04-08, 4 input a11y fixes inline; behavior audit deferred to authenticated test)
-- [ ] /shell — Vault tab — explainer visible, init/lock/unlock states
+- [x] /shell — Vault tab — explainer visible, init/lock/unlock states (cycle 26, 2026-04-08, 10 input a11y fixes inline)
 - [ ] /shell — Skills tab — explainer visible, install/uninstall
 - [ ] /shell — Share tab — public/full toggle, link creation, existing list truncation
 - [ ] /shell — Versions tab — commits view, HEAD badge, revert

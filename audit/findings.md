@@ -1391,3 +1391,41 @@ P3 priority because dashboard is auth-gated — screen reader users have already
 - File tree dedupe (no duplicate history.md after cycle 1 work) — needs authenticated browse test
 - Edit/save behavior — needs authenticated browse test
 - These will be tested in a future cycle when we have an auth pathway, or skipped as Houston-verified
+
+## Cycle 26 — Audit Vault tab source — 2026-04-08 21:10 UTC
+
+**Tool:** Source inspection
+**Status:** DONE — 10 inputs fixed inline (P3)
+
+### What was tested
+- All inputs in VaultPane.tsx (710 lines)
+- 3 vault states: not initialized, locked, unlocked
+- a11y attributes: aria-label, name, autoComplete, type
+
+### Issues found: 10 inputs missing a11y (same pattern as prior cycles)
+
+**Passphrase setup (3 inputs):**
+1. Create passphrase — no aria-label, no name, no autoComplete
+2. Confirm passphrase — same
+3. Unlock passphrase — same
+
+**Unlocked vault contents (5 inputs):**
+4. Notes textarea — no aria-label, no name
+5. New project name — no aria-label, no name, no autoComplete
+6. New project description — same
+7. New link label — same
+8. New link URL — same + type="text" should be type="url"
+
+### Fixes applied
+- All 10 inputs: added `aria-label`, `name`, `autoComplete` (password fields get "new-password"/"current-password", text fields get "off")
+- Password fields: create passphrase → `autoComplete="new-password"`, unlock → `autoComplete="current-password"` (correct semantic distinction)
+- URL input: `type="text"` → `type="url"` (better mobile keyboard for URL entry)
+- Notes textarea: added `spellCheck={false}` (private notes — don't send to browser spell-check service)
+
+### Verification
+- Type-check: PASS (6 edits)
+
+### Cycle bookkeeping
+- Picked: queue.md item 18 (/shell Vault tab)
+- 1 P3 fix (10 inputs)
+- Lock held throughout
