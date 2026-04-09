@@ -1700,3 +1700,59 @@ Added to `next.config.ts` via Next.js's `async headers()` config. Applied to all
 ### Verification
 - Type-check: PASS
 - Cycle 31 verification: deferred to next cycle (after Vercel deploy)
+
+## Cycle 32 — Verify cycle 31 + audit error states — 2026-04-08 22:10 UTC
+
+**Tool:** curl + browse + source edit
+**Status:** DONE — cycle 31 verified live, error states audited, 1 P2 fixed inline
+
+### Cycle 31 verification (PASSED — all 4 security headers live)
+- ✅ `referrer-policy: strict-origin-when-cross-origin`
+- ✅ `x-frame-options: SAMEORIGIN`
+- ✅ `x-content-type-options: nosniff`
+- ✅ `permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()`
+- (also still present: `strict-transport-security: max-age=63072000`)
+
+### Error state audit results
+
+| Test | Expected | Actual | Verdict |
+|------|----------|--------|---------|
+| Random nonexistent path | 404 | HTTP 404 | ✅ |
+| /you.json for nonexistent username | 404 + JSON error | HTTP 404 + `{"error":"Profile not found"}` | ✅ |
+| /ctx with bogus token | 404 | HTTP 404 + `{"error":"Link not found"}` | ✅ |
+| **/ctx with expired token** | **410 Gone** | **HTTP 410 + `{"error":"Link has expired"}`** | ✅ **(correct semantic — RFC 9110 §15.5.11)** |
+| /[username] for unclaimed user | 404 OR 200+noindex | HTTP 200, no noindex, no h1 | ⚠️ **P2 — fixed inline** |
+
+### P2 found and fixed: unclaimed username pages indexable
+
+The dynamic /[username] route returns HTTP 200 for ANY username (since the route exists in the file system), and the profile-content.tsx renders an "ERR: profile not found, this username has not been claimed yet" upsell page. **But the page had no noindex meta and no h1**, so:
+1. Search engines could index millions of fake profile URLs (e.g. `you.md/asdf123`)
+2. Screen readers had no semantic landmark to start from
+3. The error page wrapper was a `<div>` not a `<main>`
+
+**Fix:**
+1. `src/app/[username]/page.tsx:35-53` — added `robots: { index: false, follow: true }` to the fallback metadata. The fallback metadata is what's used when `fetchProfileData(username)` returns null (i.e., the profile doesn't exist).
+2. `src/app/[username]/profile-content.tsx:170-197` — converted error branch's outer `<div>` → `<main>` and passed `asHeading` to `<TerminalHeader>` so the title becomes an `<h1>`.
+
+Now unclaimed pages have:
+- `<meta name="robots" content="noindex,follow">` so search engines won't index them
+- `<main>` landmark for a11y
+- `<h1>you.md -- error</h1>` for screen reader navigation
+
+### Bonus observation: error semantics are excellent
+
+The Convex backend uses correct HTTP semantics for /ctx errors:
+- 404 for "not found" (link doesn't exist)
+- 410 Gone for "expired" (link existed but is now intentionally gone)
+
+Most apps return 404 for both. Using 410 is the technically correct choice and signals to AI agents (and any caching proxy) that the resource is permanently unavailable.
+
+### Verification
+- Type-check: PASS
+- Cycle 31 verification: PASS (4/4 headers)
+- Cycle 32 fix verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: round-2 queue items 16-21 (error states)
+- 1 P2 fixed inline (unclaimed username noindex + landmarks)
+- Lock held throughout

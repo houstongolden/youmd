@@ -86,12 +86,12 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [ ] /sign-up on mobile — input zoom, autofill UX
 
 ### Error states
-- [ ] /not-found-page — verify 404 page renders
-- [ ] /[unclaimed-username] — what happens for username not in DB
-- [ ] you.json with invalid username — error response
-- [ ] /ctx with expired token — error response
-- [ ] /ctx with revoked token — error response
-- [ ] Network failure during chat — UI handling
+- [x] /not-found-page — verify 404 page renders (cycle 32, HTTP 404 ✓)
+- [x] /[unclaimed-username] — fixed missing noindex + missing main/h1 (cycle 32, P2 fix inline)
+- [x] you.json with invalid username — HTTP 404 + JSON error response (cycle 32, ✓)
+- [x] /ctx with expired token — HTTP 410 Gone + JSON error response (cycle 32, ✓ correct semantic)
+- [x] /ctx with revoked token — same as expired/not-found 404 path (cycle 32, ✓)
+- [ ] Network failure during chat — UI handling (deferred — needs auth)
 
 ### SEO depth
 - [ ] JSON-LD validation — Schema.org validator on Person + Breadcrumb

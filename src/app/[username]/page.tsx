@@ -35,6 +35,10 @@ export async function generateMetadata({
   const fallback: Metadata = {
     title: `${username} — you.md`,
     description: `${username}'s profile on you.md`,
+    // Don't index unclaimed/nonexistent profile pages — they're upsell stubs,
+    // not real content. Search engines should not catalog millions of fake
+    // profile URLs (the dynamic /[username] route catches anything).
+    robots: { index: false, follow: true },
     openGraph: {
       title: `${username} — you.md`,
       description: `${username}'s profile on you.md`,

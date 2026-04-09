@@ -169,10 +169,10 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   // Not found — only trust the live Convex response
   if (profile === null) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))] p-4">
+      <main className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))] p-4">
         <div className="w-full max-w-md">
           <div className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "2px" }}>
-            <TerminalHeader title="you.md -- error" />
+            <TerminalHeader title="you.md -- error" asHeading />
             <div className="p-6 font-mono text-[14px] space-y-2">
               <p className="text-[hsl(var(--text-secondary))] opacity-60">
                 &gt; lookup @{username}
@@ -192,7 +192,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
