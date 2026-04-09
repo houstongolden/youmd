@@ -388,6 +388,21 @@ input[type="password"]:focus-visible {
     min-width: 0;
     display: inline;
   }
+
+  /* Landing page + nav: expand tap targets on the most-used CTAs and nav
+   * elements without disturbing the compact terminal-native body content.
+   * Targets the primary call-to-action buttons (cta-primary, cta-outline)
+   * and any link/button inside <nav> elements. Body links inside paragraphs
+   * stay compact. */
+  nav a,
+  nav button,
+  .cta-primary,
+  .cta-outline {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* ── Mobile keyboard: keep input visible ──────────────────── */

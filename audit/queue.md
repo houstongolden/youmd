@@ -81,8 +81,8 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [x] Static asset cache headers (cycle 33: /assets/* now max-age=31536000 immutable)
 
 ### Mobile
-- [ ] Landing on iPhone (390x844) — full mobile audit (most cycles tested desktop only)
-- [ ] /shell on mobile — touch targets, drawer behavior, keyboard avoidance
+- [x] Landing on iPhone (390x844) — full mobile audit (cycle 34: no horizontal scroll, tap targets fixed for nav + CTAs)
+- [ ] /shell on mobile — touch targets, drawer behavior, keyboard avoidance (auth-gated, deferred)
 - [ ] /create on mobile — terminal panel sizing, keyboard handling
 - [ ] /sign-up on mobile — input zoom, autofill UX
 

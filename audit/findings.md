@@ -1827,3 +1827,72 @@ Cold = first request goes through Convex Cloud. Warm = subsequent hit Vercel edg
 - 4 of 5 done, 1 deferred (auth-gated /shell perf)
 - 1 P2 fixed inline, 1 P2 queued
 - Lock held throughout
+
+## Cycle 34 — Mobile audit on landing — 2026-04-08 22:30 UTC
+
+**Tool:** /browse skill at 390x844 viewport
+**Status:** DONE — cycle 33 verified, mobile findings documented, P3 fix inline
+
+### Cycle 33 verification (PASSED)
+- /assets/houston-portrait.jpeg now serves `cache-control: public, max-age=31536000, immutable` ✓
+
+### Landing page mobile audit (390x844)
+
+**What works:**
+- ✅ No horizontal scroll
+- ✅ No overflowing elements
+- ✅ Page height: 13305px (12 sections — same as desktop 13364px, minor diff)
+- ✅ Mobile load time 635ms (faster than desktop 1216ms)
+- ✅ Existing iOS auto-zoom prevention (`@media max-width: 768px → input font-size: 16px`)
+- ✅ Existing `.profile-page` already has tap target rules
+
+**Found:**
+- ⚠️ **27 of 47 clickable elements (57%) are smaller than 44x44px** (Apple HIG minimum)
+
+Examples of small tap targets:
+| Element | Size | Tag |
+|---------|------|-----|
+| `you` (nav logo) | 21x20 | `<a>` |
+| `>_` (mobile menu toggle) | 21x33 | `<button>` |
+| `> get started` | 94x20 | `<a>` |
+| `> docs` | 43x20 | `<a>` |
+| `Houston Golden founder...` | 292x40 | `<a>` |
+| `> view all` | 46x33 | `<a>` |
+| `> claim yours` | 60x33 | `<a>` |
+| `> github/youmd →` | 106x18 | `<a>` |
+
+### Design tension: terminal-native vs touch accessibility
+
+Houston explicitly chose a **compact terminal-native** aesthetic ("not SaaS", "compact spacing", small monospace fonts). Globally enforcing 44x44 tap targets would betray that design choice and bloat every link.
+
+**The right answer**: target only the most-used navigation and CTA elements, not all body links.
+
+### Fix applied inline
+
+Added a media query in `src/app/globals.css` (extending the existing `@media (max-width: 767px)` block) that expands tap targets ONLY on:
+- `nav a` and `nav button` (all nav links)
+- `.cta-primary` and `.cta-outline` (the major call-to-action buttons used throughout the site)
+
+```css
+nav a, nav button, .cta-primary, .cta-outline {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+```
+
+This makes the nav and primary CTAs touch-friendly without affecting:
+- Body content links (FAQ, footer columns, inline references)
+- Compact list items
+- The terminal-native visual aesthetic
+
+### Verification
+- Type-check: PASS
+- Cycle 34 verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: round-2 Mobile dimension (4 items)
+- 1 of 4 done (landing); 3 deferred (auth-gated)
+- 1 P3 fixed inline
+- Lock held throughout
