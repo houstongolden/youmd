@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation, internalMutation } from "./_generated/server";
+import { requireOwner } from "./lib/auth";
 
 // ── Username validation ──────────────────────────────────────
 
@@ -380,6 +381,8 @@ export const updateProfile = mutation({
     } else {
       const clerkId = args.clerkId;
       if (!clerkId) throw new Error("authentication required");
+      // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+      await requireOwner(ctx, clerkId);
       const user = await ctx.db
         .query("users")
         .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
@@ -418,6 +421,9 @@ export const claimProfile = mutation({
     sessionToken: v.string(),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const profile = await ctx.db.get(args.profileId);
     if (!profile) throw new Error("profile not found");
     if (profile.isClaimed) throw new Error("profile already claimed");
@@ -548,6 +554,9 @@ export const setProfileImages = mutation({
     primaryImage: v.string(), // "x" | "github" | "linkedin" | "custom"
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const profile = await ctx.db.get(args.profileId);
     if (!profile) throw new Error("profile not found");
 
@@ -595,6 +604,8 @@ export const updateLinks = mutation({
     } else {
       const clerkId = args.clerkId;
       if (!clerkId) throw new Error("authentication required");
+      // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+      await requireOwner(ctx, clerkId);
       const user = await ctx.db
         .query("users")
         .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
@@ -645,6 +656,8 @@ export const savePortrait = mutation({
     } else {
       const clerkId = args.clerkId;
       if (!clerkId) throw new Error("authentication required");
+      // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+      await requireOwner(ctx, clerkId);
       const user = await ctx.db
         .query("users")
         .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
@@ -682,6 +695,9 @@ export const createVerification = mutation({
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -746,6 +762,9 @@ export const revokeVerification = mutation({
     verificationId: v.id("profileVerifications"),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))

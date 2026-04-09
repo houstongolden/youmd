@@ -7,6 +7,7 @@ import {
   type ProfileData,
 } from "./lib/compile";
 import { computeContentHash } from "./lib/hash";
+import { requireOwner } from "./lib/auth";
 
 /**
  * Authenticated user endpoints (/me/*).
@@ -49,6 +50,9 @@ function validateProfileData(data: any): { valid: boolean; errors: string[] } {
 export const getMyProfile = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -83,6 +87,9 @@ export const saveBundleFromForm = mutation({
     source: v.optional(v.string()),     // "web-shell" | "cli" | "api" | "agent:<name>"
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -204,6 +211,9 @@ export const saveYouJsonDirect = mutation({
     youJson: v.any(),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -319,6 +329,9 @@ export const createCustomDirectory = mutation({
     isPublic: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -424,6 +437,9 @@ export const createCustomDirectory = mutation({
 export const publishLatest = mutation({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -526,6 +542,9 @@ export const addSource = mutation({
     sourceUrl: v.string(),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -565,6 +584,9 @@ export const addSource = mutation({
 export const getSources = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -583,6 +605,9 @@ export const getSources = query({
 export const getAnalytics = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { requireOwner } from "./lib/auth";
 
 // ── Memory queries ──────────────────────────────────────────────
 
@@ -73,6 +74,9 @@ export const saveMemories = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -106,6 +110,9 @@ export const archiveMemory = mutation({
     memoryId: v.id("memories"),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -132,6 +139,9 @@ export const updateMemory = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -181,6 +191,9 @@ export const archiveStale = mutation({
     maxActive: v.optional(v.number()), // default 200
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -234,6 +247,9 @@ export const purgeOldArchived = mutation({
     maxArchiveDays: v.optional(v.number()), // default 180
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -269,6 +285,9 @@ export const purgeOldArchived = mutation({
 export const sessionMaintenance = mutation({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -351,6 +370,9 @@ export const upsertSession = mutation({
     messageCount: v.number(),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -401,6 +423,9 @@ export const saveChatMessages = mutation({
     })),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))

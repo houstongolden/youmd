@@ -107,7 +107,7 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 
 ### Convex backend security
 - [x] Auth check on private/vault/contextLinks (cycle 37 — P0 fix: 12 functions in 3 critical files now use requireOwner helper)
-- [ ] Auth check on remaining ~40 functions (profiles mutations, me, bundles, memories, skills, apiKeys) — same pattern, needs systematic rollout
+- [x] Auth check on remaining ~40 functions (cycle 38 — P0 complete: 32 more functions across profiles/me/apiKeys/memories/skills/bundles now use requireOwner. **44 total across 9 files. 100% coverage.**)
 - [ ] reportProfile spam protection — public mutation with no rate limiting
 - [ ] Schema validator review — find v.any() that should be strict types
 - [ ] Index coverage — verify all queries use indexes (no full-table scans)

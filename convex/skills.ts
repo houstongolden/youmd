@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireOwner } from "./lib/auth";
 
 // ── Queries ──────────────────────────────────────────────────
 
@@ -98,6 +99,9 @@ export const publish = mutation({
     content: v.string(),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -157,6 +161,9 @@ export const recordInstall = mutation({
     identityFields: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -217,6 +224,9 @@ export const trackUsage = mutation({
     skillName: v.string(),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -250,6 +260,9 @@ export const removeInstall = mutation({
     skillName: v.string(),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
