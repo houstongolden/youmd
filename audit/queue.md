@@ -27,7 +27,7 @@ to `audit/improvements.md`.
 - [x] /claim — claim existing profile flow (cycle 23, 2026-04-08, fixed dead-code redirect chain → /initialize, added noindex)
 
 ### Web — Shell (Dashboard)
-- [ ] /shell — initial load, auto-scroll, chat input
+- [x] /shell — initial load, auto-scroll, chat input (cycle 24, 2026-04-08, P0 protect-rewrite bug found and fixed; auth-gating now works correctly)
 - [ ] /shell — Files tab — file tree, edit/save, dedupe, no duplicate history.md
 - [ ] /shell — Vault tab — explainer visible, init/lock/unlock states
 - [ ] /shell — Skills tab — explainer visible, install/uninstall

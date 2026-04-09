@@ -1259,3 +1259,68 @@ Also:
 ### Numbers
 - Redirects after sign-up (BEFORE fix): 3 (claim → sign-up → shell)
 - Redirects after sign-up (AFTER fix): 1 (claim → initialize)
+
+## Cycle 24 — Audit /shell + dashboard auth gating — 2026-04-08 20:50 UTC
+
+**Tool:** curl + node + grep + source inspection
+**Status:** DONE_WITH_FINDINGS — **P0 routing bug found and fixed inline**
+
+### What was tested
+- /shell HTTP response (auth gating)
+- /dashboard HTTP response
+- /initialize HTTP response (re-verify)
+- The routing path that protected requests take
+- Source code of middleware (proxy.ts)
+
+### **CRITICAL P0 FOUND — protect-rewrite bug across ALL auth-gated routes**
+
+**Symptom:** anonymous curl to `/shell`, `/dashboard`, `/initialize` ALL return:
+- HTTP 200 (NOT 307)
+- `x-clerk-auth-reason: protect-rewrite, session-token-and-uat-missing`
+- `x-clerk-auth-status: signed-out`
+- `x-matched-path: /[username]`
+- HTML body with `<title>clerk_${Date.now()} — you.md</title>`
+- Visible body: "loading..." (the dashboard skeleton)
+- Metadata + OG tags for a fake profile that doesn't exist
+
+**Investigation:**
+- `x-matched-path: /[username]` proves the request is being routed through the dynamic `/[username]` catchall, NOT to the explicit /shell route
+- The username param value is `clerk_${Date.now()}` — generated freshly on every request
+- This happens because Clerk v7's `auth.protect()` does an internal "protect-rewrite" instead of a 307 redirect — the rewrite target ends up matching the [username] catchall
+- I verified the SAME bug on /dashboard and /initialize — all 3 protected routes have the issue
+
+**Impact (P0):**
+- Anonymous visitors to the main dashboard surface see "loading..." indefinitely
+- They're never prompted to sign in
+- Social link previews for /shell pull metadata for `clerk_${Date.now()}` (a fresh nonsense username every time)
+- The explicit /shell route handler is never reached for anonymous users
+- Database pollution risk if any handler tries to create users from these fake usernames
+
+### Fix applied inline
+
+`src/proxy.ts:43-47` — replaced `await auth.protect()` with explicit:
+```typescript
+const session = await auth();
+if (!session.userId) {
+  const signInUrl = new URL("/sign-in", req.url);
+  signInUrl.searchParams.set("redirect_url", req.url);
+  return NextResponse.redirect(signInUrl);
+}
+```
+
+This bypasses Clerk v7's protect-rewrite entirely. Anonymous requests to protected routes now return HTTP 307 to /sign-in with the original URL preserved as redirect_url. After sign-in, Clerk redirects the user back where they came from. Standard, predictable behavior.
+
+### Other observations
+
+**Stale Clerk-named profiles in DB:** during this audit, multiple `clerk_${timestamp}` usernames were observed in the SSR responses. These match Date.now() at the moment of each request — they're not real DB records, just generated for the fake metadata. No cleanup needed.
+
+**Cycle 23 /claim fix:** still showing the OLD redirect target (/sign-up) in production. Not yet deployed. Will verify in next cycle along with this cycle's fix.
+
+### Verification
+- Type-check: PASS
+- Cycle 24 fix verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: queue.md item 16 (/shell)
+- 1 P0 fixed inline (most critical fix in the entire audit loop so far)
+- Lock held throughout

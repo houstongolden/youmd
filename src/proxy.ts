@@ -41,8 +41,20 @@ function isAgentRequest(req: Request): boolean {
 }
 
 export default clerkMiddleware(async (auth, req) => {
+  // For protected routes, do an explicit 307 redirect to /sign-in instead of
+  // using auth.protect(). In Clerk v7, auth.protect() does an internal
+  // "protect-rewrite" that re-routes the request through Next.js's catchall
+  // /[username] route with a placeholder username (clerk_${timestamp}) — which
+  // means anonymous /shell, /dashboard, /initialize requests render a fake
+  // profile page instead of redirecting to sign-in. Explicit redirect is
+  // predictable and gives the user a clear path forward.
   if (isProtectedRoute(req)) {
-    await auth.protect();
+    const session = await auth();
+    if (!session.userId) {
+      const signInUrl = new URL("/sign-in", req.url);
+      signInUrl.searchParams.set("redirect_url", req.url);
+      return NextResponse.redirect(signInUrl);
+    }
   }
 
   // Agent/bot interception for profile pages

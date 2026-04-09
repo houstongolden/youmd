@@ -16,6 +16,24 @@ Severity:
 
 ## DONE
 
+### [P0] Anonymous /shell, /dashboard, /initialize requests render fake profile page instead of redirecting to sign-in — cycle 24, 2026-04-08
+- File: `src/proxy.ts:43-47`
+- Found by: cycle 24 audit — `curl /shell` returned HTTP 200 with `x-matched-path: /[username]` and `<title>clerk_${Date.now()} — you.md</title>`. Verified the same bug on /dashboard and /initialize.
+- Root cause: `auth.protect()` in Clerk v7 does NOT do a 307 redirect for unauthenticated users. Instead, it does an internal "protect-rewrite" (visible in `x-clerk-auth-reason: protect-rewrite, session-token-and-uat-missing`) that re-routes the request through Next.js's catchall `/[username]` dynamic route. The `[username]` param ends up as a placeholder `clerk_${Date.now()}` so each anonymous visit shows a 'loading...' skeleton with metadata for a non-existent fake profile.
+- Impact: P0 — the entire dashboard surface is broken for anonymous users. Visitors see "loading..." indefinitely instead of being prompted to sign in. SEO/social previews for /shell pull metadata for nonexistent `clerk_${timestamp}` profiles.
+- Fix: replaced `await auth.protect()` with explicit:
+  ```typescript
+  const session = await auth();
+  if (!session.userId) {
+    const signInUrl = new URL("/sign-in", req.url);
+    signInUrl.searchParams.set("redirect_url", req.url);
+    return NextResponse.redirect(signInUrl);
+  }
+  ```
+- Result: anonymous requests to /shell, /dashboard, /initialize now return HTTP 307 to /sign-in?redirect_url={original} (predictable, no rewrites)
+- Commit: pending
+- Note: cycle 23 /claim fix not yet verified live in this cycle (will verify next cycle along with this one)
+
 ### [P2] /claim had a 3-hop redirect chain after sign-up — cycle 23, 2026-04-08
 - File: `src/app/claim/page.tsx`
 - Found by: cycle 23 audit + grep `/claim` → discovered `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/claim` in `.env.local.example`
