@@ -13,6 +13,18 @@ Severity:
 
 ## TODO
 
+### [P2] apiKeys never expire — add expiresAt field — cycle 55, 2026-04-09
+- Audit found that `apiKeys` schema has no `expiresAt` field. CLI/MCP/3rd-party API keys are permanent until manually revoked. A leaked key (compromised dev machine, accidental git commit, copy-pasted in a logged channel) grants permanent access until Houston finds it and revokes.
+- Other token types in the codebase (`accessTokens`, `contextLinks`) correctly enforce expiry. Only `apiKeys` is the outlier.
+- **Fix design:** add `expiresAt: v.optional(v.number())` to apiKeys schema. New keys default to 365 days (configurable in `createKey`). `authenticateRequest` in http.ts checks `if (apiKey.expiresAt && apiKey.expiresAt < Date.now()) return 401`. Existing keys without `expiresAt` continue to work indefinitely (backward-compat); add a migration script later if/when Houston wants to retroactively cap them.
+- **Why P2:** the existing `revokedAt` field handles known compromises. The risk is *unknown* compromises where Houston doesn't realize a key has leaked. Defense-in-depth.
+
+### [P2] No "revoke all sessions" panic button — cycle 55, 2026-04-09
+- If a user suspects compromise (lost laptop, breached email, leaked credentials), they have no single button to invalidate all their tokens at once. They'd have to revoke each accessToken, apiKey, and contextLink individually.
+- The cycle 47 Clerk webhook cascade-delete handles the "delete account" case but there's no "revoke without deleting" path.
+- **Fix design:** add a `me.revokeAllSessions` mutation that sets `revokedAt` / `isRevoked` on every apiKey, accessToken, and contextLink for the user, then logs `eventType: "panic_revoke_all"` to securityLogs. Wire a button in SettingsPane.tsx.
+- **Why P2:** useful for incident response. Not urgent because each token type already has individual revocation, but better UX during a panic moment.
+
 ### [P2] Houston needs to set CLERK_WEBHOOK_SECRET in Clerk dashboard — cycle 52, 2026-04-09
 - The webhook receiver shipped in cycle 52 (`POST /api/v1/webhooks/clerk`). It's verified end-to-end with a test secret. But until Houston configures the webhook in Clerk dashboard and copies the real signing secret to the Convex env var, Clerk events won't actually flow through.
 - **One-time setup:**

@@ -3768,3 +3768,123 @@ The chat AND scrape vectors are now both economically defensible. The remaining 
 - Type-check clean
 - Deployed
 - Lock held throughout
+
+---
+
+## Cycle 55 — Auth token rotation / session expiry audit (Round 2 audit-only) — 2026-04-09 12:35 UTC
+
+**Tool:** schema review + validate-function code review of all 5 token types
+**Status:** **DONE — 4 of 5 token types correctly enforce expiry. apiKeys never expire — logged P2. No "revoke all sessions" panic button — logged P2.**
+
+### What this cycle did
+
+Improvements TODO had only the cycle 52 Houston-config item (still not actionable). Per protocol step 2, moved to queue.md and picked the top remaining tractable Round 2 security item: **Authentication token rotation — verify Clerk session tokens expire correctly**. Also broadened the audit to cover ALL token types in the codebase, not just Clerk JWTs.
+
+### Inventory of token types
+
+The codebase uses 5 distinct token types, each with different lifecycle properties:
+
+| # | Token type | Schema/source | Expiry field | Validation point |
+|---|------------|---------------|--------------|------------------|
+| 1 | Clerk session JWTs | external (Clerk) | encoded in JWT | `ctx.auth.getUserIdentity()` |
+| 2 | accessTokens | `accessTokens` table | `expiresAt: v.optional(v.number())` | `private:validateToken` |
+| 3 | contextLinks | `contextLinks` table | `expiresAt: v.optional(v.number())` + `maxUses` | `contextLinks:resolveLink` |
+| 4 | apiKeys (CLI/MCP) | `apiKeys` table | **NONE** | `apiKeys:getByHash` + `authenticateRequest` |
+| 5 | profiles.sessionToken | `profiles.sessionToken` | cleared on claim | `claimProfile` mutation |
+
+### Per-type findings
+
+**1. Clerk session JWTs** ✅
+- Configured via `convex/auth.config.ts` with `process.env.CLERK_JWT_ISSUER_DOMAIN` and `applicationID: "convex"`.
+- Convex validates the JWT signature against Clerk's JWKS endpoint on every `getUserIdentity()` call. Expired JWTs return `null` automatically.
+- Clerk's session token defaults: 1-hour token lifetime, 7-day inactivity timeout, 30-day max session duration. Auto-refreshed by the Clerk SDK.
+- **No issue.** Standard Clerk lifecycle, fully managed externally.
+
+**2. accessTokens (private context API tokens, used by external agents)** ✅
+- `validateToken` (in `convex/private.ts`) correctly checks BOTH conditions:
+  ```ts
+  if (accessToken.isRevoked) return { valid: false, error: "token revoked" };
+  if (accessToken.expiresAt && accessToken.expiresAt < Date.now()) {
+    return { valid: false, error: "token expired" };
+  }
+  ```
+- **No issue.** Expiry + revocation both enforced.
+
+**3. contextLinks (share-link tokens)** ✅
+- `resolveLink` (in `convex/contextLinks.ts`) correctly checks ALL THREE conditions:
+  ```ts
+  if (link.revokedAt) return { error: "Link has been revoked", status: 401 };
+  if (link.expiresAt && link.expiresAt < Date.now()) {
+    return { error: "Link has expired", status: 410 };
+  }
+  if (link.maxUses && link.useCount >= link.maxUses) {
+    return { error: "Link has reached maximum uses", status: 410 };
+  }
+  ```
+- **No issue.** Returns proper HTTP status codes (401 for revoked, 410 Gone for expired/exhausted).
+
+**4. apiKeys (CLI/MCP/3rd-party API keys)** ⚠️ **P2 finding**
+- Schema:
+  ```ts
+  apiKeys: defineTable({
+    userId: v.id("users"),
+    keyHash: v.string(),
+    label: v.optional(v.string()),
+    scopes: v.array(v.string()),
+    lastUsedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+  ```
+- **NO `expiresAt` FIELD.** API keys are permanent until manually revoked.
+- `authenticateRequest` in http.ts only checks `revokedAt`:
+  ```ts
+  if (!apiKey || apiKey.revokedAt) {
+    return json({ error: "Invalid or revoked API key" }, 401);
+  }
+  ```
+- **Risk**: a leaked CLI API key (compromised dev machine, accidental git commit, copy-pasted in a logged channel, dropped into a Slack DM) grants permanent access until Houston manually finds and revokes it. Could be years.
+- **Mitigations already in place**: cycle 49 internalized `apiKeys.updateLastUsed` so the `lastUsedAt` audit trail is hard to forge; cycle 38/43 added `requireOwner` to all apiKey management functions; the `lastUsedAt` field gives Houston some visibility into stale keys.
+- **Fix design (logged P2)**: add `expiresAt: v.optional(v.number())` to apiKeys schema. New keys default to 365 days (or configurable), users can opt for permanent (set to undefined). `authenticateRequest` checks expiry like the existing `validateToken` does. Existing keys without expiresAt continue to work indefinitely (backward-compat) until Houston runs a migration or rotates them manually.
+
+**5. profiles.sessionToken** ✅
+- Single-use-ish: created during pre-auth profile creation, cleared on `claimProfile`. Not really a "token" in the auth sense.
+- **No issue.**
+
+### Cross-cutting finding: no "revoke all sessions" feature ⚠️ **P2**
+
+If a user suspects compromise (lost laptop, breached email, leaked credentials), they have no single "panic button" to invalidate all their tokens at once. They'd have to:
+- Sign out of Clerk (invalidates Clerk session)
+- Manually revoke each accessToken via `revokeAccessToken`
+- Manually revoke each apiKey via `revokeKey`
+- Manually revoke each contextLink via `revokeLink`
+
+The cycle 47 Clerk webhook cascade-delete handles the "delete account" case (it deletes all of these), but there's no "revoke without deleting" path.
+
+**Fix design (logged P2)**: add a `me.revokeAllSessions` mutation that:
+1. Sets `revokedAt: Date.now()` on every `apiKeys` row for the user
+2. Sets `isRevoked: true` on every `accessTokens` row for the user's profile
+3. Sets `revokedAt: Date.now()` on every `contextLinks` row for the user
+4. Logs the event to `securityLogs` with type `panic_revoke_all`
+
+A web button in `SettingsPane.tsx` would expose this. Useful for incident response.
+
+### What's NOT a concern
+
+- **Convex deploy key**: out of scope (not a session token). It's a server-side admin credential, handled separately.
+- **JWT refresh handling**: automatic via Clerk SDK. Convex re-validates on every call. No issue.
+- **Clerk session timeout config**: that's a Clerk dashboard setting, not a code-side issue. Houston should verify the Clerk dashboard has reasonable values (default Clerk values are reasonable: 1h JWT, 7d inactive, 30d max).
+
+### Files changed
+
+None. This was an audit-only cycle.
+
+### Cycle bookkeeping
+- 5 token types audited
+- 4 of 5 correctly enforce expiry + revocation
+- 1 P2 logged (apiKeys never expire)
+- 1 P2 logged (no "revoke all sessions" panic button)
+- 0 code changes
+- 0 deploys
+- Lock held throughout
+- Remaining tractable queue items: CSP (still needs dev env), all the auth-gated UI/perf items
