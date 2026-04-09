@@ -13,17 +13,16 @@ Severity:
 
 ## TODO
 
-### [P3] apiKeys.updateLastUsed is unauth'd — cleanliness fix — cycle 45, 2026-04-09
-- Public mutation taking only `keyId: v.id("apiKeys")`.
-- Practical attack surface: if attacker already knows an apiKeyId (32-char base32 random), they can mark it as used. No value to attacker.
-- Worth fixing for cleanliness — convert to internalMutation, called only by `authenticateRequest` in http.ts.
-
 ### [P3] rateLimits table needs cron cleanup — cycle 46, 2026-04-09
 - The new `rateLimits` table (cycle 46) accumulates one row per call indefinitely. `cleanupOldRateLimits` exists but isn't called from a cron yet.
 - **Fix design:** add a Convex cron that runs hourly and deletes rows older than 1 hour. Or call `cleanupOldRateLimits` opportunistically on each rate-limit check. Low priority — table will grow but not catastrophically.
 
 
 ## DONE
+
+### [P3] apiKeys.updateLastUsed → internalMutation — cycle 49, 2026-04-09
+- Sole caller is `authenticateRequest` in http.ts. No legitimate reason to expose publicly. Now `internalMutation`, unreachable via /api/mutation. Verified anonymous call returns Server Error, API key auth flow still works.
+- Commit: pending
 
 ### [P2] Per-day spend cap kill switch for chat.* — cycle 48, 2026-04-09
 - Defense-in-depth above cycle 46's per-IP rate limits. Per-IP caps prevent single-attacker abuse (~$100/IP/day) but a botnet could still burn $10k/day across 100+ IPs.

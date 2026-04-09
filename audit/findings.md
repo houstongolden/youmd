@@ -3268,3 +3268,53 @@ The cap is also a useful canary: if it ever trips on a normal day, that's a sign
 - Type-check clean
 - Lock held throughout
 - The chat.* attack surface is now economically defensible at three layers: (1) internalAction / Clerk auth gates, (2) per-IP rate limits + payload caps, (3) daily total spend cap
+
+---
+
+## Cycle 49 — apiKeys.updateLastUsed internalize (P3 cleanliness) — 2026-04-09 10:35 UTC
+
+**Tool:** code review + 1-line refactor + curl verification + regression sweep
+**Status:** **DONE — small focused cleanliness fix, attack surface eliminated.**
+
+### What this cycle did
+
+Picked up the top remaining P3 from improvements.md: `apiKeys.updateLastUsed` cleanliness fix. Practical attack surface was negligible (an attacker would need to know an existing apiKey._id, which is a 32-char base32 random string, and the only "damage" is updating a timestamp). But there was no legitimate reason to expose it publicly — the only caller is `authenticateRequest` in `convex/http.ts`. Cleanest fix: convert to `internalMutation`.
+
+### The fix
+
+```diff
+- import { mutation, query } from "./_generated/server";
++ import { mutation, query, internalMutation } from "./_generated/server";
+
+- export const updateLastUsed = mutation({
++ export const updateLastUsed = internalMutation({
+
+  // convex/http.ts:357
+- await (ctx as any).runMutation(api.apiKeys.updateLastUsed, ...);
++ await (ctx as any).runMutation(internal.apiKeys.updateLastUsed, ...);
+```
+
+### Verification (post-deploy)
+
+```
+Test 1: anonymous /api/mutation apiKeys:updateLastUsed → Server Error  ✓ BLOCKED
+Test 2: HTTP /api/v1/me with invalid Bearer → 401 "Invalid or revoked API key"  ✓
+        (verifies authenticateRequest still calls updateLastUsed via internal.* path)
+
+Regression checks:
+- Cycle 42 (private:getPrivateContext)              → still BLOCKED ✓
+- Cycle 45 (cleanup:clearAllData)                   → still BLOCKED ✓
+- Cycle 47 (createUser squat with fake clerkId)     → still BLOCKED ✓
+```
+
+### Files changed
+- `convex/apiKeys.ts` — `updateLastUsed` `mutation` → `internalMutation`; doc comment updated
+- `convex/http.ts` — `authenticateRequest` call switched from `api.apiKeys.updateLastUsed` to `internal.apiKeys.updateLastUsed`
+
+### Cycle bookkeeping
+- 1 P3 closed
+- 2 files changed
+- Type-check clean
+- Deployed and verified (5 tests, all green)
+- Lock held throughout
+- Improvements TODO now has only 1 P3 remaining (rateLimits cron cleanup)

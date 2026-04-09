@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 
 /**
@@ -170,7 +170,17 @@ export const getByHash = query({
   },
 });
 
-export const updateLastUsed = mutation({
+/**
+ * Internal: mark an API key as used (updates lastUsedAt timestamp).
+ *
+ * Cycle 49: previously a public `mutation`. Practical attack surface was
+ * negligible (an attacker would need to know an existing apiKey._id, which
+ * is a 32-char base32 random string, and the only "damage" is updating a
+ * timestamp). But there was no legitimate reason to expose it publicly —
+ * the only caller is `authenticateRequest` in convex/http.ts. Now
+ * `internalMutation` so it cannot be reached via /api/mutation at all.
+ */
+export const updateLastUsed = internalMutation({
   args: { keyId: v.id("apiKeys") },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.keyId, { lastUsedAt: Date.now() });

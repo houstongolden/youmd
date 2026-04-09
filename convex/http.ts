@@ -353,8 +353,8 @@ async function authenticateRequest(
     return json({ error: "Invalid or revoked API key" }, 401);
   }
 
-  // Update last used
-  await (ctx as any).runMutation(api.apiKeys.updateLastUsed, {
+  // Update last used (cycle 49: now via internal.* — was api.* before)
+  await (ctx as any).runMutation(internal.apiKeys.updateLastUsed, {
     keyId: apiKey._id,
   });
 
