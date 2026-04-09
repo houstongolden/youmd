@@ -362,6 +362,8 @@ function FileViewer({
           onChange={(e) => onContentChange(file.path, e.target.value)}
           className="flex-1 w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[11px] leading-relaxed p-3 md:p-4 resize-none focus:outline-none"
           spellCheck={false}
+          aria-label={`edit ${file.path}`}
+          name={file.path}
         />
       ) : (
         <pre className="flex-1 overflow-auto bg-[hsl(var(--bg))] text-[hsl(var(--text-secondary))] font-mono text-[11px] leading-relaxed p-3 md:p-4 whitespace-pre-wrap break-all">
@@ -401,10 +403,12 @@ function NewFileInput({
   return (
     <div className="px-2 py-1.5 border-t border-[hsl(var(--border))]">
       <div className="flex items-center gap-1">
-        <span className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-60 shrink-0">+</span>
+        <span aria-hidden="true" className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-60 shrink-0">+</span>
         <input
           ref={inputRef}
           type="text"
+          name="new-file-path"
+          aria-label="new file path"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
@@ -413,6 +417,8 @@ function NewFileInput({
           }}
           onBlur={() => { if (!value.trim()) onCancel(); }}
           placeholder="custom/my-notes.md"
+          autoComplete="off"
+          spellCheck={false}
           className="flex-1 bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[10px] px-1.5 py-0.5 border border-[hsl(var(--accent))]/40 focus:outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-30"
           style={{ borderRadius: "2px" }}
         />
@@ -457,10 +463,12 @@ function NewDirectoryInput({
   return (
     <div className="px-2 py-1.5 border-t border-[hsl(var(--border))]">
       <div className="flex items-center gap-1">
-        <span className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-60 shrink-0">+</span>
+        <span aria-hidden="true" className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-60 shrink-0">+</span>
         <input
           ref={inputRef}
           type="text"
+          name="new-directory-name"
+          aria-label="new directory name (lowercase letters, numbers, dashes only)"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
@@ -470,6 +478,8 @@ function NewDirectoryInput({
           disabled={busy}
           placeholder="my-notes"
           maxLength={30}
+          autoComplete="off"
+          spellCheck={false}
           className="flex-1 bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[10px] px-1.5 py-0.5 border border-[hsl(var(--accent))]/40 focus:outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-30 disabled:opacity-40"
           style={{ borderRadius: "2px" }}
         />
@@ -852,10 +862,14 @@ export function FilesPane({ userId }: FilesPaneProps) {
         <div className="w-full md:w-[180px] md:shrink-0 md:border-r border-[hsl(var(--border))] overflow-y-auto flex flex-col">
           <div className="px-2 py-1.5 border-b border-[hsl(var(--border))]">
             <input
-              type="text"
+              type="search"
+              name="file-search"
+              aria-label="search files by name or path"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="search..."
+              autoComplete="off"
+              spellCheck={false}
               className="w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[10px] px-2 py-1 border border-[hsl(var(--border))] focus:border-[hsl(var(--accent))]/40 focus:outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-30"
               style={{ borderRadius: "2px" }}
             />

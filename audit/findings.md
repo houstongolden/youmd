@@ -1324,3 +1324,70 @@ This bypasses Clerk v7's protect-rewrite entirely. Anonymous requests to protect
 - Picked: queue.md item 16 (/shell)
 - 1 P0 fixed inline (most critical fix in the entire audit loop so far)
 - Lock held throughout
+
+## Cycle 25 — Verify cycle 24 P0 + audit Files tab source — 2026-04-08 21:00 UTC
+
+**Tool:** curl + source inspection
+**Status:** DONE — TWO HUGE verification wins + 1 P3 inline fix
+
+### Verification of cycle 23 + 24 (BOTH PASSED — multiple HTTP tests)
+
+**Cycle 24 P0 fix VERIFIED LIVE on all 3 protected routes:**
+
+| Route | Status (was) | Status (now) | Location |
+|-------|------------|------------|----------|
+| /shell | 200 (rewrite to fake profile) | **307** | /sign-in?redirect_url=...%2Fshell |
+| /dashboard | 200 (rewrite to fake profile) | **307** | /sign-in?redirect_url=...%2Fdashboard |
+| /initialize | 200 (rewrite to fake profile) | **307** | /sign-in?redirect_url=...%2Finitialize |
+
+- No more `protect-rewrite` in `x-clerk-auth-reason`
+- No more `x-matched-path: /[username]`
+- No more `clerk_${Date.now()}` fake profiles
+- Anonymous visitors are now correctly redirected to sign-in with the original URL preserved
+- This was the most impactful fix in the audit loop so far — the entire dashboard surface was broken for anonymous users
+
+**Cycle 23 /claim fix VERIFIED LIVE:**
+- /claim: HTTP 307 → /initialize (was → /sign-up before)
+- Signed-up users now go through 1 redirect instead of 3
+
+### /shell Files tab source audit
+
+The /shell Files tab is in `src/components/panes/FilesPane.tsx` (947 lines). It's gated by Clerk auth so I couldn't browse-test it directly. Audited the source for known a11y patterns.
+
+**Found 4 inputs all missing a11y attributes:**
+1. **File editor textarea** (line 360) — no aria-label, no name
+2. **New file path input** (line 405) — no aria-label, no name, type=text, no autoComplete=off, no spellCheck=false
+3. **New directory name input** (line 461) — same gaps
+4. **File search input** (line 854) — same gaps + type=text instead of type=search
+
+Same a11y patterns I fixed in cycles 5 (TerminalAuthInput), 10 (/profiles search), and 21 (/create skeleton).
+
+### Fix applied inline
+
+Added to all 4 inputs:
+- `aria-label` describing the field purpose ("edit ${file.path}", "new file path", "new directory name (lowercase letters, numbers, dashes only)", "search files by name or path")
+- `name` attribute matching the purpose
+- `autoComplete="off"` (technical input)
+- `spellCheck={false}` (technical input)
+- File search: `type="text"` → `type="search"` (mobile keyboard + native clear button)
+- `aria-hidden="true"` on the decorative `+` prefix spans (was being announced)
+
+P3 priority because dashboard is auth-gated — screen reader users have already passed sign-in by the time they encounter these. Lower impact than public-page a11y bugs.
+
+### Verification
+- Type-check: PASS (4 file edits, all in FilesPane.tsx)
+- Cycle 24 verification: PASS (3 of 3 routes ✓)
+- Cycle 23 verification: PASS (1 of 1 ✓)
+- Cycle 25 fix verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: queue.md item 17 (/shell Files tab)
+- Verification of cycles 23 + 24 + 1 P3 fixed inline
+- Cycle 23 entry promoted to VERIFIED LIVE
+- Cycle 24 entry promoted to FULLY VERIFIED LIVE
+- Lock held throughout
+
+### Behavioral audit deferred
+- File tree dedupe (no duplicate history.md after cycle 1 work) — needs authenticated browse test
+- Edit/save behavior — needs authenticated browse test
+- These will be tested in a future cycle when we have an auth pathway, or skipped as Houston-verified

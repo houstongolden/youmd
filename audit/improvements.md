@@ -16,7 +16,33 @@ Severity:
 
 ## DONE
 
-### [P0] Anonymous /shell, /dashboard, /initialize requests render fake profile page instead of redirecting to sign-in — cycle 24, 2026-04-08
+### [P3] FilesPane had 4 inputs missing aria-label/name — cycle 25, 2026-04-08
+- File: `src/components/panes/FilesPane.tsx`
+- Found by: cycle 25 source audit (FilesPane is auth-gated, can't browse-test directly)
+- Issues:
+  1. **File editor textarea** (line 360): no aria-label, no name
+  2. **New file path input** (line 405): no aria-label, no name, no autoComplete, no spellCheck=false
+  3. **New directory name input** (line 461): same as above
+  4. **File search input** (line 854): no aria-label, no name, type=text instead of type=search, no autoComplete, no spellCheck=false
+- Fix: applied a11y treatment to all 4 inputs:
+  - Added `aria-label` describing the field's purpose (e.g. "edit ${file.path}", "new file path", "new directory name (lowercase letters, numbers, dashes only)", "search files by name or path")
+  - Added `name` attribute matching field purpose
+  - Search input: changed `type="text"` → `type="search"` (better mobile keyboard, native clear button on some browsers)
+  - Added `autoComplete="off"` and `spellCheck={false}` to text inputs (technical input — no autofill or spell check)
+  - Added `aria-hidden="true"` to the decorative `+` prefix spans (was being announced)
+- Why P3: dashboard is auth-gated so screen reader users have already passed auth; lower impact than public-page a11y issues. But still good practice.
+- Commit: pending
+
+### [P0] Anonymous /shell, /dashboard, /initialize requests render fake profile page instead of redirecting to sign-in — cycle 24, 2026-04-08 (FULLY VERIFIED LIVE 21:00 UTC)
+- **Verified live on all 3 protected routes:**
+  - /shell: HTTP 307 → `/sign-in?redirect_url=https%3A%2F%2Fwww.you.md%2Fshell` ✓
+  - /dashboard: HTTP 307 → `/sign-in?redirect_url=...%2Fdashboard` ✓
+  - /initialize: HTTP 307 → `/sign-in?redirect_url=...%2Finitialize` ✓
+- No more `protect-rewrite`, no more `x-matched-path: /[username]`, no more fake `clerk_${Date.now()}` profiles
+- The dashboard surface is fully fixed for anonymous users — they're now correctly redirected to sign-in with the original URL preserved
+
+### [P2] /claim had a 3-hop redirect chain after sign-up — cycle 23, 2026-04-08 (VERIFIED LIVE 21:00 UTC)
+- **Verified live:** /claim now returns HTTP 307 to /initialize (was /sign-up before cycle 23 fix)
 - File: `src/proxy.ts:43-47`
 - Found by: cycle 24 audit — `curl /shell` returned HTTP 200 with `x-matched-path: /[username]` and `<title>clerk_${Date.now()} — you.md</title>`. Verified the same bug on /dashboard and /initialize.
 - Root cause: `auth.protect()` in Clerk v7 does NOT do a 307 redirect for unauthenticated users. Instead, it does an internal "protect-rewrite" (visible in `x-clerk-auth-reason: protect-rewrite, session-token-and-uat-missing`) that re-routes the request through Next.js's catchall `/[username]` dynamic route. The `[username]` param ends up as a placeholder `clerk_${Date.now()}` so each anonymous visit shows a 'loading...' skeleton with metadata for a non-existent fake profile.
