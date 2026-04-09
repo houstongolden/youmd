@@ -67,7 +67,7 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 
 ### Security
 - [x] Security headers — HSTS, Referrer-Policy, X-Frame, X-Content-Type, Permissions-Policy (cycle 31, 4 of 5 added inline; CSP queued separately)
-- [ ] Content-Security-Policy — define and test (complex, needs all script/style/connect sources mapped)
+- [x] Content-Security-Policy — define and test (cycle 58, 2026-04-09 — shipped as report-only via /browse-driven inventory; caught + fixed worker-src gap on first pass; logged P2 followup for Houston to flip to enforcing after 24-48h monitoring)
 - [x] Authentication token rotation — verify Clerk session tokens expire correctly (cycle 55, 2026-04-09 — broadened to all 5 token types: Clerk JWTs ✓ auto-validated, accessTokens ✓ expiry+revoke enforced, contextLinks ✓ expiry+revoke+maxUses enforced, profiles.sessionToken ✓ cleared on claim, apiKeys ⚠ NO expiresAt field — logged P2; also logged P2 for missing "revoke all sessions" panic button)
 - [x] Rate limiting — check API endpoints for rate limits (cycle 46 covered chat.*; cycle 54 closed the remaining 2 P0 financial-loss vectors: /api/v1/scrape and /api/v1/enrich-linkedin both got per-IP rate limits + spend cap, underlying scrape actions internalized)
 - [x] HTTPS-only enforcement (cycle 53, 2026-04-09 — 0 insecure fetches found, HSTS still live with max-age=2yr; tightened 4 protocol-validation sites in scrape/onboarding/skills/add to reject http://)
@@ -116,7 +116,7 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [x] npm audit root project (cycle 40: 0 vulnerabilities ✓)
 - [x] npm audit CLI (cycle 40: 4 moderate in jimp→file-type ASF parser, unreachable since CLI only does image→ASCII not audio. Deferred.)
 - [x] Convex actions inventory (cycle 40: 9 actions across scrape/chat/portrait, all server-side called from mutations/queries that already auth-check)
-- [ ] CSP — define and ship (still needs dev env testing)
+- [x] CSP — define and ship (cycle 58, 2026-04-09 — Round 2 + Round 4 CSP items both resolved by the same cycle 58 work; report-only deployed, first browse pass caught worker-src gap, second pass clean)
 
 ---
 

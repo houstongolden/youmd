@@ -13,6 +13,12 @@ Severity:
 
 ## TODO
 
+### [P2] Houston flips CSP from report-only to enforcing — cycle 58, 2026-04-09
+- Cycle 58 shipped the Content-Security-Policy as `Content-Security-Policy-Report-Only`. Verified via /browse: 0 violations on landing/profile/sign-in after the worker-src fix.
+- **What Houston needs to do**: use the site for ~24-48h, especially /shell (the auth-gated dashboard which I couldn't browse-test), watch the browser console (F12) for any "Refused to load..." messages. If any legit sources are blocked, add them to the `CONTENT_SECURITY_POLICY` array in next.config.ts.
+- When confident: edit next.config.ts line ~87, rename the header key from `"Content-Security-Policy-Report-Only"` → `"Content-Security-Policy"`, commit, push. Vercel auto-deploys and CSP starts enforcing.
+- **Why P2**: the policy is shipped, just not enforcing yet. Defense-in-depth. The Round 4 queue item is technically done.
+
 ### [Operational] Houston needs to re-create CLI API key after cycle 57 — cycle 57, 2026-04-09
 - During cycle 57's verification of the new `me.revokeAllSessions` mutation, I made a verification-discipline mistake: I called the destructive mutation against Houston's REAL prod clerkId instead of creating a throwaway test user. Net effect: 2 of Houston's real CLI API keys + 10 of his context links are now revoked.
 - His Clerk JWT (web dashboard) is **unaffected**. He can still sign into /shell normally.
@@ -30,6 +36,14 @@ Severity:
 
 
 ## DONE
+
+### [P2] Content-Security-Policy report-only — cycle 58, 2026-04-09
+- The long-deferred Round 4 CSP item, shipped after a /browse-driven inventory of the live prod site (landing, profile, sign-in pages) plus knowledge of the Convex client behavior used by /shell.
+- Built directives for default-src, script-src, worker-src, style-src, img-src, font-src, connect-src, frame-src, form-action, base-uri, object-src, frame-ancestors. Allowlisted: own origin, clerk.you.md, kindly-cassowary-600.convex.{cloud,site} (REST + wss).
+- Shipped as `Content-Security-Policy-Report-Only` first. The first browse pass caught a real gap: Web Workers spawned from `blob:` URLs need an explicit `worker-src 'self' blob:` (without it, browsers fall back to script-src which doesn't include blob:). Added the directive, re-deployed, second browse pass clean.
+- Known intentional weaknesses documented: `'unsafe-inline'`/`'unsafe-eval'` on script-src (Next.js + Clerk requirements), `https:` wildcard on img-src (user-provided external avatars).
+- Logged P2 follow-up for Houston to flip to enforcing after 24-48h of monitoring.
+- Commits: 1cd5bba (initial) + b05208f (worker-src fix)
 
 ### [P2] me.revokeAllSessions panic button — cycle 57, 2026-04-09
 - New mutation in convex/me.ts that bulk-revokes apiKeys + accessTokens + contextLinks for the authenticated user. Logs eventType: "panic_revoke_all" with per-table counts. Idempotent.

@@ -4067,3 +4067,127 @@ Net impact:
 - **1 self-inflicted operational issue**: Houston's real API keys + context links got revoked during verification. Not a security issue (the fix is correct), but a verification-discipline failure on my part.
 - Lock held throughout
 - 1 P2 still in TODO (Houston webhook config — not actionable by me)
+
+---
+
+## Cycle 58 — Content-Security-Policy (report-only) — 2026-04-09 13:55 UTC
+
+**Tool:** /browse skill against live prod for source inventory + next.config.ts edit + Vercel auto-deploy + browse re-verify
+**Status:** **DONE — CSP shipped as report-only, caught one real violation in the first browse pass (worker-src), fixed it, re-deployed, second pass clean. Houston has a 24h window to monitor before flipping to enforcing.**
+
+### What this cycle did
+
+The CSP item has been deferred since cycle 31 with the comment "complex, needs all script/style/connect sources mapped". Cycle 58 actually does it. The "needs dev env" framing turned out to be wrong — the safe approach is to ship as `Content-Security-Policy-Report-Only` first, monitor against live prod, then flip to enforcing once confident. That's the standard CSP rollout pattern.
+
+### Inventory (from /browse against prod)
+
+Browsed landing, profile, sign-in pages and catalogued every actually-fetched origin:
+
+| Origin | Used for | Directive |
+|--------|----------|-----------|
+| `https://www.you.md` | own origin (Next.js chunks, fonts, RSC, /api/*) | self |
+| `https://clerk.you.md` | Clerk JS bundles + auth API | script-src, connect-src, style-src, frame-src, form-action |
+| `https://unavatar.io` | external avatar service | img-src https: |
+| `https://www.google.com/s2/favicons` | favicon service for external link badges | img-src https: |
+| `https://t0/t2/t3.gstatic.com` | favicon CDN (redirected from google) | img-src https: |
+| `https://kindly-cassowary-600.convex.cloud` | Convex queries/mutations/actions (REST) | connect-src |
+| `wss://kindly-cassowary-600.convex.cloud` | Convex real-time subscriptions | connect-src |
+| `https://kindly-cassowary-600.convex.site` | Convex httpActions (/api/v1/*) | connect-src |
+| `data:` | AsciiAvatar canvas → data URLs, font fallback | img-src, font-src |
+| `blob:` | Web Workers, downloads | worker-src, img-src |
+
+The Convex origins aren't visible in the landing/profile/signin browse traces (those pages don't trigger Convex client queries — they're SSR'd) but they're required by the dashboard `/shell` flow. Added based on knowledge from prior cycles.
+
+### The policy
+
+```
+default-src 'self';
+script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.you.md;
+worker-src 'self' blob:;
+style-src 'self' 'unsafe-inline' https://clerk.you.md;
+img-src 'self' data: https: blob:;
+font-src 'self' data:;
+connect-src 'self' https://clerk.you.md
+            https://kindly-cassowary-600.convex.cloud
+            wss://kindly-cassowary-600.convex.cloud
+            https://kindly-cassowary-600.convex.site;
+frame-src 'self' https://clerk.you.md;
+form-action 'self' https://clerk.you.md;
+base-uri 'self';
+object-src 'none';
+frame-ancestors 'self';
+```
+
+### Verification flow (this is what report-only mode is for)
+
+**Pass 1**: shipped the initial policy without `worker-src`. Browsed 3 pages. Console showed:
+
+```
+Creating a worker from 'blob:https://www.you.md/<uuid>' violates the
+following Content Security Policy directive: "script-src 'self'
+'unsafe-inline' 'unsafe-eval' https://clerk.you.md". Note that 'worker-src'
+was not explicitly set, so 'script-src' is used as a fallback. The policy
+is report-only, so the violation has been logged but no further action
+has been taken.
+```
+
+Caught it: Next.js or Clerk spawns Web Workers from blob: URLs for some background work. Without an explicit `worker-src`, browsers fall back to `script-src`, which doesn't include `blob:`, so the violation fires.
+
+**Fix**: added `worker-src 'self' blob:`. Committed `b05208f`, pushed, Vercel auto-deployed in ~60s.
+
+**Pass 2**: re-browsed all 3 pages. Console clean of CSP violations. The only remaining console error is a 404 (probably the favicon issue from cycle 12, unrelated).
+
+### Final live header (verified via curl)
+
+```
+content-security-policy-report-only: default-src 'self'; script-src 'self'
+'unsafe-inline' 'unsafe-eval' https://clerk.you.md; worker-src 'self' blob:;
+style-src 'self' 'unsafe-inline' https://clerk.you.md; img-src 'self' data:
+https: blob:; font-src 'self' data:; connect-src 'self' https://clerk.you.md
+https://kindly-cassowary-600.convex.cloud
+wss://kindly-cassowary-600.convex.cloud
+https://kindly-cassowary-600.convex.site; frame-src 'self' https://clerk.you.md;
+form-action 'self' https://clerk.you.md; base-uri 'self'; object-src 'none';
+frame-ancestors 'self'
+```
+
+### Known intentional weaknesses
+
+Logged in the next.config.ts comment for future cycles:
+- **`'unsafe-inline'` on script-src**: Next.js inlines RSC payloads + bootstrap scripts. A nonce-based CSP requires Next.js middleware to inject a per-request nonce. Doable but invasive.
+- **`'unsafe-eval'` on script-src**: required by current Clerk SDK version. Can be removed if Clerk drops the requirement.
+- **`https:` wildcard on img-src**: reasonable for a profile site that shows user-provided external avatars + favicon service results. Tightening would break legitimate user-pasted avatar URLs.
+
+### Next steps for Houston
+
+The header is currently `Content-Security-Policy-Report-Only`. To flip to enforcing:
+
+1. Use the site for ~24-48h after this commit
+2. If anything breaks (especially in /shell with the chat or file panes which I couldn't auth-test), add the missing source to the policy
+3. When confident no more violations are firing, edit `next.config.ts` line 87:
+   ```diff
+   - { key: "Content-Security-Policy-Report-Only", value: CONTENT_SECURITY_POLICY },
+   + { key: "Content-Security-Policy", value: CONTENT_SECURITY_POLICY },
+   ```
+4. Commit + push, Vercel auto-deploys, CSP starts enforcing
+
+**Logged as a P2 followup in improvements.md.**
+
+### What I couldn't test
+
+- **`/shell` (auth-gated)**: I can't sign in via Clerk in headless browse, so I can't verify the dashboard's actual CSP behavior. This is the highest-risk surface for surprises — the chat panel uses Convex websockets, the file pane uses Convex queries, the share pane creates context links. Houston should pay the most attention to /shell when monitoring. If anything breaks there, the `connect-src` directive is the first place to look.
+
+### Files changed
+
+- `next.config.ts` — added `CONTENT_SECURITY_POLICY` constant + `Content-Security-Policy-Report-Only` header in the securityHeaders array. 1 follow-up commit to add the missing `worker-src` directive after the first browse caught it.
+
+### Cycle bookkeeping
+- 1 long-deferred Round 4 item shipped (CSP — has been on the queue since cycle 31)
+- 1 file changed across 2 commits (initial + worker-src fix)
+- 0 type errors
+- 2 Vercel auto-deploys (~60s each)
+- 1 real CSP gap caught and fixed via report-only mode (worker-src)
+- 0 regressions to prior cycles (HSTS + Permissions-Policy + X-Frame-Options + X-Content-Type-Options + Referrer-Policy all still live)
+- /browse skill used for the live prod inventory + verification
+- 1 P2 follow-up logged (Houston flips to enforcing after monitoring)
+- Lock held throughout
