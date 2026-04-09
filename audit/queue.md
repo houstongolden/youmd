@@ -58,3 +58,44 @@ to `audit/improvements.md`.
 
 ## DONE
 (audited cycles will be moved here with date and result)
+
+---
+
+## ROUND 2 — Deeper audit dimensions (added cycle 31)
+
+Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
+
+### Security
+- [x] Security headers — HSTS, Referrer-Policy, X-Frame, X-Content-Type, Permissions-Policy (cycle 31, 4 of 5 added inline; CSP queued separately)
+- [ ] Content-Security-Policy — define and test (complex, needs all script/style/connect sources mapped)
+- [ ] Authentication token rotation — verify Clerk session tokens expire correctly
+- [ ] Rate limiting — check API endpoints for rate limits
+- [ ] HTTPS-only enforcement — verify no http:// references in code
+
+### Performance
+- [ ] Landing page Lighthouse — paint timings, bundle size, TBT
+- [ ] /shell first paint — measure Time-to-Interactive
+- [ ] you.json/you.txt response time — agent fetch latency
+- [ ] Image optimization — verify next/image used where appropriate
+- [ ] Bundle size analysis — find largest chunks
+
+### Mobile
+- [ ] Landing on iPhone (390x844) — full mobile audit (most cycles tested desktop only)
+- [ ] /shell on mobile — touch targets, drawer behavior, keyboard avoidance
+- [ ] /create on mobile — terminal panel sizing, keyboard handling
+- [ ] /sign-up on mobile — input zoom, autofill UX
+
+### Error states
+- [ ] /not-found-page — verify 404 page renders
+- [ ] /[unclaimed-username] — what happens for username not in DB
+- [ ] you.json with invalid username — error response
+- [ ] /ctx with expired token — error response
+- [ ] /ctx with revoked token — error response
+- [ ] Network failure during chat — UI handling
+
+### SEO depth
+- [ ] JSON-LD validation — Schema.org validator on Person + Breadcrumb
+- [ ] OG image generation — verify /opengraph-image renders
+- [ ] sitemap.xml freshness — lastmod accuracy
+- [ ] Canonical URL consistency — apex vs www
+- [ ] hreflang — international targeting (if applicable)

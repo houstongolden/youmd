@@ -1643,3 +1643,60 @@ Full functional testing of MCP tools requires running the server with an active 
 - **Landmarks**: every page now has h1 + main (was missing on 6+ pages)
 - **Decorative elements**: aria-hidden added to terminal dots, > prompt chevrons, ASCII background patterns
 - **API consistency**: all 3 proxy routes now forward upstream ETag, Link, support 304, use application/vnd.you-md.v1+json
+
+## Cycle 31 — Round 2: security headers + queue extension — 2026-04-08 22:00 UTC
+
+**Tool:** curl + source edit
+**Status:** DONE — 4 security headers added, queue extended with 22 new items
+
+### Original 40-item queue is fully audited. Round 2 begins.
+
+This cycle starts a new audit dimension since the original queue is exhausted. Added 5 new categories (Security, Performance, Mobile, Error states, SEO depth) totaling 22 new items to queue.md.
+
+### Security headers audit
+
+Curl on https://you.md/ revealed which security headers are present and which are missing:
+
+**Present:**
+- ✅ `Strict-Transport-Security: max-age=63072000` (HSTS, 2 years)
+- ✅ `Access-Control-Allow-Origin: *` (CORS for cross-origin agents)
+
+**MISSING (4 added, 1 queued):**
+- ❌ `Referrer-Policy` — **CRITICAL SECURITY BUG**
+- ❌ `X-Frame-Options`
+- ❌ `X-Content-Type-Options`
+- ❌ `Permissions-Policy`
+- ❌ `Content-Security-Policy` (complex, queued for deeper work)
+
+### CRITICAL fix: Referrer-Policy + ctx token leak prevention
+
+**The bug:** When a user visits `/ctx/{username}/{token}` (which contains a secret token), and then clicks any outbound link, the browser sends the FULL URL including the token in the Referer header to the destination site. This **leaks the secret context token** to third parties.
+
+**The fix:** added `Referrer-Policy: strict-origin-when-cross-origin` (the modern default). With this policy:
+- Same-origin requests: full URL sent (Referer works as expected within you.md)
+- Cross-origin HTTPS→HTTPS: only the origin sent (e.g. `https://you.md/`, NOT the full path with token)
+- HTTPS→HTTP downgrade: nothing sent (no leak)
+
+This single header line fixes a real token-disclosure vulnerability that would otherwise be exploited by any malicious link target.
+
+### Other headers added (defense in depth)
+- `X-Content-Type-Options: nosniff` — browsers must respect declared Content-Type, no MIME sniffing
+- `X-Frame-Options: SAMEORIGIN` — clickjacking protection, can't embed you.md in third-party iframes
+- `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()` — restrict unused browser capabilities
+
+### Implementation
+Added to `next.config.ts` via Next.js's `async headers()` config. Applied to all routes via `source: "/:path*"`. Type-check passes.
+
+### Queued for follow-up
+- **Content-Security-Policy** — needs careful mapping of all script/style/connect sources (Clerk JS, Convex, Vercel CDN, unavatar, gstatic favicons, etc). Wrong CSP can break the site, so doing it properly requires testing in dev first.
+
+### Round 2 queue (22 items added)
+- Security: 5 items (1 done, 4 queued)
+- Performance: 5 items
+- Mobile: 4 items
+- Error states: 6 items
+- SEO depth: 5 items
+
+### Verification
+- Type-check: PASS
+- Cycle 31 verification: deferred to next cycle (after Vercel deploy)
