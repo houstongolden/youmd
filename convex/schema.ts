@@ -216,6 +216,9 @@ export default defineSchema({
     scopes: v.array(v.string()),
     lastUsedAt: v.optional(v.number()),
     revokedAt: v.optional(v.number()),
+    // Cycle 56: optional expiry. New keys default to 365 days. Existing
+    // keys without expiresAt continue working indefinitely (backward-compat).
+    expiresAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_userId", ["userId"])

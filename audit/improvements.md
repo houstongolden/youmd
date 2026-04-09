@@ -13,12 +13,6 @@ Severity:
 
 ## TODO
 
-### [P2] apiKeys never expire — add expiresAt field — cycle 55, 2026-04-09
-- Audit found that `apiKeys` schema has no `expiresAt` field. CLI/MCP/3rd-party API keys are permanent until manually revoked. A leaked key (compromised dev machine, accidental git commit, copy-pasted in a logged channel) grants permanent access until Houston finds it and revokes.
-- Other token types in the codebase (`accessTokens`, `contextLinks`) correctly enforce expiry. Only `apiKeys` is the outlier.
-- **Fix design:** add `expiresAt: v.optional(v.number())` to apiKeys schema. New keys default to 365 days (configurable in `createKey`). `authenticateRequest` in http.ts checks `if (apiKey.expiresAt && apiKey.expiresAt < Date.now()) return 401`. Existing keys without `expiresAt` continue to work indefinitely (backward-compat); add a migration script later if/when Houston wants to retroactively cap them.
-- **Why P2:** the existing `revokedAt` field handles known compromises. The risk is *unknown* compromises where Houston doesn't realize a key has leaked. Defense-in-depth.
-
 ### [P2] No "revoke all sessions" panic button — cycle 55, 2026-04-09
 - If a user suspects compromise (lost laptop, breached email, leaked credentials), they have no single button to invalidate all their tokens at once. They'd have to revoke each accessToken, apiKey, and contextLink individually.
 - The cycle 47 Clerk webhook cascade-delete handles the "delete account" case but there's no "revoke without deleting" path.
@@ -36,6 +30,12 @@ Severity:
 
 
 ## DONE
+
+### [P2] apiKeys expiresAt field + auth check — cycle 56, 2026-04-09
+- Added `expiresAt: v.optional(v.number())` to apiKeys schema. New keys default to 365 days via `expiresInDays` arg in `createKey` (pass `null` or `0` for permanent). `authenticateRequest` in http.ts checks expiry after revocation. Existing keys without expiresAt continue working indefinitely (backward-compat).
+- Verified: created a default key (expiresAt 1 year out, auth succeeds), created a 0.864-second key, slept 2s, auth returns 401 "API key has expired". listKeys surfaces expiresAt + isExpired for the UI. Cycle 42 regression still blocked.
+- Result: leaked keys now age out automatically. Defense-in-depth above the existing revocation path.
+- Commit: pending
 
 ### [P1] Clerk → Convex sync divergence + GDPR profile deletion — cycle 52, 2026-04-09
 - Originally logged as P3 in cycle 51. Re-evaluated to P1 on cycle 52: a deleted Clerk user with their public profile still accessible at `/<username>` is a real GDPR/privacy concern.

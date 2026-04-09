@@ -353,6 +353,13 @@ async function authenticateRequest(
     return json({ error: "Invalid or revoked API key" }, 401);
   }
 
+  // Cycle 56: enforce key expiry. Existing keys without expiresAt continue
+  // working indefinitely (backward-compat — getByHash returns undefined for
+  // keys created before cycle 56's schema change).
+  if (apiKey.expiresAt && apiKey.expiresAt < Date.now()) {
+    return json({ error: "API key has expired" }, 401);
+  }
+
   // Update last used (cycle 49: now via internal.* — was api.* before)
   await (ctx as any).runMutation(internal.apiKeys.updateLastUsed, {
     keyId: apiKey._id,

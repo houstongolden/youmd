@@ -26,12 +26,19 @@ async function hashKey(key: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** Cycle 56: default API key lifetime if `expiresInDays` not specified. */
+const DEFAULT_API_KEY_LIFETIME_DAYS = 365;
+
 export const createKey = mutation({
   args: {
     clerkId: v.string(),
     _internalAuthToken: v.optional(v.string()),
     label: v.optional(v.string()),
     scopes: v.array(v.string()),
+    // Cycle 56: optional expiry override. Defaults to 365 days. Pass `null`
+    // (or `0`) for a never-expiring key. The default exists so leaked keys
+    // age out automatically rather than living forever.
+    expiresInDays: v.optional(v.union(v.number(), v.null())),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
@@ -69,11 +76,21 @@ export const createKey = mutation({
     const plaintext = generateApiKey();
     const keyHash = await hashKey(plaintext);
 
+    // Cycle 56: compute expiry. null/0 = never, undefined = default 365d.
+    let expiresAt: number | undefined;
+    if (args.expiresInDays === null || args.expiresInDays === 0) {
+      expiresAt = undefined; // permanent
+    } else {
+      const days = args.expiresInDays ?? DEFAULT_API_KEY_LIFETIME_DAYS;
+      expiresAt = Date.now() + days * 86400000;
+    }
+
     await ctx.db.insert("apiKeys", {
       userId: user._id,
       keyHash,
       label: args.label,
       scopes: args.scopes,
+      expiresAt,
       createdAt: Date.now(),
     });
 
@@ -82,6 +99,7 @@ export const createKey = mutation({
       key: plaintext,
       scopes: args.scopes,
       label: args.label,
+      expiresAt: expiresAt ?? null,
     };
   },
 });
@@ -113,6 +131,9 @@ export const listKeys = query({
         : null,
       createdAt: new Date(k.createdAt).toISOString(),
       isRevoked: !!k.revokedAt,
+      // Cycle 56: surface expiresAt + isExpired so the UI can show it
+      expiresAt: k.expiresAt ? new Date(k.expiresAt).toISOString() : null,
+      isExpired: k.expiresAt ? k.expiresAt < Date.now() : false,
       // Never return the hash
       keyPrefix: "ym_****",
     }));
@@ -166,6 +187,9 @@ export const getByHash = query({
       plan: user.plan,
       scopes: key.scopes,
       revokedAt: key.revokedAt,
+      // Cycle 56: surface expiresAt so authenticateRequest can enforce it.
+      // Existing keys without expiresAt are returned as undefined → never expire (backward-compat).
+      expiresAt: key.expiresAt,
     };
   },
 });

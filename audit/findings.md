@@ -3888,3 +3888,92 @@ None. This was an audit-only cycle.
 - 0 deploys
 - Lock held throughout
 - Remaining tractable queue items: CSP (still needs dev env), all the auth-gated UI/perf items
+
+---
+
+## Cycle 56 — apiKeys expiresAt field + auth check (cycle 55 follow-up) — 2026-04-09 12:55 UTC
+
+**Tool:** schema migration + 4 file edits + curl verification with a 0.864-second test key
+**Status:** **DONE — apiKeys now expire (default 365 days), verified end-to-end with both happy and expired paths.**
+
+### What this cycle did
+
+Picked up the top actionable P2 from cycle 55: add `expiresAt` to `apiKeys`. Cycle 55's audit found that 4 of 5 token types correctly enforce expiry, but `apiKeys` (the CLI/MCP/3rd-party API keys) had no `expiresAt` field — they were permanent until manually revoked. A leaked key (compromised dev machine, accidental git commit, copy-pasted in a logged channel) would grant permanent access until Houston manually found and revoked it.
+
+### The fix
+
+**Schema (`convex/schema.ts`):** added `expiresAt: v.optional(v.number())` to `apiKeys`. Optional, so existing keys without the field continue working indefinitely (backward-compat).
+
+**`apiKeys.createKey`:** added optional `expiresInDays` arg (`v.union(v.number(), v.null())`):
+- Default: 365 days (`DEFAULT_API_KEY_LIFETIME_DAYS = 365`)
+- `null` or `0`: never expires (explicit opt-in for permanent)
+- Any positive number: that many days
+- Returns `expiresAt` in the response so the client can display it
+
+**`apiKeys.getByHash`:** now returns `expiresAt` so `authenticateRequest` can check it.
+
+**`apiKeys.listKeys`:** surfaces `expiresAt` (ISO string) + `isExpired` (boolean) for the UI to display.
+
+**`http.ts:authenticateRequest`:** added expiry check after the revocation check:
+```ts
+if (apiKey.expiresAt && apiKey.expiresAt < Date.now()) {
+  return json({ error: "API key has expired" }, 401);
+}
+```
+
+The `if (apiKey.expiresAt && ...)` short-circuit means existing keys (where `expiresAt` is undefined from `getByHash` for pre-cycle-56 rows) skip the check entirely — they continue to work indefinitely. New keys created after cycle 56 deploy will have a 365-day default that auto-expires.
+
+### Verification (post-deploy)
+
+Generated two test keys with very different expiry settings, then exercised both auth paths:
+
+```
+Test 1: createKey with default (no expiresInDays passed)
+        → returned key + expiresAt: 1807261923652 (April 2027, +365d)  ✓
+
+Test 2: HTTP /api/v1/me with the new key
+        → 200 with full bundle data  ✓ (expiry check passes since exp > now)
+
+Test 3: createKey with expiresInDays: 0.00001 (0.864 seconds)
+        → returned key + expiresAt: 1775725926369 (1 second from now)  ✓
+        sleep 2
+
+Test 4: HTTP /api/v1/me with the now-expired key
+        → 401 "API key has expired"  ✓ NEW BEHAVIOR
+
+Test 5: listKeys shows the full picture
+        - Existing pre-cycle-56 keys: expiresAt: null, isExpired: false (backward-compat)
+        - cycle56-default: expiresAt: "2027-04-09T09:12:03.652Z", isExpired: false
+        - cycle56-tiny:    expiresAt: "2026-04-09T09:12:06.369Z", isExpired: true  ✓
+
+Cleanup: both test keys revoked.
+
+Regression: Cycle 42 (private:getPrivateContext) → still BLOCKED ✓
+```
+
+### Files changed
+
+- `convex/schema.ts` — added optional `expiresAt: v.optional(v.number())` to apiKeys
+- `convex/apiKeys.ts` — `createKey` accepts `expiresInDays`, defaults to 365; `getByHash` surfaces `expiresAt`; `listKeys` returns `expiresAt` + `isExpired` for UI
+- `convex/http.ts` — `authenticateRequest` checks expiry after revocation
+
+### Backward compatibility
+
+- **Existing keys**: keep working forever. Their `expiresAt` is undefined (not in the row), so `getByHash` returns undefined, so the `if (apiKey.expiresAt && ...)` short-circuit skips the check. No breakage.
+- **New keys**: default to 365 days. If a user wants a permanent key, they can pass `expiresInDays: null` (or `0`).
+- **Migration**: NOT included in this cycle. Houston could later run a one-shot internalMutation to backfill `expiresAt` on old keys if/when desired. Logged as future work, not blocking.
+
+### What this means for Houston
+
+Before cycle 56: a leaked CLI API key was permanent. Years-long blast radius from a single mistake (committing the key, getting phished, losing a laptop).
+
+After cycle 56: new keys auto-rotate after 365 days. Even if a user never thinks about key rotation, leaked keys age out. The default is a sensible compromise — long enough that legitimate users rarely hit it, short enough that staleness limits exposure. Houston can override per-key (shorter for high-risk, permanent for trusted automation).
+
+### Cycle bookkeeping
+- 1 P2 closed (apiKeys expiry — was the top actionable item from cycle 55)
+- 4 files changed (1 schema + 1 logic + 1 auth check + 1 audit log)
+- Type-check clean
+- Deployed
+- 7 verification tests (2 happy path + 1 fix verification + 1 listKeys display + 2 revoke cleanup + 1 regression)
+- Lock held throughout
+- 2 P2 still in TODO (revoke-all panic button, Houston webhook config)
