@@ -22,7 +22,7 @@ to `audit/improvements.md`.
 - [x] sitemap.xml — well-formed, includes all profiles (cycle 20, 2026-04-08, all checks pass — 30 entries, full metadata coverage)
 
 ### Web — Auth Flows
-- [ ] /create — profile creation flow end-to-end
+- [x] /create — profile creation flow end-to-end (cycle 21, 2026-04-08, P1 SSR-empty bug fixed inline)
 - [ ] /initialize — onboarding boot sequence
 - [ ] /claim — claim existing profile flow
 

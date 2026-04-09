@@ -16,6 +16,18 @@ Severity:
 
 ## DONE
 
+### [P1] /create renders empty SSR markup (no h1, no main, no content) — cycle 21, 2026-04-08
+- File: `src/app/create/create-content.tsx`
+- Found by: cycle 21 audit — first eval (no boot delay) returned `h1: 0, main: 0, nav: 0, footer: 0`. After 5500ms boot delay it returned `h1: 1, main: 1`. The semantic landmarks only appear AFTER hydration + boot animation completes.
+- Root cause: `if (!publicConvex) return null;` returns `null` on the server because `publicConvex` is `null` when `typeof window === "undefined"`. Search engines and any non-JS crawler see an empty page. SEO-critical: the **profile creation page**, the main onboarding entry point, has zero indexable content.
+- Confirmed via direct curl: `curl https://you.md/create | grep "<h1\|<main"` returns nothing.
+- Fix: added a `CreateSkeleton` component that mirrors the visible structure of `CreateContentInner` but with no state/effects/Convex provider. Used a `useState(false) + useEffect(() => setMounted(true))` pattern so:
+  - SSR renders `<CreateSkeleton>` (h1 + main + "initializing..." text)
+  - First client render also renders `<CreateSkeleton>` (matches SSR — no hydration mismatch)
+  - useEffect fires after mount, `mounted` becomes true, re-renders with the full `<ConvexProvider><CreateContentInner></ConvexProvider>` tree
+- Visible result: same — the skeleton has the same terminal panel chrome and h1 as the live component, so the swap is invisible
+- Commit: pending
+
 ### [P3] Convex /ctx HTTP route now computes ETag — cycle 18, 2026-04-08 (FULLY VERIFIED LIVE 19:51 UTC)
 - File: `convex/http.ts` /ctx route (lines 246-295)
 - Found by: cycle 17 (the Next.js proxy was forwarding "whatever upstream sends" and link came through but etag did not — root cause was upstream wasn't sending an etag at all)

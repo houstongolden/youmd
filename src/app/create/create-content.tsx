@@ -20,8 +20,52 @@ const publicConvex = typeof window !== "undefined"
 
 type Phase = "boot" | "username" | "name" | "social" | "portrait" | "creating" | "magic" | "email" | "password" | "verifying_email" | "verify_code" | "finalizing" | "done" | "error";
 
+/**
+ * SSR/hydration skeleton — same visible structure as CreateContentInner
+ * but with no state, no effects, no Convex provider. This guarantees that
+ * search engines and the first paint always have a real <main>, <h1>, and
+ * "initializing..." message instead of an empty page.
+ */
+function CreateSkeleton() {
+  return (
+    <main className="fixed inset-0 bg-[hsl(var(--bg))] flex flex-col">
+      <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4 min-h-0">
+        <div
+          className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden min-h-0"
+          style={{ borderRadius: "2px" }}
+        >
+          <div className="flex items-center justify-between border-b border-[hsl(var(--border))] shrink-0">
+            <div className="flex items-center gap-2 px-4 py-3">
+              <div className="flex gap-1.5" aria-hidden="true">
+                <span className="w-3 h-3 rounded-full" style={{ background: "rgba(239, 68, 68, 0.6)" }} />
+                <span className="w-3 h-3 rounded-full" style={{ background: "rgba(234, 179, 8, 0.6)" }} />
+                <span className="w-3 h-3 rounded-full" style={{ background: "rgba(34, 197, 94, 0.6)" }} />
+              </div>
+              <h1 className="text-sm font-mono text-[hsl(var(--text-secondary))] opacity-60 ml-2 font-normal">
+                you.md — create
+              </h1>
+            </div>
+          </div>
+          <div className="flex-1 p-5 font-mono text-[14px] text-[hsl(var(--text-secondary))] opacity-60">
+            <p>initializing...</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 export function CreateContent() {
-  if (!publicConvex) return null;
+  // Render the skeleton on the server AND on the first client render so the
+  // hydration markup matches. After mount, useEffect flips `mounted` and
+  // we re-render with the live ConvexProvider + CreateContentInner.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted || !publicConvex) {
+    return <CreateSkeleton />;
+  }
+
   return (
     <ConvexProvider client={publicConvex}>
       <CreateContentInner />

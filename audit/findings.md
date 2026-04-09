@@ -1075,3 +1075,73 @@ This is the file Houston was hammering me about during the recovery sprint. The 
 - Picked: queue.md item 12 (sitemap.xml)
 - Audit only — no fixes needed
 - Lock held throughout
+
+## Cycle 21 — Audit /create profile creation flow — 2026-04-08 20:20 UTC
+
+**Tool:** /browse skill (real Chromium) + curl
+**Status:** DONE_WITH_FINDINGS — 1 P1 SEO bug fixed inline
+
+### What was tested
+- /create page load (200, 0 console errors)
+- Title, h1, h2, main, nav, footer
+- Username input field a11y (cycle 6 verification)
+- SSR markup vs hydrated markup
+- Boot animation timing
+- Comparison with sister auth pages
+
+### Cycle 6 verification (PASSED on /create when hydrated)
+- Username input: type=text, name=username, placeholder=username, ariaLabel="username", autocomplete=username ✓
+
+### **CRITICAL P1 finding — /create has empty SSR markup**
+
+**Symptom:** First eval (no delay) showed `h1: 0, main: 0, nav: 0, footer: 0`. With a 5500ms boot delay it showed `h1: 1, main: 1`. The same eval works perfectly on /sign-up, /sign-in, /reset-password (those return h1=1, main=1 immediately).
+
+**Investigation:** ran `curl https://you.md/create | grep "<h1\|<main"` — **returns nothing**. The SSR markup has zero h1 or main elements. Search engines indexing /create see an empty page.
+
+**Root cause:** `src/app/create/create-content.tsx:23-30`:
+```tsx
+const publicConvex = typeof window !== "undefined"
+  ? new ConvexReactClient(CONVEX_URL)
+  : null;
+
+export function CreateContent() {
+  if (!publicConvex) return null;  // ← returns null on the server
+  ...
+}
+```
+
+The `if (!publicConvex) return null` early-returns `null` on the server because `publicConvex` is intentionally null when `typeof window === "undefined"` (Convex client can't be instantiated server-side). The component renders NOTHING during SSR. The `<main>` and `<h1>` only appear after client-side hydration.
+
+**Impact:**
+- SEO: search engines crawling /create see empty markup (no h1, no description, no semantic landmarks)
+- Performance: contentful paint waits for hydration
+- A11y: assistive tech that doesn't run JS sees nothing
+- This is the **main onboarding entry point** for the product — having empty SSR is a serious bug
+
+### Fix applied inline
+
+Added a `CreateSkeleton` component that mirrors the visible structure of `CreateContentInner` (terminal panel + h1 "you.md — create" + "initializing..." message). Used a `useState(false) + useEffect(() => setMounted(true))` pattern:
+- SSR: renders `<CreateSkeleton>` → real `<main>` and `<h1>` in markup
+- First client render: still renders `<CreateSkeleton>` (matches SSR exactly — no hydration mismatch)
+- After useEffect fires: `mounted` becomes true, re-renders with full `<ConvexProvider><CreateContentInner></ConvexProvider>` tree
+
+The skeleton's structure mirrors the live component so the swap is invisible to users.
+
+### Verification
+- Type-check: PASS
+- SSR markup verification: deferred to next cycle (after Vercel deploy)
+
+### Other findings (non-blocking)
+- /create has nav=0 and footer=0 — same as the other auth pages (sign-up/sign-in/reset-password). Not flagged as a bug since the auth flow design intentionally has minimal chrome. Could add nav/footer in a future polish cycle if Houston wants.
+- /create has h2=0 — single-purpose page, no need for sub-headings
+- 0 console errors
+
+### Cycle bookkeeping
+- Picked: queue.md item 13 (/create)
+- 1 P1 fixed inline
+- Lock held throughout
+
+### Numbers
+- /create SSR h1: 0 (BEFORE fix) → expected 1 after deploy
+- /create SSR main: 0 (BEFORE fix) → expected 1 after deploy
+- /create boot animation: ~2-5 seconds before form renders
