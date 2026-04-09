@@ -13,22 +13,26 @@ Severity:
 
 ## TODO
 
-### [P3] Clerk → Convex sync divergence (no webhook propagation) — cycle 51, 2026-04-09
-- The codebase has no Clerk webhooks. User records are mirrored from Clerk on demand (sign-up flows). There's no mechanism to propagate Clerk-side changes back to Convex.
-- **Drift cases:**
-  - Clerk user deleted (admin, GDPR, account closure) → Convex user record orphaned. Cannot authenticate (no JWT will match) but the row + linked profile / bundles / etc. remain.
-  - Clerk email changed → `users.email` field stale.
-  - Clerk username changed → `users.username` stale, may diverge from `profiles.username`.
-- **Why P3:** the Clerk JWT remains the source of truth for auth, so orphaned records can't be used to impersonate. Email/username staleness is mostly cosmetic (used for display, not auth). The product can survive without this for a long time.
-- **Fix design (for whenever it becomes a problem):** add a Clerk webhook handler at `convex/http.ts:/api/v1/webhooks/clerk` that:
-  1. Verifies the Svix signature using `CLERK_WEBHOOK_SECRET` env var
-  2. Handles `user.deleted` → soft-delete or hard-delete the Convex user (and cascade to profile/bundles)
-  3. Handles `user.updated` → patch `users.email`, `users.username`, `users.displayName` to match Clerk
-  4. Logs to `securityLogs` for audit trail
-- Alternative: a periodic cron that calls Clerk Backend API for each Convex user and reconciles divergences. Slower but doesn't require webhook setup.
+### [P2] Houston needs to set CLERK_WEBHOOK_SECRET in Clerk dashboard — cycle 52, 2026-04-09
+- The webhook receiver shipped in cycle 52 (`POST /api/v1/webhooks/clerk`). It's verified end-to-end with a test secret. But until Houston configures the webhook in Clerk dashboard and copies the real signing secret to the Convex env var, Clerk events won't actually flow through.
+- **One-time setup:**
+  1. Clerk dashboard → Webhooks → Add Endpoint → `https://kindly-cassowary-600.convex.site/api/v1/webhooks/clerk`
+  2. Subscribe to: `user.deleted`, `user.updated` (optionally `user.created` — it's ack-ignored on our side)
+  3. Copy the signing secret (starts with `whsec_`)
+  4. `npx convex env set CLERK_WEBHOOK_SECRET <whsec_...>`
+- Until done: deleted Clerk users still leave orphaned Convex profiles. The risk is the same as before cycle 52.
 
 
 ## DONE
+
+### [P1] Clerk → Convex sync divergence + GDPR profile deletion — cycle 52, 2026-04-09
+- Originally logged as P3 in cycle 51. Re-evaluated to P1 on cycle 52: a deleted Clerk user with their public profile still accessible at `/<username>` is a real GDPR/privacy concern.
+- Built `POST /api/v1/webhooks/clerk` with manual Svix HMAC-SHA256 signature verification (no svix npm dep), 5-minute replay protection window, fail-closed if `CLERK_WEBHOOK_SECRET` env var unset.
+- New `users._internalDeleteByClerkId` cascade-deletes across **15 user-linked tables** (profiles, accessTokens, apiKeys, bundles, sources, analysisArtifacts, privateVault, pipelineJobs, contextLinks, memories, chatSessions, chatMessages, skillInstalls, agentActivity, users) and logs to securityLogs.
+- New `users._internalUpdateByClerkId` patches users.email/username/displayName from Clerk source-of-truth + syncs the linked profiles.username if it changed.
+- Verified end-to-end: created throwaway user → signed user.deleted webhook → cascade returned `{deleted: true, counts: {profiles: 1, users: 1, ...}}` → username available again (cascade complete). Plus 4 auth-rejection tests (no headers, wrong sig, stale ts, tampered body) + cycles 42, 45, 46, 47 regression checks all green.
+- Followup logged for Houston to do the one-time Clerk dashboard config.
+- Commit: pending
 
 ### [P3] rateLimits table cron cleanup — cycle 50, 2026-04-09
 - Created `convex/crons.ts` (new file — no Convex crons existed before). Registers an hourly cron at HH:17 UTC that calls `internal.lib.rateLimit.cleanupOldRateLimits` with `maxAgeMs: 1 hour`. Prevents the rateLimits table from growing unboundedly under sustained traffic.

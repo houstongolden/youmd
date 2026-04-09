@@ -1783,6 +1783,185 @@ http.route({
 });
 
 // ============================================================
+// CLERK WEBHOOK RECEIVER (cycle 52)
+// ============================================================
+//
+// Receives `user.deleted` and `user.updated` events from Clerk via Svix.
+// Verifies the signature manually using HMAC-SHA256 (no svix npm dep —
+// we can't add deps to convex/, and the manual implementation is short).
+//
+// Setup (Houston needs to do this once):
+//   1. In Clerk dashboard → Webhooks → Add Endpoint
+//      URL: https://kindly-cassowary-600.convex.site/api/v1/webhooks/clerk
+//      Events: user.deleted, user.updated
+//   2. Copy the signing secret (starts with "whsec_")
+//   3. Set as Convex env: `npx convex env set CLERK_WEBHOOK_SECRET whsec_...`
+//
+// Until step 3 is done, the webhook returns 500 "webhook not configured".
+// That's the safe default — we'd rather drop legitimate events than
+// process spoofed ones.
+
+/**
+ * Verify a Svix-style HMAC-SHA256 webhook signature.
+ *
+ * Svix's signing scheme:
+ *   1. signedContent = `${svix-id}.${svix-timestamp}.${rawBody}`
+ *   2. expectedSig = base64(HMAC-SHA256(decodedSecret, signedContent))
+ *   3. The svix-signature header is space-separated `v1,<base64>` entries
+ *      (multiple sigs for key rotation)
+ *
+ * The secret is `whsec_<base64>` — strip the prefix and base64-decode.
+ */
+async function verifySvixSignature(
+  rawBody: string,
+  svixId: string,
+  svixTimestamp: string,
+  svixSignature: string,
+  webhookSecret: string
+): Promise<boolean> {
+  // Strip whsec_ prefix and decode the secret
+  const secretPart = webhookSecret.startsWith("whsec_")
+    ? webhookSecret.slice(6)
+    : webhookSecret;
+
+  let secretBytes: Uint8Array;
+  try {
+    const binary = atob(secretPart);
+    secretBytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) secretBytes[i] = binary.charCodeAt(i);
+  } catch {
+    return false;
+  }
+
+  // Compute expected signature
+  const signedContent = `${svixId}.${svixTimestamp}.${rawBody}`;
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    secretBytes as BufferSource,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sigBuffer = await crypto.subtle.sign(
+    "HMAC",
+    cryptoKey,
+    new TextEncoder().encode(signedContent)
+  );
+  const sigBytes = new Uint8Array(sigBuffer);
+  let binary = "";
+  for (let i = 0; i < sigBytes.length; i++) binary += String.fromCharCode(sigBytes[i]);
+  const expectedSig = btoa(binary);
+
+  // Header format: "v1,base64sig v1,othersig" (space-separated for key rotation)
+  const providedSigs = svixSignature
+    .split(" ")
+    .map((entry) => {
+      const parts = entry.split(",");
+      return parts.length >= 2 ? parts[1] : "";
+    })
+    .filter(Boolean);
+
+  // Constant-time comparison against any of the provided sigs
+  for (const provided of providedSigs) {
+    if (provided.length !== expectedSig.length) continue;
+    let diff = 0;
+    for (let i = 0; i < provided.length; i++) {
+      diff |= provided.charCodeAt(i) ^ expectedSig.charCodeAt(i);
+    }
+    if (diff === 0) return true;
+  }
+  return false;
+}
+
+http.route({
+  path: "/api/v1/webhooks/clerk",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      // Fail closed: return 500 so Clerk retries (and Houston notices in logs)
+      return json({ error: "webhook not configured (CLERK_WEBHOOK_SECRET missing)" }, 500);
+    }
+
+    const svixId = request.headers.get("svix-id");
+    const svixTimestamp = request.headers.get("svix-timestamp");
+    const svixSignature = request.headers.get("svix-signature");
+
+    if (!svixId || !svixTimestamp || !svixSignature) {
+      return json({ error: "missing svix headers" }, 401);
+    }
+
+    // Reject stale events (replay protection — Svix recommends 5 min window)
+    const now = Math.floor(Date.now() / 1000);
+    const ts = parseInt(svixTimestamp, 10);
+    if (Number.isNaN(ts) || Math.abs(now - ts) > 300) {
+      return json({ error: "timestamp out of range" }, 401);
+    }
+
+    const rawBody = await request.text();
+
+    const sigValid = await verifySvixSignature(
+      rawBody,
+      svixId,
+      svixTimestamp,
+      svixSignature,
+      webhookSecret
+    );
+    if (!sigValid) {
+      return json({ error: "invalid signature" }, 401);
+    }
+
+    // Parse the verified payload
+    let event: any;
+    try {
+      event = JSON.parse(rawBody);
+    } catch {
+      return json({ error: "invalid JSON body" }, 400);
+    }
+
+    if (!event || typeof event !== "object" || typeof event.type !== "string") {
+      return json({ error: "invalid event shape" }, 400);
+    }
+
+    // Dispatch by event type
+    if (event.type === "user.deleted") {
+      const clerkId = event.data?.id;
+      if (typeof clerkId !== "string") {
+        return json({ error: "user.deleted missing data.id" }, 400);
+      }
+      const result = await ctx.runMutation(internal.users._internalDeleteByClerkId, {
+        clerkId,
+      });
+      return json({ ok: true, action: "deleted", ...result });
+    }
+
+    if (event.type === "user.updated") {
+      const clerkId = event.data?.id;
+      if (typeof clerkId !== "string") {
+        return json({ error: "user.updated missing data.id" }, 400);
+      }
+      const email = event.data?.email_addresses?.[0]?.email_address;
+      const username = event.data?.username;
+      const displayName = event.data?.first_name;
+
+      const result = await ctx.runMutation(internal.users._internalUpdateByClerkId, {
+        clerkId,
+        email: typeof email === "string" ? email : undefined,
+        username: typeof username === "string" ? username : undefined,
+        displayName: typeof displayName === "string" ? displayName : undefined,
+      });
+      return json({ ok: true, action: "updated", ...result });
+    }
+
+    // Other event types (user.created, session.*, etc.) — ack but no-op.
+    // user.created is intentionally ignored: we use on-demand mirroring,
+    // not webhook-driven creation, to avoid race conditions with the
+    // sign-up flow.
+    return json({ ok: true, action: "ignored", type: event.type });
+  }),
+});
+
+// ============================================================
 // CORS PREFLIGHT (catch-all for OPTIONS)
 // ============================================================
 

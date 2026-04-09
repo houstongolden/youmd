@@ -263,6 +263,263 @@ export const getByUsername = internalQuery({
   },
 });
 
+/**
+ * Internal: cascade-delete a user and ALL their data, by clerkId.
+ *
+ * Cycle 52: called from the Clerk webhook handler when Clerk fires a
+ * `user.deleted` event. Removes the user record + every row in every table
+ * tied to that user._id. This is the GDPR-compliant deletion path.
+ *
+ * Tables touched:
+ *   - users (the user row itself)
+ *   - profiles (by ownerId — the public profile page)
+ *   - accessTokens (by profileId, looked up from profiles)
+ *   - apiKeys (by_userId)
+ *   - bundles (by_userId)
+ *   - sources (by_userId)
+ *   - analysisArtifacts (by_userId)
+ *   - privateVault (by_userId)
+ *   - pipelineJobs (by_userId)
+ *   - contextLinks (by_userId)
+ *   - memories (by_userId)
+ *   - chatSessions (by_userId)
+ *   - chatMessages (by_userId)
+ *   - skillInstalls (by_userId)
+ *   - agentActivity (by_userId)
+ *
+ * Tables NOT touched (audit / historical / public references):
+ *   - securityLogs (audit trail — we ADD a deletion event)
+ *   - profileVerifications (linked by profileId; stale rows can be cleaned later)
+ *   - profileReports (audit; reporter may have been deleted)
+ *   - profileViews (analytics; userId is optional, profile is gone anyway)
+ *   - rateLimits, chatSpendLog (per-IP/per-day, not per-user)
+ *
+ * Returns counts so the webhook can log them.
+ */
+export const _internalDeleteByClerkId = internalMutation({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) {
+      return { deleted: false, reason: "user not found in Convex" };
+    }
+    const userId = user._id;
+
+    const counts: Record<string, number> = {};
+
+    // Profiles (public-facing — delete first so the profile page disappears immediately)
+    const profiles = await ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", userId))
+      .collect();
+    for (const p of profiles) {
+      // Delete accessTokens linked to this profile
+      const tokens = await ctx.db
+        .query("accessTokens")
+        .withIndex("by_profileId", (q) => q.eq("profileId", p._id))
+        .collect();
+      for (const t of tokens) await ctx.db.delete(t._id);
+      counts.accessTokens = (counts.accessTokens || 0) + tokens.length;
+
+      await ctx.db.delete(p._id);
+    }
+    counts.profiles = profiles.length;
+
+    // apiKeys
+    const apiKeys = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const k of apiKeys) await ctx.db.delete(k._id);
+    counts.apiKeys = apiKeys.length;
+
+    // bundles
+    const bundles = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const b of bundles) await ctx.db.delete(b._id);
+    counts.bundles = bundles.length;
+
+    // sources
+    const sources = await ctx.db
+      .query("sources")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const s of sources) await ctx.db.delete(s._id);
+    counts.sources = sources.length;
+
+    // analysisArtifacts
+    const artifacts = await ctx.db
+      .query("analysisArtifacts")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const a of artifacts) await ctx.db.delete(a._id);
+    counts.analysisArtifacts = artifacts.length;
+
+    // privateVault
+    const vault = await ctx.db
+      .query("privateVault")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
+    if (vault) {
+      await ctx.db.delete(vault._id);
+      counts.privateVault = 1;
+    }
+
+    // pipelineJobs
+    const jobs = await ctx.db
+      .query("pipelineJobs")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const j of jobs) await ctx.db.delete(j._id);
+    counts.pipelineJobs = jobs.length;
+
+    // contextLinks
+    const links = await ctx.db
+      .query("contextLinks")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const l of links) await ctx.db.delete(l._id);
+    counts.contextLinks = links.length;
+
+    // memories
+    const memories = await ctx.db
+      .query("memories")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const m of memories) await ctx.db.delete(m._id);
+    counts.memories = memories.length;
+
+    // chatSessions
+    const sessions = await ctx.db
+      .query("chatSessions")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const s of sessions) await ctx.db.delete(s._id);
+    counts.chatSessions = sessions.length;
+
+    // chatMessages
+    const messages = await ctx.db
+      .query("chatMessages")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const m of messages) await ctx.db.delete(m._id);
+    counts.chatMessages = messages.length;
+
+    // skillInstalls
+    const installs = await ctx.db
+      .query("skillInstalls")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const i of installs) await ctx.db.delete(i._id);
+    counts.skillInstalls = installs.length;
+
+    // agentActivity
+    const activity = await ctx.db
+      .query("agentActivity")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const a of activity) await ctx.db.delete(a._id);
+    counts.agentActivity = activity.length;
+
+    // The user row itself (last)
+    await ctx.db.delete(userId);
+    counts.users = 1;
+
+    // Audit log
+    await ctx.db.insert("securityLogs", {
+      eventType: "user_deleted_by_clerk_webhook",
+      userId: undefined,
+      details: { clerkId: args.clerkId, username: user.username, counts },
+      createdAt: Date.now(),
+    });
+
+    return { deleted: true, clerkId: args.clerkId, username: user.username, counts };
+  },
+});
+
+/**
+ * Internal: patch a user record's email/username/displayName, by clerkId.
+ *
+ * Cycle 52: called from the Clerk webhook handler when Clerk fires a
+ * `user.updated` event. Keeps the Convex user mirror in sync with Clerk's
+ * source-of-truth fields.
+ *
+ * If the username changes, the linked profile's username is also patched
+ * to keep them in sync.
+ */
+export const _internalUpdateByClerkId = internalMutation({
+  args: {
+    clerkId: v.string(),
+    email: v.optional(v.string()),
+    username: v.optional(v.string()),
+    displayName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) {
+      return { updated: false, reason: "user not found in Convex" };
+    }
+
+    const updates: Record<string, unknown> = {};
+    const changedFields: string[] = [];
+
+    if (args.email !== undefined && args.email !== user.email) {
+      updates.email = args.email;
+      changedFields.push("email");
+    }
+    if (
+      args.username !== undefined &&
+      args.username.length > 0 &&
+      args.username !== user.username
+    ) {
+      updates.username = args.username;
+      changedFields.push("username");
+    }
+    if (
+      args.displayName !== undefined &&
+      args.displayName !== user.displayName
+    ) {
+      updates.displayName = args.displayName;
+      changedFields.push("displayName");
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return { updated: false, reason: "no fields changed" };
+    }
+
+    await ctx.db.patch(user._id, updates);
+
+    // If username changed, sync it to the linked profile
+    if ("username" in updates) {
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
+        .first();
+      if (profile) {
+        await ctx.db.patch(profile._id, { username: updates.username as string });
+      }
+    }
+
+    // Audit log
+    await ctx.db.insert("securityLogs", {
+      eventType: "user_updated_by_clerk_webhook",
+      userId: user._id,
+      details: { clerkId: args.clerkId, changedFields },
+      createdAt: Date.now(),
+    });
+
+    return { updated: true, clerkId: args.clerkId, changedFields };
+  },
+});
+
 /** List all legacy users that have published bundles (for directory) */
 export const listAllLegacy = query({
   handler: async (ctx) => {
