@@ -131,16 +131,23 @@ function CodeBlock({ title, children }: { title?: string; children: string }) {
     setTimeout(() => setCopied(false), 1500);
   };
 
+  // Cycle 61: touch target sizes were 24x17 (way under WCAG 2.5.5 44x44 min).
+  // Bumped to min-h/min-w 44px and added aria-label so screen readers know
+  // what's being copied (the title or "code block" if no title).
+  const copyAriaLabel = title ? `copy ${title}` : "copy code";
+
   return (
     <div className="my-4 rounded-lg border border-[hsl(var(--border))] overflow-hidden">
       {title && (
-        <div className="bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-4 py-2 flex items-center justify-between">
-          <span className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-60">
+        <div className="bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-2 py-1 flex items-center justify-between">
+          <span className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-60 px-2">
             {title}
           </span>
           <button
+            type="button"
             onClick={copy}
-            className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-80 transition-opacity"
+            aria-label={copyAriaLabel}
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-80 transition-opacity"
           >
             {copied ? "copied" : "copy"}
           </button>
@@ -149,8 +156,10 @@ function CodeBlock({ title, children }: { title?: string; children: string }) {
       <div className="relative">
         {!title && (
           <button
+            type="button"
             onClick={copy}
-            className="absolute top-2 right-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-80 transition-opacity"
+            aria-label={copyAriaLabel}
+            className="absolute top-1 right-1 inline-flex items-center justify-center min-h-[44px] min-w-[44px] font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-80 transition-opacity"
           >
             {copied ? "copied" : "copy"}
           </button>
@@ -245,8 +254,10 @@ function QuickStart() {
                   $ {s.cmd}
                 </code>
                 <button
+                  type="button"
                   onClick={() => copy(s.cmd, s.key)}
-                  className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-100 hover:text-[hsl(var(--accent))] transition-colors"
+                  aria-label={`copy command: ${s.cmd}`}
+                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-100 hover:text-[hsl(var(--accent))] transition-colors"
                 >
                   {copied === s.key ? "copied" : "copy"}
                 </button>
@@ -442,8 +453,14 @@ export default function DocsContent() {
               Get Started
             </Link>
             <button
+              type="button"
               onClick={() => setMobileNavOpen(!mobileNavOpen)}
-              className="md:hidden text-[hsl(var(--text-secondary))] text-[13px] font-mono"
+              aria-label={mobileNavOpen ? "close docs navigation" : "open docs navigation"}
+              aria-expanded={mobileNavOpen}
+              aria-controls="docs-mobile-nav"
+              // Cycle 61: bumped to min-h/min-w 44px for WCAG 2.5.5 / Apple HIG
+              // touch target compliance. Was 31x21 (way too small).
+              className="md:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] -mr-2 px-3 text-[hsl(var(--text-secondary))] text-[13px] font-mono"
             >
               {mobileNavOpen ? "close" : "menu"}
             </button>
@@ -461,7 +478,10 @@ export default function DocsContent() {
 
         {/* Sidebar — mobile overlay */}
         {mobileNavOpen && (
-          <div className="fixed inset-0 top-14 z-40 bg-[hsl(var(--bg))] md:hidden p-6 overflow-y-auto">
+          <div
+            id="docs-mobile-nav"
+            className="fixed inset-0 top-14 z-40 bg-[hsl(var(--bg))] md:hidden p-6 overflow-y-auto"
+          >
             <Sidebar activeId={activeId} onNav={scrollTo} />
           </div>
         )}
