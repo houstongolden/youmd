@@ -23,11 +23,16 @@ Severity:
   4. **Accept the failure** (Notion/Linear pattern). Not recommended given recent FTC + Apple + Google enforcement trends.
 - I cannot pick this — it's a brand decision. Tell me which option and I'll ship in one cycle.
 
-### [P3] FadeUp opacity-0 mask if intersection observer doesn't fire — cycle 69, 2026-04-09 (connected to cycle 65 crash report)
-- The contrast audit needed to inject `* { opacity: 1 !important }` to bypass Framer Motion's `whileInView` initial state. Multiple landing sections (Hero, OpenSpec, ProfilesShowcase, ForDevelopers, FounderQuote, CTAFooter) are wrapped in `FadeUp` which starts at `opacity: 0` and waits for the intersection observer.
-- This is the same root cause that LIKELY explains Houston's "site is crashed, 80% black on mobile" report from cycle 65. If the intersection observer doesn't fire (slow JS, reduced-motion, ad blocker, browser bug, prerender mismatch), real users see opacity-0 sections.
-- **Recommended fix**: change `FadeUp` to start at `opacity: 0.01` and animate to `1` (so failure mode is "very faint" not "invisible") OR add a `prefers-reduced-motion` fallback that skips the animation entirely OR add a CSS-only fallback `@media (prefers-reduced-motion: reduce) { .fade-up { opacity: 1 !important; } }`.
-- Estimated time: 30 mins to refactor `FadeUp.tsx` + verify on landing.
+### [P2] Progressive enhancement for FadeUp / Hero motion.divs — cycle 70, 2026-04-09 (CYCLE 65 ROOT CAUSE — reproduced)
+- Cycle 70 shipped `MotionConfig reducedMotion="user"` (76a6c3d) which fixes the case where users with `prefers-reduced-motion: reduce` set in their OS see invisible content. **That covers a real subset of Houston's cycle 65 report.**
+- BUT: cycle 70 also reproduced the cycle 65 "80% black" pattern via `prettyscreenshot`. Without scrolling, every FadeUp / motion.div component below the fold stays at `opacity: 0` because the SSR HTML literally has `style="opacity: 0; transform: translateY(24px)"` baked in by Framer Motion's `initial` prop, and the `useInView` intersection observer never fires for anything outside the viewport.
+- **Affected user population (residual after cycle 70)**: users with broken/slow JS bundles, users with aggressive ad blockers that kill intersection observers, screenshot/visual-diff tools that don't scroll, and any other failure mode where the JS-driven animation pipeline doesn't run end-to-end.
+- **The proper fix is progressive enhancement**: render at full opacity in SSR HTML, then JS enhances with the fade-in animation post-mount. The implementation choices, ranked:
+  1. **CSS-only animation with `useInView` toggling a class** (recommended): replace `motion.div` in FadeUp with a plain `div` that applies `fadeup-init` (opacity 0, transform 24px) + `fadeup-visible` (opacity 1, transform 0, transition 600ms). The `prefers-reduced-motion: reduce` media query in CSS overrides everything to opacity 1. The SSR HTML still has `fadeup-init` baked in via the className, BUT a `<noscript>` block in `layout.tsx` can inject `<style>.fadeup-init { opacity: 1 !important; }</style>` so the no-JS case is also covered. Touches FadeUp + globals.css + layout.tsx + nothing else. ~2 hours.
+  2. **Replace `initial={{opacity:0}}` with `initial={false}` + `useEffect` mount controller**: the motion.div renders at natural opacity in SSR. After mount, useEffect hides it and immediately starts the animation. Has a brief "blink" as the element flashes from visible → opacity 0 → animated. Avoidable with `useLayoutEffect` instead of `useEffect`. ~1 hour for FadeUp, longer if Hero's 8 motion.divs need the same treatment.
+  3. **Render at opacity 0.05** as a "soft fail": user always sees a faint shadow of content even if animation never fires. Quick (30 min) but visually different. Houston has strong design opinions, so I'd want his sign-off before doing this.
+- I recommend approach #1 because it's the only option that makes the no-JS case work. The other two require JS to mount.
+- **Estimated time**: 2 hours for approach #1 (FadeUp.tsx refactor + globals.css + layout.tsx noscript injection + visual verify across landing/profiles/houstongolden).
 
 ### [P2] Houston flips CSP from report-only to enforcing — cycle 58, 2026-04-09 (cycle 60 verified clean across 8+ public routes, monitoring window for public surface complete)
 - Cycle 58 shipped the CSP as `Content-Security-Policy-Report-Only`.
@@ -52,6 +57,13 @@ Severity:
 
 
 ## DONE
+
+### [P3→P2-partial] Cycle 70 — site-wide MotionConfig reducedMotion=user — cycle 70, 2026-04-09
+- Wraps the app tree in `<MotionConfig reducedMotion="user">` via new `src/providers/motion-config-provider.tsx`. With this, Framer Motion respects the OS-level prefers-reduced-motion preference and replaces transforms / opacity changes with instant value updates.
+- Closes the "reduced motion preference" subset of the cycle 65 crash report. Hero alone has 8 motion.divs with delays up to 2.5s — pre-fix, a reduced-motion user waited the full 2.5s with content invisible. Post-fix, immediate visibility.
+- Also reproduced the cycle 65 "80% black" pattern via prettyscreenshot for the first time, confirming the residual problem (broken JS / no-scroll) needs the bigger progressive-enhancement fix logged P2 above.
+- Also deleted dead duplicate `src/components/FadeUp.tsx` (zero imports).
+- Commit: 76a6c3d
 
 ### [P2] Cycle 69 — aria-hidden on decorative separators (── and |) — cycle 69, 2026-04-09
 - Built a WCAG SC 1.4.3 contrast auditor (canvas-normalized colors to bypass Chrome's oklab output, force-visible CSS injection to bypass FadeUp animations). Audited 7 public routes + every dashboard pane component.

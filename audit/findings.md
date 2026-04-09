@@ -5275,3 +5275,71 @@ The footer `text-muted-foreground/40` and `text-muted-foreground/50` strings on 
 - 1 P2 logged (cta-primary brand color decision)
 - 1 P3 logged (FadeUp opacity-0 mask if intersection observer fails — connected to cycle 65 crash report)
 - Lock held throughout
+
+---
+
+## Cycle 70 — MotionConfig reducedMotion=user + landing prettyscreenshot evidence — 2026-04-09
+
+### What I shipped (76a6c3d)
+
+Created `src/providers/motion-config-provider.tsx` and wrapped the app tree in `<MotionConfig reducedMotion="user">` inside `layout.tsx` (between ConvexClientProvider and SiteNav). With this set, Framer Motion respects the OS-level `prefers-reduced-motion: reduce` setting and replaces transforms / opacity changes with instant value updates.
+
+Also deleted dead duplicate `src/components/FadeUp.tsx` (canonical is `src/components/landing/FadeUp.tsx`, grep confirmed zero imports of the dup).
+
+3 files changed, 37 insertions, 26 deletions, type-check clean, Vercel deploy verified.
+
+### What this fix actually addresses
+
+The cycle 69 P3 followup said "FadeUp opacity-0 mask if intersection observer doesn't fire". The MotionConfig fix is the recommended Framer Motion pattern for that — when the user has `prefers-reduced-motion: reduce` set, the entire animation pipeline is short-circuited and elements jump to their target state immediately.
+
+This is a real a11y win for users with the OS preference. Hero alone has 8 motion.div elements with delays from 0.3s to 2.5s. Pre-fix, a reduced-motion user would wait through the full 2.5s sequence with content invisible. Post-fix, they see everything immediately on load.
+
+### What this fix does NOT address — and the screenshot evidence
+
+I also took a `prettyscreenshot` of `https://you.md/` post-deploy, both at t=0 (immediately after `wait body`) and at t=6s (after waiting for animation timers). **Both screenshots showed the same pattern**: Hero block visible at top, then 11000+ pixels of solid black space below it, then the footer at the very bottom.
+
+This is the EXACT pattern Houston reported in cycle 65: "site is crashed, 80% black on mobile". And it's specifically NOT fixed by the MotionConfig change, because:
+
+1. The screenshot tool (Playwright via gstack browse) doesn't simulate the OS-level reduced-motion preference, so MotionConfig doesn't kick in.
+2. Without scrolling, every FadeUp / motion.div component below the fold stays at `opacity: 0` because its `useInView` intersection observer never fires.
+3. The SSR HTML literally has `style="opacity: 0; transform: translateY(24px)"` baked in for every motion.div with an `initial` prop.
+
+### Who is impacted (and who isn't)
+
+- **Real visitors with normal browsers**: ✓ no impact. They scroll, the observer fires, content fades in.
+- **Real visitors with reduced-motion preference**: ✓ FIXED by MotionConfig in this cycle.
+- **Search engine crawlers (Googlebot)**: ✓ probably fine. Google's WRS scrolls and waits for content during render.
+- **Open Graph image generation**: ✓ unaffected. OG endpoint (`/api/og`) is its own React component, doesn't render the landing tree.
+- **Social media link previews**: ✓ unaffected, same as OG.
+- **Screenshot tools (gstack browse, dev tooling, automated visual diff tools)**: ✗ broken capture, see blank below-the-fold.
+- **Users with broken/slow JS bundles**: ✗ see blank content for a long time, possibly indefinitely.
+- **Users with intersection-observer-killing browser extensions**: ✗ same.
+
+The remaining gap is the "broken JS / aggressive ad blocker" subset. That's a small but real population, and Houston himself may be in it (his cycle 65 report could have been any of the above three failure modes — we never confirmed which).
+
+### The proper fix (logged P2 followup)
+
+The right architectural fix is **progressive enhancement**: the SSR HTML should render at full opacity, and JS should enhance with the fade-in animation only after mount. That way:
+- No-JS / broken-JS users see content immediately (it never disappears)
+- JS users see the animation enhance the experience after mount
+- Screenshot tools / crawlers see content
+- Everyone wins
+
+The implementation requires either:
+1. A `mounted` state that gates the `initial` prop (but causes a brief "blink" as the element transitions from visible → opacity 0 → animated to 1)
+2. Replacing Framer's `motion.div` with a CSS-only animation that uses `prefers-reduced-motion` natively + a class toggle on inView
+3. Using Framer Motion's `useAnimationControls` + `initial={false}` pattern with a manual control sequence
+
+This is a bigger refactor (touches FadeUp + Hero's 8 motion.divs + every other component using motion.div with opacity initial). Logged P2 in improvements.md with a recommended approach.
+
+### Cycle bookkeeping
+
+- 1 fix shipped (`src/providers/motion-config-provider.tsx` + layout integration + dead-FadeUp deletion)
+- 1 dead file removed
+- Type-check clean
+- Vercel deploy verified
+- Contrast audit re-run post-deploy: same 4 fails on landing + 1 on /houstongolden (no regression)
+- Screenshot evidence captured the cycle 65 pattern in repro form for the first time
+- 1 P2 logged for the progressive-enhancement followup
+- Lock held throughout
+
