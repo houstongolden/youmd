@@ -24,7 +24,7 @@ to `audit/improvements.md`.
 ### Web — Auth Flows
 - [x] /create — profile creation flow end-to-end (cycle 21, 2026-04-08, P1 SSR-empty bug fixed inline)
 - [x] /initialize — onboarding boot sequence (cycle 22, 2026-04-08, 3 main+h1 landmark fixes inline; auth-gating verified)
-- [ ] /claim — claim existing profile flow
+- [x] /claim — claim existing profile flow (cycle 23, 2026-04-08, fixed dead-code redirect chain → /initialize, added noindex)
 
 ### Web — Shell (Dashboard)
 - [ ] /shell — initial load, auto-scroll, chat input

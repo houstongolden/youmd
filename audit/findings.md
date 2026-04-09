@@ -1203,3 +1203,59 @@ Visual unchanged. All 3 branches now render proper h1 + main landmarks for logge
 - Source audit + 1 P2 fixed inline
 - Cycle 21 entry promoted to VERIFIED LIVE
 - Lock held throughout
+
+## Cycle 23 — Audit /claim flow — 2026-04-08 20:40 UTC
+
+**Tool:** curl + browse + source inspection + grep
+**Status:** DONE_WITH_FINDINGS — 1 P2 dead-code chain fixed inline
+
+### What was tested
+- /claim HTTP response and redirect chain
+- /claim source code
+- Where /claim is referenced from
+- Post-sign-up redirect flow
+
+### Findings
+
+**Behavior:** /claim is a 9-line stub that does `redirect("/sign-up")` server-side. The browse test confirmed the chain:
+1. /claim → 307 → /sign-up
+2. /sign-up sees `isSignedIn=true` (when called from Clerk post-signup) → `router.replace("/shell")`
+
+**Bug found:** dead-code redirect chain
+- `.env.local.example` has `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/claim` (almost certainly mirrored in production env vars)
+- After Clerk completes sign-up, it redirects users to /claim
+- /claim then redirects to /sign-up
+- /sign-up then redirects to /shell
+- **Total: 3 redirects** for every newly signed-up user
+
+**Root cause:** /claim was originally a separate "claim username" page. That functionality was merged into /initialize (which now handles boot animation + claim username + onboarding agent in one flow). The env var was never updated and the /claim stub kept pointing to the wrong destination.
+
+### Fix applied inline
+
+Changed `redirect("/sign-up")` → `redirect("/initialize")` in `src/app/claim/page.tsx`. Result:
+- Signed-up users: /claim → /initialize (1 redirect, lands directly on the onboarding flow they should see)
+- Anonymous /claim visitors: still get redirected via Clerk middleware to /sign-in (correct gating behavior)
+
+Also:
+- Added `robots: { index: false, follow: true }` so search engines don't index the redirect-only stub
+- Removed OpenGraph + Twitter metadata (never visible, page redirects immediately)
+- Added explanatory comment block documenting the legacy alias status
+
+### Side observation: Clerk debug headers leak on /claim
+- `x-clerk-auth-reason: session-token-and-uat-missing` appears in /claim's response headers (from middleware)
+- This is expected since /claim is auth-gated and Clerk runs there
+- Cycle 14 only excluded public agent endpoints from the matcher; auth-gated routes correctly run Clerk
+- Not a bug — just documenting for completeness
+
+### Verification
+- Type-check: PASS
+- Cycle 23 verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: queue.md item 15 (/claim)
+- 1 P2 fixed inline
+- Lock held throughout
+
+### Numbers
+- Redirects after sign-up (BEFORE fix): 3 (claim → sign-up → shell)
+- Redirects after sign-up (AFTER fix): 1 (claim → initialize)

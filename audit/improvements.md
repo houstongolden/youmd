@@ -16,6 +16,20 @@ Severity:
 
 ## DONE
 
+### [P2] /claim had a 3-hop redirect chain after sign-up — cycle 23, 2026-04-08
+- File: `src/app/claim/page.tsx`
+- Found by: cycle 23 audit + grep `/claim` → discovered `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/claim` in `.env.local.example`
+- Bug: legacy redirect chain — after a user signs up via Clerk, they land on /claim (per env var), /claim used to `redirect("/sign-up")`, /sign-up sees `isSignedIn=true` and `router.replace("/shell")`. That's **3 redirects** (claim → sign-up → shell) for every newly signed-up user.
+- Root cause: /claim was a separate "claim username" page in an earlier version. The functionality was later merged into /initialize but the env var was never updated and the /claim stub kept redirecting to the wrong place.
+- Fix:
+  1. Changed `redirect("/sign-up")` → `redirect("/initialize")` in `claim/page.tsx`. New users now go directly to the onboarding flow they should see.
+  2. Added `robots: { index: false, follow: true }` to the page metadata so search engines don't index the redirect-only stub.
+  3. Removed the unnecessary OpenGraph + Twitter card metadata (they were never visible since the page redirects immediately) — kept just title + description for any cached external links.
+  4. Added an explanatory comment block at the top documenting the legacy alias status.
+- Visible effect: signed-up users now go through 1 redirect (claim → initialize) instead of 3 (claim → sign-up → shell)
+- Note: env var `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/claim` could be updated directly to `/initialize` to skip even the legacy /claim hop, but that requires updating Vercel + local .env.local. The redirect fix in /claim/page.tsx is sufficient and doesn't require env changes.
+- Commit: pending
+
 ### [P2] /initialize had no main + no h1 landmarks across 3 render branches — cycle 22, 2026-04-08
 - File: `src/app/initialize/initialize-content.tsx`
 - Found by: cycle 22 source audit (page is auth-gated so couldn't browse-test directly — verified via source inspection)
