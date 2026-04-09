@@ -12,7 +12,17 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-(empty — all known improvements cleared)
+
+### [P0] HTTP routes broken by cycle 42 strict requireOwner — refactor to use internal mutations — cycle 42, 2026-04-08
+
+- **Symptom:** All `/api/v1/me/*` endpoints return 500 "authentication required: no Clerk identity" because the cycle 42 strict `requireOwner` fix throws on null identity, and `httpAction` API-key flows have no Clerk JWT.
+- **Affected routes** (~10): `/api/v1/me`, `/api/v1/me/bundle`, `/api/v1/me/publish`, `/api/v1/me/portrait`, `/api/v1/me/sources`, `/api/v1/me/analytics`, `/api/v1/me/build`, `/api/v1/me/build/status`, `/api/v1/me/context-links`, plus pipeline trigger routes
+- **Affected callers:** the `youmd` CLI (`youmd push`, `youmd publish`, `youmd init` portrait upload, MCP server identify tool, all `apiKey`-authenticated agents)
+- **Fix design:** convert the underlying logic in `convex/me.ts`, `convex/profiles.ts`, `convex/bundles.ts` (functions called from http.ts) into `internalMutation`/`internalQuery` versions that take `userId: v.id("users")` instead of `clerkId`. Public mutation wrappers do `requireOwner` then `ctx.runMutation(internal.foo._barInternal, ...)`. The HTTP routes call the internal versions directly with the user resolved from the API key.
+- **Why P0:** CLI is the second primary surface of the product (after web). Currently 100% broken in prod. Houston uses CLI flows.
+- **Why deferred from cycle 42:** the security fix was urgent (data leak/write); the refactor is mechanical and large (~10 functions). Cycle 43 will own it.
+- Commit: pending
+
 
 ## DONE
 

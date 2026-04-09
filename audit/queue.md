@@ -117,3 +117,13 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [x] npm audit CLI (cycle 40: 4 moderate in jimp→file-type ASF parser, unreachable since CLI only does image→ASCII not audio. Deferred.)
 - [x] Convex actions inventory (cycle 40: 9 actions across scrape/chat/portrait, all server-side called from mutations/queries that already auth-check)
 - [ ] CSP — define and ship (still needs dev env testing)
+
+---
+
+## ROUND 5 — Real-world exploit verification (added cycle 42)
+
+### Convex public endpoint exploit testing
+- [x] **CRITICAL P0** — anonymous read+write via `/api/query` and `/api/mutation` (cycle 42, 2026-04-09 — exploit verified live, fix shipped strict requireOwner, victim data restored, exploit verified DEAD; CLI HTTP routes broken as side effect, P0 logged for cycle 43)
+- [ ] HTTP routes refactor — move ~10 me/bundles/profiles functions to internalMutation versions so API-key auth flows work again (cycle 43 will pick this up from improvements.md)
+- [ ] Per-table permissive `query`/`mutation` audit — sweep for any other "trust the args" patterns that bypass auth
+- [ ] Cron functions and scheduled actions — verify they don't accept untrusted args

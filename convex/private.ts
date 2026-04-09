@@ -1,6 +1,33 @@
 import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
+
+/**
+ * Internal: restore privateNotes to a specific value, bypassing auth.
+ * Used by data tooling. Callable only from other Convex functions or
+ * via `npx convex run --component-function internal/private:_restorePrivateNotes`.
+ *
+ * Cycle 42: needed because cycle 42's strict requireOwner blocked the
+ * regular updatePrivateContext mutation from admin CLI usage.
+ */
+export const _restorePrivateNotesAdmin = internalMutation({
+  args: {
+    profileId: v.id("profiles"),
+    privateNotes: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("privateContext")
+      .withIndex("by_profileId", (q) => q.eq("profileId", args.profileId))
+      .first();
+    if (!existing) throw new Error("privateContext row not found");
+    await ctx.db.patch(existing._id, {
+      privateNotes: args.privateNotes,
+      updatedAt: Date.now(),
+    });
+    return { success: true, privateNotes: args.privateNotes };
+  },
+});
 
 // ── Agent interaction stats ──────────────────────────────────
 
