@@ -90,7 +90,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
   // Activity logs from Convex
   const logs = useQuery(
     api.profiles.getSecurityLogs,
-    profileId ? { profileId } : "skip"
+    profileId && clerkId ? { clerkId, profileId } : "skip"
   );
 
   const [confirmDelete, setConfirmDelete] = useState(false);

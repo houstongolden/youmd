@@ -2874,3 +2874,116 @@ The cycle 44 awk script catches all three cases by walking each .ts file in `con
 - Cycles 42 + 43 regression checks both green
 - Lock held throughout
 - 2 new follow-ups logged for cycle 45 (`users.getByClerkId` enumeration, `users.createUser` audit)
+
+---
+
+## Cycle 45 — APOCALYPTIC P0: anonymous database wipe + 6 more admin/financial vulns + enumeration vectors closed — 2026-04-09 08:30 UTC
+
+**Tool:** wider awk sweep + manual review + curl exploit verification on 7 vectors
+**Status:** **DONE — 7 P0/P1 vectors closed, all verified DEAD post-deploy. Including the most catastrophic vulnerability of the entire audit.**
+
+### What this cycle did
+
+Started as the cycle 44 follow-up to refactor `users.getByClerkId` to self-only (P1). Before doing that, I expanded the awk inventory script to find ALL public functions in `convex/` lacking `requireOwner` (not just clerkId/userId-arg ones — ALL of them). The wider sweep revealed **7 more critical/high vulns** including the **most catastrophic vulnerability of the entire audit**.
+
+### THE WORST FINDING: anonymous database wipe
+
+```ts
+// convex/cleanup.ts
+export const clearAllData = mutation({
+  handler: async (ctx) => {
+    // Deletes EVERY ROW in EVERY TABLE: users, profiles, bundles, sources,
+    // apiKeys, contextLinks, profileViews, securityLogs, privateContext,
+    // accessTokens, agentInteractions, pipelineJobs, analysisArtifacts,
+    // profileReports, profileVerifications.
+  },
+});
+```
+
+This was a **public** mutation. **Anyone could `curl` it and DELETE THE ENTIRE PRODUCTION DATABASE.** A single 2-line command from any IP, no auth, no rate limit, no warning. The function was meant for `npx convex run` admin tooling but was exported as `mutation` instead of `internalMutation`, making it publicly callable via `/api/mutation`.
+
+**This is the most catastrophic vulnerability found in the entire 45-cycle audit.** It would have been a complete-loss event: every user, every profile, every bundle, every API key, every share token, every encrypted vault, every memory, every chat session — gone. No recovery short of a Convex point-in-time backup restore (if one exists for prod).
+
+### Other P0s found in the same sweep
+
+1. **`users.setUserPlan`** — anonymous mutation, lets any caller upgrade any user to "pro" plan, **bypassing billing entirely**. Free users could call `curl` to become Pro. A financial-loss vulnerability.
+
+2. **`profiles.deleteByUsername`** — anonymous mutation, deletes any profile by username. Anyone could nuke `houstongolden` or any other profile with one curl.
+
+3. **`seed.seedSampleProfiles` / `backfillSampleProfiles` / `cleanupSampleProfiles` / `cleanupBadProfileData`** — admin/dev mutations exposed as public. `seedSampleProfiles` lets attackers pollute prod with fake users; `cleanupSampleProfiles` deletes any user where `isSample === true` (attack: set isSample on a real user via some other vuln, then call cleanup); `cleanupBadProfileData` triggers pointless writes across all bundles.
+
+### P1 enumeration vectors
+
+4. **`users.getByClerkId`** — leaked full user record (including `_id` and email) for any clerkId. This was the **enumeration vector** that chained the cycle 44 userId-arg attacks together. Cycle 44 broke the chain by adding ownership checks downstream, but the leak itself was still open.
+
+5. **`users.getByUsername`** — leaked full user record by username. Worse than #4 because usernames are PUBLIC (visible on every profile page). Anyone could iterate the sitemap and dump every user's clerkId + email.
+
+6. **`profiles.getSecurityLogs`** — leaked the security log for any profileId. Reveals "private context updated", "token created", "token revoked", timestamps, IPs (if logged), etc.
+
+7. **`profiles.getReports`** — leaked profile abuse reports by profileId. Zero callers — was admin/moderation view that was never wired to UI.
+
+### The fix pattern
+
+For zero-caller admin functions: convert `mutation` → `internalMutation` and `query` → `internalQuery`. This is the strongest fix because Convex enforces at the runtime level — the function is no longer reachable via `/api/mutation` or `/api/query`. Public callers literally cannot invoke it.
+
+For functions with callers: add `requireOwner` + ownership check (same pattern as cycles 42/43/44).
+
+### Files changed
+
+**Convex (zero-caller → internal):**
+- `convex/cleanup.ts` — `clearAllData` → `internalMutation`
+- `convex/seed.ts` — 4 functions → `internalMutation` (also updated import)
+- `convex/users.ts` — `setUserPlan` → `internalMutation`, `getByUsername` → `internalQuery`
+- `convex/profiles.ts` — `deleteByUsername` → `internalMutation`, `getReports` → `internalQuery` (added `internalQuery` to imports)
+
+**Convex (auth added):**
+- `convex/users.ts` — `getByClerkId` now requires `requireOwner` (self-only)
+- `convex/profiles.ts` — `getSecurityLogs` now requires `requireOwner` + ownership check
+
+**HTTP route updates:**
+- `convex/http.ts` — 11 single-line `users.getByClerkId` calls now pass `_internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN`
+- `convex/http.ts` — `users.getByUsername` call switched from `api.users.getByUsername` to `internal.users.getByUsername`
+
+**Web client updates:**
+- `src/components/panes/SettingsPane.tsx` — `getSecurityLogs` call now passes `clerkId` from props
+
+### Verification (post-deploy, 7 exploit vectors + 2 regression checks)
+
+```
+Test 1: anonymous clearAllData         → Server Error  ✓ BLOCKED (was APOCALYPTIC P0)
+Test 2: anonymous setUserPlan          → Server Error  ✓ BLOCKED (was P0 financial bypass)
+Test 3: anonymous deleteByUsername     → Server Error  ✓ BLOCKED (was P0 destructive)
+Test 4: anonymous seedSampleProfiles   → Server Error  ✓ BLOCKED (was P0 pollution)
+Test 5: anonymous getByClerkId         → Server Error  ✓ BLOCKED (was P1 enumeration)
+Test 6: anonymous getByUsername        → Server Error  ✓ BLOCKED (was P1 leak)
+Test 7: anonymous getSecurityLogs      → Server Error  ✓ BLOCKED (was P1 leak)
+
+Regression checks:
+- Cycle 42 exploit (private:getPrivateContext)         → still BLOCKED ✓
+- Cycle 43 HTTP route with revoked API key             → 401 ✓
+- Public profile route /api/v1/profiles?username=...   → 200 with full profile ✓
+  (cycle 45's switch from api.users.getByUsername → internal.users.getByUsername works)
+```
+
+### What's STILL not covered
+
+- `users.createUser` — bootstrap path, intentional. Logged for cycle 46.
+- `profiles.createProfile`, `profiles.recordView`, `profiles.reportProfile` — pre-auth public paths, intentional. Quick re-audit recommended.
+- `chat.*` actions (LLM proxy) — public actions called from web/CLI. Need to verify they have rate limits or other abuse protection. Logged for cycle 46.
+- `apiKeys.updateLastUsed` — public mutation taking only `keyId`. The keyId is essentially a Convex `Id<"apiKeys">` which is a 32-char base32 random string. Effectively unguessable, so the practical attack surface is "if you already know an apiKeyId, you can mark it as used (no value to attacker)". Very low priority but worth fixing for cleanliness. Logged for cycle 46.
+- `chat.summarizeSession`, `chat.compactSession` — need to verify they don't trust user-supplied `userId`/`sessionId`. Logged for cycle 46.
+
+### Cycle bookkeeping
+- 1 APOCALYPTIC P0 closed (database wipe — **largest single risk reduction in the entire audit**)
+- 3 P0 admin/financial vulns closed
+- 4 P1 enumeration/leak vectors closed
+- 8 functions converted from public `mutation`/`query` → `internalMutation`/`internalQuery`
+- 2 functions auth'd with `requireOwner` + ownership check
+- 11 http.ts call sites updated with bypass token
+- 1 http.ts call switched from `api.*` → `internal.*`
+- 1 web client file updated
+- 7 exploit vectors verified DEAD
+- 3 regression checks green (cycle 42, 43, public profile route)
+- Lock held throughout
+- Type-check clean
+- Logged 4 follow-ups for cycle 46

@@ -1,6 +1,17 @@
-import { mutation } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 
-export const clearAllData = mutation({
+/**
+ * Cycle 45: APOCALYPTIC P0 fix. This was previously `mutation` which made it
+ * a public endpoint — any anonymous caller could `curl /api/mutation` with
+ * `path: "cleanup:clearAllData"` and **DELETE EVERY ROW IN EVERY TABLE** in
+ * the production database.
+ *
+ * Now `internalMutation` — callable only from other Convex functions or via
+ * Convex Dashboard / `npx convex run --component-function`. Public callers
+ * cannot reach it. The function is destructive admin-only tooling and was
+ * never meant to be publicly callable.
+ */
+export const clearAllData = internalMutation({
   handler: async (ctx) => {
     const counts: Record<string, number> = {};
 

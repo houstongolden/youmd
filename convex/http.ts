@@ -121,7 +121,7 @@ http.route({
     // Log cross-agent activity (best-effort — skip silently if user lookup fails)
     try {
       const agent = detectAgent(request.headers.get("user-agent"));
-      const ownerUser = await ctx.runQuery(api.users.getByUsername, { username });
+      const ownerUser = await ctx.runQuery(internal.users.getByUsername, { username });
       if (ownerUser) {
         const profileIdRaw = (profileAny.profileId as any) ?? undefined;
         await ctx.runMutation(internal.activity.logActivity, {
@@ -533,7 +533,7 @@ http.route({
       }
 
       // Find user's profile
-      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
       if (!user) return json({ error: "user not found" }, 404);
 
       const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
@@ -1559,7 +1559,7 @@ http.route({
       }
 
       // 3. Find the Convex user by clerkId
-      const convexUser = await ctx.runQuery(api.users.getByClerkId, { clerkId: clerkUserId });
+      const convexUser = await ctx.runQuery(api.users.getByClerkId, { clerkId: clerkUserId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
 
       if (!convexUser) {
         // User exists in Clerk but not in Convex — create the Convex record
@@ -1576,7 +1576,7 @@ http.route({
       }
 
       // Re-fetch to get the user with _id
-      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: clerkUserId });
+      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: clerkUserId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
       if (!user) {
         return json({ error: "Failed to resolve user account" }, 500);
       }
@@ -1671,7 +1671,7 @@ http.route({
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
 
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
 
     // Find the user's profile
@@ -1694,7 +1694,7 @@ http.route({
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
 
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
 
     const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
@@ -1751,7 +1751,7 @@ http.route({
     const category = url.searchParams.get("category") || undefined;
     const limit = url.searchParams.has("limit") ? parseInt(url.searchParams.get("limit")!) : undefined;
 
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
 
     const memories = await ctx.runQuery(api.memories.listMemories, {
@@ -1779,7 +1779,7 @@ http.route({
       return json({ error: "Request body must contain 'memories' array" }, 400);
     }
 
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
 
     const result = await ctx.runMutation(api.memories.saveFromAgent, {
@@ -1854,7 +1854,7 @@ http.route({
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
 
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
 
     const installs = await ctx.runQuery(api.skills.listInstalls, {
@@ -2048,7 +2048,7 @@ http.route({
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
 
-    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+    const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
 
     const history = await ctx.runQuery(api.bundles.getHistory, {
@@ -2235,7 +2235,7 @@ http.route({
     }
 
     try {
-      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
       if (!user) return json({ error: "User not found" }, 404);
 
       const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
@@ -2406,7 +2406,7 @@ http.route({
     if (auth instanceof Response) return auth;
 
     try {
-      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId });
+      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
       if (!user) return json({ error: "User not found" }, 404);
 
       const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });

@@ -6,8 +6,14 @@
  *   npx convex run seed:cleanupSampleProfiles — delete all sample data
  *
  * All sample users are flagged with isSample: true for easy cleanup.
+ *
+ * Cycle 45: All exports are now `internalMutation` — public callers cannot
+ * invoke them via /api/mutation. Previously they were `mutation`, which let
+ * any anonymous caller pollute prod with sample profiles or trigger cleanup
+ * sweeps. They were always meant for `npx convex run --component-function`
+ * admin tooling.
  */
-import { mutation } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import {
   ProfileData,
   compileYouJson,
@@ -412,7 +418,7 @@ const SAMPLE_PROFILES: SeedProfile[] = [
   },
 ];
 
-export const seedSampleProfiles = mutation({
+export const seedSampleProfiles = internalMutation({
   args: {},
   handler: async (ctx) => {
     const results: string[] = [];
@@ -502,7 +508,7 @@ export const seedSampleProfiles = mutation({
 });
 
 /** Backfill profile records for existing sample users that only have bundles */
-export const backfillSampleProfiles = mutation({
+export const backfillSampleProfiles = internalMutation({
   args: {},
   handler: async (ctx) => {
     const results: string[] = [];
@@ -558,7 +564,7 @@ export const backfillSampleProfiles = mutation({
   },
 });
 
-export const cleanupSampleProfiles = mutation({
+export const cleanupSampleProfiles = internalMutation({
   args: {},
   handler: async (ctx) => {
     // Find all sample users
@@ -678,7 +684,7 @@ export const cleanupSampleProfiles = mutation({
  * Usage:
  *   npx convex run seed:cleanupBadProfileData
  */
-export const cleanupBadProfileData = mutation({
+export const cleanupBadProfileData = internalMutation({
   args: {},
   handler: async (ctx) => {
     const bundles = await ctx.db.query("bundles").collect();

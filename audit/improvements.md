@@ -13,20 +13,36 @@ Severity:
 
 ## TODO
 
-### [P1] users.getByClerkId is the enumeration vector — refactor to self-only — cycle 44, 2026-04-09
-- Currently `users.getByClerkId({clerkId})` returns a full user record (including the Convex `_id`) for ANY clerkId, with no auth check.
-- This is the chained vector that makes any `userId: v.id("users")` arg attack possible: an attacker who knows a clerkId can resolve it to a user._id, then attack any function that trusts userId.
-- Cycle 44 closed all known userId-arg vulns by adding `requireOwner + ownership check`, so the chain is broken — but the enumeration leak remains.
-- **Fix design:** add `_internalAuthToken` bypass (for httpAction callers). For Clerk-authenticated calls, add `requireOwner` and require the called clerkId to match the authenticated user (self-only). httpAction callers and Clerk-authed web clients all already only look up themselves, so this should be a clean refactor — just need to verify each call site only ever passes its own clerkId.
-- **Why P1 not P0:** the chained attack is now broken, so the leak alone is information-only (lets attacker confirm a clerkId exists and learn the email). Still worth fixing.
-
 ### [P2] users.createUser is callable without existing Clerk session — verify the bootstrap path — cycle 44, 2026-04-09
 - Intentionally unauth'd (sign-up flow needs to create the Convex user record before any session exists).
 - Risk: anonymous attacker could insert junk user records with fake clerkIds. They wouldn't match any real Clerk JWT, so they'd be orphaned, but the row would exist.
 - **Fix design:** add a check that the clerkId arg corresponds to a real Clerk user (call Clerk backend API). The auth/register HTTP route already does this. The webhook flow probably also does. Consolidate into a single "verified bootstrap" path.
 
+### [P2] chat.* actions need rate limiting / abuse protection audit — cycle 45, 2026-04-09
+- `chat.onboardingChat`, `researchUser`, `verifyIdentity`, `enrichXProfile`, `compactSession`, `summarizeSession` are all public actions.
+- These call OpenRouter (LLM) which costs $$. Anonymous abuse → financial loss.
+- Need to verify each action has either: (a) auth gate, (b) rate limit, (c) is non-billing.
+
+### [P3] apiKeys.updateLastUsed is unauth'd — cleanliness fix — cycle 45, 2026-04-09
+- Public mutation taking only `keyId: v.id("apiKeys")`.
+- Practical attack surface: if attacker already knows an apiKeyId (32-char base32 random), they can mark it as used. No value to attacker.
+- Worth fixing for cleanliness — convert to internalMutation, called only by `authenticateRequest` in http.ts.
+
+### [P3] chat.summarizeSession + compactSession arg trust audit — cycle 45, 2026-04-09
+- Verify these public actions don't trust user-supplied `userId`/`sessionId` to write into another user's session.
+
 
 ## DONE
+
+### [APOCALYPTIC P0 + 3 P0 + 4 P1] cleanup.clearAllData was anonymous DB wipe + 6 more admin/financial/leak vulns — cycle 45, 2026-04-09
+- **THE WORST FINDING OF THE ENTIRE AUDIT.** `convex/cleanup.ts:clearAllData` was a public mutation. Any anonymous caller could `curl /api/mutation` and **delete every row in every table** in production. No auth, no rate limit, no warning. Closed by converting to `internalMutation` (Convex enforces unreachable from public callers).
+- Other P0s closed: `users.setUserPlan` (anyone could become Pro for free), `profiles.deleteByUsername` (anyone could nuke any profile), 4 `seed.*` admin mutations (pollution + cleanup attacks).
+- P1 enumeration/leak vectors closed: `users.getByClerkId` (the chained attack vector for cycle 44's userId-arg vulns), `users.getByUsername` (worse — usernames are public), `profiles.getSecurityLogs` (security log leak), `profiles.getReports` (report leak, was zero-caller dead code).
+- Pattern: zero-caller admin functions → `internalMutation`/`internalQuery` (Convex-enforced unreachable from public). Functions with callers → `requireOwner` + ownership check.
+- 8 functions converted to internal, 2 functions added auth, 11 http.ts call sites updated, 1 web client updated.
+- 7 exploit vectors verified DEAD with curl. Cycles 42 + 43 + 44 regressions all green. Public profile route still works.
+- Logged 4 follow-ups for cycle 46 (createUser bootstrap, chat.* rate limiting, apiKeys.updateLastUsed cleanliness, chat.summarize/compact arg trust).
+- Commit: 6c20bce
 
 ### [P0×6 + P1×4] MASSIVE SWEEP: 13 unauth'd public functions across memories/activity/bundles/skills + 3 dead funcs deleted — cycle 44, 2026-04-09
 - **The smoking gun from cycle 43 was real.** Cycle 38 claimed "100% coverage" but only swept functions taking `clerkId: v.string()`. Functions taking `userId: v.id("users")` were entirely missed. So was `convex/activity.ts`. So was `convex/pipeline/`.

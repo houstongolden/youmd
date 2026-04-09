@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, mutation, internalMutation } from "./_generated/server";
+import { query, mutation, internalMutation, internalQuery } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 
 // ── Username validation ──────────────────────────────────────
@@ -192,10 +192,34 @@ export const checkUsername = query({
   },
 });
 
-/** Get security logs for a profile */
+/**
+ * Get security logs for a profile.
+ * Cycle 45: added auth + ownership check. Previously took only profileId and
+ * returned the full security log to any anonymous caller — leaked things like
+ * "profile reported", "token created/revoked", "private context updated"
+ * timestamps and details for any profile.
+ */
 export const getSecurityLogs = query({
-  args: { profileId: v.id("profiles") },
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    profileId: v.id("profiles"),
+  },
   handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    // Verify the caller owns the profile
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner) throw new Error("not authenticated");
+
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile || profile.ownerId !== owner._id) {
+      throw new Error("not authorized: profile is not owned by authenticated user");
+    }
+
     return ctx.db
       .query("securityLogs")
       .withIndex("by_profileId", (q) => q.eq("profileId", args.profileId))
@@ -204,8 +228,15 @@ export const getSecurityLogs = query({
   },
 });
 
-/** Get reports for a profile */
-export const getReports = query({
+/**
+ * Get reports for a profile.
+ * Cycle 45: was previously a public `query` taking only profileId. Zero
+ * external callers in src/ or cli/ — admin/moderation view that was never
+ * wired up. Converted to `internalQuery` so it cannot be called via
+ * /api/query. If a moderation UI is added later, restore as `query` with
+ * proper admin auth.
+ */
+export const getReports = internalQuery({
   args: { profileId: v.id("profiles") },
   handler: async (ctx, args) => {
     return ctx.db
@@ -848,8 +879,13 @@ export const revokeVerification = mutation({
   },
 });
 
-/** Admin: delete a profile by username (for cleanup) */
-export const deleteByUsername = mutation({
+/**
+ * Admin: delete a profile by username (for cleanup).
+ * Cycle 45: was previously `mutation` — anonymous P0 destructive vector.
+ * Anyone could `curl /api/mutation` to delete any profile by username. Now
+ * `internalMutation` — admin-only via Convex Dashboard or `npx convex run`.
+ */
+export const deleteByUsername = internalMutation({
   args: { username: v.string() },
   handler: async (ctx, args) => {
     const profile = await ctx.db
