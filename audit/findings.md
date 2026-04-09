@@ -5037,3 +5037,78 @@ I'm waiting on Houston's response with that data.
 - 2 minor cycle 65 incomplete fixes logged for cycle 67 (P3 cosmetic)
 - Lock held throughout
 - Site is in a known-good state pending Houston's response on the crash report
+
+---
+
+## Cycle 67 — Cycle 65 incomplete fixes (FounderQuote.tsx + CTAFooter "you" link) — 2026-04-09 18:30 UTC
+
+**Tool:** code review of cycle 65 misses + 2 small className edits + verify
+**Status:** **DONE — landing page is now 0/42 too-small interactive elements at mobile viewport.**
+
+### What this cycle did
+
+Houston still hadn't responded to the cycle 65 crash report when the next cron fired. Following the cycle 66 stabilization protocol, picked the lowest-risk actionable item: the 2 P3 cosmetic spots from cycle 65 that the cycle 66 re-audit caught.
+
+### Health check before changes
+
+```
+/ → 200 ✓
+/houstongolden → 200 ✓
+convex /version → healthy ✓
+```
+
+Site still operational. Safe to proceed with low-risk changes.
+
+### Issue 1 — FounderQuote.tsx founder link (cycle 65 missed entirely)
+
+```tsx
+// Before (rendering at 40 tall):
+<a href="/houstongolden" className="flex items-center gap-3 group">
+  <div className="w-10 h-10 ...">  // 40x40 avatar div constrains height
+    <AsciiAvatar ... />
+  </div>
+  ...
+</a>
+```
+
+The natural height was constrained by the 40×40 avatar div. Cycle 65's batch fix touched 7 landing files but **missed `FounderQuote.tsx` entirely** — I never knew this file existed during the cycle 65 source-search. The cycle 66 re-audit's `292×40` finding had text "Houston Goldenfounder · you.md" which I initially confused with the ProfilesShowcase profile card (which DID get fixed).
+
+**Fix**: added `min-h-[44px] py-1` to the anchor.
+
+### Issue 2 — CTAFooter "you" link subpixel boundary
+
+Cycle 65 set `min-h-[44px]` correctly, but the rendered height was occasionally **43.998px** due to subpixel rounding. The audit's strict `r.height < 44` filter caught this (43.998 < 44 is true).
+
+**Fix attempt 1**: bumped to `min-h-[48px]`. Re-verified — height was now 48 ✓, but the WIDTH dimension showed the same issue at 44 (subpixel 43.998).
+
+**Fix attempt 2 (followup commit)**: also added `min-w-[48px]` + `justify-center`. Both dimensions now comfortably exceed the threshold.
+
+### Verification
+
+**After both commits**:
+```js
+{"visible": 42, "tooSmall": 0, "list": []}
+```
+
+**0 of 42 visible interactive elements too small.** The landing page is now fully WCAG 2.5.5 compliant for touch targets at iPhone 14 Pro viewport (390×844).
+
+### Files changed
+
+- `src/components/landing/FounderQuote.tsx` — added `min-h-[44px] py-1` to founder link
+- `src/components/landing/CTAFooter.tsx` — bumped "you" link to `min-h-[48px] min-w-[48px]` + `justify-center`
+
+### Commits
+
+- `895222c` — initial fix (FounderQuote + CTAFooter min-h-[48px])
+- `e7813c9` — followup (CTAFooter min-w-[48px])
+
+### Cycle bookkeeping
+
+- 2 cycle 65 incomplete fixes closed
+- 2 commits, 2 files changed total
+- Type-check clean
+- 2 Vercel auto-deploys (~50s + ~40s)
+- Final audit: 0/42 too-small (was 2/42 in cycle 66)
+- 0 console errors post-fix
+- Lock held throughout
+- Houston still hasn't responded on the cycle 65 crash report — site continues operational
