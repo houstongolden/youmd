@@ -3379,3 +3379,83 @@ The cron itself doesn't have an immediate verification path (it fires at HH:17 U
 - Cycle 42 regression check green
 - Lock held throughout
 - **Improvements TODO is now empty**. All known P0/P1/P2/P3 items have been closed.
+
+---
+
+## Cycle 51 — Webhook signature audit + cron/scheduled-action audit (audit-only) — 2026-04-09 11:05 UTC
+
+**Tool:** grep + file inventory + manual code review
+**Status:** **DONE — both queue items confirmed clean. 1 P3 sync-divergence concern logged.**
+
+### What this cycle did
+
+Improvements TODO was empty for the first time since the security sweep began. Per cycle protocol step 2, moved to queue.md. Picked the top two unchecked Round 5 items:
+
+1. **Webhook endpoints — verify Clerk webhooks signature-validate properly**
+2. **Cron functions and scheduled actions — verify they don't accept untrusted args**
+
+Both are audits, not fixes — verify that what we believe to be safe actually is.
+
+### Webhook audit findings
+
+```
+$ grep -rn "webhook\|svix" convex/ src/
+(no results)
+
+$ grep -n "http.route" convex/http.ts
+(50+ /api/v1/* routes — none are webhook receivers)
+
+$ ls src/app/api 2>/dev/null
+no src/app/api
+
+$ cat convex/auth.config.ts
+(only configures CLERK_JWT_ISSUER_DOMAIN — JWT verification, no webhooks)
+```
+
+**Result: there are NO Clerk webhooks anywhere in this codebase.** Convex authenticates via Clerk JWT (verified per-request via `auth.config.ts`'s issuer domain). User records are mirrored on demand through two paths, both auth-gated as of cycle 47:
+- Web sign-up → `useUser()` → web client calls `users.createUser` (Clerk JWT auto-attached)
+- CLI sign-up → http.ts `/api/v1/auth/register` → calls Clerk Backend API → calls `users.createUser` (with the trusted bypass token)
+
+Since there are no webhooks, there are no webhook signatures to verify. The audit resolves to "the safe state" — no signature validation needed because there's no signature surface.
+
+### Sync-divergence concern (NEW P3)
+
+But the audit surfaces a related concern: without webhooks, there's no mechanism to propagate Clerk-side changes to Convex. Specifically:
+- Clerk user deleted (admin action, GDPR request, account closure) → Convex user record is orphaned
+- Clerk email changed → Convex `users.email` field stale
+- Clerk username changed → Convex `users.username` stale (and may diverge from `profiles.username`)
+
+Today's behavior: the orphaned/stale records can never authenticate (no JWT will match) and the email/username are only used for display so the staleness is mostly cosmetic. Not a security vuln, but a data hygiene issue. Logged as P3 in improvements.md.
+
+**Why P3, not higher:** the Clerk JWT remains the source of truth for auth — orphaned Convex records can't be used to impersonate. Email staleness only affects display/notifications. Username divergence is the most concerning because it could create UI confusion, but is bounded.
+
+### Cron / scheduled-action audit findings
+
+Inventory:
+
+```
+$ grep -rn "scheduler\.runAfter\|scheduler\.runAt\|cronJobs" convex/
+convex/crons.ts:11           — cronJobs() instance
+convex/crons.ts:26           — crons.hourly(...)
+convex/pipeline/index.ts:67  — ctx.scheduler.runAfter(0, internal.pipeline.orchestrator.runPipeline, ...)
+```
+
+**Two scheduled functions total**:
+
+1. **`convex/crons.ts:26` (cycle 50)** — hourly cron, calls `internal.lib.rateLimit.cleanupOldRateLimits` with hardcoded `{maxAgeMs: 1 hour}` args. The handler is `internalMutation` (cycle 46), only callable from other Convex functions (or this cron). All args are hardcoded in the cron registration. **Trusted by construction.** ✓
+
+2. **`convex/pipeline/index.ts:67`** — `startPipeline` mutation schedules `internal.pipeline.orchestrator.runPipeline` with `{userId, username}`. The args come from the authenticated user record (resolved via `requireOwner` + DB lookup, both added in cycle 43). The handler is `internalAction`, only callable from other Convex functions (or this scheduled trigger). The args are validated upstream — `userId` and `username` are read from the DB after auth, not from user input. **Trusted by construction.** ✓
+
+**Result: both scheduled functions are safe.** The cycle 43 fix on `startPipeline` (adding `requireOwner`) was load-bearing for this audit — without it, the scheduled `runPipeline` would have inherited untrusted args from a public mutation. Now the chain is clean end-to-end.
+
+### Files changed
+
+None. This was an audit-only cycle that confirmed the existing state is safe.
+
+### Cycle bookkeeping
+- 2 queue items audited and closed (both N/A or clean)
+- 1 P3 sync-divergence concern logged for future cycles
+- 0 code changes
+- 0 deploys
+- Lock held throughout
+- This is the first cycle since the security sweep began that didn't ship any code. The remaining surface is mostly verified-clean.

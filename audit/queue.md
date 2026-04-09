@@ -133,5 +133,5 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [x] Per-day spend cap kill switch for chat.* (cycle 48, 2026-04-09 — `chatSpendLog` table + `lib/spendCap.ts` helper + 5 httpAction wrappers wired; verified end-to-end by manipulating the cap; total chat-system spend now hard-capped at $50/day default, configurable via env)
 - [x] `apiKeys.updateLastUsed` internalize cleanliness (cycle 49, 2026-04-09 — converted to internalMutation, http.ts caller switched to internal.*)
 - [x] `rateLimits` table cron cleanup (cycle 50, 2026-04-09 — created convex/crons.ts with hourly cleanup at HH:17 UTC)
-- [ ] Cron functions and scheduled actions — verify they don't accept untrusted args (the new cycle 50 cron is internal-only and trusted by definition; other crons should be re-audited if added)
-- [ ] Webhook endpoints — verify Clerk webhooks signature-validate properly
+- [x] Cron functions and scheduled actions — verify they don't accept untrusted args (cycle 51, 2026-04-09 — 2 scheduled functions total: crons.ts hourly cleanup with hardcoded args, pipeline/index.ts runPipeline scheduled from auth-checked startPipeline; both trusted by construction, cycle 43 was load-bearing)
+- [x] Webhook endpoints — verify Clerk webhooks signature-validate properly (cycle 51, 2026-04-09 — N/A, NO webhooks exist in this codebase. Convex auth is JWT-based via auth.config.ts. Logged P3 sync-divergence concern for orphaned Clerk → Convex records)

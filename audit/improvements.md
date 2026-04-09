@@ -12,7 +12,20 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-(empty — all known improvements cleared)
+
+### [P3] Clerk → Convex sync divergence (no webhook propagation) — cycle 51, 2026-04-09
+- The codebase has no Clerk webhooks. User records are mirrored from Clerk on demand (sign-up flows). There's no mechanism to propagate Clerk-side changes back to Convex.
+- **Drift cases:**
+  - Clerk user deleted (admin, GDPR, account closure) → Convex user record orphaned. Cannot authenticate (no JWT will match) but the row + linked profile / bundles / etc. remain.
+  - Clerk email changed → `users.email` field stale.
+  - Clerk username changed → `users.username` stale, may diverge from `profiles.username`.
+- **Why P3:** the Clerk JWT remains the source of truth for auth, so orphaned records can't be used to impersonate. Email/username staleness is mostly cosmetic (used for display, not auth). The product can survive without this for a long time.
+- **Fix design (for whenever it becomes a problem):** add a Clerk webhook handler at `convex/http.ts:/api/v1/webhooks/clerk` that:
+  1. Verifies the Svix signature using `CLERK_WEBHOOK_SECRET` env var
+  2. Handles `user.deleted` → soft-delete or hard-delete the Convex user (and cascade to profile/bundles)
+  3. Handles `user.updated` → patch `users.email`, `users.username`, `users.displayName` to match Clerk
+  4. Logs to `securityLogs` for audit trail
+- Alternative: a periodic cron that calls Clerk Backend API for each Convex user and reconciles divergences. Slower but doesn't require webhook setup.
 
 
 ## DONE
