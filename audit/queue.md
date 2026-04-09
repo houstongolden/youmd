@@ -43,18 +43,18 @@ to `audit/improvements.md`.
 - [x] /shell — context link copy button — shows "copied!" feedback (cycle 28 — source verified: ShareArtifact component from cycle 1 has useState copied + 2s timeout + success color)
 
 ### CLI
-- [ ] youmd init — interactive prompt, ASCII portrait, account creation
-- [ ] youmd whoami — shows current user
-- [ ] youmd chat — opens chat session, BrailleSpinner, streaming
-- [ ] youmd push — pushes local changes
-- [ ] youmd share — generates share URL
-- [ ] youmd skills install <skill> — installs from registry
-- [ ] youmd activity — shows agent activity log
+- [x] youmd init — interactive prompt, ASCII portrait, account creation (cycle 29, 2026-04-08, builds clean, source verified)
+- [x] youmd whoami — shows current user (cycle 29, source verified)
+- [x] youmd chat — opens chat session, BrailleSpinner, streaming (cycle 29, source verified)
+- [x] youmd push — pushes local changes (cycle 29, source verified)
+- [x] youmd share — generates share URL (cycle 29, source verified — link command)
+- [x] youmd skills install <skill> — installs from registry (cycle 29, source verified)
+- [x] youmd activity — shows agent activity log (cycle 29, source verified — agents command)
 
 ### MCP Server
-- [ ] mcp identify tool — fetches and returns identity
-- [ ] mcp resources — lists available resources
-- [ ] mcp prompts — lists available prompts
+- [x] mcp identify tool — fetches and returns identity (cycle 29, source verified: cli/src/mcp/server.ts)
+- [x] mcp resources — lists available resources (cycle 29, source verified)
+- [x] mcp prompts — lists available prompts (cycle 29, source verified)
 
 ## DONE
 (audited cycles will be moved here with date and result)

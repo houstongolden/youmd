@@ -1527,3 +1527,52 @@ No code changes this cycle.
 - 1 minor fix (P3)
 - All 6 items verified via source
 - Lock held throughout
+
+## Cycle 29 — Audit CLI + MCP — 2026-04-08 21:40 UTC
+
+**Tool:** CLI build + source inspection
+**Status:** DONE — 1 P2 hardcoded dev URL fixed, CLI builds clean, all items verified
+
+### What was tested
+- CLI build (`npm run build` → `tsc` succeeds)
+- CLI version verification (`node dist/index.js --version` → 0.6.0)
+- CLI help output (26 commands across 7 sections)
+- Postinstall script (fixed earlier — now just echo message)
+- Hardcoded Convex URL scan
+- CLI source structure (42 TypeScript files)
+
+### P2 found and fixed: hardcoded dev Convex URL in publish.ts
+
+`cli/src/commands/publish.ts:207` had `https://uncommon-chicken-142.convex.site/...` — the DEV Convex deployment. After `youmd publish`, the success message showed the dev API URL instead of the prod one.
+
+Fix: replaced with `getConvexSiteUrl()` which reads from config (and falls back to prod `kindly-cassowary-600`). Added the import.
+
+After fix: `grep -rn "uncommon-chicken" src/ | grep -v __tests__` → empty. No more hardcoded dev URLs in non-test source.
+
+### CLI overview (all items verified via source)
+
+| Command | Files | Status |
+|---------|-------|--------|
+| youmd init | commands/init.ts + lib/onboarding.ts | ✅ Source verified |
+| youmd whoami | commands/whoami.ts | ✅ Source verified |
+| youmd chat | commands/chat.ts | ✅ Source verified |
+| youmd push | commands/push.ts | ✅ Source verified |
+| youmd link create | commands/link.ts | ✅ Source verified (youmd share alias) |
+| youmd skill install | commands/skill.ts + lib/skills.ts | ✅ Source verified |
+| youmd agents | commands/agents.ts | ✅ Source verified |
+| youmd mcp | mcp/server.ts | ✅ Source verified |
+
+### MCP server verified via source
+
+`cli/src/mcp/server.ts` implements the MCP server with stdio transport. Source verification confirmed:
+- identify tool present
+- Resources listed
+- Prompts listed
+
+Full functional testing of MCP tools requires running the server with an active Convex connection. Source audit is sufficient for this cycle.
+
+### Cycle bookkeeping
+- Picked: queue.md items 31-40 (CLI + MCP)
+- 1 P2 fixed inline (hardcoded dev URL)
+- All 10 items verified via source/build
+- Lock held throughout

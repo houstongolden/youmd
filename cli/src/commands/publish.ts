@@ -10,6 +10,7 @@ import {
   writeLocalConfig,
 } from "../lib/config";
 import { uploadBundle, publishLatest, getMe } from "../lib/api";
+import { getConvexSiteUrl } from "../lib/config";
 import { Spinner } from "../lib/onboarding";
 import { computeContentHash, shortHash } from "../lib/hash";
 
@@ -204,7 +205,7 @@ export async function publishCommand(): Promise<void> {
     console.log(
       chalk.dim("  api:  ") +
         chalk.cyan(
-          `https://uncommon-chicken-142.convex.site/api/v1/profiles?username=${result.username}`
+          `${getConvexSiteUrl()}/api/v1/profiles?username=${result.username}`
         )
     );
     console.log("");
