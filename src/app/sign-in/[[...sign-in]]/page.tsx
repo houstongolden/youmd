@@ -262,6 +262,19 @@ export default function SignInPage() {
     verify: handleVerify,
   };
 
+  // Per-step input semantics: type, autocomplete, mobile keyboard, accessible name
+  const stepFieldConfig: Record<string, {
+    type: "text" | "email" | "password" | "tel";
+    autoComplete: string;
+    inputMode?: "text" | "email" | "tel" | "url" | "numeric";
+    name: string;
+    ariaLabel: string;
+  }> = {
+    email: { type: "email", autoComplete: "email", inputMode: "email", name: "email", ariaLabel: "email address" },
+    password: { type: "password", autoComplete: "current-password", name: "current-password", ariaLabel: "password" },
+    verify: { type: "text", autoComplete: "one-time-code", inputMode: "numeric", name: "verification-code", ariaLabel: "verification code" },
+  };
+
   return (
     <div className="h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4 min-h-0">
@@ -295,7 +308,11 @@ export default function SignInPage() {
               <TerminalAuthInput
                 prompt=">"
                 placeholder={stepPlaceholder[step]}
-                type={step === "password" ? "password" : "text"}
+                type={stepFieldConfig[step].type}
+                autoComplete={stepFieldConfig[step].autoComplete}
+                inputMode={stepFieldConfig[step].inputMode}
+                name={stepFieldConfig[step].name}
+                ariaLabel={stepFieldConfig[step].ariaLabel}
                 onSubmit={stepHandler[step]}
               />
             </div>

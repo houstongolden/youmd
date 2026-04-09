@@ -341,11 +341,18 @@ export default function ResetPasswordContent() {
     "confirm-password": handleConfirmPassword,
   };
 
-  const stepType: Record<string, "text" | "password"> = {
-    email: "text",
-    code: "text",
-    "new-password": "password",
-    "confirm-password": "password",
+  // Per-step input semantics: type, autocomplete, mobile keyboard, accessible name
+  const stepFieldConfig: Record<string, {
+    type: "text" | "email" | "password" | "tel";
+    autoComplete: string;
+    inputMode?: "text" | "email" | "tel" | "url" | "numeric";
+    name: string;
+    ariaLabel: string;
+  }> = {
+    email: { type: "email", autoComplete: "email", inputMode: "email", name: "email", ariaLabel: "email address" },
+    code: { type: "text", autoComplete: "one-time-code", inputMode: "numeric", name: "verification-code", ariaLabel: "verification code" },
+    "new-password": { type: "password", autoComplete: "new-password", name: "new-password", ariaLabel: "new password" },
+    "confirm-password": { type: "password", autoComplete: "new-password", name: "confirm-password", ariaLabel: "confirm new password" },
   };
 
   const spinnerStep =
@@ -390,7 +397,11 @@ export default function ResetPasswordContent() {
               <TerminalAuthInput
                 prompt=">"
                 placeholder={stepPlaceholder[step]}
-                type={stepType[step]}
+                type={stepFieldConfig[step].type}
+                autoComplete={stepFieldConfig[step].autoComplete}
+                inputMode={stepFieldConfig[step].inputMode}
+                name={stepFieldConfig[step].name}
+                ariaLabel={stepFieldConfig[step].ariaLabel}
                 onSubmit={stepHandler[step]}
               />
             </div>

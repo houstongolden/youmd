@@ -648,6 +648,22 @@ function CreateContentInner() {
     verify_code: handleVerifyCode,
   };
 
+  // Per-step input semantics: type, autocomplete, mobile keyboard, accessible name
+  const phaseFieldConfig: Record<string, {
+    type: "text" | "email" | "password" | "tel";
+    autoComplete: string;
+    inputMode?: "text" | "email" | "tel" | "url" | "numeric";
+    name: string;
+    ariaLabel: string;
+  }> = {
+    username: { type: "text", autoComplete: "username", name: "username", ariaLabel: "username" },
+    name: { type: "text", autoComplete: "name", name: "name", ariaLabel: "your name" },
+    social: { type: "text", autoComplete: "off", name: "social-handle", ariaLabel: "social handle (x or github username)" },
+    email: { type: "email", autoComplete: "email", inputMode: "email", name: "email", ariaLabel: "email address" },
+    password: { type: "password", autoComplete: "new-password", name: "new-password", ariaLabel: "new password" },
+    verify_code: { type: "text", autoComplete: "one-time-code", inputMode: "numeric", name: "verification-code", ariaLabel: "verification code" },
+  };
+
   // Auto-scroll to bottom when lines change or phase changes
   useEffect(() => {
     setTimeout(() => {
@@ -728,7 +744,11 @@ function CreateContentInner() {
               <TerminalAuthInput
                 prompt=">"
                 placeholder={promptPlaceholder[phase] || ""}
-                type={phase === "password" ? "password" : "text"}
+                type={phaseFieldConfig[phase]?.type || "text"}
+                autoComplete={phaseFieldConfig[phase]?.autoComplete}
+                inputMode={phaseFieldConfig[phase]?.inputMode}
+                name={phaseFieldConfig[phase]?.name}
+                ariaLabel={phaseFieldConfig[phase]?.ariaLabel}
                 onSubmit={handleSubmit[phase] || (() => {})}
               />
             </div>

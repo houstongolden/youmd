@@ -12,17 +12,21 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-
-### [P2] Other auth forms (sign-in, create, reset-password) need same TerminalAuthInput a11y treatment (cycle 5)
-- Files: `src/app/sign-in/[[...sign-in]]/page.tsx`, `src/app/create/create-content.tsx`, `src/app/reset-password/reset-content.tsx`
-- Issue: TerminalAuthInput has been extended with optional autoComplete/inputMode/name/ariaLabel props (cycle 5), but only sign-up was updated to pass them. Other call sites still rely on the defaults (autoComplete="off", no inputMode, ariaLabel falls back to placeholder).
-- Fix: For each call site, pass per-field config (email → type=email + autoComplete=email + inputMode=email; password → autoComplete=current-password or new-password; verification code → autoComplete=one-time-code + inputMode=numeric; etc)
-- Why P2: Same screen-reader, autofill, and mobile-keyboard issues that cycle 5 fixed for sign-up. Lower priority than sign-up because the affected forms are less central.
-- Found by: cycle 5 audit of /sign-up
+(empty — all known improvements cleared)
 
 ## DONE
 
-### [P1] /sign-up email field had 4 a11y/UX bugs — cycle 5, 2026-04-08
+### [P2] sign-in / create / reset-password TerminalAuthInput a11y — cycle 6, 2026-04-08
+- Files: `src/app/sign-in/[[...sign-in]]/page.tsx`, `src/app/create/create-content.tsx`, `src/app/reset-password/reset-content.tsx`
+- Fix: applied the same per-step `stepFieldConfig` / `phaseFieldConfig` map pattern from cycle 5 to all 3 remaining auth forms. Each step now passes correct type/autoComplete/inputMode/name/ariaLabel:
+  - **sign-in**: email (type=email, autoComplete=email), password (autoComplete=current-password — note: NOT new-password since this is sign-in not sign-up), verify (one-time-code + numeric)
+  - **create**: username, name, social, email, password (new-password), verify_code — 6 fields total
+  - **reset-password**: email, code (one-time-code), new-password (autoComplete=new-password), confirm-password (autoComplete=new-password)
+- TerminalAuthInput component itself was already updated in cycle 5 (backwards-compatible additions)
+- Commit: pending
+
+### [P1] /sign-up email field had 4 a11y/UX bugs — cycle 5, 2026-04-08 (VERIFIED LIVE 17:31 UTC)
+- **Verified live:** input on /sign-up has `type=email, name=email, ariaLabel="email address", autocomplete=email, inputMode=email` (all 4 cycle 5 fixes confirmed)
 - File: `src/components/terminal/TerminalAuthInput.tsx`, `src/app/sign-up/[[...sign-up]]/page.tsx`
 - Bugs found via real Chromium DOM inspection of `/sign-up`:
   1. Email input was `type="text"` (should be `type="email"` for keyboard + validation)
