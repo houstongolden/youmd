@@ -124,9 +124,12 @@ const CTAFooter = () => {
             </div>
           </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-border/30">
+            {/* Cycle 67: bumped from min-h-[44px] to min-h-[48px] — at 44 the
+                subpixel rounding occasionally lands on 43.998px which fails the
+                strict < 44 audit check. 48px is comfortably above the threshold. */}
             <Link
               href="/"
-              className="inline-flex items-center min-h-[44px] px-3 text-accent font-mono text-[11px] hover:text-accent-light transition-colors"
+              className="inline-flex items-center min-h-[48px] px-3 text-accent font-mono text-[11px] hover:text-accent-light transition-colors"
             >
               you
             </Link>
