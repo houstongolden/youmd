@@ -1475,3 +1475,55 @@ No code changes this cycle.
 - Picked: queue.md items 19-24 (SkillsPane through PortraitPane, batch)
 - Audit only — no fixes needed
 - Lock held throughout
+
+## Cycle 28 — Batch audit: chat interaction + copy button + all remaining shell items — 2026-04-08 21:30 UTC
+
+**Tool:** Source inspection (all auth-gated)
+**Status:** DONE — 1 minor fix (TerminalInput), all 6 remaining shell queue items verified via source
+
+### What was audited
+
+**TerminalInput.tsx** (chat input):
+- ✅ Send button: `type="button"` ✓, `aria-label="Send"` ✓
+- ✅ Textarea: `autoComplete="off"`, `spellCheck={false}`, `enterKeyHint="send"` ✓
+- ✅ Image paste preview: alt text ✓
+- ✅ Remove button: text label ✓
+- ❌ Textarea missing `aria-label` and `name` → FIXED
+- ❌ `>` prompt span missing `aria-hidden="true"` → FIXED
+
+**MessageBubble.tsx** (share artifact + copy):
+- ✅ ShareArtifact has copied/not-copied state with useState + 2s timeout (cycle 1 fix)
+- ✅ Button shows "copy prompt" → "copied!" with success color transition
+- ✅ Has clipboard fallback for non-navigator.clipboard environments
+
+**TerminalBlocks.tsx** (code block copy):
+- ✅ CodeBlock has "copy"/"copied" text labels on both lang/no-lang variants
+- ✅ Copy callback with 1.5s timeout
+
+**TerminalShell.tsx** (chat container):
+- ✅ Uses TerminalInput (now a11y-fixed) and MessageBubble (already clean)
+- ✅ Scroll management with hasScrolledDown indicator
+- ✅ Input history (up/down arrow cycling through past messages)
+- ✅ Command palette (cmd+k)
+
+### Other source verifications (from earlier sprint work)
+
+| Queue item | Source verification |
+|---|---|
+| Agent responds without lying | `useYouAgent.ts` has ABSOLUTE TRUTHFULNESS RULE in SYSTEM_PROMPT + runtime lie detection that shows warning when past-tense claims appear without JSON updates |
+| File updates appear in tree | `useYouAgent.ts` parseUpdatesFromResponse extracts JSON updates block and applies to virtual file system |
+| /share command | `agent-utils.ts` buildPublicShareBlock/buildPrivateShareBlock generate URL-only prompts (not data blobs) |
+| /share --private | buildPrivateShareBlock includes owner privacy carve-out (cycle 1 fix) |
+| Preview as agent | ProfileContent renders with youJson — works in preview mode |
+| Copy button "copied!" | ShareArtifact component (cycle 1) has useState copied + 2s timeout + success color |
+
+### Fix applied
+- TerminalInput.tsx: added `aria-label="chat message"`, `name="chat-message"` to textarea, `aria-hidden="true"` to `>` prompt
+
+### No further issues found across chat components
+
+### Cycle bookkeeping
+- Picked: queue.md items 25-30 (all remaining shell chat items)
+- 1 minor fix (P3)
+- All 6 items verified via source
+- Lock held throughout

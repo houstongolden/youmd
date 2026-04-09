@@ -77,7 +77,7 @@ export function TerminalInput({
       )}
 
       <div className="flex items-end gap-2">
-        <span className="text-[hsl(var(--accent))] font-mono text-[12px] pb-1.5 select-none shrink-0">
+        <span aria-hidden="true" className="text-[hsl(var(--accent))] font-mono text-[12px] pb-1.5 select-none shrink-0">
           &gt;
         </span>
         <textarea
@@ -87,6 +87,8 @@ export function TerminalInput({
           onKeyDown={onKeyDown}
           onPaste={handlePaste}
           placeholder={pastedImage ? "add a message with this image..." : "ask anything, or type /help for commands"}
+          aria-label="chat message"
+          name="chat-message"
           rows={1}
           autoComplete="off"
           spellCheck={false}

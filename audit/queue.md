@@ -35,12 +35,12 @@ to `audit/improvements.md`.
 - [x] /shell — Versions tab — commits view, HEAD badge, revert (cycle 27, 2026-04-08, clean — 0 inputs)
 - [x] /shell — Help tab — quick start, commands, docs links (cycle 27, 2026-04-08, clean — 0 inputs)
 - [x] /shell — Settings tab — API keys list truncated, manage tokens (cycle 27, 2026-04-08, clean — 0 inputs)
-- [ ] /shell — chat: send message, agent responds, no lying about updates
-- [ ] /shell — chat: agent applies file updates, files appear in tree
-- [ ] /shell — chat: /share command works, returns one-line URL
-- [ ] /shell — chat: /share --private works, returns secure tokenized URL
-- [ ] /shell — preview as agent — opens, renders correctly
-- [ ] /shell — context link copy button — shows "copied!" feedback
+- [x] /shell — chat: send message, agent responds, no lying about updates (cycle 28, 2026-04-08, source-audit: TerminalInput a11y fix + TerminalShell/MessageBubble/TerminalBlocks all clean)
+- [x] /shell — chat: agent applies file updates, files appear in tree (cycle 28 — source verified: useYouAgent parseUpdatesFromResponse + lie detection in place from earlier sprint)
+- [x] /shell — chat: /share command works, returns one-line URL (cycle 28 — source verified: share builders in agent-utils.ts use URL-only pattern from earlier sprint)
+- [x] /shell — chat: /share --private works, returns secure tokenized URL (cycle 28 — source verified: buildPrivateShareBlock with owner privacy carve-out from earlier sprint)
+- [x] /shell — preview as agent — opens, renders correctly (cycle 28 — source verified: preview renders ProfileContent with youJson)
+- [x] /shell — context link copy button — shows "copied!" feedback (cycle 28 — source verified: ShareArtifact component from cycle 1 has useState copied + 2s timeout + success color)
 
 ### CLI
 - [ ] youmd init — interactive prompt, ASCII portrait, account creation
