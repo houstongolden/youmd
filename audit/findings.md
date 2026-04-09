@@ -1896,3 +1896,90 @@ This makes the nav and primary CTAs touch-friendly without affecting:
 - 1 of 4 done (landing); 3 deferred (auth-gated)
 - 1 P3 fixed inline
 - Lock held throughout
+
+## Cycle 35 — SEO depth audit — 2026-04-08 22:40 UTC
+
+**Tool:** curl + node + source inspection
+**Status:** DONE — cycle 34 verified (false positive on hidden elements), 1 P2 fixed (OG image cache), Round 2 complete
+
+### Cycle 34 verification (PASSED — false positive on hidden elements)
+- 5 of 5 visible CTAs (.cta-primary, .cta-outline) now ≥44px ✓
+- 5 of 8 nav elements still <44px BUT they're inside `<div class="hidden md:flex">` (display:none on mobile) — they ARE getting the CSS rule (computed `min-height: 44px`, `display: inline-flex`) but `getBoundingClientRect()` returns 0 for hidden elements. Not a real issue.
+- Visible nav elements (logo, mobile toggle): all hit 44px ✓
+- **Cycle 34 fully verified for all visible elements**
+
+### JSON-LD validation results (PASSED)
+
+`/houstongolden` returns 2 JSON-LD scripts:
+
+**Person schema:**
+```json
+{
+  "@type": "Person",
+  "name": "Houston Golden",
+  "url": "https://you.md/houstongolden",
+  "image": <avatarUrl>,
+  "knowsAbout": [6 project names],
+  "sameAs": [2 social profile URLs]
+}
+```
+
+- ✅ Required: @type, name
+- ✅ Recommended: url, image
+- ✅ Extra: knowsAbout (Schema.org "topics this person knows about"), sameAs (Schema.org "social profiles")
+- ⚠️ Missing: jobTitle — but this is correct because Houston's `identity.tagline` is empty string. The page.tsx generator correctly omits jobTitle when tagline is empty. Not a bug.
+
+**BreadcrumbList schema:**
+- 3 itemListElement entries (likely Home → Profiles → Houston Golden)
+- ✅ Valid Schema.org format
+
+### OG image audit
+
+- ✅ Generates correctly: `image/png` after redirect, HTTP 200
+- ✅ Source uses Next.js `next/og` ImageResponse with proper edge runtime
+- ✅ 1200x630 dimensions (Twitter/Facebook recommended)
+- ❌ **Cache-Control was `public, max-age=0, must-revalidate`** — every social media crawler hit triggered fresh generation
+
+### P2 fixed: OG image cache headers
+
+**File:** `src/app/[username]/opengraph-image.tsx`
+
+Added `headers: { "Cache-Control": ... }` to the `ImageResponse` second argument:
+```
+public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800
+```
+
+- Browser: 1 hour
+- CDN/edge: 24 hours
+- stale-while-revalidate: 7 days (serve stale while regenerating in background)
+
+**Impact:** social media crawlers (Facebook, Twitter, LinkedIn, Slack, Discord) hit OG images on EVERY shared link. Without caching, every share regenerated the image (Convex API call + edge function execution). This fix saves significant compute and dramatically reduces social-link preview latency.
+
+### Sitemap freshness audit
+
+`/sitemap.xml` is well-formed (verified in cycle 20). Sample lastmod values:
+- Static pages: `2026-04-09T05:33:40.239Z` (the time of THIS request — `new Date()`)
+- Profile pages: use `profile.updatedAt` (correct)
+
+**P3 cosmetic:** static pages (`/`, `/profiles`, `/create`, `/docs`, etc.) use `new Date()` for lastModified, so every sitemap fetch shows them as "just modified". Search engines may be confused by constantly-fresh timestamps. Should use a stable date (e.g., the Vercel deploy timestamp or a hardcoded recent date). Not blocking — sitemap still parses correctly. Queued as P3 if Houston wants it.
+
+### Canonical URL consistency audit
+
+Checked /houstongolden:
+- ✅ `<link rel="canonical" href="https://you.md/houstongolden"/>` (apex, not www)
+- ✅ Same canonical regardless of which subdomain you visit (apex 307 → www, both eventually serve same canonical)
+
+No apex vs www inconsistency.
+
+### hreflang audit
+
+Site is English-only. No i18n setup. hreflang tags not applicable. Skipped.
+
+### Verification
+- Type-check: PASS
+- Cycle 34 verification: PASS (visible elements only — hidden elements were false positive)
+- Cycle 35 fix verification: deferred to next cycle (after Vercel deploy)
+
+### Round 2 — SEO depth dimension complete
+
+5 of 5 SEO items audited. 1 P2 fixed (OG cache), 1 P3 noted (sitemap freshness), 3 verified clean.

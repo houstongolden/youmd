@@ -214,6 +214,16 @@ export default async function OgImage({
     ),
     {
       ...size,
+      headers: {
+        // OG images don't change unless the profile changes. Social media
+        // crawlers (Facebook, Twitter, LinkedIn, Slack, etc.) hammer this
+        // endpoint on every shared link, so caching is critical.
+        // - Browser: 1 hour
+        // - CDN/edge: 24 hours
+        // - stale-while-revalidate: 7 days (serve stale while regenerating)
+        "Cache-Control":
+          "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800",
+      },
     }
   );
 }

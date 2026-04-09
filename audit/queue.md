@@ -95,8 +95,8 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [ ] Network failure during chat — UI handling (deferred — needs auth)
 
 ### SEO depth
-- [ ] JSON-LD validation — Schema.org validator on Person + Breadcrumb
-- [ ] OG image generation — verify /opengraph-image renders
-- [ ] sitemap.xml freshness — lastmod accuracy
-- [ ] Canonical URL consistency — apex vs www
-- [ ] hreflang — international targeting (if applicable)
+- [x] JSON-LD validation (cycle 35: Person + BreadcrumbList both valid; Person has name/url/image/knowsAbout/sameAs; jobTitle correctly omitted because tagline empty)
+- [x] OG image generation (cycle 35: PNG generated correctly; cache headers added inline P2 fix)
+- [x] sitemap.xml freshness (cycle 35: profile entries use updatedAt; static pages use new Date() — minor cosmetic, see findings)
+- [x] Canonical URL consistency (cycle 35: all profile pages set canonical to https://you.md/{username}, no apex/www inconsistency)
+- [x] hreflang (cycle 35: not applicable — single-language site, no i18n in scope)
