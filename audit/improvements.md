@@ -13,6 +13,12 @@ Severity:
 
 ## TODO
 
+### [P3] Cycle 65 incomplete fixes — 2 cosmetic touch target gaps — cycle 66, 2026-04-09
+- Cycle 66's stabilization re-audit found 2 elements where the cycle 65 mobile a11y fix didn't fully apply:
+  1. **ProfilesShowcase profile card** "Houston Goldenfounder · you.md" — rendering at 292×40 (4px under WCAG min). I added `min-h-[44px]` to the Wrapper className in cycle 65 but it didn't take effect. The dynamic Wrapper (Link or div) may be constructing the className differently. **Fix**: change `min-h-[44px]` to an explicit `h-[52px]` or wrap with a separate `min-h-[44px]` div, OR debug why the className isn't applying.
+  2. **CTAFooter "you" brand link** — 44×44 (exactly at boundary, audit's `< 44` filter catches it due to subpixel rounding to 43.998px). Cosmetic. Bump padding to make the layout >44 explicitly.
+- **Why P3**: both are off by 4px or less. Not blockers. Easy fix in a future low-risk cycle.
+
 ### [P2] Houston flips CSP from report-only to enforcing — cycle 58, 2026-04-09 (cycle 60 verified clean across 8+ public routes, monitoring window for public surface complete)
 - Cycle 58 shipped the CSP as `Content-Security-Policy-Report-Only`.
 - Cycle 60 verified clean across 8 HTML routes (landing, sign-up, sign-in, docs, /profiles, /houstongolden, /create, /ctx valid token) AND 5 non-HTML routes (you.json, you.txt, robots.txt, sitemap.xml, ctx). **0 CSP violations across all 13 public surfaces.**

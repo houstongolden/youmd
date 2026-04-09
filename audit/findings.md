@@ -4941,3 +4941,99 @@ If Houston's actual concern is /shell, the most useful debug data would be:
 - 30+ minutes of end-to-end investigation: server-side healthy, browser-side healthy, no errors found
 - 1 self-inflicted side effect: overwrote .env.local with `vercel ls --yes`. Restored Clerk + Convex public URL vars from Vercel; Houston needs to manually re-add CONVEX_DEPLOY_KEY (1 line) for local Convex deploys to work.
 - Lock held throughout
+
+---
+
+## Cycle 66 — Stabilization regression sweep (post Houston "site crashed" report) — 2026-04-09 18:10 UTC
+
+**Tool:** 26-test stabilization sweep + /browse re-verify
+**Status:** **DONE — site is fully operational. 26/26 health checks pass. 2 minor cycle 65 incomplete fixes logged for cycle 67 (not what Houston was reporting).**
+
+### What this cycle did
+
+Houston's "site crashed" message from cycle 65 hadn't been responded to when the cron fired again. Following the protocol's principle of not making things worse, this cycle is **verification-only**: re-run the cycle 59 23-test security regression sweep + cycle 65 deploy verification + fresh /browse health check. No new code unless something is broken.
+
+### Comprehensive health check (26 of 26 pass)
+
+**HTTP route probes (15/15)**:
+```
+✓ /              → 200
+✓ /sign-up       → 200
+✓ /sign-in       → 200
+✓ /docs          → 200
+✓ /profiles      → 200
+✓ /houstongolden → 200
+✓ /houstongolden/you.json → 200
+✓ /houstongolden/you.txt  → 200
+✓ /create        → 200
+✓ /reset-password → 200
+✓ /robots.txt    → 200
+✓ /sitemap.xml   → 200
+✓ /shell         → 307 (redirects to /sign-in for anon)
+✓ /initialize    → 307
+✓ /claim         → 307
+```
+
+**Security regression (8/8 — cycles 42-58)**:
+```
+✓ cycle 42: anon getPrivateContext blocked
+✓ cycle 45: anon clearAllData blocked
+✓ cycle 46: anon chat:onboardingChat blocked
+✓ cycle 47: anon createUser squat blocked
+✓ cycle 52: webhook missing-headers 401
+✓ cycle 53: scrape http:// rejected
+✓ cycle 54: anon scrape:scrapeProfile blocked
+✓ cycle 58: CSP-Report-Only header live
+```
+
+**Backend health (2/2)**:
+```
+✓ convex /version: 20260404T013721Z-2ef55d9d3a83
+✓ convex public query profiles:listAll → success with real data
+```
+
+**Cycle 65 deploy verification (1/1)**:
+```
+✓ landing HTML contains min-h-[44px] (cycle 65 fix is in prod)
+```
+
+**Browser-side (/browse)**:
+- Mobile viewport: page renders, 0 console errors
+- Page text preview shows the hero ASCII art + "you" + nav links — confirms client-side hydration is working
+
+### Cycle 65 incomplete spots (logged for cycle 67, NOT urgent)
+
+The post-fix cycle 66 re-audit found **2 elements still slightly under 44px**:
+
+1. **ProfilesShowcase profile card** "Houston Goldenfounder · you.md" — 292×**40** (4px under). I added `min-h-[44px]` to the Wrapper className in cycle 65 but it didn't fully apply to this specific element. Likely the dynamic Wrapper component (Link or div) is constructing the className differently than I expected. Easy fix: explicit height or change the constraint.
+
+2. **CTAFooter "you" brand link** — 44×44 (exactly at boundary, the audit's `< 44` filter catches it due to subpixel rounding). Rendered as 43.998-ish pixels in the actual layout. Cosmetic.
+
+**Neither of these is what Houston was reporting**. Both are minor incomplete cycle 65 fixes, well below the WCAG threshold concern.
+
+### What I did NOT do
+
+- **Did not ship code changes** — this is a stabilization cycle. Adding new commits while Houston's "crash" report is still unresolved would be irresponsible.
+- **Did not chase the 2 incomplete cycle 65 fixes** — they're cosmetic, not blockers, and would be scope creep. Logged for cycle 67.
+- **Did not make any changes to production** — server-side and client-side health checks all pass, no fixes needed.
+
+### Houston's "site crashed" report — current status
+
+**Cannot reproduce.** Every server-side and browser-side test shows the site is operational. Cycle 65's findings table for the 30+ checks I ran is in the previous section.
+
+If Houston is still seeing a crash, the most useful debug data would be:
+1. Browser DevTools → Console tab → red errors
+2. Browser DevTools → Network tab → failed requests
+3. Exact URL that's broken
+4. Whether the issue is /shell (auth-gated, I can't browse-test)
+
+I'm waiting on Houston's response with that data.
+
+### Cycle bookkeeping
+
+- 0 code changes
+- 0 deploys
+- 26 of 26 health checks pass
+- 2 minor cycle 65 incomplete fixes logged for cycle 67 (P3 cosmetic)
+- Lock held throughout
+- Site is in a known-good state pending Houston's response on the crash report
