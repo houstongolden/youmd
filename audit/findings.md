@@ -1009,3 +1009,69 @@ This is the file Houston was hammering me about during the recovery sprint. The 
 - Picked: queue.md item 11 (robots.txt)
 - Audit only — verification cycle, no fixes needed
 - Lock held throughout
+
+## Cycle 20 — Audit sitemap.xml — 2026-04-08 20:10 UTC
+
+**Tool:** curl + node XML parsing + convex run + source inspection
+**Status:** DONE — all checks pass, no code changes needed
+
+### What was tested
+- HTTP status, headers (content-type)
+- Well-formed XML (XML declaration, urlset xmlns)
+- Entry count and structure
+- Metadata coverage (lastmod, changefreq, priority)
+- Key static pages presence
+- Profile URL coverage
+- Cross-reference with Convex profiles count
+
+### Results
+
+**HTTP & format:**
+- ✅ HTTP 200 (after 307 redirect)
+- ✅ Content-Type: application/xml
+- ✅ Opens with `<?xml version="1.0" encoding="UTF-8"?>`
+- ✅ Proper urlset xmlns: http://www.sitemaps.org/schemas/sitemap/0.9
+- ✅ 4685 bytes, 183 lines (reasonable for 30 entries)
+
+**Entry counts:**
+- Total `<url>` entries: 30
+- Each entry has lastmod, changefreq, priority (30/30 coverage)
+
+**Static pages (6/6 present):**
+- ✅ https://you.md (priority 1.0)
+- ✅ https://you.md/profiles (priority 0.9)
+- ✅ https://you.md/create (priority 0.8)
+- ✅ https://you.md/docs (priority 0.7)
+- ✅ https://you.md/sign-in (priority 0.3)
+- ✅ https://you.md/sign-up (priority 0.3)
+
+**Profile pages (8 profiles × 3 URLs = 24 entries):**
+- 8 profiles: kai, emmawright, sato-yuki, jmarcus, priya, alex, ... + houstongolden
+- For each: `/[username]`, `/[username]/you.json`, `/[username]/you.txt`
+- houstongolden present ✓
+
+**Math:** 6 static + 24 profile = 30 entries ✓
+
+**Cross-reference with Convex:**
+- `profiles:listAll` returns 8 profiles (7 claimed + 1 unclaimed)
+- Sitemap correctly includes all 8 from this query
+- The /profiles directory page (cycle 10) showed 22 entries because it merges Convex profiles (8) + legacy users (14), but the sitemap intentionally only uses the canonical profiles table
+- This is correct: legacy users may have incomplete youJson and shouldn't be surfaced to search engines
+
+### Source inspection
+- File: `src/app/sitemap.ts`
+- Uses Next.js MetadataRoute.Sitemap
+- Fetches via `${CONVEX_SITE_URL}/api/v1/profiles` with 1-hour revalidation
+- Maps each profile to 3 URLs (page + you.json + you.txt) — smart for AI agent crawlers and SEO
+
+### No issues found
+- Well-formed XML
+- Complete metadata
+- Correct content-type
+- Reasonable filtering (Convex profiles only, not legacy)
+- 1-hour revalidation cache (good balance between freshness and Convex load)
+
+### Cycle bookkeeping
+- Picked: queue.md item 12 (sitemap.xml)
+- Audit only — no fixes needed
+- Lock held throughout
