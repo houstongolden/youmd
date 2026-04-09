@@ -16,6 +16,7 @@ import type * as cleanup from "../cleanup.js";
 import type * as contextLinks from "../contextLinks.js";
 import type * as http from "../http.js";
 import type * as lib_agentDetect from "../lib/agentDetect.js";
+import type * as lib_auth from "../lib/auth.js";
 import type * as lib_compile from "../lib/compile.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as lib_openrouter from "../lib/openrouter.js";
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   contextLinks: typeof contextLinks;
   http: typeof http;
   "lib/agentDetect": typeof lib_agentDetect;
+  "lib/auth": typeof lib_auth;
   "lib/compile": typeof lib_compile;
   "lib/hash": typeof lib_hash;
   "lib/openrouter": typeof lib_openrouter;

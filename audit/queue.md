@@ -111,3 +111,9 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [x] reportProfile spam protection (cycle 39 — P3 fix: now requires Clerk auth + 24h rate limit + reporterId tracking + length validation + self-report block)
 - [x] Schema validator review (cycle 39: 92 v.any() usages, all in dynamic schema fields like youJson/manifest where free-form is intentional. Acceptable.)
 - [x] Index coverage (cycle 39: most queries use withIndex; cleanup.ts has 1 full-table scan but it's an admin function)
+
+### Round 4 — Dependency security + Convex actions
+- [x] npm audit root project (cycle 40: 0 vulnerabilities ✓)
+- [x] npm audit CLI (cycle 40: 4 moderate in jimp→file-type ASF parser, unreachable since CLI only does image→ASCII not audio. Deferred.)
+- [x] Convex actions inventory (cycle 40: 9 actions across scrape/chat/portrait, all server-side called from mutations/queries that already auth-check)
+- [ ] CSP — define and ship (still needs dev env testing)
