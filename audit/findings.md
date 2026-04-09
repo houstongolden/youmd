@@ -5112,3 +5112,93 @@ Cycle 65 set `min-h-[44px]` correctly, but the rendered height was occasionally 
 - 0 console errors post-fix
 - Lock held throughout
 - Houston still hasn't responded on the cycle 65 crash report — site continues operational
+
+---
+
+## Cycle 68 — Auth flow mobile a11y sweep (/sign-up + /sign-in + /reset-password + /initialize) — 2026-04-09 18:50 UTC
+
+**Tool:** /browse at 390x844 across 4 auth flow pages
+**Status:** **DONE — 1 fix shipped on /reset-password. Other 3 auth pages already clean from cycle 64 cascade.**
+
+### What this cycle did
+
+Continued the mobile a11y sweep on the 4 auth flow pages I hadn't yet specifically audited at iPhone viewport. Cycle 64's `TerminalAuthInput` cascade fix theoretically improved all 4 (since they all use that shared component), but I wanted to verify each + check the surrounding chrome (page header, helper text, links not inside the auth input).
+
+Health check before changes (cycle 65 crash report still unresolved):
+- `/ → 200`, `/sign-up → 200`, Convex `/version` healthy ✓
+
+### Audit results
+
+| Page | Visible interactive | Too-small | Notes |
+|------|---------------------|-----------|-------|
+| `/sign-up` | 2 | **0** ✓ | email input + Submit button (both 44×44 from cycle 64) |
+| `/sign-in` | 2 | **0** ✓ | same |
+| `/initialize` | 2 | **0** ✓ | same (auth-gated, redirects to /sign-in) |
+| `/reset-password` | 3 | **1** ✗ | "sign in" inline link 50×16 |
+
+The cycle 64 TerminalAuthInput cascade is doing its job: 3 of 4 pages had **zero issues** without any per-page work this cycle. Only `/reset-password` had a non-input-area finding.
+
+### The fix
+
+`/reset-password` had a "remember your password? sign in" line at the bottom — an inline `<Link>` inside a `<span>` with `text-[12px] opacity-40`. Natural height was 16px (font height), well under the WCAG 44 minimum.
+
+**Fix**: same pattern as cycle 63's `/houstongolden` CTA — promoted the inline link to a standalone block element below the helper text:
+
+```diff
+- <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
+-   remember your password?{" "}
+-   <Link href="/sign-in" className="text-[hsl(var(--accent))] opacity-70 ...">
+-     sign in
+-   </Link>
+- </span>
++ <p className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
++   remember your password?
++ </p>
++ <Link
++   href="/sign-in"
++   className="inline-flex items-center justify-center min-h-[44px] mt-1 px-4 ..."
++ >
++   sign in
++ </Link>
+```
+
+### Verification (post-deploy)
+
+```js
+{"visible": 3, "tooSmall": 0, "list": []}    // was 1/3
+```
+
+### What this cycle confirms about the cascade strategy
+
+The cycle 64 `TerminalAuthInput` cascade (1 file changed) achieved **3 of 4 auth pages clean for free**. Only the page-specific chrome around the cascaded component needed per-page work.
+
+The cycle 62 `SiteNav` cascade did the same for the 7+ pages using the shared header.
+
+This is the expected payoff of the mobile a11y sweep — fixing shared components yields cascading benefits, and the per-page audits surface the residual issues that don't live in shared components.
+
+### Files changed
+
+- `src/app/reset-password/reset-content.tsx` — promoted inline "sign in" link to standalone block
+
+### Cycle bookkeeping
+- 1 touch target fix
+- 1 file changed
+- 4 pages audited (3 already clean)
+- Type-check clean
+- Vercel auto-deploy (~50s)
+- Site still operational (cycle 65 crash report unresolved, no regression detected)
+- Lock held throughout
+
+### Cumulative mobile a11y sweep across cycles 61-68
+
+| Cycle | Page/component | Before | After |
+|-------|----------------|--------|-------|
+| 61 | /docs | 13 too-small + missing aria | 0 |
+| 62 | /profiles + SiteNav cascade | 9 + missing label | 0 (cascades to ~7 pages) |
+| 63 | /houstongolden | 3 (1 CTA + 2 footer) | 0 |
+| 64 | /create + TerminalAuthInput cascade | 3 | 0 (cascades to 4 auth pages) |
+| 65 | landing | 25 | 2 (incomplete spots) |
+| 67 | landing followup (cycle 65 spots) | 2 | 0 |
+| 68 | /reset-password (auth flow chrome) | 1 | 0 |
+
+**Total: 56 touch target fixes shipped across 8 cycles** — plus 2 shared-component cascades that improved another ~10 pages for free. The public-facing mobile a11y baseline is now fully clean for all surfaces I've been able to test.
