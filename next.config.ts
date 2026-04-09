@@ -51,6 +51,10 @@ import type { NextConfig } from "next";
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.you.md",
+  // worker-src: cycle 58 caught this in the first report-only browse pass —
+  // Next.js / Clerk spawn Web Workers from blob: URLs. Without an explicit
+  // worker-src, browsers fall back to script-src which doesn't include blob:.
+  "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline' https://clerk.you.md",
   "img-src 'self' data: https: blob:",
   "font-src 'self' data:",
