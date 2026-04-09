@@ -900,11 +900,16 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         {!isOwner && (
           <motion.div {...delay(12)} className="mt-12 text-center">
             <p className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40">
-              want your own identity context?{" "}
-              <Link href="/create" className="text-[hsl(var(--accent))] opacity-80 hover:opacity-100 transition-opacity">
-                &gt; create yours
-              </Link>
+              want your own identity context?
             </p>
+            {/* Cycle 63: was an inline link inside the paragraph at 92x14.
+                Promoted to a standalone block link with min-h-[44px] tap target. */}
+            <Link
+              href="/create"
+              className="inline-flex items-center justify-center min-h-[44px] mt-2 px-4 text-[hsl(var(--accent))] opacity-80 hover:opacity-100 transition-opacity font-mono text-[11px]"
+            >
+              &gt; create yours
+            </Link>
           </motion.div>
         )}
 
@@ -1015,14 +1020,21 @@ function ProfileHeader({ username }: { username: string }) {
 function ProfileFooter({ username }: { username: string }) {
   return (
     <footer className="border-t border-[hsl(var(--border))] shrink-0">
-      <div className="max-w-[680px] mx-auto px-6 py-6 text-center flex items-center justify-center gap-4">
-        <p className="text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-30 uppercase tracking-widest">
-          powered by{" "}
-          <Link href="/" className="text-[hsl(var(--accent))] opacity-60 hover:opacity-100 transition-opacity">
-            you.md
-          </Link>
-        </p>
-        <Link href="/create" className="text-[hsl(var(--text-secondary))] opacity-30 font-mono text-[10px] hover:text-[hsl(var(--accent))] transition-colors">
+      {/* Cycle 63: bumped both inline-text links to min-h-[44px] standalone tap targets. */}
+      <div className="max-w-[680px] mx-auto px-6 py-4 text-center flex items-center justify-center gap-2 flex-wrap">
+        <span className="text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-30 uppercase tracking-widest">
+          powered by
+        </span>
+        <Link
+          href="/"
+          className="inline-flex items-center min-h-[44px] px-3 text-[hsl(var(--accent))] opacity-60 hover:opacity-100 transition-opacity font-mono text-[10px] uppercase tracking-widest"
+        >
+          you.md
+        </Link>
+        <Link
+          href="/create"
+          className="inline-flex items-center min-h-[44px] px-3 text-[hsl(var(--text-secondary))] opacity-30 font-mono text-[10px] hover:text-[hsl(var(--accent))] transition-colors"
+        >
           &gt; create yours
         </Link>
       </div>
