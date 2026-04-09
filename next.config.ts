@@ -31,6 +31,16 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
+      // Long cache for static assets in /public/assets/. Files here are
+      // intentionally static (logos, portraits, illustrations) and don't
+      // change between deploys. Without this they get the Next.js default
+      // `max-age=0, must-revalidate` and re-fetch on every page view.
+      {
+        source: "/assets/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
     ];
   },
 };

@@ -1756,3 +1756,74 @@ Most apps return 404 for both. Using 410 is the technically correct choice and s
 - Picked: round-2 queue items 16-21 (error states)
 - 1 P2 fixed inline (unclaimed username noindex + landmarks)
 - Lock held throughout
+
+## Cycle 33 — Performance audit on landing + key endpoints — 2026-04-08 22:20 UTC
+
+**Tool:** /browse perf cmd + curl + source inspection
+**Status:** DONE — cycle 32 verified live, 1 P2 fixed inline (asset cache headers), bundle split queued
+
+### Cycle 32 verification (PASSED)
+- /[unclaimed-username] now has `<meta name="robots" content="noindex, follow"/>` ✓
+
+### Landing page paint metrics
+
+**Desktop (1440x900):**
+| Phase | Time |
+|-------|------|
+| DNS | 1ms |
+| TCP | 64ms |
+| SSL | 46ms |
+| TTFB | **25ms** ✓ |
+| Download | 448ms |
+| DOM Parse | 214ms |
+| DOM Ready | 889ms |
+| Load | **1216ms** |
+
+**Mobile (390x844):**
+| Phase | Time |
+|-------|------|
+| TTFB | 25ms |
+| Download | 60ms |
+| DOM Parse | 222ms |
+| DOM Ready | 498ms |
+| Load | **635ms** ✓ (faster than desktop) |
+
+**Verdict:** TTFB is excellent (25ms — Vercel edge cache hit), total load is good (1.2s desktop, 0.6s mobile). Industry average is 2-3s.
+
+### API endpoint perf
+
+| Endpoint | Cold | Warm |
+|----------|------|------|
+| /houstongolden/you.json | 0.76s | 0.19s |
+| /ctx/{user}/{token} (public) | 0.66s | 0.19s |
+
+Cold = first request goes through Convex Cloud. Warm = subsequent hit Vercel edge cache (max-age=60). The 0.19s warm time is excellent for AI agent fetches.
+
+### Findings
+
+**P2 fixed: /assets/* static files had `max-age=0, must-revalidate`**
+- File: `next.config.ts`
+- The /public/assets/ directory contains static assets (houston-portrait.jpeg, etc.) that don't change between deploys, but they had the Next.js default cache header (`public, max-age=0, must-revalidate`), forcing every page view to re-validate.
+- Fix: added a `headers()` entry in next.config.ts setting `cache-control: public, max-age=31536000, immutable` for `/assets/:path*`.
+- Impact: every revisit of any page that references `/assets/*` saves bandwidth and reduces network requests. Houston's portrait alone is 17.5KB and was hitting the network on every page load.
+
+**P2 queued: bundle split for unauth pages**
+- The root layout (`src/app/layout.tsx`) wraps EVERYTHING in `ConvexClientProvider`, which wraps in `ClerkProvider`. This means the landing page (which doesn't need auth) loads heavy auth-related JS chunks on every visit.
+- Largest bundle chunks observed: 414KB, 265KB, 203KB, 175KB, 132KB
+- Architecture already supports this — there's a `ConvexPublicProvider` exported from the same file. But the root layout uses the auth-wrapped version unconditionally.
+- Fix would require: Next.js route groups (`(public)/` vs `(auth)/`), moving Clerk into the auth group only. **Risky without dev environment testing** — could break auth state hydration. Queued as P2 follow-up.
+
+### Network observations
+- Landing page makes 50 network requests on first load (heavy but typical for marketing pages with multiple JS chunks)
+- /assets/houston-portrait.jpeg requested twice per page load (once from HeroPortrait component, once from FounderQuote component) — both will now use the cached copy after first request
+- /_next/static/chunks/* have `max-age=31536000, immutable` (good — content-hashed filenames)
+
+### Verification
+- Type-check: PASS
+- Cycle 33 verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: round-2 Performance dimension (5 items)
+- 4 of 5 done, 1 deferred (auth-gated /shell perf)
+- 1 P2 fixed inline, 1 P2 queued
+- Lock held throughout

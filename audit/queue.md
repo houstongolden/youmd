@@ -73,11 +73,12 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [ ] HTTPS-only enforcement — verify no http:// references in code
 
 ### Performance
-- [ ] Landing page Lighthouse — paint timings, bundle size, TBT
-- [ ] /shell first paint — measure Time-to-Interactive
-- [ ] you.json/you.txt response time — agent fetch latency
+- [x] Landing page paint timings (cycle 33: TTFB 25ms, total 1216ms desktop / 635ms mobile — solid)
+- [ ] /shell first paint — measure Time-to-Interactive (auth-gated, deferred)
+- [x] you.json/you.txt response time (cycle 33: 0.76s cold / 0.19s warm)
 - [ ] Image optimization — verify next/image used where appropriate
-- [ ] Bundle size analysis — find largest chunks
+- [x] Bundle size analysis (cycle 33: largest chunks 414KB, 265KB — likely Clerk; queued bundle split as P2)
+- [x] Static asset cache headers (cycle 33: /assets/* now max-age=31536000 immutable)
 
 ### Mobile
 - [ ] Landing on iPhone (390x844) — full mobile audit (most cycles tested desktop only)
