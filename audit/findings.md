@@ -3318,3 +3318,64 @@ Regression checks:
 - Deployed and verified (5 tests, all green)
 - Lock held throughout
 - Improvements TODO now has only 1 P3 remaining (rateLimits cron cleanup)
+
+---
+
+## Cycle 50 — rateLimits table cron cleanup (P3 polish) — 2026-04-09 10:50 UTC
+
+**Tool:** Convex cron file creation + manual cleanup verification + rate limit regression sweep
+**Status:** **DONE — final P3 closed. Improvements TODO is now empty.**
+
+### What this cycle did
+
+Picked up the last remaining P3 from improvements.md: rateLimits table cron cleanup. The cycle 46 `rateLimits` table inserts one row per call to a rate-limited endpoint. Without periodic cleanup it grows unboundedly: at 30 calls/min sustained from one IP that's ~43k rows/day; across many IPs it grows fast. The `cleanupOldRateLimits` internalMutation already existed (added in cycle 46) but wasn't wired to a cron.
+
+### The fix
+
+Created `convex/crons.ts` (new file — no Convex crons existed in the project before):
+
+```ts
+import { cronJobs } from "convex/server";
+import { internal } from "./_generated/api";
+
+const crons = cronJobs();
+
+crons.hourly(
+  "cleanup stale rate limit rows",
+  { minuteUTC: 17 },  // arbitrary minute offset to avoid top-of-hour spike
+  internal.lib.rateLimit.cleanupOldRateLimits,
+  { maxAgeMs: 60 * 60 * 1000 } // 1 hour
+);
+
+export default crons;
+```
+
+The cron runs every hour at HH:17 UTC and deletes rateLimits rows older than 1 hour (well outside the 60-second sliding window the rate-limit checks use). Convex's scheduler handles the firing — no separate cron daemon needed.
+
+### Verification (post-deploy)
+
+```
+Test 1: manual cleanupOldRateLimits with 1-hour cutoff → deleted: 0 (clean baseline)  ✓
+Test 2: insert a row via checkAndRecord, then cleanup with 1ms cutoff
+        → checkAndRecord allowed: true, recentCount: 1
+        → cleanup deleted: 4 (the new row + 3 lingering test rows)  ✓
+Test 3: rate limit regression — POST /api/v1/research 12x with x-forwarded-for: 99.99.99.99
+        → first 10: 200, last 2: 429  ✓ (cycle 46 rate limit still works)
+Test 4: cleanup test rows → deleted: 10  ✓
+Regression: Cycle 42 (private:getPrivateContext) → still BLOCKED  ✓
+```
+
+The cron itself doesn't have an immediate verification path (it fires at HH:17 UTC and there's no CLI inspection of registered crons), but the deploy succeeded — Convex would have errored on a malformed cron file. The next firing will run automatically.
+
+### Files changed
+- `convex/crons.ts` — **new file**, registers the hourly rate limit cleanup cron
+
+### Cycle bookkeeping
+- 1 P3 closed (the last one)
+- 1 new file
+- Type-check clean
+- Deployed
+- 1 manual cron run + rate-limit regression test green
+- Cycle 42 regression check green
+- Lock held throughout
+- **Improvements TODO is now empty**. All known P0/P1/P2/P3 items have been closed.

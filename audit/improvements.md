@@ -12,13 +12,15 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-
-### [P3] rateLimits table needs cron cleanup — cycle 46, 2026-04-09
-- The new `rateLimits` table (cycle 46) accumulates one row per call indefinitely. `cleanupOldRateLimits` exists but isn't called from a cron yet.
-- **Fix design:** add a Convex cron that runs hourly and deletes rows older than 1 hour. Or call `cleanupOldRateLimits` opportunistically on each rate-limit check. Low priority — table will grow but not catastrophically.
+(empty — all known improvements cleared)
 
 
 ## DONE
+
+### [P3] rateLimits table cron cleanup — cycle 50, 2026-04-09
+- Created `convex/crons.ts` (new file — no Convex crons existed before). Registers an hourly cron at HH:17 UTC that calls `internal.lib.rateLimit.cleanupOldRateLimits` with `maxAgeMs: 1 hour`. Prevents the rateLimits table from growing unboundedly under sustained traffic.
+- Verified manual cleanup runs work, rate limit at 10/min still triggers correctly post-deploy, cycle 42 regression check green.
+- Commit: pending
 
 ### [P3] apiKeys.updateLastUsed → internalMutation — cycle 49, 2026-04-09
 - Sole caller is `authenticateRequest` in http.ts. No legitimate reason to expose publicly. Now `internalMutation`, unreachable via /api/mutation. Verified anonymous call returns Server Error, API key auth flow still works.
