@@ -906,3 +906,50 @@ All 4 auth pages now have proper h1 + main landmark.
 - Full ctx byte length: 6659
 - Delta: 74 bytes for empty _privateContext object
 - _privateContext fields: 3 (internalLinks, privateNotes, privateProjects), all empty
+
+## Cycle 18 — Fix P3: Convex /ctx ETag — 2026-04-08 19:50 UTC
+
+**Tool:** Edit (convex/http.ts) + tsc + npx convex deploy + curl
+**Status:** DONE — fix applied, deployed to Convex prod, fully verified live end-to-end
+
+### What was done
+
+1. **Fixed P3: Convex /ctx HTTP route now computes ETag**
+   - Built the JSON body once before responding so it can be hashed
+   - Computed etag = `sha256(token + ":" + scope + ":" + body.length + ":" + sha256(body))`
+     - Token + scope ensures public/full variants of the same token never collide
+     - Body hash ensures any content change invalidates the etag
+   - Added If-None-Match → 304 passthrough
+   - Added ETag, Link, and Cache-Control headers to both JSON and markdown 200 responses
+   - Bonus fix: markdown branch was also missing the Link header — added
+
+2. **Deployed to Convex prod:**
+   - Cleaned stale .js files in convex/ first (recurring requirement)
+   - `npx convex deploy` succeeded
+
+### End-to-end verification (PASSED)
+
+| Test | Result |
+|------|--------|
+| Upstream Convex /ctx returns etag | ✅ `"9795d458..."` |
+| Next.js proxy /ctx forwards etag | ✅ Same value (cycle 16 plumbing now has data) |
+| Upstream conditional request with matching etag | ✅ Returns **HTTP 304** |
+| Link rel="describedby" header (both layers) | ✅ Present |
+
+### Verification
+- Type-check: PASS
+- Convex deploy: PASS
+- Live verification: PASS (3/3 tests)
+- Cycle 16 status: now FULLY VERIFIED LIVE (was PARTIAL — etag was the missing piece)
+
+### Cycle bookkeeping
+- Picked: only TODO from improvements.md (P3 from cycle 17)
+- Cycle 16 entry promoted from PARTIAL VERIFY → NOW FULLY VERIFIED LIVE
+- Lock held throughout
+
+### Impact
+- All 3 you.md proxy routes (you.json, you.txt, ctx) now consistently:
+  - Forward upstream ETag header
+  - Forward upstream Link rel="describedby" header
+  - Support conditional requests via If-None-Match → 304
+- AI agents that fetch the same identity context multiple times can now use 304 responses to save bandwidth

@@ -245,40 +245,64 @@ http.route({
 
     const accept = request.headers.get("accept") ?? "";
 
+    // Build the JSON body once so we can hash it for ETag
+    const jsonBody = JSON.stringify(
+      {
+        schema: "you-md/v1",
+        username: result.username,
+        scope: result.scope,
+        ...(result.bundle as Record<string, unknown>),
+        ...(result.privateContext
+          ? { _privateContext: result.privateContext }
+          : {}),
+      },
+      null,
+      2
+    );
+
+    // Compute a stable ETag from token + scope + body hash. The scope is
+    // included so that public/full variants of the same token never collide.
+    const etagValue = await sha256Hex(`${token}:${result.scope}:${jsonBody.length}:${await sha256Hex(jsonBody)}`);
+    const etag = `"${etagValue}"`;
+
+    // Honor If-None-Match — return 304 with no body
+    const ifNoneMatch = request.headers.get("if-none-match");
+    if (ifNoneMatch && ifNoneMatch === etag) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          ETag: etag,
+          Link: SCHEMA_LINK_HEADER,
+          "Cache-Control": "public, max-age=60",
+          ...CORS_HEADERS,
+        },
+      });
+    }
+
     // Return markdown if requested
     if (accept.includes("text/markdown") || accept.includes("text/plain")) {
       return new Response(result.markdown as string, {
         status: 200,
         headers: {
           "Content-Type": "text/markdown; charset=utf-8",
+          ETag: etag,
+          Link: SCHEMA_LINK_HEADER,
+          "Cache-Control": "public, max-age=60",
           ...CORS_HEADERS,
         },
       });
     }
 
-    return new Response(
-      JSON.stringify(
-        {
-          schema: "you-md/v1",
-          username: result.username,
-          scope: result.scope,
-          ...(result.bundle as Record<string, unknown>),
-          ...(result.privateContext
-            ? { _privateContext: result.privateContext }
-            : {}),
-        },
-        null,
-        2
-      ),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/vnd.you-md.v1+json",
-          Link: SCHEMA_LINK_HEADER,
-          ...CORS_HEADERS,
-        },
-      }
-    );
+    return new Response(jsonBody, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/vnd.you-md.v1+json",
+        ETag: etag,
+        Link: SCHEMA_LINK_HEADER,
+        "Cache-Control": "public, max-age=60",
+        ...CORS_HEADERS,
+      },
+    });
   }),
 });
 
