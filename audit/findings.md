@@ -326,3 +326,71 @@ Cycle 6 password step transition works correctly across the boot animation.
 - Console errors: 0 (all 4 auth pages)
 - Boot animation: ~5s on sign-in (same as sign-up)
 - Network requests: 30+ on /sign-in, all 200
+
+## Cycle 8 — Audit /docs page — 2026-04-08 17:50 UTC
+
+**Tool:** /browse skill (real Chromium), desktop 1440x900
+**Status:** DONE_WITH_FINDINGS — 1 P1 + 1 P2 found, P1 fixed inline, P2 queued. Cycle 7 verified live on all 4 auth pages.
+
+### What was tested
+- Page load (200, 0 console errors)
+- Page semantics (h1, h2, h3, main, nav, footer, links, code blocks)
+- Heading hierarchy and IDs (for deep-linking)
+- TOC structure (aside + nav)
+- Cycle 7 verification on all 4 auth pages
+
+### Cycle 7 verification (PASSED — all 4 auth pages)
+- /sign-in: h1=1 "you.md — authenticate", main=1 ✓
+- /sign-up: h1=1 "you.md — initialize", main=1 ✓
+- /create: h1=1 "you.md — create", main=1 ✓
+- /reset-password: h1=1 "you.md -- reset password", main=1 ✓
+
+All 4 auth pages now have proper h1 + main landmark.
+
+### /docs metrics (mostly excellent)
+- h1=1 "you.md" ✓
+- h2=10 ✓ (Getting Started, Claude Code Integration, Share Your Identity, Sync, CLI Reference, Skills, Agent Directives, API, Privacy, Dashboard Commands)
+- h3=17 ✓
+- main=1 ✓
+- nav=1 (TOC sidebar) ✓
+- All 27 headings have IDs ✓ (perfect for deep-linking)
+- Page height: 15155px (long but expected)
+- Code blocks: 67
+- Console errors: 0
+- Title: "Documentation — you.md" ✓
+- No horizontal scroll on desktop
+
+### Issues found
+
+**P1 — /docs sidebar TOC uses 27 BUTTONS instead of anchor links**
+- File: `src/app/docs/docs-content.tsx:317-361` (Sidebar component)
+- Inspection: `nav.linkCount: 0, nav.buttonCount: 27`
+- Impact: docs TOC was unusable for normal browser navigation patterns:
+  - Right-click "copy link" doesn't work
+  - Middle-click / cmd-click to open in new tab doesn't work
+  - Can't bookmark or share specific docs sections
+  - Buttons-as-navigation is an a11y antipattern (axe DevTools would flag this)
+- **STATUS: FIXED inline** — converted to <a href="#id"> with click handler that preserves smooth scroll AND lets the browser handle modified clicks. Also added aria-label to the nav and aria-current to the active item.
+
+**P2 — /docs has no <footer> landmark**
+- Inspection: `footer: 0`
+- Impact: incomplete landmark set; minor a11y issue
+- **STATUS: queued to improvements.md**
+
+### Verification
+- Type-check: PASS (1 file edit)
+- Cycle 7 verification: PASS (all 4 auth pages)
+- Cycle 8 fix verification: deferred to next cycle (after Vercel deploy)
+
+### Cycle bookkeeping
+- Picked: queue.md item 4 (/docs)
+- Found: 1 P1 (fixed inline) + 1 P2 (queued)
+- Cycle 7 entry annotated with "VERIFIED LIVE" tag
+- Lock held throughout
+
+### Numbers
+- /docs network requests: all 200
+- /docs console errors: 0
+- /docs h1 / h2 / h3 / main / nav: 1 / 10 / 17 / 1 / 1
+- /docs heading IDs coverage: 27/27 (100%)
+- Cycle 7 auth h1 verification: 4/4 pages pass

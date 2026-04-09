@@ -323,12 +323,27 @@ function Sidebar({
   activeId: string;
   onNav: (id: string) => void;
 }) {
+  // Wrapper that handles smooth scroll on click while letting middle-click,
+  // ctrl+click, and copy-link work like a normal anchor (browser handles those)
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    // Let the browser handle modified clicks (new tab, copy, etc)
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    onNav(id);
+    // Update URL hash without jumping (smooth scroll handles the actual scroll)
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", `#${id}`);
+    }
+  };
+
   return (
-    <nav className="space-y-1">
+    <nav aria-label="Documentation table of contents" className="space-y-1">
       {navigation.map((item) => (
         <div key={item.id}>
-          <button
-            onClick={() => onNav(item.id)}
+          <a
+            href={`#${item.id}`}
+            onClick={(e) => handleClick(e, item.id)}
+            aria-current={activeId === item.id ? "location" : undefined}
             className={`block w-full text-left px-3 py-1.5 rounded text-[13px] transition-colors ${
               activeId === item.id
                 ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))/0.08]"
@@ -336,13 +351,15 @@ function Sidebar({
             }`}
           >
             {item.label}
-          </button>
+          </a>
           {item.children && (
             <div className="ml-3 mt-0.5 space-y-0.5">
               {item.children.map((child) => (
-                <button
+                <a
                   key={child.id}
-                  onClick={() => onNav(child.id)}
+                  href={`#${child.id}`}
+                  onClick={(e) => handleClick(e, child.id)}
+                  aria-current={activeId === child.id ? "location" : undefined}
                   className={`block w-full text-left px-3 py-1 rounded text-[12px] transition-colors ${
                     activeId === child.id
                       ? "text-[hsl(var(--accent))]"
@@ -350,7 +367,7 @@ function Sidebar({
                   }`}
                 >
                   {child.label}
-                </button>
+                </a>
               ))}
             </div>
           )}

@@ -12,11 +12,39 @@ Severity:
 - **P3** — nice-to-have
 
 ## TODO
-(empty — all known improvements cleared)
+
+### [P2] /docs has no <footer> landmark (cycle 8)
+- File: `src/app/docs/docs-content.tsx`
+- Issue: docs page has nav, main, but no footer landmark
+- Fix: add `<footer>` at the bottom with copyright/version/links (or wrap an existing element)
+- Why P2: not critical, but a "complete" landmark set helps screen readers and is best practice for top-level pages
+- Found by: cycle 8 audit (`footer: 0`)
 
 ## DONE
 
-### [P1] All 4 auth pages had 0 h1 + 0 main — cycle 7, 2026-04-08
+### [P1] /docs sidebar TOC used 27 buttons instead of 27 anchor links — cycle 8, 2026-04-08
+- File: `src/app/docs/docs-content.tsx:317-361`
+- Found by: cycle 8 audit — `nav.linkCount: 0, nav.buttonCount: 27`
+- Impact: docs sidebar TOC was unusable for normal browser navigation:
+  - No deep-linking (couldn't bookmark or share a specific section)
+  - No copy-link (right-click "copy link address" wouldn't work)
+  - No middle-click to open in new tab
+  - No browser back/forward navigation between sections
+  - Buttons-as-navigation is an a11y antipattern
+- Fix: converted both top-level and child Sidebar items from `<button onClick>` to `<a href="#section-id" onClick>` with a click handler that:
+  - Lets the browser handle modified clicks (cmd/ctrl/shift/middle-click) so new-tab and copy-link work
+  - On normal click, calls `onNav(id)` for smooth scroll AND `window.history.pushState` to update the URL hash
+  - Added `aria-current="location"` for the active item
+  - Added `aria-label="Documentation table of contents"` to the wrapping `<nav>`
+- Pre-existing: all 27 docs section headings already have IDs, so anchor links work natively
+- Commit: pending
+
+### [P1] All 4 auth pages had 0 h1 + 0 main — cycle 7, 2026-04-08 (VERIFIED LIVE 17:51 UTC)
+- **Verified live on all 4 pages:**
+  - /sign-in: h1=1 "you.md — authenticate", main=1
+  - /sign-up: h1=1 "you.md — initialize", main=1
+  - /create: h1=1 "you.md — create", main=1
+  - /reset-password: h1=1 "you.md -- reset password", main=1
 - Files: `src/components/terminal/TerminalHeader.tsx`, `src/app/sign-up/[[...sign-up]]/page.tsx`, `src/app/sign-in/[[...sign-in]]/page.tsx`, `src/app/reset-password/reset-content.tsx`, `src/app/create/create-content.tsx`
 - Found by: cycle 7 audit checking h1/h2/main on all 4 auth pages — every single page returned `h1: 0, h2: 0, main: 0` (same SEO issue landing had before cycles 2-4)
 - Fix:
