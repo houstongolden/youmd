@@ -8,8 +8,8 @@ to `audit/improvements.md`.
 ## NEXT (work top-to-bottom)
 
 ### Web — Public Routes
-- [x] landing — `/` — render, hero CTAs, scroll, mobile + desktop, animations (cycle 1, 2026-04-08, 3 fixed inline + 3 queued)
-- [ ] sign-up — `/sign-up` — Clerk widget loads, can submit, redirects correctly
+- [x] landing — `/` — render, hero CTAs, scroll, mobile + desktop, animations (cycle 1, 2026-04-08, 3 fixed inline + 3 queued — all 6 cleared by cycles 1-4)
+- [x] sign-up — `/sign-up` — Clerk widget loads, can submit, redirects correctly (cycle 5, 2026-04-08, 4 a11y bugs found + fixed inline)
 - [ ] sign-in — `/sign-in` — same as above
 - [ ] docs — `/docs` — content renders, links work, mobile
 - [ ] profiles directory — `/profiles` — list loads, search, click into profile

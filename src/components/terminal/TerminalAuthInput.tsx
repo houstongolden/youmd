@@ -5,7 +5,15 @@ import { useState, useRef, useEffect } from "react";
 interface TerminalAuthInputProps {
   prompt?: string;
   placeholder?: string;
-  type?: "text" | "password";
+  type?: "text" | "password" | "email" | "tel";
+  /** Native autocomplete hint — "email", "current-password", "new-password", "username", "one-time-code", etc */
+  autoComplete?: string;
+  /** Mobile keyboard hint */
+  inputMode?: "text" | "email" | "tel" | "url" | "numeric" | "decimal" | "search";
+  /** Form field name (for password managers) */
+  name?: string;
+  /** Accessible label — falls back to placeholder if not provided */
+  ariaLabel?: string;
   onSubmit: (value: string) => void;
   autoFocus?: boolean;
   disabled?: boolean;
@@ -15,6 +23,10 @@ export function TerminalAuthInput({
   prompt = ">",
   placeholder = "",
   type = "text",
+  autoComplete = "off",
+  inputMode,
+  name,
+  ariaLabel,
   onSubmit,
   autoFocus = true,
   disabled = false,
@@ -44,21 +56,24 @@ export function TerminalAuthInput({
 
   return (
     <div className="flex items-center gap-2 font-mono text-[16px]">
-      <span className="text-[hsl(var(--accent))] select-none shrink-0">
+      <span className="text-[hsl(var(--accent))] select-none shrink-0" aria-hidden="true">
         {prompt}
       </span>
       <input
         ref={inputRef}
         type={type}
+        name={name}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         className="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[16px] text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/15"
         autoFocus={autoFocus}
         disabled={disabled}
-        autoComplete="off"
+        autoComplete={autoComplete}
+        inputMode={inputMode}
         spellCheck={false}
         placeholder={placeholder}
+        aria-label={ariaLabel || placeholder || "input"}
         enterKeyHint="send"
       />
       {/* Return/submit button */}

@@ -159,3 +159,70 @@ text for SEO and screen readers. Tailwind v4 ships `sr-only` as a built-in utili
 - Cycle 3 entry annotated with "VERIFIED LIVE" tag
 - Lock held throughout
 - **Next cycle will move to queue.md item 2: /sign-up flow audit** (no more landing improvements left)
+
+## Cycle 5 — Audit /sign-up flow — 2026-04-08 17:20 UTC
+
+**Tool:** /browse skill (real Chromium), desktop 1440x900
+**Status:** DONE_WITH_FINDINGS — 4 a11y bugs found, all fixed inline
+
+### What was tested
+- Page load (HTTP 200 after 307 redirect to www.you.md, all 30+ assets load)
+- Console errors (none)
+- Boot animation timing (~5s before form renders)
+- Form rendering after boot
+- Email input accessibility attributes (aria-label, autoComplete, type, inputMode, name)
+- Submit button (already correct)
+- Cycle 4 verification on production
+
+### Cycle 4 verification (passed)
+- h1Count: 1 ✓ (cycle 2 fix live)
+- h2Count: 10 ✓ (cycle 4 fix live, was 1)
+- main: 1 ✓ (cycle 3 fix live, was 0)
+
+### Issues found on /sign-up
+
+**P1 — Email input has no accessible name**
+- File: `src/components/terminal/TerminalAuthInput.tsx`
+- Inspection result: `ariaLabel: null, hasMatchingLabel: false, id: ""`
+- Impact: Screen readers will announce as generic "edit" or "input" instead of "email address"
+- **STATUS: FIXED** — TerminalAuthInput now accepts ariaLabel prop with placeholder fallback
+
+**P1 — Email input is `type="text"` not `type="email"`**
+- Same file
+- Inspection result: `type: "text"`
+- Impact: Mobile users get text keyboard instead of email keyboard. No browser-level validation. No autofill hint.
+- **STATUS: FIXED** — TerminalAuthInput type prop extended to accept "email"/"tel"; sign-up email step now passes type="email"
+
+**P2 — Email input has `autoComplete="off"` (hardcoded)**
+- Inspection: `autocomplete: "off"`
+- Impact: Password managers (1Password, iCloud Keychain, etc) can't autofill or save credentials
+- **STATUS: FIXED** — TerminalAuthInput now accepts autoComplete prop; sign-up passes "email", "new-password", "username", "one-time-code" per step
+
+**P2 — Email input has no `name` attribute**
+- Inspection: `name: ""`
+- Impact: Form data has no key, password managers struggle to save credentials
+- **STATUS: FIXED** — TerminalAuthInput now accepts name prop; sign-up passes "email", "new-password", "username", "verification-code" per step
+
+**Bonus fix — `>` prompt span was announced by screen readers**
+- The decorative `>` chevron in the terminal-style prompt was being read by screen readers
+- **STATUS: FIXED** — added `aria-hidden="true"` to the span
+
+### What worked correctly
+- Submit button has `type="button"` ✓ and `aria-label="Submit"` ✓
+- `enterKeyHint="send"` ✓ (good mobile UX)
+- `spellCheck={false}` ✓ (correct for technical input)
+- Custom Clerk wrapper with terminal aesthetic — unique, on-brand
+- Boot sequence animation works
+- All assets load (Clerk JS, fonts, chunks)
+- 0 console errors
+
+### Side effects
+- TerminalAuthInput is shared by 4 other pages (sign-in, create, reset-password, and the component itself).
+- Backwards compatible: all new props are optional, defaults preserve existing behavior.
+- Other call sites still need per-field config to get the same a11y win — queued in improvements.md as P2 for future cycles.
+
+### Numbers
+- Network requests on /sign-up: 30+, all 200
+- Console errors: 0
+- Boot animation: ~5s
+- Form fields: 1 input + 1 button
