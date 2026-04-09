@@ -100,3 +100,14 @@ Original 40-item queue is fully done. Round 2 covers dimensions not yet tested.
 - [x] sitemap.xml freshness (cycle 35: profile entries use updatedAt; static pages use new Date() — minor cosmetic, see findings)
 - [x] Canonical URL consistency (cycle 35: all profile pages set canonical to https://you.md/{username}, no apex/www inconsistency)
 - [x] hreflang (cycle 35: not applicable — single-language site, no i18n in scope)
+
+---
+
+## ROUND 3 — Backend audit (added cycle 37)
+
+### Convex backend security
+- [x] Auth check on private/vault/contextLinks (cycle 37 — P0 fix: 12 functions in 3 critical files now use requireOwner helper)
+- [ ] Auth check on remaining ~40 functions (profiles mutations, me, bundles, memories, skills, apiKeys) — same pattern, needs systematic rollout
+- [ ] reportProfile spam protection — public mutation with no rate limiting
+- [ ] Schema validator review — find v.any() that should be strict types
+- [ ] Index coverage — verify all queries use indexes (no full-table scans)

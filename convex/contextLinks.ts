@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireOwner } from "./lib/auth";
 
 /**
  * Context links — shareable URLs that return identity context.
@@ -27,6 +28,9 @@ export const createLink = mutation({
     name: v.optional(v.string()), // optional memorable name for the link
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -98,6 +102,9 @@ export const createLink = mutation({
 export const listLinks = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -139,6 +146,9 @@ export const revokeLink = mutation({
     linkId: v.id("contextLinks"),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -158,6 +168,9 @@ export const revokeLink = mutation({
 export const revokeAllLinks = mutation({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { requireOwner } from "./lib/auth";
 
 // ── Vault initialization ──────────────────────────────────────
 
@@ -12,6 +13,9 @@ export const initVault = mutation({
     vaultKeyIv: v.bytes(),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -65,6 +69,9 @@ export const saveEncryptedVault = mutation({
     iv: v.bytes(),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -99,6 +106,9 @@ export const getEncryptedVault = query({
     clerkId: v.string(),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))

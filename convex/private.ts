@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { requireOwner } from "./lib/auth";
 
 // ── Agent interaction stats ──────────────────────────────────
 
@@ -58,14 +59,17 @@ function generateToken(): string {
 
 // ── Private context queries ──────────────────────────────────
 
-/** Get private context — owner only (requires clerkId) */
+/** Get private context — owner only (requires authenticated Clerk identity) */
 export const getPrivateContext = query({
   args: {
     clerkId: v.string(),
     profileId: v.id("profiles"),
   },
   handler: async (ctx, args) => {
-    // Verify ownership
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
+    // Then verify they own the profile
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -98,7 +102,10 @@ export const updatePrivateContext = mutation({
     customData: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    // Verify ownership
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
+    // Then verify they own the profile
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -157,6 +164,9 @@ export const createAccessToken = mutation({
     expiresInDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     // Verify ownership
     const user = await ctx.db
       .query("users")
@@ -206,6 +216,9 @@ export const revokeAccessToken = mutation({
     tokenId: v.id("accessTokens"),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -239,6 +252,9 @@ export const listAccessTokens = query({
     profileId: v.id("profiles"),
   },
   handler: async (ctx, args) => {
+    // Verify the caller IS the user they claim to be (cycle 37 P0 fix)
+    await requireOwner(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
