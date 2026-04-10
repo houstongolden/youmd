@@ -414,6 +414,78 @@ input[type="password"]:focus-visible {
   }
 }
 
+/* ── FadeUp progressive enhancement ──────────────────────── */
+/* SSR default: content fully visible — no JS required */
+.fadeup {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* JS mounted but not scrolled into view: hidden instantly */
+.fadeup-hidden {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+/* Scrolled into view: animate to visible */
+.fadeup-in {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+/* Reduced motion: skip FadeUp animations entirely */
+@media (prefers-reduced-motion: reduce) {
+  .fadeup-hidden {
+    opacity: 1;
+    transform: none;
+  }
+  .fadeup-in {
+    transition: none;
+  }
+}
+
+/* ── Hero entrance animations (CSS-only, no JS dependency) ── */
+@keyframes hero-enter-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes hero-enter-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hero-enter-scale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.hero-enter {
+  opacity: 0;
+  animation: hero-enter-fade 0.4s ease-out forwards;
+}
+
+.hero-enter-up {
+  opacity: 0;
+  animation: hero-enter-fade-up 0.4s ease-out forwards;
+}
+
+.hero-enter-scale {
+  opacity: 0;
+  animation: hero-enter-scale 0.5s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-enter,
+  .hero-enter-up,
+  .hero-enter-scale {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ── Scrollbar ────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;

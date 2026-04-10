@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { motion, useScroll, useTransform } from "motion/react";
+import { useScroll, useTransform, motion } from "motion/react";
 import { Copy, Check } from "lucide-react";
 import PixelYOU from "./PixelYOU";
 import HeroPortrait from "./HeroPortrait";
@@ -47,19 +47,19 @@ const BootSequence = () => {
   return (
     <div className="text-left inline-block">
       {phase === "typing" && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-mono text-[11px] text-muted-foreground">
+        <div className="font-mono text-[11px] text-muted-foreground hero-enter" style={{ animationDuration: "0.2s" }}>
           {typed}<span className="cursor-blink text-accent">{"\u2588"}</span>
-        </motion.div>
+        </div>
       )}
       {(phase === "tagline" || phase === "done") && (
         <div>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-mono text-[11px] text-accent">
+          <div className="font-mono text-[11px] text-accent hero-enter" style={{ animationDuration: "0.2s" }}>
             identity context protocol
-          </motion.div>
+          </div>
           {phase === "done" && (
-            <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="font-mono text-[10px] text-muted-foreground mt-1">
+            <div className="font-mono text-[10px] text-muted-foreground mt-1 hero-enter-up" style={{ animationDelay: "0.1s", animationDuration: "0.3s" }}>
               an MCP where the context is you
-            </motion.div>
+            </div>
           )}
         </div>
       )}
@@ -123,24 +123,22 @@ const Hero = () => {
           {/* LEFT — branding & commands */}
           <div className="flex-1 text-left">
             {/* Pixel YOU — wrapped in h1 for SEO + a11y. Visible glyph is decorative; sr-only text gives semantic meaning. */}
-            <motion.h1 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.3 }} className="mb-6">
+            <h1 className="mb-6 hero-enter-scale" style={{ animationDelay: "0.3s" }}>
               <span className="sr-only">you.md — identity context protocol for the agent internet</span>
               <span aria-hidden="true">
                 <PixelYOU />
               </span>
-            </motion.h1>
+            </h1>
 
             {/* Boot sequence */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.8 }} className="mb-6">
+            <div className="mb-6 hero-enter" style={{ animationDelay: "0.8s" }}>
               <BootSequence />
-            </motion.div>
+            </div>
 
             {/* Value prop */}
-            <motion.div
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 1.1 }}
-              className="font-mono text-[11px] leading-relaxed text-muted-foreground/60 mb-6 max-w-sm space-y-1.5"
+            <div
+              className="font-mono text-[11px] leading-relaxed text-muted-foreground/60 mb-6 max-w-sm space-y-1.5 hero-enter-up"
+              style={{ animationDelay: "1.1s" }}
             >
               <p>
                 every agent starts from scratch.{" "}
@@ -151,13 +149,13 @@ const Hero = () => {
                 your identity, preferences, and best practices sync across
                 Claude Code, Cursor, and every tool you use.
               </p>
-            </motion.div>
+            </div>
 
             {/* Divider */}
             <div className="w-full h-px bg-border mb-6" />
 
             {/* Commands */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 1.5 }} className="space-y-1.5 mb-8">
+            <div className="space-y-1.5 mb-8 hero-enter" style={{ animationDelay: "1.5s" }}>
               {commands.map(([cmd, desc]) => (
                 <div key={cmd} className="font-mono text-[10px] leading-relaxed">
                   <span className="text-muted-foreground/50">$ </span>
@@ -165,41 +163,39 @@ const Hero = () => {
                   <span className="text-muted-foreground/30 ml-3"># {desc}</span>
                 </div>
               ))}
-            </motion.div>
+            </div>
 
             {/* Dual CTA */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 1.8 }} className="mb-6 flex items-center gap-3">
+            <div className="mb-6 flex items-center gap-3 hero-enter-up" style={{ animationDelay: "1.8s" }}>
               <CliPill />
               <Link href="/create" className="cta-primary px-5 py-3 text-[13px] font-mono shrink-0 whitespace-nowrap">
                 &gt; start now
               </Link>
-            </motion.div>
+            </div>
 
             {/* Badge */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 2.1 }} className="flex items-center gap-3 font-mono text-[8px] text-muted-foreground/30 uppercase tracking-widest">
+            <div className="flex items-center gap-3 font-mono text-[8px] text-muted-foreground/30 uppercase tracking-widest hero-enter" style={{ animationDelay: "2.1s" }}>
               <span>YOU/V1 &middot; OPEN SPEC &middot; FREE</span>
-            </motion.div>
+            </div>
           </div>
 
           {/* RIGHT — ASCII portrait */}
           <div className="flex-1 flex justify-center">
             <Link href="/houstongolden" className="block w-full max-w-md group">
-              <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 1.2 }}>
+              <div className="hero-enter-scale" style={{ animationDelay: "1.2s" }}>
                 <HeroPortrait />
                 <p className="text-center font-mono text-[9px] text-muted-foreground/40 mt-2 group-hover:text-accent/60 transition-colors">
                   &gt; view live profile
                 </p>
-              </motion.div>
+              </div>
             </Link>
           </div>
         </div>
 
         {/* Agent pills — BELOW the main hero content */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 2.3 }}
-          className="mt-12 flex flex-wrap items-center justify-center gap-1.5"
+        <div
+          className="mt-12 flex flex-wrap items-center justify-center gap-1.5 hero-enter"
+          style={{ animationDelay: "2.3s" }}
         >
           <span className="font-mono text-[8px] text-muted-foreground/25 uppercase tracking-widest mr-1.5">
             works with
@@ -217,14 +213,14 @@ const Hero = () => {
               {agent.name}
             </span>
           ))}
-        </motion.div>
+        </div>
 
         {/* Quick links — cycle 65: bumped to min-h-[44px] inline-flex */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 2.5 }} className="flex items-center justify-center gap-4 font-mono text-[12px] mt-4">
+        <div className="flex items-center justify-center gap-4 font-mono text-[12px] mt-4 hero-enter" style={{ animationDelay: "2.5s" }}>
           <Link href="/create" className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; get started</Link>
           <Link href="/docs" className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; docs</Link>
           <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; github</a>
-        </motion.div>
+        </div>
       </motion.div>
 
       <div className="absolute bottom-0 inset-x-0 section-divider" />

@@ -1,8 +1,15 @@
 "use client";
 
-import { motion, useInView } from "motion/react";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 
+/**
+ * FadeUp — progressive-enhancement scroll-reveal.
+ *
+ * SSR: renders at full opacity (no inline style="opacity:0").
+ * Client JS: hides element, then fades in when scrolled into view.
+ * No-JS / broken-JS: content stays visible — never invisible.
+ * Reduced motion: skips animation entirely.
+ */
 const FadeUp = ({
   children,
   delay = 0,
@@ -12,18 +19,41 @@ const FadeUp = ({
   delay?: number;
   className?: string;
 }) => {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const el = ref.current;
+    if (!el) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "-60px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <motion.div
+    <div
       ref={ref}
-      className={className}
-      initial={{ opacity: 0, y: 24 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, ease: "easeOut", delay }}
+      className={`${className} fadeup${mounted && !isVisible ? " fadeup-hidden" : ""}${isVisible ? " fadeup-in" : ""}`}
+      style={isVisible && delay > 0 ? { transitionDelay: `${delay}s` } : undefined}
     >
       {children}
-    </motion.div>
+    </div>
   );
 };
 

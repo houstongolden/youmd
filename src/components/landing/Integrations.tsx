@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import FadeUp from "./FadeUp";
 
 const agents = [
@@ -41,15 +40,10 @@ const Integrations = () => (
       {/* Agent pills */}
       <FadeUp delay={0.08}>
         <div className="flex flex-wrap items-center justify-center gap-2">
-          {agents.map((agent, i) => (
-            <motion.span
+          {agents.map((agent) => (
+            <span
               key={agent.name}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: i * 0.04 }}
-              whileHover={{ scale: 1.05, y: -1 }}
-              className={`font-mono text-[11px] transition-colors duration-300 cursor-default select-none px-3 py-1.5 border ${
+              className={`font-mono text-[11px] transition-colors duration-300 cursor-default select-none px-3 py-1.5 border hover:scale-105 hover:-translate-y-px transition-transform ${
                 agent.tier === "primary"
                   ? "text-accent/80 border-accent/20 hover:border-accent/40 hover:text-accent bg-accent-wash/30"
                   : "text-muted-foreground/60 border-border/60 hover:border-accent/20 hover:text-accent/80"
@@ -57,7 +51,7 @@ const Integrations = () => (
               style={{ borderRadius: "2px" }}
             >
               {agent.name}
-            </motion.span>
+            </span>
           ))}
         </div>
       </FadeUp>
@@ -75,12 +69,7 @@ const Integrations = () => (
           </div>
           <div className="p-4 space-y-4">
             {/* User prompt */}
-            <motion.div
-              className="space-y-1.5"
-              whileInView={{ opacity: [0, 1] }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3 }}
-            >
+            <div className="space-y-1.5">
               <div className="font-mono text-[9px] text-muted-foreground/40">
                 you
               </div>
@@ -90,17 +79,12 @@ const Integrations = () => (
                   https://you.md/ctx/houston/sk_a1b2c3
                 </p>
               </div>
-            </motion.div>
+            </div>
 
             <div className="h-px bg-border/50" />
 
             {/* Agent response */}
-            <motion.div
-              className="space-y-1.5"
-              whileInView={{ opacity: [0, 1] }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5 }}
-            >
+            <div className="space-y-1.5">
               <div className="font-mono text-[9px] text-accent/40">agent</div>
               <div className="font-mono text-[11px] text-muted-foreground/70 leading-relaxed pl-3 border-l border-border/40">
                 <p>
@@ -109,19 +93,14 @@ const Integrations = () => (
                   I&apos;ll match your style. What are we working on?
                 </p>
               </div>
-            </motion.div>
+            </div>
 
             <div className="h-px bg-border/50" />
 
             {/* Result */}
-            <motion.div
-              className="font-mono text-[9px] text-accent/50 text-center"
-              whileInView={{ opacity: [0, 1] }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.7 }}
-            >
+            <div className="font-mono text-[9px] text-accent/50 text-center">
               zero onboarding. works in any chat window.
-            </motion.div>
+            </div>
           </div>
         </div>
       </FadeUp>
@@ -129,14 +108,11 @@ const Integrations = () => (
       {/* Integration methods */}
       <FadeUp delay={0.28}>
         <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl mx-auto">
-          {methods.map((method, i) => (
-            <motion.div
+          {methods.map((method) => (
+            <div
               key={method.label}
               className="text-center px-3 py-3 border border-border/40 bg-[hsl(var(--bg-raised))]/50"
               style={{ borderRadius: "2px" }}
-              whileInView={{ opacity: [0, 1], y: [8, 0] }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.35 + i * 0.06 }}
             >
               <p className="font-mono text-[10px] text-accent/70 mb-1">
                 {method.label}
@@ -144,7 +120,7 @@ const Integrations = () => (
               <p className="font-mono text-[8px] text-muted-foreground/50 leading-relaxed">
                 {method.desc}
               </p>
-            </motion.div>
+            </div>
           ))}
         </div>
       </FadeUp>
