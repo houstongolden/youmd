@@ -2,7 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from "../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { useYouAgent, buildProfileContext } from "@/hooks/useYouAgent";

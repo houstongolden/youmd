@@ -10,7 +10,7 @@ import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 
 import { ConvexReactClient } from "convex/react";
 import { ConvexProvider, useMutation as useConvexMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from "../../../../convex/_generated/api";
 import { CONVEX_SITE_URL } from "@/lib/constants";
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL || "https://kindly-cassowary-600.convex.cloud";

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from "../../../../convex/_generated/api";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowRight, MapPin } from "lucide-react";
