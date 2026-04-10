@@ -22,13 +22,18 @@ export function SiteNav() {
   const [avatarDropdown, setAvatarDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Compute hidden-path check early so we can skip queries on auth pages
+  // (prevents getByClerkId from firing before Convex JWT is synced)
+  const hiddenPaths = ["/", "/create", "/sign-in", "/sign-up", "/initialize", "/reset-password", "/docs"];
+  const isHidden = hiddenPaths.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p)));
+
   const convexUser = useQuery(
     api.users.getByClerkId,
-    user?.id ? { clerkId: user.id } : "skip"
+    !isHidden && user?.id ? { clerkId: user.id } : "skip"
   );
   const userProfile = useQuery(
     api.profiles.getByOwnerId,
-    convexUser?._id ? { ownerId: convexUser._id } : "skip"
+    !isHidden && convexUser?._id ? { ownerId: convexUser._id } : "skip"
   );
 
   // Close menus on route change
@@ -56,8 +61,7 @@ export function SiteNav() {
   }, [mobileOpen]);
 
   // Hide on pages that have their own nav or don't need one
-  const hiddenPaths = ["/", "/create", "/sign-in", "/sign-up", "/initialize", "/reset-password", "/docs"];
-  if (hiddenPaths.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p)))) {
+  if (isHidden) {
     return null;
   }
 
