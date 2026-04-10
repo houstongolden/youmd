@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from "../../../../convex/_generated/api";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
