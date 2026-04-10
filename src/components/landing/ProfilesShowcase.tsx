@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "motion/react";
 import { Shield, ArrowRight } from "lucide-react";
 import { sampleProfiles } from "./sampleProfiles";
 import FadeUp from "./FadeUp";
@@ -53,12 +52,8 @@ const ProfilesShowcase = () => {
                   : {};
 
                 return (
-                  <motion.div
+                  <div
                     key={profile.username}
-                    initial={{ opacity: 0, x: -8 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true, margin: "-40px" }}
-                    transition={{ duration: 0.3, delay: i * 0.06 }}
                   >
                     {/* Cycle 65: bumped from py-3.5 (40 tall) to min-h-[44px] */}
                     {/* @ts-expect-error — dynamic wrapper */}
@@ -129,7 +124,7 @@ const ProfilesShowcase = () => {
                         )}
                       </div>
                     </Wrapper>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
