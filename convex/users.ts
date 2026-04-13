@@ -233,22 +233,7 @@ export const setUserPlan = internalMutation({
 export const getByClerkId = query({
   args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    // Cycle 71: return null instead of throwing when auth isn't ready.
-    // Client callers (SiteNav, useYouAgent, dashboard, etc.) fire this
-    // query as soon as useUser() returns a user from Clerk's local state,
-    // but there's a brief window where the Convex JWT hasn't been synced
-    // yet — getUserIdentity() returns null and requireOwner would throw
-    // "authentication required", crashing the page with "Server Error".
-    //
-    // Returning null is safe: the caller already handles null/undefined
-    // (renders logged-out UI or loading state). The requireOwner throw
-    // is preserved for the token-bypass path (httpAction callers) where
-    // a hard failure is the correct behavior.
-    try {
-      await requireOwner(ctx, args.clerkId, args._internalAuthToken);
-    } catch {
-      return null;
-    }
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
     return await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))

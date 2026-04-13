@@ -77,15 +77,15 @@ export function TerminalAuthInput({
         aria-label={ariaLabel || placeholder || "input"}
         enterKeyHint="send"
       />
-      {/* Return/submit button — cycle 64: bumped from 28x36 to 44x44 */}
+      {/* Return/submit button */}
       <button
         type="button"
         onClick={handleSubmit}
-        className="shrink-0 h-11 w-11 flex items-center justify-center bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform"
+        className="shrink-0 h-11 w-11 flex items-center justify-center bg-[hsl(var(--bg))] border border-[hsl(var(--border))] hover:border-[hsl(var(--accent))]/40 active:scale-95 transition-all"
         style={{ borderRadius: "3px" }}
         aria-label="Submit"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--accent))" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="9 10 4 15 9 20" />
           <path d="M20 4v7a4 4 0 0 1-4 4H4" />
         </svg>
