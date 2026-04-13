@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -96,9 +96,10 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
 
   // ── Ownership detection ──────────────────────────────────────
   const { user: clerkUser } = useUser();
+  const { isAuthenticated } = useConvexAuth();
   const convexUser = useQuery(
     api.users.getByClerkId,
-    clerkUser?.id ? { clerkId: clerkUser.id } : "skip"
+    isAuthenticated && clerkUser?.id ? { clerkId: clerkUser.id } : "skip"
   );
   const ownedProfile = useQuery(
     api.profiles.getByOwnerId,

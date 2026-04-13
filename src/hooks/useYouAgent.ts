@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useQuery, useMutation, useAction, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 import { CONVEX_SITE_URL } from "@/lib/constants";
@@ -54,9 +54,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const { onPaneSwitch, isOnboarding, onboardingGreeting, onDone } = options;
 
   const { user } = useUser();
+  const { isAuthenticated } = useConvexAuth();
   const convexUser = useQuery(
     api.users.getByClerkId,
-    user?.id ? { clerkId: user.id } : "skip"
+    isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
   );
   const latestBundle = useQuery(
     api.bundles.getLatestBundle,

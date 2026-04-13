@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useUser, SignOutButton } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
+import { useQuery, useConvexAuth } from "convex/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { X } from "lucide-react";
@@ -17,19 +17,20 @@ import AsciiAvatar from "./AsciiAvatar";
  */
 export function SiteNav() {
   const { isSignedIn, user } = useUser();
+  const { isAuthenticated } = useConvexAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarDropdown, setAvatarDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Compute hidden-path check early so we can skip queries on auth pages
-  // (prevents getByClerkId from firing before Convex JWT is synced)
   const hiddenPaths = ["/", "/create", "/sign-in", "/sign-up", "/initialize", "/reset-password", "/docs"];
   const isHidden = hiddenPaths.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p)));
 
+  // Gate on isAuthenticated so the query only fires AFTER Convex JWT is synced
   const convexUser = useQuery(
     api.users.getByClerkId,
-    !isHidden && user?.id ? { clerkId: user.id } : "skip"
+    !isHidden && isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
   );
   const userProfile = useQuery(
     api.profiles.getByOwnerId,

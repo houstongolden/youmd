@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
@@ -39,13 +39,14 @@ const BOOT_SEQUENCE = [
 
 export function InitializeContent() {
   const { user } = useUser();
+  const { isAuthenticated } = useConvexAuth();
   const router = useRouter();
   const createUser = useMutation(api.users.createUser);
   const claimProfile = useMutation(api.profiles.claimProfile);
 
   const existingUser = useQuery(
     api.users.getByClerkId,
-    user?.id ? { clerkId: user.id } : "skip"
+    isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
   );
 
   // Check if there's an unclaimed profile from /create flow (session cookie)
@@ -228,9 +229,10 @@ export function InitializeContent() {
 function OnboardingTerminal() {
   const router = useRouter();
   const { user } = useUser();
+  const { isAuthenticated } = useConvexAuth();
   const convexUser = useQuery(
     api.users.getByClerkId,
-    user?.id ? { clerkId: user.id } : "skip"
+    isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
   );
   const latestBundle = useQuery(
     api.bundles.getLatestBundle,

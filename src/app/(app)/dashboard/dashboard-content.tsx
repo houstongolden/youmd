@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -55,10 +55,15 @@ const DESKTOP_PANES: Array<{ key: RightPane; label: string }> = [
 
 export function DashboardContent() {
   const { user } = useUser();
+  const { isAuthenticated } = useConvexAuth();
   const router = useRouter();
+  // Gate on isAuthenticated so the query only fires AFTER Convex has
+  // validated the Clerk JWT. Without this, there's a timing window
+  // where user?.id is set (Clerk local cache) but getUserIdentity()
+  // returns null on the server, causing requireOwner to throw.
   const convexUser = useQuery(
     api.users.getByClerkId,
-    user?.id ? { clerkId: user.id } : "skip"
+    isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
   );
   const latestBundle = useQuery(
     api.bundles.getLatestBundle,
