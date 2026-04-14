@@ -810,6 +810,15 @@ you can also emit custom sections in the same response:
 {"custom_sections": [{"id": "tech-stack", "title": "Tech Stack", "content": "## Tech Stack\\n\\n- Frontend: Next.js, TypeScript, Tailwind\\n- Backend: Convex, Vercel\\n- AI: Claude, OpenRouter"}]}
 \`\`\`
 
+VALID SECTION PATHS (use EXACTLY these):
+  fixed sections: "profile/about.md", "profile/now.md", "profile/projects.md", "profile/values.md", "profile/links.md", "profile/skills.md", "profile/experience.md", "preferences/agent.md", "preferences/writing.md", "preferences/tools.md", "directives/agent.md"
+  dynamic sections (use the prefix + a slug): "projects/bamf-ai.md", "projects/hubify.md", "projects/youmd.md", "skills/leadership.md", "private/notes.md", "private/projects/stealth.md"
+
+WRONG: {"section": "projects", ...} — bare name, will be silently dropped.
+WRONG: {"section": "README", ...} — no path prefix, will be dropped.
+CORRECT: {"section": "projects/bamf-ai.md", "content": "..."} — full path with prefix.
+CORRECT: {"section": "profile/projects.md", "content": "..."} — exact fixed section.
+
 rules for update content:
 - each section starts with YAML frontmatter: --- title: "SectionTitle" ---
 - real markdown, never placeholders or HTML comments

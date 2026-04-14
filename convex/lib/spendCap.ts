@@ -24,7 +24,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "../_generated/server";
 
-const DEFAULT_DAILY_LIMIT_USD = 50;
+const DEFAULT_DAILY_LIMIT_USD = 500;
 
 /** UTC YYYY-MM-DD string for today */
 function todayBucket(): string {
