@@ -1,5 +1,26 @@
 # You.md — Changelog
 
+## 2026-04-15 — QA Sprint: Web Shell Parity + AI Leader Seeding
+
+### Web Shell — Feature Parity with CLI
+- **`/history` + `/analytics` routing:** both commands now route to their panes (were missing from `paneCommands` map in `useYouAgent.ts`); `/versions` aliases `/history`, `/stats` aliases `/analytics`
+- **`/help` rewrite:** shell help text now lists all 25 commands in 7 sections (identity, sharing, skills, account, data, memory, system)
+- **HelpPane:** commands reference completely rewritten with 7 categorized sections + accent-colored headers; added previously missing commands (`/json`, `/files`, `/sources`, `/activity`, `/portrait show`, `/portrait --regenerate`, `/skill use {name}`, `/analytics`, `/history`)
+- **SkillsPane:** each skill card now shows a "use in shell" copy button — clicking copies `/skill use {name}` to clipboard with visual confirmation
+
+### Seeding — 20 AI Leader Profiles
+- Added `seedAiLeaders` internalMutation to `convex/seed.ts`
+- Added `cleanDuplicates` utility mutation
+- Seeded 20 top AI founders/influencers in prod (all 20 created, 0 skipped):
+  sama, gdb, hwchase17, ylecun, jeremyphoward, emollick, swyx, svpino,
+  rileytomasek, danshipper, gregisenberg, linusekenstam, alexandrwang,
+  saranormous, clemdelangue, reidhoffman, natfriedman, andrewng,
+  darioamodei, ilyasut
+- Used GitHub avatars where available (unavatar.io/github/handle)
+
+### Infrastructure
+- **Fixed Convex deploy:** removed `"allowJs": true` from `convex/tsconfig.json` — was causing esbuild to pick up both `.ts` and `.js` versions of every file, crashing with "Two output files share the same path"
+
 ## 2026-04-15 — Profiles Directory Upgrade + Seeding Plan
 
 ### /profiles Page
