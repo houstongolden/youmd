@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useUser, SignOutButton } from "@clerk/nextjs";
+import { useQuery, useConvexAuth } from "convex/react";
 import { X } from "lucide-react";
 import Link from "next/link";
 import AsciiAvatar from "@/components/AsciiAvatar";
+import { api } from "../../../convex/_generated/api";
 
 
 const sections = [
@@ -15,6 +17,7 @@ const sections = [
 
 const Navbar = () => {
   const { isSignedIn, user } = useUser();
+  const { isAuthenticated } = useConvexAuth();
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -56,8 +59,18 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, [avatarDropdown]);
 
-  const username = user?.username;
-  const avatarUrl = user?.imageUrl;
+  const convexUser = useQuery(
+    api.users.getByClerkId,
+    isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
+  );
+  const userProfile = useQuery(
+    api.profiles.getByOwnerId,
+    convexUser?._id ? { ownerId: convexUser._id } : "skip"
+  );
+
+  const username = convexUser?.username ?? user?.username;
+  const avatarUrl = (userProfile as Record<string, unknown> | null | undefined)?.avatarUrl as string | undefined
+    || user?.imageUrl;
 
   return (
     <>
