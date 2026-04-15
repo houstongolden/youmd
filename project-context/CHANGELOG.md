@@ -1,5 +1,27 @@
 # You.md — Changelog
 
+## 2026-04-14 — Top 5 Priority Sprint
+
+### Chat Agent Reliability
+- **Streaming init:** greeting now streams token-by-token instead of waiting for full response (switches from `callLLM` → `callLLMStreaming` in `initConversation`)
+- **Faster responses:** reduced `max_tokens` from 4096 → 1500 (streaming endpoint) and 4096 → 2048 (non-streaming). Agent is meant to be concise — large token limits were generating unnecessary latency.
+
+### MCP Server (Priority 4 — NEW)
+- **Full MCP endpoint:** `/api/v1/mcp` — JSON-RPC 2.0 compliant Model Context Protocol server
+- **Tools:** `get_identity(username)`, `search_profiles(query?)`, `get_my_identity` (auth required)
+- **Resources:** `identity://{username}` resource type
+- **Discovery:** `GET /.well-known/mcp.json` returns server capabilities + endpoint URL
+- **Discovery ping:** `GET /api/v1/mcp` returns server info
+- Claude Code, Cursor, Windsurf can now connect to you.md as an MCP server
+
+### Portrait in Chat
+- **`/portrait show` command:** renders the user's current avatar and all scraped social images inline using `![platform](url)` markdown (rendered by TerminalBlocks as real images)
+- Shows which source is active and prompts to switch
+
+### CLI → Web Sync
+- **avatarUrl sync:** portrait endpoint (`POST /api/v1/me/portrait`) now also patches `avatarUrl` from `portrait.sourceUrl` when profile has no avatar — CLI-generated portraits now appear as profile photo on web
+- **`updateProfile` httpAction compat:** added `_internalAuthToken` bypass so httpActions can call it without Clerk JWT
+
 ## 2026-03-27 — Identity-Aware Skill System
 
 ### CLI Skill System (Phase 1-5 complete)

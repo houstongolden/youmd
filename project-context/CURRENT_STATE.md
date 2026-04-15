@@ -199,12 +199,33 @@ MVP now requires account creation before profile building. The "no signup requir
 
 ---
 
+## What Was Built April 14
+
+### Chat Agent Reliability
+- Streaming init: greeting now streams as tokens arrive (was blocking wait for full response)
+- Reduced max_tokens: streaming 4096→1500, non-streaming 4096→2048 (faster responses)
+
+### MCP Server (NEW — was TODO)
+- Full JSON-RPC 2.0 MCP endpoint at `/api/v1/mcp`
+- Tools: `get_identity`, `search_profiles`, `get_my_identity`
+- Resources: `identity://{username}` 
+- Discovery: `GET /.well-known/mcp.json`
+- Claude Code, Cursor, Windsurf can now configure you.md as an MCP server
+
+### Portrait in Chat
+- `/portrait show` command renders avatar + all social images inline
+- `updateProfile` now works from httpAction context (added `_internalAuthToken`)
+
+### CLI Sync
+- Portrait endpoint now patches `avatarUrl` from `sourceUrl` on push
+- CLI-pushed portraits now visible as profile photo on web
+
+---
+
 ## Next Priorities (Houston's Order)
 
-1. **Chat agent reliability** — slow responses, streaming improvements, session quality
-2. **CLI ↔ Web sync verification** — portraits, images, full data round-trip
-3. **Agent intelligence** — tune personality, ensure it acts (not asks), show portraits in chat
-4. **MCP server** — working MCP endpoint for agent-to-agent identity sharing
-5. **End-to-end flow testing** — full journey from CLI init to web dashboard to agent share
-6. **Billing + Pro plan** — Stripe integration
-7. **Growth features** — verified badges, analytics, rate limiting
+1. **End-to-end flow testing** — full journey from CLI init to web dashboard to agent share
+2. **Agent intelligence** — tune personality, ensure it acts (not asks), conversational portrait management
+3. **Billing + Pro plan** — Stripe integration
+4. **Growth features** — verified badges, analytics, rate limiting
+5. **MCP client tools** — SDK/npm package for agents to consume you.md MCP
