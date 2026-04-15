@@ -1,3 +1,4 @@
+import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { MotionConfigProvider } from "@/providers/motion-config-provider";
 
 export default function MarketingLayout({
@@ -6,8 +7,10 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <MotionConfigProvider>
-      {children}
-    </MotionConfigProvider>
+    <ConvexClientProvider>
+      <MotionConfigProvider>
+        {children}
+      </MotionConfigProvider>
+    </ConvexClientProvider>
   );
 }
