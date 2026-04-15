@@ -340,6 +340,9 @@ async function authenticateRequest(
   }
 
   const key = authHeader.substring(7);
+  if (!key) {
+    return json({ error: "Missing API key in Authorization header" }, 401);
+  }
 
   // Hash the key and look it up
   const encoder = new TextEncoder();
@@ -2300,7 +2303,8 @@ http.route({
 
     const url = new URL(request.url);
     const category = url.searchParams.get("category") || undefined;
-    const limit = url.searchParams.has("limit") ? parseInt(url.searchParams.get("limit")!) : undefined;
+    const limitRaw = url.searchParams.has("limit") ? parseInt(url.searchParams.get("limit")!, 10) : undefined;
+    const limit = limitRaw !== undefined && Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : undefined;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
@@ -2326,8 +2330,8 @@ http.route({
     if (auth instanceof Response) return auth;
 
     const body = await request.json();
-    if (!body.memories || !Array.isArray(body.memories)) {
-      return json({ error: "Request body must contain 'memories' array" }, 400);
+    if (!body.memories || !Array.isArray(body.memories) || body.memories.length === 0) {
+      return json({ error: "Request body must contain a non-empty 'memories' array" }, 400);
     }
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });

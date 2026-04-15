@@ -154,6 +154,8 @@ export function AgentsPane() {
             <button
               key={f}
               onClick={() => setFilter(f === "all" ? "" : f)}
+              aria-pressed={active}
+              aria-label={`filter by ${f}`}
               className={`px-2 py-1 text-[10px] border transition-colors ${
                 active
                   ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"

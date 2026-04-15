@@ -85,13 +85,10 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const [agentPreviewLoading, setAgentPreviewLoading] = useState(false);
 
   // ── Verifications ─────────────────────────────────────────
-  const profileForVerification = useQuery(
-    api.profiles.getByUsername,
-    { username }
-  );
+  // getPublicProfile already returns profileId — no need for a second query
   const verifications = useQuery(
     api.profiles.listVerifications,
-    profileForVerification?._id ? { profileId: profileForVerification._id } : "skip"
+    profile?.profileId ? { profileId: profile.profileId } : "skip"
   );
 
   // ── Ownership detection ──────────────────────────────────────
@@ -294,6 +291,8 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
+                  aria-pressed={viewMode === mode}
+                  aria-label={`view ${mode === "agent" ? "agent preview" : mode} mode`}
                   className={`px-3 py-1.5 transition-colors ${
                     viewMode === mode
                       ? "border border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))]"

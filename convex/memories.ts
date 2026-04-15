@@ -42,7 +42,7 @@ export const listMemories = query({
     return memories
       .filter((m) => !m.isArchived)
       .sort((a, b) => b.createdAt - a.createdAt)
-      .slice(0, args.limit ?? 100);
+      .slice(0, Number.isFinite(args.limit) ? args.limit : 100);
   },
 });
 

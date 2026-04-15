@@ -135,8 +135,8 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   const registrySkills = useQuery(api.skills.listPublished, { limit: 20 });
 
   const isLoading = installs === undefined || registrySkills === undefined;
-  const installedNames = new Set(installs?.map((i: any) => i.skillName) ?? []);
-  const installMap = new Map(installs?.map((i: any) => [i.skillName, i]) ?? []);
+  const installMap = new Map((installs ?? []).map((i: any) => [i.skillName, i]));
+  const installedNames = new Set(installMap.keys());
 
   const [showAllSkills, setShowAllSkills] = useState(false);
   const [mcpCopied, setMcpCopied] = useState(false);
