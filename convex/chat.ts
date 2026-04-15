@@ -28,7 +28,7 @@ import { requireOwner } from "./lib/auth";
 
 const MODELS = {
   // Primary chat — best quality for identity conversations
-  chat_primary: { provider: "anthropic", model: "claude-sonnet-4-6-20250520" },
+  chat_primary: { provider: "anthropic", model: "claude-sonnet-4-6" },
   chat_fallback: { provider: "openrouter", model: "anthropic/claude-sonnet-4" },
   // Research — Perplexity Sonar for fast web search with citations
   research: { provider: "perplexity", model: "sonar" },
@@ -498,7 +498,7 @@ async function callAnthropic(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6-20250520",
+      model: "claude-sonnet-4-6",
       max_tokens: 2048,
       temperature: 0.7,
       system: systemMessage?.content || "",

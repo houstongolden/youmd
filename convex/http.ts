@@ -1037,7 +1037,7 @@ http.route({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "claude-sonnet-4-6-20250520",
+            model: "claude-sonnet-4-6",
             max_tokens: 2000,
             temperature: 0.7,
             stream: true,
