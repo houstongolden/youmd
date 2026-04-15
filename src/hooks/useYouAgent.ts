@@ -384,6 +384,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       private_updates?: { section: string; content: string }[];
       custom_sections?: { id: string; title: string; content: string }[];
       memories?: { key: string; value: string; category: string }[];
+      urls?: string[];
+      purpose?: string;
     };
   }
 
@@ -1972,6 +1974,56 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           });
         } catch {
           failStep(memStepId, "failed");
+        }
+      }
+
+      // Handle fetch_website tool calls — agent requests scraping specific URLs
+      const fetchWebsiteCalls = toolCalls.filter(tc => tc.name === "fetch_website");
+      if (fetchWebsiteCalls.length > 0) {
+        const allUrls = fetchWebsiteCalls.flatMap(tc => tc.input.urls || []).filter(Boolean);
+        if (allUrls.length > 0) {
+          const fetchStepId = addStep("fetching websites", allUrls.join(", "));
+          const scrapeResults: string[] = [];
+          await Promise.all(allUrls.map(async (url) => {
+            try {
+              // Detect what kind of source this is
+              const xMatch = url.match(/(?:x\.com|twitter\.com)\/([a-zA-Z0-9_]+)/i);
+              const ghMatch = url.match(/github\.com\/([a-zA-Z0-9_-]+)/i);
+              const liMatch = url.match(/linkedin\.com\/in\/([a-zA-Z0-9_-]+)/i);
+              let source: DetectedSource;
+              if (xMatch) source = { platform: "x", url, username: xMatch[1] };
+              else if (ghMatch) source = { platform: "github", url, username: ghMatch[1] };
+              else if (liMatch) source = { platform: "linkedin", url, username: liMatch[1] };
+              else source = { platform: "website", url };
+
+              const result = await scrapeSource(source);
+              if (result) {
+                scrapeResults.push(result);
+                scrapedSourcesRef.current.add(`${source.platform}:${source.username || url}`);
+              }
+            } catch { /* non-fatal */ }
+          }));
+          completeStep(fetchStepId, `${scrapeResults.length} fetched`);
+
+          if (scrapeResults.length > 0) {
+            // Inject scrape results back into conversation so agent sees real data
+            const scrapeMsg: ChatMessage = {
+              role: "user",
+              content: `[PLATFORM SCRAPE RESULTS — fetched per agent request]\n\n${scrapeResults.join("\n\n")}`,
+            };
+            setMessages(prev => [...prev, scrapeMsg]);
+            newDisplayMsgs.push({
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: `[fetched ${scrapeResults.length} site${scrapeResults.length > 1 ? "s" : ""} — data injected into context]`,
+            });
+          } else {
+            newDisplayMsgs.push({
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: `[could not fetch ${allUrls.length} site${allUrls.length > 1 ? "s" : ""} — check the URLs]`,
+            });
+          }
         }
       }
 

@@ -24,7 +24,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Mobile nav shows these panes as top-level tabs
 const MOBILE_PANES: Array<{ key: RightPane | "terminal"; label: string }> = [
-  { key: "terminal", label: "terminal" },
+  { key: "terminal", label: "shell" },
   { key: "profile", label: "profile" },
   { key: "edit", label: "files" },
   { key: "share", label: "share" },

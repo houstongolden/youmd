@@ -1122,6 +1122,25 @@ http.route({
                   required: ["memories"],
                 },
               },
+              {
+                name: "fetch_website",
+                description: "Fetch and scrape a website URL to get its content. Use this when the user asks you to fetch, scrape, or read a website for project context, company info, or profile enrichment. The platform will perform the actual scrape and inject results into the conversation.",
+                input_schema: {
+                  type: "object",
+                  properties: {
+                    urls: {
+                      type: "array",
+                      description: "List of URLs to scrape",
+                      items: { type: "string", description: "Full URL including https://" },
+                    },
+                    purpose: {
+                      type: "string",
+                      description: "Why you're fetching these URLs (e.g., 'project context for hubify', 'company website', 'portfolio')",
+                    },
+                  },
+                  required: ["urls"],
+                },
+              },
             ],
             tool_choice: { type: "auto" },
           }),
