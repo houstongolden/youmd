@@ -383,6 +383,7 @@ export const updateProfile = mutation({
     profileId: v.id("profiles"),
     sessionToken: v.optional(v.string()),
     clerkId: v.optional(v.string()),
+    _internalAuthToken: v.optional(v.string()),
     name: v.optional(v.string()),
     tagline: v.optional(v.string()),
     location: v.optional(v.string()),
@@ -413,7 +414,7 @@ export const updateProfile = mutation({
       const clerkId = args.clerkId;
       if (!clerkId) throw new Error("authentication required");
       // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
-      await requireOwner(ctx, clerkId);
+      await requireOwner(ctx, clerkId, args._internalAuthToken);
       const user = await ctx.db
         .query("users")
         .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))

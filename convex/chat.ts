@@ -499,7 +499,7 @@ async function callAnthropic(
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-6-20250520",
-      max_tokens: 4096,
+      max_tokens: 2048,
       temperature: 0.7,
       system: systemMessage?.content || "",
       messages: conversationMessages.map((m) => ({
@@ -538,7 +538,7 @@ async function callOpenRouter(
       model: "anthropic/claude-sonnet-4",
       messages,
       temperature: 0.7,
-      max_tokens: 4096,
+      max_tokens: 2048,
     }),
     signal: AbortSignal.timeout(60_000),
   });

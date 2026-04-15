@@ -880,48 +880,70 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
         setMessages(allMessages);
 
-        const initLlmStepId = addStep("generating greeting");
-        const response = await callLLM(allMessages);
-        completeStep(initLlmStepId);
-        const { display, updates } = parseUpdatesFromResponse(response);
+        // Stream the greeting into a new display message so tokens appear
+        // as they arrive instead of waiting for the full response.
+        const initStreamMsgId = crypto.randomUUID();
+        let initFirstToken = false;
 
-        const assistantMsg: ChatMessage = {
-          role: "assistant",
-          content: response,
-        };
-
-        setMessages((prev) => [...prev, assistantMsg]);
-
-        const newDisplay: DisplayMessage[] = [];
-
+        // Show pre-stream notices then add an empty assistant placeholder
+        const preDisplay: DisplayMessage[] = [];
         if (shouldAutoScrape) {
-          newDisplay.push({
+          preDisplay.push({
             id: crypto.randomUUID(),
             role: "system-notice",
             content: `[scraped ${existingLinks.length} source${existingLinks.length > 1 ? "s" : ""} from your profile]`,
           });
         }
+        preDisplay.push({ id: initStreamMsgId, role: "assistant", content: "" });
+        setDisplayMessages((prev) => [...prev, ...preDisplay]);
 
-        if (display) {
-          newDisplay.push({
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: display,
-          });
+        const onInitFirstToken = () => {
+          if (!initFirstToken) {
+            initFirstToken = true;
+            // Turn off the spinner once the greeting starts flowing
+            setIsThinking(false);
+            clearSteps();
+          }
+        };
+
+        const response = await callLLMStreaming(allMessages, initStreamMsgId, onInitFirstToken);
+
+        if (!initFirstToken) {
+          // Fallback: streaming returned nothing, show what we got
+          setIsThinking(false);
+          clearSteps();
         }
+
+        const { display, updates } = parseUpdatesFromResponse(response);
+
+        // Clean the streamed display (strip JSON blocks, collapse extra newlines)
+        const cleanDisplay = display
+          .replace(/\n{3,}/g, "\n\n")
+          .replace(/^\n+/, "")
+          .replace(/\n+$/, "")
+          .trim();
+
+        // Update the streaming message to the cleaned display text
+        setDisplayMessages((prev) => prev.map(m =>
+          m.id === initStreamMsgId ? { ...m, content: cleanDisplay } : m
+        ));
+
+        const assistantMsg: ChatMessage = { role: "assistant", content: response };
+        setMessages((prev) => [...prev, assistantMsg]);
 
         if (updates.length > 0) {
           const sectionNames = updates.map((u) => sectionLabel(u.section)).join(", ");
-          newDisplay.push({
-            id: crypto.randomUUID(),
-            role: "system-notice",
-            content: `[updated: ${sectionNames}]`,
-          });
+          setDisplayMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: `[updated: ${sectionNames}]`,
+            },
+          ]);
           saveUpdates(updates);
         }
 
-        setDisplayMessages((prev) => [...prev, ...newDisplay]);
-        setIsThinking(false);
         setTimeout(() => clearSteps(), 1500);
       } catch (err) {
         setDisplayMessages((prev) => [
@@ -937,7 +959,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }
 
     initConversation();
-  }, [initialized, sessionRestored, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, saveUpdates, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps]);
+  }, [initialized, sessionRestored, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, callLLMStreaming, saveUpdates, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps]);
 
   // Slash commands
   const handleSlashCommand = useCallback(
@@ -980,6 +1002,52 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             content: noticeContent,
           },
         ]);
+        return true;
+      }
+
+      // /portrait show — render portrait inline in chat
+      if (trimmed === "/portrait show") {
+        const avatarUrl = (userProfile as Record<string, unknown> | null)?.avatarUrl as string | undefined;
+        const socialImages = (userProfile as Record<string, unknown> | null)?.socialImages as Record<string, string> | undefined;
+        const primaryImage = (userProfile as Record<string, unknown> | null)?.primaryImage as string | undefined;
+
+        const msgs: DisplayMessage[] = [
+          { id: crypto.randomUUID(), role: "user", content: trimmed },
+        ];
+
+        if (avatarUrl || socialImages) {
+          // Show the primary portrait first
+          if (avatarUrl) {
+            msgs.push({
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: `![your portrait](${avatarUrl})\n\ncurrent portrait — sourced from ${primaryImage || "profile"}`,
+            });
+          }
+
+          // Show all available platform images
+          if (socialImages) {
+            const platforms = Object.entries(socialImages).filter(([, url]) => url && typeof url === "string");
+            if (platforms.length > 1) {
+              const gallery = platforms
+                .map(([platform, url]) => `![${platform} photo](${url})`)
+                .join("\n");
+              msgs.push({
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: `${gallery}\n\navailable from ${platforms.length} sources. say "use my [platform] photo" to switch.`,
+              });
+            }
+          }
+        } else {
+          msgs.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: "no portrait yet. share your x, github, or linkedin handle and i'll pull your photo.",
+          });
+        }
+
+        setDisplayMessages((prev) => [...prev, ...msgs]);
         return true;
       }
 

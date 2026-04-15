@@ -560,6 +560,23 @@ http.route({
         },
       });
 
+      // Also sync avatarUrl if portrait has a real image source URL and profile
+      // doesn't already have one. This ensures CLI-pushed portraits are visible
+      // as the profile photo on the web, not just stored as ASCII art.
+      const srcUrl: string = portrait.sourceUrl || "";
+      if (srcUrl && srcUrl.startsWith("http") && !profile.avatarUrl) {
+        try {
+          await ctx.runMutation(api.profiles.updateProfile, {
+            profileId: profile._id,
+            clerkId: auth.userId,
+            _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+            avatarUrl: srcUrl,
+          });
+        } catch {
+          // non-fatal — portrait was saved, avatar URL sync failed
+        }
+      }
+
       // Log activity
       try {
         const agent = detectAgent(request.headers.get("user-agent"));
@@ -944,7 +961,7 @@ http.route({
           },
           body: JSON.stringify({
             model: "claude-sonnet-4-6-20250520",
-            max_tokens: 4096,
+            max_tokens: 1500,
             temperature: 0.7,
             stream: true,
             system: systemMessage?.content || "",
@@ -2778,6 +2795,376 @@ http.route({
 });
 
 http.route({ path: "/api/v1/me/vault", method: "OPTIONS", handler: corsPreflight });
+
+// ============================================================
+// MCP SERVER (Model Context Protocol — JSON-RPC 2.0)
+// ============================================================
+//
+// Exposes you.md identity data to MCP-compatible AI agents (Claude Code,
+// Cursor, Windsurf, etc.) so they can read user identity context without
+// being manually briefed each session.
+//
+// Spec: https://spec.modelcontextprotocol.io/specification/
+// Protocol version: 2024-11-05
+//
+// Tools:
+//   get_identity       — get a user's public identity bundle by username
+//   search_profiles    — list/search public profiles
+//   get_my_identity    — get authenticated user's full identity (API key)
+//
+// Resources:
+//   identity://{username} — identity bundle for a username
+//
+// Discovery: GET /.well-known/mcp.json
+
+const MCP_PROTOCOL_VERSION = "2024-11-05";
+const MCP_SERVER_INFO = { name: "you.md", version: "1.0.0" };
+
+// ─── Discovery ────────────────────────────────────────────────────────────────
+
+http.route({
+  path: "/.well-known/mcp.json",
+  method: "GET",
+  handler: httpAction(async (_ctx, _request) => {
+    return new Response(
+      JSON.stringify({
+        schema_version: "1",
+        name: "you.md",
+        description: "The identity context protocol for the agent internet — give every AI agent context about who you are.",
+        server: {
+          type: "http",
+          url: "https://you.md/api/v1/mcp",
+        },
+        capabilities: {
+          tools: true,
+          resources: true,
+        },
+      }, null, 2),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...CORS_HEADERS,
+          "Cache-Control": "public, max-age=3600",
+        },
+      }
+    );
+  }),
+});
+
+http.route({ path: "/.well-known/mcp.json", method: "OPTIONS", handler: corsPreflight });
+
+// ─── MCP JSON-RPC Handler ─────────────────────────────────────────────────────
+
+http.route({
+  path: "/api/v1/mcp",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    let body: { jsonrpc?: string; id?: unknown; method?: string; params?: unknown };
+    try {
+      body = await request.json();
+    } catch {
+      return mcpError(null, -32700, "Parse error");
+    }
+
+    if (body.jsonrpc !== "2.0" || typeof body.method !== "string") {
+      return mcpError(body.id ?? null, -32600, "Invalid Request");
+    }
+
+    const id = body.id ?? null;
+    const method = body.method;
+    const params = (body.params as Record<string, unknown>) || {};
+
+    try {
+      switch (method) {
+        // ── Lifecycle ──────────────────────────────────────────────────────────
+        case "initialize": {
+          return mcpOk(id, {
+            protocolVersion: MCP_PROTOCOL_VERSION,
+            capabilities: {
+              tools: { listChanged: false },
+              resources: { listChanged: false, subscribe: false },
+            },
+            serverInfo: MCP_SERVER_INFO,
+            instructions: "you.md is the identity context protocol for the agent internet. use get_identity(username) to load a user's structured identity bundle — their bio, projects, values, skills, agent directives, and communication preferences — so you can work with them without starting from scratch.",
+          });
+        }
+
+        case "notifications/initialized":
+        case "ping": {
+          return mcpOk(id, {});
+        }
+
+        // ── Tools ──────────────────────────────────────────────────────────────
+        case "tools/list": {
+          return mcpOk(id, {
+            tools: [
+              {
+                name: "get_identity",
+                description: "Get a user's public identity bundle from you.md. Returns their structured identity: bio, projects, values, agent directives, communication preferences, and more. Use this at the start of a session to understand who you're working with.",
+                inputSchema: {
+                  type: "object",
+                  properties: {
+                    username: {
+                      type: "string",
+                      description: "The you.md username (e.g. 'houstongolden')",
+                    },
+                  },
+                  required: ["username"],
+                },
+              },
+              {
+                name: "search_profiles",
+                description: "Search or list public profiles on you.md.",
+                inputSchema: {
+                  type: "object",
+                  properties: {
+                    query: {
+                      type: "string",
+                      description: "Optional search query to filter profiles by name or username",
+                    },
+                    limit: {
+                      type: "number",
+                      description: "Max number of results (default 20, max 100)",
+                    },
+                  },
+                },
+              },
+              {
+                name: "get_my_identity",
+                description: "Get the authenticated user's full identity bundle, including private context. Requires a you.md API key passed as Bearer token in the Authorization header.",
+                inputSchema: {
+                  type: "object",
+                  properties: {},
+                },
+              },
+            ],
+          });
+        }
+
+        case "tools/call": {
+          const toolName = (params as Record<string, unknown>).name as string;
+          const toolArgs = ((params as Record<string, unknown>).arguments as Record<string, unknown>) || {};
+
+          if (toolName === "get_identity") {
+            const username = toolArgs.username as string;
+            if (!username || typeof username !== "string") {
+              return mcpToolError(id, "username is required");
+            }
+
+            const profile = await ctx.runQuery(api.profiles.getPublicProfile, {
+              username: username.toLowerCase().replace(/^@/, ""),
+            });
+
+            if (!profile) {
+              return mcpToolError(id, `no profile found for @${username}`);
+            }
+
+            // Log as agent read
+            try {
+              await ctx.runMutation(api.profiles.recordView, {
+                username: username.toLowerCase(),
+                referrer: "mcp",
+                isAgentRead: true,
+              });
+            } catch { /* non-fatal */ }
+
+            const result = {
+              username: profile.username,
+              displayName: profile.displayName,
+              avatarUrl: profile.avatarUrl,
+              isClaimed: profile.isClaimed,
+              identity: (profile.youJson as Record<string, unknown>)?.identity ?? null,
+              projects: (profile.youJson as Record<string, unknown>)?.projects ?? null,
+              values: (profile.youJson as Record<string, unknown>)?.values ?? null,
+              voice: (profile.youJson as Record<string, unknown>)?.voice ?? null,
+              agent_directives: (profile.youJson as Record<string, unknown>)?.agent_directives ?? null,
+              preferences: (profile.youJson as Record<string, unknown>)?.preferences ?? null,
+              links: (profile.youJson as Record<string, unknown>)?.links ?? null,
+              now: (profile.youJson as Record<string, unknown>)?.now ?? null,
+              meta: (profile.youJson as Record<string, unknown>)?.meta ?? null,
+              _profile_url: `https://you.md/${profile.username}`,
+            };
+
+            return mcpToolOk(id, JSON.stringify(result, null, 2), "application/json");
+          }
+
+          if (toolName === "search_profiles") {
+            const query = (toolArgs.query as string | undefined) || "";
+            const limit = Math.min(Number(toolArgs.limit) || 20, 100);
+
+            const profiles = await ctx.runQuery(api.profiles.listAll);
+            const filtered = query
+              ? profiles.filter((p: { username: string }) =>
+                  p.username.toLowerCase().includes(query.toLowerCase()) ||
+                  (p as Record<string, unknown>).name?.toString().toLowerCase().includes(query.toLowerCase())
+                )
+              : profiles;
+
+            const results = filtered.slice(0, limit).map((p: Record<string, unknown>) => ({
+              username: p.username,
+              name: p.name,
+              tagline: p.tagline,
+              profileUrl: `https://you.md/${p.username}`,
+              updatedAt: p.updatedAt || p.createdAt,
+            }));
+
+            return mcpToolOk(id, JSON.stringify({ profiles: results, total: results.length }, null, 2), "application/json");
+          }
+
+          if (toolName === "get_my_identity") {
+            // Require API key auth
+            const auth = await authenticateRequest(ctx, request);
+            if (auth instanceof Response) {
+              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
+            }
+
+            const user = await ctx.runQuery(api.users.getByClerkId, {
+              clerkId: auth.userId,
+              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+            });
+            if (!user) return mcpToolError(id, "user not found");
+
+            const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
+
+            const latestBundle = user ? await ctx.runQuery(api.bundles.getLatestBundle, {
+              clerkId: auth.userId,
+              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+              userId: user._id,
+            }) : null;
+
+            const result = {
+              username: user.username,
+              email: user.email,
+              plan: user.plan,
+              profile: profile ? {
+                avatarUrl: profile.avatarUrl,
+                name: profile.name,
+                tagline: profile.tagline,
+              } : null,
+              bundle: latestBundle ? {
+                version: latestBundle.version,
+                isPublished: latestBundle.isPublished,
+                youJson: latestBundle.youJson,
+                youMd: latestBundle.youMd,
+              } : null,
+              _profile_url: `https://you.md/${user.username}`,
+            };
+
+            return mcpToolOk(id, JSON.stringify(result, null, 2), "application/json");
+          }
+
+          return mcpError(id, -32601, `Unknown tool: ${toolName}`);
+        }
+
+        // ── Resources ──────────────────────────────────────────────────────────
+        case "resources/list": {
+          return mcpOk(id, {
+            resources: [
+              {
+                uri: "identity://houstongolden",
+                name: "Example identity (houstongolden)",
+                description: "Example you.md identity bundle. Replace username with any you.md user.",
+                mimeType: "application/json",
+              },
+            ],
+          });
+        }
+
+        case "resources/read": {
+          const uri = (params as Record<string, unknown>).uri as string;
+          if (!uri || typeof uri !== "string") {
+            return mcpError(id, -32602, "uri parameter required");
+          }
+
+          // Parse identity://{username} or https://you.md/{username}
+          let username: string | null = null;
+          const identityMatch = uri.match(/^identity:\/\/([a-zA-Z0-9_-]+)/);
+          const urlMatch = uri.match(/you\.md\/([a-zA-Z0-9_-]+)/);
+          if (identityMatch) username = identityMatch[1];
+          else if (urlMatch) username = urlMatch[1];
+
+          if (!username) {
+            return mcpError(id, -32602, "unrecognised URI — use identity://{username} or https://you.md/{username}");
+          }
+
+          const profile = await ctx.runQuery(api.profiles.getPublicProfile, { username });
+          if (!profile) {
+            return mcpError(id, -32001, `no profile found for @${username}`);
+          }
+
+          return mcpOk(id, {
+            contents: [
+              {
+                uri,
+                mimeType: "application/vnd.you-md.v1+json",
+                text: JSON.stringify(profile.youJson ?? { username: profile.username }, null, 2),
+              },
+            ],
+          });
+        }
+
+        default:
+          return mcpError(id, -32601, `Method not found: ${method}`);
+      }
+    } catch (err) {
+      return mcpError(id, -32603, err instanceof Error ? err.message : "Internal error");
+    }
+  }),
+});
+
+http.route({ path: "/api/v1/mcp", method: "OPTIONS", handler: corsPreflight });
+
+// Allow GET on MCP for SSE-capable clients / discovery ping
+http.route({
+  path: "/api/v1/mcp",
+  method: "GET",
+  handler: httpAction(async (_ctx, _request) => {
+    return new Response(
+      JSON.stringify({
+        name: "you.md MCP server",
+        version: "1.0.0",
+        protocolVersion: MCP_PROTOCOL_VERSION,
+        description: "Identity context protocol for the agent internet. POST JSON-RPC 2.0 to this endpoint.",
+        docs: "https://you.md/docs",
+      }, null, 2),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      }
+    );
+  }),
+});
+
+// ─── MCP JSON-RPC helpers ─────────────────────────────────────────────────────
+
+function mcpOk(id: unknown, result: unknown): Response {
+  return new Response(
+    JSON.stringify({ jsonrpc: "2.0", id, result }),
+    { status: 200, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+  );
+}
+
+function mcpError(id: unknown, code: number, message: string): Response {
+  return new Response(
+    JSON.stringify({ jsonrpc: "2.0", id, error: { code, message } }),
+    { status: 200, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+  );
+}
+
+function mcpToolOk(id: unknown, text: string, mimeType = "text/plain"): Response {
+  return mcpOk(id, {
+    content: [{ type: "text", text, mimeType }],
+    isError: false,
+  });
+}
+
+function mcpToolError(id: unknown, message: string): Response {
+  return mcpOk(id, {
+    content: [{ type: "text", text: message }],
+    isError: true,
+  });
+}
 
 // ============================================================
 // VERIFICATIONS
