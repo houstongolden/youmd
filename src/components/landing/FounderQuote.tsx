@@ -24,21 +24,22 @@ const FounderQuote = () => (
 
           <blockquote className="font-mono text-sm md:text-base leading-relaxed text-[hsl(var(--text-primary)/0.85)] space-y-4">
             <p>
-              <span className="text-accent">&gt;</span> I run 6 AI agents
-              daily across 4 projects. every one of them starts from
-              scratch. who am I, what am I building, what do I care
-              about, how do I like to work -- every single time.
+              <span className="text-accent">&gt;</span> I run agents
+              constantly -- dozens a day, across more projects than I
+              can count. for a while, every new one started from scratch.
+              who am I, what am I building, how do I like to work.
             </p>
             <p>
-              <span className="text-accent">&gt;</span> I needed one
-              link that gives any agent full context instantly. no
-              more copy-pasting system prompts. no more re-explaining
-              myself. turns out a lot of people have the same problem.
+              <span className="text-accent">&gt;</span> so I built a
+              system: a personal context layer, shared conventions,
+              identity files, project structure, reusable skills. one
+              command and any agent knows everything.
             </p>
             <p>
-              <span className="text-accent">&gt;</span> so I built{" "}
+              <span className="text-accent">&gt;</span> then I turned
+              it into{" "}
               <span className="text-accent font-medium">you.md</span>
-              {" "}-- an open identity protocol for the agent internet.
+              {" "}-- so anyone can have it.
             </p>
           </blockquote>
 
