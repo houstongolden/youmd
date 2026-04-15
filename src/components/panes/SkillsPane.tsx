@@ -80,6 +80,19 @@ function SkillCard({
   isInstalled: boolean;
   useCount?: number;
 }) {
+  const [useCopied, setUseCopied] = useState(false);
+  const useCmd = `/skill use ${skill.name}`;
+
+  const handleUse = async () => {
+    try {
+      await navigator.clipboard.writeText(useCmd);
+      setUseCopied(true);
+      setTimeout(() => setUseCopied(false), 1500);
+    } catch {
+      // clipboard not available
+    }
+  };
+
   return (
     <div
       className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))] p-4 space-y-3"
@@ -118,6 +131,21 @@ function SkillCard({
           ))}
         </div>
       )}
+
+      {/* Use in shell */}
+      <div className="pt-1 border-t border-[hsl(var(--border))]/50">
+        <button
+          onClick={handleUse}
+          className="text-[9px] font-mono text-[hsl(var(--accent))]/60 hover:text-[hsl(var(--accent))] transition-colors"
+          title={`copy "${useCmd}" to paste in shell`}
+        >
+          {useCopied ? (
+            <span className="text-[hsl(var(--success))]">copied — paste in shell</span>
+          ) : (
+            <span>{useCmd}</span>
+          )}
+        </button>
+      </div>
     </div>
   );
 }

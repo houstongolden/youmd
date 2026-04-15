@@ -105,27 +105,62 @@ export function HelpPane({ username }: HelpPaneProps) {
         {/* Commands reference */}
         <PaneSectionLabel>commands reference</PaneSectionLabel>
         <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 mb-3">
-          slash commands you can run in the terminal pane.
+          slash commands you can run in the shell pane.
         </p>
-        <div className="space-y-1 mb-2">
+
+        <p className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest mb-1.5">identity</p>
+        <div className="space-y-1 mb-3">
           <CopyableCommand command="/profile" dimmed />
+          <CopyableCommand command="/portrait" dimmed />
+          <CopyableCommand command="/portrait show" dimmed />
+          <CopyableCommand command="/portrait --regenerate" dimmed />
           <CopyableCommand command="/edit" dimmed />
+          <CopyableCommand command="/json" dimmed />
+          <CopyableCommand command="/files" dimmed />
+          <CopyableCommand command="/sources" dimmed />
+        </div>
+
+        <p className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest mb-1.5">sharing</p>
+        <div className="space-y-1 mb-3">
           <CopyableCommand command="/share" dimmed />
           <CopyableCommand command="/share --private" dimmed />
           <CopyableCommand command="/share --project {name}" dimmed />
           <CopyableCommand command="/publish" dimmed />
-          <CopyableCommand command="/portrait" dimmed />
-          <CopyableCommand command="/portrait --regenerate" dimmed />
+        </div>
+
+        <p className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest mb-1.5">skills</p>
+        <div className="space-y-1 mb-3">
           <CopyableCommand command="/skills" dimmed />
+          <CopyableCommand command="/skill use {name}" dimmed />
+        </div>
+
+        <p className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest mb-1.5">account</p>
+        <div className="space-y-1 mb-3">
           <CopyableCommand command="/vault" dimmed />
           <CopyableCommand command="/agents" dimmed />
           <CopyableCommand command="/settings" dimmed />
-          <CopyableCommand command="/status" dimmed />
+          <CopyableCommand command="/activity" dimmed />
+        </div>
+
+        <p className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest mb-1.5">data</p>
+        <div className="space-y-1 mb-3">
+          <CopyableCommand command="/analytics" dimmed />
+          <CopyableCommand command="/history" dimmed />
+        </div>
+
+        <p className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest mb-1.5">memory</p>
+        <div className="space-y-1 mb-3">
           <CopyableCommand command="/memory" dimmed />
           <CopyableCommand command="/recall" dimmed />
           <CopyableCommand command="/recall {query}" dimmed />
+        </div>
+
+        <p className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest mb-1.5">system</p>
+        <div className="space-y-1 mb-2">
+          <CopyableCommand command="/status" dimmed />
           <CopyableCommand command="/help" dimmed />
         </div>
+
         <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-30 mb-2">
           you can also type naturally -- the agent understands free-form input.
         </p>

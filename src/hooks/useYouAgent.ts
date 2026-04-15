@@ -1056,6 +1056,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         "/edit": "edit",
         "/agents": "agents",
         "/skills": "skills",
+        "/history": "history",
+        "/versions": "history",
+        "/analytics": "analytics",
+        "/stats": "analytics",
+        // /share and /help are handled separately below (special logic)
       };
 
       if (paneCommands[trimmed] && onPaneSwitch) {
@@ -1282,8 +1287,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("help");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n\nSHARING\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n\nIDENTITY\n/profile -- your identity profile\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait inline\n/portrait --regenerate -- regenerate ascii portrait from sources\n/edit -- edit your identity context (files, json, sources)\n/json -- export raw identity JSON\n/sources -- manage connected sources\n\nSKILLS\n/skills -- browse installed skills\n/skill use {name} -- activate a skill in this conversation\n\nACCOUNT\n/publish -- publish your latest bundle\n/settings -- account, api keys, billing\n/tokens -- manage api access tokens\n/agents -- connected agents\n\nMEMORY\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n\nSYSTEM\n/status -- bundle status\n/help -- show this reference"
-          : "available commands:\n/share -- create a shareable identity link\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/skill use {name} -- activate a skill\n/memory -- memory summary\n/recall -- show recent memories\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
+          ? "available commands:\n\nIDENTITY\n/profile -- live profile preview\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait variants inline\n/portrait --regenerate -- re-scrape sources and update portrait\n/edit -- edit identity context (files, json, sources)\n/json -- raw identity json\n/files -- file browser\n/sources -- manage connected sources\n\nSHARING\n/share -- create shareable identity link (copies to clipboard)\n/share --private -- include private context in link\n/share --project {name} -- project-scoped context link\n/publish -- publish latest bundle publicly\n\nSKILLS\n/skills -- browse + install skills\n/skill use {name} -- activate skill in this conversation\n\nACCOUNT\n/vault -- api keys + secrets manager\n/agents -- connected agent integrations (MCP)\n/settings -- account, billing, session log\n/activity -- agent activity log\n\nDATA\n/analytics -- profile views + agent reads\n/history -- bundle version history\n\nMEMORY\n/memory -- memory stats by category\n/recall -- recent memories\n/recall {query} -- search memories by keyword\n\nSYSTEM\n/status -- @username | plan | version | published/draft\n/help -- show this reference"
+          : "available commands:\n/profile, /portrait, /edit, /json, /files, /sources\n/share, /share --private, /share --project {name}, /publish\n/skills, /skill use {name}\n/vault, /agents, /settings, /activity\n/analytics, /history\n/memory, /recall, /recall {query}\n/status, /help";
 
         setDisplayMessages((prev) => [
           ...prev,
