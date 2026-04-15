@@ -1027,7 +1027,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
         // Custom message for /skills
         const noticeContent = trimmed === "/skills"
-          ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\ninstall via CLI: `youmd skill install all`\nscaffold a project: `youmd skill init-project`"
+          ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use claude-md-generator\ninstall via CLI: youmd skill install all\nscaffold a project: youmd skill init-project\n\navailable: claude-md-generator, project-context-init, voice-sync, meta-improve"
           : `[switched to ${paneCommands[trimmed]}]`;
 
         setDisplayMessages((prev) => [
@@ -1039,6 +1039,93 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             content: noticeContent,
           },
         ]);
+        return true;
+      }
+
+      // /skill use {name} — fetch skill from registry and inject into conversation
+      if (trimmed.startsWith("/skill use ") || trimmed.startsWith("/skill ")) {
+        const skillName = trimmed.startsWith("/skill use ")
+          ? trimmed.slice(11).trim()
+          : trimmed.slice(7).trim();
+
+        if (!skillName || skillName === "use") {
+          setDisplayMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "user", content: trimmed },
+            {
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: `usage: /skill use <name>\navailable skills: claude-md-generator, project-context-init, voice-sync, meta-improve\ninstall via CLI: youmd skill install all`,
+            },
+          ]);
+          return true;
+        }
+
+        setDisplayMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "user", content: trimmed },
+          { id: crypto.randomUUID(), role: "system-notice", content: `[fetching skill: ${skillName}...]` },
+        ]);
+
+        // Fetch skill from registry
+        fetch(`${CONVEX_SITE_URL}/api/v1/skills?name=${encodeURIComponent(skillName)}`)
+          .then((res) => res.ok ? res.json() : null)
+          .then((skillData) => {
+            if (!skillData || !skillData.content) {
+              setDisplayMessages((prev) => [
+                ...prev,
+                {
+                  id: crypto.randomUUID(),
+                  role: "system-notice",
+                  content: `skill "${skillName}" not found in registry. install via CLI: youmd skill install ${skillName}`,
+                },
+              ]);
+              return;
+            }
+
+            // Inject skill as context into conversation for the agent to follow
+            const youJson = (latestBundle?.youJson as Record<string, unknown>) || null;
+            let renderedContent = skillData.content as string;
+
+            // Simple identity interpolation for known fields
+            if (youJson) {
+              const prefs = (youJson as Record<string, unknown>)?.["preferences/agent.md"] as string || "";
+              const directives = (youJson as Record<string, unknown>)?.["directives/agent.md"] as string || "";
+              const voice = (youJson as Record<string, unknown>)?.["voice/voice.md"] as string || "";
+              const about = (youJson as Record<string, unknown>)?.["profile/about.md"] as string || "";
+              renderedContent = renderedContent
+                .replace(/\{\{preferences\.agent\}\}/g, prefs || "(not set)")
+                .replace(/\{\{directives\.agent\}\}/g, directives || "(not set)")
+                .replace(/\{\{voice\.overall\}\}/g, voice || "(not set)")
+                .replace(/\{\{profile\.about\}\}/g, about || "(not set)");
+            }
+
+            const skillMsg: ChatMessage = {
+              role: "system",
+              content: `[SKILL ACTIVATED: ${skillName}]\n\nFollow these instructions for this conversation:\n\n${renderedContent}\n\n[END SKILL]\n\nExecute this skill now for the user. Start immediately.`,
+            };
+
+            setMessages((prev) => [...prev, skillMsg]);
+            setDisplayMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                role: "system-notice",
+                content: `[skill loaded: ${skillName} (${skillData.version})]\n\n${skillData.description}\n\nidentity fields: ${(skillData.identityFields || []).join(", ")}\n\nthe agent will now follow the skill instructions. you can guide it from here.`,
+              },
+            ]);
+          })
+          .catch(() => {
+            setDisplayMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                role: "system-notice",
+                content: `failed to fetch skill "${skillName}" — check your connection.`,
+              },
+            ]);
+          });
+
         return true;
       }
 
@@ -1159,8 +1246,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("help");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/profile -- your identity profile\n/portrait -- ascii portrait editor + format picker\n/portrait --regenerate -- regenerate ascii portrait from sources\n/edit -- edit your identity context (files, json, sources)\n/skills -- identity-aware agent skills\n/publish -- publish your latest bundle\n/settings -- account, api keys, billing\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n/status -- bundle status\n/help -- show this reference"
-          : "available commands:\n/share -- create a shareable identity link\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/memory -- memory summary\n/recall -- show recent memories\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
+          ? "available commands:\n\nSHARING\n/share -- create a shareable identity link (copied to clipboard)\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n\nIDENTITY\n/profile -- your identity profile\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait inline\n/portrait --regenerate -- regenerate ascii portrait from sources\n/edit -- edit your identity context (files, json, sources)\n/json -- export raw identity JSON\n/sources -- manage connected sources\n\nSKILLS\n/skills -- browse installed skills\n/skill use {name} -- activate a skill in this conversation\n\nACCOUNT\n/publish -- publish your latest bundle\n/settings -- account, api keys, billing\n/tokens -- manage api access tokens\n/agents -- connected agents\n\nMEMORY\n/memory -- memory summary + stats\n/recall -- show recent memories\n/recall {query} -- search memories\n\nSYSTEM\n/status -- bundle status\n/help -- show this reference"
+          : "available commands:\n/share -- create a shareable identity link\n/share --private -- include private context\n/share --project {name} -- share context scoped to a project\n/skill use {name} -- activate a skill\n/memory -- memory summary\n/recall -- show recent memories\n/status -- show bundle status\n/publish -- publish your latest bundle\n/done -- finish onboarding\n/help -- show this message";
 
         setDisplayMessages((prev) => [
           ...prev,
@@ -1711,19 +1798,29 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         ? toolCalls.filter(tc => tc.name === "update_profile").flatMap(tc => tc.input.updates || [])
         : jsonUpdates;
 
-      // LYING DETECTION: if the assistant claimed past-tense actions but didn't
-      // actually emit any updates via tool_use OR JSON blocks, warn the user.
+      // LYING DETECTION: if the assistant claimed PAST-TENSE completed actions but
+      // didn't actually emit any updates via tool_use OR JSON blocks, warn the user.
+      // Only fires on definitive past-tense claims — not on future-tense commitments
+      // like "let me scaffold..." or "i'll create..." (those are promises, not lies).
       if (updates.length === 0 && toolCalls.length === 0) {
-        const lieIndicators = [
-          /\b(done|created|added|scaffolded|updated|saved|wrote|generated|set\s*up|infrastructure\s+is\s+now|properly\s+documented|i'?ve\s+(added|created|updated|scaffolded))\b/i,
-          /\bproject\s+(subdirectories|infrastructure)\b.*\b(now|created|done)\b/i,
+        const pastTenseClaims = [
+          // Only definitive past-tense: "done.", "created X", "scaffolded Y", "i've added"
+          /\b(i'?ve\s+(added|created|updated|scaffolded|written|generated|built|set\s+up|populated))\b/i,
+          /\b(done\.|scaffolded\s+(all|your|those|the)\s+\d*\s*(project|file|director|section))/i,
+          /\b(infrastructure\s+is\s+now|properly\s+documented|all\s+\d+\s+project.*\bcreated\b)\b/i,
         ];
-        const claimsAction = lieIndicators.some((rx) => rx.test(cleanDisplay));
-        if (claimsAction && cleanDisplay.length > 50) {
+        const futureTensePatterns = [
+          /\b(let\s+me|i'?ll|going\s+to|will\s+(create|scaffold|add|build)|i\s+can\s+(scaffold|create))\b/i,
+          /\b(here'?s?\s+(what|the)|starting\s+(with|on)|working\s+on)\b/i,
+          /\b(should\s+i|want\s+me\s+to|ok\s+to\s+(start|proceed)|shall\s+i)\b/i,
+        ];
+        const claimsPastAction = pastTenseClaims.some((rx) => rx.test(cleanDisplay));
+        const isFutureTense = futureTensePatterns.some((rx) => rx.test(cleanDisplay));
+        if (claimsPastAction && !isFutureTense && cleanDisplay.length > 50) {
           newDisplayMsgs.push({
             id: crypto.randomUUID(),
             role: "system-notice",
-            content: `[warning: agent claimed actions but did NOT save any updates. nothing was actually written.]`,
+            content: `[warning: agent claimed completed actions but no updates were saved. use the update_profile tool or emit a json block to actually write files.]`,
           });
         }
       }

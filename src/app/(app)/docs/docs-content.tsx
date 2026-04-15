@@ -68,6 +68,7 @@ const navigation: NavItem[] = [
       { id: "public-endpoints", label: "Public Endpoints" },
       { id: "authenticated-endpoints", label: "Authenticated" },
       { id: "skills-api", label: "Skills API" },
+      { id: "mcp-server", label: "MCP Server" },
     ],
   },
   { id: "privacy", label: "Privacy" },
@@ -1185,7 +1186,7 @@ GET /api/v1/me/skills
 
 # Publish a skill to the registry (authenticated)
 POST /api/v1/me/skills
-{ "name": "...", "description": "...", "template": "...", "tags": [...] }
+{ "name": "...", "description": "...", "content": "...", "version": "1.0.0", "scope": "shared" }
 
 # Record a skill install (authenticated)
 POST /api/v1/me/skills/install
@@ -1198,6 +1199,44 @@ POST /api/v1/me/skills/usage
 # Remove an installed skill (authenticated)
 POST /api/v1/me/skills/remove
 { "skillName": "..." }`}</CodeBlock>
+
+            <H3 id="mcp-server">MCP Server</H3>
+            <P>
+              You.md exposes a JSON-RPC 2.0 MCP endpoint so AI agents (Claude,
+              Cursor, Windsurf) can natively query identity context. Discover
+              the server via the{" "}
+              <InlineCode>{"/.well-known/mcp.json"}</InlineCode> endpoint.
+            </P>
+            <CodeBlock title="HTTP">{`# MCP discovery — auto-configure any MCP-compatible client
+GET /.well-known/mcp.json
+
+# JSON-RPC 2.0 MCP endpoint
+POST /api/v1/mcp
+Content-Type: application/json
+
+# Example: list available tools
+{ "jsonrpc": "2.0", "method": "tools/list", "params": {}, "id": 1 }
+
+# Example: get a user's identity
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "get_identity",
+    "arguments": { "username": "houstongolden", "format": "compact" }
+  },
+  "id": 2
+}`}</CodeBlock>
+            <P>
+              Available MCP tools:{" "}
+              <InlineCode>get_identity</InlineCode>,{" "}
+              <InlineCode>search_profiles</InlineCode>,{" "}
+              <InlineCode>get_my_identity</InlineCode> (authenticated).
+              Configure via CLI:
+            </P>
+            <CodeBlock title="bash">{`youmd mcp --install claude   # Show Claude Code setup instructions
+youmd mcp --install cursor   # Show Cursor setup instructions
+youmd mcp --auto             # Auto-write MCP config to agent settings`}</CodeBlock>
 
             {/* ── Privacy ──────────────────────────────────── */}
             <H2 id="privacy">Privacy</H2>
@@ -1240,31 +1279,27 @@ POST /api/v1/me/skills/remove
             </P>
             <CommandTable
               commands={[
-                {
-                  cmd: "/share",
-                  desc: "Generate shareable identity context block",
-                },
-                {
-                  cmd: "/share --private",
-                  desc: "Include private layer in context block",
-                },
+                { cmd: "/share", desc: "Create shareable context link (copied to clipboard)" },
+                { cmd: "/share --private", desc: "Include private context in the link" },
+                { cmd: "/share --project {name}", desc: "Share context scoped to a specific project" },
+                { cmd: "/profile", desc: "View your identity profile" },
+                { cmd: "/portrait", desc: "ASCII portrait editor + format picker" },
+                { cmd: "/portrait show", desc: "Render your portrait inline in chat" },
+                { cmd: "/portrait --regenerate", desc: "Re-scrape social profiles for a fresh portrait" },
+                { cmd: "/edit", desc: "Edit identity context (files, JSON, sources)" },
+                { cmd: "/sources", desc: "Manage connected sources (LinkedIn, GitHub, X)" },
+                { cmd: "/skills", desc: "Browse and manage installed skills" },
+                { cmd: "/skill use {name}", desc: "Activate a skill in this conversation" },
+                { cmd: "/publish", desc: "Publish latest changes to your public profile" },
                 { cmd: "/preview", desc: "Preview your public profile" },
                 { cmd: "/json", desc: "Export identity as raw JSON" },
-                { cmd: "/settings", desc: "Open account settings" },
+                { cmd: "/settings", desc: "Account settings, API keys, billing" },
                 { cmd: "/tokens", desc: "Manage API access tokens" },
-                { cmd: "/billing", desc: "View billing and subscription" },
-                {
-                  cmd: "/status",
-                  desc: "Check profile completeness and status",
-                },
-                {
-                  cmd: "/publish",
-                  desc: "Publish latest changes to your public profile",
-                },
-                {
-                  cmd: "/skills",
-                  desc: "Browse and manage installed skills",
-                },
+                { cmd: "/agents", desc: "View connected agents and activity" },
+                { cmd: "/memory", desc: "Memory summary and stats" },
+                { cmd: "/recall", desc: "List recent memories" },
+                { cmd: "/recall {query}", desc: "Full-text search across memories" },
+                { cmd: "/status", desc: "Bundle status and profile completeness" },
                 { cmd: "/help", desc: "Show all available commands" },
               ]}
             />

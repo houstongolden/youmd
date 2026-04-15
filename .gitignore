@@ -52,3 +52,7 @@ cli/dist/
 cli/node_modules/
 .youmd/
 .gstack/
+.env*.local
+
+# claude code
+.claude/

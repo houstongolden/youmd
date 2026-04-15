@@ -950,24 +950,30 @@ http.route({
     }
 
     // Helper: transform Anthropic SSE stream, emitting text deltas AND complete tool_use blocks
+    // Uses an async-loop + TransformStream pattern that works reliably in Convex's runtime
     function transformAnthropicStream(upstream: ReadableStream<Uint8Array>): ReadableStream {
+      const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+      const writer = writable.getWriter();
       const reader = upstream.getReader();
-      const decoder = new TextDecoder();
+      const enc = new TextEncoder();
+      const dec = new TextDecoder();
       let buf = "";
 
       // Track each content block by index
       const blocks = new Map<number, { type: "text" | "tool_use"; name?: string; jsonBuf?: string }>();
 
-      return new ReadableStream({
-        async pull(controller) {
-          try {
+      // Drive the transform asynchronously — don't await, let Convex stream the output
+      (async () => {
+        try {
+          while (true) {
             const { done, value } = await reader.read();
             if (done) {
-              controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
-              controller.close();
-              return;
+              await writer.write(enc.encode("data: [DONE]\n\n"));
+              await writer.close();
+              break;
             }
-            buf += decoder.decode(value, { stream: true });
+
+            buf += dec.decode(value, { stream: true });
             const lines = buf.split("\n");
             buf = lines.pop() || "";
 
@@ -975,7 +981,7 @@ http.route({
               if (!line.startsWith("data: ")) continue;
               const data = line.slice(6).trim();
               if (data === "[DONE]") {
-                controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+                await writer.write(enc.encode("data: [DONE]\n\n"));
                 continue;
               }
               try {
@@ -983,9 +989,9 @@ http.route({
 
                 if (parsed.type === "content_block_start") {
                   const cb = parsed.content_block;
-                  if (cb.type === "text") {
+                  if (cb?.type === "text") {
                     blocks.set(parsed.index, { type: "text" });
-                  } else if (cb.type === "tool_use") {
+                  } else if (cb?.type === "tool_use") {
                     blocks.set(parsed.index, { type: "tool_use", name: cb.name, jsonBuf: "" });
                   }
                 } else if (parsed.type === "content_block_delta") {
@@ -993,11 +999,9 @@ http.route({
                   if (!block) continue;
                   const { delta } = parsed;
 
-                  if (delta.type === "text_delta" && block.type === "text" && delta.text) {
-                    controller.enqueue(
-                      new TextEncoder().encode(`data: ${JSON.stringify({ text: delta.text })}\n\n`)
-                    );
-                  } else if (delta.type === "input_json_delta" && block.type === "tool_use") {
+                  if (delta?.type === "text_delta" && block.type === "text" && delta.text) {
+                    await writer.write(enc.encode(`data: ${JSON.stringify({ text: delta.text })}\n\n`));
+                  } else if (delta?.type === "input_json_delta" && block.type === "tool_use") {
                     block.jsonBuf = (block.jsonBuf || "") + (delta.partial_json || "");
                   }
                 } else if (parsed.type === "content_block_stop") {
@@ -1005,10 +1009,8 @@ http.route({
                   if (block?.type === "tool_use") {
                     try {
                       const input = JSON.parse(block.jsonBuf || "{}");
-                      controller.enqueue(
-                        new TextEncoder().encode(
-                          `data: ${JSON.stringify({ tool_use: { name: block.name, input } })}\n\n`
-                        )
+                      await writer.write(
+                        enc.encode(`data: ${JSON.stringify({ tool_use: { name: block.name, input } })}\n\n`)
                       );
                     } catch { /* malformed tool JSON — skip */ }
                     blocks.delete(parsed.index);
@@ -1017,13 +1019,15 @@ http.route({
                   }
                 }
                 // message_delta, message_stop, ping — ignore
-              } catch { /* skip */ }
+              } catch { /* skip malformed SSE */ }
             }
-          } catch (err) {
-            controller.error(err);
           }
-        },
-      });
+        } catch {
+          try { await writer.abort(); } catch { /* already closed */ }
+        }
+      })();
+
+      return readable;
     }
 
     // Try Anthropic streaming first
