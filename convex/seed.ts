@@ -846,3 +846,643 @@ export const _patchProfilePortrait = internalMutation({
     await ctx.db.patch(profileId, { asciiPortrait: portrait });
   },
 });
+
+// ── AI Leaders Seeding ────────────────────────────────────────
+//
+// Unclaimed public profiles for top AI/tech founders and influencers.
+// These use the profiles table directly (no user record needed).
+// Run: npx convex run seed:seedAiLeaders
+// Dry run: npx convex run seed:seedAiLeaders '{"dryRun":true}'
+
+const AI_LEADERS = [
+  {
+    username: "sama",
+    name: "Sam Altman",
+    tagline: "Building AGI that benefits all of humanity. CEO of OpenAI.",
+    location: "San Francisco, CA",
+    avatarUrl: "https://unavatar.io/github/sama",
+    links: { x: "https://x.com/sama", github: "https://github.com/sama", website: "https://blog.samaltman.com" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "CEO of OpenAI. Former president of Y Combinator. Building artificial general intelligence — one of the most consequential technology bets in history.",
+          medium: "Sam Altman co-founded OpenAI in 2015 and returned as CEO in 2023. Before that he ran Y Combinator from 2014–2019, funding thousands of startups including Airbnb, Dropbox, Stripe, and Coinbase.",
+        },
+        tagline: "Building AGI that benefits all of humanity. CEO of OpenAI.",
+        location: "San Francisco, CA",
+      },
+      links: { x: "https://x.com/sama", github: "https://github.com/sama", website: "https://blog.samaltman.com" },
+      projects: [
+        { name: "OpenAI", description: "Leading AI safety and research company. Created GPT-4, ChatGPT, DALL-E, Sora, o1, and o3." },
+        { name: "ChatGPT", description: "Fastest consumer product to 100M users in history. 500M+ weekly active users." },
+        { name: "Worldcoin", description: "Global identity and financial network using iris biometrics." },
+      ],
+      now: { focus: ["GPT-5 development", "AGI safety research", "OpenAI enterprise expansion"] },
+      tags: ["AI", "AGI", "OpenAI", "startups", "YC", "technology"],
+    },
+  },
+  {
+    username: "gdb",
+    name: "Greg Brockman",
+    tagline: "OpenAI President. Hacker at heart. Believes in building transformative AI.",
+    location: "San Francisco, CA",
+    avatarUrl: "https://unavatar.io/github/gdb",
+    links: { x: "https://x.com/gdb", github: "https://github.com/gdb", website: "https://gregbrockman.com" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "President and co-founder of OpenAI. Led technical systems from GPT-1 through GPT-4. Former Stripe CTO at 22. MIT dropout turned AI infrastructure builder.",
+          medium: "Greg Brockman built the technical substrate that made OpenAI's research possible — from GPT-1 through GPT-4. He joined OpenAI from Stripe where he'd been CTO since age 22, having left MIT before finishing his degree.",
+        },
+        tagline: "OpenAI President. Hacker at heart. Believes in building transformative AI.",
+        location: "San Francisco, CA",
+      },
+      links: { x: "https://x.com/gdb", github: "https://github.com/gdb", website: "https://gregbrockman.com" },
+      projects: [
+        { name: "OpenAI", description: "Co-founded and led technical architecture for all major model releases." },
+        { name: "Stripe", description: "Early engineering leader. CTO at 22. Helped scale from seed to unicorn." },
+      ],
+      now: { focus: ["OpenAI research direction", "AGI infrastructure", "technical leadership"] },
+      tags: ["AI", "OpenAI", "engineering", "startups", "infrastructure"],
+    },
+  },
+  {
+    username: "hwchase17",
+    name: "Harrison Chase",
+    tagline: "Co-founder of LangChain. Building the tooling layer for LLM applications.",
+    location: "San Francisco, CA",
+    avatarUrl: "https://unavatar.io/github/hwchase17",
+    links: { x: "https://x.com/hwchase17", github: "https://github.com/hwchase17", website: "https://www.langchain.com" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Co-founder and CEO of LangChain — the most widely-used open-source framework for LLM applications. Built as a side project in late 2022; now one of the fastest-growing GitHub repos in history.",
+          medium: "Harrison Chase created LangChain while working at Robust Intelligence. Within months it became the default way to build LLM applications. LangChain now powers thousands of production AI systems.",
+        },
+        tagline: "Co-founder of LangChain. Building the tooling layer for LLM applications.",
+        location: "San Francisco, CA",
+      },
+      links: { x: "https://x.com/hwchase17", github: "https://github.com/hwchase17", website: "https://www.langchain.com" },
+      projects: [
+        { name: "LangChain", description: "Most popular framework for building LLM apps. 90k+ GitHub stars, Python and JS." },
+        { name: "LangSmith", description: "Production observability platform for LLM applications." },
+        { name: "LangGraph", description: "Framework for building stateful, multi-actor agentic applications." },
+      ],
+      now: { focus: ["LangSmith production monitoring", "LangGraph agent framework", "LLM application infrastructure"] },
+      tags: ["LLMs", "AI infrastructure", "Python", "agents", "open source"],
+    },
+  },
+  {
+    username: "ylecun",
+    name: "Yann LeCun",
+    tagline: "Meta AI Chief Scientist. Invented CNNs. Turing Award 2018. Open AI advocate.",
+    location: "New York, NY",
+    avatarUrl: "https://unavatar.io/twitter/ylecun",
+    links: { x: "https://x.com/ylecun", website: "https://yann.lecun.com" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "VP and Chief AI Scientist at Meta. NYU Professor. Turing Award winner (2018). Invented convolutional neural networks in the 1980s. One of the founding fathers of modern deep learning.",
+          medium: "Yann LeCun invented CNNs and demonstrated them for digit recognition at Bell Labs in the late 1980s. He won the Turing Award alongside Bengio and Hinton in 2018. He leads FAIR, Meta's AI research lab, and is one of AI's most prominent open-source advocates.",
+        },
+        tagline: "Meta AI Chief Scientist. Invented CNNs. Turing Award 2018. Open AI advocate.",
+        location: "New York, NY",
+      },
+      links: { x: "https://x.com/ylecun", website: "https://yann.lecun.com" },
+      projects: [
+        { name: "Meta AI Research (FAIR)", description: "Leading fundamental AI research including LLaMA, Segment Anything, ImageBind." },
+        { name: "LLaMA", description: "Meta's open-source large language model series — democratizing frontier AI access." },
+      ],
+      now: { focus: ["World model research", "JEPA (Joint Embedding Predictive Architecture)", "open-source AI advocacy"] },
+      tags: ["AI", "deep learning", "research", "Meta AI", "CNNs", "Turing Award", "open source"],
+    },
+  },
+  {
+    username: "jeremyphoward",
+    name: "Jeremy Howard",
+    tagline: "Making deep learning accessible. fast.ai founder. World's top Kaggle competitor.",
+    location: "San Francisco, CA",
+    avatarUrl: "https://unavatar.io/github/jph00",
+    links: { x: "https://x.com/jeremyphoward", github: "https://github.com/jph00", website: "https://www.fast.ai" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Co-founder of fast.ai. Creator of fastai and nbdev. Kaggle's #1 ranked competitor (2014). Former Kaggle president. Building deep learning education for everyone.",
+          medium: "Jeremy Howard co-founded fast.ai to make deep learning accessible without sacrificing rigor. The free fast.ai courses have taught hundreds of thousands worldwide. He created nbdev to make Jupyter notebooks first-class dev environments.",
+        },
+        tagline: "Making deep learning accessible. fast.ai founder. World's top Kaggle competitor.",
+        location: "San Francisco, CA",
+      },
+      links: { x: "https://x.com/jeremyphoward", github: "https://github.com/jph00", website: "https://www.fast.ai" },
+      projects: [
+        { name: "fast.ai", description: "Free top-down deep learning courses. Taught hundreds of thousands worldwide." },
+        { name: "fastai", description: "High-level deep learning library on top of PyTorch." },
+        { name: "nbdev", description: "Literate programming system in Jupyter notebooks — exports to production-quality libraries." },
+      ],
+      now: { focus: ["AI education accessibility", "practical AI research", "open-source AI tools"] },
+      tags: ["deep learning", "education", "open source", "Python", "PyTorch", "Kaggle"],
+    },
+  },
+  {
+    username: "emollick",
+    name: "Ethan Mollick",
+    tagline: "Wharton professor. Co-Intelligence author. One Useful Thing blogger.",
+    location: "Philadelphia, PA",
+    avatarUrl: "https://unavatar.io/twitter/emollick",
+    links: { x: "https://x.com/emollick", website: "https://www.oneusefulthing.org" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Associate Professor at Wharton. Studies AI, entrepreneurship, and innovation. Author of Co-Intelligence: Living and Working with AI. Writes One Useful Thing — one of the most-read AI newsletters.",
+          medium: "Ethan Mollick researches how AI changes work and education. His practical experiments with AI tools have reached millions of readers. He argues most people drastically underestimate how capable current AI systems are.",
+        },
+        tagline: "Wharton professor. Co-Intelligence author. One Useful Thing blogger.",
+        location: "Philadelphia, PA",
+      },
+      links: { x: "https://x.com/emollick", website: "https://www.oneusefulthing.org" },
+      projects: [
+        { name: "One Useful Thing", description: "Newsletter on AI, innovation, and the future of work. Millions of readers." },
+        { name: "Co-Intelligence", description: "Book on living and working with AI as a collaborator, not just a tool." },
+      ],
+      now: { focus: ["AI in education research", "human-AI collaboration experiments", "Wharton AI curriculum"] },
+      tags: ["AI", "education", "research", "Wharton", "future of work", "LLMs"],
+    },
+  },
+  {
+    username: "swyx",
+    name: "Shawn Wang",
+    tagline: "Learning in public. AI engineer, writer, and co-host of Latent Space.",
+    location: "San Francisco, CA",
+    avatarUrl: "https://unavatar.io/github/sw-yx",
+    links: { x: "https://x.com/swyx", github: "https://github.com/sw-yx", website: "https://www.swyx.io" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "AI engineer, writer, and co-host of the Latent Space podcast. Founded smol.ai. Coined 'Learn in Public.' Former Stripe and AWS engineer. Wrote The Coding Career Handbook.",
+          medium: "Shawn Wang coined 'Learn in Public' — a philosophy of learning-by-sharing that spread across engineering. He hosts Latent Space (top AI podcast) and builds AI tools. Formerly engineering at Stripe and AWS.",
+        },
+        tagline: "Learning in public. AI engineer, writer, and co-host of Latent Space.",
+        location: "San Francisco, CA",
+      },
+      links: { x: "https://x.com/swyx", github: "https://github.com/sw-yx", website: "https://www.swyx.io" },
+      projects: [
+        { name: "Latent Space", description: "Top AI engineer podcast. Deep technical interviews with AI researchers and builders." },
+        { name: "smol.ai", description: "AI developer tools. smol-developer was one of the first viral agent demos." },
+        { name: "AI Engineer Summit", description: "Conference for AI engineers — bridging research and production." },
+      ],
+      now: { focus: ["Latent Space podcast", "AI engineering community", "smol.ai tooling"] },
+      tags: ["AI engineering", "community", "developer tools", "podcasting", "open source"],
+    },
+  },
+  {
+    username: "svpino",
+    name: "Santiago Valdarrama",
+    tagline: "Simplifying machine learning for 1M+ developers. ML educator and builder.",
+    location: "Miami, FL",
+    avatarUrl: "https://unavatar.io/github/svpino",
+    links: { x: "https://x.com/svpino", github: "https://github.com/svpino", website: "https://tidepool.so" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "ML educator with 1M+ followers across X and LinkedIn. Co-founder of Tidepool. Former Principal Engineer at Apple. Known for visual ML explanations that make complex concepts instantly understandable.",
+          medium: "Santiago built one of the largest ML education audiences on X by explaining complex concepts through clear, visual diagrams. He co-founded Tidepool to bring AI capabilities to enterprise teams.",
+        },
+        tagline: "Simplifying machine learning for 1M+ developers. ML educator and builder.",
+        location: "Miami, FL",
+      },
+      links: { x: "https://x.com/svpino", github: "https://github.com/svpino", website: "https://tidepool.so" },
+      projects: [
+        { name: "Tidepool", description: "Making AI accessible for enterprise teams without ML expertise." },
+        { name: "ML visual education", description: "1M+ followers learning ML through visual diagrams and explanations." },
+      ],
+      now: { focus: ["ML education at scale", "Tidepool enterprise AI platform", "making AI approachable for everyone"] },
+      tags: ["machine learning", "education", "AI", "Python", "enterprise", "data science"],
+    },
+  },
+  {
+    username: "rileytomasek",
+    name: "Riley Tomasek",
+    tagline: "Building AI-native products and sharing what works in production.",
+    location: "San Francisco, CA",
+    avatarUrl: "https://unavatar.io/github/rileytomasek",
+    links: { x: "https://x.com/rileytomasek", github: "https://github.com/rileytomasek" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Early AI application developer. Known for building and openly sharing insights about working with LLMs in production systems.",
+          medium: "Riley Tomasek has been building AI applications since the early days of the LLM wave. He shares practical engineering insights about what works and what doesn't when shipping AI products.",
+        },
+        tagline: "Building AI-native products and sharing what works in production.",
+        location: "San Francisco, CA",
+      },
+      links: { x: "https://x.com/rileytomasek", github: "https://github.com/rileytomasek" },
+      projects: [],
+      now: { focus: ["AI-native product development", "LLM engineering", "building in public"] },
+      tags: ["AI", "LLMs", "product engineering", "TypeScript"],
+    },
+  },
+  {
+    username: "danshipper",
+    name: "Dan Shipper",
+    tagline: "Co-founder of Every. Building AI tools for how knowledge workers think.",
+    location: "New York, NY",
+    avatarUrl: "https://unavatar.io/github/danshipper",
+    links: { x: "https://x.com/danshipper", github: "https://github.com/danshipper", website: "https://every.to" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Co-founder and CEO of Every — a bundle of AI-powered newsletters and tools for knowledge workers. Built Lex (AI writing editor) and Spiral. Writes about AI, cognition, and how thinking works.",
+          medium: "Dan Shipper built Every into a profitable media and tools business by combining smart writers with AI experiments. He was early on every major AI wave and writes some of the clearest thinking about what AI means for knowledge work.",
+        },
+        tagline: "Co-founder of Every. Building AI tools for how knowledge workers think.",
+        location: "New York, NY",
+      },
+      links: { x: "https://x.com/danshipper", github: "https://github.com/danshipper", website: "https://every.to" },
+      projects: [
+        { name: "Every", description: "Bundle of AI-powered newsletters and tools for curious, ambitious people. $1M+ ARR." },
+        { name: "Lex", description: "AI writing editor. One of the first AI writing tools to ship." },
+        { name: "Spiral", description: "AI tool for structured thinking and sense-making." },
+      ],
+      now: { focus: ["Every AI product suite", "AI cognition research", "extending human intelligence"] },
+      tags: ["AI", "writing", "productivity", "media", "knowledge work", "tools"],
+    },
+  },
+  {
+    username: "gregisenberg",
+    name: "Greg Isenberg",
+    tagline: "Building and investing in internet communities. Late Checkout founder.",
+    location: "Miami, FL",
+    avatarUrl: "https://unavatar.io/twitter/gregisenberg",
+    links: { x: "https://x.com/gregisenberg", website: "https://www.gregisenberg.com" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Founder of Late Checkout, a product studio. Angel investor. Built and sold communities to Reddit, WeHeartIt, and others. Known for generating startup ideas live in public and teaching community-led growth.",
+          medium: "Greg Isenberg built and sold multiple internet communities to Reddit, Apple, and TikTok before founding Late Checkout. He teaches community-first growth and generates AI startup ideas publicly.",
+        },
+        tagline: "Building and investing in internet communities. Late Checkout founder.",
+        location: "Miami, FL",
+      },
+      links: { x: "https://x.com/gregisenberg", website: "https://www.gregisenberg.com" },
+      projects: [
+        { name: "Late Checkout", description: "Product studio and community for internet entrepreneurs." },
+        { name: "Community-led growth playbook", description: "Framework for building internet communities as defensible business moats." },
+      ],
+      now: { focus: ["AI startup ideas in public", "Late Checkout studio", "community-first growth investing"] },
+      tags: ["community", "startups", "AI", "internet businesses", "growth", "angel investing"],
+    },
+  },
+  {
+    username: "linusekenstam",
+    name: "Linus Ekenstam",
+    tagline: "Designing the future of human-AI interfaces. Visual AI explorer.",
+    location: "Stockholm, Sweden",
+    avatarUrl: "https://unavatar.io/twitter/LinusEkenstam",
+    links: { x: "https://x.com/LinusEkenstam" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Designer and builder focused on AI interfaces. Shares visual explorations of AI tools and thoughtful commentary on where AI meets design. Influential voice on X in the AI design space.",
+          medium: "Linus Ekenstam explores the design frontier of AI products through visual essays and experiments. He's built a large following for his thoughtful, visual perspective on human-AI interaction design.",
+        },
+        tagline: "Designing the future of human-AI interfaces. Visual AI explorer.",
+        location: "Stockholm, Sweden",
+      },
+      links: { x: "https://x.com/LinusEkenstam" },
+      projects: [],
+      now: { focus: ["AI interface design exploration", "human-AI interaction research", "visual AI product critique"] },
+      tags: ["design", "AI", "UX", "interfaces", "product", "visual design"],
+    },
+  },
+  {
+    username: "alexandrwang",
+    name: "Alexandr Wang",
+    tagline: "CEO and founder of Scale AI. Built the data infrastructure powering frontier AI.",
+    location: "San Francisco, CA",
+    avatarUrl: "https://unavatar.io/twitter/alexandr_wang",
+    links: { x: "https://x.com/alexandr_wang", website: "https://scale.com" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Founder and CEO of Scale AI — the data platform powering OpenAI, Microsoft, Meta, and the US government. Founded Scale at 19 after dropping out of MIT. Youngest self-made billionaire in US history.",
+          medium: "Alexandr Wang founded Scale AI in 2016, starting with data labeling and expanding into the full AI development lifecycle. Scale is now one of the most critical AI infrastructure companies, with government and frontier model contracts.",
+        },
+        tagline: "CEO and founder of Scale AI. Built the data infrastructure powering frontier AI.",
+        location: "San Francisco, CA",
+      },
+      links: { x: "https://x.com/alexandr_wang", website: "https://scale.com" },
+      projects: [
+        { name: "Scale AI", description: "AI data platform — labeling, evals, RLHF data, and model development infrastructure." },
+      ],
+      now: { focus: ["Scale AI enterprise", "government AI contracts", "frontier model evaluation infrastructure"] },
+      tags: ["AI", "data infrastructure", "Scale AI", "startups", "national security"],
+    },
+  },
+  {
+    username: "saranormous",
+    name: "Sarah Guo",
+    tagline: "Conviction Capital founder. AI-native investor. No Priors podcast host.",
+    location: "San Francisco, CA",
+    avatarUrl: "https://unavatar.io/twitter/saranormous",
+    links: { x: "https://x.com/saranormous", website: "https://conviction.com" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Founder of Conviction Capital, an AI-native venture fund. Former Greylock partner. Co-host of No Priors podcast. Backed some of the most important AI-native companies from day zero.",
+          medium: "Sarah Guo left Greylock to start Conviction Capital, focused entirely on AI-native companies. She co-hosts No Priors, one of the leading AI research and entrepreneurship podcasts.",
+        },
+        tagline: "Conviction Capital founder. AI-native investor. No Priors podcast host.",
+        location: "San Francisco, CA",
+      },
+      links: { x: "https://x.com/saranormous", website: "https://conviction.com" },
+      projects: [
+        { name: "Conviction Capital", description: "AI-native venture fund. Backs the best AI founders from day zero." },
+        { name: "No Priors", description: "Top AI podcast on research, products, and entrepreneurship." },
+      ],
+      now: { focus: ["AI startup investing", "No Priors podcast", "Conviction portfolio companies"] },
+      tags: ["AI", "venture capital", "investing", "startups", "podcasting"],
+    },
+  },
+  {
+    username: "clemdelangue",
+    name: "Clement Delangue",
+    tagline: "Co-founder and CEO of Hugging Face. The GitHub of machine learning.",
+    location: "New York, NY",
+    avatarUrl: "https://unavatar.io/twitter/ClementDelangue",
+    links: { x: "https://x.com/ClementDelangue", website: "https://huggingface.co" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Co-founder and CEO of Hugging Face — the platform where the AI community collaborates on models, datasets, and applications. 500K+ models hosted. $4.5B valuation.",
+          medium: "Clement Delangue co-founded Hugging Face in 2016 as a chatbot app and pivoted it into the dominant AI model hub. Today it's the default place to find, share, and run open-source AI models.",
+        },
+        tagline: "Co-founder and CEO of Hugging Face. The GitHub of machine learning.",
+        location: "New York, NY",
+      },
+      links: { x: "https://x.com/ClementDelangue", website: "https://huggingface.co" },
+      projects: [
+        { name: "Hugging Face", description: "GitHub of ML — 500K+ models, 150K datasets, collaborative AI development platform." },
+        { name: "Transformers", description: "State-of-the-art ML library. 130K+ GitHub stars." },
+      ],
+      now: { focus: ["open AI ecosystem", "Hugging Face Hub growth", "enterprise AI platform"] },
+      tags: ["AI", "open source", "Hugging Face", "machine learning", "transformers"],
+    },
+  },
+  {
+    username: "reidhoffman",
+    name: "Reid Hoffman",
+    tagline: "LinkedIn co-founder. Greylock. OpenAI board. Author of Blitzscaling.",
+    location: "Palo Alto, CA",
+    avatarUrl: "https://unavatar.io/twitter/reidhoffman",
+    links: { x: "https://x.com/reidhoffman", website: "https://www.reidhoffman.org" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Co-founder of LinkedIn (acquired by Microsoft for $26B). Partner at Greylock. Former OpenAI board member. Author of Blitzscaling and The Startup of You. Philosopher of the professional internet.",
+          medium: "Reid Hoffman co-founded LinkedIn and grew it into the world's largest professional network. He coined 'blitzscaling' — the strategy of scaling startups faster than feels comfortable when market conditions allow.",
+        },
+        tagline: "LinkedIn co-founder. Greylock. OpenAI board. Author of Blitzscaling.",
+        location: "Palo Alto, CA",
+      },
+      links: { x: "https://x.com/reidhoffman", website: "https://www.reidhoffman.org" },
+      projects: [
+        { name: "LinkedIn", description: "Co-founded and built the world's professional network. $26B Microsoft acquisition." },
+        { name: "Inflection AI", description: "Co-founded AI company. Built Pi personal AI assistant." },
+        { name: "Blitzscaling", description: "Book and framework for scaling startups at extreme pace." },
+      ],
+      now: { focus: ["AI governance and policy", "Greylock AI portfolio", "AI and society research"] },
+      tags: ["AI", "venture capital", "LinkedIn", "startups", "technology", "governance"],
+    },
+  },
+  {
+    username: "natfriedman",
+    name: "Nat Friedman",
+    tagline: "Former GitHub CEO. NFDG. Betting on ambitious founders and hard science.",
+    location: "San Francisco, CA",
+    avatarUrl: "https://unavatar.io/github/nat",
+    links: { x: "https://x.com/natfriedman", github: "https://github.com/nat", website: "https://nat.org" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Former CEO of GitHub (2018–2021). Co-founder of NFDG with Daniel Gross. Built Xamarin (acquired by Microsoft). Launched GitHub Copilot. Now backing ambitious AI and scientific projects.",
+          medium: "Nat Friedman led GitHub through its Microsoft integration and launched GitHub Copilot — the first widely-used AI coding assistant. He now runs NFDG backing ambitious technical founders. Most recently organized the Vesuvius Challenge which decoded ancient scrolls.",
+        },
+        tagline: "Former GitHub CEO. NFDG. Betting on ambitious founders and hard science.",
+        location: "San Francisco, CA",
+      },
+      links: { x: "https://x.com/natfriedman", github: "https://github.com/nat", website: "https://nat.org" },
+      projects: [
+        { name: "GitHub Copilot", description: "Launched as GitHub CEO — the first AI coding assistant at scale." },
+        { name: "NFDG", description: "Investment and advisory firm with Daniel Gross. AI and scientific computing." },
+        { name: "Vesuvius Challenge", description: "Prize competition to decode volcanic scrolls from Herculaneum. Succeeded." },
+      ],
+      now: { focus: ["NFDG investments", "scientific computing", "moonshot technology bets"] },
+      tags: ["AI", "GitHub", "investing", "science", "open source", "technology"],
+    },
+  },
+  {
+    username: "andrewng",
+    name: "Andrew Ng",
+    tagline: "AI Fund. deeplearning.ai. Coursera co-founder. Making AI accessible globally.",
+    location: "Palo Alto, CA",
+    avatarUrl: "https://unavatar.io/twitter/AndrewYNg",
+    links: { x: "https://x.com/AndrewYNg", website: "https://www.deeplearning.ai" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Co-founder of Google Brain. Former Chief Scientist at Baidu. Co-founder of Coursera. Founder of AI Fund and deeplearning.ai. Reached 7M+ learners through AI courses. One of the most important AI educators of the 21st century.",
+          medium: "Andrew Ng co-founded Google Brain and led AI at Baidu before starting deeplearning.ai and AI Fund. His ML course on Coursera was taken by 4M+ students and sparked a generation of AI practitioners. He's a relentless democratizer of AI education.",
+        },
+        tagline: "AI Fund. deeplearning.ai. Coursera co-founder. Making AI accessible globally.",
+        location: "Palo Alto, CA",
+      },
+      links: { x: "https://x.com/AndrewYNg", website: "https://www.deeplearning.ai" },
+      projects: [
+        { name: "deeplearning.ai", description: "World's leading AI education platform. 7M+ learners across 190+ countries." },
+        { name: "AI Fund", description: "Venture studio building AI-powered companies from scratch." },
+        { name: "Coursera", description: "Co-founded the MOOC platform that brought university education to everyone." },
+        { name: "Google Brain", description: "Co-founded Google's deep learning research division." },
+      ],
+      now: { focus: ["AI education at scale", "AI Fund portfolio companies", "agentic AI research"] },
+      tags: ["AI", "machine learning", "education", "Coursera", "deeplearning", "startups"],
+    },
+  },
+  {
+    username: "darioamodei",
+    name: "Dario Amodei",
+    tagline: "Co-founder and CEO of Anthropic. AI safety researcher. Building Claude.",
+    location: "San Francisco, CA",
+    avatarUrl: "https://unavatar.io/twitter/DarioAmodei",
+    links: { x: "https://x.com/DarioAmodei", website: "https://www.anthropic.com" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Co-founder and CEO of Anthropic — the AI safety company behind Claude. Former VP of Research at OpenAI. PhD in computational neuroscience from Princeton. Believes safety and capability are complementary, not opposed.",
+          medium: "Dario Amodei led research at OpenAI before co-founding Anthropic in 2021 with his sister Daniela and other OpenAI researchers. Anthropic created Claude, one of the most capable and safest AI assistants.",
+        },
+        tagline: "Co-founder and CEO of Anthropic. AI safety researcher. Building Claude.",
+        location: "San Francisco, CA",
+      },
+      links: { x: "https://x.com/DarioAmodei", website: "https://www.anthropic.com" },
+      projects: [
+        { name: "Anthropic", description: "AI safety company. Creator of Claude — advanced, helpful, harmless, and honest AI." },
+        { name: "Claude", description: "Anthropic's AI assistant. Leading in safety, reasoning, and code generation." },
+      ],
+      now: { focus: ["Claude development", "AI safety research", "constitutional AI"] },
+      tags: ["AI", "AI safety", "Anthropic", "Claude", "research", "alignment"],
+    },
+  },
+  {
+    username: "ilyasut",
+    name: "Ilya Sutskever",
+    tagline: "Co-founder of Safe Superintelligence Inc. Ex-OpenAI Chief Scientist.",
+    location: "San Francisco, CA",
+    avatarUrl: "https://unavatar.io/twitter/ilyasut",
+    links: { x: "https://x.com/ilyasut" },
+    youJson: {
+      identity: {
+        bio: {
+          short: "Co-founder of Safe Superintelligence Inc (SSI). Former Chief Scientist and co-founder of OpenAI. Student of Geoffrey Hinton. Co-created AlexNet (2012) which sparked the deep learning revolution.",
+          medium: "Ilya Sutskever is one of the most respected AI researchers alive. He co-created AlexNet with Hinton and Krizhevsky, sparking the modern deep learning era. He was Chief Scientist at OpenAI for nearly a decade before founding SSI to focus entirely on safe superintelligence.",
+        },
+        tagline: "Co-founder of Safe Superintelligence Inc. Ex-OpenAI Chief Scientist.",
+        location: "San Francisco, CA",
+      },
+      links: { x: "https://x.com/ilyasut" },
+      projects: [
+        { name: "Safe Superintelligence Inc (SSI)", description: "New AI safety company with singular focus: building safe superintelligence." },
+        { name: "OpenAI", description: "Co-founded OpenAI. Chief Scientist from 2016–2024. Drove GPT-4 and RLHF research." },
+        { name: "AlexNet", description: "Won ImageNet 2012 by a massive margin. Triggered the deep learning revolution." },
+      ],
+      now: { focus: ["Safe superintelligence research", "SSI team building", "AI alignment at scale"] },
+      tags: ["AI", "AI safety", "deep learning", "alignment", "SSI", "research"],
+    },
+  },
+];
+
+/**
+ * Seed unclaimed public profiles for top AI leaders.
+ * Creates profile records in the profiles table (no user account needed).
+ *
+ * Usage:
+ *   npx convex run seed:seedAiLeaders
+ *   npx convex run seed:seedAiLeaders '{"dryRun":true}'
+ */
+export const seedAiLeaders = internalMutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? false;
+    const results: Array<{ username: string; status: string; id?: string }> = [];
+
+    for (const leader of AI_LEADERS) {
+      const uname = leader.username.toLowerCase();
+
+      // Check if already exists in profiles table
+      const existing = await ctx.db
+        .query("profiles")
+        .withIndex("by_username", (q) => q.eq("username", uname))
+        .first();
+
+      if (existing) {
+        results.push({ username: uname, status: "exists" });
+        continue;
+      }
+
+      // Check if exists in users table (claimed account) — skip those
+      const existingUser = await ctx.db
+        .query("users")
+        .withIndex("by_username", (q) => q.eq("username", uname))
+        .first();
+
+      if (existingUser) {
+        results.push({ username: uname, status: "user_exists_skip" });
+        continue;
+      }
+
+      if (dryRun) {
+        results.push({ username: uname, status: "would_create" });
+        continue;
+      }
+
+      const id = await ctx.db.insert("profiles", {
+        username: uname,
+        name: leader.name,
+        tagline: leader.tagline,
+        location: leader.location,
+        avatarUrl: leader.avatarUrl,
+        links: leader.links,
+        youJson: leader.youJson,
+        isClaimed: false,
+        createdAt: Date.now(),
+      });
+
+      results.push({ username: uname, status: "created", id: id.toString() });
+    }
+
+    return {
+      total: AI_LEADERS.length,
+      created: results.filter((r) => r.status === "created").length,
+      existed: results.filter((r) => r.status === "exists").length,
+      skipped: results.filter((r) => r.status === "user_exists_skip").length,
+      wouldCreate: results.filter((r) => r.status === "would_create").length,
+      results,
+    };
+  },
+});
+
+/**
+ * Remove duplicate profiles — keep the richest record per username.
+ * Dry-run by default (safe).
+ *
+ * Usage:
+ *   npx convex run seed:cleanDuplicates '{"dryRun":false}'
+ */
+export const cleanDuplicates = internalMutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+    const profiles = await ctx.db.query("profiles").order("desc").take(500);
+
+    type Profile = (typeof profiles)[0];
+    const byUsername: Record<string, Profile[]> = {};
+    for (const p of profiles) {
+      const key = p.username.toLowerCase();
+      if (!byUsername[key]) byUsername[key] = [];
+      byUsername[key].push(p);
+    }
+
+    const report: Array<{ username: string; count: number; kept: string; deleted: string[] }> = [];
+
+    for (const username of Object.keys(byUsername)) {
+      const dupes = byUsername[username];
+      if (dupes.length <= 1) continue;
+
+      type Scored = { p: Profile; score: number };
+      const scored: Scored[] = dupes.map((p: Profile) => ({
+        p,
+        score:
+          (p.youJson ? 10 : 0) +
+          (p.isClaimed ? 5 : 0) +
+          (p.avatarUrl ? 2 : 0) +
+          (p.tagline ? 1 : 0),
+      })).sort((a: Scored, b: Scored) => b.score - a.score);
+
+      const keep = scored[0].p;
+      const toDelete = scored.slice(1).map((s: Scored) => s.p);
+
+      const deletedIds: string[] = [];
+      for (const dup of toDelete) {
+        if (!dryRun) await ctx.db.delete(dup._id);
+        deletedIds.push(dup._id.toString());
+      }
+
+      report.push({ username, count: dupes.length, kept: keep._id.toString(), deleted: deletedIds });
+    }
+
+    return { dryRun, duplicatesFound: report.length, report };
+  },
+});
