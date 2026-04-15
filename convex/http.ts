@@ -3195,4 +3195,30 @@ http.route({
 
 http.route({ path: "/api/v1/me/verifications", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
 
+// ---------------------------------------------------------------------------
+// Admin — reseed sample profiles
+// POST /api/admin/reseed  Authorization: Bearer <TRUSTED_INTERNAL_AUTH_TOKEN>
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: "/api/admin/reseed",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = request.headers.get("Authorization") ?? "";
+    const token = auth.replace(/^Bearer\s+/, "");
+    if (!TRUSTED_INTERNAL_AUTH_TOKEN || token !== TRUSTED_INTERNAL_AUTH_TOKEN) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    try {
+      const cleanupResult = await ctx.runMutation(internal.seed.cleanupSampleProfiles, {});
+      const seedResult = await ctx.runMutation(internal.seed.seedSampleProfiles, {});
+      return json({ cleanup: cleanupResult, seed: seedResult });
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "Reseed failed" }, 500);
+    }
+  }),
+});
+
+http.route({ path: "/api/admin/reseed", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+
 export default http;

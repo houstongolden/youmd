@@ -23,396 +23,351 @@ import {
 
 interface SeedProfile extends ProfileData {
   email: string;
+  avatarUrl?: string;
+  isClaimed?: boolean;
 }
 
+// Real AI/tech founders — unclaimed profiles showing what you.md looks like at scale.
+// avatarUrl uses GitHub avatar CDN which supports CORS (required for AsciiAvatar canvas).
 const SAMPLE_PROFILES: SeedProfile[] = [
   {
-    name: "Houston Golden",
-    username: "houstong",
-    email: "sample-houstong@you.md",
-    tagline: "Founder, BAMF Media. Building You.md.",
-    location: "Miami, FL",
+    name: "Andrej Karpathy",
+    username: "karpathy",
+    email: "sample-karpathy@you.md",
+    avatarUrl: "https://github.com/karpathy.png",
+    isClaimed: false,
+    tagline: "AI researcher, educator, builder. Ex-Tesla, ex-OpenAI.",
+    location: "San Francisco, CA",
     bio: {
-      short:
-        "Founder building the identity context protocol for the agent internet.",
+      short: "Making AI legible. Teaching the world how neural networks actually work.",
       medium:
-        "Founded BAMF Media (8-figure growth agency), LinkedIn growth pioneer. Now building You.md \u2014 the identity context protocol for the agent internet. I ship fast and build in public.",
+        "Founding team at OpenAI, former Director of AI at Tesla. I teach machine learning through writing, videos, and code. Author of Andrej's blog and the micrograd/nanoGPT series. Building in public.",
     },
     now: [
-      "Building You.md",
-      "Scaling BAMF Media",
-      "Refining identity context protocol",
+      "Building Eureka Labs — AI-native education",
+      "Writing deep-dives on LLM internals",
     ],
     projects: [
       {
-        name: "You.md",
+        name: "Eureka Labs",
         role: "Founder",
         status: "building",
-        description: "Identity as code for the agent internet.",
-        url: "https://you.md",
+        description: "AI-native education company.",
+        url: "https://eurekalabs.ai",
       },
       {
-        name: "BAMF Media",
-        role: "Founder/CEO",
-        status: "active",
-        description: "Growth marketing agency.",
-      },
-    ],
-    values: ["Build in public", "Extreme ownership", "Ship fast"],
-    links: {
-      website: "https://houstongolden.com",
-      linkedin: "https://linkedin.com/in/houstongolden",
-      x: "https://x.com/houstongolden",
-    },
-    preferences: {
-      agent: {
-        tone: "direct, confident, no fluff",
-        formality: "casual-professional",
-        avoid: ["corporate jargon", "passive voice"],
-      },
-      writing: { format: "short paragraphs, punchy sentences" },
-    },
-    analysis: {
-      topics: ["growth marketing", "AI agents", "identity protocols"],
-      voice_summary: "Direct, high-energy, founder-coded.",
-      credibility_signals: [
-        "Founded BAMF Media (8-figure agency)",
-        "LinkedIn growth pioneer",
-        "Speaker at 20+ conferences",
-      ],
-    },
-  },
-  {
-    name: "Priya Sharma",
-    username: "priya",
-    email: "sample-priya@you.md",
-    tagline: "ML engineer @ Anthropic. Alignment researcher.",
-    location: "London, UK",
-    bio: {
-      short: "Research engineer focused on RLHF and alignment.",
-      medium:
-        "ML engineer at Anthropic working on RLHF and alignment research. I think in probability distributions and communicate in analogies. Weekend ceramicist. Published 12 papers on reward modeling.",
-    },
-    now: [
-      "Publishing alignment paper Q2",
-      "Open-sourcing eval framework",
-    ],
-    projects: [
-      {
-        name: "Reward Landscapes",
-        role: "Lead researcher",
-        status: "publishing",
-        description:
-          "Novel approach to multi-objective reward modeling.",
-      },
-      {
-        name: "EvalKit",
+        name: "nanoGPT",
         role: "Creator",
-        status: "building",
-        description: "Open-source LLM evaluation framework.",
+        status: "active",
+        description: "Fastest repo for training/finetuning GPT-class models.",
+        url: "https://github.com/karpathy/nanoGPT",
       },
     ],
-    values: ["Rigorous thinking", "Open science", "Making AI safe"],
+    values: ["Teach deeply", "Open source", "First principles"],
     links: {
-      scholar: "#",
-      github: "#",
+      github: "https://github.com/karpathy",
+      x: "https://x.com/karpathy",
+      website: "https://karpathy.ai",
     },
     preferences: {
       agent: {
-        tone: "precise, curious, grounded",
+        tone: "precise, educational, honest about uncertainty",
         formality: "academic-casual",
-        avoid: ["hype language", "unsubstantiated claims"],
+        avoid: ["hype", "vague claims", "jargon without definition"],
       },
-      writing: {
-        format: "structured with headers, as long as needed for precision",
-      },
+      writing: { format: "long-form with intuition first, then math" },
     },
     analysis: {
-      topics: [
-        "RLHF",
-        "alignment",
-        "reward modeling",
-        "open-source ML",
-      ],
-      voice_summary:
-        "Technical but approachable, loves analogies.",
+      topics: ["LLMs", "neural networks", "AI education", "deep learning"],
+      voice_summary: "Precise, educational, first-principles thinker.",
       credibility_signals: [
-        "ML Engineer at Anthropic",
-        "12 published papers on reward modeling",
-        "Top 1% cited in ML safety",
+        "Founding team OpenAI",
+        "Director of AI @ Tesla (Autopilot)",
+        "nanoGPT has 40k+ GitHub stars",
+        "Top AI educator on YouTube",
       ],
     },
   },
   {
-    name: "Jordan Marcus",
-    username: "jmarcus",
-    email: "sample-jmarcus@you.md",
-    tagline: "Indie hacker. 3 exits. Building in public.",
-    location: "Austin, TX",
+    name: "Guillermo Rauch",
+    username: "rauchg",
+    email: "sample-rauchg@you.md",
+    avatarUrl: "https://github.com/rauchg.png",
+    isClaimed: false,
+    tagline: "CEO @ Vercel. Building the platform for the web.",
+    location: "San Francisco, CA",
     bio: {
-      short: "Building micro-SaaS products in public.",
+      short: "Making the web faster. Ship more, think less about infra.",
       medium:
-        "3 exits, 12 failed projects, infinite lessons. Currently running ScreenshotAPI ($8k MRR) and TinyInvoice ($4k MRR). I document everything and believe the best marketing is building in public.",
+        "CEO of Vercel and creator of Next.js. Previously built socket.io and Mongoose. I believe the web should be instant and developers should spend zero time on infrastructure.",
     },
     now: [
-      "Hit $20k MRR across products",
-      "Launch AI writing tool",
+      "v0 — AI-native UI generation",
+      "Vercel AI SDK expansion",
     ],
     projects: [
       {
-        name: "ScreenshotAPI",
-        role: "Solo founder",
+        name: "Vercel",
+        role: "CEO",
         status: "active",
-        description: "Website screenshot API.",
+        description: "Platform for frontend developers.",
+        url: "https://vercel.com",
       },
       {
-        name: "TinyInvoice",
-        role: "Solo founder",
-        status: "active",
-        description: "Invoice generator for freelancers.",
-      },
-    ],
-    values: [
-      "Ship daily",
-      "Revenue over fundraising",
-      "Transparency",
-    ],
-    links: {
-      x: "#",
-      blog: "#",
-      products: "#",
-    },
-    preferences: {
-      agent: {
-        tone: "casual, encouraging, practical",
-        formality: "very casual",
-        avoid: ["corporate speak", "long intros"],
-      },
-      writing: {
-        format:
-          "short paragraphs, lots of examples, tweet-length when possible",
-      },
-    },
-    analysis: {
-      topics: [
-        "indie hacking",
-        "micro-SaaS",
-        "building in public",
-        "solopreneurship",
-      ],
-      voice_summary:
-        "Casual, emoji-friendly, shipping energy.",
-      credibility_signals: [
-        "3 successful exits",
-        "$12k+ combined MRR across products",
-      ],
-    },
-  },
-  {
-    name: "Yuki Sato",
-    username: "sato-yuki",
-    email: "sample-sato-yuki@you.md",
-    tagline: "Staff engineer @ Stripe. Distributed systems.",
-    location: "Tokyo, Japan",
-    bio: {
-      short:
-        "Distributed systems at scale. Correctness over cleverness.",
-      medium:
-        "Staff engineer at Stripe working on payment routing infrastructure. I care about correctness, observability, and well-written RFCs. Maintaining two popular open-source Rust crates with 5k+ combined stars.",
-    },
-    now: [
-      "Migrating payment routing to new architecture",
-      "Writing a technical book on distributed systems",
-    ],
-    projects: [
-      {
-        name: "tokio-retry",
-        role: "Maintainer",
-        status: "active",
-        description: "Retry middleware for Tokio.",
-      },
-      {
-        name: "serde-diff",
+        name: "v0",
         role: "Creator",
         status: "active",
-        description: "Structural diffing for Serde types.",
+        description: "AI that generates UI from prompts.",
+        url: "https://v0.dev",
       },
     ],
-    values: [
-      "Correctness first",
-      "Write it down",
-      "Mentor generously",
-    ],
+    values: ["Zero infra friction", "Ship constantly", "DX is UX"],
     links: {
-      github: "#",
-      blog: "#",
+      github: "https://github.com/rauchg",
+      x: "https://x.com/rauchg",
+      website: "https://rauchg.com",
     },
     preferences: {
       agent: {
-        tone: "precise, thorough, occasionally wry",
-        formality: "professional",
-        avoid: [
-          "hand-waving",
-          "premature optimization claims",
-        ],
-      },
-      writing: {
-        format: "RFC-style with tradeoff analysis, thorough",
-      },
-    },
-    analysis: {
-      topics: [
-        "distributed systems",
-        "Rust",
-        "observability",
-        "payment infrastructure",
-      ],
-      voice_summary:
-        "Precise, systems-thinking, dry humor.",
-      credibility_signals: [
-        "Staff Engineer at Stripe",
-        "5k+ stars on open-source Rust crates",
-        "Published in OSDI",
-      ],
-    },
-  },
-  {
-    name: "Emma Wright",
-    username: "emmawright",
-    email: "sample-emmawright@you.md",
-    tagline:
-      "Creative director. Brand strategist. Strong feelings about kerning.",
-    location: "Brooklyn, NY",
-    bio: {
-      short: "Making brands feel like they have a soul.",
-      medium:
-        "Creative director working with startups and cultural institutions. Previously at Pentagram. I believe every brand has a story worth telling \u2014 most just haven\u2019t found the right words yet. Strong feelings about kerning.",
-    },
-    now: [
-      "Launching rebrand for a climate tech startup",
-      "Teaching brand workshop series",
-    ],
-    projects: [
-      {
-        name: "Canopy Rebrand",
-        role: "Creative Director",
-        status: "building",
-        description:
-          "Full brand identity for climate tech startup.",
-      },
-      {
-        name: "Brand Bones",
-        role: "Instructor",
-        status: "launching",
-        description:
-          "Workshop series on brand fundamentals.",
-      },
-    ],
-    values: [
-      "Story over aesthetics",
-      "Bold over safe",
-      "Details matter",
-    ],
-    links: {
-      portfolio: "#",
-      instagram: "#",
-      "are.na": "#",
-    },
-    preferences: {
-      agent: {
-        tone: "warm, opinionated, visual",
-        formality: "casual-creative",
-        avoid: [
-          "bland corporate language",
-          "design-by-committee thinking",
-        ],
-      },
-      writing: {
-        format:
-          "visual moodboards + concise briefs, enough to spark \u2014 not to lecture",
-      },
-    },
-    analysis: {
-      topics: [
-        "brand strategy",
-        "creative direction",
-        "visual identity",
-        "storytelling",
-      ],
-      voice_summary:
-        "Visual thinker, storytelling-first, bold opinions.",
-      credibility_signals: [
-        "Previously at Pentagram",
-        "Worked with 40+ startups on brand identity",
-      ],
-    },
-  },
-  {
-    name: "Kai Andersen",
-    username: "kai",
-    email: "sample-kai@you.md",
-    tagline: "DevRel lead @ Vercel. 50k YouTube subscribers.",
-    location: "Copenhagen, Denmark",
-    bio: {
-      short: "Helping developers build faster.",
-      medium:
-        "DevRel lead at Vercel. Conference speaker, tutorial creator, and eternal optimist about the web platform. 50k+ YouTube subscribers. I believe the best docs are the ones people actually enjoy reading.",
-    },
-    now: [
-      "Launching new docs platform",
-      "Keynote prep for React Conf",
-    ],
-    projects: [
-      {
-        name: "Vercel Docs v3",
-        role: "Lead",
-        status: "building",
-        description: "Next-gen documentation platform.",
-      },
-      {
-        name: "Ship It",
-        role: "Host",
-        status: "active",
-        description:
-          "YouTube series on web dev. 50k subs.",
-      },
-    ],
-    values: [
-      "Teach by building",
-      "Community first",
-      "Make it fun",
-    ],
-    links: {
-      youtube: "#",
-      x: "#",
-      github: "#",
-    },
-    preferences: {
-      agent: {
-        tone: "enthusiastic, clear, encouraging",
+        tone: "direct, visionary, aphoristic",
         formality: "casual",
-        avoid: [
-          "gatekeeping language",
-          "unnecessary jargon",
-        ],
+        avoid: ["slow explanations", "over-engineering"],
       },
-      writing: {
-        format: "step-by-step with code examples",
-      },
+      writing: { format: "punchy, tweet-first, then depth" },
     },
     analysis: {
-      topics: [
-        "developer relations",
-        "Next.js",
-        "web platform",
-        "content creation",
-      ],
-      voice_summary:
-        "Enthusiastic, educational, community-driven.",
+      topics: ["web platform", "Next.js", "AI tooling", "developer experience"],
+      voice_summary: "Direct, visionary, ships fast.",
       credibility_signals: [
-        "DevRel Lead at Vercel",
-        "50k+ YouTube subscribers",
-        "React Conf keynote speaker",
+        "CEO of Vercel ($2.5B+ valuation)",
+        "Creator of Next.js",
+        "Creator of socket.io (200M downloads)",
+      ],
+    },
+  },
+  {
+    name: "Amjad Masad",
+    username: "amasad",
+    email: "sample-amasad@you.md",
+    avatarUrl: "https://github.com/amasad.png",
+    isClaimed: false,
+    tagline: "CEO @ Replit. Making programming accessible to a billion people.",
+    location: "San Francisco, CA",
+    bio: {
+      short: "Democratizing software creation. Everyone should be able to build.",
+      medium:
+        "CEO of Replit. Former Facebook engineer. Born in Jordan, obsessed with making coding available to everyone everywhere. Building the IDE of the future — AI-first, runs in the browser.",
+    },
+    now: [
+      "Replit Agent — code from natural language",
+      "Expanding to 100M developers",
+    ],
+    projects: [
+      {
+        name: "Replit",
+        role: "CEO",
+        status: "active",
+        description: "Collaborative browser-based IDE for 30M developers.",
+        url: "https://replit.com",
+      },
+      {
+        name: "Replit Agent",
+        role: "Creator",
+        status: "building",
+        description: "Build full apps from a single prompt.",
+      },
+    ],
+    values: ["Democratize software", "AI-native tools", "Build for everyone"],
+    links: {
+      github: "https://github.com/amasad",
+      x: "https://x.com/amasad",
+      website: "https://amasad.me",
+    },
+    preferences: {
+      agent: {
+        tone: "energetic, mission-driven, builder",
+        formality: "casual",
+        avoid: ["exclusionary tech language", "gatekeeping"],
+      },
+      writing: { format: "story-first, then vision" },
+    },
+    analysis: {
+      topics: ["coding education", "AI agents", "browser-native IDE", "developer tools"],
+      voice_summary: "Energetic, mission-driven, builder at heart.",
+      credibility_signals: [
+        "CEO of Replit (30M+ users)",
+        "Ex-Facebook engineer",
+        "Forbes 30 Under 30",
+      ],
+    },
+  },
+  {
+    name: "Pieter Levels",
+    username: "levelsio",
+    email: "sample-levelsio@you.md",
+    avatarUrl: "https://github.com/levelsio.png",
+    isClaimed: false,
+    tagline: "Indie hacker. Solo-built $3M ARR. 12 startups in 12 months.",
+    location: "Amsterdam / Nomad",
+    bio: {
+      short: "Proof that one person can build a business that matters.",
+      medium:
+        "Built NomadList, RemoteOK, PhotoAI, InteriorAI, and more — all solo. $3M+ ARR, no team, no VC. I document everything in public. I believe most startups are over-staffed and under-shipped.",
+    },
+    now: [
+      "PhotoAI — AI headshots at scale",
+      "Building interior design AI",
+    ],
+    projects: [
+      {
+        name: "NomadList",
+        role: "Founder",
+        status: "active",
+        description: "Best cities for remote workers.",
+        url: "https://nomadlist.com",
+      },
+      {
+        name: "PhotoAI",
+        role: "Founder",
+        status: "active",
+        description: "AI photo generator for realistic headshots.",
+        url: "https://photoai.com",
+      },
+    ],
+    values: ["Solo builds", "Revenue > funding", "Ship in public"],
+    links: {
+      github: "https://github.com/levelsio",
+      x: "https://x.com/levelsio",
+      website: "https://levels.io",
+    },
+    preferences: {
+      agent: {
+        tone: "blunt, pragmatic, anti-corporate",
+        formality: "very casual",
+        avoid: ["VC speak", "team-building platitudes", "startup theater"],
+      },
+      writing: { format: "short, tweet-length, raw numbers" },
+    },
+    analysis: {
+      topics: ["indie hacking", "AI SaaS", "solopreneurship", "remote work"],
+      voice_summary: "Blunt, builds in public, revenue-obsessed.",
+      credibility_signals: [
+        "$3M+ ARR across solo products",
+        "NomadList: 1M+ members",
+        "Most followed indie hacker on X",
+      ],
+    },
+  },
+  {
+    name: "Simon Willison",
+    username: "simonw",
+    email: "sample-simonw@you.md",
+    avatarUrl: "https://github.com/simonw.png",
+    isClaimed: false,
+    tagline: "Creator of Datasette. LLM CLI builder. Writing about AI daily.",
+    location: "Palo Alto, CA",
+    bio: {
+      short: "Making data explorable and LLMs useful. Building open tools in public.",
+      medium:
+        "Co-creator of Django. Creator of Datasette and the LLM CLI. I write daily at simonwillison.net about building real things with AI — what works, what doesn't, no hype.",
+    },
+    now: [
+      "LLM CLI — run any model from terminal",
+      "Writing the definitive LLM application dev guide",
+    ],
+    projects: [
+      {
+        name: "Datasette",
+        role: "Creator",
+        status: "active",
+        description: "Open source tool for exploring and publishing SQLite data.",
+        url: "https://datasette.io",
+      },
+      {
+        name: "LLM CLI",
+        role: "Creator",
+        status: "active",
+        description: "CLI tool to run prompts against any LLM.",
+        url: "https://llm.datasette.io",
+      },
+    ],
+    values: ["Open source", "Write to think", "No hype"],
+    links: {
+      github: "https://github.com/simonw",
+      website: "https://simonwillison.net",
+      x: "https://x.com/simonw",
+    },
+    preferences: {
+      agent: {
+        tone: "methodical, honest, practical",
+        formality: "professional-casual",
+        avoid: ["AI hype", "vague promises", "undisclosed limitations"],
+      },
+      writing: { format: "structured writeups with code examples and caveats" },
+    },
+    analysis: {
+      topics: ["LLMs", "open source tools", "data exploration", "Python"],
+      voice_summary: "Methodical, honest, anti-hype builder.",
+      credibility_signals: [
+        "Co-creator of Django",
+        "Creator of Datasette (10k+ GitHub stars)",
+        "Daily AI writer at simonwillison.net",
+      ],
+    },
+  },
+  {
+    name: "Logan Kilpatrick",
+    username: "logankilpatrick",
+    email: "sample-logankilpatrick@you.md",
+    avatarUrl: "https://github.com/logankilpatrick.png",
+    isClaimed: false,
+    tagline: "AI @ Google. Ex-OpenAI DevRel. Making AI more accessible.",
+    location: "San Francisco, CA",
+    bio: {
+      short: "Connecting developers to the AI ecosystem. Open source contributor.",
+      medium:
+        "Working on AI product at Google. Previously led developer relations at OpenAI. Julia Language core contributor. I care about making AI tools accessible to every developer regardless of background.",
+    },
+    now: [
+      "AI Studio developer experience @ Google",
+      "Growing the Gemini developer community",
+    ],
+    projects: [
+      {
+        name: "OpenAI DevRel Program",
+        role: "Founder",
+        status: "shipped",
+        description: "Built OpenAI's developer relations from 0 to global scale.",
+      },
+      {
+        name: "Julia for AI",
+        role: "Core Contributor",
+        status: "active",
+        description: "Open source AI tooling in Julia Language.",
+        url: "https://github.com/JuliaAI",
+      },
+    ],
+    values: ["Accessible AI", "Open source", "Developer community"],
+    links: {
+      github: "https://github.com/logankilpatrick",
+      x: "https://x.com/OfficialLoganK",
+      website: "https://logankilpatrick.com",
+    },
+    preferences: {
+      agent: {
+        tone: "welcoming, educational, community-first",
+        formality: "casual",
+        avoid: ["exclusionary tech gatekeeping"],
+      },
+      writing: { format: "accessible explanations, beginner-friendly without being condescending" },
+    },
+    analysis: {
+      topics: ["AI developer relations", "LLM APIs", "open source", "community building"],
+      voice_summary: "Welcoming, community-driven, makes AI accessible.",
+      credibility_signals: [
+        "AI Product @ Google",
+        "Ex-OpenAI Developer Relations Lead",
+        "Julia Language core contributor",
       ],
     },
   },
@@ -482,6 +437,8 @@ export const seedSampleProfiles = internalMutation({
         publishedAt: Date.now(),
       });
 
+      const isClaimed = profile.isClaimed !== false; // default true unless explicitly false
+
       // Create profile record (so profiles directory + public page work)
       await ctx.db.insert("profiles", {
         username: profile.username,
@@ -490,9 +447,10 @@ export const seedSampleProfiles = internalMutation({
         location: profile.location,
         bio: profile.bio,
         links: profile.links,
+        avatarUrl: profile.avatarUrl,
         ownerId: userId,
-        isClaimed: true,
-        claimedAt: Date.now(),
+        isClaimed,
+        claimedAt: isClaimed ? Date.now() : undefined,
         youJson,
         youMd,
         createdAt: Date.now(),
