@@ -420,6 +420,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       let buffer = "";
       let notifiedFirstToken = false;
       let rafPending = false;
+      // Track active tool calls for real-time progress display
+      const activeToolSteps = new Map<string, string>(); // toolName → stepId
 
       while (true) {
         const { done, value } = await reader.read();
@@ -448,6 +450,38 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             // Collect complete tool_use blocks emitted by transformAnthropicStream
             if (parsed.tool_use && typeof parsed.tool_use === "object") {
               toolCalls.push(parsed.tool_use as AgentToolCall);
+              // Complete the tool's progress step when we have the full input
+              const stepId = activeToolSteps.get(parsed.tool_use.name);
+              if (stepId) {
+                const updateCount = parsed.tool_use.input?.updates?.length || 0;
+                completeStep(stepId, updateCount > 0 ? `${updateCount} file${updateCount > 1 ? "s" : ""}` : "done");
+                activeToolSteps.delete(parsed.tool_use.name);
+              }
+            }
+            // Handle real-time tool streaming progress events
+            if (parsed.tool_streaming && typeof parsed.tool_streaming === "object") {
+              const { name, status, bytes } = parsed.tool_streaming;
+              if (status === "started") {
+                // Show a progress step immediately when the tool call begins
+                if (!notifiedFirstToken) {
+                  notifiedFirstToken = true;
+                  onFirstToken?.();
+                }
+                const label = name === "update_profile" ? "writing profile files"
+                  : name === "save_memory" ? "saving memories"
+                  : name === "fetch_website" ? "fetching websites"
+                  : `calling ${name}`;
+                const stepId = addStep(label);
+                activeToolSteps.set(name, stepId);
+              } else if (status === "writing" && bytes) {
+                // Update step label with byte progress for large writes
+                const stepId = activeToolSteps.get(name);
+                if (stepId) {
+                  const kb = Math.round(bytes / 100) / 10;
+                  // Only update label periodically to avoid flooding React
+                  setThinkingPhrase(`writing... ${kb}kb`);
+                }
+              }
             }
           } catch {
             // Unparseable SSE chunk — skip

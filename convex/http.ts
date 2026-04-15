@@ -830,17 +830,21 @@ http.route({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 200,
           temperature: 0.5,
-          system: `you are the you.md identity agent. you MUST respond with ONLY a raw JSON object — no markdown, no code fences, no explanation. the you.md platform handles scraping, research, and profile updates for you — so acknowledge what the user wants and describe the steps the platform will take.
+          system: `you are the you.md identity agent. respond with ONLY a raw JSON object. no markdown, no code fences.
 
-format: {"ack":"<1 casual sentence acknowledging their request>","plan":["<step 1>","<step 2>","<step 3>"]}
+format: {"ack":"<one casual line, max 10 words, what you're doing right now>"}
 
-rules:
-- ack must be casual, direct, 1 sentence max
-- plan should have 2-4 steps describing what will happen
-- never say you can't do something — the platform handles scraping, research, etc.
-- never wrap in code fences or markdown
-${context ? `\nuser context: ${context.slice(0, 500)}` : ""}`,
-          messages: [{ role: "user", content: userMessage.slice(0, 500) }],
+voice rules:
+- lowercase always. no exclamation marks. no "great!" or "sure!". no "I'll".
+- action-focused: "pulling your linkedin now." / "scaffolding project files." / "updating your bio."
+- never say "certainly" / "absolutely" / "of course" / "happy to"
+- never say what you CAN'T do — you can do everything
+- if they asked to scrape: "pulling [platform] now."
+- if they asked to scaffold/create files: "writing your [thing] now."
+- if they asked a question: answer direction in 5-10 words
+- if they shared info: "got it — saving to your profile."
+${context ? `\nwho this is: ${context.slice(0, 200)}` : ""}`,
+          messages: [{ role: "user", content: userMessage.slice(0, 300) }],
         }),
         signal: AbortSignal.timeout(8_000),
       });
@@ -856,14 +860,12 @@ ${context ? `\nuser context: ${context.slice(0, 500)}` : ""}`,
         // Strip code fences if model wrapped the JSON
         const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
         const parsed = JSON.parse(cleaned);
-        return json({
-          ack: typeof parsed.ack === "string" ? parsed.ack : "on it.",
-          plan: Array.isArray(parsed.plan) ? parsed.plan.filter((s: unknown) => typeof s === "string").slice(0, 5) : [],
-        }, 200, CORS_HEADERS);
+        const ack = typeof parsed.ack === "string" ? parsed.ack.trim() : "on it.";
+        return json({ ack }, 200, CORS_HEADERS);
       } catch {
         // If JSON parse fails, use the raw text as ack
-        const cleanAck = text.replace(/```[\s\S]*```/g, "").replace(/[{}"\[\]]/g, "").trim();
-        return json({ ack: cleanAck.slice(0, 100) || "on it.", plan: [] }, 200, CORS_HEADERS);
+        const cleanAck = text.replace(/```[\s\S]*```/g, "").replace(/[{}"\[\]]/g, "").trim().slice(0, 80);
+        return json({ ack: cleanAck || "on it." }, 200, CORS_HEADERS);
       }
     } catch {
       return json({ ack: "on it.", plan: [] }, 200, CORS_HEADERS);
@@ -996,6 +998,8 @@ http.route({
                     blocks.set(parsed.index, { type: "text" });
                   } else if (cb?.type === "tool_use") {
                     blocks.set(parsed.index, { type: "tool_use", name: cb.name, jsonBuf: "" });
+                    // Immediately notify frontend a tool call is starting
+                    await writer.write(enc.encode(`data: ${JSON.stringify({ tool_streaming: { name: cb.name, status: "started" } })}\n\n`));
                   }
                 } else if (parsed.type === "content_block_delta") {
                   const block = blocks.get(parsed.index);
@@ -1006,6 +1010,11 @@ http.route({
                     await writer.write(enc.encode(`data: ${JSON.stringify({ text: delta.text })}\n\n`));
                   } else if (delta?.type === "input_json_delta" && block.type === "tool_use") {
                     block.jsonBuf = (block.jsonBuf || "") + (delta.partial_json || "");
+                    // Emit byte count so frontend can show progress (every ~500 chars to avoid overhead)
+                    const len = (block.jsonBuf || "").length;
+                    if (len > 0 && len % 500 < 50) {
+                      await writer.write(enc.encode(`data: ${JSON.stringify({ tool_streaming: { name: block.name, status: "writing", bytes: len } })}\n\n`));
+                    }
                   }
                 } else if (parsed.type === "content_block_stop") {
                   const block = blocks.get(parsed.index);
@@ -1045,8 +1054,8 @@ http.route({
           },
           body: JSON.stringify({
             model: "claude-sonnet-4-6",
-            max_tokens: 2000,
-            temperature: 0.7,
+            max_tokens: 8000,
+            temperature: 0.4,
             stream: true,
             system: systemMessage?.content || "",
             messages: conversationMessages.map((m) => ({
@@ -1167,13 +1176,13 @@ http.route({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "anthropic/claude-sonnet-4",
+            model: "anthropic/claude-sonnet-4-6",
             messages,
-            max_tokens: 4096,
-            temperature: 0.7,
+            max_tokens: 8000,
+            temperature: 0.4,
             stream: true,
           }),
-          signal: AbortSignal.timeout(45_000),
+          signal: AbortSignal.timeout(60_000),
         });
 
         if (upstreamRes.ok && upstreamRes.body) {
