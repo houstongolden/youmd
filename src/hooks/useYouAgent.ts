@@ -363,7 +363,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages: msgs }),
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(240_000),
     });
 
     if (!res.ok) {
@@ -404,7 +404,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: msgs }),
-        signal: AbortSignal.timeout(60_000), // 60s — fail faster than 90s
+        signal: AbortSignal.timeout(240_000), // 240s — scaffolding many files needs time
       });
 
       if (!res.ok || !res.body) {
@@ -466,6 +466,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
                 if (!notifiedFirstToken) {
                   notifiedFirstToken = true;
                   onFirstToken?.();
+                }
+                // Auto-switch to files pane so user sees files being created live
+                if (name === "update_profile" && onPaneSwitch) {
+                  onPaneSwitch("edit");
                 }
                 const label = name === "update_profile" ? "writing profile files"
                   : name === "save_memory" ? "saving memories"

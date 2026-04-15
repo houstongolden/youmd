@@ -1153,7 +1153,7 @@ http.route({
             ],
             tool_choice: { type: "auto" },
           }),
-          signal: AbortSignal.timeout(60_000),
+          signal: AbortSignal.timeout(240_000),
         });
 
         if (upstreamRes.ok && upstreamRes.body) {
@@ -1182,7 +1182,7 @@ http.route({
             temperature: 0.4,
             stream: true,
           }),
-          signal: AbortSignal.timeout(60_000),
+          signal: AbortSignal.timeout(240_000),
         });
 
         if (upstreamRes.ok && upstreamRes.body) {
