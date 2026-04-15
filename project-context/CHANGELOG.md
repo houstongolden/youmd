@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-04-14 — Agent Tool_Use Fix + Stale Build Cleanup
+
+### Agent Harness — Proper Tool Execution (CRITICAL FIX)
+- **Root cause:** Agent was hallucinating actions. Claimed to "scaffold directories" and "update files" without actually calling any mutations. No structured `tools` array was sent to Anthropic API, so the model emitted free-text JSON blocks that were often skipped or malformed.
+- **Fix:** Implemented Anthropic `tool_use` in the streaming pipeline end-to-end:
+  - `convex/http.ts`: New `transformAnthropicStream()` accumulates `input_json_delta` events and emits `{"tool_use": {...}}` SSE events on block stop; added `update_profile` + `save_memory` tool schemas to Anthropic API call
+  - `src/hooks/useYouAgent.ts`: `callLLMStreaming` now returns `{ text, toolCalls }`; callers extract updates/memories from tool calls directly rather than regex-parsing JSON blocks; OpenRouter fallback still uses JSON block parsing for backwards compatibility
+  - `src/hooks/agent-utils.ts`: System prompt updated to instruct agent to use tools as primary mechanism
+- **Also fixed:** Removed stale compiled `.js` files from `convex/` that were conflicting with fresh Convex bundle and blocking all deployments
+
 ## 2026-04-14 — Top 5 Priority Sprint
 
 ### Chat Agent Reliability
