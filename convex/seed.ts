@@ -13,6 +13,7 @@
  * sweeps. They were always meant for `npx convex run --component-function`
  * admin tooling.
  */
+import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 import {
   ProfileData,
@@ -712,5 +713,74 @@ export const cleanupBadProfileData = internalMutation({
           ? `Fixed ${fixedBundles} bundles (${fixedTones} tones, ${fixedProjectNames} project names)`
           : "No bad data found",
     };
+  },
+});
+
+/**
+ * Delete specific profiles by username — for removing old test/fake profiles
+ * that were seeded without isSample:true and thus survive cleanupSampleProfiles.
+ *
+ * Usage: npx convex run seed:deleteProfilesByUsername
+ */
+export const deleteProfilesByUsername = internalMutation({
+  args: { usernames: v.array(v.string()) },
+  handler: async (ctx, { usernames }) => {
+    const results: string[] = [];
+
+    for (const username of usernames) {
+      // Find the user
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_username", (q) => q.eq("username", username))
+        .first();
+
+      if (!user) {
+        results.push(`${username}: user not found`);
+        // Still try to delete orphaned profile record
+      }
+
+      if (user) {
+        // Delete bundles
+        const bundles = await ctx.db.query("bundles").withIndex("by_userId", (q) => q.eq("userId", user._id)).collect();
+        for (const b of bundles) await ctx.db.delete(b._id);
+
+        // Delete profile views
+        const views = await ctx.db.query("profileViews").withIndex("by_userId", (q) => q.eq("userId", user._id)).collect();
+        for (const v of views) await ctx.db.delete(v._id);
+
+        // Delete sources
+        const sources = await ctx.db.query("sources").withIndex("by_userId", (q) => q.eq("userId", user._id)).collect();
+        for (const s of sources) await ctx.db.delete(s._id);
+
+        // Delete context links
+        const ctxLinks = await ctx.db.query("contextLinks").withIndex("by_userId", (q) => q.eq("userId", user._id)).collect();
+        for (const cl of ctxLinks) await ctx.db.delete(cl._id);
+
+        // Delete API keys
+        const apiKeys = await ctx.db.query("apiKeys").withIndex("by_userId", (q) => q.eq("userId", user._id)).collect();
+        for (const ak of apiKeys) await ctx.db.delete(ak._id);
+
+        // Delete analysis artifacts
+        const artifacts = await ctx.db.query("analysisArtifacts").withIndex("by_userId", (q) => q.eq("userId", user._id)).collect();
+        for (const a of artifacts) await ctx.db.delete(a._id);
+
+        // Delete pipeline jobs
+        const jobs = await ctx.db.query("pipelineJobs").withIndex("by_userId", (q) => q.eq("userId", user._id)).collect();
+        for (const j of jobs) await ctx.db.delete(j._id);
+
+        await ctx.db.delete(user._id);
+      }
+
+      // Delete profile record by username (covers cases where user was already deleted)
+      const profile = await ctx.db.query("profiles").withIndex("by_username", (q) => q.eq("username", username)).first();
+      if (profile) {
+        await ctx.db.delete(profile._id);
+        results.push(`${username}: deleted`);
+      } else {
+        results.push(`${username}: profile not found (user ${user ? "deleted" : "not found"})`);
+      }
+    }
+
+    return results;
   },
 });

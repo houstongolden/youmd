@@ -93,12 +93,19 @@ const Pricing = () => (
               <span className="text-muted-foreground font-body text-[11px]">
                 For builders who live in agents daily.
               </span>
-              <span className="text-[hsl(var(--text-primary))] font-mono text-[20px] font-light">
-                $12
-                <span className="text-muted-foreground/60 text-[10px] ml-1">
-                  /mo
-                </span>
-              </span>
+              <div className="text-right">
+                <div>
+                  <span className="text-[hsl(var(--text-primary))] font-mono text-[20px] font-light">
+                    $29
+                    <span className="text-muted-foreground/60 text-[10px] ml-1">
+                      /mo
+                    </span>
+                  </span>
+                </div>
+                <div className="text-muted-foreground/40 font-mono text-[9px]">
+                  scales with usage
+                </div>
+              </div>
             </div>
             <div className="space-y-2 font-mono text-[11px] text-muted-foreground mb-5">
               <p>{"  "}&rsaquo; Everything in free, plus:</p>
