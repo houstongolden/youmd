@@ -937,7 +937,7 @@ const AI_LEADERS = [
     name: "Yann LeCun",
     tagline: "Meta AI Chief Scientist. Invented CNNs. Turing Award 2018. Open AI advocate.",
     location: "New York, NY",
-    avatarUrl: "https://unavatar.io/twitter/ylecun",
+    avatarUrl: "https://unavatar.io/x/ylecun",
     links: { x: "https://x.com/ylecun", website: "https://yann.lecun.com" },
     youJson: {
       identity: {
@@ -988,7 +988,7 @@ const AI_LEADERS = [
     name: "Ethan Mollick",
     tagline: "Wharton professor. Co-Intelligence author. One Useful Thing blogger.",
     location: "Philadelphia, PA",
-    avatarUrl: "https://unavatar.io/twitter/emollick",
+    avatarUrl: "https://unavatar.io/x/emollick",
     links: { x: "https://x.com/emollick", website: "https://www.oneusefulthing.org" },
     youJson: {
       identity: {
@@ -1086,8 +1086,8 @@ const AI_LEADERS = [
     name: "Dan Shipper",
     tagline: "Co-founder of Every. Building AI tools for how knowledge workers think.",
     location: "New York, NY",
-    avatarUrl: "https://unavatar.io/twitter/danshipper",
-    links: { x: "https://x.com/danshipper", github: "https://github.com/danshipper", website: "https://every.to" },
+    avatarUrl: "https://unavatar.io/x/danshipper",
+    links: { x: "https://x.com/danshipper", website: "https://every.to" },
     youJson: {
       identity: {
         bio: {
@@ -1097,7 +1097,7 @@ const AI_LEADERS = [
         tagline: "Co-founder of Every. Building AI tools for how knowledge workers think.",
         location: "New York, NY",
       },
-      links: { x: "https://x.com/danshipper", github: "https://github.com/danshipper", website: "https://every.to" },
+      links: { x: "https://x.com/danshipper", website: "https://every.to" },
       projects: [
         { name: "Every", description: "Bundle of AI-powered newsletters and tools for curious, ambitious people. $1M+ ARR." },
         { name: "Lex", description: "AI writing editor. One of the first AI writing tools to ship." },
@@ -1112,7 +1112,7 @@ const AI_LEADERS = [
     name: "Greg Isenberg",
     tagline: "Building and investing in internet communities. Late Checkout founder.",
     location: "Miami, FL",
-    avatarUrl: "https://unavatar.io/twitter/gregisenberg",
+    avatarUrl: "https://unavatar.io/x/gregisenberg",
     links: { x: "https://x.com/gregisenberg", website: "https://www.gregisenberg.com" },
     youJson: {
       identity: {
@@ -1137,7 +1137,7 @@ const AI_LEADERS = [
     name: "Linus Ekenstam",
     tagline: "Designing the future of human-AI interfaces. Visual AI explorer.",
     location: "Stockholm, Sweden",
-    avatarUrl: "https://unavatar.io/twitter/LinusEkenstam",
+    avatarUrl: "https://unavatar.io/x/LinusEkenstam",
     links: { x: "https://x.com/LinusEkenstam" },
     youJson: {
       identity: {
@@ -1159,7 +1159,7 @@ const AI_LEADERS = [
     name: "Alexandr Wang",
     tagline: "CEO and founder of Scale AI. Built the data infrastructure powering frontier AI.",
     location: "San Francisco, CA",
-    avatarUrl: "https://unavatar.io/twitter/alexandr_wang",
+    avatarUrl: "https://unavatar.io/x/alexandr_wang",
     links: { x: "https://x.com/alexandr_wang", website: "https://scale.com" },
     youJson: {
       identity: {
@@ -1183,7 +1183,7 @@ const AI_LEADERS = [
     name: "Sarah Guo",
     tagline: "Conviction Capital founder. AI-native investor. No Priors podcast host.",
     location: "San Francisco, CA",
-    avatarUrl: "https://unavatar.io/twitter/saranormous",
+    avatarUrl: "https://unavatar.io/x/saranormous",
     links: { x: "https://x.com/saranormous", website: "https://conviction.com" },
     youJson: {
       identity: {
@@ -1233,7 +1233,7 @@ const AI_LEADERS = [
     name: "Reid Hoffman",
     tagline: "LinkedIn co-founder. Greylock. OpenAI board. Author of Blitzscaling.",
     location: "Palo Alto, CA",
-    avatarUrl: "https://unavatar.io/twitter/reidhoffman",
+    avatarUrl: "https://unavatar.io/x/reidhoffman",
     links: { x: "https://x.com/reidhoffman", website: "https://www.reidhoffman.org" },
     youJson: {
       identity: {
@@ -1285,7 +1285,7 @@ const AI_LEADERS = [
     name: "Andrew Ng",
     tagline: "AI Fund. deeplearning.ai. Coursera co-founder. Making AI accessible globally.",
     location: "Palo Alto, CA",
-    avatarUrl: "https://unavatar.io/twitter/AndrewYNg",
+    avatarUrl: "https://unavatar.io/x/AndrewYNg",
     links: { x: "https://x.com/AndrewYNg", website: "https://www.deeplearning.ai" },
     youJson: {
       identity: {
@@ -1312,7 +1312,7 @@ const AI_LEADERS = [
     name: "Dario Amodei",
     tagline: "Co-founder and CEO of Anthropic. AI safety researcher. Building Claude.",
     location: "San Francisco, CA",
-    avatarUrl: "https://unavatar.io/twitter/DarioAmodei",
+    avatarUrl: "https://unavatar.io/x/DarioAmodei",
     links: { x: "https://x.com/DarioAmodei", website: "https://www.anthropic.com" },
     youJson: {
       identity: {
@@ -1337,7 +1337,7 @@ const AI_LEADERS = [
     name: "Ilya Sutskever",
     tagline: "Co-founder of Safe Superintelligence Inc. Ex-OpenAI Chief Scientist.",
     location: "San Francisco, CA",
-    avatarUrl: "https://unavatar.io/twitter/ilyasut",
+    avatarUrl: "https://unavatar.io/x/ilyasut",
     links: { x: "https://x.com/ilyasut" },
     youJson: {
       identity: {
@@ -1489,18 +1489,19 @@ export const cleanDuplicates = internalMutation({
 
 // ── Profile QA + Enrichment ───────────────────────────────────
 //
-// Resolves avatar URLs to reliable PNG/JPEG sources and generates
-// ASCII portraits for all unclaimed profiles missing them.
+// Resolves real avatar photos from GitHub/X and generates ASCII portraits
+// for all unclaimed profiles.
 //
-// Avatar resolution priority:
-//   1. GitHub .png URL (https://github.com/{handle}.png) — always PNG
-//   2. Current avatarUrl if it's already a direct image URL
-//   3. Generated letter-avatar fallback via ui-avatars.com
+// Avatar resolution (real photos only — no letter/generated avatars):
+//   1. GitHub handle present → https://github.com/{handle}.png (forces PNG, never WebP)
+//   2. X/Twitter handle present (no GitHub) → unavatar.io/x/{handle} with API key
+//      (redirects to pbs.twimg.com JPEG — handles JPEG format correctly)
+//   3. Neither → unavatar.io/{username} generic lookup
 //
 // Run (all profiles, skip existing portraits):
 //   npx convex run seed:enrichAndQaAllProfiles
 //
-// Force regenerate portraits for everyone:
+// Force regenerate portraits for everyone (e.g. after avatar URL fixes):
 //   npx convex run seed:enrichAndQaAllProfiles '{"forceRegenerate":true}'
 //
 // Dry run (just show what would change):
@@ -1512,9 +1513,42 @@ function githubHandleFromLinks(links: Record<string, string> | undefined): strin
   return match ? match[1] : null;
 }
 
-function letterAvatarUrl(name: string): string {
-  const encoded = encodeURIComponent(name);
-  return `https://ui-avatars.com/api/?name=${encoded}&size=256&background=0D0D0D&color=C46A3A&format=png&bold=true&length=2`;
+function xHandleFromLinks(links: Record<string, string> | undefined): string | null {
+  if (!links?.x) return null;
+  const match = links.x.match(/(?:x|twitter)\.com\/([^/?#]+)/);
+  return match ? match[1] : null;
+}
+
+function resolveAvatarUrl(
+  profile: { username: string; name?: string; avatarUrl?: string; links?: Record<string, string>; youJson?: unknown },
+  unavatarApiKey: string
+): { url: string; source: string } {
+  const links = (profile.links ?? {}) as Record<string, string>;
+  const youJsonLinks = ((profile.youJson as Record<string, unknown>)?.links ?? {}) as Record<string, string>;
+
+  // GitHub handle → force PNG (GitHub CDN serves WebP by default, but .png extension forces PNG)
+  const ghHandle = githubHandleFromLinks(links) ?? githubHandleFromLinks(youJsonLinks);
+  if (ghHandle) {
+    return { url: `https://github.com/${ghHandle}.png`, source: "github_png" };
+  }
+
+  // X/Twitter handle → unavatar.io/x (redirects to pbs.twimg.com JPEG)
+  const xHandle = xHandleFromLinks(links) ?? xHandleFromLinks(youJsonLinks);
+  if (xHandle) {
+    const apiParam = unavatarApiKey ? `?apiKey=${unavatarApiKey}` : "";
+    return { url: `https://unavatar.io/x/${xHandle}${apiParam}`, source: "unavatar_x" };
+  }
+
+  // Existing avatarUrl if it's not a letter/generated avatar
+  if (profile.avatarUrl &&
+      !profile.avatarUrl.includes("ui-avatars.com") &&
+      !profile.avatarUrl.includes("unavatar.io/twitter/")) {
+    return { url: profile.avatarUrl, source: "existing" };
+  }
+
+  // Generic unavatar lookup by username as last real-photo attempt
+  const apiParam = unavatarApiKey ? `?apiKey=${unavatarApiKey}` : "";
+  return { url: `https://unavatar.io/${profile.username}${apiParam}`, source: "unavatar_generic" };
 }
 
 export const _listAllUnclaimedProfiles = internalQuery({
@@ -1535,11 +1569,27 @@ export const _patchProfileAvatar = internalMutation({
   },
 });
 
+// One-time: fix danshipper's links to remove the non-existent GitHub handle
+export const _fixDanShipperLinks = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const p = await ctx.db.query("profiles").withIndex("by_username", (q) => q.eq("username", "danshipper")).first();
+    if (!p) return "not found";
+    const youJson = p.youJson as Record<string, unknown> | undefined;
+    const updatedLinks = { x: "https://x.com/danshipper", website: "https://every.to" };
+    await ctx.db.patch(p._id, {
+      links: updatedLinks,
+      youJson: youJson ? { ...youJson, links: updatedLinks } : undefined,
+    });
+    return "patched";
+  },
+});
+
 interface QaResult {
   username: string;
   name: string;
   avatarResolved: string;
-  avatarSource: "github_png" | "existing" | "letter_fallback";
+  avatarSource: string;
   portraitStatus: string;
 }
 
@@ -1558,36 +1608,20 @@ export const enrichAndQaAllProfiles = internalAction({
   }> => {
     const dryRun = args.dryRun ?? false;
     const forceRegenerate = args.forceRegenerate ?? false;
+    const unavatarApiKey = process.env.UNAVATAR_API_KEY ?? "";
     const results: QaResult[] = [];
 
     const profiles = await ctx.runQuery(internal.seed._listAllUnclaimedProfiles, {});
 
     for (const profile of profiles) {
-      // ── Step 1: resolve best avatar URL ─────────────────────
-      const links = (profile.links ?? {}) as Record<string, string>;
-      const ghHandle = githubHandleFromLinks(links)
-        ?? githubHandleFromLinks((profile.youJson as Record<string, unknown>)?.links as Record<string, string> | undefined);
-
-      let resolvedAvatarUrl: string;
-      let avatarSource: QaResult["avatarSource"];
-
-      if (ghHandle) {
-        resolvedAvatarUrl = `https://github.com/${ghHandle}.png`;
-        avatarSource = "github_png";
-      } else if (profile.avatarUrl && !profile.avatarUrl.includes("unavatar.io")) {
-        // Already a direct URL — use as-is
-        resolvedAvatarUrl = profile.avatarUrl;
-        avatarSource = "existing";
-      } else {
-        // unavatar.io or missing → letter avatar fallback
-        resolvedAvatarUrl = letterAvatarUrl(profile.name ?? profile.username);
-        avatarSource = "letter_fallback";
-      }
+      // ── Step 1: resolve real avatar URL (no letter/generated avatars) ──
+      const { url: resolvedAvatarUrl, source: avatarSource } = resolveAvatarUrl(profile, unavatarApiKey);
 
       const avatarChanged = resolvedAvatarUrl !== profile.avatarUrl;
+      const hasPortrait = !!profile.asciiPortrait;
 
-      // ── Step 2: skip portrait generation if not needed ───────
-      if (profile.asciiPortrait && !forceRegenerate && !avatarChanged) {
+      // ── Step 2: skip if portrait exists and nothing changed ──────────
+      if (hasPortrait && !forceRegenerate && !avatarChanged) {
         results.push({
           username: profile.username,
           name: profile.name ?? profile.username,
@@ -1604,12 +1638,12 @@ export const enrichAndQaAllProfiles = internalAction({
           name: profile.name ?? profile.username,
           avatarResolved: resolvedAvatarUrl,
           avatarSource,
-          portraitStatus: profile.asciiPortrait ? "would_regenerate" : "would_generate",
+          portraitStatus: hasPortrait ? "would_regenerate" : "would_generate",
         });
         continue;
       }
 
-      // ── Step 3: update avatarUrl if changed ──────────────────
+      // ── Step 3: update avatarUrl in DB if we resolved a better one ───
       if (avatarChanged) {
         await ctx.runMutation(internal.seed._patchProfileAvatar, {
           profileId: profile._id,
@@ -1617,7 +1651,13 @@ export const enrichAndQaAllProfiles = internalAction({
         });
       }
 
-      // ── Step 4: generate portrait ────────────────────────────
+      // ── Step 4: generate portrait ─────────────────────────────────────
+      // avatarSource order: github_png → JPEG/PNG ✓
+      //                     unavatar_x → redirects to pbs.twimg.com JPEG ✓
+      //                     existing / unavatar_generic → try as-is
+      // If the format is WebP (needsClientSide), the browser's AsciiAvatar
+      // component handles it client-side when the user visits the profile page.
+      // We do NOT fall back to fake generated images.
       try {
         const result = await ctx.runAction(internal.portrait.generatePortrait, {
           imageUrl: resolvedAvatarUrl,
@@ -1638,52 +1678,15 @@ export const enrichAndQaAllProfiles = internalAction({
             portraitStatus: `generated (${result.portrait.cols}x${result.portrait.rows})`,
           });
         } else if (result.needsClientSide) {
-          // Portrait generator couldn't handle the format — try letter avatar
-          const fallbackUrl = letterAvatarUrl(profile.name ?? profile.username);
-          if (fallbackUrl !== resolvedAvatarUrl) {
-            await ctx.runMutation(internal.seed._patchProfileAvatar, {
-              profileId: profile._id,
-              avatarUrl: fallbackUrl,
-            });
-            const fallbackResult = await ctx.runAction(internal.portrait.generatePortrait, {
-              imageUrl: fallbackUrl,
-              cols: 120,
-              format: "classic",
-            });
-            if (fallbackResult.success && fallbackResult.portrait) {
-              await ctx.runMutation(internal.seed._patchProfilePortrait, {
-                profileId: profile._id,
-                portrait: { ...fallbackResult.portrait, generatedAt: Date.now() },
-              });
-              results.push({
-                username: profile.username,
-                name: profile.name ?? profile.username,
-                avatarResolved: fallbackUrl,
-                avatarSource: "letter_fallback",
-                portraitStatus: `generated_from_fallback (${fallbackResult.portrait.cols}x${fallbackResult.portrait.rows})`,
-              });
-              continue;
-            }
-          }
+          // Real photo is set — portrait will be generated client-side when profile is visited
           results.push({
             username: profile.username,
             name: profile.name ?? profile.username,
             avatarResolved: resolvedAvatarUrl,
             avatarSource,
-            portraitStatus: `needs_client_side: ${result.error ?? "unsupported format"}`,
+            portraitStatus: `needs_client_side (avatar set, portrait via browser)`,
           });
         } else {
-          // Failed — fallback to letter avatar if not already using one
-          if (avatarSource !== "letter_fallback") {
-            const fallbackUrl = letterAvatarUrl(profile.name ?? profile.username);
-            await ctx.runMutation(internal.seed._patchProfileAvatar, { profileId: profile._id, avatarUrl: fallbackUrl });
-            const fr = await ctx.runAction(internal.portrait.generatePortrait, { imageUrl: fallbackUrl, cols: 120, format: "classic" });
-            if (fr.success && fr.portrait) {
-              await ctx.runMutation(internal.seed._patchProfilePortrait, { profileId: profile._id, portrait: { ...fr.portrait, generatedAt: Date.now() } });
-              results.push({ username: profile.username, name: profile.name ?? profile.username, avatarResolved: fallbackUrl, avatarSource: "letter_fallback", portraitStatus: `generated_fallback (${fr.portrait.cols}x${fr.portrait.rows})` });
-              continue;
-            }
-          }
           results.push({
             username: profile.username,
             name: profile.name ?? profile.username,
@@ -1693,19 +1696,6 @@ export const enrichAndQaAllProfiles = internalAction({
           });
         }
       } catch (err) {
-        // Error — fallback to letter avatar if not already using one
-        if (avatarSource !== "letter_fallback") {
-          try {
-            const fallbackUrl = letterAvatarUrl(profile.name ?? profile.username);
-            await ctx.runMutation(internal.seed._patchProfileAvatar, { profileId: profile._id, avatarUrl: fallbackUrl });
-            const fr = await ctx.runAction(internal.portrait.generatePortrait, { imageUrl: fallbackUrl, cols: 120, format: "classic" });
-            if (fr.success && fr.portrait) {
-              await ctx.runMutation(internal.seed._patchProfilePortrait, { profileId: profile._id, portrait: { ...fr.portrait, generatedAt: Date.now() } });
-              results.push({ username: profile.username, name: profile.name ?? profile.username, avatarResolved: fallbackUrl, avatarSource: "letter_fallback", portraitStatus: `generated_fallback (${fr.portrait.cols}x${fr.portrait.rows})` });
-              continue;
-            }
-          } catch { /* fall through */ }
-        }
         results.push({
           username: profile.username,
           name: profile.name ?? profile.username,
@@ -1720,7 +1710,11 @@ export const enrichAndQaAllProfiles = internalAction({
       total: profiles.length,
       generated: results.filter((r) => r.portraitStatus.startsWith("generated")).length,
       skipped: results.filter((r) => r.portraitStatus.startsWith("skipped")).length,
-      failed: results.filter((r) => r.portraitStatus.startsWith("failed") || r.portraitStatus.startsWith("error") || r.portraitStatus.startsWith("needs")).length,
+      failed: results.filter((r) =>
+        r.portraitStatus.startsWith("failed") ||
+        r.portraitStatus.startsWith("error") ||
+        r.portraitStatus.startsWith("needs_client_side")
+      ).length,
       avatarUpdated: results.filter((r) => r.avatarSource !== "existing").length,
       results,
     };
