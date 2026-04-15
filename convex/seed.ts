@@ -860,7 +860,7 @@ const AI_LEADERS = [
     name: "Sam Altman",
     tagline: "Building AGI that benefits all of humanity. CEO of OpenAI.",
     location: "San Francisco, CA",
-    avatarUrl: "https://unavatar.io/github/sama",
+    avatarUrl: "https://github.com/sama.png",
     links: { x: "https://x.com/sama", github: "https://github.com/sama", website: "https://blog.samaltman.com" },
     youJson: {
       identity: {
@@ -886,7 +886,7 @@ const AI_LEADERS = [
     name: "Greg Brockman",
     tagline: "OpenAI President. Hacker at heart. Believes in building transformative AI.",
     location: "San Francisco, CA",
-    avatarUrl: "https://unavatar.io/github/gdb",
+    avatarUrl: "https://github.com/gdb.png",
     links: { x: "https://x.com/gdb", github: "https://github.com/gdb", website: "https://gregbrockman.com" },
     youJson: {
       identity: {
@@ -911,7 +911,7 @@ const AI_LEADERS = [
     name: "Harrison Chase",
     tagline: "Co-founder of LangChain. Building the tooling layer for LLM applications.",
     location: "San Francisco, CA",
-    avatarUrl: "https://unavatar.io/github/hwchase17",
+    avatarUrl: "https://github.com/hwchase17.png",
     links: { x: "https://x.com/hwchase17", github: "https://github.com/hwchase17", website: "https://www.langchain.com" },
     youJson: {
       identity: {
@@ -962,7 +962,7 @@ const AI_LEADERS = [
     name: "Jeremy Howard",
     tagline: "Making deep learning accessible. fast.ai founder. World's top Kaggle competitor.",
     location: "San Francisco, CA",
-    avatarUrl: "https://unavatar.io/github/jph00",
+    avatarUrl: "https://github.com/jph00.png",
     links: { x: "https://x.com/jeremyphoward", github: "https://github.com/jph00", website: "https://www.fast.ai" },
     youJson: {
       identity: {
@@ -1013,7 +1013,7 @@ const AI_LEADERS = [
     name: "Shawn Wang",
     tagline: "Learning in public. AI engineer, writer, and co-host of Latent Space.",
     location: "San Francisco, CA",
-    avatarUrl: "https://unavatar.io/github/sw-yx",
+    avatarUrl: "https://github.com/sw-yx.png",
     links: { x: "https://x.com/swyx", github: "https://github.com/sw-yx", website: "https://www.swyx.io" },
     youJson: {
       identity: {
@@ -1039,7 +1039,7 @@ const AI_LEADERS = [
     name: "Santiago Valdarrama",
     tagline: "Simplifying machine learning for 1M+ developers. ML educator and builder.",
     location: "Miami, FL",
-    avatarUrl: "https://unavatar.io/github/svpino",
+    avatarUrl: "https://github.com/svpino.png",
     links: { x: "https://x.com/svpino", github: "https://github.com/svpino", website: "https://tidepool.so" },
     youJson: {
       identity: {
@@ -1064,7 +1064,7 @@ const AI_LEADERS = [
     name: "Riley Tomasek",
     tagline: "Building AI-native products and sharing what works in production.",
     location: "San Francisco, CA",
-    avatarUrl: "https://unavatar.io/github/rileytomasek",
+    avatarUrl: "https://github.com/rileytomasek.png",
     links: { x: "https://x.com/rileytomasek", github: "https://github.com/rileytomasek" },
     youJson: {
       identity: {
@@ -1086,7 +1086,7 @@ const AI_LEADERS = [
     name: "Dan Shipper",
     tagline: "Co-founder of Every. Building AI tools for how knowledge workers think.",
     location: "New York, NY",
-    avatarUrl: "https://unavatar.io/github/danshipper",
+    avatarUrl: "https://unavatar.io/twitter/danshipper",
     links: { x: "https://x.com/danshipper", github: "https://github.com/danshipper", website: "https://every.to" },
     youJson: {
       identity: {
@@ -1208,8 +1208,8 @@ const AI_LEADERS = [
     name: "Clement Delangue",
     tagline: "Co-founder and CEO of Hugging Face. The GitHub of machine learning.",
     location: "New York, NY",
-    avatarUrl: "https://unavatar.io/twitter/ClementDelangue",
-    links: { x: "https://x.com/ClementDelangue", website: "https://huggingface.co" },
+    avatarUrl: "https://github.com/ClementDelangue.png",
+    links: { x: "https://x.com/ClementDelangue", github: "https://github.com/ClementDelangue", website: "https://huggingface.co" },
     youJson: {
       identity: {
         bio: {
@@ -1259,7 +1259,7 @@ const AI_LEADERS = [
     name: "Nat Friedman",
     tagline: "Former GitHub CEO. NFDG. Betting on ambitious founders and hard science.",
     location: "San Francisco, CA",
-    avatarUrl: "https://unavatar.io/github/nat",
+    avatarUrl: "https://github.com/nat.png",
     links: { x: "https://x.com/natfriedman", github: "https://github.com/nat", website: "https://nat.org" },
     youJson: {
       identity: {
@@ -1484,5 +1484,245 @@ export const cleanDuplicates = internalMutation({
     }
 
     return { dryRun, duplicatesFound: report.length, report };
+  },
+});
+
+// ── Profile QA + Enrichment ───────────────────────────────────
+//
+// Resolves avatar URLs to reliable PNG/JPEG sources and generates
+// ASCII portraits for all unclaimed profiles missing them.
+//
+// Avatar resolution priority:
+//   1. GitHub .png URL (https://github.com/{handle}.png) — always PNG
+//   2. Current avatarUrl if it's already a direct image URL
+//   3. Generated letter-avatar fallback via ui-avatars.com
+//
+// Run (all profiles, skip existing portraits):
+//   npx convex run seed:enrichAndQaAllProfiles
+//
+// Force regenerate portraits for everyone:
+//   npx convex run seed:enrichAndQaAllProfiles '{"forceRegenerate":true}'
+//
+// Dry run (just show what would change):
+//   npx convex run seed:enrichAndQaAllProfiles '{"dryRun":true}'
+
+function githubHandleFromLinks(links: Record<string, string> | undefined): string | null {
+  if (!links?.github) return null;
+  const match = links.github.match(/github\.com\/([^/?#]+)/);
+  return match ? match[1] : null;
+}
+
+function letterAvatarUrl(name: string): string {
+  const encoded = encodeURIComponent(name);
+  return `https://ui-avatars.com/api/?name=${encoded}&size=256&background=0D0D0D&color=C46A3A&format=png&bold=true&length=2`;
+}
+
+export const _listAllUnclaimedProfiles = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("profiles")
+      .filter((q) => q.eq(q.field("isClaimed"), false))
+      .order("asc")
+      .take(500);
+  },
+});
+
+export const _patchProfileAvatar = internalMutation({
+  args: { profileId: v.id("profiles"), avatarUrl: v.string() },
+  handler: async (ctx, { profileId, avatarUrl }) => {
+    await ctx.db.patch(profileId, { avatarUrl });
+  },
+});
+
+interface QaResult {
+  username: string;
+  name: string;
+  avatarResolved: string;
+  avatarSource: "github_png" | "existing" | "letter_fallback";
+  portraitStatus: string;
+}
+
+export const enrichAndQaAllProfiles = internalAction({
+  args: {
+    dryRun: v.optional(v.boolean()),
+    forceRegenerate: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<{
+    total: number;
+    generated: number;
+    skipped: number;
+    failed: number;
+    avatarUpdated: number;
+    results: QaResult[];
+  }> => {
+    const dryRun = args.dryRun ?? false;
+    const forceRegenerate = args.forceRegenerate ?? false;
+    const results: QaResult[] = [];
+
+    const profiles = await ctx.runQuery(internal.seed._listAllUnclaimedProfiles, {});
+
+    for (const profile of profiles) {
+      // ── Step 1: resolve best avatar URL ─────────────────────
+      const links = (profile.links ?? {}) as Record<string, string>;
+      const ghHandle = githubHandleFromLinks(links)
+        ?? githubHandleFromLinks((profile.youJson as Record<string, unknown>)?.links as Record<string, string> | undefined);
+
+      let resolvedAvatarUrl: string;
+      let avatarSource: QaResult["avatarSource"];
+
+      if (ghHandle) {
+        resolvedAvatarUrl = `https://github.com/${ghHandle}.png`;
+        avatarSource = "github_png";
+      } else if (profile.avatarUrl && !profile.avatarUrl.includes("unavatar.io")) {
+        // Already a direct URL — use as-is
+        resolvedAvatarUrl = profile.avatarUrl;
+        avatarSource = "existing";
+      } else {
+        // unavatar.io or missing → letter avatar fallback
+        resolvedAvatarUrl = letterAvatarUrl(profile.name ?? profile.username);
+        avatarSource = "letter_fallback";
+      }
+
+      const avatarChanged = resolvedAvatarUrl !== profile.avatarUrl;
+
+      // ── Step 2: skip portrait generation if not needed ───────
+      if (profile.asciiPortrait && !forceRegenerate && !avatarChanged) {
+        results.push({
+          username: profile.username,
+          name: profile.name ?? profile.username,
+          avatarResolved: resolvedAvatarUrl,
+          avatarSource,
+          portraitStatus: "skipped_exists",
+        });
+        continue;
+      }
+
+      if (dryRun) {
+        results.push({
+          username: profile.username,
+          name: profile.name ?? profile.username,
+          avatarResolved: resolvedAvatarUrl,
+          avatarSource,
+          portraitStatus: profile.asciiPortrait ? "would_regenerate" : "would_generate",
+        });
+        continue;
+      }
+
+      // ── Step 3: update avatarUrl if changed ──────────────────
+      if (avatarChanged) {
+        await ctx.runMutation(internal.seed._patchProfileAvatar, {
+          profileId: profile._id,
+          avatarUrl: resolvedAvatarUrl,
+        });
+      }
+
+      // ── Step 4: generate portrait ────────────────────────────
+      try {
+        const result = await ctx.runAction(internal.portrait.generatePortrait, {
+          imageUrl: resolvedAvatarUrl,
+          cols: 120,
+          format: "classic",
+        });
+
+        if (result.success && result.portrait) {
+          await ctx.runMutation(internal.seed._patchProfilePortrait, {
+            profileId: profile._id,
+            portrait: { ...result.portrait, generatedAt: Date.now() },
+          });
+          results.push({
+            username: profile.username,
+            name: profile.name ?? profile.username,
+            avatarResolved: resolvedAvatarUrl,
+            avatarSource,
+            portraitStatus: `generated (${result.portrait.cols}x${result.portrait.rows})`,
+          });
+        } else if (result.needsClientSide) {
+          // Portrait generator couldn't handle the format — try letter avatar
+          const fallbackUrl = letterAvatarUrl(profile.name ?? profile.username);
+          if (fallbackUrl !== resolvedAvatarUrl) {
+            await ctx.runMutation(internal.seed._patchProfileAvatar, {
+              profileId: profile._id,
+              avatarUrl: fallbackUrl,
+            });
+            const fallbackResult = await ctx.runAction(internal.portrait.generatePortrait, {
+              imageUrl: fallbackUrl,
+              cols: 120,
+              format: "classic",
+            });
+            if (fallbackResult.success && fallbackResult.portrait) {
+              await ctx.runMutation(internal.seed._patchProfilePortrait, {
+                profileId: profile._id,
+                portrait: { ...fallbackResult.portrait, generatedAt: Date.now() },
+              });
+              results.push({
+                username: profile.username,
+                name: profile.name ?? profile.username,
+                avatarResolved: fallbackUrl,
+                avatarSource: "letter_fallback",
+                portraitStatus: `generated_from_fallback (${fallbackResult.portrait.cols}x${fallbackResult.portrait.rows})`,
+              });
+              continue;
+            }
+          }
+          results.push({
+            username: profile.username,
+            name: profile.name ?? profile.username,
+            avatarResolved: resolvedAvatarUrl,
+            avatarSource,
+            portraitStatus: `needs_client_side: ${result.error ?? "unsupported format"}`,
+          });
+        } else {
+          // Failed — fallback to letter avatar if not already using one
+          if (avatarSource !== "letter_fallback") {
+            const fallbackUrl = letterAvatarUrl(profile.name ?? profile.username);
+            await ctx.runMutation(internal.seed._patchProfileAvatar, { profileId: profile._id, avatarUrl: fallbackUrl });
+            const fr = await ctx.runAction(internal.portrait.generatePortrait, { imageUrl: fallbackUrl, cols: 120, format: "classic" });
+            if (fr.success && fr.portrait) {
+              await ctx.runMutation(internal.seed._patchProfilePortrait, { profileId: profile._id, portrait: { ...fr.portrait, generatedAt: Date.now() } });
+              results.push({ username: profile.username, name: profile.name ?? profile.username, avatarResolved: fallbackUrl, avatarSource: "letter_fallback", portraitStatus: `generated_fallback (${fr.portrait.cols}x${fr.portrait.rows})` });
+              continue;
+            }
+          }
+          results.push({
+            username: profile.username,
+            name: profile.name ?? profile.username,
+            avatarResolved: resolvedAvatarUrl,
+            avatarSource,
+            portraitStatus: `failed: ${result.error}`,
+          });
+        }
+      } catch (err) {
+        // Error — fallback to letter avatar if not already using one
+        if (avatarSource !== "letter_fallback") {
+          try {
+            const fallbackUrl = letterAvatarUrl(profile.name ?? profile.username);
+            await ctx.runMutation(internal.seed._patchProfileAvatar, { profileId: profile._id, avatarUrl: fallbackUrl });
+            const fr = await ctx.runAction(internal.portrait.generatePortrait, { imageUrl: fallbackUrl, cols: 120, format: "classic" });
+            if (fr.success && fr.portrait) {
+              await ctx.runMutation(internal.seed._patchProfilePortrait, { profileId: profile._id, portrait: { ...fr.portrait, generatedAt: Date.now() } });
+              results.push({ username: profile.username, name: profile.name ?? profile.username, avatarResolved: fallbackUrl, avatarSource: "letter_fallback", portraitStatus: `generated_fallback (${fr.portrait.cols}x${fr.portrait.rows})` });
+              continue;
+            }
+          } catch { /* fall through */ }
+        }
+        results.push({
+          username: profile.username,
+          name: profile.name ?? profile.username,
+          avatarResolved: resolvedAvatarUrl,
+          avatarSource,
+          portraitStatus: `error: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+    }
+
+    return {
+      total: profiles.length,
+      generated: results.filter((r) => r.portraitStatus.startsWith("generated")).length,
+      skipped: results.filter((r) => r.portraitStatus.startsWith("skipped")).length,
+      failed: results.filter((r) => r.portraitStatus.startsWith("failed") || r.portraitStatus.startsWith("error") || r.portraitStatus.startsWith("needs")).length,
+      avatarUpdated: results.filter((r) => r.avatarSource !== "existing").length,
+      results,
+    };
   },
 });
