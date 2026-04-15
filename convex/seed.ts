@@ -14,7 +14,8 @@
  * admin tooling.
  */
 import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { internalMutation, internalAction, internalQuery } from "./_generated/server";
+import { internal } from "./_generated/api";
 import {
   ProfileData,
   compileYouJson,
@@ -35,7 +36,7 @@ const SAMPLE_PROFILES: SeedProfile[] = [
     name: "Andrej Karpathy",
     username: "karpathy",
     email: "sample-karpathy@you.md",
-    avatarUrl: "https://github.com/karpathy.png",
+    avatarUrl: "https://avatars.githubusercontent.com/u/241138?v=4",
     isClaimed: false,
     tagline: "AI researcher, educator, builder. Ex-Tesla, ex-OpenAI.",
     location: "San Francisco, CA",
@@ -93,7 +94,7 @@ const SAMPLE_PROFILES: SeedProfile[] = [
     name: "Guillermo Rauch",
     username: "rauchg",
     email: "sample-rauchg@you.md",
-    avatarUrl: "https://github.com/rauchg.png",
+    avatarUrl: "https://avatars.githubusercontent.com/u/13041?v=4",
     isClaimed: false,
     tagline: "CEO @ Vercel. Building the platform for the web.",
     location: "San Francisco, CA",
@@ -150,7 +151,7 @@ const SAMPLE_PROFILES: SeedProfile[] = [
     name: "Amjad Masad",
     username: "amasad",
     email: "sample-amasad@you.md",
-    avatarUrl: "https://github.com/amasad.png",
+    avatarUrl: "https://avatars.githubusercontent.com/u/587518?v=4",
     isClaimed: false,
     tagline: "CEO @ Replit. Making programming accessible to a billion people.",
     location: "San Francisco, CA",
@@ -206,7 +207,7 @@ const SAMPLE_PROFILES: SeedProfile[] = [
     name: "Pieter Levels",
     username: "levelsio",
     email: "sample-levelsio@you.md",
-    avatarUrl: "https://github.com/levelsio.png",
+    avatarUrl: "https://avatars.githubusercontent.com/u/7150848?v=4",
     isClaimed: false,
     tagline: "Indie hacker. Solo-built $3M ARR. 12 startups in 12 months.",
     location: "Amsterdam / Nomad",
@@ -263,7 +264,7 @@ const SAMPLE_PROFILES: SeedProfile[] = [
     name: "Simon Willison",
     username: "simonw",
     email: "sample-simonw@you.md",
-    avatarUrl: "https://github.com/simonw.png",
+    avatarUrl: "https://avatars.githubusercontent.com/u/9599?v=4",
     isClaimed: false,
     tagline: "Creator of Datasette. LLM CLI builder. Writing about AI daily.",
     location: "Palo Alto, CA",
@@ -320,7 +321,7 @@ const SAMPLE_PROFILES: SeedProfile[] = [
     name: "Logan Kilpatrick",
     username: "logankilpatrick",
     email: "sample-logankilpatrick@you.md",
-    avatarUrl: "https://github.com/logankilpatrick.png",
+    avatarUrl: "https://avatars.githubusercontent.com/u/35577566?v=4",
     isClaimed: false,
     tagline: "AI @ Google. Ex-OpenAI DevRel. Making AI more accessible.",
     location: "San Francisco, CA",
@@ -782,5 +783,66 @@ export const deleteProfilesByUsername = internalMutation({
     }
 
     return results;
+  },
+});
+
+/**
+ * Generate and store server-side ASCII portraits for all sample profiles.
+ * Fetches each avatarUrl, runs portrait generation, and patches the profile record.
+ *
+ * Usage: npx convex run seed:generatePortraitsForSamples
+ */
+export const generatePortraitsForSamples = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const results: string[] = [];
+    const profiles = await ctx.runQuery(internal.seed._listSampleProfiles, {});
+
+    for (const profile of profiles) {
+      if (!profile.avatarUrl) {
+        results.push(`${profile.username}: no avatarUrl, skipping`);
+        continue;
+      }
+      try {
+        const result = await ctx.runAction(internal.portrait.generatePortrait, {
+          imageUrl: profile.avatarUrl,
+          cols: 120,
+          format: "classic",
+        });
+        if (result.success && result.portrait) {
+          await ctx.runMutation(internal.seed._patchProfilePortrait, {
+            profileId: profile._id,
+            portrait: result.portrait,
+          });
+          results.push(`${profile.username}: portrait generated (${result.portrait.cols}x${result.portrait.rows})`);
+        } else {
+          results.push(`${profile.username}: failed — ${result.error}`);
+        }
+      } catch (err) {
+        results.push(`${profile.username}: error — ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    return results;
+  },
+});
+
+export const _listSampleProfiles = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    const sampleUsers = users.filter((u) => u.isSample === true);
+    const profiles = [];
+    for (const u of sampleUsers) {
+      const p = await ctx.db.query("profiles").withIndex("by_username", (q) => q.eq("username", u.username)).first();
+      if (p) profiles.push(p);
+    }
+    return profiles;
+  },
+});
+
+export const _patchProfilePortrait = internalMutation({
+  args: { profileId: v.id("profiles"), portrait: v.any() },
+  handler: async (ctx, { profileId, portrait }) => {
+    await ctx.db.patch(profileId, { asciiPortrait: portrait });
   },
 });

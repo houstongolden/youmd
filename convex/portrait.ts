@@ -2,6 +2,7 @@
 
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
+import jpegJs from "jpeg-js";
 
 // ---------------------------------------------------------------------------
 // ASCII character ramps — same as client-side AsciiAvatar component
@@ -313,12 +314,20 @@ export const generatePortrait = internalAction({
         imageData = decodePNG(buffer);
       }
 
-      // If PNG decode failed or it's not a PNG, try using JPEG decode approach
-      // For now, return an indicator that client-side generation is needed
+      // JPEG support via jpeg-js
+      if (!imageData && (contentType.includes("jpeg") || contentType.includes("jpg"))) {
+        try {
+          const decoded = jpegJs.decode(Buffer.from(buffer), { useTArray: true });
+          imageData = { width: decoded.width, height: decoded.height, data: decoded.data };
+        } catch {
+          // fall through to error below
+        }
+      }
+
       if (!imageData) {
         return {
           success: false,
-          error: "Server-side decode not supported for this image format. Client-side generation will be used.",
+          error: "Server-side decode not supported for this image format.",
           needsClientSide: true,
         };
       }
