@@ -812,7 +812,7 @@ export const generatePortraitsForSamples = internalAction({
         if (result.success && result.portrait) {
           await ctx.runMutation(internal.seed._patchProfilePortrait, {
             profileId: profile._id,
-            portrait: result.portrait,
+            portrait: { ...result.portrait, generatedAt: Date.now() },
           });
           results.push(`${profile.username}: portrait generated (${result.portrait.cols}x${result.portrait.rows})`);
         } else {
