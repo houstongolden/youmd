@@ -906,7 +906,7 @@ http.route({
       });
     }
 
-    // Helper: transform upstream SSE into our simplified format
+    // Helper: transform upstream SSE into our simplified format (for OpenRouter/OpenAI format)
     function transformStream(
       upstream: ReadableStream<Uint8Array>,
       extractText: (parsed: any) => string | null
@@ -949,6 +949,83 @@ http.route({
       });
     }
 
+    // Helper: transform Anthropic SSE stream, emitting text deltas AND complete tool_use blocks
+    function transformAnthropicStream(upstream: ReadableStream<Uint8Array>): ReadableStream {
+      const reader = upstream.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      // Track each content block by index
+      const blocks = new Map<number, { type: "text" | "tool_use"; name?: string; jsonBuf?: string }>();
+
+      return new ReadableStream({
+        async pull(controller) {
+          try {
+            const { done, value } = await reader.read();
+            if (done) {
+              controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+              controller.close();
+              return;
+            }
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop() || "";
+
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const data = line.slice(6).trim();
+              if (data === "[DONE]") {
+                controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+                continue;
+              }
+              try {
+                const parsed = JSON.parse(data);
+
+                if (parsed.type === "content_block_start") {
+                  const cb = parsed.content_block;
+                  if (cb.type === "text") {
+                    blocks.set(parsed.index, { type: "text" });
+                  } else if (cb.type === "tool_use") {
+                    blocks.set(parsed.index, { type: "tool_use", name: cb.name, jsonBuf: "" });
+                  }
+                } else if (parsed.type === "content_block_delta") {
+                  const block = blocks.get(parsed.index);
+                  if (!block) continue;
+                  const { delta } = parsed;
+
+                  if (delta.type === "text_delta" && block.type === "text" && delta.text) {
+                    controller.enqueue(
+                      new TextEncoder().encode(`data: ${JSON.stringify({ text: delta.text })}\n\n`)
+                    );
+                  } else if (delta.type === "input_json_delta" && block.type === "tool_use") {
+                    block.jsonBuf = (block.jsonBuf || "") + (delta.partial_json || "");
+                  }
+                } else if (parsed.type === "content_block_stop") {
+                  const block = blocks.get(parsed.index);
+                  if (block?.type === "tool_use") {
+                    try {
+                      const input = JSON.parse(block.jsonBuf || "{}");
+                      controller.enqueue(
+                        new TextEncoder().encode(
+                          `data: ${JSON.stringify({ tool_use: { name: block.name, input } })}\n\n`
+                        )
+                      );
+                    } catch { /* malformed tool JSON — skip */ }
+                    blocks.delete(parsed.index);
+                  } else {
+                    blocks.delete(parsed.index);
+                  }
+                }
+                // message_delta, message_stop, ping — ignore
+              } catch { /* skip */ }
+            }
+          } catch (err) {
+            controller.error(err);
+          }
+        },
+      });
+    }
+
     // Try Anthropic streaming first
     if (anthropicKey) {
       try {
@@ -961,7 +1038,7 @@ http.route({
           },
           body: JSON.stringify({
             model: "claude-sonnet-4-6-20250520",
-            max_tokens: 1500,
+            max_tokens: 2000,
             temperature: 0.7,
             stream: true,
             system: systemMessage?.content || "",
@@ -969,16 +1046,83 @@ http.route({
               role: m.role as "user" | "assistant",
               content: m.content,
             })),
+            tools: [
+              {
+                name: "update_profile",
+                description: "Save updates to one or more sections of the user's identity profile. ALWAYS call this tool when modifying any profile data — never describe changes in text without calling this tool. The platform will auto-compile and publish the updates instantly.",
+                input_schema: {
+                  type: "object",
+                  properties: {
+                    updates: {
+                      type: "array",
+                      description: "Public profile section updates",
+                      items: {
+                        type: "object",
+                        properties: {
+                          section: { type: "string", description: "Bundle section path (e.g. profile/about.md, profile/projects.md, projects/my-app/README.md, directives/agent.md)" },
+                          content: { type: "string", description: "Full markdown content for this section (include YAML frontmatter: --- title: '...' ---)" },
+                        },
+                        required: ["section", "content"],
+                      },
+                    },
+                    private_updates: {
+                      type: "array",
+                      description: "Private section updates — not shown on public profile",
+                      items: {
+                        type: "object",
+                        properties: {
+                          section: { type: "string" },
+                          content: { type: "string" },
+                        },
+                        required: ["section", "content"],
+                      },
+                    },
+                    custom_sections: {
+                      type: "array",
+                      description: "Custom sections to create or update (speaking engagements, investment thesis, reading list, etc.)",
+                      items: {
+                        type: "object",
+                        properties: {
+                          id: { type: "string", description: "Slug (lowercase, hyphens)" },
+                          title: { type: "string" },
+                          content: { type: "string", description: "Full markdown content" },
+                        },
+                        required: ["id", "title", "content"],
+                      },
+                    },
+                  },
+                },
+              },
+              {
+                name: "save_memory",
+                description: "Save important facts, preferences, or context about the user for future sessions. Call this when you learn something worth remembering long-term.",
+                input_schema: {
+                  type: "object",
+                  properties: {
+                    memories: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          key: { type: "string", description: "Short descriptive key" },
+                          value: { type: "string", description: "The fact or preference to remember" },
+                          category: { type: "string", enum: ["identity", "work", "preferences", "goals", "context"] },
+                        },
+                        required: ["key", "value", "category"],
+                      },
+                    },
+                  },
+                  required: ["memories"],
+                },
+              },
+            ],
+            tool_choice: { type: "auto" },
           }),
-          signal: AbortSignal.timeout(45_000),
+          signal: AbortSignal.timeout(60_000),
         });
 
         if (upstreamRes.ok && upstreamRes.body) {
-          return sseResponse(transformStream(upstreamRes.body, (parsed) => {
-            if (parsed.type === "content_block_delta" && parsed.delta?.text) return parsed.delta.text;
-            if (parsed.type === "message_stop") return null;
-            return null;
-          }));
+          return sseResponse(transformAnthropicStream(upstreamRes.body));
         }
         // Anthropic failed — fall through to OpenRouter
         await upstreamRes.text();

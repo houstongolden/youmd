@@ -800,12 +800,15 @@ the bundle compiles into:
 
 every time you update a section, the platform auto-compiles and auto-publishes to their public profile at you.md/{username}. updates are instant.
 
-after each exchange where you learn something new, output structured updates:
+after each exchange where you learn something new, call the update_profile tool with the sections you want to save. ALWAYS use the tool — never describe changes in text without actually calling the tool.
+
+example: when the user tells you about their projects, call update_profile with updates containing "profile/projects.md" and the full content. call save_memory with key facts you want to remember across sessions.
+
+if tools are not available, fall back to JSON blocks:
 \`\`\`json
 {"updates": [{"section": "profile/about.md", "content": "---\\ntitle: \\"About\\"\\n---\\n\\n# Name Here\\n\\nBio content here..."}]}
 \`\`\`
 
-you can also emit custom sections in the same response:
 \`\`\`json
 {"custom_sections": [{"id": "tech-stack", "title": "Tech Stack", "content": "## Tech Stack\\n\\n- Frontend: Next.js, TypeScript, Tailwind\\n- Backend: Convex, Vercel\\n- AI: Claude, OpenRouter"}]}
 \`\`\`

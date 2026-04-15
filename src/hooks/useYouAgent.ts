@@ -376,13 +376,25 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     return data.content;
   }, []);
 
+  // Tool calls collected from Anthropic tool_use SSE events during streaming
+  interface AgentToolCall {
+    name: string;
+    input: {
+      updates?: { section: string; content: string }[];
+      private_updates?: { section: string; content: string }[];
+      custom_sections?: { id: string; title: string; content: string }[];
+      memories?: { key: string; value: string; category: string }[];
+    };
+  }
+
   // Streaming LLM call — streams tokens into a display message in real-time
   // Uses requestAnimationFrame batching to avoid excessive React re-renders
+  // Returns both the streamed text AND any tool_use calls emitted by the model
   const callLLMStreaming = useCallback(async (
     msgs: ChatMessage[],
     displayMessageId: string,
     onFirstToken?: () => void,
-  ): Promise<string> => {
+  ): Promise<{ text: string; toolCalls: AgentToolCall[] }> => {
     const streamUrl = CHAT_PROXY_URL.replace("/chat", "/chat/stream");
 
     try {
@@ -396,12 +408,13 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       if (!res.ok || !res.body) {
         // Fall back to non-streaming (DON'T call onFirstToken — let caller handle)
         const fallback = await callLLM(msgs);
-        return fallback;
+        return { text: fallback, toolCalls: [] };
       }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let fullText = "";
+      const toolCalls: AgentToolCall[] = [];
       let buffer = "";
       let notifiedFirstToken = false;
       let rafPending = false;
@@ -430,6 +443,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
               fullText += parsed.text;
               textAdded = true;
             }
+            // Collect complete tool_use blocks emitted by transformAnthropicStream
+            if (parsed.tool_use && typeof parsed.tool_use === "object") {
+              toolCalls.push(parsed.tool_use as AgentToolCall);
+            }
           } catch {
             // Unparseable SSE chunk — skip
           }
@@ -453,11 +470,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         m.id === displayMessageId ? { ...m, content: fullText } : m
       ));
 
-      return fullText || "";
+      return { text: fullText || "", toolCalls };
     } catch {
       // Fall back to non-streaming on any error (DON'T call onFirstToken)
       const fallback = await callLLM(msgs);
-      return fallback;
+      return { text: fallback, toolCalls: [] };
     }
   }, [callLLM]);
 
@@ -906,7 +923,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           }
         };
 
-        const response = await callLLMStreaming(allMessages, initStreamMsgId, onInitFirstToken);
+        const { text: response, toolCalls: initToolCalls } = await callLLMStreaming(allMessages, initStreamMsgId, onInitFirstToken);
 
         if (!initFirstToken) {
           // Fallback: streaming returned nothing, show what we got
@@ -914,7 +931,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           clearSteps();
         }
 
-        const { display, updates } = parseUpdatesFromResponse(response);
+        const { display, updates: jsonUpdates } = parseUpdatesFromResponse(response);
 
         // Clean the streamed display (strip JSON blocks, collapse extra newlines)
         const cleanDisplay = display
@@ -931,6 +948,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         const assistantMsg: ChatMessage = { role: "assistant", content: response };
         setMessages((prev) => [...prev, assistantMsg]);
 
+        // Use tool_use calls if available (Anthropic streaming), else fall back to JSON blocks (OpenRouter)
+        const updates = initToolCalls.length > 0
+          ? initToolCalls.filter(tc => tc.name === "update_profile").flatMap(tc => tc.input.updates || [])
+          : jsonUpdates;
+
         if (updates.length > 0) {
           const sectionNames = updates.map((u) => sectionLabel(u.section)).join(", ");
           setDisplayMessages((prev) => [
@@ -942,6 +964,21 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             },
           ]);
           saveUpdates(updates);
+        }
+
+        // Save memories from tool calls (init path)
+        const initMemories = initToolCalls.filter(tc => tc.name === "save_memory").flatMap(tc => tc.input.memories || []);
+        if (initMemories.length > 0 && user?.id) {
+          saveMemories({
+            clerkId: user.id,
+            memories: initMemories.map((m) => ({
+              category: m.category,
+              content: `${m.key}: ${m.value}`,
+              source: "you-agent",
+              tags: [m.category],
+              sessionId: sessionIdRef.current,
+            })),
+          }).catch(() => { /* non-fatal */ });
         }
 
         setTimeout(() => clearSteps(), 1500);
@@ -959,7 +996,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }
 
     initConversation();
-  }, [initialized, sessionRestored, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, callLLMStreaming, saveUpdates, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps]);
+  }, [initialized, sessionRestored, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, callLLMStreaming, saveUpdates, saveMemories, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps]);
 
   // Slash commands
   const handleSlashCommand = useCallback(
@@ -1628,7 +1665,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       };
 
       // Stream response — thinking stays visible until first token
-      const response = await callLLMStreaming(updatedMessages, streamMsgId, onFirstToken);
+      const { text: response, toolCalls } = await callLLMStreaming(updatedMessages, streamMsgId, onFirstToken);
 
       // If no tokens came through (fallback path), clean up and show response
       if (!firstTokenReceived) {
@@ -1644,7 +1681,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       }
 
       // Strip JSON blocks from the streamed display (they stream in raw during typing)
-      const { display, updates } = parseUpdatesFromResponse(response);
+      const { display, updates: jsonUpdates } = parseUpdatesFromResponse(response);
 
       // Clean display text: strip JSON blocks + collapse excessive blank lines
       const cleanDisplay = display
@@ -1669,9 +1706,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       // (at streamMsgId). Do NOT add a duplicate here. Only add system notices
       // for updates, memories, etc.
 
+      // Use structured tool_use calls if available (Anthropic path), else fall back to JSON block parsing (OpenRouter)
+      const updates = toolCalls.length > 0
+        ? toolCalls.filter(tc => tc.name === "update_profile").flatMap(tc => tc.input.updates || [])
+        : jsonUpdates;
+
       // LYING DETECTION: if the assistant claimed past-tense actions but didn't
-      // emit any updates, warn the user. This catches the "done. created..." lie.
-      if (updates.length === 0) {
+      // actually emit any updates via tool_use OR JSON blocks, warn the user.
+      if (updates.length === 0 && toolCalls.length === 0) {
         const lieIndicators = [
           /\b(done|created|added|scaffolded|updated|saved|wrote|generated|set\s*up|infrastructure\s+is\s+now|properly\s+documented|i'?ve\s+(added|created|updated|scaffolded))\b/i,
           /\bproject\s+(subdirectories|infrastructure)\b.*\b(now|created|done)\b/i,
@@ -1681,7 +1723,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           newDisplayMsgs.push({
             id: crypto.randomUUID(),
             role: "system-notice",
-            content: `[warning: agent claimed actions but did NOT emit any file updates. nothing was actually written. ask it to "show the json updates block" or do it yourself in the files tab.]`,
+            content: `[warning: agent claimed actions but did NOT save any updates. nothing was actually written.]`,
           });
         }
       }
@@ -1726,38 +1768,31 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
-      // Handle private updates from agent
-      const privUpdates = parsePrivateUpdatesFromResponse(response);
-      if (privUpdates.length > 0 && user?.id && userProfile?._id) {
+      // Handle custom sections from tool_use calls (Anthropic path)
+      const toolCustomSections = toolCalls
+        .filter(tc => tc.name === "update_profile")
+        .flatMap(tc => tc.input.custom_sections || []);
+
+      // Handle private updates from tool_use calls (Anthropic path)
+      const toolPrivateUpdates = toolCalls
+        .filter(tc => tc.name === "update_profile")
+        .flatMap(tc => tc.input.private_updates || []);
+
+      // Handle private updates from update_profile tool calls (Anthropic path)
+      if (toolPrivateUpdates.length > 0 && user?.id && userProfile?._id) {
         const privStepId = addStep("saving private context");
-        for (const pu of privUpdates) {
+        for (const pu of toolPrivateUpdates) {
           try {
-            if (pu.field === "privateNotes" && pu.content) {
-              await updatePrivateContext({
-                clerkId: user.id,
-                profileId: userProfile._id,
-                privateNotes: pu.content,
-              });
-              newDisplayMsgs.push({
-                id: crypto.randomUUID(),
-                role: "system-notice",
-                content: "[saved private note]",
-              });
-            } else if (pu.field === "privateProjects" && pu.action === "add" && pu.project) {
-              const existing = (privateContext as Record<string, unknown> | null);
-              const existingProjects = (existing?.privateProjects as Array<Record<string, string>>) || [];
-              const updatedProjects = [...existingProjects, pu.project];
-              await updatePrivateContext({
-                clerkId: user.id,
-                profileId: userProfile._id,
-                privateProjects: updatedProjects,
-              });
-              newDisplayMsgs.push({
-                id: crypto.randomUUID(),
-                role: "system-notice",
-                content: `[saved private project: ${pu.project.name || "unnamed"}]`,
-              });
-            }
+            await updatePrivateContext({
+              clerkId: user.id,
+              profileId: userProfile._id,
+              privateNotes: pu.content,
+            });
+            newDisplayMsgs.push({
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: "[saved private note]",
+            });
           } catch (err) {
             newDisplayMsgs.push({
               id: crypto.randomUUID(),
@@ -1769,8 +1804,56 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         completeStep(privStepId);
       }
 
-      // Handle memory saves from agent
-      const memorySaves = parseMemorySavesFromResponse(response);
+      // Handle private updates from JSON blocks (OpenRouter fallback path only)
+      if (toolCalls.length === 0) {
+        const privUpdates = parsePrivateUpdatesFromResponse(response);
+        if (privUpdates.length > 0 && user?.id && userProfile?._id) {
+          const privStepId = addStep("saving private context");
+          for (const pu of privUpdates) {
+            try {
+              if (pu.field === "privateNotes" && pu.content) {
+                await updatePrivateContext({
+                  clerkId: user.id,
+                  profileId: userProfile._id,
+                  privateNotes: pu.content,
+                });
+                newDisplayMsgs.push({
+                  id: crypto.randomUUID(),
+                  role: "system-notice",
+                  content: "[saved private note]",
+                });
+              } else if (pu.field === "privateProjects" && pu.action === "add" && pu.project) {
+                const existing = (privateContext as Record<string, unknown> | null);
+                const existingProjects = (existing?.privateProjects as Array<Record<string, string>>) || [];
+                const updatedProjects = [...existingProjects, pu.project];
+                await updatePrivateContext({
+                  clerkId: user.id,
+                  profileId: userProfile._id,
+                  privateProjects: updatedProjects,
+                });
+                newDisplayMsgs.push({
+                  id: crypto.randomUUID(),
+                  role: "system-notice",
+                  content: `[saved private project: ${pu.project.name || "unnamed"}]`,
+                });
+              }
+            } catch (err) {
+              newDisplayMsgs.push({
+                id: crypto.randomUUID(),
+                role: "system-notice",
+                content: `[failed to save private content: ${err instanceof Error ? err.message : "unknown error"}]`,
+              });
+            }
+          }
+          completeStep(privStepId);
+        }
+      }
+
+      // Handle memory saves — tool_use calls (Anthropic) OR JSON block fallback (OpenRouter)
+      const toolMemories = toolCalls.filter(tc => tc.name === "save_memory").flatMap(tc => tc.input.memories || []);
+      const memorySaves = toolMemories.length > 0
+        ? toolMemories.map((m) => ({ category: m.category, content: `${m.key}: ${m.value}`, tags: [m.category] as string[] }))
+        : parseMemorySavesFromResponse(response).map((ms) => ({ category: ms.category, content: ms.content, tags: ms.tags || [] }));
       if (memorySaves.length > 0 && user?.id) {
         const memStepId = addStep("saving memories", `${memorySaves.length} ${memorySaves.length === 1 ? "memory" : "memories"}`);
         try {
@@ -1822,8 +1905,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
-      // Handle custom sections from agent
-      const customSections = parseCustomSectionsFromResponse(response);
+      // Handle custom sections — tool_use first, then JSON block fallback
+      const customSections = toolCustomSections.length > 0
+        ? toolCustomSections
+        : parseCustomSectionsFromResponse(response);
       if (customSections.length > 0 && user?.id && userProfile?._id) {
         const csStepId = addStep("saving custom sections", `${customSections.length} section${customSections.length > 1 ? "s" : ""}`);
         try {
