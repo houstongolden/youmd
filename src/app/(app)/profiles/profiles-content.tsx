@@ -5,10 +5,9 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight, MapPin, LayoutGrid, List } from "lucide-react";
 import AsciiAvatar from "@/components/AsciiAvatar";
 import FadeUp from "@/components/landing/FadeUp";
-// PixelYOU removed — too large for nav headers, use text logo instead
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -27,9 +26,9 @@ interface DirectoryEntry {
   updatedAt: number | null;
 }
 
-/* ── Profile Card ─────────────────────────────────────────── */
+/* ── List Card ────────────────────────────────────────────── */
 
-function ProfileCard({ entry, index }: { entry: DirectoryEntry; index: number }) {
+function ProfileListCard({ entry, index }: { entry: DirectoryEntry; index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -105,7 +104,7 @@ function ProfileCard({ entry, index }: { entry: DirectoryEntry; index: number })
                 {entry.bio}
               </p>
             )}
-            {/* Meta line — location, projects, now */}
+            {/* Meta line */}
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               {entry.location && (
                 <span className="flex items-center gap-1 text-[hsl(var(--text-secondary))]/60 font-mono text-[10px]">
@@ -122,7 +121,6 @@ function ProfileCard({ entry, index }: { entry: DirectoryEntry; index: number })
                   now: {entry.nowItems[0]}
                 </span>
               )}
-              {/* Social link icons */}
               {Object.entries(entry.links).filter(([, url]) => url).length > 0 && (
                 <span className="flex items-center gap-1.5">
                   {entry.links.github && (
@@ -144,60 +142,180 @@ function ProfileCard({ entry, index }: { entry: DirectoryEntry; index: number })
   );
 }
 
+/* ── Grid Card ────────────────────────────────────────────── */
+
+function ProfileGridCard({ entry, index }: { entry: DirectoryEntry; index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.05 + index * 0.03 }}
+    >
+      <Link
+        href={`/${entry.username}`}
+        className="flex flex-col bg-[hsl(var(--raised))] border border-[hsl(var(--border))] group hover:border-[hsl(var(--accent))]/30 transition-all duration-200 p-3 h-full"
+        style={{ borderRadius: "2px" }}
+      >
+        {/* Avatar + status row */}
+        <div className="flex items-start justify-between mb-3">
+          <div
+            className="w-12 h-12 overflow-hidden border border-[hsl(var(--border))] group-hover:border-[hsl(var(--accent))]/30 transition-colors bg-[hsl(var(--bg))] relative shrink-0"
+            style={{ borderRadius: "2px" }}
+          >
+            {entry.avatarUrl ? (
+              <>
+                <AsciiAvatar
+                  src={entry.avatarUrl}
+                  cols={30}
+                  canvasWidth={48}
+                  className="w-full h-full"
+                />
+                <img
+                  src={entry.avatarUrl}
+                  alt={entry.name || entry.username}
+                  className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  loading="lazy"
+                />
+              </>
+            ) : (
+              <span className="w-full h-full flex items-center justify-center font-mono text-[16px] text-[hsl(var(--accent))]/60">
+                {(entry.name || entry.username).charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className={`inline-block w-1.5 h-1.5 rounded-full ${
+              entry.isClaimed ? "bg-[hsl(var(--success))]/60" : "bg-[hsl(var(--text-secondary))]/20"
+            }`} />
+            {!entry.isClaimed && (
+              <span className="font-mono text-[7px] text-[hsl(var(--text-secondary))]/40 border border-[hsl(var(--border))] px-1" style={{ borderRadius: "2px" }}>
+                unclaimed
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Name + username */}
+        <h3 className="text-[hsl(var(--text-primary))] font-mono text-[12px] font-medium tracking-tight truncate mb-0.5">
+          {entry.name || `@${entry.username}`}
+        </h3>
+        {entry.name && (
+          <p className="text-[hsl(var(--text-secondary))] opacity-40 font-mono text-[9px] truncate mb-1">
+            @{entry.username}
+          </p>
+        )}
+
+        {/* Tagline or bio */}
+        {(entry.tagline || entry.bio) && (
+          <p className="text-[hsl(var(--text-secondary))] text-[11px] leading-snug line-clamp-2 mb-2 flex-1">
+            {entry.tagline || entry.bio}
+          </p>
+        )}
+        {!entry.tagline && !entry.bio && <div className="flex-1" />}
+
+        {/* Footer meta */}
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-[hsl(var(--border))]/50">
+          <div className="flex items-center gap-2 flex-wrap">
+            {entry.location && (
+              <span className="flex items-center gap-0.5 text-[hsl(var(--text-secondary))]/50 font-mono text-[9px]">
+                <MapPin size={8} /> {entry.location}
+              </span>
+            )}
+            {entry.projectCount > 0 && (
+              <span className="text-[hsl(var(--accent))]/60 font-mono text-[9px]">
+                {entry.projectCount}p
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            {entry.links.github && (
+              <span className="text-[hsl(var(--text-secondary))]/30 font-mono text-[8px]">gh</span>
+            )}
+            {(entry.links.x || entry.links["x/twitter"]) && (
+              <span className="text-[hsl(var(--text-secondary))]/30 font-mono text-[8px]">x</span>
+            )}
+            {entry.links.linkedin && (
+              <span className="text-[hsl(var(--text-secondary))]/30 font-mono text-[8px]">li</span>
+            )}
+            <ArrowRight
+              size={10}
+              className="text-[hsl(var(--text-secondary))]/20 group-hover:text-[hsl(var(--accent))] transition-colors ml-0.5"
+            />
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
 /* ── Main ─────────────────────────────────────────────────── */
 
 export function ProfilesDirectoryContent() {
   const profiles = useQuery(api.profiles.listAll);
   const legacyUsers = useQuery(api.users.listAllLegacy);
 
-  const entries: DirectoryEntry[] = [];
-
-  if (profiles) {
-    for (const p of profiles) {
-      const youJson = p.youJson as Record<string, any> | undefined;
-      const bio = youJson?.identity?.bio?.short || youJson?.identity?.bio?.medium || "";
-      const projects = youJson?.projects as Array<Record<string, string>> | undefined;
-      const now = youJson?.now?.focus as string[] | undefined;
-      const links = (youJson?.links || {}) as Record<string, string>;
-      entries.push({
-        username: p.username,
-        name: p.name ?? null,
-        tagline: p.tagline ?? youJson?.identity?.tagline ?? null,
-        bio: bio ? (bio.length > 120 ? bio.slice(0, 120) + "..." : bio) : null,
-        location: p.location ?? youJson?.identity?.location ?? null,
-        avatarUrl: p.avatarUrl ?? null,
-        isClaimed: p.isClaimed,
-        source: "profiles",
-        projectCount: projects?.length ?? 0,
-        nowItems: (now || []).slice(0, 2),
-        links,
-        updatedAt: ((p as Record<string, unknown>).updatedAt as number | undefined) ?? ((p as Record<string, unknown>).createdAt as number | undefined) ?? null,
-      });
-    }
-  }
-
-  if (legacyUsers) {
-    for (const u of legacyUsers) {
-      entries.push({
-        username: u.username,
-        name: u.displayName ?? null,
-        tagline: null,
-        bio: null,
-        location: null,
-        avatarUrl: null,
-        isClaimed: true,
-        source: "legacy",
-        projectCount: 0,
-        nowItems: [],
-        links: {},
-        updatedAt: null,
-      });
-    }
-  }
-
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "verified" | "has-projects">("all");
+  const [filter, setFilter] = useState<"all" | "verified" | "has-projects" | "has-portrait">("all");
   const [sort, setSort] = useState<"recent" | "projects" | "alpha">("recent");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+
+  // Build entries — dedup by username (profiles source wins over legacy)
+  const entries: DirectoryEntry[] = useMemo(() => {
+    const seen = new Set<string>();
+    const result: DirectoryEntry[] = [];
+
+    if (profiles) {
+      for (const p of profiles) {
+        if (seen.has(p.username)) continue;
+        seen.add(p.username);
+
+        const youJson = p.youJson as Record<string, any> | undefined;
+        const bio = youJson?.identity?.bio?.short || youJson?.identity?.bio?.medium || "";
+        const projects = youJson?.projects as Array<Record<string, string>> | undefined;
+        const now = youJson?.now?.focus as string[] | undefined;
+        const links = (youJson?.links || {}) as Record<string, string>;
+
+        result.push({
+          username: p.username,
+          name: p.name ?? null,
+          tagline: p.tagline ?? youJson?.identity?.tagline ?? null,
+          bio: bio ? (bio.length > 160 ? bio.slice(0, 160) + "..." : bio) : null,
+          location: p.location ?? youJson?.identity?.location ?? null,
+          avatarUrl: p.avatarUrl ?? null,
+          isClaimed: p.isClaimed,
+          source: "profiles",
+          projectCount: projects?.length ?? 0,
+          nowItems: (now || []).slice(0, 2),
+          links,
+          updatedAt: ((p as Record<string, unknown>).updatedAt as number | undefined) ?? ((p as Record<string, unknown>).createdAt as number | undefined) ?? null,
+        });
+      }
+    }
+
+    if (legacyUsers) {
+      for (const u of legacyUsers) {
+        if (seen.has(u.username)) continue;
+        seen.add(u.username);
+
+        result.push({
+          username: u.username,
+          name: u.displayName ?? null,
+          tagline: null,
+          bio: null,
+          location: null,
+          avatarUrl: null,
+          isClaimed: true,
+          source: "legacy",
+          projectCount: 0,
+          nowItems: [],
+          links: {},
+          updatedAt: null,
+        });
+      }
+    }
+
+    return result;
+  }, [profiles, legacyUsers]);
 
   const filteredEntries = useMemo(() => {
     let result = [...entries];
@@ -207,9 +325,11 @@ export function ProfilesDirectoryContent() {
       result = result.filter((e) => e.isClaimed);
     } else if (filter === "has-projects") {
       result = result.filter((e) => e.projectCount > 0);
+    } else if (filter === "has-portrait") {
+      result = result.filter((e) => !!e.avatarUrl);
     }
 
-    // Search across name, tagline, location, username
+    // Search across name, username, tagline, bio, location
     const q = search.trim().toLowerCase();
     if (q) {
       result = result.filter(
@@ -217,6 +337,7 @@ export function ProfilesDirectoryContent() {
           e.username.toLowerCase().includes(q) ||
           (e.name && e.name.toLowerCase().includes(q)) ||
           (e.tagline && e.tagline.toLowerCase().includes(q)) ||
+          (e.bio && e.bio.toLowerCase().includes(q)) ||
           (e.location && e.location.toLowerCase().includes(q))
       );
     }
@@ -239,10 +360,10 @@ export function ProfilesDirectoryContent() {
 
   const isLoading = profiles === undefined || legacyUsers === undefined;
   const claimedCount = entries.filter((e) => e.isClaimed).length;
+  const portraitCount = entries.filter((e) => !!e.avatarUrl).length;
 
   return (
     <div className="min-h-[100dvh] bg-[hsl(var(--bg))]">
-      {/* Content — SiteNav handles navigation */}
       <main className="pt-8 pb-8 px-6">
         <div className="max-w-[680px] mx-auto">
           {/* Header */}
@@ -255,18 +376,17 @@ export function ProfilesDirectoryContent() {
                 &gt; ls /profiles
               </h1>
               <p className="text-[hsl(var(--text-secondary))] text-[13px] leading-relaxed max-w-md">
-                Identity surfaces published to the network. Each readable by any
-                agent.
+                Identity surfaces published to the network. Each readable by any agent.
               </p>
               {!isLoading && (
                 <p className="text-[hsl(var(--text-secondary))]/50 font-mono text-[10px] mt-3">
-                  {entries.length} profiles {"\u00B7"} {claimedCount} claimed
+                  {entries.length} profiles {"\u00B7"} {claimedCount} claimed {"\u00B7"} {portraitCount} with portrait
                 </p>
               )}
             </div>
           </FadeUp>
 
-          {/* Search + Filter + Sort */}
+          {/* Controls */}
           {!isLoading && entries.length > 0 && (
             <div className="mb-6 space-y-3">
               {/* Search input */}
@@ -282,30 +402,31 @@ export function ProfilesDirectoryContent() {
                   name="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="grep name, tagline, location..."
-                  aria-label="search profiles by name, tagline, or location"
+                  placeholder="grep name, bio, tagline, location..."
+                  aria-label="search profiles"
                   autoComplete="off"
                   spellCheck={false}
-                  // Cycle 62: bumped from py-2 (38px tall) to min-h-[44px] for WCAG touch target
                   className="w-full bg-[hsl(var(--raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-primary))] font-mono text-[12px] min-h-[44px] py-2 pl-7 pr-3 placeholder:text-[hsl(var(--text-secondary))]/30 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors caret-[hsl(var(--accent))]"
                   style={{ borderRadius: "2px" }}
                 />
               </div>
 
-              {/* Filter buttons + Sort dropdown */}
+              {/* Filters + Sort + View toggle */}
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-1.5">
+                {/* Filter buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {([
                     { key: "all", label: "all" },
-                    { key: "verified", label: "verified" },
+                    { key: "verified", label: "claimed" },
                     { key: "has-projects", label: "has-projects" },
+                    { key: "has-portrait", label: "has-portrait" },
                   ] as const).map((f) => (
                     <button
                       key={f.key}
                       type="button"
                       onClick={() => setFilter(f.key)}
                       aria-pressed={filter === f.key}
-                      // Cycle 62: bumped to min-h-[44px] (was 27px tall, half the WCAG min)
+                      aria-label={`filter by ${f.label}`}
                       className={`font-mono text-[10px] inline-flex items-center justify-center min-h-[44px] px-3 border transition-colors ${
                         filter === f.key
                           ? "border-[hsl(var(--accent))]/60 text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
@@ -318,7 +439,8 @@ export function ProfilesDirectoryContent() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                {/* Sort + view toggle */}
+                <div className="flex items-center gap-2">
                   <span className="text-[hsl(var(--text-secondary))]/40 font-mono text-[10px] uppercase tracking-wider">
                     sort
                   </span>
@@ -326,7 +448,6 @@ export function ProfilesDirectoryContent() {
                     value={sort}
                     onChange={(e) => setSort(e.target.value as "recent" | "projects" | "alpha")}
                     aria-label="sort profiles"
-                    // Cycle 62: bumped to min-h-[44px] (was 25px tall) + added aria-label
                     className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] font-mono text-[10px] min-h-[44px] px-2 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30"
                     style={{ borderRadius: "2px" }}
                   >
@@ -334,6 +455,36 @@ export function ProfilesDirectoryContent() {
                     <option value="projects">most projects</option>
                     <option value="alpha">alphabetical</option>
                   </select>
+
+                  {/* View mode toggle */}
+                  <div className="flex items-center border border-[hsl(var(--border))]" style={{ borderRadius: "2px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("list")}
+                      aria-pressed={viewMode === "list"}
+                      aria-label="list view"
+                      className={`inline-flex items-center justify-center min-h-[44px] w-10 transition-colors ${
+                        viewMode === "list"
+                          ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
+                          : "text-[hsl(var(--text-secondary))]/40 hover:text-[hsl(var(--accent))]"
+                      }`}
+                    >
+                      <List size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("grid")}
+                      aria-pressed={viewMode === "grid"}
+                      aria-label="grid view"
+                      className={`inline-flex items-center justify-center min-h-[44px] w-10 border-l border-[hsl(var(--border))] transition-colors ${
+                        viewMode === "grid"
+                          ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
+                          : "text-[hsl(var(--text-secondary))]/40 hover:text-[hsl(var(--accent))]"
+                      }`}
+                    >
+                      <LayoutGrid size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -379,10 +530,10 @@ export function ProfilesDirectoryContent() {
           )}
 
           {/* Profile list */}
-          {!isLoading && filteredEntries.length > 0 && (
+          {!isLoading && filteredEntries.length > 0 && viewMode === "list" && (
             <div>
               {filteredEntries.map((entry, i) => (
-                <ProfileCard
+                <ProfileListCard
                   key={`${entry.source}-${entry.username}`}
                   entry={entry}
                   index={i}
@@ -391,10 +542,22 @@ export function ProfilesDirectoryContent() {
             </div>
           )}
 
+          {/* Profile grid */}
+          {!isLoading && filteredEntries.length > 0 && viewMode === "grid" && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {filteredEntries.map((entry, i) => (
+                <ProfileGridCard
+                  key={`${entry.source}-${entry.username}`}
+                  entry={entry}
+                  index={i}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
-      {/* Page-level footer landmark — outside main so it gets contentinfo role */}
+      {/* Footer */}
       {!isLoading && (
         <footer className="px-6 pb-20">
           <div className="max-w-[680px] mx-auto">
@@ -404,7 +567,6 @@ export function ProfilesDirectoryContent() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
-              {/* Cycle 62: bumped both footer links from 14px tall to min-h-[44px] */}
               <Link
                 href="/create"
                 className="inline-flex items-center min-h-[44px] px-3 text-[hsl(var(--accent))] font-mono text-[11px] hover:opacity-80 transition-opacity mr-2"

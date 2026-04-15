@@ -1,5 +1,24 @@
 # You.md — Changelog
 
+## 2026-04-15 — Profiles Directory Upgrade + Seeding Plan
+
+### /profiles Page
+- **Deduplication:** entries now deduplicated by username in frontend `useMemo` (profiles source wins over legacy); `listAllLegacy` already deduplicates at backend
+- **Grid view:** added `ProfileGridCard` component + list/grid toggle (List/LayoutGrid icons) — state persists in session
+- **Search expanded:** bio text now included in search filter (was: name, tagline, location only)
+- **New filter:** `has-portrait` filter added alongside all/claimed/has-projects
+- **Stats line:** header now shows portrait count alongside profile + claimed counts
+
+### Seeding Plan
+- Created `project-context/SEEDING_PLAN.md` with:
+  - 3-tier target list (Tier 1: 100 AI leaders, Tier 2: 200, Tier 3: 500+)
+  - 9-stage pipeline per profile (Perplexity identity → X enrichment → GitHub → website → LinkedIn → compile → ASCII portrait → quality review → publish)
+  - Data sources + rate limits (GitHub 60/hr, Apify for LinkedIn, Grok-3-mini for X)
+  - Quality standards table per tier
+  - Deduplication rules
+  - Batch sizes + pacing guide
+  - SEO/AEO optimization specs (JSON-LD Person schema, OG, canonical URL, sitemap)
+
 ## 2026-04-14 — Agent Tool_Use Fix + Stale Build Cleanup
 
 ### Agent Harness — Proper Tool Execution (CRITICAL FIX)
