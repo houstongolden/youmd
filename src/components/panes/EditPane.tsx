@@ -11,6 +11,7 @@ type EditSubTab = "files" | "json" | "sources";
 interface EditPaneProps {
   userId: Id<"users">;
   username: string;
+  isWritingFiles?: boolean;
 }
 
 const SUB_TABS: { key: EditSubTab; label: string }[] = [
@@ -19,7 +20,7 @@ const SUB_TABS: { key: EditSubTab; label: string }[] = [
   { key: "sources", label: "sources" },
 ];
 
-export function EditPane({ userId, username }: EditPaneProps) {
+export function EditPane({ userId, username, isWritingFiles }: EditPaneProps) {
   const [subTab, setSubTab] = useState<EditSubTab>("files");
 
   return (
@@ -48,7 +49,7 @@ export function EditPane({ userId, username }: EditPaneProps) {
 
       {/* Active sub-pane */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-        {subTab === "files" && <FilesPane userId={userId} />}
+        {subTab === "files" && <FilesPane userId={userId} isWritingFiles={isWritingFiles} />}
         {subTab === "json" && <JsonPane userId={userId} />}
         {subTab === "sources" && <SourcesPane userId={userId} username={username} />}
       </div>

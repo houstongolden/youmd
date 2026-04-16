@@ -86,8 +86,13 @@ export function DashboardContent() {
     onPaneSwitch: (pane) => {
       setRightPane(pane);
       setMobileView("preview");
+      setPanelOpen(true); // auto-open the panel when agent switches to it
     },
   });
+
+  const isWritingFiles = agent.progressSteps.some(
+    (s) => s.status === "running" && s.label === "writing profile files"
+  );
 
   // Auto-create Convex user for /create flow (session cookie present),
   // or redirect to /initialize for /sign-up flow users
@@ -348,7 +353,7 @@ export function DashboardContent() {
                     <PortraitPane username={username} ownerId={convexUser._id} />
                   )}
                   {rightPane === "edit" && (
-                    <EditPane userId={convexUser._id} username={username} />
+                    <EditPane userId={convexUser._id} username={username} isWritingFiles={isWritingFiles} />
                   )}
                   {rightPane === "share" && user?.id && (
                     <SharePane

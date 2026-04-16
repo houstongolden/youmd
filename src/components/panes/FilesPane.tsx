@@ -11,6 +11,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 
 interface FilesPaneProps {
   userId: Id<"users">;
+  isWritingFiles?: boolean;
 }
 
 function getExtLabel(path: string): string {
@@ -501,7 +502,7 @@ function NewDirectoryInput({
 
 // ── Main ────────────────────────────────────────────────────────────────
 
-export function FilesPane({ userId }: FilesPaneProps) {
+export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const { user } = useUser();
   const clerkId = user?.id;
   const latestBundle = useQuery(api.bundles.getLatestBundle, clerkId && userId ? { clerkId, userId } : "skip");
@@ -856,6 +857,24 @@ export function FilesPane({ userId }: FilesPaneProps) {
           )}
         </div>
       </div>
+
+      {/* Agent writing indicator */}
+      {isWritingFiles && (
+        <div className="px-4 py-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] flex items-center gap-2 shrink-0">
+          <span className="flex gap-[3px] items-center">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="block w-[4px] h-[4px] rounded-full bg-[hsl(var(--accent))]"
+                style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
+              />
+            ))}
+          </span>
+          <span className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-80">
+            agent writing files...
+          </span>
+        </div>
+      )}
 
       {/* Mobile: full-width file viewer when selected */}
       <div className={`flex-1 min-h-0 ${showMobileViewer ? "hidden md:flex" : "flex"} md:flex`}>
