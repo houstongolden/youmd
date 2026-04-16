@@ -45,6 +45,20 @@ const BUNDLED_SKILLS: SkillEntry[] = [
     scope: "shared",
     identityFields: ["preferences.agent", "directives.agent"],
   },
+  {
+    name: "proactive-context-fill",
+    description: "Detect thin identity context and offer safe additive improvements",
+    version: "1.0.0",
+    scope: "shared",
+    identityFields: ["profile.projects", "profile.about", "preferences.agent", "voice.overall"],
+  },
+  {
+    name: "you-logs",
+    description: "View recent agent activity and identity access logs inline",
+    version: "1.0.0",
+    scope: "shared",
+    identityFields: [],
+  },
 ];
 
 function ScopeTag({ scope }: { scope: SkillEntry["scope"] }) {
@@ -236,11 +250,11 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
             </li>
             <li>
               • <span className="text-[hsl(var(--text-primary))] opacity-80">claude-md-generator</span>:
-              auto-creates CLAUDE.md for new repos with your context
+              bootstraps repo-visible agent instructions with your context
             </li>
             <li>
               • <span className="text-[hsl(var(--text-primary))] opacity-80">proactive-context-fill</span>:
-              agents detect empty sections and offer to fill them
+              detects thin context and proposes safe additive improvements
             </li>
           </ul>
         </div>
@@ -354,7 +368,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
         <PaneSectionLabel>cli quick start</PaneSectionLabel>
         <div className="space-y-2">
           <CommandRow command="youmd skill install all" description="install all bundled skills" />
-          <CommandRow command="youmd skill init-project" description="CLAUDE.md + project-context/ + .claude/skills/" />
+          <CommandRow command="youmd skill init-project" description="AGENTS/CLAUDE bootstrap + project-context/ + .you/ + links" />
           <CommandRow command="youmd skill link claude" description="link skills to Claude Code" />
           <CommandRow command="youmd skill sync" description="re-render skills with latest identity" />
           <CommandRow command="youmd skill create" description="scaffold a new custom skill" />

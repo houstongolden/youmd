@@ -120,6 +120,17 @@ PRD Version: 2.3
 - [x] Hardened generated MCP config to avoid bare `npx youmd mcp` package-name collisions
 - [x] Updated user-facing MCP install copy/docs to use the safe published-package form
 
+### Agent Context Bootstrap Overhaul (April 16)
+- [x] `youmd skill init-project` now supports `auto`, `additive`, `zero-touch`, and `scaffold` modes
+- [x] Added first-class `AGENTS.md` support with one managed additive bootstrap block for existing repos
+- [x] Added generated `.you/` layer with `AGENT.md`, `STACK-MAP.md`, and supplemental `.you/project-context/`
+- [x] Canonical `project-context/` scaffolding now fills missing files individually, including `PROMPTS.md`
+- [x] `youmd init` now offers repo bootstrap even when mature repos already have `CLAUDE.md` / `project-context/`
+- [x] Bundled skill truth pass completed across CLI catalog, backend seed data, dashboard UI, docs, and README
+- [x] Bundled skill set expanded and reconciled to 6 shipped skills: `claude-md-generator`, `project-context-init`, `voice-sync`, `meta-improve`, `proactive-context-fill`, `you-logs`
+- [x] Existing local skill catalogs now auto-merge new bundled defaults on upgrade instead of staying stuck on the old 4-skill set
+- [x] Smoke-tested `youmd skill init-project` in fresh and existing repos to verify scaffold vs additive behavior
+
 ### CLI Overhaul (March 24-25)
 - [x] 20 commands (init, login, register, whoami, status, build, publish, add, diff, export, preview, chat, link, keys, memories, private, project, pull, push, sync)
 - [x] Conversational AI onboarding with BrailleSpinners
@@ -177,17 +188,9 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 
 ## IN PROGRESS
 
-- [ ] Safe agent-context integration overhaul
-- [ ] Run a truth pass across skill catalog, seeded backend skill records, dashboard skill UI, CLI help, and README so one bundled-skill source of truth wins
-- [ ] Add `AGENTS.md` first-class support to `youmd skill init-project`
-- [ ] Add init-project modes: `auto`, `additive`, `zero-touch`, `scaffold`
-- [ ] Introduce `.you/` supplemental project context with `.youmd` compatibility
-- [ ] Replace full `CLAUDE.md` append behavior with one standard managed bootstrap block for existing repos
-- [ ] Add `PROMPTS.md` to project-context scaffolding and ongoing maintenance model
-- [ ] Teach generated instructions to require reading `project-context/` and updating TODO / FEATURES / CHANGELOG / feature-requests / PROMPTS as part of done
-- [ ] Add repo classification preview plus approval gate for non-additive instruction-file edits
+- [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
 - [ ] Design global `~/.you/` plus repo-local `.you/` ownership model and migration path from `.youmd`
-- [ ] Incorporate the validated cross-agent stack-sync pattern: shared instruction layer, shared skill layer, portable overlap settings, and persistent stack inventory
+- [ ] Extend the validated cross-agent stack-sync pattern beyond repo bootstrap into global/shared instruction mirroring, portable overlap settings, and persistent stack inventory
 
 ---
 
@@ -197,9 +200,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Chat context compaction (Claude Code-style)
 - [ ] Memory lifecycle improvements
 - [ ] Next.js 16.2.2 upgrade evaluation
-- [ ] Audit bundled skills and onboarding copy so the packaged product explicitly sells and installs the agent-operating-system workflow
-- [ ] Study gstack setup/team-mode patterns and borrow the useful structure for You.md repo bootstrap
-- [ ] Audit which You.md features are actually real in code/API today versus docs/UI marketing or placeholder claims
+- [ ] Study gstack setup/team-mode patterns and borrow the useful structure for global You.md bootstrap and team rollout
 
 ### Agent Intelligence Polish
 - [ ] You Agent personality tuning (more wit, less generic)
@@ -217,7 +218,6 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 ### CLI Polish
 - [ ] Reveal/copy existing API key (instead of revoke-to-create-new)
 - [ ] Better error messages when auth fails
-- [ ] youmd preview (local dev server) — currently placeholder
 - [ ] Standalone binary (bun build --compile)
 - [ ] curl installer (you.md/install.sh)
 

@@ -221,53 +221,50 @@ export async function initCommand(options: {
 
   // After everything, offer to set up skills for this project
   if (projectCtx) {
-    const claudeMdPath = path.join(projectCtx.root, "CLAUDE.md");
-    const pcDir = path.join(projectCtx.root, "project-context");
-    const needsSkills = !fs.existsSync(claudeMdPath) || !fs.existsSync(pcDir);
+    const youDir = path.join(projectCtx.root, ".you");
+    const hasBootstrap = fs.existsSync(youDir);
+    const rl2 = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
 
-    if (needsSkills) {
-      const rl2 = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-      });
+    const prompt = hasBootstrap
+      ? `\n  refresh repo agent bootstrap? (managed AGENTS/CLAUDE block + project-context/ + .you/ + links) [Y/n]: `
+      : `\n  set up repo agent bootstrap? (managed AGENTS/CLAUDE block + project-context/ + .you/ + links) [Y/n]: `;
 
-      const skillAnswer = await new Promise<string>((resolve) => {
-        rl2.question(
-          chalk.dim(`\n  set up agent skills? (CLAUDE.md + project-context/ + .claude/skills/) [Y/n]: `),
-          (a) => resolve(a.trim())
-        );
-      });
+    const skillAnswer = await new Promise<string>((resolve) => {
+      rl2.question(chalk.dim(prompt), (a) => resolve(a.trim()));
+    });
 
-      rl2.close();
+    rl2.close();
 
-      if (!skillAnswer || skillAnswer.toLowerCase() !== "n") {
-        // Auto-install all bundled skills before init-project
-        const catalog = readSkillCatalog();
-        const toInstall = catalog.skills.filter((s) => !s.installed);
-        if (toInstall.length > 0) {
-          console.log(chalk.dim(`\n  installing ${toInstall.length} bundled skills...`));
-          for (const entry of toInstall) {
-            let result = installSkill(entry.name);
-            if (!result.ok && (entry.source.startsWith("github:") || entry.source.startsWith("https://"))) {
-              result = await installSkillAsync(entry.name);
-            }
-            if (result.ok) {
-              console.log(chalk.green("  \u2713") + chalk.dim(` ${entry.name}`));
-            }
+    if (!skillAnswer || skillAnswer.toLowerCase() !== "n") {
+      // Auto-install all bundled skills before init-project
+      const catalog = readSkillCatalog();
+      const toInstall = catalog.skills.filter((s) => !s.installed);
+      if (toInstall.length > 0) {
+        console.log(chalk.dim(`\n  installing ${toInstall.length} bundled skills...`));
+        for (const entry of toInstall) {
+          let result = installSkill(entry.name);
+          if (!result.ok && (entry.source.startsWith("github:") || entry.source.startsWith("https://"))) {
+            result = await installSkillAsync(entry.name);
+          }
+          if (result.ok) {
+            console.log(chalk.green("  \u2713") + chalk.dim(` ${entry.name}`));
           }
         }
+      }
 
+      console.log("");
+      const result = skillInitProject({ mode: "auto" });
+      for (const step of result.steps) {
+        const icon = step.ok ? chalk.green("\u2713") : chalk.hex("#C46A3A")("\u2717");
+        const detail = step.detail ? chalk.dim(` ${step.detail}`) : "";
+        console.log(`  ${icon} ${step.name}${detail}`);
+      }
+      if (result.ok) {
         console.log("");
-        const result = skillInitProject();
-        for (const step of result.steps) {
-          const icon = step.ok ? chalk.green("\u2713") : chalk.hex("#C46A3A")("\u2717");
-          const detail = step.detail ? chalk.dim(` ${step.detail}`) : "";
-          console.log(`  ${icon} ${step.name}${detail}`);
-        }
-        if (result.ok) {
-          console.log("");
-          console.log(chalk.dim("  every agent that touches this repo now knows who you are."));
-        }
+        console.log(chalk.dim(`  repo bootstrap refreshed in ${result.mode} mode.`));
       }
     }
   }

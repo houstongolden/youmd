@@ -104,7 +104,7 @@ Last Updated: 2026-04-16
 | Private vault encryption | Not started | AES-256-GCM, deferred |
 | Rate limiting | Not started | Per plan |
 
-## CLI (npm: youmd v0.5.0)
+## CLI (npm: youmd v0.6.0)
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -121,14 +121,14 @@ Last Updated: 2026-04-16
 | youmd keys | Done | API key management |
 | youmd diff | Done | LCS-based diff vs published |
 | youmd export | Done | Export you.json + you.md to disk |
-| youmd preview | Placeholder | Local dev server |
+| youmd preview | Done | Local dev server for bundle inspection |
 | youmd pull | Done | Pull from web to local |
 | youmd push | Done | Push local to web |
 | youmd sync | Done | Two-way sync |
 | youmd memories | Done | List, add, stats |
 | youmd private | Done | Private context management (10 subcommands) |
 | youmd project | Done | Per-project context (init, list, switch, context, memory) |
-| youmd skill | Done | 12 subcommands: list, install, remove, use, sync, add, push, link, init-project, improve, metrics, search |
+| youmd skill | Done | 18 core subcommands plus aliases: list, install, remove, use, sync, create, add, push, link, init-project, improve, metrics, search, browse, publish, remote, export, info |
 | MCP config generation | Done | `youmd mcp --json` / `--install` now emit an unambiguous published-package launcher instead of bare `npx youmd mcp` |
 
 ## Skill System (v1.0)
@@ -137,19 +137,22 @@ Last Updated: 2026-04-16
 |---|---|---|
 | Skill catalog (YAML) | Done | youmd-skills.yaml with entries, scope, identity_fields |
 | Template engine | Done | {{var}} interpolation against live identity data |
-| Bundled skills (4) | Done | claude-md-generator, project-context-init, voice-sync, meta-improve |
+| Bundled skills (6) | Done | claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs |
 | Install / Remove | Done | Global ~/.youmd/skills/ + batch all |
 | Use (render) | Done | Interpolate + readiness check + display |
 | Sync (re-interpolate) | Done | Manual + auto on push/pull/sync |
 | Agent linking | Done | claude (.claude/skills/youmd/), cursor (.cursor/rules/youmd.md), codex |
-| init-project | Done | CLAUDE.md + project-context/ + .claude/skills/ in one command |
-| CLAUDE.md merge | Done | Appends identity section to existing files |
+| init-project | Done | Bootstrap AGENTS/CLAUDE entrypoints, canonical project-context/, generated `.you/`, and host links in one command |
+| Managed bootstrap block | Done | Existing AGENTS.md / CLAUDE.md files get one additive You.md-managed block instead of broad rewrites |
+| `.you/` generated layer | Done | `.you/AGENT.md`, `.you/STACK-MAP.md`, and `.you/project-context/README.md` scaffolded automatically |
+| Per-file project-context scaffold | Done | Fills missing canonical files additively, including `PROMPTS.md` |
 | Meta-improvement | Done | Identity coverage bars, unused skill detection, actionable proposals |
 | Metrics tracking | Done | skill-metrics.json — uses, installs, identity field references |
 | npm packaging | Done | Skills shipped with package in cli/skills/ |
 | Push/pull hooks | Done | Auto re-interpolate installed skills on identity changes |
 | Onboarding integration | Done | youmd init offers skill init-project when project detected |
 | Status integration | Done | Skills count + identity coverage bar in status output |
+| Bundled skill catalog upgrade merge | Done | Existing local YAML catalogs auto-merge new default bundled skills on upgrade |
 | Web: SkillsPane | Done | Dashboard tab with catalog, CLI commands, how-it-works |
 | Web: /skills command | Done | Slash command + help text |
 | Skill registry | Done | Convex tables (skills + skillInstalls), 9 HTTP endpoints, web SkillsPane — completed 2026-03-27 |

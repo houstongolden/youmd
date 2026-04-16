@@ -1,5 +1,35 @@
 # You.md — Changelog
 
+## 2026-04-16 — Agent Bootstrap Overhaul + Skill Truth Reconciliation
+
+### CLI / Skill System
+- Rebuilt `youmd skill init-project` around a safer bootstrap model:
+  - `auto`, `additive`, `zero-touch`, and `scaffold` modes
+  - first-class `AGENTS.md` support
+  - additive managed bootstrap blocks for existing `AGENTS.md` / `CLAUDE.md`
+  - canonical `project-context/` files scaffolded per-file instead of all-or-nothing skipping
+  - generated `.you/` layer with `AGENT.md`, `STACK-MAP.md`, and supplemental `.you/project-context/`
+- Updated `youmd init` so mature repos can refresh the repo bootstrap instead of being skipped just because `CLAUDE.md` or `project-context/` already exist
+- Fixed `youmd skill` argument passthrough so `init-project --mode ...` works correctly through the top-level CLI router
+- Added automatic local skill-catalog reconciliation so existing installs pick up newly bundled default skills on upgrade instead of staying pinned to the old 4-skill catalog
+
+### Bundled Skill Truth Pass
+- Reconciled the bundled skill system around the real shipped set of 6 local skills:
+  - `claude-md-generator`
+  - `project-context-init`
+  - `voice-sync`
+  - `meta-improve`
+  - `proactive-context-fill`
+  - `you-logs`
+- Updated the CLI catalog, backend seed data, MCP skill hints, dashboard SkillsPane, landing copy, onboarding copy, docs page, README, and project metadata so they describe the same shipped behavior instead of drifting across multiple partial truths
+
+### Verification
+- `npm --prefix cli run build` passed
+- `npm run build` passed
+- Smoke-tested `youmd skill init-project` in:
+  - a fresh throwaway repo (`scaffold` mode)
+  - an existing throwaway repo with pre-existing `AGENTS.md` + `project-context/TODO.md` (`additive` mode)
+
 ## 2026-04-16 — Truth Pass + Cross-Agent Stack Sync Planning
 
 ### Planning / Product Direction

@@ -400,6 +400,11 @@ export function syncAffectedSkills(changedFields: string[]): { synced: string[];
 // ─── Link to Agent Directories ────────────────────────────────────────
 
 export type AgentTarget = "claude" | "cursor" | "codex";
+export type InitProjectMode = "auto" | "additive" | "zero-touch" | "scaffold";
+
+export interface InitProjectOptions {
+  mode?: InitProjectMode;
+}
 
 /**
  * Link installed skills to an agent's directory.
@@ -485,87 +490,130 @@ function getRenderedContent(skillName: string): string | null {
 
 // ─── Init Project (Compound Command) ─────────────────────────────────
 
+const BOOTSTRAP_START = "<!-- youmd:bootstrap:start -->";
+const BOOTSTRAP_END = "<!-- youmd:bootstrap:end -->";
+
 /**
- * Initialize a project with skills: install core skills, generate CLAUDE.md,
- * scaffold project-context/, and link to .claude/skills/.
+ * Initialize a project with additive agent bootstrap files, scaffolded
+ * project-context docs, a generated .you layer, and host-linked skills.
  */
-export function initProject(): {
+export function initProject(options: InitProjectOptions = {}): {
   ok: boolean;
+  mode: Exclude<InitProjectMode, "auto">;
   steps: Array<{ name: string; ok: boolean; detail?: string }>;
 } {
   const steps: Array<{ name: string; ok: boolean; detail?: string }> = [];
   const project = detectProjectContext();
   const cwd = process.cwd();
+  const identity = loadIdentityData();
+  const projectName = project?.name || path.basename(cwd);
+  const agentsPath = path.join(cwd, "AGENTS.md");
+  const claudePath = path.join(cwd, "CLAUDE.md");
+  const projectContextDir = path.join(cwd, "project-context");
+  const youDir = path.join(cwd, ".you");
 
-  // Step 1: Install core skills
+  const requestedMode = options.mode ?? "auto";
+  const resolvedMode = resolveInitProjectMode({
+    mode: requestedMode,
+    hasAgentFile: fs.existsSync(agentsPath),
+    hasClaudeFile: fs.existsSync(claudePath),
+    hasProjectContext: fs.existsSync(projectContextDir),
+  });
+
+  // Step 1: Install core skills that power the generated layer
   for (const name of ["claude-md-generator", "project-context-init"]) {
     const result = installSkill(name);
     steps.push({
       name: `install ${name}`,
       ok: result.ok,
-      detail: result.error,
+      detail: result.ok ? "ready" : result.error,
     });
   }
 
-  // Step 2: Generate or merge CLAUDE.md
-  const identity = loadIdentityData();
-  const projectName = project?.name || path.basename(cwd);
-  const claudeMdPath = path.join(cwd, "CLAUDE.md");
-  if (fs.existsSync(claudeMdPath)) {
-    // Merge: append identity section if not already present
-    const existing = fs.readFileSync(claudeMdPath, "utf-8");
-    const IDENTITY_MARKER = "<!-- youmd:identity -->";
-    if (existing.includes(IDENTITY_MARKER)) {
-      steps.push({ name: "CLAUDE.md", ok: true, detail: "identity section already present" });
-    } else {
-      const identitySection = generateIdentitySection(identity);
-      if (identitySection) {
-        fs.writeFileSync(claudeMdPath, existing.trimEnd() + "\n\n" + identitySection);
-        steps.push({ name: "CLAUDE.md", ok: true, detail: "identity section appended" });
-      } else {
-        steps.push({ name: "CLAUDE.md", ok: true, detail: "exists, no identity data to add" });
-      }
-    }
-  } else {
-    const claudeMd = generateClaudeMd(identity, projectName);
-    fs.writeFileSync(claudeMdPath, claudeMd);
-    steps.push({ name: "CLAUDE.md", ok: true, detail: "generated" });
-  }
-
-  // Step 3: Scaffold project-context/
-  const pcDir = path.join(cwd, "project-context");
-  if (fs.existsSync(pcDir)) {
-    steps.push({ name: "project-context/", ok: true, detail: "already exists, skipped" });
-  } else {
-    scaffoldProjectContext(pcDir, identity, project?.name || path.basename(cwd));
-    steps.push({ name: "project-context/", ok: true, detail: "scaffolded" });
-  }
-
-  // Step 4: Link to .claude/skills/
-  const linkResult = linkToAgent("claude");
+  // Step 2: Create/update the generated .you layer
+  const youResult = scaffoldYouLayer(youDir, identity, projectName);
   steps.push({
-    name: "link .claude/skills/youmd/",
-    ok: linkResult.ok,
-    detail: linkResult.error || linkResult.path,
+    name: ".you/",
+    ok: true,
+    detail: youResult,
   });
 
-  // Step 5: Also link to Cursor if .cursor/ exists
-  if (fs.existsSync(path.join(cwd, ".cursor"))) {
-    const cursorResult = linkToAgent("cursor");
+  // Step 3: Scaffold or update first-class entrypoints
+  if (resolvedMode === "zero-touch") {
     steps.push({
-      name: "link .cursor/rules/youmd.md",
-      ok: cursorResult.ok,
-      detail: cursorResult.error || cursorResult.path,
+      name: "top-level agent files",
+      ok: true,
+      detail: "zero-touch mode — left AGENTS.md and CLAUDE.md unchanged",
+    });
+  } else {
+    const agentResult = ensureAgentInstructionFiles({
+      cwd,
+      projectName,
+      identity,
+    });
+    steps.push({
+      name: "agent instruction files",
+      ok: true,
+      detail: agentResult,
     });
   }
 
-  return { ok: steps.every((s) => s.ok), steps };
+  // Step 4: Scaffold the canonical project-context/ directory
+  if (resolvedMode === "zero-touch") {
+    steps.push({
+      name: "project-context/",
+      ok: true,
+      detail: "zero-touch mode — left canonical project-context untouched",
+    });
+  } else {
+    const scaffolded = scaffoldProjectContext(projectContextDir, identity, projectName);
+    steps.push({
+      name: "project-context/",
+      ok: true,
+      detail: scaffolded,
+    });
+  }
+
+  // Step 5: Link rendered skills into host-specific discovery paths
+  const linkTargets: AgentTarget[] = ["claude"];
+  if (fs.existsSync(path.join(cwd, ".cursor"))) linkTargets.push("cursor");
+  if (fs.existsSync(path.join(cwd, ".codex"))) linkTargets.push("codex");
+
+  for (const target of linkTargets) {
+    const result = linkToAgent(target);
+    const label =
+      target === "claude"
+        ? "link .claude/skills/youmd/"
+        : target === "cursor"
+          ? "link .cursor/rules/youmd.md"
+          : "link .codex/skills/youmd/";
+    steps.push({
+      name: label,
+      ok: result.ok,
+      detail: result.error || result.path,
+    });
+  }
+
+  return { ok: steps.every((s) => s.ok), mode: resolvedMode, steps };
 }
 
-function generateClaudeMd(identity: IdentityData, projectName: string): string {
+function resolveInitProjectMode(args: {
+  mode: InitProjectMode;
+  hasAgentFile: boolean;
+  hasClaudeFile: boolean;
+  hasProjectContext: boolean;
+}): Exclude<InitProjectMode, "auto"> {
+  if (args.mode !== "auto") return args.mode;
+  if (!args.hasAgentFile && !args.hasClaudeFile && !args.hasProjectContext) {
+    return "scaffold";
+  }
+  return "additive";
+}
+
+function generateAgentMd(identity: IdentityData, projectName: string): string {
   const parts: string[] = [];
-  parts.push(`# ${projectName} — Coding Agent Operating Manual\n`);
-  parts.push(`> Generated by You.md skill system. Powered by your identity context.\n`);
+  parts.push(`# ${projectName} — Agent Operating Manual\n`);
+  parts.push(`> Bootstrapped by You.md. This is the repo-visible instruction layer agents should read first.\n`);
 
   if (identity.profile.about) {
     parts.push(`\n## Who You're Working With\n\n${identity.profile.about}\n`);
@@ -582,6 +630,12 @@ function generateClaudeMd(identity: IdentityData, projectName: string): string {
   if (identity.voice.overall) {
     parts.push(`\n## Voice & Communication\n\n${identity.voice.overall}\n`);
   }
+
+  parts.push(`\n## Workflow\n`);
+  parts.push(`- Read \`project-context/CURRENT_STATE.md\` and \`project-context/feature-requests-active.md\` before substantial work.\n`);
+  parts.push(`- Track multi-part user asks in \`project-context/feature-requests-active.md\` rather than silently handling only part of the request.\n`);
+  parts.push(`- Treat updates to \`project-context/TODO.md\`, \`FEATURES.md\`, \`CHANGELOG.md\`, \`feature-requests-active.md\`, and \`PROMPTS.md\` as part of "done" after meaningful development sessions.\n`);
+  parts.push(`- Read \`.you/AGENT.md\`, \`.you/STACK-MAP.md\`, and \`.you/project-context/\` for additive You.md-generated context.\n`);
 
   parts.push(`\n## Project\n\n- **Name:** ${projectName}\n`);
 
@@ -608,44 +662,110 @@ function generateClaudeMd(identity: IdentityData, projectName: string): string {
   return parts.join("\n");
 }
 
-/**
- * Generate an identity section to append to an existing CLAUDE.md.
- * Returns null if no identity data is available.
- */
-function generateIdentitySection(identity: IdentityData): string | null {
-  const sections: string[] = [];
-
-  if (identity.profile.about) {
-    sections.push(`## Who You're Working With\n\n${identity.profile.about}`);
-  }
-  if (identity.preferences.agent) {
-    sections.push(`## Agent Preferences\n\n${identity.preferences.agent}`);
-  }
-  if (identity.directives.agent) {
-    sections.push(`## Directives\n\n${identity.directives.agent}`);
-  }
-  if (identity.voice.overall) {
-    sections.push(`## Voice & Communication\n\n${identity.voice.overall}`);
-  }
-
-  if (sections.length === 0) return null;
-
+function generateClaudeMd(projectName: string): string {
   return [
-    "<!-- youmd:identity -->",
-    "<!-- Auto-generated by You.md skill system. Re-run `youmd skill init-project` to update. -->",
+    `# ${projectName} — Claude Entry Point`,
     "",
-    "---",
-    "",
-    "# You.md Identity Context",
-    "",
-    ...sections,
+    "> This repo uses `AGENTS.md` as the canonical human-owned instruction layer.",
+    "> Read `AGENTS.md`, `project-context/`, and `.you/` before substantial work.",
     "",
   ].join("\n");
 }
 
-function scaffoldProjectContext(dir: string, identity: IdentityData, projectName: string): void {
-  fs.mkdirSync(dir, { recursive: true });
+/**
+ * Generate an additive managed bootstrap block for existing top-level
+ * instruction files without rewriting user-owned content.
+ */
+function generateBootstrapBlock(target: "AGENTS.md" | "CLAUDE.md", includeCompanion: boolean): string {
+  const companionLine =
+    includeCompanion && target === "CLAUDE.md"
+      ? "- Also read `AGENTS.md` for repo-native operating instructions.\n"
+      : includeCompanion && target === "AGENTS.md"
+        ? "- Keep `CLAUDE.md` as the Claude-specific entrypoint if this repo uses it.\n"
+        : "";
 
+  return [
+    BOOTSTRAP_START,
+    `<!-- Auto-generated by You.md. Re-run \`youmd skill init-project\` to refresh this managed block. -->`,
+    "",
+    "## You.md Bootstrap",
+    "",
+    "- Read `project-context/CURRENT_STATE.md` and `project-context/feature-requests-active.md` before substantial work.",
+    "- Track multi-part asks in `project-context/feature-requests-active.md` rather than silently handling only one part.",
+    "- Treat updates to `project-context/TODO.md`, `FEATURES.md`, `CHANGELOG.md`, `feature-requests-active.md`, and `PROMPTS.md` as part of done after meaningful development sessions.",
+    "- Read `.you/AGENT.md`, `.you/STACK-MAP.md`, and `.you/project-context/` for additive You.md-generated context.",
+    companionLine.trimEnd(),
+    "",
+    BOOTSTRAP_END,
+    "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function upsertManagedBootstrap(
+  existing: string,
+  target: "AGENTS.md" | "CLAUDE.md",
+  includeCompanion: boolean
+): { content: string; status: "added" | "updated" | "unchanged" } {
+  const block = generateBootstrapBlock(target, includeCompanion).trim();
+  const pattern = new RegExp(
+    `${escapeRegex(BOOTSTRAP_START)}[\\s\\S]*?${escapeRegex(BOOTSTRAP_END)}`,
+    "m"
+  );
+  if (pattern.test(existing)) {
+    const replaced = existing.replace(pattern, block);
+    return {
+      content: replaced === existing ? existing : replaced,
+      status: replaced === existing ? "unchanged" : "updated",
+    };
+  }
+  const trimmed = existing.trimEnd();
+  return {
+    content: trimmed ? `${trimmed}\n\n${block}\n` : `${block}\n`,
+    status: "added",
+  };
+}
+
+function ensureAgentInstructionFiles(args: {
+  cwd: string;
+  projectName: string;
+  identity: IdentityData;
+}): string {
+  const agentsPath = path.join(args.cwd, "AGENTS.md");
+  const claudePath = path.join(args.cwd, "CLAUDE.md");
+  const hasAgents = fs.existsSync(agentsPath);
+  const hasClaude = fs.existsSync(claudePath);
+  const notes: string[] = [];
+
+  if (!hasAgents) {
+    fs.writeFileSync(agentsPath, generateAgentMd(args.identity, args.projectName));
+    notes.push("created AGENTS.md");
+  } else {
+    const existing = fs.readFileSync(agentsPath, "utf-8");
+    const update = upsertManagedBootstrap(existing, "AGENTS.md", hasClaude);
+    fs.writeFileSync(agentsPath, update.content);
+    notes.push(`${update.status} AGENTS.md bootstrap`);
+  }
+
+  if (!hasClaude) {
+    fs.writeFileSync(
+      claudePath,
+      `${generateClaudeMd(args.projectName)}\n${generateBootstrapBlock("CLAUDE.md", true)}`
+    );
+    notes.push("created CLAUDE.md");
+  } else {
+    const existing = fs.readFileSync(claudePath, "utf-8");
+    const update = upsertManagedBootstrap(existing, "CLAUDE.md", true);
+    fs.writeFileSync(claudePath, update.content);
+    notes.push(`${update.status} CLAUDE.md bootstrap`);
+  }
+
+  return notes.join("; ");
+}
+
+function scaffoldProjectContext(dir: string, identity: IdentityData, projectName: string): string {
+  fs.mkdirSync(dir, { recursive: true });
   const owner = identity.username || "you";
   const date = new Date().toISOString().slice(0, 10);
 
@@ -658,14 +778,124 @@ function scaffoldProjectContext(dir: string, identity: IdentityData, projectName
     "CURRENT_STATE.md": `# ${projectName} — Current State\n\n> Updated: ${date}\n\n## Deployed\n\n## Known Issues\n\n## Next Priorities\n`,
     "STYLE_GUIDE.md": `# ${projectName} — Style Guide\n\n> Updated: ${date}\n\n(describe design system, colors, typography)\n`,
     "feature-requests-active.md": `# ${projectName} — Active Feature Requests\n\n> Updated: ${date}\n\n| Request | Status | Source | Notes |\n|---|---|---|---|\n`,
+    "PROMPTS.md": `# ${projectName} — Prompt Archive\n\n> Updated: ${date}\n> Total sessions: 0\n> Total prompts: 0\n\n## Notes\n\nAppend user messages here after each development session so future agents can search exact wording.\n`,
   };
 
+  const created: string[] = [];
+  const skipped: string[] = [];
   for (const [filename, content] of Object.entries(files)) {
     const filePath = path.join(dir, filename);
     if (!fs.existsSync(filePath)) {
       fs.writeFileSync(filePath, content);
+      created.push(filename);
+    } else {
+      skipped.push(filename);
     }
   }
+  if (created.length === 0) {
+    return `all canonical files already present (${skipped.length} checked)`;
+  }
+  return `created ${created.length} file(s): ${created.join(", ")}`;
+}
+
+function scaffoldYouLayer(dir: string, identity: IdentityData, projectName: string): string {
+  const projectContextDir = path.join(dir, "project-context");
+  fs.mkdirSync(projectContextDir, { recursive: true });
+
+  const writes: Array<[string, string]> = [
+    [path.join(dir, "AGENT.md"), generateYouAgentMd(identity, projectName)],
+    [path.join(dir, "STACK-MAP.md"), generateStackMap(projectName)],
+    [
+      path.join(projectContextDir, "README.md"),
+      generateYouProjectContextReadme(projectName),
+    ],
+  ];
+
+  const created: string[] = [];
+  const updated: string[] = [];
+  for (const [filePath, content] of writes) {
+    const existed = fs.existsSync(filePath);
+    fs.writeFileSync(filePath, content);
+    (existed ? updated : created).push(path.relative(dir, filePath));
+  }
+
+  const parts: string[] = [];
+  if (created.length > 0) parts.push(`created ${created.join(", ")}`);
+  if (updated.length > 0) parts.push(`updated ${updated.join(", ")}`);
+  return parts.join("; ");
+}
+
+function generateYouAgentMd(identity: IdentityData, projectName: string): string {
+  const lines: string[] = [
+    `# You.md Generated Agent Context`,
+    "",
+    `> This is the You.md-owned additive layer for \`${projectName}\`. Top-level repo files stay user-owned.`,
+    "",
+    "## Purpose",
+    "",
+    "- Provide additive identity and workflow context without overwriting human-maintained docs.",
+    "- Keep cross-agent expectations consistent across Claude, Codex, Cursor, and similar tools.",
+    "",
+  ];
+
+  if (identity.profile.about) {
+    lines.push("## Identity", "", identity.profile.about, "");
+  }
+  if (identity.preferences.agent) {
+    lines.push("## Agent Preferences", "", identity.preferences.agent, "");
+  }
+  if (identity.directives.agent) {
+    lines.push("## Directives", "", identity.directives.agent, "");
+  }
+  if (identity.voice.overall) {
+    lines.push("## Voice", "", identity.voice.overall, "");
+  }
+
+  lines.push("## Operating Expectations", "");
+  lines.push("- Read the repo-visible instruction file(s) first.");
+  lines.push("- Treat `project-context/` as the canonical shared working context.");
+  lines.push("- Use this `.you/` layer as additive guidance and generated metadata, not as a replacement for repo-owned docs.");
+  lines.push("");
+  return lines.join("\n");
+}
+
+function generateStackMap(projectName: string): string {
+  return [
+    "# You.md Stack Map",
+    "",
+    `> Generated for \`${projectName}\`. This file explains what You.md owns versus what the repo/user owns.`,
+    "",
+    "## Ownership",
+    "",
+    "- `AGENTS.md` / `CLAUDE.md`: human-owned entrypoints with a managed additive You.md bootstrap block.",
+    "- `project-context/`: canonical shared repo context. You.md only fills missing files unless a human explicitly asks for deeper changes.",
+    "- `.you/`: You.md-owned generated layer for additive cross-agent context.",
+    "- `.claude/skills/youmd`, `.codex/skills/youmd`, `.cursor/rules/youmd.md`: host-specific rendered skill surfaces when linked.",
+    "",
+    "## Maintenance Rules",
+    "",
+    "- Update only the managed You.md block inside top-level instruction files.",
+    "- Never delete or rewrite user-authored repo context without explicit approval.",
+    "- Prefer additive file creation and managed-block refreshes over broad merges.",
+    "",
+  ].join("\n");
+}
+
+function generateYouProjectContextReadme(projectName: string): string {
+  return [
+    "# You.md Supplemental Project Context",
+    "",
+    `This directory holds additive, generated context for \`${projectName}\`.`,
+    "",
+    "- Keep canonical project docs in `project-context/`.",
+    "- Keep generated cross-agent context in `.you/`.",
+    "- Use this layer when You.md needs to preserve shared behavior without clobbering hand-written repo docs.",
+    "",
+  ].join("\n");
+}
+
+function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // ─── Remote Sync (non-blocking) ───────────────────────────────────────

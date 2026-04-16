@@ -286,6 +286,7 @@ program
 program
   .command("skill [subcommand] [args...]")
   .description("Identity-aware agent skills (list, install, use, sync, init-project)")
+  .allowUnknownOption(true)
   .action((subcommand, args) => {
     return skillCommand(subcommand, ...(args || []));
   });

@@ -763,7 +763,7 @@ export async function startMcpServer(): Promise<void> {
             properties: {
               name: {
                 type: "string",
-                description: "Skill name: voice-sync, claude-md-generator, project-context-init, meta-improve",
+                description: "Skill name: voice-sync, claude-md-generator, project-context-init, meta-improve, proactive-context-fill, you-logs",
               },
             },
             required: ["name"],

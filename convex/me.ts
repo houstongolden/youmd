@@ -826,7 +826,7 @@ The identity context protocol for the agent internet — an MCP where the contex
 - Web shell agent reliability (tool_use execution, no hallucination)
 - CLI maturity (v0.6.0 with 24+ commands)
 - MCP server (JSON-RPC 2.0, Claude/Cursor integration)
-- Skill system (4 bundled skills, identity interpolation)
+- Skill system (6 bundled skills, identity interpolation)
 - Production at you.md
 
 ## Key Links
@@ -888,7 +888,7 @@ title: "You.md — Todo"
 
 - [x] Anthropic tool_use for agent mutations (replaces JSON block hallucination)
 - [x] MCP server (JSON-RPC 2.0, Claude/Cursor integration)
-- [x] Skill system with 4 bundled skills
+- [x] Skill system with 6 bundled skills
 - [x] CLI v0.6.0 (24+ commands)
 - [x] Session persistence and restoration
 - [x] Memory system with categories and search

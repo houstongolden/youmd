@@ -49,7 +49,7 @@ youmd link create        # generate a shareable context link
 
 ## CLI Commands
 
-21 top-level commands. The `skill` command alone has 19 subcommands.
+21 top-level commands. The `skill` command alone has 18 core subcommands plus aliases.
 
 | Command | What It Does |
 |---|---|
@@ -71,7 +71,7 @@ youmd link create        # generate a shareable context link
 | `youmd memories` | Manage your memory brain (list, add, stats) |
 | `youmd private` | Manage private context (notes, links, projects) |
 | `youmd project` | Manage project agent context (init, list, show, memories) |
-| `youmd skill` | Identity-aware agent skills (19 subcommands -- see below) |
+| `youmd skill` | Identity-aware agent skills (18 core subcommands -- see below) |
 | `youmd link` | Context links (create, list, revoke, preview) |
 | `youmd keys` | API key management (list, create, revoke) |
 
@@ -88,7 +88,7 @@ youmd link create        # generate a shareable context link
 | `add <name> <source>` | Register a skill in the catalog |
 | `push <name>` | Push local changes back to source |
 | `link <agent>` | Link skills to claude / cursor / codex |
-| `init-project` | CLAUDE.md + project-context/ + agent link |
+| `init-project` | AGENTS/CLAUDE bootstrap + project-context/ + .you/ + links |
 | `improve` | Review metrics, find gaps, propose changes |
 | `metrics` | Usage stats and identity field coverage |
 | `search <query>` | Search skills by name or description |
@@ -190,9 +190,11 @@ When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your
 | Skill | What It Does |
 |---|---|
 | `voice-sync` | Propagate your voice profile to Claude, Cursor, and custom agents |
-| `claude-md-generator` | Generate CLAUDE.md pre-loaded with your identity context |
+| `claude-md-generator` | Bootstrap repo-visible agent instructions with your identity context |
 | `project-context-init` | Scaffold project-context/ with your preferences baked in |
 | `meta-improve` | Analyze your skill setup, find gaps, propose improvements |
+| `proactive-context-fill` | Detect thin identity context and propose safe additive improvements |
+| `you-logs` | Show recent agent activity and identity access inline |
 
 ### How Skills Work
 
@@ -212,7 +214,7 @@ Variable resolution follows dot notation: `voice.overall` reads `~/.youmd/voice/
 ```
 youmd init               # AI conversation builds your identity
 youmd push               # Publish to you.md/<username> (content-addressed, version-controlled)
-youmd skill init-project # Wire identity into current repo (CLAUDE.md + project-context/ + link)
+youmd skill init-project # Wire identity into current repo (AGENTS/CLAUDE + project-context/ + .you/ + links)
 youmd link create        # Generate shareable context link for other agents
 ```
 

@@ -20,20 +20,20 @@ Last Updated: 2026-04-16
 **Verification:** Start Codex in `/Users/houstongolden/Desktop/CODE_2025/youmd` — no `youmd` MCP handshake warning. Start Codex in another repo — `youmd` MCP still starts via npm.
 
 ### 42. Safe multi-tier agent context integration for existing repos
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
 **Request:** Make `youmd` able to improve agent/project operating context without clobbering mature `CLAUDE.md`, `AGENTS.md`, `.cursor/rules`, or existing `project-context/` structures. Support fresh scaffold, minimal merge, and zero-touch modes.
 **Expanded Scope:** `.you/` should be the safe generated layer, but You.md should still make additive edits to top-level agent files so normal agents/tools actually discover and use the context. Prefer one standard managed bootstrap block for existing repos rather than too many subtle tiers. Non-additive rewrites, deletions, or consolidations should require an explicit approval flow.
 **Verification:** In a fresh repo, `youmd skill init-project` scaffolds everything. In an existing repo, it inserts or updates one standard managed bootstrap block, adds missing context files only, creates `.you/` supplemental context, and avoids rewriting user-owned docs. Any requested destructive cleanup shows a preview and requires approval.
 
 ### 43. Productize the "agent operating system" workflow that works in this repo
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
 **Request:** Ensure the packaged You.md CLI/skills bundle can replicate the behavior seen in this repo: agents read repo instructions first, read `project-context/` before substantial work, track multi-part requests, and treat updates to `TODO.md`, `FEATURES.md`, `CHANGELOG.md`, `feature-requests-active.md`, and `PROMPTS.md` as part of completion.
 **Verification:** A user installs You.md in a new repo and a fresh agent session behaves this way out of the box. In an existing repo, You.md safely teaches the same workflow through additive bootstrap blocks, linked host-specific skills, and scaffolded missing files without clobbering user-owned docs.
 
 ### 44. Reconcile You.md with the validated cross-agent stack-sync workflow
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
 **Request:** Before implementing the new bootstrap plan, audit what You.md already ships versus what is marketed, then ensure the product design incorporates the recently validated cross-agent pattern: shared instruction layer, shared skill layer, mapped portable overlap settings, persistent stack inventory, and host-specific entrypoints that still preserve tool-native behavior.
 **Verification:** There is one clear bundled-skill source of truth. Dashboard/docs/README match shipped behavior. The new You.md bootstrap model works coherently with cross-agent stack sync instead of competing with it, and the product can clearly explain what is global/shared, repo-local, generated, mirrored, and tool-specific.
@@ -42,7 +42,7 @@ Last Updated: 2026-04-16
 **Status:** DONE
 **Verified:** NO
 **Request:** Build The Library-inspired skill system with identity interpolation, YAML catalog, bundled skills, CLI commands, cross-project sync, agent linking, meta-improvement, web dashboard pane.
-**Verification:** Run `youmd skill list` (shows 4 skills), `youmd skill install all`, `youmd skill init-project` in fresh repo (generates CLAUDE.md + project-context/ + .claude/skills/), `youmd skill use claude-md-generator` with identity data populated (all {{var}} resolved), `youmd skill link claude`, web dashboard shows skills tab.
+**Verification:** Run `youmd skill list` (shows 6 bundled skills), `youmd skill install all`, `youmd skill init-project` in a fresh repo (generates AGENTS.md + CLAUDE.md + project-context/ + .you/ + .claude/skills/), `youmd skill use claude-md-generator` with identity data populated (all {{var}} resolved), `youmd skill link claude`, web dashboard shows skills tab.
 
 ### 40. Git Self-Hosting vs Convex Architecture Decision
 **Status:** DECIDED — Convex stays as source of truth, git as optional export channel in v2

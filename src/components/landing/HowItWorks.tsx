@@ -18,7 +18,7 @@ const steps = [
   {
     num: "03",
     cmd: "$ youmd skill init-project",
-    desc: "start any new project with full identity context. generates CLAUDE.md from your preferences, scaffolds project-context/, and links skills to Claude Code, Cursor, or Codex.",
+    desc: "start any new project with full identity context. bootstraps AGENTS/CLAUDE entrypoints, scaffolds project-context/ additively, creates a generated .you/ layer, and links skills to Claude Code, Cursor, or Codex.",
   },
   {
     num: "04",

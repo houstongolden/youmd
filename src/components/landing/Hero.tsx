@@ -91,7 +91,7 @@ const CliPill = () => {
 const commands = [
   ["you init", "build your identity via AI conversation"],
   ["you push", "publish to you.md/username"],
-  ["you skill init-project", "CLAUDE.md + project-context/ in any repo"],
+  ["you skill init-project", "bootstrap AGENTS/CLAUDE + project-context/ in any repo"],
   ["you skill link claude", "sync identity skills to your agent"],
   ["you link create", "scoped context link for any agent"],
 ];

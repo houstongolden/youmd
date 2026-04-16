@@ -38,7 +38,7 @@ function defaultSkills(owner: string): SkillEntry[] {
       name: "claude-md-generator",
       description: "Generate CLAUDE.md from identity + project detection",
       version: "1.0.0",
-      source: "bundled:you-agent/skills/claude-md-generator.md",
+      source: "bundled:claude-md-generator.md",
       scope: "shared",
       identity_fields: ["preferences.agent", "directives.agent", "voice.overall"],
       requires: [],
@@ -48,7 +48,7 @@ function defaultSkills(owner: string): SkillEntry[] {
       name: "project-context-init",
       description: "Scaffold project-context/ directory with PRD, TODO, features, changelog",
       version: "1.0.0",
-      source: "bundled:you-agent/skills/project-context-init.md",
+      source: "bundled:project-context-init.md",
       scope: "project",
       identity_fields: ["preferences.agent", "profile.about"],
       requires: [],
@@ -58,7 +58,7 @@ function defaultSkills(owner: string): SkillEntry[] {
       name: "voice-sync",
       description: "Sync voice profile across all agent tools",
       version: "1.0.0",
-      source: "bundled:you-agent/skills/voice-sync.md",
+      source: "bundled:voice-sync.md",
       scope: "shared",
       identity_fields: ["voice.overall", "voice.writing", "voice.speaking"],
       requires: [],
@@ -68,9 +68,29 @@ function defaultSkills(owner: string): SkillEntry[] {
       name: "meta-improve",
       description: "Self-improvement protocol — review effectiveness, propose identity updates",
       version: "1.0.0",
-      source: "bundled:you-agent/skills/meta-improve.md",
+      source: "bundled:meta-improve.md",
       scope: "shared",
       identity_fields: ["preferences.agent", "directives.agent"],
+      requires: [],
+      installed: false,
+    },
+    {
+      name: "proactive-context-fill",
+      description: "Detect thin identity context and offer safe additive improvements",
+      version: "1.0.0",
+      source: "bundled:proactive-context-fill.md",
+      scope: "shared",
+      identity_fields: ["profile.projects", "profile.about", "preferences.agent", "voice.overall"],
+      requires: [],
+      installed: false,
+    },
+    {
+      name: "you-logs",
+      description: "View recent agent activity and identity access logs inline",
+      version: "1.0.0",
+      source: "bundled:you-logs.md",
+      scope: "shared",
+      identity_fields: [],
       requires: [],
       installed: false,
     },
@@ -82,13 +102,25 @@ function defaultSkills(owner: string): SkillEntry[] {
  */
 export function readSkillCatalog(): SkillCatalog {
   const catalogPath = getSkillCatalogPath();
+  const config = readGlobalConfig();
+  const owner = config.username || "anonymous";
+  const defaults = defaultSkills(owner);
 
   if (fs.existsSync(catalogPath)) {
     try {
       const raw = fs.readFileSync(catalogPath, "utf-8");
       const parsed = yaml.load(raw) as SkillCatalog;
       if (parsed && parsed.skills) {
-        return parsed;
+        const merged = mergeCatalogWithDefaults(
+          {
+            version: parsed.version ?? 1,
+            owner: parsed.owner || owner,
+            skills: parsed.skills,
+          },
+          defaults
+        );
+        writeSkillCatalog(merged);
+        return merged;
       }
     } catch {
       // Fall through to defaults
@@ -96,12 +128,10 @@ export function readSkillCatalog(): SkillCatalog {
   }
 
   // Create default catalog
-  const config = readGlobalConfig();
-  const owner = config.username || "anonymous";
   const catalog: SkillCatalog = {
     version: 1,
     owner,
-    skills: defaultSkills(owner),
+    skills: defaults,
   };
 
   writeSkillCatalog(catalog);
@@ -169,6 +199,30 @@ export function setSkillInstalled(catalog: SkillCatalog, name: string, installed
     writeSkillCatalog(catalog);
   }
   return catalog;
+}
+
+function mergeCatalogWithDefaults(catalog: SkillCatalog, defaults: SkillEntry[]): SkillCatalog {
+  const merged: SkillEntry[] = [...catalog.skills];
+
+  for (const def of defaults) {
+    const existing = merged.find((entry) => entry.name === def.name);
+    if (existing) {
+      existing.description = def.description;
+      existing.version = def.version;
+      existing.source = def.source;
+      existing.scope = def.scope;
+      existing.identity_fields = def.identity_fields;
+      existing.requires = def.requires;
+    } else {
+      merged.push({ ...def });
+    }
+  }
+
+  return {
+    version: catalog.version ?? 1,
+    owner: catalog.owner,
+    skills: merged,
+  };
 }
 
 /**

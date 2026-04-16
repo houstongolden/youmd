@@ -1499,7 +1499,7 @@ async function finishBundle(
   console.log(`    1. ${chalk.cyan("youmd login")}              ${chalk.dim("-- connect to you.md")}`);
   console.log(`    2. ${chalk.cyan("youmd push")}               ${chalk.dim("-- publish to you.md/" + username)}`);
   console.log(`    3. ${chalk.cyan("youmd skill install all")}  ${chalk.dim("-- install identity-aware agent skills")}`);
-  console.log(`    4. ${chalk.cyan("youmd skill init-project")} ${chalk.dim("-- CLAUDE.md + project-context/ in any repo")}`);
+  console.log(`    4. ${chalk.cyan("youmd skill init-project")} ${chalk.dim("-- AGENTS/CLAUDE bootstrap + project-context/ in any repo")}`);
   console.log("");
   console.log("  " + accent("agent tools:"));
   console.log("");

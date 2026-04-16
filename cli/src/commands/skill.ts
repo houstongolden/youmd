@@ -27,6 +27,7 @@ import {
   initProject,
   getMetrics,
   AgentTarget,
+  InitProjectMode,
 } from "../lib/skills";
 import { loadIdentityData, resolveVariable, IdentityData } from "../lib/skill-renderer";
 import { BrailleSpinner, renderRichResponse } from "../lib/render";
@@ -681,16 +682,30 @@ async function linkSkillsCmd(args: string[]): Promise<void> {
   console.log("");
 }
 
-async function initProjectCmd(): Promise<void> {
+function parseInitProjectMode(args: string[]): InitProjectMode {
+  const modeFlag = args.find((arg) => arg.startsWith("--mode="));
+  const modeIndex = args.indexOf("--mode");
+  const explicitMode =
+    modeFlag?.slice("--mode=".length) ||
+    (modeIndex >= 0 && modeIndex + 1 < args.length ? args[modeIndex + 1] : undefined);
+  const value = (explicitMode || "auto").toLowerCase();
+  if (value === "auto" || value === "additive" || value === "zero-touch" || value === "scaffold") {
+    return value;
+  }
+  return "auto";
+}
+
+async function initProjectCmd(args: string[] = []): Promise<void> {
   console.log("");
   console.log("  " + chalk.bold("youmd skill init-project"));
+  const mode = parseInitProjectMode(args);
 
   // Detect existing .youmd-project
   const youmdProjectPath = path.join(process.cwd(), ".youmd-project");
   if (fs.existsSync(youmdProjectPath)) {
     console.log(DIM("  .youmd-project already exists -- re-running will update...\n"));
   } else {
-    console.log(DIM("  scaffolding identity-aware project structure...\n"));
+    console.log(DIM(`  scaffolding identity-aware project structure (${mode} mode)...\n`));
   }
 
   // Auto-install all catalog skills first (not just 2)
@@ -718,7 +733,7 @@ async function initProjectCmd(): Promise<void> {
 
   await new Promise((r) => setTimeout(r, 500));
 
-  const result = initProject();
+  const result = initProject({ mode });
 
   spinner.stop();
   console.log("");
@@ -732,7 +747,7 @@ async function initProjectCmd(): Promise<void> {
   console.log("");
   if (result.ok) {
     console.log("  " + chalk.green("project initialized with your identity."));
-    console.log(DIM("  every agent that touches this repo now knows who you are."));
+    console.log(DIM(`  mode: ${result.mode} -- every agent touching this repo now has the right entrypoints.`));
   } else {
     console.log(ACCENT("  some steps failed. check above for details."));
   }
@@ -1281,7 +1296,7 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       break;
     case "init-project":
     case "init":
-      await initProjectCmd();
+      await initProjectCmd(args);
       break;
     case "improve":
       improveCmd();
@@ -1355,7 +1370,7 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       console.log(`    ${chalk.cyan("add <name> <source>".padEnd(28))} ${DIM("register a new skill in catalog")}`);
       console.log(`    ${chalk.cyan("push <name>".padEnd(28))} ${DIM("push local changes back to source")}`);
       console.log(`    ${chalk.cyan("link <agent>".padEnd(28))} ${DIM("link to claude | cursor | codex")}`);
-      console.log(`    ${chalk.cyan("init-project".padEnd(28))} ${DIM("CLAUDE.md + project-context/ + link")}`);
+      console.log(`    ${chalk.cyan("init-project [--mode auto|additive|zero-touch|scaffold]".padEnd(28))} ${DIM("bootstrap AGENTS/CLAUDE + project-context/ + .you/ + links")}`);
       console.log(`    ${chalk.cyan("improve".padEnd(28))} ${DIM("review metrics, find gaps, propose changes")}`);
       console.log(`    ${chalk.cyan("metrics".padEnd(28))} ${DIM("usage stats and effectiveness scores")}`);
       console.log(`    ${chalk.cyan("search <query>".padEnd(28))} ${DIM("search skills by name or description")}`);

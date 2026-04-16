@@ -218,6 +218,78 @@ The feedback loop that makes your identity smarter over time. Agents review what
 - After a significant number of skill uses (auto-suggested)
 - When onboarding a new project (review what's working)`,
   },
+  {
+    name: "proactive-context-fill",
+    description: "Detect thin identity context and offer safe additive improvements",
+    version: "1.0.0",
+    scope: "shared" as const,
+    identityFields: ["profile.projects", "profile.about", "preferences.agent", "voice.overall"],
+    content: `# proactive-context-fill
+
+Use this skill when starting a new session with a user who has a you.md identity bundle. It detects thin or missing context and proposes safe additive improvements.
+
+## Detection Rules
+
+1. **Projects:** If the identity references projects but the project context is thin, offer to scaffold missing project context.
+2. **Voice:** If voice guidance is sparse, offer to derive a better voice profile from existing writing samples and preferences.
+3. **Directives:** If agent directives are generic, offer to extract more explicit rules from recent conversations.
+4. **Sources:** If profile links exist but source coverage is thin, offer to scrape and add them.
+5. **Memories:** If there are very few memories, offer to seed initial memories from the current conversation.
+
+## Guardrails
+
+- Never overwrite user-owned files automatically.
+- Present changes as additive proposals.
+- Batch suggestions into a short, concrete list instead of asking ten questions at once.
+- If project instructions are already robust, prefer adding a managed bootstrap block or \`.you/\` supplements over rewriting top-level docs.
+
+## When To Use
+
+- At the start of a new session when the identity bundle is obviously incomplete
+- After major profile or project changes
+- When a user wants You.md to improve their agent setup without clobbering what they already maintain`,
+  },
+  {
+    name: "you-logs",
+    description: "View recent agent activity and identity access logs inline",
+    version: "1.0.0",
+    scope: "shared" as const,
+    identityFields: [],
+    content: `# you-logs
+
+Show recent agent activity for the current user.
+
+## What It Does
+
+Fetches recent agent activity from you.md and renders it as a terminal-friendly table showing:
+- Time of activity
+- Agent name
+- Action performed
+- Resource touched
+- Bundle version diffs for writes
+
+## How To Use It
+
+Run:
+
+\`\`\`bash
+youmd logs --limit 30
+\`\`\`
+
+Pass through flags for filtering:
+
+\`\`\`bash
+youmd logs --limit 30 --agent "Claude Code"
+youmd logs --action push
+youmd logs --tail
+\`\`\`
+
+## When To Use
+
+- When you want to see which agents touched your identity
+- When debugging cross-agent context drift
+- When reviewing whether shared instructions and skills are actually being used`,
+  },
 ];
 
 /**

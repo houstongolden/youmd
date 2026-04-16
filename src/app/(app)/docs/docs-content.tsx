@@ -893,7 +893,7 @@ preferences: terminal-native, monochrome
             </P>
             <CommandTable
               commands={[
-                { cmd: "youmd project init NAME", desc: "Initialize project-specific context (CLAUDE.md + project-context/ + .claude/skills/)" },
+                { cmd: "youmd project init NAME", desc: "Initialize project-specific You.md context and private project memory" },
                 { cmd: "youmd project list", desc: "List known projects" },
                 { cmd: "youmd project show NAME", desc: "Display project details and context paths" },
                 { cmd: "youmd project memories NAME", desc: "List memories for a specific project" },
@@ -917,7 +917,7 @@ preferences: terminal-native, monochrome
                 { cmd: "youmd skill browse", desc: "Browse the public skill registry" },
                 { cmd: "youmd skill remote NAME", desc: "Fetch and preview a remote skill" },
                 { cmd: "youmd skill link NAME PATH", desc: "Symlink a local skill for development" },
-                { cmd: "youmd skill init-project", desc: "Generate CLAUDE.md + project-context/ + .claude/skills/ for current repo" },
+                { cmd: "youmd skill init-project", desc: "Bootstrap AGENTS/CLAUDE + project-context/ + .you/ + host links for current repo" },
                 { cmd: "youmd skill improve NAME", desc: "Use AI to improve a skill's template" },
                 { cmd: "youmd skill metrics NAME", desc: "View usage stats for a published skill" },
                 { cmd: "youmd skill search QUERY", desc: "Search the registry by keyword" },
@@ -989,7 +989,7 @@ preferences: terminal-native, monochrome
                 { cmd: "skill browse", desc: "Browse available skills in the registry" },
                 { cmd: "skill remote NAME", desc: "Preview a remote skill before installing" },
                 { cmd: "skill link NAME PATH", desc: "Symlink a local skill for dev iteration" },
-                { cmd: "skill init-project", desc: "Generate CLAUDE.md + project-context/ + .claude/skills/" },
+                { cmd: "skill init-project", desc: "Bootstrap AGENTS/CLAUDE + project-context/ + .you/ + host links" },
                 { cmd: "skill improve NAME", desc: "AI-powered template improvement" },
                 { cmd: "skill metrics NAME", desc: "View installs and usage stats" },
                 { cmd: "skill search QUERY", desc: "Search registry by keyword" },
@@ -1000,48 +1000,52 @@ preferences: terminal-native, monochrome
 
             <H3 id="skills-bundled">Bundled Skills</H3>
             <P>
-              Every you.md install ships with four built-in skills. These are
+              Every you.md install ships with six built-in skills. These are
               always available and kept in sync with CLI updates.
             </P>
             <CommandTable
               commands={[
-                { cmd: "claude-md-generator", desc: "Generate a CLAUDE.md file from your identity -- persona, preferences, coding style, all baked in" },
+                { cmd: "claude-md-generator", desc: "Bootstrap repo-visible agent instructions from your identity -- persona, preferences, coding style, all baked in" },
                 { cmd: "project-context-init", desc: "Scaffold a project-context/ directory with TODO.md, FEATURES.md, ARCHITECTURE.md, and more" },
                 { cmd: "voice-sync", desc: "Export your voice profile as agent instructions for consistent tone across tools" },
                 { cmd: "meta-improve", desc: "Feed a skill back through the LLM to improve its template quality" },
+                { cmd: "proactive-context-fill", desc: "Detect thin identity context and propose safe additive improvements" },
+                { cmd: "you-logs", desc: "Show recent agent activity and identity access inline" },
               ]}
             />
 
             <H3 id="skills-init-project">init-project</H3>
             <P>
               The <InlineCode>youmd skill init-project</InlineCode> command is
-              the fastest way to make a repo identity-aware. It generates three
+              the fastest way to make a repo identity-aware. It sets up four
               things:
             </P>
             <StepList>
               <Step n={1}>
-                <InlineCode>CLAUDE.md</InlineCode> -- a coding agent operating
-                manual, pre-filled with your identity, preferences, and project
-                context
+                <InlineCode>AGENTS.md</InlineCode> -- the repo-visible
+                instruction layer with workflow rules and your generated
+                identity context
               </Step>
               <Step n={2}>
-                <InlineCode>project-context/</InlineCode> -- a directory with
-                TODO.md, FEATURES.md, CHANGELOG.md, ARCHITECTURE.md, and
-                STYLE_GUIDE.md templates
+                <InlineCode>CLAUDE.md</InlineCode> -- the Claude-specific
+                entrypoint with a managed You.md bootstrap block
               </Step>
               <Step n={3}>
-                <InlineCode>.claude/skills/</InlineCode> -- local skill
-                overrides scoped to the project
+                <InlineCode>project-context/</InlineCode> -- the canonical repo
+                context directory, filled additively per file
+              </Step>
+              <Step n={4}>
+                <InlineCode>.you/</InlineCode> plus host-linked skills -- the
+                generated additive layer and tool-specific discovery surfaces
               </Step>
             </StepList>
             <CodeBlock title="terminal">{`$ youmd skill init-project
-  creating CLAUDE.md ...
-  creating project-context/TODO.md ...
-  creating project-context/FEATURES.md ...
-  creating project-context/CHANGELOG.md ...
-  creating project-context/ARCHITECTURE.md ...
-  creating project-context/STYLE_GUIDE.md ...
-  creating .claude/skills/ ...
+  install claude-md-generator ready
+  install project-context-init ready
+  .you/ created AGENT.md, STACK-MAP.md, project-context/README.md
+  agent instruction files created AGENTS.md; created CLAUDE.md
+  project-context/ created TODO.md, FEATURES.md, CHANGELOG.md, PROMPTS.md ...
+  link .claude/skills/youmd/ /path/to/repo/.claude/skills/youmd
   done -- your repo is identity-aware`}</CodeBlock>
 
             <H3 id="skills-sync">Skill Sync</H3>
