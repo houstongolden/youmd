@@ -1,5 +1,12 @@
 # You.md — Changelog
 
+## 2026-04-16 — Bootstrap Strategy Simplification
+
+### Planning / Product Direction
+- Simplified the safe integration plan so existing repos use one standard managed bootstrap block instead of trying to vary block size too much based on subjective "minimal vs robust" repo tiers
+- Kept the real safety boundary where it belongs: additive bootstrap + missing-file scaffolding can be automatic, but anything more invasive still requires preview plus approval
+- Renamed the intended default mode direction from `minimal` toward `additive` to better match the product behavior we actually want
+
 ## 2026-04-16 — Agent Operating System Product Direction
 
 ### Planning / Product Direction

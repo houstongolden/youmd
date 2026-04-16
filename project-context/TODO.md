@@ -179,9 +179,9 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 
 - [ ] Safe agent-context integration overhaul
 - [ ] Add `AGENTS.md` first-class support to `youmd skill init-project`
-- [ ] Add init-project modes: `auto`, `minimal`, `zero-touch`, `scaffold`
+- [ ] Add init-project modes: `auto`, `additive`, `zero-touch`, `scaffold`
 - [ ] Introduce `.you/` supplemental project context with `.youmd` compatibility
-- [ ] Replace full `CLAUDE.md` append behavior with a tiny managed bootstrap block
+- [ ] Replace full `CLAUDE.md` append behavior with one standard managed bootstrap block for existing repos
 - [ ] Add `PROMPTS.md` to project-context scaffolding and ongoing maintenance model
 - [ ] Teach generated instructions to require reading `project-context/` and updating TODO / FEATURES / CHANGELOG / feature-requests / PROMPTS as part of done
 - [ ] Add repo classification preview plus approval gate for non-additive instruction-file edits

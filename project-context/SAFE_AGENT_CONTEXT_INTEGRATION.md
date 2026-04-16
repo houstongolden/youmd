@@ -209,6 +209,20 @@ This should become a real CLI behavior, not just documentation:
 
 ## Safe Tier Strategy
 
+The previous version of this plan split existing repos into finer-grained
+"minimal" versus "robust" tiers with different bootstrap sizes.
+
+That is probably too clever.
+
+The better default is a more consistent user/agent experience:
+
+- empty repos get scaffolded first-class files
+- existing repos get the same managed bootstrap block
+- anything beyond additive edits requires preview + approval
+
+This reduces ambiguity across agents and avoids a gray area where different
+tools interpret "minimal" versus "robust" differently.
+
 ### Tier 1 — No existing instruction system
 
 Condition:
@@ -225,22 +239,21 @@ Action:
 
 This is the fast path.
 
-### Tier 2 — Minimal existing instruction system
+### Tier 2 — Existing instruction system
 
 Condition:
 
-- `CLAUDE.md` or `AGENTS.md` exists but is short/lightweight
-- `project-context/` exists but is sparse or partially missing
+- `CLAUDE.md` and/or `AGENTS.md` already exists
 
 Action:
 
 - preserve existing files
-- insert a small bootstrap block near the top with markers
+- insert or update one standard managed bootstrap block
 - scaffold only missing `project-context/` files one-by-one
 - create `.you/` supplemental files
 - link agent-specific skills
 
-Example bootstrap block:
+Example managed bootstrap block:
 
 ```md
 <!-- youmd:bootstrap:start -->
@@ -260,25 +273,25 @@ Important:
 - this block must be marker-based so it can be updated in place later
 - never duplicate it
 - never append a second unmanaged blob
-- it should be extremely short and point to `.you/` plus shared repo docs
+- it should be compact, but rich enough that agents do not overlook it
+- it should encode the core operating workflow, not just point vaguely at `.you/`
 
-### Tier 3 — Robust existing instruction system
+### Tier 3 — Approval-required invasive changes
 
 Condition:
 
-- `CLAUDE.md` and/or `AGENTS.md` is long, structured, and clearly customized
-- `project-context/` is already heavily used
+- the agent wants to do more than add/update the managed bootstrap block
+- or the repo has highly customized instruction files and the proposed change
+  goes beyond additive bootstrap + missing-file scaffolding
 
 Action:
 
-- default to minimal-touch behavior
-- do not append large identity blocks
-- do not create duplicate top-level docs
-- add only a tiny bootstrap block if safe
-- otherwise fall back to zero-touch mode
-- always create `.you/` supplemental context and linked skills
+- show a preview
+- explain exactly what would change
+- explain what behavior is preserved
+- ask for approval before proceeding
 
-This is the correct place to push back on brute-force merge behavior.
+This is where rewrites, consolidations, deletions, or heavier cleanup belong.
 
 ## Detection Heuristics
 
@@ -286,18 +299,20 @@ The CLI should classify repos before writing.
 
 ### Instruction file classification
 
-Treat as robust if any are true:
+Classification still matters, but less for choosing radically different
+behaviors and more for deciding when approval is required.
+
+Treat as highly customized if any are true:
 
 - file length > 120 lines
 - 5+ headings
 - contains custom operational rules or project-specific protocols
 - lacks prior You.md markers but clearly has handcrafted structure
 
-Treat as minimal if all are true:
+For highly customized files:
 
-- file length < 60 lines
-- 3 or fewer headings
-- little or no project-specific structure
+- additive bootstrap edits are still acceptable
+- heavier changes should require approval
 
 ### project-context classification
 
@@ -339,7 +354,7 @@ context-aware. That behavior needs to be productized.
 Support:
 
 - `--mode scaffold`
-- `--mode minimal`
+- `--mode additive`
 - `--mode zero-touch`
 - `--mode auto` (default)
 
@@ -499,12 +514,12 @@ repo/
 The best default is:
 
 1. `auto` classify the repo
-2. for mature repos, choose `minimal`
-3. create `.you/` always
-4. patch `AGENTS.md` or `CLAUDE.md` only with a tiny bootstrap block
+2. create `.you/` always
+3. if no top-level files exist, scaffold them
+4. if top-level files exist, insert or update one standard managed bootstrap block
 5. link agent-specific skill files always
-6. scaffold top-level `project-context/` only when absent or clearly minimal
-7. always include the workflow files that make agent context compound over time
+6. scaffold top-level `project-context/` missing files individually
+7. require approval for anything beyond additive bootstrap + missing-file scaffolding
 
 This gets the upside of portable identity context without acting like You.md
 owns the user's repo.
@@ -513,9 +528,9 @@ owns the user's repo.
 
 Highest leverage implementation order:
 
-1. add `--mode auto|minimal|zero-touch`
+1. add `--mode auto|additive|zero-touch`
 2. add `AGENTS.md` support
-3. replace "append full identity section" with "insert/update bootstrap block"
+3. replace "append full identity section" with "insert/update standard managed bootstrap block"
 4. scaffold missing `project-context/` files individually, including `PROMPTS.md`
 5. introduce `.you/` as supplemental namespace with `.youmd` compatibility
 6. teach generated instructions the operating-system behaviors listed above

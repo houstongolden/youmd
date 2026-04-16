@@ -23,8 +23,8 @@ Last Updated: 2026-04-16
 **Status:** IN PROGRESS
 **Verified:** NO
 **Request:** Make `youmd` able to improve agent/project operating context without clobbering mature `CLAUDE.md`, `AGENTS.md`, `.cursor/rules`, or existing `project-context/` structures. Support fresh scaffold, minimal merge, and zero-touch modes.
-**Expanded Scope:** `.you/` should be the safe generated layer, but You.md should still make small additive edits to top-level agent files when safe so normal agents/tools actually discover and use the context. Non-additive rewrites, deletions, or consolidations should require an explicit approval flow.
-**Verification:** In a fresh repo, `youmd skill init-project` scaffolds everything. In a light repo, it inserts a small marked bootstrap block and adds missing context files only. In a mature repo, it defaults to minimal or zero-touch behavior, creates `.you/` supplemental context, and avoids rewriting user-owned docs. Any requested destructive cleanup shows a preview and requires approval.
+**Expanded Scope:** `.you/` should be the safe generated layer, but You.md should still make additive edits to top-level agent files so normal agents/tools actually discover and use the context. Prefer one standard managed bootstrap block for existing repos rather than too many subtle tiers. Non-additive rewrites, deletions, or consolidations should require an explicit approval flow.
+**Verification:** In a fresh repo, `youmd skill init-project` scaffolds everything. In an existing repo, it inserts or updates one standard managed bootstrap block, adds missing context files only, creates `.you/` supplemental context, and avoids rewriting user-owned docs. Any requested destructive cleanup shows a preview and requires approval.
 
 ### 43. Productize the "agent operating system" workflow that works in this repo
 **Status:** IN PROGRESS
