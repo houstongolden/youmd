@@ -1,0 +1,3 @@
+# Compiled JS output — Convex CLI generates these; only .ts sources belong in git
+*.js
+*.js.map

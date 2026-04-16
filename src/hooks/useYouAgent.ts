@@ -399,6 +399,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   ): Promise<{ text: string; toolCalls: AgentToolCall[] }> => {
     const streamUrl = CHAT_PROXY_URL.replace("/chat", "/chat/stream");
 
+    // Hoisted so catch block can return partial results
+    let fullText = "";
+    const toolCalls: AgentToolCall[] = [];
+
     try {
       const res = await fetch(streamUrl, {
         method: "POST",
@@ -408,15 +412,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       });
 
       if (!res.ok || !res.body) {
-        // Fall back to non-streaming (DON'T call onFirstToken — let caller handle)
-        const fallback = await callLLM(msgs);
-        return { text: fallback, toolCalls: [] };
+        // Streaming endpoint failed (both Anthropic + OpenRouter down).
+        // Return empty rather than falling back to the onboarding /chat endpoint
+        // (wrong endpoint: no tools, 50K payload limit).
+        return { text: "", toolCalls: [] };
       }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let fullText = "";
-      const toolCalls: AgentToolCall[] = [];
       let buffer = "";
       let notifiedFirstToken = false;
       let rafPending = false;
@@ -512,11 +515,12 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       return { text: fullText || "", toolCalls };
     } catch {
-      // Fall back to non-streaming on any error (DON'T call onFirstToken)
-      const fallback = await callLLM(msgs);
-      return { text: fallback, toolCalls: [] };
+      // Streaming failed — return whatever was streamed so far rather than
+      // falling back to callLLM (which hits the onboarding endpoint with a 50K char limit
+      // and no tools — wrong endpoint for the main agent).
+      return { text: fullText || "", toolCalls };
     }
-  }, [callLLM]);
+  }, []);
 
   // Save updates to Convex
   const saveUpdates = useCallback(
