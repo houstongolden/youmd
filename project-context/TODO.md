@@ -190,6 +190,8 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 
 - [ ] Execute the ship-readiness plan across CLI, MCP, API, web-agent reliability, parity, and personality
 - [x] Complete the first ship-readiness evidence pass: CLI/bootstrap smoke tests, live MCP/API checks, and a tracked audit doc
+- [x] Complete authenticated production CLI hard-smoke coverage for `register`, `login`, `login --key`, `whoami`, `push`, `pull`, `diff`, `status`, `keys list`, and `sync`
+- [x] Fix CLI public-profile ingestion + round-trip correctness (`application/vnd.you-md.v1+json`, public markdown fetch, clean publish→pull→diff, accurate local publish/sync state)
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
 - [ ] Design global `~/.you/` plus repo-local `.you/` ownership model and migration path from `.youmd`
 - [ ] Extend the validated cross-agent stack-sync pattern beyond repo bootstrap into global/shared instruction mirroring, portable overlap settings, and persistent stack inventory
@@ -203,8 +205,9 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Memory lifecycle improvements
 - [ ] Next.js 16.2.2 upgrade evaluation
 - [ ] Study gstack setup/team-mode patterns and borrow the useful structure for global You.md bootstrap and team rollout
-- [ ] Expand the CLI/MCP/API smoke matrix to authenticated flows and post-deploy production verification
 - [ ] Continue the web-agent reliability/personality audit with live repros and side-by-side parity checks against the local CLI agent
+- [ ] Isolate and fix the headless/browser Clerk sign-in stall in the custom terminal auth flow
+- [ ] Add a documented production endpoint matrix for public, authenticated, MCP, and chat surfaces
 
 ### Agent Intelligence Polish
 - [ ] You Agent personality tuning (more wit, less generic)
@@ -214,7 +217,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Custom sections via agent conversation (flexible, not rigid 13 sections)
 
 ### End-to-End Flow Testing
-- [ ] Full CLI → web journey: init → register → push → web dashboard sees data
+- [x] Full CLI → web journey: fresh account → login → init → build → push/publish → public profile → pull → diff/status clean
 - [ ] Full web → CLI journey: web create → CLI login → pull → local files correct
 - [ ] Context link share: create → share with Claude → Claude responds with context
 - [ ] Pipeline: add source URL → scrape → extract → compile → auto-publish

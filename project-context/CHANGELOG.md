@@ -1,5 +1,19 @@
 # You.md — Changelog
 
+## 2026-04-16 — Ship Readiness Pass: Authenticated CLI Hardening + Round-Trip Fidelity
+
+### CLI / API / Sync Reliability
+- Hard-tested the authenticated production CLI flow against fresh throwaway accounts: `register`, `login`, `login --key`, `whoami`, `init`, `build`, `push`, `pull`, `diff`, `status`, `keys list`, and `sync`
+- Fixed CLI auth/account resolution against the real `/api/v1/me` shape by normalizing nested `user` responses instead of assuming only legacy flat fields
+- Fixed public-profile ingestion so the CLI correctly parses `application/vnd.you-md.v1+json`, strips web-only `_profile` transport metadata, and fetches the markdown variant for `you.md`
+- Fixed `push` so successful publishes persist local publish state, which makes `status` reflect reality instead of continuing to say `publish never`
+- Fixed publish → pull → diff round-trip drift by tightening compiler/decompiler defaults, removing scaffold-only decompile output, and preventing empty writing-preferences objects from rendering as fake file diffs
+- Fixed sync-state accuracy after `pull` so local and remote hashes now match after a clean production round-trip
+
+### QA Findings
+- The local CLI/auth/API path is materially healthier now: fresh-account onboarding and live profile publication work end-to-end against production
+- The main remaining release blocker is not the CLI toolchain — it is browser-based auth/web-shell parity, where headless Clerk sign-in still stalls with no surfaced error
+
 ## 2026-04-16 — Ship Readiness Pass: MCP Web Proxy + Web-Agent Reliability
 
 ### MCP / API / QA

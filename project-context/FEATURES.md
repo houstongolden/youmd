@@ -133,6 +133,8 @@ Last Updated: 2026-04-16
 | youmd project | Done | Per-project context (init, list, switch, context, memory) |
 | youmd skill | Done | 18 core subcommands plus aliases: list, install, remove, use, sync, create, add, push, link, init-project, improve, metrics, search, browse, publish, remote, export, info |
 | MCP config generation | Done | `youmd mcp --json` / `--install` now emit an unambiguous published-package launcher instead of bare `npx youmd mcp` |
+| Authenticated CLI production round-trip | Done | Fresh-account register/login/login-key/whoami/push/pull/diff/status/sync now hard-smoke clean against prod |
+| Public-profile vendor JSON handling | Done | CLI now parses `application/vnd.you-md.v1+json`, strips `_profile`, fetches public markdown, and keeps local hashes/sync state aligned |
 
 ## Skill System (v1.0)
 
@@ -160,6 +162,7 @@ Last Updated: 2026-04-16
 | Web: /skills command | Done | Slash command + help text |
 | Skill registry | Done | Convex tables (skills + skillInstalls), 9 HTTP endpoints, web SkillsPane — completed 2026-03-27 |
 | Ship-readiness audit evidence | In progress | First pass completed: CLI/bootstrap/MCP smoke checks, live API contract validation, and a tracked audit doc with resolved vs remaining blockers |
+| Browser-auth parity audit | In progress | Terminal auth UI renders, but headless Clerk sign-in still stalls on `sign_ins` requests with no surfaced error |
 
 ## Design System (PRD v2.3)
 
