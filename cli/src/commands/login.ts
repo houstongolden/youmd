@@ -2,7 +2,7 @@ import * as readline from "readline";
 import { exec } from "child_process";
 import chalk from "chalk";
 import { readGlobalConfig, writeGlobalConfig, getConvexSiteUrl } from "../lib/config";
-import { getMe, loginWithEmail } from "../lib/api";
+import { getMe, getMeUser, loginWithEmail } from "../lib/api";
 import { BrailleSpinner } from "../lib/render";
 
 const ACCENT = chalk.hex("#C46A3A");
@@ -158,8 +158,9 @@ async function loginWithKey(key: string): Promise<void> {
     }
 
     const me = res.data;
-    config.username = me.username;
-    config.email = me.email;
+    const user = getMeUser(me);
+    config.username = user.username;
+    config.email = user.email;
     writeGlobalConfig(config);
 
     spinner.stop();
@@ -167,14 +168,14 @@ async function loginWithKey(key: string): Promise<void> {
     console.log(
       "  " + chalk.green("authenticated") +
         " as " +
-        chalk.hex("#C46A3A")("@" + me.username)
+        chalk.hex("#C46A3A")("@" + (user.username || "unknown"))
     );
     console.log("");
-    console.log("  user:  " + me.username);
-    if (me.email) {
-      console.log("  email: " + me.email);
+    console.log("  user:  " + (user.username || "unknown"));
+    if (user.email) {
+      console.log("  email: " + user.email);
     }
-    console.log("  plan:  " + me.plan);
+    console.log("  plan:  " + (user.plan || "free"));
     console.log("  key:   " + key.slice(0, 8) + "..." + key.slice(-4));
     console.log("");
   } catch (err) {

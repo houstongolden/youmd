@@ -8,7 +8,7 @@ import {
   isAuthenticated,
   readGlobalConfig,
 } from "../lib/config";
-import { getMe } from "../lib/api";
+import { getMe, getMeUser } from "../lib/api";
 import { shortHash } from "../lib/hash";
 import { readSkillCatalog } from "../lib/skill-catalog";
 import { loadIdentityData, resolveVariable } from "../lib/skill-renderer";
@@ -295,7 +295,8 @@ async function showRemoteStatus(): Promise<void> {
     }
 
     const me = res.data;
-    const remoteUsername = me.user?.username || me.username;
+    const remoteUser = getMeUser(me);
+    const remoteUsername = remoteUser.username;
     console.log("  " + label("user") + chalk.green("@" + (remoteUsername || "unknown")));
     console.log("  " + label("bundles") + String(me.bundleCount));
 
@@ -353,7 +354,7 @@ async function showRemoteStatus(): Promise<void> {
 
     console.log(
       "  " + label("url") +
-        chalk.cyan("https://you.md/@" + (me.user?.username || me.username || "unknown"))
+        chalk.cyan("https://you.md/@" + (remoteUsername || "unknown"))
     );
     console.log("");
   } catch (err) {

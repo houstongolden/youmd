@@ -1884,6 +1884,7 @@ http.route({
       // 4. Generate an API key for CLI access
       const keyResult = await ctx.runMutation(api.apiKeys.createKey, {
         clerkId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         label: "cli-auth",
         scopes: ["read:public"],
       });

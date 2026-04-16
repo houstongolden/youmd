@@ -206,10 +206,26 @@ describe("integration: API endpoint contract", () => {
     expect(res.ok).toBe(true);
 
     const data = await res.json() as Array<{ username?: string }>;
-    return data
+    const candidates = data
       .map((entry) => entry.username)
       .filter((username): username is string => Boolean(username))
-      .slice(0, limit);
+      .slice(0, 20);
+
+    const confirmed: string[] = [];
+    for (const username of candidates) {
+      const profileRes = await fetch(
+        `https://kindly-cassowary-600.convex.site/api/v1/profiles?username=${username}`,
+        { signal: AbortSignal.timeout(10_000) }
+      );
+      if (profileRes.ok) {
+        confirmed.push(username);
+      }
+      if (confirmed.length >= limit) {
+        break;
+      }
+    }
+
+    return confirmed;
   }
 
   it("profile endpoint returns you-md/v1 schema", async () => {

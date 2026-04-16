@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { readGlobalConfig } from "../lib/config";
-import { getMe, listApiKeys } from "../lib/api";
+import { getMe, getMeUser, listApiKeys } from "../lib/api";
 import { readSkillCatalog } from "../lib/skill-catalog";
 
 const ACCENT = chalk.hex("#C46A3A");
@@ -68,7 +68,7 @@ export async function whoamiCommand(): Promise<void> {
     }
 
     const me = res.data;
-    const u = me.user || { username: me.username, email: me.email, displayName: me.displayName, plan: me.plan, createdAt: me.createdAt };
+    const u = getMeUser(me);
 
     // Reprint with fresh server data
     console.log("");

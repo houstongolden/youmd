@@ -165,6 +165,34 @@ export interface MeResponse {
   bundleCount: number;
 }
 
+export interface MeUser {
+  username?: string;
+  email?: string;
+  displayName?: string;
+  plan?: string;
+  createdAt?: number;
+}
+
+export function getMeUser(me: MeResponse): MeUser {
+  if (me.user) {
+    return {
+      username: me.user.username,
+      email: me.user.email,
+      displayName: me.user.displayName,
+      plan: me.user.plan,
+      createdAt: me.user.createdAt,
+    };
+  }
+
+  return {
+    username: me.username,
+    email: me.email,
+    displayName: me.displayName,
+    plan: me.plan,
+    createdAt: me.createdAt,
+  };
+}
+
 export async function getMe(): Promise<ApiResponse<MeResponse>> {
   return request<MeResponse>("/api/v1/me", {
     token: getToken(),
