@@ -191,12 +191,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     // Restore the session
     sessionIdRef.current = latestChatMessages.sessionId;
     messageCountRef.current = latestChatMessages.messageCount || 0;
-    const restoredDisplay = latestChatMessages.displayMessages.map(m => ({
+    // Restore only the last 30/40 messages — prevents stale bloated sessions
+    // from causing slow loads (large payload over Convex WebSocket).
+    const restoredDisplay = latestChatMessages.displayMessages.slice(-30).map(m => ({
       id: m.id,
       role: m.role as DisplayMessage["role"],
       content: m.content,
     }));
-    const restoredLLM = latestChatMessages.llmMessages.map(m => ({
+    const restoredLLM = latestChatMessages.llmMessages.slice(-40).map(m => ({
       role: m.role as ChatMessage["role"],
       content: m.content,
     }));
@@ -229,15 +231,21 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     // Debounce: save 1s after the last change
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
+      // Truncate to last 30 display + 40 LLM messages to prevent session bloat.
+      // Large sessions slow down the initial load (full payload over WebSocket).
+      const MAX_DISPLAY = 30;
+      const MAX_LLM = 40;
+      const trimmedDisplay = displayMessages.slice(-MAX_DISPLAY);
+      const trimmedLLM = messages.slice(-MAX_LLM);
       saveChatMessages({
         clerkId: user.id,
         sessionId: sessionIdRef.current,
-        displayMessages: displayMessages.map(m => ({
+        displayMessages: trimmedDisplay.map(m => ({
           id: m.id,
           role: m.role,
           content: m.content,
         })),
-        llmMessages: messages.map(m => ({
+        llmMessages: trimmedLLM.map(m => ({
           role: m.role,
           content: m.content,
         })),
