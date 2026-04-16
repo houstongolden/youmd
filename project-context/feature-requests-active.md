@@ -23,7 +23,14 @@ Last Updated: 2026-04-16
 **Status:** IN PROGRESS
 **Verified:** NO
 **Request:** Make `youmd` able to improve agent/project operating context without clobbering mature `CLAUDE.md`, `AGENTS.md`, `.cursor/rules`, or existing `project-context/` structures. Support fresh scaffold, minimal merge, and zero-touch modes.
-**Verification:** In a fresh repo, `youmd skill init-project` scaffolds everything. In a light repo, it appends a small marked bootstrap block and adds missing context files only. In a mature repo, it defaults to minimal or zero-touch behavior, creates `.you/` supplemental context, and avoids rewriting user-owned docs.
+**Expanded Scope:** `.you/` should be the safe generated layer, but You.md should still make small additive edits to top-level agent files when safe so normal agents/tools actually discover and use the context. Non-additive rewrites, deletions, or consolidations should require an explicit approval flow.
+**Verification:** In a fresh repo, `youmd skill init-project` scaffolds everything. In a light repo, it inserts a small marked bootstrap block and adds missing context files only. In a mature repo, it defaults to minimal or zero-touch behavior, creates `.you/` supplemental context, and avoids rewriting user-owned docs. Any requested destructive cleanup shows a preview and requires approval.
+
+### 43. Productize the "agent operating system" workflow that works in this repo
+**Status:** IN PROGRESS
+**Verified:** NO
+**Request:** Ensure the packaged You.md CLI/skills bundle can replicate the behavior seen in this repo: agents read repo instructions first, read `project-context/` before substantial work, track multi-part requests, and treat updates to `TODO.md`, `FEATURES.md`, `CHANGELOG.md`, `feature-requests-active.md`, and `PROMPTS.md` as part of completion.
+**Verification:** A user installs You.md in a new repo and a fresh agent session behaves this way out of the box. In an existing repo, You.md safely teaches the same workflow through additive bootstrap blocks, linked host-specific skills, and scaffolded missing files without clobbering user-owned docs.
 
 ### 39. Identity-Aware Skill System — Full Implementation
 **Status:** DONE

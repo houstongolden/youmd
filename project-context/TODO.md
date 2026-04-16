@@ -181,6 +181,11 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Add `AGENTS.md` first-class support to `youmd skill init-project`
 - [ ] Add init-project modes: `auto`, `minimal`, `zero-touch`, `scaffold`
 - [ ] Introduce `.you/` supplemental project context with `.youmd` compatibility
+- [ ] Replace full `CLAUDE.md` append behavior with a tiny managed bootstrap block
+- [ ] Add `PROMPTS.md` to project-context scaffolding and ongoing maintenance model
+- [ ] Teach generated instructions to require reading `project-context/` and updating TODO / FEATURES / CHANGELOG / feature-requests / PROMPTS as part of done
+- [ ] Add repo classification preview plus approval gate for non-additive instruction-file edits
+- [ ] Design global `~/.you/` plus repo-local `.you/` ownership model and migration path from `.youmd`
 
 ---
 
@@ -190,6 +195,8 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Chat context compaction (Claude Code-style)
 - [ ] Memory lifecycle improvements
 - [ ] Next.js 16.2.2 upgrade evaluation
+- [ ] Audit bundled skills and onboarding copy so the packaged product explicitly sells and installs the agent-operating-system workflow
+- [ ] Study gstack setup/team-mode patterns and borrow the useful structure for You.md repo bootstrap
 
 ### Agent Intelligence Polish
 - [ ] You Agent personality tuning (more wit, less generic)

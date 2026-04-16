@@ -19,6 +19,44 @@ serious ownership model for coexistence with robust user-authored `CLAUDE.md`,
 
 This document proposes the safer long-term model.
 
+## Critical Clarification
+
+Using `.you/` alone is not enough.
+
+Reason:
+
+- most agents do not auto-read `.you/AGENT.md`
+- most tools discover `AGENTS.md`, `CLAUDE.md`, host-linked skills, and
+  conventional project docs first
+- if You.md only writes hidden duplicates, users will not get the immediate
+  "magic moment" where a fresh agent actually behaves better on first contact
+
+So the right model is:
+
+- `.you/` as the safe, generated, You.md-owned context layer
+- plus tiny additive bootstrap edits to `AGENTS.md` / `CLAUDE.md` when safe
+- plus host-specific linked skills/rules for Claude, Codex, Cursor, and future agents
+
+That three-part combination is what makes the system both safe and instantly
+useful.
+
+## The Real Product Goal
+
+The product is not merely "identity-aware prompts."
+
+The product is a portable agent operating system bootstrap that helps users
+replicate the kind of setup that already works well in this repo:
+
+- agents read repo operating instructions before substantial work
+- agents read and use `project-context/`
+- agents track multi-part requests explicitly
+- agents treat updates to `TODO.md`, `FEATURES.md`, `CHANGELOG.md`,
+  `feature-requests-active.md`, and `PROMPTS.md` as part of "done"
+- agents preserve the user's working style across sessions and across tools
+
+If You.md does not scaffold or teach those behaviors, it is not yet delivering
+the full value proposition.
+
 ## Current Behavior
 
 Today the CLI does the following:
@@ -35,14 +73,16 @@ Current gaps:
 - no `AGENTS.md` generation or merge path
 - no distinction between "minimal existing file" and "highly customized file"
 - no per-file merge for `project-context/`
+- no `PROMPTS.md` scaffold even though prompt archival is part of the operating model
 - no preview/dry-run before writes
 - no "zero-touch" install mode
 - no first-class namespaced supplemental context directory
 - no explicit ownership boundary between user-authored instructions and You.md-authored instructions
+- bundled skills describe safe behavior aspirationally, but the merge policy actually lives in code and is still too coarse
 
 ## Recommendation
 
-Do **not** make `CLAUDE-you.md` / `AGENTS-you.md` the primary strategy.
+Do not make `CLAUDE-you.md` / `AGENTS-you.md` the primary strategy.
 
 Reason:
 
@@ -50,7 +90,7 @@ Reason:
 - they add clutter at repo root
 - they still require modifying the main file to teach the agent to read them
 
-Instead, adopt a **three-layer model plus zero-touch mode**.
+Instead, adopt a three-layer model plus zero-touch mode.
 
 ## Proposed Ownership Model
 
@@ -78,8 +118,8 @@ Create a namespaced location for generated instructions:
     TODO.md
     FEATURES.md
     CHANGELOG.md
-    PRD.md
-    ARCHITECTURE.md
+    feature-requests-active.md
+    PROMPTS.md
 ```
 
 This directory is explicitly You.md-owned and safe to regenerate.
@@ -120,6 +160,53 @@ For cautious users or mature repos:
 
 This should be a first-class supported mode, not an accidental outcome.
 
+## Permission Model
+
+This needs to be explicit because trust is the product.
+
+### Safe by default
+
+Auto/minimal modes may:
+
+- create missing files
+- insert or update a managed bootstrap block
+- scaffold missing `project-context/` files one-by-one
+- create `.you/`
+- link host-specific skills/rules
+
+Auto/minimal modes must not:
+
+- delete user content
+- rewrite large user-authored sections
+- rename files
+- replace `CLAUDE.md`, `AGENTS.md`, or existing `project-context/*`
+- silently move user content into `.you/`
+
+### Approval required
+
+If the agent wants to do anything beyond additive safe edits, it must:
+
+1. show the exact proposed changes
+2. explain why they help
+3. explain what existing behavior is preserved
+4. ask for approval before making the change
+
+This applies to:
+
+- deletions
+- major rewrites
+- consolidations or deduplication passes
+- replacing existing instruction structures
+- changing robust/customized `project-context/` files beyond marker blocks
+
+### Implementation note
+
+This should become a real CLI behavior, not just documentation:
+
+- `auto` prints a plan before writing
+- `minimal` performs additive writes only
+- rewrite/cleanup paths require explicit confirmation
+
 ## Safe Tier Strategy
 
 ### Tier 1 — No existing instruction system
@@ -148,7 +235,7 @@ Condition:
 Action:
 
 - preserve existing files
-- insert a **small bootstrap block** near the top with markers
+- insert a small bootstrap block near the top with markers
 - scaffold only missing `project-context/` files one-by-one
 - create `.you/` supplemental files
 - link agent-specific skills
@@ -162,6 +249,7 @@ Example bootstrap block:
 Also read:
 - `.you/AGENT.md`
 - `.you/project-context/`
+- `project-context/`
 
 Treat existing repo instructions as primary and You.md context as additive.
 <!-- youmd:bootstrap:end -->
@@ -172,6 +260,7 @@ Important:
 - this block must be marker-based so it can be updated in place later
 - never duplicate it
 - never append a second unmanaged blob
+- it should be extremely short and point to `.you/` plus shared repo docs
 
 ### Tier 3 — Robust existing instruction system
 
@@ -193,7 +282,7 @@ This is the correct place to push back on brute-force merge behavior.
 
 ## Detection Heuristics
 
-The CLI should classify repos before writing:
+The CLI should classify repos before writing.
 
 ### Instruction file classification
 
@@ -222,6 +311,27 @@ Treat as minimal if:
 - directory exists but only 1-3 files are present
 - files are mostly empty templates
 
+## Operating-System Behaviors To Scaffold
+
+When You.md generates or patches repo instructions, the resulting setup should
+teach agents to do the following:
+
+1. read `AGENTS.md` / `CLAUDE.md` first
+2. read `project-context/` before significant work
+3. treat multi-part user prompts as a checklist, not a single request
+4. record active asks in `feature-requests-active.md`
+5. update at least:
+   - `TODO.md`
+   - `FEATURES.md`
+   - `CHANGELOG.md`
+   - `feature-requests-active.md`
+   - `PROMPTS.md`
+6. treat those updates as part of completion, not optional cleanup
+7. preserve user-authored instructions as primary when they already exist
+
+This is what made the first Codex session in this repo feel immediately
+context-aware. That behavior needs to be productized.
+
 ## CLI/Product Changes Needed
 
 ### 1. Add explicit modes to `youmd skill init-project`
@@ -229,12 +339,14 @@ Treat as minimal if:
 Support:
 
 - `--mode scaffold`
-- `--mode merge`
 - `--mode minimal`
 - `--mode zero-touch`
 - `--mode auto` (default)
 
 `auto` should classify and then print the plan before writing.
+
+Human users should not need to think about the mode flag. The default should be
+good enough.
 
 ### 2. Add first-class `AGENTS.md` support
 
@@ -246,7 +358,7 @@ Needed:
 - merge/update a bootstrap block when present
 - if both `AGENTS.md` and `CLAUDE.md` exist, prefer `AGENTS.md` as repo-wide canonical and keep `CLAUDE.md` thin/tool-specific
 
-### 3. Split "identity block" from "bootstrap block"
+### 3. Split identity context from bootstrap context
 
 Current append strategy mixes too much into the root file.
 
@@ -267,6 +379,18 @@ Desired behavior:
 - never overwrite existing files without explicit approval
 - optionally write You.md-owned variants into `.you/project-context/`
 
+Minimum shared files You.md should understand and scaffold:
+
+- `CURRENT_STATE.md`
+- `TODO.md`
+- `FEATURES.md`
+- `CHANGELOG.md`
+- `feature-requests-active.md`
+- `PROMPTS.md`
+
+These are the core files that create the "carry context forward between agent
+sessions" effect.
+
 ### 5. Add dry-run output
 
 Before writing, show:
@@ -285,6 +409,62 @@ Long-term model:
 - `~/.you/` for user-global identity and skills
 - repo-local `.you/` for project overlay and generated supplements
 - continue reading `~/.youmd/` and local `.youmd/` during migration
+
+## What To Borrow From gstack
+
+gstack is relevant here because it already produces the "install this and your
+agent gets better immediately" feeling.
+
+Patterns worth copying:
+
+### 1. Tiny top-level bootstrap, rich generated layer underneath
+
+gstack becomes useful quickly because it teaches the host agent where to look
+and what skills to use, while keeping richer generated content in linked skill
+directories.
+
+You.md should do the same:
+
+- tiny managed bootstrap block in `AGENTS.md` / `CLAUDE.md`
+- richer generated context in `.you/`
+- host-linked skills for actual tool/runtime integration
+
+### 2. Host-specific generated outputs
+
+gstack does not assume one generic file works everywhere. It generates and links
+host-specific artifacts for Claude, Codex, Cursor, Kiro, Factory, and others.
+
+You.md should keep leaning into this. A universal context model is good; a
+universal delivery surface is not.
+
+### 3. Setup/bootstrap command as the magic moment
+
+gstack's setup flow is opinionated and immediate. That is part of why it feels
+useful right away.
+
+You.md should have the same quality bar:
+
+- one command
+- classify the repo automatically
+- print the plan
+- make safe additive edits
+- leave the repo immediately more usable by agents
+
+### 4. Team/repo bootstrap as a first-class concept
+
+gstack has a clear repo/team bootstrap story, not just a personal install.
+
+You.md needs the same split:
+
+- user-global identity + skills under `~/.you/`
+- repo-local agent bootstrap under `.you/` plus top-level bootstrap blocks
+- later: explicit team/repo init command that teammates can inherit safely
+
+### 5. Generated assets should be clearly owned
+
+gstack distinguishes generated/linked assets from hand-authored project docs.
+You.md should formalize the same ownership boundary so users know what they can
+edit freely and what the CLI may regenerate.
 
 ## Recommended File Layout
 
@@ -324,6 +504,7 @@ The best default is:
 4. patch `AGENTS.md` or `CLAUDE.md` only with a tiny bootstrap block
 5. link agent-specific skill files always
 6. scaffold top-level `project-context/` only when absent or clearly minimal
+7. always include the workflow files that make agent context compound over time
 
 This gets the upside of portable identity context without acting like You.md
 owns the user's repo.
@@ -335,8 +516,10 @@ Highest leverage implementation order:
 1. add `--mode auto|minimal|zero-touch`
 2. add `AGENTS.md` support
 3. replace "append full identity section" with "insert/update bootstrap block"
-4. scaffold missing `project-context/` files individually
+4. scaffold missing `project-context/` files individually, including `PROMPTS.md`
 5. introduce `.you/` as supplemental namespace with `.youmd` compatibility
+6. teach generated instructions the operating-system behaviors listed above
+7. add explicit preview/approval flow for anything beyond additive edits
 
 ## Bottom Line
 
@@ -347,6 +530,8 @@ You.md should:
 - enrich the user's operating system for agents
 - preserve handcrafted repo instructions
 - keep its own generated context clearly namespaced
+- make small useful additive edits to shared agent files when safe
+- require approval for anything beyond additive edits
 - give advanced users a zero-touch option
 
 That is the durable path to making this work across Claude Code, Codex, Cursor,

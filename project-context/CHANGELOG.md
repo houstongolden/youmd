@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-04-16 — Agent Operating System Product Direction
+
+### Planning / Product Direction
+- Expanded the safe integration strategy to make one product point explicit: `.you/` by itself is not enough, because most agents do not auto-read it and the product only feels magical when top-level agent files are improved safely too
+- Defined the intended three-part delivery model:
+  - `.you/` as the You.md-owned generated layer
+  - tiny additive bootstrap blocks in `AGENTS.md` / `CLAUDE.md` when safe
+  - host-specific linked skills/rules for Claude, Codex, Cursor, and future agents
+- Added an explicit permission model: additive edits can be automatic in `auto` / `minimal`, but rewrites, deletions, consolidations, and other non-additive changes should require a preview plus approval
+- Captured the exact "agent operating system" behaviors You.md should scaffold, including reading `project-context/`, tracking multi-part requests, and treating updates to `TODO.md`, `FEATURES.md`, `CHANGELOG.md`, `feature-requests-active.md`, and `PROMPTS.md` as part of completion
+- Documented the main gstack patterns worth borrowing: tiny bootstrap surfaces, host-specific generated artifacts, setup as the magic moment, repo/team bootstrap, and clearly owned generated assets
+
 ## 2026-04-16 — Safe Agent Context Integration Strategy
 
 ### Planning / Product Direction
