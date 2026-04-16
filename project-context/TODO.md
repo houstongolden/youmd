@@ -178,6 +178,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 ## IN PROGRESS
 
 - [ ] Safe agent-context integration overhaul
+- [ ] Run a truth pass across skill catalog, seeded backend skill records, dashboard skill UI, CLI help, and README so one bundled-skill source of truth wins
 - [ ] Add `AGENTS.md` first-class support to `youmd skill init-project`
 - [ ] Add init-project modes: `auto`, `additive`, `zero-touch`, `scaffold`
 - [ ] Introduce `.you/` supplemental project context with `.youmd` compatibility
@@ -186,6 +187,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Teach generated instructions to require reading `project-context/` and updating TODO / FEATURES / CHANGELOG / feature-requests / PROMPTS as part of done
 - [ ] Add repo classification preview plus approval gate for non-additive instruction-file edits
 - [ ] Design global `~/.you/` plus repo-local `.you/` ownership model and migration path from `.youmd`
+- [ ] Incorporate the validated cross-agent stack-sync pattern: shared instruction layer, shared skill layer, portable overlap settings, and persistent stack inventory
 
 ---
 
@@ -197,6 +199,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Next.js 16.2.2 upgrade evaluation
 - [ ] Audit bundled skills and onboarding copy so the packaged product explicitly sells and installs the agent-operating-system workflow
 - [ ] Study gstack setup/team-mode patterns and borrow the useful structure for You.md repo bootstrap
+- [ ] Audit which You.md features are actually real in code/API today versus docs/UI marketing or placeholder claims
 
 ### Agent Intelligence Polish
 - [ ] You Agent personality tuning (more wit, less generic)

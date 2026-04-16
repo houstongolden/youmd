@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-04-16 — Truth Pass + Cross-Agent Stack Sync Planning
+
+### Planning / Product Direction
+- Added an explicit pre-implementation truth pass to reconcile what the You.md skill system actually ships versus what the dashboard, README, and docs currently imply
+- Captured the need to unify multiple overlapping skill sources of truth: CLI bundled catalog, backend-seeded bundled skills, dashboard UI lists, and on-disk skill markdown files
+- Folded the validated cross-agent stack-sync workflow into the product direction so the You.md plan now accounts for:
+  - a shared instruction layer
+  - a shared skill layer with host-specific mirrors
+  - portable overlap settings instead of forced config flattening
+  - a persistent stack inventory for future agents
+- Clarified that the new bootstrap work should complement platform-side agent/activity visibility and linked host-native skills, not create a second conflicting system
+
 ## 2026-04-16 — Bootstrap Strategy Simplification
 
 ### Planning / Product Direction

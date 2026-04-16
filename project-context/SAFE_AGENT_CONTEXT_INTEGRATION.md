@@ -481,6 +481,85 @@ gstack distinguishes generated/linked assets from hand-authored project docs.
 You.md should formalize the same ownership boundary so users know what they can
 edit freely and what the CLI may regenerate.
 
+## Cross-Agent Stack Sync Implications
+
+An additional lesson from the recent local stack-standardization workflow is
+that You.md should not think only in terms of a single repo.
+
+There are really three integration layers:
+
+### 1. Global agent entrypoints
+
+Examples from the validated local workflow:
+
+- shared top-level instructions across Claude, Codex, Cursor, and Pi
+- one canonical instruction source with agent-specific entrypoints pointing to it
+- one shared inventory file that future agents can consult before mutating the stack
+
+You.md does not need to copy that exact filesystem layout, but the product
+should support the same outcome:
+
+- one clear shared instruction layer
+- agent-specific entrypoints
+- one permanent inventory of what is installed, shared, mirrored, or tool-specific
+
+### 2. Shared skill library
+
+The local workflow also validated the usefulness of:
+
+- one shared source-of-truth skill directory
+- mirrored host-specific installs where needed
+- preserving host-native built-ins instead of flattening everything into one directory
+
+That should inform the You.md direction:
+
+- `.you/` and host-linked skills should complement, not erase, host-native systems
+- the product should understand "shared skills" versus "agent-native managed skills"
+
+### 3. Portable shared settings
+
+The validated stack-sync workflow did not force one config format across every
+agent. It synced only the safe overlap and preserved tool-specific extras.
+
+That is the right philosophy for You.md too:
+
+- unify the shared semantic layer
+- map only the safe overlap into each tool
+- preserve host-specific extras instead of trying to flatten everything
+
+This matters because You.md is trying to become infrastructure, not a takeover.
+
+## Truth Pass Required Before Build
+
+Before implementing the new bootstrap behavior, the product needs a deliberate
+"truth pass" across the existing skill system.
+
+Right now there are multiple overlapping sources of truth:
+
+- default bundled skills in `cli/src/lib/skill-catalog.ts`
+- bundled skill content seeded in `convex/skills.ts`
+- UI-local bundled skill arrays in the dashboard
+- docs/README command tables
+- extra skill markdown files in `cli/skills/` that are present on disk but not
+  actually part of the default bundled product
+
+This creates drift.
+
+Examples already observed:
+
+- the dashboard markets `proactive-context-fill`, but it is not in the default
+  skill catalog
+- `README.md` and CLI copy still describe the old `init-project` behavior
+- the skill catalog source paths are written one way while runtime resolution
+  succeeds via fallback behavior
+
+So implementation should begin with:
+
+1. decide the canonical source of truth for bundled skill metadata
+2. reconcile catalog, seeded backend records, dashboard UI, and docs against it
+3. mark which skills are real shipping product versus experimental/on-disk only
+4. only then update `init-project`, `.you/`, and bootstrap behavior
+
 ## Recommended File Layout
 
 ### Global
