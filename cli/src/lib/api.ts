@@ -48,7 +48,10 @@ async function request<T = unknown>(
 
   let data: T;
   const contentType = res.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
+  if (
+    contentType.includes("application/json") ||
+    contentType.includes("+json")
+  ) {
     data = (await res.json()) as T;
   } else {
     data = (await res.text()) as unknown as T;
@@ -99,8 +102,9 @@ export async function checkUsername(
 export async function getPublicProfile(
   username: string
 ): Promise<{ youJson: unknown; youMd: string; username: string; displayName?: string } | null> {
+  const path = `/api/v1/profiles?username=${encodeURIComponent(username)}`;
   const res = await request<any>(
-    `/api/v1/profiles?username=${encodeURIComponent(username)}`
+    path
   );
   if (!res.ok) return null;
 
@@ -111,11 +115,26 @@ export async function getPublicProfile(
   if (data && !data.youJson) {
     // If the response has profile[] or identity{}, the entire response IS the youJson
     if (Array.isArray(data.profile) || data.identity) {
+      const { _profile, ...bundleData } = data as Record<string, unknown>;
+      let youMd =
+        (bundleData.youMd as string) ||
+        (data._youMd as string) ||
+        "";
+
+      if (!youMd) {
+        const mdRes = await request<string>(path, {
+          headers: { Accept: "text/plain" },
+        });
+        if (mdRes.ok && typeof mdRes.data === "string") {
+          youMd = mdRes.data;
+        }
+      }
+
       return {
-        youJson: data,
-        youMd: data.youMd || data._youMd || "",
-        username: data._profile?.username || data.username || username,
-        displayName: data._profile?.displayName,
+        youJson: bundleData,
+        youMd,
+        username: (data._profile as Record<string, unknown> | undefined)?.username as string || (bundleData.username as string) || username,
+        displayName: (data._profile as Record<string, unknown> | undefined)?.displayName as string | undefined,
       };
     }
   }

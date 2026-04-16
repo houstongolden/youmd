@@ -215,7 +215,7 @@ function parseAgentPrefsMd(content: string): { tone: string; formality: string; 
 
 function parseWritingPrefsMd(content: string): { style: string; format: string } {
   let style = "";
-  let format = "markdown preferred";
+  let format = "";
 
   for (const line of content.split("\n")) {
     const trimmed = line.trim();
@@ -410,7 +410,7 @@ export function compileBundle(bundleDir: string): CompileResult {
   const writingPrefSection = prefSections.find((s) => s.slug === "writing");
 
   const agentPrefs = agentPrefSection ? parseAgentPrefsMd(agentPrefSection.content) : { tone: "", formality: "casual-professional", avoid: [] };
-  const writingPrefs = writingPrefSection ? parseWritingPrefsMd(writingPrefSection.content) : { style: "", format: "markdown preferred" };
+  const writingPrefs = writingPrefSection ? parseWritingPrefsMd(writingPrefSection.content) : { style: "", format: "" };
 
   // ── Parse voice ────────────────────────────────────────────────
 
@@ -465,7 +465,7 @@ export function compileBundle(bundleDir: string): CompileResult {
       },
       writing: {
         style: writingPrefs.style || (skeleton as any)?.preferences?.writing?.style || "",
-        format: writingPrefs.format || (skeleton as any)?.preferences?.writing?.format || "markdown preferred",
+        format: writingPrefs.format || (skeleton as any)?.preferences?.writing?.format || "",
       },
     },
 

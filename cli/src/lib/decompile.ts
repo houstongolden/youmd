@@ -79,15 +79,13 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
   // profile/now.md
   {
     const focus = (now.focus as string[]) || [];
-    const lines: string[] = ['---', 'title: "Now"', '---', ''];
     if (focus.length > 0) {
+      const lines: string[] = ['---', 'title: "Now"', '---', ''];
       lines.push(...focus.map((f) => `- ${f}`));
-    } else {
-      lines.push("- (what you're working on right now)");
+      lines.push("");
+      fs.writeFileSync(path.join(profileDir, "now.md"), lines.join("\n"));
+      filesWritten++;
     }
-    lines.push("");
-    fs.writeFileSync(path.join(profileDir, "now.md"), lines.join("\n"));
-    filesWritten++;
   }
 
   // profile/projects.md
@@ -102,13 +100,9 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
         if (p.description) lines.push(`\n${p.description}`);
         lines.push("");
       }
-    } else {
-      lines.push("## Project Name");
-      lines.push("Description of your project.");
-      lines.push("");
+      fs.writeFileSync(path.join(profileDir, "projects.md"), lines.join("\n"));
+      filesWritten++;
     }
-    fs.writeFileSync(path.join(profileDir, "projects.md"), lines.join("\n"));
-    filesWritten++;
   }
 
   // profile/values.md
@@ -116,12 +110,10 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
     const lines: string[] = ['---', 'title: "Values"', '---', ''];
     if (values.length > 0) {
       lines.push(...values.map((v) => `- ${v}`));
-    } else {
-      lines.push("- (your core principles)");
+      lines.push("");
+      fs.writeFileSync(path.join(profileDir, "values.md"), lines.join("\n"));
+      filesWritten++;
     }
-    lines.push("");
-    fs.writeFileSync(path.join(profileDir, "values.md"), lines.join("\n"));
-    filesWritten++;
   }
 
   // profile/links.md
@@ -132,12 +124,10 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
       for (const [platform, url] of linkEntries) {
         lines.push(`- **${platform}**: ${url}`);
       }
-    } else {
-      lines.push("- **website**: https://");
+      lines.push("");
+      fs.writeFileSync(path.join(profileDir, "links.md"), lines.join("\n"));
+      filesWritten++;
     }
-    lines.push("");
-    fs.writeFileSync(path.join(profileDir, "links.md"), lines.join("\n"));
-    filesWritten++;
   }
 
   // Custom sections → profile/{id}.md
@@ -163,24 +153,34 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
   {
     const agent = prefs.agent || {};
     const lines: string[] = ['---', 'title: "Agent Preferences"', '---', ''];
-    lines.push(`**Tone:** ${(agent.tone as string) || "direct, curious"}`);
-    lines.push(`**Formality:** ${(agent.formality as string) || "casual-professional"}`);
+    const tone = (agent.tone as string) || "";
+    const formality = (agent.formality as string) || "";
     const avoid = (agent.avoid as string[]) || [];
+    if (tone) lines.push(`**Tone:** ${tone}`);
+    if (formality) lines.push(`**Formality:** ${formality}`);
     if (avoid.length > 0) lines.push(`**Avoid:** ${avoid.join(", ")}`);
-    lines.push("");
-    fs.writeFileSync(path.join(prefsDir, "agent.md"), lines.join("\n"));
-    filesWritten++;
+    if (lines.length > 4) {
+      lines.push("");
+      fs.writeFileSync(path.join(prefsDir, "agent.md"), lines.join("\n"));
+      filesWritten++;
+    }
   }
 
   // preferences/writing.md
   {
     const writing = prefs.writing || {};
     const lines: string[] = ['---', 'title: "Writing Preferences"', '---', ''];
-    lines.push(`**Style:** ${(writing.style as string) || ""}`);
-    lines.push(`**Format:** ${(writing.format as string) || "markdown preferred"}`);
-    lines.push("");
-    fs.writeFileSync(path.join(prefsDir, "writing.md"), lines.join("\n"));
-    filesWritten++;
+    const style = (writing.style as string) || "";
+    const format = (writing.format as string) || "";
+    if (style) lines.push(`**Style:** ${style}`);
+    if (format && !(format === "markdown preferred" && !style)) {
+      lines.push(`**Format:** ${format}`);
+    }
+    if (lines.length > 4) {
+      lines.push("");
+      fs.writeFileSync(path.join(prefsDir, "writing.md"), lines.join("\n"));
+      filesWritten++;
+    }
   }
 
   // voice/voice.md
@@ -218,12 +218,7 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
       lines.push(`**Communication Style:** ${agentDirectives.communication_style}`);
     }
     const negPrompts = (agentDirectives.negative_prompts as string[]) || [];
-    if (negPrompts.length > 0) {
-      lines.push(`**Never:**`);
-      for (const prompt of negPrompts) {
-        lines.push(`- ${prompt}`);
-      }
-    }
+    if (negPrompts.length > 0) lines.push(`**Never:** ${negPrompts.join(". ")}`);
     if (agentDirectives.default_stack) {
       lines.push(`**Default Stack:** ${agentDirectives.default_stack}`);
     }
@@ -233,13 +228,11 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
     if (agentDirectives.current_goal) {
       lines.push(`**Current Goal:** ${agentDirectives.current_goal}`);
     }
-    // If completely empty, add scaffold
-    if (lines.length === 4) {
-      lines.push("(behavioral instructions for AI agents)");
+    if (lines.length > 4) {
+      lines.push("");
+      fs.writeFileSync(path.join(directivesDir, "agent.md"), lines.join("\n"));
+      filesWritten++;
     }
-    lines.push("");
-    fs.writeFileSync(path.join(directivesDir, "agent.md"), lines.join("\n"));
-    filesWritten++;
   }
 
   return filesWritten;

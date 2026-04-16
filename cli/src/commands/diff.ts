@@ -236,7 +236,7 @@ function extractRemoteSections(
     }
 
     // preferences/writing.md
-    if (prefs.writing) {
+    if (prefs.writing?.style || prefs.writing?.format) {
       const lines = [`---\ntitle: "Writing Preferences"\n---\n`];
       if (prefs.writing.style) lines.push(`**Style:** ${prefs.writing.style}`);
       if (prefs.writing.format) lines.push(`**Format:** ${prefs.writing.format}`);

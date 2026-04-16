@@ -4,7 +4,7 @@ import chalk from "chalk";
 import { getMe, getPublicProfile, getPrivateContext } from "../lib/api";
 import { readGlobalConfig, getLocalBundleDir, readLocalConfig, writeLocalConfig } from "../lib/config";
 import { writePrivateContextToLocal } from "./private";
-import { shortHash } from "../lib/hash";
+import { computeContentHash, shortHash } from "../lib/hash";
 import { syncAllSkills } from "../lib/skills";
 import { readSkillCatalog } from "../lib/skill-catalog";
 import { decompileToFilesystem, detectFormat } from "../lib/decompile";
@@ -120,6 +120,10 @@ export async function pullCommand() {
       const remoteContentHash = meRes.data.latestBundle?.contentHash;
       const lc = readLocalConfig() || { version: 1, sources: [] };
       lc.lastKnownRemoteVersion = remoteVersion;
+      lc.localContentHash = remoteContentHash || computeContentHash(
+        youJson,
+        youJsonSource.youMd ?? ""
+      );
       if (remoteContentHash) {
         lc.lastPulledHash = remoteContentHash;
       }

@@ -188,6 +188,11 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
       const pubResult = await publishLatest();
 
       if (pubResult.ok) {
+        const currentConfig = readLocalConfig();
+        if (currentConfig) {
+          currentConfig.lastPublished = new Date().toISOString();
+          writeLocalConfig(currentConfig);
+        }
         console.log(
           chalk.green("  \u2713") +
             chalk.dim(
