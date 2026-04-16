@@ -394,6 +394,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       memories?: { key: string; value: string; category: string }[];
       urls?: string[];
       purpose?: string;
+      avatar_url?: string;
+      avatar_source?: string;
     };
   }
 
@@ -1084,7 +1086,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
         // Custom message for /skills
         const noticeContent = trimmed === "/skills"
-          ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use claude-md-generator\ninstall via CLI: youmd skill install all\nscaffold a project: youmd skill init-project\n\navailable: claude-md-generator, project-context-init, voice-sync, meta-improve"
+          ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use claude-md-generator\ninstall via CLI: youmd skill install all\nscaffold a project: youmd skill init-project\n\navailable: claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs"
           : `[switched to ${paneCommands[trimmed]}]`;
 
         setDisplayMessages((prev) => [
@@ -1112,7 +1114,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             {
               id: crypto.randomUUID(),
               role: "system-notice",
-              content: `usage: /skill use <name>\navailable skills: claude-md-generator, project-context-init, voice-sync, meta-improve\ninstall via CLI: youmd skill install all`,
+              content: `usage: /skill use <name>\navailable skills: claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs\ninstall via CLI: youmd skill install all`,
             },
           ]);
           return true;
@@ -2082,8 +2084,15 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
-      // Handle portrait updates from agent
-      const portraitUpdate = parsePortraitUpdateFromResponse(response);
+      // Handle portrait updates from agent — prefer tool_use, fall back to JSON blocks.
+      const toolPortraitUpdate = toolCalls
+        .filter(tc => tc.name === "update_profile" && typeof tc.input.avatar_url === "string")
+        .map(tc => ({
+          source: tc.input.avatar_source || "profile",
+          url: tc.input.avatar_url as string,
+        }))
+        .at(-1);
+      const portraitUpdate = toolPortraitUpdate || parsePortraitUpdateFromResponse(response);
       if (portraitUpdate && user?.id && userProfile?._id) {
         const portraitStepId = addStep("updating portrait", portraitUpdate.source);
         try {

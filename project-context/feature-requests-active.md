@@ -42,6 +42,7 @@ Last Updated: 2026-04-16
 **Status:** IN PROGRESS
 **Verified:** NO
 **Request:** Hard-test the actual CLI/skill flows locally, ensure You.md API + MCP sync correctly, and audit the You Agent/onboarding/web shell so local and web experiences are highly consistent with a clear bias toward the local CLI/TUI power-user surface. Produce a comprehensive improvement plan and QA plan covering endpoints, functionality, UI/UX, personality, proactiveness, and cross-agent usage with Claude/Codex/etc.
+**Progress (2026-04-16):** Completed the first evidence pass. Smoke-tested `skill init-project` scaffold/additive modes, `mcp --json`, and `mcp --install`; validated live public API + MCP behavior; fixed broken web-domain MCP discovery/transport; fixed stale 4-skill web-shell copy; moved portrait updates onto the main tool-use path; and captured findings in `project-context/SHIP_READINESS_AUDIT_2026-04-16.md`.
 **Verification:** There is a concrete ship-readiness plan, a real end-to-end test matrix, a bug/repro inventory for the web agent, a parity audit for local vs web, and a prioritized fix list that can be executed to reach public-release quality.
 
 ### 39. Identity-Aware Skill System — Full Implementation

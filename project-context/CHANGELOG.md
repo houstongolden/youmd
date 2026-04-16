@@ -1,5 +1,18 @@
 # You.md — Changelog
 
+## 2026-04-16 — Ship Readiness Pass: MCP Web Proxy + Web-Agent Reliability
+
+### MCP / API / QA
+- Added `project-context/SHIP_READINESS_AUDIT_2026-04-16.md` to capture the first real evidence pass across CLI, skills, MCP, API contracts, and web-agent behavior
+- Fixed public MCP discovery on the web domain by adding a Next route proxy for `/.well-known/mcp.json`
+- Fixed public MCP transport on the web domain by adding a Next route proxy for `/api/v1/mcp`
+- Updated `robots.txt` so the MCP discovery and transport URLs are explicitly allowed for agents/crawlers
+- Reworked the CLI integration tests to validate the real live production profile contract instead of relying on stale sample-profile usernames and stricter assumptions than prod actually guarantees
+
+### Web Agent Reliability
+- Updated the web shell's bundled-skill guidance from the stale 4-skill set to the real shipped 6-skill set
+- Promoted portrait updates onto the main `update_profile` tool path with explicit `avatar_url` / `avatar_source` fields, reducing reliance on brittle JSON-block parsing for portrait mutations
+
 ## 2026-04-16 — Ship Readiness Planning
 
 ### Planning / QA Direction

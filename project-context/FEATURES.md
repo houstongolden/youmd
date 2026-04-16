@@ -51,6 +51,8 @@ Last Updated: 2026-04-16
 |---|---|
 | GET /api/v1/profiles | Done |
 | GET /api/v1/check-username | Done |
+| GET /.well-known/mcp.json | Done | Web-domain MCP discovery now proxied through Next to the Convex MCP discovery document |
+| POST /api/v1/mcp | Done | Web-domain MCP transport now proxied through Next to the Convex MCP server |
 | GET /ctx (context links) | Done |
 | POST /api/v1/chat (LLM proxy) | Done |
 | GET /api/v1/me | Done |
@@ -72,6 +74,7 @@ Last Updated: 2026-04-16
 | Directives in share blocks | Done | Context links include directive summary |
 | "building" thinking category | Done | 10 new phrases for directive/identity construction |
 | Enhanced activity simulation | Done | 7 granular sub-steps during LLM wait (vs 3), faster rotation |
+| Portrait updates via tool_use | Done | Web shell now supports portrait/avatar changes on the primary `update_profile` tool path, with JSON fallback only when tools are unavailable |
 
 ## Intelligent Model Routing
 
@@ -156,6 +159,7 @@ Last Updated: 2026-04-16
 | Web: SkillsPane | Done | Dashboard tab with catalog, CLI commands, how-it-works |
 | Web: /skills command | Done | Slash command + help text |
 | Skill registry | Done | Convex tables (skills + skillInstalls), 9 HTTP endpoints, web SkillsPane — completed 2026-03-27 |
+| Ship-readiness audit evidence | In progress | First pass completed: CLI/bootstrap/MCP smoke checks, live API contract validation, and a tracked audit doc with resolved vs remaining blockers |
 
 ## Design System (PRD v2.3)
 

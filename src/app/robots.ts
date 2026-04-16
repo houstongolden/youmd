@@ -17,6 +17,8 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: [
           "/",
+          "/.well-known/mcp.json",
+          "/api/v1/mcp",
           "/api/v1/profiles",
           "/api/v1/skills",
           "/ctx/",
@@ -38,7 +40,7 @@ export default function robots(): MetadataRoute.Robots {
           "Anthropic-AI",
           "cohere-ai",
         ],
-        allow: ["/", "/ctx/", "/api/v1/profiles", "/api/v1/skills", "/schema/"],
+        allow: ["/", "/.well-known/mcp.json", "/api/v1/mcp", "/ctx/", "/api/v1/profiles", "/api/v1/skills", "/schema/"],
         disallow: ["/shell", "/initialize", "/dashboard", "/api/v1/me"],
       },
     ],

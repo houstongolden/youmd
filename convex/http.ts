@@ -1106,6 +1106,14 @@ http.route({
                         required: ["id", "title", "content"],
                       },
                     },
+                    avatar_url: {
+                      type: "string",
+                      description: "Optional public image URL to set as the user's current portrait/avatar.",
+                    },
+                    avatar_source: {
+                      type: "string",
+                      description: "Optional source label for the portrait/avatar URL (x, github, linkedin, website, custom).",
+                    },
                   },
                 },
               },
