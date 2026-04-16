@@ -190,8 +190,9 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   const availableSkills = allSkills.filter((s) => !installedNames.has(s.name));
 
   const handleInstallMcp = async () => {
+    const installCommand = "npx --yes youmd@latest mcp --install claude --auto";
     try {
-      await navigator.clipboard.writeText("npx youmd mcp install");
+      await navigator.clipboard.writeText(installCommand);
       setMcpCopied(true);
       setTimeout(() => setMcpCopied(false), 1500);
     } catch {
@@ -257,7 +258,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
             style={{ borderRadius: "2px" }}
             title="copy install command"
           >
-            {mcpCopied ? "copied npx youmd mcp install" : "install MCP"}
+            {mcpCopied ? "copied Claude MCP install command" : "install MCP"}
           </button>
           <button
             onClick={() => setShowAllSkills((v) => !v)}

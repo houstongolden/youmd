@@ -89,7 +89,7 @@ export async function statusCommand(): Promise<void> {
   // ── MCP server ────────────────────────────────────────────────────
   console.log(
     "  " + label("mcp") + chalk.green("available") +
-    DIM(" (youmd mcp --install claude|cursor)")
+    DIM(" (npx --yes youmd@latest mcp --install claude|cursor)")
   );
 
   if (!hasBundle) {

@@ -115,6 +115,11 @@ PRD Version: 2.3
 - [x] Fixed profile view tracking for unclaimed profiles (userId now optional)
 - [x] Created .env.local with all API keys
 
+### MCP Reliability (April 16)
+- [x] Codex MCP launcher split: local `cli/dist` inside the youmd repo, published npm package elsewhere
+- [x] Hardened generated MCP config to avoid bare `npx youmd mcp` package-name collisions
+- [x] Updated user-facing MCP install copy/docs to use the safe published-package form
+
 ### CLI Overhaul (March 24-25)
 - [x] 20 commands (init, login, register, whoami, status, build, publish, add, diff, export, preview, chat, link, keys, memories, private, project, pull, push, sync)
 - [x] Conversational AI onboarding with BrailleSpinners

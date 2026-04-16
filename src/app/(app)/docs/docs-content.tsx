@@ -1234,9 +1234,9 @@ Content-Type: application/json
               <InlineCode>get_my_identity</InlineCode> (authenticated).
               Configure via CLI:
             </P>
-            <CodeBlock title="bash">{`youmd mcp --install claude   # Show Claude Code setup instructions
-youmd mcp --install cursor   # Show Cursor setup instructions
-youmd mcp --auto             # Auto-write MCP config to agent settings`}</CodeBlock>
+            <CodeBlock title="bash">{`npx --yes youmd@latest mcp --install claude --auto
+npx --yes youmd@latest mcp --install cursor --auto
+youmd mcp --json             # Print the exact MCP config JSON`}</CodeBlock>
 
             {/* ── Privacy ──────────────────────────────────── */}
             <H2 id="privacy">Privacy</H2>

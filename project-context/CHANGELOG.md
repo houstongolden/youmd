@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-04-16 — MCP Launch Hardening for Local Dev + Codex
+
+### MCP / CLI Reliability
+- **Fixed Codex startup in the `youmd` repo:** the Codex MCP launcher now uses the local `cli/dist/index.js` build when your working directory is this repo, so developing the CLI/MCP no longer collides with the root app package also being named `youmd`
+- **Safe generated MCP config:** `youmd mcp --json` and `youmd mcp --install ...` now emit an explicit published-package launcher instead of bare `npx youmd mcp`, avoiding package-name collisions in monorepos or source checkouts
+- **Updated install UX:** dashboard/docs/CLI copy now points people at the safe MCP install command for Claude Code and Cursor
+- **Result:** you can dogfood the newest local MCP implementation while building `youmd`, but everywhere else Codex still uses the published npm CLI like a normal user
+
 ## 2026-04-15 — QA Sprint: Web Shell Parity + AI Leader Seeding
 
 ### Web Shell — Feature Parity with CLI

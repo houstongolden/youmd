@@ -70,7 +70,7 @@ export async function agentsCommand(): Promise<void> {
     );
     console.log("");
     console.log(
-      "  " + DIM("tip: install the mcp with ") + chalk.cyan("youmd mcp --install claude --auto")
+      "  " + DIM("tip: install the mcp with ") + chalk.cyan("npx --yes youmd@latest mcp --install claude --auto")
     );
     console.log("");
     return;

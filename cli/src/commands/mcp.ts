@@ -6,6 +6,14 @@ import { localBundleExists, readGlobalConfig, isAuthenticated } from "../lib/con
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
+const PUBLISHED_MCP_PACKAGE = process.env.YOUMD_MCP_PACKAGE || "youmd@latest";
+
+function getPublishedMcpEntry(): Record<string, unknown> {
+  return {
+    command: "npx",
+    args: ["--yes", PUBLISHED_MCP_PACKAGE, "mcp"],
+  };
+}
 
 export async function mcpCommand(options: { json?: boolean; install?: string; auto?: boolean }): Promise<void> {
   // --json: output MCP config for agent settings
@@ -31,35 +39,29 @@ export async function mcpCommand(options: { json?: boolean; install?: string; au
 }
 
 function getMcpConfig(): Record<string, unknown> {
-  const binPath = process.argv[1] || "youmd";
-  const useNpx = !binPath.includes("youmd");
+  const binPath = process.argv[1];
+  const repoLocalDist = path.resolve(process.cwd(), "cli", "dist", "index.js");
 
-  if (useNpx) {
+  // When running from the source repo itself, prefer the checked-out local CLI
+  // so MCP clients exercise the latest in-repo implementation instead of npm.
+  if (binPath && path.resolve(binPath) === repoLocalDist && fs.existsSync(repoLocalDist)) {
     return {
       youmd: {
-        command: "npx",
-        args: ["youmd", "mcp"],
+        command: "node",
+        args: [repoLocalDist, "mcp"],
       },
     };
   }
 
   return {
-    youmd: {
-      command: "node",
-      args: [binPath, "mcp"],
-    },
+    youmd: getPublishedMcpEntry(),
   };
 }
-
-const YOUMD_MCP_ENTRY = {
-  command: "npx",
-  args: ["youmd", "mcp"],
-};
 
 function mergeMcpServers(
   existing: Record<string, unknown> | undefined
 ): Record<string, unknown> {
-  return { ...(existing || {}), youmd: YOUMD_MCP_ENTRY };
+  return { ...(existing || {}), youmd: getPublishedMcpEntry() };
 }
 
 function backupAndWrite(filePath: string, content: string): string {
@@ -189,7 +191,9 @@ async function installMcp(target: string, auto?: boolean): Promise<void> {
     console.log(DIM("    \"mcpServers\": {"));
     console.log(`      ${chalk.green('"youmd"')}: {`);
     console.log(`        "command": ${chalk.green('"npx"')},`);
-    console.log(`        "args": [${chalk.green('"youmd"')}, ${chalk.green('"mcp"')}]`);
+    console.log(
+      `        "args": [${chalk.green('"--yes"')}, ${chalk.green(`"${PUBLISHED_MCP_PACKAGE}"`)}, ${chalk.green('"mcp"')}]`
+    );
     console.log("      }");
     console.log(DIM("    }"));
     console.log(DIM("  }"));
@@ -216,7 +220,7 @@ async function installMcp(target: string, auto?: boolean): Promise<void> {
       mcpServers: {
         youmd: {
           command: "npx",
-          args: ["youmd", "mcp"],
+          args: ["--yes", PUBLISHED_MCP_PACKAGE, "mcp"],
         },
       },
     };

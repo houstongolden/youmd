@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-04-06
+Last Updated: 2026-04-16
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -12,6 +12,12 @@ Last Updated: 2026-04-06
 ---
 
 ## Skill System (from March 27 conversation)
+
+### 41. Codex MCP launcher should use local CLI in the youmd repo and npm elsewhere
+**Status:** DONE
+**Verified:** NO
+**Request:** Prevent Codex/youmd MCP startup failures caused by `npx youmd mcp` resolving the repo root package when working inside the youmd codebase. Use the local `cli/` build in this repo for development, and a published npm package everywhere else.
+**Verification:** Start Codex in `/Users/houstongolden/Desktop/CODE_2025/youmd` — no `youmd` MCP handshake warning. Start Codex in another repo — `youmd` MCP still starts via npm.
 
 ### 39. Identity-Aware Skill System — Full Implementation
 **Status:** DONE

@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-03-26
+Last Updated: 2026-04-16
 
 ## Core Platform
 
@@ -129,6 +129,7 @@ Last Updated: 2026-03-26
 | youmd private | Done | Private context management (10 subcommands) |
 | youmd project | Done | Per-project context (init, list, switch, context, memory) |
 | youmd skill | Done | 12 subcommands: list, install, remove, use, sync, add, push, link, init-project, improve, metrics, search |
+| MCP config generation | Done | `youmd mcp --json` / `--install` now emit an unambiguous published-package launcher instead of bare `npx youmd mcp` |
 
 ## Skill System (v1.0)
 
@@ -206,6 +207,7 @@ Last Updated: 2026-03-26
 | CLI rich terminal renderer | Done | Tables, stats, code blocks, callouts |
 | Private context API + CLI | Done | Full CRUD on private identity data |
 | Image paste in chat | Done | Web chat accepts pasted images |
+| Codex MCP local-vs-global split | Done | Codex uses the local `cli/dist` build inside the youmd repo and the published npm CLI everywhere else |
 
 ## Feature Requests (Backlog)
 
