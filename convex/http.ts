@@ -1054,7 +1054,7 @@ http.route({
           },
           body: JSON.stringify({
             model: "claude-sonnet-4-6",
-            max_tokens: 32000,
+            max_tokens: 64000,
             temperature: 0.4,
             stream: true,
             system: systemMessage?.content || "",
@@ -1178,7 +1178,6 @@ http.route({
           body: JSON.stringify({
             model: "anthropic/claude-sonnet-4-6",
             messages,
-            max_tokens: 32000,
             temperature: 0.4,
             stream: true,
           }),
