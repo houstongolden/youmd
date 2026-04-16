@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-04-16 — Ship Readiness Planning
+
+### Planning / QA Direction
+- Added `project-context/SHIP_READINESS_PLAN.md` to define the next major release-hardening phase across:
+  - CLI + skills + MCP hard testing
+  - API + MCP endpoint coverage
+  - web-agent execution reliability
+  - local-vs-web parity
+  - agent personality / proactiveness
+  - UI/docs truth auditing
+- Tracked the new ship-readiness audit as an active request and moved the roadmap/TODO items from vague "test more" language into a concrete multi-workstream plan
+
 ## 2026-04-16 — Agent Bootstrap Overhaul + Skill Truth Reconciliation
 
 ### CLI / Skill System
