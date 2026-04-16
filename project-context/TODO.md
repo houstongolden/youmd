@@ -177,7 +177,10 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 
 ## IN PROGRESS
 
-(Nothing currently in progress)
+- [ ] Safe agent-context integration overhaul
+- [ ] Add `AGENTS.md` first-class support to `youmd skill init-project`
+- [ ] Add init-project modes: `auto`, `minimal`, `zero-touch`, `scaffold`
+- [ ] Introduce `.you/` supplemental project context with `.youmd` compatibility
 
 ---
 

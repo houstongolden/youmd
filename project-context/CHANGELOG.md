@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-04-16 — Safe Agent Context Integration Strategy
+
+### Planning / Product Direction
+- Added `project-context/SAFE_AGENT_CONTEXT_INTEGRATION.md` to define a safer long-term model for how You.md should integrate with existing `CLAUDE.md`, `AGENTS.md`, linked skills, and `project-context/` directories
+- Proposed moving from the current blunt append/skip behavior to a tiered system:
+  - full scaffold for empty repos
+  - minimal bootstrap merge for lightweight repos
+  - minimal-touch or zero-touch mode for robust/customized repos
+- Recommended a namespaced supplemental context directory (`.you/`) so You.md-generated instructions can stay clearly additive instead of pretending to own the user's handcrafted repo docs
+
 ## 2026-04-16 — MCP Launch Hardening for Local Dev + Codex
 
 ### MCP / CLI Reliability

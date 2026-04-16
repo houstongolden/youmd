@@ -19,6 +19,12 @@ Last Updated: 2026-04-16
 **Request:** Prevent Codex/youmd MCP startup failures caused by `npx youmd mcp` resolving the repo root package when working inside the youmd codebase. Use the local `cli/` build in this repo for development, and a published npm package everywhere else.
 **Verification:** Start Codex in `/Users/houstongolden/Desktop/CODE_2025/youmd` — no `youmd` MCP handshake warning. Start Codex in another repo — `youmd` MCP still starts via npm.
 
+### 42. Safe multi-tier agent context integration for existing repos
+**Status:** IN PROGRESS
+**Verified:** NO
+**Request:** Make `youmd` able to improve agent/project operating context without clobbering mature `CLAUDE.md`, `AGENTS.md`, `.cursor/rules`, or existing `project-context/` structures. Support fresh scaffold, minimal merge, and zero-touch modes.
+**Verification:** In a fresh repo, `youmd skill init-project` scaffolds everything. In a light repo, it appends a small marked bootstrap block and adds missing context files only. In a mature repo, it defaults to minimal or zero-touch behavior, creates `.you/` supplemental context, and avoids rewriting user-owned docs.
+
 ### 39. Identity-Aware Skill System — Full Implementation
 **Status:** DONE
 **Verified:** NO
