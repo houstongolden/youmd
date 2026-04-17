@@ -366,6 +366,24 @@ async function persistBundleFromYouJson(
   return { bundleId, version: maxVersion + 1, contentHash };
 }
 
+async function publishBundleForUser(ctx: any, userId: any, bundleId: any) {
+  const bundles: any[] = await ctx.db
+    .query("bundles")
+    .withIndex("by_userId", (q: any) => q.eq("userId", userId))
+    .collect();
+
+  for (const bundle of bundles) {
+    if (bundle.isPublished) {
+      await ctx.db.patch(bundle._id, { isPublished: false });
+    }
+  }
+
+  await ctx.db.patch(bundleId, {
+    isPublished: true,
+    publishedAt: Date.now(),
+  });
+}
+
 export const getMyProfile = query({
   args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
@@ -822,9 +840,11 @@ export const scaffoldProjectDirectories = mutation({
 
     baseYouJson.custom_files = customFiles;
     const persisted = await persistBundleFromYouJson(ctx as any, user as any, baseYouJson, "web-shell:project-scaffold");
+    await publishBundleForUser(ctx as any, user._id, persisted.bundleId);
 
     return {
       changed: true,
+      published: true,
       version: persisted.version,
       projectCount,
       projectSlugs,
@@ -1245,9 +1265,11 @@ export const scaffoldProjectsForUser = internalMutation({
 
     baseYouJson.custom_files = customFiles;
     const persisted = await persistBundleFromYouJson(ctx as any, user as any, baseYouJson, "internal:project-scaffold");
+    await publishBundleForUser(ctx as any, user._id, persisted.bundleId);
 
     return {
       changed: true,
+      published: true,
       version: persisted.version,
       projectCount,
       projectSlugs,

@@ -724,19 +724,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             role: "system-notice",
             content: `[saved as v${result.version}]`,
           });
-
-          const publishStepId = addStep("publishing changes");
-          try {
-            await publishLatest({ clerkId: user.id });
-            completeStep(publishStepId);
-            notices.push({
-              id: crypto.randomUUID(),
-              role: "system-notice",
-              content: "[published]",
-            });
-          } catch {
-            failStep(publishStepId, "failed");
-          }
+          notices.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: "[published]",
+          });
         }
 
         const assistantMsg: ChatMessage = { role: "assistant", content: assistantContent };
@@ -784,7 +776,6 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       failStep,
       onPaneSwitch,
       scaffoldProjectDirectories,
-      publishLatest,
       upsertSession,
     ]
   );
