@@ -1,5 +1,12 @@
 # You.md — Changelog
 
+## 2026-04-17 — CLI Version Sync For npm Publish
+
+### CLI / Release Ops
+- Corrected the CLI package version drift so the repo, lockfile, runtime `youmd --version`, and MCP user-agent string now all agree on `0.6.1`
+- Fixed the stale mismatch where `cli/package.json` still said `0.6.0`, `cli/package-lock.json` was left behind at `0.5.0`, and the built CLI still reported `0.6.0`, which could block or confuse the next npm publish attempt
+- Rebuilt the CLI after the version sync so the generated `dist/` artifacts now line up with the publish target
+
 ## 2026-04-17 — Revealable API Keys + Grouped Pane Navigation
 
 ### Web Settings / Shell UX

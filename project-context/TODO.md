@@ -11,6 +11,7 @@ PRD Version: 2.3
 - [x] Make newly minted API keys revealable/copyable again without weakening hash-based auth validation
 - [x] Hide revoked API key history behind an explicit toggle so the settings pane defaults to the real live-key state
 - [x] Consolidate the shell preview pane nav into grouped primary labels with small secondary tabs where needed
+- [x] Normalize the CLI publish version to 0.6.1 across package.json, package-lock, runtime version output, and built artifacts
 
 ### Foundation (March 16-17)
 - [x] Next.js 16 + Convex + Clerk + Tailwind v4 scaffold

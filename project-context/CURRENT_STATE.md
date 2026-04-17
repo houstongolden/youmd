@@ -35,7 +35,7 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
 
-### CLI (youmd v0.6.0 — published)
+### CLI (youmd v0.6.1 — ready to publish)
 - 21 commands (added `skill` with 19 subcommands)
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
