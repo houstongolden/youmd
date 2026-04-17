@@ -7,21 +7,31 @@ import FadeUp from "./FadeUp";
 const steps = [
   {
     num: "01",
-    cmd: "$ npx youmd init",
-    desc: "a conversational AI builds your identity through dialogue -- not a form. bio, projects, preferences, voice, directives. your agent learns how you think and what you care about.",
+    cmd: "$ curl -fsSL https://you.md/install.sh | bash",
+    desc: "install youmd globally in one step. curl is the default path, npm stays available as the fallback if you prefer package-manager installs directly.",
   },
   {
     num: "02",
+    cmd: "$ youmd login",
+    desc: "authenticate once with browser, email code, or API key. same identity works across the web shell, CLI, MCP, and linked coding agents.",
+  },
+  {
+    num: "03",
+    cmd: "$ youmd init",
+    desc: "a conversational AI builds your identity through dialogue -- not a form. bio, projects, preferences, voice, directives. your agent learns how you think and what you care about.",
+  },
+  {
+    num: "04",
     cmd: "$ youmd push",
     desc: "your identity goes live at you.md/username. any agent can read it instantly -- public profile + API + context links. skills auto-sync across all your tools.",
   },
   {
-    num: "03",
+    num: "05",
     cmd: "$ youmd skill init-project",
     desc: "start any new project with full identity context. bootstraps AGENTS/CLAUDE entrypoints, scaffolds project-context/ additively, creates a generated .you/ layer, and links skills to Claude Code, Cursor, or Codex.",
   },
   {
-    num: "04",
+    num: "06",
     cmd: "$ youmd skill link claude",
     desc: "your identity skills -- voice sync, agent preferences, directives -- render into .claude/skills/youmd/ or .cursor/rules/. every coding agent knows who you are from the first prompt.",
   },

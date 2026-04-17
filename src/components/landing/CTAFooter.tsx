@@ -1,26 +1,19 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
-import { Copy, Check } from "lucide-react";
 import Link from "next/link";
 import FadeUp from "./FadeUp";
 import ThemeToggle from "./ThemeToggle";
+import { CliInstallTabs } from "@/components/install/CliInstallTabs";
 
 const CTAFooter = () => {
-  const [copied, setCopied] = useState(false);
   const sectionRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start end", "end start"],
   });
   const contentY = useTransform(scrollYProgress, [0, 1], [40, -20]);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText("npx youmd init");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
 
   return (
     <>
@@ -48,26 +41,8 @@ const CTAFooter = () => {
             </p>
           </FadeUp>
           <FadeUp delay={0.08}>
-            <div className="flex items-center justify-center gap-3 flex-wrap mb-3">
-              <button
-                onClick={handleCopy}
-                className="cli-pill inline-flex items-center gap-3 px-5 py-3 whitespace-nowrap"
-              >
-                <span className="text-muted-foreground">$</span>
-                <span className="text-accent font-medium">
-                  npx youmd init
-                </span>
-                <span className="cursor-blink text-accent">
-                  {"\u2588"}
-                </span>
-                <span className="ml-2 text-muted-foreground/50">
-                  {copied ? (
-                    <Check size={13} className="text-success" />
-                  ) : (
-                    <Copy size={13} />
-                  )}
-                </span>
-              </button>
+            <div className="flex items-stretch justify-center gap-3 flex-col md:flex-row mb-3">
+              <CliInstallTabs className="w-full md:max-w-[420px] text-left" title="CLI install" />
               <Link
                 href="/create"
                 className="cta-primary px-5 py-3 text-[13px] font-mono whitespace-nowrap"
@@ -75,11 +50,6 @@ const CTAFooter = () => {
                 &gt; start in browser
               </Link>
             </div>
-            {copied && (
-              <p className="text-success font-mono text-[10px] mt-1">
-                copied to clipboard
-              </p>
-            )}
           </FadeUp>
         </motion.div>
       </section>

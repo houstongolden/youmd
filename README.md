@@ -33,17 +33,20 @@ Public profile. Private vault. Skills system. Memory brain. Project context. Ver
 ## Quick Start
 
 ```bash
-npx youmd init
+curl -fsSL https://you.md/install.sh | bash
 ```
 
-That's it. An AI conversation builds your identity bundle interactively -- bio, projects, values, voice, agent preferences. No forms. Just a conversation.
+That installs the latest global CLI. Then:
 
 ```bash
 youmd login              # press Enter for browser sign-in, or type your email for a code
+youmd init               # build your identity bundle interactively
 youmd push               # publish to you.md/<username>
 youmd skill init-project # wire your identity into the current repo
 youmd link create        # generate a shareable context link
 ```
+
+Prefer npm directly? Use `npm install -g youmd@latest`.
 
 ---
 
@@ -55,6 +58,7 @@ youmd link create        # generate a shareable context link
 |---|---|
 | `youmd init` | Build your identity via AI conversation |
 | `youmd login` | Authenticate (Enter for browser sign-in, email code, or `--key`) |
+| `youmd logout` | Clear local authentication on this machine |
 | `youmd register` | Claim a username |
 | `youmd whoami` | Show current authenticated user |
 | `youmd build` | Compile bundle from local profile/ and preferences/ files |

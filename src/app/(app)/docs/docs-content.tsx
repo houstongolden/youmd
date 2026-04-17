@@ -221,7 +221,9 @@ function QuickStart() {
   };
 
   const steps: { key: string; cmd: string; desc: string }[] = [
-    { key: "init", cmd: "npx youmd init", desc: "create your identity" },
+    { key: "install", cmd: "curl -fsSL https://you.md/install.sh | bash", desc: "install the CLI globally" },
+    { key: "login", cmd: "youmd login", desc: "authenticate with browser or email code" },
+    { key: "init", cmd: "youmd init", desc: "create your identity" },
     { key: "push", cmd: "youmd push", desc: "publish to you.md/<your-username>" },
     { key: "mcp", cmd: "youmd mcp --install claude --auto", desc: "wire into Claude Code" },
   ];
@@ -553,21 +555,23 @@ export default function DocsContent() {
             </StepList>
 
             <H3 id="cli-quickstart">CLI Quickstart</H3>
-            <CodeBlock title="terminal">{`$ npx youmd register`}</CodeBlock>
+            <CodeBlock title="terminal">{`$ curl -fsSL https://you.md/install.sh | bash`}</CodeBlock>
             <StepList>
               <Step n={1}>
-                Run <InlineCode>youmd register</InlineCode> to create your
-                account (or <InlineCode>youmd login</InlineCode> if you already
-                have one)
+                Install the global CLI with the curl bootstrapper. If you prefer
+                npm directly, run <InlineCode>npm install -g youmd@latest</InlineCode>.
               </Step>
               <Step n={2}>
+                Run <InlineCode>youmd login</InlineCode> to authenticate
+              </Step>
+              <Step n={3}>
                 Run <InlineCode>youmd init</InlineCode> -- the agent builds your
                 identity through conversation
               </Step>
-              <Step n={3}>
+              <Step n={4}>
                 Run <InlineCode>youmd push</InlineCode> to publish your profile
               </Step>
-              <Step n={4}>
+              <Step n={5}>
                 Run <InlineCode>youmd chat</InlineCode> then type{" "}
                 <InlineCode>/share</InlineCode> to get your context link
               </Step>
@@ -593,7 +597,9 @@ export default function DocsContent() {
             <StepList>
               <Step n={1}>
                 Open a regular terminal (not inside Claude Code) and run{" "}
-                <InlineCode>npx youmd init</InlineCode> to create your identity
+                <InlineCode>curl -fsSL https://you.md/install.sh | bash</InlineCode>{" "}
+                once, then <InlineCode>youmd init</InlineCode> to create your
+                identity
               </Step>
               <Step n={2}>
                 Run <InlineCode>youmd login</InlineCode> to authenticate
@@ -779,10 +785,10 @@ preferences: terminal-native, monochrome
             {/* ── CLI ──────────────────────────────────────── */}
             <H2 id="cli">CLI Reference</H2>
             <P>
-              Install globally with <InlineCode>npm i -g youmd</InlineCode> or
-              run commands directly with <InlineCode>npx youmd</InlineCode>.
-              The CLI covers the full identity lifecycle -- identity, auth,
-              sync, sharing, memory, projects, and skills.
+              Install with <InlineCode>curl -fsSL https://you.md/install.sh | bash</InlineCode>{" "}
+              as the default path, or use <InlineCode>npm i -g youmd@latest</InlineCode>{" "}
+              directly if you prefer. The CLI covers the full identity lifecycle
+              -- identity, auth, sync, sharing, memory, projects, and skills.
             </P>
 
             <P>
@@ -830,6 +836,10 @@ preferences: terminal-native, monochrome
                 {
                   cmd: "youmd login",
                   desc: "Browser sign-in, email-code login, or --key KEY for direct auth",
+                },
+                {
+                  cmd: "youmd logout",
+                  desc: "Clear local auth state on this machine",
                 },
                 {
                   cmd: "youmd register",

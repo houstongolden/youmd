@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useScroll, useTransform, motion } from "motion/react";
-import { Copy, Check } from "lucide-react";
 import PixelYOU from "./PixelYOU";
 import HeroPortrait from "./HeroPortrait";
+import { CliInstallTabs } from "@/components/install/CliInstallTabs";
 
 /* -- Agent pills (shown below CTA) -- */
 const AGENTS = [
@@ -67,33 +67,15 @@ const BootSequence = () => {
   );
 };
 
-const CliPill = () => {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText("npx youmd init");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  return (
-    <button onClick={handleCopy} className="cli-pill flex items-center gap-3 px-5 py-3 group whitespace-nowrap">
-      <span className="text-muted-foreground">$</span>
-      <span className="text-accent font-medium">npx youmd init</span>
-      <span className="cursor-blink text-accent">{"\u2588"}</span>
-      <span className="ml-2 text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors">
-        {copied ? <Check size={13} className="text-success" /> : <Copy size={13} />}
-      </span>
-    </button>
-  );
-};
-
 /* -- CLI commands list -- */
 const commands = [
-  ["you init", "build your identity via AI conversation"],
-  ["you push", "publish to you.md/username"],
-  ["you skill init-project", "bootstrap AGENTS/CLAUDE + project-context/ in any repo"],
-  ["you skill link claude", "sync identity skills to your agent"],
-  ["you link create", "scoped context link for any agent"],
+  ["curl ...install.sh | bash", "install youmd globally in one step"],
+  ["youmd login", "authenticate with browser, email code, or API key"],
+  ["youmd init", "build your identity via AI conversation"],
+  ["youmd push", "publish to you.md/username"],
+  ["youmd skill init-project", "bootstrap AGENTS/CLAUDE + project-context/ in any repo"],
+  ["youmd skill link claude", "sync identity skills to your agent"],
+  ["youmd link create", "scoped context link for any agent"],
 ];
 
 const Hero = () => {
@@ -166,10 +148,10 @@ const Hero = () => {
             </div>
 
             {/* Dual CTA */}
-            <div className="mb-6 flex items-center gap-3 hero-enter-up" style={{ animationDelay: "1.8s" }}>
-              <CliPill />
+            <div className="mb-6 flex flex-col md:flex-row items-stretch md:items-center gap-3 hero-enter-up" style={{ animationDelay: "1.8s" }}>
+              <CliInstallTabs className="w-full md:max-w-[420px]" title="CLI install" />
               <Link href="/create" className="cta-primary px-5 py-3 text-[13px] font-mono shrink-0 whitespace-nowrap">
-                &gt; start now
+                &gt; start in browser
               </Link>
             </div>
 

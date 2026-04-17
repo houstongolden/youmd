@@ -210,8 +210,9 @@ export function HelpPane({ username }: HelpPaneProps) {
           run these in your terminal (not the shell pane).
         </p>
         <div className="space-y-1 mb-2">
-          <CopyableCommand command="npm i -g youmd" />
+          <CopyableCommand command="curl -fsSL https://you.md/install.sh | bash" />
           <CopyableCommand command="youmd login" dimmed />
+          <CopyableCommand command="youmd logout" dimmed />
           <CopyableCommand command="youmd push" dimmed />
           <CopyableCommand command="youmd pull" dimmed />
           <CopyableCommand command="youmd skill install all" dimmed />
