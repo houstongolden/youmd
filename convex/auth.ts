@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { createUserAndProfile } from "./users";
 import { issueApiKeyForUser } from "./apiKeys";
@@ -100,6 +100,37 @@ export const startEmailAuth = mutation({
       email,
       expiresAt: Date.now() + CHALLENGE_LIFETIME_MS,
     };
+  },
+});
+
+export const inspectAuthChallenges = internalQuery({
+  args: {
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const email = normalizeEmail(args.email);
+    const now = Date.now();
+    const challenges = await ctx.db
+      .query("authChallenges")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .collect();
+
+    return challenges
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map((challenge) => ({
+        _id: challenge._id,
+        email: challenge.email,
+        type: challenge.type,
+        createdAt: challenge.createdAt,
+        expiresAt: challenge.expiresAt,
+        usedAt: challenge.usedAt ?? null,
+        attempts: challenge.attempts,
+        isExpired: challenge.expiresAt < now,
+        isUsed: !!challenge.usedAt,
+        ageMs: now - challenge.createdAt,
+        codeHashSuffix: challenge.codeHash.slice(-8),
+        tokenHashSuffix: challenge.tokenHash.slice(-8),
+      }));
   },
 });
 
