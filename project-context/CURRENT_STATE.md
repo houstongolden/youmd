@@ -31,12 +31,13 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - Same-origin web chat routes for the shell: `/api/v1/chat`, `/api/v1/chat/ack`, and `/api/v1/chat/stream`
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 
-### CLI (youmd v0.6.0 — npm publish pending)
+### CLI (youmd v0.6.0 — published)
 - 21 commands (added `skill` with 19 subcommands)
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
 - Conversational AI onboarding with BrailleSpinners, ASCII logo, portrait rendering
 - Passwordless email-code auth (no API token required for your own account)
+- `youmd login` now clearly splits the auth paths: press Enter for browser sign-in, type your email for in-terminal code login, or use `--key` for direct agent auth
 - Chat command with slash commands, project awareness, directive injection
 - Rich terminal rendering (tables, stats, code blocks, callouts)
 - Pull/push/sync for web ↔ local
@@ -86,6 +87,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Production API-key issuance on the passwordless flow is verified, and `youmd whoami` resolves correctly against the live prod backend with a fresh prod key
 - Production shell bootstrap is now verified after login: `/api/auth/session` returns a valid Convex JWT and the downstream authenticated user/profile/private/bundle queries all execute cleanly on prod
 - Remaining release blocker on auth is deliverability, not session plumbing: the passwordless sender still needs a verified production domain sender configured (`AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL`) so non-owner accounts and plus-address aliases can receive codes reliably
+- The local CLI auth proof is still blocked on this machine being logged into Houston's real You.md account instead of the disposable `@clitest5283` test account, which prevents a truthful end-to-end preference-sync verification on the published package
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 
 ### Portrait Sync

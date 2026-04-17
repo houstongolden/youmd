@@ -226,6 +226,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Keep the shell working state alive through response drafting plus post-response saves/publishes, then finish with a stronger completion summary + proactive next-step options
 - [ ] Configure a verified production email sender for passwordless auth so non-owner accounts and aliases can actually receive login/signup codes
 - [ ] Switch the published `youmd` CLI from the disposable test account to Houston's real account and save the new agent-session behavior preferences into his durable identity context
+- [x] Simplify `youmd login` so the default flow offers browser sign-in on Enter, email-code login in-terminal when an email is typed, and `--key` as the explicit direct-auth path
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
 - [ ] Remove or rewrite remaining Clerk-specific docs/comments/webhooks/password endpoints so the repo no longer describes the old auth model as current
 - [ ] Run transcript-level local CLI vs web shell parity prompts and capture tone/proactiveness gaps with concrete repros

@@ -9,36 +9,7 @@ const ACCENT = chalk.hex("#C46A3A");
 
 export async function loginCommand(options: { key?: string; web?: boolean }): Promise<void> {
   if (options.web) {
-    console.log("");
-    console.log("opening you.md dashboard in your browser...");
-    console.log("");
-
-    const url = "https://you.md/dashboard";
-    const platform = process.platform;
-    const cmd =
-      platform === "darwin"
-        ? `open ${url}`
-        : platform === "win32"
-          ? `start ${url}`
-          : `xdg-open ${url}`;
-
-    exec(cmd, (err) => {
-      if (err) {
-        console.log(
-          chalk.yellow("could not open browser") +
-            " -- visit " +
-            chalk.cyan(url) +
-            " manually"
-        );
-      }
-    });
-
-    console.log("sign in with your email code in the browser.");
-    console.log(
-      "for agent or automation access, create or reveal an API key in settings and then run: " +
-        chalk.cyan("youmd login --key YOUR_KEY")
-    );
-    console.log("");
+    openBrowserLogin();
     return;
   }
 
@@ -52,10 +23,14 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
   console.log(ACCENT("you.md") + " -- login");
   console.log("");
 
-  const email = await promptInput(ACCENT("  email: "));
+  console.log("  " + chalk.dim("press Enter to open browser sign-in"));
+  console.log("  " + chalk.dim("or type your email for an in-terminal code login"));
+  console.log("  " + chalk.dim("or run ") + chalk.cyan("youmd login --key YOUR_KEY") + chalk.dim(" for direct agent auth"));
+  console.log("");
+
+  const email = await promptInput(ACCENT("  email (or Enter for browser): "));
   if (!email) {
-    console.log(chalk.yellow("  no email provided -- aborting"));
-    console.log("");
+    openBrowserLogin();
     return;
   }
 
@@ -141,6 +116,36 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
     }
     console.log("");
   }
+}
+
+function openBrowserLogin(): void {
+  console.log("");
+  console.log("opening you.md in your browser...");
+  console.log("");
+
+  const url = "https://you.md/sign-in?redirect_url=https%3A%2F%2Fwww.you.md%2Fdashboard";
+  const platform = process.platform;
+  const cmd =
+    platform === "darwin"
+      ? `open ${url}`
+      : platform === "win32"
+        ? `start ${url}`
+        : `xdg-open ${url}`;
+
+  exec(cmd, (err) => {
+    if (err) {
+      console.log(
+        chalk.yellow("could not open browser") +
+          " -- visit " +
+          chalk.cyan(url) +
+          " manually"
+      );
+    }
+  });
+
+  console.log("sign in there, then create or reveal an API key in settings if you want local agent access.");
+  console.log("after that, run " + chalk.cyan("youmd login --key YOUR_KEY"));
+  console.log("");
 }
 
 async function loginWithKey(key: string): Promise<void> {

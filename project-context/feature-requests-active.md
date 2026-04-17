@@ -177,7 +177,7 @@ Last Updated: 2026-04-17
 **Status:** IN PROGRESS
 **Verified:** NO
 **Request:** Persist Houston's preferences for how agentic chat / terminal sessions should behave — including the ack → plan → work → complete pattern and proactive next-step guidance — into his own durable You.md preferences/directives using the published npm package / skill workflow, sync them, and then verify another agent-facing surface can find that context later.
-**Progress (2026-04-17):** Confirmed the published npm package is live as `youmd@0.6.0` and that the machine-level CLI auth works, but the current `~/.youmd/config.json` still points at the disposable CLI test account rather than Houston's real `@houstongolden` identity. Need to switch the CLI onto Houston's real account or API key before the preference-save proof can be completed against the correct user.
+**Progress (2026-04-17):** Confirmed the published npm package is live as `youmd@0.6.0`, simplified the CLI auth entrypoint so `youmd login` now offers browser sign-in on Enter, email-code login in-terminal when an email is typed, and `--key` as the explicit direct-auth path, and revalidated that the machine-level CLI auth still works. The remaining blocker is account state, not the login surface: the current `~/.youmd/config.json` still points at the disposable CLI test account rather than Houston's real `@houstongolden` identity, so the preference-save proof cannot be completed honestly yet.
 **Verification:** Using the published package, pull Houston's real bundle, save these session-behavior preferences into durable preference/directive files, build + publish them, pull again from a clean location, and verify the saved preferences are visible through the pulled files and MCP-readable identity surfaces.
 
 ---

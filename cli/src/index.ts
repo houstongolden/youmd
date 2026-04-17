@@ -45,7 +45,7 @@ const HELP_GROUPS: Array<{
   {
     title: "AUTH",
     commands: [
-      { name: "login", summary: "authenticate with your api key" },
+      { name: "login", summary: "sign in via browser or email code, or use --key" },
       { name: "register", summary: "create a new you.md identity" },
       { name: "whoami", summary: "show current authenticated user" },
     ],
@@ -155,7 +155,7 @@ program
   .command("login")
   .description("Authenticate with the You.md platform")
   .option("-k, --key <apiKey>", "API key for authentication")
-  .option("-w, --web", "Open the dashboard in your browser to create an API key")
+  .option("-w, --web", "Open browser sign-in directly")
   .action(loginCommand);
 
 program

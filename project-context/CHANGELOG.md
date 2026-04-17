@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-04-17 — Simpler CLI Login Flow
+
+### CLI / Docs / Auth UX
+- Simplified `youmd login` so the default human path is now obvious: pressing Enter opens browser sign-in, typing an email starts the in-terminal verification-code flow, and `youmd login --key ...` remains the direct agent/automation path
+- Kept `--web` as an explicit escape hatch but changed the copy so it opens browser sign-in directly instead of sending users to a vague dashboard-first API-key scavenger hunt
+- Updated CLI help text, README quick-start guidance, and docs copy to match the real shipped login contract instead of implying the more confusing legacy flow
+- Rebuilt both the CLI and Next app after the login UX pass to confirm the new auth-entry guidance is production-safe
+
 ## 2026-04-17 — Shell Turn Lifecycle Hardening
 
 ### Shell / Agent UX

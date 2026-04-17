@@ -39,7 +39,7 @@ npx youmd init
 That's it. An AI conversation builds your identity bundle interactively -- bio, projects, values, voice, agent preferences. No forms. Just a conversation.
 
 ```bash
-youmd login              # authenticate
+youmd login              # press Enter for browser sign-in, or type your email for a code
 youmd push               # publish to you.md/<username>
 youmd skill init-project # wire your identity into the current repo
 youmd link create        # generate a shareable context link
@@ -54,7 +54,7 @@ youmd link create        # generate a shareable context link
 | Command | What It Does |
 |---|---|
 | `youmd init` | Build your identity via AI conversation |
-| `youmd login` | Authenticate (email code or `--key`) |
+| `youmd login` | Authenticate (Enter for browser sign-in, email code, or `--key`) |
 | `youmd register` | Claim a username |
 | `youmd whoami` | Show current authenticated user |
 | `youmd build` | Compile bundle from local profile/ and preferences/ files |

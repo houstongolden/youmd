@@ -735,8 +735,9 @@ preferences: terminal-native, monochrome
             <StepList>
               <Step n={1}>Create your profile on either web or CLI</Step>
               <Step n={2}>
-                <InlineCode>youmd login</InlineCode> -- enter the same email you
-                use on the web, then paste the verification code
+                <InlineCode>youmd login</InlineCode> -- press Enter to open
+                browser sign-in, or type the same email you use on the web and
+                paste the verification code in-terminal
               </Step>
               <Step n={3}>
                 <InlineCode>youmd pull</InlineCode> downloads your web profile to
@@ -828,7 +829,7 @@ preferences: terminal-native, monochrome
               commands={[
                 {
                   cmd: "youmd login",
-                  desc: "Email/password login (or --key KEY, --web to open browser)",
+                  desc: "Browser sign-in, email-code login, or --key KEY for direct auth",
                 },
                 {
                   cmd: "youmd register",
