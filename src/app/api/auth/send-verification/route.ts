@@ -27,6 +27,14 @@ function appUrl() {
   );
 }
 
+function authEmailFrom() {
+  return (
+    process.env.AUTH_EMAIL_FROM?.trim() ||
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    "you.md <onboarding@resend.dev>"
+  );
+}
+
 function buildEmailHtml(args: {
   code: string;
   link: string;
@@ -90,6 +98,7 @@ export async function POST(request: Request) {
     const resendKey =
       process.env.RESEND_API_KEY ||
       process.env.FOLDERMD_RESEND_API_KEY;
+    const emailFrom = authEmailFrom();
     const isProduction = process.env.NODE_ENV === "production";
 
     if (isProduction && resendKey) {
@@ -100,7 +109,7 @@ export async function POST(request: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "you.md <onboarding@resend.dev>",
+          from: emailFrom,
           to: email,
           subject:
             type === "login"
@@ -112,8 +121,15 @@ export async function POST(request: Request) {
 
       if (!res.ok) {
         const text = await res.text();
+        const testingModeError = text.includes(
+          "You can only send testing emails to your own email address"
+        );
         return NextResponse.json(
-          { error: `Email delivery failed: ${text}` },
+          {
+            error: testingModeError
+              ? "Email delivery failed: Resend is still in testing mode. Set AUTH_EMAIL_FROM (or RESEND_FROM_EMAIL) to a verified sender on your domain."
+              : `Email delivery failed: ${text}`,
+          },
           { status: 502 }
         );
       }

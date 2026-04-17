@@ -1,5 +1,25 @@
 # You.md — Changelog
 
+## 2026-04-17 — Production Shell Verification + Passwordless Sender Hardening
+
+### Shell / Auth / Release Readiness
+- Verified the latest GitHub-triggered Vercel deploy reached `Ready` on `www.you.md`, then re-validated the live production session bootstrap path: `/api/auth/session` returns a healthy authenticated user + Convex JWT, and the production Convex logs show the full shell bootstrap stack (`users:getByClerkId`, `profiles:getByOwnerId`, `private:getPrivateContext`, `bundles:getLatestBundle`, memory/session queries) executing successfully
+- Re-verified the exact golden-path scaffold behavior against the live authenticated production account: `me:scaffoldProjectDirectories` now cleanly no-ops with `changed: false` because the generated project tree is already present, and the latest published bundle remains `v60`
+- Verified the production bundle data really contains the scaffolded `projects/*/{README,context,prd,todo}.md` files rather than only pretending to, which closes the core "it said it wrote files but didn't" trust failure on the live shell path
+- Hardened production passwordless email sending so the auth route can use `AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL` instead of being permanently locked to `onboarding@resend.dev`
+- Added a clearer production error message when Resend is still in testing mode, so auth failures now point directly at the missing verified sender configuration instead of surfacing opaque provider text
+- Updated the example env file to reflect the real first-party passwordless auth stack and remove stale Clerk-era env guidance
+
+## 2026-04-17 — Deterministic Project Scaffold Fix For Web Shell
+
+### Web Shell / Files / QA
+- Fixed the core live shell regression where asking `create my projects directory and subdirectories for each project within my private folder` could stall, lie about writing files, or emit misleading repeated `README/context/prd/todo` notices without actually creating the directory tree
+- Added a deterministic scaffold path for that exact golden-path request so the shell now bypasses the fragile LLM mutation flow and writes real `custom_files` entries for per-project `README`, `context`, `prd`, and `todo` files under the synthetic `private/projects/` tree
+- Replaced the broken hardcoded internal scaffolder with a generic project-driven implementation that derives project directories from the user's actual bundle/profile data instead of a stale one-off Houston-specific file map
+- Verified the exact production repro on `https://www.you.md/shell` with a fresh authenticated session: the prompt now creates the real project subtree, the files pane reflects the new directories, and subsequent runs correctly report that the scaffold is already in place instead of pretending to write again
+- Followed with an atomic publish hardening pass so future scaffold saves publish server-side in the same mutation rather than depending on a second client-side publish race
+- Confirmed local codegen + app build still pass after the scaffold + publish hardening changes
+
 ## 2026-04-17 — Local Browser Re-Verification + Mutation Replay Hardening
 
 ### Web Shell / CLI / QA

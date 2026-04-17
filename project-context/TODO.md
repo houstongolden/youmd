@@ -218,6 +218,11 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Re-verify the real-domain production passwordless browser shell flow on `you.md`
 - [x] Fix `youmd chat` so closed stdin / piped non-interactive sessions exit cleanly instead of throwing `ERR_USE_AFTER_CLOSE`
 - [x] Fix stale web-shell mutation replay so completed custom-section turns stop getting re-applied on later unrelated requests
+- [x] Fix the core production shell scaffold regression so `create my projects directory and subdirectories for each project within my private folder` creates the real `private/projects/*` tree instead of hanging or fabricating repeated `README/context/prd/todo` updates
+- [x] Verify the live post-login shell bootstrap path end-to-end on production (`/api/auth/session` + Convex user/profile/private/bundle queries)
+- [x] Verify the authenticated production bundle really contains the scaffolded `projects/*/{README,context,prd,todo}.md` files instead of only claiming to
+- [x] Support configurable verified passwordless email senders via `AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL` and surface a clearer error when Resend is still in testing mode
+- [ ] Configure a verified production email sender for passwordless auth so non-owner accounts and aliases can actually receive login/signup codes
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
 - [ ] Remove or rewrite remaining Clerk-specific docs/comments/webhooks/password endpoints so the repo no longer describes the old auth model as current
 - [ ] Run transcript-level local CLI vs web shell parity prompts and capture tone/proactiveness gaps with concrete repros

@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-04-17
-Last Commit: 49bcb95 (2026-04-16)
+Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 
 ---
 
@@ -27,6 +27,7 @@ Last Commit: 49bcb95 (2026-04-16)
 - Sources pane with real mutations (add URL, view status, pipeline stats)
 - Files pane with keyboard shortcuts (Cmd+S), markdown preview, create new file
 - Same-origin web chat routes for the shell: `/api/v1/chat`, `/api/v1/chat/ack`, and `/api/v1/chat/stream`
+- Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 
 ### CLI (youmd v0.6.0 — npm publish pending)
 - 21 commands (added `skill` with 19 subcommands)
@@ -81,6 +82,8 @@ MVP now requires account creation before profile building. The "no signup requir
 - Local/dev passwordless auth is working via first-party email codes, session cookies, and custom JWT/JWKS for Convex
 - Production `you.md` passwordless auth is now hard-verified end to end: email delivery, verify-code, cookie-backed session refresh, and authenticated `/shell` hydration
 - Production API-key issuance on the passwordless flow is verified, and `youmd whoami` resolves correctly against the live prod backend with a fresh prod key
+- Production shell bootstrap is now verified after login: `/api/auth/session` returns a valid Convex JWT and the downstream authenticated user/profile/private/bundle queries all execute cleanly on prod
+- Remaining release blocker on auth is deliverability, not session plumbing: the passwordless sender still needs a verified production domain sender configured (`AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL`) so non-owner accounts and plus-address aliases can receive codes reliably
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 
 ### Portrait Sync
@@ -94,6 +97,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Stale source detection warns at 7 days but doesn't auto-refresh
 - Agent sometimes says "the system handles that" instead of acting directly
 - Production still needs a final live verification pass that the faster web-shell sequencing feels better after redeploy
+- The core project-directory scaffold prompt is now fixed in production, but broader shell mutation QA still needs the same transcript-level scrutiny so other high-value actions do not regress into tool-call lies or half-finished saves
 
 ### UI Polish
 - Some text formatting issues in CLI (wrapping, alignment) — partially fixed in 0.4.8

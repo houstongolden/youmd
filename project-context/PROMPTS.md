@@ -3,8 +3,8 @@ All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
 **Total sessions:** 9
-**Total messages:** 329
-**Last updated:** 2026-04-17 03:25
+**Total messages:** 332
+**Last updated:** 2026-04-17 07:06
 
 ## Table of Contents
 
@@ -16,12 +16,12 @@ Auto-maintained — new messages appended each session.
 6. [2026-03-27 to 2026-03-28 (be60ecec)](#session-2026-03-27-be60ecec) --- 47 messages
 7. [2026-03-28 (4eb46dbc)](#session-2026-03-28-4eb46dbc) --- 6 messages
 8. [2026-03-20 to 2026-04-04 (2f31c971)](#session-2026-03-20-2f31c971) --- 104 messages
-9. [2026-04-16 (019d978f)](#session-2026-04-16-019d978f) --- 25 messages
+9. [2026-04-16 (019d978f)](#session-2026-04-16-019d978f) --- 28 messages
 
 ---
 
 ## Session: 2026-04-16 (019d978f)
-*25 messages | File modified: 2026-04-17 03:25*
+*28 messages | File modified: 2026-04-17 07:06*
 
 **2026-04-16 18:31:41 UTC**
 > can you look into why these warnings were shown when I started codex in this project directory? 
@@ -160,6 +160,20 @@ Auto-maintained — new messages appended each session.
 
 **2026-04-17 02:46:51 UTC**
 > Continue.
+
+**2026-04-17 05:40:53 UTC**
+> you need to push to github main branch for it to auto deploy to vercel - pushing to github also autodeploys changes to convex on prod too - i set up the action to do that - so you should never have to deploy directly to vercel
+
+**2026-04-17 05:46:54 UTC**
+> When i try to login to you.md it verifies and logs me in successfully butit doesn't load my profile or the shell or anything properly you can see it is just stuck in this state after redirecting from verifying login  - heres all i see in the console: "Failed to load resource: the server responded with a status of 401 ()Understand this error
+> 6sign-in?redirect_url…ww.you.md%2Fshell:1 Uncaught (in promise) Error: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"
+
+**2026-04-17 06:06:15 UTC**
+> [Image #1] hey this is the core test the agent needs to pass that it keeps failing... [Image #2] I keep asking it this basic thing and it either totally stalls and fails, or just lies and says it did it when it does not actually do it: "create my projects directory and subdirectories for each project within my private folder" then here is what it said it did but did NOT actually do this...
+> updated README, context, prd, todo, README, context, prd, todo, README, context, prd, todo, README, context, prd, todo, README, context, prd, todo.
+> [updated: README, context, prd, todo, README, context, prd, todo, README, context, prd, todo, README, context, prd, todo, README, context, prd, todo]
+> [saved as v58]
+> [published]"
 
 ## Session: 2026-03-16 to 2026-03-19 (29023a33)
 *36 messages | File modified: 2026-03-19 16:17*

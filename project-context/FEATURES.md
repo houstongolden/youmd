@@ -9,6 +9,7 @@ Last Updated: 2026-04-17
 | Open spec you-md/v1 | Done | Directory-based identity bundles |
 | Convex backend | Done | Reactive, serverless, TypeScript-native |
 | Passwordless auth migration | Done | First-party email-code auth, sessions, custom JWT/JWKS. Local/dev validated and production browser + CLI parity hard-smoked |
+| Verified passwordless sender config | Done | Auth email route now supports `AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL` instead of being hardcoded to `onboarding@resend.dev` |
 | Remote-Convex local auth guard | Done | Local web sessions now mint `https://you.md` Convex JWT issuers when the app is pointed at a remote Convex deployment, avoiding `NoAuthProvider` auth failures during local web QA |
 | Username claim | Done | Auto-claim via /initialize (no manual form) |
 | Bundle compilation | Done | Server-side via convex/lib/compile.ts |
@@ -27,6 +28,8 @@ Last Updated: 2026-04-17
 | Auto-scrape on init | Done | Scrapes existing profile links before first LLM call |
 | Auto-research | Done | Perplexity web research for sparse profiles |
 | Auto-publish | Done | Every bundle save auto-publishes |
+| Deterministic project scaffold in shell | Done | The exact `create my projects directory and subdirectories for each project within my private folder` request now bypasses the fragile LLM mutation path and creates real `private/projects/*` files |
+| Production shell bootstrap verification | Done | Live `/api/auth/session` plus authenticated Convex user/profile/private/bundle queries now verified on `www.you.md` after login |
 | Shared pane primitives | Done | Consistent UI across all dashboard panes |
 | Source management | Done | Add URLs, view status |
 | Pipeline trigger | Done | From dashboard |
@@ -82,6 +85,7 @@ Last Updated: 2026-04-17
 | Tool-only shell response synthesis | Done | When the model emits valid tool calls but little/no natural-language follow-through, the web shell now synthesizes concrete confirmation copy for updates, memories, fetches, and portrait changes |
 | Authoritative turn-history pruning | Done | Completed profile-mutation turns are now stripped from future shell reasoning so later unrelated requests do not re-apply already finished custom-section updates |
 | Finalized assistant history storage | Done | Web shell now stores the rendered/synthesized assistant completion text in LLM history instead of only the raw terse model output, improving later turn grounding |
+| Project scaffold truthfulness | Done | The shell no longer claims repeated `README/context/prd/todo` updates for project scaffolding without writing the directory tree; production now shows the real scaffolded files under the files pane |
 
 ## Intelligent Model Routing
 

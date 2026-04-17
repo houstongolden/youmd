@@ -3,6 +3,39 @@
 Status: Phase 1 hardening pass substantially complete
 Owner: Houston + coding agents
 
+## 2026-04-17 Continuation — Production Shell Re-Verification + Passwordless Sender Blocker
+
+### Additional Verification
+- Verified the latest GitHub-triggered Vercel deployment attached to `www.you.md` and reached `Ready`.
+- Re-validated the production first-party session path directly:
+  - `GET /api/auth/session` with a fresh production `youmd_session` cookie returned `authenticated: true`
+  - the response included the expected Convex JWT for `houstongolden`
+- Re-validated the authenticated production Convex shell bootstrap using that JWT:
+  - `users:getByClerkId`
+  - `profiles:getByOwnerId`
+  - `bundles:getLatestBundle`
+- Re-ran the authenticated production `me:scaffoldProjectDirectories` mutation for Houston's account; it now correctly returns `changed: false` because the scaffold already exists.
+- Verified the latest published production bundle (`v60`) really contains the scaffolded `projects/*/{README,context,prd,todo}.md` files in `youJson.custom_files`.
+
+### New Findings Confirmed
+- The core shell scaffold golden path is now genuinely fixed on production. The system is no longer only saying it created files; the live authenticated bundle proves they exist.
+- Passwordless auth still has one major release blocker unrelated to session plumbing:
+  - the send-verification route was still hardcoded to `you.md <onboarding@resend.dev>`
+  - Resend therefore remains in testing-recipient mode
+  - non-owner addresses and plus-address aliases fail with the provider's 403 testing-mode error
+
+### Additional Fixes Landed
+- Added production sender configuration support for passwordless email:
+  - `AUTH_EMAIL_FROM`
+  - `RESEND_FROM_EMAIL`
+- Added a clearer production error message when Resend is still in testing mode, so future failures point directly at the missing verified sender configuration instead of surfacing raw provider text.
+- Updated the example env file to reflect the first-party passwordless auth stack and remove stale Clerk-era environment guidance.
+
+### Current Read
+- Production shell auth/bootstrap is healthy.
+- The exact project-directory scaffold pass/fail test is now passing on the live account path.
+- The next auth release gate is email deliverability for non-owner accounts, which now depends on configuring a verified production sender rather than more code plumbing.
+
 ## 2026-04-17 Continuation — Local Browser Re-Verification + Mutation Replay Fix
 
 ### Additional Verification
