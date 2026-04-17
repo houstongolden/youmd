@@ -181,20 +181,35 @@ export const completeEmailAuthWithCode = mutation({
     issueApiKey: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const challenge = await ctx.db
+    const challenges = await ctx.db
       .query("authChallenges")
       .withIndex("by_email", (q) => q.eq("email", normalizeEmail(args.email)))
-      .first();
+      .collect();
 
-    const verifiedChallenge = await consumeChallenge(challenge);
+    const activeChallenges = challenges
+      .filter((challenge) => {
+        if (challenge.usedAt) return false;
+        if (challenge.expiresAt < Date.now()) return false;
+        if (challenge.attempts >= MAX_CHALLENGE_ATTEMPTS) return false;
+        return true;
+      })
+      .sort((a, b) => b.createdAt - a.createdAt);
 
-    if (verifiedChallenge.codeHash !== args.codeHash) {
-      await ctx.db.patch(verifiedChallenge._id, {
-        attempts: verifiedChallenge.attempts + 1,
-      });
+    const matchingChallenge = activeChallenges.find(
+      (challenge) => challenge.codeHash === args.codeHash
+    );
+
+    if (!matchingChallenge) {
+      const latestChallenge = activeChallenges[0];
+      if (latestChallenge) {
+        await ctx.db.patch(latestChallenge._id, {
+          attempts: latestChallenge.attempts + 1,
+        });
+      }
       throw new Error("Invalid or expired verification code.");
     }
 
+    const verifiedChallenge = await consumeChallenge(matchingChallenge);
     return await finalizeChallenge(ctx, verifiedChallenge, args.issueApiKey);
   },
 });

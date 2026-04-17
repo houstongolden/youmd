@@ -10,7 +10,7 @@ import { signConvexToken } from "@/lib/auth-jwt";
 export async function GET() {
   const token = await getSessionTokenFromCookies();
   if (!token) {
-    return NextResponse.json({ authenticated: false }, { status: 401 });
+    return NextResponse.json({ authenticated: false });
   }
 
   const tokenHash = hashOpaqueToken(token);
@@ -19,7 +19,7 @@ export async function GET() {
 
   if (!session) {
     await clearSessionCookie();
-    return NextResponse.json({ authenticated: false }, { status: 401 });
+    return NextResponse.json({ authenticated: false });
   }
 
   await client.mutation(api.auth.touchSession, { tokenHash });
