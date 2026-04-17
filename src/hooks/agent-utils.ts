@@ -1131,6 +1131,9 @@ export function parsePortraitUpdateFromResponse(text: string): PortraitUpdate | 
 }
 
 export function sectionLabel(section: string): string {
+  if (section.includes("/") && !BUNDLE_SECTIONS.includes(section as (typeof BUNDLE_SECTIONS)[number])) {
+    return section.replace(/README\.md$/, "agent.md").replace(/\.md$/, "");
+  }
   const name = section.replace(/\.md$/, "").split("/").pop() || section;
   return name;
 }

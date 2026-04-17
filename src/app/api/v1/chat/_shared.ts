@@ -5,7 +5,15 @@ import { CONVEX_SITE_URL } from "@/lib/constants";
 export function copyProxyHeaders(source: Headers): Headers {
   const headers = new Headers();
   source.forEach((value, key) => {
-    if (key.toLowerCase() === "content-length") return;
+    const lower = key.toLowerCase();
+    if (
+      lower === "content-length" ||
+      lower === "content-encoding" ||
+      lower === "transfer-encoding" ||
+      lower === "connection"
+    ) {
+      return;
+    }
     headers.set(key, value);
   });
   return headers;

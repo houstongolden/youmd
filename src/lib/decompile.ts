@@ -392,8 +392,51 @@ export function buildFileTree(files: VirtualFile[]): FileTreeNode[] {
     return a.path.localeCompare(b.path);
   });
 
+  function attachChild(parent: FileTreeNode, child: FileTreeNode): void {
+    if (!parent.children) parent.children = [];
+    if (!parent.children.some((node) => node.path === child.path && node.type === child.type)) {
+      parent.children.push(child);
+    }
+  }
+
+  function attachTopLevelDir(node: FileTreeNode): void {
+    if (isTopLevelPublic(node.name, false)) {
+      if (!root.some((existing) => existing.path === node.path && existing.type === node.type)) {
+        root.push(node);
+      }
+      return;
+    }
+    attachChild(privateNode, node);
+  }
+
+  function ensureDir(dirPath: string): FileTreeNode {
+    const existing = dirs.get(dirPath);
+    if (existing) return existing;
+
+    const parts = dirPath.split("/");
+    const node: FileTreeNode = {
+      name: parts[parts.length - 1],
+      path: dirPath,
+      type: "directory",
+      children: [],
+    };
+    dirs.set(dirPath, node);
+
+    if (parts.length === 1) {
+      attachTopLevelDir(node);
+      return node;
+    }
+
+    const parentDir = ensureDir(parts.slice(0, -1).join("/"));
+    attachChild(parentDir, node);
+    return node;
+  }
+
   for (const file of sorted) {
-    const parts = file.path.split("/");
+    const visualPath = file.path.startsWith("private/")
+      ? file.path.slice("private/".length)
+      : file.path;
+    const parts = visualPath.split("/");
 
     if (parts.length === 1) {
       // Root-level file — public root files only at the top
@@ -410,34 +453,10 @@ export function buildFileTree(files: VirtualFile[]): FileTreeNode[] {
       }
     } else {
       // File inside a directory
-      const topDir = parts[0];
       const dirPath = parts.slice(0, -1).join("/");
       const fileName = parts[parts.length - 1];
-      const isPublicDir = isTopLevelPublic(topDir, false);
-
-      // Get or create the dir node
-      if (!dirs.has(dirPath)) {
-        const dirNode: FileTreeNode = {
-          name: parts[parts.length - 2],
-          path: dirPath,
-          type: "directory",
-          children: [],
-        };
-        dirs.set(dirPath, dirNode);
-
-        if (parts.length === 2) {
-          // Top-level directory: place under root or under private/
-          if (isPublicDir) {
-            root.push(dirNode);
-          } else {
-            privateNode.children!.push(dirNode);
-          }
-        }
-      }
-
-      // Add file to its parent dir
-      const dir = dirs.get(dirPath)!;
-      dir.children!.push({
+      const dir = ensureDir(dirPath);
+      attachChild(dir, {
         name: displayName(fileName),
         path: file.path, // keep real path for I/O
         type: "file",
