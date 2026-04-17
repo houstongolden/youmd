@@ -5,6 +5,8 @@ import * as os from "os";
 const GLOBAL_CONFIG_DIR = path.join(os.homedir(), ".youmd");
 const GLOBAL_CONFIG_FILE = path.join(GLOBAL_CONFIG_DIR, "config.json");
 const LOCAL_BUNDLE_DIR = ".youmd";
+const DEFAULT_API_URL = "https://kindly-cassowary-600.convex.site";
+const DEFAULT_APP_URL = "https://you.md";
 
 export interface GlobalConfig {
   token?: string;
@@ -40,12 +42,20 @@ export function getLocalBundleDir(): string {
 
 export function getConvexSiteUrl(): string {
   const config = readGlobalConfig();
-  return config.apiUrl || "https://kindly-cassowary-600.convex.site";
+  return config.apiUrl || DEFAULT_API_URL;
 }
 
 export function getAppUrl(): string {
   const config = readGlobalConfig();
-  return config.appUrl || "https://you.md";
+  return config.appUrl || DEFAULT_APP_URL;
+}
+
+export function getDefaultConvexSiteUrl(): string {
+  return DEFAULT_API_URL;
+}
+
+export function getDefaultAppUrl(): string {
+  return DEFAULT_APP_URL;
 }
 
 export function readGlobalConfig(): GlobalConfig {
@@ -65,6 +75,21 @@ export function writeGlobalConfig(config: GlobalConfig): void {
     fs.mkdirSync(GLOBAL_CONFIG_DIR, { recursive: true });
   }
   fs.writeFileSync(GLOBAL_CONFIG_FILE, JSON.stringify(config, null, 2) + "\n");
+}
+
+export function clearGlobalAuth(options: { resetEndpoints?: boolean } = {}): void {
+  const config = readGlobalConfig();
+  delete config.token;
+  delete config.username;
+  delete config.email;
+  delete config.avatarUrl;
+
+  if (options.resetEndpoints) {
+    delete config.apiUrl;
+    delete config.appUrl;
+  }
+
+  writeGlobalConfig(config);
 }
 
 export function readLocalConfig(): LocalConfig | null {

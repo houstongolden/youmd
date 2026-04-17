@@ -1,7 +1,12 @@
 import * as readline from "readline";
 import { exec } from "child_process";
 import chalk from "chalk";
-import { readGlobalConfig, writeGlobalConfig, getConvexSiteUrl } from "../lib/config";
+import {
+  readGlobalConfig,
+  writeGlobalConfig,
+  getDefaultAppUrl,
+  getDefaultConvexSiteUrl,
+} from "../lib/config";
 import { getMe, getMeUser, startEmailLogin, verifyEmailCode } from "../lib/api";
 import { BrailleSpinner } from "../lib/render";
 
@@ -89,7 +94,8 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
     config.token = apiKey || undefined;
     config.username = username;
     config.email = user.email;
-    config.apiUrl = getConvexSiteUrl();
+    config.apiUrl = getDefaultConvexSiteUrl();
+    config.appUrl = getDefaultAppUrl();
     writeGlobalConfig(config);
 
     verifySpinner.stop();
@@ -152,7 +158,10 @@ async function loginWithKey(key: string): Promise<void> {
   // Save the key first
   const config = readGlobalConfig();
   config.token = key;
-  config.apiUrl = getConvexSiteUrl();
+  delete config.username;
+  delete config.email;
+  config.apiUrl = getDefaultConvexSiteUrl();
+  config.appUrl = getDefaultAppUrl();
   writeGlobalConfig(config);
 
   console.log("");

@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { isAuthenticated, localBundleExists, readGlobalConfig } from "./lib/config";
 import { initCommand } from "./commands/init";
 import { loginCommand } from "./commands/login";
+import { logoutCommand } from "./commands/logout";
 import { registerCommand } from "./commands/register";
 import { whoamiCommand } from "./commands/whoami";
 import { statusCommand } from "./commands/status";
@@ -46,6 +47,7 @@ const HELP_GROUPS: Array<{
     title: "AUTH",
     commands: [
       { name: "login", summary: "sign in via browser or email code, or use --key" },
+      { name: "logout", summary: "clear local auth state for this machine" },
       { name: "register", summary: "create a new you.md identity" },
       { name: "whoami", summary: "show current authenticated user" },
     ],
@@ -162,6 +164,11 @@ program
   .command("register")
   .description("Register a new You.md identity")
   .action(registerCommand);
+
+program
+  .command("logout")
+  .description("Clear local authentication for this machine")
+  .action(logoutCommand);
 
 program
   .command("whoami")

@@ -5,9 +5,6 @@
 
 import { readGlobalConfig, getConvexSiteUrl, getAppUrl } from "./config";
 
-const SITE_URL = getConvexSiteUrl();
-const APP_URL = getAppUrl();
-
 interface ApiResponse<T = unknown> {
   ok: boolean;
   status: number;
@@ -75,7 +72,7 @@ async function apiRequest<T = unknown>(
     headers?: Record<string, string>;
   } = {}
 ) {
-  return request<T>(SITE_URL, path, options);
+  return request<T>(getConvexSiteUrl(), path, options);
 }
 
 async function appRequest<T = unknown>(
@@ -87,7 +84,7 @@ async function appRequest<T = unknown>(
     headers?: Record<string, string>;
   } = {}
 ) {
-  return request<T>(APP_URL, path, options);
+  return request<T>(getAppUrl(), path, options);
 }
 
 // ─── Auth endpoints (no token needed) ────────────────────────────────
