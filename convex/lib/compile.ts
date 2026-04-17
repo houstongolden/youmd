@@ -61,6 +61,12 @@ export interface ProfileData {
     title: string;   // display title like "Speaking", "Investment Thesis"
     content: string; // markdown content
   }>;
+  // Arbitrary file-backed paths (projects/*, skills/*, user-created dirs, etc.)
+  customFiles?: Array<{
+    path: string;
+    content: string;
+    isPublic?: boolean;
+  }>;
 }
 
 export function compileYouJson(data: ProfileData): Record<string, unknown> {
@@ -158,6 +164,13 @@ export function compileYouJson(data: ProfileData): Record<string, unknown> {
       id: s.id,
       title: s.title,
       content: s.content,
+    })),
+
+    // Arbitrary file-backed content that should round-trip through the files pane
+    custom_files: (data.customFiles ?? []).map((file) => ({
+      path: file.path,
+      content: file.content,
+      isPublic: file.isPublic ?? file.path.startsWith("profile/"),
     })),
 
     meta: {
@@ -318,6 +331,16 @@ export function compileManifest(
     "private/internal-links.md",
     "private/context.md",
   ];
+
+  for (const file of data.customFiles ?? []) {
+    const target = file.path;
+    if (!target) continue;
+    if ((file.isPublic ?? target.startsWith("profile/"))) {
+      if (!publicPaths.includes(target)) publicPaths.push(target);
+    } else if (!privatePaths.includes(target)) {
+      privatePaths.push(target);
+    }
+  }
 
   return {
     schema: "you-md/v1",

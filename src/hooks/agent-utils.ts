@@ -1254,6 +1254,8 @@ export function buildProfileDataFromUpdates(
   const existingDirectives = (existingJson?.agent_directives as Record<string, unknown>) || {};
   const existingCustomSections =
     (existingJson?.custom_sections as Array<Record<string, string>> | undefined) || [];
+  const existingCustomFiles =
+    (existingJson?.custom_files as Array<{ path?: string; content?: string; isPublic?: boolean }> | undefined) || [];
 
   const profileData: Record<string, unknown> = {
     name: (identity.name as string) || "",
@@ -1291,6 +1293,13 @@ export function buildProfileDataFromUpdates(
       title: section.title || section.id || "",
       content: section.content || "",
     })),
+    customFiles: existingCustomFiles
+      .filter((file) => typeof file?.path === "string")
+      .map((file) => ({
+        path: file.path as string,
+        content: typeof file.content === "string" ? file.content : "",
+        isPublic: file.isPublic ?? (file.path as string).startsWith("profile/"),
+      })),
   };
 
   if (customSections.length > 0) {
@@ -1419,6 +1428,41 @@ export function buildProfileDataFromUpdates(
           }
         }
         profileData.agentDirectives = directives;
+        break;
+      }
+      default: {
+        const managedReadOnly =
+          update.section === "you.md" ||
+          update.section === "you.json" ||
+          update.section === "manifest.json" ||
+          update.section === "FOLDER.md" ||
+          update.section.startsWith("memory/") ||
+          update.section.startsWith("sessions/") ||
+          update.section.startsWith("sources/");
+
+        if (managedReadOnly) break;
+
+        const customFiles = (profileData.customFiles as Array<{
+          path: string;
+          content: string;
+          isPublic?: boolean;
+        }> | undefined) || [];
+        const existingIndex = customFiles.findIndex(
+          (file) => file.path === update.section
+        );
+        const nextFile = {
+          path: update.section,
+          content: update.content.trim(),
+          isPublic: update.section.startsWith("profile/"),
+        };
+
+        if (existingIndex >= 0) {
+          customFiles[existingIndex] = nextFile;
+        } else {
+          customFiles.push(nextFile);
+        }
+
+        profileData.customFiles = customFiles;
         break;
       }
     }
