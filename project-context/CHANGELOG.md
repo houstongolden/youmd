@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-04-16 — Production Passwordless Verification + Legacy Clerk Surface Retirement
+
+### Auth / Reliability / Cleanup
+- Hard-verified production passwordless auth on `you.md`: email delivery, verification-code login, cookie-backed session refresh, and authenticated `/shell` hydration all work on the live site
+- Hard-verified the production API-key path by issuing a fresh key through the passwordless flow and resolving `youmd whoami` successfully against the live prod backend
+- Removed stale Clerk-specific CSP allowances from the active Next.js security headers so production no longer advertises dead third-party auth domains
+- Retired the legacy `/api/v1/auth/register`, `/api/v1/auth/login`, and `/api/v1/webhooks/clerk` paths to explicit 410 deprecation responses instead of leaving dead password/webhook infrastructure wired into the repo
+- Cleaned active auth copy and comments so the current app describes first-party passwordless auth rather than the retired Clerk model
+- Verified both app and CLI builds still pass after the auth-surface cleanup
+
 ## 2026-04-16 — Passwordless Auth Migration: First-Party Web + CLI Sign-In
 
 ### Auth / Web / CLI
@@ -15,7 +25,7 @@
 - Deployed the auth/schema changes to the dev Convex deployment and synced production Vercel auth env for the new signer/JWKS stack
 - Validated the local passwordless route loop end-to-end: signup → code verification → session → logout → login
 - Validated CLI auth against the dev backend: `register`, `login`, and `whoami`
-- Production browser/dashboard parity is the remaining auth-release gate and should be checked immediately after the deployed stack goes live
+- Production browser/dashboard parity has now been hard-verified in the follow-up ship-readiness pass
 
 ## 2026-04-16 — Ship Readiness Pass: Authenticated CLI Hardening + Round-Trip Fidelity
 

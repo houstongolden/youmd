@@ -187,13 +187,14 @@ export const checkUsername = query({
  * `anthropic`, `jane`, etc.) preventing real users from claiming them.
  *
  * Now requires `requireOwner`. The 4 legitimate callers all qualify:
- *   1. Web init flow: user just completed Clerk sign-up, has a fresh JWT.
- *      Convex client auto-attaches the JWT. requireOwner sees JWT.sub == clerkId.
+ *   1. Web init flow: user just completed first-party passwordless auth and
+ *      has a fresh custom JWT. Convex client auto-attaches it and
+ *      requireOwner sees JWT.sub == clerkId.
  *   2. Web dashboard flow: same.
- *   3. http.ts /api/v1/auth/register: calls Clerk Backend API first to create
- *      the Clerk user, then mirrors into Convex via the trusted bypass token.
- *   4. http.ts /api/v1/auth/login: verifies password via Clerk first, then
- *      mirrors via the trusted bypass token.
+ *   3. First-party auth route handlers can mirror or repair the Convex user
+ *      via the trusted bypass token.
+ *   4. API-key or httpAction flows can do the same via the trusted internal
+ *      token path after authenticating the caller elsewhere.
  */
 export const createUser = mutation({
   args: {

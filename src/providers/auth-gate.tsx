@@ -6,8 +6,8 @@ import type { ReactNode } from "react";
 /**
  * Cycle 71: gates all (app) route children behind Convex auth readiness.
  *
- * The problem: after Clerk login, useUser() returns a user immediately
- * from Clerk's local cache, but the Convex JWT hasn't synced yet.
+ * The problem: after first-party session auth succeeds, the app can know
+ * about the signed-in user before Convex finishes validating the custom JWT.
  * Any useQuery/useMutation that calls requireOwner sees null identity
  * and throws "authentication required", crashing the page.
  *

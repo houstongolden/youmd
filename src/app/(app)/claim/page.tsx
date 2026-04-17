@@ -7,9 +7,9 @@ import { redirect } from "next/navigation";
  * /initialize (which runs the boot animation, claims the username, and
  * launches the onboarding agent in one flow).
  *
- * Clerk's `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL` env var is set to /claim
- * for legacy reasons, so signed-up users land here. Redirecting straight
- * to /initialize avoids a 3-hop chain (/claim → /sign-up → /shell).
+ * We keep the route as a stable redirect target for any cached links,
+ * old onboarding flows, or stale browser history entries that still
+ * point at /claim after the passwordless auth migration.
  *
  * This page never renders — the metadata exists only for any direct
  * /claim links that may still be cached by search engines.

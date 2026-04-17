@@ -1,7 +1,7 @@
 # You.md — Current State
 
-Last Updated: 2026-04-06
-Last Commit: 4e952ec (2026-03-27)
+Last Updated: 2026-04-16
+Last Commit: b95bf6a (2026-04-16)
 
 ---
 
@@ -27,12 +27,12 @@ Last Commit: 4e952ec (2026-03-27)
 - Sources pane with real mutations (add URL, view status, pipeline stats)
 - Files pane with keyboard shortcuts (Cmd+S), markdown preview, create new file
 
-### CLI (youmd v0.5.0 — npm publish pending)
+### CLI (youmd v0.6.0 — npm publish pending)
 - 21 commands (added `skill` with 19 subcommands)
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
 - Conversational AI onboarding with BrailleSpinners, ASCII logo, portrait rendering
-- Email/password auth (no API token required for own account)
+- Passwordless email-code auth (no API token required for your own account)
 - Chat command with slash commands, project awareness, directive injection
 - Rich terminal rendering (tables, stats, code blocks, callouts)
 - Pull/push/sync for web ↔ local
@@ -77,10 +77,10 @@ MVP now requires account creation before profile building. The "no signup requir
 ## Known Issues
 
 ### Auth Migration
-- Local/dev passwordless auth is now working via first-party email codes, session cookies, and custom JWT/JWKS for Convex
-- CLI `register`, `login`, and `whoami` have been validated against the dev deployment on the new auth path
-- Production web env for the new signer/JWKS pair has been synced, but the real-domain browser/dashboard flow still needs post-deploy verification
-- Remaining cleanup: remove remaining Clerk-era docs/comments/webhooks/password endpoints so the repo no longer describes Clerk as current auth
+- Local/dev passwordless auth is working via first-party email codes, session cookies, and custom JWT/JWKS for Convex
+- Production `you.md` passwordless auth is now hard-verified end to end: email delivery, verify-code, cookie-backed session refresh, and authenticated `/shell` hydration
+- Production API-key issuance on the passwordless flow is verified, and `youmd whoami` resolves correctly against the live prod backend with a fresh prod key
+- Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 
 ### Portrait Sync
 - CLI generates ASCII portraits locally but sync to web API is not verified end-to-end
@@ -120,7 +120,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Portrait sync improvements
 - Request tracking in feature-requests-active.md
 - CLI text formatting fixes (word-wrap, paragraph spacing)
-- CLI email/password auth (register + login, no API token needed)
+- CLI passwordless auth (register + login via email code, no API token needed)
 - ASCII portrait rendering in CLI terminal
 - Block-char YOU logo + orange branding in CLI
 - CLI onboarding overhaul (multi-select, personality, live spinners)
@@ -238,6 +238,8 @@ MVP now requires account creation before profile building. The "no signup requir
 - `npm --prefix cli run build` passes
 - Local auth route smoke test passed: signup → verify → session → logout → login
 - CLI smoke test passed against dev backend: `register`, `login`, `whoami`
+- Production auth smoke test passed: send code → verify code → session cookie → `/shell`
+- Production CLI parity smoke test passed: API-key issuance on the passwordless flow → `youmd whoami`
 - CLI-pushed portraits now visible as profile photo on web
 
 ---

@@ -58,8 +58,8 @@ export function DashboardContent() {
   const { isAuthenticated } = useConvexAuth();
   const router = useRouter();
   // Gate on isAuthenticated so the query only fires AFTER Convex has
-  // validated the Clerk JWT. Without this, there's a timing window
-  // where user?.id is set (Clerk local cache) but getUserIdentity()
+  // validated the custom JWT. Without this, there's a timing window
+  // where user?.id is set from the session bootstrap but getUserIdentity()
   // returns null on the server, causing requireOwner to throw.
   const convexUser = useQuery(
     api.users.getByClerkId,

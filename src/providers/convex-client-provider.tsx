@@ -37,7 +37,7 @@ class AuthErrorBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
-      // Provide Convex without Clerk auth — public queries work, auth-gated ones won't
+      // Provide Convex without session auth — public queries work, auth-gated ones won't
       return (
         <ConvexProvider client={this.props.convex}>
           {this.props.children}
@@ -66,7 +66,7 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * Convex provider WITHOUT Clerk auth — for pages that work without sign-in.
+ * Convex provider WITHOUT authenticated session wiring — for pages that work without sign-in.
  * Used by /create and other public-facing interactive pages.
  */
 export function ConvexPublicProvider({ children }: { children: ReactNode }) {

@@ -1813,409 +1813,57 @@ http.route({
 });
 
 // ============================================================
-// CLI AUTHENTICATION (email/password via Clerk Backend API)
+// LEGACY AUTH ROUTES (deprecated after first-party passwordless migration)
 // ============================================================
 
-// POST /api/v1/auth/register — Create account from CLI
+// These endpoints previously implemented email/password auth for older CLI
+// builds. The current CLI uses the web app's first-party passwordless flow
+// instead:
+//   - POST /api/auth/send-verification
+//   - POST /api/auth/verify-code
+//
+// Keep the legacy paths as explicit 410 responses so stale clients get a clear
+// migration message instead of silently hitting removed infrastructure.
+
 http.route({
   path: "/api/v1/auth/register",
   method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    try {
-      const body = await request.json();
-      const { email, password, username, name } = body;
-
-      if (!email || !password || !username) {
-        return json({ error: "email, password, and username are required" }, 400);
-      }
-
-      // 1. Check username availability
-      const usernameCheck = await ctx.runQuery(api.users.checkUsername, { username });
-      if (!usernameCheck.available) {
-        return json({ error: usernameCheck.reason || "Username not available" }, 409);
-      }
-
-      // 2. Create Clerk user via Backend API
-      const clerkKey = process.env.CLERK_SECRET_KEY;
-      if (!clerkKey) {
-        return json({ error: "Auth service not configured" }, 500);
-      }
-
-      const clerkRes = await fetch("https://api.clerk.com/v1/users", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${clerkKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email_address: [email],
-          password,
-          username,
-          first_name: name || username,
-        }),
-      });
-
-      if (!clerkRes.ok) {
-        const clerkError = await clerkRes.json();
-        // Extract user-friendly error message from Clerk
-        const errors = (clerkError as any).errors || [];
-        const message =
-          errors.length > 0
-            ? errors.map((e: any) => e.long_message || e.message).join("; ")
-            : "Failed to create account";
-        return json({ error: message }, clerkRes.status === 422 ? 422 : 400);
-      }
-
-      const clerkUser = await clerkRes.json();
-      const clerkId = (clerkUser as any).id;
-
-      // 3. Create Convex user record (also creates profile)
-      // Cycle 47: pass the bypass token because we just verified the Clerk
-      // user via Clerk Backend API but don't have a Clerk JWT in this
-      // httpAction context.
-      await ctx.runMutation(api.users.createUser, {
-        clerkId,
-        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-        username: username.toLowerCase(),
-        email,
-        displayName: name || undefined,
-      });
-
-      // 4. Generate an API key for CLI access
-      const keyResult = await ctx.runMutation(api.apiKeys.createKey, {
-        clerkId,
-        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-        label: "cli-auth",
-        scopes: ["read:public"],
-      });
-
-      return json({
-        success: true,
-        username: username.toLowerCase(),
-        apiKey: keyResult.key,
-        clerkId,
-      });
-    } catch (err) {
-      return json(
-        { error: err instanceof Error ? err.message : "Registration failed" },
-        500
-      );
-    }
+  handler: httpAction(async () => {
+    return json(
+      {
+        error:
+          "Password registration has been removed. Use /api/auth/send-verification or run `youmd register` from the latest CLI.",
+      },
+      410
+    );
   }),
 });
 
-// POST /api/v1/auth/login — Login from CLI with email/password
 http.route({
   path: "/api/v1/auth/login",
   method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    try {
-      const body = await request.json();
-      const { email, password } = body;
-
-      if (!email || !password) {
-        return json({ error: "email and password are required" }, 400);
-      }
-
-      const clerkKey = process.env.CLERK_SECRET_KEY;
-      if (!clerkKey) {
-        return json({ error: "Auth service not configured" }, 500);
-      }
-
-      // 1. Look up user by email in Clerk
-      const lookupRes = await fetch(
-        `https://api.clerk.com/v1/users?email_address=${encodeURIComponent(email)}`,
-        {
-          headers: { Authorization: `Bearer ${clerkKey}` },
-        }
-      );
-
-      if (!lookupRes.ok) {
-        return json({ error: "Failed to look up user" }, 500);
-      }
-
-      const users = (await lookupRes.json()) as any[];
-      if (!users || users.length === 0) {
-        return json({ error: "No account found with that email. Run `youmd register` to create one." }, 401);
-      }
-
-      const clerkUser = users[0];
-      const clerkUserId = clerkUser.id;
-
-      // 2. Verify password via Clerk Backend API
-      const verifyRes = await fetch(
-        `https://api.clerk.com/v1/users/${clerkUserId}/verify_password`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${clerkKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ password }),
-        }
-      );
-
-      if (!verifyRes.ok) {
-        const verifyBody = await verifyRes.json();
-        const verified = (verifyBody as any).verified;
-        if (verified === false) {
-          return json({ error: "Incorrect password" }, 401);
-        }
-        return json({ error: "Password verification failed" }, 401);
-      }
-
-      const verifyBody = await verifyRes.json();
-      if (!(verifyBody as any).verified) {
-        return json({ error: "Incorrect password" }, 401);
-      }
-
-      // 3. Find the Convex user by clerkId
-      const convexUser = await ctx.runQuery(api.users.getByClerkId, { clerkId: clerkUserId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-
-      if (!convexUser) {
-        // User exists in Clerk but not in Convex — create the Convex record
-        const clerkUsername =
-          clerkUser.username ||
-          email.split("@")[0].toLowerCase().replace(/[^a-z0-9-]/g, "-");
-
-        await ctx.runMutation(api.users.createUser, {
-          clerkId: clerkUserId,          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-          username: clerkUsername,
-          email,
-          displayName: clerkUser.first_name || undefined,
-        });
-      }
-
-      // Re-fetch to get the user with _id
-      const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: clerkUserId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-      if (!user) {
-        return json({ error: "Failed to resolve user account" }, 500);
-      }
-
-      // 4. Generate API key — revoke old CLI keys first to avoid free-plan limit
-      let keyResult;
-      try {
-        // Try to revoke any existing cli-auth keys first
-        // For free plan: revoke all existing keys so we can create a fresh one
-        const existingKeys = await ctx.runQuery(api.apiKeys.listKeys, { clerkId: clerkUserId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-        for (const k of existingKeys) {
-          if (!k.isRevoked) {
-            await ctx.runMutation(api.apiKeys.revokeKey, { clerkId: clerkUserId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN, keyId: k.id });
-          }
-        }
-        keyResult = await ctx.runMutation(api.apiKeys.createKey, {
-          clerkId: clerkUserId,          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-          label: "cli-auth",
-          scopes: ["read:public"],
-        });
-      } catch {
-        // If key creation still fails (non-cli key exists), return without a key
-        return json({
-          success: true,
-          username: user.username,
-          plan: user.plan,
-          apiKey: null,
-          message: "Logged in but could not generate API key. You already have an active key — use it with `youmd login --key YOUR_KEY`.",
-        });
-      }
-
-      return json({
-        success: true,
-        username: user.username,
-        apiKey: keyResult.key,
-        plan: user.plan,
-      });
-    } catch (err) {
-      // If the error is about free plan key limits, find and return existing key info
-      const errMsg = err instanceof Error ? err.message : "Login failed";
-      if (errMsg.includes("Free plan allows 1 API key")) {
-        // User already has a key — tell them to use it or revoke the old one
-        return json(
-          { error: "You already have an API key. Use `youmd login --key YOUR_KEY` or revoke the old key at you.md/dashboard and try again." },
-          409
-        );
-      }
-      return json({ error: errMsg }, 500);
-    }
+  handler: httpAction(async () => {
+    return json(
+      {
+        error:
+          "Password login has been removed. Use /api/auth/send-verification and /api/auth/verify-code, or run `youmd login` from the latest CLI.",
+      },
+      410
+    );
   }),
 });
-
-// ============================================================
-// CLERK WEBHOOK RECEIVER (cycle 52)
-// ============================================================
-//
-// Receives `user.deleted` and `user.updated` events from Clerk via Svix.
-// Verifies the signature manually using HMAC-SHA256 (no svix npm dep —
-// we can't add deps to convex/, and the manual implementation is short).
-//
-// Setup (Houston needs to do this once):
-//   1. In Clerk dashboard → Webhooks → Add Endpoint
-//      URL: https://kindly-cassowary-600.convex.site/api/v1/webhooks/clerk
-//      Events: user.deleted, user.updated
-//   2. Copy the signing secret (starts with "whsec_")
-//   3. Set as Convex env: `npx convex env set CLERK_WEBHOOK_SECRET whsec_...`
-//
-// Until step 3 is done, the webhook returns 500 "webhook not configured".
-// That's the safe default — we'd rather drop legitimate events than
-// process spoofed ones.
-
-/**
- * Verify a Svix-style HMAC-SHA256 webhook signature.
- *
- * Svix's signing scheme:
- *   1. signedContent = `${svix-id}.${svix-timestamp}.${rawBody}`
- *   2. expectedSig = base64(HMAC-SHA256(decodedSecret, signedContent))
- *   3. The svix-signature header is space-separated `v1,<base64>` entries
- *      (multiple sigs for key rotation)
- *
- * The secret is `whsec_<base64>` — strip the prefix and base64-decode.
- */
-async function verifySvixSignature(
-  rawBody: string,
-  svixId: string,
-  svixTimestamp: string,
-  svixSignature: string,
-  webhookSecret: string
-): Promise<boolean> {
-  // Strip whsec_ prefix and decode the secret
-  const secretPart = webhookSecret.startsWith("whsec_")
-    ? webhookSecret.slice(6)
-    : webhookSecret;
-
-  let secretBytes: Uint8Array;
-  try {
-    const binary = atob(secretPart);
-    secretBytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) secretBytes[i] = binary.charCodeAt(i);
-  } catch {
-    return false;
-  }
-
-  // Compute expected signature
-  const signedContent = `${svixId}.${svixTimestamp}.${rawBody}`;
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    secretBytes as BufferSource,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const sigBuffer = await crypto.subtle.sign(
-    "HMAC",
-    cryptoKey,
-    new TextEncoder().encode(signedContent)
-  );
-  const sigBytes = new Uint8Array(sigBuffer);
-  let binary = "";
-  for (let i = 0; i < sigBytes.length; i++) binary += String.fromCharCode(sigBytes[i]);
-  const expectedSig = btoa(binary);
-
-  // Header format: "v1,base64sig v1,othersig" (space-separated for key rotation)
-  const providedSigs = svixSignature
-    .split(" ")
-    .map((entry) => {
-      const parts = entry.split(",");
-      return parts.length >= 2 ? parts[1] : "";
-    })
-    .filter(Boolean);
-
-  // Constant-time comparison against any of the provided sigs
-  for (const provided of providedSigs) {
-    if (provided.length !== expectedSig.length) continue;
-    let diff = 0;
-    for (let i = 0; i < provided.length; i++) {
-      diff |= provided.charCodeAt(i) ^ expectedSig.charCodeAt(i);
-    }
-    if (diff === 0) return true;
-  }
-  return false;
-}
 
 http.route({
   path: "/api/v1/webhooks/clerk",
   method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      // Fail closed: return 500 so Clerk retries (and Houston notices in logs)
-      return json({ error: "webhook not configured (CLERK_WEBHOOK_SECRET missing)" }, 500);
-    }
-
-    const svixId = request.headers.get("svix-id");
-    const svixTimestamp = request.headers.get("svix-timestamp");
-    const svixSignature = request.headers.get("svix-signature");
-
-    if (!svixId || !svixTimestamp || !svixSignature) {
-      return json({ error: "missing svix headers" }, 401);
-    }
-
-    // Reject stale events (replay protection — Svix recommends 5 min window)
-    const now = Math.floor(Date.now() / 1000);
-    const ts = parseInt(svixTimestamp, 10);
-    if (Number.isNaN(ts) || Math.abs(now - ts) > 300) {
-      return json({ error: "timestamp out of range" }, 401);
-    }
-
-    const rawBody = await request.text();
-
-    const sigValid = await verifySvixSignature(
-      rawBody,
-      svixId,
-      svixTimestamp,
-      svixSignature,
-      webhookSecret
+  handler: httpAction(async () => {
+    return json(
+      {
+        error:
+          "The Clerk webhook endpoint has been retired. You.md now uses first-party passwordless auth and no longer accepts Clerk lifecycle events.",
+      },
+      410
     );
-    if (!sigValid) {
-      return json({ error: "invalid signature" }, 401);
-    }
-
-    // Parse the verified payload
-    let event: any;
-    try {
-      event = JSON.parse(rawBody);
-    } catch {
-      return json({ error: "invalid JSON body" }, 400);
-    }
-
-    if (!event || typeof event !== "object" || typeof event.type !== "string") {
-      return json({ error: "invalid event shape" }, 400);
-    }
-
-    // Dispatch by event type
-    if (event.type === "user.deleted") {
-      const clerkId = event.data?.id;
-      if (typeof clerkId !== "string") {
-        return json({ error: "user.deleted missing data.id" }, 400);
-      }
-      const result = await ctx.runMutation(internal.users._internalDeleteByClerkId, {
-        clerkId,
-      });
-      return json({ ok: true, action: "deleted", ...result });
-    }
-
-    if (event.type === "user.updated") {
-      const clerkId = event.data?.id;
-      if (typeof clerkId !== "string") {
-        return json({ error: "user.updated missing data.id" }, 400);
-      }
-      const email = event.data?.email_addresses?.[0]?.email_address;
-      const username = event.data?.username;
-      const displayName = event.data?.first_name;
-
-      const result = await ctx.runMutation(internal.users._internalUpdateByClerkId, {
-        clerkId,
-        email: typeof email === "string" ? email : undefined,
-        username: typeof username === "string" ? username : undefined,
-        displayName: typeof displayName === "string" ? displayName : undefined,
-      });
-      return json({ ok: true, action: "updated", ...result });
-    }
-
-    // Other event types (user.created, session.*, etc.) — ack but no-op.
-    // user.created is intentionally ignored: we use on-demand mirroring,
-    // not webhook-driven creation, to avoid race conditions with the
-    // sign-up flow.
-    return json({ ok: true, action: "ignored", type: event.type });
   }),
 });
 

@@ -754,7 +754,7 @@ preferences: terminal-native, monochrome
             </StepList>
             <Callout type="tip">
               API keys are for giving OTHER agents and apps access to your data,
-              not for authenticating yourself. Your own CLI uses email/password auth.
+              not for authenticating yourself. Your own CLI uses passwordless email-code auth.
             </Callout>
 
             <H3 id="file-structure">Local File Structure</H3>

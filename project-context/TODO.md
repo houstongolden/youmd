@@ -130,6 +130,10 @@ PRD Version: 2.3
 - [x] Synced production Vercel auth env for the new JWT signer/JWKS stack
 - [x] Validated local web auth route flow (signup, verify, session, logout, login) against the dev backend
 - [x] Validated CLI auth flow (`register`, `login`, `whoami`) against the dev backend
+- [x] Validated production passwordless email delivery, verify-code, session cookie, and authenticated `/shell` hydration on `you.md`
+- [x] Validated production API-key issuance on the passwordless flow plus live CLI `whoami` against the prod backend
+- [x] Retired legacy password/Clerk HTTP auth routes to explicit 410 deprecation responses
+- [x] Removed stale Clerk CSP allowances and auth copy from active web/CLI surfaces
 
 ### Agent Context Bootstrap Overhaul (April 16)
 - [x] `youmd skill init-project` now supports `auto`, `additive`, `zero-touch`, and `scaffold` modes
@@ -145,7 +149,7 @@ PRD Version: 2.3
 ### CLI Overhaul (March 24-25)
 - [x] 20 commands (init, login, register, whoami, status, build, publish, add, diff, export, preview, chat, link, keys, memories, private, project, pull, push, sync)
 - [x] Conversational AI onboarding with BrailleSpinners
-- [x] Email/password auth (no API token needed for own account)
+- [x] Passwordless email-code auth (no manual API token needed for your own account)
 - [x] ASCII YOU logo on opening screen
 - [x] ASCII portrait rendering in terminal
 - [x] Multi-select UI for platform/tool selection

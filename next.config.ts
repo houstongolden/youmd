@@ -12,10 +12,13 @@ import type { NextConfig } from "next";
  */
 
 /**
- * Cycle 58: Content-Security-Policy.
+ * Cycle 58 / 94: Content-Security-Policy.
  *
  * Built from a live network inventory of the prod site (landing, profile,
  * sign-in pages) plus knowledge of the Convex client behavior used by /shell.
+ *
+ * Cycle 94 removed Clerk from the auth stack. The CSP now reflects the
+ * first-party passwordless flow and the live Convex endpoints only.
  *
  * Shipped as **Content-Security-Policy-Report-Only** initially so violations
  * surface in browser dev tools without breaking anything. Houston should:
@@ -31,36 +34,37 @@ import type { NextConfig } from "next";
  * Directive rationale (see audit/findings.md cycle 58 for the full inventory):
  *
  * - default-src 'self': fallback — anything not explicitly listed is same-origin
- * - script-src: own + Clerk JS bundles + 'unsafe-inline' (RSC payloads) + 'unsafe-eval' (Clerk requirement)
- * - style-src: own + Clerk + 'unsafe-inline' (Tailwind v4 + Clerk)
+ * - script-src: own + 'unsafe-inline' (RSC payloads) + 'unsafe-eval' (kept until we verify it is unnecessary in prod)
+ * - style-src: own + 'unsafe-inline' (Tailwind v4 + app styles)
  * - img-src: own + data: (AsciiAvatar) + https: (external avatars, favicons) + blob:
  * - font-src: own woff2 in /_next/static/media/ + data: fallback
- * - connect-src: own + Clerk auth API + Convex (https for REST + wss for subscriptions + .site for httpActions)
- * - frame-src: own + Clerk (OAuth/captcha iframes)
- * - form-action: own + Clerk
+ * - connect-src: own + Convex (https for REST + wss for subscriptions + .site for httpActions)
+ * - frame-src: own only
+ * - form-action: own only
  * - base-uri / object-src / frame-ancestors: hardened to 'self' / 'none' / 'self'
  *
  * Known intentional weaknesses (to revisit in a future cycle):
  *   - 'unsafe-inline' on script-src: a nonce-based CSP requires Next.js
  *     middleware to inject a per-request nonce. Doable but invasive.
- *   - 'unsafe-eval' on script-src: required by current Clerk SDK version.
- *     Can be removed if Clerk drops the requirement.
+ *   - 'unsafe-eval' on script-src: likely removable now, but left in place
+ *     for one hardening cycle so we do not regress Next/Turbopack runtime
+ *     behavior on production.
  *   - https: wildcard on img-src: reasonable for a profile site that shows
  *     user-provided external avatars + favicon service results.
  */
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.you.md",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   // worker-src: cycle 58 caught this in the first report-only browse pass —
-  // Next.js / Clerk spawn Web Workers from blob: URLs. Without an explicit
+  // Next.js app code can spawn Web Workers from blob: URLs. Without an explicit
   // worker-src, browsers fall back to script-src which doesn't include blob:.
   "worker-src 'self' blob:",
-  "style-src 'self' 'unsafe-inline' https://clerk.you.md",
+  "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https: blob:",
   "font-src 'self' data:",
-  "connect-src 'self' https://clerk.you.md https://kindly-cassowary-600.convex.cloud wss://kindly-cassowary-600.convex.cloud https://kindly-cassowary-600.convex.site",
-  "frame-src 'self' https://clerk.you.md",
-  "form-action 'self' https://clerk.you.md",
+  "connect-src 'self' https://kindly-cassowary-600.convex.cloud wss://kindly-cassowary-600.convex.cloud https://kindly-cassowary-600.convex.site",
+  "frame-src 'self'",
+  "form-action 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'self'",

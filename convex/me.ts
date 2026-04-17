@@ -847,7 +847,7 @@ When working on this project, here is what matters:
 
 - **Frontend**: Next.js 16+ App Router, deployed on Vercel (auto-deploy on push)
 - **Backend**: Convex (kindly-cassowary-600 in prod, uncommon-chicken-142 in dev)
-- **Auth**: Clerk v7 (web) + email/password via Clerk Backend API (CLI)
+- **Auth**: first-party passwordless web auth + scoped API keys for CLI/agents
 - **LLM**: Anthropic Claude Sonnet 4.6 (primary) → OpenRouter (fallback)
 - **CLI**: npm package "youmd", v0.6.0, 24+ commands
 

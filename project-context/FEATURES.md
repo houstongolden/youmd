@@ -8,7 +8,7 @@ Last Updated: 2026-04-16
 |---|---|---|
 | Open spec you-md/v1 | Done | Directory-based identity bundles |
 | Convex backend | Done | Reactive, serverless, TypeScript-native |
-| Passwordless auth migration | In progress | First-party email-code auth, sessions, custom JWT/JWKS. Local + dev validated; production deploy/browser parity pending |
+| Passwordless auth migration | Done | First-party email-code auth, sessions, custom JWT/JWKS. Local/dev validated and production browser + CLI parity hard-smoked |
 | Username claim | Done | Auto-claim via /initialize (no manual form) |
 | Bundle compilation | Done | Server-side via convex/lib/compile.ts |
 | Bundle publishing | Done | Version tracking, unpublish previous |
@@ -161,7 +161,7 @@ Last Updated: 2026-04-16
 | Web: SkillsPane | Done | Dashboard tab with catalog, CLI commands, how-it-works |
 | Web: /skills command | Done | Slash command + help text |
 | Skill registry | Done | Convex tables (skills + skillInstalls), 9 HTTP endpoints, web SkillsPane — completed 2026-03-27 |
-| Ship-readiness audit evidence | In progress | First pass completed: CLI/bootstrap/MCP smoke checks, live API contract validation, and a tracked audit doc with resolved vs remaining blockers |
+| Ship-readiness audit evidence | In progress | Browser session auth, production shell hydration, production email delivery, real API-key issuance, and live CLI `whoami` parity now verified; broader web-agent personality/proactiveness audit still pending |
 | Browser-auth parity audit | In progress | Passwordless auth stack validated locally and on dev backend; production browser/dashboard parity still needs live verification after deploy |
 
 ## Design System (PRD v2.3)

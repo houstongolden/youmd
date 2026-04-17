@@ -33,8 +33,9 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
       }
     });
 
+    console.log("sign in with your email code in the browser.");
     console.log(
-      "create an API key in the /tokens tab, then run: " +
+      "for agent or automation access, create or reveal an API key in settings and then run: " +
         chalk.cyan("youmd login --key YOUR_KEY")
     );
     console.log("");
