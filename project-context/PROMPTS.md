@@ -2,29 +2,82 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 15
-**Total messages:** 340
-**Last updated:** 2026-04-17 22:55
+**Total sessions:** 16
+**Total messages:** 347
+**Last updated:** 2026-04-17 23:45
 
 ## Table of Contents
 
-1. [2026-03-16 to 2026-03-19 (29023a33)](#session-2026-03-16-29023a33) --- 36 messages
-2. [2026-03-19 (bcba8b83)](#session-2026-03-19-bcba8b83) --- 3 messages
-3. [2026-03-19 (b8db5107)](#session-2026-03-19-b8db5107) --- 5 messages
-4. [2026-03-20 to 2026-03-27 (52b9c96c)](#session-2026-03-20-52b9c96c) --- 86 messages
-5. [2026-03-27 (a613f536)](#session-2026-03-27-a613f536) --- 17 messages
-6. [2026-03-27 to 2026-03-28 (be60ecec)](#session-2026-03-27-be60ecec) --- 47 messages
-7. [2026-03-28 (4eb46dbc)](#session-2026-03-28-4eb46dbc) --- 6 messages
-8. [2026-03-20 to 2026-04-04 (2f31c971)](#session-2026-03-20-2f31c971) --- 104 messages
-9. [2026-04-16 (019d978f)](#session-2026-04-16-019d978f) --- 28 messages
-10. [2026-04-17 (spinner-shell-ux)](#session-2026-04-17-spinner-shell-ux) --- 3 messages
-11. [2026-04-17 (login-ux)](#session-2026-04-17-login-ux) --- 1 message
-12. [2026-04-17 (api-key-ux)](#session-2026-04-17-api-key-ux) --- 1 message
-13. [2026-04-17 (api-key-history-fix)](#session-2026-04-17-api-key-history-fix) --- 1 message
-14. [2026-04-17 (reveal-nav-cleanup)](#session-2026-04-17-reveal-nav-cleanup) --- 1 message
-15. [2026-04-17 (cli-version-bump)](#session-2026-04-17-cli-version-bump) --- 1 message
+1. [2026-04-17 (cli-auth-installer)](#session-2026-04-17-cli-auth-installer) --- 7 messages
+2. [2026-03-16 to 2026-03-19 (29023a33)](#session-2026-03-16-29023a33) --- 36 messages
+3. [2026-03-19 (bcba8b83)](#session-2026-03-19-bcba8b83) --- 3 messages
+4. [2026-03-19 (b8db5107)](#session-2026-03-19-b8db5107) --- 5 messages
+5. [2026-03-20 to 2026-03-27 (52b9c96c)](#session-2026-03-20-52b9c96c) --- 86 messages
+6. [2026-03-27 (a613f536)](#session-2026-03-27-a613f536) --- 17 messages
+7. [2026-03-27 to 2026-03-28 (be60ecec)](#session-2026-03-27-be60ecec) --- 47 messages
+8. [2026-03-28 (4eb46dbc)](#session-2026-03-28-4eb46dbc) --- 6 messages
+9. [2026-03-20 to 2026-04-04 (2f31c971)](#session-2026-03-20-2f31c971) --- 104 messages
+10. [2026-04-16 (019d978f)](#session-2026-04-16-019d978f) --- 28 messages
+11. [2026-04-17 (spinner-shell-ux)](#session-2026-04-17-spinner-shell-ux) --- 3 messages
+12. [2026-04-17 (login-ux)](#session-2026-04-17-login-ux) --- 1 message
+13. [2026-04-17 (api-key-ux)](#session-2026-04-17-api-key-ux) --- 1 message
+14. [2026-04-17 (api-key-history-fix)](#session-2026-04-17-api-key-history-fix) --- 1 message
+15. [2026-04-17 (reveal-nav-cleanup)](#session-2026-04-17-reveal-nav-cleanup) --- 1 message
+16. [2026-04-17 (cli-version-bump)](#session-2026-04-17-cli-version-bump) --- 1 message
 
 ---
+
+## Session: 2026-04-17 (cli-auth-installer)
+*7 messages | File modified: 2026-04-17 23:45*
+
+**2026-04-17 23:00:00 UTC**
+> do I have to run like this "npm install -g youmd@0.6.1" or can I just run "npm install youmd" ? if im in my root it'll install globally by default right and it'll install/upgrade the latest version of the package too right?
+
+**2026-04-17 23:02:00 UTC**
+> ok but I think it is important that youmd installs globally by default just like how claude code or any other cli tool like gstack etc all do... right?
+
+**2026-04-17 23:05:00 UTC**
+> well how does gstack do it? or claude code or codex itself?
+
+**2026-04-17 23:07:00 UTC**
+> aha yeah, I think the curl command is the key. that is what gstack and openclaw both do - from my recent experience - so we should try that - does that bypass the need for npm or not really?
+
+**2026-04-17 23:10:00 UTC**
+> ok lets do the curl thing and then continue on the other key tasks that you identify are truly best - I am going to run this for now too as a test and try to login with my key and we can continue from there as well - so you will also want to update the homepage to have in the hero and everywhere we have the CTA with the two options to get started via web or CLI have a tabbed CLI with curl code to copy as the default option and npm as secondary tab option
+
+**2026-04-17 23:12:00 UTC**
+> ok also you were right in that we are still logged in as the cli test user and i think that is messing up my login flow test locally and there's no way to logout that user ...
+>
+> "youmd login --key [redacted api key]
+>
+>   ✗ verifying key
+>
+>   warning -- key saved but could not verify with the server
+>   server responded with status 401
+>
+>   the key has been stored. if it is valid, youmd whoami will show your identity.
+>
+> youmd whoami
+>
+>   you.md -- identity
+>
+>   user       @clitest5283
+>   email      houston+cli-reg-1776385283@example.com
+>   token      ym_k1O4X...tQmn
+>
+>   resolving from server...
+>   server error -- Invalid or revoked API key
+>
+>   token may be invalid or revoked.
+>   run youmd login --key <new-key> to re-authenticate.
+>
+> youmd logout
+> error: unknown command 'logout'
+> (Did you mean one of login, logs?)"
+
+**2026-04-17 23:18:00 UTC**
+> Warning: The maximum number of unified exec processes you can keep open is 60 and you currently have 60 processes open. Reuse older processes or close them to prevent automatic pruning of old processes
+
 
 ## Session: 2026-04-17 (cli-version-bump)
 *1 message | File modified: 2026-04-17 22:55*

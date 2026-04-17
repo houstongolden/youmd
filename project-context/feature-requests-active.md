@@ -67,6 +67,20 @@ Last Updated: 2026-04-17
 **Progress (2026-04-17):** Reworked the shell preview nav into grouped top-level buckets (`profile`, `content`, `share`, `agents`, `insights`, `portrait`, `account`) with secondary sub-tabs only when needed (`files/history`, `agents/skills`, `settings/secrets/help`). This now applies on both desktop and mobile instead of exposing the old long flat tab strip everywhere.
 **Verification:** On the deployed shell, the right panel shows grouped primary categories with small secondary tabs only for grouped areas, and the mobile shell uses the same grouping model instead of exposing every pane as its own top-level tab.
 
+### 49. Fix stale CLI auth state and add a real logout path
+**Status:** DONE
+**Verified:** NO
+**Request:** The local CLI should not stay stuck on the disposable `@clitest...` machine state, and logging into a real production account with `youmd login --key ...` should not verify that key against stale dev endpoints. There also needs to be a proper `youmd logout`.
+**Progress (2026-04-17):** Fixed CLI endpoint handling so auth requests resolve the configured API/app URLs per request instead of caching stale values at module load, forced fresh logins back onto the production defaults, cleared stale `username` / `email` on key login, and added `youmd logout` to clear local auth state from `~/.youmd/config.json`.
+**Verification:** Run `youmd logout`, then `youmd login --key ...`, then `youmd whoami`. The CLI should resolve the real production identity cleanly instead of saving the key but reporting a 401 from the old dev backend.
+
+### 50. Make the curl installer the default CLI onboarding path
+**Status:** DONE
+**Verified:** NO
+**Request:** Add a `curl ... | bash` installer like gstack/OpenClaw, make it the primary CLI CTA on the homepage, and keep npm as the secondary install option. The docs and in-product help should all teach the same curl-first path.
+**Progress (2026-04-17):** Added `https://you.md/install.sh`, which installs `youmd@latest` globally via npm and prints next steps. Updated the hero/footer CLI CTAs to use tabbed curl-vs-npm install cards, updated the landing-page how-it-works steps, updated docs/README/in-app help to teach the curl path first, and kept npm as the explicit fallback for users who prefer direct package-manager installs.
+**Verification:** `curl -fsSL https://you.md/install.sh | bash` installs the CLI, `youmd --version` works in a fresh shell, and the homepage/docs/help all show curl first with npm as the secondary option.
+
 ### 39. Identity-Aware Skill System — Full Implementation
 **Status:** DONE
 **Verified:** NO

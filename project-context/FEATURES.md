@@ -10,6 +10,9 @@ Last Updated: 2026-04-17
 | Convex backend | Done | Reactive, serverless, TypeScript-native |
 | Passwordless auth migration | Done | First-party email-code auth, sessions, custom JWT/JWKS. Local/dev validated and production browser + CLI parity hard-smoked |
 | Simpler CLI login contract | Done | `youmd login` now cleanly branches into browser sign-in on Enter, email-code login in-terminal, or `--key` for direct agent auth |
+| CLI logout | Done | `youmd logout` now clears local auth state so machines can switch accounts without hand-editing `~/.youmd/config.json` |
+| Stale endpoint-safe CLI auth | Done | CLI auth requests now resolve `apiUrl` / `appUrl` at request time and reset fresh logins to production defaults instead of verifying production keys against cached dev endpoints |
+| Curl installer | Done | `https://you.md/install.sh` now installs the latest global CLI and teaches `youmd login` + `youmd init` as the next steps |
 | API key rotation + cleanup UX | Done | Settings pane now supports rotating to one fresh key, bulk revoking all API keys, and copying the newly issued key without revoking other token types |
 | Revoked API key history collapse | Done | Settings now shows active keys by default and hides revoked history behind an explicit toggle |
 | Revealable active API keys | Done | Newly created or rotated keys can now be shown again by the owner from the settings pane; pre-existing hash-only keys still need one rotate to migrate |
@@ -238,6 +241,7 @@ Last Updated: 2026-04-17
 | Private context API + CLI | Done | Full CRUD on private identity data |
 | Image paste in chat | Done | Web chat accepts pasted images |
 | Codex MCP local-vs-global split | Done | Codex uses the local `cli/dist` build inside the youmd repo and the published npm CLI everywhere else |
+| Curl-first landing/docs/help install path | Done | Hero, footer, docs, and in-app help now teach `curl -fsSL https://you.md/install.sh | bash` first while keeping npm as the fallback |
 
 ## Feature Requests (Backlog)
 
@@ -262,4 +266,3 @@ Last Updated: 2026-04-17
 - [ ] Voice onboarding
 - [ ] Team/org bundles
 - [ ] Standalone CLI binary (bun build --compile)
-- [ ] curl installer (you.md/install.sh)

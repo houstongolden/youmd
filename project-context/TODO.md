@@ -235,6 +235,8 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Simplify `youmd login` so the default flow offers browser sign-in on Enter, email-code login in-terminal when an email is typed, and `--key` as the explicit direct-auth path
 - [x] Add sane API-key operator UX in settings: rotate one fresh key, bulk revoke all API keys, and copy the newly issued key without touching unrelated token types
 - [x] Hide revoked API-key history behind an explicit toggle so the default settings view shows the real active-key state
+- [x] Fix stale CLI auth state so `youmd login --key ...` stops verifying production keys against cached dev endpoints and add an explicit `youmd logout` escape hatch
+- [x] Add a curl-first installer at `you.md/install.sh` and update hero/footer/docs/help to teach curl as the default CLI install path with npm as fallback
 - [ ] Decide later whether You.md should ever store revealable API-key ciphertext for future keys, or keep the current hash-only model permanently
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
 - [ ] Remove or rewrite remaining Clerk-specific docs/comments/webhooks/password endpoints so the repo no longer describes the old auth model as current
@@ -275,7 +277,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Reveal/copy existing API key (instead of revoke-to-create-new)
 - [ ] Better error messages when auth fails
 - [ ] Standalone binary (bun build --compile)
-- [ ] curl installer (you.md/install.sh)
+- [x] curl installer (you.md/install.sh)
 
 ### Design Polish
 - [ ] Profile page custom sections (user-defined via conversation)

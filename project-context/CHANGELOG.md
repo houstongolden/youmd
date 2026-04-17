@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-04-17 — CLI Auth State Hardening + Curl Installer
+
+### CLI / Install / Docs
+- Fixed a real CLI auth-state bug where `youmd login --key ...` could save a fresh production key but then try to verify it against stale dev endpoints cached from an older machine config, which produced a misleading 401 and left users looking half-logged-in
+- Added `youmd logout` so switching machines or accounts no longer requires hand-editing `~/.youmd/config.json`
+- Changed the CLI API/app URL handling to resolve the configured endpoints per request and force fresh browser/key logins back onto the production defaults, which makes the login path much harder to poison with old local test state
+- Added a real curl bootstrap path at `https://you.md/install.sh` that installs the latest global CLI, then points users straight at `youmd login` and `youmd init`
+- Updated the landing page, docs, in-app help, and README to teach the curl installer as the default CLI entry path and keep npm as the explicit fallback instead of scattering older `npx`-first guidance
+
 ## 2026-04-17 — CLI Version Sync For npm Publish
 
 ### CLI / Release Ops

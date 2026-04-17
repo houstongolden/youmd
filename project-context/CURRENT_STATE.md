@@ -42,6 +42,8 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - Conversational AI onboarding with BrailleSpinners, ASCII logo, portrait rendering
 - Passwordless email-code auth (no API token required for your own account)
 - `youmd login` now clearly splits the auth paths: press Enter for browser sign-in, type your email for in-terminal code login, or use `--key` for direct agent auth
+- `youmd logout` now exists and clears stale local auth state from `~/.youmd/config.json`
+- CLI auth now forces production defaults for `apiUrl` / `appUrl` on fresh logins and resolves those URLs per request instead of caching a stale dev endpoint at process start
 - Chat command with slash commands, project awareness, directive injection
 - Rich terminal rendering (tables, stats, code blocks, callouts)
 - Pull/push/sync for web ↔ local
@@ -53,6 +55,7 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - Export command (you.json + you.md)
 - Diff command (compare local vs published)
 - Multi-select UI for platform/tool selection during onboarding
+- curl-first installer now exists at `https://you.md/install.sh`, with landing/docs/help updated to teach `curl -fsSL https://you.md/install.sh | bash` as the default CLI entry path and npm as the fallback
 
 ### Backend (Convex — kindly-cassowary-600)
 - 21-table schema fully deployed (added skills + skillInstalls)
@@ -91,7 +94,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Production API-key issuance on the passwordless flow is verified, and `youmd whoami` resolves correctly against the live prod backend with a fresh prod key
 - Production shell bootstrap is now verified after login: `/api/auth/session` returns a valid Convex JWT and the downstream authenticated user/profile/private/bundle queries all execute cleanly on prod
 - Remaining release blocker on auth is deliverability, not session plumbing: the passwordless sender still needs a verified production domain sender configured (`AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL`) so non-owner accounts and plus-address aliases can receive codes reliably
-- The local CLI auth proof is still blocked on this machine being logged into Houston's real You.md account instead of the disposable `@clitest5283` test account, which prevents a truthful end-to-end preference-sync verification on the published package
+- The stale local CLI auth-state bug is now fixed: this machine can log out of the disposable test account, log back into `@houstongolden`, and resolve the real production identity cleanly via `youmd whoami`
 - Existing API keys created before the reveal upgrade remain non-revealable by design because those historical records were stored hash-only; newly created or rotated keys are now revealable, so one rotate is the migration path for older keys
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 
