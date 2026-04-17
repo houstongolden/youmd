@@ -27,6 +27,81 @@ export async function hashKey(key: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+function getApiKeyEncryptionSecret(): string {
+  const secret =
+    process.env.API_KEY_ENCRYPTION_SECRET ||
+    process.env.TRUSTED_INTERNAL_AUTH_TOKEN;
+  if (!secret || secret.length < 32) {
+    throw new Error("API key encryption secret is not configured");
+  }
+  return secret;
+}
+
+async function getApiKeyCryptoKey(): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const secretBytes = encoder.encode(getApiKeyEncryptionSecret());
+  const digest = await crypto.subtle.digest("SHA-256", secretBytes);
+  return crypto.subtle.importKey("raw", digest, "AES-GCM", false, [
+    "encrypt",
+    "decrypt",
+  ]);
+}
+
+async function encryptPlaintextKey(plaintext: string): Promise<{
+  encryptedKey: string;
+  keyIv: string;
+}> {
+  const key = await getApiKeyCryptoKey();
+  const encoder = new TextEncoder();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    encoder.encode(plaintext)
+  );
+
+  return {
+    encryptedKey: bytesToBase64(new Uint8Array(encrypted)),
+    keyIv: bytesToBase64(iv),
+  };
+}
+
+async function decryptPlaintextKey(
+  encryptedKey: string,
+  keyIv: string
+): Promise<string> {
+  const key = await getApiKeyCryptoKey();
+  const decrypted = await crypto.subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv: new Uint8Array(base64ToArrayBuffer(keyIv)),
+    },
+    key,
+    base64ToArrayBuffer(encryptedKey)
+  );
+  return new TextDecoder().decode(decrypted);
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binary = atob(base64);
+  const buffer = new ArrayBuffer(binary.length);
+  const bytes = new Uint8Array(buffer);
+
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return buffer;
+}
+
 /** Cycle 56: default API key lifetime if `expiresInDays` not specified. */
 const DEFAULT_API_KEY_LIFETIME_DAYS = 365;
 
@@ -70,6 +145,7 @@ export async function issueApiKeyForUser(
 
   const plaintext = generateApiKey();
   const keyHash = await hashKey(plaintext);
+  const { encryptedKey, keyIv } = await encryptPlaintextKey(plaintext);
 
   let expiresAt: number | undefined;
   if (options.expiresInDays === null || options.expiresInDays === 0) {
@@ -82,6 +158,8 @@ export async function issueApiKeyForUser(
   await ctx.db.insert("apiKeys", {
     userId: user._id,
     keyHash,
+    encryptedKey,
+    keyIv,
     label: options.label,
     scopes: options.scopes,
     expiresAt,
@@ -158,6 +236,7 @@ export const listKeys = query({
       // Cycle 56: surface expiresAt + isExpired so the UI can show it
       expiresAt: k.expiresAt ? new Date(k.expiresAt).toISOString() : null,
       isExpired: k.expiresAt ? k.expiresAt < Date.now() : false,
+      canReveal: !!k.encryptedKey && !!k.keyIv && !k.revokedAt,
       // Never return the hash
       keyPrefix: "ym_****",
     }));
@@ -232,6 +311,51 @@ export const revokeAllKeys = mutation({
     }
 
     return { revokedCount };
+  },
+});
+
+export const revealKey = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    keyId: v.id("apiKeys"),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
+    const key = await ctx.db.get(args.keyId);
+    if (!key || key.userId !== user._id) {
+      throw new Error("API key not found");
+    }
+    if (key.revokedAt) {
+      throw new Error("Revoked API keys cannot be revealed");
+    }
+    if (!key.encryptedKey || !key.keyIv) {
+      throw new Error(
+        "This key was created before reveal support. Rotate it to create a revealable replacement."
+      );
+    }
+
+    const plaintext = await decryptPlaintextKey(key.encryptedKey, key.keyIv);
+
+    await ctx.db.insert("securityLogs", {
+      eventType: "token_revealed",
+      userId: user._id,
+      details: {
+        keyId: String(args.keyId),
+        label: key.label || "API key",
+      },
+      createdAt: Date.now(),
+    });
+
+    return { key: plaintext };
   },
 });
 

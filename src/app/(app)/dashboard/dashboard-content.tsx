@@ -22,35 +22,71 @@ import { VaultPane } from "@/components/panes/VaultPane";
 import { HelpPane } from "@/components/panes/HelpPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-// Mobile nav shows these panes as top-level tabs
-const MOBILE_PANES: Array<{ key: RightPane | "terminal"; label: string }> = [
-  { key: "terminal", label: "shell" },
-  { key: "profile", label: "profile" },
-  { key: "edit", label: "files" },
-  { key: "share", label: "share" },
-  { key: "agents", label: "agents" },
-  { key: "analytics", label: "analytics" },
-  { key: "skills", label: "skills" },
-  { key: "vault", label: "vault" },
-  { key: "history", label: "versions" },
-  { key: "portrait", label: "portrait" },
-  { key: "settings", label: "settings" },
-  { key: "help", label: "help" },
+type PrimaryPaneGroup = "profile" | "content" | "share" | "agents" | "insights" | "portrait" | "account";
+
+const PANE_GROUPS: Array<{
+  key: PrimaryPaneGroup;
+  label: string;
+  defaultPane: RightPane;
+  panes: Array<{ key: RightPane; label: string }>;
+}> = [
+  {
+    key: "profile",
+    label: "profile",
+    defaultPane: "profile",
+    panes: [{ key: "profile", label: "profile" }],
+  },
+  {
+    key: "content",
+    label: "content",
+    defaultPane: "edit",
+    panes: [
+      { key: "edit", label: "files" },
+      { key: "history", label: "history" },
+    ],
+  },
+  {
+    key: "share",
+    label: "share",
+    defaultPane: "share",
+    panes: [{ key: "share", label: "share" }],
+  },
+  {
+    key: "agents",
+    label: "agents",
+    defaultPane: "agents",
+    panes: [
+      { key: "agents", label: "agents" },
+      { key: "skills", label: "skills" },
+    ],
+  },
+  {
+    key: "insights",
+    label: "insights",
+    defaultPane: "analytics",
+    panes: [{ key: "analytics", label: "analytics" }],
+  },
+  {
+    key: "portrait",
+    label: "portrait",
+    defaultPane: "portrait",
+    panes: [{ key: "portrait", label: "portrait" }],
+  },
+  {
+    key: "account",
+    label: "account",
+    defaultPane: "settings",
+    panes: [
+      { key: "settings", label: "settings" },
+      { key: "vault", label: "secrets" },
+      { key: "help", label: "help" },
+    ],
+  },
 ];
 
-// Desktop pane tab row (shown inside the right panel)
-const DESKTOP_PANES: Array<{ key: RightPane; label: string }> = [
-  { key: "profile", label: "profile" },
-  { key: "edit", label: "files" },
-  { key: "share", label: "share" },
-  { key: "agents", label: "agents" },
-  { key: "analytics", label: "analytics" },
-  { key: "skills", label: "skills" },
-  { key: "vault", label: "vault" },
-  { key: "history", label: "versions" },
-  { key: "portrait", label: "portrait" },
-  { key: "settings", label: "settings" },
-  { key: "help", label: "help" },
+const MOBILE_PRIMARY_PANES: Array<{ key: PrimaryPaneGroup | "terminal"; label: string }> = [
+  { key: "terminal", label: "shell" },
+  ...PANE_GROUPS.map((group) => ({ key: group.key, label: group.label })),
 ];
 
 export function DashboardContent() {
@@ -185,9 +221,13 @@ export function DashboardContent() {
   const plan = convexUser.plan ?? "free";
   const version = latestBundle?.version ?? null;
   const isPublished = latestBundle?.isPublished ?? false;
+  const activePaneGroup =
+    PANE_GROUPS.find((group) => group.panes.some((pane) => pane.key === rightPane)) ??
+    PANE_GROUPS[0];
+  const activePreviewTab = activePaneGroup.key;
 
   // Which mobile tab is active?
-  const activeMobileTab = mobileView === "terminal" ? "terminal" : rightPane;
+  const activeMobileTab = mobileView === "terminal" ? "terminal" : activePreviewTab;
 
   return (
     <div className="h-[calc(100dvh-2.25rem)] bg-[hsl(var(--bg))] flex flex-col">
@@ -218,7 +258,10 @@ export function DashboardContent() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => { setPanelOpen(true); setRightPane("profile"); }}
+                onClick={() => {
+                  setPanelOpen(true);
+                  setRightPane("profile");
+                }}
                 className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60 transition-opacity"
               >
                 profile
@@ -236,7 +279,7 @@ export function DashboardContent() {
           <div className="md:hidden shrink-0 border-b border-[hsl(var(--border))]">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center overflow-x-auto scrollbar-none">
-                {MOBILE_PANES.map(({ key, label }) => (
+                {MOBILE_PRIMARY_PANES.map(({ key, label }) => (
                   <button
                     key={key}
                     onClick={() => {
@@ -244,7 +287,8 @@ export function DashboardContent() {
                         setMobileView("terminal");
                       } else {
                         setMobileView("preview");
-                        setRightPane(key);
+                        const group = PANE_GROUPS.find((g) => g.key === key);
+                        if (group) setRightPane(group.defaultPane);
                       }
                     }}
                     className={`px-2.5 py-2 text-[10px] font-mono transition-colors whitespace-nowrap ${
@@ -266,6 +310,24 @@ export function DashboardContent() {
                 </span>
               </div>
             </div>
+            {mobileView === "preview" && activePaneGroup.panes.length > 1 && (
+              <div className="flex items-center gap-1 px-2 pb-2 overflow-x-auto scrollbar-none">
+                {activePaneGroup.panes.map((pane) => (
+                  <button
+                    key={pane.key}
+                    onClick={() => setRightPane(pane.key)}
+                    className={`px-2 py-1 text-[10px] font-mono whitespace-nowrap transition-colors border ${
+                      rightPane === pane.key
+                        ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border-[hsl(var(--border))]"
+                        : "text-[hsl(var(--text-secondary))] opacity-40 border-transparent hover:opacity-75"
+                    }`}
+                    style={{ borderRadius: "2px" }}
+                  >
+                    {pane.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Content — split on desktop, toggled on mobile */}
@@ -321,14 +383,32 @@ export function DashboardContent() {
               <div className="hidden md:block relative shrink-0 border-b border-[hsl(var(--border))]">
                 <div className="flex items-center px-4 py-1.5 overflow-x-auto scrollbar-none">
                   <div className="flex items-center gap-0.5">
-                    {DESKTOP_PANES.map((pane) => (
+                    {PANE_GROUPS.map((group) => (
+                      <button
+                        key={group.key}
+                        onClick={() => setRightPane(group.defaultPane)}
+                        className={`px-2.5 py-1 text-[10px] font-mono transition-colors whitespace-nowrap ${
+                          activePaneGroup.key === group.key
+                            ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))]"
+                            : "text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"
+                        }`}
+                        style={{ borderRadius: "2px" }}
+                      >
+                        {group.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {activePaneGroup.panes.length > 1 && (
+                  <div className="flex items-center gap-1 px-4 pb-2 overflow-x-auto scrollbar-none">
+                    {activePaneGroup.panes.map((pane) => (
                       <button
                         key={pane.key}
                         onClick={() => setRightPane(pane.key)}
-                        className={`px-2.5 py-1 text-[10px] font-mono transition-colors whitespace-nowrap ${
+                        className={`px-2 py-1 text-[10px] font-mono whitespace-nowrap transition-colors border ${
                           rightPane === pane.key
-                            ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))]"
-                            : "text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"
+                            ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border-[hsl(var(--border))]"
+                            : "text-[hsl(var(--text-secondary))] opacity-40 border-transparent hover:opacity-75"
                         }`}
                         style={{ borderRadius: "2px" }}
                       >
@@ -336,7 +416,7 @@ export function DashboardContent() {
                       </button>
                     ))}
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Active pane */}

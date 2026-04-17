@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-04-17 — Revealable API Keys + Grouped Pane Navigation
+
+### Web Settings / Shell UX
+- Added owner-only reveal support for newly created or rotated API keys, so fresh keys can now be shown and copied again from the settings pane instead of disappearing forever after the first hide
+- Kept the secure auth model intact by continuing to authenticate on the SHA-256 key hash while storing a separate encrypted plaintext copy strictly for owner reveal/copy in the UI
+- Made the settings copy honest about the migration edge case: older keys created before reveal support stay hash-only and need one rotate to become revealable going forward
+- Consolidated the cluttered shell preview tab strip into grouped primary categories with smaller secondary sub-tabs only where needed, which makes the panel navigation feel closer to a normal intuitive product UI instead of a long flat debug rail
+
 ## 2026-04-17 — API Key History Panel Cleanup
 
 ### Web Settings / Auth Ops

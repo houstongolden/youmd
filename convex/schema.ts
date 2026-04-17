@@ -239,6 +239,8 @@ export default defineSchema({
   apiKeys: defineTable({
     userId: v.id("users"),
     keyHash: v.string(),
+    encryptedKey: v.optional(v.string()),
+    keyIv: v.optional(v.string()),
     label: v.optional(v.string()),
     scopes: v.array(v.string()),
     lastUsedAt: v.optional(v.number()),

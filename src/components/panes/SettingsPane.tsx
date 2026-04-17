@@ -67,6 +67,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
   const createKey = useMutation(api.apiKeys.createKey);
   const revokeKey = useMutation(api.apiKeys.revokeKey);
   const revokeAllKeys = useMutation(api.apiKeys.revokeAllKeys);
+  const revealKey = useMutation(api.apiKeys.revealKey);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
   const [rotatingKey, setRotatingKey] = useState(false);
@@ -78,6 +79,10 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
   const [revokedAllKeysCount, setRevokedAllKeysCount] = useState<number | null>(null);
   const [showRevokedKeys, setShowRevokedKeys] = useState(false);
   const [copiedNewKey, setCopiedNewKey] = useState(false);
+  const [revealedKeyId, setRevealedKeyId] = useState<string | null>(null);
+  const [revealedKeyValue, setRevealedKeyValue] = useState<string | null>(null);
+  const [revealingKeyId, setRevealingKeyId] = useState<string | null>(null);
+  const [copiedExistingKeyId, setCopiedExistingKeyId] = useState<string | null>(null);
 
   // Sort: active (not revoked) first, then revoked. Within each group, newest first.
   const sortedKeys = keys
@@ -195,6 +200,26 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
     setTimeout(() => setCopiedNewKey(false), 2000);
   };
 
+  const handleRevealExistingKey = async (keyId: string) => {
+    setRevealingKeyId(keyId);
+    setKeyError(null);
+    try {
+      const result = await revealKey({ clerkId, keyId: keyId as any });
+      setRevealedKeyId(keyId);
+      setRevealedKeyValue(result.key);
+    } catch (err) {
+      setKeyError(err instanceof Error ? err.message : "failed to reveal key.");
+    }
+    setRevealingKeyId(null);
+  };
+
+  const handleCopyExistingKey = async (keyId: string) => {
+    if (!revealedKeyValue || revealedKeyId !== keyId) return;
+    await navigator.clipboard.writeText(revealedKeyValue);
+    setCopiedExistingKeyId(keyId);
+    setTimeout(() => setCopiedExistingKeyId(null), 2000);
+  };
+
   const handleSignOut = () => {
     void signOut();
   };
@@ -260,10 +285,11 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
         </div>
 
         <p className="text-[10px] text-[hsl(var(--text-secondary))] opacity-45 font-mono mb-3">
-          existing keys are stored hash-only, so old plaintext keys cannot be revealed again. use
+          new keys can be shown again from this panel. older keys created before reveal support stay
+          hash-only, so use
           {" "}
           <span className="text-[hsl(var(--accent))] opacity-80">rotate key</span>
-          {" "}to mint one fresh key and revoke the rest.
+          {" "}once to replace them with a revealable key.
         </p>
 
         {keyError && (
@@ -312,7 +338,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
                   className="flex items-center justify-between px-3 py-2.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[10px] font-mono"
                   style={{ borderRadius: "2px" }}
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <code className="text-[hsl(var(--text-primary))] px-1.5 py-0.5 bg-[hsl(var(--bg))] border border-[hsl(var(--border))]">
                         {k.keyPrefix}...
@@ -328,21 +354,77 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
                       {k.lastUsedAt &&
                         ` -- last used ${k.lastUsedAt.split("T")[0]}`}
                     </div>
+                    {revealedKeyId === k.id && revealedKeyValue && (
+                      <div className="mt-2 p-2 bg-[hsl(var(--bg))] border border-[hsl(var(--border))] break-all text-[hsl(var(--text-primary))]">
+                        {revealedKeyValue}
+                      </div>
+                    )}
+                    {revealedKeyId === k.id && (
+                      <div className="flex items-center gap-3 pt-1">
+                        <button
+                          onClick={() => handleCopyExistingKey(k.id)}
+                          className="text-[10px] text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-mid))] transition-colors"
+                        >
+                          {copiedExistingKeyId === k.id ? "copied" : "copy"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRevealedKeyId(null);
+                            setRevealedKeyValue(null);
+                            setCopiedExistingKeyId(null);
+                          }}
+                          className="text-[10px] text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-100 transition-opacity"
+                        >
+                          hide
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <button
-                    onClick={() => {
-                      if (confirmRevokeKey === k.id) {
-                        revokeKey({ clerkId, keyId: k.id });
-                        setConfirmRevokeKey(null);
-                      } else {
-                        setConfirmRevokeKey(k.id);
-                        setTimeout(() => setConfirmRevokeKey((c) => c === k.id ? null : c), 3000);
-                      }
-                    }}
-                    className={`transition-colors ${confirmRevokeKey === k.id ? "text-red-400 hover:text-red-300" : "text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-dark))]"}`}
-                  >
-                    {confirmRevokeKey === k.id ? "confirm?" : "revoke"}
-                  </button>
+                  <div className="flex items-center gap-3 shrink-0 pl-3">
+                    {k.canReveal ? (
+                      <button
+                        onClick={() => {
+                          if (revealedKeyId === k.id) {
+                            setRevealedKeyId(null);
+                            setRevealedKeyValue(null);
+                            setCopiedExistingKeyId(null);
+                          } else {
+                            void handleRevealExistingKey(k.id);
+                          }
+                        }}
+                        className="text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-dark))] transition-colors"
+                      >
+                        {revealingKeyId === k.id
+                          ? "showing..."
+                          : revealedKeyId === k.id
+                          ? "hide"
+                          : "show key"}
+                      </button>
+                    ) : (
+                      <span className="text-[hsl(var(--text-secondary))] opacity-30">
+                        rotate to reveal
+                      </span>
+                    )}
+                    <button
+                      onClick={() => {
+                        if (confirmRevokeKey === k.id) {
+                          revokeKey({ clerkId, keyId: k.id });
+                          setConfirmRevokeKey(null);
+                          if (revealedKeyId === k.id) {
+                            setRevealedKeyId(null);
+                            setRevealedKeyValue(null);
+                            setCopiedExistingKeyId(null);
+                          }
+                        } else {
+                          setConfirmRevokeKey(k.id);
+                          setTimeout(() => setConfirmRevokeKey((c) => c === k.id ? null : c), 3000);
+                        }
+                      }}
+                      className={`transition-colors ${confirmRevokeKey === k.id ? "text-red-400 hover:text-red-300" : "text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-dark))]"}`}
+                    >
+                      {confirmRevokeKey === k.id ? "confirm?" : "revoke"}
+                    </button>
+                  </div>
                 </div>
               ))
             ) : (

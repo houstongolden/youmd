@@ -53,6 +53,20 @@ Last Updated: 2026-04-17
 **Progress (2026-04-17 update):** The first-party passwordless stack is now clearly the live auth path, and the production session/bootstrap flow is verified after login. This pass also exposed one remaining release blocker: the web auth route was still hardcoded to `onboarding@resend.dev`, which leaves Resend in testing-recipient mode. The route now supports `AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL` and returns an explicit error when production is still using the test sender, but the deployed environment still needs a verified sender configured before non-owner accounts can rely on email-code auth.
 **Verification:** Production `you.md` supports passwordless sign-up/sign-in/sign-out/session refresh, the dashboard works on the new first-party auth stack, CLI `register`/`login`/`whoami` work against production, and the old Clerk-dependent paths/webhooks/password endpoints are removed or explicitly deprecated.
 
+### 47. Let users reveal/copy current API keys again and clean up key-panel confusion
+**Status:** DONE
+**Verified:** NO
+**Request:** The settings pane should let users reveal/show and copy active API keys again instead of forcing endless new key creation, and it should stop making the key list feel like a giant pile of still-live credentials when most of them are just revoked history.
+**Progress (2026-04-17):** Added reveal support for newly issued API keys by storing owner-revealable encrypted plaintext alongside the existing hash-only auth record, kept auth validation on `keyHash`, added a `revealKey` mutation with owner checks + security logging, upgraded the settings pane to show/hide/copy revealable active keys, hid revoked key history behind an explicit toggle, and updated copy to explain the one-time migration reality: older keys created before reveal support remain hash-only and need one rotate to become revealable going forward.
+**Verification:** On production, newly created or rotated API keys show a `show key` action in settings, reveal the plaintext for owner copy, and old revoked/history keys stay collapsed by default unless explicitly expanded.
+
+### 48. Consolidate the right-panel nav into more intuitive grouped labels
+**Status:** DONE
+**Verified:** NO
+**Request:** The dashboard panel nav is cluttered and confusing. Group/consolidate it into more intuitive labels that people instantly understand instead of a long flat row of niche tabs.
+**Progress (2026-04-17):** Reworked the shell preview nav into grouped top-level buckets (`profile`, `content`, `share`, `agents`, `insights`, `portrait`, `account`) with secondary sub-tabs only when needed (`files/history`, `agents/skills`, `settings/secrets/help`). This now applies on both desktop and mobile instead of exposing the old long flat tab strip everywhere.
+**Verification:** On the deployed shell, the right panel shows grouped primary categories with small secondary tabs only for grouped areas, and the mobile shell uses the same grouping model instead of exposing every pane as its own top-level tab.
+
 ### 39. Identity-Aware Skill System — Full Implementation
 **Status:** DONE
 **Verified:** NO

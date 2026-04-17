@@ -12,6 +12,7 @@ Last Updated: 2026-04-17
 | Simpler CLI login contract | Done | `youmd login` now cleanly branches into browser sign-in on Enter, email-code login in-terminal, or `--key` for direct agent auth |
 | API key rotation + cleanup UX | Done | Settings pane now supports rotating to one fresh key, bulk revoking all API keys, and copying the newly issued key without revoking other token types |
 | Revoked API key history collapse | Done | Settings now shows active keys by default and hides revoked history behind an explicit toggle |
+| Revealable active API keys | Done | Newly created or rotated keys can now be shown again by the owner from the settings pane; pre-existing hash-only keys still need one rotate to migrate |
 | Verified passwordless sender config | Done | Auth email route now supports `AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL` instead of being hardcoded to `onboarding@resend.dev` |
 | Remote-Convex local auth guard | Done | Local web sessions now mint `https://you.md` Convex JWT issuers when the app is pointed at a remote Convex deployment, avoiding `NoAuthProvider` auth failures during local web QA |
 | Username claim | Done | Auto-claim via /initialize (no manual form) |
@@ -34,6 +35,7 @@ Last Updated: 2026-04-17
 | Deterministic project scaffold in shell | Done | The exact `create my projects directory and subdirectories for each project within my private folder` request now bypasses the fragile LLM mutation path and creates real `private/projects/*` files |
 | Production shell bootstrap verification | Done | Live `/api/auth/session` plus authenticated Convex user/profile/private/bundle queries now verified on `www.you.md` after login |
 | Shared pane primitives | Done | Consistent UI across all dashboard panes |
+| Grouped shell pane navigation | Done | Flat desktop/mobile pane sprawl replaced with grouped primary buckets plus small secondary sub-tabs where needed |
 | Source management | Done | Add URLs, view status |
 | Pipeline trigger | Done | From dashboard |
 

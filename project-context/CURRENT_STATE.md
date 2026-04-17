@@ -30,8 +30,10 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - Files pane with keyboard shortcuts (Cmd+S), markdown preview, create new file
 - Settings pane now supports `rotate key` and `revoke all keys`, which gives users a sane way to clean up API-key sprawl without revoking unrelated token types
 - Revoked API keys are now hidden behind an explicit history toggle, so the default settings view reflects the real active-key state instead of surfacing the graveyard first
+- Newly created or rotated API keys can now be revealed again from the settings pane by their owner, while older pre-migration hash-only keys correctly prompt a one-time rotate
 - Same-origin web chat routes for the shell: `/api/v1/chat`, `/api/v1/chat/ack`, and `/api/v1/chat/stream`
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
+- Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
 
 ### CLI (youmd v0.6.0 — published)
 - 21 commands (added `skill` with 19 subcommands)
@@ -90,7 +92,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Production shell bootstrap is now verified after login: `/api/auth/session` returns a valid Convex JWT and the downstream authenticated user/profile/private/bundle queries all execute cleanly on prod
 - Remaining release blocker on auth is deliverability, not session plumbing: the passwordless sender still needs a verified production domain sender configured (`AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL`) so non-owner accounts and plus-address aliases can receive codes reliably
 - The local CLI auth proof is still blocked on this machine being logged into Houston's real You.md account instead of the disposable `@clitest5283` test account, which prevents a truthful end-to-end preference-sync verification on the published package
-- Existing API keys remain non-revealable by design because the backend stores only hashes, not reversible ciphertext; the intended operator path is now rotate/copy or bulk revoke + mint a fresh key
+- Existing API keys created before the reveal upgrade remain non-revealable by design because those historical records were stored hash-only; newly created or rotated keys are now revealable, so one rotate is the migration path for older keys
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 
 ### Portrait Sync
