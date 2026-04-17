@@ -18,6 +18,7 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - /initialize onboarding boot sequence + agent conversation
 - You Agent chat with streaming responses, thinking indicators, progress steps
 - The shell thinking line now rotates through active/completed subtask-aware phrases with a live braille spinner and sweep/shimmer treatment instead of freezing on one stale status string
+- The shell no longer drops out of “working” state on first streamed token — it stays visibly active through the save/publish tail and now ends with a stronger completion follow-through when real mutations happened
 - Markdown file vault (browse, edit, save identity files)
 - Memory system (auto-capture, recall, search, /memory + /recall commands)
 - Session persistence (messages survive page refresh)

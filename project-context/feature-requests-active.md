@@ -167,6 +167,19 @@ Last Updated: 2026-04-17
 **Request:** Keep the braille loading animation alive while the agent is working, rotate through unique subtask-aware status text instead of one stale phrase, add a text sweep/shimmer effect to the active line, and show completed work in real time so the shell feels as alive and transparent as Codex or Claude Code.
 **Verification:** In the web shell, trigger a multi-step task. The top thinking line keeps animating, rotates through active/completed subtask phrases while work is in progress, and the activity log visibly reorders/emphasizes running vs completed steps instead of freezing on one generic status.
 
+### 54. Web/CLI agent turns should follow ack → plan → work → complete
+**Status:** DONE
+**Verified:** NO
+**Request:** While the agent is still doing background saves/publishes/mutations, keep the active braille loader + work text visible instead of collapsing to a barely visible cursor. Then finish each turn with a stronger completion message that explains what actually changed, keeps the green programmatic notices, and proactively proposes the next highest-leverage follow-up options so the experience feels guided instead of abruptly stopping.
+**Verification:** In a real shell mutation flow, the working indicator stays alive through response drafting plus the post-response mutation tail, then the assistant completion text summarizes the concrete changes and ends with proactive next-step options above the existing green notices.
+
+### 55. Save Houston's preferred agent-session behavior into his own You.md identity and prove cross-agent discoverability
+**Status:** IN PROGRESS
+**Verified:** NO
+**Request:** Persist Houston's preferences for how agentic chat / terminal sessions should behave — including the ack → plan → work → complete pattern and proactive next-step guidance — into his own durable You.md preferences/directives using the published npm package / skill workflow, sync them, and then verify another agent-facing surface can find that context later.
+**Progress (2026-04-17):** Confirmed the published npm package is live as `youmd@0.6.0` and that the machine-level CLI auth works, but the current `~/.youmd/config.json` still points at the disposable CLI test account rather than Houston's real `@houstongolden` identity. Need to switch the CLI onto Houston's real account or API key before the preference-save proof can be completed against the correct user.
+**Verification:** Using the published package, pull Houston's real bundle, save these session-behavior preferences into durable preference/directive files, build + publish them, pull again from a clean location, and verify the saved preferences are visible through the pulled files and MCP-readable identity surfaces.
+
 ---
 
 ## SEO/AEO (from March 24-25)

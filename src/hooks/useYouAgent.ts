@@ -48,6 +48,103 @@ import {
 export type { ThinkingCategory, ProgressStep, ChatMessage, DisplayMessage, SectionUpdate, PrivateUpdate, RightPane, MemorySave, PortraitUpdate, CustomSection } from "./agent-utils";
 export { BUNDLE_SECTIONS, isValidSection, buildProfileContext, buildProfileDataFromUpdates, parseUpdatesFromResponse, parsePrivateUpdatesFromResponse, parseMemorySavesFromResponse, parsePortraitUpdateFromResponse, parseCustomSectionsFromResponse } from "./agent-utils";
 
+function humanizeProjectSlug(slug: string) {
+  return slug.replace(/[-_]+/g, " ").trim();
+}
+
+function buildCompletionFollowThrough(params: {
+  rawSections: string[];
+  customSectionTitles: string[];
+  savedMemoryCount: number;
+  fetchedWebsiteCount: number;
+  updatedPortraitSource: string | null;
+  savedPrivateCount: number;
+  published: boolean;
+  version: number | null;
+}) {
+  const {
+    rawSections,
+    customSectionTitles,
+    savedMemoryCount,
+    fetchedWebsiteCount,
+    updatedPortraitSource,
+    savedPrivateCount,
+    published,
+    version,
+  } = params;
+
+  const projectNames = Array.from(
+    new Set(
+      rawSections
+        .map((section) => section.match(/^projects\/([^/]+)/)?.[1])
+        .filter((value): value is string => Boolean(value))
+        .map(humanizeProjectSlug)
+    )
+  );
+
+  const actions: string[] = [];
+  if (rawSections.includes("projects")) {
+    if (projectNames.length === 1) actions.push(`added ${projectNames[0]} to your public project layer`);
+    else if (projectNames.length > 1) actions.push(`updated ${projectNames.length} projects in your public profile`);
+    else actions.push("updated your public projects");
+  }
+  if (projectNames.length > 0) {
+    actions.push(
+      projectNames.length === 1
+        ? `filled in the private ${projectNames[0]} project files`
+        : `updated private project files for ${projectNames.length} projects`
+    );
+  }
+  if (customSectionTitles.length > 0) {
+    actions.push(
+      customSectionTitles.length === 1
+        ? `added the ${customSectionTitles[0]} section`
+        : `added ${customSectionTitles.length} custom sections`
+    );
+  }
+  if (savedPrivateCount > 0) {
+    actions.push(`saved ${savedPrivateCount} private ${savedPrivateCount === 1 ? "update" : "updates"}`);
+  }
+  if (savedMemoryCount > 0) {
+    actions.push(`saved ${savedMemoryCount} ${savedMemoryCount === 1 ? "memory" : "memories"}`);
+  }
+  if (fetchedWebsiteCount > 0) {
+    actions.push(`pulled ${fetchedWebsiteCount} ${fetchedWebsiteCount === 1 ? "site" : "sites"} into context`);
+  }
+  if (updatedPortraitSource) {
+    actions.push(`switched your portrait to ${updatedPortraitSource}`);
+  }
+  if (published) {
+    actions.push(version ? `published v${version}` : "published the latest version");
+  }
+
+  if (actions.length === 0) return "";
+
+  const nextSteps: string[] = [];
+  if (projectNames.length > 0) {
+    const leadProject = projectNames[0];
+    nextSteps.push(`go deeper on ${leadProject} and tighten the public positioning from the live source material`);
+    nextSteps.push(`fill out the remaining private ${leadProject} docs with sharper README, context, PRD, and next actions`);
+    nextSteps.push("run the same scrape + profile + private-folder pass on another project or source");
+  } else if (fetchedWebsiteCount > 0) {
+    nextSteps.push("turn the scraped source into a sharper public profile update");
+    nextSteps.push("save the strongest facts or decisions into private context so they persist");
+    nextSteps.push("repeat this scrape pass on another site or profile");
+  } else {
+    nextSteps.push("tighten the thing I just updated so it lands sharper");
+    nextSteps.push("go one layer deeper and capture the private context behind it");
+    nextSteps.push("repeat the same pass on the next highest-leverage area of your profile");
+  }
+  nextSteps.push("do all of the above");
+
+  return [
+    `done. ${actions.join(", ")}.`,
+    "",
+    "next best moves:",
+    ...nextSteps.map((step, index) => `${index + 1}. ${step}`),
+  ].join("\n");
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -1761,6 +1858,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     const cat: ThinkingCategory = newSources.length > 0 ? "discovery" : "analysis";
     setThinkingPhrase(randomThinking(cat));
     setThinkingCategory(cat);
+    const planStepId = addStep("planning the update");
 
     try {
       // ─── PHASE 1: FAST ACK ───────────────────────────────────
@@ -1982,22 +2080,20 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         setThinkingCategory("identity");
       }
 
+      completeStep(planStepId, newSources.length > 0 ? `${newSources.length} source${newSources.length > 1 ? "s" : ""} queued` : "plan locked");
+
       // ─── PHASE 3: FULL RESPONSE (streaming) ────────────────
-      // No step added here — the thinking indicator is sufficient.
-      // Real steps (scraping, researching) already show in the activity log.
-      const llmStepId = "";
+      const llmStepId = addStep("drafting the response");
 
       // NEVER replace the ack — always stream into a NEW message below it
       const streamMsgId = crypto.randomUUID();
       let firstTokenReceived = false;
 
-      // Keep thinking/progress visible until first token arrives
+      // Keep thinking/progress visible through the full write + save + publish cycle.
       const onFirstToken = () => {
         if (!firstTokenReceived) {
           firstTokenReceived = true;
           mainResponseStarted = true;
-          if (llmStepId) completeStep(llmStepId);
-          setIsThinking(false);
           // Add a new message for the full response (ack stays above)
           setDisplayMessages(prev => [...prev, {
             id: streamMsgId,
@@ -2013,6 +2109,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       if (!response.trim() && toolCalls.length === 0) {
         mainResponseStarted = true;
+        failStep(llmStepId, "no response");
         setIsThinking(false);
         clearSteps();
         setDisplayMessages((prev) => [
@@ -2030,8 +2127,6 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       if (!firstTokenReceived) {
         mainResponseStarted = true;
         completeStep(llmStepId);
-        setIsThinking(false);
-        clearSteps();
         // Add full response as new message (ack stays above)
         setDisplayMessages(prev => [...prev, {
           id: streamMsgId,
@@ -2053,6 +2148,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       let savedMemoryCount = 0;
       let updatedPortraitSource: string | null = null;
       let fetchedWebsiteCount = 0;
+      let savedPrivateCount = 0;
+      let publishedVersion: number | null = null;
+      let publishedChanges = false;
 
       setDisplayMessages(prev => prev.map(m =>
         m.id === streamMsgId ? { ...m, content: cleanDisplay } : m
@@ -2111,6 +2209,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       }
 
       if (updates.length > 0 || customSections.length > 0) {
+        setThinkingPhrase("saving your changes");
         const sectionNames = updates
           .map((u) => sectionLabel(u.section))
           .concat(customSections.map((section) => `${section.title} section`))
@@ -2125,6 +2224,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         const result = await saveUpdates(updates, customSections);
         if (result) {
           completeStep(saveStepId, `v${result.version}`);
+          publishedVersion = result.version;
           newDisplayMsgs.push({
             id: crypto.randomUUID(),
             role: "system-notice",
@@ -2137,6 +2237,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             try {
               await publishLatest({ clerkId: user.id });
               completeStep(pubStepId);
+              publishedChanges = true;
               newDisplayMsgs.push({
                 id: crypto.randomUUID(),
                 role: "system-notice",
@@ -2166,6 +2267,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       // Handle private updates from update_profile tool calls (Anthropic path)
       if (toolPrivateUpdates.length > 0 && user?.id && userProfile?._id) {
+        setThinkingPhrase("saving your private context");
         const privStepId = addStep("saving private context");
         for (const pu of toolPrivateUpdates) {
           try {
@@ -2179,6 +2281,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
               role: "system-notice",
               content: "[saved private note]",
             });
+            savedPrivateCount += 1;
           } catch (err) {
             newDisplayMsgs.push({
               id: crypto.randomUUID(),
@@ -2194,6 +2297,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       if (toolCalls.length === 0) {
         const privUpdates = parsePrivateUpdatesFromResponse(response);
         if (privUpdates.length > 0 && user?.id && userProfile?._id) {
+          setThinkingPhrase("saving your private context");
           const privStepId = addStep("saving private context");
           for (const pu of privUpdates) {
             try {
@@ -2208,6 +2312,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
                   role: "system-notice",
                   content: "[saved private note]",
                 });
+                savedPrivateCount += 1;
               } else if (pu.field === "privateProjects" && pu.action === "add" && pu.project) {
                 const existing = (privateContext as Record<string, unknown> | null);
                 const existingProjects = (existing?.privateProjects as Array<Record<string, string>>) || [];
@@ -2222,6 +2327,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
                   role: "system-notice",
                   content: `[saved private project: ${pu.project.name || "unnamed"}]`,
                 });
+                savedPrivateCount += 1;
               }
             } catch (err) {
               newDisplayMsgs.push({
@@ -2242,6 +2348,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         : parseMemorySavesFromResponse(response).map((ms) => ({ category: ms.category, content: ms.content, tags: ms.tags || [] }));
       if (memorySaves.length > 0 && user?.id) {
         savedMemoryCount = memorySaves.length;
+        setThinkingPhrase("saving what i learned");
         const memStepId = addStep("saving memories", `${memorySaves.length} ${memorySaves.length === 1 ? "memory" : "memories"}`);
         try {
           await saveMemories({
@@ -2270,6 +2377,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       if (fetchWebsiteCalls.length > 0) {
         const allUrls = fetchWebsiteCalls.flatMap(tc => tc.input.urls || []).filter(Boolean);
         if (allUrls.length > 0) {
+          setThinkingPhrase("pulling in the requested sites");
           const fetchStepId = addStep("fetching websites", allUrls.join(", "));
           const scrapeResults: string[] = [];
           await Promise.all(allUrls.map(async (url) => {
@@ -2327,6 +2435,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       const portraitUpdate = toolPortraitUpdate || parsePortraitUpdateFromResponse(response);
       if (portraitUpdate && user?.id && userProfile?._id) {
         updatedPortraitSource = portraitUpdate.source;
+        setThinkingPhrase("updating your portrait");
         const portraitStepId = addStep("updating portrait", portraitUpdate.source);
         try {
           await updateProfile({
@@ -2376,6 +2485,26 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
+      const completionFollowThrough = buildCompletionFollowThrough({
+        rawSections: updates.map((update) => update.section),
+        customSectionTitles,
+        savedMemoryCount,
+        fetchedWebsiteCount,
+        updatedPortraitSource,
+        savedPrivateCount,
+        published: publishedChanges,
+        version: publishedVersion,
+      });
+
+      if (completionFollowThrough) {
+        finalAssistantDisplay = finalAssistantDisplay
+          ? `${finalAssistantDisplay}\n\n${completionFollowThrough}`
+          : completionFollowThrough;
+        setDisplayMessages(prev => prev.map(m =>
+          m.id === streamMsgId ? { ...m, content: finalAssistantDisplay } : m
+        ));
+      }
+
       if (finalAssistantDisplay && finalAssistantDisplay !== assistantMsg.content) {
         setMessages((prev) => {
           const next = [...prev];
@@ -2391,6 +2520,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           return next;
         });
       }
+
+      completeStep(llmStepId, "response ready");
 
       // --- Context Compaction (Claude Code-style) ---
       // After 15+ turns, summarize older messages + extract durable facts into memory.
@@ -2497,7 +2628,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
     // Ensure thinking is always cleared (idempotent)
     setIsThinking(false);
-    clearSteps();
+    setTimeout(() => clearSteps(), 250);
     textareaRef.current?.focus();
   }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps, buildTurnScaffold, pruneResolvedMutationTurns, handleProjectDirectoryScaffold]);
 

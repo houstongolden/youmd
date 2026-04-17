@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-04-17 — Shell Turn Lifecycle Hardening
+
+### Shell / Agent UX
+- Fixed the shell turn lifecycle so the working indicator no longer disappears on first streamed token while profile saves, private-context writes, memory saves, portrait changes, or publish operations are still running in the background
+- Added an explicit planning step plus a live “drafting the response” step so the activity log now reads more like ack → plan → work instead of only showing scrape/save fragments
+- Upgraded mutation-heavy completions with a deterministic follow-through block that summarizes what actually changed and proposes the next best moves, which makes the shell feel guided instead of ending on a thin one-liner plus green notices
+- Rebuilt the app successfully after the lifecycle hardening pass to confirm the new turn-state logic is production-safe
+
 ## 2026-04-17 — Web Shell Thinking Animation Upgrade
 
 ### Shell / Progress UX
