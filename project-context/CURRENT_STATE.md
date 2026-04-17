@@ -29,6 +29,7 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - Sources pane with real mutations (add URL, view status, pipeline stats)
 - Files pane with keyboard shortcuts (Cmd+S), markdown preview, create new file
 - Settings pane now supports `rotate key` and `revoke all keys`, which gives users a sane way to clean up API-key sprawl without revoking unrelated token types
+- Revoked API keys are now hidden behind an explicit history toggle, so the default settings view reflects the real active-key state instead of surfacing the graveyard first
 - Same-origin web chat routes for the shell: `/api/v1/chat`, `/api/v1/chat/ack`, and `/api/v1/chat/stream`
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 

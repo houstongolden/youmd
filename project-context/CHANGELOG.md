@@ -1,5 +1,12 @@
 # You.md — Changelog
 
+## 2026-04-17 — API Key History Panel Cleanup
+
+### Web Settings / Auth Ops
+- Fixed the settings pane so active API keys are now the primary view and revoked keys are hidden behind an explicit history toggle instead of cluttering the panel by default
+- Confirmed the production account cleanup worked at the data level: the old key pile is revoked history, not dozens of still-live keys
+- Softened the fresh-key helper text so it tells users to copy the new key and hide the card when done instead of foregrounding the one-way-storage warning in the main CTA
+
 ## 2026-04-17 — API Key Rotation + Cleanup UX
 
 ### Web Settings / Auth Ops

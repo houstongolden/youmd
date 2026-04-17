@@ -76,7 +76,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
   const [confirmRevokeAllKeys, setConfirmRevokeAllKeys] = useState(false);
   const [revokingAllKeys, setRevokingAllKeys] = useState(false);
   const [revokedAllKeysCount, setRevokedAllKeysCount] = useState<number | null>(null);
-  const [showAllKeys, setShowAllKeys] = useState(false);
+  const [showRevokedKeys, setShowRevokedKeys] = useState(false);
   const [copiedNewKey, setCopiedNewKey] = useState(false);
 
   // Sort: active (not revoked) first, then revoked. Within each group, newest first.
@@ -90,9 +90,8 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
       })
     : [];
 
-  const KEY_LIMIT = 5;
-  const visibleKeys = showAllKeys ? sortedKeys : sortedKeys.slice(0, KEY_LIMIT);
-  const hiddenKeyCount = Math.max(0, sortedKeys.length - KEY_LIMIT);
+  const activeKeys = sortedKeys.filter((k) => !k.isRevoked);
+  const revokedKeys = sortedKeys.filter((k) => k.isRevoked);
 
   // Activity logs from Convex
   const logs = useQuery(
@@ -279,7 +278,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
             style={{ borderRadius: "2px" }}
           >
             <p className="text-[10px] text-[hsl(var(--accent-mid))] font-mono">
-              fresh key ready. copy it now -- it will not be shown again after you dismiss it.
+              fresh key ready. copy it now, then hide this card when you're done.
             </p>
             <code className="block text-[10px] font-mono text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] p-2 break-all select-all">
               {newKey}
@@ -304,32 +303,32 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
           </div>
         )}
 
-        {keys && sortedKeys.length > 0 ? (
+        {keys && (activeKeys.length > 0 || revokedKeys.length > 0) ? (
           <div className="space-y-2">
-            {visibleKeys.map((k) => (
-              <div
-                key={k.id}
-                className="flex items-center justify-between px-3 py-2.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[10px] font-mono"
-                style={{ borderRadius: "2px" }}
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <code className="text-[hsl(var(--text-primary))] px-1.5 py-0.5 bg-[hsl(var(--bg))] border border-[hsl(var(--border))]">
-                      {k.keyPrefix}...
-                    </code>
-                    {k.label && (
-                      <span className="text-[hsl(var(--text-secondary))] opacity-40">
-                        {k.label}
-                      </span>
-                    )}
+            {activeKeys.length > 0 ? (
+              activeKeys.map((k) => (
+                <div
+                  key={k.id}
+                  className="flex items-center justify-between px-3 py-2.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[10px] font-mono"
+                  style={{ borderRadius: "2px" }}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <code className="text-[hsl(var(--text-primary))] px-1.5 py-0.5 bg-[hsl(var(--bg))] border border-[hsl(var(--border))]">
+                        {k.keyPrefix}...
+                      </code>
+                      {k.label && (
+                        <span className="text-[hsl(var(--text-secondary))] opacity-40">
+                          {k.label}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[hsl(var(--text-secondary))] opacity-40">
+                      {k.scopes.join(", ")}
+                      {k.lastUsedAt &&
+                        ` -- last used ${k.lastUsedAt.split("T")[0]}`}
+                    </div>
                   </div>
-                  <div className="text-[hsl(var(--text-secondary))] opacity-40">
-                    {k.scopes.join(", ")}
-                    {k.lastUsedAt &&
-                      ` -- last used ${k.lastUsedAt.split("T")[0]}`}
-                  </div>
-                </div>
-                {!k.isRevoked ? (
                   <button
                     onClick={() => {
                       if (confirmRevokeKey === k.id) {
@@ -344,28 +343,32 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
                   >
                     {confirmRevokeKey === k.id ? "confirm?" : "revoke"}
                   </button>
-                ) : (
-                  <span className="text-[hsl(var(--text-secondary))] opacity-25">
-                    revoked
-                  </span>
-                )}
+                </div>
+              ))
+            ) : (
+              <div
+                className="flex items-center justify-between px-3 py-2.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[10px] font-mono"
+                style={{ borderRadius: "2px" }}
+              >
+                <span className="text-[hsl(var(--text-secondary))] opacity-35">
+                  no active api keys. rotate or create one when you need local agent access.
+                </span>
               </div>
-            ))}
+            )}
 
-            {/* Footer: count + load more / collapse */}
             <div className="flex items-center justify-between pt-1">
               <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30">
-                {visibleKeys.length} of {sortedKeys.length} keys shown
+                {activeKeys.length} active / {revokedKeys.length} revoked
               </p>
               <div className="flex items-center gap-3">
-                {hiddenKeyCount > 0 && (
+                {revokedKeys.length > 0 && (
                   <button
-                    onClick={() => setShowAllKeys((v) => !v)}
+                    onClick={() => setShowRevokedKeys((v) => !v)}
                     className="text-[10px] font-mono text-[hsl(var(--accent))] opacity-60 hover:opacity-100 transition-opacity"
                   >
-                    {showAllKeys
-                      ? "[show less]"
-                      : `[load more keys (${hiddenKeyCount} hidden)]`}
+                    {showRevokedKeys
+                      ? `[hide revoked history]`
+                      : `[show revoked history (${revokedKeys.length})]`}
                   </button>
                 )}
                 <button
@@ -381,6 +384,38 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
                 </button>
               </div>
             </div>
+
+            {showRevokedKeys && revokedKeys.length > 0 && (
+              <div className="space-y-2 pt-1">
+                {revokedKeys.map((k) => (
+                  <div
+                    key={k.id}
+                    className="flex items-center justify-between px-3 py-2 border border-[hsl(var(--border))]/60 bg-[hsl(var(--bg-raised))]/50 text-[10px] font-mono opacity-65"
+                    style={{ borderRadius: "2px" }}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <code className="text-[hsl(var(--text-primary))] px-1.5 py-0.5 bg-[hsl(var(--bg))] border border-[hsl(var(--border))]">
+                          {k.keyPrefix}...
+                        </code>
+                        {k.label && (
+                          <span className="text-[hsl(var(--text-secondary))] opacity-50">
+                            {k.label}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[hsl(var(--text-secondary))] opacity-40">
+                        revoked
+                        {k.lastUsedAt && ` -- last used ${k.lastUsedAt.split("T")[0]}`}
+                      </div>
+                    </div>
+                    <span className="text-[hsl(var(--text-secondary))] opacity-25">
+                      history
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             {confirmRevokeAllKeys && !revokingAllKeys && (
               <p className="text-[9px] font-mono text-[hsl(var(--accent))] opacity-50">
                 this only revokes API keys. your email login, share links, and other tokens stay untouched. click again to confirm.
