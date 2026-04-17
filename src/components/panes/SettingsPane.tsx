@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useState } from "react";
-import { useUser, useClerk } from "@clerk/nextjs";
+import { useUser, useSessionAuth } from "@/lib/you-auth";
 import { useRouter } from "next/navigation";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
 
@@ -59,7 +59,7 @@ function formatLogDetails(details: Record<string, unknown> | undefined): string 
 
 export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPaneProps) {
   const { user } = useUser();
-  const { signOut } = useClerk();
+  const { signOut } = useSessionAuth();
   const router = useRouter();
 
   // API keys
@@ -134,7 +134,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
   };
 
   const handleSignOut = () => {
-    signOut({ redirectUrl: "/" });
+    void signOut();
   };
 
   return (
@@ -375,7 +375,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
             </button>
             {confirmRevokeAll && !revokingAll && (
               <p className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-50 mt-1">
-                this will revoke every API key, access token, and share link you own. you can sign back in via clerk and create new ones. click again to confirm.
+                this will revoke every API key, access token, and share link you own. you can sign back in with a fresh email code and create new ones. click again to confirm.
               </p>
             )}
             {revokeAllResult && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { SignOutButton } from "@clerk/nextjs";
+import { SignOutButton } from "@/lib/you-auth";
 import Link from "next/link";
 import PixelYOU from "@/components/PixelYOU";
 

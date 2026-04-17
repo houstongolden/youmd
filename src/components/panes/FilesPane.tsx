@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation } from "convex/react";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/lib/you-auth";
 import { api } from "../../../convex/_generated/api";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { PaneHeader, PaneEmptyState } from "./shared";

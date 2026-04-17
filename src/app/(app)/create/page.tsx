@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CreateContent } from "./create-content";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Create Your Identity — you.md",
@@ -25,5 +25,5 @@ export const metadata: Metadata = {
 };
 
 export default function CreatePage() {
-  return <CreateContent />;
+  redirect("/sign-up");
 }

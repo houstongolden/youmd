@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "motion/react";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/lib/you-auth";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import AsciiAvatar from "@/components/AsciiAvatar";

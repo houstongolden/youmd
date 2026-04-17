@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
+import type { MutationCtx } from "./_generated/server";
 
 /**
  * API key management.
@@ -8,7 +9,7 @@ import { requireOwner } from "./lib/auth";
  * The plaintext is shown to the user exactly once at creation time.
  */
 
-function generateApiKey(): string {
+export function generateApiKey(): string {
   const chars =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let key = "ym_";
@@ -18,7 +19,7 @@ function generateApiKey(): string {
   return key;
 }
 
-async function hashKey(key: string): Promise<string> {
+export async function hashKey(key: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(key);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
@@ -28,6 +29,72 @@ async function hashKey(key: string): Promise<string> {
 
 /** Cycle 56: default API key lifetime if `expiresInDays` not specified. */
 const DEFAULT_API_KEY_LIFETIME_DAYS = 365;
+
+export async function issueApiKeyForUser(
+  ctx: MutationCtx,
+  user: { _id: any; plan: "free" | "pro" },
+  options: {
+    label?: string;
+    scopes: string[];
+    expiresInDays?: number | null;
+    revokeExisting?: boolean;
+  }
+) {
+  if (user.plan === "free") {
+    const existingKeys = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    if (options.revokeExisting) {
+      for (const key of existingKeys) {
+        if (!key.revokedAt) {
+          await ctx.db.patch(key._id, { revokedAt: Date.now() });
+        }
+      }
+    } else {
+      const activeKeys = existingKeys.filter((k) => !k.revokedAt);
+      if (activeKeys.length >= 1) {
+        throw new Error(
+          "Free plan allows 1 API key. Upgrade to Pro for unlimited keys."
+        );
+      }
+    }
+
+    if (options.scopes.some((s) => s !== "read:public")) {
+      throw new Error(
+        "Free plan only supports read:public scope. Upgrade to Pro for all scopes."
+      );
+    }
+  }
+
+  const plaintext = generateApiKey();
+  const keyHash = await hashKey(plaintext);
+
+  let expiresAt: number | undefined;
+  if (options.expiresInDays === null || options.expiresInDays === 0) {
+    expiresAt = undefined;
+  } else {
+    const days = options.expiresInDays ?? DEFAULT_API_KEY_LIFETIME_DAYS;
+    expiresAt = Date.now() + days * 86400000;
+  }
+
+  await ctx.db.insert("apiKeys", {
+    userId: user._id,
+    keyHash,
+    label: options.label,
+    scopes: options.scopes,
+    expiresAt,
+    createdAt: Date.now(),
+  });
+
+  return {
+    key: plaintext,
+    scopes: options.scopes,
+    label: options.label,
+    expiresAt: expiresAt ?? null,
+  };
+}
 
 export const createKey = mutation({
   args: {
@@ -51,56 +118,11 @@ export const createKey = mutation({
 
     if (!user) throw new Error("User not found");
 
-    // Free users get 1 key max
-    if (user.plan === "free") {
-      const existingKeys = await ctx.db
-        .query("apiKeys")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
-        .collect();
-
-      const activeKeys = existingKeys.filter((k) => !k.revokedAt);
-      if (activeKeys.length >= 1) {
-        throw new Error(
-          "Free plan allows 1 API key. Upgrade to Pro for unlimited keys."
-        );
-      }
-
-      // Free users can only have read:public scope
-      if (args.scopes.some((s) => s !== "read:public")) {
-        throw new Error(
-          "Free plan only supports read:public scope. Upgrade to Pro for all scopes."
-        );
-      }
-    }
-
-    const plaintext = generateApiKey();
-    const keyHash = await hashKey(plaintext);
-
-    // Cycle 56: compute expiry. null/0 = never, undefined = default 365d.
-    let expiresAt: number | undefined;
-    if (args.expiresInDays === null || args.expiresInDays === 0) {
-      expiresAt = undefined; // permanent
-    } else {
-      const days = args.expiresInDays ?? DEFAULT_API_KEY_LIFETIME_DAYS;
-      expiresAt = Date.now() + days * 86400000;
-    }
-
-    await ctx.db.insert("apiKeys", {
-      userId: user._id,
-      keyHash,
+    return await issueApiKeyForUser(ctx, user, {
       label: args.label,
       scopes: args.scopes,
-      expiresAt,
-      createdAt: Date.now(),
+      expiresInDays: args.expiresInDays,
     });
-
-    // Return plaintext ONCE — it will never be shown again
-    return {
-      key: plaintext,
-      scopes: args.scopes,
-      label: args.label,
-      expiresAt: expiresAt ?? null,
-    };
   },
 });
 

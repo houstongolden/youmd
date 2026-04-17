@@ -1,286 +1,241 @@
 "use client";
 
-import { useSignUp, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import Link from "next/link";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { TerminalAuthInput } from "@/components/terminal/TerminalAuthInput";
+import { useUser } from "@/lib/you-auth";
 
-/* ── Clerk error extraction ────────────────────────────────── */
-
-function extractError(err: unknown): string {
-  const clerkErr = err as {
-    errors?: { message?: string; longMessage?: string }[];
-    message?: string;
-  };
-  return (
-    clerkErr.errors?.[0]?.longMessage ??
-    clerkErr.errors?.[0]?.message ??
-    clerkErr.message ??
-    "initialization failed. try again."
-  );
-}
-
-/* ── Main page ─────────────────────────────────────────────── */
-
-type Step = "boot" | "email" | "password" | "username" | "processing" | "verify" | "verifying" | "done";
+type Step = "boot" | "email" | "username" | "name" | "sending" | "verify" | "verifying" | "done";
 
 export default function SignUpPage() {
   const { isSignedIn } = useUser();
-  const signUpHook = useSignUp();
-  const signUp = signUpHook.signUp;
   const router = useRouter();
-
-  useEffect(() => {
-    if (isSignedIn) router.replace("/shell");
-  }, [isSignedIn, router]);
 
   const [step, setStep] = useState<Step>("boot");
   const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const lineCounter = useRef(0);
+
+  useEffect(() => {
+    if (isSignedIn) router.replace("/shell");
+  }, [isSignedIn, router]);
 
   const addLine = useCallback((content: ReactNode, className?: string) => {
     const id = `l${lineCounter.current++}`;
     setLines((prev) => [...prev, { id, content, className }]);
   }, []);
 
-  // Auto-scroll
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [lines, step]);
 
-  // Boot sequence
   useEffect(() => {
     const timers = [
       setTimeout(() => addLine("you.md v0.1.0", "text-[hsl(var(--accent))]"), 200),
-      setTimeout(() => addLine("identity context protocol for the agent internet", "text-[hsl(var(--text-secondary))] opacity-60"), 600),
+      setTimeout(
+        () =>
+          addLine(
+            "identity context protocol for the agent internet",
+            "text-[hsl(var(--text-secondary))] opacity-60"
+          ),
+        600
+      ),
       setTimeout(() => addLine("\u00A0"), 900),
-      setTimeout(() => addLine("initializing authentication...", "text-[hsl(var(--text-secondary))] opacity-50"), 1100),
-      setTimeout(() => addLine("\u00A0"), 1400),
-      setTimeout(() => addLine("enter your email to begin.", "text-[hsl(var(--text-secondary))] opacity-70"), 1500),
-      setTimeout(() => setStep("email"), 1600),
+      setTimeout(
+        () => addLine("enter your email to begin.", "text-[hsl(var(--text-secondary))] opacity-70"),
+        1200
+      ),
+      setTimeout(() => setStep("email"), 1350),
     ];
     return () => timers.forEach(clearTimeout);
   }, [addLine]);
 
-  // Handlers
-  const handleEmail = useCallback((val: string) => {
-    setEmail(val);
+  const handleEmail = useCallback((value: string) => {
+    setEmail(value);
     addLine(
       <span>
         <span className="text-[hsl(var(--accent))]">email:</span>{" "}
-        <span className="text-[hsl(var(--text-secondary))]">{val}</span>
-      </span>
-    );
-    addLine("\u00A0");
-    addLine("choose a password.", "text-[hsl(var(--text-secondary))] opacity-70");
-    setTimeout(() => setStep("password"), 300);
-  }, [addLine]);
-
-  const handlePassword = useCallback((val: string) => {
-    setPassword(val);
-    addLine(
-      <span>
-        <span className="text-[hsl(var(--accent))]">password:</span>{" "}
-        <span className="text-[hsl(var(--text-secondary))]">{"\u2022".repeat(val.length)}</span>
+        <span className="text-[hsl(var(--text-secondary))]">{value}</span>
       </span>
     );
     addLine("\u00A0");
     addLine("claim your username.", "text-[hsl(var(--text-secondary))] opacity-70");
-    setTimeout(() => setStep("username"), 300);
+    setStep("username");
   }, [addLine]);
 
-  const handleUsername = useCallback(async (val: string) => {
+  const handleUsername = useCallback(async (value: string) => {
+    const clean = value.toLowerCase().replace(/[^a-z0-9-]/g, "");
     addLine(
       <span>
         <span className="text-[hsl(var(--accent))]">username:</span>{" "}
-        <span className="text-[hsl(var(--text-secondary))]">{val}</span>
+        <span className="text-[hsl(var(--text-secondary))]">{clean}</span>
       </span>
     );
-    addLine("\u00A0");
-    setStep("processing");
-
-    if (!signUp) return;
-
-    // Check username availability — skip HTTP endpoint (caching issues), just proceed
-    // Clerk will validate the username, and createUser will check both tables
-    addLine("checking username availability...", "text-[hsl(var(--text-secondary))] opacity-50");
-
-    addLine("initializing identity context...", "text-[hsl(var(--text-secondary))] opacity-50");
-
     try {
-      const result = await signUp.password({
-        emailAddress: email,
-        password,
-        username: val,
-      });
-
-      if (result.error) {
-        addLine(
-          <span className="text-[hsl(var(--accent))]">
-            ERR: {result.error.message ?? "initialization failed."}
-          </span>
-        );
-        addLine("\u00A0");
-        setStep("username");
-        return;
+      const res = await fetch(`/api/v1/check-username?username=${encodeURIComponent(clean)}`);
+      const data = (await res.json()) as { available?: boolean; reason?: string | null };
+      if (!data.available) {
+        throw new Error(data.reason || "username is not available.");
       }
-
-      if (signUp.status === "complete") {
-        addLine(
-          <span className="text-[hsl(var(--success))]">{"\u2713"} identity created</span>
-        );
-        addLine(
-          <span className="text-[hsl(var(--text-secondary))] opacity-60">
-            {"\u2192"} redirecting to /initialize...
-          </span>
-        );
-        setStep("done");
-        await signUp.finalize({ navigate: () => router.push("/initialize") });
-        return;
-      }
-
-      // Email verification required
-      if (
-        signUp.status === "missing_requirements" &&
-        signUp.unverifiedFields?.includes("email_address")
-      ) {
-        const sendResult = await signUp.verifications.sendEmailCode();
-        if (sendResult.error) {
-          addLine(
-            <span className="text-[hsl(var(--accent))]">
-              ERR: {sendResult.error.message}
-            </span>
-          );
-          setStep("username");
-          return;
-        }
-        addLine(
-          <span className="text-[hsl(var(--success))]">{"\u2713"} account created</span>
-        );
-        addLine(
-          <span className="text-[hsl(var(--text-secondary))] opacity-60">
-            {"\u2192"} verification code sent to {email}
-          </span>
-        );
-        addLine("\u00A0");
-        addLine("enter verification code.", "text-[hsl(var(--text-secondary))] opacity-70");
-        setTimeout(() => setStep("verify"), 400);
-      }
-    } catch (err: unknown) {
+      setUsername(clean);
+      addLine(
+        <span className="text-[hsl(var(--success))]">{"\u2713"} @{clean} is available</span>
+      );
+      addLine("\u00A0");
+      addLine("what should we call you?", "text-[hsl(var(--text-secondary))] opacity-70");
+      setStep("name");
+    } catch (error) {
       addLine(
         <span className="text-[hsl(var(--accent))]">
-          ERR: {extractError(err)}
+          ERR: {error instanceof Error ? error.message : "invalid username."}
         </span>
       );
       addLine("\u00A0");
-      setStep("email");
+      setStep("username");
     }
-  }, [email, password, signUp, router, addLine]);
+  }, [addLine]);
 
-  const handleVerify = useCallback(async (val: string) => {
+  const handleName = useCallback(async (value: string) => {
+    setDisplayName(value);
+    addLine(
+      <span>
+        <span className="text-[hsl(var(--accent))]">name:</span>{" "}
+        <span className="text-[hsl(var(--text-secondary))]">{value}</span>
+      </span>
+    );
+    addLine("\u00A0");
+    setStep("sending");
+    addLine("sending verification code...", "text-[hsl(var(--text-secondary))] opacity-50");
+
+    try {
+      const res = await fetch("/api/auth/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          type: "signup",
+          username,
+          displayName: value,
+        }),
+      });
+      const data = (await res.json()) as { error?: string; devCode?: string };
+      if (!res.ok) {
+        throw new Error(data.error || "could not send verification code.");
+      }
+      addLine(
+        <span className="text-[hsl(var(--success))]">{"\u2713"} code sent to {email}</span>
+      );
+      if (data.devCode) {
+        addLine(
+          <span className="text-[hsl(var(--text-secondary))] opacity-50">
+            dev code: {data.devCode}
+          </span>
+        );
+      }
+      addLine("\u00A0");
+      addLine("enter verification code.", "text-[hsl(var(--text-secondary))] opacity-70");
+      setStep("verify");
+    } catch (error) {
+      addLine(
+        <span className="text-[hsl(var(--accent))]">
+          ERR: {error instanceof Error ? error.message : "signup failed."}
+        </span>
+      );
+      addLine("\u00A0");
+      setStep("name");
+    }
+  }, [addLine, email, username]);
+
+  const handleVerify = useCallback(async (code: string) => {
     addLine(
       <span>
         <span className="text-[hsl(var(--accent))]">code:</span>{" "}
-        <span className="text-[hsl(var(--text-secondary))]">{val}</span>
+        <span className="text-[hsl(var(--text-secondary))]">{code}</span>
       </span>
     );
     addLine("\u00A0");
     setStep("verifying");
-
-    if (!signUp) return;
-
-    addLine(
-      <span className="text-[hsl(var(--text-secondary))] opacity-50">
-        {"\u25CC"} verifying...
-      </span>
-    );
+    addLine("verifying...", "text-[hsl(var(--text-secondary))] opacity-50");
 
     try {
-      const verifyResult = await signUp.verifications.verifyEmailCode({ code: val });
-
-      if (verifyResult.error) {
-        addLine(
-          <span className="text-[hsl(var(--accent))]">
-            ERR: {verifyResult.error.message ?? "invalid code."}
-          </span>
-        );
-        addLine("\u00A0");
-        setStep("verify");
-        return;
+      const res = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error || "verification failed.");
       }
-
-      if (signUp.status === "complete") {
-        addLine(
-          <span className="text-[hsl(var(--success))]">{"\u2713"} verified</span>
-        );
-        addLine(
-          <span className="text-[hsl(var(--text-secondary))] opacity-60">
-            {"\u2192"} redirecting to /initialize...
-          </span>
-        );
-        setStep("done");
-        await signUp.finalize({ navigate: () => router.push("/initialize") });
-      } else {
-        addLine(
-          <span className="text-[hsl(var(--accent))]">
-            ERR: verification incomplete. check your code.
-          </span>
-        );
-        addLine("\u00A0");
-        setStep("verify");
-      }
-    } catch (err: unknown) {
+      addLine(
+        <span className="text-[hsl(var(--success))]">{"\u2713"} account created</span>
+      );
+      addLine(
+        <span className="text-[hsl(var(--text-secondary))] opacity-60">
+          {"\u2192"} redirecting to initialize...
+        </span>
+      );
+      setStep("done");
+      router.push("/initialize");
+      router.refresh();
+    } catch (error) {
       addLine(
         <span className="text-[hsl(var(--accent))]">
-          ERR: {extractError(err)}
+          ERR: {error instanceof Error ? error.message : "verification failed."}
         </span>
       );
       addLine("\u00A0");
       setStep("verify");
     }
-  }, [signUp, router, addLine]);
+  }, [addLine, email, router]);
 
-  const isInputStep = ["email", "password", "username", "verify"].includes(step);
+  const isInputStep = ["email", "username", "name", "verify"].includes(step);
 
-  const stepLabel: Record<string, string> = {
-    email: "enter your email to begin",
-    password: "choose a password",
-    username: "claim your username",
-    verify: "enter verification code",
-  };
-
-  const stepPlaceholder: Record<string, string> = {
-    email: "email",
-    password: "",
-    username: "username",
-    verify: "000000",
-  };
-
-  const stepHandler: Record<string, (v: string) => void> = {
-    email: handleEmail,
-    password: handlePassword,
-    username: handleUsername,
-    verify: handleVerify,
-  };
-
-  // Per-step input semantics: type, autocomplete, mobile keyboard, accessible name
-  const stepFieldConfig: Record<string, {
-    type: "text" | "email" | "password" | "tel";
-    autoComplete: string;
-    inputMode?: "text" | "email" | "tel" | "url" | "numeric";
-    name: string;
-    ariaLabel: string;
-  }> = {
-    email: { type: "email", autoComplete: "email", inputMode: "email", name: "email", ariaLabel: "email address" },
-    password: { type: "password", autoComplete: "new-password", name: "new-password", ariaLabel: "new password" },
-    username: { type: "text", autoComplete: "username", name: "username", ariaLabel: "username" },
-    verify: { type: "text", autoComplete: "one-time-code", inputMode: "numeric", name: "verification-code", ariaLabel: "verification code" },
-  };
+  const inputProps =
+    step === "email"
+      ? {
+          placeholder: "email",
+          type: "email" as const,
+          autoComplete: "email",
+          inputMode: "email" as const,
+          name: "email",
+          ariaLabel: "email address",
+          onSubmit: handleEmail,
+        }
+      : step === "username"
+        ? {
+            placeholder: "username",
+            type: "text" as const,
+            autoComplete: "username",
+            inputMode: "text" as const,
+            name: "username",
+            ariaLabel: "username",
+            onSubmit: handleUsername,
+          }
+        : step === "name"
+          ? {
+              placeholder: "display name",
+              type: "text" as const,
+              autoComplete: "name",
+              inputMode: "text" as const,
+              name: "name",
+              ariaLabel: "display name",
+              onSubmit: handleName,
+            }
+          : {
+              placeholder: "______",
+              type: "text" as const,
+              autoComplete: "one-time-code",
+              inputMode: "numeric" as const,
+              name: "verification-code",
+              ariaLabel: "verification code",
+              onSubmit: handleVerify,
+            };
 
   return (
     <main className="h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
@@ -289,9 +244,8 @@ export default function SignUpPage() {
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden min-h-0"
           style={{ borderRadius: "2px" }}
         >
-          <TerminalHeader title="you.md — initialize" asHeading />
+          <TerminalHeader title="you.md — sign up" asHeading />
 
-          {/* Scrollable output */}
           <div
             ref={scrollRef}
             className="flex-1 overflow-y-auto p-5 font-mono text-[14px] leading-relaxed"
@@ -301,39 +255,17 @@ export default function SignUpPage() {
                 {line.content || "\u00A0"}
               </div>
             ))}
-
-            {step === "processing" && (
-              <div className="text-[hsl(var(--accent-mid))] animate-pulse mt-1">
-                {"\u25CC"} processing...
-              </div>
-            )}
-            {step === "verifying" && (
-              <div className="text-[hsl(var(--accent-mid))] animate-pulse mt-1">
-                {"\u25CC"} verifying...
-              </div>
-            )}
           </div>
 
-          {/* Input pinned at bottom — clean, no labels */}
           {isInputStep && (
             <div className="shrink-0 border-t border-[hsl(var(--border))] px-5 pt-3 pb-5">
-              <TerminalAuthInput
-                prompt=">"
-                placeholder={stepPlaceholder[step]}
-                type={stepFieldConfig[step].type}
-                autoComplete={stepFieldConfig[step].autoComplete}
-                inputMode={stepFieldConfig[step].inputMode}
-                name={stepFieldConfig[step].name}
-                ariaLabel={stepFieldConfig[step].ariaLabel}
-                onSubmit={stepHandler[step]}
-              />
+              <TerminalAuthInput prompt=">" {...inputProps} />
             </div>
           )}
         </div>
 
-        {/* Link below terminal */}
         {!isInputStep && (
-          <div className="mt-3 text-center shrink-0">
+          <div className="mt-3 text-center shrink-0 flex flex-col gap-1">
             <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
               already initialized?{" "}
               <Link

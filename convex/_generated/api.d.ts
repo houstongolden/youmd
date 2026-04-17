@@ -10,6 +10,7 @@
 
 import type * as activity from "../activity.js";
 import type * as apiKeys from "../apiKeys.js";
+import type * as auth from "../auth.js";
 import type * as bundles from "../bundles.js";
 import type * as chat from "../chat.js";
 import type * as cleanup from "../cleanup.js";
@@ -53,6 +54,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   activity: typeof activity;
   apiKeys: typeof apiKeys;
+  auth: typeof auth;
   bundles: typeof bundles;
   chat: typeof chat;
   cleanup: typeof cleanup;

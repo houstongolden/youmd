@@ -2,7 +2,7 @@ import * as readline from "readline";
 import { exec } from "child_process";
 import chalk from "chalk";
 import { readGlobalConfig, writeGlobalConfig, getConvexSiteUrl } from "../lib/config";
-import { getMe, getMeUser, loginWithEmail } from "../lib/api";
+import { getMe, getMeUser, startEmailLogin, verifyEmailCode } from "../lib/api";
 import { BrailleSpinner } from "../lib/render";
 
 const ACCENT = chalk.hex("#C46A3A");
@@ -46,7 +46,7 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
     return;
   }
 
-  // Interactive email/password login
+  // Interactive email-code login
   console.log("");
   console.log(ACCENT("you.md") + " -- login");
   console.log("");
@@ -58,20 +58,11 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
     return;
   }
 
-  const password = await promptPassword(ACCENT("  password: "));
-  if (!password) {
-    console.log(chalk.yellow("  no password provided -- aborting"));
-    console.log("");
-    return;
-  }
-
-  console.log("");
-
-  const spinner = new BrailleSpinner("authenticating");
+  const spinner = new BrailleSpinner("sending verification code");
   spinner.start();
 
   try {
-    const res = await loginWithEmail(email, password);
+    const res = await startEmailLogin(email);
 
     if (!res.ok) {
       spinner.fail();
@@ -87,26 +78,56 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
       return;
     }
 
-    const { username, apiKey, plan } = res.data;
+    spinner.stop();
+    console.log("");
+    console.log("  verification code sent to " + email);
+    if ((res.data as any).devCode) {
+      console.log("  " + chalk.dim("dev code: ") + (res.data as any).devCode);
+    }
+    console.log("");
+
+    const code = await promptInput(ACCENT("  code: "));
+    if (!code) {
+      console.log(chalk.yellow("  no verification code provided -- aborting"));
+      console.log("");
+      return;
+    }
+
+    const verifySpinner = new BrailleSpinner("verifying code");
+    verifySpinner.start();
+
+    const verifyRes = await verifyEmailCode(email, code);
+    if (!verifyRes.ok) {
+      verifySpinner.fail();
+      const errData = verifyRes.data as any;
+      console.log("");
+      console.log("  " + chalk.yellow(errData?.error || `server returned ${verifyRes.status}`));
+      console.log("");
+      return;
+    }
+
+    const { username, apiKey, user } = verifyRes.data;
 
     // Save credentials
     const config = readGlobalConfig();
-    config.token = apiKey;
+    config.token = apiKey || undefined;
     config.username = username;
-    config.email = email;
+    config.email = user.email;
     config.apiUrl = getConvexSiteUrl();
     writeGlobalConfig(config);
 
-    spinner.stop();
+    verifySpinner.stop();
     console.log("");
     console.log(
       "  " + chalk.green("authenticated") + " as " + ACCENT("@" + username)
     );
     console.log("");
     console.log("  user:  " + username);
-    console.log("  email: " + email);
-    console.log("  plan:  " + (plan || "free"));
-    console.log("  key:   " + apiKey.slice(0, 8) + "..." + apiKey.slice(-4));
+    console.log("  email: " + user.email);
+    console.log("  plan:  free");
+    if (apiKey) {
+      console.log("  key:   " + apiKey.slice(0, 8) + "..." + apiKey.slice(-4));
+    }
     console.log("");
   } catch (err) {
     spinner.fail();
@@ -211,13 +232,6 @@ function promptInput(prompt: string): Promise<string> {
     });
   });
 }
-
-// Ensure raw mode is restored if the process exits unexpectedly during password input
-process.on('exit', () => {
-  if (process.stdin.isTTY) {
-    try { process.stdin.setRawMode(false); } catch {}
-  }
-});
 
 function promptPassword(prompt: string): Promise<string> {
   return new Promise((resolve) => {

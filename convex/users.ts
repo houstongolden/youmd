@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
+import type { MutationCtx } from "./_generated/server";
 
 // Reserved usernames that cannot be claimed
 const RESERVED_USERNAMES = new Set([
@@ -31,6 +32,106 @@ const RESERVED_USERNAMES = new Set([
 
 // Username validation: 3-30 chars, lowercase alphanumeric + hyphens, no leading/trailing hyphens
 const USERNAME_REGEX = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
+
+export async function createUserAndProfile(
+  ctx: MutationCtx,
+  args: {
+    clerkId: string;
+    username: string;
+    email: string;
+    displayName?: string;
+    verificationSource?: string;
+  }
+) {
+  const username = args.username.toLowerCase();
+
+  if (!USERNAME_REGEX.test(username)) {
+    throw new Error("Invalid username format.");
+  }
+
+  if (RESERVED_USERNAMES.has(username)) {
+    throw new Error("This username is reserved.");
+  }
+
+  const existingClerk = await ctx.db
+    .query("users")
+    .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+    .first();
+
+  if (existingClerk) {
+    return existingClerk._id;
+  }
+
+  const existingUsername = await ctx.db
+    .query("users")
+    .withIndex("by_username", (q) => q.eq("username", username))
+    .first();
+
+  if (existingUsername) {
+    throw new Error("Username already taken.");
+  }
+
+  const userId = await ctx.db.insert("users", {
+    clerkId: args.clerkId,
+    username,
+    email: args.email,
+    displayName: args.displayName,
+    plan: "free",
+    createdAt: Date.now(),
+  });
+
+  const existingProfile = await ctx.db
+    .query("profiles")
+    .withIndex("by_username", (q) => q.eq("username", username))
+    .first();
+
+  if (existingProfile && !existingProfile.isClaimed) {
+    await ctx.db.patch(existingProfile._id, {
+      ownerId: userId,
+      isClaimed: true,
+      claimedAt: Date.now(),
+      sessionToken: undefined,
+      updatedAt: Date.now(),
+    });
+
+    await ctx.db.insert("profileVerifications", {
+      profileId: existingProfile._id,
+      method: "email",
+      verifiedAt: Date.now(),
+      isActive: true,
+      metadata: {
+        email: args.email,
+        source: args.verificationSource || "email_code",
+      },
+    });
+
+    return userId;
+  }
+
+  if (!existingProfile) {
+    const newProfileId = await ctx.db.insert("profiles", {
+      username,
+      name: args.displayName || username,
+      isClaimed: true,
+      ownerId: userId,
+      claimedAt: Date.now(),
+      createdAt: Date.now(),
+    });
+
+    await ctx.db.insert("profileVerifications", {
+      profileId: newProfileId,
+      method: "email",
+      verifiedAt: Date.now(),
+      isActive: true,
+      metadata: {
+        email: args.email,
+        source: args.verificationSource || "email_code",
+      },
+    });
+  }
+
+  return userId;
+}
 
 export const checkUsername = query({
   args: { username: v.string() },
@@ -104,95 +205,13 @@ export const createUser = mutation({
   },
   handler: async (ctx, args) => {
     await requireOwner(ctx, args.clerkId, args._internalAuthToken);
-
-    const username = args.username.toLowerCase();
-
-    // Validate username
-    if (!USERNAME_REGEX.test(username)) {
-      throw new Error("Invalid username format.");
-    }
-
-    if (RESERVED_USERNAMES.has(username)) {
-      throw new Error("This username is reserved.");
-    }
-
-    // Check if clerkId already has an account — if so, return it (idempotent)
-    const existingClerk = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-
-    if (existingClerk) {
-      return existingClerk._id;
-    }
-
-    // Check username uniqueness
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_username", (q) => q.eq("username", username))
-      .first();
-
-    if (existing) {
-      throw new Error("Username already taken.");
-    }
-
-    const userId = await ctx.db.insert("users", {
+    return await createUserAndProfile(ctx, {
       clerkId: args.clerkId,
-      username,
+      username: args.username,
       email: args.email,
       displayName: args.displayName,
-      plan: "free",
-      createdAt: Date.now(),
+      verificationSource: "clerk_signup",
     });
-
-    // Auto-create or claim a profile entry
-    const existingProfile = await ctx.db
-      .query("profiles")
-      .withIndex("by_username", (q) => q.eq("username", username))
-      .first();
-
-    if (existingProfile && !existingProfile.isClaimed) {
-      // Claim the unclaimed profile
-      await ctx.db.patch(existingProfile._id, {
-        ownerId: userId,
-        isClaimed: true,
-        claimedAt: Date.now(),
-        sessionToken: undefined,
-        updatedAt: Date.now(),
-      });
-    } else if (!existingProfile) {
-      // Create a new profile entry linked to this user
-      const newProfileId = await ctx.db.insert("profiles", {
-        username,
-        name: args.displayName || username,
-        isClaimed: true,
-        ownerId: userId,
-        claimedAt: Date.now(),
-        createdAt: Date.now(),
-      });
-
-      // Auto-create email verification (Clerk verifies email at sign-up)
-      await ctx.db.insert("profileVerifications", {
-        profileId: newProfileId,
-        method: "email",
-        verifiedAt: Date.now(),
-        isActive: true,
-        metadata: { email: args.email, source: "clerk_signup" },
-      });
-    }
-
-    // If claiming an existing profile, also create email verification
-    if (existingProfile && !existingProfile.isClaimed) {
-      await ctx.db.insert("profileVerifications", {
-        profileId: existingProfile._id,
-        method: "email",
-        verifiedAt: Date.now(),
-        isActive: true,
-        metadata: { email: args.email, source: "clerk_signup" },
-      });
-    }
-
-    return userId;
   },
 });
 

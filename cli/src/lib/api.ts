@@ -3,9 +3,10 @@
  * Uses the HTTP action endpoints at the Convex site URL.
  */
 
-import { readGlobalConfig, getConvexSiteUrl } from "./config";
+import { readGlobalConfig, getConvexSiteUrl, getAppUrl } from "./config";
 
 const SITE_URL = getConvexSiteUrl();
+const APP_URL = getAppUrl();
 
 interface ApiResponse<T = unknown> {
   ok: boolean;
@@ -14,6 +15,7 @@ interface ApiResponse<T = unknown> {
 }
 
 async function request<T = unknown>(
+  baseUrl: string,
   path: string,
   options: {
     method?: string;
@@ -42,7 +44,7 @@ async function request<T = unknown>(
     fetchOptions.body = JSON.stringify(body);
   }
 
-  const url = `${SITE_URL}${path}`;
+  const url = `${baseUrl}${path}`;
 
   const res = await fetch(url, fetchOptions);
 
@@ -64,27 +66,66 @@ async function request<T = unknown>(
   };
 }
 
+async function apiRequest<T = unknown>(
+  path: string,
+  options: {
+    method?: string;
+    body?: unknown;
+    token?: string;
+    headers?: Record<string, string>;
+  } = {}
+) {
+  return request<T>(SITE_URL, path, options);
+}
+
+async function appRequest<T = unknown>(
+  path: string,
+  options: {
+    method?: string;
+    body?: unknown;
+    token?: string;
+    headers?: Record<string, string>;
+  } = {}
+) {
+  return request<T>(APP_URL, path, options);
+}
+
 // ─── Auth endpoints (no token needed) ────────────────────────────────
 
-export async function loginWithEmail(
-  email: string,
-  password: string
-): Promise<ApiResponse<{ success: boolean; username: string; apiKey: string; plan: string }>> {
-  return request<{ success: boolean; username: string; apiKey: string; plan: string }>(
-    "/api/v1/auth/login",
-    { method: "POST", body: { email, password } }
+export async function startEmailLogin(
+  email: string
+): Promise<ApiResponse<{ success: boolean; devCode?: string }>> {
+  return appRequest<{ success: boolean; devCode?: string }>(
+    "/api/auth/send-verification",
+    { method: "POST", body: { email, type: "login" } }
   );
 }
 
-export async function registerWithEmail(
+export async function startEmailRegister(
   email: string,
-  password: string,
   username: string,
-  name: string
-): Promise<ApiResponse<{ success: boolean; username: string; apiKey: string; clerkId: string }>> {
-  return request<{ success: boolean; username: string; apiKey: string; clerkId: string }>(
-    "/api/v1/auth/register",
-    { method: "POST", body: { email, password, username, name } }
+  displayName: string
+): Promise<ApiResponse<{ success: boolean; devCode?: string }>> {
+  return appRequest<{ success: boolean; devCode?: string }>(
+    "/api/auth/send-verification",
+    { method: "POST", body: { email, type: "signup", username, displayName } }
+  );
+}
+
+export async function verifyEmailCode(
+  email: string,
+  code: string
+): Promise<
+  ApiResponse<{
+    success: boolean;
+    username: string;
+    apiKey: string | null;
+    user: { id: string; username: string; email: string; displayName?: string };
+  }>
+> {
+  return appRequest(
+    "/api/auth/verify-code",
+    { method: "POST", body: { email, code, issueApiKey: true } }
   );
 }
 
@@ -93,7 +134,7 @@ export async function registerWithEmail(
 export async function checkUsername(
   username: string
 ): Promise<{ available: boolean; reason: string | null }> {
-  const res = await request<{ available: boolean; reason: string | null }>(
+  const res = await apiRequest<{ available: boolean; reason: string | null }>(
     `/api/v1/check-username?username=${encodeURIComponent(username)}`
   );
   return res.data;
@@ -103,7 +144,7 @@ export async function getPublicProfile(
   username: string
 ): Promise<{ youJson: unknown; youMd: string; username: string; displayName?: string } | null> {
   const path = `/api/v1/profiles?username=${encodeURIComponent(username)}`;
-  const res = await request<any>(
+  const res = await apiRequest<any>(
     path
   );
   if (!res.ok) return null;
@@ -122,7 +163,7 @@ export async function getPublicProfile(
         "";
 
       if (!youMd) {
-        const mdRes = await request<string>(path, {
+        const mdRes = await apiRequest<string>(path, {
           headers: { Accept: "text/plain" },
         });
         if (mdRes.ok && typeof mdRes.data === "string") {
@@ -213,7 +254,7 @@ export function getMeUser(me: MeResponse): MeUser {
 }
 
 export async function getMe(): Promise<ApiResponse<MeResponse>> {
-  return request<MeResponse>("/api/v1/me", {
+  return apiRequest<MeResponse>("/api/v1/me", {
     token: getToken(),
   });
 }
@@ -236,7 +277,7 @@ export interface BundleVersionData {
 export async function getBundleByVersion(
   version: number
 ): Promise<ApiResponse<BundleVersionData>> {
-  return request<BundleVersionData>(`/api/v1/me/bundles?version=${version}`, {
+  return apiRequest<BundleVersionData>(`/api/v1/me/bundles?version=${version}`, {
     token: getToken(),
   });
 }
@@ -257,7 +298,7 @@ export interface HistoryEntry {
 export async function getBundleHistory(): Promise<
   ApiResponse<{ history: HistoryEntry[]; count: number }>
 > {
-  return request<{ history: HistoryEntry[]; count: number }>("/api/v1/me/history", {
+  return apiRequest<{ history: HistoryEntry[]; count: number }>("/api/v1/me/history", {
     token: getToken(),
   });
 }
@@ -277,7 +318,7 @@ export interface RemoteStatus {
 }
 
 export async function getRemoteStatus(): Promise<ApiResponse<RemoteStatus>> {
-  return request<RemoteStatus>("/api/v1/me", {
+  return apiRequest<RemoteStatus>("/api/v1/me", {
     token: getToken(),
   });
 }
@@ -291,7 +332,7 @@ export interface SaveBundleArgs {
 export async function saveBundle(
   args: SaveBundleArgs
 ): Promise<ApiResponse<{ bundleId: string; version: number }>> {
-  return request<{ bundleId: string; version: number }>("/api/v1/me/bundle", {
+  return apiRequest<{ bundleId: string; version: number }>("/api/v1/me/bundle", {
     method: "POST",
     token: getToken(),
     body: {
@@ -306,7 +347,7 @@ export async function uploadBundle(
   // Upload raw bundle data - manifest, youJson, youMd
   // The /api/v1/me/bundle endpoint expects profileData for server-side compilation.
   // For CLI uploads where we already have compiled artifacts, we send them directly.
-  return request<any>("/api/v1/me/bundle", {
+  return apiRequest<any>("/api/v1/me/bundle", {
     method: "POST",
     token: getToken(),
     body: {
@@ -328,7 +369,7 @@ export interface PublishResult {
 }
 
 export async function publishLatest(): Promise<ApiResponse<PublishResult>> {
-  return request<PublishResult>("/api/v1/me/publish", {
+  return apiRequest<PublishResult>("/api/v1/me/publish", {
     method: "POST",
     token: getToken(),
   });
@@ -340,7 +381,7 @@ export async function addSource(
   sourceType: string,
   sourceUrl: string
 ): Promise<ApiResponse<{ sourceId: string }>> {
-  return request<{ sourceId: string }>("/api/v1/me/sources", {
+  return apiRequest<{ sourceId: string }>("/api/v1/me/sources", {
     method: "POST",
     token: getToken(),
     body: { sourceType, sourceUrl },
@@ -348,7 +389,7 @@ export async function addSource(
 }
 
 export async function listSources(): Promise<ApiResponse<any[]>> {
-  return request<any[]>("/api/v1/me/sources", {
+  return apiRequest<any[]>("/api/v1/me/sources", {
     token: getToken(),
   });
 }
@@ -372,7 +413,7 @@ export async function listMemories(opts?: {
   if (opts?.category) params.set("category", opts.category);
   if (opts?.limit) params.set("limit", String(opts.limit));
   const qs = params.toString();
-  return request<{ memories: MemoryItem[]; count: number }>(
+  return apiRequest<{ memories: MemoryItem[]; count: number }>(
     `/api/v1/me/memories${qs ? `?${qs}` : ""}`,
     { token: getToken() }
   );
@@ -382,7 +423,7 @@ export async function saveMemories(
   memories: Array<{ category: string; content: string; tags?: string[] }>,
   agentName?: string
 ): Promise<ApiResponse<{ saved: number }>> {
-  return request<{ saved: number }>("/api/v1/me/memories", {
+  return apiRequest<{ saved: number }>("/api/v1/me/memories", {
     method: "POST",
     token: getToken(),
     body: { memories, agentName: agentName || "cli" },
@@ -392,7 +433,7 @@ export async function saveMemories(
 // ─── Analytics ───────────────────────────────────────────────────────
 
 export async function getAnalytics(): Promise<ApiResponse<any>> {
-  return request<any>("/api/v1/me/analytics", {
+  return apiRequest<any>("/api/v1/me/analytics", {
     token: getToken(),
   });
 }
@@ -428,7 +469,7 @@ export async function createContextLink(opts: {
   maxUses?: number;
   name?: string;
 }): Promise<ApiResponse<CreateLinkResult>> {
-  return request<CreateLinkResult>("/api/v1/me/context-links", {
+  return apiRequest<CreateLinkResult>("/api/v1/me/context-links", {
     method: "POST",
     token: getToken(),
     body: {
@@ -441,13 +482,13 @@ export async function createContextLink(opts: {
 }
 
 export async function listContextLinks(): Promise<ApiResponse<ContextLink[]>> {
-  return request<ContextLink[]>("/api/v1/me/context-links", {
+  return apiRequest<ContextLink[]>("/api/v1/me/context-links", {
     token: getToken(),
   });
 }
 
 export async function revokeContextLink(linkId: string): Promise<ApiResponse<{ success: boolean }>> {
-  return request<{ success: boolean }>("/api/v1/me/context-links", {
+  return apiRequest<{ success: boolean }>("/api/v1/me/context-links", {
     method: "DELETE",
     token: getToken(),
     body: { linkId },
@@ -476,7 +517,7 @@ export async function createApiKey(opts: {
   label?: string;
   scopes?: string[];
 }): Promise<ApiResponse<CreateKeyResult>> {
-  return request<CreateKeyResult>("/api/v1/me/api-keys", {
+  return apiRequest<CreateKeyResult>("/api/v1/me/api-keys", {
     method: "POST",
     token: getToken(),
     body: {
@@ -487,13 +528,13 @@ export async function createApiKey(opts: {
 }
 
 export async function listApiKeys(): Promise<ApiResponse<ApiKeyInfo[]>> {
-  return request<ApiKeyInfo[]>("/api/v1/me/api-keys", {
+  return apiRequest<ApiKeyInfo[]>("/api/v1/me/api-keys", {
     token: getToken(),
   });
 }
 
 export async function revokeApiKey(keyId: string): Promise<ApiResponse<{ success: boolean }>> {
-  return request<{ success: boolean }>("/api/v1/me/api-keys", {
+  return apiRequest<{ success: boolean }>("/api/v1/me/api-keys", {
     method: "DELETE",
     token: getToken(),
     body: { keyId },
@@ -510,7 +551,7 @@ export interface PrivateContext {
 }
 
 export async function getPrivateContext(): Promise<ApiResponse<PrivateContext | null>> {
-  return request<PrivateContext | null>("/api/v1/me/private", {
+  return apiRequest<PrivateContext | null>("/api/v1/me/private", {
     token: getToken(),
   });
 }
@@ -518,7 +559,7 @@ export async function getPrivateContext(): Promise<ApiResponse<PrivateContext | 
 export async function updatePrivateContext(
   updates: Partial<PrivateContext>
 ): Promise<ApiResponse<{ success: boolean }>> {
-  return request<{ success: boolean }>("/api/v1/me/private", {
+  return apiRequest<{ success: boolean }>("/api/v1/me/private", {
     method: "POST",
     token: getToken(),
     body: updates,
@@ -551,15 +592,15 @@ export interface SkillInstallEntry {
 }
 
 export async function browseSkills(): Promise<ApiResponse<{ skills: SkillRegistryEntry[]; count: number }>> {
-  return request<{ skills: SkillRegistryEntry[]; count: number }>("/api/v1/skills");
+  return apiRequest<{ skills: SkillRegistryEntry[]; count: number }>("/api/v1/skills");
 }
 
 export async function getRegistrySkill(name: string): Promise<ApiResponse<SkillRegistryEntry & { content: string }>> {
-  return request<SkillRegistryEntry & { content: string }>(`/api/v1/skills?name=${encodeURIComponent(name)}`);
+  return apiRequest<SkillRegistryEntry & { content: string }>(`/api/v1/skills?name=${encodeURIComponent(name)}`);
 }
 
 export async function getMySkills(): Promise<ApiResponse<{ skills: SkillInstallEntry[]; count: number }>> {
-  return request<{ skills: SkillInstallEntry[]; count: number }>("/api/v1/me/skills", {
+  return apiRequest<{ skills: SkillInstallEntry[]; count: number }>("/api/v1/me/skills", {
     token: getToken(),
   });
 }
@@ -572,7 +613,7 @@ export async function publishSkill(skill: {
   identityFields: string[];
   content: string;
 }): Promise<ApiResponse<{ id: string; updated: boolean }>> {
-  return request<{ id: string; updated: boolean }>("/api/v1/me/skills", {
+  return apiRequest<{ id: string; updated: boolean }>("/api/v1/me/skills", {
     method: "POST",
     token: getToken(),
     body: skill,
@@ -585,7 +626,7 @@ export async function recordSkillInstall(install: {
   scope: string;
   identityFields: string[];
 }): Promise<ApiResponse<{ id: string; updated: boolean }>> {
-  return request<{ id: string; updated: boolean }>("/api/v1/me/skills/install", {
+  return apiRequest<{ id: string; updated: boolean }>("/api/v1/me/skills/install", {
     method: "POST",
     token: getToken(),
     body: install,
@@ -593,7 +634,7 @@ export async function recordSkillInstall(install: {
 }
 
 export async function trackSkillUsage(skillName: string): Promise<ApiResponse<{ success: boolean }>> {
-  return request<{ success: boolean }>("/api/v1/me/skills/usage", {
+  return apiRequest<{ success: boolean }>("/api/v1/me/skills/usage", {
     method: "POST",
     token: getToken(),
     body: { skillName },
@@ -601,7 +642,7 @@ export async function trackSkillUsage(skillName: string): Promise<ApiResponse<{ 
 }
 
 export async function removeSkillInstall(skillName: string): Promise<ApiResponse<{ success: boolean }>> {
-  return request<{ success: boolean }>("/api/v1/me/skills/remove", {
+  return apiRequest<{ success: boolean }>("/api/v1/me/skills/remove", {
     method: "POST",
     token: getToken(),
     body: { skillName },
@@ -616,7 +657,7 @@ export async function savePortrait(portrait: {
   format: string;
   sourceUrl: string;
 }): Promise<ApiResponse<{ success: boolean }>> {
-  return request<{ success: boolean }>("/api/v1/me/portrait", {
+  return apiRequest<{ success: boolean }>("/api/v1/me/portrait", {
     method: "POST",
     token: getToken(),
     body: { portrait },
@@ -642,7 +683,7 @@ export async function initVault(wrapped: {
   vaultSalt: string;       // base64
   vaultKeyIv: string;      // base64
 }): Promise<ApiResponse<{ success: boolean }>> {
-  return request<{ success: boolean }>("/api/v1/me/vault/init", {
+  return apiRequest<{ success: boolean }>("/api/v1/me/vault/init", {
     method: "POST",
     token: getToken(),
     body: wrapped,
@@ -654,7 +695,7 @@ export async function saveVaultData(data: {
   encryptedJson: string;  // base64
   iv: string;             // base64
 }): Promise<ApiResponse<{ success: boolean }>> {
-  return request<{ success: boolean }>("/api/v1/me/vault", {
+  return apiRequest<{ success: boolean }>("/api/v1/me/vault", {
     method: "POST",
     token: getToken(),
     body: data,
@@ -662,7 +703,7 @@ export async function saveVaultData(data: {
 }
 
 export async function getVaultData(): Promise<ApiResponse<VaultData>> {
-  return request<VaultData>("/api/v1/me/vault", {
+  return apiRequest<VaultData>("/api/v1/me/vault", {
     token: getToken(),
   });
 }

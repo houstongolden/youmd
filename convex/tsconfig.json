@@ -5,6 +5,7 @@
     "module": "ESNext",
     "jsx": "react-jsx",
     "skipLibCheck": true,
+    "noEmit": true,
     "noUncheckedIndexedAccess": false
   },
   "include": ["./**/*"],

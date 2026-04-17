@@ -11,6 +11,7 @@ export interface GlobalConfig {
   username?: string;
   email?: string;
   apiUrl?: string;
+  appUrl?: string;
   avatarUrl?: string;
   openrouterKey?: string;
 }
@@ -40,6 +41,11 @@ export function getLocalBundleDir(): string {
 export function getConvexSiteUrl(): string {
   const config = readGlobalConfig();
   return config.apiUrl || "https://kindly-cassowary-600.convex.site";
+}
+
+export function getAppUrl(): string {
+  const config = readGlobalConfig();
+  return config.appUrl || "https://you.md";
 }
 
 export function readGlobalConfig(): GlobalConfig {

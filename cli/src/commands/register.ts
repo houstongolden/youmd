@@ -1,6 +1,6 @@
 import * as readline from "readline";
 import chalk from "chalk";
-import { checkUsername, registerWithEmail } from "../lib/api";
+import { checkUsername, startEmailRegister, verifyEmailCode } from "../lib/api";
 import { readGlobalConfig, writeGlobalConfig, getConvexSiteUrl } from "../lib/config";
 import { BrailleSpinner } from "../lib/render";
 
@@ -76,38 +76,21 @@ export async function registerCommand(): Promise<void> {
     return;
   }
 
-  // 3. Password
-  const password = await promptPassword(ACCENT("  choose a password: "));
-  if (!password) {
-    console.log(chalk.yellow("  no password provided -- aborting"));
-    console.log("");
-    return;
-  }
-
-  if (password.length < 8) {
-    console.log("");
-    console.log(chalk.yellow("  password must be at least 8 characters"));
-    console.log("");
-    return;
-  }
-
-  // 4. Confirm password
-  const confirm = await promptPassword(ACCENT("  confirm password: "));
-  if (confirm !== password) {
-    console.log("");
-    console.log(chalk.yellow("  passwords do not match -- aborting"));
+  // 3. Display name
+  const displayName = await promptInput(ACCENT("  what should we call you? "));
+  if (!displayName) {
+    console.log(chalk.yellow("  no name provided -- aborting"));
     console.log("");
     return;
   }
 
   console.log("");
 
-  // 5. Register
-  const spinner = new BrailleSpinner("creating account");
+  const spinner = new BrailleSpinner("sending verification code");
   spinner.start();
 
   try {
-    const res = await registerWithEmail(email, password, cleanUsername, cleanUsername);
+    const res = await startEmailRegister(email, cleanUsername, displayName);
 
     if (!res.ok) {
       spinner.fail();
@@ -119,17 +102,45 @@ export async function registerCommand(): Promise<void> {
       return;
     }
 
-    const { username: registeredUsername, apiKey } = res.data;
+    spinner.stop();
+    console.log("");
+    console.log("  verification code sent to " + email);
+    if ((res.data as any).devCode) {
+      console.log("  " + chalk.dim("dev code: ") + (res.data as any).devCode);
+    }
+    console.log("");
+
+    const code = await promptInput(ACCENT("  code: "));
+    if (!code) {
+      console.log(chalk.yellow("  no verification code provided -- aborting"));
+      console.log("");
+      return;
+    }
+
+    const verifySpinner = new BrailleSpinner("verifying code");
+    verifySpinner.start();
+
+    const verifyRes = await verifyEmailCode(email, code);
+    if (!verifyRes.ok) {
+      verifySpinner.fail();
+      const errData = verifyRes.data as any;
+      console.log("");
+      console.log("  " + chalk.yellow(errData?.error || `server returned ${verifyRes.status}`));
+      console.log("");
+      return;
+    }
+
+    const { username: registeredUsername, apiKey, user } = verifyRes.data;
 
     // Save credentials
     const config = readGlobalConfig();
-    config.token = apiKey;
+    config.token = apiKey || undefined;
     config.username = registeredUsername;
-    config.email = email;
+    config.email = user.email;
     config.apiUrl = getConvexSiteUrl();
     writeGlobalConfig(config);
 
-    spinner.stop();
+    verifySpinner.stop();
     console.log("");
     console.log(
       "  " + chalk.green("account created") +
@@ -138,9 +149,11 @@ export async function registerCommand(): Promise<void> {
     );
     console.log("");
     console.log("  user:  " + registeredUsername);
-    console.log("  email: " + email);
+    console.log("  email: " + user.email);
     console.log("  plan:  free");
-    console.log("  key:   " + apiKey.slice(0, 8) + "..." + apiKey.slice(-4));
+    if (apiKey) {
+      console.log("  key:   " + apiKey.slice(0, 8) + "..." + apiKey.slice(-4));
+    }
     console.log("");
     console.log(
       "  run " + ACCENT("youmd init") + " to build your identity context"
@@ -174,70 +187,5 @@ function promptInput(prompt: string): Promise<string> {
       rl.close();
       resolve(answer.trim());
     });
-  });
-}
-
-function promptPassword(prompt: string): Promise<string> {
-  return new Promise((resolve) => {
-    // Write the prompt manually
-    process.stdout.write(prompt);
-
-    const rl = readline.createInterface({
-      input: process.stdin,
-      terminal: false,
-    });
-
-    // If stdin is a TTY, enable raw mode for character-by-character masking
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(true);
-    }
-    process.stdin.resume();
-
-    let password = "";
-
-    const onData = (ch: Buffer) => {
-      const char = ch.toString("utf8");
-
-      // Enter
-      if (char === "\n" || char === "\r" || char === "\u0004") {
-        if (process.stdin.isTTY) {
-          process.stdin.setRawMode(false);
-        }
-        process.stdin.removeListener("data", onData);
-        process.stdin.pause();
-        rl.close();
-        process.stdout.write("\n");
-        resolve(password);
-        return;
-      }
-
-      // Ctrl+C
-      if (char === "\u0003") {
-        if (process.stdin.isTTY) {
-          process.stdin.setRawMode(false);
-        }
-        process.stdin.removeListener("data", onData);
-        process.stdin.pause();
-        rl.close();
-        process.stdout.write("\n");
-        resolve("");
-        return;
-      }
-
-      // Backspace
-      if (char === "\u007F" || char === "\b") {
-        if (password.length > 0) {
-          password = password.slice(0, -1);
-          process.stdout.write("\b \b");
-        }
-        return;
-      }
-
-      // Regular character
-      password += char;
-      process.stdout.write("*");
-    };
-
-    process.stdin.on("data", onData);
   });
 }

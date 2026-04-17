@@ -54,7 +54,7 @@ youmd link create        # generate a shareable context link
 | Command | What It Does |
 |---|---|
 | `youmd init` | Build your identity via AI conversation |
-| `youmd login` | Authenticate (email/password or `--key`) |
+| `youmd login` | Authenticate (email code or `--key`) |
 | `youmd register` | Claim a username |
 | `youmd whoami` | Show current authenticated user |
 | `youmd build` | Compile bundle from local profile/ and preferences/ files |

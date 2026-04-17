@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "convex/react";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/lib/you-auth";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { PaneSectionLabel, PaneDivider } from "./shared";

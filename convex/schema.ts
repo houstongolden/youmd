@@ -15,6 +15,33 @@ export default defineSchema({
     .index("by_clerkId", ["clerkId"])
     .index("by_email", ["email"]),
 
+  authChallenges: defineTable({
+    email: v.string(),
+    type: v.union(v.literal("login"), v.literal("signup")),
+    codeHash: v.string(),
+    tokenHash: v.string(),
+    username: v.optional(v.string()),
+    displayName: v.optional(v.string()),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+    attempts: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_tokenHash", ["tokenHash"]),
+
+  authSessions: defineTable({
+    userId: v.id("users"),
+    tokenHash: v.string(),
+    expiresAt: v.number(),
+    userAgent: v.optional(v.string()),
+    ipAddress: v.optional(v.string()),
+    lastUsedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_userId", ["userId"]),
+
   // ── Profiles (can exist without auth) ──────────────────────
   profiles: defineTable({
     username: v.string(),

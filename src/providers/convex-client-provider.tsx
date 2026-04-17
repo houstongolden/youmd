@@ -2,8 +2,8 @@
 
 import { ReactNode, Component } from "react";
 import { ConvexReactClient, ConvexProvider } from "convex/react";
-import { ConvexProviderWithClerk } from "convex/react-clerk";
-import { ClerkProvider, useAuth } from "@clerk/nextjs";
+import { ConvexProviderWithAuth } from "convex/react";
+import { YouAuthProvider, useAuth } from "@/lib/you-auth";
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 
@@ -11,10 +11,10 @@ const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
 
 /**
- * Error boundary that catches Clerk load failures.
+ * Error boundary that catches auth bootstrap failures.
  * Falls back to unauthenticated Convex (public queries still work).
  */
-class ClerkErrorBoundary extends Component<
+class AuthErrorBoundary extends Component<
   { convex: ConvexReactClient; children: ReactNode },
   { hasError: boolean }
 > {
@@ -29,7 +29,7 @@ class ClerkErrorBoundary extends Component<
 
   componentDidCatch(error: Error) {
     console.warn(
-      "Clerk failed to load — falling back to unauthenticated mode. " +
+      "you.md auth failed to load — falling back to unauthenticated mode. " +
         "Public pages will work; auth-gated pages will not.",
       error.message
     );
@@ -55,30 +55,13 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ClerkErrorBoundary convex={convex}>
-      <ClerkProvider
-        publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY as string}
-        appearance={{
-          variables: {
-            colorPrimary: "#C46A3A",
-            colorText: "#EAE6E1",
-            colorBackground: "#171717",
-            colorInputBackground: "#0D0D0D",
-            colorInputText: "#EAE6E1",
-            borderRadius: "0.25rem",
-          },
-          elements: {
-            card: "border border-[hsl(0,0%,18%)]",
-            formButtonPrimary: "bg-[#C46A3A] hover:bg-[#A8552E]",
-            footerActionLink: "text-[#C46A3A] hover:text-[#D27A4F]",
-          },
-        }}
-      >
-        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+    <AuthErrorBoundary convex={convex}>
+      <YouAuthProvider>
+        <ConvexProviderWithAuth client={convex} useAuth={useAuth}>
           {children}
-        </ConvexProviderWithClerk>
-      </ClerkProvider>
-    </ClerkErrorBoundary>
+        </ConvexProviderWithAuth>
+      </YouAuthProvider>
+    </AuthErrorBoundary>
   );
 }
 

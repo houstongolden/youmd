@@ -26,7 +26,7 @@ const afterSnippets = [
   { role: "ctx" as const, text: "loading you.md/houston..." },
   {
     role: "agent" as const,
-    text: "Houston -- you're building You.md (Next.js + Convex + Clerk), prefer terminal-native design, ship fast, no emoji. I see your CLAUDE.md generator skill and your project-context setup. You have 3 active projects. What are we working on?",
+    text: "Houston -- you're building You.md (Next.js + Convex + passwordless auth), prefer terminal-native design, ship fast, no emoji. I see your CLAUDE.md generator skill and your project-context setup. You have 3 active projects. What are we working on?",
   },
   { role: "you" as const, text: "new feature for the skill system." },
   {

@@ -1,7 +1,6 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/shell(.*)", "/initialize(.*)"]);
+const PROTECTED_ROUTE_PATTERNS = [/^\/dashboard(?:\/.*)?$/, /^\/shell(?:\/.*)?$/, /^\/initialize(?:\/.*)?$/];
 
 // AI agent/LLM User-Agent patterns — these get plain text identity context.
 // EXCLUDES social card crawlers (need OG tags from HTML) and search engines (need to index HTML).
@@ -40,17 +39,14 @@ function isAgentRequest(req: Request): boolean {
   return AI_AGENT_UA_PATTERNS.some((p) => p.test(ua));
 }
 
-export default clerkMiddleware(async (auth, req) => {
-  // For protected routes, do an explicit 307 redirect to /sign-in instead of
-  // using auth.protect(). In Clerk v7, auth.protect() does an internal
-  // "protect-rewrite" that re-routes the request through Next.js's catchall
-  // /[username] route with a placeholder username (clerk_${timestamp}) — which
-  // means anonymous /shell, /dashboard, /initialize requests render a fake
-  // profile page instead of redirecting to sign-in. Explicit redirect is
-  // predictable and gives the user a clear path forward.
-  if (isProtectedRoute(req)) {
-    const session = await auth();
-    if (!session.userId) {
+export default async function middleware(req: Request & { nextUrl: URL; cookies: { get(name: string): { value: string } | undefined } }) {
+  const isProtectedRoute = PROTECTED_ROUTE_PATTERNS.some((pattern) =>
+    pattern.test(req.nextUrl.pathname)
+  );
+
+  if (isProtectedRoute) {
+    const sessionCookie = req.cookies.get("youmd_session")?.value;
+    if (!sessionCookie) {
       const signInUrl = new URL("/sign-in", req.url);
       signInUrl.searchParams.set("redirect_url", req.url);
       return NextResponse.redirect(signInUrl);
@@ -97,7 +93,7 @@ export default clerkMiddleware(async (auth, req) => {
       }
     }
   }
-});
+}
 
 export const config = {
   matcher: [

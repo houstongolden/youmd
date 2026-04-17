@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useUser, SignOutButton } from "@clerk/nextjs";
+import { useUser, SignOutButton } from "@/lib/you-auth";
 import { useQuery, useConvexAuth } from "convex/react";
 import { X } from "lucide-react";
 import Link from "next/link";
