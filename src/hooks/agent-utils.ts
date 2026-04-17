@@ -185,6 +185,20 @@ export interface DetectedSource {
   username?: string;
 }
 
+export interface ProjectScaffoldFile {
+  path: string;
+  content: string;
+  isPublic?: boolean;
+}
+
+export interface ProjectDirectoryScaffoldPlan {
+  projectCount: number;
+  projectSlugs: string[];
+  createdPaths: string[];
+  existingPaths: string[];
+  customFiles: ProjectScaffoldFile[];
+}
+
 export function detectSourcesInMessage(text: string): DetectedSource[] {
   const sources: DetectedSource[] = [];
   const seen = new Set<string>();
@@ -1472,6 +1486,230 @@ export function buildProfileDataFromUpdates(
   }
 
   return profileData;
+}
+
+function slugifyProjectName(name: string): string {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return slug || "project";
+}
+
+function ensureUniqueSlug(baseSlug: string, used: Set<string>): string {
+  if (!used.has(baseSlug)) {
+    used.add(baseSlug);
+    return baseSlug;
+  }
+
+  let counter = 2;
+  let next = `${baseSlug}-${counter}`;
+  while (used.has(next)) {
+    counter += 1;
+    next = `${baseSlug}-${counter}`;
+  }
+  used.add(next);
+  return next;
+}
+
+function coerceProjectList(
+  existingJson: Record<string, unknown> | null,
+  fallbackProjects: Array<Record<string, unknown>> = []
+): Array<Record<string, unknown>> {
+  const bundledProjects = Array.isArray(existingJson?.projects)
+    ? (existingJson?.projects as Array<Record<string, unknown>>)
+    : [];
+  return bundledProjects.length > 0 ? bundledProjects : fallbackProjects;
+}
+
+function buildProjectReadme(project: Record<string, unknown>, projectName: string): string {
+  const role = typeof project.role === "string" ? project.role.trim() : "";
+  const status = typeof project.status === "string" ? project.status.trim() : "";
+  const url = typeof project.url === "string" ? project.url.trim() : "";
+  const description = typeof project.description === "string" ? project.description.trim() : "";
+  const headerLines = [
+    "---",
+    `title: "${projectName} — Project Overview"`,
+    "---",
+    "",
+    `# ${projectName}`,
+    "",
+  ];
+
+  if (status) headerLines.push(`**Status:** ${status}`);
+  if (role) headerLines.push(`**Role:** ${role}`);
+  if (url) headerLines.push(`**URL:** ${url}`);
+
+  const body = description
+    ? description
+    : `Working directory for ${projectName}. Capture the operating context here so agents stop guessing.`;
+
+  return [
+    ...headerLines,
+    "",
+    "## What It Is",
+    "",
+    body,
+    "",
+    "## Current Focus",
+    "",
+    "- clarify the near-term priorities for this project",
+    "- capture the current scope, constraints, and open questions",
+    "",
+  ].join("\n");
+}
+
+function buildProjectContext(projectName: string, description: string): string {
+  const overview = description || `Shared operating context for ${projectName}.`;
+  return [
+    "---",
+    `title: "${projectName} — Agent Context"`,
+    "---",
+    "",
+    `# Agent Context: ${projectName}`,
+    "",
+    overview,
+    "",
+    "## Context For Agents",
+    "",
+    "- read this directory before making project-specific changes",
+    "- keep README, context, prd, and todo aligned when the project changes",
+    "- use this folder to capture decisions, constraints, and current direction",
+    "",
+  ].join("\n");
+}
+
+function buildProjectPrd(projectName: string, description: string): string {
+  const vision = description || `${projectName} needs a clear product definition here.`;
+  return [
+    "---",
+    `title: "${projectName} — PRD"`,
+    "---",
+    "",
+    `# ${projectName} — Product Requirements`,
+    "",
+    "## Vision",
+    "",
+    vision,
+    "",
+    "## Core Outcomes",
+    "",
+    "- define what success looks like for this project",
+    "- capture the primary user or audience",
+    "- list the most important constraints and differentiators",
+    "",
+  ].join("\n");
+}
+
+function buildProjectTodo(projectName: string): string {
+  return [
+    "---",
+    `title: "${projectName} — Todo"`,
+    "---",
+    "",
+    `# ${projectName} — Active Todos`,
+    "",
+    "## In Progress",
+    "",
+    "- [ ] define the current workstreams",
+    "",
+    "## Next",
+    "",
+    "- [ ] capture the next highest-value tasks",
+    "",
+    "## Done",
+    "",
+    "- [ ] move completed work here as it ships",
+    "",
+  ].join("\n");
+}
+
+export function isProjectDirectoryScaffoldRequest(text: string): boolean {
+  const normalized = text.toLowerCase();
+  const asksToCreate = /\b(create|make|scaffold|build|generate|set up|setup|add)\b/.test(normalized);
+  const mentionsProjectsDir =
+    /\bprojects?\s+director(y|ies)\b/.test(normalized) ||
+    /\bproject\s+subdirector(y|ies)\b/.test(normalized) ||
+    /\bproject\s+folders?\b/.test(normalized);
+  const mentionsPrivate = /\bprivate\b/.test(normalized);
+  const mentionsPerProject =
+    /\b(each|every)\s+project\b/.test(normalized) ||
+    /\bsubdirector(y|ies)\b/.test(normalized);
+
+  return asksToCreate && mentionsProjectsDir && (mentionsPrivate || mentionsPerProject);
+}
+
+export function buildProjectDirectoryScaffold(
+  existingJson: Record<string, unknown> | null,
+  fallbackProjects: Array<Record<string, unknown>> = []
+): ProjectDirectoryScaffoldPlan {
+  const existingCustomFiles =
+    (existingJson?.custom_files as Array<{ path?: string; content?: string; isPublic?: boolean }> | undefined) || [];
+  const customFiles: ProjectScaffoldFile[] = existingCustomFiles
+    .filter((file) => typeof file?.path === "string")
+    .map((file) => ({
+      path: file.path as string,
+      content: typeof file.content === "string" ? file.content : "",
+      isPublic: file.isPublic ?? (file.path as string).startsWith("profile/"),
+    }));
+
+  const existingPaths = new Set(customFiles.map((file) => file.path));
+  const usedSlugs = new Set<string>();
+  const projectSlugs: string[] = [];
+  const createdPaths: string[] = [];
+  const skippedPaths: string[] = [];
+  const projects = coerceProjectList(existingJson, fallbackProjects);
+
+  for (const project of projects) {
+    const rawName = typeof project?.name === "string" ? project.name.trim() : "";
+    if (!rawName) continue;
+
+    const slug = ensureUniqueSlug(slugifyProjectName(rawName), usedSlugs);
+    projectSlugs.push(slug);
+
+    const description = typeof project.description === "string" ? project.description.trim() : "";
+    const files: ProjectScaffoldFile[] = [
+      {
+        path: `projects/${slug}/README.md`,
+        content: buildProjectReadme(project, rawName),
+        isPublic: false,
+      },
+      {
+        path: `projects/${slug}/context.md`,
+        content: buildProjectContext(rawName, description),
+        isPublic: false,
+      },
+      {
+        path: `projects/${slug}/prd.md`,
+        content: buildProjectPrd(rawName, description),
+        isPublic: false,
+      },
+      {
+        path: `projects/${slug}/todo.md`,
+        content: buildProjectTodo(rawName),
+        isPublic: false,
+      },
+    ];
+
+    for (const file of files) {
+      if (existingPaths.has(file.path)) {
+        skippedPaths.push(file.path);
+        continue;
+      }
+      existingPaths.add(file.path);
+      customFiles.push(file);
+      createdPaths.push(file.path);
+    }
+  }
+
+  return {
+    projectCount: projectSlugs.length,
+    projectSlugs,
+    createdPaths,
+    existingPaths: skippedPaths,
+    customFiles,
+  };
 }
 
 // ---------------------------------------------------------------------------

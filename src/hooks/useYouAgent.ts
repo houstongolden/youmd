@@ -23,6 +23,8 @@ import {
   buildProjectShareBlock,
   buildProfileContext,
   buildProfileDataFromUpdates,
+  buildProjectDirectoryScaffold,
+  isProjectDirectoryScaffoldRequest,
   parseUpdatesFromResponse,
   parsePrivateUpdatesFromResponse,
   parseMemorySavesFromResponse,
@@ -74,6 +76,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       : "skip"
   );
   const saveBundleFromForm = useMutation(api.me.saveBundleFromForm);
+  const scaffoldProjectDirectories = useMutation(api.me.scaffoldProjectDirectories);
   const publishLatest = useMutation(api.me.publishLatest);
   const createContextLink = useMutation(api.contextLinks.createLink);
   const updatePrivateContext = useMutation(api.private.updatePrivateContext);
@@ -659,6 +662,131 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       }
     },
     [user?.id, convexUser, latestBundle?.youJson, saveBundleFromForm]
+  );
+
+  const handleProjectDirectoryScaffold = useCallback(
+    async (trimmed: string, priorConversation: ChatMessage[], userMsg: ChatMessage) => {
+      if (!user?.id) return false;
+
+      const fallbackProjects = Array.isArray(userProfile?.projects)
+        ? (userProfile.projects as Array<Record<string, unknown>>)
+        : [];
+      const preview = buildProjectDirectoryScaffold(
+        (latestBundle?.youJson as Record<string, unknown>) || null,
+        fallbackProjects
+      );
+
+      setIsThinking(true);
+      clearSteps();
+      setThinkingCategory("building");
+      setThinkingPhrase("scaffolding your private project directories");
+
+      const scaffoldStepId = addStep(
+        "scaffolding project directories",
+        preview.projectCount > 0 ? `${preview.projectCount} projects` : undefined
+      );
+
+      try {
+        if (preview.projectCount === 0) {
+          failStep(scaffoldStepId, "no projects found");
+          const assistantContent =
+            "i don’t see any projects in your profile yet, so there’s nothing to scaffold under private/projects. add projects first, then i can build the folder tree in one shot.";
+          setMessages([...priorConversation, userMsg, { role: "assistant", content: assistantContent }]);
+          setDisplayMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: "assistant", content: assistantContent },
+          ]);
+          return true;
+        }
+
+        onPaneSwitch?.("edit");
+
+        const result = await scaffoldProjectDirectories({ clerkId: user.id });
+        const projectList = result.projectSlugs.join(", ");
+        const createdCount = result.createdPaths.length;
+
+        let assistantContent = "";
+        const notices: DisplayMessage[] = [];
+
+        if (!result.changed || createdCount === 0) {
+          completeStep(scaffoldStepId, "already scaffolded");
+          assistantContent = `your private/projects scaffold is already in place for ${result.projectCount} projects (${projectList}).`;
+        } else {
+          completeStep(scaffoldStepId, `${createdCount} files`);
+          assistantContent = `done. scaffolded private/projects for ${result.projectCount} projects and created ${createdCount} files across ${result.projectSlugs.length} directories (${projectList}).`;
+          notices.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[updated: ${createdCount} files under private/projects (${projectList})]`,
+          });
+          notices.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[saved as v${result.version}]`,
+          });
+
+          const publishStepId = addStep("publishing changes");
+          try {
+            await publishLatest({ clerkId: user.id });
+            completeStep(publishStepId);
+            notices.push({
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: "[published]",
+            });
+          } catch {
+            failStep(publishStepId, "failed");
+          }
+        }
+
+        const assistantMsg: ChatMessage = { role: "assistant", content: assistantContent };
+        setMessages([...priorConversation, userMsg, assistantMsg]);
+        setDisplayMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "assistant", content: assistantContent },
+          ...notices,
+        ]);
+
+        messageCountRef.current += 2;
+        if (user?.id) {
+          await upsertSession({
+            clerkId: user.id,
+            sessionId: sessionIdRef.current,
+            surface: "web",
+            messageCount: messageCountRef.current,
+          }).catch(() => {
+            // Non-fatal — session persistence failure should not break the shell
+          });
+        }
+
+        return true;
+      } catch (err) {
+        failStep(scaffoldStepId, "failed");
+        const assistantContent = `something went wrong while scaffolding your project directories. ${err instanceof Error ? err.message : "try again."}`;
+        setMessages([...priorConversation, userMsg, { role: "assistant", content: assistantContent }]);
+        setDisplayMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "assistant", content: assistantContent },
+        ]);
+        return true;
+      } finally {
+        setIsThinking(false);
+        clearSteps();
+      }
+    },
+    [
+      user?.id,
+      userProfile?.projects,
+      latestBundle?.youJson,
+      clearSteps,
+      addStep,
+      completeStep,
+      failStep,
+      onPaneSwitch,
+      scaffoldProjectDirectories,
+      publishLatest,
+      upsertSession,
+    ]
   );
 
   // ---------------------------------------------------------------------------
@@ -1603,13 +1731,6 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       { id: crypto.randomUUID(), role: "user", content: userContent },
     ]);
 
-    // Detect URLs/usernames in the message for auto-scraping
-    const detectedSources = detectSourcesInMessage(trimmed);
-    const newSources = detectedSources.filter(
-      (s) => !scrapedSourcesRef.current.has(`${s.platform}:${s.username || s.url}`)
-    );
-
-    const { systemMessage: liveSystemMessage, contextMessage: liveContextMessage } = buildTurnScaffold();
     const priorConversation = pruneResolvedMutationTurns(messagesRef.current.filter((message, index) => {
       if (index === 0 && message.role === "system") return false;
       if (
@@ -1621,9 +1742,25 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       }
       return true;
     }));
+    const userMsg: ChatMessage = { role: "user", content: trimmed };
+
+    if (trimmed && isProjectDirectoryScaffoldRequest(trimmed)) {
+      const handled = await handleProjectDirectoryScaffold(trimmed, priorConversation, userMsg);
+      if (handled) {
+        textareaRef.current?.focus();
+        return;
+      }
+    }
+
+    // Detect URLs/usernames in the message for auto-scraping
+    const detectedSources = detectSourcesInMessage(trimmed);
+    const newSources = detectedSources.filter(
+      (s) => !scrapedSourcesRef.current.has(`${s.platform}:${s.username || s.url}`)
+    );
+
+    const { systemMessage: liveSystemMessage, contextMessage: liveContextMessage } = buildTurnScaffold();
 
     // Add to conversation history
-    const userMsg: ChatMessage = { role: "user", content: trimmed };
     let updatedMessages = [liveSystemMessage, liveContextMessage, ...priorConversation, userMsg];
     setMessages([...priorConversation, userMsg]);
 
@@ -2371,7 +2508,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     setIsThinking(false);
     clearSteps();
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps, buildTurnScaffold, pruneResolvedMutationTurns]);
+  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps, buildTurnScaffold, pruneResolvedMutationTurns, handleProjectDirectoryScaffold]);
 
   return {
     // State
