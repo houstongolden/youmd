@@ -33,7 +33,7 @@ export default function SignInPage() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => addLine("you.md v0.1.0", "text-[hsl(var(--accent))]"), 200),
+      setTimeout(() => addLine("you.md", "text-[hsl(var(--accent))]"), 200),
       setTimeout(
         () =>
           addLine(
@@ -128,7 +128,7 @@ export default function SignInPage() {
         );
         addLine(
           <span className="text-[hsl(var(--text-secondary))] opacity-60">
-            {"\u2192"} redirecting to dashboard...
+            {"\u2192"} redirecting to shell...
           </span>
         );
         setStep("done");

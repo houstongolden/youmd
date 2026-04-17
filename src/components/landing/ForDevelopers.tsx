@@ -23,7 +23,7 @@ const useCases = [
 ];
 
 const integrationMethods = [
-  { label: "MCP server", code: "youmd mcp connect", desc: "agent serves identity context on demand" },
+  { label: "MCP server", code: "npx --yes youmd@latest mcp --install claude --auto", desc: "agent serves identity context on demand" },
   { label: "REST API", code: "GET /api/v1/profiles?username=x", desc: "structured identity data as JSON" },
   { label: "context links", code: "https://you.md/ctx/user/token", desc: "scoped, expiring identity access" },
   { label: "OAuth flow", code: "coming soon", desc: "\"sign in with you.md\" for AI-native apps" },
@@ -114,7 +114,7 @@ const ForDevelopers = () => (
             min-h-[44px] block — was 66x13 inline. */}
         <div className="text-center mt-8">
           <p className="font-mono text-[10px] text-muted-foreground/40">
-            -- MCP server + OAuth coming soon
+            -- OAuth coming soon. MCP is live now.
           </p>
           <a
             href="/docs"

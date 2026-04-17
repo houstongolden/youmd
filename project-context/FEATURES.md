@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-04-16
+Last Updated: 2026-04-17
 
 ## Core Platform
 
@@ -54,7 +54,9 @@ Last Updated: 2026-04-16
 | GET /.well-known/mcp.json | Done | Web-domain MCP discovery now proxied through Next to the Convex MCP discovery document |
 | POST /api/v1/mcp | Done | Web-domain MCP transport now proxied through Next to the Convex MCP server |
 | GET /ctx (context links) | Done |
-| POST /api/v1/chat (LLM proxy) | Done |
+| POST /api/v1/chat | Done | Web-domain chat proxy now exists through Next so the shell and docs can use same-origin API routes |
+| POST /api/v1/chat/ack | Done | Web-domain fast-ack proxy now exists through Next |
+| POST /api/v1/chat/stream | Done | Web-domain SSE chat proxy now exists through Next |
 | GET /api/v1/me | Done |
 | POST /api/v1/me/bundle | Done |
 | POST /api/v1/me/publish | Done |
@@ -163,6 +165,7 @@ Last Updated: 2026-04-16
 | Skill registry | Done | Convex tables (skills + skillInstalls), 9 HTTP endpoints, web SkillsPane — completed 2026-03-27 |
 | Ship-readiness audit evidence | In progress | Browser session auth, production shell hydration, production email delivery, real API-key issuance, and live CLI `whoami` parity now verified; broader web-agent personality/proactiveness audit still pending |
 | Browser-auth parity audit | In progress | Passwordless auth stack validated locally and on dev backend; production browser/dashboard parity still needs live verification after deploy |
+| Web shell first-response latency hardening | Done | Shell no longer waits on `/api/v1/chat/ack` before streaming the real answer, and blank streams now surface an explicit fallback message |
 
 ## Design System (PRD v2.3)
 

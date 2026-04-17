@@ -4,8 +4,8 @@
 
 import { CONVEX_SITE_URL } from "@/lib/constants";
 
-export const CHAT_PROXY_URL = `${CONVEX_SITE_URL}/api/v1/chat`;
-export const CHAT_ACK_URL = `${CONVEX_SITE_URL}/api/v1/chat/ack`;
+export const CHAT_PROXY_URL = "/api/v1/chat";
+export const CHAT_ACK_URL = "/api/v1/chat/ack";
 
 // --- Categorized Thinking Phrases (shuffled per session, never repeated) ---
 // Inspired by Claude Code — short, specific, never generic "thinking..." or "generating..."

@@ -77,6 +77,10 @@ Owner: Houston + coding agents
   - materializing scaffold/default markdown during decompile
   - rendering empty `preferences.writing` blocks as real file diffs
   - hashing public-profile JSON without the markdown variant, causing false `local ahead` status after a clean pull
+- The web shell was still serializing on `/api/v1/chat/ack`, which meant the "fast acknowledgement" added roughly 1.1s-1.2s of guaranteed latency before the main streamed response could even begin.
+- The web shell could still end a turn with no visible response if the model stream never emitted tokens or tool calls.
+- The web/docs/API story still contradicted itself because `/api/v1/chat*` was documented as a web surface while the actual routes only lived on the Convex hostname.
+- Active auth/shell/docs copy still had stale phrasing such as `v0.1.0`, `dashboard`, deprecated password endpoints, and a fake `youmd mcp connect` command.
 
 ### Still True / Still Important
 - The live MCP surface is currently small and public-read focused:
@@ -104,6 +108,10 @@ Owner: Houston + coding agents
   - `avatar_source`
 - Updated the web shell to prefer tool-use portrait updates before falling back to JSON parsing
 - Updated the agent instructions to tell the model to use the tool path first for portrait changes
+- Stopped blocking the main shell reply on `/api/v1/chat/ack`; the ACK now runs in parallel and only shows if the real response has not started yet
+- Added a visible fallback message when the model stream terminates without any text or tool calls instead of leaving the user with silent nothingness
+- Added same-origin Next proxies for `/api/v1/chat`, `/api/v1/chat/ack`, and `/api/v1/chat/stream`, then pointed the web shell at those routes so the shell, docs, and public API surface match
+- Synced active shell/auth/docs copy to the shipped product: no more stale `v0.1.0`, no more `redirecting to dashboard...`, no more deprecated password endpoint docs, and no more fake `youmd mcp connect`
 
 ### CLI Contract Tests
 - Reworked the API integration tests to validate the live production contract instead of hard-coding stale sample usernames and assuming every public profile has the same shape as Houston's
@@ -127,8 +135,10 @@ Owner: Houston + coding agents
 ### Stronger Than Before
 - Repo bootstrap / skill linking / MCP install flows
 - Public MCP discovery + transport story on the web domain
+- Public chat story on the web domain for the shell itself
 - Bundled-skill truth consistency between CLI and web shell messaging
 - Portrait mutation path reliability in the web shell
+- First visible shell response path, because the UI no longer forces the ACK to finish before streaming the real answer
 - Authenticated CLI/account flow:
   - fresh account creation
   - email/password login
@@ -143,7 +153,7 @@ Owner: Houston + coding agents
 - Local vs web parity audit beyond static/code inspection
 - Personality / proactiveness audit based on live interaction transcripts
 - Browser-based auth reliability in headless/QA conditions
-- Production verification after each deploy for the MCP web-domain proxy routes and auth shell behavior
+- Production verification after each deploy for the MCP + chat web-domain proxy routes and auth shell behavior
 
 ## Next Phase 1 Tasks
 - Verify `https://you.md/.well-known/mcp.json` and `https://you.md/api/v1/mcp` in production after each deploy

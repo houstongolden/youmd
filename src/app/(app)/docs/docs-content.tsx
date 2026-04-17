@@ -545,7 +545,7 @@ export default function DocsContent() {
                   href="/shell"
                   className="text-[hsl(var(--accent))] hover:opacity-80"
                 >
-                  dashboard
+                  shell
                 </Link>
                 , type <InlineCode>/share</InlineCode> to get your shareable
                 context link
@@ -681,12 +681,12 @@ export default function DocsContent() {
             <P>
               The core feature. Once your identity is built, share it with any AI
               agent in seconds. The <InlineCode>/share</InlineCode> command works
-              in both the web dashboard and the CLI.
+              in both the web shell and the CLI.
             </P>
 
             <H3 id="share-command">/share Command</H3>
             <P>
-              Type <InlineCode>/share</InlineCode> in either the web dashboard
+              Type <InlineCode>/share</InlineCode> in either the web shell
               terminal or inside <InlineCode>youmd chat</InlineCode> on the CLI.
               Both generate the same copyable block:
             </P>
@@ -714,10 +714,10 @@ preferences: terminal-native, monochrome
 
             <H3 id="context-links">Context Links</H3>
             <P>
-              Your public context is always available at{" "}
-              <InlineCode>you.md/ctx/[username]</InlineCode>. Any agent can
-              fetch this URL directly to load your context into their
-              conversation.
+              Shareable context links look like{" "}
+              <InlineCode>https://you.md/ctx/[username]/[token]</InlineCode>.
+              Any agent can fetch that scoped URL directly to load your context
+              into its conversation.
             </P>
 
             {/* ── Sync ─────────────────────────────────────── */}
@@ -729,14 +729,14 @@ preferences: terminal-native, monochrome
 
             <H3 id="web-cli-sync">Connecting Web + CLI</H3>
             <P>
-              The CLI uses the same email and password as the web app -- no
-              separate API token needed for your own account.
+              The CLI uses the same email and verification-code flow as the web
+              app -- no separate API token needed for your own account.
             </P>
             <StepList>
               <Step n={1}>Create your profile on either web or CLI</Step>
               <Step n={2}>
-                <InlineCode>youmd login</InlineCode> -- enter the same email and
-                password you use on the web
+                <InlineCode>youmd login</InlineCode> -- enter the same email you
+                use on the web, then paste the verification code
               </Step>
               <Step n={3}>
                 <InlineCode>youmd pull</InlineCode> downloads your web profile to
@@ -974,7 +974,7 @@ preferences: terminal-native, monochrome
 
             <H3 id="skills-cli">CLI Commands</H3>
             <P>
-              The <InlineCode>youmd skill</InlineCode> namespace has 16
+              The <InlineCode>youmd skill</InlineCode> namespace has 18 core
               subcommands covering the full skill lifecycle:
             </P>
             <CommandTable
@@ -985,6 +985,8 @@ preferences: terminal-native, monochrome
                 { cmd: "skill use NAME", desc: "Run a skill -- resolves {{vars}} and outputs the result" },
                 { cmd: "skill sync", desc: "Sync installed skills with your cloud bundle" },
                 { cmd: "skill create", desc: "Scaffold a new skill template" },
+                { cmd: "skill add NAME SOURCE", desc: "Register a new skill in your local catalog" },
+                { cmd: "skill push NAME", desc: "Push local skill changes back to their source" },
                 { cmd: "skill publish", desc: "Publish to the public registry" },
                 { cmd: "skill browse", desc: "Browse available skills in the registry" },
                 { cmd: "skill remote NAME", desc: "Preview a remote skill before installing" },
@@ -1118,13 +1120,20 @@ GET /api/v1/check-username?username=newuser
 # Resolve a context link (plain text for agents)
 GET /ctx/{username}/{token}
 
-# Register a new account
-POST /api/v1/auth/register
-{ "email": "...", "password": "...", "username": "...", "name": "..." }
+# Start passwordless auth
+POST /api/auth/send-verification
+{ "email": "...", "type": "login" }
 
-# Login
-POST /api/v1/auth/login
-{ "email": "...", "password": "..." }`}</CodeBlock>
+# Start passwordless signup
+POST /api/auth/send-verification
+{ "email": "...", "type": "signup", "username": "...", "displayName": "..." }
+
+# Verify code and optionally issue an API key
+POST /api/auth/verify-code
+{ "email": "...", "code": "...", "issueApiKey": true }
+
+# Read the current cookie-backed web session
+GET /api/auth/session`}</CodeBlock>
             <P>
               Context links at <InlineCode>/ctx/username/token</InlineCode>{" "}
               return identity context optimized for AI consumption. Use
@@ -1134,7 +1143,7 @@ POST /api/v1/auth/login
             <H3 id="authenticated-endpoints">Authenticated Endpoints</H3>
             <P>
               Include your API key as a Bearer token. Generate keys from the
-              dashboard (<InlineCode>/settings</InlineCode>) or via CLI (
+              shell (<InlineCode>/settings</InlineCode>) or via CLI (
               <InlineCode>youmd keys create</InlineCode>).
             </P>
             <CodeBlock title="HTTP">{`Authorization: Bearer ym_your_api_key_here
@@ -1267,7 +1276,7 @@ youmd mcp --json             # Print the exact MCP config JSON`}</CodeBlock>
               </div>
             </div>
             <P>
-              Access tokens can be generated from the dashboard via{" "}
+              Access tokens can be generated from the shell via{" "}
               <InlineCode>/tokens</InlineCode>. Each token has configurable scope
               and can be revoked at any time.
             </P>
@@ -1279,7 +1288,7 @@ youmd mcp --json             # Print the exact MCP config JSON`}</CodeBlock>
             {/* ── Dashboard Commands ────────────────────────── */}
             <H2 id="commands">Dashboard Commands</H2>
             <P>
-              The web dashboard terminal supports the following slash commands:
+              The web shell supports the following slash commands:
             </P>
             <CommandTable
               commands={[

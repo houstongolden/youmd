@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-04-17 — Web Shell Parity Hardening + Chat Surface Unification
+
+### Web Shell / Docs / UX
+- Removed a real source of shell sluggishness: the web app no longer waits for the fast `/chat/ack` call to finish before starting the main streamed reply, so responses can start as soon as the real model does
+- Added a visible fallback when the model stream dies without text or tool calls, which prevents the shell from leaving users staring at an empty/non-answer turn
+- Added same-origin web-domain proxies for `/api/v1/chat`, `/api/v1/chat/ack`, and `/api/v1/chat/stream`, so the shell, docs, and public API story now agree instead of quietly depending on a Convex-only hostname
+- Cleaned stale product copy across active surfaces: no more `v0.1.0` auth boot text, no more `redirecting to dashboard...` after sign-in, no more deprecated password auth endpoints in docs, and no more fake `youmd mcp connect` install guidance
+
+### Audit Notes
+- Measured the production fast-ack path at roughly 1.1-1.2s and the first streamed token at roughly 1.4-1.5s, which explained why the old shell sequencing felt slower than it should
+- Confirmed the deeper remaining release work is transcript-level product quality: tone, proactiveness, real mutation journeys, and local-vs-web parity — not auth plumbing
+
 ## 2026-04-16 — Production Passwordless Verification + Legacy Clerk Surface Retirement
 
 ### Auth / Reliability / Cleanup

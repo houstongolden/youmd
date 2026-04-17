@@ -1573,37 +1573,39 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       // Quick Haiku call (~1-2s) to acknowledge the user's message
       // and show what we'll do next. Makes the chat feel responsive.
       const ackMsgId = crypto.randomUUID();
-      try {
-        const existingYouJson = (latestBundle?.youJson as Record<string, unknown>) || null;
-        const userName = (existingYouJson?.identity as Record<string, unknown>)?.name as string ||
-          userProfile?.name || convexUser?.displayName || "";
-        const contextHint = userName ? `user: ${userName}` : "";
+      let mainResponseStarted = false;
+      const ackPromise = (async () => {
+        try {
+          const existingYouJson = (latestBundle?.youJson as Record<string, unknown>) || null;
+          const userName = (existingYouJson?.identity as Record<string, unknown>)?.name as string ||
+            userProfile?.name || convexUser?.displayName || "";
+          const contextHint = userName ? `user: ${userName}` : "";
 
-        const ackRes = await fetch(CHAT_ACK_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: trimmed, context: contextHint }),
-          signal: AbortSignal.timeout(5_000),
-        });
+          const ackRes = await fetch(CHAT_ACK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: trimmed, context: contextHint }),
+            signal: AbortSignal.timeout(5_000),
+          });
 
-        if (ackRes.ok) {
+          if (!ackRes.ok) return;
+
           const ackData = await ackRes.json();
           const ackText = ackData.ack || "";
 
-          if (ackText) {
-            // Show the fast ack as an assistant message immediately
-            // The ACK is the plan — no need for separate activity log steps
+          // Only inject the ACK while the main response has not started yet.
+          // Once streaming begins, the real response should own the surface.
+          if (ackText && !mainResponseStarted) {
             setDisplayMessages((prev) => [
               ...prev,
               { id: ackMsgId, role: "assistant", content: ackText },
             ]);
-            // Use ACK as the thinking phrase (replaces random rotation)
             setThinkingPhrase(ackText);
           }
+        } catch {
+          // ACK failed — non-fatal, continue with full response
         }
-      } catch {
-        // ACK failed — non-fatal, continue with full response
-      }
+      })();
 
       // ─── PHASE 2: SCRAPE + RESEARCH ──────────────────────────
       // If we detected new sources, scrape them FIRST and inject results
@@ -1799,6 +1801,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       const onFirstToken = () => {
         if (!firstTokenReceived) {
           firstTokenReceived = true;
+          mainResponseStarted = true;
           if (llmStepId) completeStep(llmStepId);
           setIsThinking(false);
           // Add a new message for the full response (ack stays above)
@@ -1812,9 +1815,26 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       // Stream response — thinking stays visible until first token
       const { text: response, toolCalls } = await callLLMStreaming(updatedMessages, streamMsgId, onFirstToken);
+      void ackPromise;
+
+      if (!response.trim() && toolCalls.length === 0) {
+        mainResponseStarted = true;
+        setIsThinking(false);
+        clearSteps();
+        setDisplayMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "hmm. the model never finished that response. try again in a second.",
+          },
+        ]);
+        return;
+      }
 
       // If no tokens came through (fallback path), clean up and show response
       if (!firstTokenReceived) {
+        mainResponseStarted = true;
         completeStep(llmStepId);
         setIsThinking(false);
         clearSteps();

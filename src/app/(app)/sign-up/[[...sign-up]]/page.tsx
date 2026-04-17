@@ -36,7 +36,7 @@ export default function SignUpPage() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => addLine("you.md v0.1.0", "text-[hsl(var(--accent))]"), 200),
+      setTimeout(() => addLine("you.md", "text-[hsl(var(--accent))]"), 200),
       setTimeout(
         () =>
           addLine(

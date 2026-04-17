@@ -1,7 +1,7 @@
 # You.md — Current State
 
-Last Updated: 2026-04-16
-Last Commit: b95bf6a (2026-04-16)
+Last Updated: 2026-04-17
+Last Commit: 49bcb95 (2026-04-16)
 
 ---
 
@@ -26,6 +26,7 @@ Last Commit: b95bf6a (2026-04-16)
 - Activity/security logs wired to real Convex data
 - Sources pane with real mutations (add URL, view status, pipeline stats)
 - Files pane with keyboard shortcuts (Cmd+S), markdown preview, create new file
+- Same-origin web chat routes for the shell: `/api/v1/chat`, `/api/v1/chat/ack`, and `/api/v1/chat/stream`
 
 ### CLI (youmd v0.6.0 — npm publish pending)
 - 21 commands (added `skill` with 19 subcommands)
@@ -92,6 +93,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Session compaction triggers at 120k chars but summary quality varies
 - Stale source detection warns at 7 days but doesn't auto-refresh
 - Agent sometimes says "the system handles that" instead of acting directly
+- Production still needs a final live verification pass that the faster web-shell sequencing feels better after redeploy
 
 ### UI Polish
 - Some text formatting issues in CLI (wrapping, alignment) — partially fixed in 0.4.8

@@ -2,7 +2,7 @@
 
 **Identity context protocol for the agent internet -- an MCP where the context is you.**
 
-Your identity file. One bundle. Every agent on earth knows who you are, how you work, and what you sound like. Public profile + private file system + skills + API.
+Your identity context protocol. One bundle. Every agent on earth knows who you are, how you work, and what you sound like. Public profile + private file system + skills + API.
 
 No more re-explaining yourself. No more starting from scratch.
 
@@ -310,8 +310,8 @@ POST   /api/v1/verify-identity     # Cross-reference verification
 ### Auth
 
 ```bash
-POST   /api/v1/auth/register       # Create account from CLI
-POST   /api/v1/auth/login          # Login from CLI (returns API key)
+POST   /api/auth/send-verification # Start passwordless login/signup
+POST   /api/auth/verify-code       # Verify code, establish session, optionally issue API key
 POST   /api/v1/chat                # Onboarding chat proxy
 POST   /api/v1/chat/stream         # Streaming chat via SSE
 ```
@@ -325,7 +325,7 @@ POST   /api/v1/chat/stream         # Streaming chat via SSE
 | Full identity bundle | yes | yes |
 | Public profile page | yes | yes |
 | CLI access (all commands) | yes | yes |
-| Skills (install + use) | 4 bundled | unlimited + registry |
+| Skills (install + use) | 6 bundled | unlimited + registry |
 | API (read:public) | 1 key | unlimited keys, all scopes |
 | Context links | public scope | public + full scope |
 | Private vault | local only | synced + encrypted |

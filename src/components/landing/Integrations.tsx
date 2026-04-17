@@ -20,8 +20,8 @@ const agents = [
 const methods = [
   { label: "context links", desc: "paste a URL, agent reads your identity" },
   { label: "MCP server", desc: "youmd agent serves context on demand" },
-  { label: "plain text", desc: "/ctx/username returns raw markdown" },
-  { label: "JSON API", desc: "/api/you/v1/username returns structured data" },
+  { label: "plain text", desc: "/ctx/username/token returns scoped agent-ready text" },
+  { label: "JSON API", desc: "/api/v1/profiles?username=x returns structured identity" },
 ];
 
 const Integrations = () => (

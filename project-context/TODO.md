@@ -1,6 +1,6 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-04-06
+Last Updated: 2026-04-17
 PRD Version: 2.3
 
 ---
@@ -207,9 +207,13 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Complete the first ship-readiness evidence pass: CLI/bootstrap smoke tests, live MCP/API checks, and a tracked audit doc
 - [x] Complete authenticated production CLI hard-smoke coverage for `register`, `login`, `login --key`, `whoami`, `push`, `pull`, `diff`, `status`, `keys list`, and `sync`
 - [x] Fix CLI public-profile ingestion + round-trip correctness (`application/vnd.you-md.v1+json`, public markdown fetch, clean publish→pull→diff, accurate local publish/sync state)
+- [x] Fix web-shell response sequencing so the main answer no longer waits on `/api/v1/chat/ack`
+- [x] Add same-origin web proxies for `/api/v1/chat`, `/api/v1/chat/ack`, and `/api/v1/chat/stream` so the shell/docs/public API surface are consistent
+- [x] Remove stale active auth/shell/docs copy (`v0.1.0`, `dashboard`, dead password endpoints, fake MCP command)
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
 - [ ] Deploy the passwordless auth migration to production and verify real-domain browser/dashboard parity
 - [ ] Remove or rewrite remaining Clerk-specific docs/comments/webhooks/password endpoints so the repo no longer describes the old auth model as current
+- [ ] Run transcript-level local CLI vs web shell parity prompts and capture tone/proactiveness gaps with concrete repros
 - [ ] Design global `~/.you/` plus repo-local `.you/` ownership model and migration path from `.youmd`
 - [ ] Extend the validated cross-agent stack-sync pattern beyond repo bootstrap into global/shared instruction mirroring, portable overlap settings, and persistent stack inventory
 

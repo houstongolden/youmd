@@ -23,7 +23,7 @@ function clearCookie(name: string): void {
 /* ── Boot sequence items ───────────────────────────────────── */
 
 const BOOT_SEQUENCE = [
-  { text: "you.md v0.1.0", className: "text-[hsl(var(--accent))]", delay: 200 },
+  { text: "you.md", className: "text-[hsl(var(--accent))]", delay: 200 },
   { text: "identity context protocol for the agent internet", className: "text-[hsl(var(--text-secondary))] opacity-60", delay: 500 },
   { text: "", delay: 700 },
   { text: "loading identity protocol...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 900 },
@@ -279,7 +279,7 @@ instructions for this greeting:
         >
           <TerminalHeader title="you.md — agent" asHeading />
 
-          {/* Skip to dashboard */}
+          {/* Skip to shell */}
           <div className="flex items-center justify-between px-4 py-1.5 border-b border-[hsl(var(--border))]">
             <span className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-50">
               onboarding @{username}
