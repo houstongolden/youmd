@@ -222,6 +222,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Verify the live post-login shell bootstrap path end-to-end on production (`/api/auth/session` + Convex user/profile/private/bundle queries)
 - [x] Verify the authenticated production bundle really contains the scaffolded `projects/*/{README,context,prd,todo}.md` files instead of only claiming to
 - [x] Support configurable verified passwordless email senders via `AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL` and surface a clearer error when Resend is still in testing mode
+- [x] Upgrade the web shell thinking indicator so it keeps a braille spinner alive, rotates through subtask-aware status text, adds a sweep/shimmer effect to the active line, and shows completions more clearly in real time
 - [ ] Configure a verified production email sender for passwordless auth so non-owner accounts and aliases can actually receive login/signup codes
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
 - [ ] Remove or rewrite remaining Clerk-specific docs/comments/webhooks/password endpoints so the repo no longer describes the old auth model as current
@@ -246,6 +247,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 ### Agent Intelligence Polish
 - [ ] You Agent personality tuning (more wit, less generic)
 - [ ] Agent acts directly, never says "the system handles that"
+- [ ] Keep the web shell's live thinking/progress UX feeling as crisp and legible as Codex/Claude Code during long-running multi-step work
 - [ ] Show ASCII portrait in web chat when switched or created
 - [ ] Conversational portrait management working end-to-end
 - [ ] Custom sections via agent conversation (flexible, not rigid 13 sections)

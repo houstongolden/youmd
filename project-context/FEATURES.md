@@ -176,6 +176,7 @@ Last Updated: 2026-04-17
 | Ship-readiness audit evidence | In progress | Browser session auth, production shell hydration, production email delivery, real API-key issuance, live CLI `whoami` parity, local browser auth re-verification, and a fixed browser-level mutation replay repro are now verified; broader web-agent personality/proactiveness audit still pending |
 | Browser-auth parity audit | Done | Passwordless auth stack now validated locally, on dev, and in a fresh real browser session on `you.md`; remaining quality work is shell behavior/personality, not browser auth plumbing |
 | Web shell first-response latency hardening | Done | Shell no longer waits on `/api/v1/chat/ack` before streaming the real answer, and blank streams now surface an explicit fallback message |
+| Web shell thinking animation parity | Done | Active thinking line now rotates through subtask-aware phrases with a sweep/shimmer treatment, and the activity log keeps running work visually prominent in real time |
 
 ## Design System (PRD v2.3)
 

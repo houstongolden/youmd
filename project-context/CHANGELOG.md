@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-04-17 — Web Shell Thinking Animation Upgrade
+
+### Shell / Progress UX
+- Upgraded the web shell thinking indicator so it behaves more like Codex or Claude Code during real work instead of freezing on one stale label
+- Kept the braille spinner alive while the agent is working, rotated the main status line through active and recently completed subtasks, and preserved elapsed timing without resetting on every phrase swap
+- Added a sweep/shimmer treatment to the active thinking line and running activity labels so the shell looks visibly alive while long-running work is in flight
+- Reordered the activity log to keep running work at the top, then errors, then completed steps, which makes real-time progress easier to scan during multi-step tasks
+- Rebuilt the app successfully after the shell UX pass to confirm the animation/state changes are production-safe
+
 ## 2026-04-17 — Production Shell Verification + Passwordless Sender Hardening
 
 ### Shell / Auth / Release Readiness

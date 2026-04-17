@@ -17,6 +17,7 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - SiteNav top bar across all pages
 - /initialize onboarding boot sequence + agent conversation
 - You Agent chat with streaming responses, thinking indicators, progress steps
+- The shell thinking line now rotates through active/completed subtask-aware phrases with a live braille spinner and sweep/shimmer treatment instead of freezing on one stale status string
 - Markdown file vault (browse, edit, save identity files)
 - Memory system (auto-capture, recall, search, /memory + /recall commands)
 - Session persistence (messages survive page refresh)

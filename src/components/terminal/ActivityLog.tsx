@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export interface ProgressStep {
   id: string;
@@ -26,9 +26,37 @@ const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", 
 export function ActivityLog({ steps }: ActivityLogProps) {
   if (steps.length === 0) return null;
 
+  const orderedSteps = useMemo(() => {
+    const running = steps.filter((step) => step.status === "running");
+    const errors = steps.filter((step) => step.status === "error");
+    const done = steps.filter((step) => step.status === "done");
+    return [...running, ...errors, ...done];
+  }, [steps]);
+
   return (
     <div className="space-y-0">
-      {steps.map((step) => (
+      <style>{`
+        @keyframes youmdActivitySweep {
+          0% { background-position: 150% 50%; }
+          100% { background-position: -50% 50%; }
+        }
+        .youmd-activity-sweep {
+          background-image: linear-gradient(
+            90deg,
+            hsl(var(--accent) / 0.52) 0%,
+            hsl(var(--accent) / 0.7) 35%,
+            hsl(var(--text-primary) / 0.98) 50%,
+            hsl(var(--accent) / 0.7) 65%,
+            hsl(var(--accent) / 0.52) 100%
+          );
+          background-size: 230% 100%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          animation: youmdActivitySweep 2.2s linear infinite;
+        }
+      `}</style>
+      {orderedSteps.map((step) => (
         <ActivityStep key={step.id} step={step} />
       ))}
     </div>
@@ -89,7 +117,7 @@ function ActivityStep({ step }: { step: ProgressStep }) {
         <span
           className={
             step.status === "running"
-              ? "text-[hsl(var(--accent))]"
+              ? "youmd-activity-sweep"
               : step.status === "done"
                 ? "text-[hsl(var(--text-secondary))]"
                 : "text-[hsl(var(--accent))]"

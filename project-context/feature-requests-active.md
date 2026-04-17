@@ -161,6 +161,12 @@ Last Updated: 2026-04-17
 **Request:** BrailleSpinners/live animation on every step, not just web crawling. Every time agent is working, user sees activity.
 **Verification:** Any agent operation (save, compile, scrape, LLM call) shows progress indicator.
 
+### 53. Shell thinking indicator should feel like Codex/Claude Code
+**Status:** DONE
+**Verified:** NO
+**Request:** Keep the braille loading animation alive while the agent is working, rotate through unique subtask-aware status text instead of one stale phrase, add a text sweep/shimmer effect to the active line, and show completed work in real time so the shell feels as alive and transparent as Codex or Claude Code.
+**Verification:** In the web shell, trigger a multi-step task. The top thinking line keeps animating, rotates through active/completed subtask phrases while work is in progress, and the activity log visibly reorders/emphasizes running vs completed steps instead of freezing on one generic status.
+
 ---
 
 ## SEO/AEO (from March 24-25)
