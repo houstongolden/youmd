@@ -3,6 +3,53 @@
 Status: Phase 1 hardening pass substantially complete
 Owner: Houston + coding agents
 
+## 2026-04-17 Continuation — Deploy Verification + Web-Shell Mutation Audit
+
+### Additional Verification
+- Verified the Vercel deployment for commit `dd0aabe` reached `Ready` via `vercel inspect`, including the expected live routes:
+  - `/api/v1/chat`
+  - `/api/v1/chat/ack`
+  - `/api/v1/chat/stream`
+  - `/api/v1/mcp`
+- Verified the live web-domain chat proxies respond in production:
+  - `POST https://www.you.md/api/v1/chat/ack` → `200`
+  - `POST https://www.you.md/api/v1/chat` → `200`
+- Verified the deployed docs page reflects the current passwordless auth and skill command surfaces rather than the removed legacy/password flow.
+- Ran direct authenticated shell-mutation probes against a disposable account using the real web-shell system prompt and the live streaming route:
+  - custom section + memory save
+  - portrait update
+  - `fetch_website`
+
+### New Findings Confirmed
+- Local web auth had a real parity bug when the app was run locally against a remote Convex deployment:
+  - the session route signed Convex JWTs with `iss=http://localhost:3000`
+  - remote Convex rejected them with `NoAuthProvider`
+- Web-shell custom section saves were destructive:
+  - the shell saved partial `youJson` containing only `custom_sections`
+  - public profile responses then lost the rest of the compiled identity payload until another full bundle save restored it
+- The live streaming model often emits valid tool calls with almost no useful user-facing follow-through text:
+  - custom section + memory mutation returned only `on it.`
+  - portrait update and `fetch_website` could return no natural-language response at all
+
+### Additional Fixes Landed
+- Split auth issuer logic from local app URL semantics:
+  - local web dev can still use localhost links/cookies
+  - but Convex JWT signing now falls back to `https://you.md` when the app is pointed at a remote Convex deployment
+  - `AUTH_APP_URL` now takes precedence for auth-link generation so local link targets no longer have to piggyback on JWT issuer configuration
+- Moved web-shell custom section persistence onto the normal bundle compile/save/publish path:
+  - custom sections now merge with existing compiled bundle data
+  - they no longer clobber `profile.youJson`
+  - they now ride the same versioned/published workflow as other shell-written identity updates
+- Added deterministic follow-through copy synthesis in the web shell for terse tool-only turns:
+  - updates
+  - custom sections
+  - memory saves
+  - website fetches
+  - portrait changes
+
+### Remaining Caveat
+- The currently running local Next dev process was stale while this continuation pass was in progress, so direct browser-level confirmation of the new local session-token issuer behavior still needs one clean restart/retest cycle.
+
 ## What Was Actually Tested
 
 ### Local CLI / Skill / MCP

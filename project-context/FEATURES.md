@@ -9,6 +9,7 @@ Last Updated: 2026-04-17
 | Open spec you-md/v1 | Done | Directory-based identity bundles |
 | Convex backend | Done | Reactive, serverless, TypeScript-native |
 | Passwordless auth migration | Done | First-party email-code auth, sessions, custom JWT/JWKS. Local/dev validated and production browser + CLI parity hard-smoked |
+| Remote-Convex local auth guard | Done | Local web sessions now mint `https://you.md` Convex JWT issuers when the app is pointed at a remote Convex deployment, avoiding `NoAuthProvider` auth failures during local web QA |
 | Username claim | Done | Auto-claim via /initialize (no manual form) |
 | Bundle compilation | Done | Server-side via convex/lib/compile.ts |
 | Bundle publishing | Done | Version tracking, unpublish previous |
@@ -77,6 +78,8 @@ Last Updated: 2026-04-17
 | "building" thinking category | Done | 10 new phrases for directive/identity construction |
 | Enhanced activity simulation | Done | 7 granular sub-steps during LLM wait (vs 3), faster rotation |
 | Portrait updates via tool_use | Done | Web shell now supports portrait/avatar changes on the primary `update_profile` tool path, with JSON fallback only when tools are unavailable |
+| Versioned custom-section saves | Done | Web shell custom sections now merge into the compiled bundle + publish path instead of partially overwriting `profile.youJson` |
+| Tool-only shell response synthesis | Done | When the model emits valid tool calls but little/no natural-language follow-through, the web shell now synthesizes concrete confirmation copy for updates, memories, fetches, and portrait changes |
 
 ## Intelligent Model Routing
 

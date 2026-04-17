@@ -1241,7 +1241,8 @@ export function buildProfileContext(youJson: Record<string, unknown> | null, rec
 export function buildProfileDataFromUpdates(
   updates: SectionUpdate[],
   existingJson: Record<string, unknown> | null,
-  username: string
+  username: string,
+  customSections: CustomSection[] = []
 ): Record<string, unknown> {
   const identity = (existingJson?.identity as Record<string, unknown>) || {};
   const bio = (identity.bio as Record<string, string>) || {};
@@ -1251,6 +1252,8 @@ export function buildProfileDataFromUpdates(
   const existingLinks = (existingJson?.links as Record<string, string>) || {};
   const existingPrefs = (existingJson?.preferences as Record<string, Record<string, unknown>>) || {};
   const existingDirectives = (existingJson?.agent_directives as Record<string, unknown>) || {};
+  const existingCustomSections =
+    (existingJson?.custom_sections as Array<Record<string, string>> | undefined) || [];
 
   const profileData: Record<string, unknown> = {
     name: (identity.name as string) || "",
@@ -1283,7 +1286,22 @@ export function buildProfileDataFromUpdates(
       decision_framework: (existingDirectives.decision_framework as string) || "",
       current_goal: (existingDirectives.current_goal as string) || "",
     },
+    customSections: existingCustomSections.map((section) => ({
+      id: section.id || "",
+      title: section.title || section.id || "",
+      content: section.content || "",
+    })),
   };
+
+  if (customSections.length > 0) {
+    const merged = [...(profileData.customSections as CustomSection[])];
+    for (const section of customSections) {
+      const idx = merged.findIndex((existing) => existing.id === section.id);
+      if (idx >= 0) merged[idx] = section;
+      else merged.push(section);
+    }
+    profileData.customSections = merged;
+  }
 
   for (const update of updates) {
     const content = update.content

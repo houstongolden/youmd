@@ -534,14 +534,15 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
   // Save updates to Convex
   const saveUpdates = useCallback(
-    async (updates: SectionUpdate[]) => {
+    async (updates: SectionUpdate[], customSections: CustomSection[] = []) => {
       if (!user?.id || !convexUser) return;
 
       try {
         const profileData = buildProfileDataFromUpdates(
           updates,
           (latestBundle?.youJson as Record<string, unknown>) || null,
-          convexUser.username
+          convexUser.username,
+          customSections
         );
 
         const result = await saveBundleFromForm({
@@ -1855,6 +1856,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         .replace(/^\n+/, "")          // strip leading blank lines
         .replace(/\n+$/, "")          // strip trailing blank lines
         .trim();
+      let finalAssistantDisplay = cleanDisplay;
+      let savedMemoryCount = 0;
+      let updatedPortraitSource: string | null = null;
+      let fetchedWebsiteCount = 0;
 
       setDisplayMessages(prev => prev.map(m =>
         m.id === streamMsgId ? { ...m, content: cleanDisplay } : m
@@ -1876,6 +1881,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       const updates = toolCalls.length > 0
         ? toolCalls.filter(tc => tc.name === "update_profile").flatMap(tc => tc.input.updates || [])
         : jsonUpdates;
+      const toolCustomSections = toolCalls
+        .filter(tc => tc.name === "update_profile")
+        .flatMap(tc => tc.input.custom_sections || []);
+      const customSections = toolCustomSections.length > 0
+        ? toolCustomSections
+        : parseCustomSectionsFromResponse(response);
+      const updatedSectionLabels = updates.map((u) => sectionLabel(u.section));
+      const customSectionTitles = customSections.map((section) => section.title);
 
       // LYING DETECTION: if the assistant claimed PAST-TENSE completed actions but
       // didn't actually emit any updates via tool_use OR JSON blocks, warn the user.
@@ -1904,9 +1917,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
-      if (updates.length > 0) {
+      if (updates.length > 0 || customSections.length > 0) {
         const sectionNames = updates
           .map((u) => sectionLabel(u.section))
+          .concat(customSections.map((section) => `${section.title} section`))
           .join(", ");
         newDisplayMsgs.push({
           id: crypto.randomUUID(),
@@ -1915,7 +1929,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         });
 
         const saveStepId = addStep("saving profile updates", sectionNames);
-        const result = await saveUpdates(updates);
+        const result = await saveUpdates(updates, customSections);
         if (result) {
           completeStep(saveStepId, `v${result.version}`);
           newDisplayMsgs.push({
@@ -1942,12 +1956,15 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         } else {
           failStep(saveStepId, "no changes");
         }
+        if (customSections.length > 0) {
+          const titles = customSections.map(section => section.title).join(", ");
+          newDisplayMsgs.push({
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[added custom section${customSections.length > 1 ? "s" : ""}: ${titles}]`,
+          });
+        }
       }
-
-      // Handle custom sections from tool_use calls (Anthropic path)
-      const toolCustomSections = toolCalls
-        .filter(tc => tc.name === "update_profile")
-        .flatMap(tc => tc.input.custom_sections || []);
 
       // Handle private updates from tool_use calls (Anthropic path)
       const toolPrivateUpdates = toolCalls
@@ -2031,6 +2048,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         ? toolMemories.map((m) => ({ category: m.category, content: `${m.key}: ${m.value}`, tags: [m.category] as string[] }))
         : parseMemorySavesFromResponse(response).map((ms) => ({ category: ms.category, content: ms.content, tags: ms.tags || [] }));
       if (memorySaves.length > 0 && user?.id) {
+        savedMemoryCount = memorySaves.length;
         const memStepId = addStep("saving memories", `${memorySaves.length} ${memorySaves.length === 1 ? "memory" : "memories"}`);
         try {
           await saveMemories({
@@ -2083,6 +2101,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           completeStep(fetchStepId, `${scrapeResults.length} fetched`);
 
           if (scrapeResults.length > 0) {
+            fetchedWebsiteCount = scrapeResults.length;
             // Inject scrape results back into conversation so agent sees real data
             const scrapeMsg: ChatMessage = {
               role: "user",
@@ -2114,6 +2133,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         .at(-1);
       const portraitUpdate = toolPortraitUpdate || parsePortraitUpdateFromResponse(response);
       if (portraitUpdate && user?.id && userProfile?._id) {
+        updatedPortraitSource = portraitUpdate.source;
         const portraitStepId = addStep("updating portrait", portraitUpdate.source);
         try {
           await updateProfile({
@@ -2138,42 +2158,28 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
-      // Handle custom sections — tool_use first, then JSON block fallback
-      const customSections = toolCustomSections.length > 0
-        ? toolCustomSections
-        : parseCustomSectionsFromResponse(response);
-      if (customSections.length > 0 && user?.id && userProfile?._id) {
-        const csStepId = addStep("saving custom sections", `${customSections.length} section${customSections.length > 1 ? "s" : ""}`);
-        try {
-          // Merge with existing custom sections on the profile
-          const existingCustom = ((userProfile as Record<string, unknown>)?.youJson as Record<string, unknown>)?.custom_sections as CustomSection[] || [];
-          const merged = [...existingCustom];
-          for (const cs of customSections) {
-            const idx = merged.findIndex(e => e.id === cs.id);
-            if (idx >= 0) {
-              merged[idx] = cs; // update existing
-            } else {
-              merged.push(cs); // add new
-            }
-          }
-          // Save via the profile update (youJson field)
-          await updateProfile({
-            profileId: userProfile._id,
-            clerkId: user.id,
-            youJson: {
-              ...((userProfile as Record<string, unknown>)?.youJson as Record<string, unknown> || {}),
-              custom_sections: merged,
-            },
-          });
-          completeStep(csStepId);
-          const titles = customSections.map(cs => cs.title).join(", ");
-          newDisplayMsgs.push({
-            id: crypto.randomUUID(),
-            role: "system-notice",
-            content: `[added custom section${customSections.length > 1 ? "s" : ""}: ${titles}]`,
-          });
-        } catch {
-          failStep(csStepId, "failed");
+      if (toolCalls.length > 0 && finalAssistantDisplay.length < 24) {
+        const clauses: string[] = [];
+        if (updatedSectionLabels.length > 0 || customSectionTitles.length > 0) {
+          const targets = updatedSectionLabels
+            .concat(customSectionTitles.map((title) => `${title.toLowerCase()} section`))
+            .join(", ");
+          clauses.push(`updated ${targets}`);
+        }
+        if (savedMemoryCount > 0) {
+          clauses.push(`saved ${savedMemoryCount} ${savedMemoryCount === 1 ? "memory" : "memories"}`);
+        }
+        if (fetchedWebsiteCount > 0) {
+          clauses.push(`pulled ${fetchedWebsiteCount} site${fetchedWebsiteCount === 1 ? "" : "s"} into context`);
+        }
+        if (updatedPortraitSource) {
+          clauses.push(`switched your portrait to ${updatedPortraitSource}`);
+        }
+        if (clauses.length > 0) {
+          finalAssistantDisplay = `${clauses.join(", ")}.`;
+          setDisplayMessages(prev => prev.map(m =>
+            m.id === streamMsgId ? { ...m, content: finalAssistantDisplay } : m
+          ));
         }
       }
 

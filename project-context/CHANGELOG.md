@@ -1,5 +1,19 @@
 # You.md — Changelog
 
+## 2026-04-17 — Deploy Verification + Web-Shell Mutation Reliability
+
+### Web Shell / Auth / QA
+- Verified the Vercel deploy for the web-shell parity hardening commit reached `Ready`, and confirmed the live web-domain chat routes (`/api/v1/chat`, `/api/v1/chat/ack`, `/api/v1/chat/stream`) are responding in production
+- Fixed a real local web-auth parity bug: when local Next was pointed at a remote Convex deployment, the app could mint `localhost`-issued Convex JWTs that the remote backend rejected with `NoAuthProvider`
+- Split local auth-link targeting from JWT issuer semantics so localhost can still be used for verification links/cookies while remote Convex auth continues to use the production issuer
+- Fixed a destructive web-shell mutation path where saving custom sections could overwrite `profile.youJson` with only `custom_sections`, effectively wiping the rest of the public identity payload until another full bundle save repaired it
+- Moved custom-section persistence onto the same versioned bundle compile/save/publish path as normal shell-written profile updates, so custom sections now preserve the rest of the user's compiled identity state
+- Hardened the shell against tool-only non-answers: when the model emits real tool calls but returns empty or ultra-short copy, the UI now synthesizes concrete follow-through text for updates, memories, fetches, and portrait changes
+
+### Audit Notes
+- Direct live mutation probes confirmed the model often does the right thing structurally but still under-communicates after tool execution; the shell now patches that gap instead of leaving the user with `on it.` or silence
+- A clean browser-level re-test of the local web auth flow is still needed after restarting the stale dev server process that was already running during this continuation pass
+
 ## 2026-04-17 — Web Shell Parity Hardening + Chat Surface Unification
 
 ### Web Shell / Docs / UX

@@ -24,14 +24,42 @@ function normalizePem(value: string | undefined) {
   return value?.replace(/\\n/g, "\n").trim();
 }
 
+function looksLocalUrl(value: string | undefined) {
+  if (!value) return false;
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(value.trim());
+}
+
+function usesRemoteConvex() {
+  const convexUrl =
+    process.env.NEXT_PUBLIC_CONVEX_URL?.trim() ||
+    process.env.CONVEX_URL?.trim() ||
+    "";
+  if (!convexUrl) return false;
+  return !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(convexUrl);
+}
+
 function getIssuerBaseUrl() {
-  return (
-    process.env.AUTH_ISSUER_URL?.trim() ||
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    (process.env.NODE_ENV === "development"
-      ? "http://localhost:3000"
-      : "https://you.md")
-  );
+  const explicitIssuer = process.env.AUTH_ISSUER_URL?.trim();
+  if (explicitIssuer) {
+    // Local web dev commonly points at a remote Convex deployment. In that
+    // setup, minting localhost-issued JWTs makes Convex reject every request
+    // with `NoAuthProvider`. Keep localhost app URLs for links/cookies, but
+    // sign tokens for the remote issuer unless the backend is also local.
+    if (looksLocalUrl(explicitIssuer) && usesRemoteConvex()) {
+      return "https://you.md";
+    }
+    return explicitIssuer;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return "https://you.md";
+  }
+
+  if (usesRemoteConvex()) {
+    return "https://you.md";
+  }
+
+  return "http://localhost:3000";
 }
 
 function getKeyPair() {
