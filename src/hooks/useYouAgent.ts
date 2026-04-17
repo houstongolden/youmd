@@ -149,6 +149,107 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     messagesRef.current = messages;
   }, [messages]);
 
+  const buildAuthoritativeProfileContext = useCallback(() => {
+    const memoryContext = (recentMemories ?? []).map((m) => ({
+      category: m.category,
+      content: m.content,
+      tags: m.tags,
+    }));
+
+    let profileContext = buildProfileContext(
+      (latestBundle?.youJson as Record<string, unknown>) || null,
+      memoryContext.length > 0 ? memoryContext : undefined
+    );
+
+    if (userProfile && profileContext === "the user has no existing profile data yet.") {
+      const parts: string[] = ["here is what we know about the user:"];
+      if (userProfile.name) parts.push(`name: ${userProfile.name}`);
+      if (convexUser?.username) parts.push(`username: @${convexUser.username}`);
+      if (userProfile.tagline) parts.push(`tagline: ${userProfile.tagline}`);
+      if (userProfile.location) parts.push(`location: ${userProfile.location}`);
+      if (userProfile.bio) {
+        const bio = userProfile.bio as Record<string, string>;
+        if (bio.long) parts.push(`bio: ${bio.long}`);
+        else if (bio.medium) parts.push(`bio: ${bio.medium}`);
+        else if (bio.short) parts.push(`bio: ${bio.short}`);
+      }
+      const profileLinks = userProfile.links as Record<string, string> | undefined;
+      if (profileLinks) {
+        const linkEntries = Object.entries(profileLinks).filter(([, value]) => value);
+        if (linkEntries.length > 0) {
+          parts.push(`links: ${linkEntries.map(([key, value]) => `${key}: ${value}`).join(", ")}`);
+        }
+      }
+      const profileNow = userProfile.now as string[] | undefined;
+      if (profileNow && profileNow.length > 0) {
+        parts.push(`current focus: ${profileNow.join(", ")}`);
+      }
+      const profileProjects = userProfile.projects as Array<Record<string, string>> | undefined;
+      if (profileProjects && profileProjects.length > 0) {
+        parts.push(`projects: ${profileProjects.map((project) => `${project.name} (${project.status || "active"})${project.description ? ` — ${project.description}` : ""}`).join("; ")}`);
+      }
+      if (userProfile.avatarUrl) parts.push("has profile image from social media");
+      if (parts.length > 1) profileContext = parts.join("\n");
+    }
+
+    return profileContext;
+  }, [recentMemories, latestBundle?.youJson, userProfile, convexUser?.username]);
+
+  const buildTurnScaffold = useCallback(() => {
+    const profileContext = buildAuthoritativeProfileContext();
+    return {
+      profileContext,
+      systemMessage: {
+        role: "system" as const,
+        content: `${SYSTEM_PROMPT}\n\n--- THIS USER'S IDENTITY CONTEXT ---\n\n${profileContext}`,
+      },
+      contextMessage: {
+        role: "user" as const,
+        content:
+          `[CURRENT PROFILE SNAPSHOT — authoritative latest saved state. ` +
+          `If earlier conversation turns conflict with this snapshot, trust this snapshot. ` +
+          `Treat completed mutations in this snapshot as already done, and do not repeat or re-apply them unless the user explicitly asks again.]\n\n${profileContext}`,
+      },
+    };
+  }, [buildAuthoritativeProfileContext]);
+
+  const pruneResolvedMutationTurns = useCallback((conversation: ChatMessage[]) => {
+    const pruned: ChatMessage[] = [];
+
+    const isMutationRequest = (content: string) => {
+      const normalized = content.toLowerCase();
+      const hasMutationVerb =
+        /\b(add|create|make|update|change|set|save|remember|switch|use)\b/.test(normalized);
+      const hasMutationTarget =
+        /\b(custom section|section called|portrait|avatar|profile image|profile photo|private note|private context|bio|tagline|location|link|links|project|directive|memory)\b/.test(normalized);
+      return hasMutationVerb && hasMutationTarget;
+    };
+
+    const isCompletedMutationReply = (content: string) =>
+      /\b(updated|saved|added|switched|set|created|generated)\b/i.test(content);
+
+    for (let index = 0; index < conversation.length; index += 1) {
+      const current = conversation[index];
+      const next = conversation[index + 1];
+
+      if (
+        current.role === "user" &&
+        typeof current.content === "string" &&
+        next?.role === "assistant" &&
+        typeof next.content === "string" &&
+        isMutationRequest(current.content) &&
+        isCompletedMutationReply(next.content)
+      ) {
+        index += 1;
+        continue;
+      }
+
+      pruned.push(current);
+    }
+
+    return pruned;
+  }, []);
+
   // Auto-rotate thinking phrases while agent is working
   const thinkingCategoryRef = useRef<ThinkingCategory | undefined>(undefined);
   useEffect(() => {
@@ -625,56 +726,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     // For dashboard, we wait for latestBundle to be defined (can be null)
     if (!isOnboarding && latestBundle === undefined) return;
 
-    // Build context from BOTH profiles table and bundles table
-    const memoryContext = (recentMemories ?? []).map((m) => ({
-      category: m.category,
-      content: m.content,
-      tags: m.tags,
-    }));
-    let profileContext = buildProfileContext(
-      (latestBundle?.youJson as Record<string, unknown>) || null,
-      memoryContext.length > 0 ? memoryContext : undefined
-    );
-
-    // Enrich with data from profiles table (from /create flow)
-    if (userProfile && profileContext === "the user has no existing profile data yet.") {
-      const parts: string[] = ["here is what we know about the user:"];
-      if (userProfile.name) parts.push(`name: ${userProfile.name}`);
-      if (convexUser?.username) parts.push(`username: @${convexUser.username}`);
-      if (userProfile.tagline) parts.push(`tagline: ${userProfile.tagline}`);
-      if (userProfile.location) parts.push(`location: ${userProfile.location}`);
-      if (userProfile.bio) {
-        const bio = userProfile.bio as Record<string, string>;
-        if (bio.long) parts.push(`bio: ${bio.long}`);
-        else if (bio.medium) parts.push(`bio: ${bio.medium}`);
-        else if (bio.short) parts.push(`bio: ${bio.short}`);
-      }
-      const profileLinks = userProfile.links as Record<string, string> | undefined;
-      if (profileLinks) {
-        const linkEntries = Object.entries(profileLinks).filter(([, v]) => v);
-        if (linkEntries.length > 0) {
-          parts.push(`links: ${linkEntries.map(([k, v]) => `${k}: ${v}`).join(", ")}`);
-        }
-      }
-      const profileNow = userProfile.now as string[] | undefined;
-      if (profileNow && profileNow.length > 0) {
-        parts.push(`current focus: ${profileNow.join(", ")}`);
-      }
-      const profileProjects = userProfile.projects as Array<Record<string, string>> | undefined;
-      if (profileProjects && profileProjects.length > 0) {
-        parts.push(`projects: ${profileProjects.map((p) => `${p.name} (${p.status || "active"})${p.description ? ` — ${p.description}` : ""}`).join("; ")}`);
-      }
-      if (userProfile.avatarUrl) parts.push(`has profile image from social media`);
-      if (parts.length > 1) profileContext = parts.join("\n");
-    }
-
-    // Merge identity context INTO the system prompt so it's baked into every turn.
-    // This makes the agent consistently personal — identity isn't just a user message
-    // the LLM might deprioritize; it's core instructions.
-    const systemMessage: ChatMessage = {
-      role: "system",
-      content: `${SYSTEM_PROMPT}\n\n--- THIS USER'S IDENTITY CONTEXT ---\n\n${profileContext}`,
-    };
+    const { profileContext, systemMessage } = buildTurnScaffold();
 
     const username = convexUser?.username || "";
     const displayName = userProfile?.name || convexUser?.displayName || "";
@@ -1051,7 +1103,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }
 
     initConversation();
-  }, [initialized, sessionRestored, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, callLLMStreaming, saveUpdates, saveMemories, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps]);
+  }, [initialized, sessionRestored, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, callLLMStreaming, saveUpdates, saveMemories, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps, buildTurnScaffold]);
 
   // Slash commands
   const handleSlashCommand = useCallback(
@@ -1557,10 +1609,23 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       (s) => !scrapedSourcesRef.current.has(`${s.platform}:${s.username || s.url}`)
     );
 
+    const { systemMessage: liveSystemMessage, contextMessage: liveContextMessage } = buildTurnScaffold();
+    const priorConversation = pruneResolvedMutationTurns(messagesRef.current.filter((message, index) => {
+      if (index === 0 && message.role === "system") return false;
+      if (
+        message.role === "user" &&
+        typeof message.content === "string" &&
+        message.content.includes("just opened the web chat")
+      ) {
+        return false;
+      }
+      return true;
+    }));
+
     // Add to conversation history
     const userMsg: ChatMessage = { role: "user", content: trimmed };
-    let updatedMessages = [...messagesRef.current, userMsg];
-    setMessages(updatedMessages);
+    let updatedMessages = [liveSystemMessage, liveContextMessage, ...priorConversation, userMsg];
+    setMessages([...priorConversation, userMsg]);
 
     // Start thinking with progress steps
     setIsThinking(true);
@@ -1867,7 +1932,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       const assistantMsg: ChatMessage = {
         role: "assistant",
-        content: response,
+        content: cleanDisplay || response,
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
@@ -2183,6 +2248,22 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
+      if (finalAssistantDisplay && finalAssistantDisplay !== assistantMsg.content) {
+        setMessages((prev) => {
+          const next = [...prev];
+          for (let index = next.length - 1; index >= 0; index -= 1) {
+            if (
+              next[index].role === "assistant" &&
+              next[index].content === assistantMsg.content
+            ) {
+              next[index] = { ...next[index], content: finalAssistantDisplay };
+              break;
+            }
+          }
+          return next;
+        });
+      }
+
       // --- Context Compaction (Claude Code-style) ---
       // After 15+ turns, summarize older messages + extract durable facts into memory.
       // Turn-based trigger (more predictable than char-based).
@@ -2290,7 +2371,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     setIsThinking(false);
     clearSteps();
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps]);
+  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps, buildTurnScaffold, pruneResolvedMutationTurns]);
 
   return {
     // State

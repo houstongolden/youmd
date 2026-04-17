@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-04-17 — Local Browser Re-Verification + Mutation Replay Hardening
+
+### Web Shell / CLI / QA
+- Re-ran the local passwordless browser flow after restarting the stale dev server and confirmed the full localhost auth loop still works: send verification, verify code, session cookie, and authenticated `/shell` hydration
+- Re-verified the production browser shell path with a fresh real session on `you.md`, then compared CLI chat against the web shell to confirm the CLI still feels cleaner and more grounded
+- Fixed a real shell-history bug where completed custom-section mutations were still being sent back into later turns, causing unrelated requests like `fetch website` to re-apply already finished profile updates
+- Updated web-shell LLM history to store the final rendered/synthesized assistant completion text instead of only the raw terse model reply, which keeps future turns grounded in what the user actually saw
+- Added targeted pruning of resolved mutation turns before building each new shell prompt, which stopped the clean browser-level custom-section replay repro on a fresh disposable account
+- Fixed `youmd chat` for piped/non-interactive usage so closed stdin now exits cleanly instead of throwing `ERR_USE_AFTER_CLOSE`
+
 ## 2026-04-17 — Deploy Verification + Web-Shell Mutation Reliability
 
 ### Web Shell / Auth / QA

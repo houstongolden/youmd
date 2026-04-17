@@ -3,6 +3,39 @@
 Status: Phase 1 hardening pass substantially complete
 Owner: Houston + coding agents
 
+## 2026-04-17 Continuation — Local Browser Re-Verification + Mutation Replay Fix
+
+### Additional Verification
+- Re-ran the local passwordless browser flow end-to-end after restarting the stale `next dev` process:
+  - `POST /api/auth/send-verification`
+  - `POST /api/auth/verify-code`
+  - `GET /api/auth/session`
+  - `/shell` browser hydration
+- Confirmed the local web app now mints Convex JWTs with the production issuer when pointed at remote Convex, while still using localhost for the browser-facing auth flow.
+- Re-verified the production passwordless shell flow with a fresh real browser session on `https://www.you.md`, including authenticated `/shell` hydration on Houston's account.
+- Compared local CLI chat against the production web shell using the same high-level "summarize my priorities" prompt. CLI remains the cleaner, more grounded surface.
+- Reproduced a clean browser-level shell bug on a disposable local account:
+  1. add a custom section
+  2. ask an unrelated `fetch website` question
+  3. shell incorrectly re-applies the already completed custom section
+- Re-tested the same browser repro after the history fix on a brand-new disposable account. The second turn now fetches `example.com` without re-running the completed custom-section mutation.
+
+### New Findings Confirmed
+- The shell was saving the raw assistant response into LLM history while showing a different synthesized completion line in the UI.
+- Because of that mismatch, later turns could still see vague/raw mutation-history context instead of the clearer rendered "that update is done" phrasing.
+- Completed profile-mutation turns were still contaminating future reasoning even when the visible UI looked correct.
+- `youmd chat` had a real non-interactive/EOF bug: piping or closing stdin could crash with `ERR_USE_AFTER_CLOSE`.
+
+### Additional Fixes Landed
+- Added a targeted history-pruning step for resolved mutation turns before building each new shell prompt. Completed profile-mutation requests no longer get forwarded back into later reasoning turns.
+- Updated stored LLM assistant history to use the finalized rendered assistant text instead of the raw pre-synthesis model output when the shell rewrites terse tool-only completions into concrete user-facing copy.
+- Hardened CLI chat input handling so closed stdin/readline sessions resolve cleanly to `/done` instead of crashing.
+
+### Current Read
+- Local browser auth is re-verified and healthy.
+- The concrete stale mutation replay repro is now fixed in the web shell for the tested custom-section flow.
+- CLI vs web personality/proactiveness parity is still not where it should be; the web shell remains noisier than the CLI even though the mutation reliability is materially better now.
+
 ## 2026-04-17 Continuation — Deploy Verification + Web-Shell Mutation Audit
 
 ### Additional Verification

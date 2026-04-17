@@ -535,7 +535,18 @@ function createRL(): readline.Interface {
 
 function ask(rl: readline.Interface, question: string): Promise<string> {
   return new Promise((resolve) => {
+    const interfaceWithState = rl as readline.Interface & {
+      closed?: boolean;
+      input?: NodeJS.ReadableStream & { readableEnded?: boolean };
+    };
+    if (interfaceWithState.closed || interfaceWithState.input?.readableEnded) {
+      resolve("/done");
+      return;
+    }
+    const handleClose = () => resolve("/done");
+    rl.once("close", handleClose);
     rl.question(question, (answer) => {
+      rl.removeListener("close", handleClose);
       resolve(answer.trim());
     });
   });

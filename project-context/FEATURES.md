@@ -80,6 +80,8 @@ Last Updated: 2026-04-17
 | Portrait updates via tool_use | Done | Web shell now supports portrait/avatar changes on the primary `update_profile` tool path, with JSON fallback only when tools are unavailable |
 | Versioned custom-section saves | Done | Web shell custom sections now merge into the compiled bundle + publish path instead of partially overwriting `profile.youJson` |
 | Tool-only shell response synthesis | Done | When the model emits valid tool calls but little/no natural-language follow-through, the web shell now synthesizes concrete confirmation copy for updates, memories, fetches, and portrait changes |
+| Authoritative turn-history pruning | Done | Completed profile-mutation turns are now stripped from future shell reasoning so later unrelated requests do not re-apply already finished custom-section updates |
+| Finalized assistant history storage | Done | Web shell now stores the rendered/synthesized assistant completion text in LLM history instead of only the raw terse model output, improving later turn grounding |
 
 ## Intelligent Model Routing
 
@@ -118,6 +120,7 @@ Last Updated: 2026-04-17
 |---|---|---|
 | youmd init | Done | Conversational AI onboarding with BrailleSpinners, ASCII portrait, multi-select |
 | youmd chat | Done | Ongoing agent conversation with slash commands, project awareness |
+| youmd chat EOF handling | Done | Piped/non-interactive chat sessions now exit cleanly on closed stdin instead of crashing with `ERR_USE_AFTER_CLOSE` |
 | youmd build | Done | Local compile + thinking phrases |
 | youmd publish | Done | Upload + publish to platform |
 | youmd login | Done | Email-code auth or `--key` |
@@ -166,8 +169,8 @@ Last Updated: 2026-04-17
 | Web: SkillsPane | Done | Dashboard tab with catalog, CLI commands, how-it-works |
 | Web: /skills command | Done | Slash command + help text |
 | Skill registry | Done | Convex tables (skills + skillInstalls), 9 HTTP endpoints, web SkillsPane — completed 2026-03-27 |
-| Ship-readiness audit evidence | In progress | Browser session auth, production shell hydration, production email delivery, real API-key issuance, and live CLI `whoami` parity now verified; broader web-agent personality/proactiveness audit still pending |
-| Browser-auth parity audit | In progress | Passwordless auth stack validated locally and on dev backend; production browser/dashboard parity still needs live verification after deploy |
+| Ship-readiness audit evidence | In progress | Browser session auth, production shell hydration, production email delivery, real API-key issuance, live CLI `whoami` parity, local browser auth re-verification, and a fixed browser-level mutation replay repro are now verified; broader web-agent personality/proactiveness audit still pending |
+| Browser-auth parity audit | Done | Passwordless auth stack now validated locally, on dev, and in a fresh real browser session on `you.md`; remaining quality work is shell behavior/personality, not browser auth plumbing |
 | Web shell first-response latency hardening | Done | Shell no longer waits on `/api/v1/chat/ack` before streaming the real answer, and blank streams now surface an explicit fallback message |
 
 ## Design System (PRD v2.3)

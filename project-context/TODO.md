@@ -214,11 +214,14 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Fix local web auth so locally served passwordless sessions mint Convex JWTs accepted by remote Convex deployments
 - [x] Fix destructive web-shell custom-section persistence so custom sections stop clobbering the rest of `profile.youJson`
 - [x] Add deterministic follow-through text when the web shell gets tool calls but the model returns empty/terse user-facing copy
+- [x] Re-run the local browser passwordless auth flow after restarting the stale dev server and confirm `/shell` hydrates cleanly
+- [x] Re-verify the real-domain production passwordless browser shell flow on `you.md`
+- [x] Fix `youmd chat` so closed stdin / piped non-interactive sessions exit cleanly instead of throwing `ERR_USE_AFTER_CLOSE`
+- [x] Fix stale web-shell mutation replay so completed custom-section turns stop getting re-applied on later unrelated requests
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
-- [ ] Deploy the passwordless auth migration to production and verify real-domain browser/dashboard parity
 - [ ] Remove or rewrite remaining Clerk-specific docs/comments/webhooks/password endpoints so the repo no longer describes the old auth model as current
 - [ ] Run transcript-level local CLI vs web shell parity prompts and capture tone/proactiveness gaps with concrete repros
-- [ ] Re-run the local browser/dashboard auth flow after restarting the dev server to confirm the issuer fix end to end in the actual web shell
+- [ ] Continue hardening the web shell's tone/proactiveness so it feels as crisp and grounded as the CLI instead of noisier/redundant
 - [ ] Design global `~/.you/` plus repo-local `.you/` ownership model and migration path from `.youmd`
 - [ ] Extend the validated cross-agent stack-sync pattern beyond repo bootstrap into global/shared instruction mirroring, portable overlap settings, and persistent stack inventory
 
