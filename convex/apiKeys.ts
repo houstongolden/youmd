@@ -102,6 +102,7 @@ export const createKey = mutation({
     _internalAuthToken: v.optional(v.string()),
     label: v.optional(v.string()),
     scopes: v.array(v.string()),
+    revokeExisting: v.optional(v.boolean()),
     // Cycle 56: optional expiry override. Defaults to 365 days. Pass `null`
     // (or `0`) for a never-expiring key. The default exists so leaked keys
     // age out automatically rather than living forever.
@@ -121,6 +122,7 @@ export const createKey = mutation({
     return await issueApiKeyForUser(ctx, user, {
       label: args.label,
       scopes: args.scopes,
+      revokeExisting: args.revokeExisting,
       expiresInDays: args.expiresInDays,
     });
   },
@@ -185,6 +187,51 @@ export const revokeKey = mutation({
     }
 
     await ctx.db.patch(args.keyId, { revokedAt: Date.now() });
+  },
+});
+
+export const revokeAllKeys = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
+    const now = Date.now();
+    const keys = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    let revokedCount = 0;
+    for (const key of keys) {
+      if (!key.revokedAt) {
+        await ctx.db.patch(key._id, { revokedAt: now });
+        revokedCount += 1;
+      }
+    }
+
+    if (revokedCount > 0) {
+      await ctx.db.insert("securityLogs", {
+        eventType: "token_revoked",
+        userId: user._id,
+        details: {
+          reason: "bulk api key revoke",
+          count: revokedCount,
+        },
+        createdAt: now,
+      });
+    }
+
+    return { revokedCount };
   },
 });
 

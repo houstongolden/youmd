@@ -66,11 +66,18 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
   const keys = useQuery(api.apiKeys.listKeys, clerkId ? { clerkId } : "skip");
   const createKey = useMutation(api.apiKeys.createKey);
   const revokeKey = useMutation(api.apiKeys.revokeKey);
+  const revokeAllKeys = useMutation(api.apiKeys.revokeAllKeys);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
+  const [rotatingKey, setRotatingKey] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
   const [confirmRevokeKey, setConfirmRevokeKey] = useState<string | null>(null);
+  const [confirmRotateKey, setConfirmRotateKey] = useState(false);
+  const [confirmRevokeAllKeys, setConfirmRevokeAllKeys] = useState(false);
+  const [revokingAllKeys, setRevokingAllKeys] = useState(false);
+  const [revokedAllKeysCount, setRevokedAllKeysCount] = useState<number | null>(null);
   const [showAllKeys, setShowAllKeys] = useState(false);
+  const [copiedNewKey, setCopiedNewKey] = useState(false);
 
   // Sort: active (not revoked) first, then revoked. Within each group, newest first.
   const sortedKeys = keys
@@ -120,6 +127,8 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
   const handleCreateKey = async () => {
     setCreatingKey(true);
     setKeyError(null);
+    setRevokedAllKeysCount(null);
+    setCopiedNewKey(false);
     try {
       const result = await createKey({
         clerkId,
@@ -131,6 +140,60 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
       setKeyError(err instanceof Error ? err.message : "failed to create key.");
     }
     setCreatingKey(false);
+  };
+
+  const handleRotateKey = async () => {
+    if (!confirmRotateKey) {
+      setConfirmRotateKey(true);
+      setTimeout(() => setConfirmRotateKey(false), 4000);
+      return;
+    }
+
+    setRotatingKey(true);
+    setKeyError(null);
+    setCopiedNewKey(false);
+    setRevokedAllKeysCount(null);
+    try {
+      const result = await createKey({
+        clerkId,
+        label: "CLI key",
+        scopes: ["read:public"],
+        revokeExisting: true,
+      });
+      setNewKey(result.key);
+      setConfirmRotateKey(false);
+    } catch (err) {
+      setKeyError(err instanceof Error ? err.message : "failed to rotate key.");
+    }
+    setRotatingKey(false);
+  };
+
+  const handleRevokeAllKeys = async () => {
+    if (!confirmRevokeAllKeys) {
+      setConfirmRevokeAllKeys(true);
+      setTimeout(() => setConfirmRevokeAllKeys(false), 4000);
+      return;
+    }
+
+    setRevokingAllKeys(true);
+    setKeyError(null);
+    setNewKey(null);
+    setCopiedNewKey(false);
+    try {
+      const result = await revokeAllKeys({ clerkId });
+      setRevokedAllKeysCount(result.revokedCount);
+      setConfirmRevokeAllKeys(false);
+    } catch (err) {
+      setKeyError(err instanceof Error ? err.message : "failed to revoke keys.");
+    }
+    setRevokingAllKeys(false);
+  };
+
+  const handleCopyNewKey = async () => {
+    if (!newKey) return;
+    await navigator.clipboard.writeText(newKey);
+    setCopiedNewKey(true);
+    setTimeout(() => setCopiedNewKey(false), 2000);
   };
 
   const handleSignOut = () => {
@@ -173,15 +236,36 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
         {/* API Keys */}
         <div className="flex items-center justify-between mb-3">
           <SectionLabel>api keys</SectionLabel>
-          <button
-            onClick={handleCreateKey}
-            disabled={creatingKey}
-            className="text-[10px] font-mono px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors disabled:opacity-30"
-            style={{ borderRadius: "2px" }}
-          >
-            {creatingKey ? "creating..." : "create key"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRotateKey}
+              disabled={rotatingKey || creatingKey}
+              className="text-[10px] font-mono px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-mid))] hover:border-[hsl(var(--accent))]/40 transition-colors disabled:opacity-30"
+              style={{ borderRadius: "2px" }}
+            >
+              {rotatingKey
+                ? "rotating..."
+                : confirmRotateKey
+                ? "confirm rotate"
+                : "rotate key"}
+            </button>
+            <button
+              onClick={handleCreateKey}
+              disabled={creatingKey || rotatingKey}
+              className="text-[10px] font-mono px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors disabled:opacity-30"
+              style={{ borderRadius: "2px" }}
+            >
+              {creatingKey ? "creating..." : "create key"}
+            </button>
+          </div>
         </div>
+
+        <p className="text-[10px] text-[hsl(var(--text-secondary))] opacity-45 font-mono mb-3">
+          existing keys are stored hash-only, so old plaintext keys cannot be revealed again. use
+          {" "}
+          <span className="text-[hsl(var(--accent))] opacity-80">rotate key</span>
+          {" "}to mint one fresh key and revoke the rest.
+        </p>
 
         {keyError && (
           <p className="text-[10px] text-[hsl(var(--accent))] font-mono mb-2">
@@ -195,20 +279,28 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
             style={{ borderRadius: "2px" }}
           >
             <p className="text-[10px] text-[hsl(var(--accent-mid))] font-mono">
-              key created. copy it now -- it will not be shown again.
+              fresh key ready. copy it now -- it will not be shown again after you dismiss it.
             </p>
             <code className="block text-[10px] font-mono text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] p-2 break-all select-all">
               {newKey}
             </code>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(newKey);
-                setNewKey(null);
-              }}
-              className="text-[10px] text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] font-mono transition-colors"
-            >
-              copy and dismiss
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleCopyNewKey}
+                className="text-[10px] text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))] font-mono transition-colors"
+              >
+                {copiedNewKey ? "copied" : "copy"}
+              </button>
+              <button
+                onClick={() => {
+                  setNewKey(null);
+                  setCopiedNewKey(false);
+                }}
+                className="text-[10px] text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-100 font-mono transition-opacity"
+              >
+                hide
+              </button>
+            </div>
           </div>
         )}
 
@@ -265,22 +357,52 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
               <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30">
                 {visibleKeys.length} of {sortedKeys.length} keys shown
               </p>
-              {hiddenKeyCount > 0 && (
+              <div className="flex items-center gap-3">
+                {hiddenKeyCount > 0 && (
+                  <button
+                    onClick={() => setShowAllKeys((v) => !v)}
+                    className="text-[10px] font-mono text-[hsl(var(--accent))] opacity-60 hover:opacity-100 transition-opacity"
+                  >
+                    {showAllKeys
+                      ? "[show less]"
+                      : `[load more keys (${hiddenKeyCount} hidden)]`}
+                  </button>
+                )}
                 <button
-                  onClick={() => setShowAllKeys((v) => !v)}
-                  className="text-[10px] font-mono text-[hsl(var(--accent))] opacity-60 hover:opacity-100 transition-opacity"
+                  onClick={handleRevokeAllKeys}
+                  disabled={revokingAllKeys}
+                  className="text-[10px] font-mono text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity disabled:opacity-30"
                 >
-                  {showAllKeys
-                    ? "[show less]"
-                    : `[load more keys (${hiddenKeyCount} hidden)]`}
+                  {revokingAllKeys
+                    ? "revoking..."
+                    : confirmRevokeAllKeys
+                    ? "[confirm revoke all keys]"
+                    : "[revoke all keys]"}
                 </button>
-              )}
+              </div>
             </div>
+            {confirmRevokeAllKeys && !revokingAllKeys && (
+              <p className="text-[9px] font-mono text-[hsl(var(--accent))] opacity-50">
+                this only revokes API keys. your email login, share links, and other tokens stay untouched. click again to confirm.
+              </p>
+            )}
+            {revokedAllKeysCount !== null && (
+              <p className="text-[9px] font-mono text-[hsl(var(--success))] opacity-70">
+                revoked {revokedAllKeysCount} api key{revokedAllKeysCount === 1 ? "" : "s"}.
+              </p>
+            )}
           </div>
         ) : (
-          <p className="text-[10px] text-[hsl(var(--text-secondary))] opacity-25 font-mono">
-            no api keys yet. create one to use the cli.
-          </p>
+          <div className="space-y-1">
+            <p className="text-[10px] text-[hsl(var(--text-secondary))] opacity-25 font-mono">
+              no api keys yet. create one to use the cli.
+            </p>
+            {revokedAllKeysCount !== null && (
+              <p className="text-[9px] font-mono text-[hsl(var(--success))] opacity-70">
+                revoked {revokedAllKeysCount} api key{revokedAllKeysCount === 1 ? "" : "s"}.
+              </p>
+            )}
+          </div>
         )}
 
         <Divider />

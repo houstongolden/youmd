@@ -10,6 +10,7 @@ Last Updated: 2026-04-17
 | Convex backend | Done | Reactive, serverless, TypeScript-native |
 | Passwordless auth migration | Done | First-party email-code auth, sessions, custom JWT/JWKS. Local/dev validated and production browser + CLI parity hard-smoked |
 | Simpler CLI login contract | Done | `youmd login` now cleanly branches into browser sign-in on Enter, email-code login in-terminal, or `--key` for direct agent auth |
+| API key rotation + cleanup UX | Done | Settings pane now supports rotating to one fresh key, bulk revoking all API keys, and copying the newly issued key without revoking other token types |
 | Verified passwordless sender config | Done | Auth email route now supports `AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL` instead of being hardcoded to `onboarding@resend.dev` |
 | Remote-Convex local auth guard | Done | Local web sessions now mint `https://you.md` Convex JWT issuers when the app is pointed at a remote Convex deployment, avoiding `NoAuthProvider` auth failures during local web QA |
 | Username claim | Done | Auto-claim via /initialize (no manual form) |

@@ -152,9 +152,10 @@ Last Updated: 2026-04-17
 **Verification:** In web terminal, type "show me my portrait" → ASCII portrait renders inline in chat.
 
 ### 16. Reveal/copy existing API key (not just revoke-to-create)
-**Status:** TODO
+**Status:** PARTIALLY DONE
 **Request:** In web UI settings, user should be able to reveal and copy their existing API key instead of having to revoke and create a new one.
-**Verification:** Go to dashboard /settings → API keys → click reveal → key shown → copy works.
+**Progress (2026-04-17):** Settings now supports the operationally useful path: `rotate key` creates one fresh key, reveals it immediately for copy, and revokes the old pile; `revoke all keys` cleans up stale keys without touching share links or other token types. Existing historical keys are still not revealable because the backend stores only hashes, not reversible ciphertext.
+**Verification:** Go to dashboard /settings → API keys → use `rotate key` and confirm a fresh key is shown/copyable immediately while the old active keys are revoked. Use `revoke all keys` and confirm only API keys are revoked.
 
 ### 17. Persistent real-time progress on ALL active steps
 **Status:** DONE

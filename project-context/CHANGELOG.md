@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-04-17 — API Key Rotation + Cleanup UX
+
+### Web Settings / Auth Ops
+- Upgraded the settings pane API-key section to support a cleaner operator workflow: `rotate key` now creates one fresh key, immediately reveals it for copy, and revokes the rest in the same move
+- Added a dedicated `revoke all keys` action so users can clean up stale API-key sprawl without nuking share links, access tokens, or their email-login session
+- Kept API-key storage hash-only for existing keys and made that explicit in the UI, so the product no longer implies it can magically reveal old plaintext keys that the backend never stored
+- Improved the fresh-key follow-through block with explicit copy + hide actions instead of a single dismiss-only CTA
+
 ## 2026-04-17 — Simpler CLI Login Flow
 
 ### CLI / Docs / Auth UX
