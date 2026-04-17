@@ -1,5 +1,22 @@
 # You.md — Changelog
 
+## 2026-04-16 — Passwordless Auth Migration: First-Party Web + CLI Sign-In
+
+### Auth / Web / CLI
+- Replaced the Clerk-first app auth path with first-party passwordless auth built around email verification codes, opaque session cookies, and custom Convex JWT signing
+- Added first-party auth/session tables and mutations in Convex (`authChallenges`, `authSessions`) plus JWKS-backed `customJwt` auth config
+- Added web auth routes for `send-verification`, `verify-code`, `verify-link`, `session`, `logout`, and `/.well-known/jwks.json`
+- Rebuilt `/sign-in` and `/sign-up` as sequential passwordless terminal flows and retired password reset into a redirect to the new sign-in path
+- Migrated CLI `register` and `login` from email/password to email-code auth while keeping `--key` as the direct API-key path
+- Removed the last live Clerk package dependency from the web app and fixed lingering sign-out / copy references that still described the old auth model
+
+### Infrastructure / Validation
+- Fixed `convex/tsconfig.json` with `noEmit` so Convex commands stop regenerating source-adjacent `.js` artifacts and breaking deploy/codegen with duplicate-path errors
+- Deployed the auth/schema changes to the dev Convex deployment and synced production Vercel auth env for the new signer/JWKS stack
+- Validated the local passwordless route loop end-to-end: signup → code verification → session → logout → login
+- Validated CLI auth against the dev backend: `register`, `login`, and `whoami`
+- Production browser/dashboard parity is the remaining auth-release gate and should be checked immediately after the deployed stack goes live
+
 ## 2026-04-16 — Ship Readiness Pass: Authenticated CLI Hardening + Round-Trip Fidelity
 
 ### CLI / API / Sync Reliability

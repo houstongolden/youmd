@@ -120,6 +120,17 @@ PRD Version: 2.3
 - [x] Hardened generated MCP config to avoid bare `npx youmd mcp` package-name collisions
 - [x] Updated user-facing MCP install copy/docs to use the safe published-package form
 
+### Passwordless Auth Migration (April 16)
+- [x] Replaced the app-side Clerk provider/middleware path with first-party session auth + Convex custom JWT signing
+- [x] Added Convex auth/session tables plus passwordless email challenge/session mutations
+- [x] Added web auth routes for send-verification, verify-code, verify-link, session, logout, and JWKS discovery
+- [x] Migrated `/sign-in` and `/sign-up` to sequential passwordless terminal flows
+- [x] Migrated CLI `register` / `login` from email+password to email-code auth
+- [x] Removed the last live Clerk package dependency from the web app
+- [x] Synced production Vercel auth env for the new JWT signer/JWKS stack
+- [x] Validated local web auth route flow (signup, verify, session, logout, login) against the dev backend
+- [x] Validated CLI auth flow (`register`, `login`, `whoami`) against the dev backend
+
 ### Agent Context Bootstrap Overhaul (April 16)
 - [x] `youmd skill init-project` now supports `auto`, `additive`, `zero-touch`, and `scaffold` modes
 - [x] Added first-class `AGENTS.md` support with one managed additive bootstrap block for existing repos
@@ -178,7 +189,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 
 - [ ] CLI → web portrait sync (ASCII portraits generated locally persist to server)
 - [ ] CLI → web image sync (scraped profile images upload to server storage)
-- [ ] Email/password auth works end-to-end (CLI register → web login with same creds)
+- [ ] Passwordless auth works end-to-end on production (web sign-up/sign-in/dashboard + CLI register/login/whoami)
 - [ ] Context link resolution by AI agents (do real agents parse the response correctly?)
 - [ ] CLI export produces valid you.json + you.md
 - [ ] CLI diff accurately shows changes vs published
@@ -193,6 +204,8 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Complete authenticated production CLI hard-smoke coverage for `register`, `login`, `login --key`, `whoami`, `push`, `pull`, `diff`, `status`, `keys list`, and `sync`
 - [x] Fix CLI public-profile ingestion + round-trip correctness (`application/vnd.you-md.v1+json`, public markdown fetch, clean publish→pull→diff, accurate local publish/sync state)
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
+- [ ] Deploy the passwordless auth migration to production and verify real-domain browser/dashboard parity
+- [ ] Remove or rewrite remaining Clerk-specific docs/comments/webhooks/password endpoints so the repo no longer describes the old auth model as current
 - [ ] Design global `~/.you/` plus repo-local `.you/` ownership model and migration path from `.youmd`
 - [ ] Extend the validated cross-agent stack-sync pattern beyond repo bootstrap into global/shared instruction mirroring, portable overlap settings, and persistent stack inventory
 
@@ -206,7 +219,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Next.js 16.2.2 upgrade evaluation
 - [ ] Study gstack setup/team-mode patterns and borrow the useful structure for global You.md bootstrap and team rollout
 - [ ] Continue the web-agent reliability/personality audit with live repros and side-by-side parity checks against the local CLI agent
-- [ ] Isolate and fix the headless/browser Clerk sign-in stall in the custom terminal auth flow
+- [ ] Verify the new first-party passwordless browser flow on production and fix any dashboard/session/JWT parity gaps
 - [ ] Add a documented production endpoint matrix for public, authenticated, MCP, and chat surfaces
 
 ### Agent Intelligence Polish

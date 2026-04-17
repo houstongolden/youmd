@@ -76,10 +76,11 @@ MVP now requires account creation before profile building. The "no signup requir
 
 ## Known Issues
 
-### Clerk v7 Compatibility
-- Some TypeScript errors in Clerk v7 API surface (non-blocking, types issue)
-- Terminal-style auth works but uses undocumented Clerk v7 custom flow APIs
-- Password reset flow uses `SignInFutureResource` which may change
+### Auth Migration
+- Local/dev passwordless auth is now working via first-party email codes, session cookies, and custom JWT/JWKS for Convex
+- CLI `register`, `login`, and `whoami` have been validated against the dev deployment on the new auth path
+- Production web env for the new signer/JWKS pair has been synced, but the real-domain browser/dashboard flow still needs post-deploy verification
+- Remaining cleanup: remove remaining Clerk-era docs/comments/webhooks/password endpoints so the repo no longer describes Clerk as current auth
 
 ### Portrait Sync
 - CLI generates ASCII portraits locally but sync to web API is not verified end-to-end
@@ -218,6 +219,25 @@ MVP now requires account creation before profile building. The "no signup requir
 
 ### CLI Sync
 - Portrait endpoint now patches `avatarUrl` from `sourceUrl` on push
+
+---
+
+## What Was Built April 16
+
+### Passwordless Auth Migration
+- Convex auth switched to `customJwt` with JWKS discovery
+- Added `authChallenges` and `authSessions` tables plus first-party auth/session mutations
+- Added web auth routes for `send-verification`, `verify-code`, `verify-link`, `session`, `logout`, and `/.well-known/jwks.json`
+- Replaced the app-side Clerk provider with first-party session auth (`YouAuthProvider`)
+- `/sign-in` and `/sign-up` now use sequential passwordless terminal flows
+- CLI `register` and `login` now use email-code auth instead of email/password
+- Fixed `convex/tsconfig.json` with `noEmit` so Convex commands stop regenerating stray `.js` source siblings
+
+### Validation
+- `npm run build` passes
+- `npm --prefix cli run build` passes
+- Local auth route smoke test passed: signup → verify → session → logout → login
+- CLI smoke test passed against dev backend: `register`, `login`, `whoami`
 - CLI-pushed portraits now visible as profile photo on web
 
 ---

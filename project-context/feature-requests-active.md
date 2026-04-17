@@ -42,8 +42,15 @@ Last Updated: 2026-04-16
 **Status:** IN PROGRESS
 **Verified:** NO
 **Request:** Hard-test the actual CLI/skill flows locally, ensure You.md API + MCP sync correctly, and audit the You Agent/onboarding/web shell so local and web experiences are highly consistent with a clear bias toward the local CLI/TUI power-user surface. Produce a comprehensive improvement plan and QA plan covering endpoints, functionality, UI/UX, personality, proactiveness, and cross-agent usage with Claude/Codex/etc.
-**Progress (2026-04-16):** Completed the first evidence pass, then followed with a real hardening pass. Smoke-tested `skill init-project` scaffold/additive modes, `mcp --json`, `mcp --install`, live public API + MCP behavior, and the authenticated CLI flow (`register`, `login`, `login --key`, `whoami`, `push`, `pull`, `diff`, `status`, `keys list`, `sync`) against fresh production accounts. Fixed broken web-domain MCP discovery/transport, stale 4-skill web-shell copy, portrait tool-use handling, nested `/me` auth parsing, vendor `+json` public-profile parsing, local publish-state persistence, public-profile markdown fetching, and publish→pull→diff round-trip drift. Remaining major blocker: browser-based Clerk sign-in still stalls in headless QA, and local-vs-web agent parity/personality still needs transcript-level audit.
+**Progress (2026-04-16):** Completed the first evidence pass, then followed with a real hardening pass. Smoke-tested `skill init-project` scaffold/additive modes, `mcp --json`, `mcp --install`, live public API + MCP behavior, and the authenticated CLI flow (`register`, `login`, `login --key`, `whoami`, `push`, `pull`, `diff`, `status`, `keys list`, `sync`) against fresh production accounts. Fixed broken web-domain MCP discovery/transport, stale 4-skill web-shell copy, portrait tool-use handling, nested `/me` auth parsing, vendor `+json` public-profile parsing, local publish-state persistence, public-profile markdown fetching, and publish→pull→diff round-trip drift. Follow-up auth migration work replaced the Clerk-first web/CLI path with first-party passwordless auth locally, validated local `/api/auth/*` signup/login/logout/session flows, validated CLI `register`/`login`/`whoami` against the dev deployment, and synced the new production Vercel auth env. Remaining major blocker: production deploy + real-domain browser/dashboard parity still need to be verified after the custom JWT/JWKS auth stack lands live.
 **Verification:** There is a concrete ship-readiness plan, a real end-to-end test matrix, a bug/repro inventory for the web agent, a parity audit for local vs web, and a prioritized fix list that can be executed to reach public-release quality.
+
+### 46. Replace Clerk with first-party passwordless auth modeled on foldermd
+**Status:** IN PROGRESS
+**Verified:** NO
+**Request:** Drop Clerk, simplify aggressively, and move You.md to a first-party passwordless auth model similar to foldermd: email code / magic link for humans, HTTP-only sessions for the web, scoped API keys for CLI/MCP/agents, and one internal user identity rather than Clerk-owned auth.
+**Progress (2026-04-16):** Added first-party auth/session tables and mutations in Convex, switched Convex auth to `customJwt`, added web auth routes (`send-verification`, `verify-code`, `verify-link`, `session`, `logout`, `/.well-known/jwks.json`), replaced the app-side Clerk provider with `YouAuthProvider`, replaced the sign-in/sign-up flows with sequential passwordless terminal UX, removed the last live Clerk package dependency from the web app, migrated CLI `register`/`login` to email-code auth, fixed Convex no-emit config to stop regenerating stray `.js` files, deployed the backend/auth schema to the dev deployment, and validated local web auth plus CLI auth against the new flow. Production Vercel auth env has been synced for the new signer/JWKS pair.
+**Verification:** Production `you.md` supports passwordless sign-up/sign-in/sign-out/session refresh, the dashboard works on the new first-party auth stack, CLI `register`/`login`/`whoami` work against production, and the old Clerk-dependent paths/webhooks/password endpoints are either removed or explicitly deprecated.
 
 ### 39. Identity-Aware Skill System — Full Implementation
 **Status:** DONE
@@ -91,11 +98,11 @@ Last Updated: 2026-04-16
 **Verified:** NO
 **Request:** Green checkmarks/indicators for live/active/done status are acceptable alongside orange accent.
 
-### 7. CLI email/password auth (no API token for own account)
+### 7. CLI first-party auth (no API token needed for your own account)
 **Status:** DONE (a6d5c3d)
 **Verified:** NO
-**Request:** Users sign up and log in via email + password, same as web. API tokens only for agent/app access.
-**Verification:** youmd register → enter email/password → account created → youmd login → same creds work → web login with same creds works.
+**Request:** Users should authenticate as themselves from the CLI without hand-managing API tokens. API tokens are for agent/app access, not basic account login.
+**Verification:** `youmd register` → email code → account created → `youmd login` → email code → authenticated session + API key saved → `youmd whoami` succeeds.
 
 ### 8. ASCII portrait within first 3 interactions
 **Status:** DONE (8d64e95)

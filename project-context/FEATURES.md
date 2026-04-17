@@ -8,7 +8,7 @@ Last Updated: 2026-04-16
 |---|---|---|
 | Open spec you-md/v1 | Done | Directory-based identity bundles |
 | Convex backend | Done | Reactive, serverless, TypeScript-native |
-| Clerk auth | Done | Production: clerk.you.md |
+| Passwordless auth migration | In progress | First-party email-code auth, sessions, custom JWT/JWKS. Local + dev validated; production deploy/browser parity pending |
 | Username claim | Done | Auto-claim via /initialize (no manual form) |
 | Bundle compilation | Done | Server-side via convex/lib/compile.ts |
 | Bundle publishing | Done | Version tracking, unpublish previous |
@@ -115,8 +115,8 @@ Last Updated: 2026-04-16
 | youmd chat | Done | Ongoing agent conversation with slash commands, project awareness |
 | youmd build | Done | Local compile + thinking phrases |
 | youmd publish | Done | Upload + publish to platform |
-| youmd login | Done | Email/password auth (was API key only) |
-| youmd register | Done | Create account from CLI |
+| youmd login | Done | Email-code auth or `--key` |
+| youmd register | Done | Create account from CLI with passwordless verification |
 | youmd status | Done | Rich tree-style summary |
 | youmd whoami | Done | Profile display |
 | youmd add | Done | Add source URLs |
@@ -162,7 +162,7 @@ Last Updated: 2026-04-16
 | Web: /skills command | Done | Slash command + help text |
 | Skill registry | Done | Convex tables (skills + skillInstalls), 9 HTTP endpoints, web SkillsPane — completed 2026-03-27 |
 | Ship-readiness audit evidence | In progress | First pass completed: CLI/bootstrap/MCP smoke checks, live API contract validation, and a tracked audit doc with resolved vs remaining blockers |
-| Browser-auth parity audit | In progress | Terminal auth UI renders, but headless Clerk sign-in still stalls on `sign_ins` requests with no surfaced error |
+| Browser-auth parity audit | In progress | Passwordless auth stack validated locally and on dev backend; production browser/dashboard parity still needs live verification after deploy |
 
 ## Design System (PRD v2.3)
 
@@ -201,7 +201,7 @@ Last Updated: 2026-04-16
 
 | Feature | Status | Notes |
 |---|---|---|
-| Email/password CLI auth | Done | No API token required for own account |
+| Passwordless CLI auth | Done | No manual API token required for your own account |
 | Server-side ASCII portrait generation | Done | convex/portrait.ts + DB caching |
 | BrailleSpinner color rotation + lightsweep | Done | Orange shades, text lightsweep |
 | CLI ASCII YOU logo | Done | Block-char logo in burnt orange |
