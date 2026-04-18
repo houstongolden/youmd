@@ -48,6 +48,8 @@ Last Commit: see git log for latest 2026-04-18 `you` launcher + proactive portra
 - npm publish retry path is fixed: the next release target is `0.6.11`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
 - Bare `youmd` now enters like U instead of dropping straight into a dry command list: it shows the YOU logo, optionally shows the saved portrait preview, greets the user, surfaces project-context opportunities, and proposes the next best moves contextually
 - `youmd chat` now opens with the same U-style entrance and no longer prints the first assistant greeting twice when streaming succeeds
+- Web `/initialize` now passes the same `thinkingCategory` + `progressSteps` state into the terminal shell, so onboarding can show the same live working-state treatment as the main shell
+- Web onboarding greeting instructions now explicitly target the same local-launcher U persona and can mention known saved projects instead of always sounding like a generic cold start
 - The npm install moment is now less deadpan: postinstall prints a real U-style welcome with logo + next moves instead of the old `Run: youmd init`
 - A real `you` launcher now exists alongside `youmd`: if the user is authenticated and has a bundle in either the current project or `~/.youmd`, `you` goes straight into chat instead of forcing `youmd chat`
 - The new `you` opening renders the YOU logo, the user's ASCII portrait-in-code, a small terminal bot greeting the portrait, and a more proactive U intro so the local entry feels more like meeting a wingman than a utility binary

@@ -10,6 +10,8 @@
 ## 2026-04-18 — Workspace Repo Awareness For `you`
 
 ### CLI / Agent UX
+- Tightened the web `/initialize` encounter so it uses the same live thinking/progress plumbing as the main shell, instead of feeling flatter than the local `you` launcher while the agent is working
+- The onboarding greeting prompt now explicitly targets the same U persona as the local launcher and can naturally mention known saved projects when context already exists
 - Bumped the next CLI publish target to `0.6.11` so this onboarding-handoff pass is versioned before the next npm publish prompt
 - Extracted shared recent-project helper logic into the project library so `you`, `youmd`, and onboarding can all prioritize the same real project openings instead of drifting
 - `youmd init` and conversational onboarding now finish with a stronger handoff into U: `you` is the first next step, recent orbit is surfaced explicitly, and actionable openings like `foldermd` are suggested right in the finish flow
