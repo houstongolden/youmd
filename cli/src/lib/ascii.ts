@@ -179,6 +179,35 @@ function padRight(value: string, width: number): string {
   return value + " ".repeat(Math.max(0, width - value.length));
 }
 
+function wrapLine(value: string, width: number): string[] {
+  if (width <= 0) return [value];
+  if (value.length <= width) return [value];
+
+  const words = value.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [value.slice(0, width)];
+
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    if (!current) {
+      current = word;
+      continue;
+    }
+
+    if (`${current} ${word}`.length <= width) {
+      current = `${current} ${word}`;
+      continue;
+    }
+
+    lines.push(current);
+    current = word;
+  }
+
+  if (current) lines.push(current);
+  return lines;
+}
+
 export function printPortraitEncounter(options: {
   bundleDir: string;
   displayName: string;
@@ -203,6 +232,34 @@ export function printPortraitEncounter(options: {
 
   const leftWidth = Math.max(...portraitLines.map((line) => line.length));
   const rightWidth = Math.max(...BOT_LINES.map((line) => line.length), ...speechLines.map((line) => line.length + 2));
+  const terminalWidth = process.stdout.columns || 120;
+  const sideBySideWidth = 2 + leftWidth + 4 + rightWidth;
+
+  if (sideBySideWidth > terminalWidth - 2) {
+    for (const line of portraitLines) {
+      process.stdout.write(`  ${ACCENT(line)}\n`);
+    }
+
+    process.stdout.write("\n");
+
+    for (const line of BOT_LINES) {
+      process.stdout.write(`  ${chalk.hex("#E09060")(line)}\n`);
+    }
+
+    process.stdout.write("\n");
+
+    const wrapWidth = Math.max(34, terminalWidth - 6);
+    for (let i = 0; i < speechLines.length; i++) {
+      const wrapped = wrapLine(speechLines[i], wrapWidth);
+      for (let j = 0; j < wrapped.length; j++) {
+        const prefix = i === 0 && j === 0 ? "> " : "  ";
+        process.stdout.write(`  ${chalk.whiteBright(prefix + wrapped[j])}\n`);
+      }
+    }
+
+    return true;
+  }
+
   const totalLines = Math.max(portraitLines.length, BOT_LINES.length + speechLines.length + 1);
 
   for (let i = 0; i < totalLines; i++) {
