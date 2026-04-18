@@ -18,7 +18,7 @@ PRD Version: 2.3
 - [x] Align installer + register/init/onboarding guidance around `you` so new users are consistently pointed at the alive entrypoint instead of the older `youmd chat` muscle memory
 - [ ] Publish `youmd@0.6.11` so end users get the `you` launcher, portrait splash, truthful startup investigation, public-profile portrait contract fix, update hints, read-only active-bundle fallback, raw-markdown identity roundtrip preservation, recent-project opportunity scanning from arbitrary directories, broader local workspace repo awareness, recent-project openings that prioritize actionable workspace repos like `foldermd`, and the stronger onboarding handoff into U
 - [ ] Build a truly proactive first-run U flow after install/login instead of relying only on better static startup copy
-- [ ] Make `/initialize` visually match the full portrait-first `you` launcher encounter instead of only matching the shell behavior and prompt quality
+- [ ] Make `/initialize` match the launcher even more closely with the actual YOU logo / scene composition, not just the portrait-first encounter strip and shell behavior
 - [ ] Verify the `you` splash now matches Houston's current primary/public portrait after the new `_profile.asciiPortrait` contract ships to production
 
 ### 2026-04-17
