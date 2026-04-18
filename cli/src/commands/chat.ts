@@ -47,7 +47,11 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.4";
+const CURRENT_VERSION = "0.6.6";
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // ─── Streaming LLM client ─────────────────────────────────────────────
 
@@ -1061,10 +1065,124 @@ async function printUpdateHint(): Promise<void> {
   console.log("");
 }
 
+interface LaunchInvestigation {
+  findings: string[];
+}
+
+function countMarkdownFiles(dir: string): number {
+  if (!fs.existsSync(dir)) return 0;
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    let total = 0;
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        total += countMarkdownFiles(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith(".md")) {
+        total += 1;
+      }
+    }
+    return total;
+  } catch {
+    return 0;
+  }
+}
+
+async function runYouLaunchInvestigation(
+  bundleDir: string,
+  projectCtx: ReturnType<typeof detectProjectContext>,
+  recentProjects: string[],
+): Promise<LaunchInvestigation> {
+  const labels = [
+    "sipping bitbucks frappaccino while i look around",
+    "checking local AGENTS and CLAUDE instructions",
+    "reading project context and recent work",
+    "connecting the dots before we talk",
+  ];
+  const spinner = new BrailleSpinner(labels[0]);
+  let labelIndex = 1;
+  const findings: string[] = [];
+  const rotation = setInterval(() => {
+    spinner.update(labels[labelIndex % labels.length]);
+    labelIndex += 1;
+  }, 1100);
+
+  spinner.start();
+
+  try {
+    await delay(160);
+    try {
+      const hasPreferences = fs.existsSync(path.join(bundleDir, "preferences", "agent.md"));
+      const hasDirectives = fs.existsSync(path.join(bundleDir, "directives", "agent.md"));
+      if (hasPreferences && hasDirectives) {
+        findings.push("your agent preferences and directives are already loaded from your home bundle.");
+      } else if (hasPreferences || hasDirectives) {
+        findings.push("i found part of your agent guidance locally, but it still wants a little more shape.");
+      }
+    } catch {
+      // keep scanning other surfaces
+    }
+
+    if (projectCtx) {
+      try {
+        const hasAgents = fs.existsSync(path.join(projectCtx.root, "AGENTS.md"));
+        const hasClaude = fs.existsSync(path.join(projectCtx.root, "CLAUDE.md"));
+        const projectContextDir = path.join(projectCtx.root, "project-context");
+        const projectContextFiles = countMarkdownFiles(projectContextDir);
+
+        if (hasAgents && hasClaude) {
+          findings.push(`${projectCtx.name} already has both AGENTS.md and CLAUDE.md in place.`);
+        } else if (hasAgents || hasClaude) {
+          findings.push(`${projectCtx.name} has some local agent wiring, but not the full stack yet.`);
+        }
+
+        if (projectContextFiles > 0) {
+          findings.push(`${projectCtx.name} is carrying ${projectContextFiles} project-context file${projectContextFiles === 1 ? "" : "s"} already.`);
+        } else if (fs.existsSync(projectContextDir)) {
+          findings.push(`${projectCtx.name} has a project-context directory, but it still feels mostly empty.`);
+        } else {
+          findings.push(`${projectCtx.name} still wants a real project-context spine.`);
+        }
+      } catch {
+        findings.push(`${projectCtx.name} is open, but one of the local context probes tripped over itself.`);
+      }
+    } else if (recentProjects.length > 0) {
+      findings.push(`recent orbit: ${recentProjects.slice(0, 3).join(", ")}.`);
+
+      try {
+        const projectsRoot = findProjectsRoot();
+        if (projectsRoot) {
+          const wiredCount = recentProjects
+            .slice(0, 5)
+            .filter((name) => {
+              const projectDir = getProjectDir(projectsRoot, name);
+              return fs.existsSync(path.join(projectDir, "directives", "agent.md")) ||
+                fs.existsSync(path.join(projectDir, "memory", "contexts.md"));
+            }).length;
+          if (wiredCount > 0) {
+            findings.push(`${wiredCount} of your recent projects already have local context files waiting for me.`);
+          }
+        }
+      } catch {
+        // keep the recent-project signal even if the deeper scan hiccups
+      }
+    } else {
+      findings.push("i've got your home bundle loaded, even though we're not inside a project yet.");
+    }
+
+    await delay(220);
+    spinner.stop("looked through local context");
+    return { findings: findings.slice(0, 4) };
+  } finally {
+    clearInterval(rotation);
+  }
+}
+
 async function printChatOpening(
   bundleDir: string,
   projectCtx: ReturnType<typeof detectProjectContext>,
-): Promise<void> {
+): Promise<LaunchInvestigation> {
   const ACCENT = chalk.hex("#C46A3A");
   const DIM = chalk.dim;
   const cfg = readGlobalConfig();
@@ -1072,6 +1190,7 @@ async function printChatOpening(
   const displayName = readDisplayName(bundleDir);
   const recentProjects = getRecentProjectNames();
   const launchSurface = process.env.YOUMD_LAUNCH_SURFACE;
+  let investigation: LaunchInvestigation = { findings: [] };
 
   printYouLogo();
 
@@ -1094,6 +1213,18 @@ async function printChatOpening(
   if (didShowPortrait) {
     console.log("");
     console.log("  " + ACCENT("there you are.") + " " + DIM("your portrait is loaded."));
+  }
+
+  if (launchSurface === "you") {
+    console.log("");
+    investigation = await runYouLaunchInvestigation(bundleDir, projectCtx, recentProjects);
+    if (investigation.findings.length > 0) {
+      console.log("");
+      console.log("  " + ACCENT("i checked a few corners."));
+      for (const finding of investigation.findings) {
+        console.log("  " + DIM("· ") + chalk.white(finding));
+      }
+    }
   }
 
   console.log("");
@@ -1121,11 +1252,13 @@ async function printChatOpening(
   console.log("  " + chalk.bold("you.md chat"));
   console.log("  " + DIM("talk naturally. i'll update your identity, spot useful structure, and suggest next moves."));
   console.log("");
+  return investigation;
 }
 
 function buildYouLaunchIntro(
   projectCtx: ReturnType<typeof detectProjectContext>,
   bundleDir: string,
+  investigation: LaunchInvestigation,
 ): string {
   const displayName = readDisplayName(bundleDir).split(" ")[0];
   const recentProjects = getRecentProjectNames();
@@ -1142,6 +1275,10 @@ function buildYouLaunchIntro(
     lines.push(`recently you've been orbiting ${recentProjects.slice(0, 3).join(", ")}.`);
   } else {
     lines.push("clean slate. we can still shape your identity, private context, or project structure from here.");
+  }
+
+  if (investigation.findings.length > 0) {
+    lines.push(`quick read: ${investigation.findings.slice(0, 2).join(" ")}`);
   }
 
   lines.push("what are we moving forward right now?");
@@ -1209,7 +1346,7 @@ export async function chatCommand(): Promise<void> {
     }
   }
 
-  await printChatOpening(bundleDir, projectCtx);
+  const launchInvestigation = await printChatOpening(bundleDir, projectCtx);
   await printUpdateHint();
 
   // Load current profile as context
@@ -1263,7 +1400,7 @@ export async function chatCommand(): Promise<void> {
 
   // Initial greeting from agent
   if (process.env.YOUMD_LAUNCH_SURFACE === "you") {
-    const proactiveIntro = buildYouLaunchIntro(projectCtx, bundleDir);
+    const proactiveIntro = buildYouLaunchIntro(projectCtx, bundleDir, launchInvestigation);
     messages.push({ role: "assistant", content: proactiveIntro });
     printAgentMessage(proactiveIntro);
   } else {

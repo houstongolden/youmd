@@ -13,7 +13,7 @@ import {
 } from "./config";
 import { compileBundle, writeBundle } from "./compiler";
 import { BrailleSpinner } from "./render";
-import { renderAsciiPortrait, printYouLogo } from "./ascii";
+import { printPortraitEncounter } from "./ascii";
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -1539,7 +1539,7 @@ export async function runOnboarding(): Promise<void> {
 
   // ── ASCII logo splash ──────────────────────────────────────────────
   // Real YOU logo — same block-character font as the homepage hero
-  printYouLogo();
+  await showAsciiLogo();
 
   // ── Phase 1: Identity basics (fast, no LLM) ────────────────────────
 
@@ -1660,7 +1660,6 @@ export async function runOnboarding(): Promise<void> {
       portraitSpinner.stop("got it — rendering portrait");
       console.log("");
 
-      // Now render the portrait line by line (the actual wow moment)
       const RAMP = `$@B%8&#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/|()1{}?-_+~<>i!lI;:,". `;
       const cols = 60;
       const rows = Math.floor(cols * (img.getHeight() / img.getWidth()) * 0.46);
@@ -1694,13 +1693,24 @@ export async function runOnboarding(): Promise<void> {
           }
         }
         portraitLines.push(plainLine);
-        process.stdout.write(`  ${coloredLine}\n`);
       }
     } catch {
       portraitSpinner.stop("couldn't fetch image — we'll try again later");
     }
 
     if (portraitLines) {
+      console.log("");
+      printPortraitEncounter({
+        bundleDir: getLocalBundleDir(),
+        displayName: name || username,
+        portraitLines,
+        speechLines: [
+          `hi ${(name || username).split(" ")[0]}, i'm U.`,
+          "this is your face in code.",
+          "we'll shape the rest of your identity from here.",
+          "give me a second — i'm pulling the rest together.",
+        ],
+      });
       console.log("");
       console.log("  " + chalk.hex("#C46A3A")(randomPortraitComment()));
       console.log("");

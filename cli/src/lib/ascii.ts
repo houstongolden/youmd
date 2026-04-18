@@ -9,6 +9,7 @@ import chalk from "chalk";
 import * as fs from "fs";
 import * as path from "path";
 import { readGlobalConfig } from "./config";
+import { getPublicProfile } from "./api";
 
 const ACCENT = chalk.hex("#C46A3A");
 
@@ -165,12 +166,13 @@ export function getSavedPortraitLines(
 }
 
 const BOT_LINES = [
-  "  .-.",
-  " (o o)  __",
-  " | O | / /",
-  " |   |/ /",
-  " '~~~' /",
-  "   \\__/ ",
+  "   ▄▄▄▄▄   ",
+  "  █ ▄▄ █   ",
+  "  █ ◉◉ █   ",
+  "  █ ▀▀ █   ",
+  "  ██████   ",
+  " ▄█ ██ █▄  ",
+  "   ▀  ▀    ",
 ];
 
 function padRight(value: string, width: number): string {
@@ -183,11 +185,12 @@ export function printPortraitEncounter(options: {
   recentProjects?: string[];
   currentProject?: string;
   portraitLines: string[];
+  speechLines?: string[];
 }): boolean {
   const portraitLines = options.portraitLines.slice(0, 16);
   if (!portraitLines || portraitLines.length === 0) return false;
 
-  const speechLines = [
+  const speechLines = options.speechLines ?? [
     `hi ${options.displayName.split(" ")[0]}, i'm U.`,
     "i help other agents know you.",
     options.currentProject
@@ -195,7 +198,7 @@ export function printPortraitEncounter(options: {
       : options.recentProjects && options.recentProjects.length > 0
         ? `lately you've been around ${options.recentProjects.slice(0, 3).join(", ")}.`
         : "let's see what you've been working on lately.",
-    "*sipping bitbucks frappaccino*",
+    "give me a second — i'm taking a lap through your recent work.",
   ];
 
   const leftWidth = Math.max(...portraitLines.map((line) => line.length));
@@ -221,7 +224,7 @@ export function printPortraitEncounter(options: {
 
     const leftCell = left ? ACCENT(padRight(left, leftWidth)) : " ".repeat(leftWidth);
     const rightCell = right
-      ? (i < BOT_LINES.length ? chalk.hex("#E09060")(padRight(right, rightWidth)) : chalk.dim(padRight(right, rightWidth)))
+      ? (i < BOT_LINES.length ? chalk.hex("#E09060")(padRight(right, rightWidth)) : chalk.whiteBright(padRight(right, rightWidth)))
       : " ".repeat(rightWidth);
 
     process.stdout.write(`  ${leftCell}    ${rightCell}\n`);
@@ -231,17 +234,61 @@ export function printPortraitEncounter(options: {
 }
 
 export async function resolvePortraitLines(bundleDir: string): Promise<string[] | null> {
+  const bundleUrl = readPrimaryPortraitUrlFromBundle(bundleDir);
+  if (bundleUrl) {
+    const bundlePortrait = await generateAsciiPortraitLines(bundleUrl, 44);
+    if (bundlePortrait && bundlePortrait.length > 0) return bundlePortrait.slice(0, 16);
+  }
+
+  const remotePortrait = await readRemotePortraitLines();
+  if (remotePortrait) return remotePortrait;
+
+  const inferredUrl = await inferPortraitImageUrl(bundleDir);
+  if (inferredUrl) {
+    const inferred = await generateAsciiPortraitLines(inferredUrl, 44);
+    if (inferred && inferred.length > 0) return inferred.slice(0, 16);
+  }
+
   const saved = getSavedPortraitLines(bundleDir, 16);
   if (saved && saved.length > 0) return saved;
 
-  const inferredUrl = inferPortraitImageUrl(bundleDir);
-  if (!inferredUrl) return null;
-
-  return generateAsciiPortraitLines(inferredUrl, 44);
+  return null;
 }
 
-function inferPortraitImageUrl(bundleDir: string): string | null {
+async function readRemotePortraitLines(): Promise<string[] | null> {
   const config = readGlobalConfig();
+  if (!config.username) return null;
+
+  try {
+    const remote = await getPublicProfile(config.username);
+    const remoteProfile = (remote?.youJson as Record<string, unknown> | undefined)?._profile as Record<string, unknown> | undefined;
+    const asciiPortrait = remoteProfile?.asciiPortrait as { lines?: string[] } | undefined;
+    if (Array.isArray(asciiPortrait?.lines) && asciiPortrait.lines.length > 0) {
+      return asciiPortrait.lines.slice(0, 16);
+    }
+  } catch {
+    // non-fatal — fall back to image URL inference
+  }
+
+  return null;
+}
+
+async function inferPortraitImageUrl(bundleDir: string): Promise<string | null> {
+  const bundleUrl = readPrimaryPortraitUrlFromBundle(bundleDir);
+  if (bundleUrl) return bundleUrl;
+
+  const config = readGlobalConfig();
+  if (config.username) {
+    try {
+      const remote = await getPublicProfile(config.username);
+      const remoteProfile = (remote?.youJson as Record<string, unknown> | undefined)?._profile as Record<string, unknown> | undefined;
+      const remoteAvatar = typeof remoteProfile?.avatarUrl === "string" ? remoteProfile.avatarUrl : null;
+      if (remoteAvatar) return remoteAvatar;
+    } catch {
+      // non-fatal — fall through to local link inference
+    }
+  }
+
   if (config.avatarUrl) return config.avatarUrl;
 
   const youJsonPath = path.join(bundleDir, "you.json");
@@ -266,6 +313,29 @@ function inferPortraitImageUrl(bundleDir: string): string | null {
 
     const linkedIn = links.linkedin;
     if (linkedIn) return `https://unavatar.io/linkedin/${encodeURIComponent(linkedIn)}`;
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function readPrimaryPortraitUrlFromBundle(bundleDir: string): string | null {
+  const youJsonPath = path.join(bundleDir, "you.json");
+  if (!fs.existsSync(youJsonPath)) return null;
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(youJsonPath, "utf-8")) as Record<string, unknown>;
+    const socialImages = (parsed.social_images as Record<string, string | undefined> | undefined) || {};
+    const primaryImage = parsed.primary_image;
+
+    if (typeof primaryImage === "string" && socialImages[primaryImage]) {
+      return socialImages[primaryImage] || null;
+    }
+
+    for (const key of ["custom", "linkedin", "github", "x"]) {
+      if (socialImages[key]) return socialImages[key] || null;
+    }
   } catch {
     return null;
   }

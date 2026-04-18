@@ -153,7 +153,8 @@ export async function getPublicProfile(
   if (data && !data.youJson) {
     // If the response has profile[] or identity{}, the entire response IS the youJson
     if (Array.isArray(data.profile) || data.identity) {
-      const { _profile, ...bundleData } = data as Record<string, unknown>;
+      const bundleData = { ...(data as Record<string, unknown>) };
+      delete bundleData._youMd;
       let youMd =
         (bundleData.youMd as string) ||
         (data._youMd as string) ||

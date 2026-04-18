@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
 import { getMe, getPublicProfile, getPrivateContext } from "../lib/api";
-import { readGlobalConfig, getLocalBundleDir, readLocalConfig, writeLocalConfig } from "../lib/config";
+import { readGlobalConfig, writeGlobalConfig, getLocalBundleDir, readLocalConfig, writeLocalConfig } from "../lib/config";
 import { writePrivateContextToLocal } from "./private";
 import { computeContentHash, shortHash } from "../lib/hash";
 import { syncAllSkills } from "../lib/skills";
@@ -33,6 +33,13 @@ export async function pullCommand() {
 
   if (profile && profile.youJson) {
     youJsonSource = { youJson: profile.youJson, youMd: profile.youMd };
+
+    const avatarUrl = ((profile.youJson as Record<string, unknown>)._profile as Record<string, unknown> | undefined)?.avatarUrl;
+    if (typeof avatarUrl === "string" && avatarUrl) {
+      const nextConfig = readGlobalConfig();
+      nextConfig.avatarUrl = avatarUrl;
+      writeGlobalConfig(nextConfig);
+    }
   } else {
     console.log(chalk.dim("  no published profile found, checking your latest bundle..."));
     try {

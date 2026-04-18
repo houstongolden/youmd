@@ -164,6 +164,7 @@ http.route({
       ...(profile.youJson as Record<string, unknown>),
       _profile: {
         avatarUrl: profile.avatarUrl ?? null,
+        asciiPortrait: profile.asciiPortrait ?? null,
         displayName: profile.displayName ?? null,
         isClaimed: profile.isClaimed ?? false,
         source: profile.source,
