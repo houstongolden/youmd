@@ -47,7 +47,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.6";
+const CURRENT_VERSION = "0.6.7";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
