@@ -42,6 +42,7 @@ Last Commit: see git log for latest 2026-04-18 `you` launcher + proactive portra
 - Conversational AI onboarding with BrailleSpinners, ASCII logo, portrait rendering
 - Passwordless email-code auth (no API token required for your own account)
 - `youmd login` now clearly splits the auth paths: press Enter for browser sign-in, type your email for in-terminal code login, or use `--key` for direct agent auth
+- Install/login/register/init/onboarding copy now consistently points users toward `you` as the main "meet U" terminal path once they have an identity bundle, instead of over-indexing on `youmd chat`
 - `youmd logout` now exists and clears stale local auth state from `~/.youmd/config.json`
 - CLI auth now forces production defaults for `apiUrl` / `appUrl` on fresh logins and resolves those URLs per request instead of caching a stale dev endpoint at process start
 - npm publish retry path is fixed: the next release target is `0.6.6`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly

@@ -25,6 +25,7 @@ Last Updated: 2026-04-18
 | Non-duplicated streamed chat greeting | Done | `youmd chat` no longer prints the first assistant turn twice after a successful streamed opening response |
 | Proactive CLI repo callouts | Done | `youmd` / `youmd chat` now notice missing AGENTS/project-context wiring in a real repo and suggest `youmd skill init-project` at the right moment |
 | U-style npm postinstall | Done | npm install now drops users into a logo-forward “meet U” moment with next moves instead of the old dead `Run: youmd init` text |
+| `you`-first onboarding copy | Done | Installer output, register success, init success, onboarding next-steps, and README quickstart now consistently steer users toward `you` as the main alive entrypoint once a bundle exists |
 | Raw-markdown identity roundtrip preservation | Done | Richer markdown in preferences/directives/voice files now survives compile → publish → pull instead of being flattened down to only structured top-line fields |
 | API key rotation + cleanup UX | Done | Settings pane now supports rotating to one fresh key, bulk revoking all API keys, and copying the newly issued key without revoking other token types |
 | Revoked API key history collapse | Done | Settings now shows active keys by default and hides revoked history behind an explicit toggle |

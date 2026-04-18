@@ -238,6 +238,13 @@ Last Updated: 2026-04-18
 **Progress (2026-04-18):** Hardened the `you` launcher so it now runs a real local-context investigation before speaking, keeps a live braille spinner active while it scans nearby AGENTS / CLAUDE / project-context signals, and then reports concrete findings instead of bluffing that it already looked around. Reworked the terminal bot into a chunkier block shape that sits more naturally beside the YOU logo. Tightened the encounter copy so the final speech line points at real active work ("taking a lap through your recent work"). Also fixed a contract bug on the public profile path: the CLI wrapper for `/api/v1/profiles` was stripping `_profile` metadata, so the launcher could not actually see the live profile portrait metadata it was supposed to prefer. The public profile payload now includes `_profile.asciiPortrait`, and the CLI portrait resolver now prefers current profile/portrait data before stale cached avatar fallbacks. Remaining step: verify after deploy that the startup portrait now matches Houston's current default/public portrait on the live profile.
 **Verification:** After the latest deploy and npm publish, run `you` from a fresh shell. The startup should show the updated bot art, keep a live spinner active while U investigates local context, print real findings, and render the same portrait-in-code that the public profile exposes as Houston's current default portrait.
 
+### 57. Teach `you` consistently across install and onboarding surfaces
+**Status:** DONE
+**Verified:** NO
+**Request:** Once `you` exists as the real wingman entrypoint, make sure the surrounding install/login/init/onboarding guidance consistently points people there instead of making them memorize the older `youmd chat` path.
+**Progress (2026-04-18):** Updated the installer output, CLI register success copy, example-init next steps, conversational onboarding next-step block, and README quickstart/command table so the product consistently teaches `you` as the main alive terminal entrypoint after a bundle exists. `youmd chat` still exists as the explicit long-form command, but it is no longer the dominant path in the first-run guidance.
+**Verification:** Run the curl installer, register/login/init, and read the README quickstart. The next-step guidance should consistently suggest `you` once the identity bundle exists.
+
 ---
 
 ## SEO/AEO (from March 24-25)

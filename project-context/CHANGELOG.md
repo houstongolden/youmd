@@ -1,5 +1,12 @@
 # You.md — Changelog
 
+## 2026-04-18 — `you`-First Install + Onboarding Copy
+
+### CLI / Install / DX
+- Tightened the first-run guidance around the new launcher so the product now consistently teaches `you` as the main "meet U" path once a bundle exists
+- Updated the curl installer next-steps output, CLI register success copy, example-init next steps, and conversational onboarding next-step block so they no longer over-index on `youmd chat`
+- Updated the README quickstart and command table to introduce `you` explicitly as the alive terminal entrypoint instead of burying it beneath the older explicit chat command
+
 ## 2026-04-18 — Truthful `you` Startup + Public Portrait Contract Fix
 
 ### CLI / Portrait / Agent UX
