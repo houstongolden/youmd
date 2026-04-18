@@ -45,7 +45,7 @@ import { logsCommand } from "./commands/logs";
 import { agentsCommand } from "./commands/agents";
 
 const program = new Command();
-const CURRENT_VERSION = "0.6.8";
+const CURRENT_VERSION = "0.6.9";
 const CLI_NAME = process.env.YOUMD_LAUNCH_SURFACE === "you" ? "you" : "youmd";
 
 program
@@ -214,7 +214,7 @@ async function renderNoArgWelcome(): Promise<void> {
     rawProjectCtx && path.resolve(rawProjectCtx.root) !== path.resolve(os.homedir())
       ? rawProjectCtx
       : null;
-  const recentInsights = getRecentProjectInsights(process.cwd(), 3);
+  const recentInsights = getRecentProjectInsights(process.cwd(), 6);
   const recentProjects = recentInsights.map((item) => item.name);
   const missingRepoBootstrap =
     !!projectCtx &&
@@ -262,7 +262,7 @@ async function renderNoArgWelcome(): Promise<void> {
       console.log("  " + DIM("current project: ") + chalk.white(projectCtx.name) + DIM(` (${projectCtx.root})`));
     }
     if (recentProjects.length > 0) {
-      console.log("  " + DIM("recent project contexts: ") + recentProjects.map((name) => chalk.cyan(name)).join(DIM(", ")));
+      console.log("  " + DIM("recent project contexts: ") + recentProjects.slice(0, 3).map((name) => chalk.cyan(name)).join(DIM(", ")));
     }
     const topOpportunity = recentInsights.find((item) => item.signals.length > 0);
     if (topOpportunity && !projectCtx) {

@@ -27,6 +27,17 @@ export interface RecentProjectInsight {
   suggestedCommand: string;
 }
 
+const STANDARD_WORKSPACE_ROOTS = [
+  "Desktop/CODE_2025",
+  "Desktop/CODE_2026",
+  "CODE_2025",
+  "CODE_2026",
+  "Projects",
+  "projects",
+  "Developer",
+  "dev",
+];
+
 export interface ProjectPreferences {
   tone: string;
   stack: string;
@@ -283,6 +294,22 @@ function quoteShellArg(value: string): string {
   return `"${value.replace(/(["\\$`])/g, "\\$1")}"`;
 }
 
+function countMarkdownFiles(dir: string): number {
+  if (!fs.existsSync(dir)) return 0;
+  try {
+    let total = 0;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith(".")) continue;
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) total += countMarkdownFiles(fullPath);
+      else if (entry.isFile() && entry.name.endsWith(".md")) total += 1;
+    }
+    return total;
+  } catch {
+    return 0;
+  }
+}
+
 function buildProjectSignals(projectDir: string, projectName: string): string[] {
   const signals: string[] = [];
 
@@ -311,30 +338,149 @@ function buildProjectSignals(projectDir: string, projectName: string): string[] 
   return signals;
 }
 
+function getWorkspaceRootCandidates(startDir?: string): string[] {
+  const roots = new Set<string>();
+  const envRoots = process.env.YOUMD_WORKSPACE_ROOTS
+    ?.split(path.delimiter)
+    .map((entry) => entry.trim())
+    .filter(Boolean) || [];
+
+  for (const root of envRoots) {
+    if (fs.existsSync(root)) roots.add(path.resolve(root));
+  }
+
+  for (const relative of STANDARD_WORKSPACE_ROOTS) {
+    const candidate = path.join(os.homedir(), relative);
+    if (fs.existsSync(candidate)) roots.add(path.resolve(candidate));
+  }
+
+  if (startDir) {
+    const cwd = path.resolve(startDir);
+    roots.add(path.dirname(cwd));
+    roots.add(path.dirname(path.dirname(cwd)));
+  }
+
+  return Array.from(roots).filter((root) => fs.existsSync(root));
+}
+
+function getWorkspaceProjectModifiedAt(projectDir: string): number {
+  const candidates = [
+    path.join(projectDir, "AGENTS.md"),
+    path.join(projectDir, "CLAUDE.md"),
+    path.join(projectDir, "project-context"),
+    path.join(projectDir, ".youmd-project"),
+  ];
+
+  let latest = 0;
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate)) continue;
+    try {
+      latest = Math.max(latest, fs.statSync(candidate).mtimeMs);
+    } catch {
+      // non-fatal
+    }
+  }
+  return latest;
+}
+
+function buildWorkspaceSignals(projectDir: string): string[] {
+  const hasAgents = fs.existsSync(path.join(projectDir, "AGENTS.md"));
+  const hasClaude = fs.existsSync(path.join(projectDir, "CLAUDE.md"));
+  const contextDir = path.join(projectDir, "project-context");
+  const contextFiles = countMarkdownFiles(contextDir);
+  const signals: string[] = [];
+
+  if ((hasAgents || hasClaude) && contextFiles === 0) {
+    signals.push("has agent instructions but still wants a project-context spine");
+  } else if (!hasAgents && !hasClaude && contextFiles > 0) {
+    signals.push("has project-context docs but no top-level agent entrypoint");
+  } else if (contextFiles > 0 && contextFiles < 4) {
+    signals.push("has a project-context directory, but it still feels thin");
+  } else if (!hasAgents && !hasClaude && contextFiles === 0) {
+    signals.push("still looks unwired for agent-native work");
+  }
+
+  return signals;
+}
+
+function getWorkspaceProjectInsights(startDir?: string, limit = 5): RecentProjectInsight[] {
+  const insights: RecentProjectInsight[] = [];
+  const seen = new Set<string>();
+
+  for (const root of getWorkspaceRootCandidates(startDir)) {
+    let entries: fs.Dirent[] = [];
+    try {
+      entries = fs.readdirSync(root, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
+      const projectDir = path.join(root, entry.name);
+      const hasMarker =
+        fs.existsSync(path.join(projectDir, "AGENTS.md")) ||
+        fs.existsSync(path.join(projectDir, "CLAUDE.md")) ||
+        fs.existsSync(path.join(projectDir, "project-context")) ||
+        fs.existsSync(path.join(projectDir, ".youmd-project"));
+      if (!hasMarker) continue;
+
+      const realDir = fs.realpathSync.native(projectDir);
+      if (seen.has(realDir)) continue;
+      seen.add(realDir);
+
+      const signals = buildWorkspaceSignals(projectDir);
+      insights.push({
+        name: entry.name,
+        slug: entry.name,
+        projectDir,
+        updatedAt: getWorkspaceProjectModifiedAt(projectDir),
+        signals,
+        summary: signals.length > 0 ? `${entry.name} ${signals[0]}.` : `${entry.name} already looks pretty well-shaped.`,
+        suggestedCommand: `cd ${quoteShellArg(projectDir)} && you`,
+      });
+    }
+  }
+
+  return insights
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, limit);
+}
+
 export function getRecentProjectInsights(startDir?: string, limit = 3): RecentProjectInsight[] {
   const projectsRoot =
     findProjectsRoot(startDir) ||
     (fs.existsSync(path.join(os.homedir(), ".youmd", "projects"))
       ? path.join(os.homedir(), ".youmd", "projects")
       : null);
-  if (!projectsRoot) return [];
+  const managedInsights = projectsRoot
+    ? listProjects(projectsRoot).map((slug) => {
+        const projectDir = path.join(projectsRoot, slug);
+        const meta = readProjectMeta(projectDir);
+        const projectName = meta?.name || slug;
+        const updatedAt = meta?.updated_at ? Date.parse(meta.updated_at) : 0;
+        const signals = buildProjectSignals(projectDir, projectName);
+        return {
+          name: projectName,
+          slug,
+          projectDir,
+          updatedAt,
+          signals,
+          summary: signals.length > 0 ? `${projectName} ${signals[0]}.` : `${projectName} looks pretty well-shaped already.`,
+          suggestedCommand: `youmd project show ${quoteShellArg(projectName)}`,
+        };
+      })
+    : [];
 
-  return listProjects(projectsRoot)
-    .map((slug) => {
-      const projectDir = path.join(projectsRoot, slug);
-      const meta = readProjectMeta(projectDir);
-      const projectName = meta?.name || slug;
-      const updatedAt = meta?.updated_at ? Date.parse(meta.updated_at) : 0;
-      const signals = buildProjectSignals(projectDir, projectName);
-      return {
-        name: projectName,
-        slug,
-        projectDir,
-        updatedAt,
-        signals,
-        summary: signals.length > 0 ? `${projectName} ${signals[0]}.` : `${projectName} looks pretty well-shaped already.`,
-        suggestedCommand: `youmd project show ${quoteShellArg(projectName)}`,
-      };
+  const combined = [...managedInsights, ...getWorkspaceProjectInsights(startDir, Math.max(limit * 2, 6))];
+  const seen = new Set<string>();
+
+  return combined
+    .filter((item) => {
+      const key = fs.existsSync(item.projectDir) ? fs.realpathSync.native(item.projectDir) : path.resolve(item.projectDir);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     })
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, limit);

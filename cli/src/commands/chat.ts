@@ -48,7 +48,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.8";
+const CURRENT_VERSION = "0.6.9";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1130,7 +1130,7 @@ async function runYouLaunchInvestigation(
       }
     } else if (recentProjects.length > 0) {
       findings.push(`recent orbit: ${recentProjects.slice(0, 3).join(", ")}.`);
-      const insights = getRecentProjectInsights(process.cwd(), 3);
+      const insights = getRecentProjectInsights(process.cwd(), 6);
       const opportunities = insights.filter((item) => item.signals.length > 0).slice(0, 2);
       for (const opportunity of opportunities) {
         findings.push(opportunity.summary);
@@ -1159,7 +1159,7 @@ async function printChatOpening(
   const cfg = readGlobalConfig();
   const user = cfg.username ? `@${cfg.username}` : "you";
   const displayName = readDisplayName(bundleDir);
-  const recentInsights = getRecentProjectInsights(process.cwd(), 3);
+  const recentInsights = getRecentProjectInsights(process.cwd(), 6);
   const recentProjects = recentInsights.map((item) => item.name);
   const launchSurface = process.env.YOUMD_LAUNCH_SURFACE;
   let investigation: LaunchInvestigation = { findings: [] };
@@ -1240,7 +1240,7 @@ function buildYouLaunchIntro(
   investigation: LaunchInvestigation,
 ): string {
   const displayName = readDisplayName(bundleDir).split(" ")[0];
-  const recentInsights = getRecentProjectInsights(process.cwd(), 3);
+  const recentInsights = getRecentProjectInsights(process.cwd(), 6);
   const recentProjects = recentInsights.map((item) => item.name);
   const lines: string[] = [];
 
