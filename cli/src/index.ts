@@ -45,7 +45,7 @@ import { logsCommand } from "./commands/logs";
 import { agentsCommand } from "./commands/agents";
 
 const program = new Command();
-const CURRENT_VERSION = "0.6.9";
+const CURRENT_VERSION = "0.6.10";
 const CLI_NAME = process.env.YOUMD_LAUNCH_SURFACE === "you" ? "you" : "youmd";
 
 program
@@ -190,6 +190,28 @@ function readDisplayName(bundleDir: string | null, cfg: ReturnType<typeof readGl
   return cfg.username || "friend";
 }
 
+function getFeaturedRecentProjectNames(
+  recentInsights: Array<{ name: string; signals: string[] }>,
+  limit = 3,
+): string[] {
+  const featured: string[] = [];
+  const pushUnique = (name: string) => {
+    if (!featured.includes(name)) featured.push(name);
+  };
+
+  for (const insight of recentInsights) {
+    if (insight.signals.length > 0) pushUnique(insight.name);
+    if (featured.length >= limit) return featured;
+  }
+
+  for (const insight of recentInsights) {
+    pushUnique(insight.name);
+    if (featured.length >= limit) return featured;
+  }
+
+  return featured;
+}
+
 async function printUpdateHint(): Promise<void> {
   const latest = await checkForCliUpdate(CURRENT_VERSION);
   if (!latest) return;
@@ -215,7 +237,7 @@ async function renderNoArgWelcome(): Promise<void> {
       ? rawProjectCtx
       : null;
   const recentInsights = getRecentProjectInsights(process.cwd(), 6);
-  const recentProjects = recentInsights.map((item) => item.name);
+  const recentProjects = getFeaturedRecentProjectNames(recentInsights);
   const missingRepoBootstrap =
     !!projectCtx &&
     (!fs.existsSync(path.join(projectCtx.root, "AGENTS.md")) ||
@@ -276,7 +298,9 @@ async function renderNoArgWelcome(): Promise<void> {
     if (missingRepoBootstrap) {
       console.log("    " + chalk.cyan("youmd skill init-project") + DIM(" wire this repo for your agents"));
     } else if (topOpportunity) {
-      console.log("    " + chalk.cyan(topOpportunity.suggestedCommand) + DIM(" inspect the next project that wants attention"));
+      console.log("    " + chalk.cyan("open the next project opening"));
+      console.log("      " + chalk.cyan(topOpportunity.suggestedCommand));
+      console.log("      " + DIM("then let U tighten it up"));
     } else {
       console.log("    " + chalk.cyan("youmd sync") + DIM("           pull + push the latest identity state"));
     }

@@ -48,7 +48,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.9";
+const CURRENT_VERSION = "0.6.10";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1036,6 +1036,28 @@ function getRecentProjectNames(limit = 3): string[] {
   return getRecentProjectInsights(process.cwd(), limit).map((item) => item.name);
 }
 
+function getFeaturedRecentProjectNames(
+  recentInsights: Array<{ name: string; signals: string[] }>,
+  limit = 3,
+): string[] {
+  const featured: string[] = [];
+  const pushUnique = (name: string) => {
+    if (!featured.includes(name)) featured.push(name);
+  };
+
+  for (const insight of recentInsights) {
+    if (insight.signals.length > 0) pushUnique(insight.name);
+    if (featured.length >= limit) return featured;
+  }
+
+  for (const insight of recentInsights) {
+    pushUnique(insight.name);
+    if (featured.length >= limit) return featured;
+  }
+
+  return featured;
+}
+
 async function printUpdateHint(): Promise<void> {
   const latest = await checkForCliUpdate(CURRENT_VERSION);
   if (!latest) return;
@@ -1129,8 +1151,9 @@ async function runYouLaunchInvestigation(
         findings.push(`${projectCtx.name} is open, but one of the local context probes tripped over itself.`);
       }
     } else if (recentProjects.length > 0) {
-      findings.push(`recent orbit: ${recentProjects.slice(0, 3).join(", ")}.`);
       const insights = getRecentProjectInsights(process.cwd(), 6);
+      const featuredRecent = getFeaturedRecentProjectNames(insights, 3);
+      findings.push(`recent orbit: ${featuredRecent.join(", ")}.`);
       const opportunities = insights.filter((item) => item.signals.length > 0).slice(0, 2);
       for (const opportunity of opportunities) {
         findings.push(opportunity.summary);
@@ -1160,7 +1183,7 @@ async function printChatOpening(
   const user = cfg.username ? `@${cfg.username}` : "you";
   const displayName = readDisplayName(bundleDir);
   const recentInsights = getRecentProjectInsights(process.cwd(), 6);
-  const recentProjects = recentInsights.map((item) => item.name);
+  const recentProjects = getFeaturedRecentProjectNames(recentInsights, 6);
   const launchSurface = process.env.YOUMD_LAUNCH_SURFACE;
   let investigation: LaunchInvestigation = { findings: [] };
 
@@ -1224,7 +1247,9 @@ async function printChatOpening(
     : null;
   if (topOpportunity) {
     console.log("  " + ACCENT("next opening i see.") + " " + DIM(topOpportunity.summary));
-    console.log("  " + DIM("run ") + chalk.cyan(topOpportunity.suggestedCommand) + DIM(" and i'll help tighten it up."));
+    console.log("  " + DIM("run:"));
+    console.log("    " + chalk.cyan(topOpportunity.suggestedCommand));
+    console.log("  " + DIM("then i'll help tighten it up."));
   }
 
   console.log("");
@@ -1241,7 +1266,7 @@ function buildYouLaunchIntro(
 ): string {
   const displayName = readDisplayName(bundleDir).split(" ")[0];
   const recentInsights = getRecentProjectInsights(process.cwd(), 6);
-  const recentProjects = recentInsights.map((item) => item.name);
+  const recentProjects = getFeaturedRecentProjectNames(recentInsights, 6);
   const lines: string[] = [];
 
   lines.push(`hi ${displayName}. i'm U — i help other agents know you.`);
