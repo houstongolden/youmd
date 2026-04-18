@@ -21,6 +21,15 @@ const BOT_LINES = [
   "   ▀  ▀    ",
 ];
 
+const YOU_LOGO_LINES = [
+  "  ██╗   ██╗   ██████╗   ██╗   ██╗",
+  "  ╚██╗ ██╔╝  ██╔═══██╗  ██║   ██║",
+  "   ╚████╔╝   ██║   ██║  ██║   ██║",
+  "    ╚██╔╝    ██║   ██║  ██║   ██║",
+  "     ██║     ╚██████╔╝  ╚██████╔╝",
+  "     ╚═╝      ╚═════╝    ╚═════╝ ",
+];
+
 /** Read a cookie by name */
 function getCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
@@ -377,7 +386,20 @@ function InitializeEncounter({
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_260px] md:items-center">
+    <div className="space-y-4">
+      <div className="overflow-x-auto border-b border-[hsl(var(--border))] pb-4">
+        <pre className="font-mono text-[10px] sm:text-[12px] leading-[1.05] text-[hsl(var(--accent))] whitespace-pre">
+          {YOU_LOGO_LINES.join("\n")}
+        </pre>
+        <div className="mt-2 font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-70">
+          ──────────────────────────────────
+        </div>
+        <div className="mt-1 font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-80">
+          <span className="text-[hsl(var(--text-secondary))] opacity-90">you.md</span> — identity for the agent internet
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_260px] md:items-center">
       <div className="min-w-0">
         <div className="mb-3 text-[10px] font-mono uppercase tracking-[0.18em] text-[hsl(var(--accent))] opacity-70">
           there you are
@@ -417,6 +439,7 @@ function InitializeEncounter({
           ))}
         </div>
       </div>
+    </div>
     </div>
   );
 }
