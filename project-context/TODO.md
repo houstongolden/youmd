@@ -12,9 +12,9 @@ PRD Version: 2.3
 - [x] Make conversational startup work from the home bundle in `~/.youmd` so `you` / `youmd chat` still work outside a project-local `.youmd/`
 - [x] Make bare `youmd`, `youmd chat`, and npm postinstall feel more alive and U-like instead of dropping users into a dead utility experience
 - [x] Preserve richer preference/directive markdown across identity push → pull roundtrips so saved agent-behavior instructions do not get flattened away
-- [ ] Publish `youmd@0.6.4` so end users get the `you` launcher, portrait splash, update hints, and raw-markdown identity roundtrip preservation
+- [x] Extend home-bundle fallback parity to read-only bundle commands so `status`, `diff`, `export`, and `preview` work like `you`
+- [ ] Publish `youmd@0.6.5` so end users get the `you` launcher, portrait splash, update hints, read-only active-bundle fallback, and raw-markdown identity roundtrip preservation
 - [ ] Build a truly proactive first-run U flow after install/login instead of relying only on better static startup copy
-- [ ] Extend home-bundle fallback parity beyond chat launch so commands like `status` and other read-only surfaces behave as gracefully as `you`
 - [ ] Improve portrait fidelity/caching for the `you` splash so fallback avatar-derived ASCII is less blocky and more recognizably "you"
 
 ### 2026-04-17

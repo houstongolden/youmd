@@ -6,8 +6,9 @@
 - Added a real `you` launcher alongside `youmd`, so the default local entry can now feel more like Claude/OpenClaw: if you're authenticated and have a bundle, `you` drops straight into chat instead of making you remember `youmd chat`
 - Upgraded that launcher to feel like meeting U instead of a utility binary: it now renders the YOU logo, loads the user's ASCII portrait-in-code, shows a small terminal bot greeting the portrait, and opens with a more proactive "I help other agents know you" intro
 - Made the conversational launch path resilient outside initialized repos by letting `you` / `youmd chat` fall back to the home bundle in `~/.youmd` when there is no local `.youmd/`
+- Extended that same active-bundle fallback to read-only commands, so `status`, `diff`, `export`, and `preview` now work cleanly from arbitrary directories instead of pretending no bundle exists
 - Added update-aware startup hints so the CLI can notice when npm has a newer published build and show the exact curl and npm commands to upgrade without the user having to guess
-- Bumped the next publish target to `0.6.4` so the runtime version, package metadata, and MCP user-agent stay aligned for the next npm release
+- Bumped the next publish target to `0.6.5` so the runtime version, package metadata, and MCP user-agent stay aligned for the next npm release
 
 ## 2026-04-18 — U-Style Install Moment + Durable Preference Roundtrips
 

@@ -13,10 +13,11 @@ Last Updated: 2026-04-18
 | CLI logout | Done | `youmd logout` now clears local auth state so machines can switch accounts without hand-editing `~/.youmd/config.json` |
 | Stale endpoint-safe CLI auth | Done | CLI auth requests now resolve `apiUrl` / `appUrl` at request time and reset fresh logins to production defaults instead of verifying production keys against cached dev endpoints |
 | Curl installer | Done | `https://you.md/install.sh` now installs the latest global CLI and teaches `youmd login` + `youmd init` as the next steps |
-| Clean npm publish metadata | Done | CLI package now targets `0.6.4`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
+| Clean npm publish metadata | Done | CLI package now targets `0.6.5`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
 | U-style CLI entrance | Done | Bare `youmd` now opens with the YOU logo, an optional saved portrait preview, a more human greeting, and contextual “next best moves” instead of a dry mini help menu |
 | `you` launcher alias | Done | `you` now launches straight into U chat when the user is authenticated and a bundle exists, while still supporting subcommands like `you status` |
 | Home-bundle conversational fallback | Done | `you` / `youmd chat` now work from arbitrary directories by falling back to `~/.youmd` when no local `.youmd/` exists |
+| Active-bundle read-only parity | Done | `status`, `diff`, `export`, and `preview` now use the same active-bundle resolution as `you`, so they can operate from `~/.youmd` outside initialized repos |
 | Portrait + bot startup scene | Done | The proactive `you` launch now shows the YOU logo, the user's ASCII portrait, a small bot greeting the portrait, and a more human "meet U" intro |
 | Update-aware CLI startup | Done | CLI startup now checks npm for newer published versions, caches the result, and shows both curl and npm upgrade paths when an update exists |
 | Non-duplicated streamed chat greeting | Done | `youmd chat` no longer prints the first assistant turn twice after a successful streamed opening response |
@@ -136,7 +137,7 @@ Last Updated: 2026-04-18
 | Private vault encryption | Not started | AES-256-GCM, deferred |
 | Rate limiting | Not started | Per plan |
 
-## CLI (npm: youmd v0.6.4)
+## CLI (npm: youmd v0.6.5)
 
 | Feature | Status | Notes |
 |---|---|---|
