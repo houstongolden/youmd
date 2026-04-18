@@ -13,8 +13,12 @@ Last Updated: 2026-04-18
 | CLI logout | Done | `youmd logout` now clears local auth state so machines can switch accounts without hand-editing `~/.youmd/config.json` |
 | Stale endpoint-safe CLI auth | Done | CLI auth requests now resolve `apiUrl` / `appUrl` at request time and reset fresh logins to production defaults instead of verifying production keys against cached dev endpoints |
 | Curl installer | Done | `https://you.md/install.sh` now installs the latest global CLI and teaches `youmd login` + `youmd init` as the next steps |
-| Clean npm publish metadata | Done | CLI package now targets `0.6.3`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
+| Clean npm publish metadata | Done | CLI package now targets `0.6.4`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
 | U-style CLI entrance | Done | Bare `youmd` now opens with the YOU logo, an optional saved portrait preview, a more human greeting, and contextual “next best moves” instead of a dry mini help menu |
+| `you` launcher alias | Done | `you` now launches straight into U chat when the user is authenticated and a bundle exists, while still supporting subcommands like `you status` |
+| Home-bundle conversational fallback | Done | `you` / `youmd chat` now work from arbitrary directories by falling back to `~/.youmd` when no local `.youmd/` exists |
+| Portrait + bot startup scene | Done | The proactive `you` launch now shows the YOU logo, the user's ASCII portrait, a small bot greeting the portrait, and a more human "meet U" intro |
+| Update-aware CLI startup | Done | CLI startup now checks npm for newer published versions, caches the result, and shows both curl and npm upgrade paths when an update exists |
 | Non-duplicated streamed chat greeting | Done | `youmd chat` no longer prints the first assistant turn twice after a successful streamed opening response |
 | Proactive CLI repo callouts | Done | `youmd` / `youmd chat` now notice missing AGENTS/project-context wiring in a real repo and suggest `youmd skill init-project` at the right moment |
 | U-style npm postinstall | Done | npm install now drops users into a logo-forward “meet U” moment with next moves instead of the old dead `Run: youmd init` text |
@@ -132,11 +136,12 @@ Last Updated: 2026-04-18
 | Private vault encryption | Not started | AES-256-GCM, deferred |
 | Rate limiting | Not started | Per plan |
 
-## CLI (npm: youmd v0.6.1)
+## CLI (npm: youmd v0.6.4)
 
 | Feature | Status | Notes |
 |---|---|---|
 | youmd init | Done | Conversational AI onboarding with BrailleSpinners, ASCII portrait, multi-select |
+| you | Done | Friendly shortcut launcher for U chat with portrait scene + proactive intro |
 | youmd chat | Done | Ongoing agent conversation with slash commands, project awareness |
 | youmd chat EOF handling | Done | Piped/non-interactive chat sessions now exit cleanly on closed stdin instead of crashing with `ERR_USE_AFTER_CLOSE` |
 | youmd build | Done | Local compile + thinking phrases |
