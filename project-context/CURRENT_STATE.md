@@ -35,7 +35,7 @@ Last Commit: see git log for latest 2026-04-18 `you` launcher + proactive portra
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
 
-### CLI (youmd v0.6.9 — ready to publish)
+### CLI (youmd v0.6.10 — ready to publish)
 - 21 commands (added `skill` with 19 subcommands)
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
@@ -45,7 +45,7 @@ Last Commit: see git log for latest 2026-04-18 `you` launcher + proactive portra
 - Install/login/register/init/onboarding copy now consistently points users toward `you` as the main "meet U" terminal path once they have an identity bundle, instead of over-indexing on `youmd chat`
 - `youmd logout` now exists and clears stale local auth state from `~/.youmd/config.json`
 - CLI auth now forces production defaults for `apiUrl` / `appUrl` on fresh logins and resolves those URLs per request instead of caching a stale dev endpoint at process start
-- npm publish retry path is fixed: the next release target is `0.6.9`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
+- npm publish retry path is fixed: the next release target is `0.6.10`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
 - Bare `youmd` now enters like U instead of dropping straight into a dry command list: it shows the YOU logo, optionally shows the saved portrait preview, greets the user, surfaces project-context opportunities, and proposes the next best moves contextually
 - `youmd chat` now opens with the same U-style entrance and no longer prints the first assistant greeting twice when streaming succeeds
 - The npm install moment is now less deadpan: postinstall prints a real U-style welcome with logo + next moves instead of the old `Run: youmd init`
@@ -113,7 +113,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Existing API keys created before the reveal upgrade remain non-revealable by design because those historical records were stored hash-only; newly created or rotated keys are now revealable, so one rotate is the migration path for older keys
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 - The CLI still does not feel proactive enough at install/startup compared with Claude Code/OpenClaw. The new startup entrance is a meaningful step, but U still needs a richer first-run / post-install “friendly wingman” flow that helps without requiring the user to already know the commands
-- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.9` and need one more npm publish before end users get the `you` launcher, portrait splash, truthful startup investigation, update hints, public-profile portrait contract fix, active-bundle fallback on read-only commands, raw-markdown roundtrip preservation, recent-project opportunity scanning from arbitrary directories, and broader local workspace repo awareness
+- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.10` and need one more npm publish before end users get the `you` launcher, portrait splash, truthful startup investigation, update hints, public-profile portrait contract fix, active-bundle fallback on read-only commands, raw-markdown roundtrip preservation, recent-project opportunity scanning from arbitrary directories, broader local workspace repo awareness, and actionable recent-project openings
 
 ### Portrait Sync
 - CLI generates ASCII portraits locally but sync to web API is not verified end-to-end
