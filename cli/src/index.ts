@@ -15,7 +15,7 @@ import {
   detectProjectContext,
 } from "./lib/config";
 import { printPortraitEncounter, printYouLogo, resolvePortraitLines } from "./lib/ascii";
-import { findProjectsRoot, listProjects } from "./lib/project";
+import { getRecentProjectInsights } from "./lib/project";
 import { checkForCliUpdate } from "./lib/update";
 import { initCommand } from "./commands/init";
 import { loginCommand } from "./commands/login";
@@ -45,7 +45,7 @@ import { logsCommand } from "./commands/logs";
 import { agentsCommand } from "./commands/agents";
 
 const program = new Command();
-const CURRENT_VERSION = "0.6.7";
+const CURRENT_VERSION = "0.6.8";
 const CLI_NAME = process.env.YOUMD_LAUNCH_SURFACE === "you" ? "you" : "youmd";
 
 program
@@ -162,29 +162,6 @@ function renderGroupedHelp(): string {
 // commander's default rendering, which is still what we want for them.
 program.helpInformation = () => renderGroupedHelp();
 
-function getRecentProjectNames(limit = 3): string[] {
-  const projectsRoot = findProjectsRoot();
-  if (!projectsRoot) return [];
-
-  return listProjects(projectsRoot)
-    .map((name) => {
-      const projectJson = path.join(projectsRoot, name, "project.json");
-      let updatedAt = 0;
-      try {
-        const parsed = JSON.parse(fs.readFileSync(projectJson, "utf-8")) as {
-          updated_at?: string;
-        };
-        updatedAt = parsed.updated_at ? new Date(parsed.updated_at).getTime() : 0;
-      } catch {
-        // non-fatal
-      }
-      return { name, updatedAt };
-    })
-    .sort((a, b) => b.updatedAt - a.updatedAt)
-    .slice(0, limit)
-    .map((item) => item.name);
-}
-
 function resolveBundleDirForWelcome(): string | null {
   const localDir = getLocalBundleDir();
   if (bundleLooksInitialized(localDir)) return localDir;
@@ -237,7 +214,8 @@ async function renderNoArgWelcome(): Promise<void> {
     rawProjectCtx && path.resolve(rawProjectCtx.root) !== path.resolve(os.homedir())
       ? rawProjectCtx
       : null;
-  const recentProjects = getRecentProjectNames();
+  const recentInsights = getRecentProjectInsights(process.cwd(), 3);
+  const recentProjects = recentInsights.map((item) => item.name);
   const missingRepoBootstrap =
     !!projectCtx &&
     (!fs.existsSync(path.join(projectCtx.root, "AGENTS.md")) ||
@@ -286,6 +264,10 @@ async function renderNoArgWelcome(): Promise<void> {
     if (recentProjects.length > 0) {
       console.log("  " + DIM("recent project contexts: ") + recentProjects.map((name) => chalk.cyan(name)).join(DIM(", ")));
     }
+    const topOpportunity = recentInsights.find((item) => item.signals.length > 0);
+    if (topOpportunity && !projectCtx) {
+      console.log("  " + ACCENT("i found an opening.") + " " + DIM(topOpportunity.summary));
+    }
     console.log("");
     console.log("  " + chalk.bold("next best moves"));
     console.log("");
@@ -293,6 +275,8 @@ async function renderNoArgWelcome(): Promise<void> {
     console.log("    " + chalk.cyan("youmd status") + DIM("         check sync state, publish state, and gaps"));
     if (missingRepoBootstrap) {
       console.log("    " + chalk.cyan("youmd skill init-project") + DIM(" wire this repo for your agents"));
+    } else if (topOpportunity) {
+      console.log("    " + chalk.cyan(topOpportunity.suggestedCommand) + DIM(" inspect the next project that wants attention"));
     } else {
       console.log("    " + chalk.cyan("youmd sync") + DIM("           pull + push the latest identity state"));
     }

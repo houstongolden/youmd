@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as os from "os";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -14,6 +15,16 @@ export interface ProjectMemory {
   category: string;
   content: string;
   created_at: string;
+}
+
+export interface RecentProjectInsight {
+  name: string;
+  slug: string;
+  projectDir: string;
+  updatedAt: number;
+  signals: string[];
+  summary: string;
+  suggestedCommand: string;
 }
 
 export interface ProjectPreferences {
@@ -233,6 +244,100 @@ export function listProjects(projectsRoot: string): string[] {
       return fs.existsSync(projectJson);
     })
     .sort();
+}
+
+function readProjectMeta(projectDir: string): ProjectMeta | null {
+  const metaPath = path.join(projectDir, "project.json");
+  if (!fs.existsSync(metaPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(metaPath, "utf-8")) as ProjectMeta;
+  } catch {
+    return null;
+  }
+}
+
+function readTrimmed(filePath: string): string {
+  if (!fs.existsSync(filePath)) return "";
+  try {
+    return fs.readFileSync(filePath, "utf-8").trim();
+  } catch {
+    return "";
+  }
+}
+
+function contentHasSubstance(content: string, template: string): boolean {
+  const trimmed = content.trim();
+  if (!trimmed) return false;
+  if (trimmed === template.trim()) return false;
+
+  const meaningfulLines = trimmed
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#") && !line.startsWith("##"));
+
+  return meaningfulLines.length > 0;
+}
+
+function quoteShellArg(value: string): string {
+  if (/^[a-zA-Z0-9._/-]+$/.test(value)) return value;
+  return `"${value.replace(/(["\\$`])/g, "\\$1")}"`;
+}
+
+function buildProjectSignals(projectDir: string, projectName: string): string[] {
+  const signals: string[] = [];
+
+  const prd = readTrimmed(path.join(projectDir, "context", "prd.md"));
+  const todo = readTrimmed(path.join(projectDir, "context", "todo.md"));
+  const instructions = readTrimmed(path.join(projectDir, "agent", "instructions.md"));
+  const memories = getProjectMemories(projectDir);
+  const privateNotes = readTrimmed(path.join(projectDir, "private", "notes.md"));
+
+  if (!contentHasSubstance(prd, prdTemplate(projectName))) {
+    signals.push("still wants a real PRD");
+  }
+  if (!contentHasSubstance(todo, todoTemplate())) {
+    signals.push("still has an empty TODO board");
+  }
+  if (!contentHasSubstance(instructions, instructionsTemplate())) {
+    signals.push("could use sharper agent instructions");
+  }
+  if (memories.length === 0) {
+    signals.push("has no project memory yet");
+  }
+  if (!privateNotes || privateNotes === "# Private Notes") {
+    signals.push("has no private notes yet");
+  }
+
+  return signals;
+}
+
+export function getRecentProjectInsights(startDir?: string, limit = 3): RecentProjectInsight[] {
+  const projectsRoot =
+    findProjectsRoot(startDir) ||
+    (fs.existsSync(path.join(os.homedir(), ".youmd", "projects"))
+      ? path.join(os.homedir(), ".youmd", "projects")
+      : null);
+  if (!projectsRoot) return [];
+
+  return listProjects(projectsRoot)
+    .map((slug) => {
+      const projectDir = path.join(projectsRoot, slug);
+      const meta = readProjectMeta(projectDir);
+      const projectName = meta?.name || slug;
+      const updatedAt = meta?.updated_at ? Date.parse(meta.updated_at) : 0;
+      const signals = buildProjectSignals(projectDir, projectName);
+      return {
+        name: projectName,
+        slug,
+        projectDir,
+        updatedAt,
+        signals,
+        summary: signals.length > 0 ? `${projectName} ${signals[0]}.` : `${projectName} looks pretty well-shaped already.`,
+        suggestedCommand: `youmd project show ${quoteShellArg(projectName)}`,
+      };
+    })
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, limit);
 }
 
 /**

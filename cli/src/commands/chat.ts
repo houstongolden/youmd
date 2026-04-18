@@ -20,6 +20,7 @@ import {
   buildProjectContextInjection,
   parseProjectUpdates,
   updateProjectFile,
+  getRecentProjectInsights,
 } from "../lib/project";
 import { compileBundle, writeBundle } from "../lib/compiler";
 import { uploadBundle, publishLatest, saveMemories, updatePrivateContext } from "../lib/api";
@@ -47,7 +48,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.7";
+const CURRENT_VERSION = "0.6.8";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1032,27 +1033,7 @@ function readDisplayName(bundleDir: string): string {
 }
 
 function getRecentProjectNames(limit = 3): string[] {
-  const projectsRoot = findProjectsRoot();
-  if (!projectsRoot) return [];
-
-  return fs.readdirSync(projectsRoot)
-    .filter((entry) => fs.existsSync(path.join(projectsRoot, entry, "project.json")))
-    .map((name) => {
-      const projectJson = path.join(projectsRoot, name, "project.json");
-      let updatedAt = 0;
-      try {
-        const parsed = JSON.parse(fs.readFileSync(projectJson, "utf-8")) as {
-          updated_at?: string;
-        };
-        updatedAt = parsed.updated_at ? Date.parse(parsed.updated_at) : 0;
-      } catch {
-        // non-fatal
-      }
-      return { name, updatedAt };
-    })
-    .sort((a, b) => b.updatedAt - a.updatedAt)
-    .slice(0, limit)
-    .map((item) => item.name);
+  return getRecentProjectInsights(process.cwd(), limit).map((item) => item.name);
 }
 
 async function printUpdateHint(): Promise<void> {
@@ -1149,23 +1130,13 @@ async function runYouLaunchInvestigation(
       }
     } else if (recentProjects.length > 0) {
       findings.push(`recent orbit: ${recentProjects.slice(0, 3).join(", ")}.`);
-
-      try {
-        const projectsRoot = findProjectsRoot();
-        if (projectsRoot) {
-          const wiredCount = recentProjects
-            .slice(0, 5)
-            .filter((name) => {
-              const projectDir = getProjectDir(projectsRoot, name);
-              return fs.existsSync(path.join(projectDir, "directives", "agent.md")) ||
-                fs.existsSync(path.join(projectDir, "memory", "contexts.md"));
-            }).length;
-          if (wiredCount > 0) {
-            findings.push(`${wiredCount} of your recent projects already have local context files waiting for me.`);
-          }
-        }
-      } catch {
-        // keep the recent-project signal even if the deeper scan hiccups
+      const insights = getRecentProjectInsights(process.cwd(), 3);
+      const opportunities = insights.filter((item) => item.signals.length > 0).slice(0, 2);
+      for (const opportunity of opportunities) {
+        findings.push(opportunity.summary);
+      }
+      if (opportunities.length === 0 && insights.length > 0) {
+        findings.push(`${insights[0].name} already looks pretty well-shaped, so i can go deeper instead of scaffolding basics.`);
       }
     } else {
       findings.push("i've got your home bundle loaded, even though we're not inside a project yet.");
@@ -1188,7 +1159,8 @@ async function printChatOpening(
   const cfg = readGlobalConfig();
   const user = cfg.username ? `@${cfg.username}` : "you";
   const displayName = readDisplayName(bundleDir);
-  const recentProjects = getRecentProjectNames();
+  const recentInsights = getRecentProjectInsights(process.cwd(), 3);
+  const recentProjects = recentInsights.map((item) => item.name);
   const launchSurface = process.env.YOUMD_LAUNCH_SURFACE;
   let investigation: LaunchInvestigation = { findings: [] };
 
@@ -1247,6 +1219,13 @@ async function printChatOpening(
   if (recentProjects.length > 0) {
     console.log("  " + DIM("recently active: ") + recentProjects.map((name) => chalk.cyan(name)).join(DIM(", ")));
   }
+  const topOpportunity = !projectCtx
+    ? recentInsights.find((item) => item.signals.length > 0)
+    : null;
+  if (topOpportunity) {
+    console.log("  " + ACCENT("next opening i see.") + " " + DIM(topOpportunity.summary));
+    console.log("  " + DIM("run ") + chalk.cyan(topOpportunity.suggestedCommand) + DIM(" and i'll help tighten it up."));
+  }
 
   console.log("");
   console.log("  " + chalk.bold("you.md chat"));
@@ -1261,7 +1240,8 @@ function buildYouLaunchIntro(
   investigation: LaunchInvestigation,
 ): string {
   const displayName = readDisplayName(bundleDir).split(" ")[0];
-  const recentProjects = getRecentProjectNames();
+  const recentInsights = getRecentProjectInsights(process.cwd(), 3);
+  const recentProjects = recentInsights.map((item) => item.name);
   const lines: string[] = [];
 
   lines.push(`hi ${displayName}. i'm U — i help other agents know you.`);
@@ -1273,6 +1253,10 @@ function buildYouLaunchIntro(
     }
   } else if (recentProjects.length > 0) {
     lines.push(`recently you've been orbiting ${recentProjects.slice(0, 3).join(", ")}.`);
+    const topOpportunity = recentInsights.find((item) => item.signals.length > 0);
+    if (topOpportunity) {
+      lines.push(`biggest opening i see: ${topOpportunity.summary}`);
+    }
   } else {
     lines.push("clean slate. we can still shape your identity, private context, or project structure from here.");
   }
