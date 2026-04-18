@@ -88,6 +88,20 @@ Last Updated: 2026-04-17
 **Progress (2026-04-17):** Confirmed `youmd@0.6.1` is already live on npm, bumped the CLI to `0.6.2`, normalized the `bin` entries to clean `dist/...` paths, normalized the repository URL to `git+https://...`, and rebuilt the CLI so the runtime version + MCP user-agent match the next publish target.
 **Verification:** `node cli/dist/index.js --version` returns `0.6.2`, `cli/package.json` and `package-lock.json` both say `0.6.2`, and `npm publish` should now target `0.6.2` without the prior overwrite error.
 
+### 52. Make the installed CLI feel alive and proactive instead of assuming the user knows the commands
+**Status:** DONE
+**Verified:** NO
+**Request:** The installed CLI should feel more like meeting a friendly wingman agent such as Claude Code/OpenClaw: logo/mascot energy, portrait-in-code when available, proactive suggestions, helpful next steps, and less of a “here’s a command list, good luck” vibe. This should not be limited to onboarding; normal `youmd` and `youmd chat` entry should feel alive too.
+**Progress (2026-04-18):** Bare `youmd` now opens with the YOU logo, an optional saved portrait preview, a more human greeting, contextual next moves, and repo-aware setup suggestions instead of the old dry mini help state. `youmd chat` now enters with the same U-style opening, notices missing AGENTS/project-context wiring in a real repo, and no longer prints the first streamed assistant greeting twice. npm postinstall is no longer deadpan either — it now prints a small U-style install moment that points users toward `youmd`, `youmd login`, and `youmd chat`.
+**Verification:** Run bare `youmd` in a normal shell and `youmd chat` from a directory with your bundle. Both should feel noticeably more alive, and `youmd chat` should only print the opening assistant turn once.
+
+### 53. Evaluate a `you` command alias for U
+**Status:** IN PROGRESS
+**Verified:** NO
+**Request:** If it can be done safely, it would be ideal to type `you` to start the local U agent.
+**Progress (2026-04-18):** Investigated the collision risk. npm already has a separate package named `you`, so shipping a `you` binary alias globally would risk PATH conflicts and surprising overrides on user machines. No alias has been shipped yet.
+**Verification:** Decide on the product path explicitly: keep `youmd` as the safe default, add an opt-in alias installer, or accept the collision risk and ship `you`.
+
 ### 39. Identity-Aware Skill System — Full Implementation
 **Status:** DONE
 **Verified:** NO
@@ -214,7 +228,8 @@ Last Updated: 2026-04-17
 **Verified:** NO
 **Request:** Persist Houston's preferences for how agentic chat / terminal sessions should behave — including the ack → plan → work → complete pattern and proactive next-step guidance — into his own durable You.md preferences/directives using the published npm package / skill workflow, sync them, and then verify another agent-facing surface can find that context later.
 **Progress (2026-04-17):** Confirmed the last published npm package was `youmd@0.6.0`, simplified the CLI auth entrypoint so `youmd login` now offers browser sign-in on Enter, email-code login in-terminal when an email is typed, and `--key` as the explicit direct-auth path, and then corrected the repo/package version drift so the next clean publish target is `youmd@0.6.1`. The remaining blocker is account state, not the login surface: the current `~/.youmd/config.json` still points at the disposable CLI test account rather than Houston's real `@houstongolden` identity, so the preference-save proof cannot be completed honestly yet.
-**Verification:** Using the published package, pull Houston's real bundle, save these session-behavior preferences into durable preference/directive files, build + publish them, pull again from a clean location, and verify the saved preferences are visible through the pulled files and MCP-readable identity surfaces.
+**Progress (2026-04-18 update):** Pulled Houston's real live bundle into `~/.youmd`, added the agent-session preferences directly into `preferences/agent.md` and `directives/agent.md`, published them as live bundle `v65`, and then verified a clean pull using the local `0.6.3` build. That exposed and then fixed a real compiler/decompiler bug: richer markdown instructions in preferences/directives/voice files were being flattened away on pull because only the structured top-line fields were preserved. The roundtrip now works correctly with the local `0.6.3` build. Remaining step: publish `youmd@0.6.3` to npm so end users get the same durable roundtrip behavior from the packaged CLI rather than only from the repo build.
+**Verification:** Using the published npm package, pull Houston's real bundle, confirm the new session-behavior preferences are present in `preferences/agent.md` / `directives/agent.md`, and confirm another agent-facing surface can read or leverage that context without manual re-entry.
 
 ---
 

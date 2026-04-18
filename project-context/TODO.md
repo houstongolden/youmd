@@ -1,11 +1,17 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-04-17
+Last Updated: 2026-04-18
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-04-18
+- [x] Make bare `youmd`, `youmd chat`, and npm postinstall feel more alive and U-like instead of dropping users into a dead utility experience
+- [x] Preserve richer preference/directive markdown across identity push → pull roundtrips so saved agent-behavior instructions do not get flattened away
+- [ ] Publish `youmd@0.6.3` so end users get the alive startup/postinstall UX and raw-markdown identity roundtrip preservation
+- [ ] Build a truly proactive first-run U flow after install/login instead of relying only on better static startup copy
 
 ### 2026-04-17
 - [x] Make newly minted API keys revealable/copyable again without weakening hash-based auth validation
@@ -238,6 +244,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Fix stale CLI auth state so `youmd login --key ...` stops verifying production keys against cached dev endpoints and add an explicit `youmd logout` escape hatch
 - [x] Add a curl-first installer at `you.md/install.sh` and update hero/footer/docs/help to teach curl as the default CLI install path with npm as fallback
 - [x] Fix the blocked npm publish retry by bumping the CLI to `0.6.2` and normalizing package metadata npm was auto-correcting during publish
+- [x] Make bare `youmd` and `youmd chat` feel more like meeting U: logo-first, contextual greeting, proactive repo guidance, and no duplicate first streamed reply
 - [ ] Decide later whether You.md should ever store revealable API-key ciphertext for future keys, or keep the current hash-only model permanently
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
 - [ ] Remove or rewrite remaining Clerk-specific docs/comments/webhooks/password endpoints so the repo no longer describes the old auth model as current
@@ -264,6 +271,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Agent acts directly, never says "the system handles that"
 - [ ] Keep the web shell's live thinking/progress UX feeling as crisp and legible as Codex/Claude Code during long-running multi-step work
 - [ ] Push the same ack → plan → work → complete + proactive follow-through pattern into the local CLI agent so web and local feel aligned
+- [ ] Build a true post-install / first-run “meet U” flow so the CLI feels like a helpful wingman immediately after install/login instead of assuming the user already knows the command tree
 - [ ] Show ASCII portrait in web chat when switched or created
 - [ ] Conversational portrait management working end-to-end
 - [ ] Custom sections via agent conversation (flexible, not rigid 13 sections)

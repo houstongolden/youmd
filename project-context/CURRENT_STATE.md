@@ -1,7 +1,7 @@
 # You.md — Current State
 
-Last Updated: 2026-04-17
-Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
+Last Updated: 2026-04-18
+Last Commit: see git log for latest 2026-04-18 cli-alive + identity roundtrip continuation
 
 ---
 
@@ -35,7 +35,7 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
 
-### CLI (youmd v0.6.2 — ready to publish)
+### CLI (youmd v0.6.3 — ready to publish)
 - 21 commands (added `skill` with 19 subcommands)
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
@@ -44,7 +44,11 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - `youmd login` now clearly splits the auth paths: press Enter for browser sign-in, type your email for in-terminal code login, or use `--key` for direct agent auth
 - `youmd logout` now exists and clears stale local auth state from `~/.youmd/config.json`
 - CLI auth now forces production defaults for `apiUrl` / `appUrl` on fresh logins and resolves those URLs per request instead of caching a stale dev endpoint at process start
-- npm publish retry path is fixed: the next release target is `0.6.2`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
+- npm publish retry path is fixed: the next release target is `0.6.3`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
+- Bare `youmd` now enters like U instead of dropping straight into a dry command list: it shows the YOU logo, optionally shows the saved portrait preview, greets the user, surfaces project-context opportunities, and proposes the next best moves contextually
+- `youmd chat` now opens with the same U-style entrance and no longer prints the first assistant greeting twice when streaming succeeds
+- The npm install moment is now less deadpan: postinstall prints a real U-style welcome with logo + next moves instead of the old `Run: youmd init`
+- The identity compiler/decompiler now preserves richer raw markdown in `preferences/agent.md`, `preferences/writing.md`, `voice/voice.md`, and `directives/agent.md` so durable preference files survive push → pull roundtrips instead of being collapsed back to only the structured headline fields
 - Chat command with slash commands, project awareness, directive injection
 - Rich terminal rendering (tables, stats, code blocks, callouts)
 - Pull/push/sync for web ↔ local
@@ -98,6 +102,8 @@ MVP now requires account creation before profile building. The "no signup requir
 - The stale local CLI auth-state bug is now fixed: this machine can log out of the disposable test account, log back into `@houstongolden`, and resolve the real production identity cleanly via `youmd whoami`
 - Existing API keys created before the reveal upgrade remain non-revealable by design because those historical records were stored hash-only; newly created or rotated keys are now revealable, so one rotate is the migration path for older keys
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
+- The CLI still does not feel proactive enough at install/startup compared with Claude Code/OpenClaw. The new startup entrance is a meaningful step, but U still needs a richer first-run / post-install “friendly wingman” flow that helps without requiring the user to already know the commands
+- The published npm package on npm is still `0.6.2`; the latest CLI fixes in this repo are `0.6.3` and need one more npm publish before end users get the postinstall/startup polish and raw-markdown roundtrip preservation
 
 ### Portrait Sync
 - CLI generates ASCII portraits locally but sync to web API is not verified end-to-end

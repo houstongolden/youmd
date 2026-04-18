@@ -1,5 +1,21 @@
 # You.md — Changelog
 
+## 2026-04-18 — U-Style Install Moment + Durable Preference Roundtrips
+
+### CLI / Identity Bundle / Agent UX
+- Upgraded the npm install moment so postinstall now feels like meeting U instead of getting barked at with `Run: youmd init`: it prints the YOU logo, frames U as the user's wingman, and points people toward `youmd`, `youmd login`, and `youmd chat`
+- Fixed a real identity roundtrip bug where richer markdown written into `preferences/agent.md`, `preferences/writing.md`, `voice/voice.md`, or `directives/agent.md` would get flattened away on publish and then reappear as thin generated files on pull
+- The compiler now preserves the raw markdown for those files alongside the structured fields, and the decompiler now prefers that preserved markdown when rebuilding the local bundle, which means users can safely store more opinionated agent instructions in their identity without losing them on sync
+- Verified the fix end to end by writing Houston's preferred ack -> plan -> visible work -> complete + proactive next-step pattern into the live bundle, publishing it, and pulling it back into a clean temp directory with the local `0.6.3` build
+
+## 2026-04-18 — U-Style CLI Entrance + Next Publish Target 0.6.3
+
+### CLI / UX / Release Ops
+- Upgraded the normal CLI entrypoints so they feel less like a raw utility and more like meeting U: bare `youmd` now opens with the YOU logo, greets the user contextually, surfaces relevant next moves, and calls out obvious repo setup opportunities instead of just dumping a minimal command stub
+- Upgraded `youmd chat` to enter the same way, with a more human opening and proactive repo-awareness when the current project still wants AGENTS/project-context wiring
+- Fixed the duplicated first assistant greeting in `youmd chat` by stopping the chat renderer from printing the same opening turn again after a successful streamed response
+- Bumped the next CLI publish target to `0.6.3` after `0.6.2` landed, keeping `package.json`, `package-lock.json`, `youmd --version`, and the MCP user-agent aligned for the next npm release
+
 ## 2026-04-17 — CLI Publish Retry Fix For 0.6.2
 
 ### CLI / Release Ops

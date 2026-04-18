@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-04-17
+Last Updated: 2026-04-18
 
 ## Core Platform
 
@@ -13,7 +13,12 @@ Last Updated: 2026-04-17
 | CLI logout | Done | `youmd logout` now clears local auth state so machines can switch accounts without hand-editing `~/.youmd/config.json` |
 | Stale endpoint-safe CLI auth | Done | CLI auth requests now resolve `apiUrl` / `appUrl` at request time and reset fresh logins to production defaults instead of verifying production keys against cached dev endpoints |
 | Curl installer | Done | `https://you.md/install.sh` now installs the latest global CLI and teaches `youmd login` + `youmd init` as the next steps |
-| Clean npm publish metadata | Done | CLI package now targets `0.6.2`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
+| Clean npm publish metadata | Done | CLI package now targets `0.6.3`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
+| U-style CLI entrance | Done | Bare `youmd` now opens with the YOU logo, an optional saved portrait preview, a more human greeting, and contextual “next best moves” instead of a dry mini help menu |
+| Non-duplicated streamed chat greeting | Done | `youmd chat` no longer prints the first assistant turn twice after a successful streamed opening response |
+| Proactive CLI repo callouts | Done | `youmd` / `youmd chat` now notice missing AGENTS/project-context wiring in a real repo and suggest `youmd skill init-project` at the right moment |
+| U-style npm postinstall | Done | npm install now drops users into a logo-forward “meet U” moment with next moves instead of the old dead `Run: youmd init` text |
+| Raw-markdown identity roundtrip preservation | Done | Richer markdown in preferences/directives/voice files now survives compile → publish → pull instead of being flattened down to only structured top-line fields |
 | API key rotation + cleanup UX | Done | Settings pane now supports rotating to one fresh key, bulk revoking all API keys, and copying the newly issued key without revoking other token types |
 | Revoked API key history collapse | Done | Settings now shows active keys by default and hides revoked history behind an explicit toggle |
 | Revealable active API keys | Done | Newly created or rotated keys can now be shown again by the owner from the settings pane; pre-existing hash-only keys still need one rotate to migrate |
