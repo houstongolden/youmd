@@ -13,9 +13,11 @@ PRD Version: 2.3
 - [x] Make bare `youmd`, `youmd chat`, and npm postinstall feel more alive and U-like instead of dropping users into a dead utility experience
 - [x] Preserve richer preference/directive markdown across identity push → pull roundtrips so saved agent-behavior instructions do not get flattened away
 - [x] Extend home-bundle fallback parity to read-only bundle commands so `status`, `diff`, `export`, and `preview` work like `you`
-- [ ] Publish `youmd@0.6.5` so end users get the `you` launcher, portrait splash, update hints, read-only active-bundle fallback, and raw-markdown identity roundtrip preservation
+- [x] Make the `you` launcher actually investigate local context with a live braille spinner before it talks, then report concrete findings instead of bluffing that it already "looked around"
+- [x] Make the startup portrait prefer the live profile contract over stale cached avatar fallbacks, and expose the stored public ASCII portrait on the public payload so CLI/web can match more closely
+- [ ] Publish `youmd@0.6.6` so end users get the `you` launcher, portrait splash, truthful startup investigation, public-profile portrait contract fix, update hints, read-only active-bundle fallback, and raw-markdown identity roundtrip preservation
 - [ ] Build a truly proactive first-run U flow after install/login instead of relying only on better static startup copy
-- [ ] Improve portrait fidelity/caching for the `you` splash so fallback avatar-derived ASCII is less blocky and more recognizably "you"
+- [ ] Verify the `you` splash now matches Houston's current primary/public portrait after the new `_profile.asciiPortrait` contract ships to production
 
 ### 2026-04-17
 - [x] Make newly minted API keys revealable/copyable again without weakening hash-based auth validation
