@@ -27,6 +27,34 @@ export interface RecentProjectInsight {
   suggestedCommand: string;
 }
 
+export function getFeaturedRecentProjectNames(
+  recentInsights: Array<{ name: string; signals: string[] }>,
+  limit = 3,
+): string[] {
+  const featured: string[] = [];
+  const pushUnique = (name: string) => {
+    if (!featured.includes(name)) featured.push(name);
+  };
+
+  for (const insight of recentInsights) {
+    if (insight.signals.length > 0) pushUnique(insight.name);
+    if (featured.length >= limit) return featured;
+  }
+
+  for (const insight of recentInsights) {
+    pushUnique(insight.name);
+    if (featured.length >= limit) return featured;
+  }
+
+  return featured;
+}
+
+export function getTopProjectOpportunity(
+  recentInsights: RecentProjectInsight[],
+): RecentProjectInsight | null {
+  return recentInsights.find((item) => item.signals.length > 0) || recentInsights[0] || null;
+}
+
 const STANDARD_WORKSPACE_ROOTS = [
   "Desktop/CODE_2025",
   "Desktop/CODE_2026",

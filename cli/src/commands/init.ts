@@ -13,6 +13,8 @@ import {
   findProjectsRoot,
   initProjectFiles,
   getProjectDir,
+  getRecentProjectInsights,
+  getTopProjectOpportunity,
 } from "../lib/project";
 import { initProject as skillInitProject, installSkill, installSkillAsync } from "../lib/skills";
 import { readSkillCatalog } from "../lib/skill-catalog";
@@ -268,4 +270,17 @@ export async function initCommand(options: {
       }
     }
   }
+
+  const topOpportunity = getTopProjectOpportunity(getRecentProjectInsights(process.cwd(), 6));
+  console.log("");
+  console.log("  " + chalk.hex("#C46A3A")("u's handoff:"));
+  console.log(
+    `    ${chalk.cyan("you")}                      ${chalk.dim("-- keep shaping your identity with U")}`
+  );
+  if (topOpportunity) {
+    console.log(
+      `    ${chalk.cyan(topOpportunity.suggestedCommand)} ${chalk.dim("-- next project opening")}`
+    );
+  }
+  console.log("");
 }

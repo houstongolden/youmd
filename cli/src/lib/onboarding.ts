@@ -14,6 +14,11 @@ import {
 import { compileBundle, writeBundle } from "./compiler";
 import { BrailleSpinner } from "./render";
 import { printPortraitEncounter } from "./ascii";
+import {
+  getRecentProjectInsights,
+  getFeaturedRecentProjectNames,
+  getTopProjectOpportunity,
+} from "./project";
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -1492,16 +1497,29 @@ async function finishBundle(
   console.log("");
 
   const accent = chalk.hex("#C46A3A");
+  const recentInsights = getRecentProjectInsights(process.cwd(), 6);
+  const recentProjects = getFeaturedRecentProjectNames(recentInsights, 3);
+  const topOpportunity = getTopProjectOpportunity(recentInsights);
 
   // What's next guide
   console.log("  " + accent("what's next:"));
   console.log("");
-  console.log(`    1. ${chalk.cyan("youmd login")}              ${chalk.dim("-- connect to you.md")}`);
-  console.log(`    2. ${chalk.cyan("youmd push")}               ${chalk.dim("-- publish to you.md/" + username)}`);
-  console.log(`    3. ${chalk.cyan("you")}                      ${chalk.dim("-- meet U and let it keep helping from the terminal")}`);
+  console.log(`    1. ${chalk.cyan("you")}                      ${chalk.dim("-- meet U and let it keep helping from the terminal")}`);
+  console.log(`    2. ${chalk.cyan("youmd login")}              ${chalk.dim("-- connect to you.md")}`);
+  console.log(`    3. ${chalk.cyan("youmd push")}               ${chalk.dim("-- publish to you.md/" + username)}`);
   console.log(`    4. ${chalk.cyan("youmd skill install all")}  ${chalk.dim("-- install identity-aware agent skills")}`);
   console.log(`    5. ${chalk.cyan("youmd skill init-project")} ${chalk.dim("-- AGENTS/CLAUDE bootstrap + project-context/ in any repo")}`);
   console.log("");
+  if (recentProjects.length > 0) {
+    console.log("  " + accent("recent orbit:") + " " + chalk.dim(recentProjects.join(", ")));
+  }
+  if (topOpportunity) {
+    console.log("  " + accent("next opening i see.") + " " + chalk.dim(topOpportunity.summary));
+    console.log("  " + chalk.dim("run:"));
+    console.log("    " + chalk.cyan(topOpportunity.suggestedCommand));
+    console.log("  " + chalk.dim("then let U tighten it up."));
+    console.log("");
+  }
   console.log("  " + accent("agent tools:"));
   console.log("");
   console.log(`    ${chalk.cyan("youmd skill link claude")}  ${chalk.dim("-- sync skills to .claude/skills/youmd/")}`);

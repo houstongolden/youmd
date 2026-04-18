@@ -15,7 +15,11 @@ import {
   detectProjectContext,
 } from "./lib/config";
 import { printPortraitEncounter, printYouLogo, resolvePortraitLines } from "./lib/ascii";
-import { getRecentProjectInsights } from "./lib/project";
+import {
+  getRecentProjectInsights,
+  getFeaturedRecentProjectNames,
+  getTopProjectOpportunity,
+} from "./lib/project";
 import { checkForCliUpdate } from "./lib/update";
 import { initCommand } from "./commands/init";
 import { loginCommand } from "./commands/login";
@@ -45,7 +49,7 @@ import { logsCommand } from "./commands/logs";
 import { agentsCommand } from "./commands/agents";
 
 const program = new Command();
-const CURRENT_VERSION = "0.6.10";
+const CURRENT_VERSION = "0.6.11";
 const CLI_NAME = process.env.YOUMD_LAUNCH_SURFACE === "you" ? "you" : "youmd";
 
 program
@@ -190,28 +194,6 @@ function readDisplayName(bundleDir: string | null, cfg: ReturnType<typeof readGl
   return cfg.username || "friend";
 }
 
-function getFeaturedRecentProjectNames(
-  recentInsights: Array<{ name: string; signals: string[] }>,
-  limit = 3,
-): string[] {
-  const featured: string[] = [];
-  const pushUnique = (name: string) => {
-    if (!featured.includes(name)) featured.push(name);
-  };
-
-  for (const insight of recentInsights) {
-    if (insight.signals.length > 0) pushUnique(insight.name);
-    if (featured.length >= limit) return featured;
-  }
-
-  for (const insight of recentInsights) {
-    pushUnique(insight.name);
-    if (featured.length >= limit) return featured;
-  }
-
-  return featured;
-}
-
 async function printUpdateHint(): Promise<void> {
   const latest = await checkForCliUpdate(CURRENT_VERSION);
   if (!latest) return;
@@ -286,7 +268,7 @@ async function renderNoArgWelcome(): Promise<void> {
     if (recentProjects.length > 0) {
       console.log("  " + DIM("recent project contexts: ") + recentProjects.slice(0, 3).map((name) => chalk.cyan(name)).join(DIM(", ")));
     }
-    const topOpportunity = recentInsights.find((item) => item.signals.length > 0);
+    const topOpportunity = getTopProjectOpportunity(recentInsights);
     if (topOpportunity && !projectCtx) {
       console.log("  " + ACCENT("i found an opening.") + " " + DIM(topOpportunity.summary));
     }

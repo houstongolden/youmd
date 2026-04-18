@@ -21,6 +21,8 @@ import {
   parseProjectUpdates,
   updateProjectFile,
   getRecentProjectInsights,
+  getFeaturedRecentProjectNames,
+  getTopProjectOpportunity,
 } from "../lib/project";
 import { compileBundle, writeBundle } from "../lib/compiler";
 import { uploadBundle, publishLatest, saveMemories, updatePrivateContext } from "../lib/api";
@@ -48,7 +50,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.10";
+const CURRENT_VERSION = "0.6.11";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1036,28 +1038,6 @@ function getRecentProjectNames(limit = 3): string[] {
   return getRecentProjectInsights(process.cwd(), limit).map((item) => item.name);
 }
 
-function getFeaturedRecentProjectNames(
-  recentInsights: Array<{ name: string; signals: string[] }>,
-  limit = 3,
-): string[] {
-  const featured: string[] = [];
-  const pushUnique = (name: string) => {
-    if (!featured.includes(name)) featured.push(name);
-  };
-
-  for (const insight of recentInsights) {
-    if (insight.signals.length > 0) pushUnique(insight.name);
-    if (featured.length >= limit) return featured;
-  }
-
-  for (const insight of recentInsights) {
-    pushUnique(insight.name);
-    if (featured.length >= limit) return featured;
-  }
-
-  return featured;
-}
-
 async function printUpdateHint(): Promise<void> {
   const latest = await checkForCliUpdate(CURRENT_VERSION);
   if (!latest) return;
@@ -1242,9 +1222,7 @@ async function printChatOpening(
   if (recentProjects.length > 0) {
     console.log("  " + DIM("recently active: ") + recentProjects.map((name) => chalk.cyan(name)).join(DIM(", ")));
   }
-  const topOpportunity = !projectCtx
-    ? recentInsights.find((item) => item.signals.length > 0)
-    : null;
+  const topOpportunity = !projectCtx ? getTopProjectOpportunity(recentInsights) : null;
   if (topOpportunity) {
     console.log("  " + ACCENT("next opening i see.") + " " + DIM(topOpportunity.summary));
     console.log("  " + DIM("run:"));
@@ -1278,7 +1256,7 @@ function buildYouLaunchIntro(
     }
   } else if (recentProjects.length > 0) {
     lines.push(`recently you've been orbiting ${recentProjects.slice(0, 3).join(", ")}.`);
-    const topOpportunity = recentInsights.find((item) => item.signals.length > 0);
+    const topOpportunity = getTopProjectOpportunity(recentInsights);
     if (topOpportunity) {
       lines.push(`biggest opening i see: ${topOpportunity.summary}`);
     }
