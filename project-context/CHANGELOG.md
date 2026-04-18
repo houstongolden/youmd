@@ -10,9 +10,11 @@
 ## 2026-04-18 — Workspace Repo Awareness For `you`
 
 ### CLI / Agent UX
+- Bumped the next CLI publish target to `0.6.11` so this onboarding-handoff pass is versioned before the next npm publish prompt
+- Extracted shared recent-project helper logic into the project library so `you`, `youmd`, and onboarding can all prioritize the same real project openings instead of drifting
+- `youmd init` and conversational onboarding now finish with a stronger handoff into U: `you` is the first next step, recent orbit is surfaced explicitly, and actionable openings like `foldermd` are suggested right in the finish flow
 - Extended the launcher's local-awareness pass beyond `~/.youmd/projects`, so U can now notice ordinary workspace repos that already have `AGENTS.md`, `CLAUDE.md`, `.youmd-project`, or `project-context/` even if they were never initialized through the dedicated You.md project command
 - This makes the proactive startup genuinely more useful on real machines: when launched from arbitrary directories, U can now point at actionable openings like `foldermd` having project-context docs but no top-level agent entrypoint, instead of pretending your recent work disappeared
-- Bumped the next CLI publish target to `0.6.10` so this recent-project-opening pass is versioned before the next npm publish prompt
 - `you` now prioritizes actionable project openings over just the most recent healthy contexts, so startup and chat can point at real next moves like tightening `foldermd` instead of only listing project names
 
 ## 2026-04-18 — Recent Project Opportunity Scan From Anywhere
