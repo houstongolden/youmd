@@ -10,6 +10,7 @@
 ## 2026-04-18 — Workspace Repo Awareness For `you`
 
 ### CLI / Agent UX
+- Brought the actual YOU logo framing into web `/initialize`, so the onboarding encounter now starts with the same brand scene language as the local launcher instead of just a portrait strip over a terminal
 - Gave web `/initialize` a real portrait-first encounter strip above the onboarding terminal: it now reuses the stored ASCII portrait when available, pairs it with the U bot, and frames the first interaction like the local `you` launcher instead of a plain terminal box
 - Tightened the web `/initialize` encounter so it uses the same live thinking/progress plumbing as the main shell, instead of feeling flatter than the local `you` launcher while the agent is working
 - The onboarding greeting prompt now explicitly targets the same U persona as the local launcher and can naturally mention known saved projects when context already exists

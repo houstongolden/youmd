@@ -17,6 +17,7 @@ Last Updated: 2026-04-18
 | Onboarding handoff into U | Done | `youmd init` and conversational onboarding now end with the same actionable U-centric next move pattern the launcher uses, including real recent-project openings instead of only a static checklist |
 | Web initialize shell parity | Done | `/initialize` now passes live thinking/progress state into the terminal shell and prompts U to sound like the same local launcher wingman, including mentioning known projects when context already exists |
 | Web initialize portrait encounter | Done | `/initialize` now shows a portrait-and-bot encounter strip above the onboarding terminal, reusing the saved ASCII portrait when available and falling back gracefully before the portrait exists |
+| Web initialize YOU logo scene | Done | `/initialize` now brings in the actual YOU logo + subtitle framing above the portrait encounter so the first-contact scene matches the local launcher more closely |
 | U-style CLI entrance | Done | Bare `youmd` now opens with the YOU logo, an optional saved portrait preview, a more human greeting, and contextual “next best moves” instead of a dry mini help menu |
 | `you` launcher alias | Done | `you` now launches straight into U chat when the user is authenticated and a bundle exists, while still supporting subcommands like `you status` |
 | Home-bundle conversational fallback | Done | `you` / `youmd chat` now work from arbitrary directories by falling back to `~/.youmd` when no local `.youmd/` exists |

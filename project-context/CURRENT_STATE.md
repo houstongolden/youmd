@@ -51,6 +51,7 @@ Last Commit: see git log for latest 2026-04-18 `you` launcher + proactive portra
 - Web `/initialize` now passes the same `thinkingCategory` + `progressSteps` state into the terminal shell, so onboarding can show the same live working-state treatment as the main shell
 - Web onboarding greeting instructions now explicitly target the same local-launcher U persona and can mention known saved projects instead of always sounding like a generic cold start
 - Web `/initialize` now also has a portrait-first encounter strip above the terminal, using the saved ASCII portrait when available and a fallback "portrait incoming" state when it is not, so the first-contact framing is closer to the local `you` launcher
+- Web `/initialize` now includes the actual YOU logo block and subtitle above that encounter strip, bringing the scene composition closer to the local launcher instead of looking like a generic onboarding header
 - The npm install moment is now less deadpan: postinstall prints a real U-style welcome with logo + next moves instead of the old `Run: youmd init`
 - A real `you` launcher now exists alongside `youmd`: if the user is authenticated and has a bundle in either the current project or `~/.youmd`, `you` goes straight into chat instead of forcing `youmd chat`
 - The new `you` opening renders the YOU logo, the user's ASCII portrait-in-code, a small terminal bot greeting the portrait, and a more proactive U intro so the local entry feels more like meeting a wingman than a utility binary
