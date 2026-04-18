@@ -35,7 +35,7 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
 
-### CLI (youmd v0.6.1 — ready to publish)
+### CLI (youmd v0.6.2 — ready to publish)
 - 21 commands (added `skill` with 19 subcommands)
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
@@ -44,6 +44,7 @@ Last Commit: see git log for latest 2026-04-17 ship-readiness continuation
 - `youmd login` now clearly splits the auth paths: press Enter for browser sign-in, type your email for in-terminal code login, or use `--key` for direct agent auth
 - `youmd logout` now exists and clears stale local auth state from `~/.youmd/config.json`
 - CLI auth now forces production defaults for `apiUrl` / `appUrl` on fresh logins and resolves those URLs per request instead of caching a stale dev endpoint at process start
+- npm publish retry path is fixed: the next release target is `0.6.2`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
 - Chat command with slash commands, project awareness, directive injection
 - Rich terminal rendering (tables, stats, code blocks, callouts)
 - Pull/push/sync for web ↔ local

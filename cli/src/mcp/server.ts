@@ -183,7 +183,7 @@ async function logMcpActivity(action: string, resource?: string, details?: Recor
       headers: {
         Authorization: `Bearer ${config.token}`,
         "Content-Type": "application/json",
-        "User-Agent": "youmd-mcp/0.6.1",
+        "User-Agent": "youmd-mcp/0.6.2",
       },
       body: JSON.stringify({
         agentName: process.env.YOUMD_AGENT_NAME || "Claude Code",

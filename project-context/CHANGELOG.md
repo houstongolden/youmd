@@ -1,5 +1,12 @@
 # You.md — Changelog
 
+## 2026-04-17 — CLI Publish Retry Fix For 0.6.2
+
+### CLI / Release Ops
+- Bumped the CLI from `0.6.1` to `0.6.2` after confirming `0.6.1` was already live on npm, which unblocks the next publish attempt instead of trying to overwrite a forbidden version
+- Normalized the published package metadata so npm stops auto-correcting the same fields during publish: the `bin` entries now use clean `dist/...` paths and the repository URL now uses the canonical `git+https://...` form
+- Rebuilt the CLI after the bump so `cli/package.json`, `package-lock.json`, `youmd --version`, and the MCP user-agent string all agree on `0.6.2`
+
 ## 2026-04-17 — CLI Auth State Hardening + Curl Installer
 
 ### CLI / Install / Docs

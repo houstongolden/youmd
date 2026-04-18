@@ -35,7 +35,7 @@ const program = new Command();
 program
   .name("youmd")
   .description("identity context protocol for the agent internet — an MCP where the context is you")
-  .version("0.6.1");
+  .version("0.6.2");
 
 // ─── Grouped --help output ─────────────────────────────────────────
 // Commands are bucketed into categories so the help is scannable.

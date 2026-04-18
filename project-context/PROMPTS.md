@@ -2,30 +2,57 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 16
-**Total messages:** 347
-**Last updated:** 2026-04-17 23:45
+**Total sessions:** 17
+**Total messages:** 349
+**Last updated:** 2026-04-18 00:36
 
 ## Table of Contents
 
-1. [2026-04-17 (cli-auth-installer)](#session-2026-04-17-cli-auth-installer) --- 7 messages
-2. [2026-03-16 to 2026-03-19 (29023a33)](#session-2026-03-16-29023a33) --- 36 messages
-3. [2026-03-19 (bcba8b83)](#session-2026-03-19-bcba8b83) --- 3 messages
-4. [2026-03-19 (b8db5107)](#session-2026-03-19-b8db5107) --- 5 messages
-5. [2026-03-20 to 2026-03-27 (52b9c96c)](#session-2026-03-20-52b9c96c) --- 86 messages
-6. [2026-03-27 (a613f536)](#session-2026-03-27-a613f536) --- 17 messages
-7. [2026-03-27 to 2026-03-28 (be60ecec)](#session-2026-03-27-be60ecec) --- 47 messages
-8. [2026-03-28 (4eb46dbc)](#session-2026-03-28-4eb46dbc) --- 6 messages
-9. [2026-03-20 to 2026-04-04 (2f31c971)](#session-2026-03-20-2f31c971) --- 104 messages
-10. [2026-04-16 (019d978f)](#session-2026-04-16-019d978f) --- 28 messages
-11. [2026-04-17 (spinner-shell-ux)](#session-2026-04-17-spinner-shell-ux) --- 3 messages
-12. [2026-04-17 (login-ux)](#session-2026-04-17-login-ux) --- 1 message
-13. [2026-04-17 (api-key-ux)](#session-2026-04-17-api-key-ux) --- 1 message
-14. [2026-04-17 (api-key-history-fix)](#session-2026-04-17-api-key-history-fix) --- 1 message
-15. [2026-04-17 (reveal-nav-cleanup)](#session-2026-04-17-reveal-nav-cleanup) --- 1 message
-16. [2026-04-17 (cli-version-bump)](#session-2026-04-17-cli-version-bump) --- 1 message
+1. [2026-04-18 (npm-publish-retry)](#session-2026-04-18-npm-publish-retry) --- 2 messages
+2. [2026-04-17 (cli-auth-installer)](#session-2026-04-17-cli-auth-installer) --- 7 messages
+3. [2026-03-16 to 2026-03-19 (29023a33)](#session-2026-03-16-29023a33) --- 36 messages
+4. [2026-03-19 (bcba8b83)](#session-2026-03-19-bcba8b83) --- 3 messages
+5. [2026-03-19 (b8db5107)](#session-2026-03-19-b8db5107) --- 5 messages
+6. [2026-03-20 to 2026-03-27 (52b9c96c)](#session-2026-03-20-52b9c96c) --- 86 messages
+7. [2026-03-27 (a613f536)](#session-2026-03-27-a613f536) --- 17 messages
+8. [2026-03-27 to 2026-03-28 (be60ecec)](#session-2026-03-27-be60ecec) --- 47 messages
+9. [2026-03-28 (4eb46dbc)](#session-2026-03-28-4eb46dbc) --- 6 messages
+10. [2026-03-20 to 2026-04-04 (2f31c971)](#session-2026-03-20-2f31c971) --- 104 messages
+11. [2026-04-16 (019d978f)](#session-2026-04-16-019d978f) --- 28 messages
+12. [2026-04-17 (spinner-shell-ux)](#session-2026-04-17-spinner-shell-ux) --- 3 messages
+13. [2026-04-17 (login-ux)](#session-2026-04-17-login-ux) --- 1 message
+14. [2026-04-17 (api-key-ux)](#session-2026-04-17-api-key-ux) --- 1 message
+15. [2026-04-17 (api-key-history-fix)](#session-2026-04-17-api-key-history-fix) --- 1 message
+16. [2026-04-17 (reveal-nav-cleanup)](#session-2026-04-17-reveal-nav-cleanup) --- 1 message
+17. [2026-04-17 (cli-version-bump)](#session-2026-04-17-cli-version-bump) --- 1 message
 
 ---
+
+## Session: 2026-04-18 (npm-publish-retry)
+*2 messages | File modified: 2026-04-18 00:36*
+
+**2026-04-18 00:31:00 UTC**
+> tried to publish and got this error - npm publish
+>
+> \> youmd@0.6.1 prepublishOnly
+> \> npm run build
+>
+>
+> \> youmd@0.6.1 build
+> \> tsc
+>
+> npm warn publish npm auto-corrected some errors in your package.json when publishing.  Please run "npm pkg fix" to address these errors.
+> npm warn publish errors corrected:
+> npm warn publish "bin[youmd]" script name was cleaned
+> npm warn publish "bin[create-youmd]" script name was cleaned
+> npm warn publish "repository.url" was normalized to "git+https://github.com/houstongolden/youmd.git"
+> ...
+> npm error code E403
+> npm error 403 403 Forbidden - PUT https://registry.npmjs.org/youmd - You cannot publish over the previously published versions: 0.6.1.
+
+**2026-04-18 00:32:00 UTC**
+> Warning: The maximum number of unified exec processes you can keep open is 60 and you currently have 60 processes open. Reuse older processes or close them to prevent automatic pruning of old processes
+
 
 ## Session: 2026-04-17 (cli-auth-installer)
 *7 messages | File modified: 2026-04-17 23:45*

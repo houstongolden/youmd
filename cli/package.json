@@ -1,10 +1,10 @@
 {
   "name": "youmd",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Identity context protocol for the agent internet — an MCP where the context is you. CLI for the You.md platform.",
   "bin": {
-    "youmd": "./dist/index.js",
-    "create-youmd": "./dist/create.js"
+    "youmd": "dist/index.js",
+    "create-youmd": "dist/create.js"
   },
   "main": "dist/index.js",
   "files": [
@@ -35,7 +35,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/houstongolden/youmd.git",
+    "url": "git+https://github.com/houstongolden/youmd.git",
     "directory": "cli"
   },
   "homepage": "https://you.md",
