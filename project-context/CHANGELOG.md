@@ -15,7 +15,7 @@
 - Tightened the terminal bot / portrait encounter copy so the last line now points at real active work — "i'm taking a lap through your recent work" — rather than acting like a static joke
 - Fixed a contract bug that was blocking portrait parity: the CLI wrapper for `/api/v1/profiles` was stripping `_profile` metadata out of the returned `youJson`, which meant the launcher could not actually see the public profile metadata it was trying to prefer
 - Extended the public profile payload with `_profile.asciiPortrait`, then taught the CLI portrait resolver to prefer the current profile-selected portrait data over stale cached avatar fallbacks, which is the foundation for making the startup face match the public profile instead of a long-lived X/GitHub fallback
-- Bumped the next CLI publish target to `0.6.6` so the version bump is already handled before the next npm publish prompt reaches Houston
+- Bumped the next CLI publish target to `0.6.7` so the version bump is already handled before the next npm publish prompt reaches Houston
 
 ## 2026-04-18 — `you` Launcher + Portrait Encounter + Update Hints
 
