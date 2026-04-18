@@ -16,7 +16,7 @@ PRD Version: 2.3
 - [x] Make the `you` launcher actually investigate local context with a live braille spinner before it talks, then report concrete findings instead of bluffing that it already "looked around"
 - [x] Make the startup portrait prefer the live profile contract over stale cached avatar fallbacks, and expose the stored public ASCII portrait on the public payload so CLI/web can match more closely
 - [x] Align installer + register/init/onboarding guidance around `you` so new users are consistently pointed at the alive entrypoint instead of the older `youmd chat` muscle memory
-- [ ] Publish `youmd@0.6.7` so end users get the `you` launcher, portrait splash, truthful startup investigation, public-profile portrait contract fix, update hints, read-only active-bundle fallback, and raw-markdown identity roundtrip preservation
+- [ ] Publish `youmd@0.6.8` so end users get the `you` launcher, portrait splash, truthful startup investigation, public-profile portrait contract fix, update hints, read-only active-bundle fallback, raw-markdown identity roundtrip preservation, and recent-project opportunity scanning from arbitrary directories
 - [ ] Build a truly proactive first-run U flow after install/login instead of relying only on better static startup copy
 - [ ] Verify the `you` splash now matches Houston's current primary/public portrait after the new `_profile.asciiPortrait` contract ships to production
 

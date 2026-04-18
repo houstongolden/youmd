@@ -7,6 +7,13 @@
 - Updated the curl installer next-steps output, CLI register success copy, example-init next steps, and conversational onboarding next-step block so they no longer over-index on `youmd chat`
 - Updated the README quickstart and command table to introduce `you` explicitly as the alive terminal entrypoint instead of burying it beneath the older explicit chat command
 
+## 2026-04-18 — Recent Project Opportunity Scan From Anywhere
+
+### CLI / Agent UX
+- Taught the `you` startup flow to look for actual openings in recent project contexts instead of only naming recently touched projects, which gives U something concrete to point at when it wants to be proactively helpful
+- Added a home-bundle fallback for that recent-project scan, so launching `you` from arbitrary directories like `/tmp` can still inspect `~/.youmd/projects` instead of acting like your recent project orbit disappeared
+- Bumped the next CLI publish target to `0.6.8` so the new startup-opportunity pass is versioned before the next npm publish prompt
+
 ## 2026-04-18 — Truthful `you` Startup + Public Portrait Contract Fix
 
 ### CLI / Portrait / Agent UX
