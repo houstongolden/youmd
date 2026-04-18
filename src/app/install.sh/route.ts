@@ -56,6 +56,7 @@ echo ""
 echo "Next:"
 echo "  youmd login"
 echo "  youmd init"
+echo "  you"
 echo ""
 `;
 }

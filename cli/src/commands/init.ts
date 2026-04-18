@@ -130,7 +130,7 @@ async function initFromExample(exampleName: string): Promise<void> {
     `    2. ${chalk.cyan("youmd push")}     ${chalk.dim("-- publish to your handle")}`
   );
   console.log(
-    `    3. ${chalk.cyan("youmd chat")}     ${chalk.dim("-- talk to the agent to make it yours")}`
+    `    3. ${chalk.cyan("you")}            ${chalk.dim("-- meet U and keep shaping your identity")}`
   );
   console.log("");
 }

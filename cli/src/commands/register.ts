@@ -159,7 +159,7 @@ export async function registerCommand(): Promise<void> {
       "  run " + ACCENT("youmd init") + " to build your identity context"
     );
     console.log(
-      "  or  " + ACCENT("youmd chat") + " to talk to the You agent"
+      "  then " + ACCENT("you") + " to meet U once your bundle exists"
     );
     console.log("");
   } catch (err) {

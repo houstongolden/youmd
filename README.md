@@ -41,6 +41,7 @@ That installs the latest global CLI. Then:
 ```bash
 youmd login              # press Enter for browser sign-in, or type your email for a code
 youmd init               # build your identity bundle interactively
+you                     # meet U — portrait, proactive context scan, live chat
 youmd push               # publish to you.md/<username>
 youmd skill init-project # wire your identity into the current repo
 youmd link create        # generate a shareable context link
@@ -57,6 +58,7 @@ Prefer npm directly? Use `npm install -g youmd@latest`.
 | Command | What It Does |
 |---|---|
 | `youmd init` | Build your identity via AI conversation |
+| `you` | Meet U in the terminal — portrait, proactive context scan, live chat |
 | `youmd login` | Authenticate (Enter for browser sign-in, email code, or `--key`) |
 | `youmd logout` | Clear local authentication on this machine |
 | `youmd register` | Claim a username |
@@ -71,7 +73,7 @@ Prefer npm directly? Use `npm install -g youmd@latest`.
 | `youmd add <src> <url>` | Add a source (website, linkedin, x, blog, youtube, github) |
 | `youmd status` | Show pipeline/build status |
 | `youmd preview` | Local preview server on port 3333 |
-| `youmd chat` | Talk to the You Agent -- update profile, add sources, ask questions |
+| `youmd chat` | Explicit chat entry if you want the old full command instead of `you` |
 | `youmd memories` | Manage your memory brain (list, add, stats) |
 | `youmd private` | Manage private context (notes, links, projects) |
 | `youmd project` | Manage project agent context (init, list, show, memories) |

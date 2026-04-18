@@ -1498,15 +1498,16 @@ async function finishBundle(
   console.log("");
   console.log(`    1. ${chalk.cyan("youmd login")}              ${chalk.dim("-- connect to you.md")}`);
   console.log(`    2. ${chalk.cyan("youmd push")}               ${chalk.dim("-- publish to you.md/" + username)}`);
-  console.log(`    3. ${chalk.cyan("youmd skill install all")}  ${chalk.dim("-- install identity-aware agent skills")}`);
-  console.log(`    4. ${chalk.cyan("youmd skill init-project")} ${chalk.dim("-- AGENTS/CLAUDE bootstrap + project-context/ in any repo")}`);
+  console.log(`    3. ${chalk.cyan("you")}                      ${chalk.dim("-- meet U and let it keep helping from the terminal")}`);
+  console.log(`    4. ${chalk.cyan("youmd skill install all")}  ${chalk.dim("-- install identity-aware agent skills")}`);
+  console.log(`    5. ${chalk.cyan("youmd skill init-project")} ${chalk.dim("-- AGENTS/CLAUDE bootstrap + project-context/ in any repo")}`);
   console.log("");
   console.log("  " + accent("agent tools:"));
   console.log("");
   console.log(`    ${chalk.cyan("youmd skill link claude")}  ${chalk.dim("-- sync skills to .claude/skills/youmd/")}`);
   console.log(`    ${chalk.cyan("youmd skill link cursor")}  ${chalk.dim("-- sync skills to .cursor/rules/youmd.md")}`);
   console.log(`    ${chalk.cyan("youmd link create")}        ${chalk.dim("-- shareable context link for any agent")}`);
-  console.log(`    ${chalk.cyan("youmd chat")}               ${chalk.dim("-- talk to the agent to update your profile")}`);
+  console.log(`    ${chalk.cyan("youmd chat")}               ${chalk.dim("-- direct chat path if you want the old explicit command")}`);
   console.log("");
 
   // Context link
