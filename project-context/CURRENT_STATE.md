@@ -35,7 +35,7 @@ Last Commit: see git log for latest 2026-04-18 `you` launcher + proactive portra
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
 
-### CLI (youmd v0.6.11 — ready to publish)
+### CLI (youmd v0.6.12 — ready to publish)
 - 21 commands (added `skill` with 19 subcommands)
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
@@ -45,7 +45,7 @@ Last Commit: see git log for latest 2026-04-18 `you` launcher + proactive portra
 - Install/login/register/init/onboarding copy now consistently points users toward `you` as the main "meet U" terminal path once they have an identity bundle, instead of over-indexing on `youmd chat`
 - `youmd logout` now exists and clears stale local auth state from `~/.youmd/config.json`
 - CLI auth now forces production defaults for `apiUrl` / `appUrl` on fresh logins and resolves those URLs per request instead of caching a stale dev endpoint at process start
-- npm publish retry path is fixed: the next release target is `0.6.11`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
+- npm publish retry path is fixed: the next release target is `0.6.12`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
 - Bare `youmd` now enters like U instead of dropping straight into a dry command list: it shows the YOU logo, optionally shows the saved portrait preview, greets the user, surfaces project-context opportunities, and proposes the next best moves contextually
 - `youmd chat` now opens with the same U-style entrance and no longer prints the first assistant greeting twice when streaming succeeds
 - Web `/initialize` now passes the same `thinkingCategory` + `progressSteps` state into the terminal shell, so onboarding can show the same live working-state treatment as the main shell
@@ -56,6 +56,7 @@ Last Commit: see git log for latest 2026-04-18 `you` launcher + proactive portra
 - A real `you` launcher now exists alongside `youmd`: if the user is authenticated and has a bundle in either the current project or `~/.youmd`, `you` goes straight into chat instead of forcing `youmd chat`
 - The new `you` opening renders the YOU logo, the user's ASCII portrait-in-code, a small terminal bot greeting the portrait, and a more proactive U intro so the local entry feels more like meeting a wingman than a utility binary
 - The `you` opening now runs a real local-context investigation before speaking: a live braille spinner stays active while U checks bundle guidance plus nearby AGENTS / CLAUDE / project-context signals, then U reports concrete findings instead of pretending it already looked around
+- The portrait encounter in `you` now adapts to narrow terminals: if the portrait + bot + speech scene no longer fits side-by-side, it stacks vertically instead of smashing the portrait text into the dialog block
 - The launcher now scans recent project contexts for actual openings instead of only listing project names, and that recent-project scan now falls back to `~/.youmd/projects` even when `you` is launched from arbitrary directories like `/tmp`
 - U now also scans normal workspace repos with `AGENTS.md`, `CLAUDE.md`, `.youmd-project`, or `project-context/`, so the launcher can point at real projects like `foldermd` even when they were never initialized through `youmd project`
 - CLI startup can now check npm for newer published versions, cache that result, and show the exact curl/npm upgrade commands when an update is available
@@ -117,7 +118,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Existing API keys created before the reveal upgrade remain non-revealable by design because those historical records were stored hash-only; newly created or rotated keys are now revealable, so one rotate is the migration path for older keys
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 - The CLI still does not feel proactive enough at install/startup compared with Claude Code/OpenClaw. The new startup entrance is a meaningful step, but U still needs a richer first-run / post-install “friendly wingman” flow that helps without requiring the user to already know the commands
-- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.11` and need one more npm publish before end users get the `you` launcher, portrait splash, truthful startup investigation, update hints, public-profile portrait contract fix, active-bundle fallback on read-only commands, raw-markdown roundtrip preservation, recent-project opportunity scanning from arbitrary directories, broader local workspace repo awareness, actionable recent-project openings, and a stronger onboarding handoff into U
+- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.12` and need one more npm publish before end users get the `you` launcher, portrait splash, truthful startup investigation, update hints, public-profile portrait contract fix, active-bundle fallback on read-only commands, raw-markdown roundtrip preservation, recent-project opportunity scanning from arbitrary directories, broader local workspace repo awareness, actionable recent-project openings, a stronger onboarding handoff into U, and the narrow-terminal portrait encounter fix
 
 ### Portrait Sync
 - CLI generates ASCII portraits locally but sync to web API is not verified end-to-end

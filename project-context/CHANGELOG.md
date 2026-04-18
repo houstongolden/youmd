@@ -1,5 +1,12 @@
 # You.md — Changelog
 
+## 2026-04-18 — Narrow-Terminal `you` Encounter Fix
+
+### CLI / Agent UX
+- Fixed the `you` launcher scene on narrow terminals so the portrait, bot, and greeting no longer collide into unreadable overlap when the viewport is too tight for the full side-by-side encounter
+- The launcher now detects when the scene exceeds the active terminal width and automatically stacks the portrait, bot, and speech vertically instead of forcing the old horizontal composition
+- Bumped the next CLI publish target to `0.6.12` so the screenshot-driven launcher fix is already versioned before the next npm publish prompt
+
 ## 2026-04-18 — `you`-First Install + Onboarding Copy
 
 ### CLI / Install / DX
