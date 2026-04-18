@@ -1,5 +1,12 @@
 # You.md — Changelog
 
+## 2026-04-18 — Deeper `you` Context Sweep + Strongest-Move Opener
+
+### CLI / Agent UX
+- Deepened the `you` launcher investigation so U now reads home-level shared agent docs and recent Claude/Codex session roots, not just the immediate repo and home bundle
+- Replaced the old generic “what are we moving forward right now?” opener with a stronger handoff that proposes the strongest move U can already see from the recent context sweep
+- Bumped the next CLI publish target to `0.6.13` so the deeper startup-context pass is versioned before the next npm publish prompt
+
 ## 2026-04-18 — Narrow-Terminal `you` Encounter Fix
 
 ### CLI / Agent UX

@@ -13,7 +13,7 @@ Last Updated: 2026-04-18
 | CLI logout | Done | `youmd logout` now clears local auth state so machines can switch accounts without hand-editing `~/.youmd/config.json` |
 | Stale endpoint-safe CLI auth | Done | CLI auth requests now resolve `apiUrl` / `appUrl` at request time and reset fresh logins to production defaults instead of verifying production keys against cached dev endpoints |
 | Curl installer | Done | `https://you.md/install.sh` now installs the latest global CLI and teaches `youmd login` + `youmd init` as the next steps |
-| Clean npm publish metadata | Done | CLI package now targets `0.6.12`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
+| Clean npm publish metadata | Done | CLI package now targets `0.6.13`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
 | Onboarding handoff into U | Done | `youmd init` and conversational onboarding now end with the same actionable U-centric next move pattern the launcher uses, including real recent-project openings instead of only a static checklist |
 | Web initialize shell parity | Done | `/initialize` now passes live thinking/progress state into the terminal shell and prompts U to sound like the same local launcher wingman, including mentioning known projects when context already exists |
 | Web initialize portrait encounter | Done | `/initialize` now shows a portrait-and-bot encounter strip above the onboarding terminal, reusing the saved ASCII portrait when available and falling back gracefully before the portrait exists |
@@ -25,6 +25,7 @@ Last Updated: 2026-04-18
 | Portrait + bot startup scene | Done | The proactive `you` launch now shows the YOU logo, the user's ASCII portrait, a small bot greeting the portrait, and a more human "meet U" intro |
 | Truthful startup investigation | Done | `you` now keeps a live braille spinner active while it actually checks local bundle guidance plus nearby AGENTS / CLAUDE / project-context signals, then reports concrete findings before the first chat turn |
 | Narrow-terminal portrait encounter stacking | Done | The `you` launcher now stacks the portrait, bot, and speech vertically when the terminal is too narrow for the side-by-side scene, so the encounter no longer collides into unreadable overlap on mobile-ish terminal widths |
+| Home-level agent context sweep | Done | `you` now also inspects shared home agent docs and recent Claude/Codex session roots, then uses that context to propose a strongest move instead of ending on a generic “what are we moving forward right now?” opener |
 | Recent-project opportunity scan | Done | Launcher startup now looks for concrete gaps in recent project contexts instead of only listing names, and it falls back to the home `~/.youmd/projects` root even when launched outside a repo tree |
 | Workspace repo awareness | Done | Launcher startup now notices normal local repos with `AGENTS.md`, `CLAUDE.md`, `.youmd-project`, or `project-context/`, not just You.md-managed project bundles |
 | Update-aware CLI startup | Done | CLI startup now checks npm for newer published versions, caches the result, and shows both curl and npm upgrade paths when an update exists |
@@ -147,7 +148,7 @@ Last Updated: 2026-04-18
 | Private vault encryption | Not started | AES-256-GCM, deferred |
 | Rate limiting | Not started | Per plan |
 
-## CLI (npm: youmd v0.6.12)
+## CLI (npm: youmd v0.6.13)
 
 | Feature | Status | Notes |
 |---|---|---|
