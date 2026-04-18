@@ -14,7 +14,7 @@ console.log("     ╚═╝      ╚═════╝    ╚═════╝ 
 console.log("  " + chalk.dim("──────────────────────────────────"));
 console.log("  " + ACCENT("u is installed.") + " " + chalk.dim("identity for the agent internet is now on this machine."));
 console.log("");
-console.log("    " + chalk.cyan("youmd") + chalk.dim("               meet U"));
+console.log("    " + chalk.cyan("you") + chalk.dim("                 meet U"));
 console.log("    " + chalk.cyan("youmd login") + chalk.dim("         connect your identity"));
-console.log("    " + chalk.cyan("youmd chat") + chalk.dim("          start with the wingman, not the paperwork"));
+console.log("    " + chalk.cyan("you") + chalk.dim("                 start with the wingman, not the paperwork"));
 console.log("");

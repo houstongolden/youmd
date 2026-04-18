@@ -1,8 +1,9 @@
 {
   "name": "youmd",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "Identity context protocol for the agent internet — an MCP where the context is you. CLI for the You.md platform.",
   "bin": {
+    "you": "dist/you.js",
     "youmd": "dist/index.js",
     "create-youmd": "dist/create.js"
   },

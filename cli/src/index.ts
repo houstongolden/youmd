@@ -10,10 +10,13 @@ import {
   localBundleExists,
   readGlobalConfig,
   getLocalBundleDir,
+  getHomeBundleDir,
+  bundleLooksInitialized,
   detectProjectContext,
 } from "./lib/config";
-import { printSavedPortrait, printYouLogo } from "./lib/ascii";
+import { printPortraitEncounter, printYouLogo, resolvePortraitLines } from "./lib/ascii";
 import { findProjectsRoot, listProjects } from "./lib/project";
+import { checkForCliUpdate } from "./lib/update";
 import { initCommand } from "./commands/init";
 import { loginCommand } from "./commands/login";
 import { logoutCommand } from "./commands/logout";
@@ -42,11 +45,13 @@ import { logsCommand } from "./commands/logs";
 import { agentsCommand } from "./commands/agents";
 
 const program = new Command();
+const CURRENT_VERSION = "0.6.4";
+const CLI_NAME = process.env.YOUMD_LAUNCH_SURFACE === "you" ? "you" : "youmd";
 
 program
-  .name("youmd")
+  .name(CLI_NAME)
   .description("identity context protocol for the agent internet — an MCP where the context is you")
-  .version("0.6.3");
+  .version(CURRENT_VERSION);
 
 // ─── Grouped --help output ─────────────────────────────────────────
 // Commands are bucketed into categories so the help is scannable.
@@ -130,7 +135,7 @@ function renderGroupedHelp(): string {
   lines.push("");
   lines.push("  " + chalk.bold("you.md") + DIM(" -- " + program.description()));
   lines.push("");
-  lines.push("  " + DIM("Usage: ") + chalk.cyan("youmd <command> [options]"));
+  lines.push("  " + DIM("Usage: ") + chalk.cyan(`${CLI_NAME} <command> [options]`));
   lines.push("");
 
   const longest = Math.max(
@@ -147,7 +152,7 @@ function renderGroupedHelp(): string {
     lines.push("");
   }
 
-  lines.push("  " + DIM("Run ") + chalk.cyan("youmd <command> --help") + DIM(" for per-command options."));
+  lines.push("  " + DIM("Run ") + chalk.cyan(`${CLI_NAME} <command> --help`) + DIM(" for per-command options."));
   lines.push("");
 
   return lines.join("\n");
@@ -180,14 +185,53 @@ function getRecentProjectNames(limit = 3): string[] {
     .map((item) => item.name);
 }
 
-function renderNoArgWelcome(): void {
+function resolveBundleDirForWelcome(): string | null {
+  const localDir = getLocalBundleDir();
+  if (bundleLooksInitialized(localDir)) return localDir;
+
+  const homeDir = getHomeBundleDir();
+  if (bundleLooksInitialized(homeDir)) return homeDir;
+
+  return null;
+}
+
+function readDisplayName(bundleDir: string | null, cfg: ReturnType<typeof readGlobalConfig>): string {
+  if (bundleDir) {
+    const youJsonPath = path.join(bundleDir, "you.json");
+    if (fs.existsSync(youJsonPath)) {
+      try {
+        const parsed = JSON.parse(fs.readFileSync(youJsonPath, "utf-8")) as {
+          identity?: { name?: string };
+        };
+        if (parsed.identity?.name) return parsed.identity.name;
+      } catch {
+        // non-fatal
+      }
+    }
+  }
+
+  return cfg.username || "friend";
+}
+
+async function printUpdateHint(): Promise<void> {
+  const latest = await checkForCliUpdate(CURRENT_VERSION);
+  if (!latest) return;
+
+  console.log("  " + chalk.yellow(`update available: ${CURRENT_VERSION} → ${latest}`));
+  console.log("  " + chalk.dim("refresh U with: ") + chalk.cyan("curl -fsSL https://you.md/install.sh | bash"));
+  console.log("  " + chalk.dim("or: ") + chalk.cyan(`npm install -g youmd@${latest}`));
+  console.log("");
+}
+
+async function renderNoArgWelcome(): Promise<void> {
   const ACCENT = chalk.hex("#C46A3A");
   const DIM = chalk.dim;
   const authed = isAuthenticated();
-  const hasBundle = localBundleExists();
   const cfg = readGlobalConfig();
   const user = cfg.username ? "@" + cfg.username : "";
-  const bundleDir = getLocalBundleDir();
+  const bundleDir = resolveBundleDirForWelcome();
+  const hasBundle = !!bundleDir;
+  const displayName = readDisplayName(bundleDir, cfg);
   const rawProjectCtx = detectProjectContext();
   const projectCtx =
     rawProjectCtx && path.resolve(rawProjectCtx.root) !== path.resolve(os.homedir())
@@ -202,7 +246,16 @@ function renderNoArgWelcome(): void {
   printYouLogo();
 
   if (hasBundle) {
-    const showedPortrait = printSavedPortrait(bundleDir, { maxLines: 18 });
+    const portraitLines = await resolvePortraitLines(bundleDir);
+    const showedPortrait = portraitLines
+      ? printPortraitEncounter({
+          bundleDir,
+          displayName,
+          currentProject: projectCtx?.name,
+          recentProjects,
+          portraitLines,
+        })
+      : false;
     if (showedPortrait) {
       console.log("");
       console.log("  " + ACCENT("there you are.") + " " + DIM("you look good in code."));
@@ -217,13 +270,13 @@ function renderNoArgWelcome(): void {
     console.log("    " + DIM("2.") + " " + chalk.cyan("youmd init") + DIM("           build your identity through conversation"));
     console.log("    " + DIM("3.") + " " + chalk.cyan("youmd push") + DIM("           publish to you.md/<username>"));
     console.log("");
-    console.log("  " + DIM("tip: ") + chalk.cyan("youmd chat") + DIM(" is where U should start to feel like a wingman, not a utility."));
+    console.log("  " + DIM("tip: ") + chalk.cyan("you") + DIM(" is the fast path once your identity bundle exists."));
   } else if (!hasBundle) {
     console.log("  " + ACCENT(`good to see you${user ? `, ${user}` : ""}.`) + " i don't see a local bundle here yet.");
     console.log("");
     console.log("    " + chalk.cyan("youmd init") + DIM("           start the conversational setup"));
     console.log("    " + chalk.cyan("youmd pull") + DIM("           pull your live identity down to this machine"));
-    console.log("    " + chalk.cyan("youmd chat") + DIM("           open U once the bundle exists"));
+    console.log("    " + chalk.cyan("you") + DIM("                  open U once the bundle exists"));
     console.log("");
   } else {
     console.log("  " + ACCENT(`good to see you${user ? `, ${user}` : ""}.`) + " U is online.");
@@ -236,7 +289,7 @@ function renderNoArgWelcome(): void {
     console.log("");
     console.log("  " + chalk.bold("next best moves"));
     console.log("");
-    console.log("    " + chalk.cyan("youmd chat") + DIM("           open U and let it help proactively"));
+    console.log("    " + chalk.cyan("you") + DIM("                  open U and let it help proactively"));
     console.log("    " + chalk.cyan("youmd status") + DIM("         check sync state, publish state, and gaps"));
     if (missingRepoBootstrap) {
       console.log("    " + chalk.cyan("youmd skill init-project") + DIM(" wire this repo for your agents"));
@@ -252,7 +305,9 @@ function renderNoArgWelcome(): void {
     }
   }
 
-  console.log("  " + DIM("full command list: ") + chalk.cyan("youmd --help"));
+  await printUpdateHint();
+
+  console.log("  " + DIM("full command list: ") + chalk.cyan(`${CLI_NAME} --help`));
   console.log("");
 }
 
@@ -432,9 +487,13 @@ program
 
 // ─── Guided tutorial when invoked with no args ─────────────────────
 // `youmd` (bare) shows a short contextual welcome / next-step guide.
-if (process.argv.length <= 2) {
-  renderNoArgWelcome();
-  process.exit(0);
+async function main(): Promise<void> {
+  if (process.argv.length <= 2) {
+    await renderNoArgWelcome();
+    return;
+  }
+
+  await program.parseAsync(process.argv);
 }
 
-program.parse(process.argv);
+void main();

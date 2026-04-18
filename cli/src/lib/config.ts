@@ -16,6 +16,8 @@ export interface GlobalConfig {
   appUrl?: string;
   avatarUrl?: string;
   openrouterKey?: string;
+  lastCliLatestVersion?: string;
+  lastCliUpdateCheckAt?: string;
 }
 
 export interface LocalConfig {
@@ -32,12 +34,24 @@ export function getGlobalConfigDir(): string {
   return GLOBAL_CONFIG_DIR;
 }
 
+export function getHomeBundleDir(): string {
+  return GLOBAL_CONFIG_DIR;
+}
+
 export function getGlobalConfigPath(): string {
   return GLOBAL_CONFIG_FILE;
 }
 
 export function getLocalBundleDir(): string {
   return path.resolve(process.cwd(), LOCAL_BUNDLE_DIR);
+}
+
+export function bundleLooksInitialized(bundleDir: string): boolean {
+  return (
+    fs.existsSync(path.join(bundleDir, "you.json")) ||
+    fs.existsSync(path.join(bundleDir, "profile")) ||
+    fs.existsSync(path.join(bundleDir, "preferences"))
+  );
 }
 
 export function getConvexSiteUrl(): string {

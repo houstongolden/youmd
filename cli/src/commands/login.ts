@@ -111,6 +111,8 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
       console.log("  key:   " + apiKey.slice(0, 8) + "..." + apiKey.slice(-4));
     }
     console.log("");
+    console.log("  run " + chalk.cyan("you") + " to meet U.");
+    console.log("");
   } catch (err) {
     spinner.fail();
     console.log("");
@@ -151,6 +153,7 @@ function openBrowserLogin(): void {
 
   console.log("sign in there, then create or reveal an API key in settings if you want local agent access.");
   console.log("after that, run " + chalk.cyan("youmd login --key YOUR_KEY"));
+  console.log("once you're in, run " + chalk.cyan("you"));
   console.log("");
 }
 
@@ -213,6 +216,8 @@ async function loginWithKey(key: string): Promise<void> {
     }
     console.log("  plan:  " + (user.plan || "free"));
     console.log("  key:   " + key.slice(0, 8) + "..." + key.slice(-4));
+    console.log("");
+    console.log("  run " + chalk.cyan("you") + " to meet U.");
     console.log("");
   } catch (err) {
     spinner.fail();

@@ -8,6 +8,7 @@ import Jimp from "jimp";
 import chalk from "chalk";
 import * as fs from "fs";
 import * as path from "path";
+import { readGlobalConfig } from "./config";
 
 const ACCENT = chalk.hex("#C46A3A");
 
@@ -36,8 +37,29 @@ export async function renderAsciiPortrait(
   cols: number = 60,
   options?: { colored?: boolean }
 ): Promise<string[] | null> {
-  const colored = options?.colored ?? true;
+  const lines = await generateAsciiPortraitLines(imageUrl, cols);
+  if (!lines) return null;
 
+  const colored = options?.colored ?? true;
+  for (const line of lines) {
+    if (colored) {
+      let coloredLine = "";
+      for (const ch of line) {
+        coloredLine += ACCENT(ch);
+      }
+      process.stdout.write(`  ${coloredLine}\n`);
+    } else {
+      process.stdout.write(`  ${ACCENT(line)}\n`);
+    }
+  }
+
+  return lines;
+}
+
+export async function generateAsciiPortraitLines(
+  imageUrl: string,
+  cols: number = 60,
+): Promise<string[] | null> {
   try {
     // Fetch the image with a timeout to avoid hanging on slow CDNs
     const image = await Promise.race([
@@ -61,7 +83,6 @@ export async function renderAsciiPortrait(
 
     for (let y = 0; y < rows; y++) {
       let line = "";
-      let coloredLine = "";
 
       for (let x = 0; x < cols; x++) {
         const pixel = Jimp.intToRGBA(image.getPixelColor(x, y));
@@ -70,19 +91,9 @@ export async function renderAsciiPortrait(
         const ch = RAMP[charIndex];
 
         line += ch;
-        if (colored) {
-          coloredLine += lumToAnsi(lum)(ch);
-        }
       }
 
       lines.push(line);
-
-      // Print each line as it's generated (live rendering effect)
-      if (colored) {
-        process.stdout.write(`  ${coloredLine}\n`);
-      } else {
-        process.stdout.write(`  ${ACCENT(line)}\n`);
-      }
     }
 
     return lines;
@@ -123,24 +134,141 @@ export function printSavedPortrait(
   bundleDir: string,
   options: { maxLines?: number; indent?: string } = {}
 ): boolean {
+  const lines = getSavedPortraitLines(bundleDir, options.maxLines);
+  if (!lines) return false;
+
+  const indent = options.indent ?? "  ";
+  for (const line of lines) {
+    process.stdout.write(`${indent}${ACCENT(line)}\n`);
+  }
+  return true;
+}
+
+export function getSavedPortraitLines(
+  bundleDir: string,
+  maxLines?: number,
+): string[] | null {
   const portraitPath = path.join(bundleDir, "portrait.json");
-  if (!fs.existsSync(portraitPath)) return false;
+  if (!fs.existsSync(portraitPath)) return null;
 
   try {
     const raw = JSON.parse(fs.readFileSync(portraitPath, "utf-8")) as {
       lines?: string[];
     };
-    if (!raw.lines || raw.lines.length === 0) return false;
+    if (!raw.lines || raw.lines.length === 0) return null;
 
-    const indent = options.indent ?? "  ";
-    const maxLines = options.maxLines ?? raw.lines.length;
-    const lines = raw.lines.slice(0, maxLines);
-
-    for (const line of lines) {
-      process.stdout.write(`${indent}${ACCENT(line)}\n`);
-    }
-    return true;
+    const limit = maxLines ?? raw.lines.length;
+    return raw.lines.slice(0, limit);
   } catch {
-    return false;
+    return null;
   }
+}
+
+const BOT_LINES = [
+  "  .-.",
+  " (o o)  __",
+  " | O | / /",
+  " |   |/ /",
+  " '~~~' /",
+  "   \\__/ ",
+];
+
+function padRight(value: string, width: number): string {
+  return value + " ".repeat(Math.max(0, width - value.length));
+}
+
+export function printPortraitEncounter(options: {
+  bundleDir: string;
+  displayName: string;
+  recentProjects?: string[];
+  currentProject?: string;
+  portraitLines: string[];
+}): boolean {
+  const portraitLines = options.portraitLines.slice(0, 16);
+  if (!portraitLines || portraitLines.length === 0) return false;
+
+  const speechLines = [
+    `hi ${options.displayName.split(" ")[0]}, i'm U.`,
+    "i help other agents know you.",
+    options.currentProject
+      ? `let's look at ${options.currentProject} first.`
+      : options.recentProjects && options.recentProjects.length > 0
+        ? `lately you've been around ${options.recentProjects.slice(0, 3).join(", ")}.`
+        : "let's see what you've been working on lately.",
+    "*sipping bitbucks frappaccino*",
+  ];
+
+  const leftWidth = Math.max(...portraitLines.map((line) => line.length));
+  const rightWidth = Math.max(...BOT_LINES.map((line) => line.length), ...speechLines.map((line) => line.length + 2));
+  const totalLines = Math.max(portraitLines.length, BOT_LINES.length + speechLines.length + 1);
+
+  for (let i = 0; i < totalLines; i++) {
+    const left = portraitLines[i] || "";
+
+    let right = "";
+    if (i < BOT_LINES.length) {
+      right = BOT_LINES[i];
+    } else if (i === BOT_LINES.length) {
+      right = "";
+    } else {
+      const speechIndex = i - BOT_LINES.length - 1;
+      if (speechIndex >= 0 && speechIndex < speechLines.length) {
+        right = speechIndex === 0
+          ? `> ${speechLines[speechIndex]}`
+          : `  ${speechLines[speechIndex]}`;
+      }
+    }
+
+    const leftCell = left ? ACCENT(padRight(left, leftWidth)) : " ".repeat(leftWidth);
+    const rightCell = right
+      ? (i < BOT_LINES.length ? chalk.hex("#E09060")(padRight(right, rightWidth)) : chalk.dim(padRight(right, rightWidth)))
+      : " ".repeat(rightWidth);
+
+    process.stdout.write(`  ${leftCell}    ${rightCell}\n`);
+  }
+
+  return true;
+}
+
+export async function resolvePortraitLines(bundleDir: string): Promise<string[] | null> {
+  const saved = getSavedPortraitLines(bundleDir, 16);
+  if (saved && saved.length > 0) return saved;
+
+  const inferredUrl = inferPortraitImageUrl(bundleDir);
+  if (!inferredUrl) return null;
+
+  return generateAsciiPortraitLines(inferredUrl, 44);
+}
+
+function inferPortraitImageUrl(bundleDir: string): string | null {
+  const config = readGlobalConfig();
+  if (config.avatarUrl) return config.avatarUrl;
+
+  const youJsonPath = path.join(bundleDir, "you.json");
+  if (!fs.existsSync(youJsonPath)) return null;
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(youJsonPath, "utf-8")) as {
+      links?: Record<string, string>;
+    };
+    const links = parsed.links || {};
+    const github = links.github;
+    if (github) {
+      const match = github.match(/github\.com\/([^/]+)/i);
+      if (match?.[1]) return `https://unavatar.io/github/${match[1]}`;
+    }
+
+    const xUrl = links["x/twitter"] || links.x || links.twitter;
+    if (xUrl) {
+      const match = xUrl.match(/(?:x\.com|twitter\.com)\/([^/]+)/i);
+      if (match?.[1]) return `https://unavatar.io/x/${match[1]}`;
+    }
+
+    const linkedIn = links.linkedin;
+    if (linkedIn) return `https://unavatar.io/linkedin/${encodeURIComponent(linkedIn)}`;
+  } catch {
+    return null;
+  }
+
+  return null;
 }

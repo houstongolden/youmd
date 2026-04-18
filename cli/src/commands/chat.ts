@@ -5,6 +5,8 @@ import * as path from "path";
 import chalk from "chalk";
 import {
   getLocalBundleDir,
+  getHomeBundleDir,
+  bundleLooksInitialized,
   localBundleExists,
   isAuthenticated,
   readGlobalConfig,
@@ -36,7 +38,8 @@ import {
   BUNDLE_SECTIONS,
 } from "../lib/onboarding";
 import type { ChatMessage } from "../lib/onboarding";
-import { printSavedPortrait, printYouLogo } from "../lib/ascii";
+import { printPortraitEncounter, printSavedPortrait, printYouLogo, resolvePortraitLines } from "../lib/ascii";
+import { checkForCliUpdate } from "../lib/update";
 
 // ─── URL Detection + Scraping (mirrors web useYouAgent) ──────────────
 
@@ -44,6 +47,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
+const CURRENT_VERSION = "0.6.4";
 
 // ─── Streaming LLM client ─────────────────────────────────────────────
 
@@ -990,25 +994,114 @@ function repoNeedsBootstrap(projectRoot: string): boolean {
   );
 }
 
-function printChatOpening(
+function resolveBundleDirForChat(): string | null {
+  const localDir = getLocalBundleDir();
+  if (bundleLooksInitialized(localDir)) return localDir;
+
+  const homeDir = getHomeBundleDir();
+  if (bundleLooksInitialized(homeDir)) return homeDir;
+
+  return null;
+}
+
+function readDisplayName(bundleDir: string): string {
+  const youJsonPath = path.join(bundleDir, "you.json");
+  if (fs.existsSync(youJsonPath)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(youJsonPath, "utf-8")) as {
+        identity?: { name?: string };
+      };
+      if (parsed.identity?.name) return parsed.identity.name;
+    } catch {
+      // non-fatal
+    }
+  }
+
+  const aboutPath = path.join(bundleDir, "profile", "about.md");
+  if (fs.existsSync(aboutPath)) {
+    const content = fs.readFileSync(aboutPath, "utf-8");
+    const heading = content.split("\n").find((line) => line.startsWith("# "));
+    if (heading) return heading.slice(2).trim();
+  }
+
+  return readGlobalConfig().username || "friend";
+}
+
+function getRecentProjectNames(limit = 3): string[] {
+  const projectsRoot = findProjectsRoot();
+  if (!projectsRoot) return [];
+
+  return fs.readdirSync(projectsRoot)
+    .filter((entry) => fs.existsSync(path.join(projectsRoot, entry, "project.json")))
+    .map((name) => {
+      const projectJson = path.join(projectsRoot, name, "project.json");
+      let updatedAt = 0;
+      try {
+        const parsed = JSON.parse(fs.readFileSync(projectJson, "utf-8")) as {
+          updated_at?: string;
+        };
+        updatedAt = parsed.updated_at ? Date.parse(parsed.updated_at) : 0;
+      } catch {
+        // non-fatal
+      }
+      return { name, updatedAt };
+    })
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, limit)
+    .map((item) => item.name);
+}
+
+async function printUpdateHint(): Promise<void> {
+  const latest = await checkForCliUpdate(CURRENT_VERSION);
+  if (!latest) return;
+
+  console.log("  " + chalk.yellow(`update available: ${CURRENT_VERSION} → ${latest}`));
+  console.log("  " + chalk.dim("refresh U with: ") + chalk.cyan("curl -fsSL https://you.md/install.sh | bash"));
+  console.log("  " + chalk.dim("or: ") + chalk.cyan(`npm install -g youmd@${latest}`));
+  console.log("");
+}
+
+async function printChatOpening(
   bundleDir: string,
   projectCtx: ReturnType<typeof detectProjectContext>,
-): void {
+): Promise<void> {
   const ACCENT = chalk.hex("#C46A3A");
   const DIM = chalk.dim;
   const cfg = readGlobalConfig();
   const user = cfg.username ? `@${cfg.username}` : "you";
+  const displayName = readDisplayName(bundleDir);
+  const recentProjects = getRecentProjectNames();
+  const launchSurface = process.env.YOUMD_LAUNCH_SURFACE;
 
   printYouLogo();
 
-  const showedPortrait = printSavedPortrait(bundleDir, { maxLines: 18 });
-  if (showedPortrait) {
+  let didShowPortrait = false;
+  if (launchSurface !== "you") {
+    didShowPortrait = printSavedPortrait(bundleDir, { maxLines: 18 });
+  }
+  if (launchSurface === "you") {
+    const portraitLines = await resolvePortraitLines(bundleDir);
+    didShowPortrait = portraitLines
+      ? printPortraitEncounter({
+          bundleDir,
+          displayName,
+          currentProject: projectCtx?.name,
+          recentProjects,
+          portraitLines,
+        })
+      : false;
+  }
+  if (didShowPortrait) {
     console.log("");
     console.log("  " + ACCENT("there you are.") + " " + DIM("your portrait is loaded."));
   }
 
   console.log("");
-  console.log("  " + ACCENT("u is here.") + " " + DIM(`good to see you, ${user}.`));
+  if (launchSurface === "you") {
+    console.log("  " + ACCENT("u is here.") + " " + DIM(`good to see you, ${displayName}.`));
+  } else {
+    console.log("  " + ACCENT("u is here.") + " " + DIM(`good to see you, ${user}.`));
+  }
 
   if (projectCtx) {
     console.log("  " + DIM("current project: ") + chalk.white(projectCtx.name) + DIM(` (${projectCtx.root})`));
@@ -1020,16 +1113,48 @@ function printChatOpening(
     console.log("  " + DIM("i don't see a repo context here yet, but i can still help with your identity, links, memories, and private context."));
   }
 
+  if (recentProjects.length > 0) {
+    console.log("  " + DIM("recently active: ") + recentProjects.map((name) => chalk.cyan(name)).join(DIM(", ")));
+  }
+
   console.log("");
   console.log("  " + chalk.bold("you.md chat"));
   console.log("  " + DIM("talk naturally. i'll update your identity, spot useful structure, and suggest next moves."));
   console.log("");
 }
 
+function buildYouLaunchIntro(
+  projectCtx: ReturnType<typeof detectProjectContext>,
+  bundleDir: string,
+): string {
+  const displayName = readDisplayName(bundleDir).split(" ")[0];
+  const recentProjects = getRecentProjectNames();
+  const lines: string[] = [];
+
+  lines.push(`hi ${displayName}. i'm U — i help other agents know you.`);
+
+  if (projectCtx) {
+    lines.push(`i already clocked that you're inside ${projectCtx.name}.`);
+    if (repoNeedsBootstrap(projectCtx.root)) {
+      lines.push("this repo still wants cleaner agent wiring, so i can scaffold that whenever you want.");
+    }
+  } else if (recentProjects.length > 0) {
+    lines.push(`recently you've been orbiting ${recentProjects.slice(0, 3).join(", ")}.`);
+  } else {
+    lines.push("clean slate. we can still shape your identity, private context, or project structure from here.");
+  }
+
+  lines.push("what are we moving forward right now?");
+
+  return lines.join("\n\n");
+}
+
 // ─── Main chat command ────────────────────────────────────────────────
 
 export async function chatCommand(): Promise<void> {
-  if (!localBundleExists()) {
+  const bundleDir = resolveBundleDirForChat();
+
+  if (!bundleDir) {
     console.log("");
     console.log(
       chalk.yellow("  no .youmd/ directory found.")
@@ -1043,7 +1168,6 @@ export async function chatCommand(): Promise<void> {
     return;
   }
 
-  const bundleDir = getLocalBundleDir();
   const apiKey = getOpenRouterKey();
   const rl = createRL();
 
@@ -1085,7 +1209,8 @@ export async function chatCommand(): Promise<void> {
     }
   }
 
-  printChatOpening(bundleDir, projectCtx);
+  await printChatOpening(bundleDir, projectCtx);
+  await printUpdateHint();
 
   // Load current profile as context
   const currentBundle = loadCurrentBundle(bundleDir);
@@ -1137,52 +1262,57 @@ export async function chatCommand(): Promise<void> {
   ];
 
   // Initial greeting from agent
-  let response: string;
-  let streamed = false;
-  try {
-    const result = await callLLMWithStreaming(apiKey, messages, randomThinking());
-    response = result.text;
-    streamed = result.streamed;
-  } catch (err) {
-    console.log(
-      chalk.red(
-        `  failed to connect: ${err instanceof Error ? err.message : String(err)}`
-      )
-    );
-    console.log(
-      chalk.dim(
-        "  chat requires the AI service. try again later."
-      )
-    );
-    console.log("");
-    rl.close();
-    return;
-  }
-
-  messages.push({ role: "assistant", content: response });
-  const initial = parseUpdatesFromResponse(response);
-
-  // Write any updates (unlikely on greeting, but handle it)
-  if (initial.updates.length > 0) {
-    for (const update of initial.updates) {
-      writeSectionFile(bundleDir, update.section, update.content);
+  if (process.env.YOUMD_LAUNCH_SURFACE === "you") {
+    const proactiveIntro = buildYouLaunchIntro(projectCtx, bundleDir);
+    messages.push({ role: "assistant", content: proactiveIntro });
+    printAgentMessage(proactiveIntro);
+  } else {
+    let response: string;
+    let streamed = false;
+    try {
+      const result = await callLLMWithStreaming(apiKey, messages, randomThinking());
+      response = result.text;
+      streamed = result.streamed;
+    } catch (err) {
+      console.log(
+        chalk.red(
+          `  failed to connect: ${err instanceof Error ? err.message : String(err)}`
+        )
+      );
+      console.log(
+        chalk.dim(
+          "  chat requires the AI service. try again later."
+        )
+      );
+      console.log("");
+      rl.close();
+      return;
     }
-    console.log(
-      chalk.cyan(
-        `  [updated: ${initial.updates.map((u) => sectionLabel(u.section)).join(", ")}]`
-      )
-    );
-    console.log("");
-  }
 
-  // Only print via rich renderer if we didn't stream (streaming already wrote output)
-  // But we still need to display parsed output for non-streamed fallback
-  // Since streaming writes raw text, print formatted version for updates parsing
-  if (!streamed) {
-    printAgentMessage(initial.display);
+    messages.push({ role: "assistant", content: response });
+    const initial = parseUpdatesFromResponse(response);
+
+    // Write any updates (unlikely on greeting, but handle it)
+    if (initial.updates.length > 0) {
+      for (const update of initial.updates) {
+        writeSectionFile(bundleDir, update.section, update.content);
+      }
+      console.log(
+        chalk.cyan(
+          `  [updated: ${initial.updates.map((u) => sectionLabel(u.section)).join(", ")}]`
+        )
+      );
+      console.log("");
+    }
+
+    if (!streamed) {
+      printAgentMessage(initial.display);
+    }
   }
 
   // ── Conversation loop ──────────────────────────────────────────────
+  let response = "";
+  let streamed = false;
 
   while (true) {
     const userInput = await ask(rl, chalk.green("  > ") + "");
