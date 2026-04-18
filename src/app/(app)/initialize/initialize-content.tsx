@@ -244,15 +244,26 @@ function OnboardingTerminal() {
   const profileContext = buildProfileContext(
     (latestBundle?.youJson as Record<string, unknown>) || null
   );
+  const knownProjects = Array.isArray((latestBundle?.youJson as Record<string, unknown> | null)?.projects)
+    ? ((latestBundle?.youJson as Record<string, unknown>).projects as Array<Record<string, unknown>>)
+        .map((project) => String(project.name || "").trim())
+        .filter(Boolean)
+        .slice(0, 3)
+    : [];
+  const projectHint =
+    knownProjects.length > 0
+      ? `if the saved context already points at projects like ${knownProjects.map((name) => `"${name}"`).join(", ")}, mention one naturally so the user feels recognized immediately.`
+      : "if we do not know much yet, lean into the clean-slate energy without sounding generic.";
 
   const onboardingGreeting = `${profileContext}\n\nthe user just signed up and claimed the username "${username}". this is their first time here.
 
 instructions for this greeting:
-1. greet them warmly by username. introduce yourself in one sentence — you're the you.md agent, you help build identity context protocols for the agent internet.
-2. immediately ask for their x (twitter) or github username so you can generate their ascii portrait. say something like: "first things first — drop me your x or github username and i'll generate your ascii portrait. it's your identity in code."
-3. be genuinely curious and specific, not generic. make them feel like this is going to be a real conversation, not a form.
-4. keep it to 3-4 sentences max. no lists. no "here's what we'll do" — just start the conversation.
-5. terminal-native: lowercase, no emoji, no exclamation marks.`;
+1. greet them by username and introduce yourself as U in one sentence. sound like the same wingman they meet in the local \`you\` launcher.
+2. immediately ask for their x (twitter) or github username so you can generate their ascii portrait. say some version of: "first things first — drop me your x or github username and i'll generate your ascii portrait. it's your identity in code."
+3. be genuinely curious and specific, not generic. this should feel like a real encounter, not a form.
+4. ${projectHint}
+5. keep it to 3-4 sentences max. no lists. no "here's what we'll do" — just start the conversation.
+6. terminal-native: lowercase, no emoji, no exclamation marks.`;
 
   const agent = useYouAgent({
     isOnboarding: true,
@@ -298,6 +309,8 @@ instructions for this greeting:
             setInput={agent.setInput}
             isThinking={agent.isThinking}
             thinkingPhrase={agent.thinkingPhrase}
+            thinkingCategory={agent.thinkingCategory}
+            progressSteps={agent.progressSteps}
             messagesEndRef={agent.messagesEndRef}
             textareaRef={agent.textareaRef}
             sendMessage={agent.sendMessage}
