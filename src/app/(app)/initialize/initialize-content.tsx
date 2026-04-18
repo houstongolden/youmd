@@ -8,6 +8,18 @@ import { useState, useEffect, useRef, useCallback, type ReactNode } from "react"
 import { useYouAgent, buildProfileContext } from "@/hooks/useYouAgent";
 import { TerminalShell } from "@/components/terminal/TerminalShell";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
+import AsciiAvatar from "@/components/AsciiAvatar";
+import type { PreRenderedPortrait } from "@/components/AsciiAvatar";
+
+const BOT_LINES = [
+  "   ▄▄▄▄▄   ",
+  "  █ ▄▄ █   ",
+  "  █ ◉◉ █   ",
+  "  █ ▀▀ █   ",
+  "  ██████   ",
+  " ▄█ ██ █▄  ",
+  "   ▀  ▀    ",
+];
 
 /** Read a cookie by name */
 function getCookie(name: string): string | null {
@@ -238,6 +250,10 @@ function OnboardingTerminal() {
     api.bundles.getLatestBundle,
     user?.id && convexUser?._id ? { clerkId: user.id, userId: convexUser._id } : "skip"
   );
+  const userProfile = useQuery(
+    api.profiles.getByOwnerId,
+    convexUser?._id ? { ownerId: convexUser._id } : "skip"
+  );
 
   const username = convexUser?.username || user?.username || "";
 
@@ -270,6 +286,12 @@ instructions for this greeting:
     onboardingGreeting,
     onDone: () => router.push("/shell"),
   });
+  const storedPortrait = userProfile?.asciiPortrait as PreRenderedPortrait | undefined;
+  const profileMeta = ((latestBundle?.youJson as Record<string, unknown> | null)?._profile ??
+    null) as Record<string, unknown> | null;
+  const bundleAvatarUrl =
+    profileMeta && typeof profileMeta.avatarUrl === "string" ? profileMeta.avatarUrl : "";
+  const avatarUrl = userProfile?.avatarUrl || bundleAvatarUrl;
 
   if (!convexUser) {
     return (
@@ -303,6 +325,16 @@ instructions for this greeting:
             </button>
           </div>
 
+          <div className="border-b border-[hsl(var(--border))] px-4 py-4 bg-[hsl(var(--bg))]">
+            <InitializeEncounter
+              username={username}
+              displayName={convexUser?.displayName || user?.fullName || username}
+              avatarUrl={avatarUrl}
+              storedPortrait={storedPortrait}
+              knownProjects={knownProjects}
+            />
+          </div>
+
           <TerminalShell
             displayMessages={agent.displayMessages}
             input={agent.input}
@@ -318,5 +350,73 @@ instructions for this greeting:
         </div>
       </div>
     </main>
+  );
+}
+
+function InitializeEncounter({
+  username,
+  displayName,
+  avatarUrl,
+  storedPortrait,
+  knownProjects,
+}: {
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  storedPortrait?: PreRenderedPortrait;
+  knownProjects: string[];
+}) {
+  const firstName = displayName.split(" ")[0] || username;
+  const speechLines = [
+    `hi ${firstName}, i'm U.`,
+    "i help other agents know you.",
+    knownProjects.length > 0
+      ? `i already know a little about ${knownProjects.slice(0, 2).join(" and ")}.`
+      : "first things first — let's render your face in code.",
+    "drop your x or github username and i'll get to work.",
+  ];
+
+  return (
+    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_260px] md:items-center">
+      <div className="min-w-0">
+        <div className="mb-3 text-[10px] font-mono uppercase tracking-[0.18em] text-[hsl(var(--accent))] opacity-70">
+          there you are
+        </div>
+        <div
+          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden"
+          style={{ borderRadius: "2px" }}
+        >
+          {avatarUrl || storedPortrait ? (
+            <AsciiAvatar
+              src={avatarUrl || ""}
+              cols={120}
+              canvasWidth={520}
+              format="classic"
+              className="block w-full"
+              preRendered={storedPortrait}
+            />
+          ) : (
+            <div className="px-4 py-8 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-70">
+              portrait incoming.
+              <br />
+              give U your x or github username and this turns into your face in code.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="font-mono text-[12px] leading-relaxed text-[hsl(var(--text-secondary))]">
+        <div className="mb-3 whitespace-pre text-[hsl(var(--accent))] opacity-90">
+          {BOT_LINES.join("\n")}
+        </div>
+        <div className="space-y-1">
+          {speechLines.map((line, index) => (
+            <div key={line} className="whitespace-pre-wrap">
+              {index === 0 ? `> ${line}` : `  ${line}`}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
