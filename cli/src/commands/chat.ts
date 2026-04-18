@@ -1,5 +1,6 @@
 import * as readline from "readline";
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import chalk from "chalk";
 import {
@@ -35,6 +36,7 @@ import {
   BUNDLE_SECTIONS,
 } from "../lib/onboarding";
 import type { ChatMessage } from "../lib/onboarding";
+import { printSavedPortrait, printYouLogo } from "../lib/ascii";
 
 // ─── URL Detection + Scraping (mirrors web useYouAgent) ──────────────
 
@@ -136,7 +138,7 @@ async function callLLMWithStreaming(
   apiKey: string | null,
   messages: ChatMessage[],
   spinnerLabel: string
-): Promise<string> {
+): Promise<{ text: string; streamed: boolean }> {
   const thinkSpinner = new BrailleSpinner(spinnerLabel);
   thinkSpinner.start();
 
@@ -160,7 +162,7 @@ async function callLLMWithStreaming(
       thinkSpinner.stop();
     }
 
-    return response;
+    return { text: response, streamed: !firstToken };
   } catch {
     // Streaming failed -- fall back to blocking call
     thinkSpinner.update("streaming unavailable, waiting for response");
@@ -168,7 +170,7 @@ async function callLLMWithStreaming(
     try {
       const response = await callLLM(apiKey, messages);
       thinkSpinner.stop();
-      return response;
+      return { text: response, streamed: false };
     } catch (err) {
       thinkSpinner.fail(err instanceof Error ? err.message : "failed");
       throw err;
@@ -981,6 +983,49 @@ function extractProfileHint(bundleDir: string): string | null {
   return null;
 }
 
+function repoNeedsBootstrap(projectRoot: string): boolean {
+  return (
+    !fs.existsSync(path.join(projectRoot, "AGENTS.md")) ||
+    !fs.existsSync(path.join(projectRoot, "project-context"))
+  );
+}
+
+function printChatOpening(
+  bundleDir: string,
+  projectCtx: ReturnType<typeof detectProjectContext>,
+): void {
+  const ACCENT = chalk.hex("#C46A3A");
+  const DIM = chalk.dim;
+  const cfg = readGlobalConfig();
+  const user = cfg.username ? `@${cfg.username}` : "you";
+
+  printYouLogo();
+
+  const showedPortrait = printSavedPortrait(bundleDir, { maxLines: 18 });
+  if (showedPortrait) {
+    console.log("");
+    console.log("  " + ACCENT("there you are.") + " " + DIM("your portrait is loaded."));
+  }
+
+  console.log("");
+  console.log("  " + ACCENT("u is here.") + " " + DIM(`good to see you, ${user}.`));
+
+  if (projectCtx) {
+    console.log("  " + DIM("current project: ") + chalk.white(projectCtx.name) + DIM(` (${projectCtx.root})`));
+    if (repoNeedsBootstrap(projectCtx.root)) {
+      console.log("  " + ACCENT("i spotted an opening.") + " " + DIM("this repo still wants AGENTS/project-context wiring."));
+      console.log("  " + DIM("say the word or run ") + chalk.cyan("youmd skill init-project") + DIM(" and i'll set it up."));
+    }
+  } else {
+    console.log("  " + DIM("i don't see a repo context here yet, but i can still help with your identity, links, memories, and private context."));
+  }
+
+  console.log("");
+  console.log("  " + chalk.bold("you.md chat"));
+  console.log("  " + DIM("talk naturally. i'll update your identity, spot useful structure, and suggest next moves."));
+  console.log("");
+}
+
 // ─── Main chat command ────────────────────────────────────────────────
 
 export async function chatCommand(): Promise<void> {
@@ -1003,17 +1048,15 @@ export async function chatCommand(): Promise<void> {
   const rl = createRL();
 
   // Detect project context (legacy detection from config.ts)
-  const projectCtx = detectProjectContext();
+  const rawProjectCtx = detectProjectContext();
+  const projectCtx =
+    rawProjectCtx && path.resolve(rawProjectCtx.root) !== path.resolve(os.homedir())
+      ? rawProjectCtx
+      : null;
   let projectContextBlock = "";
   let activeProjectDir: string | null = null;
 
   if (projectCtx) {
-    console.log("");
-    console.log(
-      "  " + chalk.hex("#C46A3A")("project:") + " " + chalk.white(projectCtx.name) +
-      chalk.dim(` (${projectCtx.root})`)
-    );
-
     // Try the new file-system project context first
     const projectsRoot = findProjectsRoot();
     if (projectsRoot) {
@@ -1042,14 +1085,7 @@ export async function chatCommand(): Promise<void> {
     }
   }
 
-  console.log("");
-  console.log("  " + chalk.bold("you.md chat"));
-  console.log(
-    chalk.dim(
-      "  talk to update your profile. /help for commands."
-    )
-  );
-  console.log("");
+  printChatOpening(bundleDir, projectCtx);
 
   // Load current profile as context
   const currentBundle = loadCurrentBundle(bundleDir);
@@ -1088,6 +1124,9 @@ export async function chatCommand(): Promise<void> {
   if (profileHint) {
     greetingInstruction = `greet me like you remember me from last time. reference something specific from my profile (like my current focus, a project, or my background) to show you know who i am. then ask what i'd like to update. keep it to 2-3 sentences.`;
   }
+  if (projectCtx && repoNeedsBootstrap(projectCtx.root)) {
+    greetingInstruction += " i am inside a repo that is missing some agent/project wiring. briefly mention that you noticed it and that you can set it up if i want, but do not derail the opening message into a long checklist.";
+  }
 
   const messages: ChatMessage[] = [
     { role: "system", content: CHAT_SYSTEM_PROMPT },
@@ -1099,8 +1138,11 @@ export async function chatCommand(): Promise<void> {
 
   // Initial greeting from agent
   let response: string;
+  let streamed = false;
   try {
-    response = await callLLMWithStreaming(apiKey, messages, randomThinking());
+    const result = await callLLMWithStreaming(apiKey, messages, randomThinking());
+    response = result.text;
+    streamed = result.streamed;
   } catch (err) {
     console.log(
       chalk.red(
@@ -1136,7 +1178,9 @@ export async function chatCommand(): Promise<void> {
   // Only print via rich renderer if we didn't stream (streaming already wrote output)
   // But we still need to display parsed output for non-streamed fallback
   // Since streaming writes raw text, print formatted version for updates parsing
-  printAgentMessage(initial.display);
+  if (!streamed) {
+    printAgentMessage(initial.display);
+  }
 
   // ── Conversation loop ──────────────────────────────────────────────
 
@@ -1269,7 +1313,9 @@ export async function chatCommand(): Promise<void> {
       if (!researchOk) continue;
       // After research, get an LLM response with the injected context
       try {
-        response = await callLLMWithStreaming(apiKey, messages, randomThinking());
+        const result = await callLLMWithStreaming(apiKey, messages, randomThinking());
+        response = result.text;
+        streamed = result.streamed;
       } catch (err) {
         console.log(
           chalk.red(
@@ -1297,7 +1343,9 @@ export async function chatCommand(): Promise<void> {
         console.log("");
       }
 
-      printAgentMessage(researchParsed.display);
+      if (!streamed) {
+        printAgentMessage(researchParsed.display);
+      }
       continue;
     }
 
@@ -1334,14 +1382,18 @@ export async function chatCommand(): Promise<void> {
         }
       }
       try {
-        response = await callLLMWithStreaming(apiKey, messages, randomThinking());
+        const result = await callLLMWithStreaming(apiKey, messages, randomThinking());
+        response = result.text;
+        streamed = result.streamed;
       } catch (err) {
         console.log(chalk.red(`  ${err instanceof Error ? err.message : "failed"}`));
         messages.pop();
         continue;
       }
       messages.push({ role: "assistant", content: response });
-      printAgentMessage(parseUpdatesFromResponse(response).display);
+      if (!streamed) {
+        printAgentMessage(parseUpdatesFromResponse(response).display);
+      }
       continue;
     }
 
@@ -1357,14 +1409,18 @@ export async function chatCommand(): Promise<void> {
             content: `[USER DROPPED IMAGE: ${path.basename(detectedFile)}]\nthe user dropped an image file into the chat.\n![${path.basename(detectedFile)}](${dataUrl})`,
           });
           try {
-            response = await callLLMWithStreaming(apiKey, messages, randomThinking());
+            const result = await callLLMWithStreaming(apiKey, messages, randomThinking());
+            response = result.text;
+            streamed = result.streamed;
           } catch (err) {
             console.log(chalk.red(`  ${err instanceof Error ? err.message : "failed"}`));
             messages.pop();
             continue;
           }
           messages.push({ role: "assistant", content: response });
-          printAgentMessage(parseUpdatesFromResponse(response).display);
+          if (!streamed) {
+            printAgentMessage(parseUpdatesFromResponse(response).display);
+          }
           continue;
         }
       } else {
@@ -1377,14 +1433,18 @@ export async function chatCommand(): Promise<void> {
             content: `[USER DROPPED FILE: ${path.basename(detectedFile)}]\n\`\`\`\n${text.slice(0, 10000)}\n\`\`\`\n\nreview this file and suggest how it relates to my identity or profile.`,
           });
           try {
-            response = await callLLMWithStreaming(apiKey, messages, randomThinking());
+            const result = await callLLMWithStreaming(apiKey, messages, randomThinking());
+            response = result.text;
+            streamed = result.streamed;
           } catch (err) {
             console.log(chalk.red(`  ${err instanceof Error ? err.message : "failed"}`));
             messages.pop();
             continue;
           }
           messages.push({ role: "assistant", content: response });
-          printAgentMessage(parseUpdatesFromResponse(response).display);
+          if (!streamed) {
+            printAgentMessage(parseUpdatesFromResponse(response).display);
+          }
           continue;
         }
       }
@@ -1433,7 +1493,9 @@ export async function chatCommand(): Promise<void> {
     }
 
     try {
-      response = await callLLMWithStreaming(apiKey, messages, randomThinking());
+      const result = await callLLMWithStreaming(apiKey, messages, randomThinking());
+      response = result.text;
+      streamed = result.streamed;
     } catch (err) {
       console.log(chalk.red(`  ${err instanceof Error ? err.message : "failed"}`));
       console.log(chalk.dim("  try again."));
@@ -1558,7 +1620,9 @@ export async function chatCommand(): Promise<void> {
       }
     }
 
-    printAgentMessage(parsed.display);
+    if (!streamed) {
+      printAgentMessage(parsed.display);
+    }
   }
 
   rl.close();

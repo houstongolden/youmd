@@ -6,6 +6,8 @@
 
 import Jimp from "jimp";
 import chalk from "chalk";
+import * as fs from "fs";
+import * as path from "path";
 
 const ACCENT = chalk.hex("#C46A3A");
 
@@ -115,4 +117,30 @@ export function printYouLogo(): void {
   console.log(dim("  ──────────────────────────────────"));
   console.log(dim("  you.md") + dim(" — identity for the agent internet"));
   console.log("");
+}
+
+export function printSavedPortrait(
+  bundleDir: string,
+  options: { maxLines?: number; indent?: string } = {}
+): boolean {
+  const portraitPath = path.join(bundleDir, "portrait.json");
+  if (!fs.existsSync(portraitPath)) return false;
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(portraitPath, "utf-8")) as {
+      lines?: string[];
+    };
+    if (!raw.lines || raw.lines.length === 0) return false;
+
+    const indent = options.indent ?? "  ";
+    const maxLines = options.maxLines ?? raw.lines.length;
+    const lines = raw.lines.slice(0, maxLines);
+
+    for (const line of lines) {
+      process.stdout.write(`${indent}${ACCENT(line)}\n`);
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }

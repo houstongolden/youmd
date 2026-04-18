@@ -1,6 +1,6 @@
 {
   "name": "youmd",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Identity context protocol for the agent internet — an MCP where the context is you. CLI for the You.md platform.",
   "bin": {
     "youmd": "dist/index.js",
@@ -19,7 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build",
-    "postinstall": "echo '\\n  you.md installed.\\n  Run: youmd init\\n'"
+    "postinstall": "node dist/postinstall.js"
   },
   "keywords": [
     "identity",

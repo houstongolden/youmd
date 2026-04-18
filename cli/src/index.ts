@@ -2,7 +2,18 @@
 
 import { Command } from "commander";
 import chalk from "chalk";
-import { isAuthenticated, localBundleExists, readGlobalConfig } from "./lib/config";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import {
+  isAuthenticated,
+  localBundleExists,
+  readGlobalConfig,
+  getLocalBundleDir,
+  detectProjectContext,
+} from "./lib/config";
+import { printSavedPortrait, printYouLogo } from "./lib/ascii";
+import { findProjectsRoot, listProjects } from "./lib/project";
 import { initCommand } from "./commands/init";
 import { loginCommand } from "./commands/login";
 import { logoutCommand } from "./commands/logout";
@@ -35,7 +46,7 @@ const program = new Command();
 program
   .name("youmd")
   .description("identity context protocol for the agent internet — an MCP where the context is you")
-  .version("0.6.2");
+  .version("0.6.3");
 
 // ─── Grouped --help output ─────────────────────────────────────────
 // Commands are bucketed into categories so the help is scannable.
@@ -145,6 +156,105 @@ function renderGroupedHelp(): string {
 // Override the root command's help output only — subcommand --help keeps
 // commander's default rendering, which is still what we want for them.
 program.helpInformation = () => renderGroupedHelp();
+
+function getRecentProjectNames(limit = 3): string[] {
+  const projectsRoot = findProjectsRoot();
+  if (!projectsRoot) return [];
+
+  return listProjects(projectsRoot)
+    .map((name) => {
+      const projectJson = path.join(projectsRoot, name, "project.json");
+      let updatedAt = 0;
+      try {
+        const parsed = JSON.parse(fs.readFileSync(projectJson, "utf-8")) as {
+          updated_at?: string;
+        };
+        updatedAt = parsed.updated_at ? new Date(parsed.updated_at).getTime() : 0;
+      } catch {
+        // non-fatal
+      }
+      return { name, updatedAt };
+    })
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, limit)
+    .map((item) => item.name);
+}
+
+function renderNoArgWelcome(): void {
+  const ACCENT = chalk.hex("#C46A3A");
+  const DIM = chalk.dim;
+  const authed = isAuthenticated();
+  const hasBundle = localBundleExists();
+  const cfg = readGlobalConfig();
+  const user = cfg.username ? "@" + cfg.username : "";
+  const bundleDir = getLocalBundleDir();
+  const rawProjectCtx = detectProjectContext();
+  const projectCtx =
+    rawProjectCtx && path.resolve(rawProjectCtx.root) !== path.resolve(os.homedir())
+      ? rawProjectCtx
+      : null;
+  const recentProjects = getRecentProjectNames();
+  const missingRepoBootstrap =
+    !!projectCtx &&
+    (!fs.existsSync(path.join(projectCtx.root, "AGENTS.md")) ||
+      !fs.existsSync(path.join(projectCtx.root, "project-context")));
+
+  printYouLogo();
+
+  if (hasBundle) {
+    const showedPortrait = printSavedPortrait(bundleDir, { maxLines: 18 });
+    if (showedPortrait) {
+      console.log("");
+      console.log("  " + ACCENT("there you are.") + " " + DIM("you look good in code."));
+      console.log("");
+    }
+  }
+
+  if (!authed) {
+    console.log("  " + ACCENT("u is ready.") + " let's get you set up without the ceremony.");
+    console.log("");
+    console.log("    " + DIM("1.") + " " + chalk.cyan("youmd login") + DIM("          browser, email code, or --key"));
+    console.log("    " + DIM("2.") + " " + chalk.cyan("youmd init") + DIM("           build your identity through conversation"));
+    console.log("    " + DIM("3.") + " " + chalk.cyan("youmd push") + DIM("           publish to you.md/<username>"));
+    console.log("");
+    console.log("  " + DIM("tip: ") + chalk.cyan("youmd chat") + DIM(" is where U should start to feel like a wingman, not a utility."));
+  } else if (!hasBundle) {
+    console.log("  " + ACCENT(`good to see you${user ? `, ${user}` : ""}.`) + " i don't see a local bundle here yet.");
+    console.log("");
+    console.log("    " + chalk.cyan("youmd init") + DIM("           start the conversational setup"));
+    console.log("    " + chalk.cyan("youmd pull") + DIM("           pull your live identity down to this machine"));
+    console.log("    " + chalk.cyan("youmd chat") + DIM("           open U once the bundle exists"));
+    console.log("");
+  } else {
+    console.log("  " + ACCENT(`good to see you${user ? `, ${user}` : ""}.`) + " U is online.");
+    if (projectCtx) {
+      console.log("  " + DIM("current project: ") + chalk.white(projectCtx.name) + DIM(` (${projectCtx.root})`));
+    }
+    if (recentProjects.length > 0) {
+      console.log("  " + DIM("recent project contexts: ") + recentProjects.map((name) => chalk.cyan(name)).join(DIM(", ")));
+    }
+    console.log("");
+    console.log("  " + chalk.bold("next best moves"));
+    console.log("");
+    console.log("    " + chalk.cyan("youmd chat") + DIM("           open U and let it help proactively"));
+    console.log("    " + chalk.cyan("youmd status") + DIM("         check sync state, publish state, and gaps"));
+    if (missingRepoBootstrap) {
+      console.log("    " + chalk.cyan("youmd skill init-project") + DIM(" wire this repo for your agents"));
+    } else {
+      console.log("    " + chalk.cyan("youmd sync") + DIM("           pull + push the latest identity state"));
+    }
+    console.log("    " + chalk.cyan("youmd link create") + DIM("    hand your context to another agent"));
+    console.log("");
+    if (missingRepoBootstrap) {
+      console.log("  " + ACCENT("i spotted an opening.") + " this repo doesn't look fully wired for your agents yet.");
+      console.log("  " + DIM("run ") + chalk.cyan("youmd skill init-project") + DIM(" and i'll scaffold the shared operating context."));
+      console.log("");
+    }
+  }
+
+  console.log("  " + DIM("full command list: ") + chalk.cyan("youmd --help"));
+  console.log("");
+}
 
 program
   .command("init")
@@ -323,43 +433,7 @@ program
 // ─── Guided tutorial when invoked with no args ─────────────────────
 // `youmd` (bare) shows a short contextual welcome / next-step guide.
 if (process.argv.length <= 2) {
-  const ACCENT = chalk.hex("#C46A3A");
-  const DIM = chalk.dim;
-  const authed = isAuthenticated();
-  const hasBundle = localBundleExists();
-  const cfg = readGlobalConfig();
-  const user = cfg.username ? "@" + cfg.username : "";
-
-  console.log("");
-  console.log("  " + chalk.bold("you.md") + DIM(" -- identity context protocol for the agent internet"));
-  console.log("");
-
-  if (!authed) {
-    console.log("  " + ACCENT("welcome.") + " let's get you set up.");
-    console.log("");
-    console.log("    " + DIM("1.") + " " + chalk.cyan("youmd register") + DIM("    create your identity"));
-    console.log("    " + DIM("2.") + " " + chalk.cyan("youmd login") + DIM("       or log in if you already have one"));
-    console.log("    " + DIM("3.") + " " + chalk.cyan("youmd init") + DIM("        scaffold your local bundle"));
-    console.log("");
-    console.log("  " + DIM("tip: run ") + chalk.cyan("youmd --help") + DIM(" for the full command list."));
-  } else if (!hasBundle) {
-    console.log("  " + ACCENT("you're logged in") + (user ? " as " + chalk.green(user) : "") + ". let's create your identity.");
-    console.log("");
-    console.log("    " + DIM("1.") + " " + chalk.cyan("youmd init") + DIM("        scaffold .youmd/ in this dir"));
-    console.log("    " + DIM("2.") + " " + chalk.cyan("youmd chat") + DIM("        talk to the agent to fill it in"));
-    console.log("    " + DIM("3.") + " " + chalk.cyan("youmd push") + DIM("        publish to https://you.md/") + (user || "@you"));
-    console.log("");
-    console.log("  " + DIM("or run ") + chalk.cyan("youmd pull") + DIM(" if you already have a profile online."));
-  } else {
-    console.log("  " + ACCENT("all set.") + (user ? " logged in as " + chalk.green(user) + "." : ""));
-    console.log("");
-    console.log("    " + chalk.cyan("youmd status") + DIM("      show bundle + sync state"));
-    console.log("    " + chalk.cyan("youmd sync") + DIM("        pull + push latest"));
-    console.log("    " + chalk.cyan("youmd link create") + DIM(" share identity with an agent"));
-    console.log("");
-    console.log("  " + DIM("full command list: ") + chalk.cyan("youmd --help"));
-  }
-  console.log("");
+  renderNoArgWelcome();
   process.exit(0);
 }
 

@@ -462,15 +462,18 @@ export function compileBundle(bundleDir: string): CompileResult {
         tone: agentPrefs.tone || (skeleton as any)?.preferences?.agent?.tone || "",
         formality: agentPrefs.formality || (skeleton as any)?.preferences?.agent?.formality || "casual-professional",
         avoid: agentPrefs.avoid.length > 0 ? agentPrefs.avoid : ((skeleton as any)?.preferences?.agent?.avoid || []),
+        markdown: agentPrefSection?.content || (skeleton as any)?.preferences?.agent?.markdown || "",
       },
       writing: {
         style: writingPrefs.style || (skeleton as any)?.preferences?.writing?.style || "",
         format: writingPrefs.format || (skeleton as any)?.preferences?.writing?.format || "",
+        markdown: writingPrefSection?.content || (skeleton as any)?.preferences?.writing?.markdown || "",
       },
     },
 
     voice: {
       overall: voiceOverall ? parseVoiceMd(voiceOverall.content) : ((skeleton as any)?.voice?.overall || ""),
+      markdown: voiceOverall?.content || (skeleton as any)?.voice?.markdown || "",
       platforms: {
         linkedin: voicePlatforms.linkedin || (skeleton as any)?.voice?.platforms?.linkedin || null,
         x: voicePlatforms.x || (skeleton as any)?.voice?.platforms?.x || null,
@@ -495,6 +498,7 @@ export function compileBundle(bundleDir: string): CompileResult {
       default_stack: directives.default_stack || (skeleton as any)?.agent_directives?.default_stack || "",
       decision_framework: directives.decision_framework || (skeleton as any)?.agent_directives?.decision_framework || "",
       current_goal: directives.current_goal || (skeleton as any)?.agent_directives?.current_goal || "",
+      markdown: agentDirective?.content || (skeleton as any)?.agent_directives?.markdown || "",
     },
 
     agent_guide: (skeleton as any)?.agent_guide || {

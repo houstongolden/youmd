@@ -153,12 +153,17 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
   {
     const agent = prefs.agent || {};
     const lines: string[] = ['---', 'title: "Agent Preferences"', '---', ''];
-    const tone = (agent.tone as string) || "";
-    const formality = (agent.formality as string) || "";
-    const avoid = (agent.avoid as string[]) || [];
-    if (tone) lines.push(`**Tone:** ${tone}`);
-    if (formality) lines.push(`**Formality:** ${formality}`);
-    if (avoid.length > 0) lines.push(`**Avoid:** ${avoid.join(", ")}`);
+    const rawMarkdown = typeof agent.markdown === "string" ? agent.markdown.trim() : "";
+    if (rawMarkdown) {
+      lines.push(rawMarkdown);
+    } else {
+      const tone = (agent.tone as string) || "";
+      const formality = (agent.formality as string) || "";
+      const avoid = (agent.avoid as string[]) || [];
+      if (tone) lines.push(`**Tone:** ${tone}`);
+      if (formality) lines.push(`**Formality:** ${formality}`);
+      if (avoid.length > 0) lines.push(`**Avoid:** ${avoid.join(", ")}`);
+    }
     if (lines.length > 4) {
       lines.push("");
       fs.writeFileSync(path.join(prefsDir, "agent.md"), lines.join("\n"));
@@ -170,11 +175,16 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
   {
     const writing = prefs.writing || {};
     const lines: string[] = ['---', 'title: "Writing Preferences"', '---', ''];
-    const style = (writing.style as string) || "";
-    const format = (writing.format as string) || "";
-    if (style) lines.push(`**Style:** ${style}`);
-    if (format && !(format === "markdown preferred" && !style)) {
-      lines.push(`**Format:** ${format}`);
+    const rawMarkdown = typeof writing.markdown === "string" ? writing.markdown.trim() : "";
+    if (rawMarkdown) {
+      lines.push(rawMarkdown);
+    } else {
+      const style = (writing.style as string) || "";
+      const format = (writing.format as string) || "";
+      if (style) lines.push(`**Style:** ${style}`);
+      if (format && !(format === "markdown preferred" && !style)) {
+        lines.push(`**Format:** ${format}`);
+      }
     }
     if (lines.length > 4) {
       lines.push("");
@@ -185,9 +195,10 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
 
   // voice/voice.md
   {
+    const rawMarkdown = typeof voice.markdown === "string" ? voice.markdown.trim() : "";
     const overall = (voice.overall as string) || (analysis.voice_summary as string) || "";
     const lines: string[] = ['---', 'title: "Voice Profile"', '---', ''];
-    lines.push(overall || "(your overall communication style)");
+    lines.push(rawMarkdown || overall || "(your overall communication style)");
     lines.push("");
     fs.writeFileSync(path.join(voiceDir, "voice.md"), lines.join("\n"));
     filesWritten++;
@@ -214,19 +225,24 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
   // directives/agent.md
   {
     const lines: string[] = ['---', 'title: "Agent Directives"', '---', ''];
-    if (agentDirectives.communication_style) {
-      lines.push(`**Communication Style:** ${agentDirectives.communication_style}`);
-    }
-    const negPrompts = (agentDirectives.negative_prompts as string[]) || [];
-    if (negPrompts.length > 0) lines.push(`**Never:** ${negPrompts.join(". ")}`);
-    if (agentDirectives.default_stack) {
-      lines.push(`**Default Stack:** ${agentDirectives.default_stack}`);
-    }
-    if (agentDirectives.decision_framework) {
-      lines.push(`**Decision Framework:** ${agentDirectives.decision_framework}`);
-    }
-    if (agentDirectives.current_goal) {
-      lines.push(`**Current Goal:** ${agentDirectives.current_goal}`);
+    const rawMarkdown = typeof agentDirectives.markdown === "string" ? agentDirectives.markdown.trim() : "";
+    if (rawMarkdown) {
+      lines.push(rawMarkdown);
+    } else {
+      if (agentDirectives.communication_style) {
+        lines.push(`**Communication Style:** ${agentDirectives.communication_style}`);
+      }
+      const negPrompts = (agentDirectives.negative_prompts as string[]) || [];
+      if (negPrompts.length > 0) lines.push(`**Never:** ${negPrompts.join(". ")}`);
+      if (agentDirectives.default_stack) {
+        lines.push(`**Default Stack:** ${agentDirectives.default_stack}`);
+      }
+      if (agentDirectives.decision_framework) {
+        lines.push(`**Decision Framework:** ${agentDirectives.decision_framework}`);
+      }
+      if (agentDirectives.current_goal) {
+        lines.push(`**Current Goal:** ${agentDirectives.current_goal}`);
+      }
     }
     if (lines.length > 4) {
       lines.push("");
