@@ -3,10 +3,11 @@ import * as path from "path";
 import chalk from "chalk";
 import {
   getLocalBundleDir,
-  localBundleExists,
-  readLocalConfig,
+  getHomeBundleDir,
+  readBundleConfig,
   isAuthenticated,
   readGlobalConfig,
+  resolveActiveBundleDir,
 } from "../lib/config";
 import { getMe, getMeUser } from "../lib/api";
 import { shortHash } from "../lib/hash";
@@ -39,9 +40,11 @@ export async function statusCommand(): Promise<void> {
   }
 
   // ── Bundle ────────────────────────────────────────────────────────
-  const hasBundle = localBundleExists();
-  if (hasBundle) {
-    const bundleDir = getLocalBundleDir();
+  const bundleDir = resolveActiveBundleDir();
+  const hasBundle = !!bundleDir;
+  const usingHomeBundle = bundleDir === getHomeBundleDir();
+
+  if (bundleDir) {
     const manifestPath = path.join(bundleDir, "manifest.json");
     let versionStr = chalk.green("initialized");
     let contentHash = "";
@@ -56,13 +59,14 @@ export async function statusCommand(): Promise<void> {
         }
       } catch { /* skip */ }
     }
-    const localConfig = readLocalConfig();
+    const localConfig = readBundleConfig(bundleDir);
     const hashSuffix = localConfig?.localContentHash
       ? DIM(" #" + shortHash(localConfig.localContentHash))
       : contentHash
         ? DIM(" #" + shortHash(contentHash))
         : "";
-    console.log("  " + label("bundle") + versionStr + hashSuffix);
+    const locationSuffix = usingHomeBundle ? DIM(" (~/.youmd)") : "";
+    console.log("  " + label("bundle") + versionStr + hashSuffix + locationSuffix);
   } else {
     console.log("  " + label("bundle") + chalk.yellow("not initialized"));
   }
@@ -106,12 +110,15 @@ export async function statusCommand(): Promise<void> {
     return;
   }
 
-  const bundleDir = getLocalBundleDir();
+  if (!bundleDir) {
+    return;
+  }
 
   // ── Sources ───────────────────────────────────────────────────────
-  const localConfig = readLocalConfig();
-  if (localConfig && localConfig.sources.length > 0) {
-    console.log("  " + label("sources") + String(localConfig.sources.length));
+  const localConfig = readBundleConfig(bundleDir);
+  const sourceCount = Array.isArray(localConfig?.sources) ? localConfig.sources.length : 0;
+  if (sourceCount > 0) {
+    console.log("  " + label("sources") + String(sourceCount));
   } else {
     console.log("  " + label("sources") + chalk.yellow("none"));
   }
@@ -316,7 +323,8 @@ async function showRemoteStatus(): Promise<void> {
     }
 
     // ── Sync ──────────────────────────────────────────────────────
-    const localConfig = readLocalConfig();
+    const activeBundleDir = resolveActiveBundleDir();
+    const localConfig = activeBundleDir ? readBundleConfig(activeBundleDir) : null;
     const localHash = localConfig?.localContentHash;
     const remoteHash = me.latestBundle?.contentHash;
 

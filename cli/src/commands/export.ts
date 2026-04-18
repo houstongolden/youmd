@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
-import { getLocalBundleDir, localBundleExists } from "../lib/config";
+import { resolveActiveBundleDir } from "../lib/config";
 import { compileBundle, writeBundle } from "../lib/compiler";
 
 interface ExportOptions {
@@ -13,15 +13,15 @@ interface ExportOptions {
 export async function exportCommand(options: ExportOptions): Promise<void> {
   console.log("");
 
-  if (!localBundleExists()) {
-    console.log(chalk.yellow("  no .youmd/ directory found"));
+  const bundleDir = resolveActiveBundleDir();
+
+  if (!bundleDir) {
+    console.log(chalk.yellow("  no active bundle found"));
     console.log("");
     console.log("  run " + chalk.cyan("youmd init") + " to create one.");
     console.log("");
     return;
   }
-
-  const bundleDir = getLocalBundleDir();
 
   // Check if compiled artifacts exist, compile if not
   const youJsonPath = path.join(bundleDir, "you.json");

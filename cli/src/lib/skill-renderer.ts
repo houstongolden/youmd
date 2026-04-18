@@ -15,7 +15,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import matter from "gray-matter";
-import { getLocalBundleDir, localBundleExists, detectProjectContext } from "./config";
+import { readGlobalConfig, resolveActiveBundleDir, detectProjectContext } from "./config";
 
 export interface IdentityData {
   profile: Record<string, string>;
@@ -27,8 +27,8 @@ export interface IdentityData {
 }
 
 /**
- * Load identity data from the local .youmd/ bundle.
- * Reads profile/ and preferences/ directories, plus you.json if available.
+ * Load identity data from the active bundle.
+ * Prefers the local .youmd/ bundle and falls back to ~/.youmd when needed.
  */
 export function loadIdentityData(): IdentityData {
   const data: IdentityData = {
@@ -46,22 +46,13 @@ export function loadIdentityData(): IdentityData {
     data.project_name = project.name;
   }
 
-  if (!localBundleExists()) {
+  const bundleDir = resolveActiveBundleDir();
+  if (!bundleDir) {
     return data;
   }
 
-  const bundleDir = getLocalBundleDir();
-
   // Read username from config
-  const configPath = path.join(require("os").homedir(), ".youmd", "config.json");
-  if (fs.existsSync(configPath)) {
-    try {
-      const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-      data.username = config.username || "";
-    } catch {
-      // skip
-    }
-  }
+  data.username = readGlobalConfig().username || "";
 
   // Read profile sections
   const profileDir = path.join(bundleDir, "profile");

@@ -2,7 +2,7 @@ import * as http from "http";
 import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
-import { getLocalBundleDir, localBundleExists } from "../lib/config";
+import { resolveActiveBundleDir } from "../lib/config";
 import { compileBundle } from "../lib/compiler";
 
 const ACCENT = chalk.hex("#C46A3A");
@@ -12,15 +12,15 @@ export function previewCommand(options: { port?: string }): void {
 
   console.log("");
 
-  if (!localBundleExists()) {
-    console.log(chalk.yellow("no .youmd/ directory found"));
+  const bundleDir = resolveActiveBundleDir();
+
+  if (!bundleDir) {
+    console.log(chalk.yellow("no active bundle found"));
     console.log("");
     console.log("Run " + chalk.cyan("youmd init") + " to create one.");
     console.log("");
     return;
   }
-
-  const bundleDir = getLocalBundleDir();
 
   // Compile fresh bundle
   let youJson: Record<string, unknown> = {};

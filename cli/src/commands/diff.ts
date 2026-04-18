@@ -2,8 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
 import {
-  getLocalBundleDir,
-  localBundleExists,
+  resolveActiveBundleDir,
   isAuthenticated,
   readGlobalConfig,
 } from "../lib/config";
@@ -549,8 +548,10 @@ async function diffTwoVersions(v1: number, v2: number): Promise<void> {
 // ─── Local-vs-remote diff (youmd diff with no args) ──────────────────
 
 async function diffLocalVsRemote(): Promise<void> {
-  if (!localBundleExists()) {
-    console.log(chalk.yellow("  no .youmd/ directory found"));
+  const bundleDir = resolveActiveBundleDir();
+
+  if (!bundleDir) {
+    console.log(chalk.yellow("  no active bundle found"));
     console.log("");
     console.log("  run " + chalk.cyan("youmd init") + " to create one.");
     console.log("");
@@ -600,7 +601,6 @@ async function diffLocalVsRemote(): Promise<void> {
   process.stdout.write("\r" + " ".repeat(60) + "\r");
 
   // Load local sections
-  const bundleDir = getLocalBundleDir();
   const localSections = loadLocalSections(bundleDir);
   const remoteSections = extractRemoteSections(remoteData as { youJson: unknown; youMd: string });
 

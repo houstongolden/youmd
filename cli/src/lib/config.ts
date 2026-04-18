@@ -46,12 +46,26 @@ export function getLocalBundleDir(): string {
   return path.resolve(process.cwd(), LOCAL_BUNDLE_DIR);
 }
 
+export function getBundleConfigPath(bundleDir: string): string {
+  return path.join(bundleDir, "config.json");
+}
+
 export function bundleLooksInitialized(bundleDir: string): boolean {
   return (
     fs.existsSync(path.join(bundleDir, "you.json")) ||
     fs.existsSync(path.join(bundleDir, "profile")) ||
     fs.existsSync(path.join(bundleDir, "preferences"))
   );
+}
+
+export function resolveActiveBundleDir(): string | null {
+  const localDir = getLocalBundleDir();
+  if (bundleLooksInitialized(localDir)) return localDir;
+
+  const homeDir = getHomeBundleDir();
+  if (bundleLooksInitialized(homeDir)) return homeDir;
+
+  return null;
 }
 
 export function getConvexSiteUrl(): string {
@@ -107,7 +121,20 @@ export function clearGlobalAuth(options: { resetEndpoints?: boolean } = {}): voi
 }
 
 export function readLocalConfig(): LocalConfig | null {
-  const configPath = path.join(getLocalBundleDir(), "config.json");
+  const configPath = getBundleConfigPath(getLocalBundleDir());
+  if (!fs.existsSync(configPath)) {
+    return null;
+  }
+  try {
+    const raw = fs.readFileSync(configPath, "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function readBundleConfig(bundleDir: string): LocalConfig | null {
+  const configPath = getBundleConfigPath(bundleDir);
   if (!fs.existsSync(configPath)) {
     return null;
   }
@@ -120,7 +147,7 @@ export function readLocalConfig(): LocalConfig | null {
 }
 
 export function writeLocalConfig(config: LocalConfig): void {
-  const configPath = path.join(getLocalBundleDir(), "config.json");
+  const configPath = getBundleConfigPath(getLocalBundleDir());
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
 }
 
