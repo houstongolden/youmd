@@ -50,7 +50,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.12";
+const CURRENT_VERSION = "0.6.13";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1050,6 +1050,8 @@ async function printUpdateHint(): Promise<void> {
 
 interface LaunchInvestigation {
   findings: string[];
+  strongestMove?: string;
+  strongestCommand?: string;
 }
 
 function countMarkdownFiles(dir: string): number {
@@ -1072,6 +1074,66 @@ function countMarkdownFiles(dir: string): number {
   }
 }
 
+function formatRelativeTimeFromMs(ms: number): string {
+  const diff = Date.now() - ms;
+  const hour = 60 * 60 * 1000;
+  const day = 24 * hour;
+  if (diff < hour) return "within the last hour";
+  if (diff < day) return `${Math.max(1, Math.floor(diff / hour))}h ago`;
+  return `${Math.max(1, Math.floor(diff / day))}d ago`;
+}
+
+function statMtimeMs(filePath: string): number | null {
+  try {
+    return fs.statSync(filePath).mtimeMs;
+  } catch {
+    return null;
+  }
+}
+
+function collectHomeAgentSignals(): string[] {
+  const findings: string[] = [];
+  const home = os.homedir();
+  const homeAgents = path.join(home, "AGENTS.md");
+  const homeClaude = path.join(home, "CLAUDE.md");
+  const claudeConfig = path.join(home, ".claude", "CLAUDE.md");
+  const claudeProjects = path.join(home, ".claude", "projects");
+  const codexProjects = path.join(home, ".codex", "projects");
+  const legacyCodexProjects = path.join(home, ".Codex", "projects");
+  const stackSyncSkill = path.join(home, ".claude", "skills", "agent-stack-sync");
+
+  const homeInstructionFiles = [homeAgents, homeClaude, claudeConfig].filter((filePath) =>
+    fs.existsSync(filePath),
+  );
+  if (homeInstructionFiles.length > 0) {
+    findings.push("your home-level agent instructions are present, so i can anchor on shared guidance instead of guessing.");
+  }
+
+  const recentHomeInstruction = homeInstructionFiles
+    .map((filePath) => statMtimeMs(filePath))
+    .filter((value): value is number => typeof value === "number")
+    .sort((a, b) => b - a)[0];
+  if (recentHomeInstruction) {
+    findings.push(`your shared agent docs were touched ${formatRelativeTimeFromMs(recentHomeInstruction)}.`);
+  }
+
+  const recentSessionRoots = [claudeProjects, codexProjects, legacyCodexProjects]
+    .map((dir) => ({ dir, mtime: statMtimeMs(dir) }))
+    .filter((entry): entry is { dir: string; mtime: number } => !!entry.mtime)
+    .sort((a, b) => b.mtime - a.mtime);
+  if (recentSessionRoots.length > 0) {
+    const freshest = recentSessionRoots[0];
+    const label = freshest.dir.includes(".claude") ? "claude" : "codex";
+    findings.push(`there's fresh ${label}-side session activity under ${freshest.dir} from ${formatRelativeTimeFromMs(freshest.mtime)}.`);
+  }
+
+  if (fs.existsSync(stackSyncSkill)) {
+    findings.push("your shared stack-sync skill is installed, so i can lean on mirrored cross-agent context too.");
+  }
+
+  return findings;
+}
+
 async function runYouLaunchInvestigation(
   bundleDir: string,
   projectCtx: ReturnType<typeof detectProjectContext>,
@@ -1086,6 +1148,8 @@ async function runYouLaunchInvestigation(
   const spinner = new BrailleSpinner(labels[0]);
   let labelIndex = 1;
   const findings: string[] = [];
+  let strongestMove: string | undefined;
+  let strongestCommand: string | undefined;
   const rotation = setInterval(() => {
     spinner.update(labels[labelIndex % labels.length]);
     labelIndex += 1;
@@ -1107,6 +1171,9 @@ async function runYouLaunchInvestigation(
       // keep scanning other surfaces
     }
 
+    const homeSignals = collectHomeAgentSignals();
+    findings.push(...homeSignals.slice(0, 3));
+
     if (projectCtx) {
       try {
         const hasAgents = fs.existsSync(path.join(projectCtx.root, "AGENTS.md"));
@@ -1127,6 +1194,11 @@ async function runYouLaunchInvestigation(
         } else {
           findings.push(`${projectCtx.name} still wants a real project-context spine.`);
         }
+
+        if (repoNeedsBootstrap(projectCtx.root)) {
+          strongestMove = `${projectCtx.name} still wants cleaner agent wiring and project-context scaffolding.`;
+          strongestCommand = "youmd skill init-project";
+        }
       } catch {
         findings.push(`${projectCtx.name} is open, but one of the local context probes tripped over itself.`);
       }
@@ -1140,6 +1212,9 @@ async function runYouLaunchInvestigation(
       }
       if (opportunities.length === 0 && insights.length > 0) {
         findings.push(`${insights[0].name} already looks pretty well-shaped, so i can go deeper instead of scaffolding basics.`);
+      } else if (opportunities.length > 0) {
+        strongestMove = opportunities[0].summary;
+        strongestCommand = opportunities[0].suggestedCommand;
       }
     } else {
       findings.push("i've got your home bundle loaded, even though we're not inside a project yet.");
@@ -1147,7 +1222,7 @@ async function runYouLaunchInvestigation(
 
     await delay(220);
     spinner.stop("looked through local context");
-    return { findings: findings.slice(0, 4) };
+    return { findings: findings.slice(0, 6), strongestMove, strongestCommand };
   } finally {
     clearInterval(rotation);
   }
@@ -1268,7 +1343,23 @@ function buildYouLaunchIntro(
     lines.push(`quick read: ${investigation.findings.slice(0, 2).join(" ")}`);
   }
 
-  lines.push("what are we moving forward right now?");
+  const strongestMove = investigation.strongestMove
+    || (projectCtx && repoNeedsBootstrap(projectCtx.root)
+      ? `${projectCtx.name} still wants cleaner agent wiring and project-context scaffolding.`
+      : null)
+    || getTopProjectOpportunity(recentInsights)?.summary
+    || null;
+  const strongestCommand = investigation.strongestCommand
+    || (projectCtx && repoNeedsBootstrap(projectCtx.root) ? "youmd skill init-project" : null)
+    || getTopProjectOpportunity(recentInsights)?.suggestedCommand
+    || null;
+
+  if (strongestMove) {
+    lines.push(`the strongest move i can see right now: ${strongestMove}`);
+    lines.push("say \"start there\" and i'll take it, or redirect me.");
+  } else {
+    lines.push("point me at the next thing and i'll move first instead of waiting around.");
+  }
 
   return lines.join("\n\n");
 }
