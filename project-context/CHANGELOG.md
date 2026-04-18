@@ -7,6 +7,13 @@
 - Updated the curl installer next-steps output, CLI register success copy, example-init next steps, and conversational onboarding next-step block so they no longer over-index on `youmd chat`
 - Updated the README quickstart and command table to introduce `you` explicitly as the alive terminal entrypoint instead of burying it beneath the older explicit chat command
 
+## 2026-04-18 — Workspace Repo Awareness For `you`
+
+### CLI / Agent UX
+- Extended the launcher's local-awareness pass beyond `~/.youmd/projects`, so U can now notice ordinary workspace repos that already have `AGENTS.md`, `CLAUDE.md`, `.youmd-project`, or `project-context/` even if they were never initialized through the dedicated You.md project command
+- This makes the proactive startup genuinely more useful on real machines: when launched from arbitrary directories, U can now point at actionable openings like `foldermd` having project-context docs but no top-level agent entrypoint, instead of pretending your recent work disappeared
+- Bumped the next CLI publish target to `0.6.9` so this broader workspace-awareness pass is versioned before the next npm publish prompt
+
 ## 2026-04-18 — Recent Project Opportunity Scan From Anywhere
 
 ### CLI / Agent UX
