@@ -56,14 +56,34 @@ export function getTopProjectOpportunity(
 }
 
 const STANDARD_WORKSPACE_ROOTS = [
+  "Projects",
+  "projects",
+  "Code",
+  "code",
+  "Developer",
+  "Development",
+  "dev",
+  "Workspace",
+  "workspace",
+  "Workspaces",
+  "workspaces",
+  "Repos",
+  "repos",
+  "Repositories",
+  "GitHub",
+  "github",
+  "Desktop/Projects",
+  "Desktop/projects",
+  "Desktop/Code",
+  "Desktop/code",
+  "Desktop/Developer",
+  "Desktop/dev",
+  "Desktop/Repos",
+  "Desktop/repos",
   "Desktop/CODE_2025",
   "Desktop/CODE_2026",
   "CODE_2025",
   "CODE_2026",
-  "Projects",
-  "projects",
-  "Developer",
-  "dev",
 ];
 
 export interface ProjectPreferences {
@@ -366,26 +386,31 @@ function buildProjectSignals(projectDir: string, projectName: string): string[] 
   return signals;
 }
 
-function getWorkspaceRootCandidates(startDir?: string): string[] {
+export function getWorkspaceRootCandidates(startDir?: string): string[] {
   const roots = new Set<string>();
+  const addRoot = (candidate: string) => {
+    const resolved = path.resolve(candidate);
+    if (resolved === path.parse(resolved).root) return;
+    if (!fs.existsSync(resolved)) return;
+    roots.add(resolved);
+  };
   const envRoots = process.env.YOUMD_WORKSPACE_ROOTS
     ?.split(path.delimiter)
     .map((entry) => entry.trim())
     .filter(Boolean) || [];
 
   for (const root of envRoots) {
-    if (fs.existsSync(root)) roots.add(path.resolve(root));
+    addRoot(root);
   }
 
   for (const relative of STANDARD_WORKSPACE_ROOTS) {
-    const candidate = path.join(os.homedir(), relative);
-    if (fs.existsSync(candidate)) roots.add(path.resolve(candidate));
+    addRoot(path.join(os.homedir(), relative));
   }
 
   if (startDir) {
     const cwd = path.resolve(startDir);
-    roots.add(path.dirname(cwd));
-    roots.add(path.dirname(path.dirname(cwd)));
+    addRoot(path.dirname(cwd));
+    addRoot(path.dirname(path.dirname(cwd)));
   }
 
   return Array.from(roots).filter((root) => fs.existsSync(root));

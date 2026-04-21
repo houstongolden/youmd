@@ -23,6 +23,7 @@ import {
   getRecentProjectInsights,
   getFeaturedRecentProjectNames,
   getTopProjectOpportunity,
+  getWorkspaceRootCandidates,
 } from "../lib/project";
 import type { RecentProjectInsight } from "../lib/project";
 import { compileBundle, writeBundle } from "../lib/compiler";
@@ -52,7 +53,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.16";
+const CURRENT_VERSION = "0.6.17";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1377,7 +1378,10 @@ function isLocalRecentProjectsIntent(input: string): boolean {
     lower.includes("local director") ||
     lower.includes("local directory") ||
     lower.includes("local filesystem") ||
-    lower.includes("my local");
+    lower.includes("my local") ||
+    lower.includes("on my computer") ||
+    lower.includes("workspace") ||
+    lower.includes("workspaces");
   const asksRecentWork =
     lower.includes("recently touched") ||
     lower.includes("most recently") ||
@@ -1388,15 +1392,8 @@ function isLocalRecentProjectsIntent(input: string): boolean {
   return mentionsLocalWork && asksRecentWork;
 }
 
-function getCodeWorkspaceRoots(): string[] {
-  const home = os.homedir();
-  const roots = [
-    path.join(home, "Desktop", "CODE_2025"),
-    path.join(home, "CODE_2025"),
-    path.join(home, "Desktop", "CODE_2026"),
-    path.join(home, "CODE_2026"),
-  ];
-  return roots.filter((root, index) => fs.existsSync(root) && roots.indexOf(root) === index);
+function getLocalWorkspaceRoots(): string[] {
+  return getWorkspaceRootCandidates(process.cwd());
 }
 
 function getRecentFileMtime(projectDir: string, maxFiles = 1200): number {
@@ -1452,7 +1449,7 @@ function scanRecentWorkspaceProjects(limit = 8): RecentProjectInsight[] {
   const insights: RecentProjectInsight[] = [];
   const seen = new Set<string>();
 
-  for (const root of getCodeWorkspaceRoots()) {
+  for (const root of getLocalWorkspaceRoots()) {
     let entries: fs.Dirent[] = [];
     try {
       entries = fs.readdirSync(root, { withFileTypes: true });
@@ -1497,9 +1494,9 @@ function scanRecentWorkspaceProjects(limit = 8): RecentProjectInsight[] {
 
 function formatLocalRecentProjectsToolResult(insights: RecentProjectInsight[]): string {
   if (insights.length === 0) {
-    const roots = getCodeWorkspaceRoots();
+    const roots = getLocalWorkspaceRoots();
     return roots.length === 0
-      ? "tool: workspace_recent_projects\nstatus: empty\nresult: checked for CODE_2025/CODE_2026 workspaces locally and did not find one."
+      ? "tool: workspace_recent_projects\nstatus: empty\nresult: checked common local workspace roots and did not find one. users can set YOUMD_WORKSPACE_ROOTS to add explicit roots."
       : "tool: workspace_recent_projects\nstatus: empty\nresult: found the workspace root, but no project folders showed up in the first scan.";
   }
 
@@ -1574,7 +1571,7 @@ async function handleLocalChatIntent(args: {
   };
 
   if (isLocalRecentProjectsIntent(args.userInput)) {
-    const spinner = new BrailleSpinner("checking CODE_2025 locally");
+    const spinner = new BrailleSpinner("checking local workspaces");
     spinner.start();
     await delay(700);
     const insights = scanRecentWorkspaceProjects(8);
@@ -1594,7 +1591,7 @@ async function handleLocalChatIntent(args: {
       getTopProjectOpportunity(getRecentProjectInsights(process.cwd(), 8));
 
     if (!project || !fs.existsSync(project.projectDir)) {
-      const response = "i don't have a real local target for that yet. ask me to scan CODE_2025 and i'll pick from actual folders.\n\nnext strongest move: scan local recent projects first.";
+      const response = "i don't have a real local target for that yet. ask me to scan local workspaces and i'll pick from actual folders.\n\nnext strongest move: scan local recent projects first.";
       args.messages.push({ role: "user", content: args.userInput });
       args.messages.push({ role: "assistant", content: response });
       printAgentMessage(response);
