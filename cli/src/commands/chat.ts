@@ -52,7 +52,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.15";
+const CURRENT_VERSION = "0.6.16";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1495,30 +1495,33 @@ function scanRecentWorkspaceProjects(limit = 8): RecentProjectInsight[] {
   return insights.sort((a, b) => b.updatedAt - a.updatedAt).slice(0, limit);
 }
 
-function printLocalRecentProjectsReport(insights: RecentProjectInsight[]): string {
+function formatLocalRecentProjectsToolResult(insights: RecentProjectInsight[]): string {
   if (insights.length === 0) {
     const roots = getCodeWorkspaceRoots();
     return roots.length === 0
-      ? "i checked for CODE_2025/CODE_2026 workspaces locally and did not find one."
-      : "i found the workspace root, but no project folders showed up in the first scan.";
+      ? "tool: workspace_recent_projects\nstatus: empty\nresult: checked for CODE_2025/CODE_2026 workspaces locally and did not find one."
+      : "tool: workspace_recent_projects\nstatus: empty\nresult: found the workspace root, but no project folders showed up in the first scan.";
   }
 
   const lines = [
-    "i checked the local workspace for real.",
-    "",
+    "tool: workspace_recent_projects",
+    "status: ok",
+    "projects:",
     ...insights.slice(0, 6).map((item, index) => {
       const markers = item.signals.length > 0 ? ` — ${item.signals.slice(0, 3).join(", ")}` : "";
-      return `${index + 1}. ${item.name} — touched ${formatRelativeTimeFromMs(item.updatedAt)}${markers}`;
+      return `${index + 1}. ${item.name} — ${item.projectDir} — touched ${formatRelativeTimeFromMs(item.updatedAt)}${markers}`;
     }),
     "",
-    `next strongest move: open ${insights[0].name} and tighten the agent entrypoint from actual files, not a guessed summary.`,
-    `say "start there" and i'll use ${insights[0].projectDir}.`,
+    `recommended_next_project: ${insights[0].name}`,
+    `recommended_next_project_dir: ${insights[0].projectDir}`,
+    `recommended_next_command: cd ${insights[0].projectDir} && you`,
+    `recommended_next_move: say "start there" to open ${insights[0].name} and tighten the agent entrypoint from actual files, not a guessed summary.`,
   ];
 
   return lines.join("\n");
 }
 
-function printProjectBootstrapResult(
+function formatProjectBootstrapToolResult(
   project: RecentProjectInsight,
   result: ReturnType<typeof initProject>,
 ): string {
@@ -1528,13 +1531,15 @@ function printProjectBootstrapResult(
   const checked = result.steps.filter((step) => step.ok).length;
 
   return [
-    `i opened ${project.name} locally and worked on the actual folder.`,
-    "",
+    "tool: project_bootstrap",
+    "status: ok",
+    `project: ${project.name}`,
+    `project_dir: ${project.projectDir}`,
     changed.length > 0
-      ? `updated: ${changed.slice(0, 4).join("; ")}`
-      : `checked ${checked} bootstrap steps; everything important was already present.`,
+      ? `changed: ${changed.slice(0, 6).join("; ")}`
+      : `changed: none; checked ${checked} bootstrap steps; everything important was already present.`,
     "",
-    `next strongest move: read ${project.name}'s project-context and turn the rough docs into a sharper current-state + TODO pass.`,
+    `recommended_next_move: read ${project.name}'s project-context and turn the rough docs into a sharper current-state + TODO pass.`,
   ].join("\n");
 }
 
@@ -1542,7 +1547,32 @@ async function handleLocalChatIntent(args: {
   userInput: string;
   messages: ChatMessage[];
   launchInvestigation: LaunchInvestigation;
+  apiKey: string | null;
 }): Promise<boolean> {
+  const runToolResultThroughModel = async (toolResult: string, spinnerLabel: string): Promise<void> => {
+    args.messages.push({ role: "user", content: args.userInput });
+    args.messages.push({
+      role: "user",
+      content: [
+        "--- local host tool result ---",
+        toolResult,
+        "--- instructions ---",
+        "Use this local tool result as ground truth. Do not say you cannot access the filesystem; the CLI host just accessed it for you.",
+        "Use recommended_next_project exactly as the target unless the user explicitly asks for a different project.",
+        "Do not say you are scraping, pulling, reading, opening, or updating anything now unless that completed action appears in the tool result.",
+        "Do not ask the user what the local project is if the tool result already names it.",
+        "State what the local host actually found, make one concrete recommendation, and end with the exact phrase `next strongest move: ...`.",
+        "Do not end with a question. Keep it under 8 lines. No generic help-desk closer.",
+      ].join("\n"),
+    });
+
+    const result = await callLLMWithStreaming(args.apiKey, args.messages, spinnerLabel);
+    args.messages.push({ role: "assistant", content: result.text });
+    if (!result.streamed) {
+      printAgentMessage(parseUpdatesFromResponse(result.text).display);
+    }
+  };
+
   if (isLocalRecentProjectsIntent(args.userInput)) {
     const spinner = new BrailleSpinner("checking CODE_2025 locally");
     spinner.start();
@@ -1551,10 +1581,10 @@ async function handleLocalChatIntent(args: {
     spinner.stop("local workspace scanned");
     args.launchInvestigation.strongestProject = insights[0] || args.launchInvestigation.strongestProject;
     args.launchInvestigation.strongestMove = insights[0]?.summary || args.launchInvestigation.strongestMove;
-    const response = printLocalRecentProjectsReport(insights);
-    args.messages.push({ role: "user", content: args.userInput });
-    args.messages.push({ role: "assistant", content: response });
-    printAgentMessage(response);
+    await runToolResultThroughModel(
+      formatLocalRecentProjectsToolResult(insights),
+      "turning local project scan into a useful read",
+    );
     return true;
   }
 
@@ -1564,7 +1594,7 @@ async function handleLocalChatIntent(args: {
       getTopProjectOpportunity(getRecentProjectInsights(process.cwd(), 8));
 
     if (!project || !fs.existsSync(project.projectDir)) {
-      const response = "i don't have a real local target for that yet. ask me to scan CODE_2025 and i'll pick from actual folders.";
+      const response = "i don't have a real local target for that yet. ask me to scan CODE_2025 and i'll pick from actual folders.\n\nnext strongest move: scan local recent projects first.";
       args.messages.push({ role: "user", content: args.userInput });
       args.messages.push({ role: "assistant", content: response });
       printAgentMessage(response);
@@ -1585,10 +1615,10 @@ async function handleLocalChatIntent(args: {
     }
 
     spinner.stop(`${project.name} updated`);
-    const response = printProjectBootstrapResult(project, result);
-    args.messages.push({ role: "user", content: args.userInput });
-    args.messages.push({ role: "assistant", content: response });
-    printAgentMessage(response);
+    await runToolResultThroughModel(
+      formatProjectBootstrapToolResult(project, result),
+      `summarizing ${project.name} changes`,
+    );
     return true;
   }
 
@@ -1934,6 +1964,7 @@ export async function chatCommand(): Promise<void> {
       userInput,
       messages,
       launchInvestigation,
+      apiKey,
     });
     if (handledLocally) continue;
 
