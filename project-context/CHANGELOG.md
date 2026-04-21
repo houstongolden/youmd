@@ -1,12 +1,20 @@
 # You.md — Changelog
 
+## 2026-04-21 — Local Chat Action Layer
+
+### CLI / Agent UX
+- Fixed the bad `youmd chat` opener path so it no longer asks the remote model to invent the first proactive greeting; both `you` and `youmd chat` now use the local context-aware opener
+- Added deterministic local handling for `start there`, so U stores the strongest local project target and can actually open/bootstrap that folder instead of suggesting work it cannot perform
+- Added deterministic local handling for CODE_2025 recent-work questions, so U scans the local workspace directly and reports real recently touched projects instead of claiming it cannot access the filesystem
+- Bumped the next CLI publish target to `0.6.15` so this behavior fix ships as a fresh npm version
+
 ## 2026-04-21 — Compact, Paced `you` Startup
 
 ### CLI / Agent UX
 - Fixed the local `you` startup so it no longer dumps the full web-profile ASCII portrait into the terminal; the portrait is now downsampled for terminal display before rendering
 - Reduced the launch sequence from a full-page context dump into a tighter progressive flow: logo + compact portrait, a visible scan, two findings, then one concise proactive opener
 - Removed duplicated startup summaries for the `you` surface so U no longer repeats recent projects, findings, strongest opening, and chat header in multiple sections before the user can type
-- Bumped the next CLI publish target to `0.6.14` so this UX fix is versioned before the next npm publish prompt
+- Bumped the next CLI publish target to `0.6.14` so this UX fix was versioned before the next npm publish prompt
 
 ## 2026-04-18 — Deeper `you` Context Sweep + Strongest-Move Opener
 
