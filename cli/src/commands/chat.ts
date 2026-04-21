@@ -24,8 +24,10 @@ import {
   getFeaturedRecentProjectNames,
   getTopProjectOpportunity,
 } from "../lib/project";
+import type { RecentProjectInsight } from "../lib/project";
 import { compileBundle, writeBundle } from "../lib/compiler";
 import { uploadBundle, publishLatest, saveMemories, updatePrivateContext } from "../lib/api";
+import { initProject } from "../lib/skills";
 import { BrailleSpinner } from "../lib/render";
 import {
   callLLM,
@@ -50,7 +52,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.14";
+const CURRENT_VERSION = "0.6.15";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1052,6 +1054,7 @@ interface LaunchInvestigation {
   findings: string[];
   strongestMove?: string;
   strongestCommand?: string;
+  strongestProject?: RecentProjectInsight;
   recentProjects: string[];
 }
 
@@ -1151,6 +1154,7 @@ async function runYouLaunchInvestigation(
   const findings: string[] = [];
   let strongestMove: string | undefined;
   let strongestCommand: string | undefined;
+  let strongestProject: RecentProjectInsight | undefined;
   const rotation = setInterval(() => {
     spinner.update(labels[labelIndex % labels.length]);
     labelIndex += 1;
@@ -1199,6 +1203,15 @@ async function runYouLaunchInvestigation(
         if (repoNeedsBootstrap(projectCtx.root)) {
           strongestMove = `${projectCtx.name} still wants cleaner agent wiring and project-context scaffolding.`;
           strongestCommand = "youmd skill init-project";
+          strongestProject = {
+            name: projectCtx.name,
+            slug: projectCtx.name,
+            projectDir: projectCtx.root,
+            updatedAt: Date.now(),
+            signals: ["still wants cleaner agent wiring and project-context scaffolding"],
+            summary: `${projectCtx.name} still wants cleaner agent wiring and project-context scaffolding.`,
+            suggestedCommand: "youmd skill init-project",
+          };
         }
       } catch {
         findings.push(`${projectCtx.name} is open, but one of the local context probes tripped over itself.`);
@@ -1214,8 +1227,10 @@ async function runYouLaunchInvestigation(
       if (opportunities.length === 0 && insights.length > 0) {
         findings.push(`${insights[0].name} already looks pretty well-shaped, so i can go deeper instead of scaffolding basics.`);
       } else if (opportunities.length > 0) {
-        strongestMove = opportunities[0].summary;
-        strongestCommand = opportunities[0].suggestedCommand;
+        const strongest = opportunities[0];
+        strongestMove = strongest.summary;
+        strongestCommand = strongest.suggestedCommand;
+        strongestProject = strongest;
       }
     } else {
       findings.push("i've got your home bundle loaded, even though we're not inside a project yet.");
@@ -1227,6 +1242,7 @@ async function runYouLaunchInvestigation(
       findings: findings.slice(0, 3),
       strongestMove,
       strongestCommand,
+      strongestProject,
       recentProjects: recentProjects.slice(0, 3),
     };
   } finally {
@@ -1272,46 +1288,20 @@ async function printChatOpening(
     console.log("  " + ACCENT("there you are.") + " " + DIM("your portrait is loaded."));
   }
 
-  if (launchSurface === "you") {
+  console.log("");
+  investigation = await runYouLaunchInvestigation(bundleDir, projectCtx, recentProjects);
+  if (investigation.findings.length > 0) {
     console.log("");
-    investigation = await runYouLaunchInvestigation(bundleDir, projectCtx, recentProjects);
-    if (investigation.findings.length > 0) {
-      console.log("");
-      console.log("  " + ACCENT("found:"));
-      for (const finding of investigation.findings.slice(0, 2)) {
-        console.log("  " + DIM("· ") + chalk.white(finding));
-      }
+    console.log("  " + ACCENT("found:"));
+    for (const finding of investigation.findings.slice(0, 2)) {
+      console.log("  " + DIM("· ") + chalk.white(finding));
     }
   }
 
   if (launchSurface !== "you") {
     console.log("");
-    console.log("  " + ACCENT("u is here.") + " " + DIM(`good to see you, ${user}.`));
-
-    if (projectCtx) {
-      console.log("  " + DIM("current project: ") + chalk.white(projectCtx.name) + DIM(` (${projectCtx.root})`));
-      if (repoNeedsBootstrap(projectCtx.root)) {
-        console.log("  " + ACCENT("i spotted an opening.") + " " + DIM("this repo still wants AGENTS/project-context wiring."));
-        console.log("  " + DIM("say the word or run ") + chalk.cyan("youmd skill init-project") + DIM(" and i'll set it up."));
-      }
-    } else {
-      console.log("  " + DIM("i don't see a repo context here yet, but i can still help with your identity, links, memories, and private context."));
-    }
-
-    if (recentProjects.length > 0) {
-      console.log("  " + DIM("recently active: ") + recentProjects.map((name) => chalk.cyan(name)).join(DIM(", ")));
-    }
-    const topOpportunity = !projectCtx ? getTopProjectOpportunity(recentInsights) : null;
-    if (topOpportunity) {
-      console.log("  " + ACCENT("next opening i see.") + " " + DIM(topOpportunity.summary));
-      console.log("  " + DIM("run:"));
-      console.log("    " + chalk.cyan(topOpportunity.suggestedCommand));
-      console.log("  " + DIM("then i'll help tighten it up."));
-    }
-
-    console.log("");
     console.log("  " + chalk.bold("you.md chat"));
-    console.log("  " + DIM("talk naturally. i'll update your identity, spot useful structure, and suggest next moves."));
+    console.log("  " + DIM(`local context loaded for ${user}.`));
   }
   console.log("");
   return investigation;
@@ -1361,6 +1351,248 @@ function buildYouLaunchIntro(
   }
 
   return lines.join("\n\n");
+}
+
+function isStartThereIntent(input: string): boolean {
+  const lower = input.toLowerCase().trim().replace(/[.!?]+$/, "");
+  return [
+    "start there",
+    "start there please",
+    "do that",
+    "do it",
+    "take it",
+    "go",
+    "go ahead",
+    "yes",
+    "yep",
+    "start",
+  ].includes(lower);
+}
+
+function isLocalRecentProjectsIntent(input: string): boolean {
+  const lower = input.toLowerCase();
+  const mentionsLocalWork =
+    lower.includes("code_2025") ||
+    lower.includes("code 2025") ||
+    lower.includes("local director") ||
+    lower.includes("local directory") ||
+    lower.includes("local filesystem") ||
+    lower.includes("my local");
+  const asksRecentWork =
+    lower.includes("recently touched") ||
+    lower.includes("most recently") ||
+    lower.includes("what i've been working") ||
+    lower.includes("what ive been working") ||
+    lower.includes("working on lately") ||
+    lower.includes("recent projects");
+  return mentionsLocalWork && asksRecentWork;
+}
+
+function getCodeWorkspaceRoots(): string[] {
+  const home = os.homedir();
+  const roots = [
+    path.join(home, "Desktop", "CODE_2025"),
+    path.join(home, "CODE_2025"),
+    path.join(home, "Desktop", "CODE_2026"),
+    path.join(home, "CODE_2026"),
+  ];
+  return roots.filter((root, index) => fs.existsSync(root) && roots.indexOf(root) === index);
+}
+
+function getRecentFileMtime(projectDir: string, maxFiles = 1200): number {
+  const skipDirs = new Set([
+    ".git",
+    "node_modules",
+    ".next",
+    "dist",
+    "build",
+    ".turbo",
+    ".vercel",
+    "coverage",
+    ".cache",
+  ]);
+  let latest = 0;
+  let visited = 0;
+  const stack: Array<{ dir: string; depth: number }> = [{ dir: projectDir, depth: 0 }];
+
+  while (stack.length > 0 && visited < maxFiles) {
+    const current = stack.pop();
+    if (!current) break;
+
+    let entries: fs.Dirent[] = [];
+    try {
+      entries = fs.readdirSync(current.dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (visited >= maxFiles) break;
+      if (entry.name.startsWith(".") && entry.name !== ".youmd-project") continue;
+      const fullPath = path.join(current.dir, entry.name);
+
+      try {
+        const stat = fs.statSync(fullPath);
+        latest = Math.max(latest, stat.mtimeMs);
+        visited += 1;
+
+        if (entry.isDirectory() && current.depth < 3 && !skipDirs.has(entry.name)) {
+          stack.push({ dir: fullPath, depth: current.depth + 1 });
+        }
+      } catch {
+        // keep scanning; one unreadable file should not break the local read.
+      }
+    }
+  }
+
+  return latest;
+}
+
+function scanRecentWorkspaceProjects(limit = 8): RecentProjectInsight[] {
+  const insights: RecentProjectInsight[] = [];
+  const seen = new Set<string>();
+
+  for (const root of getCodeWorkspaceRoots()) {
+    let entries: fs.Dirent[] = [];
+    try {
+      entries = fs.readdirSync(root, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
+      const projectDir = path.join(root, entry.name);
+      let realDir = projectDir;
+      try {
+        realDir = fs.realpathSync.native(projectDir);
+      } catch {
+        // use unresolved path below
+      }
+      if (seen.has(realDir)) continue;
+      seen.add(realDir);
+
+      const markerSignals: string[] = [];
+      if (fs.existsSync(path.join(projectDir, "AGENTS.md"))) markerSignals.push("AGENTS.md");
+      if (fs.existsSync(path.join(projectDir, "CLAUDE.md"))) markerSignals.push("CLAUDE.md");
+      if (fs.existsSync(path.join(projectDir, "project-context"))) markerSignals.push("project-context");
+      if (fs.existsSync(path.join(projectDir, "package.json"))) markerSignals.push("package.json");
+      if (fs.existsSync(path.join(projectDir, ".youmd-project"))) markerSignals.push(".youmd-project");
+
+      const updatedAt = Math.max(getRecentFileMtime(projectDir), statMtimeMs(projectDir) || 0);
+      insights.push({
+        name: entry.name,
+        slug: entry.name,
+        projectDir,
+        updatedAt,
+        signals: markerSignals,
+        summary: `${entry.name} touched ${formatRelativeTimeFromMs(updatedAt)}${markerSignals.length > 0 ? `; found ${markerSignals.slice(0, 3).join(", ")}` : ""}.`,
+        suggestedCommand: `cd ${projectDir} && you`,
+      });
+    }
+  }
+
+  return insights.sort((a, b) => b.updatedAt - a.updatedAt).slice(0, limit);
+}
+
+function printLocalRecentProjectsReport(insights: RecentProjectInsight[]): string {
+  if (insights.length === 0) {
+    const roots = getCodeWorkspaceRoots();
+    return roots.length === 0
+      ? "i checked for CODE_2025/CODE_2026 workspaces locally and did not find one."
+      : "i found the workspace root, but no project folders showed up in the first scan.";
+  }
+
+  const lines = [
+    "i checked the local workspace for real.",
+    "",
+    ...insights.slice(0, 6).map((item, index) => {
+      const markers = item.signals.length > 0 ? ` — ${item.signals.slice(0, 3).join(", ")}` : "";
+      return `${index + 1}. ${item.name} — touched ${formatRelativeTimeFromMs(item.updatedAt)}${markers}`;
+    }),
+    "",
+    `next strongest move: open ${insights[0].name} and tighten the agent entrypoint from actual files, not a guessed summary.`,
+    `say "start there" and i'll use ${insights[0].projectDir}.`,
+  ];
+
+  return lines.join("\n");
+}
+
+function printProjectBootstrapResult(
+  project: RecentProjectInsight,
+  result: ReturnType<typeof initProject>,
+): string {
+  const changed = result.steps
+    .filter((step) => step.ok && step.detail && !step.detail.includes("unchanged") && !step.detail.includes("already present"))
+    .map((step) => `${step.name}: ${step.detail}`);
+  const checked = result.steps.filter((step) => step.ok).length;
+
+  return [
+    `i opened ${project.name} locally and worked on the actual folder.`,
+    "",
+    changed.length > 0
+      ? `updated: ${changed.slice(0, 4).join("; ")}`
+      : `checked ${checked} bootstrap steps; everything important was already present.`,
+    "",
+    `next strongest move: read ${project.name}'s project-context and turn the rough docs into a sharper current-state + TODO pass.`,
+  ].join("\n");
+}
+
+async function handleLocalChatIntent(args: {
+  userInput: string;
+  messages: ChatMessage[];
+  launchInvestigation: LaunchInvestigation;
+}): Promise<boolean> {
+  if (isLocalRecentProjectsIntent(args.userInput)) {
+    const spinner = new BrailleSpinner("checking CODE_2025 locally");
+    spinner.start();
+    await delay(700);
+    const insights = scanRecentWorkspaceProjects(8);
+    spinner.stop("local workspace scanned");
+    args.launchInvestigation.strongestProject = insights[0] || args.launchInvestigation.strongestProject;
+    args.launchInvestigation.strongestMove = insights[0]?.summary || args.launchInvestigation.strongestMove;
+    const response = printLocalRecentProjectsReport(insights);
+    args.messages.push({ role: "user", content: args.userInput });
+    args.messages.push({ role: "assistant", content: response });
+    printAgentMessage(response);
+    return true;
+  }
+
+  if (isStartThereIntent(args.userInput)) {
+    const project =
+      args.launchInvestigation.strongestProject ||
+      getTopProjectOpportunity(getRecentProjectInsights(process.cwd(), 8));
+
+    if (!project || !fs.existsSync(project.projectDir)) {
+      const response = "i don't have a real local target for that yet. ask me to scan CODE_2025 and i'll pick from actual folders.";
+      args.messages.push({ role: "user", content: args.userInput });
+      args.messages.push({ role: "assistant", content: response });
+      printAgentMessage(response);
+      return true;
+    }
+
+    const spinner = new BrailleSpinner(`opening ${project.name} from local disk`);
+    spinner.start();
+    await delay(500);
+
+    const previousCwd = process.cwd();
+    let result: ReturnType<typeof initProject>;
+    try {
+      process.chdir(project.projectDir);
+      result = initProject({ mode: "additive" });
+    } finally {
+      process.chdir(previousCwd);
+    }
+
+    spinner.stop(`${project.name} updated`);
+    const response = printProjectBootstrapResult(project, result);
+    args.messages.push({ role: "user", content: args.userInput });
+    args.messages.push({ role: "assistant", content: response });
+    printAgentMessage(response);
+    return true;
+  }
+
+  return false;
 }
 
 // ─── Main chat command ────────────────────────────────────────────────
@@ -1475,54 +1707,11 @@ export async function chatCommand(): Promise<void> {
     },
   ];
 
-  // Initial greeting from agent
-  if (process.env.YOUMD_LAUNCH_SURFACE === "you") {
-    const proactiveIntro = buildYouLaunchIntro(projectCtx, bundleDir, launchInvestigation);
-    messages.push({ role: "assistant", content: proactiveIntro });
-    printAgentMessage(proactiveIntro);
-  } else {
-    let response: string;
-    let streamed = false;
-    try {
-      const result = await callLLMWithStreaming(apiKey, messages, randomThinking());
-      response = result.text;
-      streamed = result.streamed;
-    } catch (err) {
-      console.log(
-        chalk.red(
-          `  failed to connect: ${err instanceof Error ? err.message : String(err)}`
-        )
-      );
-      console.log(
-        chalk.dim(
-          "  chat requires the AI service. try again later."
-        )
-      );
-      console.log("");
-      rl.close();
-      return;
-    }
-
-    messages.push({ role: "assistant", content: response });
-    const initial = parseUpdatesFromResponse(response);
-
-    // Write any updates (unlikely on greeting, but handle it)
-    if (initial.updates.length > 0) {
-      for (const update of initial.updates) {
-        writeSectionFile(bundleDir, update.section, update.content);
-      }
-      console.log(
-        chalk.cyan(
-          `  [updated: ${initial.updates.map((u) => sectionLabel(u.section)).join(", ")}]`
-        )
-      );
-      console.log("");
-    }
-
-    if (!streamed) {
-      printAgentMessage(initial.display);
-    }
-  }
+  // Initial greeting is local and action-aware. The remote model should not invent
+  // filesystem capabilities before the CLI has decided what it can actually do.
+  const proactiveIntro = buildYouLaunchIntro(projectCtx, bundleDir, launchInvestigation);
+  messages.push({ role: "assistant", content: proactiveIntro });
+  printAgentMessage(proactiveIntro);
 
   // ── Conversation loop ──────────────────────────────────────────────
   let response = "";
@@ -1740,6 +1929,13 @@ export async function chatCommand(): Promise<void> {
       }
       continue;
     }
+
+    const handledLocally = await handleLocalChatIntent({
+      userInput,
+      messages,
+      launchInvestigation,
+    });
+    if (handledLocally) continue;
 
     // ── Detect dragged/pasted file paths ──
     const detectedFile = detectFilePath(userInput);
