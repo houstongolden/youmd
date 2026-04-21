@@ -35,7 +35,7 @@ Last Commit: see git log for latest 2026-04-18 `you` launcher + proactive portra
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
 
-### CLI (youmd v0.6.15 — ready to publish)
+### CLI (youmd v0.6.16 — ready to publish)
 - 21 commands (added `skill` with 19 subcommands)
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
@@ -45,7 +45,7 @@ Last Commit: see git log for latest 2026-04-18 `you` launcher + proactive portra
 - Install/login/register/init/onboarding copy now consistently points users toward `you` as the main "meet U" terminal path once they have an identity bundle, instead of over-indexing on `youmd chat`
 - `youmd logout` now exists and clears stale local auth state from `~/.youmd/config.json`
 - CLI auth now forces production defaults for `apiUrl` / `appUrl` on fresh logins and resolves those URLs per request instead of caching a stale dev endpoint at process start
-- npm publish retry path is fixed: the next release target is `0.6.15`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
+- npm publish retry path is fixed: the next release target is `0.6.16`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
 - Bare `youmd` now enters like U instead of dropping straight into a dry command list: it shows the YOU logo, optionally shows the saved portrait preview, greets the user, surfaces project-context opportunities, and proposes the next best moves contextually
 - `youmd chat` now opens with the same U-style entrance and no longer prints the first assistant greeting twice when streaming succeeds
 - `youmd chat` now uses the same local proactive opener as `you` instead of asking the remote model to invent the first greeting, which prevents the old “suggested local action then claimed no filesystem access” failure path
@@ -60,7 +60,7 @@ Last Commit: see git log for latest 2026-04-18 `you` launcher + proactive portra
 - The portrait encounter in `you` now adapts to narrow terminals: if the portrait + bot + speech scene no longer fits side-by-side, it stacks vertically instead of smashing the portrait text into the dialog block
 - The `you` investigation now also sweeps home-level agent docs plus recent Claude/Codex session roots, then turns that context into a concrete strongest-move proposal instead of ending on the old generic question
 - The local `you` launch is now less overwhelming: the portrait is downsampled for terminal display, the scan has a visible dwell instead of flashing by, and the output is collapsed into two findings plus one concise proactive intro instead of repeating the same context three times
-- The conversational loop now has a local action layer for the highest-risk intents: `start there` acts on the stored strongest project target, and CODE_2025 recent-work questions scan the local workspace directly before any remote model call
+- The conversational loop now has a local host-tool bridge for the highest-risk intents: `start there` executes the stored strongest project target locally, CODE_2025 recent-work questions scan the local workspace, and both paths send the tool result back through the remote model for the final answer
 - The launcher now scans recent project contexts for actual openings instead of only listing project names, and that recent-project scan now falls back to `~/.youmd/projects` even when `you` is launched from arbitrary directories like `/tmp`
 - U now also scans normal workspace repos with `AGENTS.md`, `CLAUDE.md`, `.youmd-project`, or `project-context/`, so the launcher can point at real projects like `foldermd` even when they were never initialized through `youmd project`
 - CLI startup can now check npm for newer published versions, cache that result, and show the exact curl/npm upgrade commands when an update is available
@@ -122,7 +122,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Existing API keys created before the reveal upgrade remain non-revealable by design because those historical records were stored hash-only; newly created or rotated keys are now revealable, so one rotate is the migration path for older keys
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 - The CLI still does not feel proactive enough at install/startup compared with Claude Code/OpenClaw. The new startup entrance is a meaningful step, but U still needs a richer first-run / post-install “friendly wingman” flow that helps without requiring the user to already know the commands
-- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.15` and need one more npm publish before end users get the `you` launcher, compact portrait splash, paced startup investigation, update hints, public-profile portrait contract fix, active-bundle fallback on read-only commands, raw-markdown roundtrip preservation, recent-project opportunity scanning from arbitrary directories, broader local workspace repo awareness, local `start there` execution, local CODE_2025 recent-work scanning, a stronger onboarding handoff into U, the narrow-terminal portrait encounter fix, and the deeper home-context sweep + concise strongest-move opener
+- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.16` and need one more npm publish before end users get the `you` launcher, compact portrait splash, paced startup investigation, update hints, public-profile portrait contract fix, active-bundle fallback on read-only commands, raw-markdown roundtrip preservation, recent-project opportunity scanning from arbitrary directories, broader local workspace repo awareness, local host-tool execution for `start there` and CODE_2025 scans, a stronger onboarding handoff into U, the narrow-terminal portrait encounter fix, and the deeper home-context sweep + concise strongest-move opener
 
 ### Portrait Sync
 - CLI generates ASCII portraits locally but sync to web API is not verified end-to-end

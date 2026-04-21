@@ -1,12 +1,12 @@
 # You.md — Changelog
 
-## 2026-04-21 — Local Chat Action Layer
+## 2026-04-21 — Local Host Tool Bridge
 
 ### CLI / Agent UX
 - Fixed the bad `youmd chat` opener path so it no longer asks the remote model to invent the first proactive greeting; both `you` and `youmd chat` now use the local context-aware opener
-- Added deterministic local handling for `start there`, so U stores the strongest local project target and can actually open/bootstrap that folder instead of suggesting work it cannot perform
-- Added deterministic local handling for CODE_2025 recent-work questions, so U scans the local workspace directly and reports real recently touched projects instead of claiming it cannot access the filesystem
-- Bumped the next CLI publish target to `0.6.15` so this behavior fix ships as a fresh npm version
+- Added a local host-tool bridge for `start there`, so the CLI executes the project bootstrap locally and then sends the tool result through the remote model for the final response
+- Added the same host-tool bridge for CODE_2025 recent-work questions, so the CLI scans the local workspace and the remote model summarizes real filesystem results instead of claiming it cannot access files
+- Bumped the next CLI publish target to `0.6.16` so this behavior fix ships as a fresh npm version
 
 ## 2026-04-21 — Compact, Paced `you` Startup
 
