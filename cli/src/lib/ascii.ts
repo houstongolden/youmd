@@ -179,6 +179,29 @@ function padRight(value: string, width: number): string {
   return value + " ".repeat(Math.max(0, width - value.length));
 }
 
+function fitAsciiLines(lines: string[], maxCols: number, maxRows: number): string[] {
+  if (lines.length === 0) return [];
+
+  const rowCount = Math.min(maxRows, lines.length);
+  const rowStep = lines.length / rowCount;
+  const sampledRows: string[] = [];
+
+  for (let row = 0; row < rowCount; row++) {
+    sampledRows.push(lines[Math.floor(row * rowStep)] || "");
+  }
+
+  return sampledRows.map((line) => {
+    if (line.length <= maxCols) return line;
+
+    const colStep = line.length / maxCols;
+    let next = "";
+    for (let col = 0; col < maxCols; col++) {
+      next += line[Math.floor(col * colStep)] || "";
+    }
+    return next;
+  });
+}
+
 function wrapLine(value: string, width: number): string[] {
   if (width <= 0) return [value];
   if (value.length <= width) return [value];
@@ -215,8 +238,14 @@ export function printPortraitEncounter(options: {
   currentProject?: string;
   portraitLines: string[];
   speechLines?: string[];
+  compact?: boolean;
 }): boolean {
-  const portraitLines = options.portraitLines.slice(0, 16);
+  const terminalWidth = process.stdout.columns || 120;
+  const maxPortraitCols = options.compact
+    ? Math.min(58, Math.max(36, terminalWidth - 8))
+    : Math.min(80, Math.max(44, terminalWidth - 8));
+  const maxPortraitRows = options.compact ? 10 : 14;
+  const portraitLines = fitAsciiLines(options.portraitLines, maxPortraitCols, maxPortraitRows);
   if (!portraitLines || portraitLines.length === 0) return false;
 
   const speechLines = options.speechLines ?? [
@@ -232,7 +261,6 @@ export function printPortraitEncounter(options: {
 
   const leftWidth = Math.max(...portraitLines.map((line) => line.length));
   const rightWidth = Math.max(...BOT_LINES.map((line) => line.length), ...speechLines.map((line) => line.length + 2));
-  const terminalWidth = process.stdout.columns || 120;
   const sideBySideWidth = 2 + leftWidth + 4 + rightWidth;
 
   if (sideBySideWidth > terminalWidth - 2) {

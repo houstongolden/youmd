@@ -50,7 +50,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.13";
+const CURRENT_VERSION = "0.6.14";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1052,6 +1052,7 @@ interface LaunchInvestigation {
   findings: string[];
   strongestMove?: string;
   strongestCommand?: string;
+  recentProjects: string[];
 }
 
 function countMarkdownFiles(dir: string): number {
@@ -1158,7 +1159,7 @@ async function runYouLaunchInvestigation(
   spinner.start();
 
   try {
-    await delay(160);
+    await delay(600);
     try {
       const hasPreferences = fs.existsSync(path.join(bundleDir, "preferences", "agent.md"));
       const hasDirectives = fs.existsSync(path.join(bundleDir, "directives", "agent.md"));
@@ -1220,9 +1221,14 @@ async function runYouLaunchInvestigation(
       findings.push("i've got your home bundle loaded, even though we're not inside a project yet.");
     }
 
-    await delay(220);
+    await delay(900);
     spinner.stop("looked through local context");
-    return { findings: findings.slice(0, 6), strongestMove, strongestCommand };
+    return {
+      findings: findings.slice(0, 3),
+      strongestMove,
+      strongestCommand,
+      recentProjects: recentProjects.slice(0, 3),
+    };
   } finally {
     clearInterval(rotation);
   }
@@ -1240,7 +1246,7 @@ async function printChatOpening(
   const recentInsights = getRecentProjectInsights(process.cwd(), 6);
   const recentProjects = getFeaturedRecentProjectNames(recentInsights, 6);
   const launchSurface = process.env.YOUMD_LAUNCH_SURFACE;
-  let investigation: LaunchInvestigation = { findings: [] };
+  let investigation: LaunchInvestigation = { findings: [], recentProjects: recentProjects.slice(0, 3) };
 
   printYouLogo();
 
@@ -1257,6 +1263,7 @@ async function printChatOpening(
           currentProject: projectCtx?.name,
           recentProjects,
           portraitLines,
+          compact: true,
         })
       : false;
   }
@@ -1270,44 +1277,42 @@ async function printChatOpening(
     investigation = await runYouLaunchInvestigation(bundleDir, projectCtx, recentProjects);
     if (investigation.findings.length > 0) {
       console.log("");
-      console.log("  " + ACCENT("i checked a few corners."));
-      for (const finding of investigation.findings) {
+      console.log("  " + ACCENT("found:"));
+      for (const finding of investigation.findings.slice(0, 2)) {
         console.log("  " + DIM("· ") + chalk.white(finding));
       }
     }
   }
 
-  console.log("");
-  if (launchSurface === "you") {
-    console.log("  " + ACCENT("u is here.") + " " + DIM(`good to see you, ${displayName}.`));
-  } else {
+  if (launchSurface !== "you") {
+    console.log("");
     console.log("  " + ACCENT("u is here.") + " " + DIM(`good to see you, ${user}.`));
-  }
 
-  if (projectCtx) {
-    console.log("  " + DIM("current project: ") + chalk.white(projectCtx.name) + DIM(` (${projectCtx.root})`));
-    if (repoNeedsBootstrap(projectCtx.root)) {
-      console.log("  " + ACCENT("i spotted an opening.") + " " + DIM("this repo still wants AGENTS/project-context wiring."));
-      console.log("  " + DIM("say the word or run ") + chalk.cyan("youmd skill init-project") + DIM(" and i'll set it up."));
+    if (projectCtx) {
+      console.log("  " + DIM("current project: ") + chalk.white(projectCtx.name) + DIM(` (${projectCtx.root})`));
+      if (repoNeedsBootstrap(projectCtx.root)) {
+        console.log("  " + ACCENT("i spotted an opening.") + " " + DIM("this repo still wants AGENTS/project-context wiring."));
+        console.log("  " + DIM("say the word or run ") + chalk.cyan("youmd skill init-project") + DIM(" and i'll set it up."));
+      }
+    } else {
+      console.log("  " + DIM("i don't see a repo context here yet, but i can still help with your identity, links, memories, and private context."));
     }
-  } else {
-    console.log("  " + DIM("i don't see a repo context here yet, but i can still help with your identity, links, memories, and private context."));
-  }
 
-  if (recentProjects.length > 0) {
-    console.log("  " + DIM("recently active: ") + recentProjects.map((name) => chalk.cyan(name)).join(DIM(", ")));
-  }
-  const topOpportunity = !projectCtx ? getTopProjectOpportunity(recentInsights) : null;
-  if (topOpportunity) {
-    console.log("  " + ACCENT("next opening i see.") + " " + DIM(topOpportunity.summary));
-    console.log("  " + DIM("run:"));
-    console.log("    " + chalk.cyan(topOpportunity.suggestedCommand));
-    console.log("  " + DIM("then i'll help tighten it up."));
-  }
+    if (recentProjects.length > 0) {
+      console.log("  " + DIM("recently active: ") + recentProjects.map((name) => chalk.cyan(name)).join(DIM(", ")));
+    }
+    const topOpportunity = !projectCtx ? getTopProjectOpportunity(recentInsights) : null;
+    if (topOpportunity) {
+      console.log("  " + ACCENT("next opening i see.") + " " + DIM(topOpportunity.summary));
+      console.log("  " + DIM("run:"));
+      console.log("    " + chalk.cyan(topOpportunity.suggestedCommand));
+      console.log("  " + DIM("then i'll help tighten it up."));
+    }
 
-  console.log("");
-  console.log("  " + chalk.bold("you.md chat"));
-  console.log("  " + DIM("talk naturally. i'll update your identity, spot useful structure, and suggest next moves."));
+    console.log("");
+    console.log("  " + chalk.bold("you.md chat"));
+    console.log("  " + DIM("talk naturally. i'll update your identity, spot useful structure, and suggest next moves."));
+  }
   console.log("");
   return investigation;
 }
@@ -1319,28 +1324,26 @@ function buildYouLaunchIntro(
 ): string {
   const displayName = readDisplayName(bundleDir).split(" ")[0];
   const recentInsights = getRecentProjectInsights(process.cwd(), 6);
-  const recentProjects = getFeaturedRecentProjectNames(recentInsights, 6);
+  const recentProjects = investigation.recentProjects.length > 0
+    ? investigation.recentProjects
+    : getFeaturedRecentProjectNames(recentInsights, 3);
   const lines: string[] = [];
 
-  lines.push(`hi ${displayName}. i'm U — i help other agents know you.`);
+  lines.push(`hi ${displayName}. i'm U.`);
 
   if (projectCtx) {
-    lines.push(`i already clocked that you're inside ${projectCtx.name}.`);
+    lines.push(`i'm inside ${projectCtx.name}.`);
     if (repoNeedsBootstrap(projectCtx.root)) {
-      lines.push("this repo still wants cleaner agent wiring, so i can scaffold that whenever you want.");
+      lines.push("it still wants cleaner agent wiring.");
     }
   } else if (recentProjects.length > 0) {
-    lines.push(`recently you've been orbiting ${recentProjects.slice(0, 3).join(", ")}.`);
+    lines.push(`recent orbit: ${recentProjects.slice(0, 3).join(", ")}.`);
     const topOpportunity = getTopProjectOpportunity(recentInsights);
     if (topOpportunity) {
-      lines.push(`biggest opening i see: ${topOpportunity.summary}`);
+      lines.push(`strongest opening: ${topOpportunity.summary}`);
     }
   } else {
-    lines.push("clean slate. we can still shape your identity, private context, or project structure from here.");
-  }
-
-  if (investigation.findings.length > 0) {
-    lines.push(`quick read: ${investigation.findings.slice(0, 2).join(" ")}`);
+    lines.push("clean slate. we can shape identity, private context, or project structure from here.");
   }
 
   const strongestMove = investigation.strongestMove
@@ -1349,16 +1352,12 @@ function buildYouLaunchIntro(
       : null)
     || getTopProjectOpportunity(recentInsights)?.summary
     || null;
-  const strongestCommand = investigation.strongestCommand
-    || (projectCtx && repoNeedsBootstrap(projectCtx.root) ? "youmd skill init-project" : null)
-    || getTopProjectOpportunity(recentInsights)?.suggestedCommand
-    || null;
 
   if (strongestMove) {
-    lines.push(`the strongest move i can see right now: ${strongestMove}`);
-    lines.push("say \"start there\" and i'll take it, or redirect me.");
+    lines.push(`next strongest move: ${strongestMove}`);
+    lines.push("say \"start there\" and i'll take it.");
   } else {
-    lines.push("point me at the next thing and i'll move first instead of waiting around.");
+    lines.push("point me at the next thing and i'll move first.");
   }
 
   return lines.join("\n\n");
