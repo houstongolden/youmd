@@ -80,11 +80,20 @@ const STANDARD_WORKSPACE_ROOTS = [
   "Desktop/dev",
   "Desktop/Repos",
   "Desktop/repos",
-  "Desktop/CODE_2025",
-  "Desktop/CODE_2026",
-  "CODE_2025",
-  "CODE_2026",
 ];
+
+const WORKSPACE_ROOT_BASENAMES = new Set([
+  "projects",
+  "code",
+  "developer",
+  "development",
+  "dev",
+  "workspace",
+  "workspaces",
+  "repos",
+  "repositories",
+  "github",
+]);
 
 export interface ProjectPreferences {
   tone: string;
@@ -409,8 +418,18 @@ export function getWorkspaceRootCandidates(startDir?: string): string[] {
 
   if (startDir) {
     const cwd = path.resolve(startDir);
-    addRoot(path.dirname(cwd));
-    addRoot(path.dirname(path.dirname(cwd)));
+    const home = path.resolve(os.homedir());
+    const cwdName = path.basename(cwd).toLowerCase();
+    if (cwd !== home && WORKSPACE_ROOT_BASENAMES.has(cwdName)) {
+      addRoot(cwd);
+    }
+
+    for (const candidate of [path.dirname(cwd), path.dirname(path.dirname(cwd))]) {
+      const resolved = path.resolve(candidate);
+      if (!resolved.startsWith(home + path.sep)) continue;
+      if (resolved === home) continue;
+      addRoot(resolved);
+    }
   }
 
   return Array.from(roots).filter((root) => fs.existsSync(root));

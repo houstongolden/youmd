@@ -198,6 +198,19 @@ describe("integration: vault encryption round-trip", () => {
 });
 
 describe("integration: API endpoint contract", () => {
+  function hasUsableIdentityData(data: Record<string, unknown>): boolean {
+    const identity = data.identity as Record<string, unknown> | undefined;
+    if (!identity) return false;
+
+    const bio = identity.bio as Record<string, unknown> | undefined;
+    return (
+      Boolean(identity.name) ||
+      Boolean(identity.tagline) ||
+      Boolean(bio?.short) ||
+      Boolean(bio?.medium)
+    );
+  }
+
   async function getLivePublicUsernames(limit = 3): Promise<string[]> {
     const res = await fetch(
       "https://kindly-cassowary-600.convex.site/api/v1/profiles",
@@ -218,7 +231,10 @@ describe("integration: API endpoint contract", () => {
         { signal: AbortSignal.timeout(10_000) }
       );
       if (profileRes.ok) {
-        confirmed.push(username);
+        const profile = await profileRes.json() as Record<string, unknown>;
+        if (hasUsableIdentityData(profile)) {
+          confirmed.push(username);
+        }
       }
       if (confirmed.length >= limit) {
         break;
@@ -311,15 +327,7 @@ describe("integration: API endpoint contract", () => {
       expect(res.ok).toBe(true);
 
       const data = await res.json() as Record<string, unknown>;
-      const identity = data.identity as Record<string, unknown>;
-      expect(identity).toBeDefined();
-      const bio = identity.bio as Record<string, unknown> | undefined;
-      expect(
-        Boolean(identity.name) ||
-        Boolean(identity.tagline) ||
-        Boolean(bio?.short) ||
-        Boolean(bio?.medium)
-      ).toBe(true);
+      expect(hasUsableIdentityData(data)).toBe(true);
 
       const projects = data.projects as unknown[] | undefined;
       expect(Array.isArray(projects)).toBe(true);

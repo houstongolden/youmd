@@ -84,6 +84,9 @@ describe("getPublicProfile", () => {
         identity: {
           name: "Vendor User",
         },
+        _profile: {
+          displayName: "Vendor User",
+        },
         youMd: "# Vendor User",
       },
       youMd: "# Vendor User",

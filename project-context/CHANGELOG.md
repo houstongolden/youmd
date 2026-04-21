@@ -6,8 +6,9 @@
 - Fixed the bad `youmd chat` opener path so it no longer asks the remote model to invent the first proactive greeting; both `you` and `youmd chat` now use the local context-aware opener
 - Added a local host-tool bridge for `start there`, so the CLI executes the project bootstrap locally and then sends the tool result through the remote model for the final response
 - Added the same host-tool bridge for recent-work questions, so the CLI scans generic local workspace roots and the remote model summarizes real filesystem results instead of claiming it cannot access files
-- Generalized workspace discovery beyond Houston's `CODE_2025` layout; U now checks common roots like `~/Projects`, `~/Code`, `~/Developer`, `~/repos`, desktop variants, and explicit `YOUMD_WORKSPACE_ROOTS`
-- Bumped the next CLI publish target to `0.6.17` so this behavior fix ships as a fresh npm version
+- Generalized workspace discovery; U now checks common roots like `~/Projects`, `~/Code`, `~/Developer`, `~/repos`, desktop variants, and explicit `YOUMD_WORKSPACE_ROOTS`
+- Removed the remaining personal workspace root names from CLI source; discovery now relies on generic workspace roots, safe current-directory parents, and explicit user configuration
+- Bumped the next CLI publish target to `0.6.18` so this behavior fix ships as a fresh npm version
 
 ## 2026-04-21 — Compact, Paced `you` Startup
 

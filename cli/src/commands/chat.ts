@@ -53,7 +53,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.17";
+const CURRENT_VERSION = "0.6.18";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1373,8 +1373,6 @@ function isStartThereIntent(input: string): boolean {
 function isLocalRecentProjectsIntent(input: string): boolean {
   const lower = input.toLowerCase();
   const mentionsLocalWork =
-    lower.includes("code_2025") ||
-    lower.includes("code 2025") ||
     lower.includes("local director") ||
     lower.includes("local directory") ||
     lower.includes("local filesystem") ||
@@ -1559,6 +1557,7 @@ async function handleLocalChatIntent(args: {
         "Do not say you are scraping, pulling, reading, opening, or updating anything now unless that completed action appears in the tool result.",
         "Do not ask the user what the local project is if the tool result already names it.",
         "State what the local host actually found, make one concrete recommendation, and end with the exact phrase `next strongest move: ...`.",
+        "For workspace scans, reuse recommended_next_move as the final next strongest move. The supported follow-up command is `start there`; do not invent commands like `open PROJECT`.",
         "Do not end with a question. Keep it under 8 lines. No generic help-desk closer.",
       ].join("\n"),
     });
