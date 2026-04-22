@@ -20,6 +20,7 @@ import {
   buildProjectContextInjection,
   parseProjectUpdates,
   updateProjectFile,
+  readProjectContext as readFilesystemProjectContext,
   getRecentProjectInsights,
   getFeaturedRecentProjectNames,
   getTopProjectOpportunity,
@@ -54,7 +55,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.19";
+const CURRENT_VERSION = "0.6.20";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1535,11 +1536,364 @@ function formatProjectBootstrapToolResult(
   ].join("\n");
 }
 
+type LocalHostToolName =
+  | "discover_projects"
+  | "read_project_context"
+  | "write_project_context"
+  | "sync_identity"
+  | "respond";
+
+interface LocalHostToolCall {
+  tool: LocalHostToolName;
+  project?: string;
+  mode?: "status" | "publish" | "bootstrap";
+  reason?: string;
+}
+
+interface LocalToolLoopArgs {
+  userInput: string;
+  messages: ChatMessage[];
+  launchInvestigation: LaunchInvestigation;
+  apiKey: string | null;
+  bundleDir: string;
+}
+
+function isLocalToolLoopCandidate(input: string): boolean {
+  if (isStartThereIntent(input) || isLocalRecentProjectsIntent(input)) return true;
+  const lower = input.toLowerCase();
+  return [
+    "local",
+    "workspace",
+    "workspaces",
+    "filesystem",
+    "file system",
+    "recent projects",
+    "recent work",
+    "working on lately",
+    "project-context",
+    "project context",
+    "agent entrypoint",
+    "agent instructions",
+    "scaffold",
+    "bootstrap",
+    "start there",
+    "sync identity",
+    "sync my identity",
+    "publish identity",
+    "publish my identity",
+    "push my identity",
+  ].some((phrase) => lower.includes(phrase));
+}
+
+function userAskedForMutation(input: string): boolean {
+  const lower = input.toLowerCase();
+  return [
+    "start there",
+    "do it",
+    "go ahead",
+    "scaffold",
+    "bootstrap",
+    "create",
+    "write",
+    "update",
+    "fix",
+    "tighten",
+    "sync",
+    "publish",
+    "push",
+    "upload",
+  ].some((phrase) => lower.includes(phrase));
+}
+
+function safeJsonObject(text: string): Record<string, unknown> | null {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced?.[1]?.trim() || trimmed.match(/\{[\s\S]*\}/)?.[0];
+  if (!candidate) return null;
+  try {
+    const parsed = JSON.parse(candidate);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeLocalHostToolCall(value: Record<string, unknown> | null): LocalHostToolCall | null {
+  if (!value) return null;
+  const tool = value.tool;
+  if (
+    tool !== "discover_projects" &&
+    tool !== "read_project_context" &&
+    tool !== "write_project_context" &&
+    tool !== "sync_identity" &&
+    tool !== "respond"
+  ) {
+    return null;
+  }
+
+  const mode = value.mode === "publish" || value.mode === "bootstrap" || value.mode === "status"
+    ? value.mode
+    : undefined;
+
+  return {
+    tool,
+    project: typeof value.project === "string" ? value.project : undefined,
+    mode,
+    reason: typeof value.reason === "string" ? value.reason : undefined,
+  };
+}
+
+function inferLocalHostToolCall(input: string, launchInvestigation: LaunchInvestigation): LocalHostToolCall {
+  const lower = input.toLowerCase();
+  if (isStartThereIntent(input)) {
+    return { tool: "write_project_context", project: launchInvestigation.strongestProject?.name, mode: "bootstrap" };
+  }
+  if (lower.includes("sync") || lower.includes("publish") || lower.includes("push my identity")) {
+    return { tool: "sync_identity", mode: lower.includes("publish") || lower.includes("push") || lower.includes("sync") ? "publish" : "status" };
+  }
+  if (lower.includes("read") || lower.includes("show") || lower.includes("inspect") || lower.includes("context")) {
+    return { tool: "read_project_context", project: launchInvestigation.strongestProject?.name };
+  }
+  if (lower.includes("scaffold") || lower.includes("bootstrap") || lower.includes("create") || lower.includes("write") || lower.includes("update")) {
+    return { tool: "write_project_context", project: launchInvestigation.strongestProject?.name, mode: "bootstrap" };
+  }
+  return { tool: "discover_projects" };
+}
+
+function collectKnownProjects(launchInvestigation: LaunchInvestigation): RecentProjectInsight[] {
+  const projects = [
+    launchInvestigation.strongestProject,
+    ...scanRecentWorkspaceProjects(12),
+    ...getRecentProjectInsights(process.cwd(), 12),
+  ].filter((item): item is RecentProjectInsight => !!item);
+  const seen = new Set<string>();
+
+  return projects.filter((project) => {
+    const key = fs.existsSync(project.projectDir)
+      ? fs.realpathSync.native(project.projectDir)
+      : path.resolve(project.projectDir);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function resolveProjectForTool(
+  projectRef: string | undefined,
+  launchInvestigation: LaunchInvestigation,
+): RecentProjectInsight | null {
+  const projects = collectKnownProjects(launchInvestigation);
+  if (!projectRef && launchInvestigation.strongestProject) return launchInvestigation.strongestProject;
+  if (!projectRef) return projects[0] || null;
+
+  const normalized = projectRef.toLowerCase().trim();
+  const byPath = projects.find((project) => path.resolve(project.projectDir) === path.resolve(projectRef));
+  if (byPath) return byPath;
+
+  return projects.find((project) =>
+    project.name.toLowerCase() === normalized ||
+    project.slug.toLowerCase() === normalized ||
+    project.projectDir.toLowerCase().includes(normalized),
+  ) || null;
+}
+
+function readSnippet(filePath: string, maxChars = 1800): string | null {
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    const content = fs.readFileSync(filePath, "utf-8").trim();
+    if (!content) return null;
+    return content.length > maxChars ? `${content.slice(0, maxChars)}\n...` : content;
+  } catch {
+    return null;
+  }
+}
+
+function formatProjectReadToolResult(project: RecentProjectInsight): string {
+  const files = [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "package.json",
+    "pyproject.toml",
+    "Cargo.toml",
+    "go.mod",
+    "project-context/CURRENT_STATE.md",
+    "project-context/TODO.md",
+    "project-context/PRD.md",
+    "project-context/ARCHITECTURE.md",
+    ".you/project-context/CURRENT_STATE.md",
+    ".you/project-context/TODO.md",
+  ];
+  const snippets = files
+    .map((relativePath) => {
+      const snippet = readSnippet(path.join(project.projectDir, relativePath));
+      return snippet ? `file: ${relativePath}\n${snippet}` : null;
+    })
+    .filter((item): item is string => !!item)
+    .slice(0, 5);
+  const managedContext = readFilesystemProjectContext(project.projectDir);
+
+  return [
+    "tool: read_project_context",
+    "status: ok",
+    `project: ${project.name}`,
+    `project_dir: ${project.projectDir}`,
+    `markers: ${getProjectMarkerSignals(project.projectDir).join(", ") || "none"}`,
+    managedContext ? `managed_project_context: ${managedContext.meta.name}` : "managed_project_context: none",
+    "",
+    snippets.length > 0 ? snippets.join("\n\n---\n\n") : "no readable project-context or agent entrypoint files found yet.",
+    "",
+    `recommended_next_move: write a sharper current-state + TODO pass for ${project.name} if the user wants this project tightened.`,
+  ].join("\n");
+}
+
+async function formatIdentitySyncToolResult(bundleDir: string, publish: boolean): Promise<string> {
+  const result = compileBundle(bundleDir);
+  writeBundle(bundleDir, result);
+  const lines = [
+    "tool: sync_identity",
+    "status: ok",
+    `bundle_dir: ${bundleDir}`,
+    `compiled_version: ${result.stats.version}`,
+    `sections: ${result.stats.filledSections}/${result.stats.totalSections}`,
+  ];
+
+  if (!publish) {
+    lines.push("remote_sync: not requested; local bundle compiled only.");
+    lines.push("recommended_next_move: publish if you want this local identity bundle pushed to you.md.");
+    return lines.join("\n");
+  }
+
+  if (!isAuthenticated()) {
+    return [
+      ...lines,
+      "remote_sync: blocked; not authenticated.",
+      "recommended_next_move: run youmd login, then ask me to sync identity again.",
+    ].join("\n");
+  }
+
+  const youJson = JSON.parse(fs.readFileSync(path.join(bundleDir, "you.json"), "utf-8"));
+  const youMd = fs.readFileSync(path.join(bundleDir, "you.md"), "utf-8");
+  const manifest = JSON.parse(fs.readFileSync(path.join(bundleDir, "manifest.json"), "utf-8"));
+  const uploadRes = await uploadBundle({ manifest, youJson, youMd });
+  if (!uploadRes.ok) {
+    return [
+      ...lines,
+      `remote_sync: upload failed with status ${uploadRes.status}.`,
+      "recommended_next_move: inspect auth/API state before retrying identity sync.",
+    ].join("\n");
+  }
+
+  const publishRes = await publishLatest();
+  if (!publishRes.ok) {
+    return [
+      ...lines,
+      `remote_sync: publish failed with status ${publishRes.status}.`,
+      "recommended_next_move: inspect publish API state before retrying identity sync.",
+    ].join("\n");
+  }
+
+  lines.push(`remote_sync: published v${publishRes.data.version} as ${publishRes.data.username}.`);
+  lines.push(`url: ${publishRes.data.url || `https://you.md/${publishRes.data.username}`}`);
+  lines.push("recommended_next_move: test the updated identity from another agent surface.");
+  return lines.join("\n");
+}
+
+async function chooseLocalHostTool(args: LocalToolLoopArgs): Promise<LocalHostToolCall> {
+  const projects = collectKnownProjects(args.launchInvestigation)
+    .slice(0, 8)
+    .map((project) => `${project.name} | ${project.projectDir} | ${project.signals.slice(0, 4).join(", ")}`)
+    .join("\n");
+  const prompt = [
+    "You are the local host tool router for the you.md CLI. Return ONLY compact JSON. No prose.",
+    "Available tools:",
+    "- discover_projects: scan local filesystem markers for recent project work.",
+    "- read_project_context: read AGENTS/CLAUDE/package/project-context files for a project.",
+    "- write_project_context: bootstrap/tighten project context files for a project. Use only when the user asks to start, scaffold, update, write, fix, or tighten.",
+    "- sync_identity: compile identity locally; use mode publish only when the user asks to sync/publish/push identity.",
+    "- respond: no local tool needed.",
+    "",
+    "JSON shape: {\"tool\":\"discover_projects|read_project_context|write_project_context|sync_identity|respond\",\"project\":\"optional project name/path\",\"mode\":\"status|publish|bootstrap\",\"reason\":\"short\"}",
+    "",
+    "Known projects:",
+    projects || "none yet",
+    "",
+    `User request: ${args.userInput}`,
+  ].join("\n");
+
+  try {
+    const raw = await callLLM(args.apiKey, [
+      { role: "system", content: "Return only valid JSON for local tool routing." },
+      { role: "user", content: prompt },
+    ]);
+    return normalizeLocalHostToolCall(safeJsonObject(raw)) || inferLocalHostToolCall(args.userInput, args.launchInvestigation);
+  } catch {
+    return inferLocalHostToolCall(args.userInput, args.launchInvestigation);
+  }
+}
+
+async function executeLocalHostTool(
+  toolCall: LocalHostToolCall,
+  args: LocalToolLoopArgs,
+): Promise<string> {
+  if (toolCall.tool === "discover_projects") {
+    const insights = scanRecentWorkspaceProjects(10);
+    args.launchInvestigation.strongestProject = insights[0] || args.launchInvestigation.strongestProject;
+    args.launchInvestigation.strongestMove = insights[0]?.summary || args.launchInvestigation.strongestMove;
+    return formatLocalRecentProjectsToolResult(insights);
+  }
+
+  if (toolCall.tool === "read_project_context") {
+    const project = resolveProjectForTool(toolCall.project, args.launchInvestigation);
+    if (!project) {
+      return "tool: read_project_context\nstatus: blocked\nresult: no real local project target is known yet.\nrecommended_next_move: run discover_projects first.";
+    }
+    args.launchInvestigation.strongestProject = project;
+    return formatProjectReadToolResult(project);
+  }
+
+  if (toolCall.tool === "write_project_context") {
+    const project = resolveProjectForTool(toolCall.project, args.launchInvestigation);
+    if (!project) {
+      return "tool: write_project_context\nstatus: blocked\nresult: no real local project target is known yet.\nrecommended_next_move: run discover_projects first.";
+    }
+    if (!userAskedForMutation(args.userInput)) {
+      return [
+        "tool: write_project_context",
+        "status: blocked",
+        `project: ${project.name}`,
+        "result: user did not explicitly ask for a filesystem mutation.",
+        `recommended_next_move: say "start there" to bootstrap ${project.name}.`,
+      ].join("\n");
+    }
+
+    const previousCwd = process.cwd();
+    let result: ReturnType<typeof initProject>;
+    try {
+      process.chdir(project.projectDir);
+      result = initProject({ mode: "additive" });
+    } finally {
+      process.chdir(previousCwd);
+    }
+    args.launchInvestigation.strongestProject = project;
+    return formatProjectBootstrapToolResult(project, result);
+  }
+
+  if (toolCall.tool === "sync_identity") {
+    const publish = toolCall.mode === "publish" && userAskedForMutation(args.userInput);
+    return await formatIdentitySyncToolResult(args.bundleDir, publish);
+  }
+
+  return "tool: respond\nstatus: skipped\nresult: no local host tool needed.";
+}
+
 async function handleLocalChatIntent(args: {
   userInput: string;
   messages: ChatMessage[];
   launchInvestigation: LaunchInvestigation;
   apiKey: string | null;
+  bundleDir: string;
 }): Promise<boolean> {
   const runToolResultThroughModel = async (toolResult: string, spinnerLabel: string): Promise<void> => {
     args.messages.push({ role: "user", content: args.userInput });
@@ -1555,6 +1909,8 @@ async function handleLocalChatIntent(args: {
         "Do not ask the user what the local project is if the tool result already names it.",
         "State what the local host actually found, make one concrete recommendation, and end with the exact phrase `next strongest move: ...`.",
         "For workspace scans, reuse recommended_next_move as the final next strongest move. The supported follow-up command is `start there`; do not invent commands like `open PROJECT`.",
+        "For read_project_context results, summarize what you actually saw and recommend the next concrete local tool action.",
+        "For sync_identity results, state whether local compile or remote publish happened.",
         "Do not end with a question. Keep it under 8 lines. No generic help-desk closer.",
       ].join("\n"),
     });
@@ -1566,52 +1922,43 @@ async function handleLocalChatIntent(args: {
     }
   };
 
-  if (isLocalRecentProjectsIntent(args.userInput)) {
-    const spinner = new BrailleSpinner("checking local workspaces");
+  if (isLocalToolLoopCandidate(args.userInput)) {
+    const routeSpinner = new BrailleSpinner("choosing local tool");
+    routeSpinner.start();
+    const toolCall = await chooseLocalHostTool(args);
+    routeSpinner.stop(`selected ${toolCall.tool}`);
+
+    if (toolCall.tool === "respond") return false;
+
+    const labelByTool: Record<LocalHostToolName, string> = {
+      discover_projects: "discovering local projects",
+      read_project_context: "reading project context",
+      write_project_context: "writing project context",
+      sync_identity: "syncing identity context",
+      respond: "thinking",
+    };
+    const spinner = new BrailleSpinner(labelByTool[toolCall.tool]);
     spinner.start();
-    await delay(700);
-    const insights = scanRecentWorkspaceProjects(8);
-    spinner.stop("local workspace scanned");
-    args.launchInvestigation.strongestProject = insights[0] || args.launchInvestigation.strongestProject;
-    args.launchInvestigation.strongestMove = insights[0]?.summary || args.launchInvestigation.strongestMove;
-    await runToolResultThroughModel(
-      formatLocalRecentProjectsToolResult(insights),
-      "turning local project scan into a useful read",
-    );
-    return true;
-  }
-
-  if (isStartThereIntent(args.userInput)) {
-    const project =
-      args.launchInvestigation.strongestProject ||
-      getTopProjectOpportunity(getRecentProjectInsights(process.cwd(), 8));
-
-    if (!project || !fs.existsSync(project.projectDir)) {
-      const response = "i don't have a real local target for that yet. ask me to scan local workspaces and i'll pick from actual folders.\n\nnext strongest move: scan local recent projects first.";
+    try {
+      const toolResult = await executeLocalHostTool(toolCall, args);
+      const statusLine = toolResult.match(/^status: (.+)$/m)?.[1] || "done";
+      spinner.stop(statusLine);
+      await runToolResultThroughModel(
+        toolResult,
+        `summarizing ${toolCall.tool}`,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "local tool failed";
+      spinner.fail(message);
+      const response = [
+        `local tool failed: ${message}`,
+        "",
+        "next strongest move: retry with a read-only local scan so i can recover from real filesystem state.",
+      ].join("\n");
       args.messages.push({ role: "user", content: args.userInput });
       args.messages.push({ role: "assistant", content: response });
       printAgentMessage(response);
-      return true;
     }
-
-    const spinner = new BrailleSpinner(`opening ${project.name} from local disk`);
-    spinner.start();
-    await delay(500);
-
-    const previousCwd = process.cwd();
-    let result: ReturnType<typeof initProject>;
-    try {
-      process.chdir(project.projectDir);
-      result = initProject({ mode: "additive" });
-    } finally {
-      process.chdir(previousCwd);
-    }
-
-    spinner.stop(`${project.name} updated`);
-    await runToolResultThroughModel(
-      formatProjectBootstrapToolResult(project, result),
-      `summarizing ${project.name} changes`,
-    );
     return true;
   }
 
@@ -1958,6 +2305,7 @@ export async function chatCommand(): Promise<void> {
       messages,
       launchInvestigation,
       apiKey,
+      bundleDir,
     });
     if (handledLocally) continue;
 

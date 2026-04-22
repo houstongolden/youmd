@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-04-21 — Local Tool Loop
+
+### CLI / Agent UX
+- Turned the one-off local host bridge into an explicit local tool loop with `discover_projects`, `read_project_context`, `write_project_context`, `sync_identity`, and `respond`
+- U can now route local chat requests through host-owned filesystem tools, read real project entrypoints/context files, bootstrap project context, and compile/publish identity only when the user asks for that mutation
+- Added grounded failure handling so local tool errors become visible assistant turns instead of making the chat look stalled
+- Bumped the next CLI publish target to `0.6.20` so this tool-loop pass ships as a fresh npm version
+
 ## 2026-04-21 — Local Host Tool Bridge
 
 ### CLI / Agent UX
@@ -9,7 +17,7 @@
 - Generalized workspace discovery; U now checks common roots like `~/Projects`, `~/Code`, `~/Developer`, `~/repos`, desktop variants, and explicit `YOUMD_WORKSPACE_ROOTS`
 - Removed the remaining personal workspace root names from CLI source; discovery now relies on generic workspace roots, safe current-directory parents, and explicit user configuration
 - Added marker-based auto-discovery so U can infer workspace roots from real project markers like `AGENTS.md`, `CLAUDE.md`, `.agents`, `.claude`, `.claw`, `.git`, `package.json`, `pyproject.toml`, and `project-context`
-- Bumped the next CLI publish target to `0.6.19` so this behavior fix ships as a fresh npm version
+- Bumped the next CLI publish target to `0.6.19` so this behavior fix shipped as a fresh npm version
 
 ## 2026-04-21 — Compact, Paced `you` Startup
 
