@@ -95,6 +95,43 @@ const WORKSPACE_ROOT_BASENAMES = new Set([
   "github",
 ]);
 
+const PROJECT_MARKER_FILES = [
+  "AGENTS.md",
+  "CLAUDE.md",
+  "package.json",
+  "pyproject.toml",
+  "Cargo.toml",
+  "go.mod",
+  "composer.json",
+  "Gemfile",
+  "deno.json",
+  "bun.lock",
+  "pnpm-lock.yaml",
+  ".youmd-project",
+];
+
+const PROJECT_MARKER_DIRS = [
+  ".git",
+  ".agents",
+  ".claude",
+  ".claw",
+  "project-context",
+  ".youmd",
+];
+
+const DISCOVERY_SKIP_DIRS = new Set([
+  "Applications",
+  "Library",
+  "Movies",
+  "Music",
+  "Pictures",
+  "Public",
+  "Downloads",
+  "node_modules",
+  ".cache",
+  ".Trash",
+]);
+
 export interface ProjectPreferences {
   tone: string;
   stack: string;
@@ -395,6 +432,77 @@ function buildProjectSignals(projectDir: string, projectName: string): string[] 
   return signals;
 }
 
+export function getProjectMarkerSignals(projectDir: string): string[] {
+  const signals: string[] = [];
+
+  for (const marker of PROJECT_MARKER_FILES) {
+    if (fs.existsSync(path.join(projectDir, marker))) {
+      signals.push(marker);
+    }
+  }
+
+  for (const marker of PROJECT_MARKER_DIRS) {
+    if (fs.existsSync(path.join(projectDir, marker))) {
+      signals.push(marker);
+    }
+  }
+
+  return signals;
+}
+
+function discoverWorkspaceRootsFromProjectMarkers(seeds: string[], maxDirs = 700): string[] {
+  const roots = new Set<string>();
+  const seen = new Set<string>();
+  let visited = 0;
+
+  for (const seed of seeds) {
+    if (visited >= maxDirs) break;
+    if (!fs.existsSync(seed)) continue;
+
+    const stack: Array<{ dir: string; depth: number }> = [{ dir: seed, depth: 0 }];
+    while (stack.length > 0 && visited < maxDirs) {
+      const current = stack.pop();
+      if (!current) break;
+
+      let realDir = current.dir;
+      try {
+        realDir = fs.realpathSync.native(current.dir);
+      } catch {
+        // use unresolved path for the seen set below
+      }
+      if (seen.has(realDir)) continue;
+      seen.add(realDir);
+      visited += 1;
+
+      let entries: fs.Dirent[] = [];
+      try {
+        entries = fs.readdirSync(current.dir, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        if (entry.name.startsWith(".")) continue;
+        if (DISCOVERY_SKIP_DIRS.has(entry.name)) continue;
+
+        const child = path.join(current.dir, entry.name);
+        const markers = getProjectMarkerSignals(child);
+        if (markers.length > 0) {
+          roots.add(path.dirname(child));
+          continue;
+        }
+
+        if (current.depth < 2) {
+          stack.push({ dir: child, depth: current.depth + 1 });
+        }
+      }
+    }
+  }
+
+  return Array.from(roots);
+}
+
 export function getWorkspaceRootCandidates(startDir?: string): string[] {
   const roots = new Set<string>();
   const addRoot = (candidate: string) => {
@@ -416,9 +524,19 @@ export function getWorkspaceRootCandidates(startDir?: string): string[] {
     addRoot(path.join(os.homedir(), relative));
   }
 
+  const home = path.resolve(os.homedir());
+  const discoverySeeds = [
+    home,
+    path.join(home, "Desktop"),
+    path.join(home, "Documents"),
+    ...STANDARD_WORKSPACE_ROOTS.map((relative) => path.join(home, relative)),
+  ];
+  for (const root of discoverWorkspaceRootsFromProjectMarkers(discoverySeeds)) {
+    addRoot(root);
+  }
+
   if (startDir) {
     const cwd = path.resolve(startDir);
-    const home = path.resolve(os.homedir());
     const cwdName = path.basename(cwd).toLowerCase();
     if (cwd !== home && WORKSPACE_ROOT_BASENAMES.has(cwdName)) {
       addRoot(cwd);
@@ -436,12 +554,9 @@ export function getWorkspaceRootCandidates(startDir?: string): string[] {
 }
 
 function getWorkspaceProjectModifiedAt(projectDir: string): number {
-  const candidates = [
-    path.join(projectDir, "AGENTS.md"),
-    path.join(projectDir, "CLAUDE.md"),
-    path.join(projectDir, "project-context"),
-    path.join(projectDir, ".youmd-project"),
-  ];
+  const candidates = [...PROJECT_MARKER_FILES, ...PROJECT_MARKER_DIRS].map((marker) =>
+    path.join(projectDir, marker),
+  );
 
   let latest = 0;
   for (const candidate of candidates) {
@@ -458,6 +573,9 @@ function getWorkspaceProjectModifiedAt(projectDir: string): number {
 function buildWorkspaceSignals(projectDir: string): string[] {
   const hasAgents = fs.existsSync(path.join(projectDir, "AGENTS.md"));
   const hasClaude = fs.existsSync(path.join(projectDir, "CLAUDE.md"));
+  const hasCodeMarker = getProjectMarkerSignals(projectDir).some((marker) =>
+    !["AGENTS.md", "CLAUDE.md", "project-context", ".youmd-project", ".agents", ".claude", ".claw"].includes(marker),
+  );
   const contextDir = path.join(projectDir, "project-context");
   const contextFiles = countMarkdownFiles(contextDir);
   const signals: string[] = [];
@@ -468,6 +586,8 @@ function buildWorkspaceSignals(projectDir: string): string[] {
     signals.push("has project-context docs but no top-level agent entrypoint");
   } else if (contextFiles > 0 && contextFiles < 4) {
     signals.push("has a project-context directory, but it still feels thin");
+  } else if (hasCodeMarker && !hasAgents && !hasClaude) {
+    signals.push("has code markers but no agent entrypoint yet");
   } else if (!hasAgents && !hasClaude && contextFiles === 0) {
     signals.push("still looks unwired for agent-native work");
   }
@@ -490,12 +610,7 @@ function getWorkspaceProjectInsights(startDir?: string, limit = 5): RecentProjec
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
       const projectDir = path.join(root, entry.name);
-      const hasMarker =
-        fs.existsSync(path.join(projectDir, "AGENTS.md")) ||
-        fs.existsSync(path.join(projectDir, "CLAUDE.md")) ||
-        fs.existsSync(path.join(projectDir, "project-context")) ||
-        fs.existsSync(path.join(projectDir, ".youmd-project"));
-      if (!hasMarker) continue;
+      if (getProjectMarkerSignals(projectDir).length === 0) continue;
 
       const realDir = fs.realpathSync.native(projectDir);
       if (seen.has(realDir)) continue;

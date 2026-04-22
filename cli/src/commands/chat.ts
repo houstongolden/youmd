@@ -24,6 +24,7 @@ import {
   getFeaturedRecentProjectNames,
   getTopProjectOpportunity,
   getWorkspaceRootCandidates,
+  getProjectMarkerSignals,
 } from "../lib/project";
 import type { RecentProjectInsight } from "../lib/project";
 import { compileBundle, writeBundle } from "../lib/compiler";
@@ -53,7 +54,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.18";
+const CURRENT_VERSION = "0.6.19";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1467,12 +1468,8 @@ function scanRecentWorkspaceProjects(limit = 8): RecentProjectInsight[] {
       if (seen.has(realDir)) continue;
       seen.add(realDir);
 
-      const markerSignals: string[] = [];
-      if (fs.existsSync(path.join(projectDir, "AGENTS.md"))) markerSignals.push("AGENTS.md");
-      if (fs.existsSync(path.join(projectDir, "CLAUDE.md"))) markerSignals.push("CLAUDE.md");
-      if (fs.existsSync(path.join(projectDir, "project-context"))) markerSignals.push("project-context");
-      if (fs.existsSync(path.join(projectDir, "package.json"))) markerSignals.push("package.json");
-      if (fs.existsSync(path.join(projectDir, ".youmd-project"))) markerSignals.push(".youmd-project");
+      const markerSignals = getProjectMarkerSignals(projectDir);
+      if (markerSignals.length === 0) continue;
 
       const updatedAt = Math.max(getRecentFileMtime(projectDir), statMtimeMs(projectDir) || 0);
       insights.push({

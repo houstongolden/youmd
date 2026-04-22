@@ -8,7 +8,8 @@
 - Added the same host-tool bridge for recent-work questions, so the CLI scans generic local workspace roots and the remote model summarizes real filesystem results instead of claiming it cannot access files
 - Generalized workspace discovery; U now checks common roots like `~/Projects`, `~/Code`, `~/Developer`, `~/repos`, desktop variants, and explicit `YOUMD_WORKSPACE_ROOTS`
 - Removed the remaining personal workspace root names from CLI source; discovery now relies on generic workspace roots, safe current-directory parents, and explicit user configuration
-- Bumped the next CLI publish target to `0.6.18` so this behavior fix ships as a fresh npm version
+- Added marker-based auto-discovery so U can infer workspace roots from real project markers like `AGENTS.md`, `CLAUDE.md`, `.agents`, `.claude`, `.claw`, `.git`, `package.json`, `pyproject.toml`, and `project-context`
+- Bumped the next CLI publish target to `0.6.19` so this behavior fix ships as a fresh npm version
 
 ## 2026-04-21 — Compact, Paced `you` Startup
 
