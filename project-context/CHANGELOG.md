@@ -14,6 +14,7 @@
 - Matched the web `/initialize` encounter to the smaller portrait direction by downsampling stored portraits and rendering generated portraits at 44 columns inside a fixed small portrait column
 - Cleaned the published CLI package shape so compiled test artifacts are no longer included in the npm tarball
 - Added a GitHub Actions Trusted Publishing workflow plus `npm run publish:cli`, so local agents can trigger npm publish through GitHub OIDC without a long-lived npm token or interactive OTP prompt
+- Hardened the publish workflow after a real run failed in dependency install: CI now installs with package scripts disabled before build, and the package postinstall no longer crashes in fresh source checkouts where `dist/` has not been generated yet
 - Updated the curl installer and npm postinstall moment to put `you` first, with `youmd login` and `youmd init` framed as explicit paths rather than mandatory paperwork before meeting U
 - Changed browser login fallback copy to return users to `/shell` instead of the older dashboard path
 - Updated README, docs, FAQ, onboarding, and skill copy to consistently teach `you` as the main local U entrypoint while keeping `youmd chat` as the explicit long-form command

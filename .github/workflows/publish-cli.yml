@@ -22,7 +22,7 @@ jobs:
 
       - name: Install CLI dependencies
         working-directory: cli
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Test CLI
         working-directory: cli
