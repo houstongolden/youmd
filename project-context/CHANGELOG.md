@@ -3,13 +3,18 @@
 ## 2026-04-30 — Guided `you` Setup + Smaller Launcher Portrait
 
 ### CLI / Agent UX
-- Bumped the CLI publish target to `0.6.21`, rebuilt the package, and aligned `cli/package.json`, `package-lock.json`, runtime `--version`, and the MCP user-agent so the launcher fixes can publish cleanly
+- Bumped the CLI publish target to `0.6.22`, rebuilt the package, and aligned `cli/package.json`, `package-lock.json`, runtime `--version`, and the MCP user-agent so the launcher fixes can publish cleanly
 - Taught `you` how to stay alive when setup is incomplete: if auth or a local bundle is missing, the launcher now asks one direct next-step question and can route straight into `login`, `register`, `pull`, or `init` instead of dumping a static command list
 - Once a local bundle exists, `you` now hands straight into U chat even before auth is finished, which keeps the launcher useful in local-only identity workflows instead of hard-gating the conversation behind login
 - Shrunk the compact launcher portrait bounds dramatically so the saved/profile portrait stays inside a much smaller square on narrow terminals instead of taking over the whole viewport and getting cropped
+- Fixed the compact portrait crop bug by preserving the full public-profile portrait before downsampling, so the CLI no longer throws away the lower 70% of the portrait and cuts the face framing off at the forehead
+- Fixed nested-repo project detection so running `you` from `youmd/cli` resolves to the real git repo root instead of treating the nested CLI package as an unwired project that needs fake scaffolding
+- Made `start` / `start there` route through deterministic local host tools for obvious local actions, read real project files first, and print a grounded local summary instead of sending filesystem results back through the model and risking "i can't access files" theater
+- Changed the launcher's next-move heuristic so the current project wins over unrelated recent-project orbit; `you` launched inside You.md now proposes reading You.md's own project context instead of drifting to BigBounce
 - Matched the web `/initialize` encounter to the smaller portrait direction by downsampling stored portraits and rendering generated portraits at 44 columns inside a fixed small portrait column
 - Cleaned the published CLI package shape so compiled test artifacts are no longer included in the npm tarball
 - Added a GitHub Actions Trusted Publishing workflow plus `npm run publish:cli`, so local agents can trigger npm publish through GitHub OIDC without a long-lived npm token or interactive OTP prompt
+- Updated the curl installer and npm postinstall moment to put `you` first, with `youmd login` and `youmd init` framed as explicit paths rather than mandatory paperwork before meeting U
 - Changed browser login fallback copy to return users to `/shell` instead of the older dashboard path
 - Updated README, docs, FAQ, onboarding, and skill copy to consistently teach `you` as the main local U entrypoint while keeping `youmd chat` as the explicit long-form command
 - Removed a stale untracked Clerk-era `src/middleware.ts` that was blocking Next 16 builds now that the real request gate lives in `src/proxy.ts`
