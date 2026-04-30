@@ -1723,6 +1723,46 @@ function readSnippet(filePath: string, maxChars = 1800): string | null {
   }
 }
 
+function extractProjectActionItems(projectDir: string, maxItems = 5): string[] {
+  const files = [
+    "project-context/TODO.md",
+    "project-context/CURRENT_STATE.md",
+    "project-context/feature-requests-active.md",
+    ".you/project-context/TODO.md",
+    ".you/project-context/CURRENT_STATE.md",
+  ];
+  const seen = new Set<string>();
+  const items: string[] = [];
+
+  for (const relativePath of files) {
+    const fullPath = path.join(projectDir, relativePath);
+    const content = readSnippet(fullPath, 12000);
+    if (!content) continue;
+
+    for (const rawLine of content.split("\n")) {
+      const line = rawLine.trim();
+      if (!line) continue;
+
+      const openTask = line.match(/^[-*]\s+\[[\s?~-]\]\s+(.+)$/);
+      const statusTask = line.match(/^[-*]\s+(?:TODO|P0|P1|BLOCKED|OPEN|NEXT|IN PROGRESS|ACTIVE)[:\s-]+(.+)$/i);
+      const headingTask = line.match(/^#{2,4}\s+(?:P0|P1|Next|Open|Active|Blocked|Known issue|Current focus)[:\s-]+(.+)$/i);
+      const candidate = (openTask?.[1] || statusTask?.[1] || headingTask?.[1] || "")
+        .replace(/\s+/g, " ")
+        .replace(/\s+#.*$/, "")
+        .trim();
+      if (!candidate || candidate.length < 8) continue;
+
+      const normalized = candidate.toLowerCase();
+      if (seen.has(normalized)) continue;
+      seen.add(normalized);
+      items.push(candidate.length > 140 ? `${candidate.slice(0, 137)}...` : candidate);
+      if (items.length >= maxItems) return items;
+    }
+  }
+
+  return items;
+}
+
 function formatProjectReadToolResult(project: RecentProjectInsight): string {
   const files = [
     "AGENTS.md",
@@ -1746,6 +1786,10 @@ function formatProjectReadToolResult(project: RecentProjectInsight): string {
     .filter((item): item is string => !!item)
     .slice(0, 5);
   const managedContext = readFilesystemProjectContext(project.projectDir);
+  const actionItems = extractProjectActionItems(project.projectDir);
+  const recommendedMove = actionItems.length > 0
+    ? actionItems[0]
+    : `tighten ${project.name}'s current-state and TODO docs from actual repo context.`;
 
   return [
     "tool: read_project_context",
@@ -1754,10 +1798,11 @@ function formatProjectReadToolResult(project: RecentProjectInsight): string {
     `project_dir: ${project.projectDir}`,
     `markers: ${getProjectMarkerSignals(project.projectDir).join(", ") || "none"}`,
     managedContext ? `managed_project_context: ${managedContext.meta.name}` : "managed_project_context: none",
+    actionItems.length > 0 ? `action_items: ${actionItems.join(" | ")}` : "action_items: none found in TODO/current-state files",
     "",
     snippets.length > 0 ? snippets.join("\n\n---\n\n") : "no readable project-context or agent entrypoint files found yet.",
     "",
-    `recommended_next_move: write a sharper current-state + TODO pass for ${project.name} if the user wants this project tightened.`,
+    `recommended_next_move: ${recommendedMove}`,
   ].join("\n");
 }
 
@@ -1927,6 +1972,7 @@ async function handleLocalChatIntent(args: {
     const filesRead = Array.from(toolResult.matchAll(/^file:\s*(.+)$/gm))
       .map((match) => match[1].trim())
       .slice(0, 5);
+    const actionItems = get("action_items");
 
     if (status === "blocked") {
       const result = get("result") || "local tool blocked";
@@ -1943,6 +1989,7 @@ async function handleLocalChatIntent(args: {
         projectDir ? `path: ${projectDir}` : null,
         markers ? `markers: ${markers}` : null,
         filesRead.length > 0 ? `files read: ${filesRead.join(", ")}` : null,
+        actionItems && actionItems !== "none found in TODO/current-state files" ? `found: ${actionItems}` : null,
         "",
         `next strongest move: ${recommended || "tighten the current-state and TODO docs from the actual repo context."}`,
       ].filter((line): line is string => !!line);

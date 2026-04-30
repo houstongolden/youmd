@@ -10,11 +10,13 @@
 - Fixed the compact portrait crop bug by preserving the full public-profile portrait before downsampling, so the CLI no longer throws away the lower 70% of the portrait and cuts the face framing off at the forehead
 - Fixed nested-repo project detection so running `you` from `youmd/cli` resolves to the real git repo root instead of treating the nested CLI package as an unwired project that needs fake scaffolding
 - Made `start` / `start there` route through deterministic local host tools for obvious local actions, read real project files first, and print a grounded local summary instead of sending filesystem results back through the model and risking "i can't access files" theater
+- Made that local project read materially more useful by extracting open action items from `project-context/TODO.md`, `CURRENT_STATE.md`, and active request docs, then using the top real item as the next strongest move instead of ending on a vague "if the user wants" prompt
 - Changed the launcher's next-move heuristic so the current project wins over unrelated recent-project orbit; `you` launched inside You.md now proposes reading You.md's own project context instead of drifting to BigBounce
 - Matched the web `/initialize` encounter to the smaller portrait direction by downsampling stored portraits and rendering generated portraits at 44 columns inside a fixed small portrait column
 - Cleaned the published CLI package shape so compiled test artifacts are no longer included in the npm tarball
 - Added a GitHub Actions Trusted Publishing workflow plus `npm run publish:cli`, so local agents can trigger npm publish through GitHub OIDC without a long-lived npm token or interactive OTP prompt
 - Hardened the publish workflow after a real run failed in dependency install: CI now installs with package scripts disabled before build, and the package postinstall no longer crashes in fresh source checkouts where `dist/` has not been generated yet
+- Verified the trusted-publishing workflow now gets through install, tests, and build; the remaining publish failure is npm-side package permission / Trusted Publisher configuration for `youmd`, not a local package/build problem
 - Updated the curl installer and npm postinstall moment to put `you` first, with `youmd login` and `youmd init` framed as explicit paths rather than mandatory paperwork before meeting U
 - Changed browser login fallback copy to return users to `/shell` instead of the older dashboard path
 - Updated README, docs, FAQ, onboarding, and skill copy to consistently teach `you` as the main local U entrypoint while keeping `youmd chat` as the explicit long-form command
