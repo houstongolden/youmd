@@ -11,6 +11,9 @@
 - Fixed nested-repo project detection so running `you` from `youmd/cli` resolves to the real git repo root instead of treating the nested CLI package as an unwired project that needs fake scaffolding
 - Made `start` / `start there` route through deterministic local host tools for obvious local actions, read real project files first, and print a grounded local summary instead of sending filesystem results back through the model and risking "i can't access files" theater
 - Made that local project read materially more useful by extracting open action items from `project-context/TODO.md`, `CURRENT_STATE.md`, and active request docs, then using the top real item as the next strongest move instead of ending on a vague "if the user wants" prompt
+- Upgraded the launch-time strongest move itself to use those ranked project action items, so `you` now opens on the real unblocker when it can see one instead of forcing the user to type `start` before U becomes specific
+- Fixed the `continue` / `more` / "next strongest move" path so it bypasses the remote model router and runs the deterministic local project-context read; this prevents stale identity context from hijacking a local release-readiness continuation
+- Ranked release blockers like npm Trusted Publishing configuration above broader publish todos, and tightened action-list display so U shows the top concrete items without dumping an overlong project backlog
 - Changed the launcher's next-move heuristic so the current project wins over unrelated recent-project orbit; `you` launched inside You.md now proposes reading You.md's own project context instead of drifting to BigBounce
 - Matched the web `/initialize` encounter to the smaller portrait direction by downsampling stored portraits and rendering generated portraits at 44 columns inside a fixed small portrait column
 - Cleaned the published CLI package shape so compiled test artifacts are no longer included in the npm tarball

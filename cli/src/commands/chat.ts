@@ -1141,6 +1141,34 @@ function collectHomeAgentSignals(): string[] {
   return findings;
 }
 
+function scoreProjectActionItem(item: string): number {
+  const lower = item.toLowerCase();
+  let score = 0;
+
+  if (lower.includes("trusted publishing") || (lower.includes("publish") && lower.includes("blocked"))) score += 80;
+  if (lower.includes("configure") || lower.includes("unblock") || lower.includes("blocker")) score += 40;
+  if (lower.includes("publish") || lower.includes("npm")) score += 25;
+  if (lower.includes("verify") || lower.includes("test") || lower.includes("qa")) score += 15;
+  if (lower.includes("build") || lower.includes("proactive") || lower.includes("first-run")) score += 10;
+
+  return score;
+}
+
+function rankProjectActionItems(items: string[]): string[] {
+  return items
+    .map((item, index) => ({ item, index, score: scoreProjectActionItem(item) }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map((entry) => entry.item);
+}
+
+function shortenActionItem(item: string, maxChars = 240): string {
+  if (item.length <= maxChars) return item;
+
+  const boundary = item.lastIndexOf(" ", maxChars - 1);
+  const end = boundary > 90 ? boundary : maxChars - 1;
+  return `${item.slice(0, end).trim()}...`;
+}
+
 async function runYouLaunchInvestigation(
   bundleDir: string,
   projectCtx: ReturnType<typeof detectProjectContext>,
@@ -1199,6 +1227,7 @@ async function runYouLaunchInvestigation(
         } else {
           findings.push(`${projectCtx.name} still wants a real project-context spine.`);
         }
+        const actionItems = extractProjectActionItems(projectCtx.root);
 
         strongestProject = {
           name: projectCtx.name,
@@ -1216,6 +1245,10 @@ async function runYouLaunchInvestigation(
           strongestProject.signals = ["still wants cleaner agent wiring and project-context scaffolding"];
           strongestProject.summary = `${projectCtx.name} still wants cleaner agent wiring and project-context scaffolding.`;
           strongestProject.suggestedCommand = "youmd skill init-project";
+        } else if (actionItems.length > 0) {
+          strongestMove = actionItems[0];
+          strongestProject.signals = actionItems.slice(0, 3);
+          strongestProject.summary = actionItems[0];
         } else {
           strongestMove = `read ${projectCtx.name}'s project-context and pick the next concrete release-quality fix from actual repo state.`;
         }
@@ -1378,6 +1411,20 @@ function isStartThereIntent(input: string): boolean {
     "yes",
     "yep",
     "start",
+  ].includes(lower);
+}
+
+function isContinueNextMoveIntent(input: string): boolean {
+  const lower = input.toLowerCase().trim().replace(/[.!?]+$/, "");
+  return [
+    "continue",
+    "keep going",
+    "more",
+    "next",
+    "what next",
+    "what should i do next",
+    "next strongest move",
+    "do the next strongest move",
   ].includes(lower);
 }
 
@@ -1568,7 +1615,7 @@ interface LocalToolLoopArgs {
 }
 
 function isLocalToolLoopCandidate(input: string): boolean {
-  if (isStartThereIntent(input) || isLocalRecentProjectsIntent(input)) return true;
+  if (isStartThereIntent(input) || isContinueNextMoveIntent(input) || isLocalRecentProjectsIntent(input)) return true;
   const lower = input.toLowerCase();
   return [
     "local",
@@ -1591,6 +1638,8 @@ function isLocalToolLoopCandidate(input: string): boolean {
     "publish identity",
     "publish my identity",
     "push my identity",
+    "what next",
+    "next strongest move",
   ].some((phrase) => lower.includes(phrase));
 }
 
@@ -1656,7 +1705,7 @@ function normalizeLocalHostToolCall(value: Record<string, unknown> | null): Loca
 
 function inferLocalHostToolCall(input: string, launchInvestigation: LaunchInvestigation): LocalHostToolCall {
   const lower = input.toLowerCase();
-  if (isStartThereIntent(input)) {
+  if (isStartThereIntent(input) || isContinueNextMoveIntent(input)) {
     const project = resolveProjectForTool(launchInvestigation.strongestProject?.name, launchInvestigation);
     if (project && repoNeedsBootstrap(project.projectDir)) {
       return { tool: "write_project_context", project: project.name, mode: "bootstrap" };
@@ -1755,12 +1804,11 @@ function extractProjectActionItems(projectDir: string, maxItems = 5): string[] {
       const normalized = candidate.toLowerCase();
       if (seen.has(normalized)) continue;
       seen.add(normalized);
-      items.push(candidate.length > 140 ? `${candidate.slice(0, 137)}...` : candidate);
-      if (items.length >= maxItems) return items;
+      items.push(shortenActionItem(candidate));
     }
   }
 
-  return items;
+  return rankProjectActionItems(items).slice(0, maxItems);
 }
 
 function formatProjectReadToolResult(project: RecentProjectInsight): string {
@@ -1859,7 +1907,7 @@ async function formatIdentitySyncToolResult(bundleDir: string, publish: boolean)
 }
 
 async function chooseLocalHostTool(args: LocalToolLoopArgs): Promise<LocalHostToolCall> {
-  if (isStartThereIntent(args.userInput)) {
+  if (isStartThereIntent(args.userInput) || isContinueNextMoveIntent(args.userInput)) {
     return inferLocalHostToolCall(args.userInput, args.launchInvestigation);
   }
 
@@ -1973,6 +2021,10 @@ async function handleLocalChatIntent(args: {
       .map((match) => match[1].trim())
       .slice(0, 5);
     const actionItems = get("action_items");
+    const displayedActionItems = actionItems
+      ?.split(" | ")
+      .slice(0, 3)
+      .join(" | ");
 
     if (status === "blocked") {
       const result = get("result") || "local tool blocked";
@@ -1989,7 +2041,7 @@ async function handleLocalChatIntent(args: {
         projectDir ? `path: ${projectDir}` : null,
         markers ? `markers: ${markers}` : null,
         filesRead.length > 0 ? `files read: ${filesRead.join(", ")}` : null,
-        actionItems && actionItems !== "none found in TODO/current-state files" ? `found: ${actionItems}` : null,
+        displayedActionItems && displayedActionItems !== "none found in TODO/current-state files" ? `found: ${displayedActionItems}` : null,
         "",
         `next strongest move: ${recommended || "tighten the current-state and TODO docs from the actual repo context."}`,
       ].filter((line): line is string => !!line);
