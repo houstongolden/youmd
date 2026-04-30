@@ -2,14 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { CONVEX_SITE_URL } from "@/lib/constants";
 
-function copyHeaders(source: Headers): Headers {
-  const headers = new Headers();
-  source.forEach((value, key) => {
-    if (key.toLowerCase() === "content-length") return;
-    headers.set(key, value);
-  });
-  return headers;
-}
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
 
 async function proxyMcp(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = `${CONVEX_SITE_URL}/api/v1/mcp`;
@@ -31,11 +28,11 @@ async function proxyMcp(request: NextRequest): Promise<NextResponse> {
     cache: "no-store",
   });
 
-  const responseText = await upstream.text();
+  const json = await upstream.json();
 
-  return new NextResponse(responseText, {
+  return NextResponse.json(json, {
     status: upstream.status,
-    headers: copyHeaders(upstream.headers),
+    headers: CORS_HEADERS,
   });
 }
 
@@ -48,5 +45,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
-  return proxyMcp(request);
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
 }

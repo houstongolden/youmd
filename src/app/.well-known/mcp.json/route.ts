@@ -2,14 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { CONVEX_SITE_URL } from "@/lib/constants";
 
-function copyHeaders(source: Headers): Headers {
-  const headers = new Headers();
-  source.forEach((value, key) => {
-    if (key.toLowerCase() === "content-length") return;
-    headers.set(key, value);
-  });
-  return headers;
-}
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
 
 async function proxyDiscovery(request: NextRequest): Promise<NextResponse> {
   const upstream = await fetch(`${CONVEX_SITE_URL}/.well-known/mcp.json`, {
@@ -20,11 +17,14 @@ async function proxyDiscovery(request: NextRequest): Promise<NextResponse> {
     cache: "no-store",
   });
 
-  const responseText = await upstream.text();
+  const json = await upstream.json();
 
-  return new NextResponse(responseText, {
+  return NextResponse.json(json, {
     status: upstream.status,
-    headers: copyHeaders(upstream.headers),
+    headers: {
+      ...CORS_HEADERS,
+      "Cache-Control": "public, max-age=3600",
+    },
   });
 }
 
@@ -33,5 +33,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
-  return proxyDiscovery(request);
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
 }
