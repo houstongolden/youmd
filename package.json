@@ -9,6 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "publish:cli": "./scripts/publish-cli-workflow.sh",
+    "publish:cli:dry": "cd cli && npm pack --dry-run",
     "predev": "npx convex dev --until-success",
     "deploy:prod": "./scripts/convex-deploy.sh prod",
     "deploy:dev": "./scripts/convex-deploy.sh dev",

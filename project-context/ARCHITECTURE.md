@@ -430,7 +430,8 @@ git push                           # Triggers Vercel auto-deploy
 npx convex deploy                  # Deploy Convex to prod (needs CONVEX_DEPLOY_KEY)
 cd cli && npm run build            # Build CLI
 cd cli && npm version patch        # Bump version
-cd cli && npm publish --otp=CODE   # Publish to npm
+npm run publish:cli                # Trigger trusted npm publish through GitHub Actions
 ```
 
 GitHub Actions auto-deploys Convex when `convex/` files change on push to main.
+CLI npm publishing uses npm Trusted Publishing through `.github/workflows/publish-cli.yml`.

@@ -352,7 +352,14 @@ npx convex dev          # Convex backend (separate terminal)
 
 # Build CLI
 cd cli && npm run build
+
+# Publish CLI through npm Trusted Publishing
+npm run publish:cli
 ```
+
+CLI publishing is handled by `.github/workflows/publish-cli.yml` using npm Trusted Publishing.
+Configure npm package `youmd` with GitHub Actions trusted publisher:
+owner `houstongolden`, repo `youmd`, workflow filename `publish-cli.yml`.
 
 ---
 

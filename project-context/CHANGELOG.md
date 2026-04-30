@@ -9,6 +9,7 @@
 - Shrunk the compact launcher portrait bounds dramatically so the saved/profile portrait stays inside a much smaller square on narrow terminals instead of taking over the whole viewport and getting cropped
 - Matched the web `/initialize` encounter to the smaller portrait direction by downsampling stored portraits and rendering generated portraits at 44 columns inside a fixed small portrait column
 - Cleaned the published CLI package shape so compiled test artifacts are no longer included in the npm tarball
+- Added a GitHub Actions Trusted Publishing workflow plus `npm run publish:cli`, so local agents can trigger npm publish through GitHub OIDC without a long-lived npm token or interactive OTP prompt
 - Changed browser login fallback copy to return users to `/shell` instead of the older dashboard path
 - Updated README, docs, FAQ, onboarding, and skill copy to consistently teach `you` as the main local U entrypoint while keeping `youmd chat` as the explicit long-form command
 - Removed a stale untracked Clerk-era `src/middleware.ts` that was blocking Next 16 builds now that the real request gate lives in `src/proxy.ts`

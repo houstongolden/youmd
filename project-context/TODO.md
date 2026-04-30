@@ -22,6 +22,7 @@ PRD Version: 2.3
 - [x] Expand the bridge into a real local tool loop so U can choose among `discover_projects`, `read_project_context`, `write_project_context`, `sync_identity`, and `respond` instead of only handling two hardcoded intents
 - [ ] Publish `youmd@0.6.21` so end users get the `you` launcher, compact portrait splash, paced startup investigation, public-profile portrait contract fix, update hints, read-only active-bundle fallback, raw-markdown identity roundtrip preservation, marker-based recent-project opportunity scanning, broader local workspace repo awareness, local host-tool execution, the stronger onboarding handoff into U, smaller portrait bounds, first-run setup guidance, the deeper home-level context sweep, a much more concise strongest-move opener, and the new local tool loop
 - [x] Rebuild the CLI at `0.6.21`, align runtime/MCP version strings, and remove compiled test artifacts from the npm package before the publish attempt
+- [x] Add a Trusted Publishing workflow so agents can publish the CLI through GitHub Actions without a long-lived npm token or interactive OTP prompts
 - [ ] Build a truly proactive first-run U flow after install/login instead of relying only on better static startup copy
 - [ ] Do one live browser QA pass on `/initialize` to tune spacing, logo scale, and portrait/bot balance on desktop + mobile now that the full scene composition exists
 - [ ] Verify the `you` splash now matches Houston's current primary/public portrait after the new `_profile.asciiPortrait` contract ships to production
