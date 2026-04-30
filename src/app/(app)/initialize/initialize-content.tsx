@@ -30,6 +30,46 @@ const YOU_LOGO_LINES = [
   "     ╚═╝      ╚═════╝    ╚═════╝ ",
 ];
 
+function sampleLine(line: string, maxCols: number): string {
+  if (line.length <= maxCols) return line;
+  const step = line.length / maxCols;
+  let next = "";
+  for (let col = 0; col < maxCols; col++) {
+    next += line[Math.floor(col * step)] || "";
+  }
+  return next;
+}
+
+function fitPreRenderedPortrait(
+  portrait: PreRenderedPortrait | undefined,
+  maxCols: number,
+  maxRows: number
+): PreRenderedPortrait | undefined {
+  if (!portrait?.lines?.length) return portrait;
+
+  const rowCount = Math.min(maxRows, portrait.lines.length);
+  const rowStep = portrait.lines.length / rowCount;
+  const rows = Array.from({ length: rowCount }, (_, row) => Math.floor(row * rowStep));
+
+  return {
+    ...portrait,
+    lines: rows.map((row) => sampleLine(portrait.lines[row] || "", maxCols)),
+    coloredLines: portrait.coloredLines
+      ? rows.map((row) => {
+          const source = portrait.coloredLines?.[row] || [];
+          if (source.length <= maxCols) return source;
+          const step = source.length / maxCols;
+          return Array.from(
+            { length: maxCols },
+            (_, col) => source[Math.floor(col * step)] || { char: " ", color: "transparent" }
+          );
+        })
+      : undefined,
+    cols: Math.min(maxCols, portrait.cols || maxCols),
+    rows: rowCount,
+  };
+}
+
 /** Read a cookie by name */
 function getCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
@@ -376,6 +416,7 @@ function InitializeEncounter({
   knownProjects: string[];
 }) {
   const firstName = displayName.split(" ")[0] || username;
+  const compactPortrait = fitPreRenderedPortrait(storedPortrait, 44, 12);
   const speechLines = [
     `hi ${firstName}, i'm U.`,
     "i help other agents know you.",
@@ -399,47 +440,47 @@ function InitializeEncounter({
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_260px] md:items-center">
-      <div className="min-w-0">
-        <div className="mb-3 text-[10px] font-mono uppercase tracking-[0.18em] text-[hsl(var(--accent))] opacity-70">
-          there you are
+      <div className="grid gap-4 md:grid-cols-[minmax(150px,220px)_minmax(0,1fr)] md:items-center">
+        <div className="min-w-0 max-w-[220px]">
+          <div className="mb-3 text-[10px] font-mono uppercase tracking-[0.18em] text-[hsl(var(--accent))] opacity-70">
+            there you are
+          </div>
+          <div
+            className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden"
+            style={{ borderRadius: "2px" }}
+          >
+            {avatarUrl || storedPortrait ? (
+              <AsciiAvatar
+                src={avatarUrl || ""}
+                cols={44}
+                canvasWidth={220}
+                format="classic"
+                className="block w-full"
+                preRendered={compactPortrait}
+              />
+            ) : (
+              <div className="px-4 py-8 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-70">
+                portrait incoming.
+                <br />
+                give U your x or github username and this turns into your face in code.
+              </div>
+            )}
+          </div>
         </div>
-        <div
-          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden"
-          style={{ borderRadius: "2px" }}
-        >
-          {avatarUrl || storedPortrait ? (
-            <AsciiAvatar
-              src={avatarUrl || ""}
-              cols={120}
-              canvasWidth={520}
-              format="classic"
-              className="block w-full"
-              preRendered={storedPortrait}
-            />
-          ) : (
-            <div className="px-4 py-8 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-70">
-              portrait incoming.
-              <br />
-              give U your x or github username and this turns into your face in code.
-            </div>
-          )}
-        </div>
-      </div>
 
-      <div className="font-mono text-[12px] leading-relaxed text-[hsl(var(--text-secondary))]">
-        <div className="mb-3 whitespace-pre text-[hsl(var(--accent))] opacity-90">
-          {BOT_LINES.join("\n")}
-        </div>
-        <div className="space-y-1">
-          {speechLines.map((line, index) => (
-            <div key={line} className="whitespace-pre-wrap">
-              {index === 0 ? `> ${line}` : `  ${line}`}
-            </div>
-          ))}
+        <div className="font-mono text-[12px] leading-relaxed text-[hsl(var(--text-secondary))]">
+          <div className="mb-3 whitespace-pre text-[hsl(var(--accent))] opacity-90">
+            {BOT_LINES.join("\n")}
+          </div>
+          <div className="space-y-1">
+            {speechLines.map((line, index) => (
+              <div key={line} className="whitespace-pre-wrap">
+                {index === 0 ? `> ${line}` : `  ${line}`}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
     </div>
   );
 }

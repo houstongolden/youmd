@@ -6,7 +6,10 @@
 - Taught `you` how to stay alive when setup is incomplete: if auth or a local bundle is missing, the launcher now asks one direct next-step question and can route straight into `login`, `register`, `pull`, or `init` instead of dumping a static command list
 - Once a local bundle exists, `you` now hands straight into U chat even before auth is finished, which keeps the launcher useful in local-only identity workflows instead of hard-gating the conversation behind login
 - Shrunk the compact launcher portrait bounds dramatically so the saved/profile portrait stays inside a much smaller square on narrow terminals instead of taking over the whole viewport and getting cropped
+- Matched the web `/initialize` encounter to the smaller portrait direction by downsampling stored portraits and rendering generated portraits at 44 columns inside a fixed small portrait column
+- Removed a stale untracked Clerk-era `src/middleware.ts` that was blocking Next 16 builds now that the real request gate lives in `src/proxy.ts`
 - Added CLI tests for the first-run action parser and the portrait-bound sizing helper, then re-ran the full CLI test suite plus TypeScript build cleanly
+- Re-ran the full Next production build cleanly after the middleware/proxy conflict was removed
 - This keeps the launcher closer to the intended wingman experience on real laptop and phone-width terminal windows, while also moving the broader ship-readiness audit forward instead of leaving setup UX as a known rough edge
 
 ## 2026-04-21 — Local Tool Loop
