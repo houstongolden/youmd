@@ -179,15 +179,17 @@ function padRight(value: string, width: number): string {
   return value + " ".repeat(Math.max(0, width - value.length));
 }
 
-function fitAsciiLines(lines: string[], maxCols: number, maxRows: number): string[] {
+export function fitAsciiLines(lines: string[], maxCols: number, maxRows: number): string[] {
   if (lines.length === 0) return [];
 
   const rowCount = Math.min(maxRows, lines.length);
-  const rowStep = lines.length / rowCount;
   const sampledRows: string[] = [];
 
   for (let row = 0; row < rowCount; row++) {
-    sampledRows.push(lines[Math.floor(row * rowStep)] || "");
+    const sourceRow = rowCount === 1
+      ? 0
+      : Math.round((row * (lines.length - 1)) / (rowCount - 1));
+    sampledRows.push(lines[sourceRow] || "");
   }
 
   return sampledRows.map((line) => {
@@ -349,7 +351,7 @@ export async function resolvePortraitLines(bundleDir: string): Promise<string[] 
   const bundleUrl = readPrimaryPortraitUrlFromBundle(bundleDir);
   if (bundleUrl) {
     const bundlePortrait = await generateAsciiPortraitLines(bundleUrl, 44);
-    if (bundlePortrait && bundlePortrait.length > 0) return bundlePortrait.slice(0, 16);
+    if (bundlePortrait && bundlePortrait.length > 0) return bundlePortrait;
   }
 
   const remotePortrait = await readRemotePortraitLines();
@@ -358,10 +360,10 @@ export async function resolvePortraitLines(bundleDir: string): Promise<string[] 
   const inferredUrl = await inferPortraitImageUrl(bundleDir);
   if (inferredUrl) {
     const inferred = await generateAsciiPortraitLines(inferredUrl, 44);
-    if (inferred && inferred.length > 0) return inferred.slice(0, 16);
+    if (inferred && inferred.length > 0) return inferred;
   }
 
-  const saved = getSavedPortraitLines(bundleDir, 16);
+  const saved = getSavedPortraitLines(bundleDir);
   if (saved && saved.length > 0) return saved;
 
   return null;
@@ -376,7 +378,7 @@ async function readRemotePortraitLines(): Promise<string[] | null> {
     const remoteProfile = (remote?.youJson as Record<string, unknown> | undefined)?._profile as Record<string, unknown> | undefined;
     const asciiPortrait = remoteProfile?.asciiPortrait as { lines?: string[] } | undefined;
     if (Array.isArray(asciiPortrait?.lines) && asciiPortrait.lines.length > 0) {
-      return asciiPortrait.lines.slice(0, 16);
+      return asciiPortrait.lines;
     }
   } catch {
     // non-fatal — fall back to image URL inference

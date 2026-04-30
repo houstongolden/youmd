@@ -55,7 +55,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.21";
+const CURRENT_VERSION = "0.6.22";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1179,9 +1179,6 @@ async function runYouLaunchInvestigation(
       // keep scanning other surfaces
     }
 
-    const homeSignals = collectHomeAgentSignals();
-    findings.push(...homeSignals.slice(0, 3));
-
     if (projectCtx) {
       try {
         const hasAgents = fs.existsSync(path.join(projectCtx.root, "AGENTS.md"));
@@ -1203,18 +1200,24 @@ async function runYouLaunchInvestigation(
           findings.push(`${projectCtx.name} still wants a real project-context spine.`);
         }
 
+        strongestProject = {
+          name: projectCtx.name,
+          slug: projectCtx.name,
+          projectDir: projectCtx.root,
+          updatedAt: Date.now(),
+          signals: getProjectMarkerSignals(projectCtx.root),
+          summary: `${projectCtx.name} is the current working repo.`,
+          suggestedCommand: `cd ${projectCtx.root} && you`,
+        };
+
         if (repoNeedsBootstrap(projectCtx.root)) {
           strongestMove = `${projectCtx.name} still wants cleaner agent wiring and project-context scaffolding.`;
           strongestCommand = "youmd skill init-project";
-          strongestProject = {
-            name: projectCtx.name,
-            slug: projectCtx.name,
-            projectDir: projectCtx.root,
-            updatedAt: Date.now(),
-            signals: ["still wants cleaner agent wiring and project-context scaffolding"],
-            summary: `${projectCtx.name} still wants cleaner agent wiring and project-context scaffolding.`,
-            suggestedCommand: "youmd skill init-project",
-          };
+          strongestProject.signals = ["still wants cleaner agent wiring and project-context scaffolding"];
+          strongestProject.summary = `${projectCtx.name} still wants cleaner agent wiring and project-context scaffolding.`;
+          strongestProject.suggestedCommand = "youmd skill init-project";
+        } else {
+          strongestMove = `read ${projectCtx.name}'s project-context and pick the next concrete release-quality fix from actual repo state.`;
         }
       } catch {
         findings.push(`${projectCtx.name} is open, but one of the local context probes tripped over itself.`);
@@ -1238,6 +1241,9 @@ async function runYouLaunchInvestigation(
     } else {
       findings.push("i've got your home bundle loaded, even though we're not inside a project yet.");
     }
+
+    const homeSignals = collectHomeAgentSignals();
+    findings.push(...homeSignals.slice(0, 2));
 
     await delay(900);
     spinner.stop("looked through local context");
@@ -1342,6 +1348,9 @@ function buildYouLaunchIntro(
   const strongestMove = investigation.strongestMove
     || (projectCtx && repoNeedsBootstrap(projectCtx.root)
       ? `${projectCtx.name} still wants cleaner agent wiring and project-context scaffolding.`
+      : null)
+    || (projectCtx
+      ? `read ${projectCtx.name}'s project-context and pick the next concrete release-quality fix from actual repo state.`
       : null)
     || getTopProjectOpportunity(recentInsights)?.summary
     || null;
@@ -1648,7 +1657,11 @@ function normalizeLocalHostToolCall(value: Record<string, unknown> | null): Loca
 function inferLocalHostToolCall(input: string, launchInvestigation: LaunchInvestigation): LocalHostToolCall {
   const lower = input.toLowerCase();
   if (isStartThereIntent(input)) {
-    return { tool: "write_project_context", project: launchInvestigation.strongestProject?.name, mode: "bootstrap" };
+    const project = resolveProjectForTool(launchInvestigation.strongestProject?.name, launchInvestigation);
+    if (project && repoNeedsBootstrap(project.projectDir)) {
+      return { tool: "write_project_context", project: project.name, mode: "bootstrap" };
+    }
+    return { tool: "read_project_context", project: project?.name || launchInvestigation.strongestProject?.name };
   }
   if (lower.includes("sync") || lower.includes("publish") || lower.includes("push my identity")) {
     return { tool: "sync_identity", mode: lower.includes("publish") || lower.includes("push") || lower.includes("sync") ? "publish" : "status" };
@@ -1801,6 +1814,10 @@ async function formatIdentitySyncToolResult(bundleDir: string, publish: boolean)
 }
 
 async function chooseLocalHostTool(args: LocalToolLoopArgs): Promise<LocalHostToolCall> {
+  if (isStartThereIntent(args.userInput)) {
+    return inferLocalHostToolCall(args.userInput, args.launchInvestigation);
+  }
+
   const projects = collectKnownProjects(args.launchInvestigation)
     .slice(0, 8)
     .map((project) => `${project.name} | ${project.projectDir} | ${project.signals.slice(0, 4).join(", ")}`)
@@ -1895,7 +1912,79 @@ async function handleLocalChatIntent(args: {
   apiKey: string | null;
   bundleDir: string;
 }): Promise<boolean> {
-  const runToolResultThroughModel = async (toolResult: string, spinnerLabel: string): Promise<void> => {
+  const summarizeLocalToolResult = (toolResult: string): string => {
+    const get = (key: string): string | null => {
+      const match = toolResult.match(new RegExp(`^${key}:\\s*(.+)$`, "m"));
+      return match?.[1]?.trim() || null;
+    };
+    const tool = get("tool") || "local_tool";
+    const status = get("status") || "done";
+    const project = get("project");
+    const projectDir = get("project_dir") || get("recommended_next_project_dir");
+    const recommended = get("recommended_next_move");
+    const markers = get("markers");
+    const changed = get("changed");
+    const filesRead = Array.from(toolResult.matchAll(/^file:\s*(.+)$/gm))
+      .map((match) => match[1].trim())
+      .slice(0, 5);
+
+    if (status === "blocked") {
+      const result = get("result") || "local tool blocked";
+      return [
+        result,
+        "",
+        `next strongest move: ${recommended || "run a read-only local scan before attempting a write."}`,
+      ].join("\n");
+    }
+
+    if (tool === "read_project_context") {
+      const lines = [
+        project ? `read ${project}.` : "read the local project.",
+        projectDir ? `path: ${projectDir}` : null,
+        markers ? `markers: ${markers}` : null,
+        filesRead.length > 0 ? `files read: ${filesRead.join(", ")}` : null,
+        "",
+        `next strongest move: ${recommended || "tighten the current-state and TODO docs from the actual repo context."}`,
+      ].filter((line): line is string => !!line);
+      return lines.join("\n");
+    }
+
+    if (tool === "project_bootstrap") {
+      return [
+        project ? `bootstrapped ${project}.` : "bootstrapped the project context.",
+        changed || "changed: checked existing wiring.",
+        "",
+        `next strongest move: ${recommended || "read the project-context files and sharpen the current-state pass."}`,
+      ].join("\n");
+    }
+
+    if (tool === "workspace_recent_projects") {
+      return [
+        "scanned local workspace projects.",
+        project ? `strongest target: ${project}` : get("recommended_next_project") ? `strongest target: ${get("recommended_next_project")}` : null,
+        projectDir ? `path: ${projectDir}` : null,
+        "",
+        `next strongest move: ${recommended || "say \"start there\" to read the strongest local project from actual files."}`,
+      ].filter((line): line is string => !!line).join("\n");
+    }
+
+    if (tool === "sync_identity") {
+      return [
+        "synced local identity context.",
+        get("remote_sync") || "remote_sync: local compile only.",
+        "",
+        `next strongest move: ${recommended || "test the updated identity from another agent surface."}`,
+      ].join("\n");
+    }
+
+    return [
+      "local tool finished.",
+      "",
+      `next strongest move: ${recommended || "continue from the local result above."}`,
+    ].join("\n");
+  };
+
+  const recordLocalToolResult = (toolResult: string): void => {
     args.messages.push({ role: "user", content: args.userInput });
     args.messages.push({
       role: "user",
@@ -1915,11 +2004,9 @@ async function handleLocalChatIntent(args: {
       ].join("\n"),
     });
 
-    const result = await callLLMWithStreaming(args.apiKey, args.messages, spinnerLabel);
-    args.messages.push({ role: "assistant", content: result.text });
-    if (!result.streamed) {
-      printAgentMessage(parseUpdatesFromResponse(result.text).display);
-    }
+    const summary = summarizeLocalToolResult(toolResult);
+    args.messages.push({ role: "assistant", content: summary });
+    printAgentMessage(summary);
   };
 
   if (isLocalToolLoopCandidate(args.userInput)) {
@@ -1943,10 +2030,7 @@ async function handleLocalChatIntent(args: {
       const toolResult = await executeLocalHostTool(toolCall, args);
       const statusLine = toolResult.match(/^status: (.+)$/m)?.[1] || "done";
       spinner.stop(statusLine);
-      await runToolResultThroughModel(
-        toolResult,
-        `summarizing ${toolCall.tool}`,
-      );
+      recordLocalToolResult(toolResult);
     } catch (err) {
       const message = err instanceof Error ? err.message : "local tool failed";
       spinner.fail(message);

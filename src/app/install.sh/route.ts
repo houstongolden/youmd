@@ -54,9 +54,9 @@ echo ""
 echo "Installed: $(youmd --version)"
 echo ""
 echo "Next:"
-echo "  youmd login"
-echo "  youmd init"
-echo "  you"
+echo "  you                 # meet U; it will guide login, pull, or setup"
+echo "  youmd login          # explicit auth path if you want it"
+echo "  youmd init           # explicit local bundle setup"
 echo ""
 `;
 }

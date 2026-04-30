@@ -192,6 +192,7 @@ const PROJECT_MARKERS = [
 export function detectProjectContext(): ProjectContext | null {
   let dir = process.cwd();
   const root = path.parse(dir).root;
+  const candidates: ProjectContext[] = [];
 
   while (dir !== root) {
     for (const marker of PROJECT_MARKERS) {
@@ -200,11 +201,11 @@ export function detectProjectContext(): ProjectContext | null {
 
       if (isDir) {
         if (fs.existsSync(markerPath) && fs.statSync(markerPath).isDirectory()) {
-          return buildProjectContext(dir, marker);
+          candidates.push(buildProjectContext(dir, marker));
         }
       } else {
         if (fs.existsSync(markerPath) && fs.statSync(markerPath).isFile()) {
-          return buildProjectContext(dir, marker);
+          candidates.push(buildProjectContext(dir, marker));
         }
       }
     }
@@ -212,7 +213,15 @@ export function detectProjectContext(): ProjectContext | null {
     dir = path.dirname(dir);
   }
 
-  return null;
+  if (candidates.length === 0) return null;
+
+  return (
+    candidates.find((candidate) => candidate.marker === ".youmd-project") ||
+    candidates.find((candidate) => candidate.marker === ".git") ||
+    candidates.find((candidate) => fs.existsSync(path.join(candidate.root, "AGENTS.md"))) ||
+    candidates.find((candidate) => fs.existsSync(path.join(candidate.root, "project-context"))) ||
+    candidates[0]
+  );
 }
 
 function buildProjectContext(projectRoot: string, marker: string): ProjectContext {

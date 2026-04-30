@@ -51,7 +51,7 @@ import { logsCommand } from "./commands/logs";
 import { agentsCommand } from "./commands/agents";
 
 const program = new Command();
-const CURRENT_VERSION = "0.6.21";
+const CURRENT_VERSION = "0.6.22";
 const CLI_NAME = process.env.YOUMD_LAUNCH_SURFACE === "you" ? "you" : "youmd";
 
 program

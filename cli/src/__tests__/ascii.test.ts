@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getPortraitEncounterBounds } from "../lib/ascii";
+import { fitAsciiLines, getPortraitEncounterBounds } from "../lib/ascii";
 
 describe("portrait encounter bounds", () => {
   it("keeps compact launcher portraits under roughly 30% terminal width", () => {
@@ -25,5 +25,15 @@ describe("portrait encounter bounds", () => {
 
     expect(regular.maxPortraitCols).toBeGreaterThan(compact.maxPortraitCols);
     expect(regular.maxPortraitRows).toBeGreaterThanOrEqual(compact.maxPortraitRows);
+  });
+
+  it("downsamples the full portrait height instead of cropping the top rows", () => {
+    const source = Array.from({ length: 55 }, (_, index) => `row-${index.toString().padStart(2, "0")}`);
+    const fitted = fitAsciiLines(source, 20, 12);
+
+    expect(fitted).toHaveLength(12);
+    expect(fitted[0]).toBe("row-00");
+    expect(fitted.at(-1)).toBe("row-54");
+    expect(fitted).toContain("row-49");
   });
 });
