@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-04-30
-Last Commit: pending 2026-04-30 release-readiness commits
+Last Commit: cc61a6f fix(web): return explicit json from mcp proxy
 
 ---
 
