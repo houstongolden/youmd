@@ -9,13 +9,12 @@ if (process.argv.length <= 2) {
     getLocalBundleDir: () => string;
     getHomeBundleDir: () => string;
     bundleLooksInitialized: (dir: string) => boolean;
-    isAuthenticated: () => boolean;
   };
 
   const localReady = config.bundleLooksInitialized(config.getLocalBundleDir());
   const homeReady = config.bundleLooksInitialized(config.getHomeBundleDir());
 
-  if (config.isAuthenticated() && (localReady || homeReady)) {
+  if (localReady || homeReady) {
     process.argv.push("chat");
   }
 }

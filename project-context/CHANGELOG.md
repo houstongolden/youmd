@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-04-30 — Guided `you` Setup + Smaller Launcher Portrait
+
+### CLI / Agent UX
+- Taught `you` how to stay alive when setup is incomplete: if auth or a local bundle is missing, the launcher now asks one direct next-step question and can route straight into `login`, `register`, `pull`, or `init` instead of dumping a static command list
+- Once a local bundle exists, `you` now hands straight into U chat even before auth is finished, which keeps the launcher useful in local-only identity workflows instead of hard-gating the conversation behind login
+- Shrunk the compact launcher portrait bounds dramatically so the saved/profile portrait stays inside a much smaller square on narrow terminals instead of taking over the whole viewport and getting cropped
+- Added CLI tests for the first-run action parser and the portrait-bound sizing helper, then re-ran the full CLI test suite plus TypeScript build cleanly
+- This keeps the launcher closer to the intended wingman experience on real laptop and phone-width terminal windows, while also moving the broader ship-readiness audit forward instead of leaving setup UX as a known rough edge
+
 ## 2026-04-21 — Local Tool Loop
 
 ### CLI / Agent UX

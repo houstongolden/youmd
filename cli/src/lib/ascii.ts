@@ -231,6 +231,33 @@ function wrapLine(value: string, width: number): string[] {
   return lines;
 }
 
+export function getPortraitEncounterBounds(
+  terminalWidth: number,
+  compact?: boolean,
+): { maxPortraitCols: number; maxPortraitRows: number } {
+  if (compact) {
+    const maxPortraitCols = Math.min(
+      28,
+      Math.max(18, Math.floor(terminalWidth * 0.3)),
+    );
+    const maxPortraitRows = Math.min(
+      12,
+      Math.max(8, Math.floor(maxPortraitCols * 0.55)),
+    );
+    return { maxPortraitCols, maxPortraitRows };
+  }
+
+  const maxPortraitCols = Math.min(
+    56,
+    Math.max(28, Math.floor(terminalWidth * 0.42)),
+  );
+  const maxPortraitRows = Math.min(
+    14,
+    Math.max(10, Math.floor(maxPortraitCols * 0.52)),
+  );
+  return { maxPortraitCols, maxPortraitRows };
+}
+
 export function printPortraitEncounter(options: {
   bundleDir: string;
   displayName: string;
@@ -241,10 +268,10 @@ export function printPortraitEncounter(options: {
   compact?: boolean;
 }): boolean {
   const terminalWidth = process.stdout.columns || 120;
-  const maxPortraitCols = options.compact
-    ? Math.min(58, Math.max(36, terminalWidth - 8))
-    : Math.min(80, Math.max(44, terminalWidth - 8));
-  const maxPortraitRows = options.compact ? 10 : 14;
+  const { maxPortraitCols, maxPortraitRows } = getPortraitEncounterBounds(
+    terminalWidth,
+    options.compact,
+  );
   const portraitLines = fitAsciiLines(options.portraitLines, maxPortraitCols, maxPortraitRows);
   if (!portraitLines || portraitLines.length === 0) return false;
 

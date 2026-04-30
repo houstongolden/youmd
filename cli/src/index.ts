@@ -5,6 +5,7 @@ import chalk from "chalk";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import * as readline from "readline";
 import {
   isAuthenticated,
   localBundleExists,
@@ -21,6 +22,7 @@ import {
   getTopProjectOpportunity,
 } from "./lib/project";
 import { checkForCliUpdate } from "./lib/update";
+import { getFirstRunPlan, parseFirstRunAction } from "./lib/first-run";
 import { initCommand } from "./commands/init";
 import { loginCommand } from "./commands/login";
 import { logoutCommand } from "./commands/logout";
@@ -301,6 +303,90 @@ async function renderNoArgWelcome(): Promise<void> {
   console.log("");
 }
 
+function promptInput(prompt: string): Promise<string> {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    rl.question(prompt, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+async function runYouGuidedSetup(): Promise<void> {
+  const ACCENT = chalk.hex("#C46A3A");
+  const DIM = chalk.dim;
+
+  while (true) {
+    await renderNoArgWelcome();
+
+    const bundleDir = resolveBundleDirForWelcome();
+    const plan = getFirstRunPlan({
+      authed: isAuthenticated(),
+      hasBundle: !!bundleDir,
+    });
+
+    if (!plan) {
+      await chatCommand();
+      return;
+    }
+
+    console.log("  " + ACCENT(plan.headline));
+    console.log("  " + DIM(plan.detail));
+    console.log(
+      "  " +
+        DIM("say ") +
+        plan.suggestedActions.map((action) => chalk.cyan(action)).join(DIM(", ")) +
+        DIM(`. Enter = ${plan.defaultAction}.`),
+    );
+    console.log("");
+
+    const answer = await promptInput(ACCENT("  > "));
+    const action = parseFirstRunAction(answer, {
+      authed: isAuthenticated(),
+      hasBundle: !!resolveBundleDirForWelcome(),
+    }) || plan.defaultAction;
+
+    console.log("");
+
+    if (action === "quit") {
+      console.log("  " + DIM("later."));
+      console.log("");
+      return;
+    }
+
+    if (action === "help") {
+      console.log(renderGroupedHelp());
+      continue;
+    }
+
+    if (action === "status") {
+      await statusCommand();
+      continue;
+    }
+
+    if (action === "login") {
+      await loginCommand({});
+    } else if (action === "register") {
+      await registerCommand();
+    } else if (action === "pull") {
+      await pullCommand();
+    } else if (action === "init") {
+      await initCommand({});
+    }
+
+    if (resolveBundleDirForWelcome()) {
+      console.log("  " + ACCENT("bundle is live.") + " " + DIM("handing you to U."));
+      console.log("");
+      await chatCommand();
+      return;
+    }
+  }
+}
+
 program
   .command("init")
   .description("Initialize a local .youmd/ identity context (interactive)")
@@ -479,6 +565,10 @@ program
 // `youmd` (bare) shows a short contextual welcome / next-step guide.
 async function main(): Promise<void> {
   if (process.argv.length <= 2) {
+    if (process.env.YOUMD_LAUNCH_SURFACE === "you") {
+      await runYouGuidedSetup();
+      return;
+    }
     await renderNoArgWelcome();
     return;
   }

@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-04-21
+Last Updated: 2026-04-30
 
 ## Core Platform
 
@@ -20,7 +20,9 @@ Last Updated: 2026-04-21
 | Web initialize YOU logo scene | Done | `/initialize` now brings in the actual YOU logo + subtitle framing above the portrait encounter so the first-contact scene matches the local launcher more closely |
 | U-style CLI entrance | Done | Bare `youmd` now opens with the YOU logo, an optional saved portrait preview, a more human greeting, and contextual “next best moves” instead of a dry mini help menu |
 | `you` launcher alias | Done | `you` now launches straight into U chat when the user is authenticated and a bundle exists, while still supporting subcommands like `you status` |
+| Guided first-run `you` setup | Done | When `you` is missing auth or a local bundle, it now stays alive and walks the user through login/register/pull/init one question at a time instead of dumping static command text |
 | Home-bundle conversational fallback | Done | `you` / `youmd chat` now work from arbitrary directories by falling back to `~/.youmd` when no local `.youmd/` exists |
+| Smaller launcher portrait bounds | Done | Compact `you` startup now hard-caps the portrait to a much smaller width/height box, keeping it readable on narrow terminals instead of letting the portrait dominate the whole screen |
 | Active-bundle read-only parity | Done | `status`, `diff`, `export`, and `preview` now use the same active-bundle resolution as `you`, so they can operate from `~/.youmd` outside initialized repos |
 | Portrait + bot startup scene | Done | The proactive `you` launch now shows the YOU logo, the user's ASCII portrait, a small bot greeting the portrait, and a more human "meet U" intro |
 | Truthful startup investigation | Done | `you` now keeps a live braille spinner active while it actually checks local bundle guidance plus nearby AGENTS / CLAUDE / project-context signals, then reports concrete findings before the first chat turn |

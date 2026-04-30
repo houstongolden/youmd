@@ -283,7 +283,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Agent acts directly, never says "the system handles that"
 - [ ] Keep the web shell's live thinking/progress UX feeling as crisp and legible as Codex/Claude Code during long-running multi-step work
 - [ ] Push the same ack → plan → work → complete + proactive follow-through pattern into the local CLI agent so web and local feel aligned
-- [ ] Build a true post-install / first-run “meet U” flow so the CLI feels like a helpful wingman immediately after install/login instead of assuming the user already knows the command tree
+- [x] Build a true post-install / first-run “meet U” flow so the CLI feels like a helpful wingman immediately after install/login instead of assuming the user already knows the command tree
 - [ ] Show ASCII portrait in web chat when switched or created
 - [ ] Conversational portrait management working end-to-end
 - [ ] Custom sections via agent conversation (flexible, not rigid 13 sections)
