@@ -73,7 +73,7 @@ Prefer npm directly? Use `npm install -g youmd@latest`.
 | `youmd add <src> <url>` | Add a source (website, linkedin, x, blog, youtube, github) |
 | `youmd status` | Show pipeline/build status |
 | `youmd preview` | Local preview server on port 3333 |
-| `youmd chat` | Explicit chat entry if you want the old full command instead of `you` |
+| `youmd chat` | Explicit long-form chat path; `you` is the main entry |
 | `youmd memories` | Manage your memory brain (list, add, stats) |
 | `youmd private` | Manage private context (notes, links, projects) |
 | `youmd project` | Manage project agent context (init, list, show, memories) |

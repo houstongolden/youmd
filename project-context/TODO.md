@@ -1,6 +1,6 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-04-21
+Last Updated: 2026-04-30
 PRD Version: 2.3
 
 ---
@@ -20,7 +20,8 @@ PRD Version: 2.3
 - [x] Add a local host-tool bridge for `start there` so U can act on its own strongest project suggestion, execute the local bootstrap, and send the tool result back through the remote model
 - [x] Add a local host-tool bridge for marker-based recent-work scanning so U can answer “what have I been working on lately?” from real filesystem state with a remote-model final response
 - [x] Expand the bridge into a real local tool loop so U can choose among `discover_projects`, `read_project_context`, `write_project_context`, `sync_identity`, and `respond` instead of only handling two hardcoded intents
-- [ ] Publish `youmd@0.6.20` so end users get the `you` launcher, compact portrait splash, paced startup investigation, public-profile portrait contract fix, update hints, read-only active-bundle fallback, raw-markdown identity roundtrip preservation, marker-based recent-project opportunity scanning, broader local workspace repo awareness, local host-tool execution, the stronger onboarding handoff into U, the narrow-terminal portrait encounter stacking fix, the deeper home-level context sweep, a much more concise strongest-move opener, and the new local tool loop
+- [ ] Publish `youmd@0.6.21` so end users get the `you` launcher, compact portrait splash, paced startup investigation, public-profile portrait contract fix, update hints, read-only active-bundle fallback, raw-markdown identity roundtrip preservation, marker-based recent-project opportunity scanning, broader local workspace repo awareness, local host-tool execution, the stronger onboarding handoff into U, smaller portrait bounds, first-run setup guidance, the deeper home-level context sweep, a much more concise strongest-move opener, and the new local tool loop
+- [x] Rebuild the CLI at `0.6.21`, align runtime/MCP version strings, and remove compiled test artifacts from the npm package before the publish attempt
 - [ ] Build a truly proactive first-run U flow after install/login instead of relying only on better static startup copy
 - [ ] Do one live browser QA pass on `/initialize` to tune spacing, logo scale, and portrait/bot balance on desktop + mobile now that the full scene composition exists
 - [ ] Verify the `you` splash now matches Houston's current primary/public portrait after the new `_profile.asciiPortrait` contract ships to production
@@ -34,7 +35,7 @@ PRD Version: 2.3
 ### Foundation (March 16-17)
 - [x] Next.js 16 + Convex + Clerk + Tailwind v4 scaffold
 - [x] Full Convex schema (21 tables)
-- [x] Clerk auth (production: clerk.you.md)
+- [x] First-party passwordless auth (production: you.md sessions)
 - [x] Vercel deployment (you.md custom domain)
 - [x] Convex production (kindly-cassowary-600) + dev (uncommon-chicken-142)
 - [x] Landing page with 12 sections

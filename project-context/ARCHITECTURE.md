@@ -20,9 +20,9 @@ Last Updated: 2026-04-06
 │                                                                            │
 │  AUTH LAYER                                                                │
 │  ┌──────────────────────────────┐  ┌──────────────────────────────────┐   │
-│  │  Clerk (Web)                  │  │  Email/Password + API Keys (CLI) │   │
-│  │  clerk.you.md (production)    │  │  Clerk Backend API + SHA-256     │   │
-│  │  OAuth, MFA, session mgmt    │  │  Bearer token: ym_*              │   │
+│  │  First-party web sessions     │  │  Email Code + API Keys (CLI)     │   │
+│  │  youmd_session cookie         │  │  Passwordless or direct ym_* key  │   │
+│  │  Convex custom JWT/JWKS       │  │  SHA-256 hashed Bearer tokens     │   │
 │  └──────────────────────────────┘  └──────────────────────────────────┘   │
 │                                                                            │
 │  ───────────────────────────────────────────────────────────────────────  │
@@ -282,16 +282,16 @@ All authenticated endpoints use Bearer token auth (API key with ym_ prefix).
 ### Web (Clerk)
 1. User visits /sign-up or /create
 2. Terminal-style sequential prompts (email → password → verification code)
-3. Clerk creates user, webhook or client creates Convex user + profile
+3. Convex creates the user/profile during the passwordless verification flow
 4. Redirect to /initialize for onboarding conversation with You Agent
-5. Session managed by Clerk, Convex queries use `ctx.auth.getUserIdentity()`
+5. Session managed by the first-party `youmd_session` cookie, Convex queries use a custom JWT via `ctx.auth.getUserIdentity()`
 
-### CLI (Email/Password)
-1. `youmd login` → enter email → enter password
-2. CLI hits `POST /api/v1/auth/login` → Clerk Backend API verifies credentials
-3. Returns API key (auto-generated), stored in `~/.youmd/config.json`
+### CLI (Passwordless/API Key)
+1. `youmd login` → browser sign-in, email-code login, or `--key`
+2. CLI hits `/api/auth/send-verification` + `/api/auth/verify-code` for email-code auth
+3. Returns API key when available, stored in `~/.youmd/config.json`
 4. All subsequent CLI requests use Bearer token auth
-5. `youmd register` → email → password → username → creates Clerk user + Convex records
+5. `youmd register` → username → email → display name → verification code → creates Convex user/profile records
 
 ### External Agents (API Key / Context Link)
 1. User generates API key in dashboard or via CLI
@@ -422,7 +422,6 @@ The You Agent is powered by `src/hooks/useYouAgent.ts` (web) and `cli/src/comman
 | Vercel | Production | you.md |
 | Convex | Production | kindly-cassowary-600 |
 | Convex | Development | uncommon-chicken-142 |
-| Clerk | Production | clerk.you.md |
 | npm | CLI package | npmjs.com/package/youmd |
 
 ### Deploy Commands

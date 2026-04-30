@@ -69,7 +69,7 @@ The compiled output — a portable identity file containing:
 ### Journey 1: CLI-First Onboarding
 ```
 npx youmd register (or youmd login)
-→ Create account with email + password (30 seconds)
+→ Create account with email-code verification (30 seconds)
 → youmd init
 → ASCII YOU logo renders
 → Agent asks for username → name → first social handle
@@ -206,8 +206,8 @@ profiles → contextLinks (1:many)
 ## 8. Security Model
 
 ### Authentication
-- **Web:** Clerk OAuth/password with MFA
-- **CLI:** Email/password via Clerk Backend API → auto-generated API key
+- **Web:** First-party passwordless email-code auth with signed session cookies and Convex custom JWTs
+- **CLI:** Browser sign-in, email-code login, or direct API key auth
 - **API:** Bearer token (SHA-256 hashed ym_ keys)
 
 ### Authorization

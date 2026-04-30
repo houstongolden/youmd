@@ -131,7 +131,7 @@ function openBrowserLogin(): void {
   console.log("opening you.md in your browser...");
   console.log("");
 
-  const url = "https://you.md/sign-in?redirect_url=https%3A%2F%2Fwww.you.md%2Fdashboard";
+  const url = "https://you.md/sign-in?redirect_url=https%3A%2F%2Fwww.you.md%2Fshell";
   const platform = process.platform;
   const cmd =
     platform === "darwin"

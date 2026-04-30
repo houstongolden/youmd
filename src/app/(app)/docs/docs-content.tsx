@@ -572,7 +572,7 @@ export default function DocsContent() {
                 Run <InlineCode>youmd push</InlineCode> to publish your profile
               </Step>
               <Step n={5}>
-                Run <InlineCode>youmd chat</InlineCode> then type{" "}
+                Run <InlineCode>you</InlineCode> to meet U, then type{" "}
                 <InlineCode>/share</InlineCode> to get your context link
               </Step>
             </StepList>
@@ -587,10 +587,9 @@ export default function DocsContent() {
 
             <Callout type="tip">
               The <InlineCode>youmd</InlineCode> CLI works in any terminal,
-              including Claude Code's shell. Interactive commands (
-              <InlineCode>init</InlineCode>, <InlineCode>chat</InlineCode>)
-              need a regular terminal, but everything else works inside your
-              coding agent.
+              including Claude Code's shell. Use <InlineCode>you</InlineCode>{" "}
+              in a regular terminal for the live U conversation. Non-interactive
+              commands work inside your coding agent.
             </Callout>
 
             <H3 id="cc-setup">Setup</H3>
@@ -598,8 +597,8 @@ export default function DocsContent() {
               <Step n={1}>
                 Open a regular terminal (not inside Claude Code) and run{" "}
                 <InlineCode>curl -fsSL https://you.md/install.sh | bash</InlineCode>{" "}
-                once, then <InlineCode>youmd init</InlineCode> to create your
-                identity
+                once, then <InlineCode>you</InlineCode> to let U guide login,
+                pull, or identity setup
               </Step>
               <Step n={2}>
                 Run <InlineCode>youmd login</InlineCode> to authenticate
@@ -637,9 +636,8 @@ export default function DocsContent() {
               ]}
             />
             <Callout type="info">
-              <InlineCode>youmd init</InlineCode> and{" "}
-              <InlineCode>youmd chat</InlineCode> are interactive and need a
-              regular terminal (they use readline prompts). Run those first, then
+              <InlineCode>you</InlineCode> and <InlineCode>youmd init</InlineCode>{" "}
+              are interactive and need a regular terminal. Run those first, then
               switch to Claude Code for everything else.
             </Callout>
 
@@ -693,7 +691,7 @@ export default function DocsContent() {
             <H3 id="share-command">/share Command</H3>
             <P>
               Type <InlineCode>/share</InlineCode> in either the web shell
-              terminal or inside <InlineCode>youmd chat</InlineCode> on the CLI.
+              terminal or inside <InlineCode>you</InlineCode> on the CLI.
               Both generate the same copyable block:
             </P>
             <CodeBlock title="output">{`> /share
@@ -800,7 +798,8 @@ preferences: terminal-native, monochrome
                   cmd: "youmd init",
                   desc: "Conversational AI onboarding -- builds your identity through dialogue",
                 },
-                { cmd: "youmd chat", desc: "Ongoing conversation with the You Agent to evolve your profile" },
+                { cmd: "you", desc: "Open U, the proactive local agent that keeps shaping your identity" },
+                { cmd: "youmd chat", desc: "Explicit long-form chat command when you want the older path" },
                 {
                   cmd: "youmd build",
                   desc: "Compile local markdown files into you.json + you.md",

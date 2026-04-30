@@ -20,7 +20,9 @@ async function proxyDiscovery(request: NextRequest): Promise<NextResponse> {
     cache: "no-store",
   });
 
-  return new NextResponse(upstream.body, {
+  const responseText = await upstream.text();
+
+  return new NextResponse(responseText, {
     status: upstream.status,
     headers: copyHeaders(upstream.headers),
   });

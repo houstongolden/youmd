@@ -420,7 +420,7 @@ async function useSkillCmd(args: string[]): Promise<void> {
         ACCENT(`  ${filled}/${total} identity fields resolved.`) +
         DIM(` missing: ${missing.join(", ")}`)
       );
-      console.log(DIM("  fill these via ") + chalk.cyan("youmd chat") + DIM(" or edit .youmd/preferences/"));
+      console.log(DIM("  fill these via ") + chalk.cyan("you") + DIM(" or edit .youmd/preferences/"));
     } else {
       console.log(DIM(`  ${total}/${total} identity fields resolved.`));
     }
@@ -885,7 +885,7 @@ function improveCmd(): void {
     for (const f of missing) {
       console.log(`    ${chalk.yellow(f)}`);
     }
-    console.log(DIM("\n  fill via ") + chalk.cyan("youmd chat") + DIM(" or edit .youmd/preferences/"));
+    console.log(DIM("\n  fill via ") + chalk.cyan("you") + DIM(" or edit .youmd/preferences/"));
     console.log("");
   } else if (allFields.size > 0) {
     console.log("  " + chalk.green("\u2713") + DIM(" all identity fields populated."));

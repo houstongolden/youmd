@@ -1,7 +1,7 @@
 # You.md — Current State
 
-Last Updated: 2026-04-21
-Last Commit: see git log for latest 2026-04-21 local tool-loop work
+Last Updated: 2026-04-30
+Last Commit: pending 2026-04-30 release-readiness commits
 
 ---
 
@@ -32,10 +32,11 @@ Last Commit: see git log for latest 2026-04-21 local tool-loop work
 - Revoked API keys are now hidden behind an explicit history toggle, so the default settings view reflects the real active-key state instead of surfacing the graveyard first
 - Newly created or rotated API keys can now be revealed again from the settings pane by their owner, while older pre-migration hash-only keys correctly prompt a one-time rotate
 - Same-origin web chat routes for the shell: `/api/v1/chat`, `/api/v1/chat/ack`, and `/api/v1/chat/stream`
+- Same-origin web MCP routes: `/api/v1/mcp` and `/.well-known/mcp.json` proxy through the web domain with JSON bodies preserved
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
 
-### CLI (youmd v0.6.20 — ready to publish)
+### CLI (youmd v0.6.21 — ready to publish)
 - 21 commands (added `skill` with 19 subcommands)
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
@@ -45,7 +46,8 @@ Last Commit: see git log for latest 2026-04-21 local tool-loop work
 - Install/login/register/init/onboarding copy now consistently points users toward `you` as the main "meet U" terminal path once they have an identity bundle, instead of over-indexing on `youmd chat`
 - `youmd logout` now exists and clears stale local auth state from `~/.youmd/config.json`
 - CLI auth now forces production defaults for `apiUrl` / `appUrl` on fresh logins and resolves those URLs per request instead of caching a stale dev endpoint at process start
-- npm publish retry path is fixed: the next release target is `0.6.20`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
+- npm publish retry path is fixed: the next release target is `0.6.21`, package metadata is normalized, and the built CLI + MCP user-agent now match that version cleanly
+- The published package is cleaner now: compiled test artifacts are excluded from `dist`, and the dry-run tarball dropped from 248 files to 212 files
 - Bare `youmd` now enters like U instead of dropping straight into a dry command list: it shows the YOU logo, optionally shows the saved portrait preview, greets the user, surfaces project-context opportunities, and proposes the next best moves contextually
 - `youmd chat` now opens with the same U-style entrance and no longer prints the first assistant greeting twice when streaming succeeds
 - `youmd chat` now uses the same local proactive opener as `you` instead of asking the remote model to invent the first greeting, which prevents the old “suggested local action then claimed no filesystem access” failure path
@@ -122,7 +124,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Existing API keys created before the reveal upgrade remain non-revealable by design because those historical records were stored hash-only; newly created or rotated keys are now revealable, so one rotate is the migration path for older keys
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 - The CLI still does not feel proactive enough at install/startup compared with Claude Code/OpenClaw. The new startup entrance is a meaningful step, but U still needs a richer first-run / post-install “friendly wingman” flow that helps without requiring the user to already know the commands
-- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.20` and need one more npm publish before end users get the `you` launcher, compact portrait splash, paced startup investigation, update hints, public-profile portrait contract fix, active-bundle fallback on read-only commands, raw-markdown roundtrip preservation, marker-based recent-project opportunity scanning, broader local workspace repo awareness, the real local tool loop, a stronger onboarding handoff into U, the narrow-terminal portrait encounter fix, and the deeper home-context sweep + concise strongest-move opener
+- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.21` and need one more npm publish before end users get the `you` launcher, compact portrait splash, paced startup investigation, update hints, public-profile portrait contract fix, active-bundle fallback on read-only commands, raw-markdown roundtrip preservation, marker-based recent-project opportunity scanning, broader local workspace repo awareness, the real local tool loop, first-run setup guidance, smaller portrait bounds, and the deeper home-context sweep + concise strongest-move opener
 
 ### Portrait Sync
 - CLI generates ASCII portraits locally but sync to web API is not verified end-to-end

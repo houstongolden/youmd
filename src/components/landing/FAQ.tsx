@@ -23,7 +23,7 @@ const faqs = [
   },
   {
     q: "do i need to sign up?",
-    a: "yes, but it takes 30 seconds. sign up with email + password, then the AI builds your identity context through conversation. your data is encrypted and you control who sees what.",
+    a: "yes, but it takes 30 seconds. sign up with an email code, then U builds your identity context through conversation. your data is encrypted and you control who sees what.",
   },
   {
     q: "which agents work with you.md?",
@@ -130,7 +130,7 @@ const FAQ = () => {
         <FadeUp delay={0.35}>
           <p className="text-muted-foreground/60 font-mono text-[10px] text-center mt-10">
             still have questions? run{" "}
-            <span className="text-accent">youmd chat</span> and ask the agent.
+            <span className="text-accent">you</span> and ask U.
           </p>
         </FadeUp>
       </div>
