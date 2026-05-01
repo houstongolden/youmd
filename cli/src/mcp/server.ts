@@ -30,8 +30,9 @@ import * as fs from "fs";
 import * as path from "path";
 import {
   getGlobalConfigDir,
+  getHomeBundleDir,
   getLocalBundleDir,
-  localBundleExists,
+  bundleLooksInitialized,
   readGlobalConfig,
   isAuthenticated,
   getConvexSiteUrl,
@@ -44,6 +45,8 @@ import {
   getProjectDir,
   addProjectMemory,
 } from "../lib/project";
+
+const MCP_SERVER_VERSION = "0.6.22";
 
 function getCurrentProject(): { name: string; dir: string } | null {
   const root = findProjectsRoot();
@@ -74,7 +77,17 @@ function readJsonOr(filePath: string, fallback: unknown): unknown {
 }
 
 function getBundleDir(): string {
-  return getLocalBundleDir();
+  const localDir = getLocalBundleDir();
+  if (bundleLooksInitialized(localDir)) return localDir;
+
+  const homeDir = getHomeBundleDir();
+  if (bundleLooksInitialized(homeDir)) return homeDir;
+
+  return localDir;
+}
+
+function activeBundleExists(): boolean {
+  return bundleLooksInitialized(getBundleDir());
 }
 
 function getYouJson(): Record<string, unknown> {
@@ -337,7 +350,7 @@ export async function startMcpServer(): Promise<void> {
   const server = new Server(
     {
       name: "youmd",
-      version: "0.5.0",
+      version: MCP_SERVER_VERSION,
     },
     {
       capabilities: {
@@ -1246,7 +1259,7 @@ export async function startMcpServer(): Promise<void> {
 
       case "get_remote_status": {
         const authenticated = isAuthenticated();
-        const bundleExists = localBundleExists();
+        const bundleExists = activeBundleExists();
         const youJson = getYouJson();
         const version = (youJson as Record<string, unknown>)?.version || "unknown";
 

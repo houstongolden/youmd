@@ -56,3 +56,4 @@ cli/node_modules/
 
 # claude code
 .claude/
+.codex/

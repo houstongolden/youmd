@@ -20,6 +20,11 @@
 - Added a GitHub Actions Trusted Publishing workflow plus `npm run publish:cli`, so local agents can trigger npm publish through GitHub OIDC without a long-lived npm token or interactive OTP prompt
 - Hardened the publish workflow after a real run failed in dependency install: CI now installs with package scripts disabled before build, and the package postinstall no longer crashes in fresh source checkouts where `dist/` has not been generated yet
 - Verified the trusted-publishing workflow now gets through install, tests, and build; the remaining publish failure is npm-side package permission / Trusted Publisher configuration for `youmd`, not a local package/build problem
+- Added first-class Codex MCP install support: `youmd mcp --install codex` now prints the right `~/.codex/config.toml` block, and `--auto` safely upserts the `[mcp_servers.youmd]` entry with `npx --yes youmd@latest mcp` instead of the older collision-prone `npx youmd mcp`
+- Migrated the real local Claude and Codex MCP configs to the safe published-package launcher and updated `~/.agent-shared/STACK-MAP.md` so future local agents see the current stack shape
+- Fixed MCP server identity and fallback behavior: agents now see `serverInfo.version` as `0.6.22`, and MCP tools fall back to the initialized home bundle when a project has no local `.youmd/`, so `whoami` returns Houston's actual identity instead of `Name: (unknown)`
+- Smoke-tested MCP over stdio with `initialize`, `tools/list`, `whoami`, and `use_skill project-context-init`; both identity and skill rendering now work from the installed CLI package while launched inside this repo
+- Verified `youmd skill link codex` and `youmd skill link claude` render the six bundled skills into project-local agent directories, then ignored generated `.codex/` artifacts the same way `.claude/` artifacts were already ignored
 - Updated the curl installer and npm postinstall moment to put `you` first, with `youmd login` and `youmd init` framed as explicit paths rather than mandatory paperwork before meeting U
 - Changed browser login fallback copy to return users to `/shell` instead of the older dashboard path
 - Updated README, docs, FAQ, onboarding, and skill copy to consistently teach `you` as the main local U entrypoint while keeping `youmd chat` as the explicit long-form command

@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import chalk from "chalk";
-import { localBundleExists, readGlobalConfig, isAuthenticated } from "../lib/config";
+import { bundleLooksInitialized, getHomeBundleDir, getLocalBundleDir, readGlobalConfig, isAuthenticated } from "../lib/config";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -13,6 +13,10 @@ function getPublishedMcpEntry(): Record<string, unknown> {
     command: "npx",
     args: ["--yes", PUBLISHED_MCP_PACKAGE, "mcp"],
   };
+}
+
+function hasActiveBundle(): boolean {
+  return bundleLooksInitialized(getLocalBundleDir()) || bundleLooksInitialized(getHomeBundleDir());
 }
 
 export async function mcpCommand(options: { json?: boolean; install?: string; auto?: boolean }): Promise<void> {
@@ -30,7 +34,7 @@ export async function mcpCommand(options: { json?: boolean; install?: string; au
   }
 
   // Default: start the MCP server
-  if (!localBundleExists()) {
+  if (!hasActiveBundle()) {
     console.error("youmd mcp: no local .youmd/ bundle -- remote-only mode (run youmd init for full features)");
   }
 
@@ -161,27 +165,121 @@ function installCursorAuto(): boolean {
   return true;
 }
 
+function renderTomlString(value: string): string {
+  return JSON.stringify(value);
+}
+
+function renderTomlStringArray(values: string[]): string {
+  return `[${values.map(renderTomlString).join(", ")}]`;
+}
+
+function upsertCodexMcpServerConfig(raw: string): string {
+  const entry = [
+    "[mcp_servers.youmd]",
+    `command = ${renderTomlString("npx")}`,
+    `args = ${renderTomlStringArray(["--yes", PUBLISHED_MCP_PACKAGE, "mcp"])}`,
+  ].join("\n");
+  const lines = raw.trimEnd().split("\n");
+  const nextLines: string[] = [];
+  let replaced = false;
+  let skippingYoumdBlock = false;
+
+  for (const line of lines) {
+    if (/^\s*\[mcp_servers\.youmd\]\s*$/.test(line)) {
+      if (!replaced) {
+        if (nextLines.length > 0 && nextLines[nextLines.length - 1] !== "") {
+          nextLines.push("");
+        }
+        nextLines.push(entry);
+        replaced = true;
+      }
+      skippingYoumdBlock = true;
+      continue;
+    }
+
+    if (skippingYoumdBlock && /^\s*\[.+\]\s*$/.test(line)) {
+      skippingYoumdBlock = false;
+      if (nextLines.length > 0 && nextLines[nextLines.length - 1] !== "") {
+        nextLines.push("");
+      }
+    }
+
+    if (skippingYoumdBlock) continue;
+    nextLines.push(line);
+  }
+
+  if (!replaced) {
+    if (nextLines.length > 0 && nextLines[nextLines.length - 1] !== "") {
+      nextLines.push("");
+    }
+    nextLines.push(entry);
+  }
+
+  return `${nextLines.join("\n").trimEnd()}\n`;
+}
+
+function installCodexAuto(): boolean {
+  const settingsPath = path.join(os.homedir(), ".codex", "config.toml");
+
+  let raw = "";
+  const existed = fs.existsSync(settingsPath);
+  if (existed) {
+    try {
+      raw = fs.readFileSync(settingsPath, "utf-8");
+    } catch (err) {
+      console.log("");
+      console.log(chalk.yellow("  could not read ~/.codex/config.toml:"));
+      console.log("  " + DIM(err instanceof Error ? err.message : String(err)));
+      console.log(DIM("  falling back to manual instructions."));
+      console.log("");
+      return false;
+    }
+  }
+
+  const next = upsertCodexMcpServerConfig(raw);
+  const backupPath = backupAndWrite(settingsPath, next);
+
+  console.log("");
+  console.log("  " + ACCENT("you.md mcp") + DIM(" -- codex (auto)"));
+  console.log("");
+  console.log(
+    "  " + chalk.green("\u2713") + " merged youmd into " + chalk.cyan(settingsPath)
+  );
+  if (existed) {
+    console.log("  " + DIM("backup: " + backupPath));
+  } else {
+    console.log("  " + DIM("created new ~/.codex/config.toml"));
+  }
+  console.log("");
+  console.log("  " + chalk.bold("Installed. Restart Codex to activate."));
+  console.log("");
+  return true;
+}
+
 async function installMcp(target: string, auto?: boolean): Promise<void> {
   const config = readGlobalConfig();
   const username = config.username || "user";
   const authed = isAuthenticated();
+  const normalizedTarget = target.toLowerCase();
 
   if (auto) {
-    if (target === "claude") {
+    if (normalizedTarget === "claude") {
       if (installClaudeAuto()) return;
       // fall through to manual instructions on error
-    } else if (target === "cursor") {
+    } else if (normalizedTarget === "cursor") {
       if (installCursorAuto()) return;
+    } else if (normalizedTarget === "codex") {
+      if (installCodexAuto()) return;
     } else {
       console.log("");
       console.log(chalk.yellow(`  --auto not supported for target: ${target}`));
-      console.log(DIM("  supported: claude, cursor"));
+      console.log(DIM("  supported: claude, codex, cursor"));
       console.log("");
       return;
     }
   }
 
-  if (target === "claude") {
+  if (normalizedTarget === "claude") {
     console.log("");
     console.log("  " + ACCENT("you.md mcp") + DIM(" -- claude code"));
     console.log("");
@@ -208,7 +306,27 @@ async function installMcp(target: string, auto?: boolean): Promise<void> {
       console.log(chalk.yellow("  not authenticated -- run youmd login for full features"));
     }
     console.log("");
-  } else if (target === "cursor") {
+  } else if (normalizedTarget === "codex") {
+    console.log("");
+    console.log("  " + ACCENT("you.md mcp") + DIM(" -- codex"));
+    console.log("");
+    console.log("  add to " + chalk.cyan("~/.codex/config.toml") + ":");
+    console.log("");
+    console.log("  " + chalk.white("[mcp_servers.youmd]"));
+    console.log("  " + chalk.white(`command = ${renderTomlString("npx")}`));
+    console.log("  " + chalk.white(`args = ${renderTomlStringArray(["--yes", PUBLISHED_MCP_PACKAGE, "mcp"])}`));
+    console.log("");
+    console.log("  then restart codex.");
+    console.log("");
+
+    if (authed) {
+      console.log(DIM(`  authenticated as @${username}`));
+      console.log(DIM("  your identity context will be available to codex agents."));
+    } else {
+      console.log(chalk.yellow("  not authenticated -- run youmd login for full features"));
+    }
+    console.log("");
+  } else if (normalizedTarget === "cursor") {
     console.log("");
     console.log("  " + ACCENT("you.md mcp") + DIM(" -- cursor"));
     console.log("");
@@ -241,7 +359,7 @@ async function installMcp(target: string, auto?: boolean): Promise<void> {
   } else {
     console.log("");
     console.log(chalk.yellow(`  unknown target: ${target}`));
-    console.log("  supported: " + chalk.cyan("claude") + ", " + chalk.cyan("cursor"));
+    console.log("  supported: " + chalk.cyan("claude") + ", " + chalk.cyan("codex") + ", " + chalk.cyan("cursor"));
     console.log("");
   }
 }

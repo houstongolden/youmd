@@ -195,7 +195,7 @@ When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your
 
 | Skill | What It Does |
 |---|---|
-| `voice-sync` | Propagate your voice profile to Claude, Cursor, and custom agents |
+| `voice-sync` | Propagate your voice profile to Claude, Codex, Cursor, and custom agents |
 | `claude-md-generator` | Bootstrap repo-visible agent instructions with your identity context |
 | `project-context-init` | Scaffold project-context/ with your preferences baked in |
 | `meta-improve` | Analyze your skill setup, find gaps, propose improvements |
@@ -207,7 +207,7 @@ When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your
 1. **Install** -- `youmd skill install voice-sync`
 2. **Use** -- renders the template against your identity: `youmd skill use voice-sync`
 3. **Sync** -- when your identity changes, `youmd skill sync` re-renders everything
-4. **Link** -- `youmd skill link claude` wires rendered skills into `.claude/skills/youmd/`
+4. **Link** -- `youmd skill link claude` or `youmd skill link codex` wires rendered skills into agent-native project directories
 5. **Publish** -- share your custom skills to the registry: `youmd skill publish my-skill`
 6. **Browse** -- find skills others have published: `youmd skill browse`
 

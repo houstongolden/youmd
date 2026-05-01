@@ -114,7 +114,7 @@ const HELP_GROUPS: Array<{
   {
     title: "MCP",
     commands: [
-      { name: "mcp", summary: "run the you.md mcp server (for claude, cursor, etc.)" },
+      { name: "mcp", summary: "run the you.md mcp server (for claude, codex, cursor, etc.)" },
     ],
   },
   {
@@ -543,7 +543,7 @@ program
   .command("mcp")
   .description("Start the You.md MCP server (identity context for Claude, Cursor, any MCP client)")
   .option("--json", "Output MCP config JSON for agent settings")
-  .option("--install <target>", "Show setup instructions for an agent (claude, cursor)")
+  .option("--install <target>", "Show setup instructions for an agent (claude, codex, cursor)")
   .option("--auto", "Auto-write the MCP config into the target's settings file")
   .action(mcpCommand);
 

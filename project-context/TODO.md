@@ -27,6 +27,10 @@ PRD Version: 2.3
 - [x] Make local `you` + `start` read real project files and surface concrete action items from TODO/current-state docs instead of blocking, hallucinating, or asking the user to paste an `ls`
 - [x] Make `continue`, `more`, and "next strongest move" stay on the deterministic local project-context path instead of falling through to the remote model and drifting into stale profile context
 - [x] Rank and display the real release unblocker in the initial `you` opener, not only after the user types `start`
+- [x] Add and test Codex MCP install support (`youmd mcp --install codex --auto`) so Codex can use You.md through the same safe published-package launcher as Claude/Cursor
+- [x] Migrate local Claude and Codex MCP configs from `npx youmd mcp` to `npx --yes youmd@latest mcp`, with backups
+- [x] Fix MCP home-bundle fallback so agents launched from repos without local `.youmd/` still get Houston's identity and skills from `~/.youmd`
+- [x] Verify installed-package MCP behavior over stdio: initialize, tools/list, whoami, and use_skill all work
 - [ ] Build a truly proactive first-run U flow after install/login instead of relying only on better static startup copy
 - [ ] Do one live browser QA pass on `/initialize` to tune spacing, logo scale, and portrait/bot balance on desktop + mobile now that the full scene composition exists
 - [ ] Verify the `you` splash now matches Houston's current primary/public portrait after the new `_profile.asciiPortrait` contract ships to production
