@@ -1,11 +1,21 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-04-30
+Last Updated: 2026-05-19
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-05-19
+- [x] Complete a design-system cleanup pass for the marketing homepage and app UI without changing product behavior
+- [x] Add shared `Container`, `Section`, `SectionHeader`, `Button`, `Card`, `TerminalCard`, `FormField`, `Input`, `Textarea`, `Select`, `Label`, `FieldHelp`, and `FieldError` primitives
+- [x] Refactor the homepage into a compact conversion flow with one primary hero CTA, compressed profile proof, problem, how-it-works, inside, integrations, open-standard, pricing, FAQ, and final CTA sections
+- [x] Normalize app controls and spacing across terminal auth/input, install tabs, dashboard tabs, pane headers, empty states, sources, share, private context, files, settings, and edit surfaces
+- [x] Run production build, targeted lint, and live Chrome desktop/mobile visual QA on the local production server
+- [x] Fix `/profiles` public directory quality: canonical dedupe, QA/test suppression, stored ASCII portrait rendering, sanitized avatar URLs, and deterministic nonblank fallbacks
+- [x] Harden profile seed/backfill/cleanup and enrichment so future unclaimed public-profile crawling avoids duplicate/orphan rows and does not persist third-party API keys in public image fields
+- [x] Visually QA `/profiles` list/grid, homepage profile proof, and an unclaimed public profile in the in-app browser on `localhost:3000`
 
 ### 2026-04-18
 - [x] Add a real `you` command entrypoint that launches U directly, shows Houston's ASCII portrait-in-code, and feels closer to Claude/OpenClaw than a dry utility
@@ -267,6 +277,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Add a curl-first installer at `you.md/install.sh` and update hero/footer/docs/help to teach curl as the default CLI install path with npm as fallback
 - [x] Fix the blocked npm publish retry by bumping the CLI to `0.6.2` and normalizing package metadata npm was auto-correcting during publish
 - [x] Make bare `youmd` and `youmd chat` feel more like meeting U: logo-first, contextual greeting, proactive repo guidance, and no duplicate first streamed reply
+- [x] Make `youmd skill init-project` bootstrap both Claude and Codex skill discovery paths by default, then verify scaffold/additive flows through the installed local CLI
 - [ ] Decide later whether You.md should ever store revealable API-key ciphertext for future keys, or keep the current hash-only model permanently
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
 - [ ] Remove or rewrite remaining Clerk-specific docs/comments/webhooks/password endpoints so the repo no longer describes the old auth model as current
@@ -311,6 +322,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] curl installer (you.md/install.sh)
 
 ### Design Polish
+- [x] Normalize the `/profiles` app-nav create CTA and responsive filter/sort controls after live in-app browser QA
 - [ ] Profile page custom sections (user-defined via conversation)
 - [ ] Count-up animations on all metrics
 - [ ] Status pulse (ACTIVE dot) on profiles

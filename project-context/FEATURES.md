@@ -1,11 +1,17 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-04-30
+Last Updated: 2026-05-19
 
 ## Core Platform
 
 | Feature | Status | Notes |
 |---|---|---|
+| Shared product design primitives | Done | Reusable `Container`, `Section`, `SectionHeader`, `Button`, `Card`, `TerminalCard`, `FormField`, `Input`, `Textarea`, `Select`, `Label`, `FieldHelp`, and `FieldError` now anchor marketing and app UI control standards |
+| Compact conversion homepage | Done | Homepage now follows a calmer conversion flow with one primary hero CTA, compact profile proof, compressed problem/how-it-works/inside sections, combined integrations/builders credibility band, balanced pricing, compact FAQ, and simple final CTA |
+| App control normalization | Done | Terminal auth/input, install tabs, dashboard tabs, pane headers, empty states, sources, share, private context, files, settings, and edit surfaces now share more consistent heights, padding, focus rings, card treatment, and muted text behavior |
+| Public profile directory hygiene | Done | `/profiles` now canonicalizes/dedupes usernames, suppresses QA/test rows, sanitizes public image URLs, prefers stored ASCII portraits, and falls back to deterministic terminal placeholders instead of blank cards |
+| Profile enrichment URL safety | Done | Public-profile crawler/enrichment now keeps third-party API keys out of persisted avatar URLs and includes an internal cleanup mutation for old image URL secrets |
+| Profile seed/backfill cleanup | Done | Sample profile seeding/backfill/cleanup now avoids duplicate/orphan profile rows and preserves avatar data when reconstructing profile records from bundles |
 | Open spec you-md/v1 | Done | Directory-based identity bundles |
 | Convex backend | Done | Reactive, serverless, TypeScript-native |
 | Passwordless auth migration | Done | First-party email-code auth, sessions, custom JWT/JWKS. Local/dev validated and production browser + CLI parity hard-smoked |
@@ -16,6 +22,7 @@ Last Updated: 2026-04-30
 | Clean npm publish metadata | Done | CLI package now targets `0.6.22`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
 | Codex MCP install | Done | `youmd mcp --install codex --auto` safely writes `~/.codex/config.toml` with `npx --yes youmd@latest mcp`, matching the Claude/Cursor published-package launcher |
 | MCP home-bundle fallback | Done | MCP tools now fall back to `~/.youmd` when the working repo has no local `.youmd/`, so background Claude/Codex agents still get the user's identity and skills |
+| Cross-agent project bootstrap | Done | `youmd skill init-project` now links both `.claude/skills/youmd/` and `.codex/skills/youmd/` by default, with fresh scaffold and additive existing-repo paths verified from the installed CLI |
 | Trusted CLI publishing | Done | GitHub Actions workflow publishes the CLI through npm Trusted Publishing; local agents can trigger it with `npm run publish:cli` after npm package settings trust `publish-cli.yml` |
 | Onboarding handoff into U | Done | `youmd init` and conversational onboarding now end with the same actionable U-centric next move pattern the launcher uses, including real recent-project openings instead of only a static checklist |
 | Web initialize shell parity | Done | `/initialize` now passes live thinking/progress state into the terminal shell and prompts U to sound like the same local launcher wingman, including mentioning known projects when context already exists |
@@ -275,6 +282,7 @@ Last Updated: 2026-04-30
 | Image paste in chat | Done | Web chat accepts pasted images |
 | Codex MCP local-vs-global split | Done | Codex uses the local `cli/dist` build inside the youmd repo and the published npm CLI everywhere else |
 | Curl-first landing/docs/help install path | Done | Hero, footer, docs, and in-app help now teach `curl -fsSL https://you.md/install.sh | bash` first while keeping npm as the fallback |
+| Profile directory responsive controls | Done | `/profiles` create CTA, filters, sort, and list/grid toggles now use compact responsive app-control styling |
 
 ## Feature Requests (Backlog)
 

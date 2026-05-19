@@ -1,5 +1,24 @@
 # You.md — Changelog
 
+## 2026-05-19 — Homepage + App Design-System Cleanup
+
+### Public Profiles / Directory Quality
+- Added shared Convex profile-directory normalization for canonical username dedupe, richest-record selection, public image URL sanitization, social-link avatar fallback resolution, stored ASCII portrait sanitization, and public QA/test row suppression
+- Updated `/profiles` client and SSR directory rendering to suppress QA/test rows defensively, dedupe by canonical username, prefer stored ASCII portraits, fall back through sanitized avatar/social-link sources, and render deterministic terminal placeholders instead of blank cards
+- Updated public profile pages and metadata to sanitize avatar URLs and render stored ASCII portraits even when the live avatar URL is missing or unavailable
+- Hardened sample profile seeding/backfill/cleanup so reseeds avoid duplicate/orphan profile rows and keep avatar data attached to backfilled profiles
+- Fixed enrichment/crawler hygiene so Unavatar API keys are used only for server-side fetches and are no longer persisted into public `avatarUrl` fields; added an internal cleanup mutation for previously persisted image secrets
+- Verified `/profiles` list/grid, homepage profile proof, and an unclaimed public profile visually in the in-app browser on `localhost:3000`; `tsc --noEmit` and `next build --webpack` pass
+
+### Marketing / App UI
+- Added shared design primitives for containers, sections, section headers, buttons, cards, terminal cards, form fields, inputs, textareas, selects, helper text, and error text
+- Tightened global layout/type/control tokens around the 1120px page width, readable copy widths, 2px radius, consistent focus rings, compact section rhythm, and shared button/input sizing
+- Rebuilt the homepage into a clearer conversion path: calmer hero, one obvious primary CTA, compact profile proof strip, compressed problem/how-it-works/inside sections, combined integrations/builders band, ownership band, balanced pricing, compact FAQ, and direct final CTA
+- Reduced early profile/network noise, moved CLI install details into supporting sections, and kept the terminal/ASCII identity as an accent instead of a wall of competing command content
+- Normalized app-facing controls across terminal auth/input, dashboard tabs, pane headers/empty states, edit/share/sources/private context/files/settings surfaces, and install tabs while preserving routes, auth, API, Convex behavior, and data models
+- Cleaned up the app-nav signed-out create CTA and `/profiles` filter/sort controls so the CTA no longer leaks into narrow nav layouts, filters snap into compact responsive rows, and live list/grid interactions stay overflow-free
+- Verified with a clean production build, live Chrome desktop/mobile visual QA on `localhost:3000`, and targeted lint on changed files; full repo lint still reports pre-existing issues in untouched/generated components
+
 ## 2026-04-30 — Guided `you` Setup + Smaller Launcher Portrait
 
 ### CLI / Agent UX
@@ -25,6 +44,8 @@
 - Fixed MCP server identity and fallback behavior: agents now see `serverInfo.version` as `0.6.22`, and MCP tools fall back to the initialized home bundle when a project has no local `.youmd/`, so `whoami` returns Houston's actual identity instead of `Name: (unknown)`
 - Smoke-tested MCP over stdio with `initialize`, `tools/list`, `whoami`, and `use_skill project-context-init`; both identity and skill rendering now work from the installed CLI package while launched inside this repo
 - Verified `youmd skill link codex` and `youmd skill link claude` render the six bundled skills into project-local agent directories, then ignored generated `.codex/` artifacts the same way `.claude/` artifacts were already ignored
+- Fixed `youmd skill init-project` so fresh and existing repos now bootstrap both `.claude/skills/youmd/` and `.codex/skills/youmd/` by default, while keeping Cursor opt-in for repos that already have `.cursor/`
+- Re-tested the installed local `youmd` package end-to-end in disposable projects: scaffold mode and additive mode both preserve existing files, create the project-context layer, link 6 Claude skills, link 6 Codex skills, and generate Codex MCP config through `youmd mcp --install codex --auto`
 - Updated the curl installer and npm postinstall moment to put `you` first, with `youmd login` and `youmd init` framed as explicit paths rather than mandatory paperwork before meeting U
 - Changed browser login fallback copy to return users to `/shell` instead of the older dashboard path
 - Updated README, docs, FAQ, onboarding, and skill copy to consistently teach `you` as the main local U entrypoint while keeping `youmd chat` as the explicit long-form command

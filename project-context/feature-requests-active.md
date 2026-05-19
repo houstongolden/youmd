@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-04-30
+Last Updated: 2026-05-19
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -10,6 +10,52 @@ Last Updated: 2026-04-30
 - Source: date + commit or conversation reference
 
 ---
+
+## Homepage + App Design-System Cleanup (from May 19 conversation)
+
+### 57. Mature the homepage and app UI without changing product behavior
+**Status:** DONE
+**Verified:** NO
+**Request:** Run a design-system and homepage cleanup pass that makes the marketing homepage and app UI feel more polished, compact, consistent, and conversion-focused while preserving the terminal-native You.md aesthetic.
+**Progress (2026-05-19):** Added shared UI primitives for layout, sections, buttons, cards, terminal cards, inputs, labels, helper/error text, textarea/select controls, and small class merging. Refactored the homepage into the requested conversion flow with a calmer hero, one primary above-fold CTA, compact social proof, compressed problem/how-it-works/inside/integration/open-standard sections, balanced pricing, compact FAQ, and simple final CTA. Normalized app-facing controls across terminal auth/input, dashboard pane headers/empty states, edit/share/sources/private context/files/settings surfaces, and mobile/desktop dashboard tabs without changing routes, auth, API, Convex behavior, or data models. Verified locally with a production build, live Chrome desktop/mobile visual QA on `localhost:3000`, and a targeted lint pass on changed files.
+**Scope Checklist:**
+1. Audit `globals.css`, marketing homepage, landing sections, shared UI components, install components, dashboard/app surfaces, and shared form/button/input controls.
+2. Add or refine reusable primitives/tokens for `Container`, `Section`, `SectionHeader`, `Button`, `Card` / `TerminalCard`, `Input`, `Textarea`, `Select`, `Label`, `FieldHelp`, `FieldError`, and `FormField`.
+3. Normalize layout rhythm: 1120/1160px page max width, readable text max width, 44-96px section padding, 16-24px grid gaps, 16-32px card padding, and 8px spacing rhythm.
+4. Normalize typography hierarchy: controlled hero display, readable hero body, mono eyebrows, clear section h2s, consistent card titles/body/captions/code text.
+5. Normalize button variants/sizes/states and make the homepage primary CTA “Create your you.md” or “Start in browser,” with CLI install secondary.
+6. Normalize form/input/select/textarea styles, focus-visible rings, labels, helper/error text, disabled states, and app form spacing.
+7. Refactor homepage order to: navbar, hero, compatibility strip, problem/solution, how it works, what’s inside, works everywhere/developer integration band, open standard/ownership, pricing, FAQ, final CTA, footer.
+8. Calm the hero: lower ASCII texture density, compact two-column layout, obvious primary CTA above the fold, secondary CLI/docs CTA, shorter command detail.
+9. Move network/profile proof lower or compress it; avoid a huge early list of unclaimed famous profiles.
+10. Compress problem, how-it-works, what’s-inside, integrations/developer/open-standard, pricing, FAQ, and final CTA sections.
+11. Apply the same Button/Input/Card/FormField standards to app UI surfaces including dashboard panes, settings, share/profile editing, onboarding/init, and terminal-like panels where practical.
+12. Preserve semantic headings, accessible names, focus states, mobile tap targets, no horizontal overflow, readable contrast, and decorative ASCII `aria-hidden`.
+13. Run lint/typecheck/build if scripts exist and fix issues.
+**Verification:** Homepage is visibly shorter and clearer, one primary above-fold CTA wins, shared controls look consistent across marketing and app, typography hierarchy is obvious, mobile layout is clean, no product functionality/routes/auth/API/Convex/data behavior changed.
+
+### 58. Clean up public profile duplicates, missing portraits, and crawler/enrichment hygiene
+**Status:** DONE
+**Verified:** NO
+**Request:** Fix duplicate/incomplete profiles on `/profiles`, ensure real images and ASCII portraits do not display blank, and inspect/improve the crawler/fetch/enrichment path so future unclaimed public profiles are fetched comprehensively and safely.
+**Progress (2026-05-19):** Added shared Convex profile-directory normalization that canonicalizes usernames, selects the richest duplicate record, suppresses known QA/test usernames from public directory lists, resolves avatar fallbacks from profile fields/social images/links, sanitizes public image URLs, and exposes stored ASCII portraits safely. Updated `/profiles` client and SSR directory paths to dedupe by canonical username, suppress QA/test rows defensively even before backend deployment, prefer stored ASCII portraits, fall back to real-image/social-link avatars, and render a deterministic terminal fallback instead of blank cards. Updated public profile pages/metadata to sanitize image URLs and render stored ASCII portraits even when a live avatar URL is missing. Hardened sample seeding/backfill/cleanup so reseeds do not create duplicate/orphan profile rows and profile backfills retain avatars. Fixed crawler/enrichment hygiene so Unavatar API keys are used only for server fetches and are no longer persisted into public `avatarUrl` fields; added an internal cleanup mutation to strip previously persisted image secrets.
+**Verification:** Local browser QA on `localhost:3000/profiles` showed 27 real/network profiles, 0 visible QA/test rows, 0 duplicate visible profile hrefs, 27/27 with portrait, no horizontal overflow, and no image URLs containing API keys/tokens. Grid view passed the same checks. `localhost:3000/ilyasut` rendered a stored ASCII portrait (`pre`, no canvas dependency) plus real image, with no secret-bearing image URLs. `tsc --noEmit` passed. `next build --webpack` passed. Targeted lint on changed files has 0 errors and only existing image/unused warnings in profile UI files.
+**Scope Checklist:**
+1. Audit `/profiles` data flow, SSR profile list, frontend directory rendering, public profile rendering, profile query API, sample seeding/backfill/cleanup, crawler/scraper, portrait generation, and enrichment action.
+2. Backend canonicalizes/dedupes profile directory results and chooses the richest row per username.
+3. Directory and SSR paths suppress known QA/test rows and avoid exposing incomplete test profiles.
+4. Directory cards use stored ASCII portraits and sanitized avatar/social image fallbacks before deterministic terminal fallback.
+5. Public profile pages render stored ASCII portraits when present and sanitize all public image URLs.
+6. Seed/backfill/cleanup paths avoid duplicate/orphan profiles and preserve avatar completeness.
+7. Enrichment no longer stores third-party API keys in public avatar URLs and includes a cleanup mutation for old data.
+8. Verify visually in the browser and with typecheck/build.
+
+### 59. Polish `/profiles` create CTA and responsive filters
+**Status:** DONE
+**Verified:** NO
+**Request:** Fix the bad-looking create-you button in the app nav on `/profiles` and make the profile filters/sort controls responsive.
+**Progress (2026-05-19):** Replaced the signed-out app-nav create CTA with a compact terminal accent action (`create you.md`) instead of the old filled `cta-primary` block, and fixed the mobile tap-target CSS so hidden desktop nav links are not forced visible on narrow viewports. Rebuilt `/profiles` controls so search, filters, sort, and list/grid toggles use compact heights, shorter labels, clear focus states, and a responsive two-column/four-column/inline layout.
+**Verification:** In-app browser QA on `localhost:3000/profiles` passed at the current narrow pane width, a 390px phone viewport, and a 1280px desktop viewport with no horizontal overflow. Clicked `claimed` and `grid` live; pressed states, match count, and grid rendering updated correctly. `tsc --noEmit`, targeted lint, and `next build --webpack` pass.
 
 ## Skill System (from March 27 conversation)
 
