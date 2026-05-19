@@ -22,6 +22,13 @@ import {
   compileYouMd,
   compileManifest,
 } from "./lib/compile";
+import {
+  canonicalUsername,
+  normalizeDirectoryProfile,
+  profileQualityScore,
+  resolveProfileAvatar,
+  sanitizePublicImageUrl,
+} from "./lib/profileDirectory";
 
 interface SeedProfile extends ProfileData {
   email: string;
@@ -381,11 +388,12 @@ export const seedSampleProfiles = internalMutation({
     const results: string[] = [];
 
     for (const profile of SAMPLE_PROFILES) {
+      const username = canonicalUsername(profile.username);
       // Check if user already exists
       const existing = await ctx.db
         .query("users")
         .withIndex("by_username", (q) =>
-          q.eq("username", profile.username)
+          q.eq("username", username)
         )
         .first();
 
@@ -396,10 +404,31 @@ export const seedSampleProfiles = internalMutation({
         continue;
       }
 
+      const existingProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_username", (q) => q.eq("username", username))
+        .first();
+
+      if (existingProfile) {
+        const patch: Record<string, unknown> = { updatedAt: Date.now() };
+        if (!existingProfile.avatarUrl && profile.avatarUrl) patch.avatarUrl = profile.avatarUrl;
+        if (!existingProfile.name) patch.name = profile.name;
+        if (!existingProfile.tagline && profile.tagline) patch.tagline = profile.tagline;
+        if (!existingProfile.location && profile.location) patch.location = profile.location;
+        if (!existingProfile.links && profile.links) patch.links = profile.links;
+        if (Object.keys(patch).length > 1) {
+          await ctx.db.patch(existingProfile._id, patch);
+          results.push(`${profile.username}: patched existing profile`);
+        } else {
+          results.push(`${profile.username}: skipped (profile already exists)`);
+        }
+        continue;
+      }
+
       // Create sample user with fake clerkId
       const userId = await ctx.db.insert("users", {
-        clerkId: `sample_${profile.username}`,
-        username: profile.username,
+        clerkId: `sample_${username}`,
+        username,
         email: profile.email,
         displayName: profile.name,
         plan: "free" as const,
@@ -410,7 +439,7 @@ export const seedSampleProfiles = internalMutation({
       // Compile bundle from profile data
       const profileData: ProfileData = {
         name: profile.name,
-        username: profile.username,
+        username,
         tagline: profile.tagline,
         location: profile.location,
         bio: profile.bio,
@@ -443,7 +472,7 @@ export const seedSampleProfiles = internalMutation({
 
       // Create profile record (so profiles directory + public page work)
       await ctx.db.insert("profiles", {
-        username: profile.username,
+        username,
         name: profile.name,
         tagline: profile.tagline,
         location: profile.location,
@@ -476,16 +505,14 @@ export const backfillSampleProfiles = internalMutation({
     const sampleUsers = allUsers.filter((u) => u.isSample === true);
 
     for (const user of sampleUsers) {
+      const username = canonicalUsername(user.username);
+      const seedProfile = SAMPLE_PROFILES.find((p) => canonicalUsername(p.username) === username);
+
       // Check if profile already exists
       const existingProfile = await ctx.db
         .query("profiles")
-        .withIndex("by_username", (q) => q.eq("username", user.username))
+        .withIndex("by_username", (q) => q.eq("username", username))
         .first();
-
-      if (existingProfile) {
-        results.push(`${user.username}: profile already exists`);
-        continue;
-      }
 
       // Get published bundle
       const bundle = await ctx.db
@@ -501,14 +528,34 @@ export const backfillSampleProfiles = internalMutation({
       const youJson = bundle.youJson as Record<string, unknown>;
       const identity = (youJson.identity || {}) as Record<string, unknown>;
       const bio = identity.bio as Record<string, string> | undefined;
+      const avatarUrl =
+        sanitizePublicImageUrl(seedProfile?.avatarUrl) ??
+        resolveProfileAvatar({ username, links: youJson.links, youJson });
+
+      if (existingProfile) {
+        const patch: Record<string, unknown> = { updatedAt: Date.now() };
+        if (!existingProfile.avatarUrl && avatarUrl) patch.avatarUrl = avatarUrl;
+        if (!existingProfile.youJson) patch.youJson = bundle.youJson;
+        if (!existingProfile.youMd) patch.youMd = bundle.youMd;
+        if (!existingProfile.ownerId) patch.ownerId = user._id;
+        if (!existingProfile.links && youJson.links) patch.links = youJson.links;
+        if (Object.keys(patch).length > 1) {
+          await ctx.db.patch(existingProfile._id, patch);
+          results.push(`${user.username}: patched existing profile`);
+        } else {
+          results.push(`${user.username}: profile already complete`);
+        }
+        continue;
+      }
 
       await ctx.db.insert("profiles", {
-        username: user.username,
-        name: user.displayName || (identity.name as string) || user.username,
+        username,
+        name: user.displayName || (identity.name as string) || username,
         tagline: (identity.tagline as string) || undefined,
         location: (identity.location as string) || undefined,
         bio: bio ? { short: bio.short, medium: bio.medium } : undefined,
         links: youJson.links as Record<string, string> | undefined,
+        avatarUrl,
         ownerId: user._id,
         isClaimed: true,
         claimedAt: Date.now(),
@@ -533,9 +580,30 @@ export const cleanupSampleProfiles = internalMutation({
 
     let deletedUsers = 0;
     let deletedBundles = 0;
+    let deletedProfiles = 0;
     let deletedViews = 0;
 
     for (const user of sampleUsers) {
+      // Delete profile records before the user so reseeds cannot leave orphan
+      // directory rows behind.
+      const profiles = await ctx.db
+        .query("profiles")
+        .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
+        .collect();
+      for (const p of profiles) {
+        await ctx.db.delete(p._id);
+        deletedProfiles++;
+      }
+
+      const usernameProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_username", (q) => q.eq("username", canonicalUsername(user.username)))
+        .first();
+      if (usernameProfile && !profiles.some((p) => p._id === usernameProfile._id)) {
+        await ctx.db.delete(usernameProfile._id);
+        deletedProfiles++;
+      }
+
       // Delete bundles
       const bundles = await ctx.db
         .query("bundles")
@@ -623,10 +691,11 @@ export const cleanupSampleProfiles = internalMutation({
     return {
       deletedUsers,
       deletedBundles,
+      deletedProfiles,
       deletedViews,
       message:
         deletedUsers > 0
-          ? `Cleaned up ${deletedUsers} sample users, ${deletedBundles} bundles, ${deletedViews} views`
+          ? `Cleaned up ${deletedUsers} sample users, ${deletedProfiles} profiles, ${deletedBundles} bundles, ${deletedViews} views`
           : "No sample profiles found",
     };
   },
@@ -843,7 +912,12 @@ export const _listSampleProfiles = internalQuery({
 export const _patchProfilePortrait = internalMutation({
   args: { profileId: v.id("profiles"), portrait: v.any() },
   handler: async (ctx, { profileId, portrait }) => {
-    await ctx.db.patch(profileId, { asciiPortrait: portrait });
+    await ctx.db.patch(profileId, {
+      asciiPortrait: {
+        ...portrait,
+        sourceUrl: sanitizePublicImageUrl(portrait?.sourceUrl) ?? portrait?.sourceUrl,
+      },
+    });
   },
 });
 
@@ -1450,7 +1524,7 @@ export const cleanDuplicates = internalMutation({
     type Profile = (typeof profiles)[0];
     const byUsername: Record<string, Profile[]> = {};
     for (const p of profiles) {
-      const key = p.username.toLowerCase();
+      const key = canonicalUsername(p.username);
       if (!byUsername[key]) byUsername[key] = [];
       byUsername[key].push(p);
     }
@@ -1464,15 +1538,23 @@ export const cleanDuplicates = internalMutation({
       type Scored = { p: Profile; score: number };
       const scored: Scored[] = dupes.map((p: Profile) => ({
         p,
-        score:
-          (p.youJson ? 10 : 0) +
-          (p.isClaimed ? 5 : 0) +
-          (p.avatarUrl ? 2 : 0) +
-          (p.tagline ? 1 : 0),
+        score: profileQualityScore(p),
       })).sort((a: Scored, b: Scored) => b.score - a.score);
 
       const keep = scored[0].p;
       const toDelete = scored.slice(1).map((s: Scored) => s.p);
+
+      const normalizedKeep = normalizeDirectoryProfile(keep);
+      if (!dryRun && normalizedKeep) {
+        const patch: Record<string, unknown> = {
+          username,
+          updatedAt: Date.now(),
+        };
+        if (!keep.avatarUrl && normalizedKeep.avatarUrl) patch.avatarUrl = normalizedKeep.avatarUrl;
+        if (!keep.asciiPortrait && normalizedKeep.asciiPortrait) patch.asciiPortrait = normalizedKeep.asciiPortrait;
+        if (!keep.links && normalizedKeep.links) patch.links = normalizedKeep.links;
+        await ctx.db.patch(keep._id, patch);
+      }
 
       const deletedIds: string[] = [];
       for (const dup of toDelete) {
@@ -1522,33 +1604,47 @@ function xHandleFromLinks(links: Record<string, string> | undefined): string | n
 function resolveAvatarUrl(
   profile: { username: string; name?: string; avatarUrl?: string; links?: Record<string, string>; youJson?: unknown },
   unavatarApiKey: string
-): { url: string; source: string } {
+): { url: string; fetchUrl: string; source: string } {
   const links = (profile.links ?? {}) as Record<string, string>;
   const youJsonLinks = ((profile.youJson as Record<string, unknown>)?.links ?? {}) as Record<string, string>;
+  const withFetchKey = (publicUrl: string): string => {
+    if (!unavatarApiKey) return publicUrl;
+    try {
+      const url = new URL(publicUrl);
+      if (url.hostname.includes("unavatar.io")) {
+        url.searchParams.set("apiKey", unavatarApiKey);
+      }
+      return url.toString();
+    } catch {
+      return publicUrl;
+    }
+  };
+  const candidate = (publicUrl: string, source: string) => {
+    const url = sanitizePublicImageUrl(publicUrl) ?? publicUrl;
+    return { url, fetchUrl: withFetchKey(url), source };
+  };
 
   // GitHub handle → force PNG (GitHub CDN serves WebP by default, but .png extension forces PNG)
   const ghHandle = githubHandleFromLinks(links) ?? githubHandleFromLinks(youJsonLinks);
   if (ghHandle) {
-    return { url: `https://github.com/${ghHandle}.png`, source: "github_png" };
+    return candidate(`https://github.com/${ghHandle}.png`, "github_png");
   }
 
   // X/Twitter handle → unavatar.io/x (redirects to pbs.twimg.com JPEG)
   const xHandle = xHandleFromLinks(links) ?? xHandleFromLinks(youJsonLinks);
   if (xHandle) {
-    const apiParam = unavatarApiKey ? `?apiKey=${unavatarApiKey}` : "";
-    return { url: `https://unavatar.io/x/${xHandle}${apiParam}`, source: "unavatar_x" };
+    return candidate(`https://unavatar.io/x/${xHandle}`, "unavatar_x");
   }
 
   // Existing avatarUrl if it's not a letter/generated avatar
   if (profile.avatarUrl &&
       !profile.avatarUrl.includes("ui-avatars.com") &&
       !profile.avatarUrl.includes("unavatar.io/twitter/")) {
-    return { url: profile.avatarUrl, source: "existing" };
+    return candidate(profile.avatarUrl, "existing");
   }
 
   // Generic unavatar lookup by username as last real-photo attempt
-  const apiParam = unavatarApiKey ? `?apiKey=${unavatarApiKey}` : "";
-  return { url: `https://unavatar.io/${profile.username}${apiParam}`, source: "unavatar_generic" };
+  return candidate(`https://unavatar.io/${profile.username}`, "unavatar_generic");
 }
 
 export const _listAllUnclaimedProfiles = internalQuery({
@@ -1565,7 +1661,94 @@ export const _listAllUnclaimedProfiles = internalQuery({
 export const _patchProfileAvatar = internalMutation({
   args: { profileId: v.id("profiles"), avatarUrl: v.string() },
   handler: async (ctx, { profileId, avatarUrl }) => {
-    await ctx.db.patch(profileId, { avatarUrl });
+    await ctx.db.patch(profileId, { avatarUrl: sanitizePublicImageUrl(avatarUrl) ?? avatarUrl });
+  },
+});
+
+/**
+ * Data hygiene: remove API keys/tokens from public image fields.
+ *
+ * This is intentionally separate from enrichment so it can be run safely after
+ * old crawler runs that persisted third-party API keys in avatar URLs.
+ */
+export const stripPublicImageSecrets = internalMutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+    const profiles = await ctx.db.query("profiles").take(500);
+    const changed: Array<{ username: string; fields: string[] }> = [];
+
+    for (const profile of profiles) {
+      const patch: Record<string, unknown> = {};
+      const fields: string[] = [];
+
+      const avatarUrl = sanitizePublicImageUrl(profile.avatarUrl);
+      if (profile.avatarUrl && avatarUrl && avatarUrl !== profile.avatarUrl) {
+        patch.avatarUrl = avatarUrl;
+        fields.push("avatarUrl");
+      }
+
+      const portrait = profile.asciiPortrait as Record<string, unknown> | undefined;
+      const portraitUrl = sanitizePublicImageUrl(portrait?.sourceUrl);
+      if (portrait?.sourceUrl && portraitUrl && portraitUrl !== portrait.sourceUrl) {
+        patch.asciiPortrait = { ...portrait, sourceUrl: portraitUrl };
+        fields.push("asciiPortrait.sourceUrl");
+      }
+
+      const socialImages = profile.socialImages as Record<string, string | undefined> | undefined;
+      if (socialImages) {
+        const cleanedImages: Record<string, string | undefined> = {};
+        let dirty = false;
+        for (const [key, url] of Object.entries(socialImages)) {
+          const cleaned = sanitizePublicImageUrl(url);
+          cleanedImages[key] = cleaned;
+          if (url && cleaned && cleaned !== url) dirty = true;
+        }
+        if (dirty) {
+          patch.socialImages = cleanedImages;
+          fields.push("socialImages");
+        }
+      }
+
+      const youJson = profile.youJson as Record<string, unknown> | undefined;
+      if (youJson) {
+        const patchedYouJson = { ...youJson } as Record<string, unknown>;
+        let jsonDirty = false;
+        const profileMeta = patchedYouJson._profile as Record<string, unknown> | undefined;
+        const metaAvatar = sanitizePublicImageUrl(profileMeta?.avatarUrl);
+        if (profileMeta?.avatarUrl && metaAvatar && metaAvatar !== profileMeta.avatarUrl) {
+          patchedYouJson._profile = { ...profileMeta, avatarUrl: metaAvatar };
+          jsonDirty = true;
+        }
+        const jsonSocial = patchedYouJson.social_images as Record<string, string | undefined> | undefined;
+        if (jsonSocial) {
+          const cleanedSocial: Record<string, string | undefined> = {};
+          let socialDirty = false;
+          for (const [key, url] of Object.entries(jsonSocial)) {
+            const cleaned = sanitizePublicImageUrl(url);
+            cleanedSocial[key] = cleaned;
+            if (url && cleaned && cleaned !== url) socialDirty = true;
+          }
+          if (socialDirty) {
+            patchedYouJson.social_images = cleanedSocial;
+            jsonDirty = true;
+          }
+        }
+        if (jsonDirty) {
+          patch.youJson = patchedYouJson;
+          fields.push("youJson");
+        }
+      }
+
+      if (fields.length > 0) {
+        changed.push({ username: profile.username, fields });
+        if (!dryRun) await ctx.db.patch(profile._id, { ...patch, updatedAt: Date.now() });
+      }
+    }
+
+    return { dryRun, changedCount: changed.length, changed };
   },
 });
 
@@ -1615,7 +1798,7 @@ export const enrichAndQaAllProfiles = internalAction({
 
     for (const profile of profiles) {
       // ── Step 1: resolve real avatar URL (no letter/generated avatars) ──
-      const { url: resolvedAvatarUrl, source: avatarSource } = resolveAvatarUrl(profile, unavatarApiKey);
+      const { url: resolvedAvatarUrl, fetchUrl, source: avatarSource } = resolveAvatarUrl(profile, unavatarApiKey);
 
       const avatarChanged = resolvedAvatarUrl !== profile.avatarUrl;
       const hasPortrait = !!profile.asciiPortrait;
@@ -1660,7 +1843,7 @@ export const enrichAndQaAllProfiles = internalAction({
       // We do NOT fall back to fake generated images.
       try {
         const result = await ctx.runAction(internal.portrait.generatePortrait, {
-          imageUrl: resolvedAvatarUrl,
+          imageUrl: fetchUrl,
           cols: 120,
           format: "classic",
         });
@@ -1668,7 +1851,7 @@ export const enrichAndQaAllProfiles = internalAction({
         if (result.success && result.portrait) {
           await ctx.runMutation(internal.seed._patchProfilePortrait, {
             profileId: profile._id,
-            portrait: { ...result.portrait, generatedAt: Date.now() },
+            portrait: { ...result.portrait, sourceUrl: resolvedAvatarUrl, generatedAt: Date.now() },
           });
           results.push({
             username: profile.username,

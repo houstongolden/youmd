@@ -7,6 +7,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowRight, MapPin, LayoutGrid, List } from "lucide-react";
 import AsciiAvatar from "@/components/AsciiAvatar";
+import type { PreRenderedPortrait } from "@/components/AsciiAvatar";
 import FadeUp from "@/components/landing/FadeUp";
 
 /* ── Types ────────────────────────────────────────────────── */
@@ -18,12 +19,153 @@ interface DirectoryEntry {
   bio: string | null;
   location: string | null;
   avatarUrl: string | null;
+  asciiPortrait: PreRenderedPortrait | null;
+  hasPortrait: boolean;
   isClaimed: boolean;
   source: "profiles" | "legacy";
   projectCount: number;
   nowItems: string[];
   links: Record<string, string>;
   updatedAt: number | null;
+}
+
+function canonicalUsername(value: unknown) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function isSuppressedDirectoryUsername(username: string) {
+  return /^(qaprune|qarepro|qaclean|qastale|qalocal|qaweb|websignin|youmdqa|youmdreg)[a-z0-9-]*/i.test(username);
+}
+
+function sanitizeImageUrl(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const raw = value.trim();
+  if (raw.startsWith("/")) return raw;
+  try {
+    const url = new URL(raw);
+    for (const param of ["apiKey", "apikey", "api_key", "access_token", "token"]) {
+      url.searchParams.delete(param);
+    }
+    return url.toString();
+  } catch {
+    return raw;
+  }
+}
+
+function normalizeLinks(...sources: unknown[]): Record<string, string> {
+  const links: Record<string, string> = {};
+  for (const source of sources) {
+    if (!source || typeof source !== "object") continue;
+    for (const [key, value] of Object.entries(source as Record<string, unknown>)) {
+      if (typeof value !== "string" || !value.trim()) continue;
+      const lower = key.trim().toLowerCase();
+      const canonical =
+        lower === "twitter" || lower === "x/twitter"
+          ? "x"
+          : lower.includes("github")
+            ? "github"
+            : lower.includes("linkedin")
+              ? "linkedin"
+              : lower;
+      links[key.trim()] = value.trim();
+      if (!links[canonical]) links[canonical] = value.trim();
+    }
+  }
+  return links;
+}
+
+function handleFromUrl(value: string | undefined, host: string): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (!url.hostname.toLowerCase().includes(host)) return null;
+    return url.pathname.split("/").filter(Boolean)[0] ?? null;
+  } catch {
+    const match = value.match(new RegExp(`${host.replace(".", "\\.")}/([^/?#]+)`, "i"));
+    return match?.[1] ?? null;
+  }
+}
+
+function resolveAvatarUrl(profile: Record<string, unknown>, youJson: Record<string, unknown> | undefined): string | null {
+  const socialImages = {
+    ...((youJson?.social_images ?? {}) as Record<string, string>),
+    ...((profile.socialImages ?? {}) as Record<string, string>),
+  };
+  const primaryImage = profile.primaryImage as string | undefined;
+  if (primaryImage && socialImages[primaryImage]) return sanitizeImageUrl(socialImages[primaryImage]);
+
+  const direct = sanitizeImageUrl(
+    profile.avatarUrl ??
+      (youJson?._profile as Record<string, unknown> | undefined)?.avatarUrl ??
+      (youJson?.identity as Record<string, unknown> | undefined)?.avatarUrl ??
+      (youJson?.identity as Record<string, unknown> | undefined)?.avatar_url
+  );
+  if (direct) return direct;
+
+  const social = sanitizeImageUrl(socialImages.github ?? socialImages.x ?? socialImages.linkedin ?? socialImages.custom);
+  if (social) return social;
+
+  const links = normalizeLinks(profile.links, youJson?.links);
+  const github = handleFromUrl(links.github, "github.com");
+  if (github) return `https://github.com/${github}.png`;
+  const x = handleFromUrl(links.x, "x.com") ?? handleFromUrl(links.x, "twitter.com");
+  if (x) return `https://unavatar.io/x/${x}`;
+  const linkedin = handleFromUrl(links.linkedin, "linkedin.com");
+  if (linkedin) return `https://unavatar.io/linkedin/${linkedin}`;
+  return null;
+}
+
+function DirectoryPortrait({
+  entry,
+  sizeClass,
+  cols,
+  canvasWidth,
+}: {
+  entry: DirectoryEntry;
+  sizeClass: string;
+  cols: number;
+  canvasWidth: number;
+}) {
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const portrait = entry.asciiPortrait;
+  const src = entry.avatarUrl || portrait?.sourceUrl || "";
+
+  return (
+    <div
+      className={`${sizeClass} overflow-hidden border border-[hsl(var(--border))] group-hover:border-[hsl(var(--accent))]/30 transition-colors shrink-0 bg-[hsl(var(--bg))] relative`}
+      style={{ borderRadius: "2px" }}
+    >
+      {src || portrait ? (
+        <>
+          <AsciiAvatar
+            src={src || `profile:${entry.username}`}
+            cols={cols}
+            canvasWidth={canvasWidth}
+            className="flex h-full w-full items-center justify-center"
+            preRendered={portrait}
+          />
+          {entry.avatarUrl && !photoFailed && (
+            <img
+              src={entry.avatarUrl}
+              alt={entry.name || entry.username}
+              className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+              loading="lazy"
+              onError={() => setPhotoFailed(true)}
+            />
+          )}
+        </>
+      ) : (
+        <div className="flex h-full w-full flex-col items-center justify-center bg-[hsl(var(--accent))]/[0.04]">
+          <span className="font-mono text-[13px] text-[hsl(var(--accent))]/70">
+            {(entry.name || entry.username).slice(0, 2).toUpperCase()}
+          </span>
+          <span className="mt-0.5 max-w-full truncate px-1 font-mono text-[6px] text-[hsl(var(--text-secondary))]/30">
+            /{entry.username.slice(0, 8)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ── List Card ────────────────────────────────────────────── */
@@ -41,32 +183,7 @@ function ProfileListCard({ entry, index }: { entry: DirectoryEntry; index: numbe
         style={{ borderRadius: "2px" }}
       >
         <div className="flex items-center gap-4">
-          {/* Avatar */}
-          <div
-            className="w-10 h-10 overflow-hidden border border-[hsl(var(--border))] group-hover:border-[hsl(var(--accent))]/30 transition-colors shrink-0 bg-[hsl(var(--bg))] relative"
-            style={{ borderRadius: "2px" }}
-          >
-            {entry.avatarUrl ? (
-              <>
-                <AsciiAvatar
-                  src={entry.avatarUrl}
-                  cols={30}
-                  canvasWidth={40}
-                  className="w-full h-full"
-                />
-                <img
-                  src={entry.avatarUrl}
-                  alt={entry.name || entry.username}
-                  className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  loading="lazy"
-                />
-              </>
-            ) : (
-              <span className="w-full h-full flex items-center justify-center font-mono text-[14px] text-[hsl(var(--accent))]/60">
-                {(entry.name || entry.username).charAt(0).toUpperCase()}
-              </span>
-            )}
-          </div>
+          <DirectoryPortrait entry={entry} sizeClass="w-10 h-10" cols={30} canvasWidth={40} />
 
           {/* Info */}
           <div className="flex-1 min-w-0">
@@ -158,31 +275,7 @@ function ProfileGridCard({ entry, index }: { entry: DirectoryEntry; index: numbe
       >
         {/* Avatar + status row */}
         <div className="flex items-start justify-between mb-3">
-          <div
-            className="w-12 h-12 overflow-hidden border border-[hsl(var(--border))] group-hover:border-[hsl(var(--accent))]/30 transition-colors bg-[hsl(var(--bg))] relative shrink-0"
-            style={{ borderRadius: "2px" }}
-          >
-            {entry.avatarUrl ? (
-              <>
-                <AsciiAvatar
-                  src={entry.avatarUrl}
-                  cols={30}
-                  canvasWidth={48}
-                  className="w-full h-full"
-                />
-                <img
-                  src={entry.avatarUrl}
-                  alt={entry.name || entry.username}
-                  className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  loading="lazy"
-                />
-              </>
-            ) : (
-              <span className="w-full h-full flex items-center justify-center font-mono text-[16px] text-[hsl(var(--accent))]/60">
-                {(entry.name || entry.username).charAt(0).toUpperCase()}
-              </span>
-            )}
-          </div>
+          <DirectoryPortrait entry={entry} sizeClass="w-12 h-12" cols={30} canvasWidth={48} />
           <div className="flex flex-col items-end gap-1">
             <span className={`inline-block w-1.5 h-1.5 rounded-full ${
               entry.isClaimed ? "bg-[hsl(var(--success))]/60" : "bg-[hsl(var(--text-secondary))]/20"
@@ -259,30 +352,52 @@ export function ProfilesDirectoryContent() {
   const [sort, setSort] = useState<"recent" | "projects" | "alpha">("recent");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
-  // Build entries — dedup by username (profiles source wins over legacy)
+  // Build entries — dedup by canonical username (profiles source wins over legacy)
   const entries: DirectoryEntry[] = useMemo(() => {
     const seen = new Set<string>();
     const result: DirectoryEntry[] = [];
 
     if (profiles) {
       for (const p of profiles) {
-        if (seen.has(p.username)) continue;
-        seen.add(p.username);
+        const username = canonicalUsername(p.username);
+        if (!username || isSuppressedDirectoryUsername(username) || seen.has(username)) continue;
+        seen.add(username);
 
-        const youJson = p.youJson as Record<string, any> | undefined;
-        const bio = youJson?.identity?.bio?.short || youJson?.identity?.bio?.medium || "";
+        const profileRecord = p as Record<string, unknown>;
+        const youJson = profileRecord.youJson as Record<string, unknown> | undefined;
+        const identity = (youJson?.identity ?? {}) as Record<string, unknown>;
+        const bioRecord = (identity.bio ?? {}) as Record<string, unknown>;
+        const bio =
+          (typeof bioRecord.short === "string" && bioRecord.short) ||
+          (typeof bioRecord.medium === "string" && bioRecord.medium) ||
+          "";
         const projects = youJson?.projects as Array<Record<string, string>> | undefined;
-        const now = youJson?.now?.focus as string[] | undefined;
-        const links = (youJson?.links || {}) as Record<string, string>;
+        const nowRecord = (youJson?.now ?? {}) as Record<string, unknown>;
+        const now = nowRecord.focus as string[] | undefined;
+        const links = normalizeLinks(p.links, youJson?.links);
+        const avatarUrl = resolveAvatarUrl(profileRecord, youJson);
+        const asciiPortrait =
+          ((p.asciiPortrait ?? (youJson?._profile as Record<string, unknown> | undefined)?.asciiPortrait) as PreRenderedPortrait | undefined) ?? null;
 
         result.push({
-          username: p.username,
-          name: p.name ?? null,
-          tagline: p.tagline ?? youJson?.identity?.tagline ?? null,
+          username,
+          name:
+            (typeof p.name === "string" && p.name) ||
+            (typeof identity.name === "string" && identity.name) ||
+            null,
+          tagline:
+            (typeof p.tagline === "string" && p.tagline) ||
+            (typeof identity.tagline === "string" && identity.tagline) ||
+            null,
           bio: bio ? (bio.length > 160 ? bio.slice(0, 160) + "..." : bio) : null,
-          location: p.location ?? youJson?.identity?.location ?? null,
-          avatarUrl: p.avatarUrl ?? null,
-          isClaimed: p.isClaimed,
+          location:
+            (typeof p.location === "string" && p.location) ||
+            (typeof identity.location === "string" && identity.location) ||
+            null,
+          avatarUrl,
+          asciiPortrait,
+          hasPortrait: Boolean(avatarUrl || asciiPortrait?.lines?.length),
+          isClaimed: Boolean(p.isClaimed),
           source: "profiles",
           projectCount: projects?.length ?? 0,
           nowItems: (now || []).slice(0, 2),
@@ -294,16 +409,19 @@ export function ProfilesDirectoryContent() {
 
     if (legacyUsers) {
       for (const u of legacyUsers) {
-        if (seen.has(u.username)) continue;
-        seen.add(u.username);
+        const username = canonicalUsername(u.username);
+        if (!username || isSuppressedDirectoryUsername(username) || seen.has(username)) continue;
+        seen.add(username);
 
         result.push({
-          username: u.username,
+          username,
           name: u.displayName ?? null,
           tagline: null,
           bio: null,
           location: null,
           avatarUrl: null,
+          asciiPortrait: null,
+          hasPortrait: false,
           isClaimed: true,
           source: "legacy",
           projectCount: 0,
@@ -326,7 +444,7 @@ export function ProfilesDirectoryContent() {
     } else if (filter === "has-projects") {
       result = result.filter((e) => e.projectCount > 0);
     } else if (filter === "has-portrait") {
-      result = result.filter((e) => !!e.avatarUrl);
+      result = result.filter((e) => e.hasPortrait);
     }
 
     // Search across name, username, tagline, bio, location
@@ -360,11 +478,11 @@ export function ProfilesDirectoryContent() {
 
   const isLoading = profiles === undefined || legacyUsers === undefined;
   const claimedCount = entries.filter((e) => e.isClaimed).length;
-  const portraitCount = entries.filter((e) => !!e.avatarUrl).length;
+  const portraitCount = entries.filter((e) => e.hasPortrait).length;
 
   return (
     <div className="min-h-[100dvh] bg-[hsl(var(--bg))]">
-      <main className="pt-8 pb-8 px-6">
+      <main className="px-4 pb-8 pt-7 sm:px-6 sm:pt-8">
         <div className="max-w-[680px] mx-auto">
           {/* Header */}
           <FadeUp>
@@ -406,28 +524,28 @@ export function ProfilesDirectoryContent() {
                   aria-label="search profiles"
                   autoComplete="off"
                   spellCheck={false}
-                  className="w-full bg-[hsl(var(--raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-primary))] font-mono text-[12px] min-h-[44px] py-2 pl-7 pr-3 placeholder:text-[hsl(var(--text-secondary))]/30 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors caret-[hsl(var(--accent))]"
+                  className="h-11 w-full border border-[hsl(var(--border))] bg-[hsl(var(--raised))] py-2 pl-7 pr-3 font-mono text-[12px] text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] transition-colors placeholder:text-[hsl(var(--text-secondary))]/30 focus:border-[hsl(var(--accent))]/50 focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-[hsl(var(--accent))]/20"
                   style={{ borderRadius: "2px" }}
                 />
               </div>
 
               {/* Filters + Sort + View toggle */}
-              <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-3">
                 {/* Filter buttons */}
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="grid grid-cols-2 gap-2 min-[460px]:grid-cols-4 sm:flex sm:flex-wrap sm:gap-1.5">
                   {([
-                    { key: "all", label: "all" },
-                    { key: "verified", label: "claimed" },
-                    { key: "has-projects", label: "has-projects" },
-                    { key: "has-portrait", label: "has-portrait" },
+                    { key: "all", label: "all", ariaLabel: "show all profiles" },
+                    { key: "verified", label: "claimed", ariaLabel: "show claimed profiles" },
+                    { key: "has-projects", label: "projects", ariaLabel: "profiles with projects" },
+                    { key: "has-portrait", label: "portrait", ariaLabel: "profiles with portraits" },
                   ] as const).map((f) => (
                     <button
                       key={f.key}
                       type="button"
                       onClick={() => setFilter(f.key)}
                       aria-pressed={filter === f.key}
-                      aria-label={`filter by ${f.label}`}
-                      className={`font-mono text-[10px] inline-flex items-center justify-center min-h-[44px] px-3 border transition-colors ${
+                      aria-label={f.ariaLabel}
+                      className={`inline-flex h-10 items-center justify-center border px-2.5 font-mono text-[10px] transition-colors sm:h-9 sm:px-3 ${
                         filter === f.key
                           ? "border-[hsl(var(--accent))]/60 text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
                           : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))]/70 hover:border-[hsl(var(--accent))]/30 hover:text-[hsl(var(--accent))]"
@@ -440,15 +558,15 @@ export function ProfilesDirectoryContent() {
                 </div>
 
                 {/* Sort + view toggle */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[hsl(var(--text-secondary))]/40 font-mono text-[10px] uppercase tracking-wider">
+                <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:justify-end">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/40">
                     sort
                   </span>
                   <select
                     value={sort}
                     onChange={(e) => setSort(e.target.value as "recent" | "projects" | "alpha")}
                     aria-label="sort profiles"
-                    className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] font-mono text-[10px] min-h-[44px] px-2 focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30"
+                    className="h-10 min-w-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-2 font-mono text-[10px] text-[hsl(var(--text-secondary))] transition-colors hover:border-[hsl(var(--accent))]/30 hover:text-[hsl(var(--accent))] focus:border-[hsl(var(--accent))]/50 focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-[hsl(var(--accent))]/20 sm:h-9 sm:w-auto"
                     style={{ borderRadius: "2px" }}
                   >
                     <option value="recent">recently active</option>
@@ -457,13 +575,13 @@ export function ProfilesDirectoryContent() {
                   </select>
 
                   {/* View mode toggle */}
-                  <div className="flex items-center border border-[hsl(var(--border))]" style={{ borderRadius: "2px" }}>
+                  <div className="flex h-10 items-stretch border border-[hsl(var(--border))] sm:h-9" style={{ borderRadius: "2px" }}>
                     <button
                       type="button"
                       onClick={() => setViewMode("list")}
                       aria-pressed={viewMode === "list"}
                       aria-label="list view"
-                      className={`inline-flex items-center justify-center min-h-[44px] w-10 transition-colors ${
+                      className={`inline-flex w-10 items-center justify-center transition-colors ${
                         viewMode === "list"
                           ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
                           : "text-[hsl(var(--text-secondary))]/40 hover:text-[hsl(var(--accent))]"
@@ -476,7 +594,7 @@ export function ProfilesDirectoryContent() {
                       onClick={() => setViewMode("grid")}
                       aria-pressed={viewMode === "grid"}
                       aria-label="grid view"
-                      className={`inline-flex items-center justify-center min-h-[44px] w-10 border-l border-[hsl(var(--border))] transition-colors ${
+                      className={`inline-flex w-10 items-center justify-center border-l border-[hsl(var(--border))] transition-colors ${
                         viewMode === "grid"
                           ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
                           : "text-[hsl(var(--text-secondary))]/40 hover:text-[hsl(var(--accent))]"
@@ -534,7 +652,7 @@ export function ProfilesDirectoryContent() {
             <div>
               {filteredEntries.map((entry, i) => (
                 <ProfileListCard
-                  key={`${entry.source}-${entry.username}`}
+                  key={entry.username}
                   entry={entry}
                   index={i}
                 />
@@ -547,7 +665,7 @@ export function ProfilesDirectoryContent() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {filteredEntries.map((entry, i) => (
                 <ProfileGridCard
-                  key={`${entry.source}-${entry.username}`}
+                  key={entry.username}
                   entry={entry}
                   index={i}
                 />

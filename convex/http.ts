@@ -69,10 +69,19 @@ http.route({
     // No username param — return list of all public profiles (for sitemap, directory)
     if (!username) {
       const profiles = await ctx.runQuery(api.profiles.listAll);
-      const usernames = profiles.map((p: { username: string }) => ({
-        username: p.username,
-        updatedAt: (p as any).updatedAt || (p as any).createdAt || null,
-      }));
+      const usernames = profiles.map((profile) => {
+        const p = profile as Record<string, unknown>;
+        return {
+          username: String(p.username ?? ""),
+          name: typeof p.name === "string" ? p.name : null,
+          tagline: typeof p.tagline === "string" ? p.tagline : null,
+          location: typeof p.location === "string" ? p.location : null,
+          avatarUrl: typeof p.avatarUrl === "string" ? p.avatarUrl : null,
+          hasPortrait: Boolean(p.avatarUrl || p.asciiPortrait),
+          isClaimed: Boolean(p.isClaimed),
+          updatedAt: typeof p.updatedAt === "number" ? p.updatedAt : typeof p.createdAt === "number" ? p.createdAt : null,
+        };
+      });
       return json(usernames, 200, { "Cache-Control": "public, max-age=300" });
     }
 
@@ -2832,10 +2841,11 @@ http.route({
 
             const profiles = await ctx.runQuery(api.profiles.listAll);
             const filtered = query
-              ? profiles.filter((p: { username: string }) =>
-                  p.username.toLowerCase().includes(query.toLowerCase()) ||
-                  (p as Record<string, unknown>).name?.toString().toLowerCase().includes(query.toLowerCase())
-                )
+              ? profiles.filter((profile) => {
+                  const p = profile as Record<string, unknown>;
+                  return p.username?.toString().toLowerCase().includes(query.toLowerCase()) ||
+                    p.name?.toString().toLowerCase().includes(query.toLowerCase());
+                })
               : profiles;
 
             const results = filtered.slice(0, limit).map((p: Record<string, unknown>) => ({

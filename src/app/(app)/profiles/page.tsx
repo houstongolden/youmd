@@ -51,6 +51,10 @@ interface SsrProfile {
   updatedAt?: number;
 }
 
+function isSuppressedDirectoryUsername(username: string) {
+  return /^(qaprune|qarepro|qaclean|qastale|qalocal|qaweb|websignin|youmdqa|youmdreg)[a-z0-9-]*/i.test(username);
+}
+
 async function fetchProfiles(): Promise<SsrProfile[]> {
   try {
     const res = await fetch(`${CONVEX_SITE_URL}/api/v1/profiles`, {
@@ -58,7 +62,15 @@ async function fetchProfiles(): Promise<SsrProfile[]> {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    if (!Array.isArray(data)) return [];
+    const seen = new Set<string>();
+    return data.filter((profile) => {
+      const username = String(profile?.username ?? "").trim().toLowerCase();
+      if (!username || isSuppressedDirectoryUsername(username) || seen.has(username)) return false;
+      seen.add(username);
+      profile.username = username;
+      return true;
+    });
   } catch {
     return [];
   }
@@ -89,8 +101,8 @@ export default async function ProfilesPage() {
       <div className="sr-only" aria-hidden="true">
         <h2>Profiles on you.md</h2>
         <ul>
-          {ssrProfiles.map((p) => (
-            <li key={p.username}>
+          {ssrProfiles.map((p, i) => (
+            <li key={`${p.username}-${i}`}>
               <a href={`/${p.username}`}>{p.name || p.username}</a>
               {p.tagline && <span> — {p.tagline}</span>}
             </li>

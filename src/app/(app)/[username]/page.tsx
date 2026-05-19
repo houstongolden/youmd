@@ -3,6 +3,25 @@ import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
+// The public profile payload is protocol-shaped but intentionally extensible.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ProfilePageJson = Record<string, any>;
+
+function sanitizeImageUrl(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return "";
+  const raw = value.trim();
+  if (raw.startsWith("/")) return raw;
+  try {
+    const url = new URL(raw);
+    for (const param of ["apiKey", "apikey", "api_key", "access_token", "token"]) {
+      url.searchParams.delete(param);
+    }
+    return url.toString();
+  } catch {
+    return raw;
+  }
+}
+
 // ── Fetch profile data server-side (shared by metadata + page) ──
 async function fetchProfileData(username: string) {
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -73,7 +92,7 @@ export async function generateMetadata({
     : bio
       ? bio.slice(0, 200)
       : `${name}'s identity context on you.md`;
-  const avatarUrl = data?._profile?.avatarUrl || data?.social_images?.github || data?.social_images?.x || "";
+  const avatarUrl = sanitizeImageUrl(data?._profile?.avatarUrl || data?.social_images?.github || data?.social_images?.x || "");
   const location = data?.identity?.location || "";
   const firstName = name.split(" ")[0];
   const lastName = name.split(" ").slice(1).join(" ");
@@ -127,7 +146,7 @@ export async function generateMetadata({
 }
 
 // ── Generate plain-text SSR fallback for agents that render HTML without JS ──
-function SsrProfileText({ username, data }: { username: string; data: Record<string, any> }) {
+function SsrProfileText({ username, data }: { username: string; data: ProfilePageJson }) {
   const name = data.identity?.name || username;
   const tagline = data.identity?.tagline || "";
   const bio = data.identity?.bio?.long || data.identity?.bio?.medium || data.identity?.bio?.short || "";
@@ -140,7 +159,7 @@ function SsrProfileText({ username, data }: { username: string; data: Record<str
   const voice = data.analysis?.voice_summary || "";
 
   // Get avatar URL from the data — check _profile first (from Convex profile table), then social_images
-  const avatarUrl = data._profile?.avatarUrl || data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || "";
+  const avatarUrl = sanitizeImageUrl(data._profile?.avatarUrl || data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || "");
 
   // Note: this is a screen-reader-only structured-content block for SEO/agents.
   // Headings here are h2/h3 (not h1) because the visible profile content
@@ -174,7 +193,7 @@ function SsrProfileText({ username, data }: { username: string; data: Record<str
         <section>
           <h3>Projects</h3>
           <ul>
-            {projects.map((p: any, i: number) => (
+            {projects.map((p: { name?: string; role?: string; status?: string; description?: string }, i: number) => (
               <li key={i}>
                 {p.name}{p.role ? ` (${p.role})` : ""}{p.status ? ` [${p.status}]` : ""}
                 {p.description ? ` - ${p.description}` : ""}
@@ -219,7 +238,7 @@ function SsrProfileText({ username, data }: { username: string; data: Record<str
 }
 
 // ── Build JSON-LD structured data for SEO ──
-function buildJsonLd(username: string, data: Record<string, any>) {
+function buildJsonLd(username: string, data: ProfilePageJson) {
   const name = data.identity?.name || username;
   const tagline = data.identity?.tagline || "";
   const location = data.identity?.location || "";
@@ -231,7 +250,7 @@ function buildJsonLd(username: string, data: Record<string, any>) {
   if (data.links?.x) sameAsLinks.push(data.links.x);
   if (data.links?.github) sameAsLinks.push(data.links.github);
 
-  const avatarUrl = data._profile?.avatarUrl || data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || "";
+  const avatarUrl = sanitizeImageUrl(data._profile?.avatarUrl || data.social_images?.github || data.social_images?.x || data.social_images?.linkedin || data.social_images?.custom || "");
 
   // Build worksFor from projects
   const projects = (data.projects || []) as Array<{ name: string; description?: string; url?: string; role?: string }>;

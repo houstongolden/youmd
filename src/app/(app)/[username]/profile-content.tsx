@@ -25,6 +25,10 @@ interface Project {
   description: string;
 }
 
+// The public profile payload is protocol-shaped but intentionally extensible.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ProfileJson = Record<string, any>;
+
 /* ── Helpers ──────────────────────────────────────────────── */
 
 function formatRelativeTime(timestamp: number): string {
@@ -59,6 +63,21 @@ const delay = (i: number) => ({
   transition: { duration: 0.3, delay: i * 0.06 },
 });
 
+function sanitizeImageUrl(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  const raw = value.trim();
+  if (raw.startsWith("/")) return raw;
+  try {
+    const url = new URL(raw);
+    for (const param of ["apiKey", "apikey", "api_key", "access_token", "token"]) {
+      url.searchParams.delete(param);
+    }
+    return url.toString();
+  } catch {
+    return raw;
+  }
+}
+
 /* ── Owner edit context ───────────────────────────────────────
  * Provides ownership flag down the tree so that <SectionLabel>
  * can render an edit affordance for the owner without prop drilling.
@@ -68,7 +87,7 @@ const OwnerContext = createContext<boolean>(false);
 /* ── Main Component ───────────────────────────────────────── */
 
 interface ProfileContentProps {
-  ssrData?: Record<string, any> | null;
+  ssrData?: ProfileJson | null;
 }
 
 export function ProfileContent({ ssrData }: ProfileContentProps) {
@@ -143,7 +162,8 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const ssrProfile = ssrData ? {
     youJson: ssrData,
     displayName: ssrData.identity?.name || username,
-    avatarUrl: ssrData.meta?.avatarUrl as string | undefined,
+    avatarUrl: sanitizeImageUrl(ssrData._profile?.avatarUrl ?? ssrData.meta?.avatarUrl),
+    asciiPortrait: ssrData._profile?.asciiPortrait as PreRenderedPortrait | undefined,
     isClaimed: (ssrData.meta?.isClaimed as boolean) ?? true,
   } : null;
 
@@ -208,7 +228,10 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
     );
   }
 
-  const data = resolvedProfile.youJson as Record<string, any> | null;
+  const data = resolvedProfile.youJson as ProfileJson | null;
+  const resolvedRecord = resolvedProfile as Record<string, unknown>;
+  const resolvedAvatarUrl = sanitizeImageUrl(resolvedRecord.avatarUrl);
+  const storedPortrait = resolvedRecord.asciiPortrait as PreRenderedPortrait | undefined;
 
   const handleCopyRawJson = () => {
     if (!data) return;
@@ -224,9 +247,9 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         <ProfileHeader username={username} />
         <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
           <div className="flex items-end gap-4 mb-4">
-            {resolvedProfile.avatarUrl && (
+            {resolvedAvatarUrl && (
               <img
-                src={resolvedProfile.avatarUrl}
+                src={resolvedAvatarUrl}
                 alt={resolvedProfile.displayName || username}
                 className="w-16 h-16 border-2 border-[hsl(var(--bg))] object-cover"
                 style={{ borderRadius: "4px" }}
@@ -309,9 +332,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
       )}
 
       {/* ASCII Portrait Header — full-width above content */}
-      {resolvedProfile.avatarUrl && viewMode !== "agent" && (() => {
-        const portrait = (resolvedProfile as Record<string, unknown>).asciiPortrait as PreRenderedPortrait | undefined;
-        const preRendered = portrait && portrait.sourceUrl === resolvedProfile.avatarUrl ? portrait : undefined;
+      {(resolvedAvatarUrl || storedPortrait) && viewMode !== "agent" && (() => {
         return (
           <motion.div
             initial={{ opacity: 0 }}
@@ -321,11 +342,11 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
           >
             <div className="max-w-[680px] w-full px-4 md:px-6">
               <AsciiAvatar
-                src={resolvedProfile.avatarUrl}
+                src={resolvedAvatarUrl || storedPortrait?.sourceUrl || `profile:${username}`}
                 cols={140}
                 canvasWidth={680}
                 className="w-full opacity-80"
-                preRendered={preRendered}
+                preRendered={storedPortrait}
               />
             </div>
           </motion.div>
@@ -348,9 +369,9 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         <motion.section {...delay(0)} className="mt-4 mb-6">
           {/* Name + real photo + tagline */}
           <div className="flex items-end gap-4 mb-4">
-            {resolvedProfile.avatarUrl && (
+            {resolvedAvatarUrl && (
               <img
-                src={resolvedProfile.avatarUrl}
+                src={resolvedAvatarUrl}
                 alt={name as string}
                 className="w-16 h-16 md:w-20 md:h-20 border-2 border-[hsl(var(--bg))] object-cover"
                 style={{ borderRadius: "4px" }}
@@ -820,7 +841,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                       name: name as string,
                       youJson: data,
                       isClaimed: resolvedProfile.isClaimed,
-                      avatarUrl: resolvedProfile.avatarUrl,
+                      avatarUrl: resolvedAvatarUrl,
                     });
                     downloadFile(JSON.stringify(json, null, 2), `${username}.you.json`, "application/json");
                   }}
@@ -1214,7 +1235,7 @@ function formatTimestamp(ts: string): string {
  * Renders JSON with syntax highlighting using the design system colors.
  * Keys in accent color, strings dimmed, numbers/booleans in primary.
  */
-function RawJsonRenderer({ json }: { json: Record<string, any> }) {
+function RawJsonRenderer({ json }: { json: Record<string, unknown> }) {
   const renderValue = (value: unknown, indent: number): React.ReactNode => {
     if (value === null) {
       return <span className="text-[hsl(var(--text-secondary))] opacity-40">null</span>;

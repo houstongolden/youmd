@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { query, mutation, internalMutation, internalQuery } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
+import {
+  canonicalUsername,
+  normalizeDirectoryProfile,
+  resolveProfileAvatar,
+  sanitizeAsciiPortrait,
+  selectBestProfile,
+} from "./lib/profileDirectory";
 
 // ── Username validation ──────────────────────────────────────
 
@@ -27,13 +34,23 @@ function generateSessionToken(): string {
 export const getPublicProfile = query({
   args: { username: v.string() },
   handler: async (ctx, args) => {
-    const uname = args.username.toLowerCase();
+    const uname = canonicalUsername(args.username);
 
     // Check profiles table first
-    const profile = await ctx.db
+    const exactProfiles = await ctx.db
       .query("profiles")
       .withIndex("by_username", (q) => q.eq("username", uname))
-      .first();
+      .collect();
+    let profile = selectBestProfile(exactProfiles);
+
+    // Older seed/import paths could leave mixed-case or whitespace variants.
+    // Keep direct profile reads resilient even before a data cleanup run lands.
+    if (!profile) {
+      const allProfiles = await ctx.db.query("profiles").take(500);
+      profile = selectBestProfile(
+        allProfiles.filter((p) => canonicalUsername(p.username) === uname)
+      );
+    }
 
     // Try to find the user and their published bundle
     const user = await ctx.db
@@ -61,10 +78,10 @@ export const getPublicProfile = query({
     if (profile && youJson) {
       return {
         source: "profiles" as const,
-        username: profile.username,
+        username: canonicalUsername(profile.username),
         displayName: profile.name,
-        avatarUrl: profile.avatarUrl,
-        asciiPortrait: profile.asciiPortrait ?? null,
+        avatarUrl: resolveProfileAvatar(profile) ?? null,
+        asciiPortrait: sanitizeAsciiPortrait(profile.asciiPortrait),
         youJson,
         youMd,
         isClaimed: profile.isClaimed,
@@ -79,10 +96,10 @@ export const getPublicProfile = query({
       if (profile) {
         return {
           source: "profiles" as const,
-          username: profile.username,
+          username: canonicalUsername(profile.username),
           displayName: profile.name,
-          avatarUrl: profile.avatarUrl,
-          asciiPortrait: profile.asciiPortrait ?? null,
+          avatarUrl: resolveProfileAvatar(profile) ?? null,
+          asciiPortrait: sanitizeAsciiPortrait(profile.asciiPortrait),
           youJson: null,
           youMd: null,
           isClaimed: profile.isClaimed,
@@ -99,7 +116,8 @@ export const getPublicProfile = query({
       source: "legacy" as const,
       username: user.username,
       displayName: user.displayName,
-      asciiPortrait: profile?.asciiPortrait ?? null,
+      avatarUrl: profile ? resolveProfileAvatar(profile) ?? null : null,
+      asciiPortrait: profile ? sanitizeAsciiPortrait(profile.asciiPortrait) : null,
       youJson: publishedBundle.youJson,
       youMd: publishedBundle.youMd,
       isClaimed: true,
@@ -151,8 +169,30 @@ export const listAll = query({
     const profiles = await ctx.db
       .query("profiles")
       .order("desc")
-      .take(100);
-    return profiles;
+      .take(500);
+
+    const byUsername = new Map<string, NonNullable<ReturnType<typeof normalizeDirectoryProfile>>>();
+    for (const rawProfile of profiles) {
+      const profile = normalizeDirectoryProfile(rawProfile);
+      if (!profile) continue;
+
+      const existing = byUsername.get(profile.username);
+      if (!existing || selectBestProfile([existing, profile])?._id === profile._id) {
+        byUsername.set(profile.username, profile);
+      }
+    }
+
+    const timestamp = (profile: Record<string, unknown>) => {
+      for (const key of ["updatedAt", "createdAt", "_creationTime"]) {
+        const value = profile[key];
+        if (typeof value === "number") return value;
+      }
+      return 0;
+    };
+
+    return Array.from(byUsername.values())
+      .sort((a, b) => timestamp(b) - timestamp(a))
+      .slice(0, 100);
   },
 });
 

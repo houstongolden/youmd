@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
+import { canonicalUsername, isDirectorySuppressedUsername } from "./lib/profileDirectory";
 import type { MutationCtx } from "./_generated/server";
 
 // Reserved usernames that cannot be claimed
@@ -544,19 +545,19 @@ export const _internalUpdateByClerkId = internalMutation({
 export const listAllLegacy = query({
   handler: async (ctx) => {
     const users = await ctx.db.query("users").order("desc").take(100);
+    const profiles = await ctx.db.query("profiles").take(500);
+    const profileUsernames = new Set(profiles.map((p) => canonicalUsername(p.username)));
 
     // For each user, check if they have a published bundle
     const results = [];
     for (const user of users) {
       // Skip sample/test users
       if (user.isSample) continue;
+      const username = canonicalUsername(user.username);
+      if (!username || isDirectorySuppressedUsername(username)) continue;
 
       // Check if this user already exists in profiles table (avoid duplicates)
-      const existingProfile = await ctx.db
-        .query("profiles")
-        .withIndex("by_username", (q) => q.eq("username", user.username))
-        .first();
-      if (existingProfile) continue;
+      if (profileUsernames.has(username)) continue;
 
       // Check for a published bundle
       const bundle = await ctx.db
@@ -567,7 +568,7 @@ export const listAllLegacy = query({
       const hasBundle = bundle?.isPublished ?? false;
 
       results.push({
-        username: user.username,
+        username,
         displayName: user.displayName ?? null,
         hasBundle,
         createdAt: user.createdAt,
