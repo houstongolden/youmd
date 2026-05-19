@@ -94,7 +94,7 @@ Prefer npm directly? Use `npm install -g youmd@latest`.
 | `add <name> <source>` | Register a skill in the catalog |
 | `push <name>` | Push local changes back to source |
 | `link <agent>` | Link skills to claude / cursor / codex |
-| `init-project` | AGENTS/CLAUDE bootstrap + project-context/ + .you/ + links |
+| `init-project` | AGENTS/CLAUDE bootstrap + project-context/ + .you/ + Claude/Codex skill links |
 | `improve` | Review metrics, find gaps, propose changes |
 | `metrics` | Usage stats and identity field coverage |
 | `search <query>` | Search skills by name or description |
@@ -207,7 +207,7 @@ When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your
 1. **Install** -- `youmd skill install voice-sync`
 2. **Use** -- renders the template against your identity: `youmd skill use voice-sync`
 3. **Sync** -- when your identity changes, `youmd skill sync` re-renders everything
-4. **Link** -- `youmd skill link claude` or `youmd skill link codex` wires rendered skills into agent-native project directories
+4. **Link** -- `youmd skill init-project` wires Claude + Codex by default, or use `youmd skill link claude` / `youmd skill link codex` directly
 5. **Publish** -- share your custom skills to the registry: `youmd skill publish my-skill`
 6. **Browse** -- find skills others have published: `youmd skill browse`
 
@@ -220,7 +220,7 @@ Variable resolution follows dot notation: `voice.overall` reads `~/.youmd/voice/
 ```
 youmd init               # AI conversation builds your identity
 youmd push               # Publish to you.md/<username> (content-addressed, version-controlled)
-youmd skill init-project # Wire identity into current repo (AGENTS/CLAUDE + project-context/ + .you/ + links)
+youmd skill init-project # Wire identity into current repo (AGENTS/CLAUDE + project-context/ + .you/ + Claude/Codex skills)
 youmd link create        # Generate shareable context link for other agents
 ```
 

@@ -575,9 +575,8 @@ export function initProject(options: InitProjectOptions = {}): {
   }
 
   // Step 5: Link rendered skills into host-specific discovery paths
-  const linkTargets: AgentTarget[] = ["claude"];
+  const linkTargets: AgentTarget[] = ["claude", "codex"];
   if (fs.existsSync(path.join(cwd, ".cursor"))) linkTargets.push("cursor");
-  if (fs.existsSync(path.join(cwd, ".codex"))) linkTargets.push("codex");
 
   for (const target of linkTargets) {
     const result = linkToAgent(target);
