@@ -39,8 +39,12 @@ export function SiteNav() {
 
   // Close menus on route change
   useEffect(() => {
-    setMobileOpen(false);
-    setAvatarDropdown(false);
+    const frame = requestAnimationFrame(() => {
+      setMobileOpen(false);
+      setAvatarDropdown(false);
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, [pathname]);
 
   // Close dropdown on click outside
@@ -169,9 +173,10 @@ export function SiteNav() {
             {!isSignedIn && (
               <Link
                 href="/create"
-                className="hidden md:inline-block cta-primary px-3 py-1 text-[10px] whitespace-nowrap"
+                className="hidden h-7 items-center border border-[hsl(var(--accent))]/35 bg-[hsl(var(--accent))]/[0.08] px-2.5 font-mono text-[10px] leading-none text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]/60 hover:bg-[hsl(var(--accent))]/[0.14] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--accent))]/70 md:inline-flex"
+                style={{ borderRadius: "2px" }}
               >
-                &gt; create you
+                create you.md
               </Link>
             )}
             {/* Mobile menu toggle — cycle 62: bumped to ≥44x44 tap area. */}
@@ -238,9 +243,10 @@ export function SiteNav() {
             <Link
               href="/create"
               onClick={() => setMobileOpen(false)}
-              className="cta-primary px-6 py-2.5 text-[12px] mt-4"
+              className="mt-4 inline-flex h-11 items-center justify-center border border-[hsl(var(--accent))]/45 bg-[hsl(var(--accent))]/10 px-5 font-mono text-[12px] text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]/70 hover:bg-[hsl(var(--accent))]/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--accent))]/70"
+              style={{ borderRadius: "2px" }}
             >
-              &gt; create you
+              create you.md
             </Link>
           )}
         </div>

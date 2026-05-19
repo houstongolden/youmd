@@ -3,16 +3,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useUser, SignOutButton } from "@/lib/you-auth";
 import { useQuery, useConvexAuth } from "convex/react";
-import { X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import AsciiAvatar from "@/components/AsciiAvatar";
 import { api } from "../../../convex/_generated/api";
+import { ButtonLink } from "@/components/ui/Button";
 
 
 const sections = [
-  { id: "how-it-works", label: "--how-it-works" },
-  { id: "spec", label: "--spec" },
-  { id: "pricing", label: "--pricing" },
+  { id: "how-it-works", label: "how it works" },
+  { id: "spec", label: "spec" },
+  { id: "pricing", label: "pricing" },
 ];
 
 const Navbar = () => {
@@ -76,19 +77,18 @@ const Navbar = () => {
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 px-4 pt-3 md:pt-4">
         <div
-          className={`max-w-xl mx-auto flex items-center justify-between gap-6 px-4 py-2 transition-all duration-500 ${
+          className={`mx-auto flex max-w-[1120px] items-center justify-between gap-6 px-4 py-2 transition-all duration-300 ${
             scrolled ? "glass-nav" : "bg-transparent"
           }`}
-          style={{ borderRadius: "2px" }}
         >
-          <a
+          <Link
             href="/"
-            className="text-accent font-mono text-[12px] tracking-tight whitespace-nowrap inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-2 px-2 -mx-2"
+            className="inline-flex min-h-11 items-center justify-center px-2 font-mono text-[13px] tracking-tight text-accent"
           >
-            you
-          </a>
+            you.md
+          </Link>
 
-          <div className="hidden md:flex items-center gap-5">
+          <div className="hidden items-center gap-5 md:flex">
             {sections.map(({ id, label }) => (
               <a
                 key={id}
@@ -96,10 +96,10 @@ const Navbar = () => {
                 className={`font-mono text-[10px] transition-colors duration-200 ${
                   activeSection === id
                     ? "text-accent"
-                    : "text-muted-foreground/60 hover:text-[hsl(var(--text-primary))]"
+                    : "text-muted-foreground/60 hover:text-foreground"
                 }`}
               >
-                {label}
+                --{label}
               </a>
             ))}
             <Link
@@ -162,24 +162,26 @@ const Navbar = () => {
                 )}
               </div>
             ) : (
-              <Link
+              <ButtonLink
                 href="/create"
-                className="hidden md:inline-block cta-primary px-3 py-1 text-[10px] whitespace-nowrap"
+                variant="primary"
+                size="sm"
+                className="hidden whitespace-nowrap md:inline-flex"
               >
-                &gt; create you
-              </Link>
+                Create your you.md
+              </ButtonLink>
             )}
             <button
               type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden text-muted-foreground inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-2 -mr-2"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center border border-transparent text-accent transition-colors hover:border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent))]/45 md:hidden"
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
             >
               {mobileOpen ? (
                 <X size={16} />
               ) : (
-                <span className="font-mono text-[11px] text-[hsl(var(--accent))] tracking-tight select-none">&gt;_</span>
+                <Menu size={16} />
               )}
             </button>
           </div>
@@ -187,20 +189,20 @@ const Navbar = () => {
       </nav>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-[hsl(var(--bg)/0.98)] backdrop-blur-xl flex flex-col items-center justify-center gap-6">
+        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 bg-[hsl(var(--bg)/0.98)] backdrop-blur-xl">
           {sections.map(({ id, label }) => (
             <a
               key={id}
               href={`#${id}`}
               onClick={() => setMobileOpen(false)}
-              className={`font-mono text-[14px] transition-colors ${
-                activeSection === id
-                  ? "text-accent"
-                  : "text-muted-foreground/70 hover:text-[hsl(var(--text-primary))]"
-              }`}
-            >
-              {label}
-            </a>
+            className={`font-mono text-[14px] transition-colors ${
+              activeSection === id
+                ? "text-accent"
+                : "text-muted-foreground/70 hover:text-foreground"
+            }`}
+          >
+            --{label}
+          </a>
           ))}
           <Link
             href="/profiles"
@@ -252,13 +254,15 @@ const Navbar = () => {
               </SignOutButton>
             </>
           ) : (
-            <Link
+            <ButtonLink
               href="/create"
               onClick={() => setMobileOpen(false)}
-              className="cta-primary px-6 py-2.5 text-[12px] mt-4"
+              variant="primary"
+              size="lg"
+              className="mt-4"
             >
-              &gt; create you
-            </Link>
+              Create your you.md
+            </ButtonLink>
           )}
         </div>
       )}

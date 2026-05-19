@@ -5,6 +5,8 @@ import { api } from "../../../convex/_generated/api";
 import { useState, useCallback } from "react";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { Button } from "@/components/ui/Button";
+import { Input, Textarea } from "@/components/ui/Form";
 
 interface PrivateLink {
   label: string;
@@ -23,7 +25,7 @@ interface PrivateContextPaneProps {
   username: string;
 }
 
-export function PrivateContextPane({ clerkId, profileId, username }: PrivateContextPaneProps) {
+export function PrivateContextPane({ clerkId, profileId }: PrivateContextPaneProps) {
   const privateCtx = useQuery(api.private.getPrivateContext, { clerkId, profileId });
   const updatePrivateContext = useMutation(api.private.updatePrivateContext);
 
@@ -115,14 +117,13 @@ export function PrivateContextPane({ clerkId, profileId, username }: PrivateCont
           <>
             {/* Notes */}
             <SectionLabel>notes</SectionLabel>
-            <textarea
+            <Textarea
               value={currentNotes}
               onChange={(e) => setNotes(e.target.value)}
               onBlur={() => save({ privateNotes: currentNotes })}
               rows={6}
               placeholder="private notes, goals, reminders..."
-              className="w-full bg-[hsl(var(--bg))] border border-[hsl(var(--border))] p-3 font-mono text-[12px] text-[hsl(var(--text-primary))] opacity-80 placeholder:text-[hsl(var(--text-secondary))]/20 resize-y focus:outline-none focus:border-[hsl(var(--accent))]/40 transition-colors"
-              style={{ borderRadius: "2px" }}
+              className="text-[12px]"
             />
 
             <Divider />
@@ -145,28 +146,27 @@ export function PrivateContextPane({ clerkId, profileId, username }: PrivateCont
               </div>
             )}
             <div className="flex gap-2">
-              <input
+              <Input
                 value={newLinkLabel}
                 onChange={(e) => setNewLinkLabel(e.target.value)}
                 placeholder="label"
-                className="flex-1 bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-2 py-1.5 font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80 placeholder:text-[hsl(var(--text-secondary))]/20 focus:outline-none focus:border-[hsl(var(--accent))]/40"
-                style={{ borderRadius: "2px" }}
+                className="flex-1 text-[12px]"
               />
-              <input
+              <Input
                 value={newLinkUrl}
                 onChange={(e) => setNewLinkUrl(e.target.value)}
                 placeholder="https://..."
                 onKeyDown={(e) => e.key === "Enter" && addLink()}
-                className="flex-[2] bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-2 py-1.5 font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80 placeholder:text-[hsl(var(--text-secondary))]/20 focus:outline-none focus:border-[hsl(var(--accent))]/40"
-                style={{ borderRadius: "2px" }}
+                className="flex-[2] text-[12px]"
               />
-              <button
+              <Button
                 onClick={addLink}
-                className="font-mono text-[10px] text-[hsl(var(--accent))] px-2 py-1.5 border border-[hsl(var(--accent))]/30 hover:bg-[hsl(var(--accent))]/10 transition-colors"
-                style={{ borderRadius: "2px" }}
+                variant="secondary"
+                size="icon"
+                className="text-accent"
               >
                 +
-              </button>
+              </Button>
             </div>
 
             <Divider />
@@ -190,28 +190,27 @@ export function PrivateContextPane({ clerkId, profileId, username }: PrivateCont
               </div>
             )}
             <div className="flex gap-2">
-              <input
+              <Input
                 value={newProjectName}
                 onChange={(e) => setNewProjectName(e.target.value)}
                 placeholder="project name"
-                className="flex-1 bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-2 py-1.5 font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80 placeholder:text-[hsl(var(--text-secondary))]/20 focus:outline-none focus:border-[hsl(var(--accent))]/40"
-                style={{ borderRadius: "2px" }}
+                className="flex-1 text-[12px]"
               />
-              <input
+              <Input
                 value={newProjectDesc}
                 onChange={(e) => setNewProjectDesc(e.target.value)}
                 placeholder="description (optional)"
                 onKeyDown={(e) => e.key === "Enter" && addProject()}
-                className="flex-[2] bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-2 py-1.5 font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80 placeholder:text-[hsl(var(--text-secondary))]/20 focus:outline-none focus:border-[hsl(var(--accent))]/40"
-                style={{ borderRadius: "2px" }}
+                className="flex-[2] text-[12px]"
               />
-              <button
+              <Button
                 onClick={addProject}
-                className="font-mono text-[10px] text-[hsl(var(--accent))] px-2 py-1.5 border border-[hsl(var(--accent))]/30 hover:bg-[hsl(var(--accent))]/10 transition-colors"
-                style={{ borderRadius: "2px" }}
+                variant="secondary"
+                size="icon"
+                className="text-accent"
               >
                 +
-              </button>
+              </Button>
             </div>
 
             {saving && (

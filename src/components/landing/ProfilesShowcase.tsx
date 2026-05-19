@@ -1,159 +1,88 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, ArrowRight } from "lucide-react";
+import { ArrowRight, Shield } from "lucide-react";
 import { sampleProfiles } from "./sampleProfiles";
 import FadeUp from "./FadeUp";
+import { Container, Section } from "@/components/ui/Layout";
+import { Card } from "@/components/ui/Card";
+import { ButtonLink } from "@/components/ui/Button";
 
-function timeAgo(ts: number): string {
-  if (!ts) return "";
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
+const tools = ["Claude Code", "Cursor", "Codex", "ChatGPT", "MCP", "plain URL"];
 
 const ProfilesShowcase = () => {
-  const featured = sampleProfiles.slice(0, 12);
-  const claimedCount = featured.filter(p => p.isClaimed).length;
+  const claimed = sampleProfiles.find((profile) => profile.isClaimed) ?? sampleProfiles[0];
+  const teasers = sampleProfiles.filter((profile) => !profile.isClaimed).slice(0, 3);
 
   return (
-    <section className="py-24 md:py-32">
-      <div className="max-w-2xl mx-auto px-6">
+    <Section compact>
+      <Container>
         <FadeUp>
-          <h2 className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
-            -- the network --
-          </h2>
-          <p className="text-muted-foreground text-[13px] font-body mb-10">
-            every identity is readable by any AI agent. claim yours or explore who&apos;s here.
-          </p>
-        </FadeUp>
-
-        <FadeUp delay={0.1}>
-          <div className="terminal-panel">
-            <div className="terminal-panel-header">
-              <div className="terminal-dot" />
-              <div className="terminal-dot" />
-              <div className="terminal-dot" />
-              <span className="ml-2 text-muted-foreground/60 font-mono text-[10px]">
-                &gt; ls /profiles --featured
-              </span>
-            </div>
-
-            <div className="divide-y divide-border">
-              {featured.map((profile, i) => {
-                const isClaimed = profile.isClaimed;
-                const Wrapper = isClaimed ? Link : "div";
-                const wrapperProps = isClaimed
-                  ? { href: `/${profile.username}` }
-                  : {};
-
-                return (
-                  <div
-                    key={profile.username}
+          <Card padding="compact" className="grid gap-5 md:grid-cols-[1.1fr_0.9fr] md:items-center">
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent/70">
+                -- social proof --
+              </p>
+              <p className="mt-3 max-w-[620px] font-mono text-[16px] leading-relaxed text-foreground/88">
+                one identity file that every agent can read. public enough to share,
+                private enough to control.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {tools.map((tool) => (
+                  <span
+                    key={tool}
+                    className="border border-border bg-background px-2.5 py-1 font-mono text-[10px] text-muted-foreground/65"
                   >
-                    {/* Cycle 65: bumped from py-3.5 (40 tall) to min-h-[44px] */}
-                    {/* @ts-expect-error — dynamic wrapper */}
-                    <Wrapper
-                      {...wrapperProps}
-                      className={`flex items-center gap-4 px-5 py-3.5 min-h-[44px] group transition-colors ${
-                        isClaimed ? "hover:bg-accent-wash/40 cursor-pointer" : "opacity-60"
-                      }`}
-                    >
-                      {/* Status dot */}
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                        isClaimed ? "bg-success/60 status-dot-pulse" : "bg-muted-foreground/20"
-                      }`} />
-
-                      {/* Avatar placeholder */}
-                      <div className="w-8 h-8 overflow-hidden border border-[hsl(var(--border))] shrink-0 bg-[hsl(var(--bg))] flex items-center justify-center">
-                        {profile.avatarUrl ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img
-                            src={profile.avatarUrl}
-                            alt={profile.name}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span className="font-mono text-[10px] text-muted-foreground/30">
-                            {profile.name.charAt(0)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[hsl(var(--text-primary))] font-mono text-[12px] font-medium truncate">
-                            {profile.name}
-                          </span>
-                          {profile.verification.verified && (
-                            <Shield size={10} className="text-success shrink-0" />
-                          )}
-                        </div>
-                        <p className="text-muted-foreground font-mono text-[10px] truncate mt-0.5">
-                          {profile.tagline}
-                        </p>
-                      </div>
-
-                      {/* Right side — metrics or unclaimed label */}
-                      <div className="hidden md:flex items-center gap-4 shrink-0">
-                        {isClaimed ? (
-                          <>
-                            <span className="text-accent/70 font-mono text-[9px]">
-                              {profile.agentMetrics.totalReads.toLocaleString()} reads
-                            </span>
-                            {profile.updatedAt > 0 && (
-                              <span className="text-muted-foreground/40 font-mono text-[9px]">
-                                {timeAgo(profile.updatedAt)}
-                              </span>
-                            )}
-                            <ArrowRight
-                              size={12}
-                              className="text-muted-foreground/20 group-hover:text-accent/60 group-hover:translate-x-0.5 transition-all"
-                            />
-                          </>
-                        ) : (
-                          <span className="font-mono text-[9px] text-muted-foreground/30 border border-border/50 px-2 py-0.5" style={{ borderRadius: "2px" }}>
-                            unclaimed
-                          </span>
-                        )}
-                      </div>
-                    </Wrapper>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Footer */}
-            <div className="px-5 py-3 border-t border-border flex items-center justify-between">
-              <span className="font-mono text-[9px] text-muted-foreground/40">
-                {claimedCount} claimed &middot; {featured.length - claimedCount} unclaimed &middot; claim yours free
-              </span>
-              {/* Cycle 65: bumped both to inline-flex min-h-[44px] */}
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/profiles"
-                  className="inline-flex items-center min-h-[44px] px-2 font-mono text-[10px] text-muted-foreground/50 hover:text-accent transition-colors"
-                >
-                  &gt; view all
-                </Link>
-                <Link
-                  href="/create"
-                  className="inline-flex items-center min-h-[44px] px-2 font-mono text-[10px] text-accent/70 hover:text-accent transition-colors"
-                >
-                  &gt; claim yours
-                </Link>
+                    {tool}
+                  </span>
+                ))}
               </div>
             </div>
-          </div>
+
+            <div className="grid gap-3">
+              <Link
+                href={`/${claimed.username}`}
+                className="group grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 border border-accent/25 bg-accent-wash/35 p-3 transition-colors hover:border-accent/45"
+              >
+                <div className="h-10 w-10 overflow-hidden border border-border bg-background">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={claimed.avatarUrl} alt="" className="h-full w-full object-cover" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate font-mono text-[13px] text-foreground">
+                      {claimed.name}
+                    </span>
+                    <Shield size={11} className="shrink-0 text-success" />
+                  </div>
+                  <p className="truncate font-mono text-[10px] text-muted-foreground/60">
+                    {claimed.agentMetrics.totalReads.toLocaleString()} reads · @{claimed.username}
+                  </p>
+                </div>
+                <ArrowRight size={14} className="text-muted-foreground/30 transition-all group-hover:translate-x-0.5 group-hover:text-accent" />
+              </Link>
+
+              <div className="grid grid-cols-3 gap-2">
+                {teasers.map((profile) => (
+                  <div key={profile.username} className="border border-border/70 bg-background p-2">
+                    <p className="truncate font-mono text-[10px] text-muted-foreground/65">
+                      @{profile.username}
+                    </p>
+                    <p className="mt-1 truncate font-mono text-[9px] text-muted-foreground/35">
+                      unclaimed
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <ButtonLink href="/profiles" variant="terminal-link" size="sm" className="justify-start">
+                view identity network
+              </ButtonLink>
+            </div>
+          </Card>
         </FadeUp>
-      </div>
-    </section>
+      </Container>
+    </Section>
   );
 };
 

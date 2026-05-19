@@ -1,168 +1,98 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useScroll, useTransform } from "motion/react";
 import FadeUp from "./FadeUp";
+import { Card, TerminalCard } from "@/components/ui/Card";
+import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 
 const painPoints = [
-  "re-explaining your stack, role, and preferences to every new agent",
-  "copy-pasting system prompts between Claude Code, Cursor, ChatGPT",
-  "new projects start cold -- no CLAUDE.md, no context, no preferences",
-  "agents can't match your voice because they don't know how you write",
-  "switching tools means losing all the context you built up",
-  "spending 10 minutes onboarding yourself before you can start working",
+  "every new agent asks for your role, stack, tone, and current project",
+  "system prompts rot inside individual tools instead of traveling with you",
+  "new repos start cold, without your skills, preferences, or project structure",
 ];
 
-const beforeSnippets = [
-  { role: "agent" as const, text: "What do you do? What technologies do you use?" },
-  { role: "you" as const, text: "I'm a founder building AI tools. TypeScript, Next.js, Convex..." },
-  { role: "agent" as const, text: "Got it. And what's your communication preference? Formal or casual?" },
-  { role: "you" as const, text: "Direct. No fluff. I've said this 100 times across 10 tools." },
-  { role: "agent" as const, text: "What project are you working on currently?" },
-  { role: "you" as const, text: "[closes tab]" },
+const beforeLines = [
+  ["agent", "what do you do? what stack do you use?"],
+  ["you", "founder. ai tools. typescript, next.js, convex..."],
+  ["agent", "what tone should i use?"],
+  ["you", "direct. no fluff. i have typed this everywhere."],
 ];
 
-const afterSnippets = [
-  { role: "ctx" as const, text: "loading you.md/houston..." },
-  {
-    role: "agent" as const,
-    text: "Houston -- you're building You.md (Next.js + Convex + passwordless auth), prefer terminal-native design, ship fast, no emoji. I see your CLAUDE.md generator skill and your project-context setup. You have 3 active projects. What are we working on?",
-  },
-  { role: "you" as const, text: "new feature for the skill system." },
-  {
-    role: "agent" as const,
-    text: "on it. i'll follow your directives: act decisively, no forms, terminal-first. pulling in your project context now.",
-  },
+const afterLines = [
+  ["ctx", "loading you.md/houston..."],
+  ["agent", "houston, i see your stack, voice, active projects, and rules. i’ll use the terminal-native style and pull project context first."],
+  ["you", "new feature for the skill system."],
+  ["agent", "on it. syncing identity + repo instructions now."],
 ];
+
+function Transcript({
+  title,
+  lines,
+  emphasis = false,
+}: {
+  title: string;
+  lines: string[][];
+  emphasis?: boolean;
+}) {
+  return (
+    <TerminalCard title={title} className={emphasis ? "border-accent/30" : "opacity-80"}>
+      <div className="space-y-2.5">
+        {lines.map(([role, text]) => (
+          <div key={`${role}-${text}`} className="grid grid-cols-[44px_minmax(0,1fr)] gap-3 font-mono text-[11px] leading-relaxed">
+            <span className={emphasis && role !== "you" ? "text-accent/70" : "text-muted-foreground/45"}>
+              {role}
+            </span>
+            <span className={emphasis ? "text-foreground/78" : "text-muted-foreground/58"}>
+              {text}
+            </span>
+          </div>
+        ))}
+      </div>
+    </TerminalCard>
+  );
+}
 
 const ProblemStrip = () => {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [30, -30]);
-
   return (
-    <section ref={ref} className="py-24 md:py-32 overflow-hidden">
-      <motion.div className="max-w-3xl mx-auto px-6" style={{ y }}>
+    <Section>
+      <Container>
         <FadeUp>
-          <h2 className="text-muted-foreground/60 font-mono text-[10px] mb-8 tracking-widest uppercase text-center">
-            -- the problem --
-          </h2>
-          <p className="text-foreground/90 font-mono text-[15px] md:text-[17px] font-light leading-[1.8] tracking-tight text-center">
-            every agent starts from scratch.{" "}
-            <span className="text-accent">you re-explain yourself endlessly.</span>
-          </p>
+          <SectionHeader
+            eyebrow="problem"
+            title="agents forget you on purpose"
+            description="The current agent internet treats identity as disposable session input. you.md turns it into portable context."
+          />
         </FadeUp>
 
-        {/* Pain points grid */}
-        <FadeUp delay={0.1}>
-          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-2xl mx-auto">
-            {painPoints.map((item, i) => (
-              <motion.div
-                key={item}
-                className="flex items-start gap-2 font-mono text-[11px] text-destructive/70 px-3 py-2 border border-destructive/15 bg-destructive/[0.03]"
-                style={{ borderRadius: "2px" }}
-                whileInView={{ opacity: [0, 1], x: [-8, 0] }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 + i * 0.06 }}
-              >
-                <span className="shrink-0 mt-px">{"\u2717"}</span>
-                <span>{item}</span>
-              </motion.div>
-            ))}
-          </div>
-        </FadeUp>
-
-        {/* Before / After comparison */}
-        <FadeUp delay={0.25}>
-          <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
-            {/* BEFORE */}
-            <div className="terminal-panel">
-              <div className="terminal-panel-header">
-                <div className="terminal-dot" />
-                <div className="terminal-dot" />
-                <div className="terminal-dot" />
-                <span className="ml-2 text-destructive/60 font-mono text-[9px]">before you.md</span>
-              </div>
-              <div className="p-4 space-y-2.5">
-                {beforeSnippets.map((line, i) => (
-                  <motion.div
-                    key={i}
-                    className={`font-mono text-[10px] leading-relaxed ${
-                      line.role === "agent" ? "text-muted-foreground/60" : "text-foreground/70"
-                    }`}
-                    whileInView={{ opacity: [0, 1] }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.4 + i * 0.1 }}
-                  >
-                    <span className={line.role === "agent" ? "text-muted-foreground/40" : "text-destructive/50"}>
-                      {line.role === "agent" ? "agent" : "  you"}
-                    </span>
-                    <span className="text-muted-foreground/20"> | </span>
-                    <span>{line.text}</span>
-                  </motion.div>
+        <div className="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
+          <FadeUp delay={0.08}>
+            <Card padding="default">
+              <p className="font-mono text-[13px] leading-relaxed text-foreground/85">
+                the cold start tax:
+              </p>
+              <div className="mt-5 space-y-4">
+                {painPoints.map((item) => (
+                  <div key={item} className="border-l border-accent/30 pl-4">
+                    <p className="text-[14px] leading-relaxed text-muted-foreground">
+                      {item}
+                    </p>
+                  </div>
                 ))}
-                <div className="pt-2 border-t border-border/50">
-                  <span className="font-mono text-[9px] text-destructive/40">
-                    -- repeat for every tool, every session, every project --
-                  </span>
-                </div>
               </div>
-            </div>
+              <p className="mt-6 font-mono text-[12px] leading-relaxed text-accent/80">
+                you shouldn&apos;t have to onboard yourself to your own tools.
+              </p>
+            </Card>
+          </FadeUp>
 
-            {/* AFTER */}
-            <div className="terminal-panel">
-              <div className="terminal-panel-header">
-                <div className="terminal-dot" />
-                <div className="terminal-dot" />
-                <div className="terminal-dot" />
-                <span className="ml-2 text-accent/60 font-mono text-[9px]">with you.md</span>
-              </div>
-              <div className="p-4 space-y-2.5">
-                {afterSnippets.map((line, i) => (
-                  <motion.div
-                    key={i}
-                    className={`font-mono text-[10px] leading-relaxed ${
-                      line.role === "ctx"
-                        ? "text-accent/50"
-                        : line.role === "agent"
-                        ? "text-muted-foreground/70"
-                        : "text-foreground/80"
-                    }`}
-                    whileInView={{ opacity: [0, 1] }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.5 + i * 0.12 }}
-                  >
-                    <span className={
-                      line.role === "ctx"
-                        ? "text-accent/40"
-                        : line.role === "agent"
-                        ? "text-accent/50"
-                        : "text-accent/70"
-                    }>
-                      {line.role === "ctx" ? "  ctx" : line.role === "agent" ? "agent" : "  you"}
-                    </span>
-                    <span className="text-muted-foreground/20"> | </span>
-                    <span>{line.text}</span>
-                  </motion.div>
-                ))}
-                <div className="pt-2 border-t border-border/50">
-                  <span className="font-mono text-[9px] text-accent/40">
-                    -- full context from identity + skills + directives. zero onboarding --
-                  </span>
-                </div>
-              </div>
+          <FadeUp delay={0.16}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Transcript title="before you.md" lines={beforeLines} />
+              <Transcript title="with you.md" lines={afterLines} emphasis />
             </div>
-          </div>
-        </FadeUp>
-
-        <FadeUp delay={0.35}>
-          <p className="text-foreground/60 font-mono text-[12px] mt-10 italic text-center">
-            you shouldn&apos;t have to onboard{" "}
-            <span className="text-accent">yourself</span> to your own tools.
-          </p>
-        </FadeUp>
-      </motion.div>
-    </section>
+          </FadeUp>
+        </div>
+      </Container>
+    </Section>
   );
 };
 

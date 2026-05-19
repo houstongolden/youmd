@@ -1,180 +1,100 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useInView } from "motion/react";
 import FadeUp from "./FadeUp";
+import { Card, TerminalCard } from "@/components/ui/Card";
+import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 
-const codeLines = [
-  "---",
-  "schema: you/v1",
-  "name: Houston Golden",
-  "username: houstongolden",
-  "---",
-  "",
-  "# Houston Golden",
-  "",
-  "Founder. Building identity infrastructure",
-  "for the agent internet.",
-  "",
-  "## Now",
-  "",
-  "- Shipping you.md v1",
-  "- Scaling BAMF Media",
-  "- Cosmology research (bigbounce)",
-  "",
-  "## Agent Preferences",
-  "",
-  "Tone: direct, no fluff, terminal-native",
-  "Stack: TypeScript, Next.js, Convex",
-  "Never: forms, emoji, corporate speak",
-  "",
-  "## Links",
-  "",
-  "- you.md/houstongolden",
-  "- github.com/houstongolden",
+const items = [
+  {
+    label: "profile",
+    title: "who you are",
+    desc: "bio, role, links, proof, and current work agents can cite without asking.",
+  },
+  {
+    label: "voice",
+    title: "how you sound",
+    desc: "writing style, tone rules, and platform-specific communication preferences.",
+  },
+  {
+    label: "directives",
+    title: "how agents should work",
+    desc: "decision rules, never-do lists, action bias, and session behavior.",
+  },
+  {
+    label: "projects",
+    title: "what you are building",
+    desc: "active repos, goals, architecture context, TODOs, and project memory.",
+  },
+  {
+    label: "skills",
+    title: "portable agent abilities",
+    desc: "identity-aware skills for context setup, voice sync, scaffolding, and review.",
+  },
+  {
+    label: "private",
+    title: "controlled context",
+    desc: "scoped notes and links for trusted agents, separate from the public profile.",
+  },
 ];
 
-const TypewriterCode = () => {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-100px" });
-  const [visibleChars, setVisibleChars] = useState(0);
-  const totalChars = codeLines.join("\n").length;
-
-  useEffect(() => {
-    if (!inView) return;
-    let current = 0;
-    const interval = setInterval(() => {
-      current += 2;
-      if (current >= totalChars) {
-        setVisibleChars(totalChars);
-        clearInterval(interval);
-      } else {
-        setVisibleChars(current);
-      }
-    }, 16);
-    return () => clearInterval(interval);
-  }, [inView, totalChars]);
-
-  const fullText = codeLines.join("\n");
-  const visibleText = fullText.slice(0, visibleChars);
-  const lines = visibleText.split("\n");
-
-  const renderLine = (line: string) => {
-    if (line === "---")
-      return (
-        <span className="text-muted-foreground/40">{line}</span>
-      );
-    if (line === "") return <span>&nbsp;</span>;
-    if (line.startsWith("# "))
-      return <span className="text-accent">{line}</span>;
-    if (line.startsWith("## "))
-      return <span className="text-accent/80">{line}</span>;
-    if (line.startsWith("- "))
-      return <span className="text-foreground/75">{line}</span>;
-    const colonIdx = line.indexOf(":");
-    if (colonIdx > 0 && colonIdx < 20) {
-      return (
-        <>
-          <span className="text-accent/70">
-            {line.slice(0, colonIdx)}
-          </span>
-          <span className="text-muted-foreground/70">
-            {line.slice(colonIdx)}
-          </span>
-        </>
-      );
-    }
-    return <span className="text-foreground/70">{line}</span>;
-  };
-
-  return (
-    <div ref={ref} className="terminal-panel overflow-x-auto">
-      <div className="terminal-panel-header">
-        <div className="terminal-dot" />
-        <div className="terminal-dot" />
-        <div className="terminal-dot" />
-        <span className="ml-2 text-muted-foreground/50 font-mono text-[10px]">
-          you.md identity context
-        </span>
-      </div>
-      <div className="p-5">
-        <pre className="font-mono text-[11px] md:text-[12px] leading-[1.9] min-h-[200px]">
-          <code>
-            {lines.map((line, i) => (
-              <div key={i}>{renderLine(line)}</div>
-            ))}
-            {visibleChars < totalChars && (
-              <span className="cursor-blink text-accent">
-                {"\u2588"}
-              </span>
-            )}
-          </code>
-        </pre>
-      </div>
-    </div>
-  );
-};
+const codeLines = [
+  "schema: you/v1",
+  "profile/about.md",
+  "preferences/agent.md",
+  "directives/agent.md",
+  "skills/project-context-init",
+  "you.json",
+];
 
 const WhatsInside = () => (
-  <section id="spec" className="py-24 md:py-32">
-    <div className="max-w-xl mx-auto px-6">
+  <Section id="spec">
+    <Container>
       <FadeUp>
-        <h2 className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
-          -- what&apos;s inside --
-        </h2>
-        <p className="text-muted-foreground text-[13px] font-body mb-10">
-          Your identity, structured for machines and humans.
-        </p>
+        <SectionHeader
+          eyebrow="what's inside"
+          title="a machine-readable identity bundle"
+          description="Plain files for humans, structured JSON and context links for agents."
+        />
       </FadeUp>
 
-      <FadeUp delay={0.1}>
-        <TypewriterCode />
-      </FadeUp>
+      <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+        <FadeUp delay={0.08}>
+          <TerminalCard title="you.md identity context">
+            <pre className="font-mono text-[12px] leading-[1.8] text-muted-foreground/70">
+              {codeLines.map((line, index) => (
+                <div key={line}>
+                  <span className="text-muted-foreground/25">
+                    {String(index + 1).padStart(2, "0")} |
+                  </span>{" "}
+                  <span className={index === 0 ? "text-accent" : "text-foreground/72"}>
+                    {line}
+                  </span>
+                </div>
+              ))}
+            </pre>
+          </TerminalCard>
+        </FadeUp>
 
-      <FadeUp delay={0.2}>
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-4">
-          {[
-            {
-              label: "identity",
-              desc: "bio, role, projects -- agents skip the intro",
-            },
-            {
-              label: "voice",
-              desc: "how you write, per platform. responses match your tone.",
-            },
-            {
-              label: "directives",
-              desc: "your rules for AI: tone, never-do list, decision framework",
-            },
-            {
-              label: "context",
-              desc: "what you're working on now. goals. private notes for trusted agents.",
-            },
-            {
-              label: "skills",
-              desc: "agent skills that travel with you. CLAUDE.md, project scaffolds, voice sync -- identity-aware.",
-            },
-            {
-              label: "preferences",
-              desc: "stack, tools, agent behavior rules. every agent adapts to how you work.",
-            },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="py-3 border-l-2 border-accent/20 pl-3"
-            >
-              <p className="text-foreground font-mono text-[11px] mb-0.5">
-                {item.label}
-              </p>
-              <p className="text-muted-foreground/70 font-body text-[11px]">
-                {item.desc}
-              </p>
-            </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {items.map((item, index) => (
+            <FadeUp key={item.label} delay={0.1 + index * 0.04}>
+              <Card padding="compact" className="h-full">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent/65">
+                  {item.label}
+                </p>
+                <h3 className="mt-3 font-mono text-[16px] leading-snug text-foreground/90">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                  {item.desc}
+                </p>
+              </Card>
+            </FadeUp>
           ))}
         </div>
-      </FadeUp>
-    </div>
-  </section>
+      </div>
+    </Container>
+  </Section>
 );
 
 export default WhatsInside;

@@ -1,99 +1,76 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useScroll, useTransform } from "motion/react";
 import FadeUp from "./FadeUp";
+import { CliInstallTabs } from "@/components/install/CliInstallTabs";
+import { Container, Section, SectionHeader } from "@/components/ui/Layout";
+import { TerminalCard } from "@/components/ui/Card";
 
 const steps = [
   {
     num: "01",
-    cmd: "$ curl -fsSL https://you.md/install.sh | bash",
-    desc: "install youmd globally in one step. curl is the default path, npm stays available as the fallback if you prefer package-manager installs directly.",
+    title: "create your identity",
+    cmd: "youmd init",
+    desc: "U builds your profile, voice, preferences, projects, and directives through conversation.",
   },
   {
     num: "02",
-    cmd: "$ youmd login",
-    desc: "authenticate once with browser, email code, or API key. same identity works across the web shell, CLI, MCP, and linked coding agents.",
+    title: "publish/share context",
+    cmd: "youmd push",
+    desc: "your public profile, scoped context links, API, and markdown bundle become agent-readable.",
   },
   {
     num: "03",
-    cmd: "$ youmd init",
-    desc: "a conversational AI builds your identity through dialogue -- not a form. bio, projects, preferences, voice, directives. your agent learns how you think and what you care about.",
+    title: "connect agents",
+    cmd: "youmd mcp --install codex",
+    desc: "Claude Code, Cursor, Codex, ChatGPT, or any URL-aware agent can load the same context.",
   },
   {
     num: "04",
-    cmd: "$ youmd push",
-    desc: "your identity goes live at you.md/username. any agent can read it instantly -- public profile + API + context links. skills auto-sync across all your tools.",
-  },
-  {
-    num: "05",
-    cmd: "$ youmd skill init-project",
-    desc: "start any new project with full identity context. bootstraps AGENTS/CLAUDE entrypoints, scaffolds project-context/ additively, creates a generated .you/ layer, and links skills to Claude Code, Cursor, or Codex.",
-  },
-  {
-    num: "06",
-    cmd: "$ youmd skill link claude",
-    desc: "your identity skills -- voice sync, agent preferences, directives -- render into .claude/skills/youmd/ or .cursor/rules/. every coding agent knows who you are from the first prompt.",
+    title: "sync skills/projects",
+    cmd: "youmd skill init-project",
+    desc: "bootstrap AGENTS.md, CLAUDE.md, project-context, and identity-aware skills additively.",
   },
 ];
 
-const Step = ({
-  step,
-  index,
-}: {
-  step: (typeof steps)[0];
-  index: number;
-}) => {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-  const y = useTransform(scrollYProgress, [0, 1], [20, -10]);
-
-  return (
-    <motion.div ref={ref} style={{ y }}>
-      <FadeUp delay={index * 0.1}>
-        <div className="py-6 border-b border-border last:border-0">
-          <div className="flex items-baseline gap-4 mb-3">
-            <span className="text-muted-foreground/50 font-mono text-[10px]">
-              {step.num}
-            </span>
-            <span className="text-accent font-mono text-[12px]">
-              {step.cmd}
-            </span>
-          </div>
-          <p className="text-muted-foreground text-[13px] font-body leading-relaxed pl-8">
-            {step.desc}
-          </p>
-        </div>
-      </FadeUp>
-    </motion.div>
-  );
-};
-
 const HowItWorks = () => (
-  <section
-    id="how-it-works"
-    className="py-24 md:py-32 overflow-hidden"
-  >
-    <div className="max-w-xl mx-auto px-6">
-      <FadeUp>
-        <h2 className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
-          -- how it works --
-        </h2>
-        <p className="text-muted-foreground text-[13px] font-body mb-10">
-          Sign up in seconds. Your identity is ready to share from the first message.
-        </p>
-      </FadeUp>
+  <Section id="how-it-works">
+    <Container>
+      <div className="grid gap-8 lg:grid-cols-[0.72fr_1fr] lg:gap-12">
+        <FadeUp>
+          <div>
+            <SectionHeader
+              eyebrow="how it works"
+              title="four commands, then every agent starts warmer"
+              description="Install once, create once, then point any agent at the context it should have had from the beginning."
+              className="mb-6"
+            />
+            <CliInstallTabs
+              className="max-w-[520px]"
+              title="install"
+              helperText="then run youmd init"
+            />
+          </div>
+        </FadeUp>
 
-      <div>
-        {steps.map((step, i) => (
-          <Step key={step.num} step={step} index={i} />
-        ))}
+        <div className="grid gap-3">
+          {steps.map((step, index) => (
+            <FadeUp key={step.num} delay={index * 0.05}>
+              <TerminalCard title={`${step.num} / ${step.title}`} bodyClassName="py-4">
+                <div className="grid gap-2 sm:grid-cols-[190px_minmax(0,1fr)] sm:items-start">
+                  <code className="font-mono text-[12px] leading-relaxed text-accent">
+                    $ {step.cmd}
+                  </code>
+                  <p className="text-[13px] leading-relaxed text-muted-foreground">
+                    {step.desc}
+                  </p>
+                </div>
+              </TerminalCard>
+            </FadeUp>
+          ))}
+        </div>
       </div>
-    </div>
-  </section>
+    </Container>
+  </Section>
 );
 
 export default HowItWorks;

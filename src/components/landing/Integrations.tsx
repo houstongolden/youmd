@@ -1,139 +1,90 @@
 "use client";
 
 import FadeUp from "./FadeUp";
+import { ButtonLink } from "@/components/ui/Button";
+import { Card, TerminalCard } from "@/components/ui/Card";
+import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 
-const agents = [
-  { name: "Claude Code", tier: "primary" },
-  { name: "Cursor", tier: "primary" },
-  { name: "Codex CLI", tier: "primary" },
-  { name: "ChatGPT", tier: "primary" },
-  { name: "Gemini", tier: "primary" },
-  { name: "Grok", tier: "secondary" },
-  { name: "Perplexity", tier: "secondary" },
-  { name: "Copilot", tier: "secondary" },
-  { name: "Aider", tier: "secondary" },
-  { name: "Windsurf", tier: "secondary" },
-  { name: "CrewAI", tier: "secondary" },
-  { name: "OpenClaw", tier: "secondary" },
-];
-
+const primaryTools = ["Claude Code", "Cursor", "Codex", "ChatGPT"];
 const methods = [
-  { label: "context links", desc: "paste a URL, agent reads your identity" },
-  { label: "MCP server", desc: "youmd agent serves context on demand" },
-  { label: "plain text", desc: "/ctx/username/token returns scoped agent-ready text" },
-  { label: "JSON API", desc: "/api/v1/profiles?username=x returns structured identity" },
+  ["context links", "https://you.md/ctx/user/token"],
+  ["MCP server", "npx --yes youmd@latest mcp"],
+  ["plain text", "GET /ctx/user/token"],
+  ["JSON API", "GET /api/v1/profiles?username=x"],
 ];
 
 const Integrations = () => (
-  <section className="py-16 md:py-24">
-    <div className="max-w-2xl mx-auto px-6">
+  <Section compact>
+    <Container>
       <FadeUp>
-        <h2 className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-3 text-center">
-          -- works everywhere --
-        </h2>
-        <p className="text-muted-foreground/70 font-body text-[12px] mb-10 text-center max-w-md mx-auto">
-          One link gives every agent your full context. No per-tool config, no
-          system prompt hacks, no manual copy-paste.
-        </p>
+        <SectionHeader
+          eyebrow="works everywhere"
+          title="for users and builders"
+          description="Portable identity for people. A simple context surface for apps and agents."
+        />
       </FadeUp>
 
-      {/* Agent pills */}
-      <FadeUp delay={0.08}>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {agents.map((agent) => (
-            <span
-              key={agent.name}
-              className={`font-mono text-[11px] transition-colors duration-300 cursor-default select-none px-3 py-1.5 border hover:scale-105 hover:-translate-y-px transition-transform ${
-                agent.tier === "primary"
-                  ? "text-accent/80 border-accent/20 hover:border-accent/40 hover:text-accent bg-accent-wash/30"
-                  : "text-muted-foreground/60 border-border/60 hover:border-accent/20 hover:text-accent/80"
-              }`}
-              style={{ borderRadius: "2px" }}
-            >
-              {agent.name}
-            </span>
-          ))}
-        </div>
-      </FadeUp>
-
-      {/* Demo: how it works */}
-      <FadeUp delay={0.18}>
-        <div className="mt-12 terminal-panel max-w-xl mx-auto">
-          <div className="terminal-panel-header">
-            <div className="terminal-dot" />
-            <div className="terminal-dot" />
-            <div className="terminal-dot" />
-            <span className="ml-2 text-muted-foreground/60 font-mono text-[9px]">
-              &gt; sharing context with any agent
-            </span>
-          </div>
-          <div className="p-4 space-y-4">
-            {/* User prompt */}
-            <div className="space-y-1.5">
-              <div className="font-mono text-[9px] text-muted-foreground/40">
-                you
-              </div>
-              <div className="font-mono text-[11px] text-foreground/80 leading-relaxed pl-3 border-l border-accent/20">
-                <p>Read my identity before we start:</p>
-                <p className="text-accent/70 mt-1">
-                  https://you.md/ctx/houston/sk_a1b2c3
-                </p>
-              </div>
+      <div className="grid gap-5 lg:grid-cols-[0.84fr_1.16fr]">
+        <FadeUp delay={0.08}>
+          <Card padding="default" className="h-full">
+            <p className="font-mono text-[12px] uppercase tracking-[0.18em] text-accent/70">
+              primary agents
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              {primaryTools.map((tool) => (
+                <div key={tool} className="border border-border bg-background px-3 py-2.5">
+                  <p className="font-mono text-[12px] text-foreground/82">{tool}</p>
+                </div>
+              ))}
             </div>
+            <p className="mt-5 text-[13px] leading-relaxed text-muted-foreground">
+              plus any agent that can read a URL, file, MCP server, or pasted context block.
+            </p>
+          </Card>
+        </FadeUp>
 
-            <div className="h-px bg-border/50" />
-
-            {/* Agent response */}
-            <div className="space-y-1.5">
-              <div className="font-mono text-[9px] text-accent/40">agent</div>
-              <div className="font-mono text-[11px] text-muted-foreground/70 leading-relaxed pl-3 border-l border-border/40">
-                <p>
-                  Got it. You&apos;re Houston Golden -- TypeScript-first, building
-                  on Next.js + Convex, prefer terminal-native design, no emoji.
-                  I&apos;ll match your style. What are we working on?
-                </p>
-              </div>
-            </div>
-
-            <div className="h-px bg-border/50" />
-
-            {/* Result */}
-            <div className="font-mono text-[9px] text-accent/50 text-center">
-              zero onboarding. works in any chat window.
-            </div>
-          </div>
-        </div>
-      </FadeUp>
-
-      {/* Integration methods */}
-      <FadeUp delay={0.28}>
-        <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl mx-auto">
-          {methods.map((method) => (
-            <div
-              key={method.label}
-              className="text-center px-3 py-3 border border-border/40 bg-[hsl(var(--bg-raised))]/50"
-              style={{ borderRadius: "2px" }}
-            >
-              <p className="font-mono text-[10px] text-accent/70 mb-1">
-                {method.label}
+        <div className="grid gap-5 md:grid-cols-2">
+          <FadeUp delay={0.14}>
+            <TerminalCard title="for users">
+              <p className="font-mono text-[15px] leading-relaxed text-foreground/85">
+                carry your context between tools
               </p>
-              <p className="font-mono text-[8px] text-muted-foreground/50 leading-relaxed">
-                {method.desc}
+              <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
+                Share one scoped link and the agent gets your identity, preferences,
+                voice, active projects, and rules before the work starts.
               </p>
-            </div>
-          ))}
-        </div>
-      </FadeUp>
+              <code className="mt-5 block border border-border bg-background p-3 font-mono text-[11px] leading-relaxed text-accent">
+                Read my identity first: https://you.md/ctx/houston/sk...
+              </code>
+            </TerminalCard>
+          </FadeUp>
 
-      <FadeUp delay={0.35}>
-        <p className="text-center mt-8">
-          <span className="text-muted-foreground/50 font-mono text-[10px]">
-            + any tool that accepts a URL, file, or MCP connection
-          </span>
-        </p>
-      </FadeUp>
-    </div>
-  </section>
+          <FadeUp delay={0.2}>
+            <TerminalCard title="for builders">
+              <p className="font-mono text-[15px] leading-relaxed text-foreground/85">
+                integrate context without a profile form
+              </p>
+              <div className="mt-4 space-y-3">
+                {methods.map(([label, code]) => (
+                  <div key={label} className="grid gap-1">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent/60">
+                      {label}
+                    </p>
+                    <code className="break-all font-mono text-[11px] leading-relaxed text-muted-foreground/72">
+                      {code}
+                    </code>
+                  </div>
+                ))}
+              </div>
+              <ButtonLink href="/docs" variant="terminal-link" size="sm" className="mt-4 justify-start">
+                read docs
+              </ButtonLink>
+            </TerminalCard>
+          </FadeUp>
+        </div>
+      </div>
+    </Container>
+  </Section>
 );
 
 export default Integrations;

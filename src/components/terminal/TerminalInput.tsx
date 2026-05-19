@@ -1,6 +1,7 @@
 "use client";
 
 import { KeyboardEvent, ClipboardEvent, useState, useCallback } from "react";
+import { Button } from "@/components/ui/Button";
 
 interface TerminalInputProps {
   input: string;
@@ -16,7 +17,6 @@ interface TerminalInputProps {
 export function TerminalInput({
   input,
   setInput,
-  isThinking,
   textareaRef,
   onKeyDown,
   onSend,
@@ -93,25 +93,25 @@ export function TerminalInput({
           autoComplete="off"
           spellCheck={false}
           enterKeyHint="send"
-          className="flex-1 px-0 py-1.5 text-[12px] font-mono bg-transparent border-none outline-none resize-none text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/15"
+          className="min-h-11 flex-1 resize-none border border-transparent bg-transparent px-2 py-3 font-mono text-[13px] text-foreground caret-accent placeholder:text-muted-foreground/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           style={{ maxHeight: "160px" }}
         />
-        <button
+        <Button
           type="button"
           onClick={() => {
             onSend();
             setPastedImage(null);
           }}
           disabled={!input.trim() && !pastedImage}
-          className="shrink-0 h-7 w-9 flex items-center justify-center bg-[hsl(var(--accent))] text-white active:scale-95 transition-transform disabled:opacity-30"
-          style={{ borderRadius: "3px" }}
+          variant="primary"
+          size="icon"
           aria-label="Send"
         >
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 10 4 15 9 20" />
             <path d="M20 4v7a4 4 0 0 1-4 4H4" />
           </svg>
-        </button>
+        </Button>
       </div>
       <div className="flex items-center gap-3 mt-1 ml-5">
         <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-20">

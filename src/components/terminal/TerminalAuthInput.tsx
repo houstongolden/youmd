@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/Button";
 
 interface TerminalAuthInputProps {
   prompt?: string;
@@ -55,7 +56,7 @@ export function TerminalAuthInput({
   };
 
   return (
-    <div className="flex items-center gap-2 font-mono text-[16px] min-h-[44px]">
+    <div className="flex min-h-11 items-center gap-2 font-mono text-[16px]">
       <span className="text-[hsl(var(--accent))] select-none shrink-0" aria-hidden="true">
         {prompt}
       </span>
@@ -67,7 +68,7 @@ export function TerminalAuthInput({
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         // Cycle 64: bumped to min-h-[44px] (was 26px tall — well under WCAG min)
-        className="flex-1 min-w-0 min-h-[44px] bg-transparent border-none outline-none font-mono text-[16px] text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/15"
+        className="min-h-11 flex-1 min-w-0 border border-transparent bg-transparent px-2 font-mono text-[16px] text-foreground caret-accent placeholder:text-muted-foreground/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         autoFocus={autoFocus}
         disabled={disabled}
         autoComplete={autoComplete}
@@ -78,18 +79,18 @@ export function TerminalAuthInput({
         enterKeyHint="send"
       />
       {/* Return/submit button */}
-      <button
+      <Button
         type="button"
         onClick={handleSubmit}
-        className="shrink-0 h-11 w-11 flex items-center justify-center bg-[hsl(var(--bg))] border border-[hsl(var(--border))] hover:border-[hsl(var(--accent))]/40 active:scale-95 transition-all"
-        style={{ borderRadius: "3px" }}
+        variant="secondary"
+        size="icon"
         aria-label="Submit"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--accent))" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="9 10 4 15 9 20" />
           <path d="M20 4v7a4 4 0 0 1-4 4H4" />
         </svg>
-      </button>
+      </Button>
     </div>
   );
 }

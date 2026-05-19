@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
-import FounderQuote from "@/components/landing/FounderQuote";
 import ProfilesShowcase from "@/components/landing/ProfilesShowcase";
 import ProblemStrip from "@/components/landing/ProblemStrip";
 import HowItWorks from "@/components/landing/HowItWorks";
 import WhatsInside from "@/components/landing/WhatsInside";
 import OpenSpec from "@/components/landing/OpenSpec";
 import Integrations from "@/components/landing/Integrations";
-import ForDevelopers from "@/components/landing/ForDevelopers";
 import FAQ from "@/components/landing/FAQ";
 import Pricing from "@/components/landing/Pricing";
 import CTAFooter from "@/components/landing/CTAFooter";
@@ -42,16 +40,14 @@ export default function Home() {
       <Navbar />
       <main id="main">
         <Hero />
-        <FounderQuote />
         <ProfilesShowcase />
         <ProblemStrip />
         <HowItWorks />
         <WhatsInside />
         <Integrations />
-        <ForDevelopers />
         <OpenSpec />
-        <FAQ />
         <Pricing />
+        <FAQ />
         <CTAFooter />
       </main>
     </div>

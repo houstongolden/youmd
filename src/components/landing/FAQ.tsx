@@ -1,140 +1,99 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import FadeUp from "./FadeUp";
+import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 
 const faqs = [
   {
     q: "what is you.md exactly?",
-    a: "an identity context protocol -- an MCP where the context is you. your name, projects, values, preferences, voice -- structured so any agent can onboard instantly.",
+    a: "an identity context protocol: your profile, projects, values, preferences, voice, and directives structured so any agent can onboard instantly.",
   },
   {
     q: "how is this different from a system prompt?",
-    a: "system prompts are per-tool, per-session, and forgotten. you.md is a protocol -- persistent, portable, and works across every agent. write once, share everywhere.",
-  },
-  {
-    q: "what data does my identity context include?",
-    a: "your public profile (bio, projects, values, links), voice analysis (how you write), agent directives (how you want AI to talk to you), and optionally private context for trusted agents.",
+    a: "system prompts are per-tool and per-session. you.md is persistent, portable, shareable, and readable as markdown, JSON, URLs, or MCP context.",
   },
   {
     q: "is my data private?",
-    a: "you control everything. public profiles live at you.md/username. private context requires scoped tokens. you can self-host with youmd export. API keys are hashed, never stored raw.",
-  },
-  {
-    q: "do i need to sign up?",
-    a: "yes, but it takes 30 seconds. sign up with an email code, then U builds your identity context through conversation. your data is encrypted and you control who sees what.",
+    a: "you control what is public. private context requires scoped tokens or authenticated access, and you can revoke links or export your files.",
   },
   {
     q: "which agents work with you.md?",
-    a: "any agent that can read a URL or accept context. tested with Claude Code, Cursor, ChatGPT, Codex, Perplexity, Gemini, Grok, and more. share your link and it just works.",
+    a: "Claude Code, Cursor, Codex, ChatGPT, and any agent that can read a URL, local file, pasted context, API endpoint, or MCP server.",
+  },
+  {
+    q: "do i need to sign up?",
+    a: "yes. email-code auth takes about 30 seconds, then U builds your identity context conversationally instead of sending you through a form.",
   },
   {
     q: "what's the you/v1 spec?",
-    a: "an open protocol for structured identity context. plain markdown files that compile to JSON. no vendor lock-in. fork it, self-host it, build on it.",
-  },
-  {
-    q: "is there an API?",
-    a: "yes. 30+ HTTP endpoints for reading profiles, managing context, chat, memory, and more. full docs at you.md/docs.",
+    a: "plain markdown files that compile to structured JSON and agent-ready context. no vendor lock-in, and self-hosting/export are built in.",
   },
 ];
 
-const FAQItem = ({
-  faq,
-  index,
-  isOpen,
-  onToggle,
-}: {
-  faq: (typeof faqs)[0];
-  index: number;
-  isOpen: boolean;
-  onToggle: () => void;
-}) => (
-  <FadeUp delay={index * 0.04}>
-    <motion.div
-      whileHover={{
-        borderColor: "hsl(var(--accent) / 0.15)",
-      }}
-      className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] transition-colors overflow-hidden"
-      style={{ borderRadius: "2px" }}
-    >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        aria-controls={`faq-panel-${index}`}
-        className="w-full text-left px-5 py-4 flex items-center justify-between gap-4 cursor-pointer"
-      >
-        <span className="font-mono text-[12px] text-accent leading-relaxed">
-          {faq.q}
-        </span>
-        <motion.span
-          animate={{ rotate: isOpen ? 45 : 0 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          className="text-muted-foreground/40 font-mono text-[14px] shrink-0 select-none"
-        >
-          +
-        </motion.span>
-      </button>
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            id={`faq-panel-${index}`}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="overflow-hidden"
-          >
-            <div className="px-5 pb-4 pt-0">
-              <div className="border-t border-[hsl(var(--border))] pt-3">
-                <p className="font-body text-[12px] text-muted-foreground leading-relaxed">
-                  {faq.a}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  </FadeUp>
-);
-
 const FAQ = () => {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="py-24 md:py-32">
-      <div className="max-w-xl mx-auto px-6">
+    <Section id="faq" compact>
+      <Container size="narrow">
         <FadeUp>
-          <h2 className="text-muted-foreground/60 font-mono text-[10px] uppercase tracking-widest mb-2">
-            -- frequently asked --
-          </h2>
-          <p className="text-muted-foreground text-[13px] font-body mb-14">
-            The short answers to the obvious questions.
-          </p>
+          <SectionHeader
+            eyebrow="faq"
+            title="short answers"
+            description="The questions people ask before they give another agent their life story again."
+            align="center"
+          />
         </FadeUp>
 
-        <div className="space-y-3">
-          {faqs.map((faq, i) => (
-            <FAQItem
-              key={i}
-              faq={faq}
-              index={i}
-              isOpen={openIndex === i}
-              onToggle={() => setOpenIndex(openIndex === i ? null : i)}
-            />
-          ))}
+        <div className="border-y border-border">
+          {faqs.map((faq, index) => {
+            const isOpen = openIndex === index;
+            return (
+              <FadeUp key={faq.q} delay={index * 0.025}>
+                <div className="border-b border-border last:border-b-0">
+                  <button
+                    type="button"
+                    onClick={() => setOpenIndex(isOpen ? null : index)}
+                    aria-expanded={isOpen}
+                    aria-controls={`faq-panel-${index}`}
+                    className="flex min-h-14 w-full items-center justify-between gap-5 px-1 py-4 text-left transition-colors hover:bg-card/40 md:px-3"
+                  >
+                    <span className="font-mono text-[13px] leading-relaxed text-foreground/88">
+                      {faq.q}
+                    </span>
+                    <motion.span
+                      animate={{ rotate: isOpen ? 45 : 0 }}
+                      transition={{ duration: 0.16, ease: "easeOut" }}
+                      className="shrink-0 font-mono text-[18px] leading-none text-accent/70"
+                    >
+                      +
+                    </motion.span>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        id={`faq-panel-${index}`}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="overflow-hidden"
+                      >
+                        <p className="px-1 pb-5 text-[14px] leading-relaxed text-muted-foreground md:px-3">
+                          {faq.a}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </FadeUp>
+            );
+          })}
         </div>
-
-        <FadeUp delay={0.35}>
-          <p className="text-muted-foreground/60 font-mono text-[10px] text-center mt-10">
-            still have questions? run{" "}
-            <span className="text-accent">you</span> and ask U.
-          </p>
-        </FadeUp>
-      </div>
-    </section>
+      </Container>
+    </Section>
   );
 };
 

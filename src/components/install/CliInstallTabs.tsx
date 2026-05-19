@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 type InstallMode = "curl" | "npm";
 
@@ -42,12 +43,9 @@ export function CliInstallTabs({
   };
 
   return (
-    <div
-      className={`border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 md:p-4 ${className}`}
-      style={{ borderRadius: "2px" }}
-    >
+    <div className={`border border-border bg-card p-4 ${className}`}>
       <div className="flex items-center justify-between gap-3 mb-3">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-[hsl(var(--text-secondary))] opacity-55">
+        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/55">
           {title}
         </span>
         <div className="flex items-center gap-1">
@@ -56,12 +54,11 @@ export function CliInstallTabs({
               key={key}
               type="button"
               onClick={() => setMode(key)}
-              className={`px-2.5 py-1 font-mono text-[10px] border transition-colors ${
+              className={`h-8 px-2.5 font-mono text-[10px] border transition-colors ${
                 mode === key
-                  ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border-[hsl(var(--border))]"
-                  : "text-[hsl(var(--text-secondary))] opacity-50 border-transparent hover:opacity-80"
+                  ? "text-foreground bg-background border-border"
+                  : "text-muted-foreground/55 border-transparent hover:text-foreground"
               }`}
-              style={{ borderRadius: "2px" }}
             >
               {INSTALL_COMMANDS[key].label}
             </button>
@@ -69,27 +66,28 @@ export function CliInstallTabs({
         </div>
       </div>
 
-      <button
+      <Button
         type="button"
         onClick={copy}
-        className="w-full text-left border border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-4 py-3 font-mono text-[11px] md:text-[12px] text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-        style={{ borderRadius: "2px" }}
+        variant="secondary"
+        size="lg"
+        className="h-auto min-h-12 w-full justify-start px-4 py-3 text-left text-[11px] text-accent md:text-[12px]"
         aria-label={`copy ${selected.label} install command`}
       >
         <span className="flex items-center gap-3">
-          <span className="text-[hsl(var(--text-secondary))] opacity-55">$</span>
+          <span className="text-muted-foreground/55">$</span>
           <span className="flex-1 break-all">{selected.command}</span>
-          <span className="shrink-0 text-[hsl(var(--text-secondary))] opacity-50">
-            {copied ? <Check size={14} className="text-[hsl(var(--success))]" /> : <Copy size={14} />}
+          <span className="shrink-0 text-muted-foreground/50">
+            {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
           </span>
         </span>
-      </button>
+      </Button>
 
       <div className="mt-2 flex items-center justify-between gap-3 font-mono text-[10px]">
-        <span className="text-[hsl(var(--text-secondary))] opacity-45">
+        <span className="text-muted-foreground/45">
           {selected.description}
         </span>
-        <span className="text-[hsl(var(--text-secondary))] opacity-35 text-right">
+        <span className="text-muted-foreground/35 text-right">
           {copied ? "copied to clipboard" : helperText}
         </span>
       </div>

@@ -8,6 +8,8 @@ import { PaneHeader, PaneEmptyState } from "./shared";
 import { decompileBundle, buildFileTree, generateMemoryFiles, type VirtualFile, type FileTreeNode } from "@/lib/decompile";
 import { recompileYouJson } from "@/lib/recompile";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { Button } from "@/components/ui/Button";
+import { Input, Textarea } from "@/components/ui/Form";
 
 interface FilesPaneProps {
   userId: Id<"users">;
@@ -83,7 +85,7 @@ function renderMarkdown(source: string): string {
   let inList = false;
 
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
+    const line = lines[i];
 
     // Horizontal rule
     if (/^---+\s*$/.test(line)) {
@@ -280,13 +282,6 @@ function FileViewer({
   const isMarkdown = file.path.endsWith(".md");
   const [previewMode, setPreviewMode] = useState(false);
 
-  // Reset preview mode when switching files
-  const filePathRef = useRef(file.path);
-  if (filePathRef.current !== file.path) {
-    filePathRef.current = file.path;
-    if (previewMode) setPreviewMode(false);
-  }
-
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-[hsl(var(--border))] shrink-0">
@@ -358,10 +353,10 @@ function FileViewer({
       {previewMode && isMarkdown ? (
         <MarkdownPreview content={content} />
       ) : file.editable ? (
-        <textarea
+        <Textarea
           value={content}
           onChange={(e) => onContentChange(file.path, e.target.value)}
-          className="flex-1 w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[11px] leading-relaxed p-3 md:p-4 resize-none focus:outline-none"
+          className="flex-1 resize-none border-0 bg-background p-3 text-[11px] leading-relaxed focus-visible:outline-offset-[-2px] md:p-4"
           spellCheck={false}
           aria-label={`edit ${file.path}`}
           name={file.path}
@@ -405,7 +400,7 @@ function NewFileInput({
     <div className="px-2 py-1.5 border-t border-[hsl(var(--border))]">
       <div className="flex items-center gap-1">
         <span aria-hidden="true" className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-60 shrink-0">+</span>
-        <input
+        <Input
           ref={inputRef}
           type="text"
           name="new-file-path"
@@ -420,8 +415,7 @@ function NewFileInput({
           placeholder="custom/my-notes.md"
           autoComplete="off"
           spellCheck={false}
-          className="flex-1 bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[10px] px-1.5 py-0.5 border border-[hsl(var(--accent))]/40 focus:outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-30"
-          style={{ borderRadius: "2px" }}
+          className="h-9 flex-1 border-accent/40 text-[11px]"
         />
       </div>
       <div className="font-mono text-[8px] text-[hsl(var(--text-secondary))] opacity-30 mt-0.5 pl-3">
@@ -465,7 +459,7 @@ function NewDirectoryInput({
     <div className="px-2 py-1.5 border-t border-[hsl(var(--border))]">
       <div className="flex items-center gap-1">
         <span aria-hidden="true" className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-60 shrink-0">+</span>
-        <input
+        <Input
           ref={inputRef}
           type="text"
           name="new-directory-name"
@@ -481,8 +475,7 @@ function NewDirectoryInput({
           maxLength={30}
           autoComplete="off"
           spellCheck={false}
-          className="flex-1 bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[10px] px-1.5 py-0.5 border border-[hsl(var(--accent))]/40 focus:outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-30 disabled:opacity-40"
-          style={{ borderRadius: "2px" }}
+          className="h-9 flex-1 border-accent/40 text-[11px]"
         />
       </div>
       <div className="font-mono text-[8px] mt-0.5 pl-3">
@@ -831,22 +824,24 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
         <div className="flex items-center gap-2">
           {modifiedCount > 0 && (
             <>
-              <button
+              <Button
                 onClick={handleDiscard}
                 disabled={saving}
-                className="font-mono text-[10px] px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] transition-colors disabled:opacity-30"
-                style={{ borderRadius: "2px" }}
+                variant="secondary"
+                size="sm"
+                className="text-[10px]"
               >
                 discard
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSave}
                 disabled={saving}
-                className="font-mono text-[10px] px-2 py-1 border border-[hsl(var(--accent))]/40 text-[hsl(var(--accent))] hover:bg-[hsl(var(--accent))]/10 transition-colors disabled:opacity-30"
-                style={{ borderRadius: "2px" }}
+                variant="primary"
+                size="sm"
+                className="text-[10px]"
               >
                 {saving ? "saving..." : "save"}
-              </button>
+              </Button>
             </>
           )}
           {/* Keyboard shortcut hint */}
@@ -881,7 +876,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
         {/* Sidebar — full width on mobile, fixed width on desktop */}
         <div className="w-full md:w-[180px] md:shrink-0 md:border-r border-[hsl(var(--border))] overflow-y-auto flex flex-col">
           <div className="px-2 py-1.5 border-b border-[hsl(var(--border))]">
-            <input
+            <Input
               type="search"
               name="file-search"
               aria-label="search files by name or path"
@@ -890,8 +885,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
               placeholder="search..."
               autoComplete="off"
               spellCheck={false}
-              className="w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[10px] px-2 py-1 border border-[hsl(var(--border))] focus:border-[hsl(var(--accent))]/40 focus:outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-30"
-              style={{ borderRadius: "2px" }}
+              className="h-9 text-[11px]"
             />
           </div>
           <div className="px-3 py-1.5 border-b border-[hsl(var(--border))]">
@@ -914,7 +908,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
           ) : (
             <button
               onClick={() => { setCreatingFile(true); setCreatingDirectory(false); }}
-              className="w-full px-3 py-1.5 border-t border-[hsl(var(--border))] font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-70 hover:text-[hsl(var(--accent))] transition-colors text-left"
+              className="min-h-9 w-full border-t border-[hsl(var(--border))] px-3 text-left font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 transition-colors hover:text-[hsl(var(--accent))] hover:opacity-70"
             >
               + new file
             </button>
@@ -931,7 +925,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
           ) : (
             <button
               onClick={() => { setCreatingDirectory(true); setCreatingFile(false); setCreatingDirError(null); }}
-              className="w-full px-3 py-1.5 border-t border-[hsl(var(--border))] font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-70 hover:text-[hsl(var(--accent))] transition-colors text-left"
+              className="min-h-9 w-full border-t border-[hsl(var(--border))] px-3 text-left font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 transition-colors hover:text-[hsl(var(--accent))] hover:opacity-70"
               title="create a custom directory (private by default)"
             >
               + new directory

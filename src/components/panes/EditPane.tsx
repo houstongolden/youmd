@@ -32,7 +32,7 @@ export function EditPane({ userId, username, isWritingFiles }: EditPaneProps) {
             <button
               key={tab.key}
               onClick={() => setSubTab(tab.key)}
-              className={`relative px-1 py-2 text-[10px] font-mono transition-colors whitespace-nowrap ${
+              className={`relative min-h-9 px-2 text-[10px] font-mono transition-colors whitespace-nowrap ${
                 subTab === tab.key
                   ? "text-[hsl(var(--text-primary))]"
                   : "text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"

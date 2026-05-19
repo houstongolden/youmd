@@ -5,11 +5,9 @@ import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useYouAgent, type RightPane } from "@/hooks/useYouAgent";
 import { TerminalShell } from "@/components/terminal/TerminalShell";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
-import { ProfilePane } from "@/components/panes/ProfilePane";
 import { EditPane } from "@/components/panes/EditPane";
 import { SharePane } from "@/components/panes/SharePane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
@@ -291,7 +289,7 @@ export function DashboardContent() {
                         if (group) setRightPane(group.defaultPane);
                       }
                     }}
-                    className={`px-2.5 py-2 text-[10px] font-mono transition-colors whitespace-nowrap ${
+                    className={`min-h-11 px-2.5 text-[10px] font-mono transition-colors whitespace-nowrap ${
                       activeMobileTab === key
                         ? "text-[hsl(var(--text-primary))]"
                         : "text-[hsl(var(--text-secondary))] opacity-30"
@@ -316,7 +314,7 @@ export function DashboardContent() {
                   <button
                     key={pane.key}
                     onClick={() => setRightPane(pane.key)}
-                    className={`px-2 py-1 text-[10px] font-mono whitespace-nowrap transition-colors border ${
+                    className={`min-h-9 px-2 text-[10px] font-mono whitespace-nowrap transition-colors border ${
                       rightPane === pane.key
                         ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border-[hsl(var(--border))]"
                         : "text-[hsl(var(--text-secondary))] opacity-40 border-transparent hover:opacity-75"
@@ -387,10 +385,10 @@ export function DashboardContent() {
                       <button
                         key={group.key}
                         onClick={() => setRightPane(group.defaultPane)}
-                        className={`px-2.5 py-1 text-[10px] font-mono transition-colors whitespace-nowrap ${
+                        className={`h-8 px-2.5 text-[10px] font-mono transition-colors whitespace-nowrap border ${
                           activePaneGroup.key === group.key
                             ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))]"
-                            : "text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"
+                            : "border-transparent text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"
                         }`}
                         style={{ borderRadius: "2px" }}
                       >
@@ -405,7 +403,7 @@ export function DashboardContent() {
                       <button
                         key={pane.key}
                         onClick={() => setRightPane(pane.key)}
-                        className={`px-2 py-1 text-[10px] font-mono whitespace-nowrap transition-colors border ${
+                        className={`h-8 px-2 text-[10px] font-mono whitespace-nowrap transition-colors border ${
                           rightPane === pane.key
                             ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border-[hsl(var(--border))]"
                             : "text-[hsl(var(--text-secondary))] opacity-40 border-transparent hover:opacity-75"

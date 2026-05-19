@@ -1,160 +1,86 @@
 "use client";
 
-import { motion } from "motion/react";
+import { ExternalButtonLink } from "@/components/ui/Button";
+import { Card, TerminalCard } from "@/components/ui/Card";
+import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 import FadeUp from "./FadeUp";
 
 const bundleTree = [
-  { path: ".youmd/", indent: 0, type: "dir" as const },
-  { path: "profile/about.md", indent: 1, type: "file" as const, desc: "who you are" },
-  { path: "profile/now.md", indent: 1, type: "file" as const, desc: "what you're working on" },
-  { path: "profile/projects.md", indent: 1, type: "file" as const, desc: "your portfolio" },
-  { path: "preferences/agent.md", indent: 1, type: "file" as const, desc: "how agents should talk to you" },
-  { path: "voice/voice.md", indent: 1, type: "file" as const, desc: "your communication style" },
-  { path: "directives/agent.md", indent: 1, type: "file" as const, desc: "rules agents must follow" },
-  { path: "private/notes.md", indent: 1, type: "file" as const, desc: "context only you control" },
-  { path: "skills/", indent: 1, type: "dir" as const, desc: "agent skills that travel with you" },
-  { path: "you.json", indent: 1, type: "file" as const, desc: "compiled structured data" },
-  { path: "you.md", indent: 1, type: "file" as const, desc: "human-readable identity" },
+  ".youmd/",
+  "  profile/about.md",
+  "  preferences/agent.md",
+  "  directives/agent.md",
+  "  skills/",
+  "  you.json",
 ];
 
-const principles = [
-  "plain markdown files",
-  "compile to JSON + API",
-  "skills sync across agents",
-  "host anywhere",
-  "no vendor lock-in",
-];
+const principles = ["plain markdown", "JSON + API", "MCP-ready", "self-hostable"];
 
 const OpenSpec = () => (
-  <section className="py-16 md:py-20">
-    <div className="max-w-2xl mx-auto px-6">
-      <div className="section-divider mb-12" />
-
-      <FadeUp>
-        <h2 className="text-muted-foreground/60 font-mono text-[10px] mb-6 tracking-wider uppercase text-center">
-          -- open standard --
-        </h2>
-        <p className="text-foreground/80 font-mono text-[14px] font-light leading-relaxed text-center">
-          <motion.span
-            className="text-accent inline-block"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 400 }}
-          >
-            you/v1
-          </motion.span>{" "}
-          is an open spec. Your identity is plain files you own.
-        </p>
-        <p className="text-muted-foreground font-body text-[13px] mt-2 text-center">
-          No walled gardens. No proprietary formats. Markdown in, context out.
-        </p>
-      </FadeUp>
-
-      {/* Bundle structure */}
-      <FadeUp delay={0.12}>
-        <div className="mt-10 terminal-panel max-w-md mx-auto">
-          <div className="terminal-panel-header">
-            <div className="terminal-dot" />
-            <div className="terminal-dot" />
-            <div className="terminal-dot" />
-            <span className="ml-2 text-muted-foreground/60 font-mono text-[9px]">
-              &gt; tree .youmd/
-            </span>
-          </div>
-          <div className="p-4 space-y-0.5">
-            {bundleTree.map((item, i) => (
-              <motion.div
-                key={item.path}
-                className="font-mono text-[11px] leading-relaxed flex items-baseline gap-0"
-                whileInView={{ opacity: [0, 1] }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.15 + i * 0.05 }}
-              >
-                {/* Tree characters */}
-                <span className="text-muted-foreground/30 shrink-0 w-[120px] inline-block">
-                  {item.indent === 0 ? "" : i === bundleTree.length - 1 ? "  \u2514\u2500\u2500 " : "  \u251C\u2500\u2500 "}
-                  <span
-                    className={
-                      item.type === "dir"
-                        ? "text-accent/60"
-                        : "text-foreground/70"
-                    }
-                  >
-                    {item.path}
-                  </span>
+  <Section compact>
+    <Container>
+      <div className="border-y border-border py-10 md:py-12">
+        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <FadeUp>
+            <SectionHeader
+              eyebrow="open standard"
+              title="you own the files"
+              description="you/v1 is plain markdown that compiles into the context agents need. no walled garden, no proprietary prompt vault."
+              className="mb-0"
+            />
+            <div className="mt-5 flex flex-wrap gap-2">
+              {principles.map((principle) => (
+                <span
+                  key={principle}
+                  className="border border-accent/20 px-2.5 py-1 font-mono text-[10px] text-accent/70"
+                >
+                  {principle}
                 </span>
-                {/* Description */}
-                {"desc" in item && (
-                  <span className="text-muted-foreground/35 text-[9px] ml-2">
-                    # {item.desc}
-                  </span>
-                )}
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </FadeUp>
+              ))}
+            </div>
+          </FadeUp>
 
-      {/* Principles */}
-      <FadeUp delay={0.22}>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          {principles.map((p, i) => (
-            <motion.span
-              key={p}
-              className="font-mono text-[10px] text-accent/60 border border-accent/15 px-3 py-1"
-              style={{ borderRadius: "2px" }}
-              whileInView={{ opacity: [0, 1] }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3 + i * 0.08 }}
-            >
-              {p}
-            </motion.span>
-          ))}
-        </div>
-      </FadeUp>
+          <FadeUp delay={0.1}>
+            <div className="grid gap-4 md:grid-cols-[1fr_0.78fr]">
+              <TerminalCard title="tree .youmd/" bodyClassName="p-4">
+                <pre className="font-mono text-[12px] leading-[1.75] text-muted-foreground/70">
+                  {bundleTree.map((line) => (
+                    <div key={line} className={line.endsWith("/") ? "text-accent/75" : ""}>
+                      {line}
+                    </div>
+                  ))}
+                </pre>
+              </TerminalCard>
 
-      {/* Self-host callout */}
-      <FadeUp delay={0.3}>
-        <div className="mt-8 text-center">
-          <div className="inline-block border border-border/40 px-4 py-3 bg-[hsl(var(--bg-raised))]/50" style={{ borderRadius: "2px" }}>
-            <p className="font-mono text-[11px] text-muted-foreground/60 mb-1">
-              self-host your identity:
-            </p>
-            <p className="font-mono text-[12px] text-accent/80">
-              <span className="text-muted-foreground/40">$ </span>
-              youmd export &rarr; drop in any repo
-            </p>
-            <p className="font-mono text-[9px] text-muted-foreground/40 mt-1.5">
-              works as CLAUDE.md, .cursorrules, or standalone .youmd/
-            </p>
-          </div>
+              <Card padding="compact" className="flex flex-col justify-between gap-5">
+                <div>
+                  <p className="font-mono text-[12px] text-foreground/85">
+                    export anywhere
+                  </p>
+                  <code className="mt-3 block font-mono text-[12px] leading-relaxed text-accent">
+                    $ youmd export
+                  </code>
+                  <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
+                    Drop the bundle into a repo, serve it from a URL, or connect through MCP.
+                  </p>
+                </div>
+                <ExternalButtonLink
+                  href="https://github.com/houstongolden/youmd"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="secondary"
+                  size="sm"
+                  className="w-full"
+                >
+                  GitHub
+                </ExternalButtonLink>
+              </Card>
+            </div>
+          </FadeUp>
         </div>
-      </FadeUp>
-
-      {/* Links */}
-      <FadeUp delay={0.38}>
-        <div className="mt-8 flex items-center justify-center gap-6">
-          <a
-            href="https://github.com/houstongolden/youmd"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors duration-200"
-          >
-            &gt; github/youmd &rarr;
-          </a>
-          <a
-            href="https://github.com/houstongolden/youmd/blob/main/you-agent/soul.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors duration-200"
-          >
-            &gt; read the spec &rarr;
-          </a>
-        </div>
-      </FadeUp>
-
-      <div className="section-divider mt-12" />
-    </div>
-  </section>
+      </div>
+    </Container>
+  </Section>
 );
 
 export default OpenSpec;

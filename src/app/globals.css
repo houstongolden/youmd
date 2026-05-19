@@ -54,6 +54,14 @@
 
   --radius: 0.25rem;
 
+  /* Layout rhythm */
+  --page-max: 1120px;
+  --page-max-wide: 1160px;
+  --readable-max: 720px;
+  --section-y: 72px;
+  --section-y-hero: 96px;
+  --section-y-mobile: 52px;
+
   /* Typography stacks — overridden by next/font variables */
   --font-mono: var(--font-jetbrains-mono, "JetBrains Mono"), "SF Mono", "Consolas", monospace;
   --font-body: var(--font-inter, "Inter"), -apple-system, system-ui, sans-serif;
@@ -205,6 +213,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+a,
+button,
+input,
+textarea,
+select {
+  border-radius: 2px;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-mono);
   line-height: 1.2;
@@ -218,7 +234,7 @@ code, pre, .font-mono {
 .terminal-panel {
   background: hsl(var(--bg-raised));
   border: 1px solid hsl(var(--border));
-  border-radius: 4px;
+  border-radius: 2px;
 }
 
 .terminal-panel-header {
@@ -334,19 +350,11 @@ code, pre, .font-mono {
   outline-offset: 2px;
 }
 
-/* Kill focus ring on terminal inputs — the cursor IS the indicator */
-textarea:focus-visible,
-input[type="text"]:focus-visible,
-input[type="email"]:focus-visible,
-input[type="password"]:focus-visible,
-input[type="tel"]:focus-visible {
-  outline: none;
-}
-
 /* Prevent iOS auto-zoom on input focus */
 @media screen and (max-width: 768px) {
   textarea,
   input[type="text"],
+  input[type="email"],
   input[type="password"] {
     font-size: 16px;
   }
@@ -396,8 +404,8 @@ input[type="tel"]:focus-visible {
    * Targets the primary call-to-action buttons (cta-primary, cta-outline)
    * and any link/button inside <nav> elements. Body links inside paragraphs
    * stay compact. */
-  nav a,
-  nav button,
+  nav a:not(.hidden),
+  nav button:not(.hidden),
   .cta-primary,
   .cta-outline {
     min-height: 44px;

@@ -1,112 +1,134 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useScroll, useTransform } from "motion/react";
 import Link from "next/link";
 import FadeUp from "./FadeUp";
 import ThemeToggle from "./ThemeToggle";
 import { CliInstallTabs } from "@/components/install/CliInstallTabs";
+import { ButtonLink } from "@/components/ui/Button";
+import { Container, Section } from "@/components/ui/Layout";
 
-const CTAFooter = () => {
-  const sectionRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
-  const contentY = useTransform(scrollYProgress, [0, 1], [40, -20]);
+const footerGroups = [
+  {
+    label: "product",
+    links: [
+      ["create", "/create"],
+      ["profiles", "/profiles"],
+      ["pricing", "#pricing"],
+      ["skills", "/docs#skills"],
+    ],
+  },
+  {
+    label: "developers",
+    links: [
+      ["docs", "/docs"],
+      ["api", "/docs#api"],
+      ["cli", "/docs#cli"],
+      ["spec", "#spec"],
+    ],
+  },
+  {
+    label: "open",
+    links: [
+      ["github", "https://github.com/houstongolden/youmd"],
+      ["npm", "https://www.npmjs.com/package/youmd"],
+    ],
+  },
+  {
+    label: "connect",
+    links: [
+      ["x", "https://x.com/haborngolden"],
+      ["linkedin", "https://linkedin.com/in/houstongolden"],
+    ],
+  },
+];
+
+function FooterLink({ href, children }: { href: string; children: string }) {
+  const external = href.startsWith("http");
+  const className =
+    "inline-flex min-h-11 items-center font-mono text-[11px] text-muted-foreground/62 transition-colors hover:text-accent";
+
+  if (external) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+        &gt; {children}
+      </a>
+    );
+  }
 
   return (
+    <Link href={href} className={className}>
+      &gt; {children}
+    </Link>
+  );
+}
+
+const CTAFooter = () => {
+  return (
     <>
-      <section
-        ref={sectionRef}
-        id="get-started"
-        className="relative overflow-hidden py-32 md:py-40"
-      >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100px] h-[400px] beam-glow pointer-events-none" />
-
-        <motion.div
-          className="relative z-10 text-center px-6"
-          style={{ y: contentY }}
-        >
+      <Section id="get-started" hero className="overflow-hidden">
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[360px] w-[92px] -translate-x-1/2 -translate-y-1/2 beam-glow opacity-70" />
+        <Container size="narrow" className="relative z-10">
           <FadeUp>
-            <h2 className="text-muted-foreground/60 font-mono text-[10px] mb-8 tracking-widest uppercase">
-              -- get started --
-            </h2>
-            <p className="text-[hsl(var(--text-primary))] font-mono text-[16px] md:text-[20px] font-light tracking-tight mb-4 leading-relaxed">
-              Stop re-explaining yourself to machines.
-            </p>
-            <p className="text-muted-foreground font-body text-[13px] mb-10">
-              One command. Persistent identity context. Every agent
-              knows you from the first message.
-            </p>
-          </FadeUp>
-          <FadeUp delay={0.08}>
-            <div className="flex items-stretch justify-center gap-3 flex-col md:flex-row mb-3">
-              <CliInstallTabs className="w-full md:max-w-[420px] text-left" title="CLI install" />
-              <Link
-                href="/create"
-                className="cta-primary px-5 py-3 text-[13px] font-mono whitespace-nowrap"
-              >
-                &gt; start in browser
-              </Link>
+            <div className="text-center">
+              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent/75">
+                -- get started --
+              </p>
+              <h2 className="mt-4 font-mono text-[30px] leading-tight text-foreground md:text-[42px]">
+                stop re-explaining yourself to machines
+              </h2>
+              <p className="mx-auto mt-4 max-w-[620px] text-[16px] leading-relaxed text-muted-foreground">
+                Create one identity context, then let every agent start with the same map.
+              </p>
+              <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+                <ButtonLink href="/create" variant="primary" size="lg">
+                  Create your you.md
+                </ButtonLink>
+                <ButtonLink href="#how-it-works" variant="secondary" size="lg">
+                  Install CLI
+                </ButtonLink>
+              </div>
             </div>
           </FadeUp>
-        </motion.div>
-      </section>
 
-      <footer className="py-10 px-6">
-        <div className="section-divider mb-10" />
-        <div className="max-w-2xl mx-auto">
-          {/* Cycle 65: bumped all 12 footer links from h:18 to inline-flex min-h-[44px].
-              Tightened space-y from 2 to 0 (the 44px tap area provides spacing). */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
-            <div>
-              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-2">product</p>
-              <div className="flex flex-col">
-                <Link href="/create" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; create</Link>
-                <Link href="/profiles" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; profiles</Link>
-                <a href="#pricing" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; pricing</a>
-                <Link href="/docs#skills" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; skills</Link>
+          <FadeUp delay={0.08}>
+            <CliInstallTabs
+              className="mx-auto mt-7 max-w-[520px] text-left opacity-90"
+              title="CLI install"
+              helperText="browser signup stays primary"
+            />
+          </FadeUp>
+        </Container>
+      </Section>
+
+      <footer className="px-6 py-10">
+        <div className="mx-auto max-w-[1120px] border-t border-border pt-9">
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+            {footerGroups.map((group) => (
+              <div key={group.label}>
+                <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/42">
+                  {group.label}
+                </p>
+                <div className="flex flex-col">
+                  {group.links.map(([label, href]) => (
+                    <FooterLink key={label} href={href}>
+                      {label}
+                    </FooterLink>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-2">developers</p>
-              <div className="flex flex-col">
-                <Link href="/docs" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; docs</Link>
-                <Link href="/docs#api" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; api</Link>
-                <Link href="/docs#cli" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; cli</Link>
-                <a href="#spec" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; spec</a>
-              </div>
-            </div>
-            <div>
-              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-2">open source</p>
-              <div className="flex flex-col">
-                <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; github</a>
-                <a href="https://www.npmjs.com/package/youmd" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; npm</a>
-              </div>
-            </div>
-            <div>
-              <p className="text-muted-foreground/40 font-mono text-[9px] uppercase tracking-widest mb-2">connect</p>
-              <div className="flex flex-col">
-                <a href="https://x.com/haborngolden" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; x</a>
-                <a href="https://linkedin.com/in/houstongolden" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-muted-foreground/60 font-mono text-[11px] hover:text-accent transition-colors">&gt; linkedin</a>
-              </div>
-            </div>
+            ))}
           </div>
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-border/30">
-            {/* Cycle 67: bumped from min-h-[44px] to min-h-[48px] AND added
-                min-w-[48px] — at the 44 boundary subpixel rounding occasionally
-                lands on 43.998px which fails the strict < 44 audit check. 48px
-                is comfortably above the threshold. */}
+
+          <div className="mt-9 flex flex-col items-center justify-between gap-4 border-t border-border/45 pt-5 md:flex-row">
             <Link
               href="/"
-              className="inline-flex items-center justify-center min-h-[48px] min-w-[48px] px-3 text-accent font-mono text-[11px] hover:text-accent-light transition-colors"
+              className="inline-flex min-h-11 items-center justify-center px-3 font-mono text-[12px] text-accent transition-colors hover:text-accent-light"
             >
-              you
+              you.md
             </Link>
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              <span className="text-muted-foreground/50 font-mono text-[9px]">
+              <span className="font-mono text-[10px] text-muted-foreground/50">
                 you/v1
               </span>
             </div>

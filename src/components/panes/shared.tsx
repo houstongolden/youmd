@@ -2,36 +2,58 @@
  * Shared pane primitives for consistent UI across all dashboard panes.
  */
 
-export function PaneSectionLabel({ children }: { children: React.ReactNode }) {
+import type { ReactNode } from "react";
+import { Button, type ButtonProps } from "@/components/ui/Button";
+import { cn } from "@/lib/cn";
+
+export function PaneSectionLabel({ children }: { children: ReactNode }) {
   return (
-    <h3 className="text-[10px] font-mono text-[hsl(var(--accent))] uppercase tracking-widest mb-3">
+    <h3 className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-accent">
       &gt; {children}
     </h3>
   );
 }
 
 export function PaneDivider() {
-  return <div className="h-px bg-[hsl(var(--border))] my-6" />;
+  return <div className="my-6 h-px bg-border" />;
 }
 
-export function PaneHeader({ children }: { children: React.ReactNode }) {
+export function PaneHeader({ children }: { children: ReactNode }) {
   return (
-    <div className="px-6 py-3 border-b border-[hsl(var(--border))]">
-      <span className="text-xs font-mono text-[hsl(var(--text-secondary))]">
+    <div className="border-b border-border px-6 py-3">
+      <span className="font-mono text-[12px] text-muted-foreground">
         {children}
       </span>
     </div>
   );
 }
 
-export function PaneEmptyState({ children }: { children: React.ReactNode }) {
+export function PaneEmptyState({ children }: { children: ReactNode }) {
   return (
     <div className="flex items-center justify-center h-full">
       <div className="text-center space-y-3">
-        <p className="text-sm font-mono text-[hsl(var(--text-secondary))] opacity-40">
+        <p className="font-mono text-[13px] text-muted-foreground/45">
           {children}
         </p>
       </div>
     </div>
   );
+}
+
+export function PaneCard({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("border border-border bg-card p-4", className)}>
+      {children}
+    </div>
+  );
+}
+
+export function PaneButton({ className, ...props }: ButtonProps) {
+  return <Button size="sm" className={cn("text-[10px]", className)} {...props} />;
 }

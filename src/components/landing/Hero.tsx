@@ -1,212 +1,103 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useScroll, useTransform, motion } from "motion/react";
 import PixelYOU from "./PixelYOU";
 import HeroPortrait from "./HeroPortrait";
-import { CliInstallTabs } from "@/components/install/CliInstallTabs";
+import { ButtonLink } from "@/components/ui/Button";
+import { Container, Section } from "@/components/ui/Layout";
+import { TerminalCard } from "@/components/ui/Card";
 
-/* -- Agent pills (shown below CTA) -- */
-const AGENTS = [
-  { name: "Claude Code", tier: "primary" },
-  { name: "Cursor", tier: "primary" },
-  { name: "OpenClaw", tier: "primary" },
-  { name: "ChatGPT", tier: "primary" },
-  { name: "Gemini", tier: "primary" },
-  { name: "Grok", tier: "secondary" },
-  { name: "Perplexity", tier: "secondary" },
-  { name: "Copilot", tier: "secondary" },
-  { name: "Manus", tier: "secondary" },
-  { name: "Codex CLI", tier: "secondary" },
-  { name: "Windsurf", tier: "secondary" },
-  { name: "Aider", tier: "secondary" },
-  { name: "Pi Agent", tier: "secondary" },
-  { name: "CrewAI", tier: "secondary" },
-];
+const proofItems = ["Claude Code", "Cursor", "Codex", "ChatGPT"];
 
-/* -- Boot sequence -- */
-const BootSequence = () => {
-  const [typed, setTyped] = useState("");
-  const [phase, setPhase] = useState<"typing" | "tagline" | "done">("typing");
-
-  useEffect(() => {
-    const word = "initializing you...";
-    let i = 0;
-    const timer = setInterval(() => {
-      setTyped(word.slice(0, ++i));
-      if (i >= word.length) {
-        clearInterval(timer);
-        setTimeout(() => setPhase("tagline"), 300);
-        setTimeout(() => setPhase("done"), 1200);
-      }
-    }, 55);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <div className="text-left inline-block">
-      {phase === "typing" && (
-        <div className="font-mono text-[11px] text-muted-foreground hero-enter" style={{ animationDuration: "0.2s" }}>
-          {typed}<span className="cursor-blink text-accent">{"\u2588"}</span>
-        </div>
-      )}
-      {(phase === "tagline" || phase === "done") && (
-        <div>
-          <div className="font-mono text-[11px] text-accent hero-enter" style={{ animationDuration: "0.2s" }}>
-            identity context protocol
-          </div>
-          {phase === "done" && (
-            <div className="font-mono text-[10px] text-muted-foreground mt-1 hero-enter-up" style={{ animationDelay: "0.1s", animationDuration: "0.3s" }}>
-              an MCP where the context is you
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/* -- CLI commands list -- */
-const commands = [
-  ["curl ...install.sh | bash", "install youmd globally in one step"],
-  ["youmd login", "authenticate with browser, email code, or API key"],
-  ["youmd init", "build your identity via AI conversation"],
-  ["youmd push", "publish to you.md/username"],
-  ["youmd skill init-project", "bootstrap AGENTS/CLAUDE + project-context/ in any repo"],
-  ["youmd skill link claude", "sync identity skills to your agent"],
-  ["youmd link create", "scoped context link for any agent"],
+const terminalLines = [
+  ["$ youmd init", "build identity through conversation"],
+  ["$ youmd push", "publish you.md/username"],
+  ["$ youmd skill link codex", "sync context into agents"],
 ];
 
 const Hero = () => {
-  const sectionRef = useRef(null);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end start"] });
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.5, 0.8], [1, 0.8, 0]);
-
   return (
-    <section ref={sectionRef} className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden py-16">
-      {/* Beam glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[80%] beam-glow pointer-events-none" />
+    <Section
+      hero
+      className="flex min-h-[720px] items-center overflow-hidden pt-24 md:min-h-[calc(100svh-16px)]"
+    >
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[78%] w-[96px] -translate-x-1/2 beam-glow opacity-70" />
 
-      {/* BG texture — decorative, hidden from screen readers */}
       <div
         aria-hidden="true"
-        role="presentation"
-        className="absolute inset-0 overflow-hidden pointer-events-none select-none opacity-[0.02]"
+        className="pointer-events-none absolute inset-0 overflow-hidden select-none opacity-[0.012]"
       >
-        <p className="font-mono text-[6px] leading-none text-[hsl(var(--text-primary))] break-all whitespace-pre-wrap">
-          {`$@B%8&#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/|()1{}?-_+~<>i!lI;:,". `.repeat(300)}
+        <p className="break-all font-mono text-[6px] leading-none text-foreground whitespace-pre-wrap">
+          {`$@B%8&#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/|()1{}?-_+~<>i!lI;:,". `.repeat(120)}
         </p>
       </div>
 
-      <motion.div className="relative z-10 w-full max-w-5xl px-4" style={{ opacity: contentOpacity }}>
-        {/* Two-column layout — branding left, ASCII portrait right */}
-        <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-          {/* LEFT — branding & commands */}
-          <div className="flex-1 text-left">
-            {/* Pixel YOU — wrapped in h1 for SEO + a11y. Visible glyph is decorative; sr-only text gives semantic meaning. */}
-            <h1 className="mb-6 hero-enter-scale" style={{ animationDelay: "0.3s" }}>
-              <span className="sr-only">you.md — identity context protocol for the agent internet</span>
-              <span aria-hidden="true">
-                <PixelYOU />
-              </span>
+      <Container className="relative z-10">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.02fr)_minmax(360px,0.78fr)] lg:gap-14">
+          <div>
+            <div className="mb-8 max-w-[160px]" aria-hidden="true">
+              <PixelYOU />
+            </div>
+
+            <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/75">
+              identity context protocol
+            </p>
+
+            <h1 className="max-w-[720px] font-mono text-[44px] leading-[1.02] text-foreground sm:text-[56px] lg:text-[64px]">
+              your identity context for every AI agent
             </h1>
 
-            {/* Boot sequence */}
-            <div className="mb-6 hero-enter" style={{ animationDelay: "0.8s" }}>
-              <BootSequence />
+            <p className="mt-6 max-w-[620px] text-[17px] leading-[1.58] text-muted-foreground md:text-[18px]">
+              Stop re-explaining who you are, how you work, and what you&apos;re building.
+              you.md gives Claude, Cursor, Codex, ChatGPT, and any agent the same portable context.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <ButtonLink href="/create" variant="primary" size="lg">
+                Create your you.md
+              </ButtonLink>
+              <ButtonLink href="#how-it-works" variant="secondary" size="lg">
+                Install CLI
+              </ButtonLink>
             </div>
 
-            {/* Value prop */}
-            <div
-              className="font-mono text-[11px] leading-relaxed text-muted-foreground/60 mb-6 max-w-sm space-y-1.5 hero-enter-up"
-              style={{ animationDelay: "1.1s" }}
-            >
-              <p>
-                every agent starts from scratch.{" "}
-                <span className="text-accent">you.md fixes that.</span>
-              </p>
-              <p className="text-[10px] text-muted-foreground/40">
-                public profile + private file system + agent skills.
-                your identity, preferences, and best practices sync across
-                Claude Code, Cursor, and every tool you use.
-              </p>
+            <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[11px] text-muted-foreground/55">
+              <span className="text-accent/70">works with</span>
+              {proofItems.map((item) => (
+                <span key={item} className="border-l border-border pl-3">
+                  {item}
+                </span>
+              ))}
+              <span className="border-l border-border pl-3">+ any URL-aware agent</span>
             </div>
+          </div>
 
-            {/* Divider */}
-            <div className="w-full h-px bg-border mb-6" />
+          <div className="grid gap-4">
+            <Link href="/houstongolden" className="group block" aria-label="view houstongolden live profile">
+              <TerminalCard title="live portrait preview" bodyClassName="p-3">
+                <div className="aspect-[1.16/1] overflow-hidden rounded-[2px] border border-border bg-background">
+                  <HeroPortrait />
+                </div>
+                <p className="mt-3 text-center font-mono text-[10px] text-muted-foreground/45 transition-colors group-hover:text-accent/75">
+                  view live profile
+                </p>
+              </TerminalCard>
+            </Link>
 
-            {/* Commands */}
-            <div className="space-y-1.5 mb-8 hero-enter" style={{ animationDelay: "1.5s" }}>
-              {commands.map(([cmd, desc]) => (
-                <div key={cmd} className="font-mono text-[10px] leading-relaxed">
-                  <span className="text-muted-foreground/50">$ </span>
-                  <span className="text-accent">{cmd}</span>
-                  <span className="text-muted-foreground/30 ml-3"># {desc}</span>
+            <TerminalCard title="context pipeline" bodyClassName="space-y-3">
+              {terminalLines.map(([command, detail]) => (
+                <div key={command} className="grid gap-1 font-mono">
+                  <code className="text-[12px] leading-relaxed text-accent">{command}</code>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground/55">{detail}</p>
                 </div>
               ))}
-            </div>
-
-            {/* Dual CTA */}
-            <div className="mb-6 flex flex-col md:flex-row items-stretch md:items-center gap-3 hero-enter-up" style={{ animationDelay: "1.8s" }}>
-              <CliInstallTabs className="w-full md:max-w-[420px]" title="CLI install" />
-              <Link href="/create" className="cta-primary px-5 py-3 text-[13px] font-mono shrink-0 whitespace-nowrap">
-                &gt; start in browser
-              </Link>
-            </div>
-
-            {/* Badge */}
-            <div className="flex items-center gap-3 font-mono text-[8px] text-muted-foreground/30 uppercase tracking-widest hero-enter" style={{ animationDelay: "2.1s" }}>
-              <span>YOU/V1 &middot; OPEN SPEC &middot; FREE</span>
-            </div>
-          </div>
-
-          {/* RIGHT — ASCII portrait */}
-          <div className="flex-1 flex justify-center">
-            <Link href="/houstongolden" className="block w-full max-w-md group">
-              <div className="hero-enter-scale" style={{ animationDelay: "1.2s" }}>
-                <HeroPortrait />
-                <p className="text-center font-mono text-[9px] text-muted-foreground/40 mt-2 group-hover:text-accent/60 transition-colors">
-                  &gt; view live profile
-                </p>
-              </div>
-            </Link>
+            </TerminalCard>
           </div>
         </div>
+      </Container>
 
-        {/* Agent pills — BELOW the main hero content */}
-        <div
-          className="mt-12 flex flex-wrap items-center justify-center gap-1.5 hero-enter"
-          style={{ animationDelay: "2.3s" }}
-        >
-          <span className="font-mono text-[8px] text-muted-foreground/25 uppercase tracking-widest mr-1.5">
-            works with
-          </span>
-          {AGENTS.map((agent) => (
-            <span
-              key={agent.name}
-              className={`font-mono text-[9px] px-2 py-0.5 border cursor-default select-none ${
-                agent.tier === "primary"
-                  ? "text-accent/60 border-accent/15"
-                  : "text-muted-foreground/30 border-border/30"
-              }`}
-              style={{ borderRadius: "2px" }}
-            >
-              {agent.name}
-            </span>
-          ))}
-        </div>
-
-        {/* Quick links — cycle 65: bumped to min-h-[44px] inline-flex */}
-        <div className="flex items-center justify-center gap-4 font-mono text-[12px] mt-4 hero-enter" style={{ animationDelay: "2.5s" }}>
-          <Link href="/create" className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; get started</Link>
-          <Link href="/docs" className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; docs</Link>
-          <a href="https://github.com/houstongolden/youmd" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] px-3 text-muted-foreground/50 hover:text-accent transition-colors duration-200">&gt; github</a>
-        </div>
-      </motion.div>
-
-      <div className="absolute bottom-0 inset-x-0 section-divider" />
-    </section>
+      <div className="absolute inset-x-0 bottom-0 h-px bg-border" />
+    </Section>
   );
 };
 

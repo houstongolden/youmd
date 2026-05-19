@@ -6,7 +6,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { useState } from "react";
 import { useUser, useSessionAuth } from "@/lib/you-auth";
 import { useRouter } from "next/navigation";
-import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
+import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader, PaneCard, PaneButton } from "./shared";
 
 interface SettingsPaneProps {
   clerkId: string;
@@ -204,7 +204,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
     setRevealingKeyId(keyId);
     setKeyError(null);
     try {
-      const result = await revealKey({ clerkId, keyId: keyId as any });
+      const result = await revealKey({ clerkId, keyId: keyId as Id<"apiKeys"> });
       setRevealedKeyId(keyId);
       setRevealedKeyValue(result.key);
     } catch (err) {
@@ -231,29 +231,23 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
       <div className="px-6 py-6 space-y-0 max-w-xl">
         {/* Account info */}
         <SectionLabel>account</SectionLabel>
-        <div
-          className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] font-mono text-xs space-y-0"
-          style={{ borderRadius: "2px" }}
-        >
+        <PaneCard className="font-mono text-xs">
           <SettingRow label="username" value={`@${username}`} />
           <SettingRow label="email" value={user?.emailAddresses?.[0]?.emailAddress || "--"} />
           <SettingRow label="plan" value={plan} />
           <SettingRow label="profile" value={`you.md/${username}`} accent />
-        </div>
+        </PaneCard>
 
         <Divider />
 
         {/* Identity preferences */}
         <SectionLabel>identity preferences</SectionLabel>
-        <div
-          className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] font-mono text-xs space-y-0"
-          style={{ borderRadius: "2px" }}
-        >
+        <PaneCard className="font-mono text-xs">
           <SettingRow label="default context" value="public" />
           <SettingRow label="agent access" value="all agents" />
           <SettingRow label="update mode" value="auto-publish" />
           <SettingRow label="portrait style" value="ascii 120-col" />
-        </div>
+        </PaneCard>
 
         <Divider />
 
@@ -261,26 +255,25 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
         <div className="flex items-center justify-between mb-3">
           <SectionLabel>api keys</SectionLabel>
           <div className="flex items-center gap-2">
-            <button
+            <PaneButton
               onClick={handleRotateKey}
               disabled={rotatingKey || creatingKey}
-              className="text-[10px] font-mono px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--accent))] hover:text-[hsl(var(--accent-mid))] hover:border-[hsl(var(--accent))]/40 transition-colors disabled:opacity-30"
-              style={{ borderRadius: "2px" }}
+              variant="secondary"
+              className="text-accent"
             >
               {rotatingKey
                 ? "rotating..."
                 : confirmRotateKey
                 ? "confirm rotate"
                 : "rotate key"}
-            </button>
-            <button
+            </PaneButton>
+            <PaneButton
               onClick={handleCreateKey}
               disabled={creatingKey || rotatingKey}
-              className="text-[10px] font-mono px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors disabled:opacity-30"
-              style={{ borderRadius: "2px" }}
+              variant="secondary"
             >
               {creatingKey ? "creating..." : "create key"}
-            </button>
+            </PaneButton>
           </div>
         </div>
 
@@ -304,7 +297,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
             style={{ borderRadius: "2px" }}
           >
             <p className="text-[10px] text-[hsl(var(--accent-mid))] font-mono">
-              fresh key ready. copy it now, then hide this card when you're done.
+              fresh key ready. copy it now, then hide this card when you&apos;re done.
             </p>
             <code className="block text-[10px] font-mono text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] p-2 break-all select-all">
               {newKey}
@@ -526,10 +519,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
 
         {/* Billing */}
         <SectionLabel>billing</SectionLabel>
-        <div
-          className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] font-mono text-[10px] space-y-1.5 text-[hsl(var(--text-secondary))]"
-          style={{ borderRadius: "2px" }}
-        >
+        <PaneCard className="space-y-1.5 font-mono text-[10px] text-[hsl(var(--text-secondary))]">
           <p>-- public profile at you.md/{username}</p>
           <p>-- cli access (youmd)</p>
           <p>-- web agent chat</p>
@@ -544,7 +534,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
           <p className="opacity-30 mt-2">
             billing management coming soon. you.md is free during beta.
           </p>
-        </div>
+        </PaneCard>
 
         <Divider />
 

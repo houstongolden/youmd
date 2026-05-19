@@ -5,7 +5,9 @@ import { useUser } from "@/lib/you-auth";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader, PaneEmptyState } from "./shared";
+import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
+import { Button } from "@/components/ui/Button";
+import { FieldError, FieldHelp, Input } from "@/components/ui/Form";
 
 interface SourcesPaneProps {
   userId: Id<"users">;
@@ -83,7 +85,7 @@ function inferSourceType(url: string): string {
   return "website";
 }
 
-export function SourcesPane({ userId, username }: SourcesPaneProps) {
+export function SourcesPane({}: SourcesPaneProps) {
   const { user } = useUser();
   const clerkId = user?.id;
 
@@ -232,15 +234,12 @@ export function SourcesPane({ userId, username }: SourcesPaneProps) {
         <Divider />
 
         <SectionLabel>add source</SectionLabel>
-        <div
-          className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
-          style={{ borderRadius: "2px" }}
-        >
-          <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 mb-3">
+        <div className="border border-border bg-card p-4">
+          <FieldHelp className="mb-3 text-[11px]">
             paste a URL to connect a new source:
-          </p>
+          </FieldHelp>
           <div className="flex gap-2">
-            <input
+            <Input
               type="text"
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
@@ -249,27 +248,27 @@ export function SourcesPane({ userId, username }: SourcesPaneProps) {
               }}
               placeholder="https://linkedin.com/in/username"
               disabled={isAdding || !clerkId}
-              className="flex-1 min-w-0 font-mono text-[11px] bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] border border-[hsl(var(--border))] px-3 py-2 placeholder:text-[hsl(var(--text-secondary))]/30 focus:outline-none focus:border-[hsl(var(--accent))]/40 disabled:opacity-40"
-              style={{ borderRadius: "2px" }}
+              className="min-w-0 flex-1 text-[12px]"
             />
-            <button
+            <Button
               onClick={handleAddSource}
               disabled={isAdding || !newUrl.trim() || !clerkId}
-              className="shrink-0 font-mono text-[10px] px-3 py-2 bg-[hsl(var(--accent))] text-[hsl(var(--bg))] border border-[hsl(var(--accent))] hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ borderRadius: "2px" }}
+              variant="primary"
+              size="md"
+              className="text-[11px]"
             >
               {isAdding ? "..." : "add"}
-            </button>
+            </Button>
           </div>
           {addError && (
-            <p className="font-mono text-[9px] text-red-500 opacity-70 mt-2">
+            <FieldError className="mt-2 text-[11px]">
               {addError}
-            </p>
+            </FieldError>
           )}
           <div className="mt-3 space-y-1">
-            <p className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30">
+            <FieldHelp className="text-[10px]">
               supported: linkedin, github, x/twitter, substack, blogs, websites
-            </p>
+            </FieldHelp>
           </div>
         </div>
 

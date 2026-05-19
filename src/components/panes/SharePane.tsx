@@ -1,12 +1,15 @@
 "use client";
 
 import { useQuery, useMutation } from "convex/react";
+import Link from "next/link";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
 import { CopyableCommand } from "./CopyableCommand";
+import { Button } from "@/components/ui/Button";
+import { FieldHelp, FormField, Input, Label, Select } from "@/components/ui/Form";
 
 interface SharePaneProps {
   username: string;
@@ -655,84 +658,68 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
             </div>
 
             {/* Link name */}
-            <div>
-              <label
-                htmlFor="link-name"
-                className="block font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60 mb-1"
-              >
+            <FormField>
+              <Label htmlFor="link-name">
                 name <span className="opacity-50">(optional)</span>
-              </label>
-              <input
+              </Label>
+              <Input
                 id="link-name"
                 type="text"
                 value={linkName}
                 onChange={(e) => setLinkName(e.target.value)}
                 placeholder="e.g. Claude Code on my work laptop"
-                className="w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[11px] px-2 py-1.5 border border-[hsl(var(--border))] focus:border-[hsl(var(--accent))]/60 focus:outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-30"
-                style={{ borderRadius: "2px" }}
+                className="text-[12px]"
               />
-            </div>
+            </FormField>
 
             {/* TTL + max uses + project scope grid */}
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label
-                  htmlFor="link-ttl"
-                  className="block font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60 mb-1"
-                >
+              <FormField>
+                <Label htmlFor="link-ttl">
                   expires after
-                </label>
-                <select
+                </Label>
+                <Select
                   id="link-ttl"
                   value={ttl}
                   onChange={(e) => setTtl(e.target.value as Ttl)}
-                  className="w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[11px] px-2 py-1.5 border border-[hsl(var(--border))] focus:border-[hsl(var(--accent))]/60 focus:outline-none"
-                  style={{ borderRadius: "2px" }}
+                  className="text-[12px]"
                 >
                   {TTL_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
                   ))}
-                </select>
-              </div>
-              <div>
-                <label
-                  htmlFor="link-max-uses"
-                  className="block font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60 mb-1"
-                >
+                </Select>
+              </FormField>
+              <FormField>
+                <Label htmlFor="link-max-uses">
                   max uses
-                </label>
-                <select
+                </Label>
+                <Select
                   id="link-max-uses"
                   value={maxUses}
                   onChange={(e) => setMaxUses(e.target.value as MaxUses)}
-                  className="w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[11px] px-2 py-1.5 border border-[hsl(var(--border))] focus:border-[hsl(var(--accent))]/60 focus:outline-none"
-                  style={{ borderRadius: "2px" }}
+                  className="text-[12px]"
                 >
                   {MAX_USES_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
                   ))}
-                </select>
-              </div>
+                </Select>
+              </FormField>
             </div>
 
             {/* Project scope (full only) */}
-            <div>
-              <label
-                htmlFor="link-project"
-                className="block font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60 mb-1"
-              >
+            <FormField>
+              <Label htmlFor="link-project">
                 project scope
-              </label>
-              <select
+              </Label>
+              <Select
                 id="link-project"
                 value={projectScope}
                 onChange={(e) => setProjectScope(e.target.value)}
-                className="w-full bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))] font-mono text-[11px] px-2 py-1.5 border border-[hsl(var(--border))] focus:border-[hsl(var(--accent))]/60 focus:outline-none"
-                style={{ borderRadius: "2px" }}
+                className="text-[12px]"
               >
                 <option value="">all my private context</option>
                 {projectOptions.map((p) => (
@@ -740,13 +727,13 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                     scoped to: {p.name}
                   </option>
                 ))}
-              </select>
+              </Select>
               {projectOptions.length === 0 && (
-                <p className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 mt-1">
+                <FieldHelp className="text-[10px]">
                   no projects detected -- the link will include all your private context
-                </p>
+                </FieldHelp>
               )}
-            </div>
+            </FormField>
           </div>
         )}
 
@@ -769,7 +756,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
             <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-70 leading-relaxed mb-2">
               full context includes private notes, private projects, internal links, and vault items -- a Pro feature.
             </p>
-            <a
+            <Link
               href="/pricing"
               className="inline-block font-mono text-[10px] px-2.5 py-1 border-2 transition-colors"
               style={{
@@ -779,21 +766,21 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
               }}
             >
               upgrade to pro &rarr;
-            </a>
+            </Link>
           </div>
         )}
 
         {/* ── Create button ───────────────────────────────────────────── */}
-        <button
+        <Button
           onClick={handleCreateLink}
           disabled={creating || (scope === "full" && !isPro)}
-          className="w-full flex items-center justify-center gap-2 px-3 py-3 text-[12px] font-mono font-semibold border-2 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          variant={scope === "full" ? "secondary" : "primary"}
+          size="lg"
+          className="w-full"
           style={{
-            borderRadius: "2px",
             borderColor: scope === "full" ? scopeAccent("full") : scopeAccent("public"),
-            color: scope === "full" ? scopeAccent("full") : scopeAccent("public"),
-            background:
-              scope === "full" ? scopeAccent("full") + "10" : scopeAccent("public") + "10",
+            color: scope === "full" ? scopeAccent("full") : undefined,
+            background: scope === "full" ? scopeAccent("full") + "10" : undefined,
           }}
         >
           {creating
@@ -801,7 +788,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
             : scope === "full"
               ? "+ create full-context link"
               : "+ create public link"}
-        </button>
+        </Button>
 
         {createError && (
           <p
@@ -926,7 +913,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                 className="w-full px-3 py-1.5 text-[10px] font-mono border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/40 transition-colors"
                 style={{ borderRadius: "2px" }}
               >
-                preview as agent (see what they'll receive)
+                preview as agent (see what they&apos;ll receive)
               </button>
 
               {agentPreviewOpen && (
