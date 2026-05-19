@@ -129,6 +129,7 @@ function DirectoryPortrait({
   const [photoFailed, setPhotoFailed] = useState(false);
   const portrait = entry.asciiPortrait;
   const src = entry.avatarUrl || portrait?.sourceUrl || "";
+  const useStoredPortrait = Boolean(!src && portrait?.lines?.length);
 
   return (
     <div
@@ -142,7 +143,7 @@ function DirectoryPortrait({
             cols={cols}
             canvasWidth={canvasWidth}
             className="flex h-full w-full items-center justify-center"
-            preRendered={portrait}
+            preRendered={useStoredPortrait ? portrait : null}
           />
           {entry.avatarUrl && !photoFailed && (
             <img
