@@ -143,6 +143,7 @@ function DirectoryPortrait({
             cols={cols}
             canvasWidth={canvasWidth}
             className="flex h-full w-full items-center justify-center"
+            showLoadingText={false}
             preRendered={useStoredPortrait ? portrait : null}
           />
           {entry.avatarUrl && !photoFailed && (
