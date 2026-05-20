@@ -176,6 +176,7 @@ interface AsciiAvatarProps {
   canvasWidth?: number;
   format?: AsciiFormat;
   className?: string;
+  showLoadingText?: boolean;
   /** Pre-rendered portrait data from the database — skips canvas generation entirely */
   preRendered?: PreRenderedPortrait | null;
   /** Callback when canvas generation completes — use to save result to DB */
@@ -188,13 +189,12 @@ const AsciiAvatar = ({
   canvasWidth = 200,
   format = "block",
   className = "",
+  showLoadingText = true,
   preRendered,
   onRendered,
 }: AsciiAvatarProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const onRenderedRef = useRef(onRendered);
-  onRenderedRef.current = onRendered;
 
   // Track whether we've already called onRendered for this src+cols+format combo
   const renderedKeyRef = useRef<string>("");
@@ -216,6 +216,7 @@ const AsciiAvatar = ({
       format={format}
       className={className}
       onRendered={onRendered}
+      showLoadingText={showLoadingText}
       canvasRef={canvasRef}
       status={status}
       setStatus={setStatus}
@@ -232,6 +233,7 @@ function AsciiAvatarCanvas({
   format,
   className,
   onRendered,
+  showLoadingText,
   canvasRef,
   status,
   setStatus,
@@ -243,13 +245,17 @@ function AsciiAvatarCanvas({
   format: AsciiFormat;
   className: string;
   onRendered?: (result: RenderedResult) => void;
+  showLoadingText: boolean;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   status: "loading" | "ready" | "error";
   setStatus: (s: "loading" | "ready" | "error") => void;
   renderedKeyRef: React.MutableRefObject<string>;
 }) {
   const onRenderedRef = useRef(onRendered);
-  onRenderedRef.current = onRendered;
+
+  useEffect(() => {
+    onRenderedRef.current = onRendered;
+  }, [onRendered]);
 
   const handleImageLoad = useCallback((img: HTMLImageElement) => {
     try {
@@ -321,7 +327,7 @@ function AsciiAvatarCanvas({
           <div className="absolute inset-0 bg-[hsl(var(--accent))]/10 mix-blend-multiply" />
         </div>
       )}
-      {status === "loading" && (
+      {status === "loading" && showLoadingText && (
         <div className="flex items-center justify-center py-8">
           <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-30 animate-pulse">
             rendering portrait...
