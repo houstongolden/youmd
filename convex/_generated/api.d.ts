@@ -22,6 +22,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_compile from "../lib/compile.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as lib_openrouter from "../lib/openrouter.js";
+import type * as lib_profileDirectory from "../lib/profileDirectory.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_spendCap from "../lib/spendCap.js";
 import type * as me from "../me.js";
@@ -66,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   "lib/compile": typeof lib_compile;
   "lib/hash": typeof lib_hash;
   "lib/openrouter": typeof lib_openrouter;
+  "lib/profileDirectory": typeof lib_profileDirectory;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/spendCap": typeof lib_spendCap;
   me: typeof me;
