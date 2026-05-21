@@ -53,6 +53,7 @@ cli/node_modules/
 .youmd/
 .gstack/
 .env*.local
+audit/.lock
 
 # claude code
 .claude/

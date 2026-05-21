@@ -2075,7 +2075,7 @@ $ grep -rn "ctx.auth\|getUserIdentity" convex/*.ts | grep -v _generated
 
 ```
 $ npx convex run private:getPrivateContext \
-    '{"clerkId":"user_3BGLme0Bjk3QqRdo3Ss4t3R8OWS","profileId":"ks7b7eqmq4ge2tdf2g8szasaed83bc47"}'
+    '{"clerkId":"user_[redacted]","profileId":"ks7b7eqmq4ge2tdf2g8szasaed83bc47"}'
 
 {
   "_id": "kd70z3qqek075nd5581bbn46jh83dwhb",
@@ -2203,10 +2203,10 @@ This cycle started Round 3 by adding new audit categories:
 ### Verification (post-deploy)
 
 ```
-$ npx convex run private:getPrivateContext '{"clerkId":"user_3BGLme0Bjk3QqRdo3Ss4t3R8OWS","profileId":"ks7b7eqmq4ge2tdf2g8szasaed83bc47"}'
+$ npx convex run private:getPrivateContext '{"clerkId":"user_[redacted]","profileId":"ks7b7eqmq4ge2tdf2g8szasaed83bc47"}'
 { ...houston's private context... }
 
-$ npx convex run me:getMyProfile '{"clerkId":"user_3BGLme0Bjk3QqRdo3Ss4t3R8OWS"}'
+$ npx convex run me:getMyProfile '{"clerkId":"user_[redacted]"}'
 { "bundleCount": 49, "latestBundle": {...} }
 ```
 
@@ -2485,7 +2485,7 @@ I tested whether anonymous public callers also see null identity. They do.
 ```bash
 curl -X POST https://kindly-cassowary-600.convex.cloud/api/query \
   -H "Content-Type: application/json" \
-  -d '{"path":"private:getPrivateContext","args":{"clerkId":"user_3BGLme0Bjk3QqRdo3Ss4t3R8OWS","profileId":"ks7b7eqmq4ge2tdf2g8szasaed83bc47"}}'
+  -d '{"path":"private:getPrivateContext","args":{"clerkId":"user_[redacted]","profileId":"ks7b7eqmq4ge2tdf2g8szasaed83bc47"}}'
 ```
 
 Returned: full `privateContext` row including `privateNotes`, `privateProjects`, `internalLinks`, `customData`, `calendarContext`, `communicationPrefs`, `investmentThesis`.
@@ -2495,7 +2495,7 @@ Returned: full `privateContext` row including `privateNotes`, `privateProjects`,
 ```bash
 curl -X POST https://kindly-cassowary-600.convex.cloud/api/mutation \
   -H "Content-Type: application/json" \
-  -d '{"path":"private:updatePrivateContext","args":{"clerkId":"user_3BGLme0Bjk3QqRdo3Ss4t3R8OWS","profileId":"ks7b7eqmq4ge2tdf2g8szasaed83bc47","privateNotes":"PWNED — cycle 42 audit test"}}'
+  -d '{"path":"private:updatePrivateContext","args":{"clerkId":"user_[redacted]","profileId":"ks7b7eqmq4ge2tdf2g8szasaed83bc47","privateNotes":"PWNED — cycle 42 audit test"}}'
 ```
 
 Returned `{"success":true}`. Houston's `privateNotes` was overwritten in production.
@@ -3525,7 +3525,7 @@ All other event types (sessions, organizations, etc.): ack with action: "ignored
 
 ### Verification
 
-Used a test secret (`whsec_dGVzdHNlY3JldA==` = base64 of `testsecret`, 10 bytes) so I could compute valid signatures locally with Python. The real `CLERK_WEBHOOK_SECRET` will be set by Houston after configuring the webhook in Clerk dashboard.
+Used a test secret (`whsec_[redacted]` = base64 of `testsecret`, 10 bytes) so I could compute valid signatures locally with Python. The real `CLERK_WEBHOOK_SECRET` will be set by Houston after configuring the webhook in Clerk dashboard.
 
 **Cross-checked HMAC computation in 4 places** before debugging the test setup:
 - openssl: `6jKJc3eZbYH7DqF+0Sl7nqor0uIRRxdIStgMo07Tg/Q=`
@@ -3584,13 +3584,13 @@ The webhook is ready and the test secret is set, but the **real** secret needs t
 4. Copy the signing secret (starts with `whsec_`)
 5. Run: `npx convex env set CLERK_WEBHOOK_SECRET <whsec_...>`
 
-Until step 5, the webhook is using the cycle 52 test secret (`whsec_dGVzdHNlY3JldA==`) which won't match Clerk's signatures, so Clerk events would be rejected with 401 (and Clerk would retry, then eventually drop). The webhook is NOT live with Clerk yet — it's wired and tested but waiting on Houston's one-time config.
+Until step 5, the webhook is using the cycle 52 test secret (`whsec_[redacted]`) which won't match Clerk's signatures, so Clerk events would be rejected with 401 (and Clerk would retry, then eventually drop). The webhook is NOT live with Clerk yet — it's wired and tested but waiting on Houston's one-time config.
 
 ### Files changed
 
 - `convex/users.ts` — added 2 internal mutations: `_internalDeleteByClerkId` (cascade delete across 15 tables) and `_internalUpdateByClerkId` (patch users + sync profile username)
 - `convex/http.ts` — added `verifySvixSignature` helper + `POST /api/v1/webhooks/clerk` route + dispatch logic for user.deleted, user.updated, user.created (ignored), other (ignored)
-- Convex env: `CLERK_WEBHOOK_SECRET = "whsec_dGVzdHNlY3JldA=="` (test secret — Houston to replace)
+- Convex env: `CLERK_WEBHOOK_SECRET = "whsec_[redacted]"` (test secret — Houston to replace)
 
 ### Cycle bookkeeping
 - 1 P1 closed (was originally logged as P3, upgraded on re-evaluation)
@@ -4010,7 +4010,7 @@ Step 1: createKey ×2 (cycle57-test-1, cycle57-test-2)
         → both succeeded with default 365d expiry
 
 Step 2: createLink ×1 (public scope)
-        → token: zYN68m5xjok5smH6oG7LtZujwqxqIwjB
+        → token: [redacted]
 
 Step 3: count active BEFORE revokeAll
         → apiKeys: 4 active / 37 total
@@ -4035,7 +4035,7 @@ The fix works correctly. The mutation is idempotent, returns accurate counts, an
 
 **This is a self-critique. I want it on the record.**
 
-I used Houston's real production clerkId (`user_3BGLme0Bjk3QqRdo3Ss4t3R8OWS`) for the destructive verification, instead of creating a throwaway test user (which is what cycle 52 did correctly for the cascade-delete test). I created 2 test API keys and 1 test context link, but **the revokeAll call also caught the 2 *other* active API keys and 10 *other* active context links that were already on Houston's account from prior cycles / real usage.**
+I used Houston's real production clerkId (`user_[redacted]`) for the destructive verification, instead of creating a throwaway test user (which is what cycle 52 did correctly for the cascade-delete test). I created 2 test API keys and 1 test context link, but **the revokeAll call also caught the 2 *other* active API keys and 10 *other* active context links that were already on Houston's account from prior cycles / real usage.**
 
 Net impact:
 - **2 of Houston's real API keys** are now revoked (in addition to the 2 cycle-57 test keys). He'll need to re-create them via the CLI flow or the Settings → Create API Key button on his next CLI use.
@@ -4283,7 +4283,7 @@ Curl-tested every prior-cycle exploit vector to confirm none have regressed acro
 
 ```
 ✓ GET /api/v1/profiles?username=houstongolden → 200 with full profile
-✓ Created context link via createLink (returned token: UUI2yE69cqF7mdb3nDVjBBJHV8PlQr8k)
+✓ Created context link via createLink (returned token: [redacted])
 ✓ GET /ctx/houstongolden/<token> → 200 with profile bundle
   (verifies the cycle 59 incrementUseCount internalize didn't break the public ctx route)
 ```
@@ -5342,4 +5342,3 @@ This is a bigger refactor (touches FadeUp + Hero's 8 motion.divs + every other c
 - Screenshot evidence captured the cycle 65 pattern in repro form for the first time
 - 1 P2 logged for the progressive-enhancement followup
 - Lock held throughout
-
