@@ -92,7 +92,7 @@ you.md/create → enter email → password → verification → username claim
 ### Journey 3: Agent Integration
 ```
 User creates context link (web or CLI)
-→ Shares link with AI agent: "Read my identity: https://you.md/ctx/username/token"
+→ Shares link with AI agent: "Read my identity: https://www.you.md/ctx/username/token"
 → Agent GETs the link → receives structured identity bundle
 → Agent responds with personalized context from the start
 ```
@@ -249,7 +249,7 @@ init, login, register, whoami, status, build, publish, add, diff, export, previe
 
 ### Context Link Resolution
 ```
-GET https://you.md/ctx/{username}/{token}
+GET https://www.you.md/ctx/{username}/{token}
 Accept: text/plain → returns you.md (human-readable identity)
 Accept: application/json → returns you.json (structured bundle)
 ```

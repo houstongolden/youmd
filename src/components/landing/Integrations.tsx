@@ -7,7 +7,7 @@ import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 
 const primaryTools = ["Claude Code", "Cursor", "Codex", "ChatGPT"];
 const methods = [
-  ["context links", "https://you.md/ctx/user/token"],
+  ["context links", "https://www.you.md/ctx/user/token"],
   ["MCP server", "npx --yes youmd@latest mcp"],
   ["plain text", "GET /ctx/user/token"],
   ["JSON API", "GET /api/v1/profiles?username=x"],
@@ -54,7 +54,7 @@ const Integrations = () => (
                 voice, active projects, and rules before the work starts.
               </p>
               <code className="mt-5 block border border-border bg-background p-3 font-mono text-[11px] leading-relaxed text-accent">
-                Read my identity first: https://you.md/ctx/houston/sk...
+                Read my identity first: https://www.you.md/ctx/houston/sk...
               </code>
             </TerminalCard>
           </FadeUp>

@@ -105,6 +105,8 @@ const MAX_USES_OPTIONS: { value: MaxUses; label: string }[] = [
   { value: "25", label: "25 uses" },
 ];
 
+const CONTEXT_LINK_ORIGIN = "https://www.you.md";
+
 // ── Link preview modal (kept from previous version) ─────────────────────
 
 function LinkPreviewModal({
@@ -121,7 +123,7 @@ function LinkPreviewModal({
   const [error, setError] = useState<string | null>(null);
   const [copiedContent, setCopiedContent] = useState(false);
 
-  const fullUrl = `https://you.md/ctx/${username}/${link.token}`;
+  const fullUrl = `${CONTEXT_LINK_ORIGIN}/ctx/${username}/${link.token}`;
 
   useEffect(() => {
     let cancelled = false;
@@ -1026,7 +1028,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                       </div>
                       {/* URL */}
                       <code className="block text-[hsl(var(--accent-mid))] truncate opacity-70">
-                        you.md/ctx/{username}/{link.token}
+                        www.you.md/ctx/{username}/{link.token}
                       </code>
                       {/* Metadata */}
                       <div className="flex items-center gap-3 text-[hsl(var(--text-secondary))] opacity-50 text-[9px]">
@@ -1051,7 +1053,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                     {!link.isExpired && (
                       <div className="flex items-center gap-1.5 shrink-0">
                         <CopyButton
-                          text={`https://you.md/ctx/${username}/${link.token}`}
+                          text={`${CONTEXT_LINK_ORIGIN}/ctx/${username}/${link.token}`}
                           className="px-2 py-1 text-[9px] font-mono border border-[hsl(var(--accent))]/40 text-[hsl(var(--accent))] hover:bg-[hsl(var(--accent-wash))] transition-colors"
                           label="copy"
                         />

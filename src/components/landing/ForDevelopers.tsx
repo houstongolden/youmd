@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "motion/react";
 import FadeUp from "./FadeUp";
 
@@ -25,7 +26,7 @@ const useCases = [
 const integrationMethods = [
   { label: "MCP server", code: "npx --yes youmd@latest mcp --install claude --auto", desc: "agent serves identity context on demand" },
   { label: "REST API", code: "GET /api/v1/profiles?username=x", desc: "structured identity data as JSON" },
-  { label: "context links", code: "https://you.md/ctx/user/token", desc: "scoped, expiring identity access" },
+  { label: "context links", code: "https://www.you.md/ctx/user/token", desc: "scoped, expiring identity access" },
   { label: "OAuth flow", code: "coming soon", desc: "\"sign in with you.md\" for AI-native apps" },
 ];
 
@@ -116,12 +117,12 @@ const ForDevelopers = () => (
           <p className="font-mono text-[10px] text-muted-foreground/40">
             -- OAuth coming soon. MCP is live now.
           </p>
-          <a
+          <Link
             href="/docs"
             className="inline-flex items-center min-h-[44px] mt-1 px-3 text-accent/60 hover:text-accent transition-colors font-mono text-[10px]"
           >
             API docs at you.md/docs
-          </a>
+          </Link>
         </div>
       </FadeUp>
     </div>

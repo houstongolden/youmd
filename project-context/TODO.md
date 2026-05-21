@@ -248,6 +248,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 ## IN PROGRESS
 
 - [x] Deploy and verify the `/ctx` reliability fix so valid full-context links keep returning `you-md/v1` JSON even when tracking/logging writes fail
+- [x] Change generated context-link URLs to `https://www.you.md/ctx/...` so agent fetchers avoid the apex-domain redirect
 - [ ] Execute the ship-readiness plan across CLI, MCP, API, web-agent reliability, parity, and personality
 - [x] Complete the first ship-readiness evidence pass: CLI/bootstrap smoke tests, live MCP/API checks, and a tracked audit doc
 - [x] Complete authenticated production CLI hard-smoke coverage for `register`, `login`, `login --key`, `whoami`, `push`, `pull`, `diff`, `status`, `keys list`, and `sync`

@@ -719,7 +719,7 @@ preferences: terminal-native, monochrome
             <H3 id="context-links">Context Links</H3>
             <P>
               Shareable context links look like{" "}
-              <InlineCode>https://you.md/ctx/[username]/[token]</InlineCode>.
+              <InlineCode>https://www.you.md/ctx/[username]/[token]</InlineCode>.
               Any agent can fetch that scoped URL directly to load your context
               into its conversation.
             </P>

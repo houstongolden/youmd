@@ -340,7 +340,7 @@ After completing the fixes, run THIS test sequence (not the paste-blob version I
 
 1. Web: log in to you.md/shell
 2. Web: create a context link with scope `public`, name "Test Link Public"
-3. Web: copy the URL (one line: `https://you.md/ctx/houstongolden/<token>`)
+3. Web: copy the URL (one line: `https://www.you.md/ctx/houstongolden/<token>`)
 4. Open Claude.ai in a new browser tab
 5. Paste ONLY the URL — nothing else
 6. Send message: "fetch this and tell me what you know about me"

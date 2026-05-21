@@ -2,7 +2,7 @@
 
 **Tested:** 2026-04-08
 **Tester:** Claude Code (automated)
-**Test approach:** Real one-line context link flow (`https://you.md/ctx/<user>/<token>`), NOT paste blobs.
+**Test approach:** Real one-line context link flow (`https://www.you.md/ctx/<user>/<token>`), NOT paste blobs.
 
 ---
 
@@ -24,9 +24,9 @@ All share blocks at `/tmp/youmd-qa-results/share-blocks/` are now actual one-lin
 
 | File | Content | Use Case |
 |---|---|---|
-| `web-agent-link.txt` | `https://you.md/ctx/houstongolden/7eQognTO3SmP2iiWfKDdfUr7u0nT0omC` | Paste into any web agent (Claude.ai, ChatGPT, Gemini, Grok, Perplexity) |
+| `web-agent-link.txt` | `https://www.you.md/ctx/houstongolden/7eQognTO3SmP2iiWfKDdfUr7u0nT0omC` | Paste into any web agent (Claude.ai, ChatGPT, Gemini, Grok, Perplexity) |
 | `web-agent-with-prompt.txt` | `Read my identity context: <url>` | Same URL with prompt hint |
-| `private-project-link.txt` | `https://you.md/ctx/houstongolden/BroXnJuySKnijKcJnx16ykvNYf8EaZPs` | Full-scope link with private context |
+| `private-project-link.txt` | `https://www.you.md/ctx/houstongolden/BroXnJuySKnijKcJnx16ykvNYf8EaZPs` | Full-scope link with private context |
 | `private-with-prompt.txt` | `Read my full identity (including private context): <url>` | Same with hint |
 | `claude-code-mcp.json` | `{"mcpServers":{"youmd":{"command":"npx","args":["youmd","mcp"]}}}` | One-line MCP config |
 | `cli-install.sh` | `npx youmd mcp --install claude --auto` | One-line install command |
@@ -41,7 +41,7 @@ All share blocks at `/tmp/youmd-qa-results/share-blocks/` are now actual one-lin
 
 **Result:**
 ```
-URL: https://you.md/ctx/houstongolden/7eQognTO3SmP2iiWfKDdfUr7u0nT0omC
+URL: https://www.you.md/ctx/houstongolden/7eQognTO3SmP2iiWfKDdfUr7u0nT0omC
 Token: 7eQognTO3SmP2iiWfKDdfUr7u0nT0omC
 Scope: public
 Name: G2M Public Test
@@ -61,7 +61,7 @@ Name: G2M Public Test
 
 **Re-test result:**
 ```
-URL: https://you.md/ctx/houstongolden/BroXnJuySKnijKcJnx16ykvNYf8EaZPs
+URL: https://www.you.md/ctx/houstongolden/BroXnJuySKnijKcJnx16ykvNYf8EaZPs
 Token: BroXnJuySKnijKcJnx16ykvNYf8EaZPs
 Scope: full
 Name: G2M Private Test
@@ -73,7 +73,7 @@ Name: G2M Private Test
 
 ### Test C: Agent Fetches Public Link
 
-**Method:** `curl -L https://you.md/ctx/houstongolden/7eQognTO3SmP2iiWfKDdfUr7u0nT0omC`
+**Method:** `curl -L https://www.you.md/ctx/houstongolden/7eQognTO3SmP2iiWfKDdfUr7u0nT0omC`
 
 **Result:**
 - Status: 200
@@ -138,10 +138,10 @@ Has _privateContext: false
 **Not yet manually tested** — needs follow-up:
 ```bash
 # First fetch — note the ETag
-curl -I https://you.md/ctx/houstongolden/<token>
+curl -I https://www.you.md/ctx/houstongolden/<token>
 
 # Second fetch with If-None-Match
-curl -H 'If-None-Match: "<hash>"' -I https://you.md/ctx/houstongolden/<token>
+curl -H 'If-None-Match: "<hash>"' -I https://www.you.md/ctx/houstongolden/<token>
 # Expected: 304 Not Modified
 ```
 
@@ -181,7 +181,7 @@ Now that the share blocks are actual one-liners, paste each into a fresh agent s
 
 ### Test 1: Claude.ai (Web)
 ```
-Read my identity context: https://you.md/ctx/houstongolden/7eQognTO3SmP2iiWfKDdfUr7u0nT0omC
+Read my identity context: https://www.you.md/ctx/houstongolden/7eQognTO3SmP2iiWfKDdfUr7u0nT0omC
 ```
 
 **Pass criteria:**
@@ -204,7 +204,7 @@ Same one-liner.
 
 ### Test 6: Private Context Link (only with trusted agent)
 ```
-Read my full identity including private context: https://you.md/ctx/houstongolden/BroXnJuySKnijKcJnx16ykvNYf8EaZPs
+Read my full identity including private context: https://www.you.md/ctx/houstongolden/BroXnJuySKnijKcJnx16ykvNYf8EaZPs
 ```
 
 **Pass criteria:**

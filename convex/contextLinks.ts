@@ -7,6 +7,8 @@ import { requireOwner } from "./lib/auth";
  * GET /ctx/:username/:token returns public or full bundle depending on scope.
  */
 
+const CONTEXT_LINK_ORIGIN = "https://www.you.md";
+
 // Generate a URL-safe random token
 function generateToken(): string {
   const chars =
@@ -91,7 +93,7 @@ export const createLink = mutation({
       id: linkId,
       token,
       name: args.name,
-      url: `https://you.md/ctx/${user.username}/${token}`,
+      url: `${CONTEXT_LINK_ORIGIN}/ctx/${user.username}/${token}`,
       scope: args.scope,
       expiresAt: expiresAt
         ? new Date(expiresAt).toISOString()
@@ -125,7 +127,7 @@ export const listLinks = query({
         id: link._id,
         name: link.name ?? null,
         token: link.token,
-        url: `https://you.md/ctx/${user.username}/${link.token}`,
+        url: `${CONTEXT_LINK_ORIGIN}/ctx/${user.username}/${link.token}`,
         scope: link.scope,
         expiresAt: link.expiresAt
           ? new Date(link.expiresAt).toISOString()
