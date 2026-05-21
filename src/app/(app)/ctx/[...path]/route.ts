@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CONVEX_SITE_URL } from "@/lib/constants";
 
+const CONTEXT_LINK_HEADERS = {
+  "Cache-Control": "private, no-store, max-age=0",
+  Vary: "Accept",
+  "Access-Control-Allow-Origin": "*",
+};
+
 /**
  * Context link handler — proxies /ctx/{username}/{token} to Convex.
  *
@@ -24,7 +30,7 @@ export async function GET(
   if (!token) {
     return NextResponse.json(
       { error: "Token required" },
-      { status: 400, headers: { "Access-Control-Allow-Origin": "*" } }
+      { status: 400, headers: CONTEXT_LINK_HEADERS }
     );
   }
 
@@ -44,8 +50,7 @@ export async function GET(
     // 304 Not Modified — pass through with no body
     if (convexRes.status === 304) {
       const passthroughHeaders: Record<string, string> = {
-        "Cache-Control": "public, max-age=60",
-        "Access-Control-Allow-Origin": "*",
+        ...CONTEXT_LINK_HEADERS,
       };
       const upstreamEtag = convexRes.headers.get("etag");
       if (upstreamEtag) passthroughHeaders.ETag = upstreamEtag;
@@ -59,8 +64,7 @@ export async function GET(
 
     const responseHeaders: Record<string, string> = {
       "Content-Type": contentType,
-      "Cache-Control": "public, max-age=60",
-      "Access-Control-Allow-Origin": "*",
+      ...CONTEXT_LINK_HEADERS,
     };
     const upstreamEtag = convexRes.headers.get("etag");
     if (upstreamEtag) responseHeaders.ETag = upstreamEtag;
@@ -74,7 +78,7 @@ export async function GET(
   } catch {
     return NextResponse.json(
       { error: "Failed to resolve context link" },
-      { status: 502, headers: { "Access-Control-Allow-Origin": "*" } }
+      { status: 502, headers: CONTEXT_LINK_HEADERS }
     );
   }
 }

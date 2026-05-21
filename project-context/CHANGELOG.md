@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-05-21 — Context Link Reliability
+
+### Agent Context URLs
+- Hardened `GET /ctx` so valid full-context links no longer fail just because use-count tracking, profile-view recording, or cross-agent activity logging throws
+- Added a top-level fallback error response for unexpected `/ctx` failures so agents get JSON instead of opaque platform "Server Error" pages
+- Changed tokenized context-link cache headers from public caching to `private, no-store` and added `Vary: Accept` so JSON and markdown/text negotiation does not bleed across clients or shared caches
+- Updated the Next `/ctx/[...path]` proxy to preserve the same private/no-store cache behavior and `Vary: Accept`
+- Verified locally against the production Convex dataset: JSON returns `schema: you-md/v1`, `identity`, and `_privateContext`; `Accept: text/plain` returns markdown; invalid tokens return 404; `If-None-Match` still returns 304; `npx tsc --noEmit`, `npx tsc --noEmit -p convex/tsconfig.json`, and `npm run build` pass
+- Targeted ESLint on changed files is still blocked by pre-existing `convex/http.ts` lint debt in unrelated sections, not by the new `/ctx` route changes
+
 ## 2026-05-19 — Homepage + App Design-System Cleanup
 
 ### Public Profiles / Directory Quality

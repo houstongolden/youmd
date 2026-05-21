@@ -26,7 +26,7 @@ const TRUSTED_INTERNAL_AUTH_TOKEN = process.env.TRUSTED_INTERNAL_AUTH_TOKEN;
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, If-None-Match",
 };
 
 // Helper for JSON responses
@@ -57,6 +57,11 @@ async function sha256Hex(input: string): Promise<string> {
 // Link header pointing agents at the you-md/v1 JSON Schema
 const SCHEMA_LINK_HEADER =
   '<https://you.md/schema/you-md/v1.json>; rel="describedby"; type="application/schema+json"';
+
+const CONTEXT_LINK_CACHE_HEADERS = {
+  "Cache-Control": "private, no-store, max-age=0",
+  Vary: "Accept",
+};
 
 // GET /api/v1/profiles — List all profiles (no params) or get single profile (?username=xxx)
 http.route({
@@ -218,120 +223,136 @@ http.route({
   path: "/ctx",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
-    const url = new URL(request.url);
-    const token = url.searchParams.get("token");
-
-    if (!token) {
-      return json({ error: "Token parameter required" }, 400);
-    }
-
-    const raw = await ctx.runQuery(api.contextLinks.resolveLink, { token });
-    const result = raw as Record<string, unknown>;
-
-    if ("error" in result) {
-      return json({ error: result.error }, (result.status as number) || 400);
-    }
-
-    // Increment use count
-    // Cycle 59: incrementUseCount is now internalMutation
-    await ctx.runMutation(internal.contextLinks.incrementUseCount, { token });
-
-    // Record the view
-    await ctx.runMutation(api.profiles.recordView, {
-      username: result.username as string,
-      referrer: request.headers.get("referer") ?? undefined,
-      isAgentRead: true,
-      isContextLink: true,
-    });
-
-    // Log cross-agent activity for context-link resolution
     try {
-      const linkMeta = await ctx.runQuery(api.contextLinks.getLinkMeta, { token });
-      if (linkMeta) {
-        const uaAgent = detectAgent(request.headers.get("user-agent"));
-        // Always mark source as "context-link" regardless of UA, since the
-        // caller reached us via a shareable link. Keep the parsed name though.
-        await ctx.runMutation(internal.activity.logActivity, {
-          userId: linkMeta.userId,
-          profileId: linkMeta.profileId,
-          agentName: uaAgent.name,
-          agentSource: "context-link",
-          agentVersion: uaAgent.version,
-          action: "read",
-          resource: "identity",
-          scope: linkMeta.scope,
-          tokenId: linkMeta._id,
-          status: "success",
-          details: {
-            username: result.username,
-            linkName: linkMeta.name,
+      const url = new URL(request.url);
+      const token = url.searchParams.get("token");
+
+      if (!token) {
+        return json({ error: "Token parameter required" }, 400, CONTEXT_LINK_CACHE_HEADERS);
+      }
+
+      const raw = await ctx.runQuery(api.contextLinks.resolveLink, { token });
+      const result = raw as Record<string, unknown>;
+
+      if ("error" in result) {
+        return json({ error: result.error }, (result.status as number) || 400, CONTEXT_LINK_CACHE_HEADERS);
+      }
+
+      // Increment use count. This is observability/rate-accounting, not the
+      // payload itself; never let a tracking write break a valid context link.
+      try {
+        await ctx.runMutation(internal.contextLinks.incrementUseCount, { token });
+      } catch {
+        // non-fatal
+      }
+
+      // Record the view
+      try {
+        await ctx.runMutation(api.profiles.recordView, {
+          username: result.username as string,
+          referrer: request.headers.get("referer") ?? undefined,
+          isAgentRead: true,
+          isContextLink: true,
+        });
+      } catch {
+        // non-fatal
+      }
+
+      // Log cross-agent activity for context-link resolution
+      try {
+        const linkMeta = await ctx.runQuery(api.contextLinks.getLinkMeta, { token });
+        if (linkMeta) {
+          const uaAgent = detectAgent(request.headers.get("user-agent"));
+          // Always mark source as "context-link" regardless of UA, since the
+          // caller reached us via a shareable link. Keep the parsed name though.
+          await ctx.runMutation(internal.activity.logActivity, {
+            userId: linkMeta.userId,
+            profileId: linkMeta.profileId,
+            agentName: uaAgent.name,
+            agentSource: "context-link",
+            agentVersion: uaAgent.version,
+            action: "read",
+            resource: "identity",
+            scope: linkMeta.scope,
+            tokenId: linkMeta._id,
+            status: "success",
+            details: {
+              username: result.username,
+              linkName: linkMeta.name,
+            },
+          });
+        }
+      } catch {
+        // swallow logging errors
+      }
+
+      const accept = request.headers.get("accept") ?? "";
+
+      // Build the JSON body once so we can hash it for ETag
+      const jsonBody = JSON.stringify(
+        {
+          schema: "you-md/v1",
+          username: result.username,
+          scope: result.scope,
+          ...(result.bundle as Record<string, unknown>),
+          ...(result.privateContext
+            ? { _privateContext: result.privateContext }
+            : {}),
+        },
+        null,
+        2
+      );
+
+      // Compute a stable ETag from token + scope + body hash. The scope is
+      // included so that public/full variants of the same token never collide.
+      const etagValue = await sha256Hex(`${token}:${result.scope}:${jsonBody.length}:${await sha256Hex(jsonBody)}`);
+      const etag = `"${etagValue}"`;
+
+      // Honor If-None-Match — return 304 with no body
+      const ifNoneMatch = request.headers.get("if-none-match");
+      if (ifNoneMatch && ifNoneMatch === etag) {
+        return new Response(null, {
+          status: 304,
+          headers: {
+            ETag: etag,
+            Link: SCHEMA_LINK_HEADER,
+            ...CONTEXT_LINK_CACHE_HEADERS,
+            ...CORS_HEADERS,
           },
         });
       }
-    } catch {
-      // swallow logging errors
-    }
 
-    const accept = request.headers.get("accept") ?? "";
+      // Return markdown if requested
+      if (accept.includes("text/markdown") || accept.includes("text/plain")) {
+        return new Response(result.markdown as string, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/markdown; charset=utf-8",
+            ETag: etag,
+            Link: SCHEMA_LINK_HEADER,
+            ...CONTEXT_LINK_CACHE_HEADERS,
+            ...CORS_HEADERS,
+          },
+        });
+      }
 
-    // Build the JSON body once so we can hash it for ETag
-    const jsonBody = JSON.stringify(
-      {
-        schema: "you-md/v1",
-        username: result.username,
-        scope: result.scope,
-        ...(result.bundle as Record<string, unknown>),
-        ...(result.privateContext
-          ? { _privateContext: result.privateContext }
-          : {}),
-      },
-      null,
-      2
-    );
-
-    // Compute a stable ETag from token + scope + body hash. The scope is
-    // included so that public/full variants of the same token never collide.
-    const etagValue = await sha256Hex(`${token}:${result.scope}:${jsonBody.length}:${await sha256Hex(jsonBody)}`);
-    const etag = `"${etagValue}"`;
-
-    // Honor If-None-Match — return 304 with no body
-    const ifNoneMatch = request.headers.get("if-none-match");
-    if (ifNoneMatch && ifNoneMatch === etag) {
-      return new Response(null, {
-        status: 304,
-        headers: {
-          ETag: etag,
-          Link: SCHEMA_LINK_HEADER,
-          "Cache-Control": "public, max-age=60",
-          ...CORS_HEADERS,
-        },
-      });
-    }
-
-    // Return markdown if requested
-    if (accept.includes("text/markdown") || accept.includes("text/plain")) {
-      return new Response(result.markdown as string, {
+      return new Response(jsonBody, {
         status: 200,
         headers: {
-          "Content-Type": "text/markdown; charset=utf-8",
+          "Content-Type": "application/vnd.you-md.v1+json",
           ETag: etag,
           Link: SCHEMA_LINK_HEADER,
-          "Cache-Control": "public, max-age=60",
+          ...CONTEXT_LINK_CACHE_HEADERS,
           ...CORS_HEADERS,
         },
       });
+    } catch {
+      return json(
+        { error: "Failed to resolve context link" },
+        500,
+        CONTEXT_LINK_CACHE_HEADERS
+      );
     }
-
-    return new Response(jsonBody, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/vnd.you-md.v1+json",
-        ETag: etag,
-        Link: SCHEMA_LINK_HEADER,
-        "Cache-Control": "public, max-age=60",
-        ...CORS_HEADERS,
-      },
-    });
   }),
 });
 
