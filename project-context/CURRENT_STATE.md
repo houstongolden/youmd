@@ -1,7 +1,7 @@
 # You.md — Current State
 
-Last Updated: 2026-04-30
-Last Commit: cc61a6f fix(web): return explicit json from mcp proxy
+Last Updated: 2026-05-21
+Last Commit: 92314d3 fix(web): harden context link resolution
 
 ---
 
@@ -33,6 +33,7 @@ Last Commit: cc61a6f fix(web): return explicit json from mcp proxy
 - Newly created or rotated API keys can now be revealed again from the settings pane by their owner, while older pre-migration hash-only keys correctly prompt a one-time rotate
 - Same-origin web chat routes for the shell: `/api/v1/chat`, `/api/v1/chat/ack`, and `/api/v1/chat/stream`
 - Same-origin web MCP routes: `/api/v1/mcp` and `/.well-known/mcp.json` proxy through the web domain with JSON bodies preserved
+- Tokenized `/ctx/<username>/<token>` links now fail safely and serve reliably for agents: valid links return `you-md/v1` JSON with `_privateContext`, tracking/logging writes are best-effort, invalid links return explicit JSON errors, and deployed responses use private/no-store cache headers with `Vary: Accept`
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
 
