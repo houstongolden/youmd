@@ -10,6 +10,7 @@
 - Verified locally against the production Convex dataset: JSON returns `schema: you-md/v1`, `identity`, and `_privateContext`; `Accept: text/plain` returns markdown; invalid tokens return 404; `If-None-Match` still returns 304; `npx tsc --noEmit`, `npx tsc --noEmit -p convex/tsconfig.json`, and `npm run build` pass
 - Deployed via push `92314d3` and verified production context links return full JSON with `_privateContext`, markdown for `Accept: text/plain`, 404 JSON for invalid tokens, 304 for matching ETags, and deployed `Cache-Control: private, no-store` + `Vary: Accept`
 - After Myo reported a fresh server error that did not appear in Vercel or Convex `/ctx` logs, changed generated context links and docs to use `https://www.you.md/ctx/...` directly so agent fetchers do not have to follow the apex-domain redirect first
+- Tightened `/ctx` and profile content negotiation so broad agent headers like `Accept: application/json, text/plain, */*` return JSON; markdown/plain text now only wins when the caller asks for text without also accepting JSON
 - Verified the direct-`www` URL change with `npx tsc --noEmit`, `npx tsc --noEmit -p convex/tsconfig.json`, targeted ESLint on live changed source files, and `npm run build` through Homebrew Node; docs-page ESLint is still blocked by pre-existing `react/no-unescaped-entities` issues away from the changed URL line
 
 ## 2026-05-19 — Homepage + App Design-System Cleanup

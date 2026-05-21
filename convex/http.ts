@@ -63,6 +63,18 @@ const CONTEXT_LINK_CACHE_HEADERS = {
   Vary: "Accept",
 };
 
+function wantsMarkdown(accept: string): boolean {
+  const normalized = accept.toLowerCase();
+  const acceptsJson =
+    normalized.includes("application/vnd.you-md.v1+json") ||
+    normalized.includes("application/json") ||
+    normalized.includes("+json");
+
+  if (acceptsJson) return false;
+
+  return normalized.includes("text/markdown") || normalized.includes("text/plain");
+}
+
 // GET /api/v1/profiles — List all profiles (no params) or get single profile (?username=xxx)
 http.route({
   path: "/api/v1/profiles",
@@ -160,7 +172,7 @@ http.route({
     const accept = request.headers.get("accept") ?? "";
 
     // Return markdown if requested
-    if (accept.includes("text/markdown") || accept.includes("text/plain")) {
+    if (wantsMarkdown(accept)) {
       return new Response(profile.youMd, {
         status: 200,
         headers: {
@@ -323,7 +335,7 @@ http.route({
       }
 
       // Return markdown if requested
-      if (accept.includes("text/markdown") || accept.includes("text/plain")) {
+      if (wantsMarkdown(accept)) {
         return new Response(result.markdown as string, {
           status: 200,
           headers: {
