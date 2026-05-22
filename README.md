@@ -195,6 +195,7 @@ When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your
 
 | Skill | What It Does |
 |---|---|
+| `youstack-start` | Start local agents with identity, project state, active requests, skills, and next moves |
 | `voice-sync` | Propagate your voice profile to Claude, Codex, Cursor, and custom agents |
 | `claude-md-generator` | Bootstrap repo-visible agent instructions with your identity context |
 | `project-context-init` | Scaffold project-context/ with your preferences baked in |
@@ -331,7 +332,7 @@ POST   /api/v1/chat/stream         # Streaming chat via SSE
 | Full identity bundle | yes | yes |
 | Public profile page | yes | yes |
 | CLI access (all commands) | yes | yes |
-| Skills (install + use) | 6 bundled | unlimited + registry |
+| Skills (install + use) | 7 bundled | unlimited + registry |
 | API (read:public) | 1 key | unlimited keys, all scopes |
 | Context links | public scope | public + full scope |
 | Private vault | local only | synced + encrypted |

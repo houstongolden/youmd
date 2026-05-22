@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { docsReference } from "@/generated/docs-reference";
+import type { DocsEndpoint, DocsMcpTool } from "@/generated/docs-reference";
 
 /* ── Navigation structure ────────────────────────────────── */
 
@@ -18,6 +20,15 @@ const navigation: NavItem[] = [
     children: [
       { id: "web-quickstart", label: "Web Quickstart" },
       { id: "cli-quickstart", label: "CLI Quickstart" },
+    ],
+  },
+  {
+    id: "core-concepts",
+    label: "Core Concepts",
+    children: [
+      { id: "identity-protocol", label: "Identity Protocol" },
+      { id: "context-surfaces", label: "Context Surfaces" },
+      { id: "source-of-truth", label: "Source of Truth" },
     ],
   },
   {
@@ -62,6 +73,15 @@ const navigation: NavItem[] = [
     label: "Agent Directives",
   },
   {
+    id: "agent-workflows",
+    label: "Agent Workflows",
+    children: [
+      { id: "workflow-golden-path", label: "Golden Path" },
+      { id: "playbooks", label: "Playbooks" },
+      { id: "examples", label: "Examples" },
+    ],
+  },
+  {
     id: "api",
     label: "API",
     children: [
@@ -69,8 +89,11 @@ const navigation: NavItem[] = [
       { id: "authenticated-endpoints", label: "Authenticated" },
       { id: "skills-api", label: "Skills API" },
       { id: "mcp-server", label: "MCP Server" },
+      { id: "schema-reference", label: "Schema" },
+      { id: "docs-automation", label: "Docs Automation" },
     ],
   },
+  { id: "errors-troubleshooting", label: "Errors + Troubleshooting" },
   { id: "privacy", label: "Privacy" },
   { id: "commands", label: "Dashboard Commands" },
 ];
@@ -328,6 +351,175 @@ function CommandTable({
   );
 }
 
+function SystemPanel({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="my-5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden rounded-[2px]">
+      <div className="flex items-center gap-1.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 py-2">
+        <span className="h-2 w-2 rounded-full bg-[hsl(var(--accent))]/80" />
+        <span className="h-2 w-2 rounded-full bg-[hsl(var(--text-secondary))]/30" />
+        <span className="h-2 w-2 rounded-full bg-[hsl(var(--text-secondary))]/20" />
+        <span className="ml-2 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))] opacity-60">
+          {title}
+        </span>
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
+function ReferenceStats() {
+  const stats = [
+    { label: "HTTP endpoints", value: docsReference.counts.endpoints },
+    { label: "MCP tools", value: docsReference.counts.mcpTools },
+    { label: "CLI", value: `v${docsReference.cli.version}` },
+    { label: "manifest", value: docsReference.sourceHash.slice(0, 8) },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 my-5">
+      {stats.map((stat) => (
+        <div
+          key={stat.label}
+          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 rounded-[2px]"
+        >
+          <div className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))] opacity-50">
+            {stat.label}
+          </div>
+          <div className="mt-1 font-mono text-[18px] text-[hsl(var(--accent))]">
+            {stat.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FeatureMatrix({
+  items,
+}: {
+  items: { title: string; body: string }[];
+}) {
+  return (
+    <div className="grid md:grid-cols-2 gap-3 my-5">
+      {items.map((item) => (
+        <div
+          key={item.title}
+          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 rounded-[2px]"
+        >
+          <h4 className="font-mono text-[12px] text-[hsl(var(--text-primary))] mb-2">
+            {item.title}
+          </h4>
+          <p className="text-[13px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-80">
+            {item.body}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MethodBadge({ method }: { method: string }) {
+  return (
+    <span className="inline-flex min-w-12 justify-center border border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-1.5 py-0.5 font-mono text-[10px] text-[hsl(var(--accent))] rounded-[2px]">
+      {method}
+    </span>
+  );
+}
+
+function EndpointReference({
+  categories,
+  limit,
+}: {
+  categories?: string[];
+  limit?: number;
+}) {
+  const rows = (docsReference.endpoints as readonly DocsEndpoint[])
+    .filter((endpoint) => !["Admin", "Other"].includes(endpoint.category))
+    .filter((endpoint) => !categories || categories.includes(endpoint.category))
+    .slice(0, limit ?? 999);
+
+  return (
+    <div className="my-4 overflow-x-auto border border-[hsl(var(--border))] rounded-[2px]">
+      <table className="w-full min-w-[680px] text-[13px]">
+        <thead>
+          <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))]">
+            <th className="px-3 py-2 text-left font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))] opacity-60 font-normal">
+              Method
+            </th>
+            <th className="px-3 py-2 text-left font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))] opacity-60 font-normal">
+              Path
+            </th>
+            <th className="px-3 py-2 text-left font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))] opacity-60 font-normal">
+              Auth
+            </th>
+            <th className="px-3 py-2 text-left font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))] opacity-60 font-normal">
+              Notes
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((endpoint) => (
+            <tr key={`${endpoint.method}-${endpoint.path}`} className="border-b border-[hsl(var(--border))]/70 last:border-b-0">
+              <td className="px-3 py-2 align-top">
+                <MethodBadge method={endpoint.method} />
+              </td>
+              <td className="px-3 py-2 align-top font-mono text-[12px] text-[hsl(var(--text-primary))] whitespace-nowrap">
+                {endpoint.path}
+              </td>
+              <td className="px-3 py-2 align-top text-[12px] text-[hsl(var(--text-secondary))] whitespace-nowrap">
+                {endpoint.auth}
+              </td>
+              <td className="px-3 py-2 align-top text-[12px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-80">
+                {endpoint.summary}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function McpToolReference({ limit }: { limit?: number }) {
+  const tools = (docsReference.mcpTools as readonly DocsMcpTool[]).slice(0, limit ?? 999);
+
+  return (
+    <div className="my-4 grid gap-2">
+      {tools.map((tool) => (
+        <div
+          key={tool.name}
+          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 rounded-[2px]"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[13px] text-[hsl(var(--accent))]">
+              {tool.name}
+            </span>
+            {tool.required.length > 0 && (
+              <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">
+                required: {tool.required.join(", ")}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-[12px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-80">
+            {tool.description}
+          </p>
+          {tool.inputFields.length > 0 && (
+            <p className="mt-2 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">
+              input: {tool.inputFields.join(", ")}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ── Sidebar ─────────────────────────────────────────────── */
 
 function Sidebar({
@@ -577,17 +769,90 @@ export default function DocsContent() {
               </Step>
             </StepList>
 
+            {/* ── Core Concepts ───────────────────────────── */}
+            <H2 id="core-concepts">Core Concepts</H2>
+            <P>
+              You.md is not a profile page generator. It is a portable identity
+              context layer for agents: a canonical bundle, a local markdown
+              workspace, a public profile, private memory, API keys, context
+              links, and an MCP server that lets other tools read and update the
+              parts you allow.
+            </P>
+
+            <ReferenceStats />
+
+            <H3 id="identity-protocol">Identity Protocol</H3>
+            <FeatureMatrix
+              items={[
+                {
+                  title: "you-md/v1",
+                  body: "The structured JSON contract agents fetch, validate, cache, and reason over. Public responses advertise the schema with a Link header.",
+                },
+                {
+                  title: "Markdown source",
+                  body: "Local files in .youmd/ stay human-editable: profile/about.md, preferences/agent.md, voice/voice.md, directives/agent.md, and project context.",
+                },
+                {
+                  title: "Compiled bundle",
+                  body: "The CLI compiles markdown into you.json + you.md, preserves raw preference text, hashes the bundle, and publishes the latest version.",
+                },
+                {
+                  title: "Agent memory",
+                  body: "Durable facts, preferences, goals, decisions, and project context can be saved by the user, CLI, web shell, API, or MCP tools.",
+                },
+              ]}
+            />
+
+            <H3 id="context-surfaces">Context Surfaces</H3>
+            <P>
+              The same identity can be consumed through multiple surfaces
+              depending on what the receiving agent supports.
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "https://you.md/{username}", desc: "Human-readable public profile with JSON-LD, OG cards, and profile sections" },
+                { cmd: "GET /api/v1/profiles?username=", desc: "Public agent-readable JSON or markdown with ETag and schema link headers" },
+                { cmd: "GET /ctx/{username}/{token}", desc: "Scoped context link, optionally including private context" },
+                { cmd: "youmd mcp", desc: "Local stdio MCP server for Claude Code, Codex, Cursor, and similar tools" },
+                { cmd: "POST /api/v1/mcp", desc: "Same-origin JSON-RPC endpoint for web-capable MCP clients" },
+                { cmd: "GET /api/v1/docs/reference", desc: "Machine-readable docs manifest generated from routes and MCP tools" },
+                { cmd: "GET /api/v1/docs/openapi.json", desc: "Generated OpenAPI-style inventory for API reference tooling" },
+              ]}
+            />
+
+            <H3 id="source-of-truth">Source of Truth</H3>
+            <SystemPanel title="source map">
+              <div className="grid gap-3 text-[13px] leading-relaxed text-[hsl(var(--text-secondary))]">
+                <p>
+                  <InlineCode>convex/</InlineCode> owns the server data model,
+                  HTTP routes, auth, memory, context links, activity logs, and
+                  MCP JSON-RPC bridge.
+                </p>
+                <p>
+                  <InlineCode>cli/</InlineCode> owns local bundle compilation,
+                  the <InlineCode>you</InlineCode> launcher, stdio MCP tools,
+                  skills, sync, keys, links, memories, and project context.
+                </p>
+                <p>
+                  <InlineCode>src/app/(app)/docs</InlineCode> owns the human
+                  docs, while <InlineCode>src/generated/docs-reference.ts</InlineCode>{" "}
+                  is regenerated from source so endpoint and MCP inventories do
+                  not rot quietly.
+                </p>
+              </div>
+            </SystemPanel>
+
             {/* ── Claude Code Integration ────────────────── */}
             <H2 id="claude-code">Claude Code Integration</H2>
             <P>
               Most you.md users work inside Claude Code, Cursor, or similar AI
-              coding tools. Here's how to use you.md directly from your coding
+              coding tools. Here&apos;s how to use you.md directly from your coding
               environment.
             </P>
 
             <Callout type="tip">
               The <InlineCode>youmd</InlineCode> CLI works in any terminal,
-              including Claude Code's shell. Use <InlineCode>you</InlineCode>{" "}
+              including Claude Code&apos;s shell. Use <InlineCode>you</InlineCode>{" "}
               in a regular terminal for the live U conversation. Non-interactive
               commands work inside your coding agent.
             </Callout>
@@ -648,20 +913,20 @@ export default function DocsContent() {
             </P>
             <StepList>
               <Step n={1}>
-                Tell Claude Code: "add my preference for terminal-native UI to
-                my you.md private context" — it can run{" "}
+                Tell Claude Code: &quot;add my preference for terminal-native UI to
+                my you.md private context&quot; — it can run{" "}
                 <InlineCode>
-                  youmd private notes append "prefers terminal-native UI"
+                  youmd private notes append &quot;prefers terminal-native UI&quot;
                 </InlineCode>
               </Step>
               <Step n={2}>
-                After a coding session, tell your agent: "extract any
+                After a coding session, tell your agent: &quot;extract any
                 preferences or facts about me from this conversation and save
-                them to my you.md" — it can run{" "}
+                them to my you.md&quot; — it can run{" "}
                 <InlineCode>youmd memories add</InlineCode> commands
               </Step>
               <Step n={3}>
-                Edit your <InlineCode>.youmd/</InlineCode> files directly (they're
+                Edit your <InlineCode>.youmd/</InlineCode> files directly (they&apos;re
                 just markdown) and run{" "}
                 <InlineCode>youmd push</InlineCode> to sync
               </Step>
@@ -1012,11 +1277,12 @@ preferences: terminal-native, monochrome
 
             <H3 id="skills-bundled">Bundled Skills</H3>
             <P>
-              Every you.md install ships with six built-in skills. These are
+              Every you.md install ships with seven built-in skills. These are
               always available and kept in sync with CLI updates.
             </P>
             <CommandTable
               commands={[
+                { cmd: "youstack-start", desc: "Start local agents with identity, project state, active requests, installed skills, and next moves" },
                 { cmd: "claude-md-generator", desc: "Bootstrap repo-visible agent instructions from your identity -- persona, preferences, coding style, all baked in" },
                 { cmd: "project-context-init", desc: "Scaffold a project-context/ directory with TODO.md, FEATURES.md, ARCHITECTURE.md, and more" },
                 { cmd: "voice-sync", desc: "Export your voice profile as agent instructions for consistent tone across tools" },
@@ -1109,46 +1375,123 @@ Address every part of multi-part messages.`}</CodeBlock>
               your you.md will follow them.
             </P>
 
+            {/* ── Agent Workflows ─────────────────────────── */}
+            <H2 id="agent-workflows">Agent Workflows</H2>
+            <P>
+              The strongest You.md workflow is continuous context maintenance:
+              the agent reads who you are, does the work, then saves the durable
+              things it learned so the next agent starts smarter.
+            </P>
+
+            <H3 id="workflow-golden-path">Golden Path</H3>
+            <StepList>
+              <Step n={1}>
+                Orient with <InlineCode>whoami</InlineCode> or{" "}
+                <InlineCode>GET /api/v1/profiles?username=...</InlineCode>
+              </Step>
+              <Step n={2}>
+                For local coding agents, call <InlineCode>get_agent_brief</InlineCode>{" "}
+                to load identity, repo instructions, active requests, TODOs,
+                installed skills, and the next move in one shot
+              </Step>
+              <Step n={3}>
+                Pull the full context only when needed with{" "}
+                <InlineCode>get_identity</InlineCode>, a context link, or{" "}
+                <InlineCode>youmd pull</InlineCode>
+              </Step>
+              <Step n={4}>
+                Check project context before substantial work with{" "}
+                <InlineCode>get_project_context</InlineCode> or{" "}
+                <InlineCode>youmd project show</InlineCode>
+              </Step>
+              <Step n={5}>
+                Mutate only the smallest durable layer: memory, project memory,
+                one identity section, one skill, or one source
+              </Step>
+              <Step n={6}>
+                Compile and publish with <InlineCode>compile_and_push</InlineCode>{" "}
+                or <InlineCode>youmd push</InlineCode> when the user wants the
+                change live
+              </Step>
+              <Step n={7}>
+                Leave an activity trail through MCP/API so the user can see
+                which agents read, wrote, or published context
+              </Step>
+            </StepList>
+
+            <H3 id="playbooks">Playbooks</H3>
+            <FeatureMatrix
+              items={[
+                {
+                  title: "New coding repo",
+                  body: "Run youmd skill init-project, add a managed AGENTS/CLAUDE bootstrap, create project-context files, then save decisions as project memory.",
+                },
+                {
+                  title: "New agent handoff",
+                  body: "Create a scoped context link, paste it into the agent, and ask the agent to confirm what it received plus how it will use it.",
+                },
+                {
+                  title: "Post-session capture",
+                  body: "Ask the agent to extract preferences, decisions, projects, and durable facts from the session, then save them via memories or section edits.",
+                },
+                {
+                  title: "Identity cleanup",
+                  body: "Use get_section/update_section for one file at a time, compile locally, inspect the diff, then publish. No giant mystery rewrite.",
+                },
+              ]}
+            />
+
+            <H3 id="examples">Examples</H3>
+            <CodeBlock title="Claude Code / Codex starter prompt">{`Read my You.md context first.
+
+Use the fastest available path:
+1. call the youmd MCP whoami tool if available
+2. call get_agent_brief to load identity + local project state
+3. if you need full detail, call get_identity
+4. before editing this repo, read project-context/
+5. when you learn a durable preference or decision, save it back with add_memory or add_project_memory
+
+Then continue with the actual task.`}</CodeBlock>
+            <CodeBlock title="terminal">{`# Install the local agent surface
+curl -fsSL https://you.md/install.sh | bash
+
+# Wire MCP into an agent host
+youmd mcp --install claude --auto
+youmd mcp --install codex --auto
+youmd mcp --install cursor --auto
+
+# Smoke-test identity access
+youmd whoami
+youmd mcp --json`}</CodeBlock>
+
             {/* ── API ──────────────────────────────────────── */}
             <H2 id="api">API</H2>
             <P>
-              You.md has 30+ HTTP endpoints for programmatic access. All
-              authenticated endpoints use Bearer token auth with{" "}
-              <InlineCode>ym_</InlineCode> prefixed API keys.
+              You.md has a first-party HTTP API, same-origin web proxies, a
+              JSON Schema, and MCP endpoints for agent-native access. The
+              endpoint inventory below is generated from source on every build,
+              so it tracks the routes that actually ship.
             </P>
+            <ReferenceStats />
 
             <H3 id="public-endpoints">Public Endpoints</H3>
-            <CodeBlock title="HTTP">{`# Fetch a public profile (JSON)
-GET /api/v1/profiles?username=houstongolden
-
-# List all profiles
-GET /api/v1/profiles
-
-# Check username availability
-GET /api/v1/check-username?username=newuser
-
-# Resolve a context link (plain text for agents)
-GET /ctx/{username}/{token}
-
-# Start passwordless auth
-POST /api/auth/send-verification
-{ "email": "...", "type": "login" }
-
-# Start passwordless signup
-POST /api/auth/send-verification
-{ "email": "...", "type": "signup", "username": "...", "displayName": "..." }
-
-# Verify code and optionally issue an API key
-POST /api/auth/verify-code
-{ "email": "...", "code": "...", "issueApiKey": true }
-
-# Read the current cookie-backed web session
-GET /api/auth/session`}</CodeBlock>
             <P>
-              Context links at <InlineCode>/ctx/username/token</InlineCode>{" "}
-              return identity context optimized for AI consumption. Use
-              scope &quot;full&quot; to include private context.
+              Public routes are intentionally agent-readable: profile JSON,
+              markdown negotiation, schema discovery, MCP discovery, context
+              links, auth handshakes, and rate-limited enrichment helpers.
             </P>
+            <EndpointReference
+              categories={[
+                "Public Identity",
+                "Context Links",
+                "Schema",
+                "Auth",
+                "MCP",
+                "Docs",
+                "Chat",
+                "Enrichment",
+              ]}
+            />
 
             <H3 id="authenticated-endpoints">Authenticated Endpoints</H3>
             <P>
@@ -1157,40 +1500,16 @@ GET /api/auth/session`}</CodeBlock>
               <InlineCode>youmd keys create</InlineCode>).
             </P>
             <CodeBlock title="HTTP">{`Authorization: Bearer ym_your_api_key_here
-
-# Your profile
-GET  /api/v1/me
-
-# Bundle management
-POST /api/v1/me/bundle          # Save bundle
-POST /api/v1/me/publish         # Publish latest
-
-# Sources
-GET  /api/v1/me/sources         # List connected sources
-POST /api/v1/me/sources         # Add a source URL
-
-# Memories
-GET  /api/v1/me/memories        # List (optional: ?category=fact&limit=10)
-POST /api/v1/me/memories        # Save from external agent
-
-# Context links
-POST /api/v1/me/context-links   # Create
-GET  /api/v1/me/context-links   # List
-DELETE /api/v1/me/context-links # Revoke
-
-# Private context
-GET  /api/v1/me/private         # Read private data
-POST /api/v1/me/private         # Update private data
-
-# LLM Chat
-POST /api/v1/chat               # Non-streaming
-POST /api/v1/chat/stream        # SSE streaming
-
-# Enrichment
-POST /api/v1/scrape             # Scrape a URL
-POST /api/v1/research           # Web research via Perplexity
-POST /api/v1/enrich-x           # X/Twitter enrichment
-POST /api/v1/enrich-linkedin    # LinkedIn enrichment`}</CodeBlock>
+Content-Type: application/json`}</CodeBlock>
+            <EndpointReference
+              categories={[
+                "Account",
+                "Memories",
+                "Private Context",
+                "Activity",
+                "Skills",
+              ]}
+            />
 
             <H3 id="skills-api">Skills API</H3>
             <P>
@@ -1198,37 +1517,14 @@ POST /api/v1/enrich-linkedin    # LinkedIn enrichment`}</CodeBlock>
               skills. Public endpoints are unauthenticated. Install, usage, and
               publish endpoints require a Bearer token.
             </P>
-            <CodeBlock title="HTTP">{`# Browse the public skill registry
-GET /api/v1/skills
-
-# Fetch a single skill by name (includes full template content)
-GET /api/v1/skills?name=claude-md-generator
-
-# List your installed skills (authenticated)
-GET /api/v1/me/skills
-
-# Publish a skill to the registry (authenticated)
-POST /api/v1/me/skills
-{ "name": "...", "description": "...", "content": "...", "version": "1.0.0", "scope": "shared" }
-
-# Record a skill install (authenticated)
-POST /api/v1/me/skills/install
-{ "skillName": "..." }
-
-# Track skill usage (authenticated)
-POST /api/v1/me/skills/usage
-{ "skillName": "...", "context": "cli" }
-
-# Remove an installed skill (authenticated)
-POST /api/v1/me/skills/remove
-{ "skillName": "..." }`}</CodeBlock>
+            <EndpointReference categories={["Skills"]} />
 
             <H3 id="mcp-server">MCP Server</H3>
             <P>
-              You.md exposes a JSON-RPC 2.0 MCP endpoint so AI agents (Claude,
-              Cursor, Windsurf) can natively query identity context. Discover
-              the server via the{" "}
-              <InlineCode>{"/.well-known/mcp.json"}</InlineCode> endpoint.
+              You.md ships two MCP surfaces: a local stdio server through the
+              CLI and a same-origin JSON-RPC endpoint for clients that can speak
+              HTTP. The local server is the power path for Claude Code, Codex,
+              Cursor, and similar coding agents.
             </P>
             <CodeBlock title="HTTP">{`# MCP discovery — auto-configure any MCP-compatible client
 GET /.well-known/mcp.json
@@ -1246,20 +1542,88 @@ Content-Type: application/json
   "method": "tools/call",
   "params": {
     "name": "get_identity",
-    "arguments": { "username": "houstongolden", "format": "compact" }
+    "arguments": { "format": "compact" }
   },
   "id": 2
 }`}</CodeBlock>
             <P>
-              Available MCP tools:{" "}
-              <InlineCode>get_identity</InlineCode>,{" "}
-              <InlineCode>search_profiles</InlineCode>,{" "}
-              <InlineCode>get_my_identity</InlineCode> (authenticated).
+              The local stdio server also exposes <InlineCode>get_agent_brief</InlineCode>,
+              a YouStack startup brief that combines identity, repo instructions,
+              active requests, open TODOs, installed skills, and recommended next
+              moves for Claude Code, Codex, Cursor, and similar agents.
+            </P>
+            <P>
               Configure via CLI:
             </P>
             <CodeBlock title="bash">{`npx --yes youmd@latest mcp --install claude --auto
 npx --yes youmd@latest mcp --install cursor --auto
 youmd mcp --json             # Print the exact MCP config JSON`}</CodeBlock>
+            <McpToolReference />
+
+            <H3 id="schema-reference">Schema</H3>
+            <P>
+              Public profile responses point to the canonical{" "}
+              <InlineCode>you-md/v1</InlineCode> schema with a{" "}
+              <InlineCode>Link</InlineCode> header. Agents can validate the
+              identity document before caching or mutating it.
+            </P>
+            <CodeBlock title="HTTP">{`GET /schema/you-md/v1.json
+Accept: application/json
+
+GET /api/v1/profiles?username=houstongolden
+Accept: application/vnd.you-md.v1+json`}</CodeBlock>
+
+            <H3 id="docs-automation">Docs Automation</H3>
+            <SystemPanel title="docs sync contract">
+              <div className="space-y-3 text-[13px] leading-relaxed text-[hsl(var(--text-secondary))]">
+                <p>
+                  <InlineCode>npm run docs:generate</InlineCode> scans{" "}
+                  <InlineCode>convex/http.ts</InlineCode>, Next route files, and{" "}
+                  <InlineCode>cli/src/mcp/server.ts</InlineCode>, then writes the
+                  generated manifest used by this page.
+                </p>
+                <p>
+                  <InlineCode>npm run build</InlineCode> runs that generator
+                  first through <InlineCode>prebuild</InlineCode>, so Vercel
+                  deploys refresh API/MCP docs as part of the normal release
+                  path.
+                </p>
+                <p>
+                  <InlineCode>GET /api/v1/docs/reference</InlineCode> exposes
+                  the same generated manifest for agents, smoke tests, and
+                  release checks. <InlineCode>GET /api/v1/docs/openapi.json</InlineCode>{" "}
+                  exposes an OpenAPI-style spec for API reference tooling.{" "}
+                  <InlineCode>npm run docs:check</InlineCode> fails when the
+                  committed generated files are stale.
+                </p>
+              </div>
+            </SystemPanel>
+
+            {/* ── Errors ───────────────────────────────────── */}
+            <H2 id="errors-troubleshooting">Errors + Troubleshooting</H2>
+            <P>
+              You.md keeps errors plain because agents need recoverable
+              instructions more than theatrics. HTTP endpoints return JSON with
+              an <InlineCode>error</InlineCode> field, context links use explicit
+              status codes, and bundle writes return <InlineCode>409</InlineCode>{" "}
+              for ancestor mismatches so clients know to pull before pushing.
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "401", desc: "Missing, expired, invalid, or revoked API key. Re-run youmd login or rotate a key." },
+                { cmd: "404", desc: "Profile, context token, bundle version, or local section not found." },
+                { cmd: "409 ANCESTOR_MISMATCH", desc: "Remote bundle changed since your local parent hash. Pull, inspect diff, then push again." },
+                { cmd: "413", desc: "Chat or compaction payload is too large for the protected LLM route." },
+                { cmd: "429", desc: "Rate limit hit on public chat, research, scraping, enrichment, or per-user compacting." },
+                { cmd: "503", desc: "Spend-cap or provider kill switch is active. Retry after the service window resets." },
+              ]}
+            />
+            <CodeBlock title="terminal">{`# Most useful smoke checks
+youmd whoami
+youmd status
+youmd diff
+youmd mcp --json
+npm run docs:check`}</CodeBlock>
 
             {/* ── Privacy ──────────────────────────────────── */}
             <H2 id="privacy">Privacy</H2>
@@ -1286,9 +1650,11 @@ youmd mcp --json             # Print the exact MCP config JSON`}</CodeBlock>
               </div>
             </div>
             <P>
-              Access tokens can be generated from the shell via{" "}
-              <InlineCode>/tokens</InlineCode>. Each token has configurable scope
-              and can be revoked at any time.
+              Context links can be generated from the shell with{" "}
+              <InlineCode>/share</InlineCode> or from the CLI with{" "}
+              <InlineCode>youmd link create</InlineCode>. API keys can be
+              created, revealed, rotated, and revoked from settings or{" "}
+              <InlineCode>youmd keys</InlineCode>.
             </P>
             <Callout type="tip">
               You control what goes into each layer. Nothing is shared without

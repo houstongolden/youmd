@@ -2,22 +2,22 @@ import type { Metadata } from "next";
 import DocsContent from "./docs-content";
 
 export const metadata: Metadata = {
-  title: "Documentation — you.md",
+  title: "Developer Docs — you.md",
   description:
-    "Learn how to create, manage, and share your identity context for the agent internet.",
+    "Build with the You.md identity context protocol: CLI, API, MCP, context links, skills, schema, and agent workflows.",
   openGraph: {
-    title: "Documentation — you.md",
+    title: "Developer Docs — you.md",
     description:
-      "Learn how to create, manage, and share your identity context for the agent internet.",
+      "Build with the You.md identity context protocol: CLI, API, MCP, context links, skills, schema, and agent workflows.",
     url: "https://you.md/docs",
     siteName: "you.md",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Documentation — you.md",
+    title: "Developer Docs — you.md",
     description:
-      "Learn how to create, manage, and share your identity context for the agent internet.",
+      "Build with the You.md identity context protocol: CLI, API, MCP, context links, skills, schema, and agent workflows.",
   },
   alternates: {
     canonical: "https://you.md/docs",
