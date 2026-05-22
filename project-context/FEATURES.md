@@ -1,12 +1,14 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-05-21
+Last Updated: 2026-05-22
 
 ## Core Platform
 
 | Feature | Status | Notes |
 |---|---|---|
 | Shared product design primitives | Done | Reusable `Container`, `Section`, `SectionHeader`, `Button`, `Card`, `TerminalCard`, `FormField`, `Input`, `Textarea`, `Select`, `Label`, `FieldHelp`, and `FieldError` now anchor marketing and app UI control standards |
+| Developer docs platform | Done | `/docs` now includes concepts, context surfaces, source-of-truth mapping, agent workflows, playbooks, examples, generated API/MCP reference, schema guidance, docs automation, and troubleshooting |
+| Generated docs reference | Done | `npm run docs:generate` scans Convex HTTP routes, Next routes, and CLI MCP tools into `src/generated/docs-reference.ts` plus a generated OpenAPI-style spec; `prebuild` refreshes it and `docs:check` detects stale artifacts |
 | Compact conversion homepage | Done | Homepage now follows a calmer conversion flow with one primary hero CTA, compact profile proof, compressed problem/how-it-works/inside sections, combined integrations/builders credibility band, balanced pricing, compact FAQ, and simple final CTA |
 | App control normalization | Done | Terminal auth/input, install tabs, dashboard tabs, pane headers, empty states, sources, share, private context, files, settings, and edit surfaces now share more consistent heights, padding, focus rings, card treatment, and muted text behavior |
 | Public profile directory hygiene | Done | `/profiles` now canonicalizes/dedupes usernames, suppresses QA/test rows, sanitizes public image URLs, prefers stored ASCII portraits, and falls back to deterministic terminal placeholders instead of blank cards |
@@ -22,6 +24,8 @@ Last Updated: 2026-05-21
 | Clean npm publish metadata | Done | CLI package now targets `0.6.22`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
 | Codex MCP install | Done | `youmd mcp --install codex --auto` safely writes `~/.codex/config.toml` with `npx --yes youmd@latest mcp`, matching the Claude/Cursor published-package launcher |
 | MCP home-bundle fallback | Done | MCP tools now fall back to `~/.youmd` when the working repo has no local `.youmd/`, so background Claude/Codex agents still get the user's identity and skills |
+| YouStack MCP startup brief | In progress | Local MCP now exposes `get_agent_brief` and `youmd://agent/brief`, combining compact identity, repo instructions, project-context files, active requests, open TODOs, known issues, installed skills, and next moves; production host/deploy verification is pending |
+| YouStack starter skill | In progress | New bundled `youstack-start` skill teaches Claude/Codex/Cursor sessions to orient through You.md MCP, read local context first, route to the right bundled skill, and close the loop with tracker updates; Convex registry deploy/user verification pending |
 | Cross-agent project bootstrap | Done | `youmd skill init-project` now links both `.claude/skills/youmd/` and `.codex/skills/youmd/` by default, with fresh scaffold and additive existing-repo paths verified from the installed CLI |
 | Trusted CLI publishing | Done | GitHub Actions workflow publishes the CLI through npm Trusted Publishing; local agents can trigger it with `npm run publish:cli` after npm package settings trust `publish-cli.yml` |
 | Onboarding handoff into U | Done | `youmd init` and conversational onboarding now end with the same actionable U-centric next move pattern the launcher uses, including real recent-project openings instead of only a static checklist |
@@ -109,6 +113,8 @@ Last Updated: 2026-05-21
 | POST /api/v1/chat | Done | Web-domain chat proxy now exists through Next so the shell and docs can use same-origin API routes |
 | POST /api/v1/chat/ack | Done | Web-domain fast-ack proxy now exists through Next |
 | POST /api/v1/chat/stream | Done | Web-domain SSE chat proxy now exists through Next |
+| GET /api/v1/docs/reference | Done | Machine-readable generated docs manifest for endpoint/tool counts, route inventory, MCP tools, source hash, and CLI version |
+| GET /api/v1/docs/openapi.json | Done | Generated OpenAPI 3.1-style API inventory for reference tooling and future Mintlify-style API docs |
 | GET /api/v1/me | Done |
 | POST /api/v1/me/bundle | Done |
 | POST /api/v1/me/publish | Done |
@@ -203,7 +209,7 @@ Last Updated: 2026-05-21
 |---|---|---|
 | Skill catalog (YAML) | Done | youmd-skills.yaml with entries, scope, identity_fields |
 | Template engine | Done | {{var}} interpolation against live identity data |
-| Bundled skills (6) | Done | claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs |
+| Bundled skills (7) | In progress | youstack-start, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs; local catalog/build verified, production registry deploy pending |
 | Install / Remove | Done | Global ~/.youmd/skills/ + batch all |
 | Use (render) | Done | Interpolate + readiness check + display |
 | Sync (re-interpolate) | Done | Manual + auto on push/pull/sync |

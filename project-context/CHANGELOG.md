@@ -1,5 +1,19 @@
 # You.md — Changelog
 
+## 2026-05-22 — YouStack Agent Brief + Starter Skill
+
+### MCP / Skills
+- Added local MCP `get_agent_brief`, a YouStack startup brief that combines compact identity, cwd, repo instruction files, project-context files, active requests, open TODOs, known issues, installed skills, recommended skills, and next moves
+- Added `youmd://agent/brief` as a markdown MCP resource for clients that prefer resource reads over tool calls
+- Added bundled `youstack-start`, a local-agent startup skill for Claude Code, Codex, Cursor, and other MCP/CLI agents
+- Made `youstack-start` the first recommended bundled skill and updated the empty-catalog next step to `youmd skill install youstack-start`
+- Synced the 7-skill surface across CLI catalog defaults, backend bundled-skill seed data, SkillsPane, You Agent skill copy, README, docs, and generated docs reference
+
+### Verification
+- Added `cli/src/__tests__/mcp-agent-brief.test.ts` for startup brief extraction from `AGENTS.md` and `project-context/`
+- Verified with `npm test -- mcp-agent-brief.test.ts`, `npm run build` in `cli/`, temp-HOME `node dist/index.js skill list`, root `npm run docs:check`, and root `npm run build` with explicit Node PATH
+- Production registry seeding/deploy and real Claude/Codex host verification are still pending
+
 ## 2026-05-21 — Context Link Reliability
 
 ### Agent Context URLs

@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-05-21
+Last Updated: 2026-05-22
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -10,6 +10,36 @@ Last Updated: 2026-05-21
 - Source: date + commit or conversation reference
 
 ---
+
+## YouStack Local-Agent Priority (from May 22 conversation)
+
+### 64. Prioritize You.md skills, MCP/API, and local-agent integration over CLI/npm polish
+**Status:** IN PROGRESS
+**Verified:** NO
+**Request:** Continue improving the You.md / youmd stack around the gstack + bamfstack pattern: a "youstack" that empowers Claude Code, Codex, Grok, Cursor, and other top local/cloud agents with identity context, skills, prompts, tools, agent harness intelligence, and MCP/API access. Prioritize this over pure CLI/npm polish.
+**Actionable Scope:**
+1. Improve the bundled You.md skill layer so local agents get a stronger starting protocol, not just individual one-off templates.
+2. Improve MCP/API surfaces that let agents quickly load identity, project context, active requests, TODOs, installed skills, and next moves.
+3. Make Claude Code/Codex/Cursor-style sessions start from real local context instead of asking the user to re-explain the repo.
+4. Keep the implementation additive and compatible with existing gstack/bamfstack-style workflows.
+5. Update app/docs/web-agent copy so the shipped product advertises the actual skill/MCP surface.
+6. Verify locally and leave production deploy/user verification clearly tracked.
+**Progress (2026-05-22):** Added a local MCP `get_agent_brief` tool plus `youmd://agent/brief` resource that composes compact identity, cwd, project instructions, project-context files, active requests, open TODOs, known issues, installed skills, recommended skills, and next moves. Added the bundled `youstack-start` skill and wired it into the local catalog, recommended skills, backend bundled-skill seed list, SkillsPane, web agent prompt copy, README, docs copy, and generated docs reference. Added a focused CLI test for the brief builder. Local verification passed `npm test -- mcp-agent-brief.test.ts`, `npm run build` in `cli/`, `node dist/index.js skill list` with a temp HOME showing 7 bundled skills, `npm run docs:check`, and root `npm run build` with explicit Node PATH. Production Convex skill seeding/deploy and user verification are still pending.
+
+## Docs Platform Upgrade (from May 21 conversation)
+
+### 63. Bring You.md docs up to BAMF developer-platform quality and keep API/MCP reference auto-current
+**Status:** IN PROGRESS
+**Verified:** NO
+**Request:** Audit what is missing from `you.md/docs`, compare against the latest BAMF docs work, improve the You.md docs to a more comprehensive Mintlify-style developer/reference/playbook standard, and ensure API/MCP docs automatically update when new features, endpoints, tools, or relevant platform changes ship.
+**Actionable Scope:**
+1. Identify gaps in the current You.md docs compared with the stronger BAMF docs structure and modern Mintlify patterns.
+2. Add richer docs sections for concepts, quickstarts, architecture, CLI, skills, agent workflows, examples/playbooks, troubleshooting, privacy, API, MCP, schema, and release/documentation sync.
+3. Improve visual polish inside the existing terminal-native You.md design system without turning docs into generic SaaS marketing.
+4. Generate API/MCP reference data from source so endpoint and tool inventories do not stay as stale hand-maintained lists.
+5. Wire docs generation into local development/build scripts so releases naturally refresh docs artifacts.
+6. Update project tracking files, verify the docs build, and leave production deploy/user verification clearly tracked.
+**Progress (2026-05-21):** Auditing current `/docs`, `convex/http.ts`, web API proxies, CLI MCP tools, and BAMF `bamfaiapp/docs` / `bamfaiapp-next/docs` reference structure.
 
 ## Private Context Link Reliability (from May 20 conversation)
 
@@ -169,7 +199,7 @@ Last Updated: 2026-05-21
 **Status:** DONE
 **Verified:** NO
 **Request:** Build The Library-inspired skill system with identity interpolation, YAML catalog, bundled skills, CLI commands, cross-project sync, agent linking, meta-improvement, web dashboard pane.
-**Verification:** Run `youmd skill list` (shows 6 bundled skills), `youmd skill install all`, `youmd skill init-project` in a fresh repo (generates AGENTS.md + CLAUDE.md + project-context/ + .you/ + .claude/skills/), `youmd skill use claude-md-generator` with identity data populated (all {{var}} resolved), `youmd skill link claude`, web dashboard shows skills tab.
+**Verification:** Run `youmd skill list` (shows 7 bundled skills), `youmd skill install all`, `youmd skill init-project` in a fresh repo (generates AGENTS.md + CLAUDE.md + project-context/ + .you/ + .claude/skills/), `youmd skill use youstack-start` with identity data populated (all {{var}} resolved), `youmd skill link claude`, web dashboard shows skills tab.
 
 ### 40. Git Self-Hosting vs Convex Architecture Decision
 **Status:** DECIDED — Convex stays as source of truth, git as optional export channel in v2

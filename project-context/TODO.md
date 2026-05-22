@@ -1,11 +1,23 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-05-21
+Last Updated: 2026-05-22
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-05-22
+- [x] Add a YouStack startup MCP brief for local agents via `get_agent_brief` and `youmd://agent/brief`
+- [x] Add the bundled `youstack-start` skill and make it the first recommended skill for local Claude/Codex/Cursor sessions
+- [x] Sync the 7-skill catalog across CLI defaults, backend seed data, SkillsPane copy, web-agent prompt copy, README, docs copy, and generated docs reference
+- [x] Add focused CLI test coverage for MCP agent-brief extraction from `AGENTS.md` and `project-context/`
+- [x] Verify the local pass with the focused CLI test, CLI TypeScript build, temp-HOME skill catalog smoke test, docs reference check, and root Next production build
+- [x] Upgrade `/docs` from a single guide into a broader developer platform surface with concepts, context surfaces, agent workflows, playbooks, examples, API/MCP reference, schema guidance, docs automation, and troubleshooting
+- [x] Add generated docs reference data from Convex HTTP routes, Next routes, and CLI MCP tools so endpoint/tool inventories refresh during builds
+- [x] Add `GET /api/v1/docs/reference` and `GET /api/v1/docs/openapi.json` for machine-readable docs/reference consumers
+- [x] Wire `npm run docs:generate` into `prebuild` and add `npm run docs:check` so release paths catch stale docs artifacts
+- [x] Verify the docs upgrade with docs generation/check, targeted ESLint, `npx tsc --noEmit`, production `npm run build`, and desktop/mobile browser QA on `localhost:3100/docs`
 
 ### 2026-05-19
 - [x] Complete a design-system cleanup pass for the marketing homepage and app UI without changing product behavior
@@ -186,7 +198,7 @@ PRD Version: 2.3
 - [x] Canonical `project-context/` scaffolding now fills missing files individually, including `PROMPTS.md`
 - [x] `youmd init` now offers repo bootstrap even when mature repos already have `CLAUDE.md` / `project-context/`
 - [x] Bundled skill truth pass completed across CLI catalog, backend seed data, dashboard UI, docs, and README
-- [x] Bundled skill set expanded and reconciled to 6 shipped skills: `claude-md-generator`, `project-context-init`, `voice-sync`, `meta-improve`, `proactive-context-fill`, `you-logs`
+- [x] Bundled skill set expanded and reconciled to 7 shipped skills: `youstack-start`, `claude-md-generator`, `project-context-init`, `voice-sync`, `meta-improve`, `proactive-context-fill`, `you-logs`
 - [x] Existing local skill catalogs now auto-merge new bundled defaults on upgrade instead of staying stuck on the old 4-skill set
 - [x] Smoke-tested `youmd skill init-project` in fresh and existing repos to verify scaffold vs additive behavior
 
@@ -250,6 +262,8 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Deploy and verify the `/ctx` reliability fix so valid full-context links keep returning `you-md/v1` JSON even when tracking/logging writes fail
 - [x] Change generated context-link URLs to `https://www.you.md/ctx/...` so agent fetchers avoid the apex-domain redirect
 - [ ] Execute the ship-readiness plan across CLI, MCP, API, web-agent reliability, parity, and personality
+- [ ] Deploy/reseed the Convex bundled-skill registry so production `/api/v1/skills` includes `youstack-start`
+- [ ] Verify the new local MCP `get_agent_brief` tool through a real Claude Code/Codex MCP host after publishing or local MCP config refresh
 - [x] Complete the first ship-readiness evidence pass: CLI/bootstrap smoke tests, live MCP/API checks, and a tracked audit doc
 - [x] Complete authenticated production CLI hard-smoke coverage for `register`, `login`, `login --key`, `whoami`, `push`, `pull`, `diff`, `status`, `keys list`, and `sync`
 - [x] Fix CLI public-profile ingestion + round-trip correctness (`application/vnd.you-md.v1+json`, public markdown fetch, clean publish→pull→diff, accurate local publish/sync state)

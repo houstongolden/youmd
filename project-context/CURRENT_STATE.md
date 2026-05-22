@@ -1,6 +1,6 @@
 # You.md — Current State
 
-Last Updated: 2026-05-21
+Last Updated: 2026-05-22
 Last Commit: 92314d3 fix(web): harden context link resolution
 
 ---
@@ -50,6 +50,8 @@ Last Commit: 92314d3 fix(web): harden context link resolution
 - npm publish retry path is fixed: the next release target is `0.6.22`, package metadata is normalized, and the built CLI, MCP user-agent, and MCP serverInfo now match that version cleanly
 - Claude and Codex MCP configs on this machine now use the safe published-package launcher (`npx --yes youmd@latest mcp`) with backups written during migration
 - MCP tools have been smoke-tested through stdio from the installed local CLI: `whoami` returns Houston's real home-bundle identity from inside this repo, and `use_skill project-context-init` returns identity-interpolated skill content
+- Local MCP now exposes `get_agent_brief` plus `youmd://agent/brief`, giving Claude/Codex/Cursor-style agents one startup call for identity, repo instructions, project-context files, active requests, open TODOs, known issues, installed skills, and next moves
+- Bundled skills now include `youstack-start` locally, making the default stack 7 skills and giving local agents a first-session operating loop before they touch code
 - npm Trusted Publishing is wired through `.github/workflows/publish-cli.yml`; after configuring the package on npm, local agents can run `npm run publish:cli` to trigger the GitHub OIDC publish without a long-lived npm token or OTP
 - The published package is cleaner now: compiled test artifacts are excluded from `dist`, and the dry-run tarball dropped from 248 files to 212 files
 - Bare `youmd` now enters like U instead of dropping straight into a dry command list: it shows the YOU logo, optionally shows the saved portrait preview, greets the user, surfaces project-context opportunities, and proposes the next best moves contextually
@@ -132,6 +134,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 - The CLI still does not feel proactive enough at install/startup compared with Claude Code/OpenClaw. The new startup entrance is a meaningful step, but U still needs a richer first-run / post-install “friendly wingman” flow that helps without requiring the user to already know the commands
 - The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.22` and need one more npm publish before end users get the `you` launcher, compact portrait splash, paced startup investigation, update hints, public-profile portrait contract fix, active-bundle fallback on read-only commands, raw-markdown roundtrip preservation, marker-based recent-project opportunity scanning, broader local workspace repo awareness, the real local tool loop, first-run setup guidance, smaller portrait bounds, and the deeper home-context sweep + concise strongest-move opener
+- Production `/api/v1/skills` still needs a Convex seed/deploy pass before the new bundled `youstack-start` skill appears in the hosted registry; local CLI catalog/build already shows 7 bundled skills
 
 ### Portrait Sync
 - CLI generates ASCII portraits locally but sync to web API is not verified end-to-end

@@ -2,9 +2,9 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 31
-**Total messages:** 402
-**Last updated:** 2026-05-21 10:04
+**Total sessions:** 32
+**Total messages:** 403
+**Last updated:** 2026-05-22 07:02
 
 ## Table of Contents
 
@@ -39,6 +39,15 @@ Auto-maintained — new messages appended each session.
 29. [2026-05-19 (homepage-design-system-cleanup)](#session-2026-05-19-homepage-design-system-cleanup) --- 5 messages
 30. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 31. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
+32. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-05-22 (youstack-local-agent-priority)
+*1 message | File modified: 2026-05-22 07:02*
+
+**2026-05-22 07:02:00 UTC**
+> please please continue improving the skills of the you.md and youmd stack (which I think we should really prioritize over the actual CLI and NPM) the gstack approach i have recently taken with bamfstack modeled on gstack + our api/mcp has been the most seamless and powerful way ive found and i want to go that route of empowering the best existing local agents likd claude code, codex, etc with our "youstack" just like gstack and bamfstack have been working so well -- keep improving the core most useful functionality that the you.md platform and vision for what it should be truly achieves its vision and purpose and reaches a level of value and solving real probelsm and super usability and integration with claude code/codex/grok and any other the top existing tools that its just a no brainer for any dev or avid user of cloud and local agents etc to add you.md to their stack of tools/skills etc.. keep improving the agent intelligence, prompts, tools, and the agent harness in the app and access to them via mcp/api
 
 ---
 
