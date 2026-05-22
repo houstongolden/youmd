@@ -1355,7 +1355,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
         // Custom message for /skills
         const noticeContent = trimmed === "/skills"
-          ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use claude-md-generator\ninstall via CLI: youmd skill install all\nscaffold a project: youmd skill init-project\n\navailable: claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs"
+            ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use youstack-start\ninstall via CLI: youmd skill install all\nscaffold a project: youmd skill init-project\n\navailable: youstack-start, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs"
           : `[switched to ${paneCommands[trimmed]}]`;
 
         setDisplayMessages((prev) => [
@@ -1383,7 +1383,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             {
               id: crypto.randomUUID(),
               role: "system-notice",
-              content: `usage: /skill use <name>\navailable skills: claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs\ninstall via CLI: youmd skill install all`,
+              content: `usage: /skill use <name>\navailable skills: youstack-start, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs\ninstall via CLI: youmd skill install all`,
             },
           ]);
           return true;

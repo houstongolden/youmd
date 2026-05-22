@@ -5,10 +5,10 @@
  * An MCP where the context is you. Every agent that connects gets structured,
  * portable identity context: who you are, how you work, what you sound like.
  *
- * Resources: identity, profile sections, preferences, voice, directives,
- *            memories, projects, skills
- * Tools:     add_memory, update_section, search_memories, use_skill,
- *            compile_bundle, push_bundle, get_project_context,
+ * Resources: identity, agent brief, profile sections, preferences, voice,
+ *            directives, memories, projects, skills
+ * Tools:     whoami, get_agent_brief, add_memory, update_section,
+ *            search_memories, use_skill, compile_bundle, push_bundle, get_project_context,
  *            add_source, create_context_link, list_projects, get_remote_status
  *
  * Transport: stdio (for Claude Code, Cursor, any MCP client)
@@ -36,6 +36,7 @@ import {
   readGlobalConfig,
   isAuthenticated,
   getConvexSiteUrl,
+  detectProjectContext,
 } from "../lib/config";
 import {
   findProjectsRoot,
@@ -342,6 +343,328 @@ function readLocalProjectContextFile(name: string): string {
   return "";
 }
 
+interface AgentBriefFile {
+  path: string;
+  exists: boolean;
+  chars?: number;
+  summary?: string;
+}
+
+interface AgentBriefProject {
+  name: string;
+  root: string;
+  marker: string;
+  instructionFiles: AgentBriefFile[];
+  contextFiles: AgentBriefFile[];
+  activeRequests: string[];
+  openTodos: string[];
+  knownIssues: string[];
+}
+
+export interface AgentBrief {
+  generatedAt: string;
+  user: {
+    summary: string;
+    authenticated: boolean;
+    bundleDir: string;
+    bundleInitialized: boolean;
+  };
+  environment: {
+    cwd: string;
+    mcpVersion: string;
+  };
+  project: AgentBriefProject | null;
+  skills: {
+    installed: string[];
+    recommended: string[];
+  };
+  memories?: unknown[];
+  nextMoves: string[];
+  reminders: string[];
+}
+
+function firstContentLines(content: string, limit = 3): string {
+  const lines = content
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("---") && !line.startsWith("#") && !line.startsWith("<!--"));
+
+  return lines.slice(0, limit).join(" ").slice(0, 280);
+}
+
+function readBriefFile(root: string, relativePath: string): AgentBriefFile {
+  const filePath = path.join(root, relativePath);
+  if (!fs.existsSync(filePath)) {
+    return { path: relativePath, exists: false };
+  }
+
+  try {
+    const stat = fs.statSync(filePath);
+    if (stat.isDirectory()) {
+      return { path: relativePath, exists: true, summary: "directory" };
+    }
+    const content = fs.readFileSync(filePath, "utf-8");
+    return {
+      path: relativePath,
+      exists: true,
+      chars: content.length,
+      summary: firstContentLines(content),
+    };
+  } catch {
+    return { path: relativePath, exists: true, summary: "unreadable" };
+  }
+}
+
+function readProjectFile(root: string, relativePath: string): string {
+  const filePath = path.join(root, relativePath);
+  return readFileOr(filePath, "");
+}
+
+function collectInstructionFiles(root: string): AgentBriefFile[] {
+  const candidates = [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".you/AGENT.md",
+    ".you/STACK-MAP.md",
+    ".cursor/rules/youmd.mdc",
+    ".cursor/rules/youmd.md",
+    ".claude/skills/youmd",
+    ".codex/skills/youmd",
+  ];
+
+  return candidates
+    .map((candidate) => readBriefFile(root, candidate))
+    .filter((file) => file.exists);
+}
+
+function collectContextFiles(root: string): AgentBriefFile[] {
+  const candidates = [
+    "project-context/CURRENT_STATE.md",
+    "project-context/feature-requests-active.md",
+    "project-context/TODO.md",
+    "project-context/FEATURES.md",
+    "project-context/CHANGELOG.md",
+    "project-context/PRD.md",
+    "project-context/ARCHITECTURE.md",
+    "project-context/STYLE_GUIDE.md",
+    "project-context/BRANDING.md",
+  ];
+
+  return candidates
+    .map((candidate) => readBriefFile(root, candidate))
+    .filter((file) => file.exists);
+}
+
+function extractOpenTodos(content: string, limit = 8): string[] {
+  const todos: string[] = [];
+  for (const line of content.split("\n")) {
+    const match = line.match(/^\s*-\s+\[\s\]\s+(.+)$/);
+    if (match) todos.push(match[1].trim());
+    if (todos.length >= limit) break;
+  }
+  return todos;
+}
+
+function extractActiveRequests(content: string, limit = 6): string[] {
+  const requests: string[] = [];
+  const chunks = content.split(/\n(?=###\s+)/g);
+
+  for (const chunk of chunks) {
+    const titleMatch = chunk.match(/^###\s+(.+)$/m);
+    if (!titleMatch) continue;
+
+    const statusMatch = chunk.match(/\*\*Status:\*\*\s*([^\n]+)/);
+    const status = statusMatch?.[1]?.trim() || "UNKNOWN";
+    if (/^(DONE|VERIFIED BY USER|DECIDED|N\/A)/i.test(status)) continue;
+
+    requests.push(`${titleMatch[1].trim()} [${status}]`);
+    if (requests.length >= limit) break;
+  }
+
+  return requests;
+}
+
+function extractSectionBullets(content: string, heading: string, limit = 6): string[] {
+  const lines = content.split("\n");
+  const start = lines.findIndex((line) => line.trim().toLowerCase() === `## ${heading.toLowerCase()}`);
+  if (start < 0) return [];
+
+  const bullets: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (/^##\s+/.test(line)) break;
+    const match = line.match(/^\s*-\s+(.+)$/);
+    if (match) bullets.push(match[1].trim());
+    if (bullets.length >= limit) break;
+  }
+  return bullets;
+}
+
+function buildProjectBrief(): AgentBriefProject | null {
+  const detected = detectProjectContext();
+  const fallbackRoot = findLocalProjectContextRoot();
+  const root = detected?.root || fallbackRoot;
+  if (!root) return null;
+
+  const activeRequests = extractActiveRequests(
+    readProjectFile(root, "project-context/feature-requests-active.md"),
+  );
+  const openTodos = extractOpenTodos(readProjectFile(root, "project-context/TODO.md"));
+  const knownIssues = extractSectionBullets(
+    readProjectFile(root, "project-context/CURRENT_STATE.md"),
+    "Known Issues",
+  );
+
+  return {
+    name: detected?.name || path.basename(root),
+    root,
+    marker: detected?.marker || "project-context",
+    instructionFiles: collectInstructionFiles(root),
+    contextFiles: collectContextFiles(root),
+    activeRequests,
+    openTodos,
+    knownIssues,
+  };
+}
+
+export async function buildAgentBrief(options: { includeMemories?: boolean } = {}): Promise<AgentBrief> {
+  const project = buildProjectBrief();
+  const installedSkills = getInstalledSkills().map((skill) => skill.name).sort();
+  const nextMoves: string[] = [];
+
+  if (project?.activeRequests.length) {
+    nextMoves.push(`Address the top active request: ${project.activeRequests[0]}`);
+  }
+  if (project?.openTodos.length) {
+    nextMoves.push(`Use the first open TODO as backlog context: ${project.openTodos[0]}`);
+  }
+  if (project && project.contextFiles.length === 0) {
+    nextMoves.push("Bootstrap project-context with: youmd skill init-project --mode additive");
+  }
+  if (!installedSkills.includes("youstack-start")) {
+    nextMoves.push("Install the YouStack starter skill with: youmd skill install youstack-start");
+  }
+  if (nextMoves.length === 0) {
+    nextMoves.push("Read the project instructions, pick the highest-signal task, and act end-to-end.");
+  }
+
+  const brief: AgentBrief = {
+    generatedAt: new Date().toISOString(),
+    user: {
+      summary: buildWhoamiSummary(),
+      authenticated: isAuthenticated(),
+      bundleDir: getBundleDir(),
+      bundleInitialized: activeBundleExists(),
+    },
+    environment: {
+      cwd: process.cwd(),
+      mcpVersion: MCP_SERVER_VERSION,
+    },
+    project,
+    skills: {
+      installed: installedSkills,
+      recommended: [
+        "youstack-start",
+        "project-context-init",
+        "proactive-context-fill",
+        "voice-sync",
+        "you-logs",
+      ],
+    },
+    nextMoves: nextMoves.slice(0, 5),
+    reminders: [
+      "Read the whole user request before acting; split multi-part asks into tracked items.",
+      "Prefer local project instructions and project-context files before asking for context.",
+      "When making changes, update TODO, FEATURES, CHANGELOG, active requests, and PROMPTS before closing.",
+      "Do not claim files were written or pushed unless the tool call actually succeeded.",
+    ],
+  };
+
+  if (options.includeMemories && isAuthenticated()) {
+    brief.memories = await fetchMemories(undefined, 8);
+  }
+
+  return brief;
+}
+
+function renderFileList(files: AgentBriefFile[]): string {
+  if (files.length === 0) return "- none detected";
+  return files.map((file) => {
+    const detail = file.summary ? ` - ${file.summary}` : "";
+    const chars = typeof file.chars === "number" ? ` (${file.chars} chars)` : "";
+    return `- ${file.path}${chars}${detail}`;
+  }).join("\n");
+}
+
+function renderList(items: string[], empty: string): string {
+  if (items.length === 0) return `- ${empty}`;
+  return items.map((item) => `- ${item}`).join("\n");
+}
+
+export function formatAgentBriefMarkdown(brief: AgentBrief, maxChars = 6000): string {
+  const project = brief.project;
+  const lines: string[] = [];
+
+  lines.push("# YouStack Agent Brief");
+  lines.push("");
+  lines.push("## User");
+  lines.push(brief.user.summary || "(no identity summary available)");
+  lines.push("");
+  lines.push(`- authenticated: ${brief.user.authenticated ? "yes" : "no"}`);
+  lines.push(`- bundle: ${brief.user.bundleInitialized ? brief.user.bundleDir : "not initialized"}`);
+  lines.push(`- cwd: ${brief.environment.cwd}`);
+  lines.push("");
+
+  lines.push("## Project");
+  if (project) {
+    lines.push(`- name: ${project.name}`);
+    lines.push(`- root: ${project.root}`);
+    lines.push(`- marker: ${project.marker}`);
+    lines.push("");
+    lines.push("### Instruction Files");
+    lines.push(renderFileList(project.instructionFiles));
+    lines.push("");
+    lines.push("### Project Context");
+    lines.push(renderFileList(project.contextFiles));
+    lines.push("");
+    lines.push("### Active Requests");
+    lines.push(renderList(project.activeRequests, "none detected"));
+    lines.push("");
+    lines.push("### Open TODOs");
+    lines.push(renderList(project.openTodos, "none detected"));
+    if (project.knownIssues.length > 0) {
+      lines.push("");
+      lines.push("### Known Issues");
+      lines.push(renderList(project.knownIssues, "none detected"));
+    }
+  } else {
+    lines.push("- no local project detected");
+  }
+  lines.push("");
+
+  lines.push("## Skills");
+  lines.push(`- installed: ${brief.skills.installed.length > 0 ? brief.skills.installed.join(", ") : "none"}`);
+  lines.push(`- recommended: ${brief.skills.recommended.join(", ")}`);
+  lines.push("");
+
+  if (brief.memories) {
+    lines.push("## Memories");
+    lines.push(`- included: ${brief.memories.length}`);
+    lines.push("");
+  }
+
+  lines.push("## Next Moves");
+  lines.push(renderList(brief.nextMoves, "read instructions, then act"));
+  lines.push("");
+  lines.push("## Reminders");
+  lines.push(renderList(brief.reminders, "none"));
+
+  let markdown = lines.join("\n");
+  if (markdown.length > maxChars) {
+    markdown = markdown.slice(0, Math.max(0, maxChars - 32)).trimEnd() + "\n\n[truncated]";
+  }
+  return markdown;
+}
+
 // ---------------------------------------------------------------------------
 // MCP Server
 // ---------------------------------------------------------------------------
@@ -382,6 +705,13 @@ export async function startMcpServer(): Promise<void> {
       uri: "youmd://identity/markdown",
       name: "identity-markdown",
       description: "Human-readable you.md identity (you.md format)",
+      mimeType: "text/markdown",
+    });
+
+    resources.push({
+      uri: "youmd://agent/brief",
+      name: "agent-brief",
+      description: "YouStack startup brief for local agents: compact identity, project instructions, active requests, open TODOs, installed skills, and next moves",
       mimeType: "text/markdown",
     });
 
@@ -528,6 +858,19 @@ export async function startMcpServer(): Promise<void> {
       };
     }
 
+    // youmd://agent/brief
+    if (uri === "youmd://agent/brief") {
+      const brief = await buildAgentBrief();
+      void logMcpActivity("read", "agent/brief");
+      return {
+        contents: [{
+          uri,
+          mimeType: "text/markdown",
+          text: formatAgentBriefMarkdown(brief),
+        }],
+      };
+    }
+
     // youmd://memories
     if (uri === "youmd://memories" || uri === "youmd://memories/all") {
       const memories = await fetchMemories(undefined, 50);
@@ -644,6 +987,28 @@ export async function startMcpServer(): Promise<void> {
           inputSchema: {
             type: "object" as const,
             properties: {},
+          },
+        },
+        {
+          name: "get_agent_brief",
+          description: "Return a YouStack startup brief for local agents. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines compact identity, current repo instructions, project-context active requests, open TODOs, installed skills, and recommended next moves so the agent can act without asking the user to re-explain the project.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {
+              format: {
+                type: "string",
+                enum: ["markdown", "json"],
+                description: "Output format. markdown is default and best for agent context; json is best for automation.",
+              },
+              includeMemories: {
+                type: "boolean",
+                description: "Include up to 8 remote memories when authenticated. Default false for speed.",
+              },
+              maxChars: {
+                type: "number",
+                description: "Maximum markdown characters when format=markdown. Default 6000.",
+              },
+            },
           },
         },
         {
@@ -776,7 +1141,7 @@ export async function startMcpServer(): Promise<void> {
             properties: {
               name: {
                 type: "string",
-                description: "Skill name: voice-sync, claude-md-generator, project-context-init, meta-improve, proactive-context-fill, you-logs",
+                description: "Skill name: youstack-start, voice-sync, claude-md-generator, project-context-init, meta-improve, proactive-context-fill, you-logs",
               },
             },
             required: ["name"],
@@ -901,6 +1266,34 @@ export async function startMcpServer(): Promise<void> {
           content: [{
             type: "text" as const,
             text: buildWhoamiSummary(),
+          }],
+        };
+      }
+
+      case "get_agent_brief": {
+        const briefArgs = (args || {}) as { format?: string; includeMemories?: boolean; maxChars?: number };
+        const brief = await buildAgentBrief({ includeMemories: briefArgs.includeMemories === true });
+        void logMcpActivity("read", "agent/brief", {
+          format: briefArgs.format || "markdown",
+          includeMemories: briefArgs.includeMemories === true,
+        });
+
+        if (briefArgs.format === "json") {
+          return {
+            content: [{
+              type: "text" as const,
+              text: JSON.stringify(brief, null, 2),
+            }],
+          };
+        }
+
+        const maxChars = typeof briefArgs.maxChars === "number" && briefArgs.maxChars > 500
+          ? Math.min(briefArgs.maxChars, 20000)
+          : 6000;
+        return {
+          content: [{
+            type: "text" as const,
+            text: formatAgentBriefMarkdown(brief, maxChars),
           }],
         };
       }

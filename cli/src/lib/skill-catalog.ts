@@ -35,6 +35,16 @@ export interface SkillCatalog {
 function defaultSkills(owner: string): SkillEntry[] {
   return [
     {
+      name: "youstack-start",
+      description: "Start local agents with identity, project state, active requests, skills, and next moves",
+      version: "1.0.0",
+      source: "bundled:youstack-start.md",
+      scope: "shared",
+      identity_fields: ["profile.about", "preferences.agent", "directives.agent", "voice.overall"],
+      requires: [],
+      installed: false,
+    },
+    {
       name: "claude-md-generator",
       description: "Generate CLAUDE.md from identity + project detection",
       version: "1.0.0",

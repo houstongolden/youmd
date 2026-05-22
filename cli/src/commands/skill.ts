@@ -94,7 +94,7 @@ function truncateAtWord(text: string, max: number): string {
 
 // ─── Subcommands ──────────────────────────────────────────────────────
 
-const RECOMMENDED_SKILLS = new Set(["claude-md-generator", "voice-sync"]);
+const RECOMMENDED_SKILLS = new Set(["youstack-start", "claude-md-generator", "voice-sync"]);
 
 async function listSkills(): Promise<void> {
   const catalog = readSkillCatalog();
@@ -165,7 +165,7 @@ async function listSkills(): Promise<void> {
     console.log("");
     console.log(
       DIM("  get started: ") +
-      chalk.cyan("youmd skill install claude-md-generator")
+      chalk.cyan("youmd skill install youstack-start")
     );
   }
   console.log("");

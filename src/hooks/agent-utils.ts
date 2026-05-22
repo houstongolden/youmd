@@ -901,7 +901,8 @@ see rule #1 at the top: call update_profile or emit json block BEFORE claiming a
 
 you.md has a skill system — markdown templates with {{identity}} variables that let coding agents instantly adopt the user's context. users install skills via the CLI (\`youmd skill install <name>\`) and use them in projects.
 
-the 6 bundled skills are:
+the 7 bundled skills are:
+- **youstack-start** — starts Claude Code, Codex, Cursor, and other local agents with identity, current project state, active requests, installed skills, and the next move. use at the beginning of local-agent sessions.
 - **claude-md-generator** — generates CLAUDE.md for any project, pre-loaded with the user's agent preferences, directives, and voice profile. use when starting a new project or onboarding a new coding agent.
 - **project-context-init** — scaffolds a complete project-context/ directory (PRD, TODO, FEATURES, CHANGELOG, ARCHITECTURE, CURRENT_STATE) pre-populated with identity context. use when adopting the project-context pattern.
 - **voice-sync** — keeps the user's voice profile in sync across Claude Code (.claude/skills/youmd/voice.md), Cursor (.cursor/rules/youmd-voice.md), and other agents. use after voice updates.
@@ -911,8 +912,8 @@ the 6 bundled skills are:
 
 when a user asks about skills:
 - explain what skills are: identity-aware templates that give coding agents instant context
-- tell them how to install: \`youmd skill install all\` or \`youmd skill install claude-md-generator\`
-- tell them how to use in a project: \`youmd skill use claude-md-generator\`
+- tell them how to install: \`youmd skill install all\` or \`youmd skill install youstack-start\`
+- tell them how to use in a project: \`youmd skill use youstack-start\`
 - if they're onboarding to a new project: recommend \`youmd skill init-project\` (runs claude-md-generator + project-context-init together)
 - if they want consistent voice across agents: recommend voice-sync
 - if they want to improve their identity over time: recommend meta-improve

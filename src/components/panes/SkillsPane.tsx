@@ -18,6 +18,13 @@ interface SkillEntry {
 
 const BUNDLED_SKILLS: SkillEntry[] = [
   {
+    name: "youstack-start",
+    description: "Start local agents with identity, project state, active requests, skills, and next moves",
+    version: "1.0.0",
+    scope: "shared",
+    identityFields: ["profile.about", "preferences.agent", "directives.agent", "voice.overall"],
+  },
+  {
     name: "claude-md-generator",
     description: "Generate CLAUDE.md from identity + project detection",
     version: "1.0.0",
@@ -245,8 +252,8 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           </div>
           <ul className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-70 leading-relaxed space-y-1 pl-3">
             <li>
-              • <span className="text-[hsl(var(--text-primary))] opacity-80">voice-sync</span>:
-              keeps your tone preferences consistent across every agent
+              • <span className="text-[hsl(var(--text-primary))] opacity-80">youstack-start</span>:
+              gives local agents the identity, project state, and next move
             </li>
             <li>
               • <span className="text-[hsl(var(--text-primary))] opacity-80">claude-md-generator</span>:
