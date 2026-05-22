@@ -2,44 +2,53 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 32
-**Total messages:** 403
-**Last updated:** 2026-05-22 07:02
+**Total sessions:** 33
+**Total messages:** 404
+**Last updated:** 2026-05-22 07:04
 
 ## Table of Contents
 
-1. [2026-04-18 (you-command-launch)](#session-2026-04-18-you-command-launch) --- 8 messages
-2. [2026-04-18 (cli-wingman-and-preference-sync)](#session-2026-04-18-cli-wingman-and-preference-sync) --- 4 messages
-3. [2026-04-18 (cli-alive-feedback)](#session-2026-04-18-cli-alive-feedback) --- 1 message
-4. [2026-04-18 (npm-publish-retry)](#session-2026-04-18-npm-publish-retry) --- 2 messages
-5. [2026-04-17 (cli-auth-installer)](#session-2026-04-17-cli-auth-installer) --- 7 messages
-6. [2026-03-16 to 2026-03-19 (29023a33)](#session-2026-03-16-29023a33) --- 36 messages
-7. [2026-03-19 (bcba8b83)](#session-2026-03-19-bcba8b83) --- 3 messages
-8. [2026-03-19 (b8db5107)](#session-2026-03-19-b8db5107) --- 5 messages
-9. [2026-03-20 to 2026-03-27 (52b9c96c)](#session-2026-03-20-52b9c96c) --- 86 messages
-10. [2026-03-27 (a613f536)](#session-2026-03-27-a613f536) --- 17 messages
-11. [2026-03-27 to 2026-03-28 (be60ecec)](#session-2026-03-27-be60ecec) --- 47 messages
-12. [2026-03-28 (4eb46dbc)](#session-2026-03-28-4eb46dbc) --- 6 messages
-13. [2026-03-20 to 2026-04-04 (2f31c971)](#session-2026-03-20-2f31c971) --- 104 messages
-14. [2026-04-16 (019d978f)](#session-2026-04-16-019d978f) --- 28 messages
-15. [2026-04-17 (spinner-shell-ux)](#session-2026-04-17-spinner-shell-ux) --- 3 messages
-16. [2026-04-17 (login-ux)](#session-2026-04-17-login-ux) --- 1 message
-17. [2026-04-17 (api-key-ux)](#session-2026-04-17-api-key-ux) --- 1 message
-18. [2026-04-17 (api-key-history-fix)](#session-2026-04-17-api-key-history-fix) --- 1 message
-19. [2026-04-17 (reveal-nav-cleanup)](#session-2026-04-17-reveal-nav-cleanup) --- 1 message
-20. [2026-04-17 (cli-version-bump)](#session-2026-04-17-cli-version-bump) --- 1 message
-21. [2026-04-18 (launcher-layout-polish)](#session-2026-04-18-launcher-layout-polish) --- 15 messages
-22. [2026-04-21 (compact-you-startup)](#session-2026-04-21-compact-you-startup) --- 1 message
-23. [2026-04-21 (local-chat-action-layer)](#session-2026-04-21-local-chat-action-layer) --- 1 message
-24. [2026-04-21 (local-host-tool-bridge)](#session-2026-04-21-local-host-tool-bridge) --- 1 message
-25. [2026-04-21 (generic-workspace-discovery)](#session-2026-04-21-generic-workspace-discovery) --- 1 message
-26. [2026-04-21 (remove-personal-workspace-assumptions)](#session-2026-04-21-remove-personal-workspace-assumptions) --- 1 message
-27. [2026-04-21 (agent-owned-workspace-discovery)](#session-2026-04-21-agent-owned-workspace-discovery) --- 1 message
-28. [2026-04-30 (yolo)](#session-2026-04-30-yolo) --- 12 messages
-29. [2026-05-19 (homepage-design-system-cleanup)](#session-2026-05-19-homepage-design-system-cleanup) --- 5 messages
-30. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
-31. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
-32. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+1. [2026-05-22 (docs-platform-upgrade)](#session-2026-05-22-docs-platform-upgrade) --- 1 message
+2. [2026-04-18 (you-command-launch)](#session-2026-04-18-you-command-launch) --- 8 messages
+3. [2026-04-18 (cli-wingman-and-preference-sync)](#session-2026-04-18-cli-wingman-and-preference-sync) --- 4 messages
+4. [2026-04-18 (cli-alive-feedback)](#session-2026-04-18-cli-alive-feedback) --- 1 message
+5. [2026-04-18 (npm-publish-retry)](#session-2026-04-18-npm-publish-retry) --- 2 messages
+6. [2026-04-17 (cli-auth-installer)](#session-2026-04-17-cli-auth-installer) --- 7 messages
+7. [2026-03-16 to 2026-03-19 (29023a33)](#session-2026-03-16-29023a33) --- 36 messages
+8. [2026-03-19 (bcba8b83)](#session-2026-03-19-bcba8b83) --- 3 messages
+9. [2026-03-19 (b8db5107)](#session-2026-03-19-b8db5107) --- 5 messages
+10. [2026-03-20 to 2026-03-27 (52b9c96c)](#session-2026-03-20-52b9c96c) --- 86 messages
+11. [2026-03-27 (a613f536)](#session-2026-03-27-a613f536) --- 17 messages
+12. [2026-03-27 to 2026-03-28 (be60ecec)](#session-2026-03-27-be60ecec) --- 47 messages
+13. [2026-03-28 (4eb46dbc)](#session-2026-03-28-4eb46dbc) --- 6 messages
+14. [2026-03-20 to 2026-04-04 (2f31c971)](#session-2026-03-20-2f31c971) --- 104 messages
+15. [2026-04-16 (019d978f)](#session-2026-04-16-019d978f) --- 28 messages
+16. [2026-04-17 (spinner-shell-ux)](#session-2026-04-17-spinner-shell-ux) --- 3 messages
+17. [2026-04-17 (login-ux)](#session-2026-04-17-login-ux) --- 1 message
+18. [2026-04-17 (api-key-ux)](#session-2026-04-17-api-key-ux) --- 1 message
+19. [2026-04-17 (api-key-history-fix)](#session-2026-04-17-api-key-history-fix) --- 1 message
+20. [2026-04-17 (reveal-nav-cleanup)](#session-2026-04-17-reveal-nav-cleanup) --- 1 message
+21. [2026-04-17 (cli-version-bump)](#session-2026-04-17-cli-version-bump) --- 1 message
+22. [2026-04-18 (launcher-layout-polish)](#session-2026-04-18-launcher-layout-polish) --- 15 messages
+23. [2026-04-21 (compact-you-startup)](#session-2026-04-21-compact-you-startup) --- 1 message
+24. [2026-04-21 (local-chat-action-layer)](#session-2026-04-21-local-chat-action-layer) --- 1 message
+25. [2026-04-21 (local-host-tool-bridge)](#session-2026-04-21-local-host-tool-bridge) --- 1 message
+26. [2026-04-21 (generic-workspace-discovery)](#session-2026-04-21-generic-workspace-discovery) --- 1 message
+27. [2026-04-21 (remove-personal-workspace-assumptions)](#session-2026-04-21-remove-personal-workspace-assumptions) --- 1 message
+28. [2026-04-21 (agent-owned-workspace-discovery)](#session-2026-04-21-agent-owned-workspace-discovery) --- 1 message
+29. [2026-04-30 (yolo)](#session-2026-04-30-yolo) --- 12 messages
+30. [2026-05-19 (homepage-design-system-cleanup)](#session-2026-05-19-homepage-design-system-cleanup) --- 5 messages
+31. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
+32. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
+33. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-05-22 (docs-platform-upgrade)
+*1 message | File modified: 2026-05-22 07:04*
+
+**2026-05-22 06:47:33 UTC**
+> what is missing from the you.md/docs that we could add to make it way better - look at the latest bamf.ai/docs we have been working on which are really good and based on analyzing all the best mintlify docs real examples and templates and designs and layouts etc etc and please enhance our you.md docs to the same comprehensive level of detail and design polish and ensure our api/mcp/docs constantly auto-update whenever we release new features or improvements or endpoints or anything relevant that should be added there
 
 ---
 

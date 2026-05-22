@@ -39,7 +39,7 @@ Last Updated: 2026-05-22
 4. Generate API/MCP reference data from source so endpoint and tool inventories do not stay as stale hand-maintained lists.
 5. Wire docs generation into local development/build scripts so releases naturally refresh docs artifacts.
 6. Update project tracking files, verify the docs build, and leave production deploy/user verification clearly tracked.
-**Progress (2026-05-21):** Auditing current `/docs`, `convex/http.ts`, web API proxies, CLI MCP tools, and BAMF `bamfaiapp/docs` / `bamfaiapp-next/docs` reference structure.
+**Progress (2026-05-22):** Audited current `/docs`, `convex/http.ts`, web API proxies, CLI MCP tools, and BAMF `bamfaiapp/docs` / `bamfaiapp-next/docs` reference structure. Upgraded `/docs` with core concepts, context surfaces, source-of-truth mapping, agent workflow golden path, playbooks, starter prompts, examples, generated endpoint tables, generated MCP tool reference, schema guidance, docs automation, and troubleshooting. Added `scripts/generate-docs-reference.mjs`, `src/generated/docs-reference.ts`, `src/generated/openapi.ts`, `GET /api/v1/docs/reference`, and `GET /api/v1/docs/openapi.json`; wired `docs:generate` into `prebuild` and added `docs:check`. Local verification passed docs generation/check, targeted ESLint, `npx tsc --noEmit`, production `npm run build`, and desktop/mobile browser QA on `localhost:3100/docs` with no console errors or horizontal overflow. Production deploy and Houston verification remain pending.
 
 ## Private Context Link Reliability (from May 20 conversation)
 

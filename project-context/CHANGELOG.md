@@ -14,6 +14,16 @@
 - Verified with `npm test -- mcp-agent-brief.test.ts`, `npm run build` in `cli/`, temp-HOME `node dist/index.js skill list`, root `npm run docs:check`, and root `npm run build` with explicit Node PATH
 - Production registry seeding/deploy and real Claude/Codex host verification are still pending
 
+## 2026-05-22 — Developer Docs Platform Upgrade
+
+### Docs / API / MCP
+- Compared the current You.md docs against the stronger BAMF docs structure and Mintlify patterns: concepts, quickstart, auth/scopes/errors, endpoint reference, MCP tooling, playbooks, examples, generated OpenAPI, and release-time docs sync
+- Expanded `/docs` with core concepts, context surfaces, source-of-truth mapping, agent workflow golden path, playbooks, starter prompts, generated API endpoint tables, generated MCP tool cards, schema guidance, docs automation, and troubleshooting
+- Added `scripts/generate-docs-reference.mjs`, which scans `convex/http.ts`, Next route files, and `cli/src/mcp/server.ts` to generate `src/generated/docs-reference.ts` plus an OpenAPI 3.1-style spec
+- Added `GET /api/v1/docs/reference` and `GET /api/v1/docs/openapi.json` so agents, smoke tests, and future docs tooling can fetch the same generated reference data
+- Wired docs generation into `prebuild` and added `npm run docs:check` so releases catch stale API/MCP docs artifacts automatically
+- Verified with `npm run docs:generate`, `npm run docs:check`, targeted ESLint, `npx tsc --noEmit`, production `npm run build`, and browser QA on `localhost:3100/docs` across desktop and mobile with no console errors or horizontal overflow
+
 ## 2026-05-21 — Context Link Reliability
 
 ### Agent Context URLs
