@@ -1384,9 +1384,10 @@ preferences: terminal-native, monochrome
 
             <H3 id="youstacks-cli">CLI</H3>
             <P>
-              The first YouStack CLI surface is read-only. It validates local
-              manifests and routes requests to declared capabilities without
-              mutating your brain, repo, or connected tools.
+              The first YouStack CLI surface validates local manifests, routes
+              requests to declared capabilities, and can generate host adapter
+              files. Inspect, smoke, capabilities, and route are read-only;
+              link writes only the declared adapter files.
             </P>
             <CommandTable
               commands={[
@@ -1394,10 +1395,12 @@ preferences: terminal-native, monochrome
                 { cmd: "youmd stack smoke --path DIR", desc: "Run read-only schema, file, checksum, adapter, and capability checks" },
                 { cmd: "youmd stack capabilities --path DIR", desc: "List local and protected capabilities declared by the stack" },
                 { cmd: "youmd stack route --path DIR \"start this repo\"", desc: "Choose the best local capability for a natural-language request" },
+                { cmd: "youmd stack link --path DIR --hosts codex --target .", desc: "Generate host adapter files from the stack manifest" },
               ]}
             />
             <CodeBlock title="terminal">{`youmd stack smoke --path cli/examples/youstack-personal
-youmd stack route --path cli/examples/youstack-personal "search my memories before starting"`}</CodeBlock>
+youmd stack route --path cli/examples/youstack-personal "search my memories before starting"
+youmd stack link --path cli/examples/youstack-personal --hosts codex --target . --dry-run`}</CodeBlock>
 
             <H3 id="youstacks-manifest">Manifest</H3>
             <P>

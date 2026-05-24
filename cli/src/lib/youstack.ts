@@ -87,6 +87,13 @@ export interface YouStackRouteResult {
   alternatives: Array<{ capability: YouStackCapability; score: number }>;
 }
 
+export interface YouStackLinkResult {
+  host: string;
+  targetPath: string;
+  wrote: boolean;
+  content: string;
+}
+
 const VALID_VISIBILITY = new Set<YouStackVisibility>([
   "private",
   "scoped-link",
@@ -481,4 +488,130 @@ export function routeYouStackRequest(
     reasons,
     alternatives: scored.slice(1, 4),
   };
+}
+
+export function normalizeYouStackHost(host: string): string {
+  const value = host.trim().toLowerCase();
+  if (value === "claude") return "claude-code";
+  if (value === "claude-code") return "claude-code";
+  if (value === "codex") return "codex";
+  if (value === "cursor") return "cursor";
+  return value;
+}
+
+export function defaultAdapterPath(host: string, slug: string): string {
+  switch (normalizeYouStackHost(host)) {
+    case "claude-code":
+      return path.join(".claude", "skills", "youstacks", slug, "SKILL.md");
+    case "codex":
+      return path.join(".codex", "skills", "youstacks", slug, "SKILL.md");
+    case "cursor":
+      return path.join(".cursor", "rules", `youstacks-${slug}.md`);
+    default:
+      return path.join(".you", "adapters", normalizeYouStackHost(host), `${slug}.md`);
+  }
+}
+
+function adapterPathsForHost(manifest: YouStackManifest, host: string): string[] {
+  const normalized = normalizeYouStackHost(host);
+  const declared = manifest.adapters?.[normalized]?.files || manifest.adapters?.[host]?.files;
+  if (declared && declared.length > 0) return declared;
+  return [defaultAdapterPath(normalized, manifest.slug)];
+}
+
+export function generateYouStackAdapterContent(
+  manifest: YouStackManifest,
+  host: string
+): string {
+  const normalized = normalizeYouStackHost(host);
+  const capabilities = getYouStackCapabilities(manifest);
+  const brainScopes = manifest.brainScopes || [];
+  const lines: string[] = [];
+
+  if (normalized === "claude-code" || normalized === "codex") {
+    lines.push("---");
+    lines.push(`name: ${manifest.slug}`);
+    lines.push(
+      `description: ${manifest.description || `Use the ${manifest.name} YouStack safely.`}`
+    );
+    lines.push("---");
+    lines.push("");
+  }
+
+  lines.push(`# ${manifest.name} YouStack`);
+  lines.push("");
+  lines.push("This file is generated from `youstack.json`.");
+  lines.push("");
+  lines.push("## Startup");
+  lines.push("");
+  lines.push("1. Run `youmd stack smoke` from the stack or project root before relying on this stack.");
+  lines.push("2. Read local project instructions and project-context files before acting.");
+  lines.push("3. Use local/static stack files first.");
+  lines.push("4. Use shared You.md API/MCP only for protected brain retrieval, sync, tokens, connected tools, or server-side actions.");
+  lines.push("5. Do not mutate brain data, connected tools, or repo files until the user approves the exact action.");
+  lines.push("");
+  lines.push("## Capabilities");
+  lines.push("");
+  for (const capability of capabilities) {
+    const mode = capability.localOnly ? "local" : "protected";
+    lines.push(`- ${capability.id} (${mode}, ${capability.mutationPolicy || "unspecified"}): ${capability.intent || "No intent declared."}`);
+  }
+  lines.push("");
+  lines.push("## Brain Scopes");
+  lines.push("");
+  if (brainScopes.length === 0) {
+    lines.push("- None declared.");
+  } else {
+    for (const scope of brainScopes) {
+      const required = scope.required ? "required" : "optional";
+      lines.push(`- ${scope.scope} (${required}): ${scope.reason || "No reason declared."}`);
+    }
+  }
+  lines.push("");
+  lines.push("## Local Commands");
+  lines.push("");
+  lines.push("```bash");
+  lines.push("youmd stack inspect");
+  lines.push("youmd stack smoke");
+  lines.push("youmd stack capabilities");
+  lines.push("youmd stack route \"<request>\"");
+  lines.push("```");
+  lines.push("");
+
+  return lines.join("\n");
+}
+
+export function linkYouStackAdapters(
+  loaded: LoadedYouStack,
+  options: { hosts?: string[]; targetDir?: string; dryRun?: boolean } = {}
+): YouStackLinkResult[] {
+  const hostList =
+    options.hosts && options.hosts.length > 0
+      ? options.hosts.map(normalizeYouStackHost)
+      : Object.keys(loaded.manifest.adapters || {}).map(normalizeYouStackHost);
+  const hosts = hostList.length > 0 ? [...new Set(hostList)] : ["claude-code", "codex", "cursor"];
+  const targetDir = path.resolve(options.targetDir || process.cwd());
+  const results: YouStackLinkResult[] = [];
+
+  for (const host of hosts) {
+    for (const relativePath of adapterPathsForHost(loaded.manifest, host)) {
+      if (!isSafeRelativePath(relativePath)) {
+        throw new Error(`Unsafe adapter path for ${host}: ${relativePath}`);
+      }
+      const targetPath = path.join(targetDir, relativePath);
+      const content = generateYouStackAdapterContent(loaded.manifest, host);
+      if (!options.dryRun) {
+        fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+        fs.writeFileSync(targetPath, content);
+      }
+      results.push({
+        host,
+        targetPath,
+        wrote: !options.dryRun,
+        content,
+      });
+    }
+  }
+
+  return results;
 }

@@ -543,8 +543,11 @@ program
 
 program
   .command("stack [subcommand] [args...]")
-  .description("Local YouStack manifests (inspect, smoke, capabilities, route)")
+  .description("Local YouStack manifests (inspect, smoke, capabilities, route, link)")
   .option("--path <path>", "Path to a youstack.json file or stack directory")
+  .option("--hosts <hosts>", "Comma-separated host list for stack link (claude-code,codex,cursor)")
+  .option("--target <dir>", "Target project directory for stack link")
+  .option("--dry-run", "Preview stack link writes without changing files")
   .option("--json", "Print JSON output")
   .action((subcommand, args, options) => {
     return stackCommand(subcommand, args || [], options);

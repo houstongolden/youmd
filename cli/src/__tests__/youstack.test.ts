@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import {
+  linkYouStackAdapters,
   loadYouStackManifest,
   routeYouStackRequest,
   runYouStackSmoke,
@@ -144,5 +145,42 @@ describe("youstack manifest", () => {
 
     expect(route.capability.id).toBe("protected-memory-search");
     expect(route.score).toBeGreaterThan(0);
+  });
+
+  it("generates host adapter files from the manifest", () => {
+    writeStack(validManifest({
+      adapters: {
+        codex: {
+          files: [".codex/skills/youstacks/test-stack/SKILL.md"],
+        },
+      },
+    }));
+    const targetDir = path.join(tmpDir, "project");
+    const results = linkYouStackAdapters(loadYouStackManifest(tmpDir), {
+      hosts: ["codex"],
+      targetDir,
+    });
+    const adapterPath = path.join(targetDir, ".codex", "skills", "youstacks", "test-stack", "SKILL.md");
+
+    expect(results).toHaveLength(1);
+    expect(results[0].wrote).toBe(true);
+    expect(fs.existsSync(adapterPath)).toBe(true);
+    expect(fs.readFileSync(adapterPath, "utf-8")).toContain("Test Stack YouStack");
+    expect(fs.readFileSync(adapterPath, "utf-8")).toContain("protected-memory-search");
+  });
+
+  it("supports dry-run adapter generation without writing files", () => {
+    writeStack(validManifest());
+    const targetDir = path.join(tmpDir, "project");
+    const results = linkYouStackAdapters(loadYouStackManifest(tmpDir), {
+      hosts: ["cursor"],
+      targetDir,
+      dryRun: true,
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0].wrote).toBe(false);
+    expect(results[0].targetPath).toContain(".cursor");
+    expect(fs.existsSync(results[0].targetPath)).toBe(false);
   });
 });

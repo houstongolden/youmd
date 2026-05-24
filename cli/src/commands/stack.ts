@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import {
   getYouStackCapabilities,
+  linkYouStackAdapters,
   loadYouStackManifest,
   routeYouStackRequest,
   runYouStackSmoke,
@@ -14,6 +15,9 @@ const DIM = chalk.dim;
 interface StackCommandOptions {
   path?: string;
   json?: boolean;
+  hosts?: string;
+  target?: string;
+  dryRun?: boolean;
 }
 
 function printHelp(): void {
@@ -25,8 +29,9 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("smoke") + DIM("         Run read-only local manifest/file checks"));
   console.log("    " + chalk.cyan("capabilities") + DIM("  List declared local capabilities"));
   console.log("    " + chalk.cyan("route \"...\"") + DIM("   Pick the best local capability for a request"));
+  console.log("    " + chalk.cyan("link") + DIM("          Generate host adapter files from the manifest"));
   console.log("");
-  console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--json"));
+  console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--json"));
   console.log("");
 }
 
@@ -169,6 +174,45 @@ export async function stackCommand(
       process.exitCode = 1;
     }
     console.log("");
+    return;
+  }
+
+  if (cmd === "link") {
+    const hosts = options.hosts
+      ? options.hosts.split(",").map((host) => host.trim()).filter(Boolean)
+      : undefined;
+    let results;
+    try {
+      results = linkYouStackAdapters(loaded, {
+        hosts,
+        targetDir: options.target,
+        dryRun: options.dryRun,
+      });
+    } catch (error) {
+      console.log("");
+      console.log(chalk.red("  link failed: ") + (error instanceof Error ? error.message : String(error)));
+      console.log("");
+      process.exitCode = 1;
+      return;
+    }
+
+    if (options.json) {
+      console.log(JSON.stringify({ results }, null, 2));
+      return;
+    }
+
+    console.log("");
+    console.log("  " + ACCENT("youstack link") + (options.dryRun ? DIM(" -- dry run") : ""));
+    console.log("");
+    for (const result of results) {
+      const status = result.wrote ? chalk.green("WROTE") : chalk.yellow("WOULD WRITE");
+      console.log("  " + status + " " + chalk.cyan(result.host) + DIM(" -> ") + result.targetPath);
+    }
+    console.log("");
+    if (!options.dryRun) {
+      console.log("  " + chalk.green("Adapter files generated.") + " " + DIM("No brain data or connected tools were touched."));
+      console.log("");
+    }
     return;
   }
 
