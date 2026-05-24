@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-05-23 — YouStacks Product-Layer Planning
+
+### Planning / Architecture
+- Preserved the YouStacks product-layer brief in `project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md`
+- Audited the existing You.md web app, dashboard panes, CLI/TUI, You Agent, memory/private-context/project-context, skill system, context links, API keys, MCP/API surfaces, Convex schema/routes, docs, onboarding, sharing, and GitHub/source/sync code
+- Reviewed GStack as the local-first external lighthouse and BAMFStack as the internal proof pattern for stack install, capability discovery, deterministic routing, smoke tests, docs quality, and sync discipline
+- Added `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md` with feature inventory/classifications, brain boundary audit, YouStack manifest schema, repo layout, access model, GitHub App repo-sync recommendation, sharing model, primary/secondary host adapters, API/MCP threshold, helper CLI, smoke test, docs sync rule, and bisectable phases
+
+### Verification
+- This was a planning-only pass. No broad product behavior changes were implemented.
+
 ## 2026-05-22 — YouStack Agent Brief + Starter Skill
 
 ### MCP / Skills

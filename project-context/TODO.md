@@ -1,11 +1,18 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-05-22
+Last Updated: 2026-05-23
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-05-23
+- [x] Preserve the YouStacks product-layer brief in `project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md`
+- [x] Audit the existing You.md web, CLI, MCP/API, Convex schema/routes, memory/private-context, project-context, skills, sharing, and GitHub/source/sync surfaces before any product implementation
+- [x] Review GStack and BAMFStack as reference patterns for local-first stack install, host adapters, capability discovery, route selection, smoke tests, docs, and sync discipline
+- [x] Create `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md` with current feature inventory, keep/repurpose/expand/modify/defer classifications, YouStack schema, GitHub sync design, API/MCP threshold, adapter model, and bisectable phases
+- [ ] Houston review of the YouStacks implementation plan before any broad product changes
 
 ### 2026-05-22
 - [x] Add a YouStack startup MCP brief for local agents via `get_agent_brief` and `youmd://agent/brief`

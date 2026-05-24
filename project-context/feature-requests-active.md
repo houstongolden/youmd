@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-05-22
+Last Updated: 2026-05-23
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -10,6 +10,27 @@ Last Updated: 2026-05-22
 - Source: date + commit or conversation reference
 
 ---
+
+## YouStacks Planning Phase (from May 23 conversation)
+
+### 65. Audit You.md and write the YouStacks implementation plan before product changes
+**Status:** IN REVIEW
+**Verified:** NO
+**Request:** Start the YouStacks planning phase as an additive product-layer pass. Save the kickoff brief, audit existing You.md surfaces, review GStack and BAMFStack before designing YouStacks, and create `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md` without rushing into broad implementation.
+**Actionable Scope:**
+1. Preserve the kickoff brief in `project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md`.
+2. Read existing You.md context before writing code: README, AGENTS, CLAUDE, PRD, architecture, features, TODO, safe agent context integration, CLI commands, Convex schema/http routes, memory/private-context code, skill system, link/key sharing, and existing GitHub/source/sync code.
+3. Treat YouStacks as additive execution packages on top of the You.md brain, not a replacement brain or custom launch harness.
+4. Inventory current web app, CLI/TUI, You Agent, memory brain, private context, project context, skills, context links, API keys, MCP/API surfaces, Convex schema/http routes, GitHub/source/sync, docs, dashboard panes, onboarding, and sharing flows.
+5. Classify each existing surface as keep, repurpose, expand, modify, defer, or remove-only-if-breaking.
+6. Audit brain, memory, private context, project context, skills, link, API, and CLI boundaries.
+7. Review GStack first, then the local `bamfaiapp` repo surfaces requested in the brief.
+8. Extract GStack transfer lessons and BAMFStack applied-proof lessons for YouStacks.
+9. Define the YouStack manifest schema, repo layout, access model, GitHub sync design, sharing model, host adapters, optional API/MCP boundaries, capability map, route endpoint, helper CLI, smoke test, and docs sync rule.
+10. Decide the local-only/shared-API/custom-endpoint/user-owned-remote threshold.
+11. Break implementation into small bisectable phases and name the first PR-sized slice.
+12. Do not implement broad product changes until the audit and plan are complete.
+**Progress (2026-05-23):** Kickoff brief exists in `project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md`. Audit and implementation plan are written in `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md`; awaiting Houston review before any broad product implementation.
 
 ## YouStack Local-Agent Priority (from May 22 conversation)
 

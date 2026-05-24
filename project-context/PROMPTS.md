@@ -2,47 +2,87 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 33
-**Total messages:** 404
-**Last updated:** 2026-05-22 07:04
+**Total sessions:** 34
+**Total messages:** 405
+**Last updated:** 2026-05-24 06:40
 
 ## Table of Contents
 
-1. [2026-05-22 (docs-platform-upgrade)](#session-2026-05-22-docs-platform-upgrade) --- 1 message
-2. [2026-04-18 (you-command-launch)](#session-2026-04-18-you-command-launch) --- 8 messages
-3. [2026-04-18 (cli-wingman-and-preference-sync)](#session-2026-04-18-cli-wingman-and-preference-sync) --- 4 messages
-4. [2026-04-18 (cli-alive-feedback)](#session-2026-04-18-cli-alive-feedback) --- 1 message
-5. [2026-04-18 (npm-publish-retry)](#session-2026-04-18-npm-publish-retry) --- 2 messages
-6. [2026-04-17 (cli-auth-installer)](#session-2026-04-17-cli-auth-installer) --- 7 messages
-7. [2026-03-16 to 2026-03-19 (29023a33)](#session-2026-03-16-29023a33) --- 36 messages
-8. [2026-03-19 (bcba8b83)](#session-2026-03-19-bcba8b83) --- 3 messages
-9. [2026-03-19 (b8db5107)](#session-2026-03-19-b8db5107) --- 5 messages
-10. [2026-03-20 to 2026-03-27 (52b9c96c)](#session-2026-03-20-52b9c96c) --- 86 messages
-11. [2026-03-27 (a613f536)](#session-2026-03-27-a613f536) --- 17 messages
-12. [2026-03-27 to 2026-03-28 (be60ecec)](#session-2026-03-27-be60ecec) --- 47 messages
-13. [2026-03-28 (4eb46dbc)](#session-2026-03-28-4eb46dbc) --- 6 messages
-14. [2026-03-20 to 2026-04-04 (2f31c971)](#session-2026-03-20-2f31c971) --- 104 messages
-15. [2026-04-16 (019d978f)](#session-2026-04-16-019d978f) --- 28 messages
-16. [2026-04-17 (spinner-shell-ux)](#session-2026-04-17-spinner-shell-ux) --- 3 messages
-17. [2026-04-17 (login-ux)](#session-2026-04-17-login-ux) --- 1 message
-18. [2026-04-17 (api-key-ux)](#session-2026-04-17-api-key-ux) --- 1 message
-19. [2026-04-17 (api-key-history-fix)](#session-2026-04-17-api-key-history-fix) --- 1 message
-20. [2026-04-17 (reveal-nav-cleanup)](#session-2026-04-17-reveal-nav-cleanup) --- 1 message
-21. [2026-04-17 (cli-version-bump)](#session-2026-04-17-cli-version-bump) --- 1 message
-22. [2026-04-18 (launcher-layout-polish)](#session-2026-04-18-launcher-layout-polish) --- 15 messages
-23. [2026-04-21 (compact-you-startup)](#session-2026-04-21-compact-you-startup) --- 1 message
-24. [2026-04-21 (local-chat-action-layer)](#session-2026-04-21-local-chat-action-layer) --- 1 message
-25. [2026-04-21 (local-host-tool-bridge)](#session-2026-04-21-local-host-tool-bridge) --- 1 message
-26. [2026-04-21 (generic-workspace-discovery)](#session-2026-04-21-generic-workspace-discovery) --- 1 message
-27. [2026-04-21 (remove-personal-workspace-assumptions)](#session-2026-04-21-remove-personal-workspace-assumptions) --- 1 message
-28. [2026-04-21 (agent-owned-workspace-discovery)](#session-2026-04-21-agent-owned-workspace-discovery) --- 1 message
-29. [2026-04-30 (yolo)](#session-2026-04-30-yolo) --- 12 messages
-30. [2026-05-19 (homepage-design-system-cleanup)](#session-2026-05-19-homepage-design-system-cleanup) --- 5 messages
-31. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
-32. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
-33. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+1. [2026-05-24 (youstacks-product-layer-planning)](#session-2026-05-24-youstacks-product-layer-planning) --- 1 message
+2. [2026-05-22 (docs-platform-upgrade)](#session-2026-05-22-docs-platform-upgrade) --- 1 message
+3. [2026-04-18 (you-command-launch)](#session-2026-04-18-you-command-launch) --- 8 messages
+4. [2026-04-18 (cli-wingman-and-preference-sync)](#session-2026-04-18-cli-wingman-and-preference-sync) --- 4 messages
+5. [2026-04-18 (cli-alive-feedback)](#session-2026-04-18-cli-alive-feedback) --- 1 message
+6. [2026-04-18 (npm-publish-retry)](#session-2026-04-18-npm-publish-retry) --- 2 messages
+7. [2026-04-17 (cli-auth-installer)](#session-2026-04-17-cli-auth-installer) --- 7 messages
+8. [2026-03-16 to 2026-03-19 (29023a33)](#session-2026-03-16-29023a33) --- 36 messages
+9. [2026-03-19 (bcba8b83)](#session-2026-03-19-bcba8b83) --- 3 messages
+10. [2026-03-19 (b8db5107)](#session-2026-03-19-b8db5107) --- 5 messages
+11. [2026-03-20 to 2026-03-27 (52b9c96c)](#session-2026-03-20-52b9c96c) --- 86 messages
+12. [2026-03-27 (a613f536)](#session-2026-03-27-a613f536) --- 17 messages
+13. [2026-03-27 to 2026-03-28 (be60ecec)](#session-2026-03-27-be60ecec) --- 47 messages
+14. [2026-03-28 (4eb46dbc)](#session-2026-03-28-4eb46dbc) --- 6 messages
+15. [2026-03-20 to 2026-04-04 (2f31c971)](#session-2026-03-20-2f31c971) --- 104 messages
+16. [2026-04-16 (019d978f)](#session-2026-04-16-019d978f) --- 28 messages
+17. [2026-04-17 (spinner-shell-ux)](#session-2026-04-17-spinner-shell-ux) --- 3 messages
+18. [2026-04-17 (login-ux)](#session-2026-04-17-login-ux) --- 1 message
+19. [2026-04-17 (api-key-ux)](#session-2026-04-17-api-key-ux) --- 1 message
+20. [2026-04-17 (api-key-history-fix)](#session-2026-04-17-api-key-history-fix) --- 1 message
+21. [2026-04-17 (reveal-nav-cleanup)](#session-2026-04-17-reveal-nav-cleanup) --- 1 message
+22. [2026-04-17 (cli-version-bump)](#session-2026-04-17-cli-version-bump) --- 1 message
+23. [2026-04-18 (launcher-layout-polish)](#session-2026-04-18-launcher-layout-polish) --- 15 messages
+24. [2026-04-21 (compact-you-startup)](#session-2026-04-21-compact-you-startup) --- 1 message
+25. [2026-04-21 (local-chat-action-layer)](#session-2026-04-21-local-chat-action-layer) --- 1 message
+26. [2026-04-21 (local-host-tool-bridge)](#session-2026-04-21-local-host-tool-bridge) --- 1 message
+27. [2026-04-21 (generic-workspace-discovery)](#session-2026-04-21-generic-workspace-discovery) --- 1 message
+28. [2026-04-21 (remove-personal-workspace-assumptions)](#session-2026-04-21-remove-personal-workspace-assumptions) --- 1 message
+29. [2026-04-21 (agent-owned-workspace-discovery)](#session-2026-04-21-agent-owned-workspace-discovery) --- 1 message
+30. [2026-04-30 (yolo)](#session-2026-04-30-yolo) --- 12 messages
+31. [2026-05-19 (homepage-design-system-cleanup)](#session-2026-05-19-homepage-design-system-cleanup) --- 5 messages
+32. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
+33. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
+34. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
 
 ---
+
+## Session: 2026-05-24 (youstacks-product-layer-planning)
+*1 message | File modified: 2026-05-24 06:40*
+
+**2026-05-24 06:29:00 UTC**
+> You are working inside the local You.md repo. Your job is to start the YouStacks planning phase, not rush into random implementation.
+>
+> First, save this brief into project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md. Then read the existing You.md context before writing code: README.md, AGENTS.md, CLAUDE.md, project-context/PRD.md, project-context/ARCHITECTURE.md, project-context/FEATURES.md, project-context/TODO.md, project-context/SAFE_AGENT_CONTEXT_INTEGRATION.md, the CLI commands, the Convex schema/http routes, the memory/private-context code, the skill system, link/key sharing, and any existing GitHub/source/sync code.
+>
+> This is an additive product-layer planning pass. Do not delete, remove, or rewrite existing You.md features just because they do not perfectly fit the new YouStacks framing. First audit what exists, then decide what should be kept as-is, repurposed, expanded, modified, or deferred. Only recommend removing something if it is genuinely breaking core new or existing functionality, creates security/privacy risk, or is actively confusing agents and users.
+>
+> Core vision:
+> - You.md is the brain, identity context protocol, and durable personal/project context layer.
+> - YouStacks are not the brain. They are portable execution packages built on top of You.md.
+> - The first product wedge is for Claude Code, Codex, and Cursor users who want a one-line install that gives their agent their identity, preferences, project context, skills, tools, taste, workflows, and protected memory access.
+> - OpenClaw, Hermes Agent, and Pi agents are secondary host targets after the first three work.
+> - Do not launch with a custom You.md agent harness. A personalized You.md-branded agent environment can be a later product layer after the YouStack format, brain boundary, repo sync, and external host adapters are proven.
+> - The user should be able to create a personal YouStack for themselves, keep it private, share it with teammates/friends through scoped links or tokens, or publish a public/open version.
+> - Paid/sellable stacks are a later version. V1 is about private/public sharing, portability, trust, and usefulness.
+> - We need GitHub account/repo sync: users can connect GitHub, choose or create a user-owned repo, and keep their You.md brain files, YouStacks, manifests, skills, and project context synced there while You.md keeps a DB-backed hosted copy for availability and agent access.
+> - Start with the GitHub OAuth app/account-linking step Houston is setting up, but evaluate whether repo sync should use a GitHub App because GitHub Apps provide fine-grained repo permissions, installation-level repo selection, short-lived tokens, and built-in webhooks.
+> - Protect private IP: assume anything installed locally can be read. Put proprietary prompts, tools, retrieval, and sensitive actions behind authenticated You.md API/MCP services when needed.
+> - Treat GStack as the primary external lighthouse. It is the cleanest example of a local-first agent operating system: installable skills, specialist workflows, review/QA/release patterns, update behavior, and host-native files without needing a custom app or per-stack API.
+> - Treat BAMFStack as the closest internal proof pattern. It was inspired by the GStack shape, then proved that a local stack can become even more powerful when it also knows how to use a real product backend, API, MCP, docs, and auth safely.
+> - Before designing YouStacks, review GStack first, then review the local bamfaiapp repo: public/bamfstack, docs, docs/workflows/agent-workflows.mdx, docs/mcp, docs/authentication.mdx, src/pages/DocsPage.tsx, supabase/functions/_shared/agent-capabilities.ts, public-api /v1/agent/capabilities and /v1/agent/route, and product-mcp tools/resources/prompts.
+> - Extract why BAMFStack worked: one-line curl install, local skills/commands/prompts/helper CLI, env-only API key handling, auto-upgrade, read-only smoke test, capability discovery, deterministic workflow routing, app/Stack/API/MCP parity, docs-quality examples, and a sync rule that updates stack files/docs/OpenAPI/tests together.
+> - You.md docs should reach the same quality bar as BAMF docs: clear quickstart, copyable install and starter prompts, API/MCP reference, agent workflow golden path, generated endpoint/tool reference, auth/token docs, safety rules, playbooks, examples, and a stack sync rule.
+> - Do not require custom API/MCP per stack in v1. A YouStack should be useful as a local/static install first, like GStack. Use You.md's shared API/MCP only when the stack needs protected brain retrieval, sync, tokens, connected tools, or server-side actions. Custom per-user/per-stack API/MCP surfaces are optional power features, not the baseline.
+>
+> Deliverables:
+> 1. Create project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md.
+> 2. Include a full feature/functionality inventory of the current You.md product: web app, CLI/TUI, You Agent, memory brain, private context, project context, skills, context links, API keys, MCP/API surfaces, Convex schema/http routes, GitHub/source/sync if any, docs, dashboard panes, onboarding, and sharing flows.
+> 3. For each existing surface, classify it as keep, repurpose, expand, modify, defer, or remove-only-if-breaking. Do not remove features by default.
+> 4. Include an audit of the current You.md brain/memory/private-context/project-context/skills/link/API/CLI surfaces.
+> 5. Include a GStack transfer analysis and a BAMFStack applied-proof analysis: what maps 1:1 to YouStacks, what changes because You.md is a personal brain, and what should not be copied.
+> 6. Define the YouStack manifest schema, repo folder layout, access model, GitHub sync design, public/private sharing model, primary adapters for Claude Code/Codex/Cursor, secondary adapters for OpenClaw/Hermes Agent/Pi agents, optional API/MCP extension boundaries, capability map, route endpoint, helper CLI, smoke test, and docs sync rule.
+> 7. Decide the API/MCP threshold: what works with local files only, what uses the shared You.md API/MCP, what requires optional custom per-stack endpoints, and what clearly waits for user-owned remote MCP/API deploys later.
+> 8. Break implementation into small, bisectable phases and name the first PR-sized slice.
+> 9. Do not implement broad product changes until the audit and plan are written.
 
 ## Session: 2026-05-22 (docs-platform-upgrade)
 *1 message | File modified: 2026-05-22 07:04*

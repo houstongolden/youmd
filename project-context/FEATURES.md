@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-05-22
+Last Updated: 2026-05-23
 
 ## Core Platform
 
@@ -9,6 +9,7 @@ Last Updated: 2026-05-22
 | Shared product design primitives | Done | Reusable `Container`, `Section`, `SectionHeader`, `Button`, `Card`, `TerminalCard`, `FormField`, `Input`, `Textarea`, `Select`, `Label`, `FieldHelp`, and `FieldError` now anchor marketing and app UI control standards |
 | Developer docs platform | Done | `/docs` now includes concepts, context surfaces, source-of-truth mapping, agent workflows, playbooks, examples, generated API/MCP reference, schema guidance, docs automation, and troubleshooting |
 | Generated docs reference | Done | `npm run docs:generate` scans Convex HTTP routes, Next routes, and CLI MCP tools into `src/generated/docs-reference.ts` plus a generated OpenAPI-style spec; `prebuild` refreshes it and `docs:check` detects stale artifacts |
+| YouStacks product-layer planning | In review | `YOUSTACKS_PRODUCT_LAYER_PRD.md` and `YOUSTACKS_IMPLEMENTATION_PLAN.md` define the additive stack layer, current product inventory/classification, GStack/BAMFStack transfer analysis, manifest schema, GitHub sync direction, API/MCP threshold, adapter model, and first PR-sized slice |
 | Compact conversion homepage | Done | Homepage now follows a calmer conversion flow with one primary hero CTA, compact profile proof, compressed problem/how-it-works/inside sections, combined integrations/builders credibility band, balanced pricing, compact FAQ, and simple final CTA |
 | App control normalization | Done | Terminal auth/input, install tabs, dashboard tabs, pane headers, empty states, sources, share, private context, files, settings, and edit surfaces now share more consistent heights, padding, focus rings, card treatment, and muted text behavior |
 | Public profile directory hygiene | Done | `/profiles` now canonicalizes/dedupes usernames, suppresses QA/test rows, sanitizes public image URLs, prefers stored ASCII portraits, and falls back to deterministic terminal placeholders instead of blank cards |
