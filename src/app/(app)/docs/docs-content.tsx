@@ -1453,6 +1453,14 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
               server-side actions. Custom per-stack API/MCP is optional later,
               not the v1 baseline.
             </P>
+            <P>
+              The local MCP server also exposes
+              <InlineCode>get_stack_manifest</InlineCode>,
+              <InlineCode>get_stack_capabilities</InlineCode>,
+              <InlineCode>route_stack_request</InlineCode>, and
+              <InlineCode>smoke_stack</InlineCode> so host agents can inspect
+              and validate a stack before using it.
+            </P>
 
             {/* ── Agent Directives ───────────────────────────── */}
             <H2 id="directives">Agent Directives</H2>

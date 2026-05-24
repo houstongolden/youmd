@@ -9,7 +9,8 @@
  *            directives, memories, projects, skills
  * Tools:     whoami, get_agent_brief, add_memory, update_section,
  *            search_memories, use_skill, compile_bundle, push_bundle, get_project_context,
- *            add_source, create_context_link, list_projects, get_remote_status
+ *            add_source, create_context_link, list_projects, get_remote_status,
+ *            get_stack_manifest, get_stack_capabilities, route_stack_request, smoke_stack
  *
  * Transport: stdio (for Claude Code, Cursor, any MCP client)
  *
@@ -46,6 +47,12 @@ import {
   getProjectDir,
   addProjectMemory,
 } from "../lib/project";
+import {
+  getYouStackCapabilities,
+  loadYouStackManifest,
+  routeYouStackRequest,
+  runYouStackSmoke,
+} from "../lib/youstack";
 
 const MCP_SERVER_VERSION = "0.6.23";
 
@@ -144,6 +151,14 @@ function getInstalledSkills(): Array<{ name: string; rendered: string; raw: stri
     // skip
   }
   return skills;
+}
+
+function tryLoadCurrentYouStack(inputPath?: string): ReturnType<typeof loadYouStackManifest> | null {
+  try {
+    return loadYouStackManifest(inputPath);
+  } catch {
+    return null;
+  }
 }
 
 async function fetchMemories(category?: string, limit?: number): Promise<unknown[]> {
@@ -715,6 +730,22 @@ export async function startMcpServer(): Promise<void> {
       mimeType: "text/markdown",
     });
 
+    const currentStack = tryLoadCurrentYouStack();
+    if (currentStack) {
+      resources.push({
+        uri: "youmd://stacks/current/manifest",
+        name: "stacks/current/manifest",
+        description: "Current local YouStack manifest discovered from cwd",
+        mimeType: "application/json",
+      });
+      resources.push({
+        uri: "youmd://stacks/current/capabilities",
+        name: "stacks/current/capabilities",
+        description: "Current local YouStack capability map",
+        mimeType: "application/json",
+      });
+    }
+
     // Profile sections
     const sections = getSectionFiles();
     for (const section of sections) {
@@ -871,6 +902,40 @@ export async function startMcpServer(): Promise<void> {
       };
     }
 
+    if (uri === "youmd://stacks/current/manifest") {
+      const loaded = tryLoadCurrentYouStack();
+      if (!loaded) throw new Error("no local YouStack manifest found from current directory");
+      void logMcpActivity("read", "stacks/current/manifest");
+      return {
+        contents: [{
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({
+            manifestPath: loaded.manifestPath,
+            rootDir: loaded.rootDir,
+            manifest: loaded.manifest,
+            validation: loaded.validation,
+          }, null, 2),
+        }],
+      };
+    }
+
+    if (uri === "youmd://stacks/current/capabilities") {
+      const loaded = tryLoadCurrentYouStack();
+      if (!loaded) throw new Error("no local YouStack manifest found from current directory");
+      void logMcpActivity("read", "stacks/current/capabilities");
+      return {
+        contents: [{
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({
+            stack: loaded.manifest.slug,
+            capabilities: getYouStackCapabilities(loaded.manifest),
+          }, null, 2),
+        }],
+      };
+    }
+
     // youmd://memories
     if (uri === "youmd://memories" || uri === "youmd://memories/all") {
       const memories = await fetchMemories(undefined, 50);
@@ -1007,6 +1072,63 @@ export async function startMcpServer(): Promise<void> {
               maxChars: {
                 type: "number",
                 description: "Maximum markdown characters when format=markdown. Default 6000.",
+              },
+            },
+          },
+        },
+        {
+          name: "get_stack_manifest",
+          description: "Return the current local YouStack manifest discovered from cwd, or from a provided manifest/stack path. Use before trusting local stack files.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {
+              path: {
+                type: "string",
+                description: "Optional path to a youstack.json file or stack directory.",
+              },
+            },
+          },
+        },
+        {
+          name: "get_stack_capabilities",
+          description: "Return the local YouStack capability map, including local/static capabilities and protected API/MCP capabilities declared by the manifest.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {
+              path: {
+                type: "string",
+                description: "Optional path to a youstack.json file or stack directory.",
+              },
+            },
+          },
+        },
+        {
+          name: "route_stack_request",
+          description: "Route a natural-language request to the safest matching local YouStack capability. This is deterministic and read-only.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {
+              request: {
+                type: "string",
+                description: "The user's natural-language stack request.",
+              },
+              path: {
+                type: "string",
+                description: "Optional path to a youstack.json file or stack directory.",
+              },
+            },
+            required: ["request"],
+          },
+        },
+        {
+          name: "smoke_stack",
+          description: "Run read-only local YouStack smoke validation. It parses the manifest, verifies required files/checksums, checks adapter declarations, and performs no writes.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {
+              path: {
+                type: "string",
+                description: "Optional path to a youstack.json file or stack directory.",
               },
             },
           },
@@ -1295,6 +1417,101 @@ export async function startMcpServer(): Promise<void> {
             type: "text" as const,
             text: formatAgentBriefMarkdown(brief, maxChars),
           }],
+        };
+      }
+
+      case "get_stack_manifest": {
+        const stackArgs = (args || {}) as { path?: string };
+        const loaded = tryLoadCurrentYouStack(stackArgs.path);
+        if (!loaded) {
+          return {
+            content: [{ type: "text" as const, text: "no local YouStack manifest found" }],
+            isError: true,
+          };
+        }
+        void logMcpActivity("read", "stack/manifest", { stack: loaded.manifest.slug });
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              manifestPath: loaded.manifestPath,
+              rootDir: loaded.rootDir,
+              manifest: loaded.manifest,
+              validation: loaded.validation,
+            }, null, 2),
+          }],
+        };
+      }
+
+      case "get_stack_capabilities": {
+        const stackArgs = (args || {}) as { path?: string };
+        const loaded = tryLoadCurrentYouStack(stackArgs.path);
+        if (!loaded) {
+          return {
+            content: [{ type: "text" as const, text: "no local YouStack manifest found" }],
+            isError: true,
+          };
+        }
+        void logMcpActivity("read", "stack/capabilities", { stack: loaded.manifest.slug });
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              stack: loaded.manifest.slug,
+              capabilities: getYouStackCapabilities(loaded.manifest),
+            }, null, 2),
+          }],
+        };
+      }
+
+      case "route_stack_request": {
+        const stackArgs = (args || {}) as { path?: string; request?: string };
+        if (!stackArgs.request) {
+          return {
+            content: [{ type: "text" as const, text: "missing required argument: request" }],
+            isError: true,
+          };
+        }
+        const loaded = tryLoadCurrentYouStack(stackArgs.path);
+        if (!loaded) {
+          return {
+            content: [{ type: "text" as const, text: "no local YouStack manifest found" }],
+            isError: true,
+          };
+        }
+        const route = routeYouStackRequest(loaded.manifest, stackArgs.request);
+        void logMcpActivity("read", "stack/route", {
+          stack: loaded.manifest.slug,
+          capability: route.capability.id,
+        });
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify(route, null, 2),
+          }],
+        };
+      }
+
+      case "smoke_stack": {
+        const stackArgs = (args || {}) as { path?: string };
+        const loaded = tryLoadCurrentYouStack(stackArgs.path);
+        if (!loaded) {
+          return {
+            content: [{ type: "text" as const, text: "no local YouStack manifest found" }],
+            isError: true,
+          };
+        }
+        const smoke = runYouStackSmoke(loaded);
+        void logMcpActivity("read", "stack/smoke", {
+          stack: loaded.manifest.slug,
+          ok: smoke.ok,
+        });
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify(smoke, null, 2),
+          }],
+          isError: !smoke.ok,
         };
       }
 

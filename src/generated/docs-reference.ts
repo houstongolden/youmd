@@ -20,13 +20,13 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "4c72d920df540e69f2a4fd103f3e1351c475b5600539eddd25ea7b6baf8cd251",
+  "sourceHash": "7e775ac0f407345b981ea67e4b5239fd3f8869b090a8b79e48a2d2dc27b114fd",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
     "endpoints": 66,
-    "mcpTools": 19,
+    "mcpTools": 23,
     "convexRoutes": 54,
     "nextRoutes": 18
   },
@@ -877,6 +877,22 @@ export const docsReference = {
       ]
     },
     {
+      "name": "get_stack_capabilities",
+      "description": "Return the local YouStack capability map, including local/static capabilities and protected API/MCP capabilities declared by the manifest.",
+      "inputFields": [
+        "path"
+      ],
+      "required": []
+    },
+    {
+      "name": "get_stack_manifest",
+      "description": "Return the current local YouStack manifest discovered from cwd, or from a provided manifest/stack path. Use before trusting local stack files.",
+      "inputFields": [
+        "path"
+      ],
+      "required": []
+    },
+    {
       "name": "list_projects",
       "description": "List all detected projects with their metadata. Returns project names found in the projects root directory. Use to discover available projects before calling get_project_context with a specific project name.",
       "inputFields": [],
@@ -897,11 +913,30 @@ export const docsReference = {
       "required": []
     },
     {
+      "name": "route_stack_request",
+      "description": "Route a natural-language request to the safest matching local YouStack capability. This is deterministic and read-only.",
+      "inputFields": [
+        "request",
+        "path"
+      ],
+      "required": [
+        "request"
+      ]
+    },
+    {
       "name": "search_memories",
       "description": "Search the user's memories by category or list all active memories. Returns an array of memory objects with category, content, tags, and timestamps. Use to check what you already know before asking the user a question they may have answered before.",
       "inputFields": [
         "category",
         "limit"
+      ],
+      "required": []
+    },
+    {
+      "name": "smoke_stack",
+      "description": "Run read-only local YouStack smoke validation. It parses the manifest, verifies required files/checksums, checks adapter declarations, and performs no writes.",
+      "inputFields": [
+        "path"
       ],
       "required": []
     },
