@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-05-24
-Latest Product Commit: e79bf70 feat(api): add youstack capability routing
+Latest Deployed Commit: fd68088 docs: polish youstack api copy
 
 ---
 
@@ -102,6 +102,7 @@ Latest Product Commit: e79bf70 feat(api): add youstack capability routing
 - Shared read-only HTTP endpoints now exist for the capability contract and deterministic routing: `GET /api/v1/stacks/capabilities` and `POST /api/v1/stacks/route`
 - Protected brain retrieval still uses the existing authenticated You.md MCP/API surfaces in this slice; stack-specific grants/tokens are intentionally deferred to the next backend phase
 - GitHub App repo sync, public/private stack sharing UI, paid stacks, and optional custom per-stack API/MCP endpoints are still planned follow-up phases, not shipped behavior yet
+- Production web/API is deployed and verified: `GET /api/v1/stacks/capabilities`, `POST /api/v1/stacks/route`, `/api/v1/docs/reference`, and `/docs` all show the YouStacks surfaces on `https://www.you.md`
 
 ### Backend (Convex — kindly-cassowary-600)
 - 21-table schema fully deployed (added skills + skillInstalls)
@@ -144,7 +145,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Existing API keys created before the reveal upgrade remain non-revealable by design because those historical records were stored hash-only; newly created or rotated keys are now revealable, so one rotate is the migration path for older keys
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 - The CLI still does not feel proactive enough at install/startup compared with Claude Code/OpenClaw. The new startup entrance is a meaningful step, but U still needs a richer first-run / post-install “friendly wingman” flow that helps without requiring the user to already know the commands
-- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.23` and need one more npm publish before end users get the `you` launcher, compact portrait splash, paced startup investigation, update hints, public-profile portrait contract fix, active-bundle fallback on read-only commands, raw-markdown roundtrip preservation, marker-based recent-project opportunity scanning, broader local workspace repo awareness, the real local tool loop, first-run setup guidance, smaller portrait bounds, local YouStack manifest/link/MCP commands, and the deeper home-context sweep + concise strongest-move opener
+- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.23`, but npm still serves `0.6.21`. The May 24 trusted publish workflow passed install, tests, and build, then failed at `npm publish` with `E404 Not Found / no permission`, which points back to npm package Trusted Publishing/permission configuration rather than local package code.
 - Production `/api/v1/skills` still needs a Convex seed/deploy pass before the new bundled `youstack-start` skill appears in the hosted registry; local CLI catalog/build already shows 7 bundled skills
 - Stack-specific GitHub repo sync and stack grants are not live yet. Existing authenticated You.md MCP/API surfaces cover protected memory access for local agents, but scoped per-stack grant tokens remain the next backend slice.
 

@@ -21,6 +21,10 @@
 - Verified root TypeScript with `npx tsc --noEmit`
 - Verified root production build with `npm run build`; the Next route manifest includes `/api/v1/stacks/capabilities` and `/api/v1/stacks/route`
 - Verified local production API behavior on `localhost:3100`: capabilities contract, default memory routing, and manifest-supplied local startup routing
+- Pushed to `main`; Vercel production deployment `dpl_N72DFZEPzzXeu5oLMQXp8wPzcWpx` is ready and aliased to `https://www.you.md` / `https://you.md`
+- Verified live production `https://www.you.md/api/v1/stacks/capabilities`, `POST https://www.you.md/api/v1/stacks/route`, `https://www.you.md/api/v1/docs/reference`, and `https://www.you.md/docs`
+- Verified the Convex Deploy GitHub Action for the YouStacks implementation push completed successfully at `0bd0e66`
+- Triggered the trusted npm publish workflow for `youmd@0.6.23`; install, tests, and build passed, but npm publish failed with `E404 Not Found / no permission`, so the npm package remains `0.6.21` until npm package Trusted Publishing/permissions are configured
 - Browser QA through gstack browse was blocked because the browse runtime could not start without `bun`; HTTP/API and production-build verification completed instead
 
 ## 2026-05-23 — YouStacks Product-Layer Planning

@@ -29,7 +29,9 @@ Last Updated: 2026-05-24
 - `d7be628` adds `youmd stack link` for Claude Code, Codex, and Cursor adapter generation with dry-run support.
 - `4da2e99` exposes local MCP YouStack resources/tools: `get_stack_manifest`, `get_stack_capabilities`, `route_stack_request`, and `smoke_stack`.
 - `e79bf70` adds shared read-only HTTP endpoints: `GET /api/v1/stacks/capabilities` and `POST /api/v1/stacks/route`.
-- Local verification passed focused YouStack/MCP tests, full CLI tests, CLI build, docs check, root TypeScript, root production build, local production API smoke tests, and MCP SDK smoke. Production push/deploy/npm verification is still pending in this session.
+- Local verification passed focused YouStack/MCP tests, full CLI tests, CLI build, docs check, root TypeScript, root production build, local production API smoke tests, and MCP SDK smoke.
+- Production web/API/docs verification passed on `https://www.you.md`: stack capabilities, stack route, docs reference, and `/docs` all expose the new YouStacks surfaces.
+- npm publish verification is blocked outside code: the trusted publish workflow for `youmd@0.6.23` passed install, tests, and build, then failed at `npm publish` with `E404 Not Found / no permission`; npm still serves `youmd@0.6.21`.
 - Still intentionally deferred from this slice: GitHub App repo sync, stack grant/token storage, private/public share-link UI, paid stacks, secondary hosts, and optional custom per-stack API/MCP endpoints.
 
 ## YouStacks Planning Phase (from May 23 conversation)

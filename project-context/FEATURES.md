@@ -13,7 +13,7 @@ Last Updated: 2026-05-24
 | YouStack local manifest CLI | Done local / publish pending | `youmd stack inspect`, `smoke`, `capabilities`, and `route` validate and route a local `youstack/v1` manifest without mutating brain data or connected tools |
 | YouStack host adapter linking | Done local / publish pending | `youmd stack link` generates Claude Code, Codex, and Cursor adapter files from one manifest with dry-run support |
 | YouStack local MCP tools | Done local / publish pending | Local MCP exposes `youmd://stacks/current/manifest`, `youmd://stacks/current/capabilities`, `get_stack_manifest`, `get_stack_capabilities`, `route_stack_request`, and `smoke_stack` |
-| YouStack shared route API | Done local / deploy pending | `GET /api/v1/stacks/capabilities` exposes the shared capability contract and `POST /api/v1/stacks/route` routes requests against default or manifest-supplied capabilities |
+| YouStack shared route API | Done deployed | `GET /api/v1/stacks/capabilities` exposes the shared capability contract and `POST /api/v1/stacks/route` routes requests against default or manifest-supplied capabilities on `https://www.you.md` |
 | Compact conversion homepage | Done | Homepage now follows a calmer conversion flow with one primary hero CTA, compact profile proof, compressed problem/how-it-works/inside sections, combined integrations/builders credibility band, balanced pricing, compact FAQ, and simple final CTA |
 | App control normalization | Done | Terminal auth/input, install tabs, dashboard tabs, pane headers, empty states, sources, share, private context, files, settings, and edit surfaces now share more consistent heights, padding, focus rings, card treatment, and muted text behavior |
 | Public profile directory hygiene | Done | `/profiles` now canonicalizes/dedupes usernames, suppresses QA/test rows, sanitizes public image URLs, prefers stored ASCII portraits, and falls back to deterministic terminal placeholders instead of blank cards |
@@ -120,8 +120,8 @@ Last Updated: 2026-05-24
 | POST /api/v1/chat/stream | Done | Web-domain SSE chat proxy now exists through Next |
 | GET /api/v1/docs/reference | Done | Machine-readable generated docs manifest for endpoint/tool counts, route inventory, MCP tools, source hash, and CLI version |
 | GET /api/v1/docs/openapi.json | Done | Generated OpenAPI 3.1-style API inventory for reference tooling and future Mintlify-style API docs |
-| GET /api/v1/stacks/capabilities | Done local / deploy pending | Shared YouStack capability contract and API/MCP threshold map |
-| POST /api/v1/stacks/route | Done local / deploy pending | Deterministic read-only request routing against default or manifest-supplied YouStack capabilities |
+| GET /api/v1/stacks/capabilities | Done deployed | Shared YouStack capability contract and API/MCP threshold map |
+| POST /api/v1/stacks/route | Done deployed | Deterministic read-only request routing against default or manifest-supplied YouStack capabilities |
 | GET /api/v1/me | Done |
 | POST /api/v1/me/bundle | Done |
 | POST /api/v1/me/publish | Done |
