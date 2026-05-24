@@ -6,7 +6,7 @@ export const openApiSpec = {
   "openapi": "3.1.0",
   "info": {
     "title": "You.md API",
-    "version": "0.6.22",
+    "version": "0.6.23",
     "description": "Generated source-of-truth API inventory for the You.md identity context protocol."
   },
   "servers": [

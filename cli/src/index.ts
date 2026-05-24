@@ -49,9 +49,10 @@ import { skillCommand } from "./commands/skill";
 import { mcpCommand } from "./commands/mcp";
 import { logsCommand } from "./commands/logs";
 import { agentsCommand } from "./commands/agents";
+import { stackCommand } from "./commands/stack";
 
 const program = new Command();
-const CURRENT_VERSION = "0.6.22";
+const CURRENT_VERSION = "0.6.23";
 const CLI_NAME = process.env.YOUMD_LAUNCH_SURFACE === "you" ? "you" : "youmd";
 
 program
@@ -102,6 +103,7 @@ const HELP_GROUPS: Array<{
     title: "SKILLS",
     commands: [
       { name: "skill", summary: "identity-aware agent skills (list/install/use/sync)" },
+      { name: "stack", summary: "local YouStack manifests (inspect/smoke/capabilities/route)" },
     ],
   },
   {
@@ -537,6 +539,15 @@ program
   .allowUnknownOption(true)
   .action((subcommand, args) => {
     return skillCommand(subcommand, ...(args || []));
+  });
+
+program
+  .command("stack [subcommand] [args...]")
+  .description("Local YouStack manifests (inspect, smoke, capabilities, route)")
+  .option("--path <path>", "Path to a youstack.json file or stack directory")
+  .option("--json", "Print JSON output")
+  .action((subcommand, args, options) => {
+    return stackCommand(subcommand, args || [], options);
   });
 
 program

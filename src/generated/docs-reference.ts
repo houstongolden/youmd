@@ -20,9 +20,9 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "61801d8f76d0153cc0e2b0f7c4d68a2764fb09aaed2cd67bd84f345ac4be8423",
+  "sourceHash": "4c72d920df540e69f2a4fd103f3e1351c475b5600539eddd25ea7b6baf8cd251",
   "cli": {
-    "version": "0.6.22"
+    "version": "0.6.23"
   },
   "counts": {
     "endpoints": 66,

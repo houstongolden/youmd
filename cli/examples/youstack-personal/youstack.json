@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "youstack/v1",
+  "kind": "youstack",
+  "slug": "personal-agent-start",
+  "name": "Personal Agent Start",
+  "version": "0.1.0",
+  "description": "Local-first starter YouStack for Claude Code, Codex, and Cursor.",
+  "visibility": "private",
+  "compatibility": {
+    "hosts": ["claude-code", "codex", "cursor"],
+    "minYoumdCli": "0.7.0",
+    "requiresYoumdApi": false,
+    "requiresYoumdMcp": false
+  },
+  "brainScopes": [
+    {
+      "scope": "identity.public.read",
+      "required": true,
+      "reason": "Introduce the user and their working style to the host agent."
+    },
+    {
+      "scope": "preferences.agent.read",
+      "required": true,
+      "reason": "Apply communication, coding, and collaboration preferences."
+    },
+    {
+      "scope": "memories.search",
+      "required": false,
+      "reason": "Retrieve protected memories only when local static files are insufficient."
+    }
+  ],
+  "files": [
+    {
+      "path": "skills/youstack-start/SKILL.md",
+      "type": "skill",
+      "required": true
+    },
+    {
+      "path": "workflows/startup.md",
+      "type": "workflow",
+      "required": true
+    },
+    {
+      "path": "docs/quickstart.md",
+      "type": "docs",
+      "required": false
+    },
+    {
+      "path": "tests/smoke.md",
+      "type": "test",
+      "required": false
+    }
+  ],
+  "adapters": {
+    "claude-code": {
+      "files": [".claude/skills/youstacks/personal-agent-start/SKILL.md"],
+      "bootstrap": "CLAUDE.md"
+    },
+    "codex": {
+      "files": [".codex/skills/youstacks/personal-agent-start/SKILL.md"],
+      "bootstrap": "AGENTS.md"
+    },
+    "cursor": {
+      "files": [".cursor/rules/youstacks-personal-agent-start.md"],
+      "bootstrap": ".cursor/rules"
+    }
+  },
+  "capabilities": [
+    {
+      "id": "startup",
+      "intent": "Load local identity, project context, active requests, TODOs, and host-safe next moves.",
+      "workflow": "workflows/startup.md",
+      "skill": "youstack-start",
+      "localOnly": true,
+      "mutationPolicy": "read_only"
+    },
+    {
+      "id": "protected-memory-search",
+      "intent": "Search protected You.md memories through shared API/MCP when the local stack lacks enough context.",
+      "mcpTool": "you.search_memories",
+      "apiEndpoint": "POST /api/v1/stacks/{stack_id}/brain/search",
+      "requiredScopes": ["memories.search"],
+      "mutationPolicy": "read_only"
+    }
+  ],
+  "accessPolicy": {
+    "defaultMode": "local_static",
+    "protectedByDefault": true,
+    "requiresApprovalFor": ["brain.write", "private_context.read", "connected_tool.write"]
+  },
+  "sharing": {
+    "allowedModes": ["private", "scoped-link", "public-open"],
+    "defaultMode": "private"
+  },
+  "repoSync": {
+    "enabled": false,
+    "provider": "github",
+    "path": "youstacks/personal-agent-start"
+  },
+  "docs": {
+    "quickstart": "docs/quickstart.md"
+  },
+  "tests": {
+    "smoke": "tests/smoke.md"
+  }
+}

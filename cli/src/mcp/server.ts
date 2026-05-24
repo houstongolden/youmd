@@ -47,7 +47,7 @@ import {
   addProjectMemory,
 } from "../lib/project";
 
-const MCP_SERVER_VERSION = "0.6.22";
+const MCP_SERVER_VERSION = "0.6.23";
 
 function getCurrentProject(): { name: string; dir: string } | null {
   const root = findProjectsRoot();
@@ -197,7 +197,7 @@ async function logMcpActivity(action: string, resource?: string, details?: Recor
       headers: {
         Authorization: `Bearer ${config.token}`,
         "Content-Type": "application/json",
-        "User-Agent": "youmd-mcp/0.6.22",
+        "User-Agent": "youmd-mcp/0.6.23",
       },
       body: JSON.stringify({
         agentName: process.env.YOUMD_AGENT_NAME || "Claude Code",

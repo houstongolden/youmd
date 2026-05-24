@@ -69,6 +69,16 @@ const navigation: NavItem[] = [
     ],
   },
   {
+    id: "youstacks",
+    label: "YouStacks",
+    children: [
+      { id: "youstacks-overview", label: "Overview" },
+      { id: "youstacks-cli", label: "CLI" },
+      { id: "youstacks-manifest", label: "Manifest" },
+      { id: "youstacks-threshold", label: "API/MCP Threshold" },
+    ],
+  },
+  {
     id: "directives",
     label: "Agent Directives",
   },
@@ -1198,6 +1208,7 @@ preferences: terminal-native, monochrome
                 { cmd: "youmd skill search QUERY", desc: "Search the registry by keyword" },
                 { cmd: "youmd skill export NAME", desc: "Export a skill as a standalone markdown file" },
                 { cmd: "youmd skill info NAME", desc: "Show full metadata for an installed skill" },
+                { cmd: "youmd stack smoke --path DIR", desc: "Validate a local YouStack manifest without writing files or touching the brain" },
               ]}
             />
 
@@ -1340,6 +1351,104 @@ preferences: terminal-native, monochrome
               Use <InlineCode>youmd skill sync</InlineCode> to explicitly
               reconcile local and remote skill state without a full push/pull
               cycle.
+            </P>
+
+            {/* ── YouStacks ───────────────────────────────── */}
+            <H2 id="youstacks">YouStacks</H2>
+            <P>
+              You.md is the brain. YouStacks are portable execution packages
+              that install into host agents like Claude Code, Codex, and Cursor.
+              A stack can be useful as local/static files first, then call the
+              shared You.md API or MCP only when it needs protected memory,
+              private context, sync, tokens, connected tools, or server-side
+              actions.
+            </P>
+
+            <H3 id="youstacks-overview">Overview</H3>
+            <FeatureMatrix
+              items={[
+                {
+                  title: "Local-first package",
+                  body: "Skills, workflows, prompts, docs, examples, and host adapter declarations live beside a youstack.json manifest.",
+                },
+                {
+                  title: "Protected brain boundary",
+                  body: "Private memories, private context, proprietary prompts, and connected actions stay behind authenticated You.md API/MCP surfaces.",
+                },
+                {
+                  title: "Host-native adapters",
+                  body: "Claude Code, Codex, and Cursor are the primary targets. OpenClaw, Hermes Agent, and Pi agents come after the first three work.",
+                },
+              ]}
+            />
+
+            <H3 id="youstacks-cli">CLI</H3>
+            <P>
+              The first YouStack CLI surface is read-only. It validates local
+              manifests and routes requests to declared capabilities without
+              mutating your brain, repo, or connected tools.
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "youmd stack inspect --path DIR", desc: "Show manifest metadata, files, scopes, adapters, and validation warnings" },
+                { cmd: "youmd stack smoke --path DIR", desc: "Run read-only schema, file, checksum, adapter, and capability checks" },
+                { cmd: "youmd stack capabilities --path DIR", desc: "List local and protected capabilities declared by the stack" },
+                { cmd: "youmd stack route --path DIR \"start this repo\"", desc: "Choose the best local capability for a natural-language request" },
+              ]}
+            />
+            <CodeBlock title="terminal">{`youmd stack smoke --path cli/examples/youstack-personal
+youmd stack route --path cli/examples/youstack-personal "search my memories before starting"`}</CodeBlock>
+
+            <H3 id="youstacks-manifest">Manifest</H3>
+            <P>
+              The v1 manifest is <InlineCode>youstack.json</InlineCode>. It
+              declares package metadata, local files, requested brain scopes,
+              host adapters, capabilities, access policy, sharing modes, repo
+              sync metadata, docs, and smoke tests.
+            </P>
+            <CodeBlock title="youstack.json">{`{
+  "schemaVersion": "youstack/v1",
+  "kind": "youstack",
+  "slug": "personal-agent-start",
+  "name": "Personal Agent Start",
+  "version": "0.1.0",
+  "visibility": "private",
+  "brainScopes": [
+    {
+      "scope": "identity.public.read",
+      "required": true,
+      "reason": "Introduce the user to the host agent."
+    }
+  ],
+  "files": [
+    {
+      "path": "skills/youstack-start/SKILL.md",
+      "type": "skill",
+      "required": true
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "startup",
+      "intent": "Load local identity and project context.",
+      "localOnly": true,
+      "mutationPolicy": "read_only"
+    }
+  ],
+  "accessPolicy": {
+    "defaultMode": "local_static",
+    "protectedByDefault": true
+  }
+}`}</CodeBlock>
+
+            <H3 id="youstacks-threshold">API/MCP Threshold</H3>
+            <P>
+              Local-only stacks can ship static skills, workflows, prompts,
+              docs, examples, host adapter files, and read-only route tables.
+              Shared You.md API/MCP is used when the stack needs protected brain
+              retrieval, stack grants, sync, audit logs, connected tools, or
+              server-side actions. Custom per-stack API/MCP is optional later,
+              not the v1 baseline.
             </P>
 
             {/* ── Agent Directives ───────────────────────────── */}

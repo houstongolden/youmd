@@ -1,0 +1,148 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import * as crypto from "crypto";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import {
+  loadYouStackManifest,
+  routeYouStackRequest,
+  runYouStackSmoke,
+  validateYouStackManifest,
+} from "../lib/youstack";
+
+describe("youstack manifest", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "youmd-youstack-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function writeStack(manifest: Record<string, unknown>): string {
+    fs.mkdirSync(path.join(tmpDir, "skills", "start"), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, "workflows"), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, "skills", "start", "SKILL.md"), "# Start\n");
+    fs.writeFileSync(path.join(tmpDir, "workflows", "startup.md"), "# Startup\n");
+    fs.writeFileSync(path.join(tmpDir, "youstack.json"), JSON.stringify(manifest, null, 2));
+    return tmpDir;
+  }
+
+  function validManifest(extra: Record<string, unknown> = {}) {
+    return {
+      schemaVersion: "youstack/v1",
+      kind: "youstack",
+      slug: "test-stack",
+      name: "Test Stack",
+      version: "0.1.0",
+      visibility: "private",
+      accessPolicy: {
+        protectedByDefault: true,
+      },
+      files: [
+        {
+          path: "skills/start/SKILL.md",
+          type: "skill",
+          required: true,
+        },
+        {
+          path: "workflows/startup.md",
+          type: "workflow",
+          required: true,
+        },
+      ],
+      capabilities: [
+        {
+          id: "startup",
+          intent: "Load project context and start the agent safely.",
+          workflow: "workflows/startup.md",
+          skill: "start",
+          localOnly: true,
+          mutationPolicy: "read_only",
+        },
+        {
+          id: "protected-memory-search",
+          intent: "Search protected memories through You.md MCP.",
+          mcpTool: "you.search_memories",
+          requiredScopes: ["memories.search"],
+          mutationPolicy: "read_only",
+        },
+      ],
+      ...extra,
+    };
+  }
+
+  it("validates a minimal local-first manifest", () => {
+    const result = validateYouStackManifest(validManifest());
+    expect(result.ok).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+
+  it("rejects unsafe paths and duplicate capability ids", () => {
+    const result = validateYouStackManifest(
+      validManifest({
+        files: [{ path: "../secret.md", type: "skill", required: true }],
+        capabilities: [{ id: "same" }, { id: "same" }],
+      })
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain("safe relative path");
+    expect(result.errors.join("\n")).toContain("duplicate capability id");
+  });
+
+  it("runs read-only smoke checks over required files", () => {
+    writeStack(validManifest());
+    const loaded = loadYouStackManifest(tmpDir);
+    const smoke = runYouStackSmoke(loaded);
+
+    expect(smoke.ok).toBe(true);
+    expect(smoke.checks).toContain("file exists: skills/start/SKILL.md");
+    expect(smoke.checks).toContain("file exists: workflows/startup.md");
+  });
+
+  it("fails smoke checks for missing required files", () => {
+    writeStack(
+      validManifest({
+        files: [{ path: "missing/SKILL.md", type: "skill", required: true }],
+      })
+    );
+    const smoke = runYouStackSmoke(loadYouStackManifest(tmpDir));
+
+    expect(smoke.ok).toBe(false);
+    expect(smoke.errors).toContain("missing stack file: missing/SKILL.md");
+  });
+
+  it("checks sha256 file checksums when present", () => {
+    const filePath = path.join(tmpDir, "skills", "start", "SKILL.md");
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, "# Start\n");
+    const checksum = crypto.createHash("sha256").update("# Start\n").digest("hex");
+    fs.writeFileSync(
+      path.join(tmpDir, "youstack.json"),
+      JSON.stringify(
+        validManifest({
+          files: [{ path: "skills/start/SKILL.md", type: "skill", required: true, checksum: `sha256:${checksum}` }],
+        }),
+        null,
+        2
+      )
+    );
+
+    const smoke = runYouStackSmoke(loadYouStackManifest(tmpDir));
+    expect(smoke.ok).toBe(true);
+    expect(smoke.checks).toContain("checksum ok: skills/start/SKILL.md");
+  });
+
+  it("routes fuzzy requests to the best local capability", () => {
+    const route = routeYouStackRequest(
+      validManifest(),
+      "please search my protected memories before starting"
+    );
+
+    expect(route.capability.id).toBe("protected-memory-search");
+    expect(route.score).toBeGreaterThan(0);
+  });
+});
