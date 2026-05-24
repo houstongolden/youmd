@@ -1461,6 +1461,13 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
               <InlineCode>smoke_stack</InlineCode> so host agents can inspect
               and validate a stack before using it.
             </P>
+            <P>
+              For HTTP clients, <InlineCode>GET /api/v1/stacks/capabilities</InlineCode>
+              returns the shared capability contract and
+              <InlineCode>POST /api/v1/stacks/route</InlineCode> routes a
+              request against either that default contract or capabilities
+              supplied from a local stack manifest.
+            </P>
 
             {/* ── Agent Directives ───────────────────────────── */}
             <H2 id="directives">Agent Directives</H2>

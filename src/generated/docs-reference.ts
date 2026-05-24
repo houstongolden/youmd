@@ -20,15 +20,15 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "7e775ac0f407345b981ea67e4b5239fd3f8869b090a8b79e48a2d2dc27b114fd",
+  "sourceHash": "9a17a7a84920945fb763a50bdb52c872f18de76d4a0e4b45921ec174edb27fcd",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
-    "endpoints": 66,
+    "endpoints": 68,
     "mcpTools": 23,
     "convexRoutes": 54,
-    "nextRoutes": 18
+    "nextRoutes": 20
   },
   "endpoints": [
     {
@@ -590,6 +590,28 @@ export const docsReference = {
     {
       "method": "GET",
       "path": "/{username}/you.txt",
+      "category": "Other",
+      "auth": "Public or rate-limited",
+      "source": "next",
+      "summary": "Next.js route",
+      "sources": [
+        "next"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/stacks/capabilities",
+      "category": "Other",
+      "auth": "Public or rate-limited",
+      "source": "next",
+      "summary": "Next.js route",
+      "sources": [
+        "next"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/stacks/route",
       "category": "Other",
       "auth": "Public or rate-limited",
       "source": "next",
