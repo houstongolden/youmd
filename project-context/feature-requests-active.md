@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-05-23
+Last Updated: 2026-05-24
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -11,10 +11,31 @@ Last Updated: 2026-05-23
 
 ---
 
+## YouStacks End-to-End Implementation (from May 24 conversation)
+
+### 66. Continue YouStacks from planning into production-quality implementation
+**Status:** IN PROGRESS
+**Verified:** NO
+**Request:** Continue the YouStacks work and get it done end-to-end, production-tested, and working per the full vision rather than stopping at planning.
+**Actionable Scope:**
+1. Move from the planning document into small, bisectable implementation phases.
+2. Start with the first PR-sized slice from the plan: local YouStack manifest schema and read-only CLI smoke/inspect/capability support.
+3. Keep broad product changes gated behind verified slices instead of making an unsafe mega-patch.
+4. Test each implemented slice locally before commit.
+5. Deploy and production-test only code that has passed local verification and is ready for production.
+6. Keep GitHub sync, stack grants, protected brain retrieval, sharing, and host adapters tracked as later phases until their implementation slices are complete.
+**Progress (2026-05-24):** Phase 1-3 plus the shared read-only route endpoint are implemented locally in bisectable commits:
+- `dec9d3d` adds the local `youmd stack inspect/smoke/capabilities/route` manifest foundation, sample personal YouStack, tests, docs, and CLI `0.6.23` version bump.
+- `d7be628` adds `youmd stack link` for Claude Code, Codex, and Cursor adapter generation with dry-run support.
+- `4da2e99` exposes local MCP YouStack resources/tools: `get_stack_manifest`, `get_stack_capabilities`, `route_stack_request`, and `smoke_stack`.
+- `e79bf70` adds shared read-only HTTP endpoints: `GET /api/v1/stacks/capabilities` and `POST /api/v1/stacks/route`.
+- Local verification passed focused YouStack/MCP tests, full CLI tests, CLI build, docs check, root TypeScript, root production build, local production API smoke tests, and MCP SDK smoke. Production push/deploy/npm verification is still pending in this session.
+- Still intentionally deferred from this slice: GitHub App repo sync, stack grant/token storage, private/public share-link UI, paid stacks, secondary hosts, and optional custom per-stack API/MCP endpoints.
+
 ## YouStacks Planning Phase (from May 23 conversation)
 
 ### 65. Audit You.md and write the YouStacks implementation plan before product changes
-**Status:** IN REVIEW
+**Status:** DONE
 **Verified:** NO
 **Request:** Start the YouStacks planning phase as an additive product-layer pass. Save the kickoff brief, audit existing You.md surfaces, review GStack and BAMFStack before designing YouStacks, and create `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md` without rushing into broad implementation.
 **Actionable Scope:**
@@ -30,7 +51,8 @@ Last Updated: 2026-05-23
 10. Decide the local-only/shared-API/custom-endpoint/user-owned-remote threshold.
 11. Break implementation into small bisectable phases and name the first PR-sized slice.
 12. Do not implement broad product changes until the audit and plan are complete.
-**Progress (2026-05-23):** Kickoff brief exists in `project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md`. Audit and implementation plan are written in `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md`; awaiting Houston review before any broad product implementation.
+**Progress (2026-05-23):** Kickoff brief exists in `project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md`. Audit and implementation plan are written in `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md`.
+**Progress (2026-05-24):** Houston continued the work into implementation with request #66.
 
 ## YouStack Local-Agent Priority (from May 22 conversation)
 

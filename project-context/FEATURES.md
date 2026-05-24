@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-05-23
+Last Updated: 2026-05-24
 
 ## Core Platform
 
@@ -9,7 +9,11 @@ Last Updated: 2026-05-23
 | Shared product design primitives | Done | Reusable `Container`, `Section`, `SectionHeader`, `Button`, `Card`, `TerminalCard`, `FormField`, `Input`, `Textarea`, `Select`, `Label`, `FieldHelp`, and `FieldError` now anchor marketing and app UI control standards |
 | Developer docs platform | Done | `/docs` now includes concepts, context surfaces, source-of-truth mapping, agent workflows, playbooks, examples, generated API/MCP reference, schema guidance, docs automation, and troubleshooting |
 | Generated docs reference | Done | `npm run docs:generate` scans Convex HTTP routes, Next routes, and CLI MCP tools into `src/generated/docs-reference.ts` plus a generated OpenAPI-style spec; `prebuild` refreshes it and `docs:check` detects stale artifacts |
-| YouStacks product-layer planning | In review | `YOUSTACKS_PRODUCT_LAYER_PRD.md` and `YOUSTACKS_IMPLEMENTATION_PLAN.md` define the additive stack layer, current product inventory/classification, GStack/BAMFStack transfer analysis, manifest schema, GitHub sync direction, API/MCP threshold, adapter model, and first PR-sized slice |
+| YouStacks product-layer planning | In implementation | `YOUSTACKS_PRODUCT_LAYER_PRD.md` and `YOUSTACKS_IMPLEMENTATION_PLAN.md` define the additive stack layer, current product inventory/classification, GStack/BAMFStack transfer analysis, manifest schema, GitHub sync direction, API/MCP threshold, adapter model, and bisectable phases |
+| YouStack local manifest CLI | Done local / publish pending | `youmd stack inspect`, `smoke`, `capabilities`, and `route` validate and route a local `youstack/v1` manifest without mutating brain data or connected tools |
+| YouStack host adapter linking | Done local / publish pending | `youmd stack link` generates Claude Code, Codex, and Cursor adapter files from one manifest with dry-run support |
+| YouStack local MCP tools | Done local / publish pending | Local MCP exposes `youmd://stacks/current/manifest`, `youmd://stacks/current/capabilities`, `get_stack_manifest`, `get_stack_capabilities`, `route_stack_request`, and `smoke_stack` |
+| YouStack shared route API | Done local / deploy pending | `GET /api/v1/stacks/capabilities` exposes the shared capability contract and `POST /api/v1/stacks/route` routes requests against default or manifest-supplied capabilities |
 | Compact conversion homepage | Done | Homepage now follows a calmer conversion flow with one primary hero CTA, compact profile proof, compressed problem/how-it-works/inside sections, combined integrations/builders credibility band, balanced pricing, compact FAQ, and simple final CTA |
 | App control normalization | Done | Terminal auth/input, install tabs, dashboard tabs, pane headers, empty states, sources, share, private context, files, settings, and edit surfaces now share more consistent heights, padding, focus rings, card treatment, and muted text behavior |
 | Public profile directory hygiene | Done | `/profiles` now canonicalizes/dedupes usernames, suppresses QA/test rows, sanitizes public image URLs, prefers stored ASCII portraits, and falls back to deterministic terminal placeholders instead of blank cards |
@@ -22,7 +26,7 @@ Last Updated: 2026-05-23
 | CLI logout | Done | `youmd logout` now clears local auth state so machines can switch accounts without hand-editing `~/.youmd/config.json` |
 | Stale endpoint-safe CLI auth | Done | CLI auth requests now resolve `apiUrl` / `appUrl` at request time and reset fresh logins to production defaults instead of verifying production keys against cached dev endpoints |
 | Curl installer | Done | `https://you.md/install.sh` now installs the latest global CLI and teaches `you` as the first next step, with explicit login/init commands as fallbacks |
-| Clean npm publish metadata | Done | CLI package now targets `0.6.22`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
+| Clean npm publish metadata | Done | CLI package now targets `0.6.23`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
 | Codex MCP install | Done | `youmd mcp --install codex --auto` safely writes `~/.codex/config.toml` with `npx --yes youmd@latest mcp`, matching the Claude/Cursor published-package launcher |
 | MCP home-bundle fallback | Done | MCP tools now fall back to `~/.youmd` when the working repo has no local `.youmd/`, so background Claude/Codex agents still get the user's identity and skills |
 | YouStack MCP startup brief | In progress | Local MCP now exposes `get_agent_brief` and `youmd://agent/brief`, combining compact identity, repo instructions, project-context files, active requests, open TODOs, known issues, installed skills, and next moves; production host/deploy verification is pending |
@@ -116,6 +120,8 @@ Last Updated: 2026-05-23
 | POST /api/v1/chat/stream | Done | Web-domain SSE chat proxy now exists through Next |
 | GET /api/v1/docs/reference | Done | Machine-readable generated docs manifest for endpoint/tool counts, route inventory, MCP tools, source hash, and CLI version |
 | GET /api/v1/docs/openapi.json | Done | Generated OpenAPI 3.1-style API inventory for reference tooling and future Mintlify-style API docs |
+| GET /api/v1/stacks/capabilities | Done local / deploy pending | Shared YouStack capability contract and API/MCP threshold map |
+| POST /api/v1/stacks/route | Done local / deploy pending | Deterministic read-only request routing against default or manifest-supplied YouStack capabilities |
 | GET /api/v1/me | Done |
 | POST /api/v1/me/bundle | Done |
 | POST /api/v1/me/publish | Done |
@@ -173,7 +179,7 @@ Last Updated: 2026-05-23
 | Private vault encryption | Not started | AES-256-GCM, deferred |
 | Rate limiting | Not started | Per plan |
 
-## CLI (npm: youmd v0.6.22)
+## CLI (npm: youmd v0.6.23)
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -200,6 +206,7 @@ Last Updated: 2026-05-23
 | youmd private | Done | Private context management (10 subcommands) |
 | youmd project | Done | Per-project context (init, list, switch, context, memory) |
 | youmd skill | Done | 18 core subcommands plus aliases: list, install, remove, use, sync, create, add, push, link, init-project, improve, metrics, search, browse, publish, remote, export, info |
+| youmd stack | Done local / publish pending | Inspect, smoke-test, list capabilities, route requests, and link host adapters from local YouStack manifests |
 | MCP config generation | Done | `youmd mcp --json` / `--install` now emit an unambiguous published-package launcher instead of bare `npx youmd mcp` |
 | Authenticated CLI production round-trip | Done | Fresh-account register/login/login-key/whoami/push/pull/diff/status/sync now hard-smoke clean against prod |
 | Public-profile vendor JSON handling | Done | CLI now parses `application/vnd.you-md.v1+json`, strips `_profile`, fetches public markdown, and keeps local hashes/sync state aligned |

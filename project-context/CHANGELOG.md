@@ -1,5 +1,28 @@
 # You.md — Changelog
 
+## 2026-05-24 — YouStacks Local Product Layer
+
+### CLI / MCP / API
+- Added the first local YouStacks foundation: `youmd stack inspect`, `youmd stack smoke`, `youmd stack capabilities`, and `youmd stack route`
+- Added `youstack/v1` manifest types, validation, read-only smoke checks, deterministic capability routing, and a sample personal YouStack under `cli/examples/youstack-personal`
+- Added `youmd stack link` for Claude Code, Codex, and Cursor adapter generation, including dry-run output before writing host files
+- Exposed local MCP stack resources and tools: `youmd://stacks/current/manifest`, `youmd://stacks/current/capabilities`, `get_stack_manifest`, `get_stack_capabilities`, `route_stack_request`, and `smoke_stack`
+- Added shared read-only HTTP endpoints for `GET /api/v1/stacks/capabilities` and `POST /api/v1/stacks/route`
+- Updated `/docs`, generated API/MCP reference data, and CLI help around the local-first stack boundary and shared API/MCP threshold
+- Bumped the CLI release target and generated docs reference to `0.6.23`
+
+### Verification
+- Verified the focused YouStack tests with `npm test -- mcp-agent-brief.test.ts youstack.test.ts`
+- Verified the full CLI suite with `npm test` in `cli/` (12 files, 61 tests)
+- Verified the CLI build with `npm run build` in `cli/`
+- Verified the local stack commands with the built CLI: `stack inspect`, `stack smoke`, `stack capabilities`, `stack route`, and `stack link`
+- Verified local MCP through the official MCP SDK client: stack tools listed, current stack resources listed, and `route_stack_request` returned `protected-memory-search` for a memory request
+- Verified docs sync with `npm run docs:generate` and `npm run docs:check`
+- Verified root TypeScript with `npx tsc --noEmit`
+- Verified root production build with `npm run build`; the Next route manifest includes `/api/v1/stacks/capabilities` and `/api/v1/stacks/route`
+- Verified local production API behavior on `localhost:3100`: capabilities contract, default memory routing, and manifest-supplied local startup routing
+- Browser QA through gstack browse was blocked because the browse runtime could not start without `bun`; HTTP/API and production-build verification completed instead
+
 ## 2026-05-23 — YouStacks Product-Layer Planning
 
 ### Planning / Architecture

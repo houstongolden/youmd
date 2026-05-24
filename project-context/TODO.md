@@ -1,18 +1,29 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-05-23
+Last Updated: 2026-05-24
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
 
+### 2026-05-24
+- [x] Implement the first YouStacks local foundation: `youmd stack inspect`, `smoke`, `capabilities`, and `route`
+- [x] Add the `youstack/v1` TypeScript manifest model, validation, smoke checks, deterministic routing, and local capability extraction
+- [x] Add a sample private personal YouStack under `cli/examples/youstack-personal`
+- [x] Add focused YouStack CLI tests and verify the stack commands against the built CLI
+- [x] Add `youmd stack link` for Claude Code, Codex, and Cursor host adapter generation with dry-run support
+- [x] Expose local YouStack MCP resources/tools for manifest inspection, capability listing, request routing, and read-only smoke validation
+- [x] Add shared read-only HTTP endpoints for YouStack capability contracts and deterministic request routing
+- [x] Update `/docs`, generated API/MCP references, and CLI help for the new YouStack surfaces
+- [x] Bump the CLI release target to `youmd@0.6.23` and regenerate docs reference data
+
 ### 2026-05-23
 - [x] Preserve the YouStacks product-layer brief in `project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md`
 - [x] Audit the existing You.md web, CLI, MCP/API, Convex schema/routes, memory/private-context, project-context, skills, sharing, and GitHub/source/sync surfaces before any product implementation
 - [x] Review GStack and BAMFStack as reference patterns for local-first stack install, host adapters, capability discovery, route selection, smoke tests, docs, and sync discipline
 - [x] Create `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md` with current feature inventory, keep/repurpose/expand/modify/defer classifications, YouStack schema, GitHub sync design, API/MCP threshold, adapter model, and bisectable phases
-- [ ] Houston review of the YouStacks implementation plan before any broad product changes
+- [x] Houston continued the YouStacks planning work into implementation in the May 24 follow-up request
 
 ### 2026-05-22
 - [x] Add a YouStack startup MCP brief for local agents via `get_agent_brief` and `youmd://agent/brief`
@@ -49,7 +60,7 @@ PRD Version: 2.3
 - [x] Add a local host-tool bridge for `start there` so U can act on its own strongest project suggestion, execute the local bootstrap, and send the tool result back through the remote model
 - [x] Add a local host-tool bridge for marker-based recent-work scanning so U can answer “what have I been working on lately?” from real filesystem state with a remote-model final response
 - [x] Expand the bridge into a real local tool loop so U can choose among `discover_projects`, `read_project_context`, `write_project_context`, `sync_identity`, and `respond` instead of only handling two hardcoded intents
-- [ ] Publish `youmd@0.6.22` so end users get the `you` launcher, compact portrait splash, paced startup investigation, public-profile portrait contract fix, update hints, read-only active-bundle fallback, raw-markdown identity roundtrip preservation, marker-based recent-project opportunity scanning, broader local workspace repo awareness, local host-tool execution, the stronger onboarding handoff into U, smaller portrait bounds, first-run setup guidance, the deeper home-level context sweep, a much more concise strongest-move opener, and the new local tool loop
+- [ ] Publish `youmd@0.6.23` so end users get the `you` launcher, compact portrait splash, paced startup investigation, public-profile portrait contract fix, update hints, read-only active-bundle fallback, raw-markdown identity roundtrip preservation, marker-based recent-project opportunity scanning, broader local workspace repo awareness, local host-tool execution, the stronger onboarding handoff into U, smaller portrait bounds, first-run setup guidance, the deeper home-level context sweep, the local YouStack manifest/link/MCP surfaces, a much more concise strongest-move opener, and the new local tool loop
 - [x] Rebuild the CLI at `0.6.22`, align runtime/MCP version strings, and remove compiled test artifacts from the npm package before the publish attempt
 - [x] Add a Trusted Publishing workflow so agents can publish the CLI through GitHub Actions without a long-lived npm token or interactive OTP prompts
 - [ ] Configure npm Trusted Publishing for package `youmd` with GitHub owner `houstongolden`, repository `youmd`, workflow `publish-cli.yml`, and no environment, then rerun `npm run publish:cli`
