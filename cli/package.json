@@ -36,7 +36,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/houstongolden/youmd.git",
+    "url": "https://github.com/houstongolden/youmd",
     "directory": "cli"
   },
   "homepage": "https://you.md",
