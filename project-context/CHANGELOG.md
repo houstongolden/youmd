@@ -27,6 +27,8 @@
 - Triggered the trusted npm publish workflow for `youmd@0.6.23`; install, tests, and build passed, but npm publish failed with `E404 Not Found / no permission`, so the npm package remains `0.6.21` until npm package Trusted Publishing/permissions are configured
 - Hardened the publish workflow to match current npm Trusted Publishing guidance (`actions/checkout@v6`, `actions/setup-node@v6`, `package-manager-cache: false`) and normalized CLI package metadata back to the canonical `git+https://github.com/houstongolden/youmd.git` repository URL after npm warned about auto-correction
 - Retried the GitHub trusted publish workflow as run `26387133488`; dependency install, CLI tests, and CLI build passed again, then `npm publish` failed with the same `E404 Not Found / no permission`, confirming the remaining blocker is npm package Trusted Publishing/package permission configuration rather than repo code
+- Verified the exact npm Trusted Publishing CLI setup path with `npx npm@11.15.0 trust github youmd --repo houstongolden/youmd --file publish-cli.yml --allow-publish --yes`; dry-run resolves to the right package/repo/workflow/publish permission, while the real command is blocked on this machine by npm `E401` because the shell is not logged into npm with write access and 2FA
+- Verified the latest Vercel production deployment is ready and aliased to `https://www.you.md` / `https://you.md`, then re-smoked live stack capabilities and generated docs reference endpoints
 - Browser QA through gstack browse was blocked because the browse runtime could not start without `bun`; HTTP/API and production-build verification completed instead
 
 ## 2026-05-23 — YouStacks Product-Layer Planning

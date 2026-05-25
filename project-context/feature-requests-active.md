@@ -36,6 +36,8 @@ Last Updated: 2026-05-25
 
 **Progress (2026-05-25):** Hardened the trusted publish workflow to current npm GitHub Actions guidance, normalized CLI package metadata back to the canonical git repository URL, and reran the workflow as run `26387133488`. Install, tests, and build passed again; `npm publish` still failed with `E404 Not Found / no permission`. Remaining action is external npm package configuration for Trusted Publishing/package permissions, not another code patch.
 
+**Progress (2026-05-25 continuation):** Checked whether this machine could finish the npm-side setup directly. `npm whoami` returns `E401`, `npm trust list youmd` returns `E401`, and the real trusted-publisher setup command is blocked by npm `E401`. The dry-run command confirms the exact target is correct: `npx npm@11.15.0 trust github youmd --repo houstongolden/youmd --file publish-cli.yml --allow-publish --yes`. Also verified Vercel deployment `dpl_Eku5BV118Ww7W8tgehuHqy5axNKU` is ready and aliased, and live production `GET /api/v1/stacks/capabilities` plus `GET /api/v1/docs/reference` return the expected YouStacks contracts.
+
 ## YouStacks Planning Phase (from May 23 conversation)
 
 ### 65. Audit You.md and write the YouStacks implementation plan before product changes
