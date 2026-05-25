@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-05-24
+Last Updated: 2026-05-25
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -33,6 +33,8 @@ Last Updated: 2026-05-24
 - Production web/API/docs verification passed on `https://www.you.md`: stack capabilities, stack route, docs reference, and `/docs` all expose the new YouStacks surfaces.
 - npm publish verification is blocked outside code: the trusted publish workflow for `youmd@0.6.23` passed install, tests, and build, then failed at `npm publish` with `E404 Not Found / no permission`; npm still serves `youmd@0.6.21`.
 - Still intentionally deferred from this slice: GitHub App repo sync, stack grant/token storage, private/public share-link UI, paid stacks, secondary hosts, and optional custom per-stack API/MCP endpoints.
+
+**Progress (2026-05-25):** Hardened the trusted publish workflow to current npm GitHub Actions guidance, normalized CLI package metadata back to the canonical git repository URL, and reran the workflow as run `26387133488`. Install, tests, and build passed again; `npm publish` still failed with `E404 Not Found / no permission`. Remaining action is external npm package configuration for Trusted Publishing/package permissions, not another code patch.
 
 ## YouStacks Planning Phase (from May 23 conversation)
 

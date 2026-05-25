@@ -1,7 +1,8 @@
 # You.md — Current State
 
-Last Updated: 2026-05-24
-Latest Deployed Commit: fd68088 docs: polish youstack api copy
+Last Updated: 2026-05-25
+Latest Verified Production Web Commit: 7a0317d docs: record youstacks production verification
+Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---
 
@@ -47,7 +48,7 @@ Latest Deployed Commit: fd68088 docs: polish youstack api copy
 - Install/login/register/init/onboarding copy now consistently points users toward `you` as the main "meet U" terminal path once they have an identity bundle, instead of over-indexing on `youmd chat`
 - `youmd logout` now exists and clears stale local auth state from `~/.youmd/config.json`
 - CLI auth now forces production defaults for `apiUrl` / `appUrl` on fresh logins and resolves those URLs per request instead of caching a stale dev endpoint at process start
-- npm publish retry path is fixed: the next release target is `0.6.23`, package metadata is normalized, and the built CLI, MCP user-agent, and MCP serverInfo now match that version cleanly
+- npm publish retry path is fixed: the next release target is `0.6.23`, package metadata is normalized, the trusted publish workflow matches current npm GitHub Actions guidance, and the built CLI, MCP user-agent, and MCP serverInfo now match that version cleanly
 - Local YouStacks foundation is implemented: `youmd stack inspect`, `smoke`, `capabilities`, `route`, and `link` support local/static stack validation, deterministic routing, and Claude Code/Codex/Cursor adapter generation
 - Local MCP now exposes YouStack resources/tools for manifest inspection, capability listing, request routing, and read-only smoke validation
 - Claude and Codex MCP configs on this machine now use the safe published-package launcher (`npx --yes youmd@latest mcp`) with backups written during migration
@@ -145,7 +146,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Existing API keys created before the reveal upgrade remain non-revealable by design because those historical records were stored hash-only; newly created or rotated keys are now revealable, so one rotate is the migration path for older keys
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 - The CLI still does not feel proactive enough at install/startup compared with Claude Code/OpenClaw. The new startup entrance is a meaningful step, but U still needs a richer first-run / post-install “friendly wingman” flow that helps without requiring the user to already know the commands
-- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.23`, but npm still serves `0.6.21`. The May 24 trusted publish workflow passed install, tests, and build, then failed at `npm publish` with `E404 Not Found / no permission`, which points back to npm package Trusted Publishing/permission configuration rather than local package code.
+- The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.23`, but npm still serves `0.6.21`. The May 24 and May 25 trusted publish workflow runs passed install, tests, and build, then failed at `npm publish` with `E404 Not Found / no permission`, which points back to npm package Trusted Publishing/package permission configuration rather than local package code. The required external step is to configure package `youmd` on npm with GitHub owner `houstongolden`, repository `youmd`, workflow `publish-cli.yml`, and no environment, then rerun `npm run publish:cli`.
 - Production `/api/v1/skills` still needs a Convex seed/deploy pass before the new bundled `youstack-start` skill appears in the hosted registry; local CLI catalog/build already shows 7 bundled skills
 - Stack-specific GitHub repo sync and stack grants are not live yet. Existing authenticated You.md MCP/API surfaces cover protected memory access for local agents, but scoped per-stack grant tokens remain the next backend slice.
 

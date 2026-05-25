@@ -1,11 +1,16 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-05-24
+Last Updated: 2026-05-25
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-05-25
+- [x] Harden the GitHub Actions trusted publishing workflow to current npm Trusted Publishing guidance (`actions/checkout@v6`, `actions/setup-node@v6`, disabled setup-node package-manager cache)
+- [x] Normalize `cli/package.json` repository metadata back to the canonical `git+https://github.com/houstongolden/youmd.git` URL after npm warned about auto-correction
+- [x] Retry the `youmd@0.6.23` trusted publish workflow; dependency install, CLI tests, and CLI build passed, then `npm publish` remained blocked by npm `E404 Not Found / no permission`
 
 ### 2026-05-24
 - [x] Implement the first YouStacks local foundation: `youmd stack inspect`, `smoke`, `capabilities`, and `route`
@@ -65,7 +70,7 @@ PRD Version: 2.3
 - [ ] Publish `youmd@0.6.23` so end users get the `you` launcher, compact portrait splash, paced startup investigation, public-profile portrait contract fix, update hints, read-only active-bundle fallback, raw-markdown identity roundtrip preservation, marker-based recent-project opportunity scanning, broader local workspace repo awareness, local host-tool execution, the stronger onboarding handoff into U, smaller portrait bounds, first-run setup guidance, the deeper home-level context sweep, the local YouStack manifest/link/MCP surfaces, a much more concise strongest-move opener, and the new local tool loop
 - [x] Rebuild the CLI at `0.6.22`, align runtime/MCP version strings, and remove compiled test artifacts from the npm package before the publish attempt
 - [x] Add a Trusted Publishing workflow so agents can publish the CLI through GitHub Actions without a long-lived npm token or interactive OTP prompts
-- [ ] Configure npm Trusted Publishing / package permissions for package `youmd` with GitHub owner `houstongolden`, repository `youmd`, workflow `publish-cli.yml`, and no environment, then rerun `npm run publish:cli` (May 24 retry for `0.6.23` passed install/tests/build, then failed at `npm publish` with `E404 Not Found / no permission`)
+- [ ] Configure npm Trusted Publishing / package permissions for package `youmd` with GitHub owner `houstongolden`, repository `youmd`, workflow `publish-cli.yml`, and no environment, then rerun `npm run publish:cli` (May 24 and May 25 retries for `0.6.23` passed install/tests/build, then failed at `npm publish` with `E404 Not Found / no permission`)
 - [x] Make local `you` + `start` read real project files and surface concrete action items from TODO/current-state docs instead of blocking, hallucinating, or asking the user to paste an `ls`
 - [x] Make `continue`, `more`, and "next strongest move" stay on the deterministic local project-context path instead of falling through to the remote model and drifting into stale profile context
 - [x] Rank and display the real release unblocker in the initial `you` opener, not only after the user types `start`

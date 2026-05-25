@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-05-24
+Last Updated: 2026-05-25
 
 ## Core Platform
 
@@ -26,13 +26,13 @@ Last Updated: 2026-05-24
 | CLI logout | Done | `youmd logout` now clears local auth state so machines can switch accounts without hand-editing `~/.youmd/config.json` |
 | Stale endpoint-safe CLI auth | Done | CLI auth requests now resolve `apiUrl` / `appUrl` at request time and reset fresh logins to production defaults instead of verifying production keys against cached dev endpoints |
 | Curl installer | Done | `https://you.md/install.sh` now installs the latest global CLI and teaches `you` as the first next step, with explicit login/init commands as fallbacks |
-| Clean npm publish metadata | Done | CLI package now targets `0.6.23`, uses normalized `bin` paths, and ships the canonical git+https repository URL so npm no longer needs to auto-correct those fields during publish |
+| Clean npm publish metadata | Done | CLI package now targets `0.6.23`, uses normalized `bin` paths, and has been restored to the canonical `git+https://github.com/houstongolden/youmd.git` repository URL after the trusted publish retry confirmed npm's warning was only metadata normalization |
 | Codex MCP install | Done | `youmd mcp --install codex --auto` safely writes `~/.codex/config.toml` with `npx --yes youmd@latest mcp`, matching the Claude/Cursor published-package launcher |
 | MCP home-bundle fallback | Done | MCP tools now fall back to `~/.youmd` when the working repo has no local `.youmd/`, so background Claude/Codex agents still get the user's identity and skills |
 | YouStack MCP startup brief | In progress | Local MCP now exposes `get_agent_brief` and `youmd://agent/brief`, combining compact identity, repo instructions, project-context files, active requests, open TODOs, known issues, installed skills, and next moves; production host/deploy verification is pending |
 | YouStack starter skill | In progress | New bundled `youstack-start` skill teaches Claude/Codex/Cursor sessions to orient through You.md MCP, read local context first, route to the right bundled skill, and close the loop with tracker updates; Convex registry deploy/user verification pending |
 | Cross-agent project bootstrap | Done | `youmd skill init-project` now links both `.claude/skills/youmd/` and `.codex/skills/youmd/` by default, with fresh scaffold and additive existing-repo paths verified from the installed CLI |
-| Trusted CLI publishing | Done | GitHub Actions workflow publishes the CLI through npm Trusted Publishing; local agents can trigger it with `npm run publish:cli` after npm package settings trust `publish-cli.yml` |
+| Trusted CLI publishing | Repo ready / npm config blocked | GitHub Actions workflow uses npm Trusted Publishing with `id-token: write`, current checkout/setup-node actions, disabled setup-node cache, and passing install/test/build. npm still rejects `youmd@0.6.23` publish with `E404 Not Found / no permission` until package `youmd` trusts owner `houstongolden`, repo `youmd`, workflow `publish-cli.yml`, no environment |
 | Onboarding handoff into U | Done | `youmd init` and conversational onboarding now end with the same actionable U-centric next move pattern the launcher uses, including real recent-project openings instead of only a static checklist |
 | Web initialize shell parity | Done | `/initialize` now passes live thinking/progress state into the terminal shell and prompts U to sound like the same local launcher wingman, including mentioning known projects when context already exists |
 | Web initialize portrait encounter | Done | `/initialize` now shows a portrait-and-bot encounter strip above the onboarding terminal, reusing the saved ASCII portrait when available and falling back gracefully before the portrait exists |
