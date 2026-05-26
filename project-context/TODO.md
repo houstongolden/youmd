@@ -12,6 +12,7 @@ PRD Version: 2.3
 - [x] Expand `/docs` into a fuller YouStacks chapter covering overview, use cases, CLI, install flow, manifest, examples, API/MCP threshold, generated endpoint reference, and local MCP stack tools
 - [x] Update generated docs/OpenAPI categorization so stack endpoints appear under `YouStacks` with useful summaries instead of generic `Other`
 - [x] Verify the homepage/docs update with docs generation/check, targeted lint, TypeScript, production build, local production server smoke checks, and headless Chrome screenshots/text checks
+- [x] Deploy and production-verify the YouStacks homepage/docs update on Vercel deployment `dpl_7b6X4k3R6JahR7F3jqFdbgJXN5S1`
 
 ### 2026-05-25
 - [x] Harden the GitHub Actions trusted publishing workflow to current npm Trusted Publishing guidance (`actions/checkout@v6`, `actions/setup-node@v6`, disabled setup-node package-manager cache)

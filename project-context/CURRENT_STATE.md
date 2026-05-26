@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-05-26
-Latest Verified Production Web Commit: 7a0317d docs: record youstacks production verification
+Latest Verified Production Web Commit: 8e37ec1 docs: promote youstacks on homepage and docs
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---
@@ -105,8 +105,8 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Shared read-only HTTP endpoints now exist for the capability contract and deterministic routing: `GET /api/v1/stacks/capabilities` and `POST /api/v1/stacks/route`
 - Protected brain retrieval still uses the existing authenticated You.md MCP/API surfaces in this slice; stack-specific grants/tokens are intentionally deferred to the next backend phase
 - GitHub App repo sync, public/private stack sharing UI, paid stacks, and optional custom per-stack API/MCP endpoints are still planned follow-up phases, not shipped behavior yet
-- Production web/API is deployed and verified: `GET /api/v1/stacks/capabilities`, `POST /api/v1/stacks/route`, `/api/v1/docs/reference`, and `/docs` all show the YouStacks surfaces on `https://www.you.md`
-- Homepage/docs YouStacks copy is implemented locally and production-build verified; deployment is pending the next push/Vercel rollout
+- Production web/API/docs/homepage is deployed and verified on Vercel deployment `dpl_7b6X4k3R6JahR7F3jqFdbgJXN5S1`, aliased to `https://www.you.md` and `https://you.md`
+- Live production verification confirms the homepage shows YouStacks copy, `/docs#youstacks` includes use cases/how-to/examples/API+MCP coverage, `/api/v1/docs/reference` lists stack endpoints plus stack MCP tools, and `/api/v1/docs/openapi.json` tags the stack endpoints under `YouStacks`
 
 ### Backend (Convex — kindly-cassowary-600)
 - 21-table schema fully deployed (added skills + skillInstalls)

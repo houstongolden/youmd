@@ -14,6 +14,8 @@
 - Verified TypeScript with `npx tsc --noEmit` after temporarily stashing and restoring the unrelated untracked Clerk-era `src/middleware.ts`
 - Verified a production build with `npm run build`; the built route manifest still includes `/`, `/docs`, `/api/v1/stacks/capabilities`, and `/api/v1/stacks/route`
 - Verified the built local production server on `localhost:3100` returns homepage/docs content and generated API/OpenAPI data with YouStacks copy, endpoint tags, and stack MCP tool names
+- Deployed commit `8e37ec1` to production as Vercel deployment `dpl_7b6X4k3R6JahR7F3jqFdbgJXN5S1`, aliased to `https://www.you.md` and `https://you.md`
+- Verified live production homepage, `/docs`, `/api/v1/docs/reference`, and `/api/v1/docs/openapi.json` all expose the YouStacks homepage/docs/API/MCP surfaces
 
 ## 2026-05-24 — YouStacks Local Product Layer
 

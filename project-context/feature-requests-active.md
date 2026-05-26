@@ -16,6 +16,7 @@ Last Updated: 2026-05-26
 ### 67. Make YouStacks first-class on the homepage and in docs
 **Status:** DONE
 **Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_7b6X4k3R6JahR7F3jqFdbgJXN5S1` is Ready and aliased to `https://www.you.md` / `https://you.md`.
 **Request:** Ensure the YouStack/YouStacks product layer is properly included and described on the you.md homepage and in the improved docs, including use cases, how to use stacks, examples, and the improved API/MCP surfaces.
 **Actionable Scope:**
 1. Add a homepage section that explains YouStacks as portable execution packages on top of the You.md brain.
@@ -25,7 +26,7 @@ Last Updated: 2026-05-26
 5. Add concrete examples for manifests, stack commands, and capability routing.
 6. Include the improved YouStacks API and MCP surfaces in the docs.
 7. Keep generated docs/API references in sync with source.
-**Progress (2026-05-26):** Added `src/components/landing/YouStacks.tsx` and inserted it into the homepage after the identity bundle section. Expanded `/docs#youstacks` with overview, use cases, CLI, install flow, manifest, examples, API/MCP threshold, generated YouStacks endpoint reference, and stack-specific MCP tools. Updated docs generation so `/api/v1/stacks/capabilities` and `/api/v1/stacks/route` are categorized under `YouStacks` in `docs-reference` and OpenAPI. Local verification passed docs generation/check, targeted ESLint, TypeScript, production build, local production server smoke checks, and headless Chrome screenshots/text checks.
+**Progress (2026-05-26):** Added `src/components/landing/YouStacks.tsx` and inserted it into the homepage after the identity bundle section. Expanded `/docs#youstacks` with overview, use cases, CLI, install flow, manifest, examples, API/MCP threshold, generated YouStacks endpoint reference, and stack-specific MCP tools. Updated docs generation so `/api/v1/stacks/capabilities` and `/api/v1/stacks/route` are categorized under `YouStacks` in `docs-reference` and OpenAPI. Local verification passed docs generation/check, targeted ESLint, TypeScript, production build, local production server smoke checks, and headless Chrome screenshots/text checks. Production verification passed on `https://www.you.md`: homepage YouStacks copy, docs use-case/how-to/API+MCP copy, generated docs reference stack endpoints/tools, and OpenAPI `YouStacks` tags are all live.
 
 ## YouStacks End-to-End Implementation (from May 24 conversation)
 
