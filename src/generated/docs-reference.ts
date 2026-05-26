@@ -20,7 +20,7 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "9a17a7a84920945fb763a50bdb52c872f18de76d4a0e4b45921ec174edb27fcd",
+  "sourceHash": "54b45829e16cc186f6716e41652e729bfb3d9746ff2e4918199e860353e7aa57",
   "cli": {
     "version": "0.6.23"
   },
@@ -599,28 +599,6 @@ export const docsReference = {
       ]
     },
     {
-      "method": "GET",
-      "path": "/api/v1/stacks/capabilities",
-      "category": "Other",
-      "auth": "Public or rate-limited",
-      "source": "next",
-      "summary": "Next.js route",
-      "sources": [
-        "next"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/api/v1/stacks/route",
-      "category": "Other",
-      "auth": "Public or rate-limited",
-      "source": "next",
-      "summary": "Next.js route",
-      "sources": [
-        "next"
-      ]
-    },
-    {
       "method": "POST",
       "path": "/api/v1/webhooks/clerk",
       "category": "Other",
@@ -783,6 +761,28 @@ export const docsReference = {
       "summary": "Browse published skills (public, no auth required)",
       "sources": [
         "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/stacks/capabilities",
+      "category": "YouStacks",
+      "auth": "Public or rate-limited",
+      "source": "next",
+      "summary": "Shared YouStack capability contract and API/MCP threshold map",
+      "sources": [
+        "next"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/stacks/route",
+      "category": "YouStacks",
+      "auth": "Public or rate-limited",
+      "source": "next",
+      "summary": "Deterministically route a request against default or manifest-supplied YouStack capabilities",
+      "sources": [
+        "next"
       ]
     }
   ],

@@ -1,11 +1,17 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-05-25
+Last Updated: 2026-05-26
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-05-26
+- [x] Add a first-class YouStacks section to the homepage with brain-vs-stack positioning, local-first files, protected API/MCP boundary, use cases, docs CTA, and example stack command
+- [x] Expand `/docs` into a fuller YouStacks chapter covering overview, use cases, CLI, install flow, manifest, examples, API/MCP threshold, generated endpoint reference, and local MCP stack tools
+- [x] Update generated docs/OpenAPI categorization so stack endpoints appear under `YouStacks` with useful summaries instead of generic `Other`
+- [x] Verify the homepage/docs update with docs generation/check, targeted lint, TypeScript, production build, local production server smoke checks, and headless Chrome screenshots/text checks
 
 ### 2026-05-25
 - [x] Harden the GitHub Actions trusted publishing workflow to current npm Trusted Publishing guidance (`actions/checkout@v6`, `actions/setup-node@v6`, disabled setup-node package-manager cache)

@@ -2263,6 +2263,74 @@ export const openApiSpec = {
           }
         }
       }
+    },
+    "/api/v1/stacks/capabilities": {
+      "get": {
+        "operationId": "get_api_v1_stacks_capabilities",
+        "summary": "Shared YouStack capability contract and API/MCP threshold map",
+        "tags": [
+          "YouStacks"
+        ],
+        "x-youmd-auth": "Public or rate-limited",
+        "x-youmd-source": "next",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stacks/route": {
+      "post": {
+        "operationId": "post_api_v1_stacks_route",
+        "summary": "Deterministically route a request against default or manifest-supplied YouStack capabilities",
+        "tags": [
+          "YouStacks"
+        ],
+        "x-youmd-auth": "Public or rate-limited",
+        "x-youmd-source": "next",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 } as const;

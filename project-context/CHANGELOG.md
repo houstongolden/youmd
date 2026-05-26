@@ -1,5 +1,20 @@
 # You.md — Changelog
 
+## 2026-05-26 — YouStacks Homepage + Docs Surface
+
+### Marketing / Docs
+- Added a first-class homepage YouStacks section that explains the brain-vs-stack boundary, local-first stack files, protected You.md API/MCP access, and personal/project/team/public stack use cases
+- Expanded the `/docs` YouStacks chapter with use cases, install flow, manifest guidance, personal/project examples, API/MCP threshold rules, generated YouStacks endpoint reference, and local MCP stack tool reference
+- Updated generated docs reference/OpenAPI categorization so `/api/v1/stacks/capabilities` and `/api/v1/stacks/route` appear under a dedicated `YouStacks` category instead of generic `Other`
+- Updated homepage metadata to mention the YouStack layer alongside the identity context protocol
+
+### Verification
+- Verified docs reference generation with `npm run docs:generate` and `npm run docs:check`
+- Verified targeted changed-file lint with `npx eslint`
+- Verified TypeScript with `npx tsc --noEmit` after temporarily stashing and restoring the unrelated untracked Clerk-era `src/middleware.ts`
+- Verified a production build with `npm run build`; the built route manifest still includes `/`, `/docs`, `/api/v1/stacks/capabilities`, and `/api/v1/stacks/route`
+- Verified the built local production server on `localhost:3100` returns homepage/docs content and generated API/OpenAPI data with YouStacks copy, endpoint tags, and stack MCP tool names
+
 ## 2026-05-24 — YouStacks Local Product Layer
 
 ### CLI / MCP / API

@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-05-25
+Last Updated: 2026-05-26
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -10,6 +10,22 @@ Last Updated: 2026-05-25
 - Source: date + commit or conversation reference
 
 ---
+
+## YouStacks Homepage + Docs Surface (from May 26 conversation)
+
+### 67. Make YouStacks first-class on the homepage and in docs
+**Status:** DONE
+**Verified:** NO
+**Request:** Ensure the YouStack/YouStacks product layer is properly included and described on the you.md homepage and in the improved docs, including use cases, how to use stacks, examples, and the improved API/MCP surfaces.
+**Actionable Scope:**
+1. Add a homepage section that explains YouStacks as portable execution packages on top of the You.md brain.
+2. Cover practical stack use cases, including personal, project, team/friend, and public/open stacks.
+3. Expand the docs YouStacks section into a fuller chapter.
+4. Document how to use stacks through CLI commands and host adapters.
+5. Add concrete examples for manifests, stack commands, and capability routing.
+6. Include the improved YouStacks API and MCP surfaces in the docs.
+7. Keep generated docs/API references in sync with source.
+**Progress (2026-05-26):** Added `src/components/landing/YouStacks.tsx` and inserted it into the homepage after the identity bundle section. Expanded `/docs#youstacks` with overview, use cases, CLI, install flow, manifest, examples, API/MCP threshold, generated YouStacks endpoint reference, and stack-specific MCP tools. Updated docs generation so `/api/v1/stacks/capabilities` and `/api/v1/stacks/route` are categorized under `YouStacks` in `docs-reference` and OpenAPI. Local verification passed docs generation/check, targeted ESLint, TypeScript, production build, local production server smoke checks, and headless Chrome screenshots/text checks.
 
 ## YouStacks End-to-End Implementation (from May 24 conversation)
 

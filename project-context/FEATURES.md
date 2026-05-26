@@ -1,19 +1,21 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-05-25
+Last Updated: 2026-05-26
 
 ## Core Platform
 
 | Feature | Status | Notes |
 |---|---|---|
 | Shared product design primitives | Done | Reusable `Container`, `Section`, `SectionHeader`, `Button`, `Card`, `TerminalCard`, `FormField`, `Input`, `Textarea`, `Select`, `Label`, `FieldHelp`, and `FieldError` now anchor marketing and app UI control standards |
-| Developer docs platform | Done | `/docs` now includes concepts, context surfaces, source-of-truth mapping, agent workflows, playbooks, examples, generated API/MCP reference, schema guidance, docs automation, and troubleshooting |
-| Generated docs reference | Done | `npm run docs:generate` scans Convex HTTP routes, Next routes, and CLI MCP tools into `src/generated/docs-reference.ts` plus a generated OpenAPI-style spec; `prebuild` refreshes it and `docs:check` detects stale artifacts |
+| Developer docs platform | Done | `/docs` now includes concepts, context surfaces, source-of-truth mapping, agent workflows, playbooks, examples, generated API/MCP reference, schema guidance, docs automation, troubleshooting, and a dedicated YouStacks chapter |
+| Generated docs reference | Done | `npm run docs:generate` scans Convex HTTP routes, Next routes, and CLI MCP tools into `src/generated/docs-reference.ts` plus a generated OpenAPI-style spec; YouStacks endpoints are categorized under `YouStacks`; `prebuild` refreshes it and `docs:check` detects stale artifacts |
 | YouStacks product-layer planning | In implementation | `YOUSTACKS_PRODUCT_LAYER_PRD.md` and `YOUSTACKS_IMPLEMENTATION_PLAN.md` define the additive stack layer, current product inventory/classification, GStack/BAMFStack transfer analysis, manifest schema, GitHub sync direction, API/MCP threshold, adapter model, and bisectable phases |
 | YouStack local manifest CLI | Done local / publish pending | `youmd stack inspect`, `smoke`, `capabilities`, and `route` validate and route a local `youstack/v1` manifest without mutating brain data or connected tools |
 | YouStack host adapter linking | Done local / publish pending | `youmd stack link` generates Claude Code, Codex, and Cursor adapter files from one manifest with dry-run support |
 | YouStack local MCP tools | Done local / publish pending | Local MCP exposes `youmd://stacks/current/manifest`, `youmd://stacks/current/capabilities`, `get_stack_manifest`, `get_stack_capabilities`, `route_stack_request`, and `smoke_stack` |
 | YouStack shared route API | Done deployed | `GET /api/v1/stacks/capabilities` exposes the shared capability contract and `POST /api/v1/stacks/route` routes requests against default or manifest-supplied capabilities on `https://www.you.md` |
+| YouStacks homepage section | Done local / deploy pending | Homepage now explains YouStacks as portable execution packages on top of the You.md brain, with personal/project/team/public use cases, local-first files, protected API/MCP boundary, and docs/examples links |
+| YouStacks docs chapter | Done local / deploy pending | `/docs#youstacks` now covers overview, use cases, CLI, install flow, manifest, examples, API/MCP threshold, generated stack endpoint reference, and stack-specific MCP tools |
 | Compact conversion homepage | Done | Homepage now follows a calmer conversion flow with one primary hero CTA, compact profile proof, compressed problem/how-it-works/inside sections, combined integrations/builders credibility band, balanced pricing, compact FAQ, and simple final CTA |
 | App control normalization | Done | Terminal auth/input, install tabs, dashboard tabs, pane headers, empty states, sources, share, private context, files, settings, and edit surfaces now share more consistent heights, padding, focus rings, card treatment, and muted text behavior |
 | Public profile directory hygiene | Done | `/profiles` now canonicalizes/dedupes usernames, suppresses QA/test rows, sanitizes public image URLs, prefers stored ASCII portraits, and falls back to deterministic terminal placeholders instead of blank cards |

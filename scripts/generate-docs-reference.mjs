@@ -65,6 +65,7 @@ function categoryFor(routePath) {
   if (routePath === "/.well-known/mcp.json" || routePath === "/api/v1/mcp") return "MCP";
   if (routePath.startsWith("/api/auth") || routePath.startsWith("/api/v1/auth")) return "Auth";
   if (routePath.startsWith("/ctx")) return "Context Links";
+  if (routePath.startsWith("/api/v1/stacks")) return "YouStacks";
   if (routePath.startsWith("/api/v1/me/skills") || routePath === "/api/v1/skills") return "Skills";
   if (routePath.startsWith("/api/v1/me/memories")) return "Memories";
   if (routePath.startsWith("/api/v1/me/context-links")) return "Context Links";
@@ -102,6 +103,8 @@ const SUMMARY_OVERRIDES = new Map([
   ["GET /api/v1/mcp", "MCP discovery ping and HTTP transport metadata"],
   ["POST /api/v1/mcp", "JSON-RPC MCP endpoint for web-capable clients"],
   ["POST /api/v1/chat", "Non-streaming You Agent chat route"],
+  ["GET /api/v1/stacks/capabilities", "Shared YouStack capability contract and API/MCP threshold map"],
+  ["POST /api/v1/stacks/route", "Deterministically route a request against default or manifest-supplied YouStack capabilities"],
   ["POST /api/v1/auth/login", "Legacy CLI auth route with migration response"],
   ["POST /api/v1/auth/register", "Legacy CLI registration route with migration response"],
   ["POST /api/v1/webhooks/clerk", "Deprecated Clerk webhook route"],
@@ -175,20 +178,22 @@ function parseNextRoutes() {
     const uniqueMethods = [...new Set(methods)];
     for (const method of uniqueMethods) {
       const routePath = routePathFromNextFile(file);
+      const fallbackSummary =
+        routePath === "/api/v1/docs/reference"
+          ? "Machine-readable docs manifest generated from routes and MCP tools"
+          : routePath === "/api/v1/mcp"
+            ? "Same-origin MCP proxy to the Convex JSON-RPC endpoint"
+            : routePath.startsWith("/api/v1/chat")
+              ? "Same-origin web chat proxy to Convex"
+              : "Next.js route";
+
       routes.push({
         method,
         path: routePath,
         category: categoryFor(routePath),
         auth: authFor(routePath, method),
         source: "next",
-        summary:
-          routePath === "/api/v1/docs/reference"
-            ? "Machine-readable docs manifest generated from routes and MCP tools"
-            : routePath === "/api/v1/mcp"
-            ? "Same-origin MCP proxy to the Convex JSON-RPC endpoint"
-            : routePath.startsWith("/api/v1/chat")
-              ? "Same-origin web chat proxy to Convex"
-              : "Next.js route",
+        summary: summaryFor(method, routePath, fallbackSummary),
       });
     }
   }

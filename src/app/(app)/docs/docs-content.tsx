@@ -73,9 +73,13 @@ const navigation: NavItem[] = [
     label: "YouStacks",
     children: [
       { id: "youstacks-overview", label: "Overview" },
+      { id: "youstacks-use-cases", label: "Use Cases" },
       { id: "youstacks-cli", label: "CLI" },
+      { id: "youstacks-install-flow", label: "Install Flow" },
       { id: "youstacks-manifest", label: "Manifest" },
+      { id: "youstacks-examples", label: "Examples" },
       { id: "youstacks-threshold", label: "API/MCP Threshold" },
+      { id: "youstacks-api-mcp", label: "API + MCP" },
     ],
   },
   {
@@ -496,8 +500,16 @@ function EndpointReference({
   );
 }
 
-function McpToolReference({ limit }: { limit?: number }) {
-  const tools = (docsReference.mcpTools as readonly DocsMcpTool[]).slice(0, limit ?? 999);
+function McpToolReference({
+  limit,
+  names,
+}: {
+  limit?: number;
+  names?: string[];
+}) {
+  const tools = (docsReference.mcpTools as readonly DocsMcpTool[])
+    .filter((tool) => !names || names.includes(tool.name))
+    .slice(0, limit ?? 999);
 
   return (
     <div className="my-4 grid gap-2">
@@ -1363,6 +1375,12 @@ preferences: terminal-native, monochrome
               private context, sync, tokens, connected tools, or server-side
               actions.
             </P>
+            <Callout>
+              YouStacks do not replace your You.md identity. They package the
+              skills, workflows, prompts, examples, docs, smoke tests, and host
+              adapters an agent should use, while You.md remains the durable
+              personal/project context layer behind it.
+            </Callout>
 
             <H3 id="youstacks-overview">Overview</H3>
             <FeatureMatrix
@@ -1378,6 +1396,40 @@ preferences: terminal-native, monochrome
                 {
                   title: "Host-native adapters",
                   body: "Claude Code, Codex, and Cursor are the primary targets. OpenClaw, Hermes Agent, and Pi agents come after the first three work.",
+                },
+                {
+                  title: "Shareable by scope",
+                  body: "V1 focuses on private stacks, public/open stacks, and scoped links or tokens. Paid/sellable stacks come later.",
+                },
+              ]}
+            />
+
+            <H3 id="youstacks-use-cases">Use Cases</H3>
+            <FeatureMatrix
+              items={[
+                {
+                  title: "Personal agent start",
+                  body: "Install one stack that gives local agents your identity, preferences, taste, active projects, starter skills, and safe protected-memory routing.",
+                },
+                {
+                  title: "Project operating layer",
+                  body: "Package repo-specific workflows, test commands, review rules, release steps, and docs so every agent starts from the same playbook.",
+                },
+                {
+                  title: "Team or collaborator stack",
+                  body: "Share a scoped execution package with teammates or friends without exposing your entire private context or API key surface.",
+                },
+                {
+                  title: "Public/open workflow stack",
+                  body: "Publish skills, prompts, examples, and adapter files that anyone can inspect locally while protected capabilities still require You.md auth.",
+                },
+                {
+                  title: "Protected memory workflow",
+                  body: "Keep proprietary retrieval and sensitive actions behind authenticated You.md API/MCP calls instead of writing private IP into local files.",
+                },
+                {
+                  title: "Host adapter bootstrap",
+                  body: "Generate Claude Code, Codex, and Cursor files from one manifest so the same stack works across the first product wedge.",
                 },
               ]}
             />
@@ -1401,6 +1453,36 @@ preferences: terminal-native, monochrome
             <CodeBlock title="terminal">{`youmd stack smoke --path cli/examples/youstack-personal
 youmd stack route --path cli/examples/youstack-personal "search my memories before starting"
 youmd stack link --path cli/examples/youstack-personal --hosts codex --target . --dry-run`}</CodeBlock>
+
+            <H3 id="youstacks-install-flow">Install Flow</H3>
+            <StepList>
+              <Step n={1}>
+                Pull or create a stack folder that contains{" "}
+                <InlineCode>youstack.json</InlineCode>, local skills,
+                workflows, docs, examples, and smoke tests.
+              </Step>
+              <Step n={2}>
+                Run <InlineCode>youmd stack inspect --path DIR</InlineCode> to
+                read metadata, declared scopes, adapters, capabilities, and
+                warnings before trusting the package.
+              </Step>
+              <Step n={3}>
+                Run <InlineCode>youmd stack smoke --path DIR</InlineCode>. This
+                is read-only: it validates schema, required files, checksums,
+                adapters, and capability declarations without touching the brain.
+              </Step>
+              <Step n={4}>
+                Generate host-native files with{" "}
+                <InlineCode>youmd stack link --path DIR --hosts codex,claude,cursor --target .</InlineCode>.
+                Use <InlineCode>--dry-run</InlineCode> first when installing into
+                an existing repo.
+              </Step>
+              <Step n={5}>
+                Start the host agent. It can read local stack files first, then
+                use You.md MCP/API only for protected memory, private context,
+                sync, grants, connected tools, or server-side actions.
+              </Step>
+            </StepList>
 
             <H3 id="youstacks-manifest">Manifest</H3>
             <P>
@@ -1444,6 +1526,44 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
   }
 }`}</CodeBlock>
 
+            <H3 id="youstacks-examples">Examples</H3>
+            <P>
+              A personal stack can be private and local-first. It gives your
+              agent the same startup path everywhere, then routes protected
+              requests through the shared You.md brain boundary.
+            </P>
+            <CodeBlock title="personal stack">{`# inspect what a stack asks for
+youmd stack inspect --path cli/examples/youstack-personal
+
+# verify it without writing adapter files
+youmd stack smoke --path cli/examples/youstack-personal
+
+# ask the deterministic router which capability should handle a request
+youmd stack route --path cli/examples/youstack-personal "load my project context before editing"
+
+# link the same stack into Codex, Claude Code, and Cursor
+youmd stack link --path cli/examples/youstack-personal --hosts codex,claude,cursor --target .`}</CodeBlock>
+            <P>
+              A project stack can stay open while still requiring authentication
+              for protected memory search or private actions.
+            </P>
+            <CodeBlock title="project capability">{`{
+  "id": "review-release",
+  "intent": "Run the repo release review workflow before landing changes.",
+  "localOnly": true,
+  "mutationPolicy": "read_only",
+  "triggers": ["review", "ship", "release", "qa"],
+  "entrypoint": "workflows/release-review.md"
+},
+{
+  "id": "protected-memory-search",
+  "intent": "Search private user memory when local files are not enough.",
+  "localOnly": false,
+  "requiresAuth": true,
+  "scopes": ["memories.search"],
+  "mutationPolicy": "read_only"
+}`}</CodeBlock>
+
             <H3 id="youstacks-threshold">API/MCP Threshold</H3>
             <P>
               Local-only stacks can ship static skills, workflows, prompts,
@@ -1453,22 +1573,56 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
               server-side actions. Custom per-stack API/MCP is optional later,
               not the v1 baseline.
             </P>
+            <SystemPanel title="stack boundary rule">
+              <StepList>
+                <Step n={1}>Static skills, prompts, workflows, examples, docs, and adapter files can live inside the stack.</Step>
+                <Step n={2}>Identity summaries and public context can be read from local files or public You.md surfaces.</Step>
+                <Step n={3}>Private memory, private context, tokens, connected tools, sync, and sensitive actions call shared You.md API/MCP.</Step>
+                <Step n={4}>Custom per-stack API/MCP is optional later. V1 does not require a custom backend for every stack.</Step>
+              </StepList>
+            </SystemPanel>
+
+            <H3 id="youstacks-api-mcp">API + MCP</H3>
             <P>
-              The local MCP server also exposes
-              <InlineCode>get_stack_manifest</InlineCode>,
-              <InlineCode>get_stack_capabilities</InlineCode>,
-              <InlineCode>route_stack_request</InlineCode>, and
-              <InlineCode>smoke_stack</InlineCode> so host agents can inspect
-              and validate a stack before using it.
+              The shared HTTP endpoints let products and agents inspect the
+              default capability contract and route a request against either
+              that default contract or manifest-supplied capabilities.
             </P>
+            <EndpointReference categories={["YouStacks"]} />
+            <CodeBlock title="HTTP">{`GET /api/v1/stacks/capabilities
+
+POST /api/v1/stacks/route
+Content-Type: application/json
+
+{
+  "request": "search my private memories before starting",
+  "stack": {
+    "slug": "personal-agent-start",
+    "name": "Personal Agent Start"
+  },
+  "capabilities": [
+    {
+      "id": "protected-memory-search",
+      "intent": "Search user memory with You.md auth.",
+      "localOnly": false,
+      "requiresAuth": true,
+      "scopes": ["memories.search"]
+    }
+  ]
+}`}</CodeBlock>
             <P>
-              For HTTP clients,{" "}
-              <InlineCode>GET /api/v1/stacks/capabilities</InlineCode>{" "}
-              returns the shared capability contract and{" "}
-              <InlineCode>POST /api/v1/stacks/route</InlineCode> routes a
-              request against either that default contract or capabilities
-              supplied from a local stack manifest.
+              The local MCP server exposes stack-native tools so Claude Code,
+              Codex, Cursor, and similar hosts can inspect and validate a stack
+              before using it.
             </P>
+            <McpToolReference
+              names={[
+                "get_stack_manifest",
+                "get_stack_capabilities",
+                "route_stack_request",
+                "smoke_stack",
+              ]}
+            />
 
             {/* ── Agent Directives ───────────────────────────── */}
             <H2 id="directives">Agent Directives</H2>
