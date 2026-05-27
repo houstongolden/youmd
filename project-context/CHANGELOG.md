@@ -3,6 +3,8 @@
 ## 2026-05-27 — YouStacks Positioning Clarity
 
 ### Marketing / Docs
+- Added GStack/GBrain-guided architecture language to the homepage: YouStacks learn from GStack reference patterns, while the You.md brain follows GBrain-style durable shared brain patterns
+- Added `/docs` Brain Architecture, Reference Intelligence, and GStack/GBrain Reference Loop sections
 - Added named YouStack portfolio guidance so users can keep separate stacks for coding, scientific research, content creation, and other expertise lanes
 - Added `/docs#youstacks` sections for `Named Stacks` and `Self-Improving Stacks`, including domain stack examples and policy-bound autonomous improvement loops
 - Updated homepage YouStacks copy to explain named domain stacks and self-improving stack/skill loops
@@ -13,11 +15,16 @@
 - Tightened the copy again around the exact Gary Tan/GStack analogy: years of expertise, specialist agents, workflows, taste, examples, and review loops packaged into a stack that others can install
 
 ### Product Contract
+- Added `npm run references:sync`, which keeps ignored local clones of `garrytan/gstack` and `garrytan/gbrain` under `.reference-repos/garrytan/`
+- Added `project-context/reference-intelligence/LATEST.md` and `TASKS.md` generated from upstream commit summaries, plus `project-context/REFERENCE_INTELLIGENCE.md` documenting the loop
+- Updated the YouStacks PRD and implementation plan so daily GStack/GBrain reference monitoring becomes part of the product architecture
 - Extended the `youstack/v1` manifest model with optional `domain`, `aliases`, `tags`, `improvement`, and `update` fields
 - Added validation warnings for stacks that omit improvement/update policy, plus built-in `stack.improve` and `stack.update` local capabilities
 - Updated `youmd stack inspect`, `smoke`, adapter generation, the sample stack, route scoring, and the stack route API payload around stack identity and improvement/update behavior
 
 ### Verification
+- Verified the reference monitor with an initial sync: GStack latest `a6fb317`, GBrain latest `42d99b6`, and 24 generated You.md task candidates
+- Verified `scripts/reference-intelligence.mjs` syntax with `node --check`
 - Verified docs reference freshness with `npm run docs:check`
 - Verified targeted changed-file lint with `npx eslint`
 - Verified focused YouStack tests with `npm --prefix cli test -- youstack`
@@ -30,6 +37,8 @@
 - Verified live production homepage, `/docs#youstacks`, `/api/v1/docs/reference`, and `/api/v1/docs/openapi.json` expose the clarified YouStacks copy and reference surfaces, including the stronger "package your expertise into your own GStack" and Gary Tan/GStack/sub-agent framing
 - Deployed commit `4a0c25d` to production as Vercel deployment `dpl_CZR4kXxAnfvRWNC14XdfvAq6ye9F`, aliased to `https://www.you.md` and `https://you.md`
 - Verified live production homepage, `/docs#youstacks`, `/api/v1/stacks/capabilities`, `/api/v1/docs/reference`, and `POST /api/v1/stacks/route` expose named stack portfolio, self-improvement, update policy, and stack metadata behavior
+- Deployed commit `2e07682` to production as Vercel deployment `dpl_4UwpUiK2vUPYu8R9nj8dfnBDpq9M`, aliased to `https://www.you.md` and `https://you.md`
+- Verified live production homepage and `/docs` expose the GStack/GBrain reference-intelligence architecture and `npm run references:sync` monitor command
 
 ## 2026-05-26 — YouStacks Homepage + Docs Surface
 

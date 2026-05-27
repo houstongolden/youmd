@@ -8,6 +8,9 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-05-27
+- [x] Add local GStack/GBrain reference intelligence monitoring with ignored clones, latest upstream summaries, and generated You.md task queues
+- [x] Update homepage/docs so YouStacks are explicitly GStack-guided and the You.md brain is explicitly GBrain-guided
+- [x] Deploy and production-verify the GStack/GBrain reference intelligence docs/homepage update on Vercel deployment `dpl_4UwpUiK2vUPYu8R9nj8dfnBDpq9M`
 - [x] Add first-class named YouStack portfolio support to the manifest/docs model so users can keep separate coding, scientific research, content creation, and other domain stacks
 - [x] Add explicit YouStack self-improvement and update policy fields, CLI inspect/smoke output, built-in route capabilities, docs examples, and production verification
 - [x] Rework the YouStacks homepage copy around the clearer "build your own GStack for any agent" mental model

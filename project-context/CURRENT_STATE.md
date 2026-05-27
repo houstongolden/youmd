@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-05-27
-Latest Verified Production Web Commit: 4a0c25d feat: make youstacks named and self-improving
+Latest Verified Production Web Commit: 2e07682 feat: add gstack gbrain reference intelligence
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---
@@ -14,7 +14,7 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Dashboard with 35/65 terminal split, 4-pane system (profile, edit, share, settings)
 - Public profile pages with SSR, JSON-LD, OG cards, breadcrumbs
 - Profiles directory with search/filter
-- Docs page with Claude Code integration guide plus a full YouStacks chapter covering named stack portfolios, self-improving stack/skill loops, use cases, install flow, manifest, examples, API/MCP threshold, generated stack endpoint reference, and stack MCP tools
+- Docs page with Claude Code integration guide plus a full YouStacks chapter covering named stack portfolios, self-improving stack/skill loops, GStack/GBrain reference intelligence, use cases, install flow, manifest, examples, API/MCP threshold, generated stack endpoint reference, and stack MCP tools
 - SiteNav top bar across all pages
 - /initialize onboarding boot sequence + agent conversation
 - You Agent chat with streaming responses, thinking indicators, progress steps
@@ -37,7 +37,7 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Tokenized `/ctx/<username>/<token>` links now fail safely and serve reliably for agents: valid links return `you-md/v1` JSON with `_privateContext`, tracking/logging writes are best-effort, invalid links return explicit JSON errors, and deployed responses use private/no-store cache headers with `Vary: Accept`
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
-- Homepage now has a first-class YouStacks section that explains stacks as "your own GStack" for packaging expertise, skills, sub-agents, prompts, workflows, taste, examples, tool rules, safe You.md memory access, and improvement loops; it now explicitly supports naming separate stacks for coding, scientific research, content creation, and other domains
+- Homepage now has a first-class YouStacks section that explains stacks as "your own GStack" for packaging expertise, skills, sub-agents, prompts, workflows, taste, examples, tool rules, safe You.md memory access, and improvement loops; it now explicitly supports naming separate stacks for coding, scientific research, content creation, and other domains, with GStack/GBrain reference patterns guiding the architecture
 
 ### CLI (youmd v0.6.23 — ready to publish)
 - 21 commands (added `skill` with 19 subcommands)
@@ -99,6 +99,7 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 
 ### YouStacks Product Layer
 - Planning/audit is preserved in `project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md` and `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md`
+- GStack/GBrain reference intelligence is implemented: `npm run references:sync` clones/fetches `garrytan/gstack` and `garrytan/gbrain` into ignored `.reference-repos/`, then writes `project-context/reference-intelligence/LATEST.md` and `TASKS.md` for daily review
 - Local-first YouStack manifests work as portable execution packages on top of You.md rather than as a replacement brain
 - Manifests now support named stack portfolios via `name`, stable `slug`, `domain`, `aliases`, and `tags`, so one user can keep separate coding, scientific research, content creation, and other domain stacks
 - Manifests now declare `improvement` and `update` policy, and local stack capabilities include `stack.improve` plus `stack.update` for policy-bound stack/skill self-improvement and self-updating
@@ -107,8 +108,8 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Shared read-only HTTP endpoints now exist for the capability contract and deterministic routing: `GET /api/v1/stacks/capabilities` and `POST /api/v1/stacks/route`
 - Protected brain retrieval still uses the existing authenticated You.md MCP/API surfaces in this slice; stack-specific grants/tokens are intentionally deferred to the next backend phase
 - GitHub App repo sync, public/private stack sharing UI, paid stacks, and optional custom per-stack API/MCP endpoints are still planned follow-up phases, not shipped behavior yet
-- Production web/API/docs/homepage is deployed and verified on Vercel deployment `dpl_CZR4kXxAnfvRWNC14XdfvAq6ye9F`, aliased to `https://www.you.md` and `https://you.md`
-- Live production verification confirms the homepage now frames YouStacks as named, domain-specific "package your expertise into your own GStack" surfaces; `/docs#youstacks` explains named stack portfolios and self-improving stack/skill loops; `/api/v1/stacks/capabilities` includes improvement/update capabilities; `/api/v1/docs/reference` lists stack endpoints plus stack MCP tools; and `POST /api/v1/stacks/route` preserves stack `name`, `slug`, `domain`, and `tags`
+- Production web/API/docs/homepage is deployed and verified on Vercel deployment `dpl_4UwpUiK2vUPYu8R9nj8dfnBDpq9M`, aliased to `https://www.you.md` and `https://you.md`
+- Live production verification confirms the homepage now frames YouStacks and the personal brain as GStack/GBrain-guided; `/docs` includes Brain Architecture, Reference Intelligence, and GStack/GBrain Reference Loop sections; `/api/v1/stacks/capabilities` includes improvement/update capabilities; `/api/v1/docs/reference` lists stack endpoints plus stack MCP tools; and `POST /api/v1/stacks/route` preserves stack `name`, `slug`, `domain`, and `tags`
 
 ### Backend (Convex — kindly-cassowary-600)
 - 21-table schema fully deployed (added skills + skillInstalls)

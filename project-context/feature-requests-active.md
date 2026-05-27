@@ -11,6 +11,22 @@ Last Updated: 2026-05-27
 
 ---
 
+## GStack/GBrain Reference Intelligence (from May 27 conversation)
+
+### 70. Monitor GStack/GBrain and use them to improve YouStacks + You.md brain
+**Status:** DONE
+**Verified:** NO
+**Production Verified:** YES — deployment `dpl_4UwpUiK2vUPYu8R9nj8dfnBDpq9M` is Ready and aliased to `https://www.you.md` / `https://you.md`.
+**Request:** Keep `garrytan/gstack` and `garrytan/gbrain` as local reference repos, monitor their daily updates/commits/messages/code changes, and turn relevant upstream patterns into tasks that improve YouStacks, the You.md brain/memory/context/profile layer, docs, homepage, architecture, and self-improvement loops.
+**Actionable Scope:**
+1. Treat GStack as the live reference for YouStacks architecture, skills, host adapters, install/update behavior, evals, QA/review/release workflows, and local-first agent operating systems.
+2. Treat GBrain as the live reference for You.md memory/context/personal brain architecture, retrieval, sync, provenance, privacy, and shared-agent brain behavior.
+3. Keep both repos cloned locally without vendoring them into this repository.
+4. Add a repeatable sync/monitor command that fetches upstream commits and creates a reviewable You.md task list.
+5. Improve homepage and docs so they directly explain the GStack/GBrain-guided architecture.
+6. Set up a daily local automation to run the reference monitor.
+**Progress (2026-05-27):** Added `npm run references:sync` backed by `scripts/reference-intelligence.mjs`, which clones/fetches `garrytan/gstack` and `garrytan/gbrain` into ignored `.reference-repos/garrytan/*`, records latest commit state, and writes `project-context/reference-intelligence/LATEST.md` plus `TASKS.md`. The first run captured GStack latest commit `a6fb317` and GBrain latest commit `42d99b6`, producing 24 candidate You.md tasks. Added `project-context/REFERENCE_INTELLIGENCE.md` plus PRD/implementation-plan updates describing GStack -> YouStacks and GBrain -> You.md brain translation rules. Updated homepage copy and `/docs` with Brain Architecture, Reference Intelligence, and GStack/GBrain Reference Loop sections. Local verification passed script syntax check, docs check, targeted ESLint, `npx tsc --noEmit`, and `npm run build -- --webpack`. Production verification passed on deployment `dpl_4UwpUiK2vUPYu8R9nj8dfnBDpq9M`: live homepage and docs expose the reference-guided architecture and reference monitor command.
+
 ## YouStacks Named Portfolio + Self-Improvement (from May 27 conversation)
 
 ### 69. Make YouStacks nameable by domain and self-improving
