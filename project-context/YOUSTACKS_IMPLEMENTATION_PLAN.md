@@ -313,8 +313,9 @@ What should not be copied:
 Primary objects:
 
 - Brain: hosted/local You.md identity, memory, preferences, private context, project context, skills, and connected tools.
-- YouStack: portable execution package with local files plus optional protected service calls.
-- Stack manifest: machine-readable contract for files, capabilities, adapters, grants, protected resources, docs, tests, and sync.
+- YouStack: a named portable execution package with local files plus optional protected service calls.
+- Stack portfolio: the user's collection of separately named stacks for different domains such as coding, scientific research, content creation, investing, teaching, or project-specific operating systems.
+- Stack manifest: machine-readable contract for name, slug, domain, aliases, tags, files, capabilities, adapters, grants, protected resources, docs, tests, improvement policy, update policy, and sync.
 - Adapter: host-specific generated output for Claude Code, Codex, Cursor, OpenClaw, Hermes, Pi, etc.
 - Grant: scoped authorization for a stack to read/write brain scopes or use shared You.md API/MCP.
 - Install: a local or remote record that a stack was installed into a host/project.
@@ -337,6 +338,9 @@ Minimum v1 schema:
   "id": "stk_...",
   "slug": "houston-personal",
   "name": "Houston Personal YouStack",
+  "domain": "coding",
+  "aliases": ["agent-start", "coding-copilot"],
+  "tags": ["coding", "repo-startup", "review"],
   "version": "0.1.0",
   "description": "Portable execution context for local coding agents.",
   "owner": {
@@ -435,6 +439,20 @@ Minimum v1 schema:
   "tests": {
     "smoke": "tests/smoke.md"
   },
+  "improvement": {
+    "mode": "propose",
+    "cadence": "after meaningful agent sessions",
+    "signals": ["usage", "failures", "user corrections", "repo diffs", "smoke results"],
+    "evals": ["youmd stack smoke", "golden prompt regression checks"],
+    "appliesTo": ["skills", "subagents", "workflows", "examples", "docs", "adapters"],
+    "approvalRequiredFor": ["brain.write", "private_context.read", "connected_tool.write", "remote_repo.write"]
+  },
+  "update": {
+    "channel": "manual",
+    "check": "youmd stack smoke",
+    "source": "user-owned GitHub repo or local stack folder",
+    "autoApply": false
+  },
   "provenance": {
     "createdBy": "youmd",
     "createdAt": "2026-05-23T00:00:00Z",
@@ -468,7 +486,23 @@ you.md/
       FEATURES.md
       CHANGELOG.md
   youstacks/
-    <stack-slug>/
+    coding-copilot/
+      youstack.json
+      README.md
+      skills/
+      workflows/
+      subagents/
+      improvement/
+      evals/
+    scientific-research/
+      youstack.json
+      README.md
+      skills/
+      workflows/
+      subagents/
+      improvement/
+      evals/
+    content-studio/
       youstack.json
       README.md
       CHANGELOG.md
@@ -488,6 +522,8 @@ you.md/
         api-mcp.md
         playbooks/
       examples/
+      improvement/
+      evals/
       tests/
         smoke.md
       protected.example.json
@@ -786,6 +822,7 @@ Helper behavior:
 - Prefer read-only validation before mutation.
 - Emit host-specific next commands.
 - Run update checks without blocking agent work.
+- Treat stack and skill improvement as a policy-bound loop: observe safe signals, draft updates, run stack smoke/evals, apply only allowed local changes, and require approval for protected brain/private/connected-tool/remote-repo writes.
 
 ## 17. Smoke Test
 

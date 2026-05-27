@@ -21,9 +21,21 @@ export type YouStackRouteResult = {
 export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
   {
     id: "local-static",
-    intent: "Use local stack files, skills, workflows, prompts, docs, examples, and host adapters without contacting You.md.",
+    intent: "Use local named stack files, skills, sub-agents, workflows, prompts, docs, examples, and host adapters without contacting You.md.",
     localOnly: true,
     mutationPolicy: "read_only",
+  },
+  {
+    id: "stack-improvement-loop",
+    intent: "Use usage signals, failures, corrections, repo diffs, evals, and user feedback to improve stack skills, sub-agents, workflows, prompts, docs, and examples.",
+    localOnly: true,
+    mutationPolicy: "write_local",
+  },
+  {
+    id: "stack-update-check",
+    intent: "Check the stack update channel and refresh allowed local stack files, generated adapters, skills, docs, prompts, examples, and evals.",
+    localOnly: true,
+    mutationPolicy: "write_local",
   },
   {
     id: "protected-memory-search",
@@ -74,11 +86,15 @@ export function getYouStackCapabilityContract() {
     },
     apiMcpThreshold: {
       localFilesOnly: [
+        "stack names and slugs",
         "skills",
+        "sub-agents",
         "workflows",
         "prompts",
         "docs",
         "examples",
+        "evals and smoke tests",
+        "self-improvement proposal files",
         "host adapter files",
         "read-only route tables",
       ],
@@ -91,6 +107,8 @@ export function getYouStackCapabilityContract() {
         "tokens",
         "connected tools",
         "audit logs",
+        "hosted improvement telemetry",
+        "approved remote update actions",
         "server-side actions",
       ],
       optionalCustomApiMcp: [
@@ -198,6 +216,12 @@ function scoreCapability(request: string, capability: YouStackCapability): numbe
     score += 4;
   }
   if (/\b(sync|github|repo|repository|push|pull)\b/.test(normalized) && /sync|github|repo/.test(haystack)) {
+    score += 5;
+  }
+  if (/\b(improve|improvement|self-improve|learn|failure|correction|eval|evaluate|feedback)\b/.test(normalized) && /improv|eval|feedback|failure|correction/.test(haystack)) {
+    score += 5;
+  }
+  if (/\b(update|upgrade|refresh|latest|version|channel)\b/.test(normalized) && /update|refresh|channel|version/.test(haystack)) {
     score += 5;
   }
   if (/\b(tool|action|server|api|mcp|token)\b/.test(normalized) && /tool|action|api|mcp|token/.test(haystack)) {

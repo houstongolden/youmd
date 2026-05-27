@@ -34,12 +34,32 @@ export interface YouStackAdapter {
   bootstrap?: string;
 }
 
+export interface YouStackImprovementPolicy {
+  mode?: "observe" | "propose" | "auto_pr" | "auto_apply_local";
+  cadence?: string;
+  signals?: string[];
+  evals?: string[];
+  appliesTo?: string[];
+  approvalRequiredFor?: string[];
+}
+
+export interface YouStackUpdatePolicy {
+  channel?: string;
+  check?: string;
+  source?: string;
+  autoApply?: boolean;
+  pin?: string;
+}
+
 export interface YouStackManifest {
   schemaVersion: "youstack/v1";
   kind: "youstack";
   id?: string;
   slug: string;
   name: string;
+  domain?: string;
+  aliases?: string[];
+  tags?: string[];
   version: string;
   description?: string;
   owner?: Record<string, unknown>;
@@ -59,6 +79,8 @@ export interface YouStackManifest {
   repoSync?: Record<string, unknown>;
   docs?: Record<string, unknown>;
   tests?: Record<string, unknown>;
+  improvement?: YouStackImprovementPolicy;
+  update?: YouStackUpdatePolicy;
   provenance?: Record<string, unknown>;
 }
 
@@ -114,6 +136,18 @@ const BUILT_IN_CAPABILITIES: YouStackCapability[] = [
     localOnly: true,
     mutationPolicy: "read_only",
   },
+  {
+    id: "stack.improve",
+    intent: "inspect usage signals, evals, failures, corrections, and repo diffs to improve stack skills and workflows",
+    localOnly: true,
+    mutationPolicy: "write_local",
+  },
+  {
+    id: "stack.update",
+    intent: "check the stack update channel and refresh allowed local skills, workflows, docs, prompts, evals, and adapter files",
+    localOnly: true,
+    mutationPolicy: "write_local",
+  },
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -167,6 +201,23 @@ function isSafeRelativePath(value: string): boolean {
   if (!value || path.isAbsolute(value) || value.startsWith("~")) return false;
   const parts = value.split(/[\\/]+/);
   return !parts.includes("..");
+}
+
+function validateOptionalStringArray(
+  value: Record<string, unknown>,
+  field: string,
+  errors: string[]
+): void {
+  if (value[field] === undefined) return;
+  if (!Array.isArray(value[field])) {
+    errors.push(`${field} must be an array`);
+    return;
+  }
+  for (const [index, item] of (value[field] as unknown[]).entries()) {
+    if (typeof item !== "string" || item.trim().length === 0) {
+      errors.push(`${field}[${index}] must be a non-empty string`);
+    }
+  }
 }
 
 function parseJsonFile(filePath: string): unknown {
@@ -237,6 +288,9 @@ export function validateYouStackManifest(value: unknown): YouStackValidationResu
   expectString(value, "kind", errors, { exact: "youstack" });
   expectString(value, "slug", errors);
   expectString(value, "name", errors);
+  expectString(value, "domain", errors, { optional: true });
+  validateOptionalStringArray(value, "aliases", errors);
+  validateOptionalStringArray(value, "tags", errors);
   expectString(value, "version", errors);
   const visibility = expectString(value, "visibility", errors);
   if (visibility && !VALID_VISIBILITY.has(visibility as YouStackVisibility)) {
@@ -344,6 +398,42 @@ export function validateYouStackManifest(value: unknown): YouStackValidationResu
     warnings.push("accessPolicy is missing; defaulting to local/static only");
   }
 
+  if (value.improvement !== undefined) {
+    if (!isRecord(value.improvement)) {
+      errors.push("improvement must be an object");
+    } else {
+      const mode = value.improvement.mode;
+      if (
+        mode !== undefined &&
+        mode !== "observe" &&
+        mode !== "propose" &&
+        mode !== "auto_pr" &&
+        mode !== "auto_apply_local"
+      ) {
+        errors.push("improvement.mode must be one of: observe, propose, auto_pr, auto_apply_local");
+      }
+      validateOptionalStringArray(value.improvement, "signals", errors);
+      validateOptionalStringArray(value.improvement, "evals", errors);
+      validateOptionalStringArray(value.improvement, "appliesTo", errors);
+      validateOptionalStringArray(value.improvement, "approvalRequiredFor", errors);
+    }
+  } else {
+    warnings.push("improvement policy is missing; self-improvement will not be explicit");
+  }
+
+  if (value.update !== undefined) {
+    if (!isRecord(value.update)) {
+      errors.push("update must be an object");
+    } else if (
+      value.update.autoApply !== undefined &&
+      typeof value.update.autoApply !== "boolean"
+    ) {
+      errors.push("update.autoApply must be a boolean");
+    }
+  } else {
+    warnings.push("update policy is missing; auto-update behavior will not be explicit");
+  }
+
   return { ok: errors.length === 0, errors, warnings };
 }
 
@@ -382,6 +472,9 @@ export function runYouStackSmoke(loaded: LoadedYouStack): YouStackSmokeResult {
   const checks: string[] = [];
 
   checks.push(`manifest: ${loaded.manifestPath}`);
+  checks.push(`stack: ${loaded.manifest.name} (${loaded.manifest.slug})`);
+  if (loaded.manifest.domain) checks.push(`domain: ${loaded.manifest.domain}`);
+  if (loaded.manifest.tags?.length) checks.push(`tags: ${loaded.manifest.tags.join(", ")}`);
   if (loaded.validation.ok) checks.push("schema: youstack/v1");
 
   for (const file of loaded.manifest.files || []) {
@@ -422,6 +515,13 @@ export function runYouStackSmoke(loaded: LoadedYouStack): YouStackSmokeResult {
 
   const capabilities = getYouStackCapabilities(loaded.manifest);
   checks.push(`capabilities: ${capabilities.length}`);
+
+  if (loaded.manifest.improvement) {
+    checks.push(`improvement policy: ${loaded.manifest.improvement.mode || "declared"}`);
+  }
+  if (loaded.manifest.update) {
+    checks.push(`update policy: ${loaded.manifest.update.channel || "declared"}`);
+  }
 
   return {
     ok: errors.length === 0,
@@ -542,6 +642,14 @@ export function generateYouStackAdapterContent(
   lines.push("");
   lines.push("This file is generated from `youstack.json`.");
   lines.push("");
+  lines.push("## Stack Identity");
+  lines.push("");
+  lines.push(`- Name: ${manifest.name}`);
+  lines.push(`- Slug: ${manifest.slug}`);
+  if (manifest.domain) lines.push(`- Domain: ${manifest.domain}`);
+  if (manifest.aliases?.length) lines.push(`- Aliases: ${manifest.aliases.join(", ")}`);
+  if (manifest.tags?.length) lines.push(`- Tags: ${manifest.tags.join(", ")}`);
+  lines.push("");
   lines.push("## Startup");
   lines.push("");
   lines.push("1. Run `youmd stack smoke` from the stack or project root before relying on this stack.");
@@ -567,6 +675,29 @@ export function generateYouStackAdapterContent(
       lines.push(`- ${scope.scope} (${required}): ${scope.reason || "No reason declared."}`);
     }
   }
+  lines.push("");
+  lines.push("## Self-Improvement");
+  lines.push("");
+  if (manifest.improvement) {
+    lines.push(`- Mode: ${manifest.improvement.mode || "observe"}`);
+    if (manifest.improvement.cadence) lines.push(`- Cadence: ${manifest.improvement.cadence}`);
+    if (manifest.improvement.appliesTo?.length) lines.push(`- Applies to: ${manifest.improvement.appliesTo.join(", ")}`);
+    if (manifest.improvement.signals?.length) lines.push(`- Signals: ${manifest.improvement.signals.join(", ")}`);
+    if (manifest.improvement.evals?.length) lines.push(`- Evals: ${manifest.improvement.evals.join(", ")}`);
+    if (manifest.improvement.approvalRequiredFor?.length) {
+      lines.push(`- Approval required for: ${manifest.improvement.approvalRequiredFor.join(", ")}`);
+    }
+  } else {
+    lines.push("- No explicit improvement policy declared. Treat improvements as propose-only until the user chooses a policy.");
+  }
+  if (manifest.update) {
+    lines.push(`- Update channel: ${manifest.update.channel || "manual"}`);
+    if (manifest.update.check) lines.push(`- Update check: ${manifest.update.check}`);
+    if (manifest.update.source) lines.push(`- Update source: ${manifest.update.source}`);
+    lines.push(`- Auto-apply local updates: ${manifest.update.autoApply === true ? "yes" : "no"}`);
+  }
+  lines.push("- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run `youmd stack smoke`.");
+  lines.push("- Never auto-write protected brain data, private context, connected tools, or remote repos unless the manifest policy and user approval both allow it.");
   lines.push("");
   lines.push("## Local Commands");
   lines.push("");

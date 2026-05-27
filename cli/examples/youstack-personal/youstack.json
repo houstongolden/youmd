@@ -3,6 +3,9 @@
   "kind": "youstack",
   "slug": "personal-agent-start",
   "name": "Personal Agent Start",
+  "domain": "personal-agent-ops",
+  "aliases": ["startup", "agent-start", "default-personal-stack"],
+  "tags": ["coding", "project-context", "agent-startup"],
   "version": "0.1.0",
   "description": "Local-first starter YouStack for Claude Code, Codex, and Cursor.",
   "visibility": "private",
@@ -102,5 +105,19 @@
   },
   "tests": {
     "smoke": "tests/smoke.md"
+  },
+  "improvement": {
+    "mode": "propose",
+    "cadence": "after each meaningful agent session",
+    "signals": ["usage", "failures", "user corrections", "repo diffs", "smoke results"],
+    "evals": ["youmd stack smoke", "route startup requests to the expected capability"],
+    "appliesTo": ["skills", "workflows", "docs", "examples", "adapters"],
+    "approvalRequiredFor": ["brain.write", "private_context.read", "connected_tool.write", "remote_repo.write"]
+  },
+  "update": {
+    "channel": "manual",
+    "check": "youmd stack smoke",
+    "source": "user-owned GitHub repo or local stack folder",
+    "autoApply": false
   }
 }

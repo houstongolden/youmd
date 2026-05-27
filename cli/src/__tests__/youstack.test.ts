@@ -37,6 +37,9 @@ describe("youstack manifest", () => {
       kind: "youstack",
       slug: "test-stack",
       name: "Test Stack",
+      domain: "test-domain",
+      aliases: ["test"],
+      tags: ["coding", "qa"],
       version: "0.1.0",
       visibility: "private",
       accessPolicy: {
@@ -71,6 +74,20 @@ describe("youstack manifest", () => {
           mutationPolicy: "read_only",
         },
       ],
+      improvement: {
+        mode: "propose",
+        cadence: "after failures or user corrections",
+        signals: ["usage", "failures", "user corrections"],
+        evals: ["youmd stack smoke"],
+        appliesTo: ["skills", "workflows", "docs"],
+        approvalRequiredFor: ["brain.write", "remote_repo.write"],
+      },
+      update: {
+        channel: "manual",
+        check: "youmd stack smoke",
+        source: "local",
+        autoApply: false,
+      },
       ...extra,
     };
   }
@@ -79,6 +96,25 @@ describe("youstack manifest", () => {
     const result = validateYouStackManifest(validManifest());
     expect(result.ok).toBe(true);
     expect(result.errors).toEqual([]);
+  });
+
+  it("keeps stack names, domains, and improvement/update policy explicit", () => {
+    const result = validateYouStackManifest(validManifest());
+
+    expect(result.ok).toBe(true);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("warns when a stack omits self-improvement or update policy", () => {
+    const manifest = validManifest();
+    delete (manifest as Record<string, unknown>).improvement;
+    delete (manifest as Record<string, unknown>).update;
+
+    const result = validateYouStackManifest(manifest);
+
+    expect(result.ok).toBe(true);
+    expect(result.warnings.join("\n")).toContain("improvement policy is missing");
+    expect(result.warnings.join("\n")).toContain("update policy is missing");
   });
 
   it("rejects unsafe paths and duplicate capability ids", () => {
@@ -100,6 +136,10 @@ describe("youstack manifest", () => {
     const smoke = runYouStackSmoke(loaded);
 
     expect(smoke.ok).toBe(true);
+    expect(smoke.checks).toContain("stack: Test Stack (test-stack)");
+    expect(smoke.checks).toContain("domain: test-domain");
+    expect(smoke.checks).toContain("improvement policy: propose");
+    expect(smoke.checks).toContain("update policy: manual");
     expect(smoke.checks).toContain("file exists: skills/start/SKILL.md");
     expect(smoke.checks).toContain("file exists: workflows/startup.md");
   });
@@ -144,6 +184,16 @@ describe("youstack manifest", () => {
     );
 
     expect(route.capability.id).toBe("protected-memory-search");
+    expect(route.score).toBeGreaterThan(0);
+  });
+
+  it("routes improvement requests to the built-in improvement capability", () => {
+    const route = routeYouStackRequest(
+      validManifest(),
+      "improve this stack from failures and user corrections"
+    );
+
+    expect(route.capability.id).toBe("stack.improve");
     expect(route.score).toBeGreaterThan(0);
   });
 

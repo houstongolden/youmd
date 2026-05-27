@@ -32,6 +32,10 @@ export async function POST(request: NextRequest) {
     stack: {
       slug: typeof stack.slug === "string" ? stack.slug.slice(0, 120) : null,
       name: typeof stack.name === "string" ? stack.name.slice(0, 200) : null,
+      domain: typeof stack.domain === "string" ? stack.domain.slice(0, 160) : null,
+      tags: Array.isArray(stack.tags)
+        ? stack.tags.filter((tag): tag is string => typeof tag === "string").slice(0, 20)
+        : [],
     },
     ...routeYouStackCapability(body.request, capabilities),
   }, {

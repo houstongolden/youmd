@@ -83,6 +83,9 @@ export async function stackCommand(
     console.log("");
     console.log("  " + ACCENT("youstack") + " " + chalk.bold(manifest.name));
     console.log("  " + DIM("slug: ") + chalk.cyan(manifest.slug));
+    if (manifest.domain) console.log("  " + DIM("domain: ") + manifest.domain);
+    if (manifest.aliases?.length) console.log("  " + DIM("aliases: ") + manifest.aliases.join(", "));
+    if (manifest.tags?.length) console.log("  " + DIM("tags: ") + manifest.tags.join(", "));
     console.log("  " + DIM("version: ") + manifest.version);
     console.log("  " + DIM("visibility: ") + manifest.visibility);
     console.log("  " + DIM("manifest: ") + loaded.manifestPath);
@@ -91,6 +94,8 @@ export async function stackCommand(
     console.log("  " + DIM("brain scopes: ") + String(manifest.brainScopes?.length || 0));
     console.log("  " + DIM("capabilities: ") + String(getYouStackCapabilities(manifest).length));
     console.log("  " + DIM("adapters: ") + Object.keys(manifest.adapters || {}).join(", "));
+    console.log("  " + DIM("improvement: ") + (manifest.improvement?.mode || "not declared"));
+    console.log("  " + DIM("update: ") + (manifest.update?.channel || "not declared"));
     console.log("");
     printValidation(loaded.validation);
     if (loaded.validation.ok) {

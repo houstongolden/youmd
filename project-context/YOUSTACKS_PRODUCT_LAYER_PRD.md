@@ -14,6 +14,7 @@ This is an additive product-layer planning pass. Do not delete, remove, or rewri
 Core vision:
 - You.md is the brain, identity context protocol, and durable personal/project context layer.
 - YouStacks are not the brain. They are portable execution packages built on top of You.md.
+- YouStacks are nameable and domain-specific. A user can maintain separate stacks for coding, scientific research, content creation, investing, teaching, project operations, or any other expertise lane.
 - The first product wedge is for Claude Code, Codex, and Cursor users who want a one-line install that gives their agent their identity, preferences, project context, skills, tools, taste, workflows, and protected memory access.
 - OpenClaw, Hermes Agent, and Pi agents are secondary host targets after the first three work.
 - Do not launch with a custom You.md agent harness. A personalized You.md-branded agent environment can be a later product layer after the YouStack format, brain boundary, repo sync, and external host adapters are proven.
@@ -81,6 +82,7 @@ The cleaner vision is a personal agent operating system:
 - Templates and artifacts: docs, briefs, decks, issue templates, prompts, rubrics, launch checklists, content formats, and examples.
 - Evals and guardrails: acceptance criteria, examples, safety rules, slop scans, review gates, smoke tests, and regression cases.
 - Install and update metadata: manifest, versions, host targets, repo paths, access policy, provenance, changelog, migrations, and update channels.
+- Improvement metadata: the stack's autonomous learning loop, safe signals, evals, approval gates, and which skills/workflows/examples/adapters can self-update.
 
 ## GStack Primary Lighthouse
 
@@ -151,6 +153,7 @@ Later:
 5. Private sharing: issue scoped links and custom stack tokens with permissions, expiry, revocation, audit logs, and clear local/server boundaries.
 6. Optional hosted tools: keep stacks useful as local files first; add shared You.md API/MCP calls only for protected memory, sync, connected tools, and actions that should not live in plaintext.
 7. Feedback loop: capture usage, failures, edits, saved memories, repo diffs, and corrections so You.md brain and YouStack versions improve.
+8. Stack portfolio: let one user own many named stacks with separate slugs, domains, skills, sub-agents, workflows, examples, improvement loops, sharing policies, and update channels.
 
 ## GitHub Sync Plan
 
@@ -170,7 +173,7 @@ Potential repo layout:
 | `.youmd/you.md`                    | Human-readable compiled identity summary.                                                                 |
 | `.youmd/you.json`                  | Machine-readable bundle with schema version, sources, profile, preferences, and references.               |
 | `.youmd/brain/`                    | Safe exported brain summaries, memory indexes, project summaries, source manifests, and retrieval policy. |
-| `.youstacks/<slug>/stack.json`     | YouStack manifest: brain scopes, files, tools, adapters, versions, sharing policy, and update channel.    |
+| `.youstacks/<slug>/stack.json`     | YouStack manifest: name, slug, domain, aliases, tags, brain scopes, files, tools, adapters, versions, sharing policy, improvement policy, and update channel. |
 | `.youstacks/<slug>/skills/`        | Host-readable skills, workflows, examples, and rendered instruction files.                                |
 | `.youstacks/<slug>/adapters/`      | Generated `CLAUDE.md`, `AGENTS.md`, Cursor rules, MCP config, install scripts, and host-specific docs.    |
 | `.youstacks/<slug>/protected.json` | References to hosted services, encrypted blobs, scoped API routes, and policies. No plaintext secrets.    |
@@ -183,7 +186,7 @@ Potential repo layout:
 | You.md brain hardening     | Audit memory capture, project context, private context, retrieval quality, source provenance, deletion, stale data, conflict handling, access logs, and stack-scoped grants.       | Entity graph, temporal memory, cross-agent attribution, explainable retrieval, memory evals, retention policy, source refresh jobs.                         |
 | YouStack creation          | Add a stack creation flow that starts from current You.md context and asks one question at a time to identify host, skills, tools, files, sharing mode, and privacy boundaries.    | Creator/expert onboarding that ingests books, posts, transcripts, docs, APIs, and examples.                                                                 |
 | BAMFStack proof audit      | Review bamfaiapp's public/bamfstack, docs, capability map, route endpoint, MCP tools/resources, installer, helper CLI, smoke tests, and docs UI before finalizing the plan.        | Maintain a reusable internal checklist for future stack-like products: installer, docs, API/MCP parity, skills, commands, tests, versioning, and safety.    |
-| Stack manifest             | Create a schema for metadata, brain scopes, file outputs, tools, prompts, templates, examples, evals, host adapters, visibility, access policy, repo sync, and update channels.    | Marketplace metadata, billing policy, ratings, dependency graphs, compatibility matrix, and cross-stack composition.                                        |
+| Stack manifest             | Create a schema for name, slug, domain, aliases, tags, brain scopes, file outputs, tools, prompts, templates, examples, evals, host adapters, visibility, access policy, repo sync, improvement policy, and update channels. | Marketplace metadata, billing policy, ratings, dependency graphs, compatibility matrix, and cross-stack composition. |
 | Capability map and router  | Create a local-first capability map plus deterministic route helper that maps user intent to surface, YouStack skill, optional REST/MCP tool, scopes, approval policy, and host.   | Use routing telemetry and evals to improve workflow selection, detect stale skills, and recommend new stack capabilities.                                   |
 | Installer and helper CLI   | Ship a one-line installer and local helper such as `youstack` or `youmd stack` with version, auto-upgrade, smoke, capabilities, route, prompt, MCP setup, routing, and skills.     | Signed releases, host-specific update channels, local diff previews, and team-managed rollouts.                                                             |
 | Primary host adapters      | Generate host-native files and one-line installers for Claude Code, Codex, and Cursor with clear local/server boundaries.                                                          | Deeper host-specific UX, version migrations, compatibility tests, and stack update channels per primary host.                                               |

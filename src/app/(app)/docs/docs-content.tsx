@@ -73,7 +73,9 @@ const navigation: NavItem[] = [
     label: "YouStacks",
     children: [
       { id: "youstacks-overview", label: "Overview" },
+      { id: "youstacks-named", label: "Named Stacks" },
       { id: "youstacks-contents", label: "What Goes In" },
+      { id: "youstacks-improvement", label: "Self-Improvement" },
       { id: "youstacks-use-cases", label: "Use Cases" },
       { id: "youstacks-cli", label: "CLI" },
       { id: "youstacks-install-flow", label: "Install Flow" },
@@ -1372,19 +1374,25 @@ preferences: terminal-native, monochrome
               A YouStack packages your own expertise and workflows into your
               own stack. Think of Gary Tan creating GStack from years of startup
               operating experience, specialist agents, taste, review loops, and
-              workflows. YouStacks let anyone do that for their own domain.
+              workflows. YouStacks let anyone do that for their own domain, and
+              you can keep multiple named stacks for different expertise lanes.
             </P>
             <Callout>
               You.md is the brain. A YouStack is the shareable stack built from
-              that brain: skills, sub-agents, prompts, examples, docs, tool
-              rules, and protected memory boundaries that can be installed into
-              Claude Code, Codex, Cursor, shared with a teammate, or published as
-              an open stack.
+              that brain: a named domain package of skills, sub-agents, prompts,
+              examples, docs, tool rules, improvement policy, update policy, and
+              protected memory boundaries that can be installed into Claude Code,
+              Codex, Cursor, shared with a teammate, or published as an open
+              stack.
             </Callout>
 
             <H3 id="youstacks-overview">Overview</H3>
             <FeatureMatrix
               items={[
+                {
+                  title: "A portfolio of named stacks",
+                  body: "Keep separate stacks for coding, scientific research, content creation, investing, teaching, or any domain where the skills and workflows should not blur together.",
+                },
                 {
                   title: "Your expertise, packaged",
                   body: "A stack can contain your domain skills, hard-won instincts, sub-agents, writing taste, engineering review loops, examples, tool rules, and golden prompts.",
@@ -1403,6 +1411,30 @@ preferences: terminal-native, monochrome
                 },
               ]}
             />
+
+            <H3 id="youstacks-named">Named Stacks</H3>
+            <P>
+              A You.md account should be able to own many YouStacks. The
+              manifest <InlineCode>name</InlineCode> is the human label, the{" "}
+              <InlineCode>slug</InlineCode> is the stable install id, and{" "}
+              <InlineCode>domain</InlineCode>, <InlineCode>aliases</InlineCode>,
+              and <InlineCode>tags</InlineCode> make the stack discoverable by
+              agents and humans.
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "Coding Copilot Stack", desc: "Code review, debugging, architecture, repo startup, tests, release flow, and coding sub-agents" },
+                { cmd: "Scientific Research Stack", desc: "Paper triage, source quality, experiment planning, math checks, literature synthesis, and research-memory retrieval" },
+                { cmd: "Content Studio Stack", desc: "Voice, hooks, examples, editorial review, repurposing workflows, media prompts, and publishing rules" },
+              ]}
+            />
+            <CodeBlock title="stack portfolio">{`youstacks/
+  coding-copilot/
+    youstack.json
+  scientific-research/
+    youstack.json
+  content-studio/
+    youstack.json`}</CodeBlock>
 
             <H3 id="youstacks-contents">What Goes In</H3>
             <P>
@@ -1432,12 +1464,49 @@ preferences: terminal-native, monochrome
                   title: "Protected capabilities",
                   body: "Private memories, private context, connected tools, proprietary prompts, and sensitive actions stay behind scoped You.md API/MCP access.",
                 },
+                {
+                  title: "Improvement and update policy",
+                  body: "Rules for how the stack learns from usage, failures, corrections, evals, repo diffs, and new source material, plus which local updates can be applied automatically.",
+                },
+              ]}
+            />
+
+            <H3 id="youstacks-improvement">Self-Improving Stacks</H3>
+            <P>
+              A strong YouStack should not be frozen promptware. Each stack and
+              each skill inside it should have an improvement loop: observe how
+              agents use it, catch failures, absorb user corrections, run evals,
+              update examples, and refresh local adapter files when the manifest
+              policy allows it.
+            </P>
+            <FeatureMatrix
+              items={[
+                {
+                  title: "Autonomous observation",
+                  body: "Capture safe signals such as route choices, smoke results, failed workflows, repeated edits, user corrections, and repo diffs.",
+                },
+                {
+                  title: "Skill-level refinement",
+                  body: "Improve individual skills, sub-agents, prompts, workflows, examples, and docs instead of rewriting the whole stack blindly.",
+                },
+                {
+                  title: "Eval-gated updates",
+                  body: "Run stack smoke checks and stack-specific evals before accepting a new skill version or generated adapter update.",
+                },
+                {
+                  title: "Policy-bound autonomy",
+                  body: "Auto-apply only the local updates the manifest permits. Brain writes, private context reads, connected tools, and remote repo writes stay behind scoped approval.",
+                },
               ]}
             />
 
             <H3 id="youstacks-use-cases">Use Cases</H3>
             <FeatureMatrix
               items={[
+                {
+                  title: "Domain stack portfolio",
+                  body: "Keep coding, scientific research, content creation, and personal operating stacks separate so each agent loads the right skills, examples, sub-agents, and improvement loop.",
+                },
                 {
                   title: "Personal expertise stack",
                   body: "Package your taste, default prompts, preferred tools, sub-agents, identity, current projects, and memory-safe startup flow so every agent begins like it already knows how you work.",
@@ -1468,14 +1537,15 @@ preferences: terminal-native, monochrome
             <H3 id="youstacks-cli">CLI</H3>
             <P>
               The CLI is how a stack becomes real on a machine. It validates the
-              manifest, shows what expertise, agents, and scopes the stack asks for,
-              routes a request to the right skill or workflow, and generates
-              host-native adapter files. Inspect, smoke, capabilities, and route
-              are read-only; link writes only the declared adapter files.
+              manifest, shows the stack name, domain, expertise, agents, scopes,
+              improvement policy, and update policy, routes a request to the
+              right skill or workflow, and generates host-native adapter files.
+              Inspect, smoke, capabilities, and route are read-only; link writes
+              only the declared adapter files.
             </P>
             <CommandTable
               commands={[
-                { cmd: "youmd stack inspect --path DIR", desc: "Show manifest metadata, files, scopes, adapters, and validation warnings" },
+                { cmd: "youmd stack inspect --path DIR", desc: "Show name, slug, domain, manifest metadata, files, scopes, adapters, and validation warnings" },
                 { cmd: "youmd stack smoke --path DIR", desc: "Run read-only schema, file, checksum, adapter, and capability checks" },
                 { cmd: "youmd stack capabilities --path DIR", desc: "List local and protected capabilities declared by the stack" },
                 { cmd: "youmd stack route --path DIR \"start this repo\"", desc: "Choose the best local capability for a natural-language request" },
@@ -1529,6 +1599,9 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
   "kind": "youstack",
   "slug": "founder-growth-stack",
   "name": "Founder Growth Stack",
+  "domain": "growth",
+  "aliases": ["content", "linkedin", "founder-led-growth"],
+  "tags": ["content", "growth", "founder-review"],
   "version": "0.1.0",
   "visibility": "private",
   "brainScopes": [
@@ -1566,6 +1639,20 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
   "accessPolicy": {
     "defaultMode": "local_static",
     "protectedByDefault": true
+  },
+  "improvement": {
+    "mode": "propose",
+    "cadence": "after meaningful agent sessions",
+    "signals": ["usage", "failures", "user corrections", "repo diffs"],
+    "evals": ["youmd stack smoke", "golden prompt regression checks"],
+    "appliesTo": ["skills", "subagents", "workflows", "examples", "docs"],
+    "approvalRequiredFor": ["brain.write", "private_context.read", "connected_tool.write", "remote_repo.write"]
+  },
+  "update": {
+    "channel": "manual",
+    "check": "youmd stack smoke",
+    "source": "user-owned GitHub repo or local stack folder",
+    "autoApply": false
   }
 }`}</CodeBlock>
 
@@ -1573,10 +1660,18 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
             <P>
               A personal stack is the closest mental model: build your own
               GStack from your expertise, workflows, sub-agents, examples, and
-              taste; install it into the agents you already use; and let
-              protected requests cross the You.md brain boundary only when
-              needed.
+              taste; name separate versions for different domains; install them
+              into the agents you already use; and let protected requests cross
+              the You.md brain boundary only when needed.
             </P>
+            <CodeBlock title="named domain stacks">{`# coding stack
+youmd stack inspect --path stacks/coding-copilot
+
+# scientific research stack
+youmd stack route --path stacks/scientific-research "triage these papers and design the next experiment"
+
+# content stack
+youmd stack route --path stacks/content-studio "turn this idea into a LinkedIn post in my style"`}</CodeBlock>
             <CodeBlock title="personal stack">{`# inspect what a stack asks for
 youmd stack inspect --path stacks/my-founder-stack
 
@@ -1601,6 +1696,13 @@ youmd stack link --path stacks/my-founder-stack --hosts codex,claude,cursor --ta
   "entrypoint": "workflows/release-review.md"
 },
 {
+  "id": "skill-improvement-loop",
+  "intent": "Improve stack skills from failures, user corrections, eval results, and updated examples.",
+  "localOnly": true,
+  "mutationPolicy": "write_local",
+  "entrypoint": "improvement/skill-loop.md"
+},
+{
   "id": "protected-memory-search",
   "intent": "Search private user memory when local files are not enough.",
   "localOnly": false,
@@ -1611,18 +1713,19 @@ youmd stack link --path stacks/my-founder-stack --hosts codex,claude,cursor --ta
 
             <H3 id="youstacks-threshold">API/MCP Threshold</H3>
             <P>
-              Local-only stacks can ship static skills, workflows, prompts,
-              docs, examples, host adapter files, and read-only route tables. Use
-              shared You.md API/MCP when the stack needs protected brain
+              Local-only stacks can ship names, slugs, domains, static skills,
+              sub-agents, workflows, prompts, docs, examples, evals,
+              improvement proposals, host adapter files, and read-only route
+              tables. Use shared You.md API/MCP when the stack needs protected brain
               retrieval, private context, stack grants, sync, audit logs,
               connected tools, or server-side actions. Custom per-stack API/MCP
               is optional later, not the v1 baseline.
             </P>
             <SystemPanel title="stack boundary rule">
               <StepList>
-                <Step n={1}>Static skills, prompts, workflows, examples, docs, taste rules, and adapter files can live inside the stack.</Step>
+                <Step n={1}>Static names, domains, skills, sub-agents, prompts, workflows, examples, docs, taste rules, evals, improvement proposals, and adapter files can live inside the stack.</Step>
                 <Step n={2}>Identity summaries and public context can be read from local files or public You.md surfaces.</Step>
-                <Step n={3}>Private memory, private context, tokens, connected tools, sync, and sensitive actions call shared You.md API/MCP.</Step>
+                <Step n={3}>Private memory, private context, hosted improvement telemetry, tokens, connected tools, sync, and sensitive actions call shared You.md API/MCP.</Step>
                 <Step n={4}>Custom per-stack API/MCP is optional later. V1 does not require a custom backend for every stack.</Step>
               </StepList>
             </SystemPanel>
@@ -1643,7 +1746,9 @@ Content-Type: application/json
   "request": "review this like me before we ship",
   "stack": {
     "slug": "founder-growth-stack",
-    "name": "Founder Growth Stack"
+    "name": "Founder Growth Stack",
+    "domain": "growth",
+    "tags": ["content", "founder-review"]
   },
   "capabilities": [
     {

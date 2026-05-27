@@ -8,9 +8,14 @@ import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 
 const useCases = [
   {
+    label: "named stacks",
+    title: "separate your domains",
+    desc: "create different named stacks for coding, scientific research, content creation, investing, teaching, or any other expertise lane.",
+  },
+  {
     label: "expertise stack",
     title: "package how you think",
-    desc: "turn your years of taste, skills, prompts, sub-agents, review loops, examples, and favorite workflows into an installable stack.",
+    desc: "turn your years of taste, skills, prompts, sub-agents, review loops, examples, and favorite workflows into installable stacks.",
   },
   {
     label: "project stack",
@@ -23,19 +28,19 @@ const useCases = [
     desc: "give teammates, friends, or contractors your operating system without handing over your whole private brain.",
   },
   {
-    label: "public stack",
-    title: "publish a useful agent kit",
-    desc: "release an open stack of skills and workflows people can inspect, fork, install, and run in their own agents.",
+    label: "self-improving",
+    title: "let the stack evolve",
+    desc: "capture usage, failures, corrections, evals, and repo diffs so skills and workflows can propose or apply safe local improvements.",
   },
 ];
 
 const stackFiles = [
-  "youstack.json",
+  "stacks/coding-copilot/youstack.json",
+  "stacks/research-lab/youstack.json",
+  "stacks/content-studio/youstack.json",
   "skills/founder-review/SKILL.md",
-  "skills/growth-writing/SKILL.md",
   "subagents/operator.md",
-  "workflows/release-review.md",
-  "examples/golden-prompts.md",
+  "improvement/evals.md",
 ];
 
 const YouStacks = () => (
@@ -45,7 +50,7 @@ const YouStacks = () => (
         <SectionHeader
           eyebrow="youstacks"
           title="package your expertise into your own GStack"
-          description="A YouStack bottles how you work: years of expertise, skills, sub-agents, prompts, workflows, taste, examples, tool rules, and safe You.md memory access that any agent can install."
+          description="Name separate stacks for coding, scientific research, content creation, or any expertise lane. Each YouStack bottles the right skills, sub-agents, prompts, workflows, taste, examples, tool rules, safe memory access, and improvement loop for that domain."
         />
       </FadeUp>
 
@@ -59,9 +64,10 @@ const YouStacks = () => (
                 </p>
                 <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
                   If GStack packages founder operating wisdom into agent
-                  skills and workflows, YouStacks let anyone do that for their
-                  own domain. Local files carry the reusable expertise; You.md
-                  API/MCP protects private memory and connected actions.
+                  skills and workflows, YouStacks let anyone create a named
+                  portfolio of stackable expertise. Local files carry reusable
+                  skills; You.md API/MCP protects private memory, connected
+                  actions, and approved self-updates.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <ButtonLink href="/docs#youstacks" variant="primary" size="sm">
@@ -108,7 +114,7 @@ const YouStacks = () => (
       <FadeUp delay={0.24}>
         <div className="mt-5 grid gap-3 border border-border bg-[hsl(var(--bg-raised))] p-4 md:grid-cols-[1fr_auto] md:items-center">
           <code className="break-all font-mono text-[11px] leading-relaxed text-accent">
-            $ youmd stack link --path stacks/my-founder-stack --hosts codex,claude,cursor --target .
+            $ youmd stack link --path stacks/research-lab --hosts codex,claude,cursor --target .
           </code>
           <Link
             href="/docs#youstacks-examples"
