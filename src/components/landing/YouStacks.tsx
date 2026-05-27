@@ -8,34 +8,34 @@ import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 
 const useCases = [
   {
-    label: "personal stack",
-    title: "your default agent operating layer",
-    desc: "identity, preferences, project context, starter skills, and memory-safe routing for Claude Code, Codex, and Cursor.",
+    label: "expertise stack",
+    title: "package how you think",
+    desc: "turn your taste, skills, prompts, review loops, examples, and favorite workflows into an installable stack for any agent.",
   },
   {
     label: "project stack",
-    title: "repo-specific workflows",
-    desc: "ship the commands, review patterns, docs, and smoke tests an agent should use before touching a codebase.",
+    title: "make a repo agent-ready",
+    desc: "ship the commands, repo rules, docs, QA flow, smoke tests, and release habits an agent should follow before touching code.",
   },
   {
     label: "team stack",
-    title: "shared taste and playbooks",
-    desc: "give teammates and collaborators a scoped package without dumping your private brain into local files.",
+    title: "share the playbook",
+    desc: "give teammates, friends, or contractors your operating system without handing over your whole private brain.",
   },
   {
     label: "public stack",
-    title: "open agent workflows",
-    desc: "publish useful skills, prompts, examples, and adapter files while protected memory stays behind You.md auth.",
+    title: "publish a useful agent kit",
+    desc: "release an open stack of skills and workflows people can inspect, fork, install, and run in their own agents.",
   },
 ];
 
 const stackFiles = [
   "youstack.json",
-  "skills/youstack-start/SKILL.md",
-  "workflows/startup.md",
-  "docs/quickstart.md",
-  "tests/smoke.md",
-  ".codex/skills/youstack-start",
+  "skills/founder-review/SKILL.md",
+  "skills/growth-writing/SKILL.md",
+  "workflows/release-review.md",
+  "examples/golden-prompts.md",
+  "adapters/codex.md",
 ];
 
 const YouStacks = () => (
@@ -44,8 +44,8 @@ const YouStacks = () => (
       <FadeUp>
         <SectionHeader
           eyebrow="youstacks"
-          title="portable execution packages for your agents"
-          description="You.md is the brain. YouStacks are the installable layer that tells Claude Code, Codex, Cursor, and other hosts how to use that brain safely."
+          title="build your own GStack for any agent"
+          description="A YouStack is your packaged expertise: skills, prompts, workflows, taste, examples, tools, and safe You.md memory access that you can install into Claude Code, Codex, Cursor, or share with someone else."
         />
       </FadeUp>
 
@@ -55,13 +55,13 @@ const YouStacks = () => (
             <div className="grid gap-5 md:grid-cols-[0.9fr_1.1fr]">
               <div>
                 <p className="font-mono text-[13px] leading-relaxed text-foreground/85">
-                  local first. brain protected.
+                  your brain becomes an agent stack.
                 </p>
                 <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
-                  A stack can run as static files: skills, workflows, prompts,
-                  docs, examples, and host adapters. It calls You.md API/MCP only
-                  when it needs protected memory, private context, sync, tokens,
-                  connected tools, or server-side actions.
+                  Think GStack, but built from your own expertise. A YouStack can
+                  be local files first, then call You.md API/MCP only when an
+                  agent needs protected memory, private context, connected tools,
+                  or server-side actions.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <ButtonLink href="/docs#youstacks" variant="primary" size="sm">
@@ -108,7 +108,7 @@ const YouStacks = () => (
       <FadeUp delay={0.24}>
         <div className="mt-5 grid gap-3 border border-border bg-[hsl(var(--bg-raised))] p-4 md:grid-cols-[1fr_auto] md:items-center">
           <code className="break-all font-mono text-[11px] leading-relaxed text-accent">
-            $ youmd stack smoke --path cli/examples/youstack-personal && youmd stack link --hosts codex,claude,cursor --target .
+            $ youmd stack link --path stacks/my-founder-stack --hosts codex,claude,cursor --target .
           </code>
           <Link
             href="/docs#youstacks-examples"

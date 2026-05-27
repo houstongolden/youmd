@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-05-26
+Last Updated: 2026-05-27
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -10,6 +10,20 @@ Last Updated: 2026-05-26
 - Source: date + commit or conversation reference
 
 ---
+
+## YouStacks Positioning Clarity (from May 27 conversation)
+
+### 68. Clarify YouStacks as "your own GStack" for any agent
+**Status:** IN PROGRESS
+**Verified:** NO
+**Request:** The current homepage/docs copy does not convey YouStacks clearly enough. Reframe YouStacks as your own GStack-like stack of skills, expertise, prompts, workflows, taste, and safe memory access that can be shared with any agent.
+**Actionable Scope:**
+1. Make the homepage lead with the "build your own GStack for any agent" mental model.
+2. Explain that a YouStack packages a person's expertise, skills, workflows, prompts, examples, taste, tools, and safe memory access.
+3. Make docs clearer about what goes into a YouStack.
+4. Preserve the brain boundary: You.md is the brain, YouStack is the shareable/installable stack built from it.
+5. Verify locally and open the improved surfaces in the Codex browser for review.
+**Progress (2026-05-27):** Reworked `src/components/landing/YouStacks.tsx`, homepage metadata, and `/docs#youstacks` copy around packaged expertise and the "personal GStack" analogy. Added a docs "What Goes In" subsection for skills, workflows, taste/examples, and protected capabilities. Local verification passed `npm run docs:check`, targeted ESLint, `npx tsc --noEmit`, `npm run build -- --webpack`, local production text checks, and Codex in-app browser review on the homepage and docs.
 
 ## YouStacks Homepage + Docs Surface (from May 26 conversation)
 

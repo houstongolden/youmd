@@ -73,6 +73,7 @@ const navigation: NavItem[] = [
     label: "YouStacks",
     children: [
       { id: "youstacks-overview", label: "Overview" },
+      { id: "youstacks-contents", label: "What Goes In" },
       { id: "youstacks-use-cases", label: "Use Cases" },
       { id: "youstacks-cli", label: "CLI" },
       { id: "youstacks-install-flow", label: "Install Flow" },
@@ -1368,38 +1369,63 @@ preferences: terminal-native, monochrome
             {/* ── YouStacks ───────────────────────────────── */}
             <H2 id="youstacks">YouStacks</H2>
             <P>
-              You.md is the brain. YouStacks are portable execution packages
-              that install into host agents like Claude Code, Codex, and Cursor.
-              A stack can be useful as local/static files first, then call the
-              shared You.md API or MCP only when it needs protected memory,
-              private context, sync, tokens, connected tools, or server-side
-              actions.
+              A YouStack is your own GStack-style agent operating system. It is
+              the bundle of skills, prompts, workflows, examples, taste, tool
+              rules, docs, and safe memory access that teaches any compatible
+              agent how you operate.
             </P>
             <Callout>
-              YouStacks do not replace your You.md identity. They package the
-              skills, workflows, prompts, examples, docs, smoke tests, and host
-              adapters an agent should use, while You.md remains the durable
-              personal/project context layer behind it.
+              You.md is the brain. A YouStack is the shareable stack built from
+              that brain. You can keep it private, install it into Claude Code,
+              Codex, or Cursor, share it with a teammate, or publish an open
+              version for anyone to inspect and run.
             </Callout>
 
             <H3 id="youstacks-overview">Overview</H3>
             <FeatureMatrix
               items={[
                 {
-                  title: "Local-first package",
-                  body: "Skills, workflows, prompts, docs, examples, and host adapter declarations live beside a youstack.json manifest.",
+                  title: "Your expertise, packaged",
+                  body: "A stack can contain your domain skills, founder instincts, writing taste, engineering review loops, examples, tool rules, and golden prompts.",
                 },
                 {
-                  title: "Protected brain boundary",
-                  body: "Private memories, private context, proprietary prompts, and connected actions stay behind authenticated You.md API/MCP surfaces.",
+                  title: "Works like a personal GStack",
+                  body: "Install one stack and any host agent gets the same operating layer: how to start, what skills to use, what workflows to run, and what not to touch.",
                 },
                 {
                   title: "Host-native adapters",
-                  body: "Claude Code, Codex, and Cursor are the primary targets. OpenClaw, Hermes Agent, and Pi agents come after the first three work.",
+                  body: "Claude Code, Codex, and Cursor are the first targets. OpenClaw, Hermes Agent, and Pi agents come after the first three work.",
                 },
                 {
-                  title: "Shareable by scope",
-                  body: "V1 focuses on private stacks, public/open stacks, and scoped links or tokens. Paid/sellable stacks come later.",
+                  title: "Private, shared, or public",
+                  body: "Keep a stack for yourself, share it with friends or teammates through scoped access, or publish an open version other people can install.",
+                },
+              ]}
+            />
+
+            <H3 id="youstacks-contents">What Goes In</H3>
+            <P>
+              A YouStack should feel like an installable version of your
+              expertise. The public/local part can be inspected like a repo. The
+              private part stays behind You.md auth.
+            </P>
+            <FeatureMatrix
+              items={[
+                {
+                  title: "Skills",
+                  body: "Reusable agent instructions such as founder review, growth writing, research synthesis, release QA, design critique, or your personal startup office-hours mode.",
+                },
+                {
+                  title: "Workflows",
+                  body: "Step-by-step operating loops: how to start a repo, review a plan, ship a release, write in your voice, prep a meeting, or audit a strategy.",
+                },
+                {
+                  title: "Taste and examples",
+                  body: "Golden prompts, before/after examples, decision rules, style notes, quality bars, and the small preferences that make an agent sound and act like it learned from you.",
+                },
+                {
+                  title: "Protected capabilities",
+                  body: "Private memories, private context, connected tools, proprietary prompts, and sensitive actions stay behind scoped You.md API/MCP access.",
                 },
               ]}
             />
@@ -1408,38 +1434,39 @@ preferences: terminal-native, monochrome
             <FeatureMatrix
               items={[
                 {
-                  title: "Personal agent start",
-                  body: "Install one stack that gives local agents your identity, preferences, taste, active projects, starter skills, and safe protected-memory routing.",
+                  title: "Personal expertise stack",
+                  body: "Package your own taste, default prompts, preferred tools, identity, current projects, and memory-safe startup flow so every agent begins like it already knows you.",
                 },
                 {
                   title: "Project operating layer",
-                  body: "Package repo-specific workflows, test commands, review rules, release steps, and docs so every agent starts from the same playbook.",
+                  body: "Make a repo agent-ready with the exact workflows, test commands, review rules, docs, smoke tests, and release rituals an agent should follow.",
                 },
                 {
                   title: "Team or collaborator stack",
-                  body: "Share a scoped execution package with teammates or friends without exposing your entire private context or API key surface.",
+                  body: "Give a teammate, friend, contractor, or client a scoped copy of your operating system without exposing your entire private context or API key surface.",
                 },
                 {
                   title: "Public/open workflow stack",
-                  body: "Publish skills, prompts, examples, and adapter files that anyone can inspect locally while protected capabilities still require You.md auth.",
+                  body: "Publish a useful agent kit: skills, workflows, examples, docs, and adapter files that anyone can inspect, fork, and install.",
                 },
                 {
                   title: "Protected memory workflow",
-                  body: "Keep proprietary retrieval and sensitive actions behind authenticated You.md API/MCP calls instead of writing private IP into local files.",
+                  body: "Keep private memories, sensitive retrieval, proprietary prompts, and connected actions behind authenticated You.md API/MCP instead of dumping them into local files.",
                 },
                 {
                   title: "Host adapter bootstrap",
-                  body: "Generate Claude Code, Codex, and Cursor files from one manifest so the same stack works across the first product wedge.",
+                  body: "Generate Claude Code, Codex, and Cursor files from one manifest so the same expertise stack travels across the first product wedge.",
                 },
               ]}
             />
 
             <H3 id="youstacks-cli">CLI</H3>
             <P>
-              The first YouStack CLI surface validates local manifests, routes
-              requests to declared capabilities, and can generate host adapter
-              files. Inspect, smoke, capabilities, and route are read-only;
-              link writes only the declared adapter files.
+              The CLI is how a stack becomes real on a machine. It validates the
+              manifest, shows what expertise and scopes the stack asks for,
+              routes a request to the right skill or workflow, and generates
+              host-native adapter files. Inspect, smoke, capabilities, and route
+              are read-only; link writes only the declared adapter files.
             </P>
             <CommandTable
               commands={[
@@ -1458,8 +1485,8 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
             <StepList>
               <Step n={1}>
                 Pull or create a stack folder that contains{" "}
-                <InlineCode>youstack.json</InlineCode>, local skills,
-                workflows, docs, examples, and smoke tests.
+                <InlineCode>youstack.json</InlineCode>, local skills, prompts,
+                workflows, tool rules, docs, examples, and smoke tests.
               </Step>
               <Step n={2}>
                 Run <InlineCode>youmd stack inspect --path DIR</InlineCode> to
@@ -1494,8 +1521,8 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
             <CodeBlock title="youstack.json">{`{
   "schemaVersion": "youstack/v1",
   "kind": "youstack",
-  "slug": "personal-agent-start",
-  "name": "Personal Agent Start",
+  "slug": "founder-growth-stack",
+  "name": "Founder Growth Stack",
   "version": "0.1.0",
   "visibility": "private",
   "brainScopes": [
@@ -1507,15 +1534,20 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
   ],
   "files": [
     {
-      "path": "skills/youstack-start/SKILL.md",
+      "path": "skills/founder-review/SKILL.md",
       "type": "skill",
+      "required": true
+    },
+    {
+      "path": "workflows/growth-writing.md",
+      "type": "workflow",
       "required": true
     }
   ],
   "capabilities": [
     {
-      "id": "startup",
-      "intent": "Load local identity and project context.",
+      "id": "founder-review",
+      "intent": "Review a plan using the user's founder taste and operating rules.",
       "localOnly": true,
       "mutationPolicy": "read_only"
     }
@@ -1528,26 +1560,27 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
 
             <H3 id="youstacks-examples">Examples</H3>
             <P>
-              A personal stack can be private and local-first. It gives your
-              agent the same startup path everywhere, then routes protected
-              requests through the shared You.md brain boundary.
+              A personal stack is the closest mental model: build your own
+              GStack from your expertise, install it into the agents you already
+              use, and let protected requests cross the You.md brain boundary
+              only when needed.
             </P>
             <CodeBlock title="personal stack">{`# inspect what a stack asks for
-youmd stack inspect --path cli/examples/youstack-personal
+youmd stack inspect --path stacks/my-founder-stack
 
 # verify it without writing adapter files
-youmd stack smoke --path cli/examples/youstack-personal
+youmd stack smoke --path stacks/my-founder-stack
 
 # ask the deterministic router which capability should handle a request
-youmd stack route --path cli/examples/youstack-personal "load my project context before editing"
+youmd stack route --path stacks/my-founder-stack "review this like me before we ship"
 
 # link the same stack into Codex, Claude Code, and Cursor
-youmd stack link --path cli/examples/youstack-personal --hosts codex,claude,cursor --target .`}</CodeBlock>
+youmd stack link --path stacks/my-founder-stack --hosts codex,claude,cursor --target .`}</CodeBlock>
             <P>
-              A project stack can stay open while still requiring authentication
-              for protected memory search or private actions.
+              A public stack can expose the reusable agent kit while protected
+              capabilities still require authentication.
             </P>
-            <CodeBlock title="project capability">{`{
+            <CodeBlock title="capability boundary">{`{
   "id": "review-release",
   "intent": "Run the repo release review workflow before landing changes.",
   "localOnly": true,
@@ -1567,15 +1600,15 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex,claude,curs
             <H3 id="youstacks-threshold">API/MCP Threshold</H3>
             <P>
               Local-only stacks can ship static skills, workflows, prompts,
-              docs, examples, host adapter files, and read-only route tables.
-              Shared You.md API/MCP is used when the stack needs protected brain
-              retrieval, stack grants, sync, audit logs, connected tools, or
-              server-side actions. Custom per-stack API/MCP is optional later,
-              not the v1 baseline.
+              docs, examples, host adapter files, and read-only route tables. Use
+              shared You.md API/MCP when the stack needs protected brain
+              retrieval, private context, stack grants, sync, audit logs,
+              connected tools, or server-side actions. Custom per-stack API/MCP
+              is optional later, not the v1 baseline.
             </P>
             <SystemPanel title="stack boundary rule">
               <StepList>
-                <Step n={1}>Static skills, prompts, workflows, examples, docs, and adapter files can live inside the stack.</Step>
+                <Step n={1}>Static skills, prompts, workflows, examples, docs, taste rules, and adapter files can live inside the stack.</Step>
                 <Step n={2}>Identity summaries and public context can be read from local files or public You.md surfaces.</Step>
                 <Step n={3}>Private memory, private context, tokens, connected tools, sync, and sensitive actions call shared You.md API/MCP.</Step>
                 <Step n={4}>Custom per-stack API/MCP is optional later. V1 does not require a custom backend for every stack.</Step>
@@ -1595,18 +1628,18 @@ POST /api/v1/stacks/route
 Content-Type: application/json
 
 {
-  "request": "search my private memories before starting",
+  "request": "review this like me before we ship",
   "stack": {
-    "slug": "personal-agent-start",
-    "name": "Personal Agent Start"
+    "slug": "founder-growth-stack",
+    "name": "Founder Growth Stack"
   },
   "capabilities": [
     {
-      "id": "protected-memory-search",
-      "intent": "Search user memory with You.md auth.",
-      "localOnly": false,
-      "requiresAuth": true,
-      "scopes": ["memories.search"]
+      "id": "founder-review",
+      "intent": "Review a plan using the user's founder taste.",
+      "localOnly": true,
+      "requiresAuth": false,
+      "scopes": []
     }
   ]
 }`}</CodeBlock>

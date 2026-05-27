@@ -1,11 +1,17 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-05-26
+Last Updated: 2026-05-27
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-05-27
+- [x] Rework the YouStacks homepage copy around the clearer "build your own GStack for any agent" mental model
+- [x] Rework the `/docs#youstacks` introduction around packaged expertise, shareable stacks, and your own GStack-style agent operating system
+- [x] Add a docs "What Goes In" subsection covering skills, workflows, taste/examples, and protected capabilities
+- [x] Verify the clarified copy with docs check, targeted lint, TypeScript, Webpack production build, local production smoke checks, and Codex in-app browser review
 
 ### 2026-05-26
 - [x] Add a first-class YouStacks section to the homepage with brain-vs-stack positioning, local-first files, protected API/MCP boundary, use cases, docs CTA, and example stack command

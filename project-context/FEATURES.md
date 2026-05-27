@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-05-26
+Last Updated: 2026-05-27
 
 ## Core Platform
 
@@ -14,8 +14,8 @@ Last Updated: 2026-05-26
 | YouStack host adapter linking | Done local / publish pending | `youmd stack link` generates Claude Code, Codex, and Cursor adapter files from one manifest with dry-run support |
 | YouStack local MCP tools | Done local / publish pending | Local MCP exposes `youmd://stacks/current/manifest`, `youmd://stacks/current/capabilities`, `get_stack_manifest`, `get_stack_capabilities`, `route_stack_request`, and `smoke_stack` |
 | YouStack shared route API | Done deployed | `GET /api/v1/stacks/capabilities` exposes the shared capability contract and `POST /api/v1/stacks/route` routes requests against default or manifest-supplied capabilities on `https://www.you.md` |
-| YouStacks homepage section | Done deployed | Homepage now explains YouStacks as portable execution packages on top of the You.md brain, with personal/project/team/public use cases, local-first files, protected API/MCP boundary, and docs/examples links; live on Vercel deployment `dpl_7b6X4k3R6JahR7F3jqFdbgJXN5S1` |
-| YouStacks docs chapter | Done deployed | `/docs#youstacks` now covers overview, use cases, CLI, install flow, manifest, examples, API/MCP threshold, generated stack endpoint reference, and stack-specific MCP tools; live production text/reference checks passed |
+| YouStacks homepage section | Done local / deploy pending | Homepage now leads with the clearer "build your own GStack for any agent" mental model: a YouStack is packaged expertise made of skills, prompts, workflows, taste, examples, tools, and safe You.md memory access; previous deployment `dpl_7b6X4k3R6JahR7F3jqFdbgJXN5S1` remains live until this clarification deploys |
+| YouStacks docs chapter | Done local / deploy pending | `/docs#youstacks` now frames YouStacks as a personal GStack-style agent operating system, adds a "What Goes In" section, and keeps use cases, CLI, install flow, manifest, examples, API/MCP threshold, endpoint reference, and stack MCP tools together |
 | Compact conversion homepage | Done | Homepage now follows a calmer conversion flow with one primary hero CTA, compact profile proof, compressed problem/how-it-works/inside sections, combined integrations/builders credibility band, balanced pricing, compact FAQ, and simple final CTA |
 | App control normalization | Done | Terminal auth/input, install tabs, dashboard tabs, pane headers, empty states, sources, share, private context, files, settings, and edit surfaces now share more consistent heights, padding, focus rings, card treatment, and muted text behavior |
 | Public profile directory hygiene | Done | `/profiles` now canonicalizes/dedupes usernames, suppresses QA/test rows, sanitizes public image URLs, prefers stored ASCII portraits, and falls back to deterministic terminal placeholders instead of blank cards |

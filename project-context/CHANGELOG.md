@@ -1,5 +1,21 @@
 # You.md — Changelog
 
+## 2026-05-27 — YouStacks Positioning Clarity
+
+### Marketing / Docs
+- Reframed the homepage YouStacks section around the clearer "build your own GStack for any agent" mental model
+- Changed YouStacks copy from abstract execution-package language to packaged expertise: skills, prompts, workflows, taste, examples, tools, and safe You.md memory access
+- Added a `/docs#youstacks` "What Goes In" subsection covering skills, workflows, taste/examples, and protected capabilities
+- Updated YouStack docs examples and manifest snippets to show a founder/growth expertise stack instead of a generic startup package
+
+### Verification
+- Verified docs reference freshness with `npm run docs:check`
+- Verified targeted changed-file lint with `npx eslint`
+- Verified TypeScript with `npx tsc --noEmit` after temporarily stashing and restoring unrelated untracked middleware files
+- Verified production build with `npm run build -- --webpack`; Turbopack build path stalled in a PostCSS worker, so Webpack was used for the reliable release build check
+- Verified local production homepage/docs/reference text on `localhost:3100`
+- Opened the improved homepage and docs YouStacks section in the Codex in-app browser for visual review
+
 ## 2026-05-26 — YouStacks Homepage + Docs Surface
 
 ### Marketing / Docs
