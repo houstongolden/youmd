@@ -11,6 +11,22 @@ Last Updated: 2026-05-27
 
 ---
 
+## YouStacks Named Portfolio + Self-Improvement (from May 27 conversation)
+
+### 69. Make YouStacks nameable by domain and self-improving
+**Status:** DONE
+**Verified:** NO
+**Production Verified:** YES — deployment `dpl_CZR4kXxAnfvRWNC14XdfvAq6ye9F` is Ready and aliased to `https://www.you.md` / `https://you.md`.
+**Request:** YouStacks need to be nameable so users can maintain separate stacks for different expertise areas such as coding, scientific research, and content creation. Stacks and skills inside stacks also need to be truly self-improving/autonomously improving and self-updating.
+**Actionable Scope:**
+1. Make the homepage and docs explain named stack portfolios instead of one generic personal stack.
+2. Define how `name`, `slug`, domain metadata, aliases, and tags distinguish multiple stacks.
+3. Add manifest/contract support for improvement and update policy.
+4. Make CLI inspect/smoke output reveal stack identity and improvement/update policy.
+5. Add route/capability support for improvement and update intents.
+6. Keep autonomy policy-bound: local stack/skill improvements can be proposed or applied when allowed, while private brain/context/tool/repo writes stay behind explicit policy and approval.
+**Progress (2026-05-27):** Added optional `domain`, `aliases`, `tags`, `improvement`, and `update` fields to the `youstack/v1` TypeScript manifest contract; added validation warnings when improvement/update policies are missing; added built-in `stack.improve` and `stack.update` local capabilities; updated adapter generation with stack identity and self-improvement instructions; updated `youmd stack inspect` and `smoke` to show name, slug, domain, tags, improvement mode, and update channel; updated the sample personal stack and focused YouStack tests. Expanded the homepage and `/docs#youstacks` with named stack portfolio guidance, coding/scientific research/content examples, self-improving stack/skill loops, manifest examples, API/MCP boundary guidance, and the stack route API now preserves `domain` and `tags`. Local verification passed `npm run docs:check`, `npm --prefix cli test -- youstack`, targeted ESLint, `npx tsc --noEmit`, `npm --prefix cli run build`, built CLI inspect/smoke/route checks, and `npm run build -- --webpack`. Production verification passed on deployment `dpl_CZR4kXxAnfvRWNC14XdfvAq6ye9F`: live homepage, docs, `/api/v1/stacks/capabilities`, `/api/v1/docs/reference`, and `POST /api/v1/stacks/route` all expose the named-stack and improvement/update contract.
+
 ## YouStacks Positioning Clarity (from May 27 conversation)
 
 ### 68. Clarify YouStacks as "your own GStack" for any agent

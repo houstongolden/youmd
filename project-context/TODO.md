@@ -8,6 +8,8 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-05-27
+- [x] Add first-class named YouStack portfolio support to the manifest/docs model so users can keep separate coding, scientific research, content creation, and other domain stacks
+- [x] Add explicit YouStack self-improvement and update policy fields, CLI inspect/smoke output, built-in route capabilities, docs examples, and production verification
 - [x] Rework the YouStacks homepage copy around the clearer "build your own GStack for any agent" mental model
 - [x] Rework the `/docs#youstacks` introduction around packaged expertise, shareable stacks, and your own GStack-style agent operating system
 - [x] Add a docs "What Goes In" subsection covering skills, workflows, taste/examples, and protected capabilities

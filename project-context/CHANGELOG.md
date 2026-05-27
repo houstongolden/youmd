@@ -3,21 +3,33 @@
 ## 2026-05-27 — YouStacks Positioning Clarity
 
 ### Marketing / Docs
+- Added named YouStack portfolio guidance so users can keep separate stacks for coding, scientific research, content creation, and other expertise lanes
+- Added `/docs#youstacks` sections for `Named Stacks` and `Self-Improving Stacks`, including domain stack examples and policy-bound autonomous improvement loops
+- Updated homepage YouStacks copy to explain named domain stacks and self-improving stack/skill loops
 - Reframed the homepage YouStacks section around the clearer "build your own GStack for any agent" mental model
 - Changed YouStacks copy from abstract execution-package language to packaged expertise: skills, prompts, workflows, taste, examples, tools, and safe You.md memory access
 - Added a `/docs#youstacks` "What Goes In" subsection covering skills, workflows, taste/examples, and protected capabilities
 - Updated YouStack docs examples and manifest snippets to show a founder/growth expertise stack instead of a generic startup package
 - Tightened the copy again around the exact Gary Tan/GStack analogy: years of expertise, specialist agents, workflows, taste, examples, and review loops packaged into a stack that others can install
 
+### Product Contract
+- Extended the `youstack/v1` manifest model with optional `domain`, `aliases`, `tags`, `improvement`, and `update` fields
+- Added validation warnings for stacks that omit improvement/update policy, plus built-in `stack.improve` and `stack.update` local capabilities
+- Updated `youmd stack inspect`, `smoke`, adapter generation, the sample stack, route scoring, and the stack route API payload around stack identity and improvement/update behavior
+
 ### Verification
 - Verified docs reference freshness with `npm run docs:check`
 - Verified targeted changed-file lint with `npx eslint`
-- Verified TypeScript with `npx tsc --noEmit` after temporarily stashing and restoring unrelated untracked middleware files
-- Verified production build with `npm run build -- --webpack`; Turbopack build path stalled in a PostCSS worker, so Webpack was used for the reliable release build check
+- Verified focused YouStack tests with `npm --prefix cli test -- youstack`
+- Verified TypeScript with `npx tsc --noEmit` and `npm --prefix cli run build` after temporarily stashing unrelated untracked middleware files
+- Verified production build with `npm run build -- --webpack`; Vercel production deploy also passed the Turbopack build path
+- Verified built CLI `youmd stack inspect`, `smoke`, and `route` output for the sample stack
 - Verified local production homepage/docs/reference text on `localhost:3100`
 - Opened the improved homepage and docs YouStacks section in the Codex in-app browser for visual review
 - Deployed commit `f9defd0` to production as Vercel deployment `dpl_EyuaBhd5yXGFrw5eAGu2eBqZ46su`, aliased to `https://www.you.md` and `https://you.md`
 - Verified live production homepage, `/docs#youstacks`, `/api/v1/docs/reference`, and `/api/v1/docs/openapi.json` expose the clarified YouStacks copy and reference surfaces, including the stronger "package your expertise into your own GStack" and Gary Tan/GStack/sub-agent framing
+- Deployed commit `4a0c25d` to production as Vercel deployment `dpl_CZR4kXxAnfvRWNC14XdfvAq6ye9F`, aliased to `https://www.you.md` and `https://you.md`
+- Verified live production homepage, `/docs#youstacks`, `/api/v1/stacks/capabilities`, `/api/v1/docs/reference`, and `POST /api/v1/stacks/route` expose named stack portfolio, self-improvement, update policy, and stack metadata behavior
 
 ## 2026-05-26 — YouStacks Homepage + Docs Surface
 
