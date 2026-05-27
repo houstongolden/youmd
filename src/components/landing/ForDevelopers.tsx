@@ -24,10 +24,10 @@ const useCases = [
 ];
 
 const integrationMethods = [
-  { label: "MCP server", code: "npx --yes youmd@latest mcp --install claude --auto", desc: "agent serves identity context on demand" },
+  { label: "runtime", code: "curl -fsSL https://you.md/install.sh | bash", desc: "installs brain + YouStack helper layer" },
+  { label: "MCP server", code: "youmd mcp --install claude --auto", desc: "agent serves identity context on demand" },
   { label: "REST API", code: "GET /api/v1/profiles?username=x", desc: "structured identity data as JSON" },
   { label: "context links", code: "https://www.you.md/ctx/user/token", desc: "scoped, expiring identity access" },
-  { label: "OAuth flow", code: "coming soon", desc: "\"sign in with you.md\" for AI-native apps" },
 ];
 
 const ForDevelopers = () => (

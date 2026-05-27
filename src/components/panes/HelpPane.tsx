@@ -79,8 +79,13 @@ export function HelpPane({ username }: HelpPaneProps) {
             think of it as a secret-tier section of your identity that never lands in the public bundle.
           </Explainer>
           <Explainer term="skills">
-            identity-aware markdown templates with {`{{identity}}`} variables. install via the cli
+            identity-aware markdown templates with {`{{identity}}`} variables. install via the curl runtime
             and an agent can scaffold projects pre-personalized to who you are.
+          </Explainer>
+          <Explainer term="YouStacks">
+            named packages of your expertise: skills, sub-agents, workflows, prompts, examples,
+            tests, docs, and host adapters. they start private and can become scoped or public only
+            when you explicitly choose that.
           </Explainer>
           <Explainer term="MCP">
             model context protocol -- the standard way agents (claude, cursor, codex, etc.)
@@ -131,7 +136,9 @@ export function HelpPane({ username }: HelpPaneProps) {
         <p className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest mb-1.5">skills</p>
         <div className="space-y-1 mb-3">
           <CopyableCommand command="/skills" dimmed />
+          <CopyableCommand command="/stacks" dimmed />
           <CopyableCommand command="/skill use {name}" dimmed />
+          <CopyableCommand command="/skill use youstack-maintainer" dimmed />
         </div>
 
         <p className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest mb-1.5">account</p>
@@ -186,6 +193,11 @@ export function HelpPane({ username }: HelpPaneProps) {
             hint="identity-aware agent templates"
           />
           <DocLink
+            href="https://you.md/docs#youstacks"
+            label="YouStacks"
+            hint="named expertise stacks + BAMFStack lighthouse"
+          />
+          <DocLink
             href="https://you.md/docs/mcp"
             label="MCP integration"
             hint="connect claude, cursor, codex"
@@ -216,6 +228,7 @@ export function HelpPane({ username }: HelpPaneProps) {
           <CopyableCommand command="youmd push" dimmed />
           <CopyableCommand command="youmd pull" dimmed />
           <CopyableCommand command="youmd skill install all" dimmed />
+          <CopyableCommand command="youmd skill use youstack-maintainer" dimmed />
           <CopyableCommand command="youmd skill init-project" dimmed />
         </div>
 

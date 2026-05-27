@@ -19,7 +19,7 @@ const navigation: NavItem[] = [
     label: "Getting Started",
     children: [
       { id: "web-quickstart", label: "Web Quickstart" },
-      { id: "cli-quickstart", label: "CLI Quickstart" },
+      { id: "cli-quickstart", label: "Runtime Quickstart" },
     ],
   },
   {
@@ -80,8 +80,11 @@ const navigation: NavItem[] = [
       { id: "youstacks-improvement", label: "Self-Improvement" },
       { id: "youstacks-reference-loop", label: "Reference Loop" },
       { id: "youstacks-use-cases", label: "Use Cases" },
-      { id: "youstacks-cli", label: "CLI" },
+      { id: "youstacks-runtime", label: "Runtime" },
+      { id: "youstacks-management", label: "Management" },
       { id: "youstacks-install-flow", label: "Install Flow" },
+      { id: "youstacks-auto-update", label: "Auto-Update" },
+      { id: "youstacks-bamfstack", label: "BAMFStack" },
       { id: "youstacks-manifest", label: "Manifest" },
       { id: "youstacks-examples", label: "Examples" },
       { id: "youstacks-threshold", label: "API/MCP Threshold" },
@@ -264,7 +267,7 @@ function QuickStart() {
   };
 
   const steps: { key: string; cmd: string; desc: string }[] = [
-    { key: "install", cmd: "curl -fsSL https://you.md/install.sh | bash", desc: "install the CLI globally" },
+    { key: "install", cmd: "curl -fsSL https://you.md/install.sh | bash", desc: "install the You.md runtime globally" },
     { key: "login", cmd: "youmd login", desc: "authenticate with browser or email code" },
     { key: "init", cmd: "youmd init", desc: "create your identity" },
     { key: "push", cmd: "youmd push", desc: "publish to you.md/<your-username>" },
@@ -774,12 +777,13 @@ export default function DocsContent() {
               </Step>
             </StepList>
 
-            <H3 id="cli-quickstart">CLI Quickstart</H3>
+            <H3 id="cli-quickstart">Runtime Quickstart</H3>
             <CodeBlock title="terminal">{`$ curl -fsSL https://you.md/install.sh | bash`}</CodeBlock>
             <StepList>
               <Step n={1}>
-                Install the global CLI with the curl bootstrapper. If you prefer
-                npm directly, run <InlineCode>npm install -g youmd@latest</InlineCode>.
+                Install the You.md runtime with the curl bootstrapper. The CLI
+                is just the helper under the hood for files, MCP, smoke checks,
+                host adapters, and sync.
               </Step>
               <Step n={2}>
                 Run <InlineCode>youmd login</InlineCode> to authenticate
@@ -793,6 +797,7 @@ export default function DocsContent() {
               </Step>
               <Step n={5}>
                 Run <InlineCode>you</InlineCode> to meet U, then type{" "}
+                <InlineCode>/stacks</InlineCode> to manage named YouStacks or{" "}
                 <InlineCode>/share</InlineCode> to get your context link
               </Step>
             </StepList>
@@ -886,6 +891,11 @@ export default function DocsContent() {
               behavior, QA/review/release loops, and local-first magic. GBrain
               informs the You.md brain: durable memory, retrieval, sync,
               provenance, privacy, and startup context.
+            </P>
+            <P>
+              Houston&apos;s local workspace also runs a daily reference sync
+              automation, so upstream GStack/GBrain movement becomes a reviewed
+              task queue instead of vague inspiration.
             </P>
             <CodeBlock title="daily reference sync">{`npm run references:sync
 
@@ -1357,12 +1367,13 @@ preferences: terminal-native, monochrome
 
             <H3 id="skills-bundled">Bundled Skills</H3>
             <P>
-              Every you.md install ships with seven built-in skills. These are
+              Every you.md install ships with eight built-in skills. These are
               always available and kept in sync with CLI updates.
             </P>
             <CommandTable
               commands={[
                 { cmd: "youstack-start", desc: "Start local agents with identity, project state, active requests, installed skills, and next moves" },
+                { cmd: "youstack-maintainer", desc: "Organize, update, safely improve, and publish private-by-default named YouStacks" },
                 { cmd: "claude-md-generator", desc: "Bootstrap repo-visible agent instructions from your identity -- persona, preferences, coding style, all baked in" },
                 { cmd: "project-context-init", desc: "Scaffold a project-context/ directory with TODO.md, FEATURES.md, ARCHITECTURE.md, and more" },
                 { cmd: "voice-sync", desc: "Export your voice profile as agent instructions for consistent tone across tools" },
@@ -1439,6 +1450,12 @@ preferences: terminal-native, monochrome
               Codex, Cursor, shared with a teammate, or published as an open
               stack.
             </Callout>
+            <Callout type="tip">
+              The user-facing install should be one command:{" "}
+              <InlineCode>curl -fsSL https://you.md/install.sh | bash</InlineCode>.
+              The <InlineCode>youmd</InlineCode> binary is the runtime helper
+              underneath, not the main product mental model.
+            </Callout>
 
             <H3 id="youstacks-overview">Overview</H3>
             <FeatureMatrix
@@ -1461,7 +1478,11 @@ preferences: terminal-native, monochrome
                 },
                 {
                   title: "Private, shared, or public",
-                  body: "Keep a stack for yourself, share it with friends or teammates through scoped access, or publish an open version other people can install.",
+                  body: "Stacks default to private. Share with friends or teammates through scoped access, or publish an open version only after redaction, smoke checks, and explicit owner approval.",
+                },
+                {
+                  title: "Native maintainer skill",
+                  body: "The bundled youstack-maintainer skill helps agents organize stacks, run smoke checks, keep skills/docs/tests together, and prepare public-readiness diffs.",
                 },
               ]}
             />
@@ -1533,6 +1554,13 @@ preferences: terminal-native, monochrome
               update examples, and refresh local adapter files when the manifest
               policy allows it.
             </P>
+            <P>
+              Self-improving does not mean uncontrolled. The v1 default is:
+              propose improvements, auto-apply only safe local file refreshes
+              when the manifest allows it, and require approval for private
+              context reads, brain writes, connected tools, remote repo writes,
+              and visibility changes.
+            </P>
             <FeatureMatrix
               items={[
                 {
@@ -1585,6 +1613,7 @@ preferences: terminal-native, monochrome
             <CommandTable
               commands={[
                 { cmd: "npm run references:sync", desc: "Fetch local GStack/GBrain reference repos and regenerate reference intelligence reports" },
+                { cmd: "Daily GStack/GBrain Reference Sync", desc: "Local Codex automation that runs the reference monitor each morning and reports candidate tasks" },
                 { cmd: "project-context/reference-intelligence/LATEST.md", desc: "Latest upstream commit summary and source-linked candidate tasks" },
                 { cmd: "project-context/reference-intelligence/TASKS.md", desc: "Review queue for stack, brain, memory, context, API/MCP, and docs improvements" },
               ]}
@@ -1624,58 +1653,125 @@ preferences: terminal-native, monochrome
               ]}
             />
 
-            <H3 id="youstacks-cli">CLI</H3>
+            <H3 id="youstacks-runtime">Runtime, Not CLI-First</H3>
             <P>
-              The CLI is how a stack becomes real on a machine. It validates the
-              manifest, shows the stack name, domain, expertise, agents, scopes,
-              improvement policy, and update policy, routes a request to the
-              right skill or workflow, and generates host-native adapter files.
-              Inspect, smoke, capabilities, and route are read-only; link writes
-              only the declared adapter files.
+              Users should not have to understand a CLI before they understand
+              YouStacks. The product promise is: run one curl command, then your
+              agents can see the You.md runtime, native skills, stack manifests,
+              auto-update helper, MCP server, and host adapters. The helper
+              commands exist for agents and power users.
             </P>
             <CommandTable
               commands={[
+                { cmd: "curl -fsSL https://you.md/install.sh | bash", desc: "Install the You.md runtime, bundled skills, auto-upgrade helper, and stack starter files" },
                 { cmd: "youmd stack inspect --path DIR", desc: "Show name, slug, domain, manifest metadata, files, scopes, adapters, and validation warnings" },
                 { cmd: "youmd stack smoke --path DIR", desc: "Run read-only schema, file, checksum, adapter, and capability checks" },
                 { cmd: "youmd stack capabilities --path DIR", desc: "List local and protected capabilities declared by the stack" },
                 { cmd: "youmd stack route --path DIR \"start this repo\"", desc: "Choose the best local capability for a natural-language request" },
                 { cmd: "youmd stack link --path DIR --hosts codex --target .", desc: "Generate host adapter files from the stack manifest" },
+                { cmd: "youmd skill use youstack-maintainer", desc: "Ask the bundled maintainer skill to organize, improve, update, or prep a stack for sharing" },
               ]}
             />
-            <CodeBlock title="terminal">{`youmd stack smoke --path cli/examples/youstack-personal
+            <CodeBlock title="terminal">{`curl -fsSL https://you.md/install.sh | bash
+youmd stack smoke --path cli/examples/youstack-personal
 youmd stack route --path cli/examples/youstack-personal "search my memories before starting"
 youmd stack link --path cli/examples/youstack-personal --hosts codex --target . --dry-run`}</CodeBlock>
+
+            <H3 id="youstacks-management">Shell And Profile Management</H3>
+            <P>
+              You.md should expose stack management in the web shell and profile
+              the same way it exposes skills, sharing, memory, and agents. Type{" "}
+              <InlineCode>/stacks</InlineCode> in the shell to view named stacks,
+              their visibility, install command, update policy, and maintainer
+              workflow. Public profiles can show only stacks whose manifest is{" "}
+              <InlineCode>public-open</InlineCode>; private and scoped stacks stay
+              owner-only.
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "/stacks", desc: "Open the stack portfolio pane in the You.md shell" },
+                { cmd: "/skill use youstack-maintainer", desc: "Ask the agent to organize, update, or improve a selected stack" },
+                { cmd: "make my BAMFStack public", desc: "Agent prepares a public-readiness diff, redaction list, smoke result, and asks for final approval" },
+                { cmd: "create a private scientific research stack", desc: "Agent scaffolds a named private stack with skills, workflows, examples, tests, and protected brain scopes" },
+              ]}
+            />
 
             <H3 id="youstacks-install-flow">Install Flow</H3>
             <StepList>
               <Step n={1}>
-                Pull or create a stack folder that contains{" "}
-                <InlineCode>youstack.json</InlineCode>, local skills, prompts,
-                sub-agents, workflows, tool rules, docs, examples, and smoke
-                tests.
+                Install the runtime once with{" "}
+                <InlineCode>curl -fsSL https://you.md/install.sh | bash</InlineCode>.
+                This installs current You.md source, bundled skills, and the
+                auto-upgrade helper.
               </Step>
               <Step n={2}>
+                Pull, create, or ask U to scaffold a named stack folder that
+                contains <InlineCode>youstack.json</InlineCode>, local skills,
+                prompts, sub-agents, workflows, docs, examples, and smoke tests.
+              </Step>
+              <Step n={3}>
                 Run <InlineCode>youmd stack inspect --path DIR</InlineCode> to
                 read metadata, declared scopes, adapters, capabilities, and
                 warnings before trusting the package.
               </Step>
-              <Step n={3}>
+              <Step n={4}>
                 Run <InlineCode>youmd stack smoke --path DIR</InlineCode>. This
                 is read-only: it validates schema, required files, checksums,
                 adapters, and capability declarations without touching the brain.
               </Step>
-              <Step n={4}>
+              <Step n={5}>
                 Generate host-native files with{" "}
                 <InlineCode>youmd stack link --path DIR --hosts codex,claude,cursor --target .</InlineCode>.
                 Use <InlineCode>--dry-run</InlineCode> first when installing into
                 an existing repo.
               </Step>
-              <Step n={5}>
+              <Step n={6}>
                 Start the host agent. It can read local stack files first, then
                 use You.md MCP/API only for protected memory, private context,
                 sync, grants, connected tools, or server-side actions.
               </Step>
             </StepList>
+
+            <H3 id="youstacks-auto-update">Auto-Update</H3>
+            <P>
+              The curl installer writes a best-effort auto-upgrade helper at{" "}
+              <InlineCode>~/.youmd/bin/youmd-auto-upgrade</InlineCode>. Host
+              adapter files and the <InlineCode>youstack-maintainer</InlineCode>{" "}
+              skill can run it quietly before stack work, just like the BAMFStack
+              preamble. The helper is throttled by default so it does not rebuild
+              on every agent message.
+            </P>
+            <CodeBlock title="agent preamble">{`if [ -x "$HOME/.youmd/bin/youmd-auto-upgrade" ]; then
+  "$HOME/.youmd/bin/youmd-auto-upgrade" --quiet || true
+fi`}</CodeBlock>
+
+            <H3 id="youstacks-bamfstack">BAMFStack Lighthouse</H3>
+            <P>
+              BAMFStack should be the first public proof that YouStacks work:
+              a shareable, open creator-growth stack with a one-line install,
+              local skills, commands, workflow routing, read-only smoke checks,
+              docs-quality examples, env-only API key handling, and protected
+              API/MCP calls for real product actions.
+            </P>
+            <FeatureMatrix
+              items={[
+                {
+                  title: "What maps 1:1",
+                  body: "Curl install, host-native skills, helper CLI behavior, capability discovery, deterministic route endpoint, smoke test, docs, prompts, and auto-upgrade preamble.",
+                },
+                {
+                  title: "What stays protected",
+                  body: "BAMF API keys, private creator data, proprietary prompts, product internals, mutations, and connected actions stay behind env vars and authenticated API/MCP.",
+                },
+                {
+                  title: "What You.md adds",
+                  body: "Named stack metadata, public/private/scoped visibility, You.md brain scopes, profile-hosted discovery, GitHub sync design, and self-improvement policy.",
+                },
+              ]}
+            />
+            <CodeBlock title="public example">{`youmd stack inspect --path cli/examples/youstack-bamfstack-public
+youmd stack smoke --path cli/examples/youstack-bamfstack-public
+youmd stack route --path cli/examples/youstack-bamfstack-public "draft a creator post from research"`}</CodeBlock>
 
             <H3 id="youstacks-manifest">Manifest</H3>
             <P>
@@ -1762,6 +1858,15 @@ youmd stack route --path stacks/scientific-research "triage these papers and des
 
 # content stack
 youmd stack route --path stacks/content-studio "turn this idea into a LinkedIn post in my style"`}</CodeBlock>
+            <CodeBlock title="BAMFStack lighthouse">{`# open public stack example
+youmd stack inspect --path cli/examples/youstack-bamfstack-public
+youmd stack smoke --path cli/examples/youstack-bamfstack-public
+
+# public install surface stays curl-first
+curl -fsSL https://you.md/install.sh | bash
+
+# host agents use the maintainer skill for safe updates
+youmd skill use youstack-maintainer`}</CodeBlock>
             <CodeBlock title="personal stack">{`# inspect what a stack asks for
 youmd stack inspect --path stacks/my-founder-stack
 

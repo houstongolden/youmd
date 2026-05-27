@@ -11,6 +11,23 @@ Last Updated: 2026-05-27
 
 ---
 
+## YouStacks Curl Runtime + BAMFStack Lighthouse (from May 27 conversation)
+
+### 71. Make YouStacks curl-first, auto-updating, native-skill maintained, and BAMFStack-proofed
+**Status:** DONE
+**Verified:** NO
+**Production Verified:** PENDING_DEPLOYMENT
+**Request:** Reframe YouStacks so users do not need a CLI mental model: one curl install should deliver the You.md runtime, native skills, auto-update behavior like BAMFStack, a shareable/open-source BAMFStack lighthouse example, agent-driven stack organization/update through a bundled skill, and shell/profile visibility management where stacks default private and only become public by owner action.
+**Actionable Scope:**
+1. Make the curl installer the default product surface and describe `youmd` as the helper runtime underneath.
+2. Add a native bundled maintainer skill that lets host agents organize, improve, update, smoke, and prepare private/public visibility changes for named YouStacks.
+3. Add an auto-upgrade helper so host adapters and stack workflows can refresh the runtime before stack work.
+4. Create an open/public-safe BAMFStack lighthouse YouStack example with manifest, skills, workflows, prompts, docs, tests, update policy, improvement policy, protected-capability boundaries, and public-readiness routing.
+5. Add shell/dashboard and profile surfaces for seeing named stacks, their visibility, update policy, install command, and public/private rules.
+6. Keep stack visibility private by default, with scoped/public sharing only after redaction, smoke checks, and explicit owner approval.
+7. Keep GStack/GBrain reference monitoring live with local reference repos, updated task queues, and a daily automation.
+**Progress (2026-05-27):** Updated `https://you.md/install.sh` into a curl-first You.md runtime installer that source-installs current You.md by default, falls back to npm, installs native skills, writes `~/.youmd/bin/youmd-auto-upgrade`, and writes the stack runtime preamble. Added bundled `youstack-maintainer` across CLI catalog, SkillsPane, HelpPane, docs, README, You Agent prompt copy, and routing capabilities. Added `/stacks` shell navigation plus a YouStacks dashboard pane showing named private/public stacks, visibility, install commands, update policies, and agent commands. Added profile rendering for `public-open` YouStacks while keeping private/scoped stacks owner-only. Added `cli/examples/youstack-bamfstack-public` as the public-safe BAMFStack lighthouse with manifest, skill, workflow, prompt, quickstart, smoke test, auto-update policy, and public-readiness capability. Synced GStack/GBrain references to latest GStack `19770ea` and GBrain `42d99b6`, regenerated reference tasks, documented the daily reference automation, and created the active local Codex automation `Daily GStack/GBrain Reference Sync`. Local verification passed docs generation/check, targeted ESLint with zero errors, CLI TypeScript, root TypeScript, focused YouStack tests, CLI build, Next production build, built CLI BAMFStack smoke/routing, and local production homepage/docs/install/API smoke checks.
+
 ## GStack/GBrain Reference Intelligence (from May 27 conversation)
 
 ### 70. Monitor GStack/GBrain and use them to improve YouStacks + You.md brain
@@ -26,6 +43,7 @@ Last Updated: 2026-05-27
 5. Improve homepage and docs so they directly explain the GStack/GBrain-guided architecture.
 6. Set up a daily local automation to run the reference monitor.
 **Progress (2026-05-27):** Added `npm run references:sync` backed by `scripts/reference-intelligence.mjs`, which clones/fetches `garrytan/gstack` and `garrytan/gbrain` into ignored `.reference-repos/garrytan/*`, records latest commit state, and writes `project-context/reference-intelligence/LATEST.md` plus `TASKS.md`. The first run captured GStack latest commit `a6fb317` and GBrain latest commit `42d99b6`, producing 24 candidate You.md tasks. Added `project-context/REFERENCE_INTELLIGENCE.md` plus PRD/implementation-plan updates describing GStack -> YouStacks and GBrain -> You.md brain translation rules. Updated homepage copy and `/docs` with Brain Architecture, Reference Intelligence, and GStack/GBrain Reference Loop sections. Local verification passed script syntax check, docs check, targeted ESLint, `npx tsc --noEmit`, and `npm run build -- --webpack`. Production verification passed on deployment `dpl_4UwpUiK2vUPYu8R9nj8dfnBDpq9M`: live homepage and docs expose the reference-guided architecture and reference monitor command.
+**Progress (2026-05-27 continuation):** Re-ran `npm run references:sync` against the latest upstream refs: GStack advanced to `19770ea` (`v1.51.0.0 feat: $B memory diagnostic + 4 CDP-resource leak fixes`) and GBrain remains at `42d99b6`, producing a fresh review task in `project-context/reference-intelligence/TASKS.md`. Created the active local Codex automation `Daily GStack/GBrain Reference Sync` so the monitor runs daily and reports candidate tasks.
 
 ## YouStacks Named Portfolio + Self-Improvement (from May 27 conversation)
 

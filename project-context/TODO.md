@@ -8,6 +8,11 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-05-27
+- [x] Reframe the curl installer as the You.md runtime install rather than a CLI-first install, including source install, fallback npm install, native skill install, stack runtime notes, and `youmd-auto-upgrade`
+- [x] Add bundled `youstack-maintainer` so agents can organize, improve, update, smoke, and prepare private/public visibility changes for named YouStacks
+- [x] Add a `/stacks` shell/dashboard pane plus profile rendering rules for named private/scoped/public YouStacks
+- [x] Add the public-safe `cli/examples/youstack-bamfstack-public` lighthouse with manifest, skill, workflow, prompt, quickstart, smoke test, update policy, improvement policy, and public-readiness routing
+- [x] Create the daily local `Daily GStack/GBrain Reference Sync` automation and re-sync references to latest GStack `19770ea` / GBrain `42d99b6`
 - [x] Add local GStack/GBrain reference intelligence monitoring with ignored clones, latest upstream summaries, and generated You.md task queues
 - [x] Update homepage/docs so YouStacks are explicitly GStack-guided and the You.md brain is explicitly GBrain-guided
 - [x] Deploy and production-verify the GStack/GBrain reference intelligence docs/homepage update on Vercel deployment `dpl_4UwpUiK2vUPYu8R9nj8dfnBDpq9M`

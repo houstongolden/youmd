@@ -15,6 +15,7 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Public profile pages with SSR, JSON-LD, OG cards, breadcrumbs
 - Profiles directory with search/filter
 - Docs page with Claude Code integration guide plus a full YouStacks chapter covering named stack portfolios, self-improving stack/skill loops, GStack/GBrain reference intelligence, use cases, install flow, manifest, examples, API/MCP threshold, generated stack endpoint reference, and stack MCP tools
+- Docs now frame YouStacks as runtime-first rather than CLI-first: one curl install, native maintainer skill, auto-upgrade helper, shell/profile management, and BAMFStack as the public lighthouse example
 - SiteNav top bar across all pages
 - /initialize onboarding boot sequence + agent conversation
 - You Agent chat with streaming responses, thinking indicators, progress steps
@@ -37,11 +38,12 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Tokenized `/ctx/<username>/<token>` links now fail safely and serve reliably for agents: valid links return `you-md/v1` JSON with `_privateContext`, tracking/logging writes are best-effort, invalid links return explicit JSON errors, and deployed responses use private/no-store cache headers with `Vary: Accept`
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
-- Homepage now has a first-class YouStacks section that explains stacks as "your own GStack" for packaging expertise, skills, sub-agents, prompts, workflows, taste, examples, tool rules, safe You.md memory access, and improvement loops; it now explicitly supports naming separate stacks for coding, scientific research, content creation, and other domains, with GStack/GBrain reference patterns guiding the architecture
+- Homepage now has a first-class YouStacks section that explains stacks as "your own GStack" for packaging expertise, skills, sub-agents, prompts, workflows, taste, examples, tool rules, safe You.md memory access, and improvement loops; it now explicitly supports naming separate stacks for coding, scientific research, content creation, and other domains, teaches curl-first runtime install instead of a CLI-first mental model, and shows GStack/GBrain reference patterns guiding the architecture
 
 ### CLI (youmd v0.6.23 — ready to publish)
 - 21 commands (added `skill` with 19 subcommands)
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
+- Bundled skills now include `youstack-maintainer`, which lets host agents organize, update, improve, smoke, and prepare named YouStacks for private/scoped/public sharing with owner approval
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
 - Conversational AI onboarding with BrailleSpinners, ASCII logo, portrait rendering
 - Passwordless email-code auth (no API token required for your own account)
@@ -52,11 +54,12 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - npm publish retry path is fixed: the next release target is `0.6.23`, package metadata is normalized, the trusted publish workflow matches current npm GitHub Actions guidance, and the built CLI, MCP user-agent, and MCP serverInfo now match that version cleanly
 - The exact npm Trusted Publishing setup command has been validated with npm's current CLI shape: `npx npm@11.15.0 trust github youmd --repo houstongolden/youmd --file publish-cli.yml --allow-publish --yes`. It resolves to package `youmd`, repository `houstongolden/youmd`, workflow `publish-cli.yml`, and publish permission; running it for real still requires an npm login with package write access and 2FA.
 - Local YouStacks foundation is implemented: `youmd stack inspect`, `smoke`, `capabilities`, `route`, and `link` support local/static stack validation, named stack identity, domain metadata, improvement/update policy, deterministic routing, and Claude Code/Codex/Cursor adapter generation
+- `https://you.md/install.sh` now acts as the runtime installer: source install by default, npm fallback, native skills install, auto-upgrade helper, and stack runtime preamble
 - Local MCP now exposes YouStack resources/tools for manifest inspection, capability listing, request routing, and read-only smoke validation
 - Claude and Codex MCP configs on this machine now use the safe published-package launcher (`npx --yes youmd@latest mcp`) with backups written during migration
 - MCP tools have been smoke-tested through stdio from the installed local CLI: `whoami` returns Houston's real home-bundle identity from inside this repo, and `use_skill project-context-init` returns identity-interpolated skill content
 - Local MCP now exposes `get_agent_brief` plus `youmd://agent/brief`, giving Claude/Codex/Cursor-style agents one startup call for identity, repo instructions, project-context files, active requests, open TODOs, known issues, installed skills, and next moves
-- Bundled skills now include `youstack-start` locally, making the default stack 7 skills and giving local agents a first-session operating loop before they touch code
+- Bundled skills now include `youstack-start` and `youstack-maintainer` locally, making the default stack 8 skills and giving local agents both a first-session operating loop and a stack maintenance loop before they touch code
 - npm Trusted Publishing is wired through `.github/workflows/publish-cli.yml`; after configuring the package on npm, local agents can run `npm run publish:cli` to trigger the GitHub OIDC publish without a long-lived npm token or OTP
 - The published package is cleaner now: compiled test artifacts are excluded from `dist`, and the dry-run tarball dropped from 248 files to 212 files
 - Bare `youmd` now enters like U instead of dropping straight into a dry command list: it shows the YOU logo, optionally shows the saved portrait preview, greets the user, surfaces project-context opportunities, and proposes the next best moves contextually
@@ -100,10 +103,13 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 ### YouStacks Product Layer
 - Planning/audit is preserved in `project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md` and `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md`
 - GStack/GBrain reference intelligence is implemented: `npm run references:sync` clones/fetches `garrytan/gstack` and `garrytan/gbrain` into ignored `.reference-repos/`, then writes `project-context/reference-intelligence/LATEST.md` and `TASKS.md` for daily review
+- The daily local `Daily GStack/GBrain Reference Sync` automation is active, and the latest reference sync captured GStack `19770ea` plus GBrain `42d99b6`
 - Local-first YouStack manifests work as portable execution packages on top of You.md rather than as a replacement brain
 - Manifests now support named stack portfolios via `name`, stable `slug`, `domain`, `aliases`, and `tags`, so one user can keep separate coding, scientific research, content creation, and other domain stacks
 - Manifests now declare `improvement` and `update` policy, and local stack capabilities include `stack.improve` plus `stack.update` for policy-bound stack/skill self-improvement and self-updating
 - The sample private personal YouStack lives in `cli/examples/youstack-personal`
+- A public-safe BAMFStack lighthouse YouStack lives in `cli/examples/youstack-bamfstack-public`, with a manifest, skill, workflow, prompt, quickstart, smoke test, auto-update policy, improvement policy, protected-capability boundaries, and public-readiness routing
+- The web shell now has a `/stacks` pane for named private/scoped/public stacks, and public profiles can render only `public-open` YouStacks from profile/bundle data
 - Primary host adapter generation exists for Claude Code, Codex, and Cursor; OpenClaw, Hermes Agent, and Pi agents remain secondary-host follow-up phases
 - Shared read-only HTTP endpoints now exist for the capability contract and deterministic routing: `GET /api/v1/stacks/capabilities` and `POST /api/v1/stacks/route`
 - Protected brain retrieval still uses the existing authenticated You.md MCP/API surfaces in this slice; stack-specific grants/tokens are intentionally deferred to the next backend phase

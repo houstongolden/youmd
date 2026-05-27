@@ -104,6 +104,12 @@ function getYouJson(): Record<string, unknown> {
   return readJsonOr(youJsonPath, {}) as Record<string, unknown>;
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
 function getYouMd(): string {
   const bundleDir = getBundleDir();
   return readFileOr(path.join(bundleDir, "you.md"), "");
@@ -247,26 +253,37 @@ const MEMORY_CATEGORIES = [
  * first call an agent makes so it can orient on the user in <1 tool round.
  */
 function buildWhoamiSummary(): string {
-  const youJson = getYouJson() as Record<string, any>;
+  const youJson = getYouJson();
 
-  const identity = youJson.identity || {};
-  const preferences = youJson.preferences || {};
-  const agentPrefs = preferences.agent || {};
-  const directives = youJson.agent_directives || {};
+  const identity = asRecord(youJson.identity);
+  const preferences = asRecord(youJson.preferences);
+  const agentPrefs = asRecord(preferences.agent);
+  const directives = asRecord(youJson.agent_directives);
   const projects = Array.isArray(youJson.projects) ? youJson.projects : [];
 
-  const name = identity.name || youJson.username || "(unknown)";
-  const role = identity.tagline || identity.bio?.short || "";
-  const stack = directives.default_stack || "";
-  const tone = agentPrefs.tone || "";
-  const avoidList = Array.isArray(agentPrefs.avoid) ? agentPrefs.avoid : [];
+  const bio = asRecord(identity.bio);
+  const name = typeof identity.name === "string"
+    ? identity.name
+    : typeof youJson.username === "string" ? youJson.username : "(unknown)";
+  const role = typeof identity.tagline === "string"
+    ? identity.tagline
+    : typeof bio.short === "string" ? bio.short : "";
+  const stack = typeof directives.default_stack === "string" ? directives.default_stack : "";
+  const tone = typeof agentPrefs.tone === "string" ? agentPrefs.tone : "";
+  const avoidList = Array.isArray(agentPrefs.avoid)
+    ? agentPrefs.avoid.filter((item): item is string => typeof item === "string")
+    : [];
   const avoid = avoidList.join(", ");
   const topProjects = projects
     .slice(0, 3)
-    .map((p: any) => (typeof p === "string" ? p : p?.name || ""))
+    .map((project) => {
+      if (typeof project === "string") return project;
+      const record = asRecord(project);
+      return typeof record.name === "string" ? record.name : "";
+    })
     .filter(Boolean)
     .join(", ");
-  const goal = directives.current_goal || "";
+  const goal = typeof directives.current_goal === "string" ? directives.current_goal : "";
 
   const lines: string[] = [];
   lines.push(`Name: ${name}`);
@@ -294,13 +311,22 @@ function buildIdentityMarkdown(): string {
   if (md) return md;
 
   // Fallback: synthesize from youJson if you.md is missing
-  const youJson = getYouJson() as Record<string, any>;
-  const identity = youJson.identity || {};
+  const youJson = getYouJson();
+  const identity = asRecord(youJson.identity);
+  const bio = asRecord(identity.bio);
   const parts: string[] = [];
-  parts.push(`# ${identity.name || youJson.username || "Identity"}`);
-  if (identity.tagline) parts.push(identity.tagline);
-  if (identity.bio?.long || identity.bio?.medium || identity.bio?.short) {
-    parts.push(`\n## About\n\n${identity.bio.long || identity.bio.medium || identity.bio.short}`);
+  const title = typeof identity.name === "string"
+    ? identity.name
+    : typeof youJson.username === "string" ? youJson.username : "Identity";
+  parts.push(`# ${title}`);
+  if (typeof identity.tagline === "string") parts.push(identity.tagline);
+  const about = typeof bio.long === "string"
+    ? bio.long
+    : typeof bio.medium === "string"
+      ? bio.medium
+      : typeof bio.short === "string" ? bio.short : "";
+  if (about) {
+    parts.push(`\n## About\n\n${about}`);
   }
   return parts.join("\n") + "\n";
 }
@@ -1263,7 +1289,7 @@ export async function startMcpServer(): Promise<void> {
             properties: {
               name: {
                 type: "string",
-                description: "Skill name: youstack-start, voice-sync, claude-md-generator, project-context-init, meta-improve, proactive-context-fill, you-logs",
+                description: "Skill name: youstack-start, youstack-maintainer, voice-sync, claude-md-generator, project-context-init, meta-improve, proactive-context-fill, you-logs",
               },
             },
             required: ["name"],
@@ -1596,7 +1622,7 @@ export async function startMcpServer(): Promise<void> {
         }
 
         try {
-          const result = await apiRequest("/api/v1/me/memories", {
+          await apiRequest("/api/v1/me/memories", {
             method: "POST",
             body: {
               memories: [{
@@ -1816,7 +1842,7 @@ export async function startMcpServer(): Promise<void> {
         }
         const { sourceType, sourceUrl } = args as { sourceType: string; sourceUrl: string };
         try {
-          const result = await apiRequest("/api/v1/me/sources", {
+          await apiRequest("/api/v1/me/sources", {
             method: "POST",
             body: { sourceType, sourceUrl },
           });
@@ -1918,19 +1944,29 @@ export async function startMcpServer(): Promise<void> {
           return { content: [{ type: "text" as const, text: `failed to fetch activity log: ${res.status}` }], isError: true };
         }
 
-        const data = await res.json() as { activity?: any[] };
+        type ActivityEvent = {
+          createdAt?: number;
+          agentName?: string;
+          action?: string;
+          resource?: string;
+          bundleVersionBefore?: number;
+          bundleVersionAfter?: number;
+        };
+        const data = await res.json() as { activity?: ActivityEvent[] };
         const events = data.activity || [];
 
         if (events.length === 0) {
           return { content: [{ type: "text" as const, text: "No activity yet. Agents will appear here when they connect to your you.md identity." }] };
         }
 
-        const formatted = events.slice(0, 30).reverse().map((e: any) => {
-          const time = new Date(e.createdAt).toTimeString().slice(0, 5);
+        const formatted = events.slice(0, 30).reverse().map((e) => {
+          const time = new Date(e.createdAt || Date.now()).toTimeString().slice(0, 5);
           const versions = e.bundleVersionBefore && e.bundleVersionAfter
             ? ` v${e.bundleVersionBefore}→v${e.bundleVersionAfter}`
             : '';
-          return `${time}  ${e.agentName.padEnd(16)}  ${e.action.padEnd(12)}  ${e.resource || ''}${versions}`;
+          const agentName = (e.agentName || "unknown").padEnd(16);
+          const action = (e.action || "read").padEnd(12);
+          return `${time}  ${agentName}  ${action}  ${e.resource || ''}${versions}`;
         }).join('\n');
 
         return {

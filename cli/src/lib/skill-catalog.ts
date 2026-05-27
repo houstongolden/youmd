@@ -6,7 +6,6 @@
  */
 
 import * as fs from "fs";
-import * as path from "path";
 import * as yaml from "js-yaml";
 import { getSkillCatalogPath, ensureSkillsDir, readGlobalConfig } from "./config";
 
@@ -32,7 +31,7 @@ export interface SkillCatalog {
 /**
  * Default bundled skills that ship with youmd.
  */
-function defaultSkills(owner: string): SkillEntry[] {
+function defaultSkills(): SkillEntry[] {
   return [
     {
       name: "youstack-start",
@@ -42,6 +41,16 @@ function defaultSkills(owner: string): SkillEntry[] {
       scope: "shared",
       identity_fields: ["profile.about", "preferences.agent", "directives.agent", "voice.overall"],
       requires: [],
+      installed: false,
+    },
+    {
+      name: "youstack-maintainer",
+      description: "Organize, update, safely improve, and publish private-by-default YouStacks",
+      version: "1.0.0",
+      source: "bundled:youstack-maintainer.md",
+      scope: "shared",
+      identity_fields: ["profile.about", "preferences.agent", "directives.agent", "voice.overall"],
+      requires: ["youstack-start"],
       installed: false,
     },
     {
@@ -114,7 +123,7 @@ export function readSkillCatalog(): SkillCatalog {
   const catalogPath = getSkillCatalogPath();
   const config = readGlobalConfig();
   const owner = config.username || "anonymous";
-  const defaults = defaultSkills(owner);
+  const defaults = defaultSkills();
 
   if (fs.existsSync(catalogPath)) {
     try {

@@ -22,15 +22,15 @@ const INSTALL_COMMANDS: Record<InstallMode, { label: string; command: string; de
   npm: {
     label: "npm",
     command: "npm install -g youmd@latest",
-    description: "direct global install",
+    description: "direct helper install",
   },
 };
 
 export function CliInstallTabs({
   className = "",
-  helperText = "then run youmd login or youmd init",
+  helperText = "then run you",
   defaultMode = "curl",
-  title = "CLI install",
+  title = "runtime install",
 }: CliInstallTabsProps) {
   const [mode, setMode] = useState<InstallMode>(defaultMode);
   const [copied, setCopied] = useState(false);

@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "youstack/v1",
+  "kind": "youstack",
+  "slug": "bamfstack-public",
+  "name": "BAMFStack Public Lighthouse",
+  "domain": "creator-growth",
+  "aliases": ["bamfstack", "creator-agent-stack", "linkedin-growth-stack"],
+  "tags": ["content", "creator-growth", "api-mcp", "lighthouse"],
+  "version": "0.1.0",
+  "description": "Open YouStack example showing how BAMFStack-style skills, workflows, routing, smoke checks, docs, and auto-update behavior map into You.md without exposing secrets.",
+  "visibility": "public-open",
+  "owner": {
+    "name": "Houston Golden",
+    "profile": "https://you.md/houstongolden"
+  },
+  "compatibility": {
+    "hosts": ["claude-code", "codex", "cursor"],
+    "minYoumdCli": "0.6.23",
+    "requiresYoumdApi": true,
+    "requiresYoumdMcp": true
+  },
+  "brainScopes": [
+    {
+      "scope": "identity.public.read",
+      "required": true,
+      "reason": "Let host agents understand the stack author, public expertise, and safe usage boundaries."
+    },
+    {
+      "scope": "memories.search",
+      "required": false,
+      "reason": "Retrieve protected creator-growth lessons only when the owner grants access."
+    },
+    {
+      "scope": "private_context.read",
+      "required": false,
+      "reason": "Read private playbooks, client notes, or proprietary prompts only through scoped You.md grants."
+    }
+  ],
+  "files": [
+    {
+      "path": "skills/bamfstack-start/SKILL.md",
+      "type": "skill",
+      "required": true
+    },
+    {
+      "path": "workflows/creator-growth-workflow.md",
+      "type": "workflow",
+      "required": true
+    },
+    {
+      "path": "prompts/creator-draft-starter.md",
+      "type": "prompt",
+      "required": true
+    },
+    {
+      "path": "docs/quickstart.md",
+      "type": "docs",
+      "required": true
+    },
+    {
+      "path": "tests/smoke.md",
+      "type": "test",
+      "required": true
+    }
+  ],
+  "adapters": {
+    "claude-code": {
+      "files": [".claude/skills/youstacks/bamfstack-public/SKILL.md"],
+      "bootstrap": "CLAUDE.md"
+    },
+    "codex": {
+      "files": [".codex/skills/youstacks/bamfstack-public/SKILL.md"],
+      "bootstrap": "AGENTS.md"
+    },
+    "cursor": {
+      "files": [".cursor/rules/youstacks-bamfstack-public.md"],
+      "bootstrap": ".cursor/rules"
+    }
+  },
+  "capabilities": [
+    {
+      "id": "creator-context",
+      "intent": "Inspect creator context, existing content, ideas, knowledge, media, and analytics before generating anything.",
+      "workflow": "workflows/creator-growth-workflow.md",
+      "skill": "bamfstack-start",
+      "localOnly": true,
+      "mutationPolicy": "read_only"
+    },
+    {
+      "id": "draft-plan",
+      "intent": "Propose source-backed post, image, or carousel plans and wait for approval before creating drafts.",
+      "workflow": "workflows/creator-growth-workflow.md",
+      "skill": "bamfstack-start",
+      "localOnly": true,
+      "mutationPolicy": "read_only"
+    },
+    {
+      "id": "public-readiness",
+      "intent": "Prepare a public/private visibility review for BAMFStack: redact secrets, strip private memories, document protected capabilities, run smoke checks, and ask approval before publishing.",
+      "workflow": "workflows/creator-growth-workflow.md",
+      "skill": "bamfstack-start",
+      "localOnly": true,
+      "mutationPolicy": "read_only"
+    },
+    {
+      "id": "capability-discovery",
+      "intent": "Fetch BAMF or You.md capability maps before choosing a REST, MCP, local skill, or mutation path.",
+      "mcpTool": "you.get_stack_capabilities",
+      "apiEndpoint": "GET /api/v1/stacks/capabilities",
+      "requiredScopes": ["identity.public.read"],
+      "mutationPolicy": "read_only"
+    },
+    {
+      "id": "protected-bamf-action",
+      "intent": "Run authenticated BAMF API/MCP actions only after env-only key checks and exact user approval.",
+      "apiEndpoint": "BAMF_API_BASE /v1/*",
+      "requiredScopes": ["connected_tools.run"],
+      "mutationPolicy": "server_action"
+    }
+  ],
+  "accessPolicy": {
+    "defaultMode": "local_static",
+    "protectedByDefault": true,
+    "requiresApprovalFor": ["brain.write", "private_context.read", "connected_tool.write", "remote_repo.write", "publish_public"],
+    "secretPolicy": "env_only"
+  },
+  "sharing": {
+    "allowedModes": ["private", "scoped-link", "public-open"],
+    "defaultMode": "private",
+    "publicReadiness": ["redact secrets", "strip private memories", "strip proprietary prompts", "run smoke", "document protected capabilities"]
+  },
+  "repoSync": {
+    "enabled": false,
+    "provider": "github",
+    "path": "youstacks/bamfstack-public",
+    "recommendedOwnerRepo": "houstongolden/bamfstack-public"
+  },
+  "docs": {
+    "quickstart": "docs/quickstart.md",
+    "workflow": "workflows/creator-growth-workflow.md"
+  },
+  "tests": {
+    "smoke": "tests/smoke.md"
+  },
+  "improvement": {
+    "mode": "propose",
+    "cadence": "after creator workflow sessions and upstream BAMFStack/GStack/GBrain reference reviews",
+    "signals": ["usage", "failures", "user corrections", "route misses", "repo diffs", "smoke results", "reference-intelligence tasks"],
+    "evals": ["youmd stack smoke", "capability routing chooses creator-context before draft-plan", "public-readiness redaction checklist passes"],
+    "appliesTo": ["skills", "workflows", "prompts", "docs", "examples", "tests", "adapters"],
+    "approvalRequiredFor": ["brain.write", "private_context.read", "connected_tool.write", "remote_repo.write", "publish_public"]
+  },
+  "update": {
+    "channel": "hosted-curl",
+    "check": "~/.youmd/bin/youmd-auto-upgrade --quiet && youmd stack smoke",
+    "source": "https://you.md/install.sh plus BAMFStack source package",
+    "autoApply": true
+  },
+  "provenance": {
+    "lighthouse": "BAMFStack public/bamfstack pattern",
+    "referenceRepos": ["garrytan/gstack", "garrytan/gbrain"],
+    "notes": "This example copies the public architecture pattern, not proprietary prompts, secrets, creator data, or private BAMF internals."
+  }
+}

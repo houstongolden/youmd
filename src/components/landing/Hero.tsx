@@ -10,9 +10,9 @@ import { TerminalCard } from "@/components/ui/Card";
 const proofItems = ["Claude Code", "Cursor", "Codex", "ChatGPT"];
 
 const terminalLines = [
-  ["$ youmd init", "build identity through conversation"],
-  ["$ youmd push", "publish you.md/username"],
-  ["$ youmd skill link codex", "sync context into agents"],
+  ["$ curl -fsSL https://you.md/install.sh | bash", "install the You.md runtime"],
+  ["$ you", "meet U and sync your brain"],
+  ["$ /stacks", "manage private/public YouStacks"],
 ];
 
 const Hero = () => {
@@ -57,7 +57,7 @@ const Hero = () => {
                 Create your you.md
               </ButtonLink>
               <ButtonLink href="#how-it-works" variant="secondary" size="lg">
-                Install CLI
+                Install runtime
               </ButtonLink>
             </div>
 

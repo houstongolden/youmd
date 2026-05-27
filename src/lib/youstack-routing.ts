@@ -38,6 +38,20 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
     mutationPolicy: "write_local",
   },
   {
+    id: "native-stack-maintainer",
+    intent: "Organize, deduplicate, improve, and self-update named YouStacks and their skills using the bundled youstack-maintainer skill.",
+    localOnly: true,
+    skill: "youstack-maintainer",
+    mutationPolicy: "write_local",
+  },
+  {
+    id: "stack-visibility-management",
+    intent: "List, manage, share, or publish private-by-default YouStacks through owner-approved shell/dashboard/API actions.",
+    apiEndpoint: "POST /api/v1/stacks/{stack_id}/visibility",
+    requiredScopes: ["stack.write", "stack.publish"],
+    mutationPolicy: "server_action",
+  },
+  {
     id: "protected-memory-search",
     intent: "Search protected You.md memories when local stack context is not enough.",
     mcpTool: "search_memories",
@@ -95,6 +109,7 @@ export function getYouStackCapabilityContract() {
         "examples",
         "evals and smoke tests",
         "self-improvement proposal files",
+        "stack maintainer skill instructions",
         "host adapter files",
         "read-only route tables",
       ],
@@ -103,6 +118,7 @@ export function getYouStackCapabilityContract() {
         "private context",
         "project context from hosted sync",
         "stack grants",
+        "stack visibility changes",
         "repo sync",
         "tokens",
         "connected tools",
@@ -222,6 +238,12 @@ function scoreCapability(request: string, capability: YouStackCapability): numbe
     score += 5;
   }
   if (/\b(update|upgrade|refresh|latest|version|channel)\b/.test(normalized) && /update|refresh|channel|version/.test(haystack)) {
+    score += 5;
+  }
+  if (/\b(public|private|share|shared|scoped|visibility|publish|unpublish)\b/.test(normalized) && /visibility|share|publish|private/.test(haystack)) {
+    score += 5;
+  }
+  if (/\b(organize|dedupe|maintain|maintainer|self-update|self-improving|autonomous)\b/.test(normalized) && /maintain|organize|improv|update/.test(haystack)) {
     score += 5;
   }
   if (/\b(tool|action|server|api|mcp|token)\b/.test(normalized) && /tool|action|api|mcp|token/.test(haystack)) {

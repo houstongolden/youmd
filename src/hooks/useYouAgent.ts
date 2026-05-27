@@ -1124,7 +1124,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     const shouldAutoResearch = !isReturning && displayName;
 
     async function initConversation() {
-      let allMessages: ChatMessage[] = [systemMessage, contextMessage];
+      const allMessages: ChatMessage[] = [systemMessage, contextMessage];
 
       try {
         // Auto-scrape existing links for sparse profiles
@@ -1343,6 +1343,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         "/edit": "edit",
         "/agents": "agents",
         "/skills": "skills",
+        "/stacks": "stacks",
+        "/youstacks": "stacks",
         "/history": "history",
         "/versions": "history",
         "/analytics": "analytics",
@@ -1353,9 +1355,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       if (paneCommands[trimmed] && onPaneSwitch) {
         onPaneSwitch(paneCommands[trimmed]);
 
-        // Custom message for /skills
+        // Custom messages for skills and stacks
         const noticeContent = trimmed === "/skills"
-            ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use youstack-start\ninstall via CLI: youmd skill install all\nscaffold a project: youmd skill init-project\n\navailable: youstack-start, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs"
+            ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use youstack-start\ninstall runtime: curl -fsSL https://you.md/install.sh | bash\nscaffold a project: youmd skill init-project\n\navailable: youstack-start, youstack-maintainer, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs"
+          : trimmed === "/stacks" || trimmed === "/youstacks"
+            ? "[switched to youstacks]\n\nnamed expertise packages for different domains. default visibility is private.\n\nuse in chat: /skill use youstack-maintainer\ninstall runtime: curl -fsSL https://you.md/install.sh | bash\nexamples: personal-agent-start, bamfstack-public, coding-copilot, scientific-research, content-studio"
           : `[switched to ${paneCommands[trimmed]}]`;
 
         setDisplayMessages((prev) => [
@@ -1383,7 +1387,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             {
               id: crypto.randomUUID(),
               role: "system-notice",
-              content: `usage: /skill use <name>\navailable skills: youstack-start, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs\ninstall via CLI: youmd skill install all`,
+              content: `usage: /skill use <name>\navailable skills: youstack-start, youstack-maintainer, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs\ninstall via runtime: curl -fsSL https://you.md/install.sh | bash`,
             },
           ]);
           return true;
@@ -1574,8 +1578,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("help");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n\nIDENTITY\n/profile -- live profile preview\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait variants inline\n/portrait --regenerate -- re-scrape sources and update portrait\n/edit -- edit identity context (files, json, sources)\n/json -- raw identity json\n/files -- file browser\n/sources -- manage connected sources\n\nSHARING\n/share -- create shareable identity link (copies to clipboard)\n/share --private -- include private context in link\n/share --project {name} -- project-scoped context link\n/publish -- publish latest bundle publicly\n\nSKILLS\n/skills -- browse + install skills\n/skill use {name} -- activate skill in this conversation\n\nACCOUNT\n/vault -- api keys + secrets manager\n/agents -- connected agent integrations (MCP)\n/settings -- account, billing, session log\n/activity -- agent activity log\n\nDATA\n/analytics -- profile views + agent reads\n/history -- bundle version history\n\nMEMORY\n/memory -- memory stats by category\n/recall -- recent memories\n/recall {query} -- search memories by keyword\n\nSYSTEM\n/status -- @username | plan | version | published/draft\n/help -- show this reference"
-          : "available commands:\n/profile, /portrait, /edit, /json, /files, /sources\n/share, /share --private, /share --project {name}, /publish\n/skills, /skill use {name}\n/vault, /agents, /settings, /activity\n/analytics, /history\n/memory, /recall, /recall {query}\n/status, /help";
+          ? "available commands:\n\nIDENTITY\n/profile -- live profile preview\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait variants inline\n/portrait --regenerate -- re-scrape sources and update portrait\n/edit -- edit identity context (files, json, sources)\n/json -- raw identity json\n/files -- file browser\n/sources -- manage connected sources\n\nSHARING\n/share -- create shareable identity link (copies to clipboard)\n/share --private -- include private context in link\n/share --project {name} -- project-scoped context link\n/publish -- publish latest bundle publicly\n\nSKILLS + STACKS\n/skills -- browse + install skills\n/stacks -- manage named private/public YouStacks\n/skill use {name} -- activate skill in this conversation\n\nACCOUNT\n/vault -- api keys + secrets manager\n/agents -- connected agent integrations (MCP)\n/settings -- account, billing, session log\n/activity -- agent activity log\n\nDATA\n/analytics -- profile views + agent reads\n/history -- bundle version history\n\nMEMORY\n/memory -- memory stats by category\n/recall -- recent memories\n/recall {query} -- search memories by keyword\n\nSYSTEM\n/status -- @username | plan | version | published/draft\n/help -- show this reference"
+          : "available commands:\n/profile, /portrait, /edit, /json, /files, /sources\n/share, /share --private, /share --project {name}, /publish\n/skills, /stacks, /skill use {name}\n/vault, /agents, /settings, /activity\n/analytics, /history\n/memory, /recall, /recall {query}\n/status, /help";
 
         setDisplayMessages((prev) => [
           ...prev,

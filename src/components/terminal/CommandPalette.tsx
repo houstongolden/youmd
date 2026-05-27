@@ -13,6 +13,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/edit", description: "edit your identity context", category: "navigation" },
   { command: "/settings", description: "account and plan settings", category: "navigation" },
   { command: "/skills", description: "identity-aware agent skills", category: "navigation" },
+  { command: "/stacks", description: "named private/public YouStacks", category: "navigation" },
   { command: "/share", description: "create a shareable identity link", category: "action" },
   { command: "/share --private", description: "share with private context included", category: "action" },
   { command: "/publish", description: "publish your latest bundle", category: "action" },

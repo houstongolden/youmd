@@ -2,7 +2,7 @@
 
 **Identity context protocol for the agent internet -- an MCP where the context is you.**
 
-Your identity context protocol. One bundle. Every agent on earth knows who you are, how you work, and what you sound like. Public profile + private file system + skills + API.
+Your identity context protocol. One bundle. Every agent on earth knows who you are, how you work, what you sound like, and which named YouStacks of expertise you want it to use. Public profile + private file system + skills + stacks + API/MCP.
 
 No more re-explaining yourself. No more starting from scratch.
 
@@ -36,18 +36,19 @@ Public profile. Private vault. Skills system. Memory brain. Project context. Ver
 curl -fsSL https://you.md/install.sh | bash
 ```
 
-That installs the latest global CLI. Then:
+That installs the You.md runtime. The `youmd` command is the helper under the hood; users should think "one curl install, then U and my agents know my brain/stacks." Then:
 
 ```bash
 youmd login              # press Enter for browser sign-in, or type your email for a code
 youmd init               # build your identity bundle interactively
 you                     # meet U — portrait, proactive context scan, live chat
+youmd stack smoke --path cli/examples/youstack-personal
 youmd push               # publish to you.md/<username>
 youmd skill init-project # wire your identity into the current repo
 youmd link create        # generate a shareable context link
 ```
 
-Prefer npm directly? Use `npm install -g youmd@latest`.
+The installer also writes `~/.youmd/bin/youmd-auto-upgrade` so host agents can refresh the runtime before stack work.
 
 ---
 
@@ -78,6 +79,7 @@ Prefer npm directly? Use `npm install -g youmd@latest`.
 | `youmd private` | Manage private context (notes, links, projects) |
 | `youmd project` | Manage project agent context (init, list, show, memories) |
 | `youmd skill` | Identity-aware agent skills (18 core subcommands -- see below) |
+| `youmd stack` | Local YouStack manifests (inspect, smoke, capabilities, route, link) |
 | `youmd link` | Context links (create, list, revoke, preview) |
 | `youmd keys` | API key management (list, create, revoke) |
 
@@ -196,6 +198,7 @@ When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your
 | Skill | What It Does |
 |---|---|
 | `youstack-start` | Start local agents with identity, project state, active requests, skills, and next moves |
+| `youstack-maintainer` | Organize, update, safely improve, and publish private-by-default YouStacks |
 | `voice-sync` | Propagate your voice profile to Claude, Codex, Cursor, and custom agents |
 | `claude-md-generator` | Bootstrap repo-visible agent instructions with your identity context |
 | `project-context-init` | Scaffold project-context/ with your preferences baked in |
@@ -213,6 +216,28 @@ When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your
 6. **Browse** -- find skills others have published: `youmd skill browse`
 
 Variable resolution follows dot notation: `voice.overall` reads `~/.youmd/voice/overall.md`. Works for `profile.*`, `preferences.*`, `voice.*`, `directives.*`, and `project_name`.
+
+---
+
+## YouStacks
+
+YouStacks are named packages of your expertise: skills, sub-agents, workflows, prompts, examples, tests, docs, host adapters, update rules, and protected brain/API/MCP boundaries.
+
+Think "your own GStack." You can keep a private coding stack, a private scientific research stack, a private content stack, and a public/open BAMFStack-style lighthouse stack without blending the skills or memory scopes together.
+
+```bash
+curl -fsSL https://you.md/install.sh | bash
+youmd stack inspect --path cli/examples/youstack-personal
+youmd stack smoke --path cli/examples/youstack-bamfstack-public
+youmd skill use youstack-maintainer
+```
+
+Defaults:
+
+- Stacks are private unless you explicitly share or publish them.
+- Public stacks should expose reusable skills/docs/examples, not private memories, secrets, proprietary prompts, or connected actions.
+- Safe self-improvement updates local skills/workflows/docs/tests together and runs smoke checks.
+- Protected memory, tokens, repo sync, private context, and connected tools go through shared You.md API/MCP.
 
 ---
 
@@ -332,7 +357,7 @@ POST   /api/v1/chat/stream         # Streaming chat via SSE
 | Full identity bundle | yes | yes |
 | Public profile page | yes | yes |
 | CLI access (all commands) | yes | yes |
-| Skills (install + use) | 7 bundled | unlimited + registry |
+| Skills (install + use) | 8 bundled | unlimited + registry |
 | API (read:public) | 1 key | unlimited keys, all scopes |
 | Context links | public scope | public + full scope |
 | Private vault | local only | synced + encrypted |

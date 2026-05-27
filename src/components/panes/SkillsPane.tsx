@@ -16,10 +16,22 @@ interface SkillEntry {
   downloads?: number;
 }
 
+type InstalledSkillSummary = {
+  skillName: string;
+  useCount?: number;
+};
+
 const BUNDLED_SKILLS: SkillEntry[] = [
   {
     name: "youstack-start",
     description: "Start local agents with identity, project state, active requests, skills, and next moves",
+    version: "1.0.0",
+    scope: "shared",
+    identityFields: ["profile.about", "preferences.agent", "directives.agent", "voice.overall"],
+  },
+  {
+    name: "youstack-maintainer",
+    description: "Organize, update, safely improve, and publish private-by-default YouStacks",
     version: "1.0.0",
     scope: "shared",
     identityFields: ["profile.about", "preferences.agent", "directives.agent", "voice.overall"],
@@ -184,7 +196,12 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   const registrySkills = useQuery(api.skills.listPublished, { limit: 20 });
 
   const isLoading = installs === undefined || registrySkills === undefined;
-  const installMap = new Map((installs ?? []).map((i: any) => [i.skillName, i]));
+  const installMap = new Map<string, InstalledSkillSummary>(
+    (installs ?? []).map((install) => [
+      install.skillName,
+      { skillName: install.skillName, useCount: install.useCount },
+    ])
+  );
   const installedNames = new Set(installMap.keys());
 
   const [showAllSkills, setShowAllSkills] = useState(false);
@@ -256,6 +273,10 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
               gives local agents the identity, project state, and next move
             </li>
             <li>
+              • <span className="text-[hsl(var(--text-primary))] opacity-80">youstack-maintainer</span>:
+              keeps named stacks organized, updated, private by default, and publish-ready
+            </li>
+            <li>
               • <span className="text-[hsl(var(--text-primary))] opacity-80">claude-md-generator</span>:
               bootstraps repo-visible agent instructions with your context
             </li>
@@ -268,7 +289,9 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
 
         <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-50 leading-relaxed pt-1 border-t border-[hsl(var(--accent))] border-opacity-20">
           Most skills work AUTOMATICALLY once you install youmd MCP. Manual
-          install only needed for special skills.
+          install only needed for special skills. YouStacks use the same skill
+          layer, but package multiple skills, workflows, examples, tests, and
+          host adapters under one named stack.
         </p>
 
         {/* Quick action buttons */}
@@ -306,7 +329,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           </span>
           <span className="text-[hsl(var(--text-secondary))] opacity-20">|</span>
           <span className="text-[hsl(var(--text-secondary))] opacity-40">
-            {installs.reduce((sum: number, i: any) => sum + i.useCount, 0)} total uses
+            {installs.reduce((sum, install) => sum + (install.useCount ?? 0), 0)} total uses
           </span>
         </div>
       )}
@@ -330,7 +353,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
                 key={skill.name}
                 skill={skill}
                 isInstalled={true}
-                useCount={(installMap.get(skill.name) as any)?.useCount}
+                useCount={installMap.get(skill.name)?.useCount}
               />
             ))}
           </div>
@@ -355,7 +378,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
                   key={skill.name}
                   skill={skill}
                   isInstalled={false}
-                  useCount={(installMap.get(skill.name) as any)?.useCount}
+                  useCount={installMap.get(skill.name)?.useCount}
                 />
               ))}
             </div>
@@ -375,6 +398,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
         <PaneSectionLabel>cli quick start</PaneSectionLabel>
         <div className="space-y-2">
           <CommandRow command="youmd skill install all" description="install all bundled skills" />
+          <CommandRow command="youmd skill use youstack-maintainer" description="organize or improve a named stack" />
           <CommandRow command="youmd skill init-project" description="AGENTS/CLAUDE bootstrap + project-context/ + .you/ + links" />
           <CommandRow command="youmd skill link claude" description="link skills to Claude Code" />
           <CommandRow command="youmd skill sync" description="re-render skills with latest identity" />

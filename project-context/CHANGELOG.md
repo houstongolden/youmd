@@ -1,5 +1,25 @@
 # You.md — Changelog
 
+## 2026-05-27 — YouStacks Runtime + BAMFStack Lighthouse
+
+### Runtime / Skills
+- Reframed `https://you.md/install.sh` as the curl-first You.md runtime installer instead of a CLI-first installer
+- Added source install by default with npm fallback, bundled skill installation, `~/.youmd/bin/youmd-auto-upgrade`, and `~/.youmd/stack-runtime.md`
+- Added bundled `youstack-maintainer` so host agents can organize, update, improve, smoke, and prepare private-by-default YouStacks for sharing or publishing
+- Added `native-stack-maintainer` and `stack-visibility-management` capabilities to the shared stack route contract
+
+### Product / Docs
+- Added `/stacks` shell navigation and a YouStacks dashboard pane covering named stacks, visibility, install commands, update policy, maintainer commands, and BAMFStack lighthouse rules
+- Added public-profile rendering for `public-open` YouStacks while keeping private/scoped stacks owner-only
+- Expanded homepage and `/docs#youstacks` around runtime-not-CLI-first positioning, shell/profile management, auto-update behavior, the maintainer skill, and BAMFStack as the first public lighthouse case study
+- Added `cli/examples/youstack-bamfstack-public` with manifest, skill, workflow, prompt, quickstart, smoke test, update policy, improvement policy, protected-capability boundaries, and public-readiness routing
+- Re-synced GStack/GBrain references to latest GStack `19770ea` / GBrain `42d99b6` and created the daily local `Daily GStack/GBrain Reference Sync` automation
+
+### Verification
+- Verified docs generation/check, targeted ESLint with zero errors, CLI TypeScript, root TypeScript, focused YouStack tests, CLI build, and Webpack production build
+- Verified the built BAMFStack example with `youmd stack smoke` and routing for both creator context and public-readiness requests
+- Verified local production homepage, docs, installer script, and stack capabilities API on `localhost:3100`
+
 ## 2026-05-27 — YouStacks Positioning Clarity
 
 ### Marketing / Docs

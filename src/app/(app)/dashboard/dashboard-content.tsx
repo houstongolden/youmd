@@ -13,6 +13,7 @@ import { SharePane } from "@/components/panes/SharePane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
 import { PortraitPane } from "@/components/panes/PortraitPane";
 import { SkillsPane } from "@/components/panes/SkillsPane";
+import { StacksPane } from "@/components/panes/StacksPane";
 import { HistoryPane } from "@/components/panes/HistoryPane";
 import { AnalyticsPane } from "@/components/panes/AnalyticsPane";
 import { AgentsPane } from "@/components/panes/AgentsPane";
@@ -56,6 +57,7 @@ const PANE_GROUPS: Array<{
     panes: [
       { key: "agents", label: "agents" },
       { key: "skills", label: "skills" },
+      { key: "stacks", label: "stacks" },
     ],
   },
   {
@@ -444,6 +446,9 @@ export function DashboardContent() {
                   )}
                   {rightPane === "skills" && (
                     <SkillsPane userId={convexUser._id} />
+                  )}
+                  {rightPane === "stacks" && (
+                    <StacksPane />
                   )}
                   {rightPane === "history" && user?.id && (
                     <HistoryPane userId={convexUser._id} clerkId={user.id} />

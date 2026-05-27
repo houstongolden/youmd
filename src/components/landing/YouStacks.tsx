@@ -30,7 +30,12 @@ const useCases = [
   {
     label: "self-improving",
     title: "let the stack evolve",
-    desc: "capture usage, failures, corrections, evals, and repo diffs so skills and workflows can propose or apply safe local improvements.",
+    desc: "the included maintainer skill captures usage, failures, corrections, evals, and repo diffs so skills and workflows can safely improve.",
+  },
+  {
+    label: "curl-first",
+    title: "no cli mental model",
+    desc: "users install the You.md runtime with one curl command; the helper CLI sits underneath for smoke checks, host adapters, and sync.",
   },
   {
     label: "reference-guided",
@@ -72,9 +77,10 @@ const YouStacks = () => (
                   skills and workflows, YouStacks let anyone create a named
                   portfolio of stackable expertise. Local files carry reusable
                   skills; You.md API/MCP protects private memory, connected
-                  actions, and approved self-updates. A reference monitor keeps
-                  GStack and GBrain nearby so good upstream ideas become
-                  reviewable You.md tasks.
+                  actions, visibility changes, and approved self-updates. The
+                  curl installer gives agents the runtime, bundled maintainer
+                  skill, and auto-upgrade helper without making users learn a
+                  CLI first.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <ButtonLink href="/docs#youstacks" variant="primary" size="sm">
@@ -121,7 +127,7 @@ const YouStacks = () => (
       <FadeUp delay={0.24}>
         <div className="mt-5 grid gap-3 border border-border bg-[hsl(var(--bg-raised))] p-4 md:grid-cols-[1fr_auto] md:items-center">
           <code className="break-all font-mono text-[11px] leading-relaxed text-accent">
-            $ youmd stack link --path stacks/research-lab --hosts codex,claude,cursor --target .
+            $ curl -fsSL https://you.md/install.sh | bash &amp;&amp; you
           </code>
           <Link
             href="/docs#youstacks-examples"

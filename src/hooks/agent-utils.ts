@@ -248,7 +248,7 @@ export function detectSourcesInMessage(text: string): DetectedSource[] {
   // Match word-boundary domain patterns that aren't already captured
   const bareDomainRegex = /(?<![/\w])([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.(?:com|co|io|ai|dev|org|net|app|xyz|me|info|biz|us|uk|gg|so|sh|fm|tv|cc|to)(?:\/[^\s<>"']*)?)/gi;
   while ((match = bareDomainRegex.exec(text)) !== null) {
-    let domain = match[1].replace(/[.,;:)\]]+$/, "");
+    const domain = match[1].replace(/[.,;:)\]]+$/, "");
     // Skip social platforms already handled
     if (domain.includes("x.com") || domain.includes("twitter.com") || domain.includes("github.com") || domain.includes("linkedin.com")) continue;
     const url = `https://${domain}`;
@@ -899,10 +899,11 @@ see rule #1 at the top: call update_profile or emit json block BEFORE claiming a
 
 --- identity-aware skills ---
 
-you.md has a skill system — markdown templates with {{identity}} variables that let coding agents instantly adopt the user's context. users install skills via the CLI (\`youmd skill install <name>\`) and use them in projects.
+you.md has a skill system — markdown templates with {{identity}} variables that let coding agents instantly adopt the user's context. users install the runtime with \`curl -fsSL https://you.md/install.sh | bash\`; the helper command can then install or use skills.
 
-the 7 bundled skills are:
+the 8 bundled skills are:
 - **youstack-start** — starts Claude Code, Codex, Cursor, and other local agents with identity, current project state, active requests, installed skills, and the next move. use at the beginning of local-agent sessions.
+- **youstack-maintainer** — organizes, updates, safely improves, and prepares private-by-default YouStacks for scoped or public sharing.
 - **claude-md-generator** — generates CLAUDE.md for any project, pre-loaded with the user's agent preferences, directives, and voice profile. use when starting a new project or onboarding a new coding agent.
 - **project-context-init** — scaffolds a complete project-context/ directory (PRD, TODO, FEATURES, CHANGELOG, ARCHITECTURE, CURRENT_STATE) pre-populated with identity context. use when adopting the project-context pattern.
 - **voice-sync** — keeps the user's voice profile in sync across Claude Code (.claude/skills/youmd/voice.md), Cursor (.cursor/rules/youmd-voice.md), and other agents. use after voice updates.
@@ -912,13 +913,14 @@ the 7 bundled skills are:
 
 when a user asks about skills:
 - explain what skills are: identity-aware templates that give coding agents instant context
-- tell them how to install: \`youmd skill install all\` or \`youmd skill install youstack-start\`
+- tell them how to install: \`curl -fsSL https://you.md/install.sh | bash\`, then \`youmd skill install all\` if needed
 - tell them how to use in a project: \`youmd skill use youstack-start\`
+- if they ask about named expertise stacks, recommend \`/stacks\` and \`youmd skill use youstack-maintainer\`
 - if they're onboarding to a new project: recommend \`youmd skill init-project\` (runs claude-md-generator + project-context-init together)
 - if they want consistent voice across agents: recommend voice-sync
 - if they want to improve their identity over time: recommend meta-improve
 
-when a user types /skills in the dashboard, they see the SkillsPane where they can install, view, and manage skills. guide them toward the CLI for actual use.
+when a user types /skills in the dashboard, they see the SkillsPane where they can install, view, and manage skills. when they type /stacks, they see the YouStacks portfolio pane. guide them toward the curl runtime for first install.
 
 --- private content ---
 
@@ -1029,7 +1031,7 @@ export interface PrivateUpdate {
   project?: Record<string, string>;
 }
 
-export type RightPane = "profile" | "portrait" | "edit" | "share" | "skills" | "history" | "settings" | "analytics" | "agents" | "vault" | "help";
+export type RightPane = "profile" | "portrait" | "edit" | "share" | "skills" | "stacks" | "history" | "settings" | "analytics" | "agents" | "vault" | "help";
 
 // ---------------------------------------------------------------------------
 // Helpers (exported for reuse)

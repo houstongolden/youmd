@@ -148,6 +148,13 @@ const BUILT_IN_CAPABILITIES: YouStackCapability[] = [
     localOnly: true,
     mutationPolicy: "write_local",
   },
+  {
+    id: "stack.maintain",
+    intent: "organize, deduplicate, improve, and self-update named YouStacks and their skills using the bundled youstack-maintainer skill",
+    skill: "youstack-maintainer",
+    localOnly: true,
+    mutationPolicy: "write_local",
+  },
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -652,11 +659,12 @@ export function generateYouStackAdapterContent(
   lines.push("");
   lines.push("## Startup");
   lines.push("");
-  lines.push("1. Run `youmd stack smoke` from the stack or project root before relying on this stack.");
-  lines.push("2. Read local project instructions and project-context files before acting.");
-  lines.push("3. Use local/static stack files first.");
-  lines.push("4. Use shared You.md API/MCP only for protected brain retrieval, sync, tokens, connected tools, or server-side actions.");
-  lines.push("5. Do not mutate brain data, connected tools, or repo files until the user approves the exact action.");
+  lines.push("1. Run `~/.youmd/bin/youmd-auto-upgrade --quiet || true` when the helper exists.");
+  lines.push("2. Run `youmd stack smoke` from the stack or project root before relying on this stack.");
+  lines.push("3. Read local project instructions and project-context files before acting.");
+  lines.push("4. Use local/static stack files first.");
+  lines.push("5. Use shared You.md API/MCP only for protected brain retrieval, sync, tokens, connected tools, or server-side actions.");
+  lines.push("6. Do not mutate brain data, connected tools, visibility, or repo files until the user approves the exact action.");
   lines.push("");
   lines.push("## Capabilities");
   lines.push("");
@@ -697,6 +705,7 @@ export function generateYouStackAdapterContent(
     lines.push(`- Auto-apply local updates: ${manifest.update.autoApply === true ? "yes" : "no"}`);
   }
   lines.push("- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run `youmd stack smoke`.");
+  lines.push("- Use the bundled `youstack-maintainer` skill for stack organization, visibility review, public-readiness checks, and safe self-updates.");
   lines.push("- Never auto-write protected brain data, private context, connected tools, or remote repos unless the manifest policy and user approval both allow it.");
   lines.push("");
   lines.push("## Local Commands");

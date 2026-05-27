@@ -84,7 +84,7 @@ const CTAFooter = () => {
                   Create your you.md
                 </ButtonLink>
                 <ButtonLink href="#how-it-works" variant="secondary" size="lg">
-                  Install CLI
+                  Install runtime
                 </ButtonLink>
               </div>
             </div>
@@ -93,8 +93,8 @@ const CTAFooter = () => {
           <FadeUp delay={0.08}>
             <CliInstallTabs
               className="mx-auto mt-7 max-w-[520px] text-left opacity-90"
-              title="CLI install"
-              helperText="browser signup stays primary"
+              title="runtime install"
+              helperText="one curl, helper cli underneath"
             />
           </FadeUp>
         </Container>

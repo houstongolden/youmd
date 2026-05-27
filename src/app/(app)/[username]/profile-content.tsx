@@ -25,6 +25,16 @@ interface Project {
   description: string;
 }
 
+interface ProfileYouStack {
+  name: string;
+  slug: string;
+  domain?: string;
+  description?: string;
+  visibility?: "private" | "scoped-link" | "public-open" | "team" | string;
+  install?: string;
+  skills?: string[];
+}
+
 // The public profile payload is protocol-shaped but intentionally extensible.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ProfileJson = Record<string, any>;
@@ -76,6 +86,28 @@ function sanitizeImageUrl(value: unknown): string | undefined {
   } catch {
     return raw;
   }
+}
+
+function normalizeProfileYouStacks(value: unknown): ProfileYouStack[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item): ProfileYouStack[] => {
+    if (!item || typeof item !== "object") return [];
+    const record = item as Record<string, unknown>;
+    const name = typeof record.name === "string" ? record.name.trim() : "";
+    const slug = typeof record.slug === "string" ? record.slug.trim() : "";
+    if (!name || !slug) return [];
+    return [{
+      name,
+      slug,
+      domain: typeof record.domain === "string" ? record.domain : undefined,
+      description: typeof record.description === "string" ? record.description : undefined,
+      visibility: typeof record.visibility === "string" ? record.visibility : "private",
+      install: typeof record.install === "string" ? record.install : undefined,
+      skills: Array.isArray(record.skills)
+        ? record.skills.filter((skill): skill is string => typeof skill === "string").slice(0, 12)
+        : undefined,
+    }];
+  });
 }
 
 /* ── Owner edit context ───────────────────────────────────────
@@ -232,6 +264,12 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const resolvedRecord = resolvedProfile as Record<string, unknown>;
   const resolvedAvatarUrl = sanitizeImageUrl(resolvedRecord.avatarUrl);
   const storedPortrait = resolvedRecord.asciiPortrait as PreRenderedPortrait | undefined;
+  const allProfileStacks = normalizeProfileYouStacks(
+    data?.youstacks ?? data?.youStacks ?? data?.identity?.youstacks ?? data?.identity?.youStacks
+  );
+  const visibleProfileStacks = allProfileStacks.filter((stack) =>
+    isOwner || stack.visibility === "public-open"
+  );
 
   const handleCopyRawJson = () => {
     if (!data) return;
@@ -806,6 +844,60 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                       >
                         {skill}
                       </span>
+                    ))}
+                  </div>
+                </motion.section>
+              </>
+            )}
+
+            {visibleProfileStacks.length > 0 && (
+              <>
+                <Divider />
+                <motion.section {...delay(8)}>
+                  <SectionLabel editKey="youstacks">youstacks</SectionLabel>
+                  <div className="mt-3 space-y-2">
+                    {visibleProfileStacks.map((stack) => (
+                      <div
+                        key={stack.slug}
+                        className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3"
+                        style={{ borderRadius: "2px" }}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <p className="font-mono text-[12px] text-[hsl(var(--text-primary))] opacity-85">
+                              {stack.name}
+                            </p>
+                            <p className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
+                              {stack.slug}{stack.domain ? ` / ${stack.domain}` : ""}
+                            </p>
+                          </div>
+                          <span className="font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--accent))] opacity-70">
+                            {stack.visibility || "private"}
+                          </span>
+                        </div>
+                        {stack.description && (
+                          <p className="mt-2 text-[12px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-60">
+                            {stack.description}
+                          </p>
+                        )}
+                        {stack.skills && stack.skills.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {stack.skills.map((skill) => (
+                              <span
+                                key={skill}
+                                className="border border-[hsl(var(--border))] px-1.5 py-0.5 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-50"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {stack.install && stack.visibility === "public-open" && (
+                          <code className="mt-2 block break-all font-mono text-[10px] text-[hsl(var(--accent))] opacity-80">
+                            {stack.install}
+                          </code>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </motion.section>
