@@ -10,7 +10,7 @@ const useCases = [
   {
     label: "expertise stack",
     title: "package how you think",
-    desc: "turn your taste, skills, prompts, review loops, examples, and favorite workflows into an installable stack for any agent.",
+    desc: "turn your years of taste, skills, prompts, sub-agents, review loops, examples, and favorite workflows into an installable stack.",
   },
   {
     label: "project stack",
@@ -33,9 +33,9 @@ const stackFiles = [
   "youstack.json",
   "skills/founder-review/SKILL.md",
   "skills/growth-writing/SKILL.md",
+  "subagents/operator.md",
   "workflows/release-review.md",
   "examples/golden-prompts.md",
-  "adapters/codex.md",
 ];
 
 const YouStacks = () => (
@@ -44,8 +44,8 @@ const YouStacks = () => (
       <FadeUp>
         <SectionHeader
           eyebrow="youstacks"
-          title="build your own GStack for any agent"
-          description="A YouStack is your packaged expertise: skills, prompts, workflows, taste, examples, tools, and safe You.md memory access that you can install into Claude Code, Codex, Cursor, or share with someone else."
+          title="package your expertise into your own GStack"
+          description="A YouStack bottles how you work: years of expertise, skills, sub-agents, prompts, workflows, taste, examples, tool rules, and safe You.md memory access that any agent can install."
         />
       </FadeUp>
 
@@ -55,13 +55,13 @@ const YouStacks = () => (
             <div className="grid gap-5 md:grid-cols-[0.9fr_1.1fr]">
               <div>
                 <p className="font-mono text-[13px] leading-relaxed text-foreground/85">
-                  your brain becomes an agent stack.
+                  like GStack, but yours.
                 </p>
                 <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
-                  Think GStack, but built from your own expertise. A YouStack can
-                  be local files first, then call You.md API/MCP only when an
-                  agent needs protected memory, private context, connected tools,
-                  or server-side actions.
+                  If GStack packages founder operating wisdom into agent
+                  skills and workflows, YouStacks let anyone do that for their
+                  own domain. Local files carry the reusable expertise; You.md
+                  API/MCP protects private memory and connected actions.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <ButtonLink href="/docs#youstacks" variant="primary" size="sm">

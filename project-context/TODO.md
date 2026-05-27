@@ -11,6 +11,7 @@ PRD Version: 2.3
 - [x] Rework the YouStacks homepage copy around the clearer "build your own GStack for any agent" mental model
 - [x] Rework the `/docs#youstacks` introduction around packaged expertise, shareable stacks, and your own GStack-style agent operating system
 - [x] Add a docs "What Goes In" subsection covering skills, workflows, taste/examples, and protected capabilities
+- [x] Tighten YouStacks copy again around the exact analogy: Gary Tan's GStack as years of experience, specialist agents, workflows, taste, and review loops packaged into a stack
 - [x] Verify the clarified copy with docs check, targeted lint, TypeScript, Webpack production build, local production smoke checks, and Codex in-app browser review
 - [x] Deploy and production-verify the clarified YouStacks homepage/docs copy on Vercel deployment `dpl_G27RMotWbEVEFo3kjqPepbc7SzZo`
 

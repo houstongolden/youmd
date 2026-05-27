@@ -7,6 +7,7 @@
 - Changed YouStacks copy from abstract execution-package language to packaged expertise: skills, prompts, workflows, taste, examples, tools, and safe You.md memory access
 - Added a `/docs#youstacks` "What Goes In" subsection covering skills, workflows, taste/examples, and protected capabilities
 - Updated YouStack docs examples and manifest snippets to show a founder/growth expertise stack instead of a generic startup package
+- Tightened the copy again around the exact Gary Tan/GStack analogy: years of expertise, specialist agents, workflows, taste, examples, and review loops packaged into a stack that others can install
 
 ### Verification
 - Verified docs reference freshness with `npm run docs:check`

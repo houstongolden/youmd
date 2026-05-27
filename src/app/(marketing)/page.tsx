@@ -15,11 +15,11 @@ import CTAFooter from "@/components/landing/CTAFooter";
 export const metadata: Metadata = {
   title: "you.md — Identity context protocol for the agent internet",
   description:
-    "An MCP where the context is you. Build your own GStack-like YouStack: a shareable stack of skills, prompts, workflows, taste, tools, and protected memory for any agent.",
+    "An MCP where the context is you. Package your expertise into your own GStack-like YouStack: skills, sub-agents, prompts, workflows, taste, tools, and protected memory for any agent.",
   openGraph: {
     title: "you.md — Identity Context Protocol",
     description:
-      "An MCP where the context is you. YouStacks let you package your expertise into an installable agent stack for Claude Code, Codex, Cursor, and more.",
+      "An MCP where the context is you. YouStacks bottle your expertise, sub-agents, workflows, prompts, taste, tools, and safe memory access into an installable agent stack.",
     url: "https://you.md",
     siteName: "you.md",
     type: "website",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "you.md — Identity Context Protocol",
     description:
-      "An MCP where the context is you. Build your own GStack-like YouStack and share your skills, workflows, taste, tools, and safe memory access with any agent.",
+      "An MCP where the context is you. Build your own GStack-like YouStack and share your expertise, sub-agents, workflows, taste, tools, and safe memory access with any agent.",
   },
   alternates: {
     canonical: "https://you.md",

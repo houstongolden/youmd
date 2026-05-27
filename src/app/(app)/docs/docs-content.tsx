@@ -1369,16 +1369,17 @@ preferences: terminal-native, monochrome
             {/* ── YouStacks ───────────────────────────────── */}
             <H2 id="youstacks">YouStacks</H2>
             <P>
-              A YouStack is your own GStack-style agent operating system. It is
-              the bundle of skills, prompts, workflows, examples, taste, tool
-              rules, docs, and safe memory access that teaches any compatible
-              agent how you operate.
+              A YouStack packages your own expertise and workflows into your
+              own stack. Think of Gary Tan creating GStack from years of startup
+              operating experience, specialist agents, taste, review loops, and
+              workflows. YouStacks let anyone do that for their own domain.
             </P>
             <Callout>
               You.md is the brain. A YouStack is the shareable stack built from
-              that brain. You can keep it private, install it into Claude Code,
-              Codex, or Cursor, share it with a teammate, or publish an open
-              version for anyone to inspect and run.
+              that brain: skills, sub-agents, prompts, examples, docs, tool
+              rules, and protected memory boundaries that can be installed into
+              Claude Code, Codex, Cursor, shared with a teammate, or published as
+              an open stack.
             </Callout>
 
             <H3 id="youstacks-overview">Overview</H3>
@@ -1386,11 +1387,11 @@ preferences: terminal-native, monochrome
               items={[
                 {
                   title: "Your expertise, packaged",
-                  body: "A stack can contain your domain skills, founder instincts, writing taste, engineering review loops, examples, tool rules, and golden prompts.",
+                  body: "A stack can contain your domain skills, hard-won instincts, sub-agents, writing taste, engineering review loops, examples, tool rules, and golden prompts.",
                 },
                 {
                   title: "Works like a personal GStack",
-                  body: "Install one stack and any host agent gets the same operating layer: how to start, what skills to use, what workflows to run, and what not to touch.",
+                  body: "Install one stack and any host agent gets the same operating layer: who the expert is, what agents to call, what skills to use, what workflows to run, and what not to touch.",
                 },
                 {
                   title: "Host-native adapters",
@@ -1405,19 +1406,23 @@ preferences: terminal-native, monochrome
 
             <H3 id="youstacks-contents">What Goes In</H3>
             <P>
-              A YouStack should feel like an installable version of your
-              expertise. The public/local part can be inspected like a repo. The
-              private part stays behind You.md auth.
+              A YouStack should feel like an installable version of how you
+              operate. The local part carries the reusable expertise. The
+              protected part stays behind You.md auth.
             </P>
             <FeatureMatrix
               items={[
                 {
                   title: "Skills",
-                  body: "Reusable agent instructions such as founder review, growth writing, research synthesis, release QA, design critique, or your personal startup office-hours mode.",
+                  body: "Reusable expert instructions such as founder review, growth writing, research synthesis, release QA, design critique, or your personal startup office-hours mode.",
+                },
+                {
+                  title: "Sub-agents",
+                  body: "Specialists that reflect how you divide work: operator, editor, researcher, reviewer, QA lead, launch planner, security check, or whatever your domain needs.",
                 },
                 {
                   title: "Workflows",
-                  body: "Step-by-step operating loops: how to start a repo, review a plan, ship a release, write in your voice, prep a meeting, or audit a strategy.",
+                  body: "Step-by-step operating loops from your actual playbook: how to start a repo, review a plan, ship a release, write in your voice, prep a meeting, or audit a strategy.",
                 },
                 {
                   title: "Taste and examples",
@@ -1435,7 +1440,7 @@ preferences: terminal-native, monochrome
               items={[
                 {
                   title: "Personal expertise stack",
-                  body: "Package your own taste, default prompts, preferred tools, identity, current projects, and memory-safe startup flow so every agent begins like it already knows you.",
+                  body: "Package your taste, default prompts, preferred tools, sub-agents, identity, current projects, and memory-safe startup flow so every agent begins like it already knows how you work.",
                 },
                 {
                   title: "Project operating layer",
@@ -1463,7 +1468,7 @@ preferences: terminal-native, monochrome
             <H3 id="youstacks-cli">CLI</H3>
             <P>
               The CLI is how a stack becomes real on a machine. It validates the
-              manifest, shows what expertise and scopes the stack asks for,
+              manifest, shows what expertise, agents, and scopes the stack asks for,
               routes a request to the right skill or workflow, and generates
               host-native adapter files. Inspect, smoke, capabilities, and route
               are read-only; link writes only the declared adapter files.
@@ -1486,7 +1491,8 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
               <Step n={1}>
                 Pull or create a stack folder that contains{" "}
                 <InlineCode>youstack.json</InlineCode>, local skills, prompts,
-                workflows, tool rules, docs, examples, and smoke tests.
+                sub-agents, workflows, tool rules, docs, examples, and smoke
+                tests.
               </Step>
               <Step n={2}>
                 Run <InlineCode>youmd stack inspect --path DIR</InlineCode> to
@@ -1539,6 +1545,11 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
       "required": true
     },
     {
+      "path": "subagents/operator.md",
+      "type": "subagent",
+      "required": true
+    },
+    {
       "path": "workflows/growth-writing.md",
       "type": "workflow",
       "required": true
@@ -1561,9 +1572,10 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
             <H3 id="youstacks-examples">Examples</H3>
             <P>
               A personal stack is the closest mental model: build your own
-              GStack from your expertise, install it into the agents you already
-              use, and let protected requests cross the You.md brain boundary
-              only when needed.
+              GStack from your expertise, workflows, sub-agents, examples, and
+              taste; install it into the agents you already use; and let
+              protected requests cross the You.md brain boundary only when
+              needed.
             </P>
             <CodeBlock title="personal stack">{`# inspect what a stack asks for
 youmd stack inspect --path stacks/my-founder-stack
