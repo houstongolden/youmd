@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-05-27
-Latest Verified Production Web Commit: 2e07682 feat: add gstack gbrain reference intelligence
+Latest Verified Production Web Commit: db6a01f feat: make youstacks curl-first
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---
@@ -114,8 +114,8 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Shared read-only HTTP endpoints now exist for the capability contract and deterministic routing: `GET /api/v1/stacks/capabilities` and `POST /api/v1/stacks/route`
 - Protected brain retrieval still uses the existing authenticated You.md MCP/API surfaces in this slice; stack-specific grants/tokens are intentionally deferred to the next backend phase
 - GitHub App repo sync, public/private stack sharing UI, paid stacks, and optional custom per-stack API/MCP endpoints are still planned follow-up phases, not shipped behavior yet
-- Production web/API/docs/homepage is deployed and verified on Vercel deployment `dpl_4UwpUiK2vUPYu8R9nj8dfnBDpq9M`, aliased to `https://www.you.md` and `https://you.md`
-- Live production verification confirms the homepage now frames YouStacks and the personal brain as GStack/GBrain-guided; `/docs` includes Brain Architecture, Reference Intelligence, and GStack/GBrain Reference Loop sections; `/api/v1/stacks/capabilities` includes improvement/update capabilities; `/api/v1/docs/reference` lists stack endpoints plus stack MCP tools; and `POST /api/v1/stacks/route` preserves stack `name`, `slug`, `domain`, and `tags`
+- Production web/API/docs/homepage is deployed and verified on GitHub/Vercel deployment `4842170884` for commit `db6a01f`, aliased to `https://www.you.md` and `https://you.md`
+- Live production verification confirms the homepage now frames YouStacks and the personal brain as GStack/GBrain-guided, curl-first, and runtime-not-CLI-first; `/docs` includes Brain Architecture, Reference Intelligence, GStack/GBrain Reference Loop, Shell/Profile Management, Auto-Update, and BAMFStack Lighthouse sections; `/install.sh` serves the runtime installer with `youmd-auto-upgrade`; `/api/v1/stacks/capabilities` includes maintainer, visibility, improvement, and update capabilities; `/api/v1/docs/reference` lists stack endpoints plus stack MCP tools; and `POST /api/v1/stacks/route` preserves stack `name`, `slug`, `domain`, and `tags`
 
 ### Backend (Convex — kindly-cassowary-600)
 - 21-table schema fully deployed (added skills + skillInstalls)

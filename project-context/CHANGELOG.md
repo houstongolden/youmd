@@ -19,6 +19,7 @@
 - Verified docs generation/check, targeted ESLint with zero errors, CLI TypeScript, root TypeScript, focused YouStack tests, CLI build, and Webpack production build
 - Verified the built BAMFStack example with `youmd stack smoke` and routing for both creator context and public-readiness requests
 - Verified local production homepage, docs, installer script, and stack capabilities API on `localhost:3100`
+- Deployed commit `db6a01f` to production via GitHub/Vercel deployment `4842170884` (`https://youmd-71x5nxy48-hubify.vercel.app`) and verified live `https://www.you.md` homepage, `/docs#youstacks`, `/install.sh`, and `/api/v1/stacks/capabilities`
 
 ## 2026-05-27 — YouStacks Positioning Clarity
 
