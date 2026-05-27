@@ -12,6 +12,7 @@ PRD Version: 2.3
 - [x] Rework the `/docs#youstacks` introduction around packaged expertise, shareable stacks, and your own GStack-style agent operating system
 - [x] Add a docs "What Goes In" subsection covering skills, workflows, taste/examples, and protected capabilities
 - [x] Verify the clarified copy with docs check, targeted lint, TypeScript, Webpack production build, local production smoke checks, and Codex in-app browser review
+- [x] Deploy and production-verify the clarified YouStacks homepage/docs copy on Vercel deployment `dpl_G27RMotWbEVEFo3kjqPepbc7SzZo`
 
 ### 2026-05-26
 - [x] Add a first-class YouStacks section to the homepage with brain-vs-stack positioning, local-first files, protected API/MCP boundary, use cases, docs CTA, and example stack command

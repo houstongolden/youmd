@@ -1,7 +1,7 @@
 # You.md — Current State
 
-Last Updated: 2026-05-26
-Latest Verified Production Web Commit: 8e37ec1 docs: promote youstacks on homepage and docs
+Last Updated: 2026-05-27
+Latest Verified Production Web Commit: 5d2e3e8 docs: clarify youstacks as personal gstack
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---
@@ -105,8 +105,8 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Shared read-only HTTP endpoints now exist for the capability contract and deterministic routing: `GET /api/v1/stacks/capabilities` and `POST /api/v1/stacks/route`
 - Protected brain retrieval still uses the existing authenticated You.md MCP/API surfaces in this slice; stack-specific grants/tokens are intentionally deferred to the next backend phase
 - GitHub App repo sync, public/private stack sharing UI, paid stacks, and optional custom per-stack API/MCP endpoints are still planned follow-up phases, not shipped behavior yet
-- Production web/API/docs/homepage is deployed and verified on Vercel deployment `dpl_7b6X4k3R6JahR7F3jqFdbgJXN5S1`, aliased to `https://www.you.md` and `https://you.md`
-- Live production verification confirms the homepage shows YouStacks copy, `/docs#youstacks` includes use cases/how-to/examples/API+MCP coverage, `/api/v1/docs/reference` lists stack endpoints plus stack MCP tools, and `/api/v1/docs/openapi.json` tags the stack endpoints under `YouStacks`
+- Production web/API/docs/homepage is deployed and verified on Vercel deployment `dpl_G27RMotWbEVEFo3kjqPepbc7SzZo`, aliased to `https://www.you.md` and `https://you.md`
+- Live production verification confirms the homepage now frames YouStacks as "build your own GStack for any agent", `/docs#youstacks` explains YouStacks as packaged expertise plus a GStack-style agent operating system, `/api/v1/docs/reference` lists stack endpoints plus stack MCP tools, and `/api/v1/docs/openapi.json` tags the stack endpoints under `YouStacks`
 
 ### Backend (Convex — kindly-cassowary-600)
 - 21-table schema fully deployed (added skills + skillInstalls)
