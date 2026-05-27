@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-05-27
-Latest Verified Production Web Commit: 5d2e3e8 docs: clarify youstacks as personal gstack
+Latest Verified Production Web Commit: f9defd0 docs: sharpen youstacks expertise analogy
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---
@@ -37,7 +37,7 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Tokenized `/ctx/<username>/<token>` links now fail safely and serve reliably for agents: valid links return `you-md/v1` JSON with `_privateContext`, tracking/logging writes are best-effort, invalid links return explicit JSON errors, and deployed responses use private/no-store cache headers with `Vary: Accept`
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
-- Homepage now has a first-class YouStacks section that explains stacks as portable execution packages on top of the You.md brain, including local-first files, protected API/MCP access, and personal/project/team/public use cases
+- Homepage now has a first-class YouStacks section that explains stacks as "your own GStack" for packaging expertise, skills, sub-agents, prompts, workflows, taste, examples, tool rules, and safe You.md memory access for any agent
 
 ### CLI (youmd v0.6.23 — ready to publish)
 - 21 commands (added `skill` with 19 subcommands)
@@ -105,8 +105,8 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Shared read-only HTTP endpoints now exist for the capability contract and deterministic routing: `GET /api/v1/stacks/capabilities` and `POST /api/v1/stacks/route`
 - Protected brain retrieval still uses the existing authenticated You.md MCP/API surfaces in this slice; stack-specific grants/tokens are intentionally deferred to the next backend phase
 - GitHub App repo sync, public/private stack sharing UI, paid stacks, and optional custom per-stack API/MCP endpoints are still planned follow-up phases, not shipped behavior yet
-- Production web/API/docs/homepage is deployed and verified on Vercel deployment `dpl_G27RMotWbEVEFo3kjqPepbc7SzZo`, aliased to `https://www.you.md` and `https://you.md`
-- Live production verification confirms the homepage now frames YouStacks as "build your own GStack for any agent", `/docs#youstacks` explains YouStacks as packaged expertise plus a GStack-style agent operating system, `/api/v1/docs/reference` lists stack endpoints plus stack MCP tools, and `/api/v1/docs/openapi.json` tags the stack endpoints under `YouStacks`
+- Production web/API/docs/homepage is deployed and verified on Vercel deployment `dpl_EyuaBhd5yXGFrw5eAGu2eBqZ46su`, aliased to `https://www.you.md` and `https://you.md`
+- Live production verification confirms the homepage now frames YouStacks as "package your expertise into your own GStack", `/docs#youstacks` explains the Gary Tan/GStack analogy with years of expertise, specialist agents, taste, review loops, workflows, and sub-agents, `/api/v1/docs/reference` lists stack endpoints plus stack MCP tools, and `/api/v1/docs/openapi.json` tags the stack endpoints under `YouStacks`
 
 ### Backend (Convex — kindly-cassowary-600)
 - 21-table schema fully deployed (added skills + skillInstalls)

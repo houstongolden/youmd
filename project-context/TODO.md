@@ -13,7 +13,7 @@ PRD Version: 2.3
 - [x] Add a docs "What Goes In" subsection covering skills, workflows, taste/examples, and protected capabilities
 - [x] Tighten YouStacks copy again around the exact analogy: Gary Tan's GStack as years of experience, specialist agents, workflows, taste, and review loops packaged into a stack
 - [x] Verify the clarified copy with docs check, targeted lint, TypeScript, Webpack production build, local production smoke checks, and Codex in-app browser review
-- [x] Deploy and production-verify the clarified YouStacks homepage/docs copy on Vercel deployment `dpl_G27RMotWbEVEFo3kjqPepbc7SzZo`
+- [x] Deploy and production-verify the clarified YouStacks homepage/docs copy on Vercel deployment `dpl_EyuaBhd5yXGFrw5eAGu2eBqZ46su`
 
 ### 2026-05-26
 - [x] Add a first-class YouStacks section to the homepage with brain-vs-stack positioning, local-first files, protected API/MCP boundary, use cases, docs CTA, and example stack command

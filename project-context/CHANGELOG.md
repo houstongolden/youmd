@@ -16,8 +16,8 @@
 - Verified production build with `npm run build -- --webpack`; Turbopack build path stalled in a PostCSS worker, so Webpack was used for the reliable release build check
 - Verified local production homepage/docs/reference text on `localhost:3100`
 - Opened the improved homepage and docs YouStacks section in the Codex in-app browser for visual review
-- Deployed commit `5d2e3e8` to production as Vercel deployment `dpl_G27RMotWbEVEFo3kjqPepbc7SzZo`, aliased to `https://www.you.md` and `https://you.md`
-- Verified live production homepage, `/docs#youstacks`, `/api/v1/docs/reference`, and `/api/v1/docs/openapi.json` expose the clarified YouStacks copy and reference surfaces
+- Deployed commit `f9defd0` to production as Vercel deployment `dpl_EyuaBhd5yXGFrw5eAGu2eBqZ46su`, aliased to `https://www.you.md` and `https://you.md`
+- Verified live production homepage, `/docs#youstacks`, `/api/v1/docs/reference`, and `/api/v1/docs/openapi.json` expose the clarified YouStacks copy and reference surfaces, including the stronger "package your expertise into your own GStack" and Gary Tan/GStack/sub-agent framing
 
 ## 2026-05-26 — YouStacks Homepage + Docs Surface
 
