@@ -24,6 +24,8 @@ Core vision:
 - Start with the GitHub OAuth app/account-linking step Houston is setting up, but evaluate whether repo sync should use a GitHub App because GitHub Apps provide fine-grained repo permissions, installation-level repo selection, short-lived tokens, and built-in webhooks.
 - Protect private IP: assume anything installed locally can be read. Put proprietary prompts, tools, retrieval, and sensitive actions behind authenticated You.md API/MCP services when needed.
 - Treat GStack as the primary external lighthouse. It is the cleanest example of a local-first agent operating system: installable skills, specialist workflows, review/QA/release patterns, update behavior, and host-native files without needing a custom app or per-stack API.
+- Keep `garrytan/gstack` as a local reference repo and monitor it daily for architecture, skills, install/update, host adapter, eval, and workflow lessons that should improve YouStacks.
+- Keep `garrytan/gbrain` as a local reference repo and monitor it daily for shared-brain, memory, retrieval, sync, provenance, privacy, and context lessons that should improve the You.md brain.
 - Treat BAMFStack as the closest internal proof pattern. It was inspired by the GStack shape, then proved that a local stack can become even more powerful when it also knows how to use a real product backend, API, MCP, docs, and auth safely.
 - Before designing YouStacks, review GStack first, then review the local bamfaiapp repo: public/bamfstack, docs, docs/workflows/agent-workflows.mdx, docs/mcp, docs/authentication.mdx, src/pages/DocsPage.tsx, supabase/functions/_shared/agent-capabilities.ts, public-api /v1/agent/capabilities and /v1/agent/route, and product-mcp tools/resources/prompts.
 - Extract why BAMFStack worked: one-line curl install, local skills/commands/prompts/helper CLI, env-only API key handling, auto-upgrade, read-only smoke test, capability discovery, deterministic workflow routing, app/Stack/API/MCP parity, docs-quality examples, and a sync rule that updates stack files/docs/OpenAPI/tests together.
@@ -154,6 +156,7 @@ Later:
 6. Optional hosted tools: keep stacks useful as local files first; add shared You.md API/MCP calls only for protected memory, sync, connected tools, and actions that should not live in plaintext.
 7. Feedback loop: capture usage, failures, edits, saved memories, repo diffs, and corrections so You.md brain and YouStack versions improve.
 8. Stack portfolio: let one user own many named stacks with separate slugs, domains, skills, sub-agents, workflows, examples, improvement loops, sharing policies, and update channels.
+9. Reference intelligence: daily fetch GStack/GBrain, summarize upstream commits, and create reviewable You.md tasks for relevant stack/brain improvements.
 
 ## GitHub Sync Plan
 

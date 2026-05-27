@@ -32,6 +32,11 @@ const useCases = [
     title: "let the stack evolve",
     desc: "capture usage, failures, corrections, evals, and repo diffs so skills and workflows can propose or apply safe local improvements.",
   },
+  {
+    label: "reference-guided",
+    title: "learn from the best",
+    desc: "watch GStack and GBrain as local references, then turn upstream patterns into reviewable YouStacks and brain tasks.",
+  },
 ];
 
 const stackFiles = [
@@ -50,7 +55,7 @@ const YouStacks = () => (
         <SectionHeader
           eyebrow="youstacks"
           title="package your expertise into your own GStack"
-          description="Name separate stacks for coding, scientific research, content creation, or any expertise lane. Each YouStack bottles the right skills, sub-agents, prompts, workflows, taste, examples, tool rules, safe memory access, and improvement loop for that domain."
+          description="Name separate stacks for coding, scientific research, content creation, or any expertise lane. Each YouStack bottles the right skills, sub-agents, prompts, workflows, taste, examples, tool rules, safe memory access, and improvement loop for that domain, guided by GStack and GBrain reference patterns."
         />
       </FadeUp>
 
@@ -67,7 +72,9 @@ const YouStacks = () => (
                   skills and workflows, YouStacks let anyone create a named
                   portfolio of stackable expertise. Local files carry reusable
                   skills; You.md API/MCP protects private memory, connected
-                  actions, and approved self-updates.
+                  actions, and approved self-updates. A reference monitor keeps
+                  GStack and GBrain nearby so good upstream ideas become
+                  reviewable You.md tasks.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <ButtonLink href="/docs#youstacks" variant="primary" size="sm">

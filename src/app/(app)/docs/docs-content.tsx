@@ -27,7 +27,9 @@ const navigation: NavItem[] = [
     label: "Core Concepts",
     children: [
       { id: "identity-protocol", label: "Identity Protocol" },
+      { id: "brain-architecture", label: "Brain Architecture" },
       { id: "context-surfaces", label: "Context Surfaces" },
+      { id: "reference-intelligence", label: "Reference Intelligence" },
       { id: "source-of-truth", label: "Source of Truth" },
     ],
   },
@@ -76,6 +78,7 @@ const navigation: NavItem[] = [
       { id: "youstacks-named", label: "Named Stacks" },
       { id: "youstacks-contents", label: "What Goes In" },
       { id: "youstacks-improvement", label: "Self-Improvement" },
+      { id: "youstacks-reference-loop", label: "Reference Loop" },
       { id: "youstacks-use-cases", label: "Use Cases" },
       { id: "youstacks-cli", label: "CLI" },
       { id: "youstacks-install-flow", label: "Install Flow" },
@@ -828,6 +831,36 @@ export default function DocsContent() {
               ]}
             />
 
+            <H3 id="brain-architecture">Brain Architecture</H3>
+            <P>
+              You.md&apos;s brain layer should be intentionally guided by GBrain:
+              a shared, durable agent brain that can be read by many hosts
+              without leaking the entire private life of the user. The brain is
+              not a stack. It is the identity, memory, project context,
+              provenance, retrieval policy, and permission layer that stacks can
+              safely call into.
+            </P>
+            <FeatureMatrix
+              items={[
+                {
+                  title: "Durable context graph",
+                  body: "Profiles, preferences, directives, memories, sources, private notes, projects, and sessions need stable ids, timestamps, provenance, and update history.",
+                },
+                {
+                  title: "Scoped retrieval",
+                  body: "Agents should ask for the smallest useful brain scope: public identity, project context, private notes, memories, or connected-tool state.",
+                },
+                {
+                  title: "Local cache + hosted copy",
+                  body: "Local files keep agents fast and inspectable. The hosted DB copy keeps context available to links, API, MCP, and web sessions.",
+                },
+                {
+                  title: "Self-improving memory",
+                  body: "Usage, corrections, failed recalls, duplicate memories, stale facts, and successful retrievals should become evals and improvement tasks for the brain.",
+                },
+              ]}
+            />
+
             <H3 id="context-surfaces">Context Surfaces</H3>
             <P>
               The same identity can be consumed through multiple surfaces
@@ -844,6 +877,27 @@ export default function DocsContent() {
                 { cmd: "GET /api/v1/docs/openapi.json", desc: "Generated OpenAPI-style inventory for API reference tooling" },
               ]}
             />
+
+            <H3 id="reference-intelligence">Reference Intelligence</H3>
+            <P>
+              You.md keeps GStack and GBrain as local reference repos and turns
+              upstream changes into reviewable tasks. GStack informs YouStacks:
+              installable skills, specialist workflows, host adapters, upgrade
+              behavior, QA/review/release loops, and local-first magic. GBrain
+              informs the You.md brain: durable memory, retrieval, sync,
+              provenance, privacy, and startup context.
+            </P>
+            <CodeBlock title="daily reference sync">{`npm run references:sync
+
+# outputs:
+# project-context/reference-intelligence/LATEST.md
+# project-context/reference-intelligence/TASKS.md`}</CodeBlock>
+            <Callout type="info">
+              The reference repos live in <InlineCode>.reference-repos/</InlineCode>{" "}
+              and are ignored by git. The generated task list is a review queue,
+              not a mandate: promote only the upstream ideas that make You.md
+              simpler, more powerful, or safer.
+            </Callout>
 
             <H3 id="source-of-truth">Source of Truth</H3>
             <SystemPanel title="source map">
@@ -1497,6 +1551,42 @@ preferences: terminal-native, monochrome
                   title: "Policy-bound autonomy",
                   body: "Auto-apply only the local updates the manifest permits. Brain writes, private context reads, connected tools, and remote repo writes stay behind scoped approval.",
                 },
+              ]}
+            />
+
+            <H3 id="youstacks-reference-loop">GStack / GBrain Reference Loop</H3>
+            <P>
+              YouStacks should deliberately follow what works in GStack while
+              You.md brain/context follows what works in GBrain. The loop is:
+              fetch upstream repos, inspect the newest commits, map each useful
+              pattern to either the stack layer or brain layer, then create a
+              concrete You.md task only when it improves the product.
+            </P>
+            <FeatureMatrix
+              items={[
+                {
+                  title: "GStack -> YouStacks",
+                  body: "Borrow local-first skills, host-native adapter files, specialist modes, upgrade flows, smoke checks, eval-first quality gates, and agent workflows.",
+                },
+                {
+                  title: "GBrain -> You.md brain",
+                  body: "Borrow durable memory architecture, retrieval hygiene, source/provenance tracking, sync discipline, context extraction, and privacy boundaries.",
+                },
+                {
+                  title: "Usage -> improvement",
+                  body: "Use real You.md sessions, user corrections, route misses, failed recalls, repo diffs, and eval results to improve stacks and brain context.",
+                },
+                {
+                  title: "Tasks before code",
+                  body: "The monitor writes candidate tasks first so the team can decide what to copy, adapt, defer, or reject before product code changes.",
+                },
+              ]}
+            />
+            <CommandTable
+              commands={[
+                { cmd: "npm run references:sync", desc: "Fetch local GStack/GBrain reference repos and regenerate reference intelligence reports" },
+                { cmd: "project-context/reference-intelligence/LATEST.md", desc: "Latest upstream commit summary and source-linked candidate tasks" },
+                { cmd: "project-context/reference-intelligence/TASKS.md", desc: "Review queue for stack, brain, memory, context, API/MCP, and docs improvements" },
               ]}
             />
 

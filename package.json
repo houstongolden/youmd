@@ -8,6 +8,7 @@
     "dev:backend": "npx convex dev",
     "docs:generate": "node scripts/generate-docs-reference.mjs",
     "docs:check": "node scripts/generate-docs-reference.mjs --check",
+    "references:sync": "node scripts/reference-intelligence.mjs",
     "prebuild": "npm run docs:generate",
     "build": "next build",
     "start": "next start",

@@ -1,0 +1,78 @@
+# Reference-Derived You.md Tasks
+
+Last updated: 2026-05-27T17:56:28.290Z
+
+Use this as a review queue, not an automatic mandate. Only promote an item into `TODO.md` or implementation when it clearly improves YouStacks, You.md brain/context, memory, profiles, API/MCP, safety, or docs.
+
+- [ ] YouStacks skill packaging
+  - Source: GStack a6fb317: v1.48.0.0 feat: AskUserQuestion split rule + runtime AUTO_DECIDE carve-out (#1740)
+  - You.md review: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
+- [ ] YouStacks skill packaging
+  - Source: GStack f8bb590: v1.47.0.0 feat: /spec — author backlog-ready spec in 5 phases + optional agent spawn (#1698) (#1733)
+  - You.md review: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
+- [ ] YouStacks skill packaging
+  - Source: GStack 22f8c7f: v1.46.0.0 feat: gstack v2 foundation — catalog tokens drop 56%, eval-first floor covers all 51 skills (#1712)
+  - You.md review: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
+- [ ] YouStacks skill packaging
+  - Source: GStack cf50443: v1.45.0.0 feat(design): persistent board daemon — 24h boards, one tab, board history (#1710)
+  - You.md review: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
+- [ ] YouStacks skill packaging
+  - Source: GStack 64f9aaf: v1.44.1.0 fix wave: post-windhoek paper-cut — 9 community PRs in one bundle (#1682)
+  - You.md review: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
+- [ ] YouStacks skill packaging
+  - Source: GStack 920a13a: v1.44.0.0 feat: long-lived sidebar — keepalive, restart, re-attach, scrollback replay (#1678)
+  - You.md review: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
+- [ ] YouStacks workflow quality gates
+  - Source: GStack 61c9a20: v1.43.3.0 fix(browse): headed-mode idle timer + onDisconnect target wrong BrowserManager for embedders (#1645)
+  - You.md review: Consider adding or refining stack workflows, smoke tests, evals, or release-review loops based on this upstream quality pattern.
+- [ ] YouStacks skill packaging
+  - Source: GStack 66f3a18: v1.43.2.0 fix wave: post-Daegu paper-cut — 18 fixes, 28 bisect commits (#1642)
+  - You.md review: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
+- [ ] YouStacks skill packaging
+  - Source: GStack 65972f6: v1.43.1.0 feat: default PGLite to voyage-code-3 for code search + e2e tests (#1639)
+  - You.md review: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
+- [ ] YouStacks skill packaging
+  - Source: GStack 1d9b9c4: v1.43.0.0 feat: iOS device-farm (5 skills, Mac daemon, Tailscale) (#1574)
+  - You.md review: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
+- [ ] YouStacks workflow quality gates
+  - Source: GStack 029356e: v1.42.2.0 fix wave: browse launch hardening (2 bug fixes + headed exit-code wiring) (#1629)
+  - You.md review: Consider adding or refining stack workflows, smoke tests, evals, or release-review loops based on this upstream quality pattern.
+- [ ] YouStacks skill packaging
+  - Source: GStack b03cd1a: v1.42.1.0 feat: gate terminal-agent teardown on ServerConfig.ownsTerminalAgent (unblocks gbrowser embedder) (#1615)
+  - You.md review: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
+- [ ] You.md brain sync
+  - Source: GBrain 42d99b6: v0.41.26.0 fix: dream --source + ingest junk titles + emoji-crash (supersedes #1559, #1561) (#1571)
+  - You.md review: Evaluate whether this upstream sync or migration pattern should change GitHub repo sync, local bundle export/import, or backup behavior.
+- [ ] You.md retrieval layer
+  - Source: GBrain ff32fca: v0.41.25.0 perf(sync): batched deletes + global page-generation clock (supersedes #1538) (#1566)
+  - You.md review: Compare this retrieval/indexing signal against You.md memory search, project context search, and protected brain retrieval plans.
+- [ ] You.md brain/context/memory architecture review
+  - Source: GBrain 726dfff: v0.41.24.0 fix(conversation-parser): threshold gates + bold-paren-time pattern — 20,167 Circleback messages unblocked (closes #1533) (#1543)
+  - You.md review: Skim the upstream change and decide whether it should become a concrete You.md task or be recorded as no-op.
+- [ ] You.md brain schema/context
+  - Source: GBrain 48e1000: v0.41.23.0 feat: extract operator surfaces + pack-driven extractables (#1541)
+  - You.md review: Review whether this upstream brain/context change should improve You.md memory categories, private context, profile files, or agent startup briefs.
+- [ ] You.md brain schema/context
+  - Source: GBrain 127842e: v0.41.22.1 feat: brainstorm/lsd judge fixes (closes #1540 end-to-end) (#1562)
+  - You.md review: Review whether this upstream brain/context change should improve You.md memory categories, private context, profile files, or agent startup briefs.
+- [ ] You.md brain schema/context
+  - Source: GBrain 5d42f32: v0.41.22.0 feat: type-unification cathedral — 94 types → 15 canonical (closes #1479) (#1542)
+  - You.md review: Review whether this upstream brain/context change should improve You.md memory categories, private context, profile files, or agent startup briefs.
+- [ ] You.md brain sync
+  - Source: GBrain 543f9a7: v0.41.21.0 feat(ops): 5 daily-driver pains fixed in one wave (#1545)
+  - You.md review: Evaluate whether this upstream sync or migration pattern should change GitHub repo sync, local bundle export/import, or backup behavior.
+- [ ] You.md brain schema/context
+  - Source: GBrain a74e5d9: v0.41.20.0 feat: gbrain status + doctor --scope=brain (fix wave 2: items #6 + #7) (#1544)
+  - You.md review: Review whether this upstream brain/context change should improve You.md memory categories, private context, profile files, or agent startup briefs.
+- [ ] Docs/product education
+  - Source: GBrain a7b79b6: feat: v0.41.19.0 Supavisor Retry Cathedral (#1537)
+  - You.md review: Compare this upstream docs/example change against the homepage, `/docs`, quickstarts, and stack/brain examples.
+- [ ] You.md brain schema/context
+  - Source: GBrain 10816cb: v0.41.18.0: gbrain onboard — the activation surface gbrain didn't have before (#1521)
+  - You.md review: Review whether this upstream brain/context change should improve You.md memory categories, private context, profile files, or agent startup briefs.
+- [ ] You.md retrieval layer
+  - Source: GBrain 8ab7334: v0.41.17.0 feat: --workers N on every bulk command + facts dim doctor parity (#1519)
+  - You.md review: Compare this retrieval/indexing signal against You.md memory search, project context search, and protected brain retrieval plans.
+- [ ] You.md brain schema/context
+  - Source: GBrain f702ec0: v0.41.16.0 feat: conversation parser cathedral + progressive-batch primitive (closes #1461) (#1510)
+  - You.md review: Review whether this upstream brain/context change should improve You.md memory categories, private context, profile files, or agent startup briefs.

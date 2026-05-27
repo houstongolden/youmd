@@ -26,6 +26,11 @@ const items = [
     desc: "active repos, goals, architecture context, TODOs, and project memory.",
   },
   {
+    label: "brain",
+    title: "shared agent memory",
+    desc: "GBrain-guided durable context, provenance, retrieval rules, and privacy boundaries.",
+  },
+  {
     label: "skills",
     title: "portable agent abilities",
     desc: "identity-aware skills for context setup, voice sync, scaffolding, and review.",
@@ -42,6 +47,7 @@ const codeLines = [
   "profile/about.md",
   "preferences/agent.md",
   "directives/agent.md",
+  "memory/provenance.json",
   "skills/project-context-init",
   "you.json",
 ];

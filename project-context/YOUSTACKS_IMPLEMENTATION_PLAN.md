@@ -320,6 +320,7 @@ Primary objects:
 - Grant: scoped authorization for a stack to read/write brain scopes or use shared You.md API/MCP.
 - Install: a local or remote record that a stack was installed into a host/project.
 - Repo sync binding: a GitHub repo/folder mapping for brain files, stacks, manifests, skills, and project context.
+- Reference intelligence: local ignored clones of `garrytan/gstack` and `garrytan/gbrain` plus generated task reports that keep YouStacks and the You.md brain aligned with the best current reference patterns.
 
 ## 8. Manifest Schema
 
@@ -840,6 +841,32 @@ V1 smoke test should be read-only:
 - run deterministic route check
 - dry-run protected brain retrieval with an empty or harmless query
 - verify GitHub sync binding status if enabled
+
+## 18. Reference Intelligence
+
+The YouStacks/brain roadmap should be guided by daily local references:
+
+- `garrytan/gstack` -> YouStacks execution layer: local-first skills, host adapters, upgrade flows, eval-first quality, QA/review/release workflows, and agent operating rules.
+- `garrytan/gbrain` -> You.md brain layer: durable memory, context extraction, retrieval, provenance, sync, privacy/scopes, and agent startup contracts.
+
+Local mechanics:
+
+```bash
+npm run references:sync
+```
+
+Outputs:
+
+- `.reference-repos/garrytan/gstack` and `.reference-repos/garrytan/gbrain` as ignored local clones.
+- `project-context/reference-intelligence/LATEST.md` with commit summaries and candidate task synthesis.
+- `project-context/reference-intelligence/TASKS.md` as the human review queue.
+
+Rules:
+
+- Reference repos are never vendored into You.md.
+- Generated tasks are suggestions, not automatic scope.
+- Promote only changes that make YouStacks or the You.md brain simpler, safer, more useful, or more agent-native.
+- Do not copy large upstream files. Extract architecture patterns and implement them in the You.md style.
 - report no writes performed
 
 The smoke test should end with a plain statement equivalent to:
