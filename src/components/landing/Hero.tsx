@@ -11,8 +11,8 @@ const proofItems = ["Claude Code", "Cursor", "Codex", "ChatGPT"];
 
 const terminalLines = [
   ["$ curl -fsSL https://you.md/install.sh | bash", "install the You.md runtime"],
-  ["$ you", "meet U and sync your brain"],
-  ["$ /stacks", "manage private/public YouStacks"],
+  ["$ you", "build and sync your agent brain"],
+  ["$ /stacks", "choose the expertise stacks agents should use"],
 ];
 
 const Hero = () => {
@@ -40,16 +40,17 @@ const Hero = () => {
             </div>
 
             <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/75">
-              identity context protocol
+              agent brain + expertise stacks
             </p>
 
             <h1 className="max-w-[720px] font-mono text-[44px] leading-[1.02] text-foreground sm:text-[56px] lg:text-[64px]">
-              your identity context for every AI agent
+              give every agent your brain and best workflows
             </h1>
 
             <p className="mt-6 max-w-[620px] text-[17px] leading-[1.58] text-muted-foreground md:text-[18px]">
-              Stop re-explaining who you are, how you work, and what you&apos;re building.
-              you.md gives Claude, Cursor, Codex, ChatGPT, and any agent the same portable context.
+              Install once. You.md gives Claude Code, Codex, Cursor, ChatGPT,
+              and any agent your identity, memory, preferences, project context,
+              and the named stacks of skills and workflows you want it to use.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">

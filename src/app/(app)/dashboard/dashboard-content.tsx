@@ -31,16 +31,16 @@ const PANE_GROUPS: Array<{
 }> = [
   {
     key: "profile",
-    label: "profile",
+    label: "brain",
     defaultPane: "profile",
     panes: [{ key: "profile", label: "profile" }],
   },
   {
     key: "content",
-    label: "content",
+    label: "files",
     defaultPane: "edit",
     panes: [
-      { key: "edit", label: "files" },
+      { key: "edit", label: "brain files" },
       { key: "history", label: "history" },
     ],
   },
@@ -52,17 +52,17 @@ const PANE_GROUPS: Array<{
   },
   {
     key: "agents",
-    label: "agents",
-    defaultPane: "agents",
+    label: "stacks",
+    defaultPane: "stacks",
     panes: [
-      { key: "agents", label: "agents" },
-      { key: "skills", label: "skills" },
       { key: "stacks", label: "stacks" },
+      { key: "skills", label: "skills" },
+      { key: "agents", label: "activity" },
     ],
   },
   {
     key: "insights",
-    label: "insights",
+    label: "activity",
     defaultPane: "analytics",
     panes: [{ key: "analytics", label: "analytics" }],
   },

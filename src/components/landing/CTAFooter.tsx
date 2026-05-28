@@ -77,7 +77,8 @@ const CTAFooter = () => {
                 stop re-explaining yourself to machines
               </h2>
               <p className="mx-auto mt-4 max-w-[620px] text-[16px] leading-relaxed text-muted-foreground">
-                Create one identity context, then let every agent start with the same map.
+                Create one brain, add named stacks, then let every agent start
+                with your context and your best workflows.
               </p>
               <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
                 <ButtonLink href="/create" variant="primary" size="lg">
@@ -94,7 +95,7 @@ const CTAFooter = () => {
             <CliInstallTabs
               className="mx-auto mt-7 max-w-[520px] text-left opacity-90"
               title="runtime install"
-              helperText="one curl, helper cli underneath"
+              helperText="one curl, brain + stacks underneath"
             />
           </FadeUp>
         </Container>

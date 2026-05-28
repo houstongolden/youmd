@@ -18,10 +18,10 @@ const beforeLines = [
 ];
 
 const afterLines = [
-  ["ctx", "loading you.md/houston..."],
-  ["agent", "houston, i see your stack, voice, active projects, and rules. i’ll use the terminal-native style and pull project context first."],
+  ["ctx", "loading houston's you.md brain + stacks..."],
+  ["agent", "i see your preferences, current projects, and coding stack. i’ll use the terminal-native style and pull project context first."],
   ["you", "new feature for the skill system."],
-  ["agent", "on it. syncing identity + repo instructions now."],
+  ["agent", "on it. running the repo startup workflow and keeping private memory behind MCP."],
 ];
 
 function Transcript({
@@ -58,8 +58,8 @@ const ProblemStrip = () => {
         <FadeUp>
           <SectionHeader
             eyebrow="problem"
-            title="agents forget you on purpose"
-            description="The current agent internet treats identity as disposable session input. you.md turns it into portable context."
+            title="agents start cold"
+            description="The current agent internet treats identity, memory, and workflows as disposable session input. you.md turns them into a brain and named stacks agents can actually use."
           />
         </FadeUp>
 

@@ -7,6 +7,7 @@ Last Updated: 2026-05-27
 | Feature | Status | Notes |
 |---|---|---|
 | Shared product design primitives | Done | Reusable `Container`, `Section`, `SectionHeader`, `Button`, `Card`, `TerminalCard`, `FormField`, `Input`, `Textarea`, `Select`, `Label`, `FieldHelp`, and `FieldError` now anchor marketing and app UI control standards |
+| Simplified product model | Done local / deploy pending | Homepage, docs, public profile, dashboard copy, README, and PRD now explain You.md as four layers: Brain, Stacks, Runtime, and Protected API/MCP |
 | Developer docs platform | Done | `/docs` now includes concepts, context surfaces, source-of-truth mapping, agent workflows, playbooks, examples, generated API/MCP reference, schema guidance, docs automation, troubleshooting, and a dedicated YouStacks chapter |
 | Generated docs reference | Done | `npm run docs:generate` scans Convex HTTP routes, Next routes, and CLI MCP tools into `src/generated/docs-reference.ts` plus a generated OpenAPI-style spec; YouStacks endpoints are categorized under `YouStacks`; `prebuild` refreshes it and `docs:check` detects stale artifacts |
 | GStack/GBrain reference intelligence | Done deployed | `npm run references:sync` keeps ignored local clones of `garrytan/gstack` and `garrytan/gbrain`, writes `project-context/reference-intelligence/LATEST.md` and `TASKS.md`, and feeds daily GStack -> YouStacks plus GBrain -> You.md brain improvement review; the local `Daily GStack/GBrain Reference Sync` automation now runs this monitor daily |

@@ -6,50 +6,34 @@ import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 
 const items = [
   {
-    label: "profile",
-    title: "who you are",
-    desc: "bio, role, links, proof, and current work agents can cite without asking.",
+    label: "01 brain",
+    title: "who you are and what matters",
+    desc: "identity, preferences, voice, memory, private context, active projects, provenance, and trust rules.",
   },
   {
-    label: "voice",
-    title: "how you sound",
-    desc: "writing style, tone rules, and platform-specific communication preferences.",
+    label: "02 stacks",
+    title: "your expertise packaged",
+    desc: "named YouStacks for coding, research, content, growth, operations, or any domain-specific workflow.",
   },
   {
-    label: "directives",
-    title: "how agents should work",
-    desc: "decision rules, never-do lists, action bias, and session behavior.",
+    label: "03 runtime",
+    title: "one install for every host",
+    desc: "curl-installed helper layer for Claude Code, Codex, Cursor, local files, MCP, smoke checks, and auto-update.",
   },
   {
-    label: "projects",
-    title: "what you are building",
-    desc: "active repos, goals, architecture context, TODOs, and project memory.",
-  },
-  {
-    label: "brain",
-    title: "shared agent memory",
-    desc: "GBrain-guided durable context, provenance, retrieval rules, and privacy boundaries.",
-  },
-  {
-    label: "skills",
-    title: "portable agent abilities",
-    desc: "identity-aware skills for context setup, voice sync, scaffolding, and review.",
-  },
-  {
-    label: "private",
-    title: "controlled context",
-    desc: "scoped notes and links for trusted agents, separate from the public profile.",
+    label: "04 protected api/mcp",
+    title: "sensitive things stay gated",
+    desc: "private memory, tokens, connected tools, repo sync, and server-side actions require scoped authenticated access.",
   },
 ];
 
 const codeLines = [
-  "schema: you/v1",
-  "profile/about.md",
-  "preferences/agent.md",
-  "directives/agent.md",
-  "memory/provenance.json",
-  "skills/project-context-init",
-  "you.json",
+  "brain/profile.md",
+  "brain/memory.json",
+  "stacks/coding/youstack.json",
+  "stacks/content/youstack.json",
+  "runtime/install.sh",
+  "protected/mcp + api grants",
 ];
 
 const WhatsInside = () => (
@@ -57,15 +41,15 @@ const WhatsInside = () => (
     <Container>
       <FadeUp>
         <SectionHeader
-          eyebrow="what's inside"
-          title="a machine-readable identity bundle"
-          description="Plain files for humans, structured JSON and context links for agents."
+          eyebrow="simple model"
+          title="brain, stacks, runtime, protected access"
+          description="The whole product should reduce to these four ideas. Everything else is plumbing."
         />
       </FadeUp>
 
       <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <FadeUp delay={0.08}>
-          <TerminalCard title="you.md identity context">
+          <TerminalCard title="you.md product model">
             <pre className="font-mono text-[12px] leading-[1.8] text-muted-foreground/70">
               {codeLines.map((line, index) => (
                 <div key={line}>

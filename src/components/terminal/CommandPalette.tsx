@@ -9,11 +9,11 @@ interface SlashCommand {
 }
 
 const SLASH_COMMANDS: SlashCommand[] = [
-  { command: "/profile", description: "view your profile preview", category: "navigation" },
-  { command: "/edit", description: "edit your identity context", category: "navigation" },
+  { command: "/profile", description: "view your public brain/profile", category: "navigation" },
+  { command: "/edit", description: "edit brain files", category: "navigation" },
   { command: "/settings", description: "account and plan settings", category: "navigation" },
-  { command: "/skills", description: "identity-aware agent skills", category: "navigation" },
-  { command: "/stacks", description: "named private/public YouStacks", category: "navigation" },
+  { command: "/skills", description: "skills inside your stacks", category: "navigation" },
+  { command: "/stacks", description: "named private/public expertise stacks", category: "navigation" },
   { command: "/share", description: "create a shareable identity link", category: "action" },
   { command: "/share --private", description: "share with private context included", category: "action" },
   { command: "/publish", description: "publish your latest bundle", category: "action" },

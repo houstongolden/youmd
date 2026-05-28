@@ -1,5 +1,20 @@
 # You.md — Changelog
 
+## 2026-05-27 — Product Model Simplification
+
+### Product / Copy
+- Reframed the user-facing product model from "identity context protocol" toward `Brain -> Stacks -> Runtime -> Protected API/MCP`
+- Updated homepage metadata, hero, problem, how-it-works, simple model, YouStacks, integrations, FAQ, CTA footer, and sample profile copy around the simpler model
+- Updated docs metadata, docs intro, quickstart, and core concepts with a new "Simple Model" section before protocol/API details
+- Updated public profiles so the agent-ready panel reads as a public agent brain with optional public stacks and protected API/MCP for private memory, tokens, and connected tools
+- Updated dashboard primary group labels, Stacks pane rules, Help pane, command palette, README, and PRD so future work stays aligned to the simplified model
+
+### Verification
+- Verified docs reference freshness with `npm run docs:check`
+- Verified root TypeScript with `npx tsc --noEmit` after temporarily moving unrelated untracked Clerk-era middleware files out of the compile path
+- Verified targeted changed-file lint with `npx eslint`; only pre-existing profile image/unused warnings remain
+- Local Next dev rendering and prior production build attempts still stall in the Next compile worker with 0% CPU; production deployment verification is pending after push
+
 ## 2026-05-27 — YouStack Doctor Diagnostics
 
 ### YouStacks / CLI

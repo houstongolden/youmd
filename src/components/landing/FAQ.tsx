@@ -8,11 +8,11 @@ import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 const faqs = [
   {
     q: "what is you.md exactly?",
-    a: "an identity context protocol: your profile, projects, values, preferences, voice, and directives structured so any agent can onboard instantly.",
+    a: "your agent brain plus named expertise stacks. the brain stores identity, memory, preferences, and project context; stacks package the skills and workflows agents should use.",
   },
   {
     q: "how is this different from a system prompt?",
-    a: "system prompts are per-tool and per-session. you.md is persistent, portable, shareable, and readable as markdown, JSON, URLs, or MCP context.",
+    a: "system prompts are per-tool and per-session. you.md is persistent, portable, shareable, and installable into Claude Code, Codex, Cursor, or any agent that can read files, URLs, API, or MCP.",
   },
   {
     q: "is my data private?",
@@ -20,11 +20,11 @@ const faqs = [
   },
   {
     q: "which agents work with you.md?",
-    a: "Claude Code, Cursor, Codex, ChatGPT, and any agent that can read a URL, local file, pasted context, API endpoint, or MCP server.",
+    a: "Claude Code, Cursor, Codex, ChatGPT, and any agent that can read a URL, local file, pasted context, protected API endpoint, or MCP server.",
   },
   {
     q: "do i need to sign up?",
-    a: "yes. email-code auth takes about 30 seconds, then U builds your identity context conversationally instead of sending you through a form.",
+    a: "yes. email-code auth takes about 30 seconds, then U builds your brain conversationally and helps organize your first private stacks.",
   },
   {
     q: "what's the you/v1 spec?",

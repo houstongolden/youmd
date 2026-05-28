@@ -13,22 +13,22 @@ import Pricing from "@/components/landing/Pricing";
 import CTAFooter from "@/components/landing/CTAFooter";
 
 export const metadata: Metadata = {
-  title: "you.md — Identity context protocol for the agent internet",
+  title: "you.md — Your agent brain and expertise stacks",
   description:
-    "An MCP where the context is you. Create named GStack-like YouStacks and a GBrain-guided personal brain: skills, sub-agents, workflows, protected memory, and self-improving context for any agent.",
+    "Give Claude Code, Codex, Cursor, and every AI agent your brain, memory, preferences, project context, and named YouStacks of expertise through one simple runtime.",
   openGraph: {
-    title: "you.md — Identity Context Protocol",
+    title: "you.md — Agent brain + expertise stacks",
     description:
-      "An MCP where the context is you. Name separate YouStacks for each domain, keep a GBrain-guided personal brain, and let reference patterns plus usage improve skills and context.",
+      "Install once. Agents get your brain, your named expertise stacks, and protected API/MCP access only when private context or connected tools are needed.",
     url: "https://you.md",
     siteName: "you.md",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "you.md — Identity Context Protocol",
+    title: "you.md — Agent brain + expertise stacks",
     description:
-      "An MCP where the context is you. Build named GStack-like YouStacks and a GBrain-guided personal brain with self-improving skills, workflows, taste, tools, and safe memory access.",
+      "Give every agent your brain, memory, project context, and named YouStacks of expertise through one curl-installed runtime.",
   },
   alternates: {
     canonical: "https://you.md",

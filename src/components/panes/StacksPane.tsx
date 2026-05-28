@@ -132,10 +132,10 @@ export function StacksPane() {
       <div className="px-6 py-6 max-w-3xl">
         <PaneSectionLabel>stack portfolio</PaneSectionLabel>
         <p className="mb-4 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-60">
-          Name separate stacks for separate expertise lanes. The user-facing
-          install is one curl command; the CLI is the helper under the hood.
-          Stacks start private, can be shared with scoped links, and only become
-          public after the owner asks for that exact visibility change.
+          You.md has four layers: brain, stacks, runtime, and protected API/MCP.
+          Stacks are the named expertise layer. Keep coding, research, content,
+          and BAMFStack-style workflows separate, private by default, and safe
+          to install into any agent.
         </p>
 
         <div className="space-y-3">
@@ -159,11 +159,11 @@ export function StacksPane() {
 
         <PaneSectionLabel>rules</PaneSectionLabel>
         <div className="space-y-2 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
-          <p>1. Local files can hold skills, workflows, docs, examples, prompts, evals, and host adapters.</p>
-          <p>2. Private memories, private context, tokens, connected tools, and sensitive actions stay behind You.md API/MCP grants.</p>
-          <p>3. Doctor diagnostics and smoke checks run before self-improvement so route drift, stale adapters, and public-readiness gaps are visible.</p>
-          <p>4. Self-improvement is policy-bound: auto-apply safe local updates only when the manifest allows it; remote writes need approval.</p>
-          <p>5. BAMFStack is the lighthouse case study: one curl install, env-only auth, capability discovery, deterministic routing, read-only diagnostics/smoke, and auto-upgrade.</p>
+          <p>1. Brain stores identity, memory, preferences, project context, and trust rules.</p>
+          <p>2. Stacks hold skills, workflows, docs, examples, prompts, evals, and host adapters.</p>
+          <p>3. Runtime is the one curl install plus auto-upgrade, doctor, smoke, and host linking.</p>
+          <p>4. Protected API/MCP gates private memories, tokens, connected tools, sync, and sensitive actions.</p>
+          <p>5. Self-improvement is policy-bound: doctor first, smoke before use, and remote writes only with approval.</p>
         </div>
       </div>
     </div>

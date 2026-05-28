@@ -8,9 +8,9 @@ import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 const primaryTools = ["Claude Code", "Cursor", "Codex", "ChatGPT"];
 const methods = [
   ["context links", "https://www.you.md/ctx/user/token"],
-  ["MCP server", "npx --yes youmd@latest mcp"],
+  ["protected MCP", "npx --yes youmd@latest mcp"],
   ["plain text", "GET /ctx/user/token"],
-  ["JSON API", "GET /api/v1/profiles?username=x"],
+  ["protected API", "GET /api/v1/profiles?username=x"],
 ];
 
 const Integrations = () => (
@@ -19,8 +19,8 @@ const Integrations = () => (
       <FadeUp>
         <SectionHeader
           eyebrow="works everywhere"
-          title="for users and builders"
-          description="Portable identity for people. A simple context surface for apps and agents."
+          title="runtime first, API when needed"
+          description="Most agents start from local files and public context. Private brain retrieval, tokens, sync, and connected actions go through protected API/MCP."
         />
       </FadeUp>
 
@@ -50,8 +50,9 @@ const Integrations = () => (
                 carry your context between tools
               </p>
               <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
-                Share one scoped link and the agent gets your identity, preferences,
-                voice, active projects, and rules before the work starts.
+                Share one scoped link and the agent gets your public brain,
+                preferences, voice, active projects, and public stacks before
+                the work starts.
               </p>
               <code className="mt-5 block border border-border bg-background p-3 font-mono text-[11px] leading-relaxed text-accent">
                 Read my identity first: https://www.you.md/ctx/houston/sk...
@@ -62,7 +63,7 @@ const Integrations = () => (
           <FadeUp delay={0.2}>
             <TerminalCard title="for builders">
               <p className="font-mono text-[15px] leading-relaxed text-foreground/85">
-                integrate context without a profile form
+                integrate the brain without a profile form
               </p>
               <div className="mt-4 space-y-3">
                 {methods.map(([label, code]) => (

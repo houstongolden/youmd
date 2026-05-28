@@ -8,11 +8,18 @@ Founder: Houston Golden
 
 ## 1. Vision
 
-You.md is the identity file for the agent internet. A structured, portable identity bundle that gives every AI agent context about who you are — so they don't start from scratch every time.
+You.md is your agent brain and named expertise stack layer for the agent internet. It gives Claude Code, Codex, Cursor, ChatGPT, and any agent the context it should already have: who you are, what you remember, how you work, what you are building, and which workflows/skills it should use.
 
-**One-liner:** Your identity, as code.
+**One-liner:** Your brain and best workflows for every AI agent.
 
-**Positioning:** Not a social profile. Not a resume. Not a settings page. You.md is identity infrastructure — a machine-readable, human-curated file that any AI agent can consume to understand you deeply from the first message.
+**Simple product model:** Brain → Stacks → Runtime → Protected API/MCP.
+
+- **Brain:** identity, memory, preferences, private context, project context, sources, provenance, and trust rules.
+- **Stacks:** named packages of expertise, skills, workflows, prompts, examples, docs, tests, host adapters, improvement policy, and update policy.
+- **Runtime:** the one curl-installed helper layer that gets You.md into Claude Code, Codex, Cursor, and other agent hosts.
+- **Protected API/MCP:** the authenticated boundary for private memory retrieval, tokens, repo sync, connected tools, visibility changes, and sensitive actions.
+
+**Positioning:** Not just a social profile, resume, settings page, CLI, or API. You.md is the durable brain plus portable expertise-stack layer agents use before they start improvising.
 
 ---
 

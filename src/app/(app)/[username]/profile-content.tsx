@@ -551,17 +551,17 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-[hsl(var(--accent))] font-medium border border-[hsl(var(--accent))]/40 bg-[hsl(var(--accent))]/10 px-1.5 py-0.5" style={{ borderRadius: "2px" }}>
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--accent))] status-dot-pulse" />
-                    agent-ready
+                    agent brain
                   </span>
                   <span className="text-[10px] text-[hsl(var(--text-secondary))] opacity-60">
-                    this profile has structured endpoints
+                    public brain endpoints + optional public stacks
                   </span>
                 </div>
               </div>
 
               {/* Endpoints */}
               <div className="pl-2 space-y-1">
-                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px]">direct endpoints (no JS required):</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px]">public brain endpoints (no JS required):</p>
                 <div className="flex items-center gap-2">
                   <p className="text-[hsl(var(--accent))]">GET you.md/{username}/you.json</p>
                   <CopyButton
@@ -578,9 +578,10 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                 </div>
 
                 <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[10px] mt-3">preferred retrieval order:</p>
-                <p className="text-[hsl(var(--text-secondary))] opacity-70">1. /{username}/you.json -- structured identity context</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-70">1. /{username}/you.json -- structured public brain</p>
                 <p className="text-[hsl(var(--text-secondary))] opacity-70">2. /{username}/you.txt -- plain text markdown</p>
-                <p className="text-[hsl(var(--text-secondary))] opacity-70">3. /{username} -- HTML profile (requires JS)</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-70">3. public YouStacks below -- installable expertise packages when exposed</p>
+                <p className="text-[hsl(var(--text-secondary))] opacity-70">4. protected API/MCP -- private memory, tokens, and connected tools by grant</p>
 
                 {voice && (
                   <>
@@ -854,7 +855,12 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               <>
                 <Divider />
                 <motion.section {...delay(8)}>
-                  <SectionLabel editKey="youstacks">youstacks</SectionLabel>
+                  <SectionLabel editKey="youstacks">public youstacks</SectionLabel>
+                  <p className="mt-2 text-[12px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+                    Public stacks are installable expertise packages. Private
+                    brain, secrets, and connected actions stay behind scoped
+                    You.md API/MCP grants.
+                  </p>
                   <div className="mt-3 space-y-2">
                     {visibleProfileStacks.map((stack) => (
                       <div

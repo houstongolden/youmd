@@ -16,7 +16,7 @@ export const sampleProfiles: Profile[] = [
   {
     username: "houstongolden",
     name: "Houston Golden",
-    tagline: "Founder, You.md + BAMF Media. Building the identity context protocol.",
+    tagline: "Founder, You.md + BAMF Media. Building agent brains and expertise stacks.",
     avatarUrl: "/assets/houston-portrait.jpeg",
     verification: { verified: true },
     agentMetrics: { totalReads: 14200 },

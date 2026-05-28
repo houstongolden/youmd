@@ -59,8 +59,8 @@ const YouStacks = () => (
       <FadeUp>
         <SectionHeader
           eyebrow="youstacks"
-          title="package your expertise into your own GStack"
-          description="Name separate stacks for coding, scientific research, content creation, or any expertise lane. Each YouStack bottles the right skills, sub-agents, prompts, workflows, taste, examples, tool rules, safe memory access, and improvement loop for that domain, guided by GStack and GBrain reference patterns."
+          title="build your own GStack for any agent"
+          description="A YouStack is a named package of expertise: skills, sub-agents, prompts, workflows, taste, examples, tests, docs, host adapters, and protected brain boundaries for one domain."
         />
       </FadeUp>
 
@@ -76,18 +76,18 @@ const YouStacks = () => (
                   If GStack packages founder operating wisdom into agent
                   skills and workflows, YouStacks let anyone create a named
                   portfolio of stackable expertise. Local files carry reusable
-                  skills; You.md API/MCP protects private memory, connected
-                  actions, visibility changes, and approved self-updates. The
-                  curl installer gives agents the runtime, bundled maintainer
-                  skill, and auto-upgrade helper without making users learn a
-                  CLI first.
+                  skills. The You.md brain stores memory and preferences. The
+                  runtime installs everything into Claude Code, Codex, and
+                  Cursor. Protected API/MCP access only appears when a stack
+                  needs private context, connected tools, sync, or sensitive
+                  actions.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <ButtonLink href="/docs#youstacks" variant="primary" size="sm">
                     read stack docs
                   </ButtonLink>
                   <ButtonLink href="/docs#youstacks-api-mcp" variant="secondary" size="sm">
-                    API + MCP
+                    protected API/MCP
                   </ButtonLink>
                 </div>
               </div>

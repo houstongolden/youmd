@@ -26,8 +26,9 @@ const navigation: NavItem[] = [
     id: "core-concepts",
     label: "Core Concepts",
     children: [
-      { id: "identity-protocol", label: "Identity Protocol" },
-      { id: "brain-architecture", label: "Brain Architecture" },
+      { id: "simple-model", label: "Simple Model" },
+      { id: "brain-architecture", label: "Brain" },
+      { id: "identity-protocol", label: "Protocol" },
       { id: "context-surfaces", label: "Context Surfaces" },
       { id: "reference-intelligence", label: "Reference Intelligence" },
       { id: "source-of-truth", label: "Source of Truth" },
@@ -268,10 +269,10 @@ function QuickStart() {
 
   const steps: { key: string; cmd: string; desc: string }[] = [
     { key: "install", cmd: "curl -fsSL https://you.md/install.sh | bash", desc: "install the You.md runtime globally" },
-    { key: "login", cmd: "youmd login", desc: "authenticate with browser or email code" },
-    { key: "init", cmd: "youmd init", desc: "create your identity" },
-    { key: "push", cmd: "youmd push", desc: "publish to you.md/<your-username>" },
-    { key: "mcp", cmd: "youmd mcp --install claude --auto", desc: "wire into Claude Code" },
+    { key: "you", cmd: "you", desc: "build and sync your brain" },
+    { key: "stacks", cmd: "youmd skill use youstack-maintainer", desc: "organize or improve named stacks" },
+    { key: "doctor", cmd: "youmd stack doctor --path stacks/<name>", desc: "check a stack before agents use it" },
+    { key: "mcp", cmd: "youmd mcp --install codex --auto", desc: "wire protected brain access into Codex" },
   ];
 
   return (
@@ -722,9 +723,9 @@ export default function DocsContent() {
               </p>
               <H1>you.md</H1>
               <P>
-                The identity context protocol for the agent internet. An MCP where
-                the context is you -- giving every AI agent full context about who
-                you are.
+                Your agent brain, named expertise stacks, one installable
+                runtime, and protected API/MCP for private memory, sync, tokens,
+                and connected tools.
               </P>
             </div>
 
@@ -734,11 +735,9 @@ export default function DocsContent() {
             {/* ── Getting Started ──────────────────────────── */}
             <H2 id="getting-started">Getting Started</H2>
             <P>
-              you.md is an identity context protocol that any AI agent can
-              read. Think of it as a{" "}
-              <InlineCode>.env</InlineCode> file for your identity -- your bio,
-              projects, values, communication style, and preferences, all in one
-              place.
+              you.md gives every AI agent the context it should already have:
+              your brain, your named expertise stacks, and the protected access
+              layer needed for private memory or connected tools.
             </P>
 
             <Callout type="tip">
@@ -762,7 +761,8 @@ export default function DocsContent() {
                 Pick a username and claim your profile
               </Step>
               <Step n={3}>
-                The You Agent builds your identity through conversation
+                U builds your brain through conversation: identity, preferences,
+                memory, projects, and trust rules
               </Step>
               <Step n={4}>
                 Open the{" "}
@@ -772,8 +772,9 @@ export default function DocsContent() {
                 >
                   shell
                 </Link>
-                , type <InlineCode>/share</InlineCode> to get your shareable
-                context link
+                , type <InlineCode>/stacks</InlineCode> to organize named
+                expertise stacks, or <InlineCode>/share</InlineCode> to get a
+                scoped context link
               </Step>
             </StepList>
 
@@ -786,35 +787,65 @@ export default function DocsContent() {
                 host adapters, and sync.
               </Step>
               <Step n={2}>
-                Run <InlineCode>youmd login</InlineCode> to authenticate
+                Run <InlineCode>you</InlineCode>. U will guide login or setup
+                if needed, then build and sync your brain.
               </Step>
               <Step n={3}>
-                Run <InlineCode>youmd init</InlineCode> -- the agent builds your
-                identity through conversation
+                Type <InlineCode>/stacks</InlineCode> in the shell or ask your
+                agent to create a private coding, research, content, or
+                BAMFStack-style stack.
               </Step>
               <Step n={4}>
-                Run <InlineCode>youmd push</InlineCode> to publish your profile
+                Run <InlineCode>youmd stack doctor --path stacks/&lt;name&gt;</InlineCode>{" "}
+                before an agent improves, shares, or publishes that stack.
               </Step>
               <Step n={5}>
-                Run <InlineCode>you</InlineCode> to meet U, then type{" "}
-                <InlineCode>/stacks</InlineCode> to manage named YouStacks or{" "}
-                <InlineCode>/share</InlineCode> to get your context link
+                Use <InlineCode>youmd mcp --install codex --auto</InlineCode>{" "}
+                when the agent needs protected brain retrieval, tokens, sync,
+                or connected tools.
               </Step>
             </StepList>
 
             {/* ── Core Concepts ───────────────────────────── */}
             <H2 id="core-concepts">Core Concepts</H2>
             <P>
-              You.md is not a profile page generator. It is a portable identity
-              context layer for agents: a canonical bundle, a local markdown
-              workspace, a public profile, private memory, API keys, context
-              links, and an MCP server that lets other tools read and update the
-              parts you allow.
+              You.md is easiest to understand as four layers: the brain,
+              YouStacks, the runtime, and protected API/MCP. The identity
+              protocol still exists under the hood, but it should not be the
+              first thing a user has to understand.
             </P>
 
             <ReferenceStats />
 
-            <H3 id="identity-protocol">Identity Protocol</H3>
+            <H3 id="simple-model">Simple Model</H3>
+            <FeatureMatrix
+              items={[
+                {
+                  title: "Brain",
+                  body: "Identity, memory, preferences, private context, project context, sources, provenance, and trust rules. This is durable and personal.",
+                },
+                {
+                  title: "Stacks",
+                  body: "Named packages of expertise: skills, workflows, prompts, examples, docs, tests, host adapters, improvement policy, and update policy.",
+                },
+                {
+                  title: "Runtime",
+                  body: "The curl-installed helper layer that makes Claude Code, Codex, Cursor, and other hosts read the brain, install stacks, run doctor/smoke, and stay updated.",
+                },
+                {
+                  title: "Protected API/MCP",
+                  body: "The authenticated boundary for private memory, scoped brain retrieval, tokens, repo sync, connected tools, visibility changes, and sensitive actions.",
+                },
+              ]}
+            />
+
+            <H3 id="identity-protocol">Protocol</H3>
+            <P>
+              The protocol is the machine-readable format underneath the brain.
+              Users should not have to think about it first, but agents and
+              builders can rely on it for stable JSON, markdown, context links,
+              and schema discovery.
+            </P>
             <FeatureMatrix
               items={[
                 {
@@ -2332,7 +2363,7 @@ npm run docs:check`}</CodeBlock>
         <div className="md:ml-56 md:pl-12">
           <div className="max-w-2xl border-t border-[hsl(var(--border))] mt-16 pt-8 flex items-center justify-between">
             <span className="text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
-              you.md -- identity context protocol for the agent internet
+              you.md -- agent brain + expertise stacks for the agent internet
             </span>
             <Link
               href="/create"

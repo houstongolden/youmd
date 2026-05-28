@@ -1,8 +1,8 @@
 # `you.md`
 
-**Identity context protocol for the agent internet -- an MCP where the context is you.**
+**Your agent brain and named expertise stacks for the agent internet.**
 
-Your identity context protocol. One bundle. Every agent on earth knows who you are, how you work, what you sound like, and which named YouStacks of expertise you want it to use. Public profile + private file system + skills + stacks + API/MCP.
+Install once. Every agent can load your brain, memory, preferences, project context, and the named YouStacks of skills/workflows you want it to use. Public profile + private brain + stacks + runtime + protected API/MCP.
 
 No more re-explaining yourself. No more starting from scratch.
 
@@ -16,7 +16,7 @@ you.md/houston
 
 Every AI agent asks the same questions. Who are you? What do you do? How do you want me to talk?
 
-You.md is the answer. A structured, portable identity bundle that agents consume directly. Written in `.md` -- the native format of agent instructions. Served via API. Readable by anything.
+You.md is the answer. A structured brain and stack layer that agents consume directly. Written in `.md` -- the native format of agent instructions. Served via API/MCP when protected access is needed. Readable by anything.
 
 ```
 agent.md  -- the agent's instructions

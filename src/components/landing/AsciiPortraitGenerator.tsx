@@ -364,18 +364,17 @@ const AsciiPortraitGenerator = () => {
 
       {tab === "about" && (
         <div className="terminal-panel rounded-tl-none p-5 font-mono text-[10px] leading-[1.9] space-y-4">
-          <p className="text-accent">// WHAT IS YOU?</p>
+          <p className="text-accent">{"// WHAT IS YOU?"}</p>
           <p className="text-muted-foreground">
-            YOU is an identity context protocol -- like MCP, but for
-            your human identity.
+            YOU is your agent brain plus the stacks you want agents
+            to use.
             <br />
             Give any AI agent structured context about who you are,
             how you work,
             <br />
-            and what you care about. One file. Every agent. Every
-            session.
+            what you remember, and which workflows to follow.
           </p>
-          <p className="text-accent">// PORTRAIT PIPELINE</p>
+          <p className="text-accent">{"// PORTRAIT PIPELINE"}</p>
           <p className="text-muted-foreground">
             1. share a profile url (github / linkedin / x)
             <br />

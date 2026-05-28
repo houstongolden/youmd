@@ -78,6 +78,10 @@ export function HelpPane({ username }: HelpPaneProps) {
             encrypted private context only you (and agents you grant access to) can read.
             think of it as a secret-tier section of your identity that never lands in the public bundle.
           </Explainer>
+          <Explainer term="brain">
+            your durable agent memory: identity, preferences, private context, project context,
+            voice, sources, and trust rules.
+          </Explainer>
           <Explainer term="skills">
             identity-aware markdown templates with {`{{identity}}`} variables. install via the curl runtime
             and an agent can scaffold projects pre-personalized to who you are.
@@ -89,8 +93,8 @@ export function HelpPane({ username }: HelpPaneProps) {
           </Explainer>
           <Explainer term="MCP">
             model context protocol -- the standard way agents (claude, cursor, codex, etc.)
-            talk to external tools. you.md exposes your identity over MCP so any compliant agent
-            can read it.
+            talk to external tools. you.md uses MCP for protected brain access, stack routing,
+            sync, and connected actions.
           </Explainer>
           <Explainer term="context links">
             short, shareable URLs that hand an agent a snapshot of your identity (public, private,
@@ -133,10 +137,10 @@ export function HelpPane({ username }: HelpPaneProps) {
           <CopyableCommand command="/publish" dimmed />
         </div>
 
-        <p className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest mb-1.5">skills</p>
+        <p className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase tracking-widest mb-1.5">stacks</p>
         <div className="space-y-1 mb-3">
-          <CopyableCommand command="/skills" dimmed />
           <CopyableCommand command="/stacks" dimmed />
+          <CopyableCommand command="/skills" dimmed />
           <CopyableCommand command="/skill use {name}" dimmed />
           <CopyableCommand command="/skill use youstack-maintainer" dimmed />
         </div>

@@ -8,27 +8,27 @@ import { TerminalCard } from "@/components/ui/Card";
 const steps = [
   {
     num: "01",
-    title: "create your identity",
-    cmd: "youmd init",
-    desc: "U builds your profile, voice, preferences, projects, and directives through conversation.",
+    title: "install the runtime",
+    cmd: "curl -fsSL https://you.md/install.sh | bash",
+    desc: "one command gives local agents the You.md helper, native skills, auto-upgrade, MCP, and stack checks.",
   },
   {
     num: "02",
-    title: "publish/share context",
-    cmd: "youmd push",
-    desc: "your public profile, scoped context links, API, and markdown bundle become agent-readable.",
+    title: "build your brain",
+    cmd: "you",
+    desc: "U captures identity, preferences, memory, project context, voice, and trust rules.",
   },
   {
     num: "03",
-    title: "connect agents",
-    cmd: "youmd mcp --install codex",
-    desc: "Claude Code, Cursor, Codex, ChatGPT, or any URL-aware agent can load the same context.",
+    title: "use named stacks",
+    cmd: "/stacks",
+    desc: "choose coding, research, content, BAMFStack, or any named expertise package the agent should follow.",
   },
   {
     num: "04",
-    title: "sync skills/projects",
-    cmd: "youmd skill init-project",
-    desc: "bootstrap AGENTS.md, CLAUDE.md, project-context, and identity-aware skills additively.",
+    title: "protect sensitive access",
+    cmd: "youmd mcp --install codex",
+    desc: "private memory, repo sync, tokens, connected tools, and remote actions stay behind scoped You.md API/MCP.",
   },
 ];
 
@@ -40,14 +40,14 @@ const HowItWorks = () => (
           <div>
             <SectionHeader
               eyebrow="how it works"
-              title="four commands, then every agent starts warmer"
-              description="Install once, create once, then point any agent at the context it should have had from the beginning."
+              title="one runtime, four simple layers"
+              description="Brain, stacks, runtime, protected API/MCP. That is the product model agents and humans should understand."
               className="mb-6"
             />
             <CliInstallTabs
               className="max-w-[520px]"
               title="install"
-              helperText="then run youmd init"
+              helperText="then run you"
             />
           </div>
         </FadeUp>
