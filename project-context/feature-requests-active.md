@@ -11,6 +11,21 @@ Last Updated: 2026-05-27
 
 ---
 
+## YouStack Doctor Diagnostics (from May 27 conversation)
+
+### 72. Add read-only YouStack health diagnostics from GStack reference learning
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** PENDING — waiting for the current `main` push to deploy before marking done.
+**Request:** Continue improving YouStacks, the skill stack, API/MCP boundaries, docs, homepage, BAMFStack lighthouse, and GStack/GBrain-inspired self-improvement architecture.
+**Actionable Scope:**
+1. Convert the latest GStack reference-intelligence signal about memory diagnostics and resource-leak fixes into a YouStacks-native improvement.
+2. Add a read-only stack doctor that host agents can run before self-improving, publishing, or updating named YouStacks.
+3. Route diagnostic/health/bloat/drift/staleness requests to a first-class YouStack capability instead of relying on generic stack improvement copy.
+4. Update the BAMFStack lighthouse example and docs so diagnostics become part of the install/use/improve loop.
+5. Keep diagnostics local/static first, with no private brain reads, connected tool calls, or file mutations during the doctor pass.
+**Progress (2026-05-27):** Added `youmd stack doctor --path <stack>` plus `runYouStackDoctor`, a read-only diagnostic pass that reports manifest size, file counts/types, capability split, adapters, brain scopes, warnings, and next recommendations. Added the built-in `stack.diagnose` / `stack-diagnostics` capability to CLI and shared route scoring. Updated the bundled `youstack-maintainer` skill, BAMFStack lighthouse manifest/docs/smoke checklist, homepage/docs YouStacks copy, dashboard stack pane, and README so agents run doctor before smoke/evals/self-improvement/public-readiness work. Local verification passed focused YouStack tests, CLI TypeScript, docs check, root TypeScript, CLI build, built `youmd stack doctor`, and built routing for diagnostic requests. Local Next production build attempts stalled in the Next compile worker with 0% CPU, so final production verification will use the Vercel deployment after push.
+
 ## YouStacks Curl Runtime + BAMFStack Lighthouse (from May 27 conversation)
 
 ### 71. Make YouStacks curl-first, auto-updating, native-skill maintained, and BAMFStack-proofed
@@ -27,6 +42,7 @@ Last Updated: 2026-05-27
 6. Keep stack visibility private by default, with scoped/public sharing only after redaction, smoke checks, and explicit owner approval.
 7. Keep GStack/GBrain reference monitoring live with local reference repos, updated task queues, and a daily automation.
 **Progress (2026-05-27):** Updated `https://you.md/install.sh` into a curl-first You.md runtime installer that source-installs current You.md by default, falls back to npm, installs native skills, writes `~/.youmd/bin/youmd-auto-upgrade`, and writes the stack runtime preamble. Added bundled `youstack-maintainer` across CLI catalog, SkillsPane, HelpPane, docs, README, You Agent prompt copy, and routing capabilities. Added `/stacks` shell navigation plus a YouStacks dashboard pane showing named private/public stacks, visibility, install commands, update policies, and agent commands. Added profile rendering for `public-open` YouStacks while keeping private/scoped stacks owner-only. Added `cli/examples/youstack-bamfstack-public` as the public-safe BAMFStack lighthouse with manifest, skill, workflow, prompt, quickstart, smoke test, auto-update policy, and public-readiness capability. Synced GStack/GBrain references to latest GStack `19770ea` and GBrain `42d99b6`, regenerated reference tasks, documented the daily reference automation, and created the active local Codex automation `Daily GStack/GBrain Reference Sync`. Local verification passed docs generation/check, targeted ESLint with zero errors, CLI TypeScript, root TypeScript, focused YouStack tests, CLI build, Next production build, built CLI BAMFStack smoke/routing, and local production homepage/docs/install/API smoke checks. Production verification passed on `https://www.you.md`: homepage exposes the no-CLI mental model and auto-upgrade copy, `/docs#youstacks` exposes runtime/profile/BAMFStack/reference automation sections, `/install.sh` serves the runtime installer with `youmd-auto-upgrade`, and `/api/v1/stacks/capabilities` exposes maintainer/visibility/update capabilities.
+**Progress (2026-05-27 continuation):** Extended the BAMFStack lighthouse and native maintainer loop with `youmd stack doctor`, so curl-installed agents get a read-only health diagnostic before smoke/evals/public-readiness work.
 
 ## GStack/GBrain Reference Intelligence (from May 27 conversation)
 

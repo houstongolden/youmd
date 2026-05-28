@@ -27,7 +27,7 @@ const STACKS: StackCard[] = [
     description: "Your private starter stack for Claude Code, Codex, and Cursor: identity, project context, startup workflow, protected memory boundary, and host adapters.",
     install: "curl -fsSL https://you.md/install.sh | bash",
     skills: ["youstack-start", "youstack-maintainer", "project-context-init"],
-    update: "auto-upgrade helper + stack smoke",
+    update: "auto-upgrade helper + stack doctor + smoke",
   },
   {
     name: "BAMFStack Public Lighthouse",
@@ -150,6 +150,7 @@ export function StacksPane() {
         <div className="space-y-1">
           <CopyableCommand command="/stacks" />
           <CopyableCommand command="/skill use youstack-maintainer" dimmed />
+          <CopyableCommand command="youmd stack doctor --path cli/examples/youstack-bamfstack-public" dimmed />
           <CopyableCommand command="make my BAMFStack public after redacting secrets and running smoke checks" dimmed />
           <CopyableCommand command="create a private scientific research stack from my research workflow" dimmed />
         </div>
@@ -160,8 +161,9 @@ export function StacksPane() {
         <div className="space-y-2 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
           <p>1. Local files can hold skills, workflows, docs, examples, prompts, evals, and host adapters.</p>
           <p>2. Private memories, private context, tokens, connected tools, and sensitive actions stay behind You.md API/MCP grants.</p>
-          <p>3. Self-improvement is policy-bound: auto-apply safe local updates only when the manifest allows it; remote writes need approval.</p>
-          <p>4. BAMFStack is the lighthouse case study: one curl install, env-only auth, capability discovery, deterministic routing, read-only smoke, and auto-upgrade.</p>
+          <p>3. Doctor diagnostics and smoke checks run before self-improvement so route drift, stale adapters, and public-readiness gaps are visible.</p>
+          <p>4. Self-improvement is policy-bound: auto-apply safe local updates only when the manifest allows it; remote writes need approval.</p>
+          <p>5. BAMFStack is the lighthouse case study: one curl install, env-only auth, capability discovery, deterministic routing, read-only diagnostics/smoke, and auto-upgrade.</p>
         </div>
       </div>
     </div>

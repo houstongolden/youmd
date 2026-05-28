@@ -103,7 +103,7 @@ const HELP_GROUPS: Array<{
     title: "SKILLS",
     commands: [
       { name: "skill", summary: "identity-aware agent skills (list/install/use/sync)" },
-      { name: "stack", summary: "local YouStack manifests (inspect/smoke/capabilities/route)" },
+      { name: "stack", summary: "local YouStack manifests (inspect/doctor/smoke/capabilities/route)" },
     ],
   },
   {
@@ -543,7 +543,7 @@ program
 
 program
   .command("stack [subcommand] [args...]")
-  .description("Local YouStack manifests (inspect, smoke, capabilities, route, link)")
+  .description("Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link)")
   .option("--path <path>", "Path to a youstack.json file or stack directory")
   .option("--hosts <hosts>", "Comma-separated host list for stack link (claude-code,codex,cursor)")
   .option("--target <dir>", "Target project directory for stack link")

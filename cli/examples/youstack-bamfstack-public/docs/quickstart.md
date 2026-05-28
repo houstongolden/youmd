@@ -10,6 +10,7 @@ Inspect this stack:
 
 ```bash
 youmd stack inspect --path cli/examples/youstack-bamfstack-public
+youmd stack doctor --path cli/examples/youstack-bamfstack-public
 youmd stack smoke --path cli/examples/youstack-bamfstack-public
 youmd stack capabilities --path cli/examples/youstack-bamfstack-public
 youmd stack route --path cli/examples/youstack-bamfstack-public "draft a creator post from research"
@@ -30,4 +31,4 @@ This stack is public-open as an example, but it stays protected by design:
 - Mutations require authenticated API/MCP and exact user approval.
 - Self-updates may refresh local public stack files only.
 
-Why it matters: BAMFStack proves a YouStack can be useful as local/static files first while still knowing how to reach a real product backend safely when credentials and approvals exist.
+Why it matters: BAMFStack proves a YouStack can be useful as local/static files first while still knowing how to run diagnostics, smoke checks, and protected backend actions safely when credentials and approvals exist.

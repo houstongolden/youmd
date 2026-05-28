@@ -4,6 +4,7 @@ import {
   linkYouStackAdapters,
   loadYouStackManifest,
   routeYouStackRequest,
+  runYouStackDoctor,
   runYouStackSmoke,
   YouStackCapability,
   YouStackValidationResult,
@@ -26,6 +27,7 @@ function printHelp(): void {
   console.log("");
   console.log("  " + ACCENT("Commands"));
   console.log("    " + chalk.cyan("inspect") + DIM("       Show the local stack manifest summary"));
+  console.log("    " + chalk.cyan("doctor") + DIM("        Run read-only stack health diagnostics"));
   console.log("    " + chalk.cyan("smoke") + DIM("         Run read-only local manifest/file checks"));
   console.log("    " + chalk.cyan("capabilities") + DIM("  List declared local capabilities"));
   console.log("    " + chalk.cyan("route \"...\"") + DIM("   Pick the best local capability for a request"));
@@ -121,6 +123,36 @@ export async function stackCommand(
       if (capability.requiredScopes?.length) {
         console.log("    " + DIM("scopes: ") + capability.requiredScopes.join(", "));
       }
+    }
+    console.log("");
+    return;
+  }
+
+  if (cmd === "doctor") {
+    const result = runYouStackDoctor(loaded);
+    if (options.json) {
+      console.log(JSON.stringify(result, null, 2));
+      if (!result.ok) process.exitCode = 1;
+      return;
+    }
+
+    console.log("");
+    console.log("  " + ACCENT("youstack doctor") + DIM(" -- read-only diagnostics"));
+    console.log("");
+    for (const diagnostic of result.diagnostics) {
+      console.log("  " + chalk.cyan("INFO") + " " + diagnostic);
+    }
+    console.log("");
+    for (const recommendation of result.recommendations) {
+      console.log("  " + ACCENT("NEXT") + " " + recommendation);
+    }
+    printValidation(result);
+    console.log("");
+    if (result.ok) {
+      console.log("  " + chalk.green("Doctor passed.") + " " + DIM("No brain data was modified, no connected tools were invoked, and no files were changed."));
+    } else {
+      console.log("  " + chalk.red("Doctor failed.") + " " + DIM("Fix the manifest errors above and rerun."));
+      process.exitCode = 1;
     }
     console.log("");
     return;

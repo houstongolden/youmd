@@ -7,6 +7,7 @@ import {
   linkYouStackAdapters,
   loadYouStackManifest,
   routeYouStackRequest,
+  runYouStackDoctor,
   runYouStackSmoke,
   validateYouStackManifest,
 } from "../lib/youstack";
@@ -144,6 +145,16 @@ describe("youstack manifest", () => {
     expect(smoke.checks).toContain("file exists: workflows/startup.md");
   });
 
+  it("runs read-only doctor diagnostics for stack health", () => {
+    writeStack(validManifest());
+    const doctor = runYouStackDoctor(loadYouStackManifest(tmpDir));
+
+    expect(doctor.ok).toBe(true);
+    expect(doctor.diagnostics.join("\n")).toContain("capabilities:");
+    expect(doctor.diagnostics.join("\n")).toContain("file types:");
+    expect(doctor.recommendations.join("\n")).toContain("Add host adapters");
+  });
+
   it("fails smoke checks for missing required files", () => {
     writeStack(
       validManifest({
@@ -194,6 +205,16 @@ describe("youstack manifest", () => {
     );
 
     expect(route.capability.id).toBe("stack.improve");
+    expect(route.score).toBeGreaterThan(0);
+  });
+
+  it("routes diagnostic requests to the built-in doctor capability", () => {
+    const route = routeYouStackRequest(
+      validManifest(),
+      "diagnose stack health for route drift and manifest bloat"
+    );
+
+    expect(route.capability.id).toBe("stack.diagnose");
     expect(route.score).toBeGreaterThan(0);
   });
 

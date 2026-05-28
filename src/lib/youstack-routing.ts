@@ -38,6 +38,13 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
     mutationPolicy: "write_local",
   },
   {
+    id: "stack-diagnostics",
+    intent: "Run read-only stack health diagnostics for manifest bloat, capability routing, adapter drift, update hygiene, reference-derived tasks, and public-readiness gaps.",
+    localOnly: true,
+    skill: "youstack-maintainer",
+    mutationPolicy: "read_only",
+  },
+  {
     id: "native-stack-maintainer",
     intent: "Organize, deduplicate, improve, and self-update named YouStacks and their skills using the bundled youstack-maintainer skill.",
     localOnly: true,
@@ -108,6 +115,7 @@ export function getYouStackCapabilityContract() {
         "docs",
         "examples",
         "evals and smoke tests",
+        "read-only stack diagnostics",
         "self-improvement proposal files",
         "stack maintainer skill instructions",
         "host adapter files",
@@ -239,6 +247,9 @@ function scoreCapability(request: string, capability: YouStackCapability): numbe
   }
   if (/\b(update|upgrade|refresh|latest|version|channel)\b/.test(normalized) && /update|refresh|channel|version/.test(haystack)) {
     score += 5;
+  }
+  if (/\b(doctor|diagnose|diagnostic|health|bloat|leak|resource|drift|stale)\b/.test(normalized) && /diagnos|health|bloat|drift|hygiene|readiness/.test(haystack)) {
+    score += 8;
   }
   if (/\b(public|private|share|shared|scoped|visibility|publish|unpublish)\b/.test(normalized) && /visibility|share|publish|private/.test(haystack)) {
     score += 5;

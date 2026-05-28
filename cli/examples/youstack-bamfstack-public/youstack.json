@@ -103,6 +103,14 @@
       "mutationPolicy": "read_only"
     },
     {
+      "id": "stack-diagnostics",
+      "intent": "Run a read-only BAMFStack health check for manifest bloat, stale adapters, route ambiguity, update hygiene, reference-derived tasks, and public-readiness gaps.",
+      "workflow": "tests/smoke.md",
+      "skill": "bamfstack-start",
+      "localOnly": true,
+      "mutationPolicy": "read_only"
+    },
+    {
       "id": "capability-discovery",
       "intent": "Fetch BAMF or You.md capability maps before choosing a REST, MCP, local skill, or mutation path.",
       "mcpTool": "you.get_stack_capabilities",

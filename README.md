@@ -42,6 +42,7 @@ That installs the You.md runtime. The `youmd` command is the helper under the ho
 youmd login              # press Enter for browser sign-in, or type your email for a code
 youmd init               # build your identity bundle interactively
 you                     # meet U — portrait, proactive context scan, live chat
+youmd stack doctor --path cli/examples/youstack-personal
 youmd stack smoke --path cli/examples/youstack-personal
 youmd push               # publish to you.md/<username>
 youmd skill init-project # wire your identity into the current repo
@@ -79,7 +80,7 @@ The installer also writes `~/.youmd/bin/youmd-auto-upgrade` so host agents can r
 | `youmd private` | Manage private context (notes, links, projects) |
 | `youmd project` | Manage project agent context (init, list, show, memories) |
 | `youmd skill` | Identity-aware agent skills (18 core subcommands -- see below) |
-| `youmd stack` | Local YouStack manifests (inspect, smoke, capabilities, route, link) |
+| `youmd stack` | Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link) |
 | `youmd link` | Context links (create, list, revoke, preview) |
 | `youmd keys` | API key management (list, create, revoke) |
 
@@ -228,6 +229,7 @@ Think "your own GStack." You can keep a private coding stack, a private scientif
 ```bash
 curl -fsSL https://you.md/install.sh | bash
 youmd stack inspect --path cli/examples/youstack-personal
+youmd stack doctor --path cli/examples/youstack-bamfstack-public
 youmd stack smoke --path cli/examples/youstack-bamfstack-public
 youmd skill use youstack-maintainer
 ```

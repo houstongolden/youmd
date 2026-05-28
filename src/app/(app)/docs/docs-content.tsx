@@ -1573,7 +1573,7 @@ preferences: terminal-native, monochrome
                 },
                 {
                   title: "Eval-gated updates",
-                  body: "Run stack smoke checks and stack-specific evals before accepting a new skill version or generated adapter update.",
+                  body: "Run stack doctor diagnostics, smoke checks, and stack-specific evals before accepting a new skill version or generated adapter update.",
                 },
                 {
                   title: "Policy-bound autonomy",
@@ -1594,7 +1594,7 @@ preferences: terminal-native, monochrome
               items={[
                 {
                   title: "GStack -> YouStacks",
-                  body: "Borrow local-first skills, host-native adapter files, specialist modes, upgrade flows, smoke checks, eval-first quality gates, and agent workflows.",
+                  body: "Borrow local-first skills, host-native adapter files, specialist modes, upgrade flows, doctor diagnostics, smoke checks, eval-first quality gates, and agent workflows.",
                 },
                 {
                   title: "GBrain -> You.md brain",
@@ -1665,6 +1665,7 @@ preferences: terminal-native, monochrome
               commands={[
                 { cmd: "curl -fsSL https://you.md/install.sh | bash", desc: "Install the You.md runtime, bundled skills, auto-upgrade helper, and stack starter files" },
                 { cmd: "youmd stack inspect --path DIR", desc: "Show name, slug, domain, manifest metadata, files, scopes, adapters, and validation warnings" },
+                { cmd: "youmd stack doctor --path DIR", desc: "Run read-only diagnostics for manifest bloat, route drift, stale adapters, update hygiene, and public-readiness gaps" },
                 { cmd: "youmd stack smoke --path DIR", desc: "Run read-only schema, file, checksum, adapter, and capability checks" },
                 { cmd: "youmd stack capabilities --path DIR", desc: "List local and protected capabilities declared by the stack" },
                 { cmd: "youmd stack route --path DIR \"start this repo\"", desc: "Choose the best local capability for a natural-language request" },
@@ -1673,6 +1674,7 @@ preferences: terminal-native, monochrome
               ]}
             />
             <CodeBlock title="terminal">{`curl -fsSL https://you.md/install.sh | bash
+youmd stack doctor --path cli/examples/youstack-personal
 youmd stack smoke --path cli/examples/youstack-personal
 youmd stack route --path cli/examples/youstack-personal "search my memories before starting"
 youmd stack link --path cli/examples/youstack-personal --hosts codex --target . --dry-run`}</CodeBlock>
@@ -1701,8 +1703,8 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
               <Step n={1}>
                 Install the runtime once with{" "}
                 <InlineCode>curl -fsSL https://you.md/install.sh | bash</InlineCode>.
-                This installs current You.md source, bundled skills, and the
-                auto-upgrade helper.
+                This installs current You.md source, bundled skills, the
+                auto-upgrade helper, and stack diagnostics.
               </Step>
               <Step n={2}>
                 Pull, create, or ask U to scaffold a named stack folder that
@@ -1757,7 +1759,7 @@ fi`}</CodeBlock>
               items={[
                 {
                   title: "What maps 1:1",
-                  body: "Curl install, host-native skills, helper CLI behavior, capability discovery, deterministic route endpoint, smoke test, docs, prompts, and auto-upgrade preamble.",
+                  body: "Curl install, host-native skills, helper CLI behavior, capability discovery, deterministic route endpoint, doctor diagnostics, smoke test, docs, prompts, and auto-upgrade preamble.",
                 },
                 {
                   title: "What stays protected",
@@ -1770,6 +1772,7 @@ fi`}</CodeBlock>
               ]}
             />
             <CodeBlock title="public example">{`youmd stack inspect --path cli/examples/youstack-bamfstack-public
+youmd stack doctor --path cli/examples/youstack-bamfstack-public
 youmd stack smoke --path cli/examples/youstack-bamfstack-public
 youmd stack route --path cli/examples/youstack-bamfstack-public "draft a creator post from research"`}</CodeBlock>
 
@@ -1858,8 +1861,9 @@ youmd stack route --path stacks/scientific-research "triage these papers and des
 
 # content stack
 youmd stack route --path stacks/content-studio "turn this idea into a LinkedIn post in my style"`}</CodeBlock>
-            <CodeBlock title="BAMFStack lighthouse">{`# open public stack example
+<CodeBlock title="BAMFStack lighthouse">{`# open public stack example
 youmd stack inspect --path cli/examples/youstack-bamfstack-public
+youmd stack doctor --path cli/examples/youstack-bamfstack-public
 youmd stack smoke --path cli/examples/youstack-bamfstack-public
 
 # public install surface stays curl-first

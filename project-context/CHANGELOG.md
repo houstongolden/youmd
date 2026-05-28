@@ -1,5 +1,27 @@
 # You.md — Changelog
 
+## 2026-05-27 — YouStack Doctor Diagnostics
+
+### YouStacks / CLI
+- Added `youmd stack doctor --path <stack>` for read-only stack health diagnostics before agents smoke, improve, update, or publish named YouStacks
+- Added a built-in `stack.diagnose` capability and diagnostic route scoring for health, bloat, drift, stale adapter, public-readiness, and resource-leak style requests
+- Added doctor output for manifest size, file count/type mix, capability split, adapters, brain scopes, warnings, and next recommendations without reading private brain data or mutating files
+
+### Docs / Lighthouse
+- Updated the bundled `youstack-maintainer` skill so agents run doctor before smoke/evals/self-improvement/public-readiness loops
+- Added stack diagnostics to the BAMFStack lighthouse manifest, quickstart, smoke checklist, README, dashboard pane, and `/docs#youstacks`
+- Kept the GStack/GBrain reference loop concrete by converting the latest GStack diagnostic signal into a YouStacks-native local diagnostic layer
+
+### Verification
+- Verified focused YouStack tests with `npm --prefix cli test -- youstack`
+- Verified CLI TypeScript with `npx tsc --noEmit --project cli/tsconfig.json`
+- Verified docs reference freshness with `npm run docs:check`
+- Verified root TypeScript with `npx tsc --noEmit` after temporarily moving unrelated untracked middleware files out of the compile path
+- Verified CLI build with `npm --prefix cli run build`
+- Verified the built CLI with `node cli/dist/index.js stack doctor --path cli/examples/youstack-bamfstack-public`
+- Verified diagnostic routing with `node cli/dist/index.js stack route --path cli/examples/youstack-bamfstack-public "diagnose stack health for route drift and public readiness"`
+- Local Next production build attempts using both Webpack and Turbopack stalled in the Next compile worker with 0% CPU; production deployment verification is pending after this push
+
 ## 2026-05-27 — YouStacks Runtime + BAMFStack Lighthouse
 
 ### Runtime / Skills

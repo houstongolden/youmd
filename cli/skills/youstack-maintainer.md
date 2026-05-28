@@ -29,7 +29,7 @@ Keep stacks private by default. Never make a stack public, widen a scoped link, 
    ```
 
 2. Discover stack manifests from the current repo, `youstacks/`, `.you/youstack.json`, or the user's chosen stack folder.
-3. Run `youmd stack smoke --path <stack>` before trusting a manifest.
+3. Run `youmd stack doctor --path <stack>`, then `youmd stack smoke --path <stack>` before trusting a manifest.
 4. Read the stack's `improvement`, `update`, `sharing`, and `accessPolicy` blocks before changing anything.
 5. Prefer local/static stack files first. Use You.md API/MCP only for protected brain retrieval, sync, tokens, grants, connected tools, hosted telemetry, or server-side actions.
 
@@ -45,6 +45,7 @@ For each stack, make sure it has:
 - Smoke checks or eval notes in `tests/`.
 - Docs in `docs/`.
 - Host adapters for Claude Code, Codex, and Cursor.
+- A read-only diagnostic path for manifest bloat, route ambiguity, adapter drift, update hygiene, and public-readiness gaps.
 - An improvement policy and update policy.
 - A private/public/scoped sharing policy with `private` as the default.
 
@@ -62,6 +63,7 @@ Use safe signals first:
 - GStack/GBrain reference-intelligence tasks that are relevant.
 
 Make the smallest useful improvement. Update skills, workflows, docs, examples, tests, and generated adapters together when the change affects more than one surface. Run `youmd stack smoke` again.
+Run `youmd stack doctor` first when a change is triggered by route misses, bloat, stale adapters, memory/resource issues, or a GStack/GBrain reference-intelligence task.
 
 ## Visibility
 
@@ -91,6 +93,7 @@ BAMFStack is the reference proof for an open YouStack:
 - Capability discovery.
 - Deterministic workflow routing.
 - Read-only smoke test.
+- Read-only stack doctor/diagnostic pass.
 - Docs-quality examples.
 - Sync rule: update stack files, docs, API/MCP references, prompts, and tests together.
 

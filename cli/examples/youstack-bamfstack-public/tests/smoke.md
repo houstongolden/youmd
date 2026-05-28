@@ -3,6 +3,7 @@
 Run:
 
 ```bash
+youmd stack doctor --path cli/examples/youstack-bamfstack-public
 youmd stack smoke --path cli/examples/youstack-bamfstack-public
 youmd stack route --path cli/examples/youstack-bamfstack-public "inspect creator context"
 youmd stack route --path cli/examples/youstack-bamfstack-public "run protected bamf action"

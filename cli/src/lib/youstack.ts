@@ -101,6 +101,11 @@ export interface YouStackSmokeResult extends YouStackValidationResult {
   checks: string[];
 }
 
+export interface YouStackDoctorResult extends YouStackSmokeResult {
+  diagnostics: string[];
+  recommendations: string[];
+}
+
 export interface YouStackRouteResult {
   request: string;
   capability: YouStackCapability;
@@ -133,6 +138,13 @@ const BUILT_IN_CAPABILITIES: YouStackCapability[] = [
   {
     id: "manifest.smoke",
     intent: "run read-only local YouStack smoke validation",
+    localOnly: true,
+    mutationPolicy: "read_only",
+  },
+  {
+    id: "stack.diagnose",
+    intent: "run read-only stack health diagnostics for manifest bloat, capability routing, adapter drift, update hygiene, and public-readiness gaps",
+    skill: "youstack-maintainer",
     localOnly: true,
     mutationPolicy: "read_only",
   },
@@ -538,6 +550,94 @@ export function runYouStackSmoke(loaded: LoadedYouStack): YouStackSmokeResult {
   };
 }
 
+export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult {
+  const smoke = runYouStackSmoke(loaded);
+  const errors = [...smoke.errors];
+  const warnings = [...smoke.warnings];
+  const checks = [...smoke.checks];
+  const diagnostics: string[] = [];
+  const recommendations: string[] = [];
+  const manifest = loaded.manifest;
+  const capabilities = getYouStackCapabilities(manifest);
+  const files = manifest.files || [];
+  const adapters = Object.keys(manifest.adapters || {});
+  const manifestBytes = fs.statSync(loaded.manifestPath).size;
+  const localCapabilities = capabilities.filter((capability) => capability.localOnly).length;
+  const protectedCapabilities = capabilities.length - localCapabilities;
+  const fileTypes = new Map<string, number>();
+
+  for (const file of files) {
+    fileTypes.set(file.type, (fileTypes.get(file.type) || 0) + 1);
+  }
+
+  diagnostics.push(`manifest bytes: ${manifestBytes}`);
+  diagnostics.push(`files: ${files.length}`);
+  diagnostics.push(`file types: ${Array.from(fileTypes.entries()).map(([type, count]) => `${type}=${count}`).join(", ") || "none"}`);
+  diagnostics.push(`capabilities: ${capabilities.length} (${localCapabilities} local, ${protectedCapabilities} protected)`);
+  diagnostics.push(`adapters: ${adapters.join(", ") || "none"}`);
+  diagnostics.push(`brain scopes: ${manifest.brainScopes?.length || 0}`);
+
+  if (manifestBytes > 64 * 1024) {
+    warnings.push("manifest is over 64KB; move long docs/prompts into files and keep the manifest routable");
+  }
+  if (files.length > 50) {
+    warnings.push("stack declares more than 50 files; consider splitting into named domain stacks");
+  }
+  if (capabilities.length > 40) {
+    warnings.push("stack exposes more than 40 capabilities; route quality may degrade without narrower intents");
+  }
+  if (adapters.length === 0) {
+    recommendations.push("Add host adapters for Claude Code, Codex, and Cursor so the stack is useful after one install.");
+  }
+  if (!files.some((file) => file.type === "test")) {
+    recommendations.push("Add a read-only smoke test file so agents can verify the stack before using it.");
+  }
+  if (!manifest.improvement?.evals?.some((item) => item.includes("youmd stack smoke"))) {
+    recommendations.push("Include `youmd stack smoke` in improvement.evals so self-improvement stays gated.");
+  }
+  if (!manifest.update?.check) {
+    recommendations.push("Declare update.check so host agents know exactly how to refresh the stack.");
+  } else if (
+    manifest.update.autoApply === true &&
+    !manifest.update.check.includes("youmd-auto-upgrade")
+  ) {
+    recommendations.push("Auto-applying stacks should run `~/.youmd/bin/youmd-auto-upgrade --quiet` before stack updates.");
+  }
+
+  for (const capability of capabilities) {
+    const protectedMutation =
+      !capability.localOnly &&
+      capability.mutationPolicy &&
+      capability.mutationPolicy !== "read_only";
+    if (protectedMutation && (!capability.requiredScopes || capability.requiredScopes.length === 0)) {
+      warnings.push(`protected capability ${capability.id} mutates state without requiredScopes`);
+    }
+  }
+
+  if (manifest.visibility === "public-open") {
+    const publicReadiness = manifest.sharing?.publicReadiness;
+    if (!Array.isArray(publicReadiness) || publicReadiness.length === 0) {
+      warnings.push("public-open stacks should declare sharing.publicReadiness checks");
+    }
+    if (!capabilities.some((capability) => capability.id.includes("public-readiness"))) {
+      recommendations.push("Add a public-readiness capability that redacts secrets, private memories, and proprietary prompts before publishing.");
+    }
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push("No structural recommendations. Keep watching route misses, user corrections, eval failures, and reference-intelligence tasks.");
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    warnings,
+    checks,
+    diagnostics,
+    recommendations,
+  };
+}
+
 function capabilityText(capability: YouStackCapability): string {
   return [
     capability.id,
@@ -566,6 +666,9 @@ function scoreCapability(request: string, capability: YouStackCapability): numbe
   }
   if (capability.localOnly) score += 1;
   if (capability.mutationPolicy === "read_only") score += 1;
+  if (/\b(doctor|diagnose|diagnostic|health|bloat|leak|resource|drift|stale)\b/.test(query) && /diagnos|health|bloat|drift|hygiene|readiness/.test(haystack)) {
+    score += 8;
+  }
 
   return score;
 }
@@ -712,6 +815,7 @@ export function generateYouStackAdapterContent(
   lines.push("");
   lines.push("```bash");
   lines.push("youmd stack inspect");
+  lines.push("youmd stack doctor");
   lines.push("youmd stack smoke");
   lines.push("youmd stack capabilities");
   lines.push("youmd stack route \"<request>\"");
