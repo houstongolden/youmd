@@ -7,6 +7,9 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-05-28
+- [x] Finish the product-language cleanup across remaining app metadata, auth/onboarding copy, docs snippets, profile/share surfaces, dashboard panes, README, PRD, schema comments, and sample profiles; deploy and production-smoke on Vercel deployment `dpl_D2ZEuhDf5LUQFzW8JToASft64e5m`
+
 ### 2026-05-27
 - [x] Simplify the product model across homepage, docs, public profile, dashboard labels, README, and PRD around Brain -> Stacks -> Runtime -> Protected API/MCP
 - [x] Reframe the curl installer as the You.md runtime install rather than a CLI-first install, including source install, fallback npm install, native skill install, stack runtime notes, and `youmd-auto-upgrade`

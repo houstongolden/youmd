@@ -11,7 +11,8 @@
 - Verified docs reference freshness with `npm run docs:check`
 - Verified root TypeScript with `npx tsc --noEmit --pretty false` after temporarily moving unrelated untracked Clerk-era middleware files out of the compile path
 - Verified targeted changed-file lint with `npx eslint`; only pre-existing ignored README/profile image/unused warnings remain
-- Production verification pending
+- Verified Vercel production deployment `dpl_D2ZEuhDf5LUQFzW8JToASft64e5m` for commit `5f2150f`, aliased to `https://www.you.md` / `https://you.md`
+- Verified live homepage, `/docs#share`, `/profiles`, `/sign-up`, `/houstongolden`, and `/schema/you-md/v1.json` expose the new brain/stacks language and reject the old top-level phrases on those surfaces
 
 ## 2026-05-27 — Product Model Simplification
 
