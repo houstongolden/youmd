@@ -14,9 +14,9 @@ Last Updated: 2026-05-27
 ## YouStack Doctor Diagnostics (from May 27 conversation)
 
 ### 72. Add read-only YouStack health diagnostics from GStack reference learning
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** PENDING — waiting for the current `main` push to deploy before marking done.
+**Production Verified:** YES — GitHub/Vercel deployment `4843270141` for commit `2c80f42` completed successfully and is live at `https://www.you.md` / `https://you.md` (`https://youmd-7dhuuysdw-hubify.vercel.app`).
 **Request:** Continue improving YouStacks, the skill stack, API/MCP boundaries, docs, homepage, BAMFStack lighthouse, and GStack/GBrain-inspired self-improvement architecture.
 **Actionable Scope:**
 1. Convert the latest GStack reference-intelligence signal about memory diagnostics and resource-leak fixes into a YouStacks-native improvement.
@@ -24,7 +24,7 @@ Last Updated: 2026-05-27
 3. Route diagnostic/health/bloat/drift/staleness requests to a first-class YouStack capability instead of relying on generic stack improvement copy.
 4. Update the BAMFStack lighthouse example and docs so diagnostics become part of the install/use/improve loop.
 5. Keep diagnostics local/static first, with no private brain reads, connected tool calls, or file mutations during the doctor pass.
-**Progress (2026-05-27):** Added `youmd stack doctor --path <stack>` plus `runYouStackDoctor`, a read-only diagnostic pass that reports manifest size, file counts/types, capability split, adapters, brain scopes, warnings, and next recommendations. Added the built-in `stack.diagnose` / `stack-diagnostics` capability to CLI and shared route scoring. Updated the bundled `youstack-maintainer` skill, BAMFStack lighthouse manifest/docs/smoke checklist, homepage/docs YouStacks copy, dashboard stack pane, and README so agents run doctor before smoke/evals/self-improvement/public-readiness work. Local verification passed focused YouStack tests, CLI TypeScript, docs check, root TypeScript, CLI build, built `youmd stack doctor`, and built routing for diagnostic requests. Local Next production build attempts stalled in the Next compile worker with 0% CPU, so final production verification will use the Vercel deployment after push.
+**Progress (2026-05-27):** Added `youmd stack doctor --path <stack>` plus `runYouStackDoctor`, a read-only diagnostic pass that reports manifest size, file counts/types, capability split, adapters, brain scopes, warnings, and next recommendations. Added the built-in `stack.diagnose` / `stack-diagnostics` capability to CLI and shared route scoring. Updated the bundled `youstack-maintainer` skill, BAMFStack lighthouse manifest/docs/smoke checklist, homepage/docs YouStacks copy, dashboard stack pane, and README so agents run doctor before smoke/evals/self-improvement/public-readiness work. Local verification passed focused YouStack tests, CLI TypeScript, docs check, root TypeScript, CLI build, built `youmd stack doctor`, and built routing for diagnostic requests. Local Next production build attempts stalled in the Next compile worker with 0% CPU, but Vercel production deployment `4843270141` for commit `2c80f42` completed successfully. Production smoke passed on `https://www.you.md`: `/docs#youstacks` contains the doctor guidance, `/api/v1/stacks/capabilities` exposes `stack-diagnostics`, `/api/v1/docs/reference` still exposes YouStacks reference data, and `POST /api/v1/stacks/route` routes diagnostic requests to read-only `stack-diagnostics`.
 
 ## YouStacks Curl Runtime + BAMFStack Lighthouse (from May 27 conversation)
 

@@ -20,7 +20,8 @@
 - Verified CLI build with `npm --prefix cli run build`
 - Verified the built CLI with `node cli/dist/index.js stack doctor --path cli/examples/youstack-bamfstack-public`
 - Verified diagnostic routing with `node cli/dist/index.js stack route --path cli/examples/youstack-bamfstack-public "diagnose stack health for route drift and public readiness"`
-- Local Next production build attempts using both Webpack and Turbopack stalled in the Next compile worker with 0% CPU; production deployment verification is pending after this push
+- Local Next production build attempts using both Webpack and Turbopack stalled in the Next compile worker with 0% CPU; Vercel production deployment `4843270141` for commit `2c80f42` completed successfully and is live at `https://www.you.md`
+- Verified live `/docs#youstacks`, `/api/v1/stacks/capabilities`, `/api/v1/docs/reference`, and `POST /api/v1/stacks/route` expose doctor guidance and route diagnostic requests to read-only `stack-diagnostics`
 
 ## 2026-05-27 — YouStacks Runtime + BAMFStack Lighthouse
 
