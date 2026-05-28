@@ -7,14 +7,14 @@ import FadeUp from "./FadeUp";
 
 const bundleTree = [
   ".youmd/",
-  "  profile/about.md",
-  "  preferences/agent.md",
-  "  directives/agent.md",
-  "  skills/",
+  "  brain/profile.md",
+  "  brain/preferences.md",
+  "  stacks/coding/youstack.json",
+  "  runtime/adapter.md",
   "  you.json",
 ];
 
-const principles = ["plain markdown", "JSON + API", "MCP-ready", "self-hostable"];
+const principles = ["plain markdown", "JSON + API", "protected MCP", "self-hostable"];
 
 const OpenSpec = () => (
   <Section compact>
@@ -25,7 +25,7 @@ const OpenSpec = () => (
             <SectionHeader
               eyebrow="open standard"
               title="you own the files"
-              description="you/v1 is plain markdown that compiles into the context agents need. no walled garden, no proprietary prompt vault."
+              description="you/v1 is plain markdown for the brain and stack files agents need. no walled garden, no proprietary prompt vault."
               className="mb-0"
             />
             <div className="mt-5 flex flex-wrap gap-2">
@@ -61,7 +61,7 @@ const OpenSpec = () => (
                     $ youmd export
                   </code>
                   <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
-                    Drop the bundle into a repo, serve it from a URL, or connect through MCP.
+                    Drop the public brain into a repo, serve it from a URL, or connect protected scopes through MCP.
                   </p>
                 </div>
                 <ExternalButtonLink

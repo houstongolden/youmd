@@ -110,12 +110,12 @@ export const sampleProfiles: Profile[] = [
     avatarUrl: "/assets/houston-portrait.jpeg",
     coverUrl: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=300&fit=crop",
     bio: {
-      short: "Founder building identity infrastructure for the agent internet.",
-      medium: "Founded BAMF Media (8-figure growth agency), LinkedIn growth pioneer. Now building You.md \u2014 the identity context protocol for the agent internet. I ship fast and build in public.",
+      short: "Founder building agent brains and expertise stacks for the agent internet.",
+      medium: "Founded BAMF Media (8-figure growth agency), LinkedIn growth pioneer. Now building You.md -- agent brains, named expertise stacks, and protected context for every AI agent. I ship fast and build in public.",
     },
-    now: ["Building You.md", "Scaling BAMF Media", "Refining identity protocol"],
+    now: ["Building You.md", "Scaling BAMF Media", "Refining Brain -> Stacks -> Runtime"],
     projects: [
-      { name: "You.md", role: "Founder", status: "building", description: "Identity as code for the agent internet.", url: "https://you.md" },
+      { name: "You.md", role: "Founder", status: "building", description: "Agent brain and expertise stacks for the agent internet.", url: "https://you.md" },
       { name: "BAMF Media", role: "Founder/CEO", status: "active", description: "Growth marketing agency.", url: "#", mrr: "$800k+" },
     ],
     values: ["Build in public", "Extreme ownership", "Ship fast"],
@@ -130,7 +130,7 @@ export const sampleProfiles: Profile[] = [
       { label: "LinkedIn", url: "https://linkedin.com/in/houstongolden" },
       { label: "X", url: "https://x.com/houstongolden" },
     ],
-    topics: ["growth marketing", "AI agents", "identity protocols"],
+    topics: ["growth marketing", "AI agents", "agent brains", "expertise stacks"],
     credibility: ["Founded BAMF Media (8-figure agency)", "LinkedIn growth pioneer", "Speaker at 20+ conferences"],
     agentMetrics: {
       totalReads: 12842,
@@ -182,7 +182,7 @@ export const sampleProfiles: Profile[] = [
     },
     recentChanges: [
       "Refreshed voice profile",
-      "Republished identity context v1.3",
+      "Republished public brain v1.3",
       "Connected GitHub + LinkedIn OAuth",
       "Updated project metadata",
       "Synced latest YouTube activity",
@@ -191,9 +191,9 @@ export const sampleProfiles: Profile[] = [
     publicSections: ["identity", "projects", "values", "voice summary", "current focus"],
     privateSections: ["preferences", "internal context", "working notes", "private memory"],
     activity: [
-      { date: "2026-03-18", action: "agent_read", detail: "claude-code accessed identity context" },
+      { date: "2026-03-18", action: "agent_read", detail: "claude-code accessed public brain context" },
       { date: "2026-03-18", action: "updated", detail: "Synced LinkedIn activity via OAuth" },
-      { date: "2026-03-17", action: "published", detail: "Updated identity context to v1.3" },
+      { date: "2026-03-17", action: "published", detail: "Updated public brain context to v1.3" },
       { date: "2026-03-15", action: "connected", detail: "Connected GitHub OAuth source" },
       { date: "2026-03-12", action: "updated", detail: "Added new project: You.md" },
       { date: "2026-03-08", action: "initialized", detail: "Created you.md/houstong" },
@@ -468,7 +468,7 @@ export const sampleProfiles: Profile[] = [
     publicSections: ["identity", "projects", "values", "technical writing"],
     privateSections: ["RFC drafts", "internal architecture notes", "book manuscript"],
     activity: [
-      { date: "2026-03-17", action: "agent_read", detail: "aider accessed identity context" },
+      { date: "2026-03-17", action: "agent_read", detail: "aider accessed public brain context" },
       { date: "2026-03-17", action: "updated", detail: "Added book project to profile" },
       { date: "2026-03-13", action: "published", detail: "Updated agent preferences" },
       { date: "2026-03-07", action: "connected", detail: "Linked Aider agent" },
@@ -655,7 +655,7 @@ export const sampleProfiles: Profile[] = [
     publicSections: ["identity", "projects", "values", "tutorials"],
     privateSections: ["talk proposals", "internal docs strategy", "sponsor rates"],
     activity: [
-      { date: "2026-03-18", action: "agent_read", detail: "cursor accessed identity context" },
+      { date: "2026-03-18", action: "agent_read", detail: "cursor accessed public brain context" },
       { date: "2026-03-18", action: "updated", detail: "Added React Conf keynote to Now" },
       { date: "2026-03-14", action: "published", detail: "Updated agent preferences" },
       { date: "2026-03-10", action: "connected", detail: "Connected YouTube OAuth source" },

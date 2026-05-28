@@ -1,5 +1,18 @@
 # You.md — Changelog
 
+## 2026-05-28 — Product Language Cleanup
+
+### Product / Copy
+- Finished the next product-clarity pass across remaining app metadata, auth boot screens, initialize copy, profile/share surfaces, dashboard panes, README, PRD, docs snippets, sample profiles, schema comments, and robots comments
+- Replaced leftover "identity context protocol" / "identity-aware" presentation with the simpler Brain -> Stacks -> Runtime -> Protected API/MCP model while preserving identity as one part of the brain
+- Tightened skills and YouStacks copy so agents see brain-aware templates, stack-aware workflows, protected API/MCP boundaries, and private-by-default sharing rules
+
+### Verification
+- Verified docs reference freshness with `npm run docs:check`
+- Verified root TypeScript with `npx tsc --noEmit --pretty false` after temporarily moving unrelated untracked Clerk-era middleware files out of the compile path
+- Verified targeted changed-file lint with `npx eslint`; only pre-existing ignored README/profile image/unused warnings remain
+- Production verification pending
+
 ## 2026-05-27 — Product Model Simplification
 
 ### Product / Copy

@@ -384,7 +384,7 @@ const AsciiPortraitGenerator = () => {
             <br />
             4. chars colored via orange luminance palette
             <br />
-            5. portrait stored in your identity manifest
+            5. portrait stored in your brain manifest
             <br />
             6. loads every time you start a you session
           </p>

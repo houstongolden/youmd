@@ -7,11 +7,11 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Profiles — you.md",
   description:
-    "Browse identity profiles on the you.md network. Every profile readable by any AI agent.",
+    "Browse public agent brains on the you.md network. Every public profile is readable by AI agents.",
   openGraph: {
     title: "Profiles — you.md",
     description:
-      "Browse identity profiles on the you.md network. Every profile readable by any AI agent.",
+      "Browse public agent brains and YouStacks on the you.md network.",
     url: "https://you.md/profiles",
     siteName: "you.md",
     type: "website",
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Profiles — you.md",
     description:
-      "Browse identity profiles on the you.md network. Every profile readable by any AI agent.",
+      "Browse public agent brains and YouStacks on the you.md network.",
   },
   alternates: {
     canonical: "https://you.md/profiles",
@@ -32,7 +32,7 @@ const jsonLd = {
   "@type": "CollectionPage",
   name: "you.md Profiles Directory",
   description:
-    "Browse identity profiles on the you.md network. Every profile readable by any AI agent.",
+    "Browse public agent brains and YouStacks on the you.md network.",
   url: "https://you.md/profiles",
   isPartOf: {
     "@type": "WebSite",

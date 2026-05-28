@@ -45,7 +45,7 @@ const navigation: NavItem[] = [
   },
   {
     id: "share",
-    label: "Share Your Identity",
+    label: "Share Your Brain",
     children: [
       { id: "share-command", label: "/share Command" },
       { id: "context-links", label: "Context Links" },
@@ -1029,7 +1029,7 @@ export default function DocsContent() {
             <H3 id="cc-workflow">Recommended Workflow</H3>
             <P>
               The most powerful workflow: let your coding agent update your
-              identity context as you work together.
+              brain context as you work together.
             </P>
             <StepList>
               <Step n={1}>
@@ -1066,9 +1066,9 @@ export default function DocsContent() {
             </P>
 
             {/* ── Share ────────────────────────────────────── */}
-            <H2 id="share">Share Your Identity</H2>
+            <H2 id="share">Share Your Brain</H2>
             <P>
-              The core feature. Once your identity is built, share it with any AI
+              The core feature. Once your public brain is built, share it with any AI
               agent in seconds. The <InlineCode>/share</InlineCode> command works
               in both the web shell and the CLI.
             </P>
@@ -1181,9 +1181,9 @@ preferences: terminal-native, monochrome
               commands={[
                 {
                   cmd: "youmd init",
-                  desc: "Conversational AI onboarding -- builds your identity through dialogue",
+                  desc: "Conversational AI onboarding -- builds your agent brain through dialogue",
                 },
-                { cmd: "you", desc: "Open U, the proactive local agent that keeps shaping your identity" },
+                { cmd: "you", desc: "Open U, the proactive local agent that keeps shaping your brain" },
                 { cmd: "youmd chat", desc: "Explicit long-form chat command when you want the older path" },
                 {
                   cmd: "youmd build",
@@ -1332,10 +1332,10 @@ preferences: terminal-native, monochrome
             {/* ── Skills ──────────────────────────────────── */}
             <H2 id="skills">Skills</H2>
             <P>
-              Skills are identity-aware markdown templates that turn your you.md
-              profile into actionable outputs. They use{" "}
+              Skills are brain-aware markdown templates that turn your you.md
+              brain and stacks into actionable outputs. They use{" "}
               <InlineCode>{"{{var}}"}</InlineCode> interpolation to inject your
-              identity data at runtime -- so the output is always personalized
+              brain data at runtime -- so the output is always personalized
               to you.
             </P>
 
@@ -1403,28 +1403,28 @@ preferences: terminal-native, monochrome
             </P>
             <CommandTable
               commands={[
-                { cmd: "youstack-start", desc: "Start local agents with identity, project state, active requests, installed skills, and next moves" },
+                { cmd: "youstack-start", desc: "Start local agents with brain context, project state, active requests, installed skills, and next moves" },
                 { cmd: "youstack-maintainer", desc: "Organize, update, safely improve, and publish private-by-default named YouStacks" },
-                { cmd: "claude-md-generator", desc: "Bootstrap repo-visible agent instructions from your identity -- persona, preferences, coding style, all baked in" },
+                { cmd: "claude-md-generator", desc: "Bootstrap repo-visible agent instructions from your brain -- persona, preferences, coding style, all baked in" },
                 { cmd: "project-context-init", desc: "Scaffold a project-context/ directory with TODO.md, FEATURES.md, ARCHITECTURE.md, and more" },
                 { cmd: "voice-sync", desc: "Export your voice profile as agent instructions for consistent tone across tools" },
                 { cmd: "meta-improve", desc: "Feed a skill back through the LLM to improve its template quality" },
-                { cmd: "proactive-context-fill", desc: "Detect thin identity context and propose safe additive improvements" },
-                { cmd: "you-logs", desc: "Show recent agent activity and identity access inline" },
+                { cmd: "proactive-context-fill", desc: "Detect thin brain context and propose safe additive improvements" },
+                { cmd: "you-logs", desc: "Show recent agent activity and brain access inline" },
               ]}
             />
 
             <H3 id="skills-init-project">init-project</H3>
             <P>
               The <InlineCode>youmd skill init-project</InlineCode> command is
-              the fastest way to make a repo identity-aware. It sets up four
+              the fastest way to make a repo brain-aware. It sets up four
               things:
             </P>
             <StepList>
               <Step n={1}>
                 <InlineCode>AGENTS.md</InlineCode> -- the repo-visible
                 instruction layer with workflow rules and your generated
-                identity context
+                brain context
               </Step>
               <Step n={2}>
                 <InlineCode>CLAUDE.md</InlineCode> -- the Claude-specific
@@ -1446,7 +1446,7 @@ preferences: terminal-native, monochrome
   agent instruction files created AGENTS.md; created CLAUDE.md
   project-context/ created TODO.md, FEATURES.md, CHANGELOG.md, PROMPTS.md ...
   link .claude/skills/youmd/ /path/to/repo/.claude/skills/youmd
-  done -- your repo is identity-aware`}</CodeBlock>
+  done -- your repo is brain-aware`}</CodeBlock>
 
             <H3 id="skills-sync">Skill Sync</H3>
             <P>
@@ -2007,15 +2007,15 @@ Content-Type: application/json
             {/* ── Agent Directives ───────────────────────────── */}
             <H2 id="directives">Agent Directives</H2>
             <P>
-              Directives are instructions embedded in your you.md identity that
+              Directives are instructions embedded in your you.md brain that
               tell AI agents how to behave when working with you. They live in
               your preferences layer and are included in every context share.
             </P>
             <P>
               Unlike skills (which are templates you run), directives are
-              passive -- they ride along with your identity and shape how agents
+              passive -- they ride along with your brain and shape how agents
               respond to you. Think of them as persistent system prompts keyed
-              to your identity.
+              to your preferences.
             </P>
             <CodeBlock title=".youmd/preferences/agent.md">{`# Agent Directives
 
@@ -2122,7 +2122,7 @@ youmd mcp --install claude --auto
 youmd mcp --install codex --auto
 youmd mcp --install cursor --auto
 
-# Smoke-test identity access
+# Smoke-test brain access
 youmd whoami
 youmd mcp --json`}</CodeBlock>
 
@@ -2333,11 +2333,11 @@ npm run docs:check`}</CodeBlock>
                 { cmd: "/share", desc: "Create shareable context link (copied to clipboard)" },
                 { cmd: "/share --private", desc: "Include private context in the link" },
                 { cmd: "/share --project {name}", desc: "Share context scoped to a specific project" },
-                { cmd: "/profile", desc: "View your identity profile" },
+                { cmd: "/profile", desc: "View your public brain/profile" },
                 { cmd: "/portrait", desc: "ASCII portrait editor + format picker" },
                 { cmd: "/portrait show", desc: "Render your portrait inline in chat" },
                 { cmd: "/portrait --regenerate", desc: "Re-scrape social profiles for a fresh portrait" },
-                { cmd: "/edit", desc: "Edit identity context (files, JSON, sources)" },
+                { cmd: "/edit", desc: "Edit brain context (files, JSON, sources)" },
                 { cmd: "/sources", desc: "Manage connected sources (LinkedIn, GitHub, X)" },
                 { cmd: "/skills", desc: "Browse and manage installed skills" },
                 { cmd: "/skill use {name}", desc: "Activate a skill in this conversation" },

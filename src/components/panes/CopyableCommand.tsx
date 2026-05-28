@@ -57,7 +57,7 @@ export function CopyableLink({ url, label, withPrompt }: CopyableLinkProps) {
   };
 
   const copyWithPrompt = () => {
-    const text = withPrompt || `Read my identity context before we start:\n${url}\n\nThis is my you.md profile — it contains my bio, projects, values,\npreferences, and how I like to communicate. Use it to understand\nwho I am so we can skip the intro and get straight to work.`;
+    const text = withPrompt || `Read my public You.md brain before we start:\n${url}\n\nThis profile contains my public identity, projects, values,\npreferences, and how I like to communicate. Use it to understand\nwho I am, then use protected You.md API/MCP only if I grant private access.`;
     navigator.clipboard.writeText(text);
     setCopiedType("prompt");
     setTimeout(() => setCopiedType(null), 1500);

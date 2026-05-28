@@ -1,6 +1,6 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-05-27
+Last Updated: 2026-05-28
 PRD Version: 2.3
 
 ---
@@ -198,7 +198,7 @@ PRD Version: 2.3
 ### Skill System (March 27)
 - [x] 21 commands (added `skill` with 12 subcommands)
 - [x] Skill catalog (youmd-skills.yaml) with YAML parser/writer
-- [x] Identity-aware template engine ({{var}} → identity data)
+- [x] Brain-aware template engine ({{var}} -> brain data)
 - [x] 4 bundled skills: claude-md-generator, project-context-init, voice-sync, meta-improve
 - [x] Install/remove/use/sync/link/init-project/improve/metrics/search commands
 - [x] Batch install/remove (youmd skill install all)
@@ -339,7 +339,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Upgrade the web shell thinking indicator so it keeps a braille spinner alive, rotates through subtask-aware status text, adds a sweep/shimmer effect to the active line, and shows completions more clearly in real time
 - [x] Keep the shell working state alive through response drafting plus post-response saves/publishes, then finish with a stronger completion summary + proactive next-step options
 - [ ] Configure a verified production email sender for passwordless auth so non-owner accounts and aliases can actually receive login/signup codes
-- [ ] Switch the published `youmd` CLI from the disposable test account to Houston's real account and save the new agent-session behavior preferences into his durable identity context
+- [ ] Switch the published `youmd` CLI from the disposable test account to Houston's real account and save the new agent-session behavior preferences into his durable brain context
 - [x] Simplify `youmd login` so the default flow offers browser sign-in on Enter, email-code login in-terminal when an email is typed, and `--key` as the explicit direct-auth path
 - [x] Add sane API-key operator UX in settings: rotate one fresh key, bulk revoke all API keys, and copy the newly issued key without touching unrelated token types
 - [x] Hide revoked API-key history behind an explicit toggle so the default settings view shows the real active-key state

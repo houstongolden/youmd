@@ -971,7 +971,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                   className="text-[10px] font-mono px-2.5 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
                 />
                 <a
-                  href={`https://x.com/intent/tweet?text=${encodeURIComponent(`my identity context for the agent internet: https://you.md/${username}`)}`}
+                  href={`https://x.com/intent/tweet?text=${encodeURIComponent(`my public agent brain and stacks: https://you.md/${username}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[10px] font-mono px-2.5 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
@@ -1019,7 +1019,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         {!isOwner && (
           <motion.div {...delay(12)} className="mt-12 text-center">
             <p className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40">
-              want your own identity context?
+              want your own agent brain?
             </p>
             {/* Cycle 63: was an inline link inside the paragraph at 92x14.
                 Promoted to a standalone block link with min-h-[44px] tap target. */}

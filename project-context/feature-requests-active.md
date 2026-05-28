@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-05-27
+Last Updated: 2026-05-28
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -12,6 +12,18 @@ Last Updated: 2026-05-27
 ---
 
 ## You.md Vision Simplification (from May 27 conversation)
+
+### 74. Finish the next product-clarity pass across remaining app surfaces
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Request:** Continue the simplified You.md vision pass and "make all improvements" so the homepage/docs/app stop feeling confusing and consistently explain You.md as an agent brain plus named expertise stacks, runtime, and protected API/MCP.
+**Actionable Scope:**
+1. Sweep remaining app metadata, auth/onboarding copy, docs snippets, dashboard panes, share prompts, profile CTAs, README, PRD, and schema comments for stale "identity context protocol" positioning.
+2. Preserve identity as one part of the brain, but stop presenting the product as an abstract protocol first.
+3. Make skills and YouStacks read as brain-aware, stack-aware, and self-improving rather than generic identity templates.
+4. Verify docs/checks locally, deploy through main/Vercel, and smoke production after deployment.
+**Progress (2026-05-28):** Updated the remaining root metadata, auth boot screens, initialize copy, reset metadata, profile/profile-directory metadata and CTAs, share prompts, skill/help/history panes, homepage portrait/hero copy, README, PRD, docs snippets/navigation, sample profiles, schema comments, and robots comments so the product reads as an agent brain plus named expertise stacks, runtime, and protected API/MCP. Local verification passed docs check, root TypeScript after temporarily moving unrelated untracked middleware files, and targeted ESLint with warnings only from pre-existing ignored README/profile image/unused code. Production verification pending.
 
 ### 73. Simplify the whole product model around Brain, Stacks, Runtime, and Protected API/MCP
 **Status:** DONE

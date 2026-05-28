@@ -76,15 +76,15 @@ export function HelpPane({ username }: HelpPaneProps) {
         <div className="space-y-2 mb-2">
           <Explainer term="vault">
             encrypted private context only you (and agents you grant access to) can read.
-            think of it as a secret-tier section of your identity that never lands in the public bundle.
+            think of it as a secret-tier section of your brain that never lands in the public bundle.
           </Explainer>
           <Explainer term="brain">
             your durable agent memory: identity, preferences, private context, project context,
             voice, sources, and trust rules.
           </Explainer>
           <Explainer term="skills">
-            identity-aware markdown templates with {`{{identity}}`} variables. install via the curl runtime
-            and an agent can scaffold projects pre-personalized to who you are.
+            brain-aware markdown templates with {`{{brain}}`} variables. install via the curl runtime
+            and an agent can scaffold projects pre-personalized to how you work.
           </Explainer>
           <Explainer term="YouStacks">
             named packages of your expertise: skills, sub-agents, workflows, prompts, examples,
@@ -97,15 +97,15 @@ export function HelpPane({ username }: HelpPaneProps) {
             sync, and connected actions.
           </Explainer>
           <Explainer term="context links">
-            short, shareable URLs that hand an agent a snapshot of your identity (public, private,
+            short, shareable URLs that hand an agent a snapshot of your brain (public, private,
             or scoped to a project). every read is logged in commits.
           </Explainer>
           <Explainer term="bundle">
-            the compiled, published version of your identity. agents fetch the latest bundle when
+            the compiled, published version of your public brain. agents fetch the latest bundle when
             they read you.md/{username || "you"}.
           </Explainer>
           <Explainer term="commits">
-            every publish is a commit on your identity. revert any time from the versions tab.
+            every publish is a commit on your brain. revert any time from the versions tab.
           </Explainer>
         </div>
 
@@ -194,7 +194,7 @@ export function HelpPane({ username }: HelpPaneProps) {
           <DocLink
             href="https://you.md/docs/skills"
             label="skills"
-            hint="identity-aware agent templates"
+            hint="brain-aware agent templates"
           />
           <DocLink
             href="https://you.md/docs#youstacks"

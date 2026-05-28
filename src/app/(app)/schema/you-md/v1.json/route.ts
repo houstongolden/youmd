@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 /**
  * GET /schema/you-md/v1.json — Public JSON Schema for the you-md/v1
- * identity context protocol. Profile responses advertise this URL via
+ * public agent brain document. Profile responses advertise this URL via
  * a `Link: ...; rel="describedby"` header, so agents that want to
  * validate or introspect a profile can fetch the schema here.
  */
@@ -12,7 +12,7 @@ const SCHEMA = {
   $id: "https://you.md/schema/you-md/v1.json",
   title: "you-md/v1",
   description:
-    "Identity context protocol for humans on the agent internet. " +
+    "Public agent brain document for humans on the agent internet. " +
     "A you-md/v1 document describes a person's identity, current focus, projects, " +
     "values, voice, and agent-interaction preferences in a structured, " +
     "agent-readable form.",

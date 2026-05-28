@@ -40,7 +40,7 @@ export default function SignUpPage() {
       setTimeout(
         () =>
           addLine(
-            "identity context protocol for the agent internet",
+            "agent brain + expertise stacks for the agent internet",
             "text-[hsl(var(--text-secondary))] opacity-60"
           ),
         600

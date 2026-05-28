@@ -91,7 +91,7 @@ export async function generateMetadata({
     ? `${tagline}${bio ? ` — ${bio.slice(0, 120)}` : ""}`
     : bio
       ? bio.slice(0, 200)
-      : `${name}'s identity context on you.md`;
+      : `${name}'s public agent brain on you.md`;
   const avatarUrl = sanitizeImageUrl(data?._profile?.avatarUrl || data?.social_images?.github || data?.social_images?.x || "");
   const location = data?.identity?.location || "";
   const firstName = name.split(" ")[0];
@@ -104,7 +104,8 @@ export async function generateMetadata({
     keywords: [
       name,
       username,
-      "identity",
+      "agent brain",
+      "YouStacks",
       "agent",
       "AI",
       "you.md",

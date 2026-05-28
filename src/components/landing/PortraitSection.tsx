@@ -16,7 +16,7 @@ const PortraitSection = () => (
         <p className="text-muted-foreground text-[13px] font-body mb-10 max-w-md">
           your profile photo, rendered as code. four formats -- classic, braille,
           block, minimal. generated automatically from your social profiles.
-          the visual signature of your identity on the agent internet.
+          the visual signature of your brain on the agent internet.
         </p>
       </FadeUp>
 

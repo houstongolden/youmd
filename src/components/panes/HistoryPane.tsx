@@ -41,8 +41,8 @@ interface HistoryPaneProps {
 export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
   const history = useQuery(api.bundles.getHistory, { clerkId, userId });
   // Use the new activity table (same source as agents tab) instead of legacy bundles.getAgentStats
-  const userStats = useQuery((api as any).activity.userActivityStats, { clerkId });
-  const agentSummary = useQuery((api as any).activity.agentSummary, { clerkId });
+  const userStats = useQuery(api.activity.userActivityStats, { clerkId });
+  const agentSummary = useQuery(api.activity.agentSummary, { clerkId });
   const rollback = useMutation(api.bundles.rollbackToVersion);
   const publishBundle = useMutation(api.bundles.publishBundle);
   const [rolling, setRolling] = useState(false);
@@ -53,7 +53,7 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
     try {
       const result = await rollback({ clerkId, targetVersion: version });
       // Auto-publish the rollback
-      await publishBundle({ clerkId, bundleId: result.bundleId as any });
+      await publishBundle({ clerkId, bundleId: result.bundleId as Id<"bundles"> });
     } catch (err) {
       console.error("Rollback failed:", err);
     }
@@ -70,7 +70,7 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
           </h3>
           <span
             className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-70 transition-opacity cursor-help"
-            title="every time an agent reads or writes to your identity is tracked here, like commits to a git repo"
+            title="every time an agent reads or writes to your brain is tracked here, like commits to a git repo"
           >
             (?)
           </span>
@@ -90,7 +90,7 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
             </div>
             {agentSummary && agentSummary.length > 0 && (
               <div className="space-y-1">
-                {agentSummary.slice(0, 10).map((a: any) => {
+                {agentSummary.slice(0, 10).map((a) => {
                   const trustBadge =
                     a.trustLevel === "verified-third-party" ? (
                       <span className="text-[hsl(var(--success))] text-[9px] ml-1.5" title="External agent fetched anonymously or via context-link token">verified</span>
@@ -132,7 +132,7 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
           </h3>
           <span
             className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-70 transition-opacity cursor-help"
-            title="every published bundle is a commit on your identity. revert to any prior commit to roll back."
+            title="every published bundle is a commit on your brain. revert to any prior commit to roll back."
           >
             (?)
           </span>
@@ -143,7 +143,7 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
           <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30">no commits yet.</p>
         ) : (
           <div className="space-y-0">
-            {history.map((v: any, i: number) => (
+            {history.map((v, i) => (
               <div
                 key={v._id}
                 className={`flex items-start gap-3 py-2 border-b border-[hsl(var(--border))] last:border-0 ${

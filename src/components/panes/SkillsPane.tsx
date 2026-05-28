@@ -24,7 +24,7 @@ type InstalledSkillSummary = {
 const BUNDLED_SKILLS: SkillEntry[] = [
   {
     name: "youstack-start",
-    description: "Start local agents with identity, project state, active requests, skills, and next moves",
+    description: "Start local agents with brain context, project state, active requests, skills, and next moves",
     version: "1.0.0",
     scope: "shared",
     identityFields: ["profile.about", "preferences.agent", "directives.agent", "voice.overall"],
@@ -59,21 +59,21 @@ const BUNDLED_SKILLS: SkillEntry[] = [
   },
   {
     name: "meta-improve",
-    description: "Self-improvement protocol — review effectiveness, propose identity updates",
+    description: "Self-improvement protocol — review effectiveness, propose brain updates",
     version: "1.0.0",
     scope: "shared",
     identityFields: ["preferences.agent", "directives.agent"],
   },
   {
     name: "proactive-context-fill",
-    description: "Detect thin identity context and offer safe additive improvements",
+    description: "Detect thin brain context and offer safe additive improvements",
     version: "1.0.0",
     scope: "shared",
     identityFields: ["profile.projects", "profile.about", "preferences.agent", "voice.overall"],
   },
   {
     name: "you-logs",
-    description: "View recent agent activity and identity access logs inline",
+    description: "View recent agent activity and brain access logs inline",
     version: "1.0.0",
     scope: "shared",
     identityFields: [],
@@ -423,13 +423,13 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
             <p className="text-[hsl(var(--text-primary))] opacity-70">2. interpolate</p>
             <p>
               when you run <span className="text-[hsl(var(--accent))]">youmd skill use</span>, template
-              variables resolve against your live identity data — voice, preferences, directives.
+              variables resolve against your live brain data — voice, preferences, directives.
             </p>
           </div>
           <div className="space-y-1.5">
             <p className="text-[hsl(var(--text-primary))] opacity-70">3. sync</p>
             <p>
-              when your identity changes (via chat, push, or pull), installed skills auto re-interpolate.
+              when your brain changes (via chat, push, or pull), installed skills auto re-interpolate.
               shared skills propagate everywhere. project skills stay local.
             </p>
           </div>

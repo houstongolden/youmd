@@ -25,9 +25,9 @@ const useCases = [
 
 const integrationMethods = [
   { label: "runtime", code: "curl -fsSL https://you.md/install.sh | bash", desc: "installs brain + YouStack helper layer" },
-  { label: "MCP server", code: "youmd mcp --install claude --auto", desc: "agent serves identity context on demand" },
-  { label: "REST API", code: "GET /api/v1/profiles?username=x", desc: "structured identity data as JSON" },
-  { label: "context links", code: "https://www.you.md/ctx/user/token", desc: "scoped, expiring identity access" },
+  { label: "MCP server", code: "youmd mcp --install claude --auto", desc: "protected brain access on demand" },
+  { label: "REST API", code: "GET /api/v1/profiles?username=x", desc: "structured public brain data as JSON" },
+  { label: "context links", code: "https://www.you.md/ctx/user/token", desc: "scoped, expiring brain access" },
 ];
 
 const ForDevelopers = () => (
@@ -41,7 +41,7 @@ const ForDevelopers = () => (
             for AI builders
           </span>
           <h2 className="font-mono text-lg text-foreground/90 mb-3">
-            integrate identity context into your app
+            integrate a user brain into your app
           </h2>
           <p className="text-muted-foreground/60 font-body text-[13px] leading-relaxed max-w-md mx-auto">
             let users bring their full context when they sign up.

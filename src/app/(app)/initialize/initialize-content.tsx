@@ -85,12 +85,12 @@ function clearCookie(name: string): void {
 
 const BOOT_SEQUENCE = [
   { text: "you.md", className: "text-[hsl(var(--accent))]", delay: 200 },
-  { text: "identity context protocol for the agent internet", className: "text-[hsl(var(--text-secondary))] opacity-60", delay: 500 },
+  { text: "agent brain + expertise stacks for the agent internet", className: "text-[hsl(var(--text-secondary))] opacity-60", delay: 500 },
   { text: "", delay: 700 },
-  { text: "loading identity protocol...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 900 },
+  { text: "loading brain runtime...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 900 },
   { text: "connecting to agent network...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 1200 },
   { text: "loading you-md/v1 engine...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 1500 },
-  { text: "  \u2713 identity schema loaded", className: "text-[hsl(var(--success))]", delay: 1800 },
+  { text: "  \u2713 brain schema loaded", className: "text-[hsl(var(--success))]", delay: 1800 },
   { text: "  \u2713 agent framework ready", className: "text-[hsl(var(--success))]", delay: 2000 },
   { text: "  \u2713 source connectors online", className: "text-[hsl(var(--success))]", delay: 2200 },
   { text: "", delay: 2400 },
@@ -324,7 +324,7 @@ function OnboardingTerminal() {
 
 instructions for this greeting:
 1. greet them by username and introduce yourself as U in one sentence. sound like the same wingman they meet in the local \`you\` launcher.
-2. immediately ask for their x (twitter) or github username so you can generate their ascii portrait. say some version of: "first things first — drop me your x or github username and i'll generate your ascii portrait. it's your identity in code."
+2. immediately ask for their x (twitter) or github username so you can generate their ascii portrait. say some version of: "first things first — drop me your x or github username and i'll generate your ascii portrait. it's the visual signature of your brain."
 3. be genuinely curious and specific, not generic. this should feel like a real encounter, not a form.
 4. ${projectHint}
 5. keep it to 3-4 sentences max. no lists. no "here's what we'll do" — just start the conversation.

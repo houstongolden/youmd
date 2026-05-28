@@ -29,10 +29,10 @@ You.md is your agent brain and named expertise stack layer for the agent interne
 People who use 3+ AI agents daily (Claude Code, Cursor, ChatGPT, Codex, etc.) and are tired of re-explaining who they are, what they do, and how they like to work. Founders, engineers, researchers, creators.
 
 ### Secondary: Agent Developers
-Teams building AI agents/apps that need structured user context. They integrate via the HTTP API or context links to get rich identity data for their users.
+Teams building AI agents/apps that need structured user context. They integrate via the HTTP API or context links to get rich public brain data for their users.
 
 ### Tertiary: Knowledge Workers
-Anyone who wants a living, structured identity that evolves through conversation — not a static bio page.
+Anyone who wants a living, structured agent brain that evolves through conversation -- not a static bio page.
 
 ---
 
@@ -46,12 +46,12 @@ Anyone who wants a living, structured identity that evolves through conversation
 - **Docs** — Integration guides, API reference
 
 ### 3.2 CLI (npm: youmd)
-- **youmd init** — Conversational AI onboarding that builds your identity through dialogue
+- **youmd init** — Conversational AI onboarding that builds your agent brain through dialogue
 - **youmd chat** — Ongoing conversation with the You Agent for profile evolution
 - **youmd push/pull/sync** — Two-way sync between local files and web
-- **youmd link** — Create shareable identity links with scoped permissions
+- **youmd link** — Create shareable brain/context links with scoped permissions
 - **youmd project** — Per-project agent context management
-- 20 total commands covering the full identity lifecycle
+- 20 total commands covering the full brain, stack, and context lifecycle
 
 ### 3.3 HTTP API
 - 30+ endpoints for profile CRUD, LLM chat, scraping, enrichment, memory management
@@ -262,9 +262,9 @@ Accept: application/json → returns you.json (structured bundle)
 ```
 
 ### AI Agent User-Agent Detection
-Profile pages serve plain-text identity context to known AI agent user-agents, enabling:
+Profile pages serve public brain context to known AI agent user-agents, enabling:
 ```
-"Read my identity context before we start: https://you.md/houstongolden"
+"Read my public You.md brain before we start: https://you.md/houstongolden"
 ```
 
 ### Share Prompt Templates

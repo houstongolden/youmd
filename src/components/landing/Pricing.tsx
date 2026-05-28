@@ -6,10 +6,10 @@ import { Card } from "@/components/ui/Card";
 import { Container, Section, SectionHeader } from "@/components/ui/Layout";
 
 const freeFeatures = [
-  "public identity profile",
-  "CLI + web shell",
-  "context links + API access",
-  "bundled agent skills",
+  "public agent brain/profile",
+  "runtime + web shell",
+  "context links + protected API",
+  "bundled skills + starter stacks",
 ];
 
 const proFeatures = [
@@ -40,7 +40,7 @@ const Pricing = () => (
       <FadeUp>
         <SectionHeader
           eyebrow="pricing"
-          title="core identity stays free"
+          title="core brain stays free"
           description="Pay for power features later, not for being readable by your own tools."
           align="center"
         />
@@ -63,7 +63,7 @@ const Pricing = () => (
             </div>
 
             <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">
-              Everything needed to create, publish, and share your identity context.
+              Everything needed to create, publish, and share your public brain.
             </p>
             <div className="mt-6">
               <FeatureList items={freeFeatures} />
@@ -109,7 +109,7 @@ const Pricing = () => (
 
       <FadeUp delay={0.18}>
         <p className="mx-auto mt-8 max-w-[560px] text-center font-mono text-[11px] leading-relaxed text-muted-foreground/55">
-          your identity context, public profile, and core agent access remain free.
+          your public brain, public profile, and core agent access remain free.
         </p>
       </FadeUp>
     </Container>

@@ -81,11 +81,11 @@ function formatExpiry(iso: string): { label: string; soon: boolean; expired: boo
 
 function buildAgentPrompt(url: string, projectName?: string): string {
   const projectLine = projectName
-    ? `\n\nFocus on the project "${projectName}" — prioritize project-specific context, goals, and constraints from my profile.`
+    ? `\n\nFocus on the project "${projectName}" -- prioritize project-specific context, goals, and constraints from my You.md brain.`
     : "";
-  return `Read my identity context: ${url}
+  return `Read my public You.md brain: ${url}
 
-Apply my preferences from the start. Address me by name. Reference my projects when relevant.${projectLine}`;
+Apply my preferences from the start. Address me by name. Reference my projects and public stacks when relevant. Use protected You.md API/MCP only if I grant private access.${projectLine}`;
 }
 
 const TTL_OPTIONS: { value: Ttl; label: string }[] = [
@@ -512,10 +512,10 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
           </div>
         </div>
 
-        {/* ── SECTION 1: Share your identity — scope toggle ──────────────── */}
-        <SectionLabel>share your identity</SectionLabel>
+        {/* ── SECTION 1: Share your brain — scope toggle ──────────────── */}
+        <SectionLabel>share your brain</SectionLabel>
         <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40 mb-3">
-          create a link any agent can fetch. choose what they get to see.
+          create a link any agent can fetch. choose which brain scope they get to see.
         </p>
 
         <div

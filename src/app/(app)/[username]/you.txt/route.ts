@@ -4,7 +4,7 @@ import { CONVEX_SITE_URL } from "@/lib/constants";
 /**
  * GET /[username]/you.txt — Plain text (markdown) endpoint for agent access.
  *
- * Returns the you.md markdown identity context without requiring JS execution.
+ * Returns the you.md markdown public brain context without requiring JS execution.
  * Preserves the upstream Convex ETag and Link header so AI agent clients can
  * do conditional requests and discover the schema.
  */

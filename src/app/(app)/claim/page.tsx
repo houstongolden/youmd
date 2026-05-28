@@ -18,7 +18,7 @@ import { redirect } from "next/navigation";
 export const metadata: Metadata = {
   title: "Claim Your Username — you.md",
   description:
-    "Claim your unique username and start onboarding to the you.md identity protocol for the agent internet.",
+    "Claim your username and start building your you.md agent brain, runtime, and private-by-default expertise stacks.",
   // Don't index — this is a redirect-only stub
   robots: { index: false, follow: true },
 };

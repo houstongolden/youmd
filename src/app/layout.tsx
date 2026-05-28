@@ -15,21 +15,21 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "you.md — Identity context protocol for the agent internet",
+  title: "you.md — Agent brain and expertise stacks for the agent internet",
   description:
-    "An MCP where the context is you. The identity protocol that gives every AI agent full context about who you are — zero-setup onboarding across every tool.",
+    "Your durable agent brain, named expertise stacks, local runtime, and protected API/MCP layer for Claude Code, Codex, Cursor, and every AI tool you use.",
   openGraph: {
-    title: "you.md — Identity Context Protocol",
+    title: "you.md — Agent Brain + Expertise Stacks",
     description:
-      "An MCP where the context is you. Zero-setup agent onboarding across every tool.",
+      "Build your agent brain once. Package your skills and workflows into portable YouStacks that work across every AI tool.",
     siteName: "you.md",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "you.md — Identity Context Protocol",
+    title: "you.md — Agent Brain + Expertise Stacks",
     description:
-      "An MCP where the context is you. Zero-setup agent onboarding across every tool.",
+      "A durable personal brain plus named expertise stacks for the agents you already use.",
   },
 };
 

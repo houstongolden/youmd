@@ -4,7 +4,7 @@ import { CONVEX_SITE_URL } from "@/lib/constants";
 /**
  * GET /[username]/you.json — Direct JSON endpoint for agent access.
  *
- * Returns the full you.json identity context without requiring JS execution.
+ * Returns the full you.json public brain context without requiring JS execution.
  * Preserves the upstream Convex you-md/v1 content-type, ETag, and Link header
  * so AI agent clients can do conditional requests and discover the schema.
  */

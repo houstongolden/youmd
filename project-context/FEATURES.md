@@ -1,13 +1,13 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-05-27
+Last Updated: 2026-05-28
 
 ## Core Platform
 
 | Feature | Status | Notes |
 |---|---|---|
 | Shared product design primitives | Done | Reusable `Container`, `Section`, `SectionHeader`, `Button`, `Card`, `TerminalCard`, `FormField`, `Input`, `Textarea`, `Select`, `Label`, `FieldHelp`, and `FieldError` now anchor marketing and app UI control standards |
-| Simplified product model | Done deployed | Homepage, docs, public profile, dashboard copy, README, and PRD now explain You.md as four layers: Brain, Stacks, Runtime, and Protected API/MCP |
+| Simplified product model | Done deployed | Homepage, docs, public profile, auth/onboarding copy, dashboard panes, README, PRD, and schema comments now explain You.md as four layers: Brain, Stacks, Runtime, and Protected API/MCP |
 | Developer docs platform | Done | `/docs` now includes concepts, context surfaces, source-of-truth mapping, agent workflows, playbooks, examples, generated API/MCP reference, schema guidance, docs automation, troubleshooting, and a dedicated YouStacks chapter |
 | Generated docs reference | Done | `npm run docs:generate` scans Convex HTTP routes, Next routes, and CLI MCP tools into `src/generated/docs-reference.ts` plus a generated OpenAPI-style spec; YouStacks endpoints are categorized under `YouStacks`; `prebuild` refreshes it and `docs:check` detects stale artifacts |
 | GStack/GBrain reference intelligence | Done deployed | `npm run references:sync` keeps ignored local clones of `garrytan/gstack` and `garrytan/gbrain`, writes `project-context/reference-intelligence/LATEST.md` and `TASKS.md`, and feeds daily GStack -> YouStacks plus GBrain -> You.md brain improvement review; the local `Daily GStack/GBrain Reference Sync` automation now runs this monitor daily |
@@ -225,7 +225,7 @@ Last Updated: 2026-05-27
 | Feature | Status | Notes |
 |---|---|---|
 | Skill catalog (YAML) | Done | youmd-skills.yaml with entries, scope, identity_fields |
-| Template engine | Done | {{var}} interpolation against live identity data |
+| Template engine | Done | {{var}} interpolation against live brain data |
 | Bundled skills (7) | In progress | youstack-start, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs; local catalog/build verified, production registry deploy pending |
 | Install / Remove | Done | Global ~/.youmd/skills/ + batch all |
 | Use (render) | Done | Interpolate + readiness check + display |
@@ -302,7 +302,7 @@ Last Updated: 2026-05-27
 | Streaming responses via SSE | Done | Real-time token output |
 | Portrait pane wired to real data | Done | Multi-source, format picker, detail picker |
 | CLI rich terminal renderer | Done | Tables, stats, code blocks, callouts |
-| Private context API + CLI | Done | Full CRUD on private identity data |
+| Private context API + CLI | Done | Full CRUD on private brain data |
 | Image paste in chat | Done | Web chat accepts pasted images |
 | Codex MCP local-vs-global split | Done | Codex uses the local `cli/dist` build inside the youmd repo and the published npm CLI everywhere else |
 | Curl-first landing/docs/help install path | Done | Hero, footer, docs, and in-app help now teach `curl -fsSL https://you.md/install.sh | bash` first while keeping npm as the fallback |

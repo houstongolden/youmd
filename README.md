@@ -40,12 +40,12 @@ That installs the You.md runtime. The `youmd` command is the helper under the ho
 
 ```bash
 youmd login              # press Enter for browser sign-in, or type your email for a code
-youmd init               # build your identity bundle interactively
+youmd init               # build your agent brain interactively
 you                     # meet U — portrait, proactive context scan, live chat
 youmd stack doctor --path cli/examples/youstack-personal
 youmd stack smoke --path cli/examples/youstack-personal
 youmd push               # publish to you.md/<username>
-youmd skill init-project # wire your identity into the current repo
+youmd skill init-project # wire your brain and stacks into the current repo
 youmd link create        # generate a shareable context link
 ```
 
@@ -59,7 +59,7 @@ The installer also writes `~/.youmd/bin/youmd-auto-upgrade` so host agents can r
 
 | Command | What It Does |
 |---|---|
-| `youmd init` | Build your identity via AI conversation |
+| `youmd init` | Build your agent brain via AI conversation |
 | `you` | Meet U in the terminal — portrait, proactive context scan, live chat |
 | `youmd login` | Authenticate (Enter for browser sign-in, email code, or `--key`) |
 | `youmd logout` | Clear local authentication on this machine |
@@ -79,7 +79,7 @@ The installer also writes `~/.youmd/bin/youmd-auto-upgrade` so host agents can r
 | `youmd memories` | Manage your memory brain (list, add, stats) |
 | `youmd private` | Manage private context (notes, links, projects) |
 | `youmd project` | Manage project agent context (init, list, show, memories) |
-| `youmd skill` | Identity-aware agent skills (18 core subcommands -- see below) |
+| `youmd skill` | Brain-aware agent skills (18 core subcommands -- see below) |
 | `youmd stack` | Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link) |
 | `youmd link` | Context links (create, list, revoke, preview) |
 | `youmd keys` | API key management (list, create, revoke) |
@@ -91,7 +91,7 @@ The installer also writes `~/.youmd/bin/youmd-auto-upgrade` so host agents can r
 | `list` | Show all skills with install status |
 | `install <name\|all>` | Install from catalog or registry |
 | `remove <name\|all>` | Remove installed skill(s) |
-| `use <name>` | Run a skill with identity interpolation |
+| `use <name>` | Run a skill with brain interpolation |
 | `sync` | Re-render all skills against live identity |
 | `create [name]` | Scaffold a new custom skill |
 | `add <name> <source>` | Register a skill in the catalog |
@@ -155,10 +155,10 @@ Your identity lives in `~/.youmd/`. Every file is markdown or JSON. No proprieta
     links.json             # Internal bookmarks
     projects.json          # Private project list
 
-  skills/                  # Installed identity-aware skills
+  skills/                  # Installed brain-aware skills
     voice-sync/
       SKILL.md             # Template with {{var}} placeholders
-      RENDERED.md           # Rendered with your identity
+      RENDERED.md           # Rendered with your brain context
 
   projects/                # Per-project agent context
     my-project/
@@ -172,7 +172,7 @@ Your identity lives in `~/.youmd/`. Every file is markdown or JSON. No proprieta
 
 ## Skill System
 
-Skills are identity-aware markdown templates. They use `{{var}}` interpolation to inject your identity into agent instructions.
+Skills are brain-aware markdown templates. They use `{{var}}` interpolation to inject your preferences, voice, projects, and stack context into agent instructions.
 
 ```markdown
 ---
@@ -186,32 +186,32 @@ identity_fields: [voice.overall, voice.writing, voice.speaking]
 
 Keep your voice in sync across every agent tool.
 
-## Identity Context
+## Brain Context
 
 - **Overall voice:** {{voice.overall}}
 - **Writing voice:** {{voice.writing}}
 ```
 
-When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your live identity data.
+When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your live brain data.
 
 ### Bundled Skills
 
 | Skill | What It Does |
 |---|---|
-| `youstack-start` | Start local agents with identity, project state, active requests, skills, and next moves |
+| `youstack-start` | Start local agents with brain context, project state, active requests, skills, and next moves |
 | `youstack-maintainer` | Organize, update, safely improve, and publish private-by-default YouStacks |
 | `voice-sync` | Propagate your voice profile to Claude, Codex, Cursor, and custom agents |
-| `claude-md-generator` | Bootstrap repo-visible agent instructions with your identity context |
+| `claude-md-generator` | Bootstrap repo-visible agent instructions with your brain context |
 | `project-context-init` | Scaffold project-context/ with your preferences baked in |
 | `meta-improve` | Analyze your skill setup, find gaps, propose improvements |
-| `proactive-context-fill` | Detect thin identity context and propose safe additive improvements |
-| `you-logs` | Show recent agent activity and identity access inline |
+| `proactive-context-fill` | Detect thin brain context and propose safe additive improvements |
+| `you-logs` | Show recent agent activity and brain access inline |
 
 ### How Skills Work
 
 1. **Install** -- `youmd skill install voice-sync`
-2. **Use** -- renders the template against your identity: `youmd skill use voice-sync`
-3. **Sync** -- when your identity changes, `youmd skill sync` re-renders everything
+2. **Use** -- renders the template against your brain context: `youmd skill use voice-sync`
+3. **Sync** -- when your brain changes, `youmd skill sync` re-renders everything
 4. **Link** -- `youmd skill init-project` wires Claude + Codex by default, or use `youmd skill link claude` / `youmd skill link codex` directly
 5. **Publish** -- share your custom skills to the registry: `youmd skill publish my-skill`
 6. **Browse** -- find skills others have published: `youmd skill browse`
@@ -246,13 +246,13 @@ Defaults:
 ## How It Works
 
 ```
-youmd init               # AI conversation builds your identity
+youmd init               # AI conversation builds your agent brain
 youmd push               # Publish to you.md/<username> (content-addressed, version-controlled)
-youmd skill init-project # Wire identity into current repo (AGENTS/CLAUDE + project-context/ + .you/ + Claude/Codex skills)
+youmd skill init-project # Wire brain + stacks into current repo (AGENTS/CLAUDE + project-context/ + .you/ + Claude/Codex skills)
 youmd link create        # Generate shareable context link for other agents
 ```
 
-Identity changes propagate. Run `youmd push` and your published profile updates. Run `youmd skill sync` and every agent tool gets the latest you.
+Brain changes propagate. Run `youmd push` and your published profile updates. Run `youmd skill sync` and every agent tool gets the latest you.
 
 Push/pull uses content-addressed hashing for conflict detection. If the remote has changes you haven't pulled, push returns a 409 and tells you to pull first. Git-like safety without the git.
 

@@ -49,8 +49,8 @@ const Hero = () => {
 
             <p className="mt-6 max-w-[620px] text-[17px] leading-[1.58] text-muted-foreground md:text-[18px]">
               Install once. You.md gives Claude Code, Codex, Cursor, ChatGPT,
-              and any agent your identity, memory, preferences, project context,
-              and the named stacks of skills and workflows you want it to use.
+              and any agent your public profile, memory, preferences, project context,
+              and named stacks of skills and workflows you want it to use.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">

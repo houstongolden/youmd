@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 
 /**
- * robots.txt — explicitly allow agent fetching of identity context.
+ * robots.txt — explicitly allow agent fetching of public brain context.
  *
  * Critical: /ctx/ and /api/v1/profiles MUST be allowed for AI agents.
- * The whole point of you.md is "agents fetch your identity from a URL."
+ * The whole point of you.md is "agents fetch your public brain from a URL."
  * Blocking these endpoints with robots.txt makes the product useless.
  *
  * We disallow internal app routes (/shell, /initialize, /dashboard) because
