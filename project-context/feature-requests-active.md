@@ -14,9 +14,9 @@ Last Updated: 2026-05-27
 ## You.md Vision Simplification (from May 27 conversation)
 
 ### 73. Simplify the whole product model around Brain, Stacks, Runtime, and Protected API/MCP
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** PENDING — waiting for the current simplification pass to be pushed and deployed.
+**Production Verified:** YES — GitHub/Vercel deployment `4844921786` for commit `1a7c1a9` completed successfully and is live at `https://www.you.md` / `https://you.md` (`https://youmd-i1nc5c1ho-hubify.vercel.app`).
 **Request:** Improve everything about You.md, the vision, stack, API/MCP, and YouStacks so the product feels more powerful, simpler, clearer, and more focused.
 **Actionable Scope:**
 1. Stop leading with abstract "identity context protocol" language on the user-facing surfaces.
@@ -25,7 +25,7 @@ Last Updated: 2026-05-27
 4. Update docs quickstart/core concepts so a new user can understand the model before seeing CLI/API details.
 5. Update the public profile agent panel so `/{username}` reads like a public agent brain with optional public stacks.
 6. Update dashboard labels and help copy so the shell feels organized around brain/stacks/sharing/activity instead of scattered implementation surfaces.
-**Progress (2026-05-27):** Reworked homepage metadata, hero, problem, how-it-works, simple model, YouStacks, integrations, FAQ, CTA footer, sample profile copy, README, docs metadata, docs introduction, docs quickstart, docs core concepts, dashboard primary group labels, Stacks pane, Help pane, command palette, public profile agent panel, and public profile stack copy around the simplified `Brain → Stacks → Runtime → Protected API/MCP` model. Local verification passed docs check, root TypeScript after temporarily moving unrelated untracked middleware files, and targeted ESLint with warnings only from pre-existing profile image/unused code. Local Next dev/prod rendering still stalls in the Next compile worker, so production verification will happen through Vercel after push.
+**Progress (2026-05-27):** Reworked homepage metadata, hero, problem, how-it-works, simple model, YouStacks, integrations, FAQ, CTA footer, sample profile copy, README, docs metadata, docs introduction, docs quickstart, docs core concepts, dashboard primary group labels, Stacks pane, Help pane, command palette, public profile agent panel, and public profile stack copy around the simplified `Brain → Stacks → Runtime → Protected API/MCP` model. Local verification passed docs check, root TypeScript after temporarily moving unrelated untracked middleware files, and targeted ESLint with warnings only from pre-existing profile image/unused code. Local Next dev/prod rendering still stalls in the Next compile worker, but Vercel production deployment `4844921786` for commit `1a7c1a9` completed successfully. Production smoke passed on `https://www.you.md`: homepage contains the new agent brain/expertise stacks/simple model language, `/docs#simple-model` contains Brain/Stacks/Runtime/Protected API/MCP, and `/houstongolden` exposes the public agent brain/profile language.
 
 ## YouStack Doctor Diagnostics (from May 27 conversation)
 

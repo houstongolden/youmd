@@ -13,7 +13,8 @@
 - Verified docs reference freshness with `npm run docs:check`
 - Verified root TypeScript with `npx tsc --noEmit` after temporarily moving unrelated untracked Clerk-era middleware files out of the compile path
 - Verified targeted changed-file lint with `npx eslint`; only pre-existing profile image/unused warnings remain
-- Local Next dev rendering and prior production build attempts still stall in the Next compile worker with 0% CPU; production deployment verification is pending after push
+- Local Next dev rendering and prior production build attempts still stall in the Next compile worker with 0% CPU; Vercel production deployment `4844921786` for commit `1a7c1a9` completed successfully and is live at `https://www.you.md`
+- Verified live homepage, `/docs#simple-model`, and `/houstongolden` expose the Brain, Stacks, Runtime, and Protected API/MCP model
 
 ## 2026-05-27 — YouStack Doctor Diagnostics
 
