@@ -1,5 +1,23 @@
 # You.md — Changelog
 
+## 2026-05-29 — Homepage Minimalization + Brain-Aware Preflight
+
+### Marketing / UX
+- Simplified the homepage to a minimal core sequence (Hero → YouStacks → Open standard → CTA) and removed section sprawl
+- Simplified the landing navbar to remove scroll-spy anchors and keep only durable navigation (`--profiles`, `--docs`, create / signed-in dropdown)
+
+### YouStacks / Agent Layer
+- Updated bundled skills to pre-load `project-context/` (and reference-intelligence tasks) before planning or prompting for basics
+- Extended `youmd stack doctor` with git-aware diagnostics (repo root, dirty-tree warning, upstream ahead/behind) to improve sync-freshness visibility
+
+### Auth / Middleware
+- Replaced Clerk middleware usage with a lightweight session-cookie gate for protected routes in `src/proxy.ts`, removed the conflicting `src/middleware.ts`, and added `?next=/path` redirect preservation for sign-in flows
+
+### Verification
+- Verified root TypeScript with `npx tsc --noEmit`
+- Verified CLI TypeScript build with `npm --prefix cli run build`
+- Verified targeted landing lint with `npx eslint` on changed homepage components
+
 ## 2026-05-28 — Product Language Cleanup
 
 ### Product / Copy
