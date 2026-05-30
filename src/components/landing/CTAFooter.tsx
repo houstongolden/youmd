@@ -13,7 +13,6 @@ const footerGroups = [
     links: [
       ["create", "/create"],
       ["profiles", "/profiles"],
-      ["pricing", "#pricing"],
       ["skills", "/docs#skills"],
     ],
   },
@@ -23,7 +22,6 @@ const footerGroups = [
       ["docs", "/docs"],
       ["api", "/docs#api"],
       ["cli", "/docs#cli"],
-      ["spec", "#spec"],
     ],
   },
   {
@@ -84,8 +82,8 @@ const CTAFooter = () => {
                 <ButtonLink href="/create" variant="primary" size="lg">
                   Create your you.md
                 </ButtonLink>
-                <ButtonLink href="#how-it-works" variant="secondary" size="lg">
-                  Install runtime
+                <ButtonLink href="/docs" variant="secondary" size="lg">
+                  Read docs
                 </ButtonLink>
               </div>
             </div>

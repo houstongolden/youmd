@@ -9,31 +9,16 @@ import AsciiAvatar from "@/components/AsciiAvatar";
 import { api } from "../../../convex/_generated/api";
 import { ButtonLink } from "@/components/ui/Button";
 
-
-const sections = [
-  { id: "how-it-works", label: "how it works" },
-  { id: "spec", label: "spec" },
-  { id: "pricing", label: "pricing" },
-];
-
 const Navbar = () => {
   const { isSignedIn, user } = useUser();
   const { isAuthenticated } = useConvexAuth();
   const [scrolled, setScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarDropdown, setAvatarDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 40);
-    const offsets = sections.map(({ id }) => {
-      const el = document.getElementById(id);
-      if (!el) return { id, top: Infinity };
-      return { id, top: el.getBoundingClientRect().top };
-    });
-    const active = offsets.find((o) => o.top > -200 && o.top < 400);
-    setActiveSection(active?.id ?? "");
   }, []);
 
   useEffect(() => {
@@ -89,19 +74,6 @@ const Navbar = () => {
           </Link>
 
           <div className="hidden items-center gap-5 md:flex">
-            {sections.map(({ id, label }) => (
-              <a
-                key={id}
-                href={`#${id}`}
-                className={`font-mono text-[10px] transition-colors duration-200 ${
-                  activeSection === id
-                    ? "text-accent"
-                    : "text-muted-foreground/60 hover:text-foreground"
-                }`}
-              >
-                --{label}
-              </a>
-            ))}
             <Link
               href="/profiles"
               className="font-mono text-[10px] text-muted-foreground/60 hover:text-accent transition-colors"
@@ -190,20 +162,6 @@ const Navbar = () => {
 
       {mobileOpen && (
         <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 bg-[hsl(var(--bg)/0.98)] backdrop-blur-xl">
-          {sections.map(({ id, label }) => (
-            <a
-              key={id}
-              href={`#${id}`}
-              onClick={() => setMobileOpen(false)}
-            className={`font-mono text-[14px] transition-colors ${
-              activeSection === id
-                ? "text-accent"
-                : "text-muted-foreground/70 hover:text-foreground"
-            }`}
-          >
-            --{label}
-          </a>
-          ))}
           <Link
             href="/profiles"
             onClick={() => setMobileOpen(false)}

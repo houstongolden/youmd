@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import Link from "next/link";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
@@ -12,6 +12,7 @@ type Step = "boot" | "email" | "username" | "name" | "sending" | "verify" | "ver
 export default function SignUpPage() {
   const { isSignedIn } = useUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [step, setStep] = useState<Step>("boot");
   const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);
@@ -21,9 +22,13 @@ export default function SignUpPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lineCounter = useRef(0);
 
+  const nextPathRaw = searchParams.get("next");
+  const nextPath =
+    nextPathRaw && nextPathRaw.startsWith("/") ? nextPathRaw : "/shell";
+
   useEffect(() => {
-    if (isSignedIn) router.replace("/shell");
-  }, [isSignedIn, router]);
+    if (isSignedIn) router.replace(nextPath);
+  }, [isSignedIn, nextPath, router]);
 
   const addLine = useCallback((content: ReactNode, className?: string) => {
     const id = `l${lineCounter.current++}`;

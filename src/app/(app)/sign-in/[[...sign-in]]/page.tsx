@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import Link from "next/link";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
@@ -11,6 +11,7 @@ type Step = "boot" | "email" | "sending" | "verify" | "verifying" | "done";
 
 export default function SignInPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isSignedIn } = useUser();
   const [step, setStep] = useState<Step>("boot");
   const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);
@@ -18,9 +19,13 @@ export default function SignInPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lineCounter = useRef(0);
 
+  const nextPathRaw = searchParams.get("next");
+  const nextPath =
+    nextPathRaw && nextPathRaw.startsWith("/") ? nextPathRaw : "/shell";
+
   useEffect(() => {
-    if (isSignedIn) router.replace("/shell");
-  }, [isSignedIn, router]);
+    if (isSignedIn) router.replace(nextPath);
+  }, [isSignedIn, nextPath, router]);
 
   const addLine = useCallback((content: ReactNode, className?: string) => {
     const id = `l${lineCounter.current++}`;
@@ -128,11 +133,11 @@ export default function SignInPage() {
         );
         addLine(
           <span className="text-[hsl(var(--text-secondary))] opacity-60">
-            {"\u2192"} redirecting to shell...
+            {"\u2192"} redirecting...
           </span>
         );
         setStep("done");
-        router.push("/shell");
+        router.push(nextPath);
         router.refresh();
       } catch (error) {
         addLine(

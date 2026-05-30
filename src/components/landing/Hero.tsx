@@ -57,8 +57,8 @@ const Hero = () => {
               <ButtonLink href="/create" variant="primary" size="lg">
                 Create your you.md
               </ButtonLink>
-              <ButtonLink href="#how-it-works" variant="secondary" size="lg">
-                Install runtime
+              <ButtonLink href="/docs" variant="secondary" size="lg">
+                Read docs
               </ButtonLink>
             </div>
 

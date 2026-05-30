@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED_ROUTE_PATTERNS = [/^\/dashboard(?:\/.*)?$/, /^\/shell(?:\/.*)?$/, /^\/initialize(?:\/.*)?$/];
 
@@ -39,7 +39,7 @@ function isAgentRequest(req: Request): boolean {
   return AI_AGENT_UA_PATTERNS.some((p) => p.test(ua));
 }
 
-export default async function middleware(req: Request & { nextUrl: URL; cookies: { get(name: string): { value: string } | undefined } }) {
+export default async function middleware(req: NextRequest) {
   const isProtectedRoute = PROTECTED_ROUTE_PATTERNS.some((pattern) =>
     pattern.test(req.nextUrl.pathname)
   );
@@ -48,7 +48,7 @@ export default async function middleware(req: Request & { nextUrl: URL; cookies:
     const sessionCookie = req.cookies.get("youmd_session")?.value;
     if (!sessionCookie) {
       const signInUrl = new URL("/sign-in", req.url);
-      signInUrl.searchParams.set("redirect_url", req.url);
+      signInUrl.searchParams.set("next", req.nextUrl.pathname);
       return NextResponse.redirect(signInUrl);
     }
   }

@@ -27,21 +27,6 @@ const useCases = [
     title: "share the playbook",
     desc: "give teammates, friends, or contractors your operating system without handing over your whole private brain.",
   },
-  {
-    label: "self-improving",
-    title: "let the stack evolve",
-    desc: "the included maintainer skill captures usage, failures, corrections, evals, and repo diffs so skills and workflows can safely improve.",
-  },
-  {
-    label: "curl-first",
-    title: "no cli mental model",
-    desc: "users install the You.md runtime with one curl command; the helper CLI sits underneath for smoke checks, host adapters, and sync.",
-  },
-  {
-    label: "reference-guided",
-    title: "learn from the best",
-    desc: "watch GStack and GBrain as local references, then turn upstream patterns into reviewable YouStacks and brain tasks.",
-  },
 ];
 
 const stackFiles = [
@@ -60,7 +45,7 @@ const YouStacks = () => (
         <SectionHeader
           eyebrow="youstacks"
           title="build your own GStack for any agent"
-          description="A YouStack is a named package of expertise: skills, sub-agents, prompts, workflows, taste, examples, tests, docs, host adapters, and protected brain boundaries for one domain."
+          description="A YouStack is a named package of expertise: skills, workflows, examples, and safe boundaries for one domain."
         />
       </FadeUp>
 

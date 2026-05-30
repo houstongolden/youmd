@@ -1,15 +1,8 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
-import ProfilesShowcase from "@/components/landing/ProfilesShowcase";
-import ProblemStrip from "@/components/landing/ProblemStrip";
-import HowItWorks from "@/components/landing/HowItWorks";
-import WhatsInside from "@/components/landing/WhatsInside";
 import YouStacks from "@/components/landing/YouStacks";
 import OpenSpec from "@/components/landing/OpenSpec";
-import Integrations from "@/components/landing/Integrations";
-import FAQ from "@/components/landing/FAQ";
-import Pricing from "@/components/landing/Pricing";
 import CTAFooter from "@/components/landing/CTAFooter";
 
 export const metadata: Metadata = {
@@ -41,15 +34,8 @@ export default function Home() {
       <Navbar />
       <main id="main">
         <Hero />
-        <ProfilesShowcase />
-        <ProblemStrip />
-        <HowItWorks />
-        <WhatsInside />
         <YouStacks />
-        <Integrations />
         <OpenSpec />
-        <Pricing />
-        <FAQ />
         <CTAFooter />
       </main>
     </div>
