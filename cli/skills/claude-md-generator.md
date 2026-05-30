@@ -19,7 +19,7 @@ Generate a CLAUDE.md for the current project, pre-loaded with your identity so e
 ## What This Skill Does
 
 1. Detect project type (package.json, Cargo.toml, go.mod, pyproject.toml, etc.)
-2. Read existing CLAUDE.md or project-context/ if present
+2. Read existing CLAUDE.md and `project-context/` if present (especially `CURRENT_STATE.md`, `feature-requests-active.md`, and `TODO.md`)
 3. Generate CLAUDE.md with:
    - Your identity summary (who you are, what you're building)
    - Your agent preferences (how coding agents should behave)

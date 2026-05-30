@@ -23,7 +23,7 @@ Use this skill when starting a new session with a user who has a you.md identity
 1. Scan the bundle on session start (read the relevant sections)
 2. Build a list of detected gaps
 3. Present the list to the user concisely
-4. Offer YES/SKIP/ASK_LATER for each gap
+4. Offer YES/SKIP/ASK_LATER for each gap (explicit consent; never auto-fill)
 5. Execute the chosen actions in batches
 6. Allow skipping individual sub-tasks (e.g. "scaffold all projects but skip BAMF.ai")
 

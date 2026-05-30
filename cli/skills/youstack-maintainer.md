@@ -32,6 +32,11 @@ Keep stacks private by default. Never make a stack public, widen a scoped link, 
 3. Run `youmd stack doctor --path <stack>`, then `youmd stack smoke --path <stack>` before trusting a manifest.
 4. Read the stack's `improvement`, `update`, `sharing`, and `accessPolicy` blocks before changing anything.
 5. Prefer local/static stack files first. Use You.md API/MCP only for protected brain retrieval, sync, tokens, grants, connected tools, hosted telemetry, or server-side actions.
+6. Brain-aware preflight: before asking the user basic repo questions, skim the current repo context if present:
+   - `project-context/CURRENT_STATE.md`
+   - `project-context/feature-requests-active.md`
+   - `project-context/TODO.md`
+   - `project-context/reference-intelligence/TASKS.md`
 
 ## Organize A Stack
 

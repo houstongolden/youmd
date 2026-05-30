@@ -18,17 +18,22 @@ The feedback loop that makes your identity smarter over time. Agents review what
 ## What This Skill Does
 
 1. Read skill-metrics.json for usage data (which skills run, success/fail rates)
-2. Analyze patterns:
+2. Brain-aware preflight: if you are running inside a repo, skim `project-context/` first so you don’t propose generic changes the project already answered:
+   - `project-context/CURRENT_STATE.md`
+   - `project-context/feature-requests-active.md`
+   - `project-context/TODO.md`
+   - `project-context/reference-intelligence/TASKS.md`
+3. Analyze patterns:
    - Which skills get used most?
    - Which identity fields get referenced most?
    - Are there gaps? (skills that should exist but don't)
    - Are there stale entries? (skills never used)
-3. Propose changes:
+4. Propose changes:
    - New directives based on repeated corrections
    - Voice refinements based on agent interactions
    - Skill additions based on detected workflow patterns
    - Pruning of unused skills
-4. Present proposals for user approval (never auto-apply)
+5. Present proposals for user approval (never auto-apply)
 
 ## Metrics Tracked
 
