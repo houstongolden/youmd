@@ -1,4 +1,5 @@
 import * as crypto from "crypto";
+import { execFileSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -565,6 +566,59 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
   const localCapabilities = capabilities.filter((capability) => capability.localOnly).length;
   const protectedCapabilities = capabilities.length - localCapabilities;
   const fileTypes = new Map<string, number>();
+
+  const manifestDir = path.dirname(loaded.manifestPath);
+  try {
+    const gitRoot = execFileSync("git", ["-C", manifestDir, "rev-parse", "--show-toplevel"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .trim()
+      .replace(/\n/g, "");
+    if (gitRoot) {
+      const porcelain = execFileSync("git", ["-C", gitRoot, "status", "--porcelain"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim();
+      const dirtyCount = porcelain ? porcelain.split("\n").filter(Boolean).length : 0;
+      diagnostics.push(`git root: ${gitRoot}`);
+      diagnostics.push(dirtyCount > 0 ? `git status: dirty (${dirtyCount} changes)` : "git status: clean");
+      if (dirtyCount > 0) {
+        warnings.push("git working tree has uncommitted changes; stack adapters and smoke results may not be reproducible");
+      }
+
+      let upstream = "";
+      try {
+        upstream = execFileSync("git", ["-C", gitRoot, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"], {
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"],
+        }).trim();
+      } catch {
+        upstream = "";
+      }
+      if (upstream) {
+        try {
+          const counts = execFileSync("git", ["-C", gitRoot, "rev-list", "--left-right", "--count", `HEAD...${upstream}`], {
+            encoding: "utf8",
+            stdio: ["ignore", "pipe", "ignore"],
+          }).trim();
+          const [aheadRaw, behindRaw] = counts.split(/\s+/);
+          const ahead = Number(aheadRaw || 0);
+          const behind = Number(behindRaw || 0);
+          diagnostics.push(`git upstream: ${upstream} (ahead ${ahead}, behind ${behind})`);
+          if (behind > 0) {
+            warnings.push(`git upstream is behind by ${behind} commits; pull before publishing stack changes`);
+          }
+        } catch {
+          diagnostics.push(`git upstream: ${upstream}`);
+        }
+      } else {
+        diagnostics.push("git upstream: none");
+      }
+    }
+  } catch {
+    // Not a git repo (or git unavailable). Ignore.
+  }
 
   for (const file of files) {
     fileTypes.set(file.type, (fileTypes.get(file.type) || 0) + 1);
