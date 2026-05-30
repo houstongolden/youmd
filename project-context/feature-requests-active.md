@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-05-28
+Last Updated: 2026-05-29
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -24,6 +24,75 @@ Last Updated: 2026-05-28
 3. Make skills and YouStacks read as brain-aware, stack-aware, and self-improving rather than generic identity templates.
 4. Verify docs/checks locally, deploy through main/Vercel, and smoke production after deployment.
 **Progress (2026-05-28):** Updated the remaining root metadata, auth boot screens, initialize copy, reset metadata, profile/profile-directory metadata and CTAs, share prompts, skill/help/history panes, homepage portrait/hero copy, README, PRD, docs snippets/navigation, sample profiles, schema comments, and robots comments so the product reads as an agent brain plus named expertise stacks, runtime, and protected API/MCP. Local verification passed docs check, root TypeScript after temporarily moving unrelated untracked middleware files, and targeted ESLint with warnings only from pre-existing ignored README/profile image/unused code. Production verification passed on `https://www.you.md`: homepage exposes brain/workflow and core-brain-free copy, `/docs#share` exposes Share Your Brain / brain-aware skills / brain smoke text, `/profiles` exposes public agent brains, `/sign-up` exposes agent-brain metadata, `/houstongolden` exposes agent brain + YouStacks metadata and the agent-brain CTA, and `/schema/you-md/v1.json` exposes the public agent brain schema description.
+
+---
+
+## Reference Intelligence Follow-ups (from May 29 sync)
+
+### 75. Brain-aware planning: structured context load + safe write surfaces
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-05-29 — reference-intelligence sync (GStack `070722a`: “brain-aware planning” + `docs/gbrain-write-surfaces.md`)
+**Request:** Mirror the “brain-aware planning” pattern in You.md/YouStacks: load relevant brain context *when available* before planning, but suppress overhead when not configured; document “write surfaces” and gate writes via trust policy/consent.
+**Actionable Scope:**
+1. Define a minimal “Brain Context Load” block for You Agent planning flows (keywords → search → read top N → cite slugs).
+2. Define “write surfaces” for You.md (memories, profiles, stacks, audit logs) and which ones are allowed to receive automated writes.
+3. Add a trust-policy/consent gate that prevents auto-writeback until explicitly enabled per surface or per stack.
+**Progress (2026-05-29):** Updated bundled You.md skills (`youstack-maintainer`, `meta-improve`, `proactive-context-fill`, `claude-md-generator`) so agents load `project-context/` (plus reference-intelligence tasks) before planning or prompting for basics.
+
+### 76. Explicit consent + first-run wizard for sensitive writebacks
+**Status:** TODO
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-05-29 — reference-intelligence sync (GStack `ce5fbfa`: “explicit consent + first-run setup wizard”)
+**Request:** Add a first-run setup wizard + explicit consent checks for any You.md workflow that can mutate private brain context (memory writes, profile edits, stack installs, grants).
+**Actionable Scope:**
+1. Identify all writeback entrypoints (CLI + web + API/MCP).
+2. Require a one-time explicit consent interaction for “private brain writes” and log it.
+3. Add a “consent already prompted” state to avoid spamming prompts while still enforcing the gate.
+
+### 77. Source-scoped hygiene: orphan/coverage metrics per surface
+**Status:** TODO
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-05-29 — reference-intelligence sync (GBrain `041d89b`: “source-scoped orphan_ratio”)
+**Request:** Make You.md memory/profile hygiene checks source-scoped (per surface/stack/source) so cleanup and coverage metrics don’t mix unrelated streams.
+**Actionable Scope:**
+1. Define what “sources” mean in You.md (stack, project, profile, import, agent session).
+2. Implement or spec orphan/coverage metrics per source, with an operator-facing summary.
+
+### 78. Reliability audit: self-healing retry + disconnect audit breadcrumbs
+**Status:** TODO
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-05-29 — reference-intelligence sync (GBrain `ffac8ce`: “withRetry self-heals… + disconnect audit”)
+**Request:** Harden You.md’s long-lived client/singleton surfaces (MCP/HTTP clients, Convex/OpenRouter bridges) with self-healing retries and explicit disconnect audit logs for debugging + safety.
+**Actionable Scope:**
+1. Identify singleton-ish clients and their failure modes (null state, stale token, dropped stream).
+2. Add an audit breadcrumb per disconnect/reconnect and surface it in diagnostics.
+
+### 79. Git-aware sync freshness: skip expensive refresh when unchanged
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-05-29 — reference-intelligence sync (GBrain `cb1b5f9`: “git-aware sync_freshness”)
+**Request:** Add a sync-freshness signal for You.md “brain/index refresh” paths that short-circuits when the underlying source hasn’t changed; report freshness in CLI/dev UX.
+**Actionable Scope:**
+1. Decide which sync/refresh actions should be freshness-gated (project context index, memory index, stack repo sync).
+2. Implement a lightweight “unchanged” detection strategy and a clear freshness summary output.
+**Progress (2026-05-29):** Extended `youmd stack doctor` to surface git root, dirty working-tree warnings, and upstream ahead/behind counts (read-only) so stack maintenance is freshness-aware before publishing changes.
+
+### 80. Homepage minimalization: remove section sprawl, keep it intentional
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-05-29 — Houston feedback (“home page is way too complicated… minimal and clear and intentional”)
+**Request:** Simplify the homepage information architecture so it feels minimal, calm, and terminal-native; stop stacking every possible section.
+**Actionable Scope:**
+1. Reduce homepage sections to the core story (Hero → YouStacks → Open Standard → CTA).
+2. Simplify navbar and remove scroll-spy anchors when sections are removed.
+3. Verify TypeScript and targeted lint locally, then deploy and production-smoke.
 
 ### 73. Simplify the whole product model around Brain, Stacks, Runtime, and Protected API/MCP
 **Status:** DONE

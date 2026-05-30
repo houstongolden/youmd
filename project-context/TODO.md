@@ -382,6 +382,13 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [ ] Conversational portrait management working end-to-end
 - [ ] Custom sections via agent conversation (flexible, not rigid 13 sections)
 
+### Reference Intelligence (May 29, 2026)
+- [ ] Brain-aware planning blocks: add “context load” + “write surfaces” spec for You Agent / YouStacks (Source: GStack `070722a`) (partial: bundled skills now pre-load `project-context/` + reference tasks)
+- [ ] Consent + first-run wizard for any private brain writeback (Source: GStack `ce5fbfa`)
+- [ ] Source-scoped hygiene metrics (orphan/coverage) for memory/profile/stack surfaces (Source: GBrain `041d89b`)
+- [ ] Self-healing retry + disconnect audit breadcrumbs for long-lived clients (Source: GBrain `ffac8ce`)
+- [ ] Sync freshness gating: short-circuit expensive refresh when unchanged; surface freshness in CLI/dev UX (Source: GBrain `cb1b5f9`) (partial: `youmd stack doctor` now reports git dirty + upstream ahead/behind)
+
 ### End-to-End Flow Testing
 - [x] Full CLI → web journey: fresh account → login → init → build → push/publish → public profile → pull → diff/status clean
 - [ ] Full web → CLI journey: web create → CLI login → pull → local files correct
@@ -396,6 +403,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 
 ### Design Polish
 - [x] Normalize the `/profiles` app-nav create CTA and responsive filter/sort controls after live in-app browser QA
+- [ ] Homepage minimalization: reduce section sprawl, keep it intentional (Hero → YouStacks → Open Standard → CTA)
 - [ ] Profile page custom sections (user-defined via conversation)
 - [ ] Count-up animations on all metrics
 - [ ] Status pulse (ACTIVE dot) on profiles
