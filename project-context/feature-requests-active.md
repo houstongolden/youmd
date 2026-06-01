@@ -16,7 +16,7 @@ Last Updated: 2026-06-01
 ### 82. Make homepage minimal and upgrade docs to BAMF-style API/MCP/stack standard
 **Status:** IN PROGRESS
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_7rodpWtQzYwZSqtfdPZTY95hsu9k` for commit `3e2c83b` completed successfully and is aliased to `https://www.you.md` / `https://you.md`.
 **Source:** 2026-06-01 — Houston request to continue improvements, keep homepage simple/minimal, make docs robust, follow the higher-standard BAMF.ai API/MCP/stack docs setup/layout, test, commit, and push to main.
 **Request:** Ensure the product looks and works amazingly; keep the homepage simple, clear, and minimal; upgrade docs design/structure to match the BAMF docs standard for API/MCP/stack docs; keep identifying and applying improvements; test, commit, and push to main.
 **Actionable Scope:**
@@ -26,7 +26,7 @@ Last Updated: 2026-06-01
 4. Carry Agent Scripts and The Library into the public docs reference loop alongside GStack/GBrain.
 5. Verify docs reference freshness, targeted lint, TypeScript, local page rendering, protected-route redirect behavior, MCP discovery, and redirect sanitizer behavior.
 6. Commit bisected changes and push `main`.
-**Progress (2026-06-01):** Local pass upgraded `/docs` with a BAMF-inspired docs map, generated reference stats near the top, an explicit API/MCP/Stack Standard, expanded reference-intelligence language for GStack, GBrain, Agent Scripts, and The Library, and stricter terminal-native docs styling. Homepage remains simplified to Hero + CTA/footer. Local verification passed `npm run docs:check`, `npx tsc --noEmit`, targeted ESLint on touched files, `git diff --check`, local `http://localhost:3100/` and `/docs` 200 smoke, `/shell` redirect to `/sign-in?next=%2Fshell`, `.well-known/mcp.json`, and direct `sanitizeNextPath` checks. Full repo ESLint still fails on pre-existing ignored reference-repo and React Compiler issues; local `npm run build` still hangs in the Next 16 build worker after docs generation under Node 22.
+**Progress (2026-06-01):** Local pass upgraded `/docs` with a BAMF-inspired docs map, generated reference stats near the top, an explicit API/MCP/Stack Standard, expanded reference-intelligence language for GStack, GBrain, Agent Scripts, and The Library, and stricter terminal-native docs styling. Homepage remains simplified to Hero + CTA/footer. Local verification passed `npm run docs:check`, `npx tsc --noEmit`, targeted ESLint on touched files, `git diff --check`, local `http://localhost:3100/` and `/docs` 200 smoke, `/shell` redirect to `/sign-in?next=%2Fshell`, `.well-known/mcp.json`, and direct `sanitizeNextPath` checks. Production verification passed on deployment `dpl_7rodpWtQzYwZSqtfdPZTY95hsu9k`: live `/` and `/docs` return 200, docs include the new surface map/API-MCP-stack standard/upstream markers, `/shell` redirects to `/sign-in?next=%2Fshell`, `/.well-known/mcp.json` responds, and `/api/v1/docs/reference` reports 68 endpoints plus 23 MCP tools. Full repo ESLint still fails on pre-existing ignored reference-repo and React Compiler issues; local `npm run build` still hangs in the Next 16 build worker after docs generation under Node 22, while Vercel production build succeeds.
 
 ### 81. Add Agent Scripts and The Library to You.md's core upstream reference loop
 **Status:** IN PROGRESS
@@ -48,7 +48,7 @@ Last Updated: 2026-06-01
 ### 78. Make the homepage minimal and confirm cookie-gate redirects
 **Status:** IN PROGRESS
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_7rodpWtQzYwZSqtfdPZTY95hsu9k` confirms live homepage and `/shell` redirect behavior.
 **Source:** 2026-05-30 — Houston feedback: "homepage is way too complicated" + "confirm /shell//dashboard redirect behavior"
 **Request:** Further simplify the marketing homepage so it feels minimal, clear, and intentional; confirm the cookie-based gate cleanly redirects unauthenticated users and does not allow `next=//...` open redirects.
 **Actionable Scope:**
@@ -56,7 +56,7 @@ Last Updated: 2026-06-01
 2. Ensure auth gate redirects `/shell` + `/dashboard` to `/sign-in?next=/...` when unauthenticated.
 3. Sanitize `next` so `//evil.com` cannot be used as an open redirect and double-slash paths are normalized.
 4. Verify `next build` and a quick local `/shell` + `/dashboard` curl pass.
-**Progress (2026-06-01):** Homepage remains reduced to Hero + CTA/footer. Local dev server verified `/` returns 200 and `/shell` redirects to `/sign-in?next=%2Fshell`; `sanitizeNextPath` rejects `//evil.com`, absolute `https://...`, and triple-slash paths. Production build still needs Vercel verification because the local Next 16 production worker idles after docs generation under Node 22.
+**Progress (2026-06-01):** Homepage remains reduced to Hero + CTA/footer. Local dev server verified `/` returns 200 and `/shell` redirects to `/sign-in?next=%2Fshell`; `sanitizeNextPath` rejects `//evil.com`, absolute `https://...`, and triple-slash paths. Production deployment `dpl_7rodpWtQzYwZSqtfdPZTY95hsu9k` is ready and live aliases verify `/` 200 plus `/shell` -> `/sign-in?next=%2Fshell`.
 
 ## You.md Vision Simplification (from May 27 conversation)
 

@@ -19,7 +19,8 @@
 - Local webpack dev server verified `/` and `/docs` render 200 on `http://localhost:3100`
 - Verified `/shell` redirects unauthenticated users to `/sign-in?next=%2Fshell`
 - Verified `/.well-known/mcp.json` responds and `sanitizeNextPath` rejects protocol-relative, absolute, and triple-slash unsafe next paths
-- Full repo ESLint still fails on pre-existing `.reference-repos` and React Compiler lint issues; local `npm run build` still idles in the Next 16 build worker after docs generation under Node 22, so production verification should come from the Vercel deployment after push
+- Verified Vercel production deployment `dpl_7rodpWtQzYwZSqtfdPZTY95hsu9k`, aliased to `https://www.you.md` and `https://you.md`; live `/`, `/docs`, `/shell`, `/.well-known/mcp.json`, and `/api/v1/docs/reference` smoke checks passed
+- Full repo ESLint still fails on pre-existing `.reference-repos` and React Compiler lint issues; local `npm run build` still idles in the Next 16 build worker after docs generation under Node 22, while the Vercel production build succeeds
 
 ## 2026-06-01 — Agent Stack Upstream Reference Loop
 
