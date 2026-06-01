@@ -1,5 +1,26 @@
 # You.md — Changelog
 
+## 2026-06-01 — BAMF-Style Docs + Minimal Homepage QA
+
+### Docs / API / MCP / Stacks
+- Upgraded `/docs` with a BAMF-inspired surface map for Start, API, MCP, Stacks, Workflows, and generated Reference paths
+- Added an explicit API/MCP/Stack Standard that defines the expected guide, HTTP, MCP, local stack/runtime, and smoke-check surfaces for each important capability
+- Moved generated docs reference stats near the top of the page so the docs read more like a platform reference instead of only a long guide
+- Tightened docs UI styling to stay terminal-native: 2px radii, normal letter spacing on headings, and sharper code/table/callout surfaces
+- Expanded reference-intelligence docs so GStack, GBrain, Agent Scripts, and The Library all appear as monitored upstream inspirations
+
+### Homepage / Auth / Build Hardening
+- Kept the homepage reduced to the core Hero + CTA/footer path
+- Preserved the hardened `next` redirect sanitizer and cleaned small touched-file lint warnings
+- Kept the Next 16 `proxy` naming/path in place for the cookie gate, matching current Next 16 proxy conventions
+
+### Verification
+- Passed `npm run docs:check`, `npx tsc --noEmit`, targeted ESLint on touched files, and `git diff --check`
+- Local webpack dev server verified `/` and `/docs` render 200 on `http://localhost:3100`
+- Verified `/shell` redirects unauthenticated users to `/sign-in?next=%2Fshell`
+- Verified `/.well-known/mcp.json` responds and `sanitizeNextPath` rejects protocol-relative, absolute, and triple-slash unsafe next paths
+- Full repo ESLint still fails on pre-existing `.reference-repos` and React Compiler lint issues; local `npm run build` still idles in the Next 16 build worker after docs generation under Node 22, so production verification should come from the Vercel deployment after push
+
 ## 2026-06-01 — Agent Stack Upstream Reference Loop
 
 ### Reference Intelligence

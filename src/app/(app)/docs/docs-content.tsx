@@ -18,6 +18,7 @@ const navigation: NavItem[] = [
     id: "getting-started",
     label: "Getting Started",
     children: [
+      { id: "docs-map", label: "Docs Map" },
       { id: "web-quickstart", label: "Web Quickstart" },
       { id: "cli-quickstart", label: "Runtime Quickstart" },
     ],
@@ -30,6 +31,7 @@ const navigation: NavItem[] = [
       { id: "brain-architecture", label: "Brain" },
       { id: "identity-protocol", label: "Protocol" },
       { id: "context-surfaces", label: "Context Surfaces" },
+      { id: "docs-standard", label: "API/MCP/Stack Standard" },
       { id: "reference-intelligence", label: "Reference Intelligence" },
       { id: "source-of-truth", label: "Source of Truth" },
     ],
@@ -126,7 +128,7 @@ const navigation: NavItem[] = [
 
 function H1({ children }: { children: React.ReactNode }) {
   return (
-    <h1 className="text-[28px] md:text-[32px] font-medium text-[hsl(var(--text-primary))] tracking-tight mb-2">
+    <h1 className="text-[28px] md:text-[32px] font-medium text-[hsl(var(--text-primary))] tracking-normal mb-2">
       {children}
     </h1>
   );
@@ -136,7 +138,7 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
   return (
     <h2
       id={id}
-      className="text-[20px] md:text-[22px] font-medium text-[hsl(var(--text-primary))] tracking-tight mt-12 mb-4 scroll-mt-20 border-b border-[hsl(var(--border))] pb-3"
+      className="text-[20px] md:text-[22px] font-medium text-[hsl(var(--text-primary))] tracking-normal mt-12 mb-4 scroll-mt-20 border-b border-[hsl(var(--border))] pb-3"
     >
       {children}
     </h2>
@@ -164,7 +166,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function InlineCode({ children }: { children: React.ReactNode }) {
   return (
-    <code className="bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-1.5 py-0.5 rounded text-[13px] font-mono text-[hsl(var(--accent))]">
+    <code className="bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-1.5 py-0.5 rounded-[2px] text-[13px] font-mono text-[hsl(var(--accent))]">
       {children}
     </code>
   );
@@ -185,7 +187,7 @@ function CodeBlock({ title, children }: { title?: string; children: string }) {
   const copyAriaLabel = title ? `copy ${title}` : "copy code";
 
   return (
-    <div className="my-4 rounded-lg border border-[hsl(var(--border))] overflow-hidden">
+    <div className="my-4 rounded-[2px] border border-[hsl(var(--border))] overflow-hidden">
       {title && (
         <div className="bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-2 py-1 flex items-center justify-between">
           <span className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-60 px-2">
@@ -235,7 +237,7 @@ function Callout({
 
   return (
     <div
-      className={`border-l-2 ${colors[type]} rounded-r-lg px-4 py-3 my-4 text-[14px] text-[hsl(var(--text-secondary))] leading-relaxed`}
+      className={`border-l-2 ${colors[type]} rounded-r-[2px] px-4 py-3 my-4 text-[14px] text-[hsl(var(--text-secondary))] leading-relaxed`}
     >
       {children}
     </div>
@@ -249,7 +251,7 @@ function StepList({ children }: { children: React.ReactNode }) {
 function Step({ n, children }: { n: number; children: React.ReactNode }) {
   return (
     <li className="flex gap-3 text-[15px] text-[hsl(var(--text-secondary))] leading-relaxed">
-      <span className="shrink-0 w-6 h-6 rounded-full bg-[hsl(var(--accent))/0.12] text-[hsl(var(--accent))] text-[12px] font-mono flex items-center justify-center mt-0.5">
+      <span className="shrink-0 w-6 h-6 rounded-[2px] bg-[hsl(var(--accent))/0.12] text-[hsl(var(--accent))] text-[12px] font-mono flex items-center justify-center mt-0.5">
         {n}
       </span>
       <span>{children}</span>
@@ -278,7 +280,7 @@ function QuickStart() {
   return (
     <div
       className="my-6 border-2 border-[hsl(var(--accent))]/50 bg-[hsl(var(--accent))]/[0.04] overflow-hidden"
-      style={{ borderRadius: "4px" }}
+      style={{ borderRadius: "2px" }}
     >
       {/* Title bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-[hsl(var(--accent))]/30 bg-[hsl(var(--accent))]/[0.06]">
@@ -295,12 +297,12 @@ function QuickStart() {
       <ol className="divide-y divide-[hsl(var(--accent))]/15">
         {steps.map((s, i) => (
           <li key={s.key} className="flex items-start gap-3 px-4 py-3">
-            <span className="shrink-0 w-5 h-5 rounded-full bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))] text-[11px] font-mono flex items-center justify-center mt-0.5">
+            <span className="shrink-0 w-5 h-5 rounded-[2px] bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))] text-[11px] font-mono flex items-center justify-center mt-0.5">
               {i + 1}
             </span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <code className="font-mono text-[13px] text-[hsl(var(--accent))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-2 py-0.5 rounded">
+                <code className="font-mono text-[13px] text-[hsl(var(--accent))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-2 py-0.5 rounded-[2px]">
                   $ {s.cmd}
                 </code>
                 <button
@@ -339,7 +341,7 @@ function CommandTable({
   commands: { cmd: string; desc: string }[];
 }) {
   return (
-    <div className="my-4 border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+    <div className="my-4 border border-[hsl(var(--border))] rounded-[2px] overflow-hidden">
       <table className="w-full text-[14px]">
         <thead>
           <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))]">
@@ -421,6 +423,122 @@ function ReferenceStats() {
         </div>
       ))}
     </div>
+  );
+}
+
+function DocsSurfaceMap() {
+  const surfaces = [
+    {
+      label: "Start",
+      href: "#getting-started",
+      title: "Install + first context read",
+      body: "Use the 30-second guide, claim a brain, install the runtime, and smoke-test one agent read before adding complexity.",
+    },
+    {
+      label: "API",
+      href: "#api",
+      title: "HTTP contracts",
+      body: "Generated endpoint inventory, Bearer auth, public profile reads, context links, skills, stacks, docs manifests, and schema discovery.",
+    },
+    {
+      label: "MCP",
+      href: "#mcp-server",
+      title: "Agent-native tools",
+      body: "Local stdio and same-origin JSON-RPC surfaces for identity, project context, memory, section edits, docs, and stack routing.",
+    },
+    {
+      label: "Stacks",
+      href: "#youstacks",
+      title: "Portable expertise packages",
+      body: "Named skills, prompts, workflows, examples, adapter files, evals, update policy, and protected brain scopes.",
+    },
+    {
+      label: "Workflows",
+      href: "#agent-workflows",
+      title: "How agents should act",
+      body: "Golden paths, playbooks, starter prompts, read-before-write rules, post-session capture, and audit trails.",
+    },
+    {
+      label: "Reference",
+      href: "#docs-automation",
+      title: "Generated docs surfaces",
+      body: "Machine-readable docs reference, OpenAPI-style inventory, CLI/MCP manifest generation, and docs drift checks.",
+    },
+  ];
+
+  return (
+    <div id="docs-map" className="my-6 scroll-mt-20">
+      <div className="grid gap-2 md:grid-cols-2">
+        {surfaces.map((surface) => (
+          <Link
+            key={surface.label}
+            href={surface.href}
+            className="group border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 rounded-[2px] transition-colors hover:border-[hsl(var(--accent))]/60"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--accent))]">
+                {surface.label}
+              </span>
+              <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-35 transition-opacity group-hover:opacity-80">
+                #
+              </span>
+            </div>
+            <h3 className="mt-2 font-mono text-[14px] text-[hsl(var(--text-primary))]">
+              {surface.title}
+            </h3>
+            <p className="mt-2 text-[13px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-80">
+              {surface.body}
+            </p>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DocsStandard() {
+  return (
+    <SystemPanel title="you.md docs contract">
+      <div className="grid gap-5">
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-wider text-[hsl(var(--accent))]">
+            every capability gets five surfaces
+          </p>
+          <div className="mt-3 grid gap-2 md:grid-cols-5">
+            {["guide", "api", "mcp", "stack", "smoke"].map((label) => (
+              <div
+                key={label}
+                className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 py-2 rounded-[2px]"
+              >
+                <span className="font-mono text-[11px] text-[hsl(var(--text-primary))]">
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <FeatureMatrix
+          items={[
+            {
+              title: "Read before write",
+              body: "Agents start with public identity, project context, stack manifest, and capability discovery before requesting private memory or mutations.",
+            },
+            {
+              title: "Route before action",
+              body: "Stacks expose capabilities so a host can route intent to the right skill, workflow, prompt, or protected MCP tool instead of guessing.",
+            },
+            {
+              title: "Smallest scoped mutation",
+              body: "Memory writes, section edits, stack updates, visibility changes, and connected-tool actions stay narrow, auditable, and approval-aware.",
+            },
+            {
+              title: "Smoke before publish",
+              body: "Every public or shared stack needs doctor, smoke, docs, manifest, adapter, and route checks before it becomes someone else's starting context.",
+            },
+          ]}
+        />
+      </div>
+    </SystemPanel>
   );
 }
 
@@ -715,7 +833,7 @@ export default function DocsContent() {
 
         {/* Content */}
         <main className="flex-1 min-w-0 px-6 md:px-12 py-10 md:py-12">
-          <div className="max-w-2xl">
+          <div className="max-w-3xl">
             {/* Page header */}
             <div className="mb-8">
               <p className="text-[12px] font-mono text-[hsl(var(--accent))] mb-2 uppercase tracking-wider">
@@ -728,6 +846,9 @@ export default function DocsContent() {
                 and connected tools.
               </P>
             </div>
+
+            <ReferenceStats />
+            <DocsSurfaceMap />
 
             {/* ── 30-second guide (quick-start) ────────────── */}
             <QuickStart />
@@ -914,19 +1035,41 @@ export default function DocsContent() {
               ]}
             />
 
+            <H3 id="docs-standard">API/MCP/Stack Standard</H3>
+            <P>
+              You.md docs should match the standard of the best agent-platform
+              docs: every important capability needs a human guide, an HTTP
+              contract, an MCP surface when agents need it, a local stack/runtime
+              path, and a smoke check.
+            </P>
+            <DocsStandard />
+            <CommandTable
+              commands={[
+                { cmd: "GET /api/v1/docs/reference", desc: "Machine-readable inventory of docs, API routes, MCP tools, CLI metadata, and source hash" },
+                { cmd: "GET /api/v1/docs/openapi.json", desc: "OpenAPI-style route inventory for API reference generators and docs agents" },
+                { cmd: "GET /api/v1/stacks/capabilities", desc: "Default YouStacks capability map used by products and local agents" },
+                { cmd: "POST /api/v1/stacks/route", desc: "Deterministic route scoring for stack capability selection before action" },
+                { cmd: "youmd stack doctor --path stacks/<name>", desc: "Local static readiness check before sharing, improving, or publishing a stack" },
+                { cmd: "youmd stack smoke --path stacks/<name>", desc: "Local runtime smoke test for manifest, docs, adapter, capability, and route health" },
+              ]}
+            />
+
             <H3 id="reference-intelligence">Reference Intelligence</H3>
             <P>
-              You.md keeps GStack and GBrain as local reference repos and turns
-              upstream changes into reviewable tasks. GStack informs YouStacks:
-              installable skills, specialist workflows, host adapters, upgrade
-              behavior, QA/review/release loops, and local-first magic. GBrain
-              informs the You.md brain: durable memory, retrieval, sync,
-              provenance, privacy, and startup context.
+              You.md keeps GStack, GBrain, Agent Scripts, and The Library as
+              local reference repos and turns upstream changes into reviewable
+              tasks. GStack informs YouStacks: installable skills, specialist
+              workflows, host adapters, upgrade behavior, QA/review/release
+              loops, and local-first magic. GBrain informs the You.md brain:
+              durable memory, retrieval, sync, provenance, privacy, and startup
+              context. Agent Scripts and The Library sharpen the shared
+              scripts, prompts, skills, slash commands, catalogs, and bootstrap
+              patterns that make agent stacks easier to start and maintain.
             </P>
             <P>
               Houston&apos;s local workspace also runs a daily reference sync
-              automation, so upstream GStack/GBrain movement becomes a reviewed
-              task queue instead of vague inspiration.
+              automation, so upstream movement becomes a reviewed task queue
+              instead of vague inspiration.
             </P>
             <CodeBlock title="daily reference sync">{`npm run references:sync
 
@@ -1613,13 +1756,14 @@ preferences: terminal-native, monochrome
               ]}
             />
 
-            <H3 id="youstacks-reference-loop">GStack / GBrain Reference Loop</H3>
+            <H3 id="youstacks-reference-loop">Reference Intelligence Loop</H3>
             <P>
-              YouStacks should deliberately follow what works in GStack while
-              You.md brain/context follows what works in GBrain. The loop is:
-              fetch upstream repos, inspect the newest commits, map each useful
-              pattern to either the stack layer or brain layer, then create a
-              concrete You.md task only when it improves the product.
+              YouStacks should deliberately follow what works in GStack,
+              GBrain, Agent Scripts, and The Library. The loop is: fetch
+              upstream repos, inspect the newest commits, map each useful
+              pattern to the stack layer, brain layer, docs layer, or runtime
+              layer, then create a concrete You.md task only when it improves
+              the product.
             </P>
             <FeatureMatrix
               items={[
@@ -1630,6 +1774,14 @@ preferences: terminal-native, monochrome
                 {
                   title: "GBrain -> You.md brain",
                   body: "Borrow durable memory architecture, retrieval hygiene, source/provenance tracking, sync discipline, context extraction, and privacy boundaries.",
+                },
+                {
+                  title: "Agent Scripts -> runtime scripts",
+                  body: "Borrow practical agent command layout, shared scripts, lightweight installer ergonomics, and easy-to-inspect local workflow conventions.",
+                },
+                {
+                  title: "The Library -> skill catalogs",
+                  body: "Borrow library-style organization for prompts, commands, reusable context, examples, and discoverable bootstrap material.",
                 },
                 {
                   title: "Usage -> improvement",
@@ -1643,8 +1795,8 @@ preferences: terminal-native, monochrome
             />
             <CommandTable
               commands={[
-                { cmd: "npm run references:sync", desc: "Fetch local GStack/GBrain reference repos and regenerate reference intelligence reports" },
-                { cmd: "Daily GStack/GBrain Reference Sync", desc: "Local Codex automation that runs the reference monitor each morning and reports candidate tasks" },
+                { cmd: "npm run references:sync", desc: "Fetch local GStack, GBrain, Agent Scripts, and The Library reference repos and regenerate reports" },
+                { cmd: "Daily You.md Reference Intelligence", desc: "Local Codex automation that runs the reference monitor each morning and reports candidate tasks" },
                 { cmd: "project-context/reference-intelligence/LATEST.md", desc: "Latest upstream commit summary and source-linked candidate tasks" },
                 { cmd: "project-context/reference-intelligence/TASKS.md", desc: "Review queue for stack, brain, memory, context, API/MCP, and docs improvements" },
               ]}

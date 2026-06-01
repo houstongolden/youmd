@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
-import YouStacks from "@/components/landing/YouStacks";
-import OpenSpec from "@/components/landing/OpenSpec";
 import CTAFooter from "@/components/landing/CTAFooter";
 
 export const metadata: Metadata = {
@@ -34,8 +32,6 @@ export default function Home() {
       <Navbar />
       <main id="main">
         <Hero />
-        <YouStacks />
-        <OpenSpec />
         <CTAFooter />
       </main>
     </div>

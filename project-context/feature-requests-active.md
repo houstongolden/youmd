@@ -13,6 +13,21 @@ Last Updated: 2026-06-01
 
 ## Agent Stack Upstream Monitoring (from Jun 1 conversation)
 
+### 82. Make homepage minimal and upgrade docs to BAMF-style API/MCP/stack standard
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-01 — Houston request to continue improvements, keep homepage simple/minimal, make docs robust, follow the higher-standard BAMF.ai API/MCP/stack docs setup/layout, test, commit, and push to main.
+**Request:** Ensure the product looks and works amazingly; keep the homepage simple, clear, and minimal; upgrade docs design/structure to match the BAMF docs standard for API/MCP/stack docs; keep identifying and applying improvements; test, commit, and push to main.
+**Actionable Scope:**
+1. Keep the homepage reduced to the core hero/CTA path instead of section sprawl.
+2. Rework `/docs` around start, API, MCP, local stack runtime, agent workflows, examples, and generated reference surfaces.
+3. Add an explicit docs/API/MCP/stack standard so every capability has a guide, API contract, MCP surface where needed, local stack path, and smoke check.
+4. Carry Agent Scripts and The Library into the public docs reference loop alongside GStack/GBrain.
+5. Verify docs reference freshness, targeted lint, TypeScript, local page rendering, protected-route redirect behavior, MCP discovery, and redirect sanitizer behavior.
+6. Commit bisected changes and push `main`.
+**Progress (2026-06-01):** Local pass upgraded `/docs` with a BAMF-inspired docs map, generated reference stats near the top, an explicit API/MCP/Stack Standard, expanded reference-intelligence language for GStack, GBrain, Agent Scripts, and The Library, and stricter terminal-native docs styling. Homepage remains simplified to Hero + CTA/footer. Local verification passed `npm run docs:check`, `npx tsc --noEmit`, targeted ESLint on touched files, `git diff --check`, local `http://localhost:3100/` and `/docs` 200 smoke, `/shell` redirect to `/sign-in?next=%2Fshell`, `.well-known/mcp.json`, and direct `sanitizeNextPath` checks. Full repo ESLint still fails on pre-existing ignored reference-repo and React Compiler issues; local `npm run build` still hangs in the Next 16 build worker after docs generation under Node 22.
+
 ### 81. Add Agent Scripts and The Library to You.md's core upstream reference loop
 **Status:** IN PROGRESS
 **Verified:** NO
@@ -41,6 +56,7 @@ Last Updated: 2026-06-01
 2. Ensure auth gate redirects `/shell` + `/dashboard` to `/sign-in?next=/...` when unauthenticated.
 3. Sanitize `next` so `//evil.com` cannot be used as an open redirect and double-slash paths are normalized.
 4. Verify `next build` and a quick local `/shell` + `/dashboard` curl pass.
+**Progress (2026-06-01):** Homepage remains reduced to Hero + CTA/footer. Local dev server verified `/` returns 200 and `/shell` redirects to `/sign-in?next=%2Fshell`; `sanitizeNextPath` rejects `//evil.com`, absolute `https://...`, and triple-slash paths. Production build still needs Vercel verification because the local Next 16 production worker idles after docs generation under Node 22.
 
 ## You.md Vision Simplification (from May 27 conversation)
 

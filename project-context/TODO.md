@@ -8,6 +8,11 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-01
+- [x] Keep the homepage minimal (Hero + CTA/footer) while upgrading `/docs` into a BAMF-style API/MCP/stack documentation surface
+- [x] Add a `/docs` surface map for Start, API, MCP, Stacks, Workflows, and generated Reference paths
+- [x] Add an explicit API/MCP/Stack docs standard covering guide, API, MCP, stack, and smoke surfaces for each important capability
+- [x] Update docs reference-intelligence copy so Agent Scripts and The Library sit beside GStack/GBrain as monitored upstream inspirations
+- [x] Verify the docs/homepage pass with docs check, targeted ESLint, TypeScript, local page smoke, protected-route redirect smoke, MCP discovery, and redirect sanitizer checks
 - [x] Expand reference intelligence from GStack/GBrain to also monitor `steipete/agent-scripts` and `disler/the-library`
 - [x] Write `project-context/AGENT_STACK_UPSTREAM_AUDIT_2026-06-01.md` with the You.md translation, gaps, and next implementation slices
 - [x] Update YouStack starter/maintainer skills with pointer-catalog, typed dependency, source-of-truth, and upstream-aware maintenance guidance
