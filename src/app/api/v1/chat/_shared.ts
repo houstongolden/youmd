@@ -44,6 +44,7 @@ export async function proxyChatRequest(
     headers,
     body,
     cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
   });
 
   return new NextResponse(upstream.body, {

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { TerminalAuthInput } from "@/components/terminal/TerminalAuthInput";
 import { useUser } from "@/lib/you-auth";
+import { sanitizeNextPath } from "@/lib/redirects";
 
 type Step = "boot" | "email" | "sending" | "verify" | "verifying" | "done";
 
@@ -20,8 +21,7 @@ export default function SignInPage() {
   const lineCounter = useRef(0);
 
   const nextPathRaw = searchParams.get("next");
-  const nextPath =
-    nextPathRaw && nextPathRaw.startsWith("/") ? nextPathRaw : "/shell";
+  const nextPath = sanitizeNextPath(nextPathRaw, "/shell");
 
   useEffect(() => {
     if (isSignedIn) router.replace(nextPath);
@@ -149,7 +149,7 @@ export default function SignInPage() {
         setStep("verify");
       }
     },
-    [addLine, email, router]
+    [addLine, email, nextPath, router]
   );
 
   const isInputStep = step === "email" || step === "verify";

@@ -26,6 +26,7 @@ async function proxyMcp(request: NextRequest): Promise<NextResponse> {
     },
     body,
     cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
   });
 
   const json = await upstream.json();
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   return proxyMcp(request);
 }
 
-export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
+export async function OPTIONS(): Promise<NextResponse> {
   return new NextResponse(null, {
     status: 204,
     headers: CORS_HEADERS,

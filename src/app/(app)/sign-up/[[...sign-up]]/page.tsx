@@ -6,6 +6,7 @@ import Link from "next/link";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { TerminalAuthInput } from "@/components/terminal/TerminalAuthInput";
 import { useUser } from "@/lib/you-auth";
+import { sanitizeNextPath } from "@/lib/redirects";
 
 type Step = "boot" | "email" | "username" | "name" | "sending" | "verify" | "verifying" | "done";
 
@@ -18,13 +19,11 @@ export default function SignUpPage() {
   const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const lineCounter = useRef(0);
 
   const nextPathRaw = searchParams.get("next");
-  const nextPath =
-    nextPathRaw && nextPathRaw.startsWith("/") ? nextPathRaw : "/shell";
+  const nextPath = sanitizeNextPath(nextPathRaw, "/shell");
 
   useEffect(() => {
     if (isSignedIn) router.replace(nextPath);
@@ -106,7 +105,6 @@ export default function SignUpPage() {
   }, [addLine]);
 
   const handleName = useCallback(async (value: string) => {
-    setDisplayName(value);
     addLine(
       <span>
         <span className="text-[hsl(var(--accent))]">name:</span>{" "}

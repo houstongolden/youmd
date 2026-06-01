@@ -38,11 +38,13 @@ async function fetchProfile(
   username: string
 ): Promise<ProfileResponse | null> {
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8_000);
     const res = await fetch(
       `${CONVEX_SITE_URL}/api/v1/profiles?username=${encodeURIComponent(username)}`,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { next: { revalidate: 60 } } as any
-    );
+      { next: { revalidate: 60 }, signal: controller.signal } as any
+    ).finally(() => clearTimeout(timeout));
     if (!res.ok) return null;
     return (await res.json()) as ProfileResponse;
   } catch {

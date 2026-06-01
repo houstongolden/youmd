@@ -39,7 +39,7 @@ function isAgentRequest(req: Request): boolean {
   return AI_AGENT_UA_PATTERNS.some((p) => p.test(ua));
 }
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const isProtectedRoute = PROTECTED_ROUTE_PATTERNS.some((pattern) =>
     pattern.test(req.nextUrl.pathname)
   );
@@ -93,6 +93,8 @@ export default async function middleware(req: NextRequest) {
       }
     }
   }
+
+  return NextResponse.next();
 }
 
 export const config = {

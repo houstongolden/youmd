@@ -2,9 +2,13 @@
   "name": "youmd",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "dev": "npm run dev:frontend & npm run dev:backend",
-    "dev:frontend": "next dev --turbopack",
+    "dev:frontend": "next dev --webpack -p 3100",
+    "dev:frontend:turbo": "next dev --turbopack -p 3100",
     "dev:backend": "npx convex dev",
     "docs:generate": "node scripts/generate-docs-reference.mjs",
     "docs:check": "node scripts/generate-docs-reference.mjs --check",

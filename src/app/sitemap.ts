@@ -12,6 +12,7 @@ async function fetchProfiles(): Promise<ProfileEntry[]> {
   try {
     const res = await fetch(`${CONVEX_SITE_URL}/api/v1/profiles`, {
       next: { revalidate: 3600 }, // revalidate every hour
+      signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) return [];
     const data: ProfileEntry[] = await res.json();

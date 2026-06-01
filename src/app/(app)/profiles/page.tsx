@@ -59,6 +59,7 @@ async function fetchProfiles(): Promise<SsrProfile[]> {
   try {
     const res = await fetch(`${CONVEX_SITE_URL}/api/v1/profiles`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) return [];
     const data = await res.json();
