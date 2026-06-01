@@ -26,6 +26,8 @@ Core vision:
 - Treat GStack as the primary external lighthouse. It is the cleanest example of a local-first agent operating system: installable skills, specialist workflows, review/QA/release patterns, update behavior, and host-native files without needing a custom app or per-stack API.
 - Keep `garrytan/gstack` as a local reference repo and monitor it daily for architecture, skills, install/update, host adapter, eval, and workflow lessons that should improve YouStacks.
 - Keep `garrytan/gbrain` as a local reference repo and monitor it daily for shared-brain, memory, retrieval, sync, provenance, privacy, and context lessons that should improve the You.md brain.
+- Keep `steipete/agent-scripts` as a local reference repo and monitor it for shared AGENTS/skills/scripts/hooks, pointer-style downstream repo rules, dependency-light helpers, validation, and canonical repo-owned skill patterns that should improve You.md's stack runtime.
+- Keep `disler/the-library` as a local reference repo and monitor it for private-first skill/agent/prompt catalogs, source references instead of stale copies, typed dependencies, pull-on-demand install/use flows, and team/device distribution lessons that should improve YouStacks.
 - Treat BAMFStack as the closest internal proof pattern. It was inspired by the GStack shape, then proved that a local stack can become even more powerful when it also knows how to use a real product backend, API, MCP, docs, and auth safely.
 - Before designing YouStacks, review GStack first, then review the local bamfaiapp repo: public/bamfstack, docs, docs/workflows/agent-workflows.mdx, docs/mcp, docs/authentication.mdx, src/pages/DocsPage.tsx, supabase/functions/_shared/agent-capabilities.ts, public-api /v1/agent/capabilities and /v1/agent/route, and product-mcp tools/resources/prompts.
 - Extract why BAMFStack worked: one-line curl install, local skills/commands/prompts/helper CLI, env-only API key handling, auto-upgrade, read-only smoke test, capability discovery, deterministic workflow routing, app/Stack/API/MCP parity, docs-quality examples, and a sync rule that updates stack files/docs/OpenAPI/tests together.
@@ -52,6 +54,7 @@ The cleaner vision is a personal agent operating system:
 
 - You.md owns the brain: identity, memories, private context, project context, sources, preferences, directives, and access rules.
 - YouStacks package execution: skills, workflows, tools, prompts, templates, evals, install scripts, host adapters, and protected service calls.
+- YouStacks also need a source-of-truth catalog: skills, agents, prompts, scripts, examples, docs, and protected capabilities can be referenced from canonical local paths or GitHub repos instead of copied into every project.
 - GitHub becomes the user's owned repo-backed source of truth.
 - You.md keeps the hosted DB-backed mirror for availability, indexing, links, tokens, web, CLI, API, and MCP.
 - Claude Code, Codex, and Cursor are the first GTM wedge because those users already understand the value of one command making an agent smarter.
@@ -85,6 +88,7 @@ The cleaner vision is a personal agent operating system:
 - Evals and guardrails: acceptance criteria, examples, safety rules, slop scans, review gates, smoke tests, and regression cases.
 - Install and update metadata: manifest, versions, host targets, repo paths, access policy, provenance, changelog, migrations, and update channels.
 - Improvement metadata: the stack's autonomous learning loop, safe signals, evals, approval gates, and which skills/workflows/examples/adapters can self-update.
+- Source references: optional local/GitHub pointers and typed dependencies for skills, agents, prompts, scripts, docs, and examples that should stay canonical elsewhere.
 
 ## GStack Primary Lighthouse
 
@@ -98,6 +102,30 @@ Core lessons:
 - No backend required: a stack should be powerful before any custom API/MCP exists. Remote capabilities are optional extensions.
 - Opinionated workflows: the stack is not generic prompt storage. It encodes how a strong operator reviews, plans, debugs, ships, audits, and improves work.
 - Brain stays separate: GBrain being separate from GStack is the architectural lesson. Memory/context is a different layer from skills/workflows.
+
+## Agent Scripts Lighthouse
+
+Peter Steinberger's `agent-scripts` is the reference for keeping shared agent infrastructure elegant:
+
+- One canonical shared `AGENTS.MD` instead of duplicated hard rules in every repo.
+- Downstream repos point at the shared file, then keep repo-specific rules below the pointer.
+- Skills are terse, routing-first, and validated.
+- Helper scripts stay dependency-light and portable.
+- Repo-owned skills can remain canonical inside the repo that owns them while being exposed into the shared layer through pointers.
+
+You.md translation: `youmd skill init-project`, YouStack adapters, and GitHub-backed stack sync should support pointer-style managed blocks and source references so generated agent context stays fresh without flattening everything into a stale copy.
+
+## The Library Lighthouse
+
+Dan Disler's `the-library` is the reference for private-first distribution of agentic assets:
+
+- A catalog stores references to skills, agents, and prompts.
+- Nothing installs until the user asks for it.
+- Local paths and GitHub URLs can both be sources.
+- Typed dependencies avoid ambiguity between skills, agents, prompts, scripts, and protected capabilities.
+- The agent can run catalog operations from markdown cookbook instructions.
+
+You.md translation: YouStacks should grow from "a manifest of local files" into "a manifest plus private/source-backed catalog" where a user's skills, scripts, prompts, examples, and sub-agents can be pulled, synced, shared, or published while You.md keeps the hosted brain, grants, audit logs, and optional high-usage cloud surfaces.
 
 ## BAMFStack Proof Pattern
 
@@ -156,7 +184,7 @@ Later:
 6. Optional hosted tools: keep stacks useful as local files first; add shared You.md API/MCP calls only for protected memory, sync, connected tools, and actions that should not live in plaintext.
 7. Feedback loop: capture usage, failures, edits, saved memories, repo diffs, and corrections so You.md brain and YouStack versions improve.
 8. Stack portfolio: let one user own many named stacks with separate slugs, domains, skills, sub-agents, workflows, examples, improvement loops, sharing policies, and update channels.
-9. Reference intelligence: daily fetch GStack/GBrain, summarize upstream commits, and create reviewable You.md tasks for relevant stack/brain improvements.
+9. Reference intelligence: daily fetch GStack, GBrain, Agent Scripts, and The Library, summarize upstream commits, and create reviewable You.md tasks for relevant stack/brain/catalog/runtime improvements.
 
 ## GitHub Sync Plan
 
@@ -204,6 +232,8 @@ Potential repo layout:
 
 - [GStack](https://github.com/garrytan/gstack): primary lighthouse for the stack-as-agent-operating-system pattern: installable skills, specialist modes, review/QA/release flows, and host-native files.
 - [GBrain](https://github.com/garrytan/gbrain): reference for the memory side: markdown brain repo, retrieval layer, MCP surface, and explicit separation between brain and stack.
+- [Agent Scripts](https://github.com/steipete/agent-scripts): reference for canonical shared agent rules, skills, helper scripts, validation hooks, and pointer-style downstream setup.
+- [The Library](https://github.com/disler/the-library): reference for private-first catalogs of skills, agents, prompts, typed dependencies, and cross-device/team distribution.
 - [BAMF Developer Docs](https://bamf.ai/docs): internal quality bar for product docs: quickstart, auth, API/MCP, agent workflows, playbooks, copyable prompts, and generated endpoint/tool reference.
 - [BAMFStack Installer](https://bamf.ai/bamfstack/install.sh): internal applied proof for the one-line install pattern: local skills, commands, helper CLI, auto-update, smoke checks, and API/MCP setup guidance.
 - [GitHub Apps vs OAuth Apps](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/differences-between-github-apps-and-oauth-apps): reference for why OAuth can start account linking, while repo sync should seriously evaluate GitHub Apps for finer repo permissions and webhooks.

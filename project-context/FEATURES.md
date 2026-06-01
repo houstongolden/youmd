@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-05-28
+Last Updated: 2026-06-01
 
 ## Core Platform
 
@@ -10,7 +10,7 @@ Last Updated: 2026-05-28
 | Simplified product model | Done deployed | Homepage, docs, public profile, auth/onboarding copy, dashboard panes, README, PRD, and schema comments now explain You.md as four layers: Brain, Stacks, Runtime, and Protected API/MCP |
 | Developer docs platform | Done | `/docs` now includes concepts, context surfaces, source-of-truth mapping, agent workflows, playbooks, examples, generated API/MCP reference, schema guidance, docs automation, troubleshooting, and a dedicated YouStacks chapter |
 | Generated docs reference | Done | `npm run docs:generate` scans Convex HTTP routes, Next routes, and CLI MCP tools into `src/generated/docs-reference.ts` plus a generated OpenAPI-style spec; YouStacks endpoints are categorized under `YouStacks`; `prebuild` refreshes it and `docs:check` detects stale artifacts |
-| GStack/GBrain reference intelligence | Done deployed | `npm run references:sync` keeps ignored local clones of `garrytan/gstack` and `garrytan/gbrain`, writes `project-context/reference-intelligence/LATEST.md` and `TASKS.md`, and feeds daily GStack -> YouStacks plus GBrain -> You.md brain improvement review; the local `Daily GStack/GBrain Reference Sync` automation now runs this monitor daily |
+| Upstream reference intelligence | Done local | `npm run references:sync` keeps ignored local clones of `garrytan/gstack`, `garrytan/gbrain`, `steipete/agent-scripts`, and `disler/the-library`, writes `project-context/reference-intelligence/LATEST.md` and `TASKS.md`, and feeds daily review for YouStacks, You.md brain/context, shared agent scripts, source catalogs, and private stack distribution |
 | YouStacks product-layer planning | In implementation | `YOUSTACKS_PRODUCT_LAYER_PRD.md` and `YOUSTACKS_IMPLEMENTATION_PLAN.md` define the additive stack layer, current product inventory/classification, GStack/BAMFStack transfer analysis, manifest schema, GitHub sync direction, API/MCP threshold, adapter model, and bisectable phases |
 | YouStack local manifest CLI | Done local / publish pending | `youmd stack inspect`, `doctor`, `smoke`, `capabilities`, and `route` validate, diagnose, and route a local `youstack/v1` manifest without mutating brain data or connected tools; manifests now support human names, stable slugs, domains, aliases, tags, improvement policy, and update policy |
 | YouStack doctor diagnostics | Done deployed | `youmd stack doctor --path DIR` runs read-only health diagnostics for manifest size, file composition, capability routing, adapter coverage, brain scopes, update hygiene, public-readiness gaps, and self-improvement readiness before agents smoke, publish, or modify a stack; production exposes the shared `stack-diagnostics` route capability |
@@ -76,6 +76,7 @@ Last Updated: 2026-05-28
 | Revealable active API keys | Done | Newly created or rotated keys can now be shown again by the owner from the settings pane; pre-existing hash-only keys still need one rotate to migrate |
 | Verified passwordless sender config | Done | Auth email route now supports `AUTH_EMAIL_FROM` / `RESEND_FROM_EMAIL` instead of being hardcoded to `onboarding@resend.dev` |
 | Remote-Convex local auth guard | Done | Local web sessions now mint `https://you.md` Convex JWT issuers when the app is pointed at a remote Convex deployment, avoiding `NoAuthProvider` auth failures during local web QA |
+| Cookie-gated redirects + safe `next` | Done | Protected routes (`/shell`, `/dashboard`, `/initialize`) redirect unauthenticated users to `/sign-in?next=/...`; `next` is sanitized to prevent protocol-relative open redirects |
 | Username claim | Done | Auto-claim via /initialize (no manual form) |
 | Bundle compilation | Done | Server-side via convex/lib/compile.ts |
 | Bundle publishing | Done | Version tracking, unpublish previous |

@@ -1,5 +1,37 @@
 # You.md — Changelog
 
+## 2026-06-01 — Agent Stack Upstream Reference Loop
+
+### Reference Intelligence
+- Expanded `npm run references:sync` beyond GStack/GBrain to also clone/fetch `steipete/agent-scripts` and `disler/the-library` under ignored `.reference-repos/<owner>/<repo>/`
+- Regenerated `project-context/reference-intelligence/LATEST.md` and `TASKS.md`; latest new upstream captures are Agent Scripts `5dc3c24` and The Library `47f455c`
+- Added `project-context/AGENT_STACK_UPSTREAM_AUDIT_2026-06-01.md` to record the product audit, gaps, and next slices for shared agent skills/scripts/prompts/context/catalogs
+
+### YouStacks
+- Updated `youstack-start` and `youstack-maintainer` so host agents prefer source pointers over stale copies, check expanded reference-intelligence tasks, validate skill metadata, and model typed dependencies across skills, agents, prompts, scripts, and protected capabilities
+- Updated the YouStacks PRD and implementation plan so Agent Scripts and The Library join GStack/GBrain as first-class lighthouses for the stack runtime and private catalog/distribution layer
+
+### README / Product
+- Added hat-tip credits for GStack, GBrain, Agent Scripts, and The Library
+- Clarified the open-source direction: keep the brain, stack runtime, skills, and public examples mostly open/forkable while hosted You.md covers protected retrieval, sync, publishing, grants, connected tools, high-usage limits, and future agent-platform surfaces
+
+## 2026-05-30 — Reference Sync + Homepage Simplification + Redirect Hardening
+
+### Reference Intelligence
+- Re-synced upstream GStack/GBrain references and regenerated `project-context/reference-intelligence/LATEST.md` and `TASKS.md`
+
+### Marketing / UX
+- Simplified the homepage down to the core flow (Hero + footer CTA) by removing section sprawl from the root marketing page
+
+### Auth / Redirects
+- Hardened `next` redirect handling on `/sign-in` and `/sign-up` to prevent protocol-relative open redirects (e.g. `next=//evil.com`)
+- Verified unauthenticated redirects for `/shell` and `/dashboard` via the cookie-gated proxy
+
+### Build / Infra
+- Added fetch timeouts for Convex-backed SSR/metadata routes to prevent build stalls
+- Added a Tailwind `content` config and removed a stale Next build artifact directory that was stalling PostCSS builds
+- Verified `npm run build` successfully under Node 20
+
 ## 2026-05-29 — Homepage Minimalization + Brain-Aware Preflight
 
 ### Marketing / UX

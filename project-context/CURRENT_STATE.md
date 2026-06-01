@@ -1,6 +1,6 @@
 # You.md — Current State
 
-Last Updated: 2026-05-27
+Last Updated: 2026-06-01
 Latest Verified Production Web Commit: db6a01f feat: make youstacks curl-first
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
@@ -102,8 +102,8 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 
 ### YouStacks Product Layer
 - Planning/audit is preserved in `project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md` and `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md`
-- GStack/GBrain reference intelligence is implemented: `npm run references:sync` clones/fetches `garrytan/gstack` and `garrytan/gbrain` into ignored `.reference-repos/`, then writes `project-context/reference-intelligence/LATEST.md` and `TASKS.md` for daily review
-- The daily local `Daily GStack/GBrain Reference Sync` automation is active, and the latest reference sync captured GStack `19770ea` plus GBrain `42d99b6`
+- Upstream reference intelligence is implemented: `npm run references:sync` clones/fetches `garrytan/gstack`, `garrytan/gbrain`, `steipete/agent-scripts`, and `disler/the-library` into ignored `.reference-repos/<owner>/<repo>/`, then writes `project-context/reference-intelligence/LATEST.md` and `TASKS.md` for daily review
+- The daily local reference automation is active, and the latest reference sync captured GStack `3bef43b`, GBrain `eefe8b5`, Agent Scripts `5dc3c24`, and The Library `47f455c`
 - Local-first YouStack manifests work as portable execution packages on top of You.md rather than as a replacement brain
 - Manifests now support named stack portfolios via `name`, stable `slug`, `domain`, `aliases`, and `tags`, so one user can keep separate coding, scientific research, content creation, and other domain stacks
 - Manifests now declare `improvement` and `update` policy, and local stack capabilities include `stack.improve` plus `stack.update` for policy-bound stack/skill self-improvement and self-updating

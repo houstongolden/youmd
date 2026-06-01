@@ -241,6 +241,19 @@ Defaults:
 - Safe self-improvement updates local skills/workflows/docs/tests together and runs smoke checks.
 - Protected memory, tokens, repo sync, private context, and connected tools go through shared You.md API/MCP.
 
+### Upstream Inspiration
+
+You.md is built in the open-agent tradition: local-first, inspectable, portable, and useful inside the tools builders already use.
+
+Hat tip to the projects shaping this architecture:
+
+- [GStack](https://github.com/garrytan/gstack) for the installable agent operating-system pattern.
+- [GBrain](https://github.com/garrytan/gbrain) for the shared brain/memory separation.
+- [Agent Scripts](https://github.com/steipete/agent-scripts) for canonical shared agent rules, skills, scripts, hooks, and pointer-style repo setup.
+- [The Library](https://github.com/disler/the-library) for private-first catalogs of skills, agents, prompts, source references, and typed dependencies.
+
+You.md's bet: keep the brain, stack runtime, skills, and public stack examples mostly open and forkable; charge or gate only where hosted infrastructure matters, such as protected retrieval, sync, publishing, grants, connected tools, higher usage limits, and future agent-platform surfaces.
+
 ---
 
 ## How It Works

@@ -10,7 +10,7 @@ description: Start a local Claude/Codex/Cursor session with the user's identity,
 
 Use this skill at the beginning of a local-agent session, or when the user says "continue", "what should we do next", "use you.md", "use youstack", or asks you to make an existing repo smarter for agents.
 
-YouStack is the you.md operating layer for local agents: identity, project context, skills, memory, activity logs, and safe additive repo bootstrapping.
+YouStack is the you.md operating layer for local agents: identity, project context, skills, scripts, prompts, sub-agents, memory, activity logs, and safe additive repo bootstrapping.
 
 ## Identity Context
 
@@ -46,6 +46,7 @@ If neither is available, read the repo's normal instruction files first: `AGENTS
 4. Pick the highest-value next move from real context, not a generic command list.
 5. Act end-to-end: implement, verify, update trackers, and report what actually changed.
 6. Prefer additive changes to generated agent layers (`.you/`, `.claude/skills/youmd/`, `.codex/skills/youmd/`) before rewriting mature human-owned docs.
+7. When a repo already has canonical shared rules or skills elsewhere, add a pointer/managed block instead of duplicating the full text.
 
 ## Skill Routing
 
@@ -57,12 +58,14 @@ Use the available You.md skills as follows:
 - `proactive-context-fill` when identity or project context is thin.
 - `you-logs` when the user wants proof of which agents accessed context.
 - `meta-improve` after repeated sessions to convert corrections into better identity or skill instructions.
+- `youstack-maintainer` when a repo needs shared skills, scripts, prompts, sub-agents, source pointers, host adapters, or stack sync improved.
 
 ## Guardrails
 
 - Do not ask the user to paste files you can read locally.
 - Do not claim You.md pushed, published, linked, or wrote anything unless the tool or command actually succeeded.
 - Do not overwrite existing `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, or project-context files wholesale. Merge or add a managed block.
+- Do not copy repo-owned skills/prompts/scripts into a stack when a source pointer would keep the upstream repo canonical.
 - Do not stop at "here is a plan" when the user asked you to continue improving the stack.
 - Save durable learnings as memories or project notes when the host supports it.
 

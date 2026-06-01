@@ -320,7 +320,7 @@ Primary objects:
 - Grant: scoped authorization for a stack to read/write brain scopes or use shared You.md API/MCP.
 - Install: a local or remote record that a stack was installed into a host/project.
 - Repo sync binding: a GitHub repo/folder mapping for brain files, stacks, manifests, skills, and project context.
-- Reference intelligence: local ignored clones of `garrytan/gstack` and `garrytan/gbrain` plus generated task reports that keep YouStacks and the You.md brain aligned with the best current reference patterns.
+- Reference intelligence: local ignored clones of GStack, GBrain, Agent Scripts, and The Library plus generated task reports that keep YouStacks, the You.md brain, shared agent scripts, and stack catalogs aligned with the best current reference patterns.
 
 ## 8. Manifest Schema
 
@@ -848,6 +848,8 @@ The YouStacks/brain roadmap should be guided by daily local references:
 
 - `garrytan/gstack` -> YouStacks execution layer: local-first skills, host adapters, upgrade flows, eval-first quality, QA/review/release workflows, and agent operating rules.
 - `garrytan/gbrain` -> You.md brain layer: durable memory, context extraction, retrieval, provenance, sync, privacy/scopes, and agent startup contracts.
+- `steipete/agent-scripts` -> shared agent runtime layer: canonical `AGENTS.MD`, terse skills, dependency-light scripts, validation hooks, repo-owned skill pointers, and downstream pointer rules.
+- `disler/the-library` -> private catalog/distribution layer: reference-based skills/agents/prompts, typed dependencies, pull-on-demand installs, sync across devices/teams, and pure-agent cookbook operations.
 
 Local mechanics:
 
@@ -857,7 +859,7 @@ npm run references:sync
 
 Outputs:
 
-- `.reference-repos/garrytan/gstack` and `.reference-repos/garrytan/gbrain` as ignored local clones.
+- `.reference-repos/<owner>/<repo>` ignored local clones for all monitored upstream lighthouses.
 - `project-context/reference-intelligence/LATEST.md` with commit summaries and candidate task synthesis.
 - `project-context/reference-intelligence/TASKS.md` as the human review queue.
 
@@ -868,6 +870,20 @@ Rules:
 - Promote only changes that make YouStacks or the You.md brain simpler, safer, more useful, or more agent-native.
 - Do not copy large upstream files. Extract architecture patterns and implement them in the You.md style.
 - report no writes performed
+
+Product translation:
+
+- GStack keeps YouStacks honest as an installable local agent operating system.
+- GBrain keeps the brain layer honest as durable, private, retrievable context.
+- Agent Scripts keeps the shared agent-script layer honest: a small canonical repo, pointer-style downstream rules, validation, and portable helpers.
+- The Library keeps the distribution layer honest: private-first catalog, references instead of stale copies, typed dependencies, and agent-readable operations.
+
+Near-term You.md implications:
+
+- Add a stack/source catalog concept to YouStacks so skills, prompts, scripts, and sub-agents can point at canonical local paths or GitHub sources.
+- Teach `youstack-maintainer` to prefer source pointers over copies when a repo owns a skill.
+- Extend `youmd stack doctor` to warn about stale copied assets, missing typed dependencies, invalid skill front matter, and global-skill sprawl.
+- Keep public/open stacks inspectable and forkable, but keep private catalogs, protected prompts, private memory, connected tools, and high-usage hosted services behind You.md API/MCP grants.
 
 The smoke test should end with a plain statement equivalent to:
 

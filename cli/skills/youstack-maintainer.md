@@ -37,6 +37,7 @@ Keep stacks private by default. Never make a stack public, widen a scoped link, 
    - `project-context/feature-requests-active.md`
    - `project-context/TODO.md`
    - `project-context/reference-intelligence/TASKS.md`
+7. Upstream-aware preflight: if a stack change touches shared agent rules, skills, scripts, prompts, host adapters, or distribution, check the current reference-intelligence task list for relevant GStack, GBrain, Agent Scripts, or The Library signals before designing the change.
 
 ## Organize A Stack
 
@@ -50,6 +51,8 @@ For each stack, make sure it has:
 - Smoke checks or eval notes in `tests/`.
 - Docs in `docs/`.
 - Host adapters for Claude Code, Codex, and Cursor.
+- Optional pointer-catalog entries for repo-owned skills, prompts, scripts, agents, and examples that should stay canonical in their source repo instead of being copied.
+- Typed dependencies between skills, sub-agents, prompts, scripts, and protected capabilities so install/use flows can pull prerequisites before the requested capability.
 - A read-only diagnostic path for manifest bloat, route ambiguity, adapter drift, update hygiene, and public-readiness gaps.
 - An improvement policy and update policy.
 - A private/public/scoped sharing policy with `private` as the default.
@@ -65,10 +68,23 @@ Use safe signals first:
 - Repo diffs.
 - Repeated manual edits.
 - New docs or examples the user approves.
-- GStack/GBrain reference-intelligence tasks that are relevant.
+- Reference-intelligence tasks that are relevant:
+  - GStack for local-first skills, host adapters, evals, QA/review/release loops, and upgrade flows.
+  - GBrain for durable memory, retrieval, sync, provenance, privacy, and startup context.
+  - Agent Scripts for canonical shared AGENTS/skills/scripts/hooks, pointer-style downstream rules, skill validation, and portable helper ergonomics.
+  - The Library for private-first catalogs, reference-based installs, typed dependencies, and cross-device/team distribution.
 
 Make the smallest useful improvement. Update skills, workflows, docs, examples, tests, and generated adapters together when the change affects more than one surface. Run `youmd stack smoke` again.
-Run `youmd stack doctor` first when a change is triggered by route misses, bloat, stale adapters, memory/resource issues, or a GStack/GBrain reference-intelligence task.
+Run `youmd stack doctor` first when a change is triggered by route misses, bloat, stale adapters, memory/resource issues, or a reference-intelligence task.
+
+## Source Of Truth Rules
+
+- Prefer pointers over copies when a skill, prompt, script, or agent is owned by another repo and should improve there first.
+- Use managed blocks or generated adapter files for downstream repos; preserve repo-local rules below the managed pointer.
+- Keep helper scripts dependency-light and portable unless the manifest explicitly declares the runtime.
+- Validate skill front matter after edits and before commit or publish.
+- Never install public internet skills into a private stack without owner review.
+- Pull dependencies first when a stack capability declares `skill:*`, `agent:*`, `prompt:*`, `script:*`, or `protected:*` requirements.
 
 ## Visibility
 
@@ -103,3 +119,10 @@ BAMFStack is the reference proof for an open YouStack:
 - Sync rule: update stack files, docs, API/MCP references, prompts, and tests together.
 
 Copy the pattern, not the private implementation. Keep proprietary prompts, product internals, credentials, private creator data, and sensitive actions behind authenticated BAMF or You.md API/MCP surfaces.
+
+## External Inspiration Map
+
+- GStack: product feel for installable agent operating systems.
+- GBrain: product feel for a durable shared brain across agents.
+- Agent Scripts: product feel for canonical shared rules, skills, scripts, hooks, and repo-owned skill symlinks that stay simple enough to maintain.
+- The Library: product feel for a private-first catalog where agentic assets are referenced, pulled on demand, synced, and shared without forcing everything into a public marketplace.

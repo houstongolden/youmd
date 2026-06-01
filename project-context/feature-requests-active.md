@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-05-29
+Last Updated: 2026-06-01
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -10,6 +10,37 @@ Last Updated: 2026-05-29
 - Source: date + commit or conversation reference
 
 ---
+
+## Agent Stack Upstream Monitoring (from Jun 1 conversation)
+
+### 81. Add Agent Scripts and The Library to You.md's core upstream reference loop
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-01 — Houston request to use `steipete/agent-scripts` and keep it, `disler/the-library`, GStack, and GBrain monitored as core inspiration for You.md shared skills/scripts/context.
+**Request:** Make shared agent skills, scripts, prompts, context, memory, preferences, source catalogs, and cross-agent stack distribution a first-class You.md product goal; monitor `agent-scripts` and `the-library` alongside GStack/GBrain; audit current You.md gaps; add README credits and open-source/product-boundary direction.
+**Actionable Scope:**
+1. Add `steipete/agent-scripts` and `disler/the-library` to the local upstream reference monitor.
+2. Update project-context docs so You.md treats shared skills/scripts/prompts/context/memory/preferences/catalogs as core platform architecture.
+3. Audit what You.md already has and what should improve for elegance, simplicity, onboarding, stack catalogs, typed dependencies, and source-of-truth sync.
+4. Update `youstack-start` / `youstack-maintainer` guidance so host agents use upstream lessons when improving stacks.
+5. Add README hat-tip credits and clarify the mostly-open-source plus hosted/protected-service boundary.
+6. Retarget the daily Codex reference automation to summarize all monitored upstreams, not only GStack/GBrain.
+**Progress (2026-06-01):** Added the two repos to `scripts/reference-intelligence.mjs`; generated local ignored clones under `.reference-repos/steipete/agent-scripts` and `.reference-repos/disler/the-library`; updated `REFERENCE_INTELLIGENCE.md`, `YOUSTACKS_PRODUCT_LAYER_PRD.md`, `YOUSTACKS_IMPLEMENTATION_PLAN.md`, README credits, bundled YouStack skills, and `AGENT_STACK_UPSTREAM_AUDIT_2026-06-01.md`. The first expanded sync captured Agent Scripts `5dc3c24` and The Library `47f455c` with 13 bootstrap candidate tasks; the verification rerun correctly reports no new candidates because the local reference state is now current.
+
+## Homepage Minimal + Redirect Gate QA (from May 30 conversation)
+
+### 78. Make the homepage minimal and confirm cookie-gate redirects
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-05-30 — Houston feedback: "homepage is way too complicated" + "confirm /shell//dashboard redirect behavior"
+**Request:** Further simplify the marketing homepage so it feels minimal, clear, and intentional; confirm the cookie-based gate cleanly redirects unauthenticated users and does not allow `next=//...` open redirects.
+**Actionable Scope:**
+1. Reduce homepage section sprawl to a small, intentional sequence.
+2. Ensure auth gate redirects `/shell` + `/dashboard` to `/sign-in?next=/...` when unauthenticated.
+3. Sanitize `next` so `//evil.com` cannot be used as an open redirect and double-slash paths are normalized.
+4. Verify `next build` and a quick local `/shell` + `/dashboard` curl pass.
 
 ## You.md Vision Simplification (from May 27 conversation)
 

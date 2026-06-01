@@ -11,7 +11,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const referenceRoot = path.join(rootDir, ".reference-repos", "garrytan");
+const referenceRoot = path.join(rootDir, ".reference-repos");
 const outputDir = path.join(rootDir, "project-context", "reference-intelligence");
 const statePath = path.join(rootDir, ".reference-repos", "state.json");
 const now = new Date();
@@ -21,15 +21,29 @@ const repos = [
     id: "gstack",
     name: "GStack",
     url: "https://github.com/garrytan/gstack.git",
-    localDir: path.join(referenceRoot, "gstack"),
+    localDir: path.join(referenceRoot, "garrytan", "gstack"),
     youmdSurface: "YouStacks",
   },
   {
     id: "gbrain",
     name: "GBrain",
     url: "https://github.com/garrytan/gbrain.git",
-    localDir: path.join(referenceRoot, "gbrain"),
+    localDir: path.join(referenceRoot, "garrytan", "gbrain"),
     youmdSurface: "You.md brain/context/memory",
+  },
+  {
+    id: "agent-scripts",
+    name: "Agent Scripts",
+    url: "https://github.com/steipete/agent-scripts.git",
+    localDir: path.join(referenceRoot, "steipete", "agent-scripts"),
+    youmdSurface: "YouStacks shared agent runtime",
+  },
+  {
+    id: "the-library",
+    name: "The Library",
+    url: "https://github.com/disler/the-library.git",
+    localDir: path.join(referenceRoot, "disler", "the-library"),
+    youmdSurface: "YouStacks catalog/distribution",
   },
 ];
 
@@ -154,6 +168,36 @@ function classifyTask(repo, commit) {
     }
   }
 
+  if (repo.id === "agent-scripts") {
+    if (/(agents\.md|claude|codex|cursor|global|pointer|downstream|routing)/.test(haystack)) {
+      return task("Cross-agent instruction portability", "Review whether this upstream shared-instruction pattern should improve `youmd skill init-project`, host adapters, or repo-local pointer rules.", source);
+    }
+    if (/(skill|skill\.md|skills\/|frontmatter|description|validate)/.test(haystack)) {
+      return task("YouStacks skill ergonomics", "Compare this skill packaging or validation pattern against bundled skills, stack manifests, and `youmd stack doctor` warnings.", source);
+    }
+    if (/(script|bin|hook|committer|browser|docs-list|dependency-free|portable)/.test(haystack)) {
+      return task("Portable helper scripts", "Check whether this dependency-light helper or hook pattern should become a YouStack script convention, smoke check, or adapter utility.", source);
+    }
+    if (/(symlink|canonical|sync|repo-owned|shared|submodule)/.test(haystack)) {
+      return task("Shared stack source-of-truth", "Evaluate whether this canonical repo/symlink/sync pattern should simplify user-owned GitHub repo sync or repo-owned skill exposure.", source);
+    }
+  }
+
+  if (repo.id === "the-library") {
+    if (/(library\.yaml|catalog|reference|source|pointer|github|local path|raw.githubusercontent)/.test(haystack)) {
+      return task("YouStacks reference catalog", "Review whether this pointer-catalog pattern should improve stack manifests, skill source references, or private/public stack distribution.", source);
+    }
+    if (/(private|team|device|sync|fork|clone|share|distribution)/.test(haystack)) {
+      return task("Private-first stack distribution", "Compare this private/team/device distribution model against You.md scoped stack sharing, GitHub sync, grants, and hosted mirrors.", source);
+    }
+    if (/(agent|skill|prompt|requires|dependency|recursive|typed)/.test(haystack)) {
+      return task("Typed agentic dependencies", "Check whether typed skill/agent/prompt dependencies should be added to YouStack manifests, routing, or doctor diagnostics.", source);
+    }
+    if (/(cookbook|install|use|push|remove|list|search|justfile)/.test(haystack)) {
+      return task("Agent-run stack operations", "Evaluate whether cookbook-style agent workflows or terminal shortcuts should simplify YouStack install/use/push/sync UX.", source);
+    }
+  }
+
   if (/(readme|docs|example|quickstart|guide)/.test(haystack)) {
     return task("Docs/product education", "Compare this upstream docs/example change against the homepage, `/docs`, quickstarts, and stack/brain examples.", source);
   }
@@ -201,11 +245,18 @@ function markdownForRepo(repo, info, commits, previousCommit) {
 }
 
 function renderReport(results, tasks) {
-  return `# GStack / GBrain Reference Intelligence
+  return `# You.md Reference Intelligence
 
 Last updated: ${now.toISOString()}
 
-You.md keeps Garry Tan's GStack and GBrain as local reference repos, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under \`.reference-repos/\` and are ignored by git.
+You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under \`.reference-repos/\` and are ignored by git.
+
+Tracked lighthouses:
+
+- GStack: installable local-first agent operating systems, skills, host adapters, evals, QA/review/release loops.
+- GBrain: durable shared brain, memory, retrieval, sync, provenance, privacy, and startup context.
+- Agent Scripts: canonical shared AGENTS/skills/scripts/hook patterns across Codex/Claude-style agents.
+- The Library: private-first pointer catalog for skills, agents, prompts, dependencies, and cross-device/team distribution.
 
 Run:
 
@@ -226,7 +277,7 @@ function renderTasks(tasks) {
 
 Last updated: ${now.toISOString()}
 
-Use this as a review queue, not an automatic mandate. Only promote an item into \`TODO.md\` or implementation when it clearly improves YouStacks, You.md brain/context, memory, profiles, API/MCP, safety, or docs.
+Use this as a review queue, not an automatic mandate. Only promote an item into \`TODO.md\` or implementation when it clearly improves YouStacks, You.md brain/context, memory, profiles, API/MCP, source-of-truth sync, safety, or docs.
 
 ${tasks.length === 0 ? "- [ ] No new candidates from this sync." : tasks.map((item) => `- [ ] ${item.surface}\n  - Source: ${item.source}\n  - You.md review: ${item.action}`).join("\n")}
 `;

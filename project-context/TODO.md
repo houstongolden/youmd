@@ -1,11 +1,23 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-05-28
+Last Updated: 2026-06-01
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-06-01
+- [x] Expand reference intelligence from GStack/GBrain to also monitor `steipete/agent-scripts` and `disler/the-library`
+- [x] Write `project-context/AGENT_STACK_UPSTREAM_AUDIT_2026-06-01.md` with the You.md translation, gaps, and next implementation slices
+- [x] Update YouStack starter/maintainer skills with pointer-catalog, typed dependency, source-of-truth, and upstream-aware maintenance guidance
+- [x] Add README hat-tip credits and mostly-open-source / hosted-protected-boundary direction
+
+### 2026-05-30
+- [x] Re-sync GStack/GBrain reference intelligence and refresh `project-context/reference-intelligence/*`
+- [x] Simplify the marketing homepage to a minimal, intentional flow (remove section sprawl)
+- [x] Harden `/sign-in` + `/sign-up` `next` redirect handling to prevent protocol-relative open redirects (`next=//...`)
+- [x] Add defensive fetch timeouts + Tailwind content scoping to prevent Next build stalls; verify `npm run build` under Node 20
 
 ### 2026-05-28
 - [x] Finish the product-language cleanup across remaining app metadata, auth/onboarding copy, docs snippets, profile/share surfaces, dashboard panes, README, PRD, schema comments, and sample profiles; deploy and production-smoke on Vercel deployment `dpl_D2ZEuhDf5LUQFzW8JToASft64e5m`
