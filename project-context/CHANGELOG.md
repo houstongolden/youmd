@@ -8,7 +8,8 @@
 - Corrected the README frontend dev-server port from 3000 to 3100
 
 ### Verification
-- Passed `npm run agent-docs:ci`, live `npm run llms:smoke -- --base-url https://www.you.md`, and `git diff --check`; Vercel deployment verification pending after push
+- Passed `npm run agent-docs:ci`, live `npm run llms:smoke -- --base-url https://www.you.md`, and `git diff --check`
+- Verified Vercel production deployment `dpl_9BGpnTgiBMLLDGoNsWvfkdhtTDLY`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — Agent Docs CI Guardrail
 
