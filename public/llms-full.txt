@@ -1,5 +1,7 @@
 # You.md Full Agent Context
 
+> Generated full agent context. Source hash: a9ebbf009957a8347e6df9eb842bc408598f2622e1d12eb2e6899fc933e92a46. CLI version: 0.6.23. Endpoints: 68. MCP tools: 23. Reference intelligence: 2026-06-02T20:44:54.591Z.
+
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
 This file is the full-context companion to `/llms.txt`. Use it when an agent needs one plain-text read before choosing a docs page, API endpoint, MCP tool, or local runtime command.
@@ -49,6 +51,11 @@ Public routes are designed for agents:
 GET /api/v1/profiles?username=houstongolden
 Accept: application/vnd.you-md.v1+json
 ```
+
+Public identity endpoints:
+
+- `GET /api/v1/check-username`: Check availability (Public or rate-limited)
+- `GET /api/v1/profiles`: List all profiles (no params) or get single profile (?username=xxx) (Public or rate-limited)
 
 Use public profile responses for non-sensitive context: name, role, public bio, projects, preferences, public stacks, social links, schema metadata, and public agent-readable profile data.
 
@@ -102,6 +109,12 @@ Discovery:
 GET /.well-known/mcp.json
 ```
 
+Generated MCP endpoints:
+
+- `GET /.well-known/mcp.json`: MCP discovery metadata for agent clients (Public or rate-limited)
+- `GET /api/v1/mcp`: MCP discovery ping and HTTP transport metadata (JSON-RPC, optional Bearer API key)
+- `POST /api/v1/mcp`: JSON-RPC MCP endpoint for web-capable clients (JSON-RPC, optional Bearer API key)
+
 Example JSON-RPC request:
 
 ```json
@@ -118,16 +131,16 @@ Example JSON-RPC request:
 
 Important MCP tools and resources:
 
-- `whoami`: verify the current authenticated identity.
-- `get_identity`: retrieve identity context.
-- `get_agent_brief`: retrieve identity plus repo/project startup context for local agents.
-- `get_project_context`: retrieve local project context.
-- `add_memory`: save durable memory.
-- `add_project_memory`: save durable project-specific memory.
-- `get_stack_manifest`: inspect a local YouStack manifest.
-- `get_stack_capabilities`: list stack capabilities.
-- `route_stack_request`: route a request to a stack capability.
-- `smoke_stack`: run read-only stack smoke validation.
+- `whoami`: Return a compact ~500-char identity summary: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation - it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSON.
+- `get_identity`: Get the user's complete you.md identity bundle. Returns compact (default), full JSON, or human-readable markdown. For the fastest orient, call whoami first; call get_identity when you need full detail (preferences, voice, directives, projects).
+- `get_agent_brief`: Return a YouStack startup brief for local agents. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines compact identity, current repo instructions, project-context active requests, open TODOs, installed skills, and recommended next moves so the agent can act without asking the user to re-explain...
+- `get_project_context`: Get the full project context for the current or named project - PRD, TODO, features, decisions, changelog, and project memories. Returns a JSON object with all project-context/ files. Use when starting work on a project to understand what has been built, what is planned, and what decisions have been made.
+- `add_memory`: Save a memory about the user - facts, preferences, decisions, or context learned during this conversation. Memories persist across sessions and inform ALL future agent interactions. Use proactively when you learn something important about the user (a preference, a decision, a project detail). Requires authentication.
+- `add_project_memory`: Save a memory scoped to a specific project. Unlike add_memory (which is global), project memories are stored locally in the project-context/ directory and only surface when working on that project. Use for architecture decisions, bug context, and feature-specific learnings.
+- `get_stack_manifest`: Return the current local YouStack manifest discovered from cwd, or from a provided manifest/stack path. Use before trusting local stack files.
+- `get_stack_capabilities`: Return the local YouStack capability map, including local/static capabilities and protected API/MCP capabilities declared by the manifest.
+- `route_stack_request`: Route a natural-language request to the safest matching local YouStack capability. This is deterministic and read-only.
+- `smoke_stack`: Run read-only local YouStack smoke validation. It parses the manifest, verifies required files/checksums, checks adapter declarations, and performs no writes.
 
 ## API
 
@@ -138,6 +151,11 @@ GET /api/v1/docs/reference
 GET /api/v1/docs/openapi.json
 ```
 
+Generated docs endpoints:
+
+- `GET /api/v1/docs/openapi.json`: OpenAPI-style inventory generated from shipped You.md API routes (Public or rate-limited)
+- `GET /api/v1/docs/reference`: Machine-readable docs manifest generated from routes and MCP tools (Public or rate-limited)
+
 Public identity:
 
 ```http
@@ -146,6 +164,10 @@ GET /api/v1/profiles?username=<username>
 GET /schema/you-md/v1.json
 GET /ctx/<username>/<token>
 ```
+
+Schema endpoints:
+
+- `GET /schema/you-md/v1.json`: Canonical you-md/v1 public brain JSON Schema (Public or rate-limited)
 
 Authenticated user, private context, and memory endpoints use Bearer API keys:
 
@@ -201,10 +223,8 @@ youmd stack link --path stacks/<name> --hosts codex,claude,cursor --target .
 
 Shared HTTP stack routes:
 
-```http
-GET /api/v1/stacks/capabilities
-POST /api/v1/stacks/route
-```
+- `GET /api/v1/stacks/capabilities`: Shared YouStack capability contract and API/MCP threshold map (Public or rate-limited)
+- `POST /api/v1/stacks/route`: Deterministically route a request against default or manifest-supplied YouStack capabilities (Public or rate-limited)
 
 Route request example:
 
@@ -259,10 +279,10 @@ Agents should prefer read-before-write and route-before-action:
 
 You.md keeps these as first-class inspiration and monitoring sources:
 
-- GStack: local-first skills, specialist workflows, host adapters, upgrade flows, diagnostics, smoke checks, evals, and agent workflows.
-- GBrain: durable memory architecture, retrieval hygiene, provenance, sync, context extraction, and privacy boundaries.
-- Agent Scripts: practical shared scripts, command layout, local workflow ergonomics, and installer conventions.
-- The Library: catalog-style organization for prompts, commands, reusable context, examples, and bootstrap material.
+- GStack: https://github.com/garrytan/gstack (main @ 3bef43bc5ad8; No new commits since 3bef43b)
+- GBrain: https://github.com/garrytan/gbrain (master @ 0bfe0d0c7ebd; No new commits since 0bfe0d0)
+- Agent Scripts: https://github.com/steipete/agent-scripts (main @ 5dc3c2435ba7; No new commits since 5dc3c24)
+- The Library: https://github.com/disler/the-library (main @ 47f455cd139b; No new commits since 47f455c)
 
 The monitor writes:
 

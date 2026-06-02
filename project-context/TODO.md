@@ -8,6 +8,10 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Add a generated `llms.txt` / `llms-full.txt` pipeline that derives root agent docs from the generated docs reference and reference-intelligence state
+- [x] Add `npm run llms:generate` and `npm run llms:check`, and wire them into `docs:generate` / `docs:check`
+- [x] Refresh reference intelligence while generating agent docs and confirm no new upstream task candidates
+- [x] Verify generated agent docs with docs checks, TypeScript, targeted ESLint, ASCII scan, whitespace checks, and local HTTP smoke
 - [x] Add root-level agent-readable docs surfaces with `public/llms.txt` and `public/llms-full.txt`
 - [x] Wire agent docs into `/docs#agent-docs`, `robots.txt`, and `sitemap.xml`
 - [x] Verify the new agent docs with docs reference check, TypeScript, targeted ESLint, whitespace checks, and local HTTP smoke on `localhost:3100`

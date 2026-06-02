@@ -1,6 +1,6 @@
 # You.md Reference Intelligence
 
-Last updated: 2026-06-02T18:23:09.474Z
+Last updated: 2026-06-02T20:44:54.591Z
 
 You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under `.reference-repos/` and are ignored by git.
 

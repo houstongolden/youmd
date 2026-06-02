@@ -1,5 +1,22 @@
 # You.md — Changelog
 
+## 2026-06-02 — Generated Agent Docs Pipeline
+
+### Docs Automation
+- Added `scripts/generate-llms-docs.mjs` to generate `public/llms.txt` and `public/llms-full.txt` from `src/generated/docs-reference.ts` plus `project-context/reference-intelligence/LATEST.md`
+- Added `npm run llms:generate` and `npm run llms:check`
+- Wired `docs:generate` and `docs:check` so root agent docs are kept current with shipped routes, MCP tools, CLI metadata, source hash, and monitored upstream reference heads
+- Improved generated docs-reference summaries for the OpenAPI inventory and `you-md/v1` schema route
+- Updated `/docs#agent-docs` so maintainers know the root agent docs are generated artifacts
+
+### Reference Intelligence
+- Re-ran `npm run references:sync`; refreshed `project-context/reference-intelligence/LATEST.md` and `TASKS.md`
+- Confirmed the current upstream sync produced no new task candidates
+
+### Verification
+- Passed `npm run docs:generate`, `npm run docs:check`, `npx tsc --noEmit`, targeted ESLint on touched generator/docs/generated files, ASCII scan for root agent docs, and `git diff --check`
+- Local webpack dev server verified generated `/llms.txt`, `/llms-full.txt`, `/docs`, `robots.txt`, and `sitemap.xml` on `http://localhost:3100`
+
 ## 2026-06-02 — Agent-Readable Docs Surfaces
 
 ### Docs / Discovery

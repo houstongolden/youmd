@@ -2285,12 +2285,16 @@ youmd mcp --json`}</CodeBlock>
               discover the platform before crawling the app. Treat{" "}
               <InlineCode>/llms.txt</InlineCode> as the short index and{" "}
               <InlineCode>/llms-full.txt</InlineCode> as the full context pack
-              for docs, API, MCP, runtime, stack routing, and smoke checks.
+              for docs, API, MCP, runtime, stack routing, and smoke checks. Both
+              files are generated from the shipped docs reference and upstream
+              reference-intelligence state.
             </P>
             <CommandTable
               commands={[
                 { cmd: "GET /llms.txt", desc: "Short Markdown index for agents: docs, API, MCP, runtime, stacks, privacy, and source links" },
                 { cmd: "GET /llms-full.txt", desc: "Full plain-text agent context with order of operations, commands, API/MCP examples, stack rules, and smoke checks" },
+                { cmd: "npm run llms:check", desc: "Verify the root agent docs are current with the generated docs reference and reference-intelligence state" },
+                { cmd: "npm run llms:generate", desc: "Regenerate the root agent docs when routes, MCP tools, CLI metadata, or upstream references change" },
                 { cmd: "GET /api/v1/docs/reference", desc: "Generated manifest for shipped routes, MCP tools, CLI version, counts, and source hash" },
                 { cmd: "GET /api/v1/docs/openapi.json", desc: "OpenAPI-style inventory for API reference generators and agent tool builders" },
                 { cmd: "GET /.well-known/mcp.json", desc: "MCP discovery metadata for web-capable clients" },

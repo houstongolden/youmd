@@ -11,6 +11,24 @@ Last Updated: 2026-06-02
 
 ---
 
+## Generated Agent Docs Pipeline (from Jun 2 conversation)
+
+### 86. Make root agent docs generated and drift-checked
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — Houston said "continue comprehensively" after the root `llms.txt` / `llms-full.txt` surfaces shipped.
+**Request:** Continue the shared agent docs/context improvements comprehensively by making the newly added agent-readable docs easier to maintain, more robust, and less likely to drift from shipped routes, MCP tools, CLI metadata, and upstream reference intelligence.
+**Actionable Scope:**
+1. Add a generator for `public/llms.txt` and `public/llms-full.txt`.
+2. Add `llms:generate` and `llms:check` scripts.
+3. Wire `docs:generate`, `docs:check`, and `prebuild` so root agent docs are regenerated/checked with the existing docs reference path.
+4. Pull concrete endpoint/tool counts, docs/MCP/YouStacks/schema/public-profile endpoints, CLI version, source hash, and upstream reference heads into the generated files.
+5. Refresh reference-intelligence artifacts and confirm no new upstream task candidates.
+6. Update `/docs#agent-docs` so maintainers know the root agent files are generated.
+7. Verify docs generation/checks, TypeScript, targeted lint, ASCII safety, local HTTP smoke, then commit/push/deploy and production-smoke.
+**Progress (2026-06-02):** Added `scripts/generate-llms-docs.mjs`, wired `npm run llms:generate` and `npm run llms:check`, connected root agent docs to `docs:generate`/`docs:check`, refreshed the reference-intelligence artifacts with no new task candidates, improved generated docs-reference summaries for OpenAPI and schema routes, regenerated `src/generated/*`, `public/llms.txt`, and `public/llms-full.txt`, and passed local docs checks, TypeScript, targeted ESLint, ASCII scan, `git diff --check`, and local HTTP smoke on `http://localhost:3100`.
+
 ## Agent-Readable Docs Surfaces (from Jun 2 conversation)
 
 ### 85. Add root-level `llms.txt` / `llms-full.txt` agent context surfaces
