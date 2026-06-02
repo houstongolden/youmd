@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Root Manual Stack Truth Guardrail (from Jun 2 conversation)
 
 ### 96. Align root agent manuals with current app stack and first-party auth
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_3xHhPeCq4za3oSHGbN7xX5Y3nujs` for commit `8bf8c18` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26853067906` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — continuation of Houston's request to keep improving shared agent docs/context comprehensively after committing and pushing to `main`.
 **Request:** Continue improving repo-visible agent context by removing stale stack/auth claims from root manuals and making local CI catch future drift.
 **Actionable Scope:**
@@ -24,7 +24,7 @@ Last Updated: 2026-06-02
 2. Replace stale Clerk auth rows with first-party passwordless web sessions, email-code CLI login, signed cookies/JWKS, and scoped API keys.
 3. Extend `scripts/check-agent-doc-handoff.mjs` so root manual stack markers are derived from package metadata where possible.
 4. Run local checks, commit, push to `main`, and verify the deployment receipts.
-**Progress (2026-06-02):** Updated root manuals from Next `16.1.6` to `16.2.2`, from Framer Motion wording to the installed `motion` package, and from stale Clerk rows to first-party passwordless auth rows; extended the handoff checker to derive Next/React/Motion/Convex versions from `package.json` and require the active auth/JWKS rows; passed `npm run agent-docs:ci`, stale root-manual grep for `Clerk` / `16.1.6` / `Framer Motion`, and `git diff --check`; push and production verification are next.
+**Progress (2026-06-02):** Updated root manuals from Next `16.1.6` to `16.2.2`, from Framer Motion wording to the installed `motion` package, and from stale Clerk rows to first-party passwordless auth rows; extended the handoff checker to derive Next/React/Motion/Convex versions from `package.json` and require the active auth/JWKS rows; passed `npm run agent-docs:ci`, stale root-manual grep for `Clerk` / `16.1.6` / `Framer Motion`, and `git diff --check`; pushed commit `8bf8c18`; GitHub Actions run `26853067906` passed `Check Generated Agent Docs`; Vercel deployment `dpl_3xHhPeCq4za3oSHGbN7xX5Y3nujs` is Ready and aliased to `https://www.you.md` / `https://you.md`; live production `npm run llms:smoke -- --base-url https://www.you.md` passed all checks.
 
 ## Dynamic Handoff CLI Version Guardrail (from Jun 2 conversation)
 

@@ -8,7 +8,9 @@
 - Extended `scripts/check-agent-doc-handoff.mjs` so root manual stack-version markers are derived from `package.json` and active auth markers are required in both manuals
 
 ### Verification
-- Passed `npm run agent-docs:ci`, stale root-manual grep for `Clerk` / `16.1.6` / `Framer Motion`, and `git diff --check`; push, GitHub Actions, and Vercel production receipts are next
+- Passed `npm run agent-docs:ci`, stale root-manual grep for `Clerk` / `16.1.6` / `Framer Motion`, and `git diff --check`
+- Verified GitHub Actions run `26853067906` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_3xHhPeCq4za3oSHGbN7xX5Y3nujs`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — Dynamic CLI Handoff Version Check
 
