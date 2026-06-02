@@ -1,7 +1,7 @@
 # You.md — Current State
 
-Last Updated: 2026-06-01
-Latest Verified Production Web Commit: db6a01f feat: make youstacks curl-first
+Last Updated: 2026-06-02
+Latest Verified Production Web Commit: a00bc1f docs: harden codex chat hygiene
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---

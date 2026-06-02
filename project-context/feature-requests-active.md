@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Generated Agent Docs Pipeline (from Jun 2 conversation)
 
 ### 86. Make root agent docs generated and drift-checked
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_J5wdK3PHkCED8ZoFyW7bFvRYNtqT` for commit `a00bc1f` completed successfully and is aliased to `https://www.you.md` / `https://you.md`.
 **Source:** 2026-06-02 — Houston said "continue comprehensively" after the root `llms.txt` / `llms-full.txt` surfaces shipped.
 **Request:** Continue the shared agent docs/context improvements comprehensively by making the newly added agent-readable docs easier to maintain, more robust, and less likely to drift from shipped routes, MCP tools, CLI metadata, and upstream reference intelligence.
 **Actionable Scope:**
@@ -27,7 +27,7 @@ Last Updated: 2026-06-02
 5. Refresh reference-intelligence artifacts and confirm no new upstream task candidates.
 6. Update `/docs#agent-docs` so maintainers know the root agent files are generated.
 7. Verify docs generation/checks, TypeScript, targeted lint, ASCII safety, local HTTP smoke, then commit/push/deploy and production-smoke.
-**Progress (2026-06-02):** Added `scripts/generate-llms-docs.mjs`, wired `npm run llms:generate` and `npm run llms:check`, connected root agent docs to `docs:generate`/`docs:check`, refreshed the reference-intelligence artifacts with no new task candidates, improved generated docs-reference summaries for OpenAPI and schema routes, regenerated `src/generated/*`, `public/llms.txt`, and `public/llms-full.txt`, and passed local docs checks, TypeScript, targeted ESLint, ASCII scan, `git diff --check`, and local HTTP smoke on `http://localhost:3100`.
+**Progress (2026-06-02):** Added `scripts/generate-llms-docs.mjs`, wired `npm run llms:generate` and `npm run llms:check`, connected root agent docs to `docs:generate`/`docs:check`, refreshed the reference-intelligence artifacts with no new task candidates, improved generated docs-reference summaries for OpenAPI and schema routes, regenerated `src/generated/*`, `public/llms.txt`, and `public/llms-full.txt`, and passed local docs checks, TypeScript, targeted ESLint, ASCII scan, `git diff --check`, and local HTTP smoke on `http://localhost:3100`. Production verification passed on deployment `dpl_J5wdK3PHkCED8ZoFyW7bFvRYNtqT`: live `/llms.txt` includes generated source hash, CLI version, route/tool counts, and reference-intelligence markers; `/llms-full.txt` includes generated endpoint/tool/upstream sections; `/docs` includes `llms:check` / `llms:generate`; `robots.txt` and `sitemap.xml` still expose the root docs.
 
 ## Agent-Readable Docs Surfaces (from Jun 2 conversation)
 

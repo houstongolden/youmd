@@ -16,6 +16,7 @@
 ### Verification
 - Passed `npm run docs:generate`, `npm run docs:check`, `npx tsc --noEmit`, targeted ESLint on touched generator/docs/generated files, ASCII scan for root agent docs, and `git diff --check`
 - Local webpack dev server verified generated `/llms.txt`, `/llms-full.txt`, `/docs`, `robots.txt`, and `sitemap.xml` on `http://localhost:3100`
+- Verified Vercel production deployment `dpl_J5wdK3PHkCED8ZoFyW7bFvRYNtqT`, aliased to `https://www.you.md` and `https://you.md`; live generated `/llms.txt`, `/llms-full.txt`, `/docs`, `robots.txt`, and `sitemap.xml` smoke checks passed
 
 ## 2026-06-02 — Agent-Readable Docs Surfaces
 
