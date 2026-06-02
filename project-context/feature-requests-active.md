@@ -11,6 +11,21 @@ Last Updated: 2026-06-02
 
 ---
 
+## Agent Docs Handoff CI Coverage (from Jun 2 conversation)
+
+### 91. Guard README and root agent-manual generated-doc handoffs in CI
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — Houston said "commit and push to main - then continue" after the agent-manual docs preflight shipped.
+**Request:** Keep improving the shared agent docs/context layer by ensuring repo-visible handoff surfaces do not drift or disappear after they were added to README, `AGENTS.md`, and `CLAUDE.md`.
+**Actionable Scope:**
+1. Add a CI check that asserts README, `AGENTS.md`, and `CLAUDE.md` contain the generated-doc URLs and release-check commands.
+2. Wire that check into `npm run agent-docs:ci`.
+3. Expand `.github/workflows/agent-docs.yml` path filters so README and root agent manuals trigger the workflow.
+4. Verify locally, commit, push to `main`, and production-smoke the resulting deployment.
+**Progress (2026-06-02):** Added `scripts/check-agent-doc-handoff.mjs`, wired it into `npm run agent-docs:ci`, and added README/root agent manuals plus the new script to the agent-docs workflow path filters; passed `npm run agent-docs:ci`, workflow path marker check, and `git diff --check`; push, GitHub Actions status, deployment, and production smoke pending.
+
 ## Agent Manual Generated Docs Preflight (from Jun 2 conversation)
 
 ### 90. Add generated-docs preflight to root agent manuals

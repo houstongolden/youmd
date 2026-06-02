@@ -8,6 +8,9 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Add `scripts/check-agent-doc-handoff.mjs` to assert README, `AGENTS.md`, and `CLAUDE.md` keep generated-doc URLs and release-check commands
+- [x] Wire the handoff marker check into `npm run agent-docs:ci`
+- [x] Expand `.github/workflows/agent-docs.yml` path filters so README and root agent manuals trigger the agent-docs guardrail
 - [x] Add generated-docs preflight blocks to root `AGENTS.md` and `CLAUDE.md` so future coding agents start from `/llms.txt`, `/llms-full.txt`, docs reference, OpenAPI, MCP discovery, and stack capabilities
 - [x] Correct stale root agent-manual CLI version references to `youmd 0.6.23`
 - [x] Add a README "For Agents" handoff to the generated `/llms.txt`, `/llms-full.txt`, docs reference, OpenAPI, MCP discovery, stack capabilities, and release smoke commands

@@ -15,7 +15,7 @@
     "llms:generate": "node scripts/generate-llms-docs.mjs",
     "llms:check": "node scripts/generate-llms-docs.mjs --check",
     "llms:smoke": "node scripts/smoke-agent-docs.mjs",
-    "agent-docs:ci": "npm run docs:check && node --check scripts/generate-docs-reference.mjs && node --check scripts/generate-llms-docs.mjs && node --check scripts/smoke-agent-docs.mjs && npx eslint scripts/generate-docs-reference.mjs scripts/generate-llms-docs.mjs scripts/smoke-agent-docs.mjs src/generated/docs-reference.ts src/generated/openapi.ts 'src/app/(app)/docs/docs-content.tsx'",
+    "agent-docs:ci": "npm run docs:check && node --check scripts/generate-docs-reference.mjs && node --check scripts/generate-llms-docs.mjs && node --check scripts/smoke-agent-docs.mjs && node --check scripts/check-agent-doc-handoff.mjs && node scripts/check-agent-doc-handoff.mjs && npx eslint scripts/generate-docs-reference.mjs scripts/generate-llms-docs.mjs scripts/smoke-agent-docs.mjs scripts/check-agent-doc-handoff.mjs src/generated/docs-reference.ts src/generated/openapi.ts 'src/app/(app)/docs/docs-content.tsx'",
     "references:sync": "node scripts/reference-intelligence.mjs",
     "codex:chat-hygiene": "node scripts/codex-chat-hygiene.mjs",
     "prebuild": "npm run docs:generate",

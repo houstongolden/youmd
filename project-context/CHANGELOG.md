@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-02 — Agent Docs Handoff CI Coverage
+
+### CI / Docs
+- Added `scripts/check-agent-doc-handoff.mjs` to assert README, `AGENTS.md`, and `CLAUDE.md` keep the generated-doc URLs, MCP/stack URLs, and release-check commands
+- Wired the handoff marker check into `npm run agent-docs:ci`
+- Expanded `.github/workflows/agent-docs.yml` path filters so README and root agent manuals trigger the agent-docs workflow
+
+### Verification
+- Passed `npm run agent-docs:ci`, workflow path marker check, and `git diff --check`; push, GitHub Actions status, Vercel deployment, and production smoke pending
+
 ## 2026-06-02 — Agent Manual Docs Preflight
 
 ### Agent Context
