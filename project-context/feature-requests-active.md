@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Public Agent Docs Guardrail Wording (from Jun 2 conversation)
 
 ### 99. Publish the expanded handoff-checker scope in generated and web docs
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_6Y696yy1PZyoCQ1Efy38Y7MBvRbe` for commit `930bd36` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26853627596` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — continuation after the forbidden stale-marker guardrail was committed and pushed.
 **Request:** Continue comprehensively by ensuring the public agent-facing docs describe the expanded source-repo guardrail accurately.
 **Actionable Scope:**
@@ -24,7 +24,7 @@ Last Updated: 2026-06-02
 2. Update `/docs#agent-docs` command copy with the same expanded required/forbidden marker scope.
 3. Extend `scripts/smoke-agent-docs.mjs` so live production smoke verifies the expanded wording in `/llms-full.txt` and `/docs`.
 4. Regenerate root agent docs, run local checks, commit, push to `main`, and verify deployment receipts.
-**Progress (2026-06-02):** Updated `scripts/generate-llms-docs.mjs`, `src/app/(app)/docs/docs-content.tsx`, and `scripts/smoke-agent-docs.mjs`; regenerated `public/llms.txt` and `public/llms-full.txt`; passed `npm run agent-docs:ci`, `npm run llms:check`, expanded wording marker grep, and `git diff --check`; push and production verification are next.
+**Progress (2026-06-02):** Updated `scripts/generate-llms-docs.mjs`, `src/app/(app)/docs/docs-content.tsx`, and `scripts/smoke-agent-docs.mjs`; regenerated `public/llms.txt` and `public/llms-full.txt`; passed `npm run agent-docs:ci`, `npm run llms:check`, expanded wording marker grep, and `git diff --check`; pushed commit `930bd36`; GitHub Actions run `26853627596` passed `Check Generated Agent Docs`; Vercel deployment `dpl_6Y696yy1PZyoCQ1Efy38Y7MBvRbe` is Ready and aliased to `https://www.you.md` / `https://you.md`; live production `npm run llms:smoke -- --base-url https://www.you.md` passed the expanded wording checks.
 
 ## Forbidden Stale Handoff Markers (from Jun 2 conversation)
 

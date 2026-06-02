@@ -9,7 +9,9 @@
 - Regenerated `public/llms.txt` and `public/llms-full.txt`
 
 ### Verification
-- Passed `npm run agent-docs:ci`, `npm run llms:check`, expanded wording marker grep, and `git diff --check`; push, GitHub Actions, and Vercel production receipts are next
+- Passed `npm run agent-docs:ci`, `npm run llms:check`, expanded wording marker grep, and `git diff --check`
+- Verified GitHub Actions run `26853627596` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_6Y696yy1PZyoCQ1Efy38Y7MBvRbe`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed the expanded wording checks
 
 ## 2026-06-02 — Forbidden Stale Handoff Markers
 

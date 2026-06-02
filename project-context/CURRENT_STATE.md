@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-06-02
-Latest Verified Production Web Commit: ed0d62a ci: reject stale handoff markers
+Latest Verified Production Web Commit: 930bd36 docs: publish expanded handoff guardrail scope
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---
