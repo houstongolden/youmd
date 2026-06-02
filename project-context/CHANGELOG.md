@@ -9,7 +9,9 @@
 - Expanded `.github/workflows/agent-docs.yml` path filters so PRD and architecture changes trigger `npm run agent-docs:ci`
 
 ### Verification
-- Passed `npm run agent-docs:ci`, workflow path marker check, stale architecture/PRD Clerk-era grep, and `git diff --check`; push, GitHub Actions, and Vercel production receipts are next
+- Passed `npm run agent-docs:ci`, workflow path marker check, stale architecture/PRD Clerk-era grep, and `git diff --check`
+- Verified GitHub Actions run `26853267125` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_4DtvTt6comrhxsy7mkPFisPtA1BF`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — Root Manual Stack Truth Guardrail
 

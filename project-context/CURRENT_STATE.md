@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-06-02
-Latest Verified Production Web Commit: 8bf8c18 docs: align root manual stack truth
+Latest Verified Production Web Commit: bb73faa docs: align auth architecture context
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---

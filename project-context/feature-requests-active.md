@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Architecture Auth Source-Of-Truth Cleanup (from Jun 2 conversation)
 
 ### 97. Remove stale Clerk-era auth language from active PRD/architecture docs
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_4DtvTt6comrhxsy7mkPFisPtA1BF` for commit `bb73faa` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26853267125` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — continuation of Houston's request to keep improving shared agent docs/context comprehensively after committing and pushing to `main`.
 **Request:** Continue improving project-context source-of-truth docs so future agents see the current first-party passwordless auth architecture instead of obsolete Clerk-era language.
 **Actionable Scope:**
@@ -25,7 +25,7 @@ Last Updated: 2026-06-02
 3. Extend `scripts/check-agent-doc-handoff.mjs` so active PRD/architecture auth markers are checked locally.
 4. Expand `.github/workflows/agent-docs.yml` path filters so PRD/architecture edits trigger the guardrail.
 5. Run local checks, commit, push to `main`, and verify the deployment receipts.
-**Progress (2026-06-02):** Updated active architecture/PRD auth docs away from stale Clerk-era provider wording while keeping the legacy `clerkId` schema field name honest as a compatibility subject key; added PRD/architecture auth markers to the handoff checker; added `project-context/ARCHITECTURE.md` and `project-context/PRD.md` to the agent-docs workflow path filters; passed `npm run agent-docs:ci`, workflow path marker check, stale architecture/PRD Clerk-era grep, and `git diff --check`; push and production verification are next.
+**Progress (2026-06-02):** Updated active architecture/PRD auth docs away from stale Clerk-era provider wording while keeping the legacy `clerkId` schema field name honest as a compatibility subject key; added PRD/architecture auth markers to the handoff checker; added `project-context/ARCHITECTURE.md` and `project-context/PRD.md` to the agent-docs workflow path filters; passed `npm run agent-docs:ci`, workflow path marker check, stale architecture/PRD Clerk-era grep, and `git diff --check`; pushed commit `bb73faa`; GitHub Actions run `26853267125` passed `Check Generated Agent Docs`; Vercel deployment `dpl_4DtvTt6comrhxsy7mkPFisPtA1BF` is Ready and aliased to `https://www.you.md` / `https://you.md`; live production `npm run llms:smoke -- --base-url https://www.you.md` passed all checks.
 
 ## Root Manual Stack Truth Guardrail (from Jun 2 conversation)
 
