@@ -11,6 +11,7 @@
 ### Verification
 - Passed `npm run docs:check`, `npx tsc --noEmit`, targeted ESLint on touched TypeScript files, and `git diff --check`
 - Local webpack dev server verified `/llms.txt`, `/llms-full.txt`, `/docs`, `robots.txt`, and `sitemap.xml` on `http://localhost:3100`
+- Verified Vercel production deployment `dpl_GcSaYeSrzo1JRaqVa9MAyMr4J2VY`, aliased to `https://www.you.md` and `https://you.md`; live `/llms.txt`, `/llms-full.txt`, `/docs`, `robots.txt`, and `sitemap.xml` smoke checks passed
 
 ## 2026-06-02 — Codex Chat Hygiene
 

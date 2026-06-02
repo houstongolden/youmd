@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Agent-Readable Docs Surfaces (from Jun 2 conversation)
 
 ### 85. Add root-level `llms.txt` / `llms-full.txt` agent context surfaces
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_GcSaYeSrzo1JRaqVa9MAyMr4J2VY` for commit `0bec57c` completed successfully and is aliased to `https://www.you.md` / `https://you.md`.
 **Source:** 2026-06-02 — Houston said "ok lets do it - keep rocking and pushing forward hard" after the next-step plan to make You.md easier for agents to discover and consume.
 **Request:** Continue pushing the API/MCP/stack docs and shared agent-context strategy forward by adding machine-friendly, root-level docs that help agents understand You.md quickly and route into the right docs/API/MCP/YouStack surfaces.
 **Actionable Scope:**
@@ -25,7 +25,7 @@ Last Updated: 2026-06-02
 3. Wire the new surfaces into `/docs`, `robots.txt`, and `sitemap.xml` so agents and crawlers can discover them.
 4. Verify local serving, docs markers, robots, sitemap, docs reference freshness, TypeScript, targeted ESLint, and whitespace checks.
 5. Commit, push to `main`, and production-smoke the live URLs after Vercel deploys.
-**Progress (2026-06-02):** Added static `public/llms.txt` and `public/llms-full.txt`, added a `/docs#agent-docs` section with agent preflight commands, allowed the new docs/reference paths in robots, added the root docs to the sitemap, and passed local docs check, TypeScript, targeted ESLint, `git diff --check`, and local HTTP smoke on `http://localhost:3100`.
+**Progress (2026-06-02):** Added static `public/llms.txt` and `public/llms-full.txt`, added a `/docs#agent-docs` section with agent preflight commands, allowed the new docs/reference paths in robots, added the root docs to the sitemap, and passed local docs check, TypeScript, targeted ESLint, `git diff --check`, and local HTTP smoke on `http://localhost:3100`. Production verification passed on deployment `dpl_GcSaYeSrzo1JRaqVa9MAyMr4J2VY`: live `/llms.txt` returns 200 with expected docs/stack/reference-intelligence markers, `/llms-full.txt` includes agent order of operations, YouStacks, smoke checks, and privacy/trust markers, `/docs` includes Agent Docs plus the new GET rows, `robots.txt` allows the new docs/reference paths, and `sitemap.xml` includes both root docs files.
 
 ## Codex Chat Hygiene (from Jun 2 conversation)
 
