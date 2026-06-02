@@ -1,6 +1,6 @@
 # You.md Reference Intelligence
 
-Last updated: 2026-06-01T19:08:28.853Z
+Last updated: 2026-06-02T18:23:09.474Z
 
 You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under `.reference-repos/` and are ignored by git.
 
@@ -32,8 +32,8 @@ npm run references:sync
 - URL: https://github.com/garrytan/gbrain
 - Local path: `.reference-repos/garrytan/gbrain`
 - Branch: `master`
-- Latest commit: `eefe8b5741c2`
-- Mode: No new commits since eefe8b5
+- Latest commit: `0bfe0d0c7ebd`
+- Mode: No new commits since 0bfe0d0
 
 - No commits found.
 
