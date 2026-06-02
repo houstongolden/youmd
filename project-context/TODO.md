@@ -8,6 +8,8 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Add path-scoped GitHub Actions coverage for generated agent docs drift checks
+- [x] Add `npm run agent-docs:ci` to bundle docs checks, generator syntax checks, smoke-script syntax checks, and targeted lint
 - [x] Add `npm run llms:smoke` for live/local verification of root agent docs, docs reference, MCP discovery, robots, sitemap, and `/docs#agent-docs`
 - [x] Verify `llms:smoke` against both `https://www.you.md` and `http://localhost:3100`
 - [x] Add `npm run codex:chat-hygiene` and hard-archive completed daily-reference automation threads into `~/.codex/archived_sessions`

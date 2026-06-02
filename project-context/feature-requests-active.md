@@ -11,6 +11,22 @@ Last Updated: 2026-06-02
 
 ---
 
+## Agent Docs CI Guardrail (from Jun 2 conversation)
+
+### 88. Add CI guardrail for generated agent docs drift
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — Houston said "commit and push to main - then continue" after the live/local agent-docs smoke command shipped.
+**Request:** Ensure pending work is committed and pushed to `main`, then continue improving the shared agent docs/context layer with stronger guardrails.
+**Actionable Scope:**
+1. Confirm `main` is clean and already pushed before continuing.
+2. Add a reusable CI command for generated agent docs checks.
+3. Add a GitHub Actions workflow that runs on agent-docs-related changes.
+4. Verify the new CI command and workflow syntax locally.
+5. Commit, push to `main`, and production/CI-status check after deployment.
+**Progress (2026-06-02):** Confirmed `main` matched `origin/main` at `ee9aae3`, added `npm run agent-docs:ci`, added `.github/workflows/agent-docs.yml` with path-scoped push/PR/manual triggers for agent-docs source files, and passed local `npm run agent-docs:ci`, YAML parse, and `git diff --check`.
+
 ## Agent Docs Smoke Automation (from Jun 2 conversation)
 
 ### 87. Add reusable live/local smoke checks for root agent docs

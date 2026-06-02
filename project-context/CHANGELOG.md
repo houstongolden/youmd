@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-02 — Agent Docs CI Guardrail
+
+### CI / Docs
+- Added `npm run agent-docs:ci` to run generated docs checks, generator syntax checks, smoke-script syntax checks, and targeted lint for the agent-docs surface
+- Added `.github/workflows/agent-docs.yml`, a path-scoped GitHub Actions workflow for changes to agent docs, docs generators, generated docs artifacts, robots/sitemap, docs page content, and reference-intelligence artifacts
+
+### Verification
+- Confirmed `main` was clean and already pushed before continuing
+- Passed `npm run agent-docs:ci`, YAML parse for `.github/workflows/agent-docs.yml`, and `git diff --check`
+
 ## 2026-06-02 — Agent Docs Smoke Automation
 
 ### Docs Automation
