@@ -8,6 +8,7 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Extend `scripts/check-agent-doc-handoff.mjs` so local CI verifies `/docs#agent-docs` source markers too
 - [x] Update `/docs#agent-docs` with README, `AGENTS.md`, `CLAUDE.md`, handoff marker script, and `agent-docs:ci` guidance
 - [x] Extend live docs-page smoke checks to require source-repo handoff markers
 - [x] Add source-repo handoff guidance to generated `/llms.txt` and `/llms-full.txt`

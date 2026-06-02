@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-02 — Local Docs Page Handoff Guardrail
+
+### CI / Docs
+- Extended `scripts/check-agent-doc-handoff.mjs` so local CI checks `src/app/(app)/docs/docs-content.tsx` for `/docs#agent-docs` handoff markers
+- The local handoff marker check now verifies the docs page keeps the root agent-doc URLs, docs reference, OpenAPI, MCP discovery, stack capabilities, README/AGENTS/CLAUDE handoff row, marker script, and `agent-docs:ci`
+
+### Verification
+- Passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, and `git diff --check`; push, Vercel deployment, and production smoke pending
+
 ## 2026-06-02 — Docs Page Source Repo Handoff
 
 ### Docs / Agent Context

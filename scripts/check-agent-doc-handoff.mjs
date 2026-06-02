@@ -51,6 +51,21 @@ const requiredDocs = [
       "youmd 0.6.23",
     ],
   },
+  {
+    file: "src/app/(app)/docs/docs-content.tsx",
+    markers: [
+      "Agent Docs",
+      "README.md / AGENTS.md / CLAUDE.md",
+      "node scripts/check-agent-doc-handoff.mjs",
+      "npm run agent-docs:ci",
+      "GET /llms.txt",
+      "GET /llms-full.txt",
+      "GET /api/v1/docs/reference",
+      "GET /api/v1/docs/openapi.json",
+      "GET /.well-known/mcp.json",
+      "GET /api/v1/stacks/capabilities",
+    ],
+  },
 ];
 
 const failures = [];

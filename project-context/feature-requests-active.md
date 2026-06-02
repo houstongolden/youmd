@@ -11,6 +11,20 @@ Last Updated: 2026-06-02
 
 ---
 
+## Local Handoff Marker Coverage For Docs Page (from Jun 2 conversation)
+
+### 94. Extend local handoff marker checks to `/docs#agent-docs`
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — continuation after `/docs#agent-docs` shipped the source-repo handoff commands.
+**Request:** Continue comprehensively by making the local CI guardrail catch docs-page handoff drift before a deploy or production smoke.
+**Actionable Scope:**
+1. Extend `scripts/check-agent-doc-handoff.mjs` to check `src/app/(app)/docs/docs-content.tsx`.
+2. Require the docs page source to keep the root docs URLs, docs reference, OpenAPI, MCP discovery, stack capabilities, README/AGENTS/CLAUDE handoff row, handoff marker script, and `agent-docs:ci`.
+3. Run local CI, commit, push to `main`, and production-smoke.
+**Progress (2026-06-02):** Added the docs page source to `scripts/check-agent-doc-handoff.mjs` marker coverage; passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, and `git diff --check`; push, deployment, and production smoke pending.
+
 ## Docs Page Source Repo Handoff (from Jun 2 conversation)
 
 ### 93. Bring `/docs#agent-docs` up to the source-repo handoff standard
