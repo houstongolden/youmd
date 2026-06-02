@@ -121,14 +121,19 @@ async function main() {
     "GBrain: https://github.com/garrytan/gbrain",
     "Agent Scripts: https://github.com/steipete/agent-scripts",
     "The Library: https://github.com/disler/the-library",
+  ];
+  const missingFullMarkers = includesAll(llmsFullResult.body, requiredFullMarkers);
+  record("llms-full.txt includes workflow, privacy, and upstream markers", missingFullMarkers.length === 0, missingFullMarkers.length ? `missing: ${missingFullMarkers.join(", ")}` : `${requiredFullMarkers.length} markers`);
+
+  const sourceRepoHandoffMarkers = [
     "README.md: short \"For Agents\" section",
     "AGENTS.md: cross-agent operating manual",
     "CLAUDE.md: Claude-specific operating manual",
     "PRD, and architecture docs",
     "stale stack/auth language",
   ];
-  const missingFullMarkers = includesAll(llmsFullResult.body, requiredFullMarkers);
-  record("llms-full.txt includes workflow, privacy, and upstream markers", missingFullMarkers.length === 0, missingFullMarkers.length ? `missing: ${missingFullMarkers.join(", ")}` : `${requiredFullMarkers.length} markers`);
+  const missingSourceRepoHandoffMarkers = includesAll(llmsFullResult.body, sourceRepoHandoffMarkers);
+  record("llms-full.txt includes source-repo guardrail markers", missingSourceRepoHandoffMarkers.length === 0, missingSourceRepoHandoffMarkers.length ? `missing: ${missingSourceRepoHandoffMarkers.join(", ")}` : `${sourceRepoHandoffMarkers.length} markers`);
 
   const mcpResult = await fetchText("/.well-known/mcp.json");
   let mcp = null;

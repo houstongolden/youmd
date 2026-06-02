@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-02 — Agent Docs Smoke Output Clarity
+
+### CI / Docs
+- Split `scripts/smoke-agent-docs.mjs` so `/llms-full.txt` source-repo guardrail wording is checked separately from workflow/privacy/upstream markers
+- Live smoke output now identifies source-repo guardrail drift directly instead of folding it into the broader workflow/upstream marker check
+
+### Verification
+- Passed `npm run agent-docs:ci`, `node scripts/smoke-agent-docs.mjs --base-url https://www.you.md`, `node --check scripts/smoke-agent-docs.mjs`, and `git diff --check`; push, GitHub Actions, and final Vercel receipts are next
+
 ## 2026-06-02 — Public Agent Docs Guardrail Wording
 
 ### Docs / Agent Context
