@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-06-02
-Latest Verified Production Web Commit: 1c66b8e docs: add agent docs smoke check
+Latest Verified Production Web Commit: eaed7be ci: check generated agent docs
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---

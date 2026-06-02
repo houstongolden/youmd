@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Agent Docs CI Guardrail (from Jun 2 conversation)
 
 ### 88. Add CI guardrail for generated agent docs drift
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_6GAWESCyK3kYEhWuviYppbhGoMD8` for commit `eaed7be` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26849731544` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — Houston said "commit and push to main - then continue" after the live/local agent-docs smoke command shipped.
 **Request:** Ensure pending work is committed and pushed to `main`, then continue improving the shared agent docs/context layer with stronger guardrails.
 **Actionable Scope:**
@@ -25,7 +25,7 @@ Last Updated: 2026-06-02
 3. Add a GitHub Actions workflow that runs on agent-docs-related changes.
 4. Verify the new CI command and workflow syntax locally.
 5. Commit, push to `main`, and production/CI-status check after deployment.
-**Progress (2026-06-02):** Confirmed `main` matched `origin/main` at `ee9aae3`, added `npm run agent-docs:ci`, added `.github/workflows/agent-docs.yml` with path-scoped push/PR/manual triggers for agent-docs source files, and passed local `npm run agent-docs:ci`, YAML parse, and `git diff --check`.
+**Progress (2026-06-02):** Confirmed `main` matched `origin/main` at `ee9aae3`, added `npm run agent-docs:ci`, added `.github/workflows/agent-docs.yml` with path-scoped push/PR/manual triggers for agent-docs source files, and passed local `npm run agent-docs:ci`, YAML parse, and `git diff --check`. Production/deployment verification passed on Vercel deployment `dpl_6GAWESCyK3kYEhWuviYppbhGoMD8`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks; GitHub Actions run `26849731544` passed `Check Generated Agent Docs`.
 
 ## Agent Docs Smoke Automation (from Jun 2 conversation)
 

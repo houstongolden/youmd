@@ -9,6 +9,8 @@
 ### Verification
 - Confirmed `main` was clean and already pushed before continuing
 - Passed `npm run agent-docs:ci`, YAML parse for `.github/workflows/agent-docs.yml`, and `git diff --check`
+- Verified GitHub Actions run `26849731544` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_6GAWESCyK3kYEhWuviYppbhGoMD8`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — Agent Docs Smoke Automation
 
