@@ -105,6 +105,7 @@ const navigation: NavItem[] = [
       { id: "workflow-golden-path", label: "Golden Path" },
       { id: "playbooks", label: "Playbooks" },
       { id: "examples", label: "Examples" },
+      { id: "agent-docs", label: "Agent Docs" },
     ],
   },
   {
@@ -2277,6 +2278,32 @@ youmd mcp --install cursor --auto
 # Smoke-test brain access
 youmd whoami
 youmd mcp --json`}</CodeBlock>
+
+            <H3 id="agent-docs">Agent Docs</H3>
+            <P>
+              You.md now exposes root-level agent docs so a coding agent can
+              discover the platform before crawling the app. Treat{" "}
+              <InlineCode>/llms.txt</InlineCode> as the short index and{" "}
+              <InlineCode>/llms-full.txt</InlineCode> as the full context pack
+              for docs, API, MCP, runtime, stack routing, and smoke checks.
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "GET /llms.txt", desc: "Short Markdown index for agents: docs, API, MCP, runtime, stacks, privacy, and source links" },
+                { cmd: "GET /llms-full.txt", desc: "Full plain-text agent context with order of operations, commands, API/MCP examples, stack rules, and smoke checks" },
+                { cmd: "GET /api/v1/docs/reference", desc: "Generated manifest for shipped routes, MCP tools, CLI version, counts, and source hash" },
+                { cmd: "GET /api/v1/docs/openapi.json", desc: "OpenAPI-style inventory for API reference generators and agent tool builders" },
+                { cmd: "GET /.well-known/mcp.json", desc: "MCP discovery metadata for web-capable clients" },
+                { cmd: "GET /api/v1/stacks/capabilities", desc: "Default YouStacks capability map for route-before-action workflows" },
+              ]}
+            />
+            <CodeBlock title="agent bootstrap">{`# Fast agent preflight
+curl -fsSL https://you.md/llms.txt
+curl -fsSL https://you.md/api/v1/docs/reference
+curl -fsSL https://you.md/.well-known/mcp.json
+
+# Full docs/context pass
+curl -fsSL https://you.md/llms-full.txt`}</CodeBlock>
 
             {/* ── API ──────────────────────────────────────── */}
             <H2 id="api">API</H2>

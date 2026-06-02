@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-06-02 — Agent-Readable Docs Surfaces
+
+### Docs / Discovery
+- Added root-level `public/llms.txt` as a short agent-readable index for You.md docs, API, MCP, runtime, YouStacks, privacy, and source links
+- Added root-level `public/llms-full.txt` as the full plain-text agent context pack with recommended agent order of operations, commands, API/MCP examples, stack rules, smoke checks, and upstream reference intelligence
+- Added `/docs#agent-docs` with direct agent bootstrap commands for `/llms.txt`, `/llms-full.txt`, docs reference, OpenAPI, MCP discovery, and stack capabilities
+- Added the new docs/reference paths to `robots.txt` allow rules and `sitemap.xml`
+
+### Verification
+- Passed `npm run docs:check`, `npx tsc --noEmit`, targeted ESLint on touched TypeScript files, and `git diff --check`
+- Local webpack dev server verified `/llms.txt`, `/llms-full.txt`, `/docs`, `robots.txt`, and `sitemap.xml` on `http://localhost:3100`
+
 ## 2026-06-02 — Codex Chat Hygiene
 
 ### Automations

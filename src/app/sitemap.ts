@@ -30,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // into thinking the entire site changed every minute. Use a stable date
   // pinned at deploy time (or a manually-bumped constant) so search engines
   // can properly track when static content has actually changed.
-  const STATIC_PAGES_LAST_MODIFIED = new Date("2026-04-08");
+  const STATIC_PAGES_LAST_MODIFIED = new Date("2026-06-02");
 
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -55,6 +55,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${BASE_URL}/docs`,
       lastModified: STATIC_PAGES_LAST_MODIFIED,
       changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/llms.txt`,
+      lastModified: STATIC_PAGES_LAST_MODIFIED,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/llms-full.txt`,
+      lastModified: STATIC_PAGES_LAST_MODIFIED,
+      changeFrequency: "weekly",
       priority: 0.7,
     },
     {

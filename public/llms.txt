@@ -1,0 +1,72 @@
+# You.md
+
+You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
+
+## Start Here
+
+- [Homepage](https://you.md/): Simple product entry point for the You.md brain, runtime, and named expertise stacks.
+- [Developer Docs](https://you.md/docs): Human and agent documentation for API, MCP, runtime, YouStacks, privacy, and agent workflows.
+- [Full Agent Context](https://you.md/llms-full.txt): Full plain-text agent guide for You.md docs, APIs, MCP, runtime, stacks, and smoke checks.
+- [Install Runtime](https://you.md/install.sh): Curl-first installer for the local You.md runtime.
+- [Public Profiles](https://you.md/profiles): Directory of public agent brains.
+
+## Agent-Readable Surfaces
+
+- [Docs Reference](https://you.md/api/v1/docs/reference): Machine-readable docs manifest generated from shipped routes and MCP tools.
+- [OpenAPI Inventory](https://you.md/api/v1/docs/openapi.json): Generated OpenAPI-style API inventory.
+- [MCP Discovery](https://you.md/.well-known/mcp.json): MCP discovery metadata for web-capable agents.
+- [MCP Endpoint](https://you.md/api/v1/mcp): Same-origin JSON-RPC endpoint for web-capable MCP clients.
+- [You.md Schema](https://you.md/schema/you-md/v1.json): Canonical `you-md/v1` public brain schema.
+- [YouStacks Capabilities](https://you.md/api/v1/stacks/capabilities): Default capability map for stack-aware routing.
+
+## Core Concepts
+
+- Brain: identity, public profile, preferences, memory, projects, sources, provenance, directives, and trust rules.
+- YouStacks: named expertise packages containing skills, prompts, workflows, examples, adapter files, evals, and protected brain scopes.
+- Runtime: local `you` / `youmd` helper installed by curl or npm for CLI, MCP, sync, stack validation, and host adapters.
+- Protected API/MCP: authenticated access for private memory, project context, tokens, connected tools, and sensitive mutations.
+- Reference Intelligence: local monitoring of GStack, GBrain, Agent Scripts, and The Library for ongoing You.md stack/runtime/docs improvements.
+
+## API Reference
+
+- [Public Identity API](https://you.md/docs#public-endpoints): Public profile JSON, markdown negotiation, schema discovery, and context links.
+- [Authenticated API](https://you.md/docs#authenticated-endpoints): Bearer API key endpoints for account, memories, private context, activity, and skills.
+- [Skills API](https://you.md/docs#skills-api): Skill registry and installed skill operations.
+- [YouStacks API](https://you.md/docs#youstacks-api-mcp): Capability discovery and deterministic stack routing.
+- [Errors](https://you.md/docs#errors-troubleshooting): Common HTTP errors and recovery paths.
+
+## MCP
+
+- [MCP Server](https://you.md/docs#mcp-server): Local stdio MCP and same-origin JSON-RPC MCP surfaces.
+- Important tools include `whoami`, `get_identity`, `get_agent_brief`, `get_project_context`, `add_memory`, `add_project_memory`, `get_stack_manifest`, `get_stack_capabilities`, `route_stack_request`, and `smoke_stack`.
+- Preferred local setup: `curl -fsSL https://you.md/install.sh | bash`, then `youmd mcp --install codex --auto` or `youmd mcp --install claude --auto`.
+
+## Agent Workflows
+
+- [Golden Path](https://you.md/docs#workflow-golden-path): Read context first, route stack work, mutate the smallest durable layer, then leave an audit trail.
+- [Playbooks](https://you.md/docs#playbooks): New coding repo, new agent handoff, post-session capture, and identity cleanup.
+- [Examples](https://you.md/docs#examples): Starter prompt and terminal setup for Claude Code, Codex, Cursor, and similar agents.
+- [Agent Docs](https://you.md/docs#agent-docs): How to use `llms.txt`, `llms-full.txt`, docs reference, OpenAPI, MCP, and stack routes.
+
+## Local Runtime Commands
+
+- `curl -fsSL https://you.md/install.sh | bash`: Install the runtime.
+- `you`: Open the live You.md agent conversation.
+- `youmd whoami`: Verify authenticated identity.
+- `youmd status`: Check local bundle status.
+- `youmd mcp --json`: Print MCP configuration.
+- `youmd stack doctor --path stacks/<name>`: Static stack readiness check.
+- `youmd stack smoke --path stacks/<name>`: Local stack smoke test.
+- `youmd stack route --path stacks/<name> "request"`: Route a request through stack capabilities.
+
+## Privacy
+
+- Public brain data is meant for agents and humans to read.
+- Private memory, private project context, tokens, connected tools, and sensitive mutations require scoped auth, context links, API keys, or local MCP access.
+- Agents should read the smallest useful scope first and ask for explicit approval before writing private brain context, changing stack visibility, or using connected tools.
+
+## Source Links
+
+- GitHub: https://github.com/houstongolden/youmd
+- npm: https://www.npmjs.com/package/youmd
+- Production: https://you.md

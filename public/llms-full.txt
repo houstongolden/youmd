@@ -1,0 +1,353 @@
+# You.md Full Agent Context
+
+You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
+
+This file is the full-context companion to `/llms.txt`. Use it when an agent needs one plain-text read before choosing a docs page, API endpoint, MCP tool, or local runtime command.
+
+## Base URLs
+
+- Production: `https://you.md`
+- Docs: `https://you.md/docs`
+- Runtime installer: `https://you.md/install.sh`
+- Docs reference: `https://you.md/api/v1/docs/reference`
+- OpenAPI inventory: `https://you.md/api/v1/docs/openapi.json`
+- MCP discovery: `https://you.md/.well-known/mcp.json`
+- MCP JSON-RPC endpoint: `https://you.md/api/v1/mcp`
+- Schema: `https://you.md/schema/you-md/v1.json`
+- YouStacks capabilities: `https://you.md/api/v1/stacks/capabilities`
+
+## What You.md Is
+
+You.md is easiest to understand as four layers:
+
+1. Brain: identity, public profile, preferences, memory, projects, sources, provenance, directives, and trust rules.
+2. YouStacks: named expertise packages containing skills, prompts, workflows, examples, adapter files, evals, update policy, and protected brain scopes.
+3. Runtime: local `you` / `youmd` helper installed by curl or npm for CLI, MCP, sync, stack validation, and host adapters.
+4. Protected API/MCP: authenticated access for private memory, project context, tokens, connected tools, and sensitive mutations.
+
+Identity is one part of the brain. The product should not be treated as only a profile page or only an identity schema. The bigger goal is portable context plus reusable agent expertise.
+
+## Recommended Agent Order Of Operations
+
+When an agent receives a You.md link or works inside a You.md-enabled repo:
+
+1. Read `/llms.txt` or this file to understand the platform surfaces.
+2. If a public profile is involved, fetch `GET /api/v1/profiles?username=<username>` or the human profile at `https://you.md/<username>`.
+3. If local MCP is configured, call `whoami`.
+4. For local coding agents, call `get_agent_brief` before planning. It combines identity, repo instructions, project context, active requests, open TODOs, installed skills, and recommended next moves.
+5. If a stack is involved, inspect the manifest with `get_stack_manifest` or `youmd stack inspect --path <dir>`.
+6. Route ambiguous work through `route_stack_request` or `youmd stack route --path <dir> "request"`.
+7. Run `youmd stack doctor --path <dir>` before sharing, improving, publishing, or trusting a stack.
+8. Mutate only the smallest durable surface: one memory, one project memory, one section, one stack file, or one visibility setting.
+9. Leave an audit trail through MCP/API or project context so the next agent can resume.
+
+## Public Identity And Context
+
+Public routes are designed for agents:
+
+```http
+GET /api/v1/profiles?username=houstongolden
+Accept: application/vnd.you-md.v1+json
+```
+
+Use public profile responses for non-sensitive context: name, role, public bio, projects, preferences, public stacks, social links, schema metadata, and public agent-readable profile data.
+
+Context links look like:
+
+```text
+https://you.md/ctx/<username>/<token>
+```
+
+Context links can include scoped private context depending on how the user created the link. Treat context-link contents as sensitive if they contain private sections, project context, or explicit trust boundaries.
+
+## Local Runtime
+
+Install:
+
+```bash
+curl -fsSL https://you.md/install.sh | bash
+```
+
+Core runtime commands:
+
+```bash
+you
+youmd login
+youmd whoami
+youmd status
+youmd pull
+youmd push
+youmd sync
+youmd diff
+youmd export
+youmd preview
+youmd mcp --json
+youmd mcp --install codex --auto
+youmd mcp --install claude --auto
+youmd mcp --install cursor --auto
+```
+
+Use `you` for the live U conversation. Use `youmd` for non-interactive commands inside coding agents.
+
+## MCP
+
+You.md has two MCP surfaces:
+
+- Local stdio MCP through the runtime. This is the preferred surface for Claude Code, Codex, Cursor, and other local coding agents.
+- Same-origin JSON-RPC MCP at `POST /api/v1/mcp` for web-capable clients.
+
+Discovery:
+
+```http
+GET /.well-known/mcp.json
+```
+
+Example JSON-RPC request:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "get_identity",
+    "arguments": { "format": "compact" }
+  },
+  "id": 1
+}
+```
+
+Important MCP tools and resources:
+
+- `whoami`: verify the current authenticated identity.
+- `get_identity`: retrieve identity context.
+- `get_agent_brief`: retrieve identity plus repo/project startup context for local agents.
+- `get_project_context`: retrieve local project context.
+- `add_memory`: save durable memory.
+- `add_project_memory`: save durable project-specific memory.
+- `get_stack_manifest`: inspect a local YouStack manifest.
+- `get_stack_capabilities`: list stack capabilities.
+- `route_stack_request`: route a request to a stack capability.
+- `smoke_stack`: run read-only stack smoke validation.
+
+## API
+
+Generated docs:
+
+```http
+GET /api/v1/docs/reference
+GET /api/v1/docs/openapi.json
+```
+
+Public identity:
+
+```http
+GET /api/v1/profiles
+GET /api/v1/profiles?username=<username>
+GET /schema/you-md/v1.json
+GET /ctx/<username>/<token>
+```
+
+Authenticated user, private context, and memory endpoints use Bearer API keys:
+
+```http
+Authorization: Bearer ym_your_api_key_here
+Content-Type: application/json
+```
+
+Common authenticated categories:
+
+- Account: current user, profile, bundles, sources, API keys, publish, rollback, portrait.
+- Memories: list, search, add, and manage durable memory.
+- Private Context: private notes, projects, preferences, and user-controlled private sections.
+- Activity: agent read/write/publish activity.
+- Skills: registry and installed skill operations.
+
+Common error recovery:
+
+- `401`: missing, expired, invalid, or revoked API key. Re-run `youmd login` or rotate the key.
+- `404`: profile, context token, bundle version, or local section not found.
+- `409 ANCESTOR_MISMATCH`: remote bundle changed since local parent hash. Pull, inspect diff, then push again.
+- `413`: chat or compaction payload is too large.
+- `429`: rate limit hit.
+- `503`: spend cap or provider kill switch is active.
+
+## YouStacks
+
+YouStacks are named expertise packages. A stack can contain:
+
+- skills
+- prompts
+- workflows
+- examples
+- docs
+- smoke tests
+- evals
+- host adapter files
+- protected brain scopes
+- update policy
+- improvement policy
+- visibility policy
+
+Local stack commands:
+
+```bash
+youmd stack inspect --path stacks/<name>
+youmd stack doctor --path stacks/<name>
+youmd stack smoke --path stacks/<name>
+youmd stack capabilities --path stacks/<name>
+youmd stack route --path stacks/<name> "review this like me before we ship"
+youmd stack link --path stacks/<name> --hosts codex,claude,cursor --target .
+```
+
+Shared HTTP stack routes:
+
+```http
+GET /api/v1/stacks/capabilities
+POST /api/v1/stacks/route
+```
+
+Route request example:
+
+```json
+{
+  "request": "review this like me before we ship",
+  "stack": {
+    "slug": "founder-growth-stack",
+    "name": "Founder Growth Stack",
+    "domain": "growth",
+    "tags": ["content", "founder-review"]
+  },
+  "capabilities": [
+    {
+      "id": "founder-review",
+      "intent": "Review a plan using the user's founder taste.",
+      "localOnly": true,
+      "requiresAuth": false,
+      "scopes": []
+    }
+  ]
+}
+```
+
+Stack safety rules:
+
+1. Run doctor before smoke, publish, public readiness, or self-improvement work.
+2. Keep stacks private by default.
+3. Publish only after redaction, smoke checks, manifest review, docs review, and owner approval.
+4. Keep protected brain reads behind explicit scopes.
+5. Do not copy private memory into public stack examples.
+
+## API/MCP/Stack Documentation Standard
+
+Every important capability should have five surfaces:
+
+- Guide: human explanation and agent order of operations.
+- API: HTTP endpoint or explicit reason no endpoint exists.
+- MCP: MCP tool/resource when agents need it.
+- Stack: local runtime or YouStack command when the capability belongs in a portable stack.
+- Smoke: local or hosted check that proves the capability works.
+
+Agents should prefer read-before-write and route-before-action:
+
+1. Read public identity, project context, stack manifest, or docs reference.
+2. Route through capabilities if intent is ambiguous.
+3. Ask for the smallest private scope needed.
+4. Apply the smallest mutation.
+5. Run smoke checks before publish or handoff.
+
+## Reference Intelligence
+
+You.md keeps these as first-class inspiration and monitoring sources:
+
+- GStack: local-first skills, specialist workflows, host adapters, upgrade flows, diagnostics, smoke checks, evals, and agent workflows.
+- GBrain: durable memory architecture, retrieval hygiene, provenance, sync, context extraction, and privacy boundaries.
+- Agent Scripts: practical shared scripts, command layout, local workflow ergonomics, and installer conventions.
+- The Library: catalog-style organization for prompts, commands, reusable context, examples, and bootstrap material.
+
+The monitor writes:
+
+```text
+project-context/reference-intelligence/LATEST.md
+project-context/reference-intelligence/TASKS.md
+```
+
+The generated task list is a review queue, not a mandate. Promote only patterns that make You.md simpler, more powerful, safer, or easier to start.
+
+## Agent Starter Prompt
+
+Use this prompt when starting a Claude Code, Codex, Cursor, or similar agent session:
+
+```text
+Read my You.md context first.
+
+Use the fastest available path:
+1. call the youmd MCP whoami tool if available
+2. call get_agent_brief to load identity plus local project state
+3. if you need full detail, call get_identity
+4. before editing this repo, read project-context/
+5. when you learn a durable preference or decision, save it back with add_memory or add_project_memory
+
+Then continue with the actual task.
+```
+
+## Smoke Checks
+
+Local:
+
+```bash
+npm run docs:check
+npx tsc --noEmit
+youmd whoami
+youmd status
+youmd mcp --json
+youmd stack doctor --path cli/examples/youstack-bamfstack-public
+youmd stack smoke --path cli/examples/youstack-bamfstack-public
+```
+
+Hosted:
+
+```bash
+curl -fsSL https://you.md/llms.txt
+curl -fsSL https://you.md/llms-full.txt
+curl -fsSL https://you.md/.well-known/mcp.json
+curl -fsSL https://you.md/api/v1/docs/reference
+curl -fsSL https://you.md/api/v1/docs/openapi.json
+curl -fsSL https://you.md/api/v1/stacks/capabilities
+```
+
+## Privacy And Trust
+
+Public brain data is meant to be read by humans and agents.
+
+Private memory, private project context, API keys, connected tools, and sensitive mutations require scoped auth, context links, API keys, local MCP access, or explicit approval.
+
+Agents must not:
+
+- expose private memory in public docs or public stack examples
+- change public/private visibility without owner approval
+- invent personal proof, credentials, or private facts
+- write broad memory summaries when a small durable fact is enough
+- publish stack changes without doctor/smoke/readiness checks
+
+Agents should:
+
+- request the smallest useful context scope
+- preserve provenance and source links
+- write narrow memories with stable labels
+- prefer local files for inspectable stack work
+- leave a trail in project context or activity logs
+
+## Important Links
+
+- Homepage: https://you.md/
+- Docs: https://you.md/docs
+- LLM index: https://you.md/llms.txt
+- Full LLM context: https://you.md/llms-full.txt
+- Install runtime: https://you.md/install.sh
+- Docs reference: https://you.md/api/v1/docs/reference
+- OpenAPI inventory: https://you.md/api/v1/docs/openapi.json
+- MCP discovery: https://you.md/.well-known/mcp.json
+- Schema: https://you.md/schema/you-md/v1.json
+- YouStacks capabilities: https://you.md/api/v1/stacks/capabilities
+- GitHub: https://github.com/houstongolden/youmd
+- npm: https://www.npmjs.com/package/youmd

@@ -11,6 +11,22 @@ Last Updated: 2026-06-02
 
 ---
 
+## Agent-Readable Docs Surfaces (from Jun 2 conversation)
+
+### 85. Add root-level `llms.txt` / `llms-full.txt` agent context surfaces
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — Houston said "ok lets do it - keep rocking and pushing forward hard" after the next-step plan to make You.md easier for agents to discover and consume.
+**Request:** Continue pushing the API/MCP/stack docs and shared agent-context strategy forward by adding machine-friendly, root-level docs that help agents understand You.md quickly and route into the right docs/API/MCP/YouStack surfaces.
+**Actionable Scope:**
+1. Add `/llms.txt` as the short agent-readable index for You.md.
+2. Add `/llms-full.txt` as the full plain-text agent context pack for docs, API, MCP, runtime, stacks, smoke checks, and upstream reference intelligence.
+3. Wire the new surfaces into `/docs`, `robots.txt`, and `sitemap.xml` so agents and crawlers can discover them.
+4. Verify local serving, docs markers, robots, sitemap, docs reference freshness, TypeScript, targeted ESLint, and whitespace checks.
+5. Commit, push to `main`, and production-smoke the live URLs after Vercel deploys.
+**Progress (2026-06-02):** Added static `public/llms.txt` and `public/llms-full.txt`, added a `/docs#agent-docs` section with agent preflight commands, allowed the new docs/reference paths in robots, added the root docs to the sitemap, and passed local docs check, TypeScript, targeted ESLint, `git diff --check`, and local HTTP smoke on `http://localhost:3100`.
+
 ## Codex Chat Hygiene (from Jun 2 conversation)
 
 ### 84. Consolidate automation chats and preserve useful context
