@@ -9,7 +9,8 @@
 - Corrected stale CLI version references in root agent manuals to `youmd 0.6.23`
 
 ### Verification
-- Passed `npm run agent-docs:ci`, `git diff --check`, and manual grep checks for stale CLI version references plus new `Agent Docs Preflight` sections; Vercel deployment verification pending after push
+- Passed `npm run agent-docs:ci`, `git diff --check`, and manual grep checks for stale CLI version references plus new `Agent Docs Preflight` sections
+- Verified Vercel production deployment `dpl_BVdXiSU1uUBEJppmbJvLV79F4YTa`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — README Agent Docs Handoff
 
