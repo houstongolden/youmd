@@ -146,7 +146,16 @@ async function main() {
   record("sitemap includes root agent docs", sitemapResult.response.ok && missingSitemap.length === 0, missingSitemap.length ? `missing: ${missingSitemap.join(", ")}` : `${sitemapResult.response.status}`);
 
   const docsResult = await fetchText("/docs");
-  const missingDocs = includesAll(docsResult.body, ["Agent Docs", "npm run llms:check", "npm run llms:generate", "GET /llms.txt", "GET /llms-full.txt"]);
+  const missingDocs = includesAll(docsResult.body, [
+    "Agent Docs",
+    "npm run llms:check",
+    "npm run llms:generate",
+    "GET /llms.txt",
+    "GET /llms-full.txt",
+    "README.md / AGENTS.md / CLAUDE.md",
+    "node scripts/check-agent-doc-handoff.mjs",
+    "npm run agent-docs:ci",
+  ]);
   record("docs page documents agent-docs workflow", docsResult.response.ok && missingDocs.length === 0, missingDocs.length ? `missing: ${missingDocs.join(", ")}` : `${docsResult.response.status}`);
 
   const failed = checks.filter((check) => !check.ok);

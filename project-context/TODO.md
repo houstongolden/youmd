@@ -8,6 +8,8 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Update `/docs#agent-docs` with README, `AGENTS.md`, `CLAUDE.md`, handoff marker script, and `agent-docs:ci` guidance
+- [x] Extend live docs-page smoke checks to require source-repo handoff markers
 - [x] Add source-repo handoff guidance to generated `/llms.txt` and `/llms-full.txt`
 - [x] Extend `npm run llms:smoke` to verify generated source-repo handoff markers in production
 - [x] Add `scripts/check-agent-doc-handoff.mjs` to assert README, `AGENTS.md`, and `CLAUDE.md` keep generated-doc URLs and release-check commands

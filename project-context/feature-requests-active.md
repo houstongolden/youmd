@@ -11,6 +11,21 @@ Last Updated: 2026-06-02
 
 ---
 
+## Docs Page Source Repo Handoff (from Jun 2 conversation)
+
+### 93. Bring `/docs#agent-docs` up to the source-repo handoff standard
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — Houston said "continue comprehensively - then commit and push to main - then continue comprehensively" after generated root docs learned the source-repo handoff.
+**Request:** Continue comprehensively by keeping the web docs page aligned with the generated root agent docs, README, and root agent manuals.
+**Actionable Scope:**
+1. Update `/docs#agent-docs` to explain README, `AGENTS.md`, and `CLAUDE.md` as repo-visible handoff surfaces.
+2. Add the handoff marker script and full `agent-docs:ci` command to the docs page.
+3. Extend production smoke checks so `/docs` must include those source-repo handoff markers.
+4. Verify locally, commit, push to `main`, and production-smoke after Vercel deploys.
+**Progress (2026-06-02):** Updated `src/app/(app)/docs/docs-content.tsx` so `/docs#agent-docs` documents README/root agent manuals, the handoff marker script, and `agent-docs:ci`; updated `scripts/smoke-agent-docs.mjs` so live docs-page smoke checks require those markers; passed local `npm run agent-docs:ci`, targeted ESLint for docs content and smoke script, and `git diff --check`; push, deployment, and production smoke pending.
+
 ## Generated Source Repo Handoff In Root Agent Docs (from Jun 2 conversation)
 
 ### 92. Teach generated root agent docs about README/AGENTS/CLAUDE handoff surfaces

@@ -2289,13 +2289,24 @@ youmd mcp --json`}</CodeBlock>
               files are generated from the shipped docs reference and upstream
               reference-intelligence state.
             </P>
+            <P>
+              Source-repo agents get the same handoff in{" "}
+              <InlineCode>README.md</InlineCode>,{" "}
+              <InlineCode>AGENTS.md</InlineCode>, and{" "}
+              <InlineCode>CLAUDE.md</InlineCode>. Keep those files aligned with
+              the generated root docs so GitHub, npm, local coding agents, and
+              web-capable agents all start from the same API/MCP/stack map.
+            </P>
             <CommandTable
               commands={[
                 { cmd: "GET /llms.txt", desc: "Short Markdown index for agents: docs, API, MCP, runtime, stacks, privacy, and source links" },
                 { cmd: "GET /llms-full.txt", desc: "Full plain-text agent context with order of operations, commands, API/MCP examples, stack rules, and smoke checks" },
+                { cmd: "README.md / AGENTS.md / CLAUDE.md", desc: "Repo-visible handoff surfaces for GitHub/npm readers and local coding agents" },
                 { cmd: "npm run llms:check", desc: "Verify the root agent docs are current with the generated docs reference and reference-intelligence state" },
                 { cmd: "npm run llms:generate", desc: "Regenerate the root agent docs when routes, MCP tools, CLI metadata, or upstream references change" },
+                { cmd: "node scripts/check-agent-doc-handoff.mjs", desc: "Assert README and root agent manuals keep the generated-doc URLs and release commands" },
                 { cmd: "npm run llms:smoke -- --base-url https://www.you.md", desc: "Smoke-test live agent docs against the generated docs reference, MCP discovery, robots, sitemap, and docs page" },
+                { cmd: "npm run agent-docs:ci", desc: "Run generated docs checks, handoff marker checks, syntax checks, and targeted lint" },
                 { cmd: "GET /api/v1/docs/reference", desc: "Generated manifest for shipped routes, MCP tools, CLI version, counts, and source hash" },
                 { cmd: "GET /api/v1/docs/openapi.json", desc: "OpenAPI-style inventory for API reference generators and agent tool builders" },
                 { cmd: "GET /.well-known/mcp.json", desc: "MCP discovery metadata for web-capable clients" },
@@ -2311,7 +2322,8 @@ curl -fsSL https://you.md/.well-known/mcp.json
 curl -fsSL https://you.md/llms-full.txt
 
 # Release smoke
-npm run llms:smoke -- --base-url https://www.you.md`}</CodeBlock>
+npm run llms:smoke -- --base-url https://www.you.md
+npm run agent-docs:ci`}</CodeBlock>
 
             {/* ── API ──────────────────────────────────────── */}
             <H2 id="api">API</H2>

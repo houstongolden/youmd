@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-02 — Docs Page Source Repo Handoff
+
+### Docs / Agent Context
+- Updated `/docs#agent-docs` to explain README, `AGENTS.md`, and `CLAUDE.md` as repo-visible handoff surfaces for coding agents
+- Added `node scripts/check-agent-doc-handoff.mjs` and `npm run agent-docs:ci` to the docs-page agent command table
+- Extended `npm run llms:smoke` so `/docs` must include source-repo handoff markers and release commands
+
+### Verification
+- Passed `npm run agent-docs:ci`, targeted ESLint for docs content and smoke script, and `git diff --check`; push, Vercel deployment, and production smoke pending
+
 ## 2026-06-02 — Generated Source Repo Handoff
 
 ### Docs / Agent Context
