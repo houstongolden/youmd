@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-02 — Generated Source Repo Handoff
+
+### Docs / Agent Context
+- Updated the root agent-docs generator so `/llms.txt` points agents to the source repo and explains that README, `AGENTS.md`, and `CLAUDE.md` contain repo-visible generated-docs handoffs
+- Added a `Source Repo Handoff` section to generated `/llms-full.txt`
+- Extended `npm run llms:smoke` so production smoke checks verify the source-repo handoff markers and `scripts/check-agent-doc-handoff.mjs`
+- Regenerated `public/llms.txt` and `public/llms-full.txt`
+
+### Verification
+- Passed `npm run agent-docs:ci` and `git diff --check`; pre-deploy production smoke correctly fails on the new source-repo handoff markers until this commit is deployed
+
 ## 2026-06-02 — Agent Docs Handoff CI Coverage
 
 ### CI / Docs

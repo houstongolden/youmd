@@ -11,6 +11,7 @@ You.md is the agent brain and expertise-stack layer for the agent internet. It g
 - [Full Agent Context](https://you.md/llms-full.txt): Full plain-text agent guide for You.md docs, APIs, MCP, runtime, stacks, and smoke checks.
 - [Install Runtime](https://you.md/install.sh): Curl-first installer for the local You.md runtime.
 - [Public Profiles](https://you.md/profiles): Directory of public agent brains.
+- [Source Repo](https://github.com/houstongolden/youmd): README, AGENTS.md, and CLAUDE.md contain the repo-visible generated-docs handoff for coding agents.
 
 ## Agent-Readable Surfaces
 
@@ -72,3 +73,4 @@ You.md is the agent brain and expertise-stack layer for the agent internet. It g
 - GitHub: https://github.com/houstongolden/youmd
 - npm: https://www.npmjs.com/package/youmd
 - Production: https://you.md
+- Source repo handoff: README.md, AGENTS.md, and CLAUDE.md all point future coding agents to the generated docs, API, MCP, and YouStacks surfaces.

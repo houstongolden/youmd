@@ -11,6 +11,21 @@ Last Updated: 2026-06-02
 
 ---
 
+## Generated Source Repo Handoff In Root Agent Docs (from Jun 2 conversation)
+
+### 92. Teach generated root agent docs about README/AGENTS/CLAUDE handoff surfaces
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — Houston said "commit and push to main - then continue" after the handoff-marker CI guardrail shipped.
+**Request:** Continue improving the shared agent docs/context layer so generated root agent docs also explain the repo-visible README, `AGENTS.md`, and `CLAUDE.md` handoff path that future coding agents should use.
+**Actionable Scope:**
+1. Update the `llms.txt` / `llms-full.txt` generator to include source-repo handoff guidance.
+2. Regenerate `public/llms.txt` and `public/llms-full.txt`.
+3. Update live smoke checks so the source-repo handoff markers are production-verified.
+4. Run docs checks, commit, push to `main`, and production-smoke.
+**Progress (2026-06-02):** Updated `scripts/generate-llms-docs.mjs` to mention the source repo, README "For Agents", root `AGENTS.md`/`CLAUDE.md`, the agent-docs workflow, and the handoff marker script; updated `scripts/smoke-agent-docs.mjs` to verify those markers; regenerated `public/llms.txt` and `public/llms-full.txt`; passed local `npm run agent-docs:ci` and `git diff --check`; pre-deploy production smoke correctly fails on the new source-repo handoff markers until this commit is deployed.
+
 ## Agent Docs Handoff CI Coverage (from Jun 2 conversation)
 
 ### 91. Guard README and root agent-manual generated-doc handoffs in CI

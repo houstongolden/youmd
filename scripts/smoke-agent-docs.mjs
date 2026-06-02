@@ -93,6 +93,7 @@ async function main() {
       `CLI version: ${docsReference.cli.version}`,
       `${docsReference.counts.endpoints} shipped routes`,
       `${docsReference.counts.mcpTools} MCP tools`,
+      "README, AGENTS.md, and CLAUDE.md",
     ];
     const missing = includesAll(llmsResult.body, expected);
     record("llms.txt matches generated docs reference", missing.length === 0, missing.length ? `missing: ${missing.join(", ")}` : expected.join(", "));
@@ -105,6 +106,8 @@ async function main() {
       "Generated MCP endpoints:",
       "Generated docs endpoints:",
       "Generated full agent context",
+      "Source Repo Handoff",
+      "scripts/check-agent-doc-handoff.mjs",
     ];
     const fullMissing = includesAll(llmsFullResult.body, fullExpected);
     record("llms-full.txt matches generated docs reference", fullMissing.length === 0, fullMissing.length ? `missing: ${fullMissing.join(", ")}` : fullExpected.join(", "));
@@ -118,6 +121,9 @@ async function main() {
     "GBrain: https://github.com/garrytan/gbrain",
     "Agent Scripts: https://github.com/steipete/agent-scripts",
     "The Library: https://github.com/disler/the-library",
+    "README.md: short \"For Agents\" section",
+    "AGENTS.md: cross-agent operating manual",
+    "CLAUDE.md: Claude-specific operating manual",
   ];
   const missingFullMarkers = includesAll(llmsFullResult.body, requiredFullMarkers);
   record("llms-full.txt includes workflow, privacy, and upstream markers", missingFullMarkers.length === 0, missingFullMarkers.length ? `missing: ${missingFullMarkers.join(", ")}` : `${requiredFullMarkers.length} markers`);

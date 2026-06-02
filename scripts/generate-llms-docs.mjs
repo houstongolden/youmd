@@ -97,6 +97,7 @@ You.md is the agent brain and expertise-stack layer for the agent internet. It g
 - [Full Agent Context](https://you.md/llms-full.txt): Full plain-text agent guide for You.md docs, APIs, MCP, runtime, stacks, and smoke checks.
 - [Install Runtime](https://you.md/install.sh): Curl-first installer for the local You.md runtime.
 - [Public Profiles](https://you.md/profiles): Directory of public agent brains.
+- [Source Repo](https://github.com/houstongolden/youmd): README, AGENTS.md, and CLAUDE.md contain the repo-visible generated-docs handoff for coding agents.
 
 ## Agent-Readable Surfaces
 
@@ -158,6 +159,7 @@ You.md is the agent brain and expertise-stack layer for the agent internet. It g
 - GitHub: https://github.com/houstongolden/youmd
 - npm: https://www.npmjs.com/package/youmd
 - Production: https://you.md
+- Source repo handoff: README.md, AGENTS.md, and CLAUDE.md all point future coding agents to the generated docs, API, MCP, and YouStacks surfaces.
 `;
 }
 
@@ -199,6 +201,8 @@ This file is the full-context companion to \`/llms.txt\`. Use it when an agent n
 - MCP JSON-RPC endpoint: \`https://you.md/api/v1/mcp\`
 - Schema: \`https://you.md/schema/you-md/v1.json\`
 - YouStacks capabilities: \`https://you.md/api/v1/stacks/capabilities\`
+- Source repo: \`https://github.com/houstongolden/youmd\`
+- Source repo handoff: README.md, AGENTS.md, and CLAUDE.md contain the repo-visible Agent Docs Preflight for coding agents.
 
 ## What You.md Is
 
@@ -216,14 +220,27 @@ Identity is one part of the brain. The product should not be treated as only a p
 When an agent receives a You.md link or works inside a You.md-enabled repo:
 
 1. Read \`/llms.txt\` or this file to understand the platform surfaces.
-2. If a public profile is involved, fetch \`GET /api/v1/profiles?username=<username>\` or the human profile at \`https://you.md/<username>\`.
-3. If local MCP is configured, call \`whoami\`.
-4. For local coding agents, call \`get_agent_brief\` before planning. It combines identity, repo instructions, project context, active requests, open TODOs, installed skills, and recommended next moves.
-5. If a stack is involved, inspect the manifest with \`get_stack_manifest\` or \`youmd stack inspect --path <dir>\`.
-6. Route ambiguous work through \`route_stack_request\` or \`youmd stack route --path <dir> "request"\`.
-7. Run \`youmd stack doctor --path <dir>\` before sharing, improving, publishing, or trusting a stack.
-8. Mutate only the smallest durable surface: one memory, one project memory, one section, one stack file, or one visibility setting.
-9. Leave an audit trail through MCP/API or project context so the next agent can resume.
+2. If working in the source repo, read README.md, AGENTS.md, and CLAUDE.md; those files carry the generated-docs preflight and local project rules.
+3. If a public profile is involved, fetch \`GET /api/v1/profiles?username=<username>\` or the human profile at \`https://you.md/<username>\`.
+4. If local MCP is configured, call \`whoami\`.
+5. For local coding agents, call \`get_agent_brief\` before planning. It combines identity, repo instructions, project context, active requests, open TODOs, installed skills, and recommended next moves.
+6. If a stack is involved, inspect the manifest with \`get_stack_manifest\` or \`youmd stack inspect --path <dir>\`.
+7. Route ambiguous work through \`route_stack_request\` or \`youmd stack route --path <dir> "request"\`.
+8. Run \`youmd stack doctor --path <dir>\` before sharing, improving, publishing, or trusting a stack.
+9. Mutate only the smallest durable surface: one memory, one project memory, one section, one stack file, or one visibility setting.
+10. Leave an audit trail through MCP/API or project context so the next agent can resume.
+
+## Source Repo Handoff
+
+The public repo has its own durable handoff surfaces for coding agents:
+
+- README.md: short "For Agents" section with live docs/API/MCP/stack URLs and release checks.
+- AGENTS.md: cross-agent operating manual with an Agent Docs Preflight.
+- CLAUDE.md: Claude-specific operating manual with the same Agent Docs Preflight.
+- \`.github/workflows/agent-docs.yml\`: path-scoped CI guardrail that runs generated-docs checks when these surfaces change.
+- \`scripts/check-agent-doc-handoff.mjs\`: marker check that prevents README, AGENTS.md, or CLAUDE.md from losing the generated-doc URLs and release commands.
+
+Use those source files for repo-local rules. Use this generated file for platform-wide API/MCP/runtime/stack orientation.
 
 ## Public Identity And Context
 
