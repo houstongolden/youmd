@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Agent Docs Handoff CI Coverage (from Jun 2 conversation)
 
 ### 91. Guard README and root agent-manual generated-doc handoffs in CI
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_DX4g1vvZShDE3BaAxprMVhMfpiiw` for commit `2917ea6` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26850497617` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — Houston said "commit and push to main - then continue" after the agent-manual docs preflight shipped.
 **Request:** Keep improving the shared agent docs/context layer by ensuring repo-visible handoff surfaces do not drift or disappear after they were added to README, `AGENTS.md`, and `CLAUDE.md`.
 **Actionable Scope:**
@@ -24,7 +24,7 @@ Last Updated: 2026-06-02
 2. Wire that check into `npm run agent-docs:ci`.
 3. Expand `.github/workflows/agent-docs.yml` path filters so README and root agent manuals trigger the workflow.
 4. Verify locally, commit, push to `main`, and production-smoke the resulting deployment.
-**Progress (2026-06-02):** Added `scripts/check-agent-doc-handoff.mjs`, wired it into `npm run agent-docs:ci`, and added README/root agent manuals plus the new script to the agent-docs workflow path filters; passed `npm run agent-docs:ci`, workflow path marker check, and `git diff --check`; push, GitHub Actions status, deployment, and production smoke pending.
+**Progress (2026-06-02):** Added `scripts/check-agent-doc-handoff.mjs`, wired it into `npm run agent-docs:ci`, and added README/root agent manuals plus the new script to the agent-docs workflow path filters; passed local `npm run agent-docs:ci`, workflow path marker check, and `git diff --check`; pushed commit `2917ea6`; GitHub Actions run `26850497617` passed `Check Generated Agent Docs`; Vercel deployment `dpl_DX4g1vvZShDE3BaAxprMVhMfpiiw` is Ready and aliased to `https://www.you.md` / `https://you.md`; live production `npm run llms:smoke -- --base-url https://www.you.md` passed all checks.
 
 ## Agent Manual Generated Docs Preflight (from Jun 2 conversation)
 

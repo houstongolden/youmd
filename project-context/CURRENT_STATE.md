@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-06-02
-Latest Verified Production Web Commit: 98683a5 docs: add agent manual docs preflight
+Latest Verified Production Web Commit: 2917ea6 ci: guard agent docs handoff markers
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---

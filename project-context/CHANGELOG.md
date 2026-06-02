@@ -8,7 +8,9 @@
 - Expanded `.github/workflows/agent-docs.yml` path filters so README and root agent manuals trigger the agent-docs workflow
 
 ### Verification
-- Passed `npm run agent-docs:ci`, workflow path marker check, and `git diff --check`; push, GitHub Actions status, Vercel deployment, and production smoke pending
+- Passed `npm run agent-docs:ci`, workflow path marker check, and `git diff --check`
+- Verified GitHub Actions run `26850497617` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_DX4g1vvZShDE3BaAxprMVhMfpiiw`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — Agent Manual Docs Preflight
 
