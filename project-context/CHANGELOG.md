@@ -7,7 +7,9 @@
 - The local handoff marker check now verifies the docs page keeps the root agent-doc URLs, docs reference, OpenAPI, MCP discovery, stack capabilities, README/AGENTS/CLAUDE handoff row, marker script, and `agent-docs:ci`
 
 ### Verification
-- Passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, and `git diff --check`; push, Vercel deployment, and production smoke pending
+- Passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, and `git diff --check`
+- Verified GitHub Actions run `26852593769` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_6x8AA2W56JepwY8zN4CQNJNbASaW`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — Docs Page Source Repo Handoff
 
