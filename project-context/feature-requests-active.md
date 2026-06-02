@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-01
+Last Updated: 2026-06-02
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -10,6 +10,21 @@ Last Updated: 2026-06-01
 - Source: date + commit or conversation reference
 
 ---
+
+## Reference Intelligence Artifact Versioning (from Jun 2 conversation)
+
+### 83. Always version refreshed reference-intelligence artifacts and session context
+**Status:** DONE
+**Verified:** NO
+**Production Verified:** N/A
+**Source:** 2026-06-02 — Houston request during the daily reference-intelligence review to always check in refreshed reference artifacts, commit anything completed in the chat, and push it to `main`.
+**Request:** Treat refreshed `project-context/reference-intelligence/*` files as versioned daily artifacts; capture the completed session context in the project trackers; commit and push the resulting changes.
+**Actionable Scope:**
+1. Run `npm run references:sync` and keep the generated `LATEST.md` / `TASKS.md` changes in git when they refresh.
+2. Update the project-context trackers to record what this session completed and that this daily artifact versioning behavior is expected going forward.
+3. Archive Houston's exact prompts from this session into `project-context/PROMPTS.md`.
+4. Commit the generated artifacts plus session-context updates and push `main`.
+**Progress (2026-06-02):** Re-ran the local reference-intelligence loop, regenerated `project-context/reference-intelligence/LATEST.md` and `TASKS.md`, confirmed the current sync produced no candidate tasks, archived this session's prompts from the Codex session log, updated the project-context trackers, and pushed the resulting commits to `origin/main`.
 
 ## Agent Stack Upstream Monitoring (from Jun 1 conversation)
 

@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-06-01
+Last Updated: 2026-06-02
 
 ## Core Platform
 
@@ -10,7 +10,7 @@ Last Updated: 2026-06-01
 | Simplified product model | Done deployed | Homepage, docs, public profile, auth/onboarding copy, dashboard panes, README, PRD, and schema comments now explain You.md as four layers: Brain, Stacks, Runtime, and Protected API/MCP |
 | Developer docs platform | Done deployed | `/docs` now includes a BAMF-style surface map, concepts, API/MCP/stack operating standard, context surfaces, source-of-truth mapping, agent workflows, playbooks, examples, generated API/MCP reference, schema guidance, docs automation, troubleshooting, and a dedicated YouStacks chapter; deployment `dpl_7rodpWtQzYwZSqtfdPZTY95hsu9k` is live |
 | Generated docs reference | Done | `npm run docs:generate` scans Convex HTTP routes, Next routes, and CLI MCP tools into `src/generated/docs-reference.ts` plus a generated OpenAPI-style spec; YouStacks endpoints are categorized under `YouStacks`; `prebuild` refreshes it and `docs:check` detects stale artifacts |
-| Upstream reference intelligence | Done local | `npm run references:sync` keeps ignored local clones of `garrytan/gstack`, `garrytan/gbrain`, `steipete/agent-scripts`, and `disler/the-library`, writes `project-context/reference-intelligence/LATEST.md` and `TASKS.md`, and feeds daily review for YouStacks, You.md brain/context, shared agent scripts, source catalogs, and private stack distribution |
+| Upstream reference intelligence | Done local | `npm run references:sync` keeps ignored local clones of `garrytan/gstack`, `garrytan/gbrain`, `steipete/agent-scripts`, and `disler/the-library`, writes versioned `project-context/reference-intelligence/LATEST.md` and `TASKS.md` artifacts, and feeds daily review for YouStacks, You.md brain/context, shared agent scripts, source catalogs, and private stack distribution; the latest 2026-06-02 sync recorded no new candidate tasks |
 | YouStacks product-layer planning | In implementation | `YOUSTACKS_PRODUCT_LAYER_PRD.md` and `YOUSTACKS_IMPLEMENTATION_PLAN.md` define the additive stack layer, current product inventory/classification, GStack/BAMFStack transfer analysis, manifest schema, GitHub sync direction, API/MCP threshold, adapter model, and bisectable phases |
 | YouStack local manifest CLI | Done local / publish pending | `youmd stack inspect`, `doctor`, `smoke`, `capabilities`, and `route` validate, diagnose, and route a local `youstack/v1` manifest without mutating brain data or connected tools; manifests now support human names, stable slugs, domains, aliases, tags, improvement policy, and update policy |
 | YouStack doctor diagnostics | Done deployed | `youmd stack doctor --path DIR` runs read-only health diagnostics for manifest size, file composition, capability routing, adapter coverage, brain scopes, update hygiene, public-readiness gaps, and self-improvement readiness before agents smoke, publish, or modify a stack; production exposes the shared `stack-diagnostics` route capability |

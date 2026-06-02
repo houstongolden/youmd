@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 41
-**Total messages:** 428
-**Last updated:** 2026-06-01 22:42
+**Total sessions:** 42
+**Total messages:** 431
+**Last updated:** 2026-06-02 20:14
 
 ## Table of Contents
 
+1. [2026-06-02 (daily-reference-intelligence-review)](#session-2026-06-02-daily-reference-intelligence-review) --- 3 messages
 1. [2026-06-01 (bamf-style-docs-homepage-qa)](#session-2026-06-01-bamf-style-docs-homepage-qa) --- 1 message
 1. [2026-06-01 (agent-stack-upstream-monitoring)](#session-2026-06-01-agent-stack-upstream-monitoring) --- 1 message
 1. [2026-05-30 (daily-gstack-gbrain-reference-sync-homepage-redirect)](#session-2026-05-30-daily-gstack-gbrain-reference-sync-homepage-redirect) --- 5 messages
@@ -51,6 +52,22 @@ Auto-maintained — new messages appended each session.
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
 
 ---
+
+## Session: 2026-06-02 (daily-reference-intelligence-review)
+
+**2026-06-02 18:23:03 UTC**
+> Automation: Daily You.md Reference Intelligence Review
+> Automation ID: daily-gstack-gbrain-reference-intelligence
+> Automation memory: $CODEX_HOME/automations/daily-gstack-gbrain-reference-intelligence/memory.md
+> Last run: 2026-06-01T18:22:17.577Z (1780338137577)
+>
+> In the You.md repo, run the local reference intelligence loop: execute `npm run references:sync`, inspect the updated `project-context/reference-intelligence/LATEST.md` and `TASKS.md`, and summarize new GStack, GBrain, Agent Scripts, and The Library-derived tasks that look relevant to YouStacks, You.md brain/memory/context/profiles, shared agent skills/scripts/prompts, source catalogs, API/MCP, docs, safety, and open-source/hosted product boundaries. Keep the output focused on actionable tasks and note when there are no new upstream changes.
+
+**2026-06-02 20:12:39 UTC**
+> Okay have you pushed everything live? What else is next to be done here? Have you committed and pushed everything live to You.md?
+
+**2026-06-02 20:14:56 UTC**
+> I mean yes, I would say we do want these daily artifacts versioned. I would always want to sync refreshed reference intelligence files checked in. I want anything from this chat to be committed and pushed to the domain and any context for whatever was completed in this session. Okay yeah it's fine. Just do that commit and push to the domain thing.
 
 ## Session: 2026-06-01 (bamf-style-docs-homepage-qa)
 

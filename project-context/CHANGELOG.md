@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-02 — Reference Intelligence Artifact Versioning
+
+### Reference Intelligence
+- Re-ran `npm run references:sync` and refreshed `project-context/reference-intelligence/LATEST.md` plus `TASKS.md`
+- Recorded the current no-new-candidates state from the local reference-intelligence loop while updating the stored GBrain head pointer in the generated artifacts
+- Kept the generated reference-intelligence markdown files versioned in git as daily review artifacts instead of treating them as throwaway local output
+
+### Project Context
+- Updated `project-context/TODO.md`, `FEATURES.md`, and `feature-requests-active.md` to record the Jun 2 reference-sync result and the new expectation that refreshed reference artifacts are always committed
+- Archived Houston's Jun 2 prompts from this session into `project-context/PROMPTS.md`
+
 ## 2026-06-01 — BAMF-Style Docs + Minimal Homepage QA
 
 ### Docs / API / MCP / Stacks

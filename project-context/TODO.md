@@ -1,11 +1,15 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-01
+Last Updated: 2026-06-02
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-06-02
+- [x] Re-sync reference intelligence, confirm the current loop emits no new task candidates, and version the refreshed `project-context/reference-intelligence/LATEST.md` + `TASKS.md` artifacts
+- [x] Archive the Jun 2 daily-reference session prompts and update project-context tracking for the new "always version these artifacts" expectation
 
 ### 2026-06-01
 - [x] Keep the homepage minimal (Hero + CTA/footer) while upgrading `/docs` into a BAMF-style API/MCP/stack documentation surface
