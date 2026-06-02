@@ -8,6 +8,8 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Align root `AGENTS.md` and `CLAUDE.md` tech-stack/auth rows with current Next, Motion, Convex, and first-party passwordless auth reality
+- [x] Extend `scripts/check-agent-doc-handoff.mjs` to derive root manual stack-version markers from `package.json`
 - [x] Make `scripts/check-agent-doc-handoff.mjs` derive root agent-manual CLI version markers from `cli/package.json`
 - [x] Correct stale `project-context/ARCHITECTURE.md` CLI package version reference to `v0.6.23`
 - [x] Extend `scripts/check-agent-doc-handoff.mjs` so local CI verifies `/docs#agent-docs` source markers too

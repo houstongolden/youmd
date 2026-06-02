@@ -144,12 +144,12 @@ These are patterns that have caused problems in this project. Do not repeat them
 
 | Layer | Technology | Version |
 |---|---|---|
-| Frontend | Next.js (App Router) | 16.1.6 |
+| Frontend | Next.js (App Router) | 16.2.2 |
 | UI | React | 19.2.3 |
 | Styling | Tailwind CSS | v4 |
-| Animation | Framer Motion | 12.37.0 |
+| Animation | Motion | 12.37.0 |
 | Backend + DB | Convex | 1.33.1 |
-| Auth | Clerk | 7.0.4 |
+| Auth | First-party passwordless sessions | web cookies + API keys |
 | LLM | OpenRouter → Claude Sonnet 4.6 | |
 | CLI | TypeScript + Commander | youmd 0.6.23 |
 | Hosting | Vercel (web) + Convex Cloud (backend) | |
@@ -235,7 +235,7 @@ Root `llms.txt` and `llms-full.txt` are generated from `src/generated/docs-refer
 |---|---|---|
 | Dev Convex | uncommon-chicken-142 | Local development |
 | Prod Convex | kindly-cassowary-600 | Production |
-| Prod Clerk | clerk.you.md | pk_live keys |
+| Auth issuer | https://you.md | JWKS + signed session cookies |
 | Vercel | you.md | Custom domain, auto-deploy on push |
 | OpenRouter | Configured on both Convex | OPENROUTER_API_KEY |
 
@@ -275,7 +275,7 @@ npm publish --otp=CODE                   # Publish (requires 2FA OTP)
 
 - 21 Convex tables (users, profiles, bundles, sources, memories, skills, skillInstalls, chatMessages, etc.)
 - 38+ HTTP API endpoints in convex/http.ts
-- Auth: Clerk (web) + email/password via Clerk Backend API (CLI) + API keys (agents)
+- Auth: First-party passwordless web sessions + email-code CLI login + scoped API keys (agents)
 - Pipeline: discover → fetch → extract → analyze → compile → review
 - LLM routing: Claude Sonnet (chat), Perplexity (research), Grok (X enrichment)
 

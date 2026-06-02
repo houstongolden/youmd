@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-02 — Root Manual Stack Truth Guardrail
+
+### Agent Context
+- Updated root `AGENTS.md` and `CLAUDE.md` tech-stack rows to match current app dependency versions for Next, React, Motion, and Convex
+- Replaced stale Clerk auth rows in root manuals with first-party passwordless web sessions, email-code CLI login, signed cookies/JWKS, and scoped API keys
+- Extended `scripts/check-agent-doc-handoff.mjs` so root manual stack-version markers are derived from `package.json` and active auth markers are required in both manuals
+
+### Verification
+- Passed `npm run agent-docs:ci`, stale root-manual grep for `Clerk` / `16.1.6` / `Framer Motion`, and `git diff --check`; push, GitHub Actions, and Vercel production receipts are next
+
 ## 2026-06-02 — Dynamic CLI Handoff Version Check
 
 ### CI / Docs

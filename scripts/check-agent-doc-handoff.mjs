@@ -11,6 +11,30 @@ function readJson(relativePath) {
 const cliVersion = readJson("cli/package.json").version;
 const cliVersionMarker = `youmd ${cliVersion}`;
 const cliPackageMarker = `CLI package (npm: youmd, v${cliVersion})`;
+const appPackage = readJson("package.json");
+const appDependencies = {
+  ...appPackage.dependencies,
+  ...appPackage.devDependencies,
+};
+
+function packageVersion(packageName) {
+  const version = appDependencies[packageName];
+  if (!version) {
+    throw new Error(`Missing package dependency: ${packageName}`);
+  }
+  return version.replace(/^[~^]/, "");
+}
+
+const rootManualStackMarkers = [
+  `| Frontend | Next.js (App Router) | ${packageVersion("next")} |`,
+  `| UI | React | ${packageVersion("react")} |`,
+  "| Styling | Tailwind CSS | v4 |",
+  `| Animation | Motion | ${packageVersion("motion")} |`,
+  `| Backend + DB | Convex | ${packageVersion("convex")} |`,
+  "| Auth | First-party passwordless sessions | web cookies + API keys |",
+  "| Auth issuer | https://you.md | JWKS + signed session cookies |",
+  "- Auth: First-party passwordless web sessions + email-code CLI login + scoped API keys (agents)",
+];
 
 const requiredDocs = [
   {
@@ -43,6 +67,7 @@ const requiredDocs = [
       "npm run agent-docs:ci",
       cliVersionMarker,
       cliPackageMarker,
+      ...rootManualStackMarkers,
     ],
   },
   {
@@ -60,6 +85,7 @@ const requiredDocs = [
       "npm run agent-docs:ci",
       cliVersionMarker,
       cliPackageMarker,
+      ...rootManualStackMarkers,
     ],
   },
   {
