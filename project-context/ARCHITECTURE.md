@@ -355,7 +355,7 @@ Terminal left panel is persistent. Right pane switches via slash commands:
 
 ## CLI Architecture (cli/)
 
-**Package:** `youmd` on npm (v0.5.0)
+**Package:** `youmd` on npm (v0.6.23)
 **Entry:** `cli/src/index.ts` (Commander.js)
 **21 commands:** init, login, register, whoami, status, build, publish, add, diff, export, preview, chat, link, keys, memories, private, project, pull, push, sync, skill (19 subcommands)
 

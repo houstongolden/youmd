@@ -3,6 +3,15 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 
+function readJson(relativePath) {
+  const fullPath = path.join(ROOT, relativePath);
+  return JSON.parse(fs.readFileSync(fullPath, "utf8"));
+}
+
+const cliVersion = readJson("cli/package.json").version;
+const cliVersionMarker = `youmd ${cliVersion}`;
+const cliPackageMarker = `CLI package (npm: youmd, v${cliVersion})`;
+
 const requiredDocs = [
   {
     file: "README.md",
@@ -32,7 +41,8 @@ const requiredDocs = [
       "npm run docs:check",
       "npm run llms:smoke -- --base-url https://www.you.md",
       "npm run agent-docs:ci",
-      "youmd 0.6.23",
+      cliVersionMarker,
+      cliPackageMarker,
     ],
   },
   {
@@ -48,7 +58,8 @@ const requiredDocs = [
       "npm run docs:check",
       "npm run llms:smoke -- --base-url https://www.you.md",
       "npm run agent-docs:ci",
-      "youmd 0.6.23",
+      cliVersionMarker,
+      cliPackageMarker,
     ],
   },
   {
@@ -94,4 +105,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log("agent docs handoff markers are present");
+console.log(`agent docs handoff markers are present for ${cliVersionMarker}`);

@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-02 — Dynamic CLI Handoff Version Check
+
+### CI / Docs
+- Updated `scripts/check-agent-doc-handoff.mjs` so root agent-manual CLI version markers are derived from `cli/package.json`
+- The local handoff marker check now verifies both the current `youmd X.Y.Z` tech-stack row and `CLI package (npm: youmd, vX.Y.Z)` project-structure row in `AGENTS.md` and `CLAUDE.md`
+- Corrected `project-context/ARCHITECTURE.md` so the CLI architecture section references npm package version `v0.6.23`
+
+### Verification
+- Passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, and `git diff --check`; push, GitHub Actions, and Vercel production receipts are next
+
 ## 2026-06-02 — Local Docs Page Handoff Guardrail
 
 ### CI / Docs

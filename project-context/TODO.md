@@ -8,6 +8,8 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Make `scripts/check-agent-doc-handoff.mjs` derive root agent-manual CLI version markers from `cli/package.json`
+- [x] Correct stale `project-context/ARCHITECTURE.md` CLI package version reference to `v0.6.23`
 - [x] Extend `scripts/check-agent-doc-handoff.mjs` so local CI verifies `/docs#agent-docs` source markers too
 - [x] Update `/docs#agent-docs` with README, `AGENTS.md`, `CLAUDE.md`, handoff marker script, and `agent-docs:ci` guidance
 - [x] Extend live docs-page smoke checks to require source-repo handoff markers
