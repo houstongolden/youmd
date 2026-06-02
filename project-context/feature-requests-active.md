@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Forbidden Stale Handoff Markers (from Jun 2 conversation)
 
 ### 98. Make the agent-docs checker reject stale stack/auth language
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_HwHPUDBVWf3ayk6fdPvT4csAqnBe` for commit `ed0d62a` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26853454878` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — Houston said "continue comprehensively - then commit and push to main - then continue comprehensively" after the active auth architecture cleanup was deployed.
 **Request:** Continue hardening shared agent docs/context so future docs can fail CI not only when good handoff markers disappear, but also when obsolete stack/auth claims reappear.
 **Actionable Scope:**
@@ -25,7 +25,7 @@ Last Updated: 2026-06-02
 3. Forbid stale Clerk-era auth-flow, user-table, route, and external-services markers in active `project-context/ARCHITECTURE.md`.
 4. Forbid stale `users (1:1 Clerk)` PRD relationship language.
 5. Run local checks, commit, push to `main`, and verify deployment receipts.
-**Progress (2026-06-02):** Added `forbiddenMarkers` support to `scripts/check-agent-doc-handoff.mjs`; configured stale stack/auth forbidden markers for root manuals plus active architecture/PRD docs; passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, forbidden stale-marker grep, and `git diff --check`; push and production verification are next.
+**Progress (2026-06-02):** Added `forbiddenMarkers` support to `scripts/check-agent-doc-handoff.mjs`; configured stale stack/auth forbidden markers for root manuals plus active architecture/PRD docs; passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, forbidden stale-marker grep, and `git diff --check`; pushed commit `ed0d62a`; GitHub Actions run `26853454878` passed `Check Generated Agent Docs`; Vercel deployment `dpl_HwHPUDBVWf3ayk6fdPvT4csAqnBe` is Ready and aliased to `https://www.you.md` / `https://you.md`; live production `npm run llms:smoke -- --base-url https://www.you.md` passed all checks.
 
 ## Architecture Auth Source-Of-Truth Cleanup (from Jun 2 conversation)
 

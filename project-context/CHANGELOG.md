@@ -8,7 +8,9 @@
 - Active `project-context/ARCHITECTURE.md` and `project-context/PRD.md` now fail the handoff check if stale Clerk-era auth source-of-truth markers return
 
 ### Verification
-- Passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, forbidden stale-marker grep, and `git diff --check`; push, GitHub Actions, and Vercel production receipts are next
+- Passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, forbidden stale-marker grep, and `git diff --check`
+- Verified GitHub Actions run `26853454878` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_HwHPUDBVWf3ayk6fdPvT4csAqnBe`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — Architecture Auth Source-Of-Truth Cleanup
 
