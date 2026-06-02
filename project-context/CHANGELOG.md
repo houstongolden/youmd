@@ -8,7 +8,9 @@
 - Extended `npm run llms:smoke` so `/docs` must include source-repo handoff markers and release commands
 
 ### Verification
-- Passed `npm run agent-docs:ci`, targeted ESLint for docs content and smoke script, and `git diff --check`; push, Vercel deployment, and production smoke pending
+- Passed `npm run agent-docs:ci`, targeted ESLint for docs content and smoke script, and `git diff --check`
+- Verified GitHub Actions run `26852409585` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_5vKbdeCp1k9Lfj2ZsyroUc5538N9`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed the strengthened docs-page handoff checks
 
 ## 2026-06-02 — Generated Source Repo Handoff
 
