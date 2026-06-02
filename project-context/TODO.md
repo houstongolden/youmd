@@ -8,6 +8,7 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Publish expanded handoff-checker scope in generated `/llms-full.txt`, `/docs#agent-docs`, and live smoke expectations
 - [x] Add forbidden stale stack/auth marker support to `scripts/check-agent-doc-handoff.mjs`
 - [x] Remove stale Clerk-era auth provider wording from active `project-context/ARCHITECTURE.md` and `project-context/PRD.md`
 - [x] Extend `scripts/check-agent-doc-handoff.mjs` and `.github/workflows/agent-docs.yml` to guard active PRD/architecture auth markers

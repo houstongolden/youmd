@@ -54,7 +54,7 @@ The public repo has its own durable handoff surfaces for coding agents:
 - AGENTS.md: cross-agent operating manual with an Agent Docs Preflight.
 - CLAUDE.md: Claude-specific operating manual with the same Agent Docs Preflight.
 - `.github/workflows/agent-docs.yml`: path-scoped CI guardrail that runs generated-docs checks when these surfaces change.
-- `scripts/check-agent-doc-handoff.mjs`: marker check that prevents README, AGENTS.md, or CLAUDE.md from losing the generated-doc URLs and release commands.
+- `scripts/check-agent-doc-handoff.mjs`: marker check that prevents README, AGENTS.md, CLAUDE.md, /docs source, PRD, and architecture docs from losing required agent handoff markers or reintroducing stale stack/auth language.
 
 Use those source files for repo-local rules. Use this generated file for platform-wide API/MCP/runtime/stack orientation.
 

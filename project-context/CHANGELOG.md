@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-02 — Public Agent Docs Guardrail Wording
+
+### Docs / Agent Context
+- Updated the generated root agent-docs source so `/llms-full.txt` explains that `scripts/check-agent-doc-handoff.mjs` covers README, root manuals, `/docs` source, PRD, architecture docs, and stale stack/auth language
+- Updated `/docs#agent-docs` command copy with the expanded required/forbidden marker scope
+- Extended `scripts/smoke-agent-docs.mjs` so production smoke verifies the expanded guardrail wording in `/llms-full.txt` and `/docs`
+- Regenerated `public/llms.txt` and `public/llms-full.txt`
+
+### Verification
+- Passed `npm run agent-docs:ci`, `npm run llms:check`, expanded wording marker grep, and `git diff --check`; push, GitHub Actions, and Vercel production receipts are next
+
 ## 2026-06-02 — Forbidden Stale Handoff Markers
 
 ### CI / Docs

@@ -124,6 +124,8 @@ async function main() {
     "README.md: short \"For Agents\" section",
     "AGENTS.md: cross-agent operating manual",
     "CLAUDE.md: Claude-specific operating manual",
+    "PRD, and architecture docs",
+    "stale stack/auth language",
   ];
   const missingFullMarkers = includesAll(llmsFullResult.body, requiredFullMarkers);
   record("llms-full.txt includes workflow, privacy, and upstream markers", missingFullMarkers.length === 0, missingFullMarkers.length ? `missing: ${missingFullMarkers.join(", ")}` : `${requiredFullMarkers.length} markers`);
@@ -155,6 +157,9 @@ async function main() {
     "README.md / AGENTS.md / CLAUDE.md",
     "node scripts/check-agent-doc-handoff.mjs",
     "npm run agent-docs:ci",
+    "PRD, and architecture docs",
+    "stale stack/auth language",
+    "required/forbidden handoff marker checks",
   ]);
   record("docs page documents agent-docs workflow", docsResult.response.ok && missingDocs.length === 0, missingDocs.length ? `missing: ${missingDocs.join(", ")}` : `${docsResult.response.status}`);
 

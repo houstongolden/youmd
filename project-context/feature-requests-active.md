@@ -11,6 +11,21 @@ Last Updated: 2026-06-02
 
 ---
 
+## Public Agent Docs Guardrail Wording (from Jun 2 conversation)
+
+### 99. Publish the expanded handoff-checker scope in generated and web docs
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — continuation after the forbidden stale-marker guardrail was committed and pushed.
+**Request:** Continue comprehensively by ensuring the public agent-facing docs describe the expanded source-repo guardrail accurately.
+**Actionable Scope:**
+1. Update the root agent-docs generator so `/llms-full.txt` explains that `scripts/check-agent-doc-handoff.mjs` covers README, root manuals, `/docs` source, PRD, architecture docs, and stale stack/auth language.
+2. Update `/docs#agent-docs` command copy with the same expanded required/forbidden marker scope.
+3. Extend `scripts/smoke-agent-docs.mjs` so live production smoke verifies the expanded wording in `/llms-full.txt` and `/docs`.
+4. Regenerate root agent docs, run local checks, commit, push to `main`, and verify deployment receipts.
+**Progress (2026-06-02):** Updated `scripts/generate-llms-docs.mjs`, `src/app/(app)/docs/docs-content.tsx`, and `scripts/smoke-agent-docs.mjs`; regenerated `public/llms.txt` and `public/llms-full.txt`; passed `npm run agent-docs:ci`, `npm run llms:check`, expanded wording marker grep, and `git diff --check`; push and production verification are next.
+
 ## Forbidden Stale Handoff Markers (from Jun 2 conversation)
 
 ### 98. Make the agent-docs checker reject stale stack/auth language
