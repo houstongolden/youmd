@@ -53,6 +53,31 @@ The installer also writes `~/.youmd/bin/youmd-auto-upgrade` so host agents can r
 
 ---
 
+## For Agents
+
+If you are an agent landing on this repo, start with the generated docs surfaces before guessing from README snippets:
+
+```bash
+curl https://you.md/llms.txt
+curl https://you.md/llms-full.txt
+curl https://you.md/api/v1/docs/reference
+curl https://you.md/api/v1/docs/openapi.json
+curl https://you.md/.well-known/mcp.json
+curl https://you.md/api/v1/stacks/capabilities
+```
+
+Release and drift checks:
+
+```bash
+npm run docs:check
+npm run llms:smoke -- --base-url https://www.you.md
+npm run agent-docs:ci
+```
+
+`/llms.txt` is the short handoff. `/llms-full.txt` is the full context pack with docs, API, MCP, stack runtime, privacy boundaries, smoke checks, and upstream reference-intelligence links.
+
+---
+
 ## CLI Commands
 
 21 top-level commands. The `skill` command alone has 18 core subcommands plus aliases.
@@ -388,7 +413,7 @@ POST   /api/v1/chat/stream         # Streaming chat via SSE
 npm install
 
 # Start dev server
-npm run dev:frontend    # Next.js on port 3000
+npm run dev:frontend    # Next.js on port 3100
 npx convex dev          # Convex backend (separate terminal)
 
 # Build CLI
@@ -401,6 +426,17 @@ npm run publish:cli
 CLI publishing is handled by `.github/workflows/publish-cli.yml` using npm Trusted Publishing.
 Configure npm package `youmd` with GitHub Actions trusted publisher:
 owner `houstongolden`, repo `youmd`, workflow filename `publish-cli.yml`.
+
+Agent-readable docs are generated and drift-checked:
+
+```bash
+npm run docs:generate
+npm run docs:check
+npm run llms:smoke -- --base-url https://www.you.md
+npm run agent-docs:ci
+```
+
+`.github/workflows/agent-docs.yml` runs the agent-docs CI guardrail on path-scoped pushes and pull requests.
 
 ---
 

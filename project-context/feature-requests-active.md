@@ -11,6 +11,22 @@ Last Updated: 2026-06-02
 
 ---
 
+## README Agent Docs Handoff (from Jun 2 conversation)
+
+### 89. Make source-repo readers discover generated agent docs and release checks
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — Houston said "commit and push to main - then continue" after the agent-docs CI guardrail shipped.
+**Request:** Keep pushing the shared agent docs/context layer by making GitHub/npm/source readers and future agents quickly find the live generated docs, API/MCP surfaces, stack capabilities, and release checks.
+**Actionable Scope:**
+1. Add a concise README section for agents that points to `/llms.txt`, `/llms-full.txt`, docs reference, OpenAPI, MCP discovery, and stack capabilities.
+2. Add the local/production agent-docs verification commands to README.
+3. Correct stale README development port guidance for the frontend dev server.
+4. Run docs drift checks and live smoke checks before committing.
+5. Commit, push to `main`, and verify the resulting Vercel deployment.
+**Progress (2026-06-02):** Added a README "For Agents" handoff with the generated live docs/API/MCP/stack URLs and the `docs:check`, `llms:smoke`, and `agent-docs:ci` release commands; corrected the frontend dev port from 3000 to 3100; passed local `npm run agent-docs:ci`, live `npm run llms:smoke -- --base-url https://www.you.md`, and `git diff --check`; production deployment verification pending after push.
+
 ## Agent Docs CI Guardrail (from Jun 2 conversation)
 
 ### 88. Add CI guardrail for generated agent docs drift

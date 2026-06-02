@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-02 — README Agent Docs Handoff
+
+### Docs / Discoverability
+- Added a README "For Agents" section that points source-repo readers to generated `/llms.txt`, `/llms-full.txt`, docs reference, OpenAPI, MCP discovery, and stack capabilities
+- Added README release/drift commands for `docs:check`, live `llms:smoke`, and `agent-docs:ci`
+- Corrected the README frontend dev-server port from 3000 to 3100
+
+### Verification
+- Passed `npm run agent-docs:ci`, live `npm run llms:smoke -- --base-url https://www.you.md`, and `git diff --check`; Vercel deployment verification pending after push
+
 ## 2026-06-02 — Agent Docs CI Guardrail
 
 ### CI / Docs
