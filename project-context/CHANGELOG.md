@@ -9,6 +9,7 @@
 
 ### Verification
 - Passed `npm run docs:generate`, `npm run docs:check`, `npm run llms:smoke -- --base-url https://www.you.md`, `npm run llms:smoke -- --base-url http://localhost:3100`, `node --check scripts/smoke-agent-docs.mjs`, targeted ESLint, `npx tsc --noEmit`, ASCII scan, and `git diff --check`
+- Verified Vercel production deployment `dpl_5z5yoHXRThajMiMG2YojwYyc61Am`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — Generated Agent Docs Pipeline
 

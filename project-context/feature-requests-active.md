@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Agent Docs Smoke Automation (from Jun 2 conversation)
 
 ### 87. Add reusable live/local smoke checks for root agent docs
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_5z5yoHXRThajMiMG2YojwYyc61Am` for commit `1c66b8e` completed successfully and is aliased to `https://www.you.md` / `https://you.md`.
 **Source:** 2026-06-02 — Houston said "continue improving" after the generated root agent docs pipeline shipped.
 **Request:** Keep improving the shared agent docs/context layer by making the new root agent docs easier to verify locally, in production, and from future automations.
 **Actionable Scope:**
@@ -25,7 +25,7 @@ Last Updated: 2026-06-02
 3. Expose the command through `package.json`.
 4. Add the smoke command to `/docs#agent-docs` and the generated full agent context.
 5. Verify against production and localhost, then commit, push, deploy, and production-smoke.
-**Progress (2026-06-02):** Added `scripts/smoke-agent-docs.mjs`, wired `npm run llms:smoke`, updated the generated full agent context and `/docs#agent-docs` to include the release smoke command, regenerated root agent docs, and passed production smoke on `https://www.you.md`, local smoke on `http://localhost:3100`, docs generation/checks, targeted ESLint, TypeScript, ASCII scan, and `git diff --check`.
+**Progress (2026-06-02):** Added `scripts/smoke-agent-docs.mjs`, wired `npm run llms:smoke`, updated the generated full agent context and `/docs#agent-docs` to include the release smoke command, regenerated root agent docs, and passed production smoke on `https://www.you.md`, local smoke on `http://localhost:3100`, docs generation/checks, targeted ESLint, TypeScript, ASCII scan, and `git diff --check`. Production verification passed on deployment `dpl_5z5yoHXRThajMiMG2YojwYyc61Am`: `npm run llms:smoke -- --base-url https://www.you.md` checks docs reference JSON, root agent docs, source hash/count alignment, MCP discovery, robots, sitemap, and docs-page command markers.
 
 ## Generated Agent Docs Pipeline (from Jun 2 conversation)
 
