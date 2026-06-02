@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Generated Source Repo Handoff In Root Agent Docs (from Jun 2 conversation)
 
 ### 92. Teach generated root agent docs about README/AGENTS/CLAUDE handoff surfaces
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_JCuw4fjSbkASm31i6iywADTLTEog` for commit `76f3075` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26850743219` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — Houston said "commit and push to main - then continue" after the handoff-marker CI guardrail shipped.
 **Request:** Continue improving the shared agent docs/context layer so generated root agent docs also explain the repo-visible README, `AGENTS.md`, and `CLAUDE.md` handoff path that future coding agents should use.
 **Actionable Scope:**
@@ -24,7 +24,7 @@ Last Updated: 2026-06-02
 2. Regenerate `public/llms.txt` and `public/llms-full.txt`.
 3. Update live smoke checks so the source-repo handoff markers are production-verified.
 4. Run docs checks, commit, push to `main`, and production-smoke.
-**Progress (2026-06-02):** Updated `scripts/generate-llms-docs.mjs` to mention the source repo, README "For Agents", root `AGENTS.md`/`CLAUDE.md`, the agent-docs workflow, and the handoff marker script; updated `scripts/smoke-agent-docs.mjs` to verify those markers; regenerated `public/llms.txt` and `public/llms-full.txt`; passed local `npm run agent-docs:ci` and `git diff --check`; pre-deploy production smoke correctly fails on the new source-repo handoff markers until this commit is deployed.
+**Progress (2026-06-02):** Updated `scripts/generate-llms-docs.mjs` to mention the source repo, README "For Agents", root `AGENTS.md`/`CLAUDE.md`, the agent-docs workflow, and the handoff marker script; updated `scripts/smoke-agent-docs.mjs` to verify those markers; regenerated `public/llms.txt` and `public/llms-full.txt`; passed local `npm run agent-docs:ci` and `git diff --check`; pushed commit `76f3075`; GitHub Actions run `26850743219` passed `Check Generated Agent Docs`; Vercel deployment `dpl_JCuw4fjSbkASm31i6iywADTLTEog` is Ready and aliased to `https://www.you.md` / `https://you.md`; upgraded live production `npm run llms:smoke -- --base-url https://www.you.md` passed all source-repo handoff checks.
 
 ## Agent Docs Handoff CI Coverage (from Jun 2 conversation)
 

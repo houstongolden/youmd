@@ -9,7 +9,9 @@
 - Regenerated `public/llms.txt` and `public/llms-full.txt`
 
 ### Verification
-- Passed `npm run agent-docs:ci` and `git diff --check`; pre-deploy production smoke correctly fails on the new source-repo handoff markers until this commit is deployed
+- Passed `npm run agent-docs:ci` and `git diff --check`
+- Verified GitHub Actions run `26850743219` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_JCuw4fjSbkASm31i6iywADTLTEog`, aliased to `https://www.you.md` and `https://you.md`; upgraded live `npm run llms:smoke -- --base-url https://www.you.md` passed all source-repo handoff checks
 
 ## 2026-06-02 — Agent Docs Handoff CI Coverage
 
