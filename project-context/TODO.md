@@ -8,6 +8,8 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Remove stale Clerk-era auth provider wording from active `project-context/ARCHITECTURE.md` and `project-context/PRD.md`
+- [x] Extend `scripts/check-agent-doc-handoff.mjs` and `.github/workflows/agent-docs.yml` to guard active PRD/architecture auth markers
 - [x] Align root `AGENTS.md` and `CLAUDE.md` tech-stack/auth rows with current Next, Motion, Convex, and first-party passwordless auth reality
 - [x] Extend `scripts/check-agent-doc-handoff.mjs` to derive root manual stack-version markers from `package.json`
 - [x] Make `scripts/check-agent-doc-handoff.mjs` derive root agent-manual CLI version markers from `cli/package.json`

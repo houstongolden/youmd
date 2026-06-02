@@ -1,6 +1,6 @@
 # You.md — Architecture Reference
 
-Last Updated: 2026-04-06
+Last Updated: 2026-06-02
 
 ## System Overview
 
@@ -51,10 +51,10 @@ Last Updated: 2026-04-06
 │                                                                            │
 │  EXTERNAL SERVICES                                                         │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │
-│  │  OpenRouter  │  │  Apify      │  │  Clerk      │  │  Vercel         │ │
-│  │  Claude 4.6  │  │  LinkedIn   │  │  Auth       │  │  Hosting + Edge │ │
-│  │  Perplexity  │  │  Scraper    │  │  Backend    │  │  ISR + SSR      │ │
-│  │  Grok-3      │  │             │  │  API        │  │                 │ │
+│  │  OpenRouter  │  │  Apify      │  │  Auth       │  │  Vercel         │ │
+│  │  Claude 4.6  │  │  LinkedIn   │  │  Email code │  │  Hosting + Edge │ │
+│  │  Perplexity  │  │  Scraper    │  │  JWT/JWKS   │  │  ISR + SSR      │ │
+│  │  Grok-3      │  │             │  │  API keys   │  │                 │ │
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────┘ │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -65,10 +65,10 @@ Last Updated: 2026-04-06
 
 ### Identity Core
 
-**users** — Authenticated accounts (1:1 with Clerk)
+**users** — Authenticated accounts (1:1 with first-party auth subject)
 | Field | Type | Notes |
 |---|---|---|
-| clerkId | string | Clerk user ID, indexed |
+| clerkId | string | Legacy field name for the first-party auth subject, indexed |
 | username | string | Unique, indexed |
 | email | string | Indexed |
 | displayName | string? | |
@@ -279,9 +279,9 @@ All authenticated endpoints use Bearer token auth (API key with ym_ prefix).
 
 ## Auth Flows
 
-### Web (Clerk)
+### Web (First-Party Passwordless)
 1. User visits /sign-up or /create
-2. Terminal-style sequential prompts (email → password → verification code)
+2. Terminal-style sequential prompts (email → verification code)
 3. Convex creates the user/profile during the passwordless verification flow
 4. Redirect to /initialize for onboarding conversation with You Agent
 5. Session managed by the first-party `youmd_session` cookie, Convex queries use a custom JWT via `ctx.auth.getUserIdentity()`
@@ -337,8 +337,8 @@ Pipeline is orchestrated by `convex/pipeline/orchestrator.ts`. Each stage create
 | `/[username]` | Public | SSR | Public profile page (SEO, JSON-LD, OG) |
 | `/docs` | Public | SSR | Documentation |
 | `/create` | Public | CSR | Username claim entry point |
-| `/sign-in` | Public | CSR | Terminal-style Clerk sign-in |
-| `/sign-up` | Public | CSR | Terminal-style Clerk sign-up |
+| `/sign-in` | Public | CSR | Terminal-style email-code sign-in |
+| `/sign-up` | Public | CSR | Terminal-style email-code sign-up |
 | `/reset-password` | Public | CSR | Password reset flow |
 | `/claim` | Public | Redirect | Redirects to /sign-up |
 | `/initialize` | Auth | CSR | Boot sequence + onboarding agent |

@@ -103,6 +103,23 @@ const requiredDocs = [
       "GET /api/v1/stacks/capabilities",
     ],
   },
+  {
+    file: "project-context/ARCHITECTURE.md",
+    markers: [
+      "### Web (First-Party Passwordless)",
+      "Legacy field name for the first-party auth subject",
+      "Terminal-style email-code sign-in",
+      "Terminal-style email-code sign-up",
+      "JWT/JWKS",
+    ],
+  },
+  {
+    file: "project-context/PRD.md",
+    markers: [
+      "users (1:1 first-party auth subject) → profiles (1:1, claimable)",
+      "**Web:** First-party passwordless email-code auth with signed session cookies and Convex custom JWTs",
+    ],
+  },
 ];
 
 const failures = [];

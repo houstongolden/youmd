@@ -21,6 +21,8 @@ on:
       - "src/app/sitemap.ts"
       - "public/llms.txt"
       - "public/llms-full.txt"
+      - "project-context/ARCHITECTURE.md"
+      - "project-context/PRD.md"
       - "project-context/reference-intelligence/**"
   pull_request:
     paths:
@@ -40,6 +42,8 @@ on:
       - "src/app/sitemap.ts"
       - "public/llms.txt"
       - "public/llms-full.txt"
+      - "project-context/ARCHITECTURE.md"
+      - "project-context/PRD.md"
       - "project-context/reference-intelligence/**"
   workflow_dispatch:
 

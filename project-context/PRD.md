@@ -1,7 +1,7 @@
 # You.md — Product Requirements Document
 
 Version: 2.3
-Last Updated: 2026-03-26
+Last Updated: 2026-06-02
 Founder: Houston Golden
 
 ---
@@ -194,7 +194,7 @@ Terminal-native, not SaaS. Infrastructure with soul. Every pixel should feel lik
 See ARCHITECTURE.md for the complete 21-table schema. Key relationships:
 
 ```
-users (1:1 Clerk) → profiles (1:1, claimable)
+users (1:1 first-party auth subject) → profiles (1:1, claimable)
                    → bundles (1:many, versioned)
                    → sources (1:many)
                    → apiKeys (1:many)

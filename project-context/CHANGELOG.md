@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-02 — Architecture Auth Source-Of-Truth Cleanup
+
+### Docs / Agent Context
+- Updated `project-context/ARCHITECTURE.md` so external services, the user table, auth flows, and auth route descriptions describe first-party passwordless auth instead of stale Clerk-era provider language
+- Updated `project-context/PRD.md` so the data-model relationship diagram refers to first-party auth subjects
+- Extended `scripts/check-agent-doc-handoff.mjs` to check active PRD/architecture auth markers
+- Expanded `.github/workflows/agent-docs.yml` path filters so PRD and architecture changes trigger `npm run agent-docs:ci`
+
+### Verification
+- Passed `npm run agent-docs:ci`, workflow path marker check, stale architecture/PRD Clerk-era grep, and `git diff --check`; push, GitHub Actions, and Vercel production receipts are next
+
 ## 2026-06-02 — Root Manual Stack Truth Guardrail
 
 ### Agent Context
