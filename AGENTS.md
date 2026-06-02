@@ -151,7 +151,7 @@ These are patterns that have caused problems in this project. Do not repeat them
 | Backend + DB | Convex | 1.33.1 |
 | Auth | Clerk | 7.0.4 |
 | LLM | OpenRouter → Codex Sonnet 4.6 | |
-| CLI | TypeScript + Commander | youmd 0.4.9 |
+| CLI | TypeScript + Commander | youmd 0.6.23 |
 | Hosting | Vercel (web) + Convex Cloud (backend) | |
 
 ---
@@ -180,7 +180,7 @@ convex/me.ts                Authenticated profile operations
 convex/memories.ts          Memory system
 convex/portrait.ts          Server-side ASCII generation
 
-cli/                        CLI package (npm: youmd, v0.5.0)
+cli/                        CLI package (npm: youmd, v0.6.23)
 cli/src/index.ts            Entry point (21 commands + skill subcommands)
 cli/src/lib/onboarding.ts   Conversational AI onboarding (1000+ lines)
 cli/src/commands/chat.ts    Ongoing chat with You Agent
@@ -192,6 +192,31 @@ cli/src/lib/config.ts       Local config + project detection
 project-context/            Product docs (PRD, TODO, architecture, etc.)
 you-agent/                  You Agent personality (soul.md, skills/)
 ```
+
+---
+
+## Agent Docs Preflight
+
+Before changing docs, API, MCP, stack runtime, CLI contract, public profile contract, or agent onboarding, read the generated live docs surfaces first:
+
+```bash
+curl https://you.md/llms.txt
+curl https://you.md/llms-full.txt
+curl https://you.md/api/v1/docs/reference
+curl https://you.md/api/v1/docs/openapi.json
+curl https://you.md/.well-known/mcp.json
+curl https://you.md/api/v1/stacks/capabilities
+```
+
+Release checks for these surfaces:
+
+```bash
+npm run docs:check
+npm run llms:smoke -- --base-url https://www.you.md
+npm run agent-docs:ci
+```
+
+Root `llms.txt` and `llms-full.txt` are generated from `src/generated/docs-reference.ts` plus reference intelligence. Update the generators or source docs, then regenerate/check; do not hand-edit generated root agent docs.
 
 ---
 

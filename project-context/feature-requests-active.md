@@ -11,6 +11,22 @@ Last Updated: 2026-06-02
 
 ---
 
+## Agent Manual Generated Docs Preflight (from Jun 2 conversation)
+
+### 90. Add generated-docs preflight to root agent manuals
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — follow-on from Houston's "commit and push to main - then continue" request after the README handoff shipped.
+**Request:** Keep improving shared agent scripts/skills/context by making repo-visible coding-agent manuals route future agents through the generated You.md docs/API/MCP/stack surfaces before they change product contracts.
+**Actionable Scope:**
+1. Add an Agent Docs Preflight section to `AGENTS.md` and `CLAUDE.md`.
+2. Point future agents to `/llms.txt`, `/llms-full.txt`, docs reference, OpenAPI, MCP discovery, and stack capabilities.
+3. Add the docs drift and live smoke commands to the manuals.
+4. Correct stale CLI version references in the manuals.
+5. Verify, commit, push, and production-smoke the final deployment.
+**Progress (2026-06-02):** Added the generated-docs preflight blocks to `AGENTS.md` and `CLAUDE.md`; updated the CLI version references from `0.4.9` / `0.5.0` to `0.6.23`; passed `npm run agent-docs:ci`, `git diff --check`, and manual grep checks for stale version strings plus the new preflight sections; production deployment verification pending after push.
+
 ## README Agent Docs Handoff (from Jun 2 conversation)
 
 ### 89. Make source-repo readers discover generated agent docs and release checks

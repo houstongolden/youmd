@@ -8,6 +8,8 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Add generated-docs preflight blocks to root `AGENTS.md` and `CLAUDE.md` so future coding agents start from `/llms.txt`, `/llms-full.txt`, docs reference, OpenAPI, MCP discovery, and stack capabilities
+- [x] Correct stale root agent-manual CLI version references to `youmd 0.6.23`
 - [x] Add a README "For Agents" handoff to the generated `/llms.txt`, `/llms-full.txt`, docs reference, OpenAPI, MCP discovery, stack capabilities, and release smoke commands
 - [x] Correct README frontend dev-server guidance to port 3100
 - [x] Add path-scoped GitHub Actions coverage for generated agent docs drift checks

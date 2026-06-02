@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-02 — Agent Manual Docs Preflight
+
+### Agent Context
+- Added an Agent Docs Preflight section to root `AGENTS.md` and `CLAUDE.md`
+- Pointed future coding agents to generated `/llms.txt`, `/llms-full.txt`, docs reference, OpenAPI, MCP discovery, and stack capabilities before they change docs/API/MCP/stack contracts
+- Added the generated-docs release checks to the manuals: `docs:check`, live `llms:smoke`, and `agent-docs:ci`
+- Corrected stale CLI version references in root agent manuals to `youmd 0.6.23`
+
+### Verification
+- Passed `npm run agent-docs:ci`, `git diff --check`, and manual grep checks for stale CLI version references plus new `Agent Docs Preflight` sections; Vercel deployment verification pending after push
+
 ## 2026-06-02 — README Agent Docs Handoff
 
 ### Docs / Discoverability
