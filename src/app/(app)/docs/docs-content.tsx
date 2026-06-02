@@ -2295,6 +2295,7 @@ youmd mcp --json`}</CodeBlock>
                 { cmd: "GET /llms-full.txt", desc: "Full plain-text agent context with order of operations, commands, API/MCP examples, stack rules, and smoke checks" },
                 { cmd: "npm run llms:check", desc: "Verify the root agent docs are current with the generated docs reference and reference-intelligence state" },
                 { cmd: "npm run llms:generate", desc: "Regenerate the root agent docs when routes, MCP tools, CLI metadata, or upstream references change" },
+                { cmd: "npm run llms:smoke -- --base-url https://www.you.md", desc: "Smoke-test live agent docs against the generated docs reference, MCP discovery, robots, sitemap, and docs page" },
                 { cmd: "GET /api/v1/docs/reference", desc: "Generated manifest for shipped routes, MCP tools, CLI version, counts, and source hash" },
                 { cmd: "GET /api/v1/docs/openapi.json", desc: "OpenAPI-style inventory for API reference generators and agent tool builders" },
                 { cmd: "GET /.well-known/mcp.json", desc: "MCP discovery metadata for web-capable clients" },
@@ -2307,7 +2308,10 @@ curl -fsSL https://you.md/api/v1/docs/reference
 curl -fsSL https://you.md/.well-known/mcp.json
 
 # Full docs/context pass
-curl -fsSL https://you.md/llms-full.txt`}</CodeBlock>
+curl -fsSL https://you.md/llms-full.txt
+
+# Release smoke
+npm run llms:smoke -- --base-url https://www.you.md`}</CodeBlock>
 
             {/* ── API ──────────────────────────────────────── */}
             <H2 id="api">API</H2>

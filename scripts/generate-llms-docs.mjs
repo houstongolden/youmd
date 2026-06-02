@@ -481,6 +481,7 @@ Local:
 
 \`\`\`bash
 npm run docs:check
+npm run llms:smoke -- --base-url https://www.you.md
 npx tsc --noEmit
 youmd whoami
 youmd status

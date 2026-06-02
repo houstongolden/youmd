@@ -11,6 +11,22 @@ Last Updated: 2026-06-02
 
 ---
 
+## Agent Docs Smoke Automation (from Jun 2 conversation)
+
+### 87. Add reusable live/local smoke checks for root agent docs
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — Houston said "continue improving" after the generated root agent docs pipeline shipped.
+**Request:** Keep improving the shared agent docs/context layer by making the new root agent docs easier to verify locally, in production, and from future automations.
+**Actionable Scope:**
+1. Add a reusable smoke script for `/llms.txt`, `/llms-full.txt`, docs reference, MCP discovery, robots, sitemap, and `/docs#agent-docs`.
+2. Compare live root agent docs against the generated docs reference source hash, CLI version, endpoint count, and MCP tool count.
+3. Expose the command through `package.json`.
+4. Add the smoke command to `/docs#agent-docs` and the generated full agent context.
+5. Verify against production and localhost, then commit, push, deploy, and production-smoke.
+**Progress (2026-06-02):** Added `scripts/smoke-agent-docs.mjs`, wired `npm run llms:smoke`, updated the generated full agent context and `/docs#agent-docs` to include the release smoke command, regenerated root agent docs, and passed production smoke on `https://www.you.md`, local smoke on `http://localhost:3100`, docs generation/checks, targeted ESLint, TypeScript, ASCII scan, and `git diff --check`.
+
 ## Generated Agent Docs Pipeline (from Jun 2 conversation)
 
 ### 86. Make root agent docs generated and drift-checked

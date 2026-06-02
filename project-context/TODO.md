@@ -8,6 +8,8 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Add `npm run llms:smoke` for live/local verification of root agent docs, docs reference, MCP discovery, robots, sitemap, and `/docs#agent-docs`
+- [x] Verify `llms:smoke` against both `https://www.you.md` and `http://localhost:3100`
 - [x] Add `npm run codex:chat-hygiene` and hard-archive completed daily-reference automation threads into `~/.codex/archived_sessions`
 - [x] Add a generated `llms.txt` / `llms-full.txt` pipeline that derives root agent docs from the generated docs reference and reference-intelligence state
 - [x] Add `npm run llms:generate` and `npm run llms:check`, and wire them into `docs:generate` / `docs:check`

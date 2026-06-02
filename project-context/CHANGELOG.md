@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-02 — Agent Docs Smoke Automation
+
+### Docs Automation
+- Added `scripts/smoke-agent-docs.mjs` for reusable local/production smoke checks of `/llms.txt`, `/llms-full.txt`, `/api/v1/docs/reference`, MCP discovery, `robots.txt`, `sitemap.xml`, and `/docs`
+- Added `npm run llms:smoke`
+- Updated `/docs#agent-docs` and generated `llms-full.txt` so future agents and release paths know the smoke command
+
+### Verification
+- Passed `npm run docs:generate`, `npm run docs:check`, `npm run llms:smoke -- --base-url https://www.you.md`, `npm run llms:smoke -- --base-url http://localhost:3100`, `node --check scripts/smoke-agent-docs.mjs`, targeted ESLint, `npx tsc --noEmit`, ASCII scan, and `git diff --check`
+
 ## 2026-06-02 — Generated Agent Docs Pipeline
 
 ### Docs Automation

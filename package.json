@@ -14,6 +14,7 @@
     "docs:check": "node scripts/generate-docs-reference.mjs --check && npm run llms:check",
     "llms:generate": "node scripts/generate-llms-docs.mjs",
     "llms:check": "node scripts/generate-llms-docs.mjs --check",
+    "llms:smoke": "node scripts/smoke-agent-docs.mjs",
     "references:sync": "node scripts/reference-intelligence.mjs",
     "codex:chat-hygiene": "node scripts/codex-chat-hygiene.mjs",
     "prebuild": "npm run docs:generate",
