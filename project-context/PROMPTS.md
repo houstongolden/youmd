@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 42
-**Total messages:** 431
-**Last updated:** 2026-06-02 20:14
+**Total sessions:** 43
+**Total messages:** 432
+**Last updated:** 2026-06-02 20:24
 
 ## Table of Contents
 
+1. [2026-06-02 (codex-chat-hygiene)](#session-2026-06-02-codex-chat-hygiene) --- 1 message
 1. [2026-06-02 (daily-reference-intelligence-review)](#session-2026-06-02-daily-reference-intelligence-review) --- 3 messages
 1. [2026-06-01 (bamf-style-docs-homepage-qa)](#session-2026-06-01-bamf-style-docs-homepage-qa) --- 1 message
 1. [2026-06-01 (agent-stack-upstream-monitoring)](#session-2026-06-01-agent-stack-upstream-monitoring) --- 1 message
@@ -50,6 +51,19 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-02 (codex-chat-hygiene)
+
+**2026-06-02 20:19:50 UTC**
+> Hey so we're doing this daily GStack GBrain Intelligence Reference task. I see this has actually been recurring daily, which is pretty cool, honestly.
+>
+> What kind of an issue that it's creating is that it's creating all these new chats in this project in the side menu here. It's kind of just burying my actual Codex chats that I'm having where we're doing real work on this actively. I'm wondering if you can also somehow manage these chats inside of Codex better to consolidate, especially anything that's running on an automation, so that they're consolidated and kind of removed but in a way that makes sense. I don't want to lose everything from those chats but I also want to keep focus and not bury my other chats where I've been doing active work in the projects.
+>
+> This is an issue on You.md specifically but I assume this will also be an issue on other projects where I add in automations and things inside of Codex. Frankly it's an issue in general for products where I have a ton of chats that I've been working on because I have been trying to be better about starting new chats to have fresh context so that the agent can work faster, have less hallucinations, etc. At the same time creating new chats so frequently also makes it hard to keep track of all these previous chats that might have useful context in them that just as well get buried.
+>
+> This is something I've been thinking about already before I even noticed this specific issue with the automation, which has kind of accelerated the issue on this You.md project. I think I've seen somebody do some sort of prompt where Codex can help to actually manage their chats in a more strategic and intelligent way. Help me out here with this, beyond just You.md, but globally too on all the projects and Codex, and then specifically yes this You.md issue, the automation.
 
 ---
 

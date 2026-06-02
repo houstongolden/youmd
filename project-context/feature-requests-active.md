@@ -11,6 +11,22 @@ Last Updated: 2026-06-02
 
 ---
 
+## Codex Chat Hygiene (from Jun 2 conversation)
+
+### 84. Consolidate automation chats and preserve useful context
+**Status:** DONE
+**Verified:** NO
+**Production Verified:** N/A
+**Source:** 2026-06-02 — Houston noticed recurring daily Codex automations burying active You.md work chats and asked for a project-specific and global strategy for managing chat sprawl without losing useful context.
+**Request:** Keep automation-created Codex chats from burying real active work; consolidate or remove recurring automation threads in a way that preserves the useful context; apply the thinking specifically to You.md and generally across Codex projects.
+**Actionable Scope:**
+1. Inspect local Codex automations and identify duplicate recurring jobs.
+2. Pause overlapping You.md automation schedules so daily reference intelligence runs through one canonical job.
+3. Preserve a durable digest/index of archived automation transcript paths and the intended global chat-hygiene policy.
+4. Archive completed automation threads from the active You.md sidebar without deleting their transcript files.
+5. Update project-context tracking so future agents keep automation output in durable project files and automation memory.
+**Progress (2026-06-02):** Paused duplicate automation `daily-gstack-gbrain-reference-intelligence`, kept `daily-gstack-gbrain-reference-sync` active as the single daily 8:30 AM reference-intelligence job, added `project-context/CODEX_CHAT_HYGIENE.md`, backed up the Codex state DB to `~/.codex/state_5.sqlite.backup-chat-hygiene-20260602T202301Z`, and archived the completed You.md automation threads from the active Codex thread list while preserving transcript paths.
+
 ## Reference Intelligence Artifact Versioning (from Jun 2 conversation)
 
 ### 83. Always version refreshed reference-intelligence artifacts and session context

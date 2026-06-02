@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-02 — Codex Chat Hygiene
+
+### Automations
+- Paused duplicate local Codex automation `daily-gstack-gbrain-reference-intelligence`
+- Kept `daily-gstack-gbrain-reference-sync` active as the single daily You.md reference-intelligence job at 8:30 AM
+- Archived completed You.md automation threads from the active Codex thread list without deleting their transcript files
+
+### Project Context
+- Added `project-context/CODEX_CHAT_HYGIENE.md` with the global strategy, You.md automation setup, archived transcript index, and product-level recommendation for automation lanes
+- Backed up local Codex state before archiving threads: `~/.codex/state_5.sqlite.backup-chat-hygiene-20260602T202301Z`
+
 ## 2026-06-02 — Reference Intelligence Artifact Versioning
 
 ### Reference Intelligence

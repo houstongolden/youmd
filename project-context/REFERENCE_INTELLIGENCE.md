@@ -14,10 +14,12 @@ This is not blind cloning. The rule is: inspect upstream changes daily, extract 
 ## Local Reference Repos
 
 The repos are cloned under `.reference-repos/<owner>/<repo>/` and ignored by git.
-This workspace also has a daily local Codex automation named
+This workspace also has one active daily local Codex automation named
 `Daily You.md Reference Intelligence` that runs the monitor and reports the
-review queue. Run the command manually any time a product or architecture pass
-needs the newest upstream signal:
+review queue. Keep recurring automation output durable in the generated files
+and automation memory, then archive completed automation threads so the active
+Codex sidebar stays focused on human work chats. Run the command manually any
+time a product or architecture pass needs the newest upstream signal:
 
 ```bash
 npm run references:sync
