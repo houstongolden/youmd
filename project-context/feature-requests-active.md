@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Dynamic Handoff CLI Version Guardrail (from Jun 2 conversation)
 
 ### 95. Derive root agent-manual CLI version checks from `cli/package.json`
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_Phut9JEZc3ZuhhPi3mfXZ2FX9Umx` for commit `51cdc32` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26852875154` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — Houston said "continue comprehensively - then commit and push to main - then continue comprehensively" after the local docs-page handoff guardrail shipped.
 **Request:** Continue improving the shared agent docs/context layer by making the local handoff marker guardrail stay current when the CLI package version changes.
 **Actionable Scope:**
@@ -24,7 +24,7 @@ Last Updated: 2026-06-02
 2. Require root `AGENTS.md` and `CLAUDE.md` to include both the current `youmd X.Y.Z` stack row and `CLI package (npm: youmd, vX.Y.Z)` project-structure row.
 3. Correct stale project-context architecture references for the CLI package version.
 4. Run local checks, commit, push to `main`, and verify the resulting CI/deployment receipts.
-**Progress (2026-06-02):** Updated the handoff checker to derive `youmd 0.6.23` / `CLI package (npm: youmd, v0.6.23)` markers from `cli/package.json`; corrected `project-context/ARCHITECTURE.md` from `v0.5.0` to `v0.6.23`; passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, and `git diff --check`; push and deployment receipts are next.
+**Progress (2026-06-02):** Updated the handoff checker to derive `youmd 0.6.23` / `CLI package (npm: youmd, v0.6.23)` markers from `cli/package.json`; corrected `project-context/ARCHITECTURE.md` from `v0.5.0` to `v0.6.23`; passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, and `git diff --check`; pushed commit `51cdc32`; GitHub Actions run `26852875154` passed `Check Generated Agent Docs`; Vercel deployment `dpl_Phut9JEZc3ZuhhPi3mfXZ2FX9Umx` is Ready and aliased to `https://www.you.md` / `https://you.md`; live production `npm run llms:smoke -- --base-url https://www.you.md` passed all checks.
 
 ## Local Handoff Marker Coverage For Docs Page (from Jun 2 conversation)
 

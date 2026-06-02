@@ -8,7 +8,9 @@
 - Corrected `project-context/ARCHITECTURE.md` so the CLI architecture section references npm package version `v0.6.23`
 
 ### Verification
-- Passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, and `git diff --check`; push, GitHub Actions, and Vercel production receipts are next
+- Passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, and `git diff --check`
+- Verified GitHub Actions run `26852875154` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_Phut9JEZc3ZuhhPi3mfXZ2FX9Umx`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — Local Docs Page Handoff Guardrail
 

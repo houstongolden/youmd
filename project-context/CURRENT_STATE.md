@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-06-02
-Latest Verified Production Web Commit: 1e3e57e ci: check docs page handoff markers
+Latest Verified Production Web Commit: 51cdc32 ci: derive handoff cli version
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---
