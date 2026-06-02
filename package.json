@@ -15,6 +15,7 @@
     "llms:generate": "node scripts/generate-llms-docs.mjs",
     "llms:check": "node scripts/generate-llms-docs.mjs --check",
     "references:sync": "node scripts/reference-intelligence.mjs",
+    "codex:chat-hygiene": "node scripts/codex-chat-hygiene.mjs",
     "prebuild": "npm run docs:generate",
     "build": "next build",
     "start": "next start",

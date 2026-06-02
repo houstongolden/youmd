@@ -59,7 +59,7 @@ Last Updated: 2026-06-02
 3. Preserve a durable digest/index of archived automation transcript paths and the intended global chat-hygiene policy.
 4. Archive completed automation threads from the active You.md sidebar without deleting their transcript files.
 5. Update project-context tracking so future agents keep automation output in durable project files and automation memory.
-**Progress (2026-06-02):** Paused duplicate automation `daily-gstack-gbrain-reference-intelligence`, kept `daily-gstack-gbrain-reference-sync` active as the single daily 8:30 AM reference-intelligence job, added `project-context/CODEX_CHAT_HYGIENE.md`, backed up the Codex state DB to `~/.codex/state_5.sqlite.backup-chat-hygiene-20260602T202301Z`, and archived the completed You.md automation threads from the active Codex thread list while preserving transcript paths.
+**Progress (2026-06-02):** Paused duplicate automation `daily-gstack-gbrain-reference-intelligence`, kept `daily-gstack-gbrain-reference-sync` active as the single daily 8:30 AM reference-intelligence job, added `project-context/CODEX_CHAT_HYGIENE.md`, and then performed the harder cleanup after the sidebar still showed daily runs: moved matching automation JSONL transcripts from `~/.codex/sessions` into `~/.codex/archived_sessions`, set all 14 matching You.md daily-reference threads to `archived=1`, removed 13 daily-reference rows from `session_index.jsonl`, added `scripts/codex-chat-hygiene.mjs` / `npm run codex:chat-hygiene`, and updated the active automation prompt to run the hygiene command before future syncs.
 
 ## Reference Intelligence Artifact Versioning (from Jun 2 conversation)
 

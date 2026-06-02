@@ -35,11 +35,13 @@
 ### Automations
 - Paused duplicate local Codex automation `daily-gstack-gbrain-reference-intelligence`
 - Kept `daily-gstack-gbrain-reference-sync` active as the single daily You.md reference-intelligence job at 8:30 AM
-- Archived completed You.md automation threads from the active Codex thread list without deleting their transcript files
+- Hard-archived completed You.md automation threads from the active Codex thread list without deleting their transcript files: moved JSONL rollouts into `~/.codex/archived_sessions`, set local Codex thread rows to archived, and pruned matching rows from `session_index.jsonl`
+- Updated the active daily automation prompt so future runs start with `npm run codex:chat-hygiene -- --apply --older-than-minutes 120`
 
 ### Project Context
 - Added `project-context/CODEX_CHAT_HYGIENE.md` with the global strategy, You.md automation setup, archived transcript index, and product-level recommendation for automation lanes
-- Backed up local Codex state before archiving threads: `~/.codex/state_5.sqlite.backup-chat-hygiene-20260602T202301Z`
+- Added `scripts/codex-chat-hygiene.mjs` and `npm run codex:chat-hygiene` as an idempotent local cleanup command
+- Backed up local Codex state before hard-archiving threads: `~/.codex/state_5.sqlite.backup-chat-hygiene-hard-20260602T204535Z` and `~/.codex/session_index.jsonl.backup-chat-hygiene-hard-20260602T204535Z`
 
 ## 2026-06-02 — Reference Intelligence Artifact Versioning
 

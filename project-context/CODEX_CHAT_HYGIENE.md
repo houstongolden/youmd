@@ -22,6 +22,7 @@ Current desired setup:
 - Active: `daily-gstack-gbrain-reference-sync`
   - Display name: `Daily You.md Reference Intelligence`
   - Schedule: daily at 8:30 AM local time
+  - Startup cleanup: `npm run codex:chat-hygiene -- --apply --older-than-minutes 120`
   - Durable outputs:
     - `project-context/reference-intelligence/LATEST.md`
     - `project-context/reference-intelligence/TASKS.md`
@@ -36,24 +37,37 @@ Current desired setup:
 The following You.md automation threads were consolidated because their useful
 state lives in the generated reference-intelligence files, automation memory,
 and pushed project-context commits. Their transcript files were not deleted.
+They were moved out of `~/.codex/sessions` and into
+`~/.codex/archived_sessions`, then pruned from `session_index.jsonl`.
 
 | Thread ID | Date | Automation | Transcript |
 |---|---:|---|---|
-| `019e74e8-f30e-7ac2-a9e2-4499ed0aea7f` | 2026-05-29 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/sessions/2026/05/29/rollout-2026-05-29T11-04-44-019e74e8-f30e-7ac2-a9e2-4499ed0aea7f.jsonl` |
-| `019e7467-f64a-7060-9b83-463f04a24ef4` | 2026-05-29 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/sessions/2026/05/29/rollout-2026-05-29T08-43-50-019e7467-f64a-7060-9b83-463f04a24ef4.jsonl` |
-| `019e7a0f-ed8a-7d30-829f-036af7811fb4` | 2026-05-30 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/sessions/2026/05/30/rollout-2026-05-30T11-05-24-019e7a0f-ed8a-7d30-829f-036af7811fb4.jsonl` |
-| `019e7a1e-0921-74e1-84d1-2af1eee97362` | 2026-05-30 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/sessions/2026/05/30/rollout-2026-05-30T11-20-49-019e7a1e-0921-74e1-84d1-2af1eee97362.jsonl` |
-| `019e798d-5962-7683-9bf3-d132e71f341b` | 2026-05-30 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/sessions/2026/05/30/rollout-2026-05-30T08-42-47-019e798d-5962-7683-9bf3-d132e71f341b.jsonl` |
-| `019e7ead-e452-7890-8da5-a14c21ed521f` | 2026-05-31 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/sessions/2026/05/31/rollout-2026-05-31T08-36-25-019e7ead-e452-7890-8da5-a14c21ed521f.jsonl` |
-| `019e7f45-3332-7251-814b-180611378562` | 2026-05-31 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/sessions/2026/05/31/rollout-2026-05-31T11-21-42-019e7f45-3332-7251-814b-180611378562.jsonl` |
-| `019e83d8-a693-7f90-8ce0-04d7f02abd12` | 2026-06-01 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/sessions/2026/06/01/rollout-2026-06-01T08-41-14-019e83d8-a693-7f90-8ce0-04d7f02abd12.jsonl` |
-| `019e846c-1dd1-7521-9af2-3cf76e0e5442` | 2026-06-01 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/sessions/2026/06/01/rollout-2026-06-01T11-22-18-019e846c-1dd1-7521-9af2-3cf76e0e5442.jsonl` |
-| `019e88f6-62ed-74b1-90e8-56270aefe55f` | 2026-06-02 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/sessions/2026/06/02/rollout-2026-06-02T08-31-49-019e88f6-62ed-74b1-90e8-56270aefe55f.jsonl` |
-| `019e8993-1fd1-7d22-818f-2a10463ee92f` | 2026-06-02 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/sessions/2026/06/02/rollout-2026-06-02T11-23-01-019e8993-1fd1-7d22-818f-2a10463ee92f.jsonl` |
+| `019e6f38-237e-7cb2-9624-85593c94358a` | 2026-05-28 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-05-28T08-33-30-019e6f38-237e-7cb2-9624-85593c94358a.jsonl` |
+| `019e6fc2-4fc6-7ba3-8750-410190114823` | 2026-05-28 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-05-28T11-04-25-019e6fc2-4fc6-7ba3-8750-410190114823.jsonl` |
+| `019e7467-f64a-7060-9b83-463f04a24ef4` | 2026-05-29 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-05-29T08-43-50-019e7467-f64a-7060-9b83-463f04a24ef4.jsonl` |
+| `019e74e8-f30e-7ac2-a9e2-4499ed0aea7f` | 2026-05-29 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-05-29T11-04-44-019e74e8-f30e-7ac2-a9e2-4499ed0aea7f.jsonl` |
+| `019e798d-5962-7683-9bf3-d132e71f341b` | 2026-05-30 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-05-30T08-42-47-019e798d-5962-7683-9bf3-d132e71f341b.jsonl` |
+| `019e7a0f-ed8a-7d30-829f-036af7811fb4` | 2026-05-30 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-05-30T11-05-24-019e7a0f-ed8a-7d30-829f-036af7811fb4.jsonl` |
+| `019e7a1e-0921-74e1-84d1-2af1eee97362` | 2026-05-30 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-05-30T11-20-49-019e7a1e-0921-74e1-84d1-2af1eee97362.jsonl` |
+| `019e7ead-e452-7890-8da5-a14c21ed521f` | 2026-05-31 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-05-31T08-36-25-019e7ead-e452-7890-8da5-a14c21ed521f.jsonl` |
+| `019e7f45-3332-7251-814b-180611378562` | 2026-05-31 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-05-31T11-21-42-019e7f45-3332-7251-814b-180611378562.jsonl` |
+| `019e83d8-a693-7f90-8ce0-04d7f02abd12` | 2026-06-01 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-06-01T08-41-14-019e83d8-a693-7f90-8ce0-04d7f02abd12.jsonl` |
+| `019e846c-1dd1-7521-9af2-3cf76e0e5442` | 2026-06-01 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-06-01T11-22-18-019e846c-1dd1-7521-9af2-3cf76e0e5442.jsonl` |
+| `019e88f6-62ed-74b1-90e8-56270aefe55f` | 2026-06-02 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-06-02T08-31-49-019e88f6-62ed-74b1-90e8-56270aefe55f.jsonl` |
+| `019e89f8-37ff-7ba3-96d1-045fc8bedd0d` | 2026-06-02 | `daily-gstack-gbrain-reference-sync` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-06-02T13-13-26-019e89f8-37ff-7ba3-96d1-045fc8bedd0d.jsonl` |
+| `019e8993-1fd1-7d22-818f-2a10463ee92f` | 2026-06-02 | `daily-gstack-gbrain-reference-intelligence` | `/Users/houstongolden/.codex/archived_sessions/rollout-2026-06-02T11-23-01-019e8993-1fd1-7d22-818f-2a10463ee92f.jsonl` |
 
-To restore visibility for one of these threads, clear its `archived` flag in
-Codex's local `threads` table. Prefer restoring one specific thread instead of
-unarchiving the whole automation batch.
+To run the same cleanup again:
+
+```bash
+npm run codex:chat-hygiene -- --apply --older-than-minutes 120
+```
+
+The command backs up `state_5.sqlite` and `session_index.jsonl`, moves matching
+automation transcripts to `~/.codex/archived_sessions`, sets `archived=1`, and
+removes matching rows from `session_index.jsonl`. To restore visibility for one
+thread, restore its row/path from the backups or re-add it deliberately; prefer
+restoring one specific thread instead of unarchiving the whole automation batch.
 
 ## Better Global Product Pattern
 

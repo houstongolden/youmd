@@ -8,6 +8,7 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Add `npm run codex:chat-hygiene` and hard-archive completed daily-reference automation threads into `~/.codex/archived_sessions`
 - [x] Add a generated `llms.txt` / `llms-full.txt` pipeline that derives root agent docs from the generated docs reference and reference-intelligence state
 - [x] Add `npm run llms:generate` and `npm run llms:check`, and wire them into `docs:generate` / `docs:check`
 - [x] Refresh reference intelligence while generating agent docs and confirm no new upstream task candidates
@@ -15,7 +16,7 @@ PRD Version: 2.3
 - [x] Add root-level agent-readable docs surfaces with `public/llms.txt` and `public/llms-full.txt`
 - [x] Wire agent docs into `/docs#agent-docs`, `robots.txt`, and `sitemap.xml`
 - [x] Verify the new agent docs with docs reference check, TypeScript, targeted ESLint, whitespace checks, and local HTTP smoke on `localhost:3100`
-- [x] Consolidate recurring Codex automation chat clutter for You.md by pausing the duplicate daily reference-intelligence automation, documenting chat-hygiene policy, and archiving completed automation threads while preserving transcript paths
+- [x] Consolidate recurring Codex automation chat clutter for You.md by pausing the duplicate daily reference-intelligence automation, documenting chat-hygiene policy, hard-archiving completed automation threads while preserving transcript files, and adding a reusable cleanup command for future runs
 - [x] Re-sync reference intelligence, confirm the current loop emits no new task candidates, and version the refreshed `project-context/reference-intelligence/LATEST.md` + `TASKS.md` artifacts
 - [x] Archive the Jun 2 daily-reference session prompts and update project-context tracking for the new "always version these artifacts" expectation
 
