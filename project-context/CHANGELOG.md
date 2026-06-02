@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-02 — Forbidden Stale Handoff Markers
+
+### CI / Docs
+- Added `forbiddenMarkers` support to `scripts/check-agent-doc-handoff.mjs`
+- Root `AGENTS.md` and `CLAUDE.md` now fail the handoff check if stale Next 16.1.6, Framer Motion naming, Clerk auth stack, Prod Clerk, or Clerk Backend API markers return
+- Active `project-context/ARCHITECTURE.md` and `project-context/PRD.md` now fail the handoff check if stale Clerk-era auth source-of-truth markers return
+
+### Verification
+- Passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, forbidden stale-marker grep, and `git diff --check`; push, GitHub Actions, and Vercel production receipts are next
+
 ## 2026-06-02 — Architecture Auth Source-Of-Truth Cleanup
 
 ### Docs / Agent Context

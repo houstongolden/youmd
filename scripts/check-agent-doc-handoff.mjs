@@ -36,6 +36,14 @@ const rootManualStackMarkers = [
   "- Auth: First-party passwordless web sessions + email-code CLI login + scoped API keys (agents)",
 ];
 
+const rootManualForbiddenMarkers = [
+  "| Frontend | Next.js (App Router) | 16.1.6 |",
+  "| Animation | Framer Motion | 12.37.0 |",
+  "| Auth | Clerk | 7.0.4 |",
+  "| Prod Clerk | clerk.you.md | pk_live keys |",
+  "- Auth: Clerk (web) + email/password via Clerk Backend API (CLI) + API keys (agents)",
+];
+
 const requiredDocs = [
   {
     file: "README.md",
@@ -69,6 +77,7 @@ const requiredDocs = [
       cliPackageMarker,
       ...rootManualStackMarkers,
     ],
+    forbiddenMarkers: rootManualForbiddenMarkers,
   },
   {
     file: "CLAUDE.md",
@@ -87,6 +96,7 @@ const requiredDocs = [
       cliPackageMarker,
       ...rootManualStackMarkers,
     ],
+    forbiddenMarkers: rootManualForbiddenMarkers,
   },
   {
     file: "src/app/(app)/docs/docs-content.tsx",
@@ -112,12 +122,23 @@ const requiredDocs = [
       "Terminal-style email-code sign-up",
       "JWT/JWKS",
     ],
+    forbiddenMarkers: [
+      "### Web (Clerk)",
+      "**users** — Authenticated accounts (1:1 with Clerk)",
+      "| clerkId | string | Clerk user ID, indexed |",
+      "Terminal-style Clerk sign-in",
+      "Terminal-style Clerk sign-up",
+      "│  │  OpenRouter  │  │  Apify      │  │  Clerk      │",
+    ],
   },
   {
     file: "project-context/PRD.md",
     markers: [
       "users (1:1 first-party auth subject) → profiles (1:1, claimable)",
       "**Web:** First-party passwordless email-code auth with signed session cookies and Convex custom JWTs",
+    ],
+    forbiddenMarkers: [
+      "users (1:1 Clerk) → profiles (1:1, claimable)",
     ],
   },
 ];
@@ -136,6 +157,12 @@ for (const doc of requiredDocs) {
   for (const marker of doc.markers) {
     if (!content.includes(marker)) {
       failures.push(`${doc.file}: missing marker ${JSON.stringify(marker)}`);
+    }
+  }
+
+  for (const marker of doc.forbiddenMarkers ?? []) {
+    if (content.includes(marker)) {
+      failures.push(`${doc.file}: forbidden stale marker ${JSON.stringify(marker)}`);
     }
   }
 }

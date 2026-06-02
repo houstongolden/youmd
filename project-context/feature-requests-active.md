@@ -11,6 +11,22 @@ Last Updated: 2026-06-02
 
 ---
 
+## Forbidden Stale Handoff Markers (from Jun 2 conversation)
+
+### 98. Make the agent-docs checker reject stale stack/auth language
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — Houston said "continue comprehensively - then commit and push to main - then continue comprehensively" after the active auth architecture cleanup was deployed.
+**Request:** Continue hardening shared agent docs/context so future docs can fail CI not only when good handoff markers disappear, but also when obsolete stack/auth claims reappear.
+**Actionable Scope:**
+1. Extend `scripts/check-agent-doc-handoff.mjs` with per-file forbidden marker checks.
+2. Forbid stale Next 16.1.6, Framer Motion naming, Clerk auth stack, Prod Clerk, and Clerk Backend API language in root `AGENTS.md` and `CLAUDE.md`.
+3. Forbid stale Clerk-era auth-flow, user-table, route, and external-services markers in active `project-context/ARCHITECTURE.md`.
+4. Forbid stale `users (1:1 Clerk)` PRD relationship language.
+5. Run local checks, commit, push to `main`, and verify deployment receipts.
+**Progress (2026-06-02):** Added `forbiddenMarkers` support to `scripts/check-agent-doc-handoff.mjs`; configured stale stack/auth forbidden markers for root manuals plus active architecture/PRD docs; passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, forbidden stale-marker grep, and `git diff --check`; push and production verification are next.
+
 ## Architecture Auth Source-Of-Truth Cleanup (from Jun 2 conversation)
 
 ### 97. Remove stale Clerk-era auth language from active PRD/architecture docs
