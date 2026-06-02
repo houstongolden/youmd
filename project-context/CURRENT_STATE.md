@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-06-02
-Latest Verified Production Web Commit: 930bd36 docs: publish expanded handoff guardrail scope
+Latest Verified Production Web Commit: c8d139b ci: clarify agent docs smoke markers
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---

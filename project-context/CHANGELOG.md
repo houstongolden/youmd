@@ -7,7 +7,9 @@
 - Live smoke output now identifies source-repo guardrail drift directly instead of folding it into the broader workflow/upstream marker check
 
 ### Verification
-- Passed `npm run agent-docs:ci`, `node scripts/smoke-agent-docs.mjs --base-url https://www.you.md`, `node --check scripts/smoke-agent-docs.mjs`, and `git diff --check`; push, GitHub Actions, and final Vercel receipts are next
+- Passed `npm run agent-docs:ci`, `node scripts/smoke-agent-docs.mjs --base-url https://www.you.md`, `node --check scripts/smoke-agent-docs.mjs`, and `git diff --check`
+- Verified GitHub Actions run `26853813606` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_ET95xLFTzNAF8EnfRTkmcWjzrCGc`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed with separate workflow/privacy/upstream and source-repo guardrail marker checks
 
 ## 2026-06-02 — Public Agent Docs Guardrail Wording
 

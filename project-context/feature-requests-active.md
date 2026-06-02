@@ -14,16 +14,16 @@ Last Updated: 2026-06-02
 ## Agent Docs Smoke Output Clarity (from Jun 2 conversation)
 
 ### 100. Split source-repo guardrail markers into their own smoke check
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_ET95xLFTzNAF8EnfRTkmcWjzrCGc` for commit `c8d139b` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26853813606` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — continuation after the expanded public handoff guardrail wording shipped.
 **Request:** Continue improving agent-docs verification so failed live smoke output points future agents to the exact class of drift.
 **Actionable Scope:**
 1. Keep workflow/privacy/upstream markers in their own `/llms-full.txt` smoke check.
 2. Move source-repo guardrail wording markers into a separate `/llms-full.txt` smoke check.
 3. Run local checks, commit, push to `main`, and verify deployment receipts.
-**Progress (2026-06-02):** Split `scripts/smoke-agent-docs.mjs` so `/llms-full.txt` source-repo guardrail wording is checked separately from workflow/privacy/upstream markers; passed `npm run agent-docs:ci`, `node scripts/smoke-agent-docs.mjs --base-url https://www.you.md`, `node --check scripts/smoke-agent-docs.mjs`, and `git diff --check`; push and final deployment verification are next.
+**Progress (2026-06-02):** Split `scripts/smoke-agent-docs.mjs` so `/llms-full.txt` source-repo guardrail wording is checked separately from workflow/privacy/upstream markers; passed `npm run agent-docs:ci`, `node scripts/smoke-agent-docs.mjs --base-url https://www.you.md`, `node --check scripts/smoke-agent-docs.mjs`, and `git diff --check`; pushed commit `c8d139b`; GitHub Actions run `26853813606` passed `Check Generated Agent Docs`; Vercel deployment `dpl_ET95xLFTzNAF8EnfRTkmcWjzrCGc` is Ready and aliased to `https://www.you.md` / `https://you.md`; live production `npm run llms:smoke -- --base-url https://www.you.md` passed with separate workflow/privacy/upstream and source-repo guardrail marker checks.
 
 ## Public Agent Docs Guardrail Wording (from Jun 2 conversation)
 
