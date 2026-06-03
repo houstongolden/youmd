@@ -107,6 +107,14 @@ export interface YouStackDoctorResult extends YouStackSmokeResult {
   recommendations: string[];
 }
 
+export type YouStackReadinessStatus = "not_found" | "invalid" | "ready";
+
+export interface YouStackReadiness {
+  status: YouStackReadinessStatus;
+  ready: boolean;
+  reason: string;
+}
+
 export interface YouStackRouteResult {
   request: string;
   capability: YouStackCapability;
@@ -498,6 +506,30 @@ export function loadYouStackManifest(inputPath?: string): LoadedYouStack {
     manifestPath,
     rootDir: path.dirname(manifestPath),
     validation,
+  };
+}
+
+export function getYouStackReadiness(loaded: LoadedYouStack | null): YouStackReadiness {
+  if (!loaded) {
+    return {
+      status: "not_found",
+      ready: false,
+      reason: "No local YouStack manifest found from the current directory or supplied path.",
+    };
+  }
+
+  if (!loaded.validation.ok) {
+    return {
+      status: "invalid",
+      ready: false,
+      reason: `Manifest validation failed with ${loaded.validation.errors.length} error${loaded.validation.errors.length === 1 ? "" : "s"}.`,
+    };
+  }
+
+  return {
+    status: "ready",
+    ready: true,
+    reason: "Manifest is present and validation passed.",
   };
 }
 

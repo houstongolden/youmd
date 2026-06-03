@@ -48,6 +48,7 @@ import {
   addProjectMemory,
 } from "../lib/project";
 import {
+  getYouStackReadiness,
   getYouStackCapabilities,
   loadYouStackManifest,
   routeYouStackRequest,
@@ -1449,9 +1450,10 @@ export async function startMcpServer(): Promise<void> {
       case "get_stack_manifest": {
         const stackArgs = (args || {}) as { path?: string };
         const loaded = tryLoadCurrentYouStack(stackArgs.path);
+        const readiness = getYouStackReadiness(loaded);
         if (!loaded) {
           return {
-            content: [{ type: "text" as const, text: "no local YouStack manifest found" }],
+            content: [{ type: "text" as const, text: JSON.stringify({ readiness, manifest: null, validation: null }, null, 2) }],
             isError: true,
           };
         }
@@ -1460,6 +1462,7 @@ export async function startMcpServer(): Promise<void> {
           content: [{
             type: "text" as const,
             text: JSON.stringify({
+              readiness,
               manifestPath: loaded.manifestPath,
               rootDir: loaded.rootDir,
               manifest: loaded.manifest,
@@ -1472,9 +1475,10 @@ export async function startMcpServer(): Promise<void> {
       case "get_stack_capabilities": {
         const stackArgs = (args || {}) as { path?: string };
         const loaded = tryLoadCurrentYouStack(stackArgs.path);
+        const readiness = getYouStackReadiness(loaded);
         if (!loaded) {
           return {
-            content: [{ type: "text" as const, text: "no local YouStack manifest found" }],
+            content: [{ type: "text" as const, text: JSON.stringify({ readiness, capabilities: [] }, null, 2) }],
             isError: true,
           };
         }
@@ -1483,6 +1487,7 @@ export async function startMcpServer(): Promise<void> {
           content: [{
             type: "text" as const,
             text: JSON.stringify({
+              readiness,
               stack: loaded.manifest.slug,
               capabilities: getYouStackCapabilities(loaded.manifest),
             }, null, 2),
@@ -1499,9 +1504,10 @@ export async function startMcpServer(): Promise<void> {
           };
         }
         const loaded = tryLoadCurrentYouStack(stackArgs.path);
+        const readiness = getYouStackReadiness(loaded);
         if (!loaded) {
           return {
-            content: [{ type: "text" as const, text: "no local YouStack manifest found" }],
+            content: [{ type: "text" as const, text: JSON.stringify({ readiness, request: stackArgs.request, capability: null, alternatives: [] }, null, 2) }],
             isError: true,
           };
         }
@@ -1513,7 +1519,7 @@ export async function startMcpServer(): Promise<void> {
         return {
           content: [{
             type: "text" as const,
-            text: JSON.stringify(route, null, 2),
+            text: JSON.stringify({ readiness, ...route }, null, 2),
           }],
         };
       }
@@ -1521,9 +1527,10 @@ export async function startMcpServer(): Promise<void> {
       case "smoke_stack": {
         const stackArgs = (args || {}) as { path?: string };
         const loaded = tryLoadCurrentYouStack(stackArgs.path);
+        const readiness = getYouStackReadiness(loaded);
         if (!loaded) {
           return {
-            content: [{ type: "text" as const, text: "no local YouStack manifest found" }],
+            content: [{ type: "text" as const, text: JSON.stringify({ readiness, ok: false, errors: ["no local YouStack manifest found"], warnings: [], checks: [] }, null, 2) }],
             isError: true,
           };
         }
@@ -1535,7 +1542,7 @@ export async function startMcpServer(): Promise<void> {
         return {
           content: [{
             type: "text" as const,
-            text: JSON.stringify(smoke, null, 2),
+            text: JSON.stringify({ readiness, ...smoke }, null, 2),
           }],
           isError: !smoke.ok,
         };

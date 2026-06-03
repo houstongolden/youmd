@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import {
+  getYouStackReadiness,
   linkYouStackAdapters,
   loadYouStackManifest,
   routeYouStackRequest,
@@ -171,6 +172,24 @@ describe("youstack manifest", () => {
     expect(smoke.checks).toContain("update policy: manual");
     expect(smoke.checks).toContain("file exists: skills/start/SKILL.md");
     expect(smoke.checks).toContain("file exists: workflows/startup.md");
+  });
+
+  it("reports explicit readiness states", () => {
+    const missing = getYouStackReadiness(null);
+    expect(missing.ready).toBe(false);
+    expect(missing.status).toBe("not_found");
+
+    writeStack(validManifest({ slug: "bad slug" }));
+    const invalid = getYouStackReadiness(loadYouStackManifest(tmpDir));
+    expect(invalid.ready).toBe(false);
+    expect(invalid.status).toBe("invalid");
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "youmd-youstack-"));
+    writeStack(validManifest());
+    const ready = getYouStackReadiness(loadYouStackManifest(tmpDir));
+    expect(ready.ready).toBe(true);
+    expect(ready.status).toBe("ready");
   });
 
   it("runs read-only doctor diagnostics for stack health", () => {

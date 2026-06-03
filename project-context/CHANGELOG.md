@@ -21,6 +21,8 @@
 - Tightened `cli/src/lib/youstack.ts` so manifest validation rejects shell-unsafe stack slugs and capability ids before they can flow into adapter paths or generated host files
 - Added warnings for multi-line/control-character-heavy `domain`, `aliases`, and `tags` metadata so generated adapter/docs metadata stays readable and less error-prone across hosts
 - Added focused CLI coverage for the new manifest-safety rules in `cli/src/__tests__/youstack.test.ts`
+- Added explicit `YouStackReadiness` envelopes to the local runtime so stack CLI JSON output and MCP stack tools can report `not_found`, `invalid`, or `ready` instead of making agents infer state from plain error strings or empty payloads
+- Threaded readiness state through `get_stack_manifest`, `get_stack_capabilities`, `route_stack_request`, and `smoke_stack`, plus local `youmd stack inspect/capabilities/route/smoke` JSON output
 
 ### Verification
 - Passed `npm run references:sync`

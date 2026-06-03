@@ -13,7 +13,8 @@ PRD Version: 2.3
 - [x] Land a repo-visible docs/contract improvement from the Jun 3 reference-intelligence follow-up list
 - [x] Enforce shell-safe `youstack` slugs/capability ids plus single-line metadata warnings before adapter generation
 - [ ] Audit remaining `youmd stack` host adapters/runtime helpers for broader cached shell-identifier sanitization and local-only metadata guarantees
-- [ ] Define explicit readiness/fallback expectations for protected brain retrieval and stack-aware API/MCP reads
+- [x] Add explicit readiness envelopes for local stack CLI/MCP reads so agents can distinguish `not_found`, `invalid`, and `ready`
+- [ ] Define broader protected-brain retrieval fallback behavior beyond stack-local readiness envelopes
 - [ ] Design resumable checkpoint + watchdog behavior for long-running brain/source sync work
 
 ### 2026-06-02
