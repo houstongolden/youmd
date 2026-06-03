@@ -11,6 +11,21 @@ Last Updated: 2026-06-02
 
 ---
 
+## Docs Page Local Guardrail Parity (from Jun 2 conversation)
+
+### 101. Make the local handoff checker enforce expanded `/docs#agent-docs` wording
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — continuation after the live smoke marker output split shipped.
+**Request:** Continue improving shared agent docs/context comprehensively by closing the next local-vs-production guardrail gap before committing and pushing to `main`.
+**Actionable Scope:**
+1. Require `scripts/check-agent-doc-handoff.mjs` to verify `/docs#agent-docs` mentions the expanded PRD/architecture source scope.
+2. Require the local checker to verify `/docs#agent-docs` mentions stale stack/auth language rejection.
+3. Require the local checker to verify `/docs#agent-docs` mentions required/forbidden marker checks.
+4. Run local checks, commit, push to `main`, and verify CI/deployment receipts.
+**Progress (2026-06-02):** Added the expanded `/docs#agent-docs` marker expectations to `scripts/check-agent-doc-handoff.mjs`; passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, expanded marker grep, and `git diff --check`; push and production receipts are in progress.
+
 ## Agent Docs Smoke Output Clarity (from Jun 2 conversation)
 
 ### 100. Split source-repo guardrail markers into their own smoke check

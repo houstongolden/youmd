@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-02 — Docs Page Local Guardrail Parity
+
+### CI / Docs
+- Extended `scripts/check-agent-doc-handoff.mjs` so local CI verifies `/docs#agent-docs` includes the expanded PRD/architecture source scope
+- The local handoff checker now also verifies the docs-page copy mentions stale stack/auth language rejection and required/forbidden handoff marker checks
+- This keeps local `npm run agent-docs:ci` aligned with the stronger production smoke expectations for the public docs page
+
+### Verification
+- Passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, expanded marker grep, and `git diff --check`
+
 ## 2026-06-02 — Agent Docs Smoke Output Clarity
 
 ### CI / Docs
