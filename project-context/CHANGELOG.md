@@ -17,9 +17,15 @@
 - Regenerated `public/llms.txt` and `public/llms-full.txt` so root agent docs carry the same stack safety and readiness rules
 - Extended `scripts/check-agent-doc-handoff.mjs` and `scripts/smoke-agent-docs.mjs` so local and live guardrails enforce the new stack safety/readiness wording alongside the existing source-repo handoff markers
 
+### CLI / YouStacks Runtime
+- Tightened `cli/src/lib/youstack.ts` so manifest validation rejects shell-unsafe stack slugs and capability ids before they can flow into adapter paths or generated host files
+- Added warnings for multi-line/control-character-heavy `domain`, `aliases`, and `tags` metadata so generated adapter/docs metadata stays readable and less error-prone across hosts
+- Added focused CLI coverage for the new manifest-safety rules in `cli/src/__tests__/youstack.test.ts`
+
 ### Verification
 - Passed `npm run references:sync`
 - Passed `npm run llms:generate`, `npm run llms:check`, `npm run agent-docs:handoff`, and `npm run agent-docs:ci`
+- Passed `npm --prefix cli test -- youstack` and `npm --prefix cli run build`
 - Confirmed the regenerated reference outputs now record the new upstream commit heads and 13 candidate tasks
 - Confirmed the new audit maps those tasks into repo-visible next steps before implementation work begins
 

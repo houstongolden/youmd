@@ -131,6 +131,34 @@ describe("youstack manifest", () => {
     expect(result.errors.join("\n")).toContain("duplicate capability id");
   });
 
+  it("rejects shell-unsafe stack slugs and capability ids", () => {
+    const result = validateYouStackManifest(
+      validManifest({
+        slug: "bad slug",
+        capabilities: [{ id: "needs spaces" }],
+      })
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain("slug must use only shell-safe identifier characters");
+    expect(result.errors.join("\n")).toContain("capabilities[0].id must use only shell-safe identifier characters");
+  });
+
+  it("warns when stack metadata is not single-line", () => {
+    const result = validateYouStackManifest(
+      validManifest({
+        domain: "research\nlab",
+        aliases: ["good", "two\nlines"],
+        tags: ["qa", "ship\tfast"],
+      })
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.warnings.join("\n")).toContain("domain should stay single-line");
+    expect(result.warnings.join("\n")).toContain("aliases[1] should stay single-line");
+    expect(result.warnings.join("\n")).toContain("tags[1] should stay single-line");
+  });
+
   it("runs read-only smoke checks over required files", () => {
     writeStack(validManifest());
     const loaded = loadYouStackManifest(tmpDir);

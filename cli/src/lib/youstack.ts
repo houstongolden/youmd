@@ -129,6 +129,9 @@ const VALID_VISIBILITY = new Set<YouStackVisibility>([
   "team",
 ]);
 
+const SHELL_SAFE_IDENTIFIER_RE = /^[a-z0-9][a-z0-9._-]*$/i;
+const SINGLE_LINE_METADATA_RE = /^[^\r\n\t]+$/;
+
 const BUILT_IN_CAPABILITIES: YouStackCapability[] = [
   {
     id: "manifest.inspect",
@@ -240,6 +243,14 @@ function validateOptionalStringArray(
   }
 }
 
+function isShellSafeIdentifier(value: string): boolean {
+  return SHELL_SAFE_IDENTIFIER_RE.test(value);
+}
+
+function isSingleLineMetadata(value: string): boolean {
+  return SINGLE_LINE_METADATA_RE.test(value);
+}
+
 function parseJsonFile(filePath: string): unknown {
   const raw = fs.readFileSync(filePath, "utf-8");
   return JSON.parse(raw);
@@ -306,15 +317,30 @@ export function validateYouStackManifest(value: unknown): YouStackValidationResu
 
   expectString(value, "schemaVersion", errors, { exact: "youstack/v1" });
   expectString(value, "kind", errors, { exact: "youstack" });
-  expectString(value, "slug", errors);
+  const slug = expectString(value, "slug", errors);
   expectString(value, "name", errors);
-  expectString(value, "domain", errors, { optional: true });
+  const domain = expectString(value, "domain", errors, { optional: true });
   validateOptionalStringArray(value, "aliases", errors);
   validateOptionalStringArray(value, "tags", errors);
   expectString(value, "version", errors);
   const visibility = expectString(value, "visibility", errors);
   if (visibility && !VALID_VISIBILITY.has(visibility as YouStackVisibility)) {
     errors.push(`visibility must be one of: ${Array.from(VALID_VISIBILITY).join(", ")}`);
+  }
+  if (slug && !isShellSafeIdentifier(slug)) {
+    errors.push("slug must use only shell-safe identifier characters: letters, numbers, dot, underscore, dash");
+  }
+  if (domain && !isSingleLineMetadata(domain)) {
+    warnings.push("domain should stay single-line so generated adapter/docs metadata stays readable");
+  }
+  for (const field of ["aliases", "tags"] as const) {
+    const items = value[field];
+    if (!Array.isArray(items)) continue;
+    for (const [index, item] of items.entries()) {
+      if (typeof item === "string" && !isSingleLineMetadata(item)) {
+        warnings.push(`${field}[${index}] should stay single-line so generated adapter/docs metadata stays readable`);
+      }
+    }
   }
 
   if (value.files !== undefined) {
@@ -369,6 +395,9 @@ export function validateYouStackManifest(value: unknown): YouStackValidationResu
         if (id) {
           if (seen.has(id)) errors.push(`duplicate capability id: ${id}`);
           seen.add(id);
+          if (!isShellSafeIdentifier(id)) {
+            errors.push(`capabilities[${index}].id must use only shell-safe identifier characters: letters, numbers, dot, underscore, dash`);
+          }
         }
         if (
           capability.localOnly !== undefined &&
@@ -633,6 +662,9 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
 
   if (manifestBytes > 64 * 1024) {
     warnings.push("manifest is over 64KB; move long docs/prompts into files and keep the manifest routable");
+  }
+  if (!isShellSafeIdentifier(manifest.slug)) {
+    warnings.push("stack slug is not shell-safe; adapter paths and generated host files should use letters, numbers, dot, underscore, and dash only");
   }
   if (files.length > 50) {
     warnings.push("stack declares more than 50 files; consider splitting into named domain stacks");
