@@ -11,6 +11,21 @@ Last Updated: 2026-06-02
 
 ---
 
+## Handoff Checker JSON Output (from Jun 2 conversation)
+
+### 104. Add machine-readable JSON output for the agent-docs handoff checker
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — Houston said "continue comprehensively - then commit and push to main - then continue comprehensively" after the modular agent-docs commands shipped.
+**Request:** Continue improving shared agent docs/context comprehensively by making the handoff guardrail easier for agents, CI, and future automation to inspect without parsing prose.
+**Actionable Scope:**
+1. Add `--json` support to `scripts/check-agent-doc-handoff.mjs` with ok state, CLI version, checked files, marker counts, and failures.
+2. Add `npm run agent-docs:handoff:json` as the reusable command.
+3. Document and enforce the JSON command across README, root agent manuals, `/docs#agent-docs`, generated `/llms-full.txt`, local handoff markers, and live smoke expectations.
+4. Run local checks, commit, push to `main`, and verify CI/deployment receipts.
+**Progress (2026-06-02):** Added structured JSON output to `scripts/check-agent-doc-handoff.mjs`; added `agent-docs:handoff:json`; updated README, `AGENTS.md`, `CLAUDE.md`, `/docs#agent-docs`, generated root agent docs, handoff markers, and live smoke expectations; passed `npm run agent-docs:handoff`, `npm run agent-docs:handoff:json`, JSON parse/count assertion, `npm run agent-docs:syntax`, `npm run agent-docs:lint`, `npm run llms:check`, `npm run agent-docs:ci`, JSON command marker grep, and `git diff --check`; push and production receipts are in progress.
+
 ## Modular Agent Docs CI Commands (from Jun 2 conversation)
 
 ### 103. Split `agent-docs:ci` into reusable subcommands

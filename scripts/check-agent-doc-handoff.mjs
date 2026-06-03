@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const ROOT = process.cwd();
+const outputJson = process.argv.includes("--json");
 
 function readJson(relativePath) {
   const fullPath = path.join(ROOT, relativePath);
@@ -58,6 +59,7 @@ const requiredDocs = [
       "npm run docs:check",
       "npm run agent-docs:syntax",
       "npm run agent-docs:handoff",
+      "npm run agent-docs:handoff:json",
       "npm run agent-docs:lint",
       "npm run llms:smoke -- --base-url https://www.you.md",
       "npm run agent-docs:ci",
@@ -76,6 +78,7 @@ const requiredDocs = [
       "npm run docs:check",
       "npm run agent-docs:syntax",
       "npm run agent-docs:handoff",
+      "npm run agent-docs:handoff:json",
       "npm run agent-docs:lint",
       "npm run llms:smoke -- --base-url https://www.you.md",
       "npm run agent-docs:ci",
@@ -98,6 +101,7 @@ const requiredDocs = [
       "npm run docs:check",
       "npm run agent-docs:syntax",
       "npm run agent-docs:handoff",
+      "npm run agent-docs:handoff:json",
       "npm run agent-docs:lint",
       "npm run llms:smoke -- --base-url https://www.you.md",
       "npm run agent-docs:ci",
@@ -117,6 +121,7 @@ const requiredDocs = [
       "stale stack/auth language",
       "npm run agent-docs:syntax",
       "npm run agent-docs:handoff",
+      "npm run agent-docs:handoff:json",
       "npm run agent-docs:lint",
       "npm run agent-docs:ci",
       "required/forbidden handoff marker checks",
@@ -159,6 +164,7 @@ const requiredDocs = [
 ];
 
 const failures = [];
+const checkedFiles = [];
 let checkedDocCount = 0;
 let requiredMarkerCount = 0;
 let forbiddenMarkerCount = 0;
@@ -173,6 +179,7 @@ for (const doc of requiredDocs) {
   }
 
   checkedDocCount += 1;
+  checkedFiles.push(doc.file);
   requiredMarkerCount += doc.markers.length;
   forbiddenMarkerCount += doc.forbiddenMarkers?.length ?? 0;
 
@@ -189,7 +196,27 @@ for (const doc of requiredDocs) {
   }
 }
 
+const result = {
+  ok: failures.length === 0,
+  cliVersion,
+  marker: cliVersionMarker,
+  files: {
+    checked: checkedDocCount,
+    paths: checkedFiles,
+  },
+  markers: {
+    required: requiredMarkerCount,
+    forbiddenStale: forbiddenMarkerCount,
+  },
+  failures,
+};
+
 if (failures.length > 0) {
+  if (outputJson) {
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(1);
+  }
+
   console.error("agent docs handoff check failed");
   for (const failure of failures) {
     console.error(`- ${failure}`);
@@ -197,6 +224,10 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(
-  `agent docs handoff markers are present for ${cliVersionMarker} (${checkedDocCount} files, ${requiredMarkerCount} required markers, ${forbiddenMarkerCount} forbidden stale markers)`,
-);
+if (outputJson) {
+  console.log(JSON.stringify(result, null, 2));
+} else {
+  console.log(
+    `agent docs handoff markers are present for ${cliVersionMarker} (${checkedDocCount} files, ${requiredMarkerCount} required markers, ${forbiddenMarkerCount} forbidden stale markers)`,
+  );
+}

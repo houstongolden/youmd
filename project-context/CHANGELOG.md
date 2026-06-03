@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-02 — Handoff Checker JSON Output
+
+### CI / Docs
+- Added `--json` support to `scripts/check-agent-doc-handoff.mjs` so automation can read ok state, CLI version, checked files, marker counts, and failures without parsing prose
+- Added `npm run agent-docs:handoff:json` as the reusable machine-readable handoff check
+- Documented and enforced the JSON command across README, root agent manuals, `/docs#agent-docs`, generated `/llms-full.txt`, local handoff markers, and live smoke expectations
+
+### Verification
+- Passed `npm run agent-docs:handoff`, `npm run agent-docs:handoff:json`, JSON parse/count assertion, `npm run agent-docs:syntax`, `npm run agent-docs:lint`, `npm run llms:check`, `npm run agent-docs:ci`, JSON command marker grep, and `git diff --check`
+- Confirmed JSON output reports `ok: true`, `6` checked files, `86` required markers, `17` forbidden stale markers, and no failures
+
 ## 2026-06-02 — Modular Agent Docs CI Commands
 
 ### CI / Docs

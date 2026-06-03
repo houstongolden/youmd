@@ -133,6 +133,7 @@ async function main() {
     "stale stack/auth language",
     "npm run agent-docs:syntax",
     "npm run agent-docs:handoff",
+    "npm run agent-docs:handoff:json",
     "npm run agent-docs:lint",
   ];
   const missingSourceRepoHandoffMarkers = includesAll(llmsFullResult.body, sourceRepoHandoffMarkers);
@@ -166,6 +167,7 @@ async function main() {
     "node scripts/check-agent-doc-handoff.mjs",
     "npm run agent-docs:syntax",
     "npm run agent-docs:handoff",
+    "npm run agent-docs:handoff:json",
     "npm run agent-docs:lint",
     "npm run agent-docs:ci",
     "PRD, and architecture docs",

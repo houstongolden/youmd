@@ -72,6 +72,7 @@ Release and drift checks:
 npm run docs:check
 npm run agent-docs:syntax
 npm run agent-docs:handoff
+npm run agent-docs:handoff:json
 npm run agent-docs:lint
 npm run llms:smoke -- --base-url https://www.you.md
 npm run agent-docs:ci
@@ -437,6 +438,7 @@ npm run docs:generate
 npm run docs:check
 npm run agent-docs:syntax
 npm run agent-docs:handoff
+npm run agent-docs:handoff:json
 npm run agent-docs:lint
 npm run llms:smoke -- --base-url https://www.you.md
 npm run agent-docs:ci

@@ -2307,6 +2307,7 @@ youmd mcp --json`}</CodeBlock>
                 { cmd: "npm run agent-docs:syntax", desc: "Syntax-check the docs generator, root agent-docs generator, live smoke script, and handoff checker" },
                 { cmd: "node scripts/check-agent-doc-handoff.mjs", desc: "Assert README, root agent manuals, /docs source, PRD, and architecture docs keep required handoff markers and reject stale stack/auth language" },
                 { cmd: "npm run agent-docs:handoff", desc: "Run the handoff marker check with file and marker-count diagnostics" },
+                { cmd: "npm run agent-docs:handoff:json", desc: "Emit the handoff marker contract as JSON for automation and CI log parsing" },
                 { cmd: "npm run agent-docs:lint", desc: "Run targeted ESLint for generated docs artifacts, docs automation scripts, and the docs page source" },
                 { cmd: "npm run llms:smoke -- --base-url https://www.you.md", desc: "Smoke-test live agent docs against the generated docs reference, MCP discovery, robots, sitemap, and docs page" },
                 { cmd: "npm run agent-docs:ci", desc: "Run generated docs checks, required/forbidden handoff marker checks, syntax checks, and targeted lint" },
@@ -2327,6 +2328,7 @@ curl -fsSL https://you.md/llms-full.txt
 # Release smoke
 npm run agent-docs:syntax
 npm run agent-docs:handoff
+npm run agent-docs:handoff:json
 npm run agent-docs:lint
 npm run llms:smoke -- --base-url https://www.you.md
 npm run agent-docs:ci`}</CodeBlock>
