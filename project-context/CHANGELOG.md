@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-02 — Handoff Checker Diagnostics
+
+### CI / Docs
+- Updated `scripts/check-agent-doc-handoff.mjs` success output to report checked file count, required marker count, and forbidden stale-marker count
+- The agent-docs guardrail now gives future agents a compact local/CI receipt for the size of the handoff contract it just validated
+
+### Verification
+- Passed direct `node scripts/check-agent-doc-handoff.mjs`, `npm run agent-docs:ci`, and `git diff --check`
+- Confirmed the checker reports `6 files, 70 required markers, 17 forbidden stale markers`
+
 ## 2026-06-02 — Docs Page Local Guardrail Parity
 
 ### CI / Docs

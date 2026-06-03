@@ -147,6 +147,9 @@ const requiredDocs = [
 ];
 
 const failures = [];
+let checkedDocCount = 0;
+let requiredMarkerCount = 0;
+let forbiddenMarkerCount = 0;
 
 for (const doc of requiredDocs) {
   const fullPath = path.join(ROOT, doc.file);
@@ -156,6 +159,10 @@ for (const doc of requiredDocs) {
     failures.push(`${doc.file}: missing or empty`);
     continue;
   }
+
+  checkedDocCount += 1;
+  requiredMarkerCount += doc.markers.length;
+  forbiddenMarkerCount += doc.forbiddenMarkers?.length ?? 0;
 
   for (const marker of doc.markers) {
     if (!content.includes(marker)) {
@@ -178,4 +185,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`agent docs handoff markers are present for ${cliVersionMarker}`);
+console.log(
+  `agent docs handoff markers are present for ${cliVersionMarker} (${checkedDocCount} files, ${requiredMarkerCount} required markers, ${forbiddenMarkerCount} forbidden stale markers)`,
+);
