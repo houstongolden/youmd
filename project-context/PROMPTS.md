@@ -2,15 +2,16 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 54
-**Total messages:** 444
-**Last updated:** 2026-06-03 00:31
+**Total sessions:** 55
+**Total messages:** 446
+**Last updated:** 2026-06-03 21:22
 
 ## Table of Contents
 
 1. [2026-06-03 (handoff-checker-json-output)](#session-2026-06-03-handoff-checker-json-output) --- 1 message
 1. [2026-06-03 (modular-agent-docs-ci)](#session-2026-06-03-modular-agent-docs-ci) --- 1 message
 1. [2026-06-03 (docs-page-local-guardrail-parity)](#session-2026-06-03-docs-page-local-guardrail-parity) --- 1 message
+1. [2026-06-03 (reference-follow-up-continuation)](#session-2026-06-03-reference-follow-up-continuation) --- 2 messages
 1. [2026-06-02 (forbidden-stale-handoff-markers)](#session-2026-06-02-forbidden-stale-handoff-markers) --- 1 message
 1. [2026-06-02 (dynamic-cli-handoff-check)](#session-2026-06-02-dynamic-cli-handoff-check) --- 1 message
 1. [2026-06-02 (docs-page-source-handoff)](#session-2026-06-02-docs-page-source-handoff) --- 1 message
@@ -62,6 +63,21 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-03 (reference-follow-up-continuation)
+
+**2026-06-03 08:43:18 UTC**
+> Automation: Daily You.md Reference Intelligence
+> Automation ID: daily-gstack-gbrain-reference-sync
+> Automation memory: $CODEX_HOME/automations/daily-gstack-gbrain-reference-sync/memory.md
+> Last run: 2026-06-02T15:31:48.046Z (1780414308046)
+>
+> Run You.md's reference intelligence monitor in this workspace. First, run `npm run codex:chat-hygiene -- --apply --older-than-minutes 120` so prior completed automation threads are archived from the active Codex sidebar while their transcripts remain preserved under `$CODEX_HOME/archived_sessions`. Then execute `npm run references:sync`, inspect `project-context/reference-intelligence/LATEST.md` and `project-context/reference-intelligence/TASKS.md`, and summarize upstream changes from GStack, GBrain, Agent Scripts, and The Library. Focus the report on actionable follow-up tasks for YouStacks, the You.md brain/context layer, shared agent rules/skills/scripts, source catalogs, private stack distribution, API/MCP boundaries, safety, docs, and open-source/hosted product strategy. Do not auto-apply product changes; only update the generated reference-intelligence files and report candidate tasks.
+
+**2026-06-03 08:43:18 UTC**
+> continue comprehensively Highest-value follow-up tasks - then commit and push to main - then continue comprehensively
 
 ---
 
