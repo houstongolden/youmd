@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Modular Agent Docs CI Commands (from Jun 2 conversation)
 
 ### 103. Split `agent-docs:ci` into reusable subcommands
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_BUWknQrA2KZ4J4GkQ9NKBN9iZP2H` for commit `152dd5e` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26856191121` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — Houston said "continue comprehensively - then commit and push to main - then continue comprehensively" after the handoff diagnostics deployment was recorded.
 **Request:** Continue improving shared agent docs/context comprehensively by making the agent-docs release checks easier for future agents to run and debug.
 **Actionable Scope:**
@@ -24,7 +24,7 @@ Last Updated: 2026-06-02
 2. Document the modular commands in README, root agent manuals, `/docs#agent-docs`, and generated `/llms-full.txt`.
 3. Extend local handoff markers and live smoke expectations so the modular commands cannot silently disappear.
 4. Run local checks, commit, push to `main`, and verify CI/deployment receipts.
-**Progress (2026-06-02):** Added `agent-docs:syntax`, `agent-docs:handoff`, and `agent-docs:lint`; rewired `agent-docs:ci` to call them; updated README, `AGENTS.md`, `CLAUDE.md`, `/docs#agent-docs`, generated root agent docs, handoff markers, and live smoke expectations; passed `npm run agent-docs:syntax`, `npm run agent-docs:handoff`, `npm run agent-docs:lint`, `npm run agent-docs:ci`, `npm run llms:check`, modular command marker grep, and `git diff --check`; push and production receipts are in progress.
+**Progress (2026-06-02):** Added `agent-docs:syntax`, `agent-docs:handoff`, and `agent-docs:lint`; rewired `agent-docs:ci` to call them; updated README, `AGENTS.md`, `CLAUDE.md`, `/docs#agent-docs`, generated root agent docs, handoff markers, and live smoke expectations; passed `npm run agent-docs:syntax`, `npm run agent-docs:handoff`, `npm run agent-docs:lint`, `npm run agent-docs:ci`, `npm run llms:check`, modular command marker grep, and `git diff --check`; pushed commit `152dd5e`; GitHub Actions run `26856191121` passed `Check Generated Agent Docs`; Vercel deployment `dpl_BUWknQrA2KZ4J4GkQ9NKBN9iZP2H` is Ready and aliased to `https://www.you.md` / `https://you.md`; live production `npm run llms:smoke -- --base-url https://www.you.md` passed all checks with the source-repo guardrail smoke check reporting 8 markers.
 
 ## Handoff Checker Diagnostics (from Jun 2 conversation)
 
