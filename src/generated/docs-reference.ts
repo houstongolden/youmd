@@ -19,7 +19,7 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "a9ebbf009957a8347e6df9eb842bc408598f2622e1d12eb2e6899fc933e92a46",
+  "sourceHash": "2153815abffcb80c064fc552b40a3b6e98108b80f2d9d336999f60b54719784b",
   "cli": {
     "version": "0.6.23"
   },
@@ -946,7 +946,7 @@ export const docsReference = {
     },
     {
       "name": "search_memories",
-      "description": "Search the user's memories by category or list all active memories. Returns an array of memory objects with category, content, tags, and timestamps. Use to check what you already know before asking the user a question they may have answered before.",
+      "description": "Search the user's memories by category or list all active memories. Returns a readiness envelope plus memory objects so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states.",
       "inputFields": [
         "category",
         "limit"
