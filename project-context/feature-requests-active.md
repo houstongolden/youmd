@@ -11,6 +11,21 @@ Last Updated: 2026-06-02
 
 ---
 
+## Modular Agent Docs CI Commands (from Jun 2 conversation)
+
+### 103. Split `agent-docs:ci` into reusable subcommands
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-02 — Houston said "continue comprehensively - then commit and push to main - then continue comprehensively" after the handoff diagnostics deployment was recorded.
+**Request:** Continue improving shared agent docs/context comprehensively by making the agent-docs release checks easier for future agents to run and debug.
+**Actionable Scope:**
+1. Split the long `npm run agent-docs:ci` command into focused syntax, handoff, and lint subcommands while keeping the umbrella command.
+2. Document the modular commands in README, root agent manuals, `/docs#agent-docs`, and generated `/llms-full.txt`.
+3. Extend local handoff markers and live smoke expectations so the modular commands cannot silently disappear.
+4. Run local checks, commit, push to `main`, and verify CI/deployment receipts.
+**Progress (2026-06-02):** Added `agent-docs:syntax`, `agent-docs:handoff`, and `agent-docs:lint`; rewired `agent-docs:ci` to call them; updated README, `AGENTS.md`, `CLAUDE.md`, `/docs#agent-docs`, generated root agent docs, handoff markers, and live smoke expectations; passed `npm run agent-docs:syntax`, `npm run agent-docs:handoff`, `npm run agent-docs:lint`, `npm run agent-docs:ci`, `npm run llms:check`, modular command marker grep, and `git diff --check`; push and production receipts are in progress.
+
 ## Handoff Checker Diagnostics (from Jun 2 conversation)
 
 ### 102. Add marker-count diagnostics to the agent-docs handoff checker

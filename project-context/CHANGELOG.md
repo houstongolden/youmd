@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-02 — Modular Agent Docs CI Commands
+
+### CI / Docs
+- Split the long `npm run agent-docs:ci` script into `agent-docs:syntax`, `agent-docs:handoff`, and `agent-docs:lint`, while keeping `agent-docs:ci` as the full umbrella command
+- Documented the modular commands in README, root agent manuals, `/docs#agent-docs`, and generated `/llms-full.txt`
+- Extended the handoff checker and live smoke checks so the modular commands remain part of the source-repo and public docs handoff contract
+
+### Verification
+- Passed `npm run agent-docs:syntax`, `npm run agent-docs:handoff`, `npm run agent-docs:lint`, `npm run agent-docs:ci`, `npm run llms:check`, modular command marker grep, and `git diff --check`
+- Confirmed the handoff checker now reports `6 files, 82 required markers, 17 forbidden stale markers`
+
 ## 2026-06-02 — Handoff Checker Diagnostics
 
 ### CI / Docs

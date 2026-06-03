@@ -131,6 +131,9 @@ async function main() {
     "CLAUDE.md: Claude-specific operating manual",
     "PRD, and architecture docs",
     "stale stack/auth language",
+    "npm run agent-docs:syntax",
+    "npm run agent-docs:handoff",
+    "npm run agent-docs:lint",
   ];
   const missingSourceRepoHandoffMarkers = includesAll(llmsFullResult.body, sourceRepoHandoffMarkers);
   record("llms-full.txt includes source-repo guardrail markers", missingSourceRepoHandoffMarkers.length === 0, missingSourceRepoHandoffMarkers.length ? `missing: ${missingSourceRepoHandoffMarkers.join(", ")}` : `${sourceRepoHandoffMarkers.length} markers`);
@@ -161,6 +164,9 @@ async function main() {
     "GET /llms-full.txt",
     "README.md / AGENTS.md / CLAUDE.md",
     "node scripts/check-agent-doc-handoff.mjs",
+    "npm run agent-docs:syntax",
+    "npm run agent-docs:handoff",
+    "npm run agent-docs:lint",
     "npm run agent-docs:ci",
     "PRD, and architecture docs",
     "stale stack/auth language",

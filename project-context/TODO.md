@@ -8,6 +8,7 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-02
+- [x] Split the long `agent-docs:ci` package script into reusable `agent-docs:syntax`, `agent-docs:handoff`, and `agent-docs:lint` commands
 - [x] Add file/required-marker/forbidden-marker success diagnostics to `scripts/check-agent-doc-handoff.mjs`
 - [x] Make `scripts/check-agent-doc-handoff.mjs` enforce the expanded `/docs#agent-docs` PRD/architecture, stale stack/auth, and required/forbidden marker wording that live smoke already checks
 - [x] Split `/llms-full.txt` source-repo guardrail markers into their own live smoke check
