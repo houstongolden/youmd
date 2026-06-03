@@ -18,6 +18,7 @@ PRD Version: 2.3
 - [x] Extend protected-memory retrieval honesty beyond MCP `search_memories` into MCP memory resources and startup brief context
 - [x] Teach the stack capability contract and generated adapters the protected-read readiness states and fallback order
 - [x] Add the missing protected private-context MCP tool/resource with the same readiness and fallback contract as memory retrieval
+- [x] Add explicit readiness envelopes for MCP project-context reads and project resources so missing project context stops surfacing as ad hoc plain-text errors
 - [ ] Define broader protected-brain retrieval fallback behavior beyond current memory/private-context stack contracts
 - [ ] Design resumable checkpoint + watchdog behavior for long-running brain/source sync work
 

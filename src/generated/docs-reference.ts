@@ -19,7 +19,7 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "95ec6141b1b1f0f843d8fc0716184c2a7c9368606c75054978be7b84791cc553",
+  "sourceHash": "a2d30324e5cbc778fb97b71a138eee90afdaf10c80fceee0f6044465bfe9c745",
   "cli": {
     "version": "0.6.23"
   },
@@ -881,7 +881,7 @@ export const docsReference = {
     },
     {
       "name": "get_project_context",
-      "description": "Get the full project context for the current or named project — PRD, TODO, features, decisions, changelog, and project memories. Returns a JSON object with all project-context/ files. Use when starting work on a project to understand what has been built, what is planned, and what decisions have been made.",
+      "description": "Get the full project context for the current or named project — PRD, TODO, features, decisions, changelog, and project memories. Returns a readiness envelope so agents can distinguish missing project context from ready project context without parsing plain-text errors.",
       "inputFields": [
         "project"
       ],

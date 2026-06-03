@@ -27,6 +27,7 @@
 - Applied the same protected-memory retrieval envelope to `youmd://memories` MCP resources and `get_agent_brief` memory inclusion so missing auth or server failures no longer look like a healthy empty memory set
 - Updated the shared YouStack capability contract and generated host adapters so protected-read capabilities explicitly advertise readiness states and fallback order instead of implying hosted retrieval is always available
 - Added the missing MCP `get_private_context` tool plus `youmd://private-context` resource, both using a protected-read readiness envelope so private-context auth/server failures no longer surface as missing capability coverage or ambiguous generic errors
+- Added readiness envelopes for MCP project-context reads and `youmd://projects/*` resources so missing current/named project context now carries structured fallback guidance instead of plain-text project errors
 
 ### Verification
 - Passed `npm run references:sync`

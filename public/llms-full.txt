@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: 95ec6141b1b1f0f843d8fc0716184c2a7c9368606c75054978be7b84791cc553. CLI version: 0.6.23. Endpoints: 68. MCP tools: 24. Reference intelligence: 2026-06-03T17:12:14.740Z.
+> Generated full agent context. Source hash: a2d30324e5cbc778fb97b71a138eee90afdaf10c80fceee0f6044465bfe9c745. CLI version: 0.6.23. Endpoints: 68. MCP tools: 24. Reference intelligence: 2026-06-03T17:12:14.740Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -149,7 +149,7 @@ Important MCP tools and resources:
 - `whoami`: Return a compact ~500-char identity summary: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation - it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSON.
 - `get_identity`: Get the user's complete you.md identity bundle. Returns compact (default), full JSON, or human-readable markdown. For the fastest orient, call whoami first; call get_identity when you need full detail (preferences, voice, directives, projects).
 - `get_agent_brief`: Return a YouStack startup brief for local agents. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines compact identity, current repo instructions, project-context active requests, open TODOs, installed skills, and recommended next moves so the agent can act without asking the user to re-explain...
-- `get_project_context`: Get the full project context for the current or named project - PRD, TODO, features, decisions, changelog, and project memories. Returns a JSON object with all project-context/ files. Use when starting work on a project to understand what has been built, what is planned, and what decisions have been made.
+- `get_project_context`: Get the full project context for the current or named project - PRD, TODO, features, decisions, changelog, and project memories. Returns a readiness envelope so agents can distinguish missing project context from ready project context without parsing plain-text errors.
 - `add_memory`: Save a memory about the user - facts, preferences, decisions, or context learned during this conversation. Memories persist across sessions and inform ALL future agent interactions. Use proactively when you learn something important about the user (a preference, a decision, a project detail). Requires authentication.
 - `add_project_memory`: Save a memory scoped to a specific project. Unlike add_memory (which is global), project memories are stored locally in the project-context/ directory and only surface when working on that project. Use for architecture decisions, bug context, and feature-specific learnings.
 - `get_stack_manifest`: Return the current local YouStack manifest discovered from cwd, or from a provided manifest/stack path. Use before trusting local stack files.

@@ -193,6 +193,24 @@ interface PrivateContextRetrievalEnvelope {
   };
 }
 
+type ProjectContextReadinessStatus = "ready" | "not_found";
+
+interface ProjectContextReadiness {
+  status: ProjectContextReadinessStatus;
+  ready: boolean;
+  reason: string;
+  fallback: string;
+}
+
+interface ProjectContextEnvelope {
+  readiness: ProjectContextReadiness;
+  project: {
+    name: string | null;
+    source: "current" | "named";
+  };
+  projectContext: ReturnType<typeof readProjectContext>;
+}
+
 async function fetchMemories(category?: string, limit?: number): Promise<unknown[]> {
   const result = await fetchMemoriesEnvelope(category, limit);
   return result.memories;
@@ -348,6 +366,107 @@ async function fetchPrivateContextEnvelope(): Promise<PrivateContextRetrievalEnv
       },
     };
   }
+}
+
+function fetchProjectContextEnvelope(projectName?: string): ProjectContextEnvelope {
+  if (projectName) {
+    const root = findProjectsRoot();
+    if (!root) {
+      return {
+        readiness: {
+          status: "not_found",
+          ready: false,
+          reason: "No projects directory was found for the requested named project.",
+          fallback: "Use local project-context files from the current repo, public identity, or a current project detection flow before retrying a named project lookup.",
+        },
+        project: {
+          name: projectName,
+          source: "named",
+        },
+        projectContext: null,
+      };
+    }
+
+    const projDir = getProjectDir(root, projectName);
+    const ctx = readProjectContext(projDir);
+    if (!ctx) {
+      return {
+        readiness: {
+          status: "not_found",
+          ready: false,
+          reason: `Project context for ${projectName} was not found or is incomplete.`,
+          fallback: "Use local repo instructions, project-context files, or confirm the named project exists before retrying.",
+        },
+        project: {
+          name: projectName,
+          source: "named",
+        },
+        projectContext: null,
+      };
+    }
+
+    return {
+      readiness: {
+        status: "ready",
+        ready: true,
+        reason: `Project context for ${projectName} is available.`,
+        fallback: "None needed.",
+      },
+      project: {
+        name: projectName,
+        source: "named",
+      },
+      projectContext: ctx,
+    };
+  }
+
+  const current = getCurrentProject();
+  if (!current) {
+    return {
+      readiness: {
+        status: "not_found",
+        ready: false,
+        reason: "No current project was detected from the working directory.",
+        fallback: "Use local project-context files in the current repo, pass an explicit project name, or fall back to public identity and stack files.",
+      },
+      project: {
+        name: null,
+        source: "current",
+      },
+      projectContext: null,
+    };
+  }
+
+  const ctx = readProjectContext(current.dir);
+  if (!ctx) {
+    return {
+      readiness: {
+        status: "not_found",
+        ready: false,
+        reason: `Project context for ${current.name} was detected but could not be read.`,
+        fallback: "Use repo-local instructions and project-context markdown files directly, then repair the named project bundle before retrying.",
+      },
+      project: {
+        name: current.name,
+        source: "current",
+      },
+      projectContext: null,
+    };
+  }
+
+  return {
+    readiness: {
+      status: "ready",
+      ready: true,
+      reason: `Project context for ${current.name} is available.`,
+      fallback: "None needed.",
+    },
+    project: {
+      name: current.name,
+      source: "current",
+    },
+    projectContext: ctx,
+  };
 }
 
 async function apiRequest(path: string, opts?: { method?: string; body?: unknown }): Promise<unknown> {
@@ -1194,9 +1313,7 @@ export async function startMcpServer(): Promise<void> {
 
     // youmd://projects/current
     if (uri === "youmd://projects/current") {
-      const current = getCurrentProject();
-      if (!current) throw new Error("no project detected in current directory");
-      const ctx = readProjectContext(current.dir);
+      const ctx = fetchProjectContextEnvelope();
       return {
         contents: [{
           uri,
@@ -1209,10 +1326,7 @@ export async function startMcpServer(): Promise<void> {
     // youmd://projects/{name}
     const projMatch = uri.match(/^youmd:\/\/projects\/(.+)$/);
     if (projMatch) {
-      const root = findProjectsRoot();
-      if (!root) throw new Error("no projects directory found");
-      const projDir = getProjectDir(root, projMatch[1]);
-      const ctx = readProjectContext(projDir);
+      const ctx = fetchProjectContextEnvelope(projMatch[1]);
       return {
         contents: [{
           uri,
@@ -1445,7 +1559,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "get_project_context",
-          description: "Get the full project context for the current or named project — PRD, TODO, features, decisions, changelog, and project memories. Returns a JSON object with all project-context/ files. Use when starting work on a project to understand what has been built, what is planned, and what decisions have been made.",
+          description: "Get the full project context for the current or named project — PRD, TODO, features, decisions, changelog, and project memories. Returns a readiness envelope so agents can distinguish missing project context from ready project context without parsing plain-text errors.",
           inputSchema: {
             type: "object" as const,
             properties: {
@@ -1871,25 +1985,12 @@ export async function startMcpServer(): Promise<void> {
 
       case "get_project_context": {
         const projectName = (args as Record<string, unknown>)?.project as string | undefined;
-        try {
-          if (projectName) {
-            const root = findProjectsRoot();
-            if (!root) throw new Error("no projects directory found");
-            const projDir = getProjectDir(root, projectName);
-            const ctx = readProjectContext(projDir);
-            void logMcpActivity("read", "project/" + projectName);
-            return { content: [{ type: "text" as const, text: JSON.stringify(ctx, null, 2) }] };
-          }
-          const current = getCurrentProject();
-          if (!current) {
-            return { content: [{ type: "text" as const, text: "no project detected in current directory" }], isError: true };
-          }
-          const ctx = readProjectContext(current.dir);
-          void logMcpActivity("read", "project/current");
-          return { content: [{ type: "text" as const, text: JSON.stringify(ctx, null, 2) }] };
-        } catch (err) {
-          return { content: [{ type: "text" as const, text: `project error: ${err instanceof Error ? err.message : "unknown"}` }], isError: true };
-        }
+        const result = fetchProjectContextEnvelope(projectName);
+        void logMcpActivity("read", projectName ? "project/" + projectName : "project/current");
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+          isError: !result.readiness.ready,
+        };
       }
 
       case "add_project_memory": {
