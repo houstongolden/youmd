@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-06-02
-Latest Verified Production Web Commit: 152dd5e ci: split agent docs checks
+Latest Verified Production Web Commit: ee60713 ci: add handoff checker json output
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---

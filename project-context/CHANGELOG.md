@@ -10,6 +10,8 @@
 ### Verification
 - Passed `npm run agent-docs:handoff`, `npm run agent-docs:handoff:json`, JSON parse/count assertion, `npm run agent-docs:syntax`, `npm run agent-docs:lint`, `npm run llms:check`, `npm run agent-docs:ci`, JSON command marker grep, and `git diff --check`
 - Confirmed JSON output reports `ok: true`, `6` checked files, `86` required markers, `17` forbidden stale markers, and no failures
+- Verified GitHub Actions run `26856413207` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_CcWeF8asBZULESwqvEKGjWYBRMmY`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks with the source-repo guardrail smoke check reporting 9 markers
 
 ## 2026-06-02 — Modular Agent Docs CI Commands
 
