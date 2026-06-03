@@ -9,6 +9,8 @@
 
 ### Verification
 - Passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, expanded marker grep, and `git diff --check`
+- Verified GitHub Actions run `26855772471` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_7RTHaMrQWf4ieQhmEgTbA171BehM`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — Agent Docs Smoke Output Clarity
 

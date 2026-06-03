@@ -14,9 +14,9 @@ Last Updated: 2026-06-02
 ## Docs Page Local Guardrail Parity (from Jun 2 conversation)
 
 ### 101. Make the local handoff checker enforce expanded `/docs#agent-docs` wording
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_7RTHaMrQWf4ieQhmEgTbA171BehM` for commit `ed7facd` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26855772471` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — continuation after the live smoke marker output split shipped.
 **Request:** Continue improving shared agent docs/context comprehensively by closing the next local-vs-production guardrail gap before committing and pushing to `main`.
 **Actionable Scope:**
@@ -24,7 +24,7 @@ Last Updated: 2026-06-02
 2. Require the local checker to verify `/docs#agent-docs` mentions stale stack/auth language rejection.
 3. Require the local checker to verify `/docs#agent-docs` mentions required/forbidden marker checks.
 4. Run local checks, commit, push to `main`, and verify CI/deployment receipts.
-**Progress (2026-06-02):** Added the expanded `/docs#agent-docs` marker expectations to `scripts/check-agent-doc-handoff.mjs`; passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, expanded marker grep, and `git diff --check`; push and production receipts are in progress.
+**Progress (2026-06-02):** Added the expanded `/docs#agent-docs` marker expectations to `scripts/check-agent-doc-handoff.mjs`; passed `npm run agent-docs:ci`, direct `node scripts/check-agent-doc-handoff.mjs`, expanded marker grep, and `git diff --check`; pushed commit `ed7facd`; GitHub Actions run `26855772471` passed `Check Generated Agent Docs`; Vercel deployment `dpl_7RTHaMrQWf4ieQhmEgTbA171BehM` is Ready and aliased to `https://www.you.md` / `https://you.md`; live production `npm run llms:smoke -- --base-url https://www.you.md` passed all checks.
 
 ## Agent Docs Smoke Output Clarity (from Jun 2 conversation)
 
