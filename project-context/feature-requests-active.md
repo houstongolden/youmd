@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-02
+Last Updated: 2026-06-03
 
 ## Tracking Rules
 - Every request gets its own entry with status
@@ -8,6 +8,23 @@ Last Updated: 2026-06-02
 - Don't mark DONE until actually deployed and tested
 - Don't ignore parts of messages — break them ALL down
 - Source: date + commit or conversation reference
+
+---
+
+## 2026-06-03 Reference-Intelligence Follow-Through
+
+### 105. Turn the Jun 3 reference-intelligence wave into tracked You.md follow-up slices
+**Status:** IN PROGRESS
+**Verified:** NO
+**Source:** 2026-06-03 — Houston said "continue comprehensively Highest-value follow-up tasks - then commit and push to main - then continue comprehensively" after the daily reference-intelligence run surfaced new GStack/GBrain tasks.
+**Request:** Continue comprehensively by promoting the highest-value reference-intelligence follow-up tasks into concrete You.md tracking, docs/contracts, and implementation slices instead of leaving them as a flat generated queue.
+**Actionable Scope:**
+1. Version the fresh `project-context/reference-intelligence/LATEST.md` and `TASKS.md` outputs from the 2026-06-03 sync.
+2. Distill the highest-value follow-up work across stack safety/private distribution, brain sync resilience, retrieval/readiness honesty, and runtime health/self-upgrade boundaries.
+3. Write a dated audit that maps the upstream commits to explicit You.md next steps.
+4. Update TODO/features/changelog/request tracking so future sessions can keep shipping the sequence instead of re-deriving it.
+5. Land at least one repo-visible improvement from those highest-value tasks, then commit, push, and continue.
+**Progress (2026-06-03):** Re-ran the reference loop, which produced 13 candidate tasks from GStack `c43c850` and GBrain `f09f917`..`f3ade6c`; versioned the regenerated `project-context/reference-intelligence/LATEST.md` and `TASKS.md`; added `project-context/REFERENCE_INTELLIGENCE_AUDIT_2026-06-03.md` to collapse the raw queue into four priority bands: stack safety/private distribution, brain sync resilience, retrieval/readiness honesty, and runtime health/self-upgrade boundaries; updated TODO, FEATURES, and CHANGELOG so the next implementation slices are explicit rather than buried in generated files. Repo-visible product/docs follow-through is the next active slice in this request.
 
 ---
 

@@ -1,5 +1,21 @@
 # You.md — Changelog
 
+## 2026-06-03 — Reference Follow-Up Audit
+
+### Strategy / Tracking
+- Re-ran `npm run references:sync` and versioned the refreshed `project-context/reference-intelligence/LATEST.md` and `TASKS.md` artifacts after the new GStack/GBrain upstream wave
+- Added `project-context/REFERENCE_INTELLIGENCE_AUDIT_2026-06-03.md` to collapse the raw 13-task queue into an explicit You.md implementation order across stack safety/private distribution, brain sync resilience, retrieval/readiness honesty, and runtime health/self-upgrade boundaries
+- Updated active request tracking, roadmap TODOs, and feature inventory so future sessions can continue shipping the follow-up slices without re-deriving the same priorities from generated files
+
+### Reference Signal
+- The new upstream wave is concentrated in GStack safety/privacy hardening (`c43c850`) plus GBrain reliability and retrieval work: resumable sync, watchdogs, background-work drain, AI timeouts, retrieval fallbacks, readiness states, self-upgrade, held-out gates, and Postgres singleton ownership fixes
+- Agent Scripts and The Library had no new upstream commits in this sync window, so the immediate work shifts from monitoring breadth to implementing the highest-value GStack/GBrain translations
+
+### Verification
+- Passed `npm run references:sync`
+- Confirmed the regenerated reference outputs now record the new upstream commit heads and 13 candidate tasks
+- Confirmed the new audit maps those tasks into repo-visible next steps before implementation work begins
+
 ## 2026-06-02 — Handoff Checker JSON Output
 
 ### CI / Docs

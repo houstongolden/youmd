@@ -1,11 +1,19 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-02
+Last Updated: 2026-06-03
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-06-03
+- [x] Re-sync reference intelligence and version the new `project-context/reference-intelligence/LATEST.md` + `TASKS.md` artifacts from the 2026-06-03 upstream wave
+- [x] Write `project-context/REFERENCE_INTELLIGENCE_AUDIT_2026-06-03.md` to turn the raw 13-task queue into a You.md implementation order across stack safety, brain sync resilience, retrieval/readiness, and runtime-health boundaries
+- [ ] Land a repo-visible docs/contract improvement from the Jun 3 reference-intelligence follow-up list
+- [ ] Audit `youmd stack` host adapters/runtime helpers for cached shell-identifier sanitization and local-only metadata guarantees
+- [ ] Define explicit readiness/fallback expectations for protected brain retrieval and stack-aware API/MCP reads
+- [ ] Design resumable checkpoint + watchdog behavior for long-running brain/source sync work
 
 ### 2026-06-02
 - [x] Add `--json` / `agent-docs:handoff:json` support for machine-readable agent-docs handoff checker output
