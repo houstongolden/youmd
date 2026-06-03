@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: a9ebbf009957a8347e6df9eb842bc408598f2622e1d12eb2e6899fc933e92a46. CLI version: 0.6.23. Endpoints: 68. MCP tools: 23. Reference intelligence: 2026-06-02T20:44:54.591Z.
+> Generated full agent context. Source hash: a9ebbf009957a8347e6df9eb842bc408598f2622e1d12eb2e6899fc933e92a46. CLI version: 0.6.23. Endpoints: 68. MCP tools: 23. Reference intelligence: 2026-06-03T17:12:14.740Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -271,6 +271,10 @@ Stack safety rules:
 3. Publish only after redaction, smoke checks, manifest review, docs review, and owner approval.
 4. Keep protected brain reads behind explicit scopes.
 5. Do not copy private memory into public stack examples.
+6. Sanitize cached or generated shell-facing identifiers before adapter or startup-helper use.
+7. Keep repo/branch/runtime metadata local unless a hosted surface explicitly documents it.
+8. If a protected or stack-aware read is not ready, return an honest readiness state such as not built, indexing, or ready.
+9. Prefer a narrower retrieval fallback over a silent empty answer when richer retrieval is temporarily unavailable.
 
 ## API/MCP/Stack Documentation Standard
 
@@ -294,8 +298,8 @@ Agents should prefer read-before-write and route-before-action:
 
 You.md keeps these as first-class inspiration and monitoring sources:
 
-- GStack: https://github.com/garrytan/gstack (main @ 3bef43bc5ad8; No new commits since 3bef43b)
-- GBrain: https://github.com/garrytan/gbrain (master @ 0bfe0d0c7ebd; No new commits since 0bfe0d0)
+- GStack: https://github.com/garrytan/gstack (main @ c43c850cae77; Changes since 3bef43b)
+- GBrain: https://github.com/garrytan/gbrain (master @ f3ade6c0c3e5; Changes since 0bfe0d0)
 - Agent Scripts: https://github.com/steipete/agent-scripts (main @ 5dc3c2435ba7; No new commits since 5dc3c24)
 - The Library: https://github.com/disler/the-library (main @ 47f455cd139b; No new commits since 47f455c)
 
@@ -375,6 +379,8 @@ Agents should:
 - preserve provenance and source links
 - write narrow memories with stable labels
 - prefer local files for inspectable stack work
+- keep repo and branch identity local unless a protected hosted surface explicitly needs it
+- return honest readiness state instead of bluffing a zero-result read
 - leave a trail in project context or activity logs
 
 ## Important Links

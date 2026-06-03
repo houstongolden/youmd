@@ -269,6 +269,10 @@ Defaults:
 - Public stacks should expose reusable skills/docs/examples, not private memories, secrets, proprietary prompts, or connected actions.
 - Safe self-improvement updates local skills/workflows/docs/tests together and runs smoke checks.
 - Protected memory, tokens, repo sync, private context, and connected tools go through shared You.md API/MCP.
+- Generated adapters and startup helpers should sanitize cached shell-facing identifiers before use, not trust previously written cache files.
+- Repo names, branch names, and other stack/runtime metadata should stay local unless a hosted surface explicitly documents otherwise.
+- Protected brain or stack-aware reads should report honest readiness states such as `not built`, `indexing`, or `ready`, rather than bluffing with silent empty results.
+- Retrieval should degrade toward a narrower fallback path before silence: keyword/basic context is better than a blank answer when richer retrieval is temporarily unavailable.
 
 ### Upstream Inspiration
 

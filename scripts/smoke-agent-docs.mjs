@@ -117,6 +117,10 @@ async function main() {
     "Recommended Agent Order Of Operations",
     "YouStacks",
     "Privacy And Trust",
+    "Sanitize cached or generated shell-facing identifiers",
+    "Keep repo/branch/runtime metadata local",
+    "honest readiness state such as not built, indexing, or ready",
+    "narrower retrieval fallback",
     "GStack: https://github.com/garrytan/gstack",
     "GBrain: https://github.com/garrytan/gbrain",
     "Agent Scripts: https://github.com/steipete/agent-scripts",
@@ -173,6 +177,9 @@ async function main() {
     "PRD, and architecture docs",
     "stale stack/auth language",
     "required/forbidden handoff marker checks",
+    "local metadata should stay local by default",
+    "protected reads should report honest readiness",
+    "retrieval should fall back before it goes silent",
   ]);
   record("docs page documents agent-docs workflow", docsResult.response.ok && missingDocs.length === 0, missingDocs.length ? `missing: ${missingDocs.join(", ")}` : `${docsResult.response.status}`);
 

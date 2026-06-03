@@ -6,13 +6,20 @@
 - Re-ran `npm run references:sync` and versioned the refreshed `project-context/reference-intelligence/LATEST.md` and `TASKS.md` artifacts after the new GStack/GBrain upstream wave
 - Added `project-context/REFERENCE_INTELLIGENCE_AUDIT_2026-06-03.md` to collapse the raw 13-task queue into an explicit You.md implementation order across stack safety/private distribution, brain sync resilience, retrieval/readiness honesty, and runtime health/self-upgrade boundaries
 - Updated active request tracking, roadmap TODOs, and feature inventory so future sessions can continue shipping the follow-up slices without re-deriving the same priorities from generated files
+- Followed through with a repo-visible docs/contract pass across README, `/docs#youstacks`, generated root agent docs, and the local/live handoff guardrails so the highest-risk Jun 3 rules are explicit before deeper implementation work
 
 ### Reference Signal
 - The new upstream wave is concentrated in GStack safety/privacy hardening (`c43c850`) plus GBrain reliability and retrieval work: resumable sync, watchdogs, background-work drain, AI timeouts, retrieval fallbacks, readiness states, self-upgrade, held-out gates, and Postgres singleton ownership fixes
 - Agent Scripts and The Library had no new upstream commits in this sync window, so the immediate work shifts from monitoring breadth to implementing the highest-value GStack/GBrain translations
 
+### Docs / Agent Contract
+- README and `/docs#youstacks` now state four explicit follow-up rules from the audit: shell-facing helpers must be sanitized at use time, repo/branch/runtime metadata stays local by default, protected reads should report honest readiness states, and richer retrieval should degrade toward fallback before silence
+- Regenerated `public/llms.txt` and `public/llms-full.txt` so root agent docs carry the same stack safety and readiness rules
+- Extended `scripts/check-agent-doc-handoff.mjs` and `scripts/smoke-agent-docs.mjs` so local and live guardrails enforce the new stack safety/readiness wording alongside the existing source-repo handoff markers
+
 ### Verification
 - Passed `npm run references:sync`
+- Passed `npm run llms:generate`, `npm run llms:check`, `npm run agent-docs:handoff`, and `npm run agent-docs:ci`
 - Confirmed the regenerated reference outputs now record the new upstream commit heads and 13 candidate tasks
 - Confirmed the new audit maps those tasks into repo-visible next steps before implementation work begins
 

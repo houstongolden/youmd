@@ -441,6 +441,10 @@ Stack safety rules:
 3. Publish only after redaction, smoke checks, manifest review, docs review, and owner approval.
 4. Keep protected brain reads behind explicit scopes.
 5. Do not copy private memory into public stack examples.
+6. Sanitize cached or generated shell-facing identifiers before adapter or startup-helper use.
+7. Keep repo/branch/runtime metadata local unless a hosted surface explicitly documents it.
+8. If a protected or stack-aware read is not ready, return an honest readiness state such as not built, indexing, or ready.
+9. Prefer a narrower retrieval fallback over a silent empty answer when richer retrieval is temporarily unavailable.
 
 ## API/MCP/Stack Documentation Standard
 
@@ -542,6 +546,8 @@ Agents should:
 - preserve provenance and source links
 - write narrow memories with stable labels
 - prefer local files for inspectable stack work
+- keep repo and branch identity local unless a protected hosted surface explicitly needs it
+- return honest readiness state instead of bluffing a zero-result read
 - leave a trail in project context or activity logs
 
 ## Important Links

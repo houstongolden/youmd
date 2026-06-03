@@ -1757,6 +1757,40 @@ preferences: terminal-native, monochrome
               ]}
             />
 
+            <H3 id="youstacks-safety-readiness">Safety and Readiness Contract</H3>
+            <P>
+              The Jun 2026 reference-intelligence wave sharpened four product
+              rules for YouStacks and the protected brain layer: shell-facing
+              helpers must be sanitized at use time, local metadata should stay
+              local by default, protected reads should report honest readiness,
+              and retrieval should fall back before it goes silent.
+            </P>
+            <P>
+              In short: local metadata should stay local by default, protected
+              reads should report honest readiness, and retrieval should fall
+              back before it goes silent.
+            </P>
+            <FeatureMatrix
+              items={[
+                {
+                  title: "Shell-safe helpers",
+                  body: "Generated adapter files, startup helpers, and cached identifiers should be re-sanitized before shell use. Never trust an old cache file just because this runtime wrote it once.",
+                },
+                {
+                  title: "Local-only metadata by default",
+                  body: "Repo names, branch names, and other stack/runtime metadata stay local unless a hosted API or MCP surface explicitly documents that it carries them.",
+                },
+                {
+                  title: "Honest readiness states",
+                  body: "Protected brain, project-context, and stack-aware reads should distinguish not built, indexing, and ready. An empty answer should mean genuinely empty, not unknown.",
+                },
+                {
+                  title: "Fallback before silence",
+                  body: "When richer retrieval stalls, the system should degrade toward narrower search or basic context instead of returning nothing and pretending the context does not exist.",
+                },
+              ]}
+            />
+
             <H3 id="youstacks-reference-loop">Reference Intelligence Loop</H3>
             <P>
               YouStacks should deliberately follow what works in GStack,
