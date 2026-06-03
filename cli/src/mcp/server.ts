@@ -168,17 +168,29 @@ function tryLoadCurrentYouStack(inputPath?: string): ReturnType<typeof loadYouSt
   }
 }
 
-type MemoryRetrievalStatus = "ready" | "auth_required" | "unavailable";
+type ProtectedReadinessStatus = "ready" | "auth_required" | "unavailable";
+
+interface ProtectedReadiness {
+  status: ProtectedReadinessStatus;
+  ready: boolean;
+  reason: string;
+  fallback: string;
+}
 
 interface MemoryRetrievalEnvelope {
-  readiness: {
-    status: MemoryRetrievalStatus;
-    ready: boolean;
-    reason: string;
-    fallback: string;
-  };
+  readiness: ProtectedReadiness;
   memories: unknown[];
   count: number;
+}
+
+interface PrivateContextRetrievalEnvelope {
+  readiness: ProtectedReadiness;
+  privateContext: Record<string, unknown> | null;
+  summary: {
+    hasNotes: boolean;
+    linkCount: number;
+    projectCount: number;
+  };
 }
 
 async function fetchMemories(category?: string, limit?: number): Promise<unknown[]> {
@@ -247,6 +259,93 @@ async function fetchMemoriesEnvelope(category?: string, limit?: number): Promise
       },
       memories: [],
       count: 0,
+    };
+  }
+}
+
+async function fetchPrivateContextEnvelope(): Promise<PrivateContextRetrievalEnvelope> {
+  if (!isAuthenticated()) {
+    return {
+      readiness: {
+        status: "auth_required",
+        ready: false,
+        reason: "Private context needs an authenticated You.md session or API key.",
+        fallback: "Use local stack files, project-context files, public identity, or run `youmd login` before retrying protected private-context access.",
+      },
+      privateContext: null,
+      summary: {
+        hasNotes: false,
+        linkCount: 0,
+        projectCount: 0,
+      },
+    };
+  }
+
+  const config = readGlobalConfig();
+  const siteUrl = getConvexSiteUrl();
+
+  try {
+    const res = await fetch(`${siteUrl}/api/v1/me/private`, {
+      headers: { Authorization: `Bearer ${config.token}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!res.ok) {
+      return {
+        readiness: {
+          status: "unavailable",
+          ready: false,
+          reason: `Private context fetch failed with HTTP ${res.status}.`,
+          fallback: "Use local stack files, project-context files, or public identity first, then retry protected private-context access when auth/server access is healthy.",
+        },
+        privateContext: null,
+        summary: {
+          hasNotes: false,
+          linkCount: 0,
+          projectCount: 0,
+        },
+      };
+    }
+
+    const privateContext = await res.json() as Record<string, unknown> | null;
+    const links = privateContext && typeof privateContext === "object" && privateContext.internalLinks && typeof privateContext.internalLinks === "object"
+      ? Object.keys(privateContext.internalLinks as Record<string, unknown>).length
+      : 0;
+    const projects = Array.isArray(privateContext?.privateProjects) ? privateContext.privateProjects.length : 0;
+    const hasNotes = typeof privateContext?.privateNotes === "string" && privateContext.privateNotes.trim().length > 0;
+
+    return {
+      readiness: {
+        status: "ready",
+        ready: true,
+        reason: privateContext
+          ? "Protected private context fetch succeeded."
+          : "Protected private context fetch succeeded but no private context is stored yet.",
+        fallback: privateContext
+          ? "None needed."
+          : "If private context is empty, fall back to local stack files, project-context files, or public identity.",
+      },
+      privateContext,
+      summary: {
+        hasNotes,
+        linkCount: links,
+        projectCount: projects,
+      },
+    };
+  } catch {
+    return {
+      readiness: {
+        status: "unavailable",
+        ready: false,
+        reason: "Private context fetch could not reach the protected You.md private-context endpoint.",
+        fallback: "Use local stack files, project-context files, or public identity first, then retry protected private-context access later.",
+      },
+      privateContext: null,
+      summary: {
+        hasNotes: false,
+        linkCount: 0,
+        projectCount: 0,
+      },
     };
   }
 }
@@ -858,6 +957,13 @@ export async function startMcpServer(): Promise<void> {
     // Memories (if authenticated)
     if (isAuthenticated()) {
       resources.push({
+        uri: "youmd://private-context",
+        name: "private-context",
+        description: "Protected private context — notes, internal links, and private projects with readiness/fallback guidance",
+        mimeType: "application/json",
+      });
+
+      resources.push({
         uri: "youmd://memories",
         name: "memories",
         description: "Active memories — facts, preferences, decisions, and context the agent has learned about you",
@@ -1055,6 +1161,17 @@ export async function startMcpServer(): Promise<void> {
           uri,
           mimeType: "application/json",
           text: JSON.stringify(memories, null, 2),
+        }],
+      };
+    }
+
+    if (uri === "youmd://private-context") {
+      const privateContext = await fetchPrivateContextEnvelope();
+      return {
+        contents: [{
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify(privateContext, null, 2),
         }],
       };
     }
@@ -1316,6 +1433,14 @@ export async function startMcpServer(): Promise<void> {
                 description: "Max results (default 30)",
               },
             },
+          },
+        },
+        {
+          name: "get_private_context",
+          description: "Read protected private context — notes, internal links, and private projects. Returns a readiness envelope so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states before asking the user to restate private context.",
+          inputSchema: {
+            type: "object" as const,
+            properties: {},
           },
         },
         {
@@ -1723,6 +1848,18 @@ export async function startMcpServer(): Promise<void> {
         const { category, limit } = (args || {}) as { category?: string; limit?: number };
         const result = await fetchMemoriesEnvelope(category, limit || 30);
         void logMcpActivity("read", "memories");
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify(result, null, 2),
+          }],
+          isError: !result.readiness.ready,
+        };
+      }
+
+      case "get_private_context": {
+        const result = await fetchPrivateContextEnvelope();
+        void logMcpActivity("read", "private-context");
         return {
           content: [{
             type: "text" as const,

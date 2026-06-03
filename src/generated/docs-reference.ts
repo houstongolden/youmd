@@ -19,13 +19,13 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "2153815abffcb80c064fc552b40a3b6e98108b80f2d9d336999f60b54719784b",
+  "sourceHash": "95ec6141b1b1f0f843d8fc0716184c2a7c9368606c75054978be7b84791cc553",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
     "endpoints": 68,
-    "mcpTools": 23,
+    "mcpTools": 24,
     "convexRoutes": 54,
     "nextRoutes": 20
   },
@@ -871,6 +871,12 @@ export const docsReference = {
       "inputFields": [
         "format"
       ],
+      "required": []
+    },
+    {
+      "name": "get_private_context",
+      "description": "Read protected private context — notes, internal links, and private projects. Returns a readiness envelope so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states before asking the user to restate private context.",
+      "inputFields": [],
       "required": []
     },
     {

@@ -26,6 +26,7 @@
 - Added a protected-memory retrieval envelope in `cli/src/mcp/server.ts` so `search_memories` reports `ready`, `auth_required`, or `unavailable` plus a concrete fallback path instead of only returning a bare array
 - Applied the same protected-memory retrieval envelope to `youmd://memories` MCP resources and `get_agent_brief` memory inclusion so missing auth or server failures no longer look like a healthy empty memory set
 - Updated the shared YouStack capability contract and generated host adapters so protected-read capabilities explicitly advertise readiness states and fallback order instead of implying hosted retrieval is always available
+- Added the missing MCP `get_private_context` tool plus `youmd://private-context` resource, both using a protected-read readiness envelope so private-context auth/server failures no longer surface as missing capability coverage or ambiguous generic errors
 
 ### Verification
 - Passed `npm run references:sync`
