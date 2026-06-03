@@ -885,7 +885,8 @@ export function generateYouStackAdapterContent(
   lines.push("3. Read local project instructions and project-context files before acting.");
   lines.push("4. Use local/static stack files first.");
   lines.push("5. Use shared You.md API/MCP only for protected brain retrieval, sync, tokens, connected tools, or server-side actions.");
-  lines.push("6. Do not mutate brain data, connected tools, visibility, or repo files until the user approves the exact action.");
+  lines.push("6. Protected reads may return readiness states such as auth_required, unavailable, or ready; if richer retrieval is unavailable, fall back to local stack files, project-context files, and public identity first.");
+  lines.push("7. Do not mutate brain data, connected tools, visibility, or repo files until the user approves the exact action.");
   lines.push("");
   lines.push("## Capabilities");
   lines.push("");

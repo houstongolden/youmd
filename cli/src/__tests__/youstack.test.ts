@@ -285,6 +285,7 @@ describe("youstack manifest", () => {
     expect(fs.existsSync(adapterPath)).toBe(true);
     expect(fs.readFileSync(adapterPath, "utf-8")).toContain("Test Stack YouStack");
     expect(fs.readFileSync(adapterPath, "utf-8")).toContain("protected-memory-search");
+    expect(fs.readFileSync(adapterPath, "utf-8")).toContain("Protected reads may return readiness states");
   });
 
   it("supports dry-run adapter generation without writing files", () => {

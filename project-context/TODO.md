@@ -16,7 +16,8 @@ PRD Version: 2.3
 - [x] Add explicit readiness envelopes for local stack CLI/MCP reads so agents can distinguish `not_found`, `invalid`, and `ready`
 - [x] Add retrieval readiness + fallback guidance to MCP `search_memories` so protected memory reads stop failing as opaque empty arrays
 - [x] Extend protected-memory retrieval honesty beyond MCP `search_memories` into MCP memory resources and startup brief context
-- [ ] Define broader protected-brain retrieval fallback behavior beyond protected memory surfaces
+- [x] Teach the stack capability contract and generated adapters the protected-read readiness states and fallback order
+- [ ] Define broader protected-brain retrieval fallback behavior beyond current memory/private-context stack contracts
 - [ ] Design resumable checkpoint + watchdog behavior for long-running brain/source sync work
 
 ### 2026-06-02

@@ -60,7 +60,7 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
   },
   {
     id: "protected-memory-search",
-    intent: "Search protected You.md memories when local stack context is not enough.",
+    intent: "Search protected You.md memories when local stack context is not enough, and expect explicit readiness/fallback guidance when auth or hosted retrieval is unavailable.",
     mcpTool: "search_memories",
     apiEndpoint: "POST /api/v1/stacks/{stack_id}/brain/search",
     requiredScopes: ["memories.search"],
@@ -68,7 +68,7 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
   },
   {
     id: "protected-private-context-read",
-    intent: "Read scoped private context through authenticated You.md API/MCP grants.",
+    intent: "Read scoped private context through authenticated You.md API/MCP grants, with honest readiness states and a fallback toward local/public context when richer retrieval is unavailable.",
     mcpTool: "get_private_context",
     apiEndpoint: "GET /api/v1/stacks/{stack_id}/private-context",
     requiredScopes: ["private_context.read"],
@@ -104,6 +104,20 @@ export function getYouStackCapabilityContract() {
     productBoundary: {
       brain: "You.md is the brain, identity context protocol, and durable personal/project context layer.",
       stack: "YouStacks are portable execution packages that can work as local/static files first.",
+    },
+    protectedReadContract: {
+      readinessStates: [
+        "auth_required",
+        "unavailable",
+        "ready",
+      ],
+      fallbackOrder: [
+        "local stack files",
+        "project-context files",
+        "public identity/profile context",
+        "retry protected You.md retrieval after auth or service health is restored",
+      ],
+      policy: "Protected reads should return explicit readiness and fallback guidance instead of collapsing auth/server failures into empty results.",
     },
     apiMcpThreshold: {
       localFilesOnly: [

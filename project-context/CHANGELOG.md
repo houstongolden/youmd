@@ -25,6 +25,7 @@
 - Threaded readiness state through `get_stack_manifest`, `get_stack_capabilities`, `route_stack_request`, and `smoke_stack`, plus local `youmd stack inspect/capabilities/route/smoke` JSON output
 - Added a protected-memory retrieval envelope in `cli/src/mcp/server.ts` so `search_memories` reports `ready`, `auth_required`, or `unavailable` plus a concrete fallback path instead of only returning a bare array
 - Applied the same protected-memory retrieval envelope to `youmd://memories` MCP resources and `get_agent_brief` memory inclusion so missing auth or server failures no longer look like a healthy empty memory set
+- Updated the shared YouStack capability contract and generated host adapters so protected-read capabilities explicitly advertise readiness states and fallback order instead of implying hosted retrieval is always available
 
 ### Verification
 - Passed `npm run references:sync`
