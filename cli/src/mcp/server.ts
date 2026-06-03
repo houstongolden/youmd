@@ -168,6 +168,19 @@ function tryLoadCurrentYouStack(inputPath?: string): ReturnType<typeof loadYouSt
   }
 }
 
+type MemoryRetrievalStatus = "ready" | "auth_required" | "unavailable";
+
+interface MemoryRetrievalEnvelope {
+  readiness: {
+    status: MemoryRetrievalStatus;
+    ready: boolean;
+    reason: string;
+    fallback: string;
+  };
+  memories: unknown[];
+  count: number;
+}
+
 async function fetchMemories(category?: string, limit?: number): Promise<unknown[]> {
   if (!isAuthenticated()) return [];
   const config = readGlobalConfig();
@@ -186,6 +199,71 @@ async function fetchMemories(category?: string, limit?: number): Promise<unknown
     return ((data.memories || data) as unknown[]) || [];
   } catch {
     return [];
+  }
+}
+
+async function fetchMemoriesEnvelope(category?: string, limit?: number): Promise<MemoryRetrievalEnvelope> {
+  if (!isAuthenticated()) {
+    return {
+      readiness: {
+        status: "auth_required",
+        ready: false,
+        reason: "Memory search needs an authenticated You.md session or API key.",
+        fallback: "Use public identity, project-context files, or run `youmd login` before retrying protected memory search.",
+      },
+      memories: [],
+      count: 0,
+    };
+  }
+
+  const config = readGlobalConfig();
+  const siteUrl = getConvexSiteUrl();
+  const params = new URLSearchParams();
+  if (category) params.set("category", category);
+  if (limit) params.set("limit", String(limit));
+
+  try {
+    const res = await fetch(`${siteUrl}/api/v1/me/memories?${params}`, {
+      headers: { Authorization: `Bearer ${config.token}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!res.ok) {
+      return {
+        readiness: {
+          status: "unavailable",
+          ready: false,
+          reason: `Memory search failed with HTTP ${res.status}.`,
+          fallback: "Use project-context files or local stack files first, then retry protected memory search when auth/server access is healthy.",
+        },
+        memories: [],
+        count: 0,
+      };
+    }
+
+    const data = await res.json() as Record<string, unknown>;
+    const memories = ((data.memories || data) as unknown[]) || [];
+    return {
+      readiness: {
+        status: "ready",
+        ready: true,
+        reason: memories.length > 0 ? "Protected memory search succeeded." : "Protected memory search succeeded but found no matching memories.",
+        fallback: memories.length > 0 ? "None needed." : "If nothing matched, fall back to public identity, project-context files, or a narrower keyword query.",
+      },
+      memories,
+      count: memories.length,
+    };
+  } catch {
+    return {
+      readiness: {
+        status: "unavailable",
+        ready: false,
+        reason: "Memory search could not reach the protected You.md memories endpoint.",
+        fallback: "Use public identity, project-context files, or local stack context first, then retry protected memory search later.",
+      },
+      memories: [],
+      count: 0,
+    };
   }
 }
 
@@ -1650,13 +1728,14 @@ export async function startMcpServer(): Promise<void> {
 
       case "search_memories": {
         const { category, limit } = (args || {}) as { category?: string; limit?: number };
-        const memories = await fetchMemories(category, limit || 30);
+        const result = await fetchMemoriesEnvelope(category, limit || 30);
         void logMcpActivity("read", "memories");
         return {
           content: [{
             type: "text" as const,
-            text: JSON.stringify(memories, null, 2),
+            text: JSON.stringify(result, null, 2),
           }],
+          isError: !result.readiness.ready,
         };
       }
 
