@@ -9,6 +9,8 @@
 ### Verification
 - Passed direct `node scripts/check-agent-doc-handoff.mjs`, `npm run agent-docs:ci`, and `git diff --check`
 - Confirmed the checker reports `6 files, 70 required markers, 17 forbidden stale markers`
+- Verified GitHub Actions run `26855935056` passed `Check Generated Agent Docs`
+- Verified Vercel production deployment `dpl_9x5vntcS3kapiHZY9ZYQijCDzjpw`, aliased to `https://www.you.md` and `https://you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed all checks
 
 ## 2026-06-02 — Docs Page Local Guardrail Parity
 

@@ -14,16 +14,16 @@ Last Updated: 2026-06-02
 ## Handoff Checker Diagnostics (from Jun 2 conversation)
 
 ### 102. Add marker-count diagnostics to the agent-docs handoff checker
-**Status:** IN PROGRESS
+**Status:** DONE
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES — Vercel deployment `dpl_9x5vntcS3kapiHZY9ZYQijCDzjpw` for commit `ceef051` completed successfully and is aliased to `https://www.you.md` / `https://you.md`; GitHub Actions run `26855935056` for `.github/workflows/agent-docs.yml` completed successfully.
 **Source:** 2026-06-02 — continuation after local/live docs-page guardrail parity was committed and pushed.
 **Request:** Continue comprehensively by making the growing agent-docs guardrail easier for future agents to understand from CI/local logs.
 **Actionable Scope:**
 1. Update `scripts/check-agent-doc-handoff.mjs` success output to report checked file count.
 2. Report required marker count and forbidden stale-marker count in the same success output.
 3. Run local checks, commit, push to `main`, and verify CI/deployment receipts.
-**Progress (2026-06-02):** Added file, required-marker, and forbidden-marker counters to the handoff checker success output; passed direct `node scripts/check-agent-doc-handoff.mjs`, `npm run agent-docs:ci`, and `git diff --check`; push and production receipts are in progress.
+**Progress (2026-06-02):** Added file, required-marker, and forbidden-marker counters to the handoff checker success output; passed direct `node scripts/check-agent-doc-handoff.mjs`, `npm run agent-docs:ci`, and `git diff --check`; pushed commit `ceef051`; GitHub Actions run `26855935056` passed `Check Generated Agent Docs`; Vercel deployment `dpl_9x5vntcS3kapiHZY9ZYQijCDzjpw` is Ready and aliased to `https://www.you.md` / `https://you.md`; live production `npm run llms:smoke -- --base-url https://www.you.md` passed all checks.
 
 ## Docs Page Local Guardrail Parity (from Jun 2 conversation)
 

@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-06-02
-Latest Verified Production Web Commit: ed7facd ci: align docs page handoff markers
+Latest Verified Production Web Commit: ceef051 ci: report handoff marker counts
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---
