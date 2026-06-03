@@ -15,7 +15,8 @@ PRD Version: 2.3
 - [ ] Audit remaining `youmd stack` host adapters/runtime helpers for broader cached shell-identifier sanitization and local-only metadata guarantees
 - [x] Add explicit readiness envelopes for local stack CLI/MCP reads so agents can distinguish `not_found`, `invalid`, and `ready`
 - [x] Add retrieval readiness + fallback guidance to MCP `search_memories` so protected memory reads stop failing as opaque empty arrays
-- [ ] Define broader protected-brain retrieval fallback behavior beyond MCP memory search
+- [x] Extend protected-memory retrieval honesty beyond MCP `search_memories` into MCP memory resources and startup brief context
+- [ ] Define broader protected-brain retrieval fallback behavior beyond protected memory surfaces
 - [ ] Design resumable checkpoint + watchdog behavior for long-running brain/source sync work
 
 ### 2026-06-02

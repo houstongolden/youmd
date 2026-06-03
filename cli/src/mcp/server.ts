@@ -182,24 +182,8 @@ interface MemoryRetrievalEnvelope {
 }
 
 async function fetchMemories(category?: string, limit?: number): Promise<unknown[]> {
-  if (!isAuthenticated()) return [];
-  const config = readGlobalConfig();
-  const siteUrl = getConvexSiteUrl();
-  const params = new URLSearchParams();
-  if (category) params.set("category", category);
-  if (limit) params.set("limit", String(limit));
-
-  try {
-    const res = await fetch(`${siteUrl}/api/v1/me/memories?${params}`, {
-      headers: { Authorization: `Bearer ${config.token}` },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!res.ok) return [];
-    const data = await res.json() as Record<string, unknown>;
-    return ((data.memories || data) as unknown[]) || [];
-  } catch {
-    return [];
-  }
+  const result = await fetchMemoriesEnvelope(category, limit);
+  return result.memories;
 }
 
 async function fetchMemoriesEnvelope(category?: string, limit?: number): Promise<MemoryRetrievalEnvelope> {
@@ -498,6 +482,7 @@ export interface AgentBrief {
     installed: string[];
     recommended: string[];
   };
+  memoriesReadiness?: MemoryRetrievalEnvelope["readiness"];
   memories?: unknown[];
   nextMoves: string[];
   reminders: string[];
@@ -699,8 +684,10 @@ export async function buildAgentBrief(options: { includeMemories?: boolean } = {
     ],
   };
 
-  if (options.includeMemories && isAuthenticated()) {
-    brief.memories = await fetchMemories(undefined, 8);
+  if (options.includeMemories) {
+    const memoryResult = await fetchMemoriesEnvelope(undefined, 8);
+    brief.memoriesReadiness = memoryResult.readiness;
+    brief.memories = memoryResult.memories;
   }
 
   return brief;
@@ -769,6 +756,12 @@ export function formatAgentBriefMarkdown(brief: AgentBrief, maxChars = 6000): st
   if (brief.memories) {
     lines.push("## Memories");
     lines.push(`- included: ${brief.memories.length}`);
+    if (brief.memoriesReadiness) {
+      lines.push(`- readiness: ${brief.memoriesReadiness.status} (${brief.memoriesReadiness.reason})`);
+      if (!brief.memoriesReadiness.ready) {
+        lines.push(`- fallback: ${brief.memoriesReadiness.fallback}`);
+      }
+    }
     lines.push("");
   }
 
@@ -1043,7 +1036,7 @@ export async function startMcpServer(): Promise<void> {
 
     // youmd://memories
     if (uri === "youmd://memories" || uri === "youmd://memories/all") {
-      const memories = await fetchMemories(undefined, 50);
+      const memories = await fetchMemoriesEnvelope(undefined, 50);
       return {
         contents: [{
           uri,
@@ -1056,7 +1049,7 @@ export async function startMcpServer(): Promise<void> {
     // youmd://memories/{category}
     const memCatMatch = uri.match(/^youmd:\/\/memories\/(.+)$/);
     if (memCatMatch) {
-      const memories = await fetchMemories(memCatMatch[1], 50);
+      const memories = await fetchMemoriesEnvelope(memCatMatch[1], 50);
       return {
         contents: [{
           uri,
@@ -1172,7 +1165,7 @@ export async function startMcpServer(): Promise<void> {
               },
               includeMemories: {
                 type: "boolean",
-                description: "Include up to 8 remote memories when authenticated. Default false for speed.",
+                description: "Include up to 8 protected memories plus retrieval readiness/fallback guidance. Default false for speed.",
               },
               maxChars: {
                 type: "number",
@@ -1310,7 +1303,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "search_memories",
-          description: "Search the user's memories by category or list all active memories. Returns an array of memory objects with category, content, tags, and timestamps. Use to check what you already know before asking the user a question they may have answered before.",
+          description: "Search the user's memories by category or list all active memories. Returns a readiness envelope plus memory objects so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states.",
           inputSchema: {
             type: "object" as const,
             properties: {
