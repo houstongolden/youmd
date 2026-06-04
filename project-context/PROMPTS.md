@@ -2,9 +2,9 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 55
-**Total messages:** 446
-**Last updated:** 2026-06-03 21:22
+**Total sessions:** 56
+**Total messages:** 447
+**Last updated:** 2026-06-04
 
 ## Table of Contents
 
@@ -63,6 +63,13 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-04 (github-oauth-free-signup)
+
+**2026-06-04 UTC**
+> Hey. So I think we need to have a more, basically, free option for... and just to make it simpler, users... we need to really add the GitHub OAuth and just let everyone sign up for free and host their full UMD and use stacks on their own GitHub repos and make those repos either public or private. And then you know, just use that for all the MD files and everything. I think it will be a lot simpler. And then, yeah, if we wanna, like... since we have access to repo, we can, like, you know, clone it and and host it on our own servers for the more other, like, agentic and API m c p stuff that might be necessary to make it all work properly. But I really think that our users are gonna wanna just sign in, sign up, connect their their repo, you know, create their own, like, UMD repo and and and do it that way. And we really need to prioritize that.
 
 ---
 

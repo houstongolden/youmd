@@ -1,5 +1,22 @@
 # You.md — Changelog
 
+## 2026-06-04 — Free GitHub OAuth Signup (Phase 1)
+
+### Auth
+- New `githubConnections` Convex table: GitHub identity (numeric id + login + name + email + avatar), AES-GCM-encrypted OAuth access token + scopes, and linked You.md repo metadata (`repoFullName`, `repoVisibility`, default branch, sync bookkeeping). Indexed by user, GitHub id, and repo.
+- New `convex/github.ts`: `findOrCreateGithubUser` (resolve by GitHub id → verified email → create new user+profile; gated on `TRUSTED_INTERNAL_AUTH_TOKEN` since there's no per-request challenge), `getConnection` (owner-only, no token plaintext), and `linkRepo` (owner-only repo linking, public/private).
+- New `convex/lib/secretCrypto.ts`: shared AES-GCM `encryptSecret`/`decryptSecret` using `API_KEY_ENCRYPTION_SECRET` (falls back to the internal token) so OAuth tokens are recoverable for repo ops but encrypted at rest.
+- New web routes `/api/auth/github/start` (CSRF `state` cookie + GitHub authorize redirect) and `/api/auth/github/callback` (state check → token exchange → identity fetch incl. verified primary email → resolve/create account → mint the existing opaque session cookie → redirect new users to `/initialize`, returning users to their destination). Reuses the existing session/JWKS plumbing — no change to email-code auth.
+- New `src/lib/github-oauth.ts` (config, authorize URL, token exchange, identity fetch) and `src/components/terminal/GithubAuthButton.tsx` (terminal-native button + error copy). Wired into both `/sign-in` and `/sign-up`; the button degrades gracefully to a `?error=github_unconfigured` redirect until the OAuth App is configured.
+
+### Docs / Planning
+- `project-context/GITHUB_OAUTH_SETUP.md`: operator runbook for registering the GitHub OAuth App + env vars (`GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`, optional `GITHUB_OAUTH_SCOPES`) and verifying end-to-end.
+- `project-context/GITHUB_NATIVE_PLAN.md`: the full "repo as source of truth" vision broken into Phases 1–5 (signup → connect/create repo → sync engine → server-side clone/mirror for API/MCP → GitHub App hardening), with chosen defaults flagged for confirmation.
+
+### Validation
+- `npx tsc --noEmit` (web) and `npx tsc -p convex/tsconfig.json --noEmit`: 0 errors. Targeted ESLint on all new/changed files: clean.
+- Not deployed — branch `claude/github-oauth-free-signup` only, no PR. Needs the OAuth App + Convex/Vercel deploy from `main` to go live.
+
 ## 2026-06-03 — Reference Follow-Up Audit
 
 ### Strategy / Tracking

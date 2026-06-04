@@ -1,11 +1,13 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-06-03
+Last Updated: 2026-06-04
 
 ## Core Platform
 
 | Feature | Status | Notes |
 |---|---|---|
+| Free GitHub OAuth signup | Code complete / needs OAuth App + deploy | Phase 1 on branch `claude/github-oauth-free-signup`: `githubConnections` table (GitHub identity + AES-GCM-encrypted OAuth token + scopes + linked-repo metadata), `convex/github.ts` (`findOrCreateGithubUser` gated by trusted internal token, `getConnection`, `linkRepo`), `/api/auth/github/start` + `/callback` reusing the opaque-session cookie + JWKS Convex JWT path, and "continue with github" / "sign up free with github" on sign-in + sign-up with graceful unconfigured + error states. Email-code auth untouched. Operator must register the OAuth App + set `GITHUB_OAUTH_CLIENT_ID`/`SECRET` then deploy. See `GITHUB_OAUTH_SETUP.md` |
+| Repo-native You.md (own GitHub repo as source of truth) | Planned (Phases 2–5) | Host the full You.md `.md` + stacks in the user's own public/private GitHub repo and clone/mirror server-side for API/MCP. Schema (`githubConnections.repo*`) already supports the linked repo. Phased design in `GITHUB_NATIVE_PLAN.md` |
 | Shared product design primitives | Done | Reusable `Container`, `Section`, `SectionHeader`, `Button`, `Card`, `TerminalCard`, `FormField`, `Input`, `Textarea`, `Select`, `Label`, `FieldHelp`, and `FieldError` now anchor marketing and app UI control standards |
 | Simplified product model | Done deployed | Homepage, docs, public profile, auth/onboarding copy, dashboard panes, README, PRD, and schema comments now explain You.md as four layers: Brain, Stacks, Runtime, and Protected API/MCP |
 | Developer docs platform | Done deployed | `/docs` now includes a BAMF-style surface map, concepts, API/MCP/stack operating standard, context surfaces, source-of-truth mapping, agent workflows, playbooks, examples, generated API/MCP reference, schema guidance, docs automation, troubleshooting, and a dedicated YouStacks chapter; deployment `dpl_7rodpWtQzYwZSqtfdPZTY95hsu9k` is live |

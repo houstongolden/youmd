@@ -1,6 +1,41 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-03
+Last Updated: 2026-06-04
+
+---
+
+## 2026-06-04 — Free GitHub OAuth Signup + Repo-Native You.md
+
+### 106. Free GitHub OAuth signup
+**Status:** IN PROGRESS (code complete on branch, needs OAuth App + deploy + verify)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-04 — Houston: "add the GitHub OAuth and just let everyone sign up for free... users are gonna wanna just sign in, sign up, connect their repo, create their own You.md repo... prioritize that."
+**Request:** Let anyone sign up for free via GitHub OAuth, alongside the existing email-code auth.
+**Actionable Scope:**
+1. `githubConnections` Convex table (GitHub identity + encrypted OAuth token + scopes + linked-repo metadata). DONE
+2. `convex/github.ts`: `findOrCreateGithubUser` (gated by trusted internal token), `getConnection`, `linkRepo`. DONE
+3. Web OAuth routes `/api/auth/github/start` + `/api/auth/github/callback`, reusing the opaque session cookie + JWKS Convex JWT path. DONE
+4. "continue with github" / "sign up free with github" on sign-in + sign-up, with graceful unconfigured state + OAuth error surfacing. DONE
+5. Operator runbook (`GITHUB_OAUTH_SETUP.md`) for registering the OAuth App + env vars. DONE
+6. **Blocked on Houston/operator:** register the GitHub OAuth App, set `GITHUB_OAUTH_CLIENT_ID` / `GITHUB_OAUTH_CLIENT_SECRET` (+ optional `GITHUB_OAUTH_SCOPES`), deploy Convex + Vercel from `main`, verify end-to-end.
+**Progress (2026-06-04):** Built the full Phase-1 foundation on `claude/github-oauth-free-signup`. `npx tsc --noEmit` (web + `convex/tsconfig.json`) passes with 0 errors; targeted ESLint clean. Email-code auth is untouched. Not deployed (branch only, no PR).
+
+### 107. Repo-native You.md — host MD files + stacks in the user's own GitHub repo (public/private)
+**Status:** PLANNED (Phases 2–5 — design + tracking landed; implementation deferred)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-04 — same message: "host their full UMD and use stacks on their own GitHub repos and make those repos either public or private... use that for all the MD files and everything... since we have access to repo, we can clone it and host it on our own servers for the agentic and API MCP stuff."
+**Request:** Make the user's own GitHub repo the source of truth for their identity `.md` + stacks (public or private), and clone/mirror it server-side to power the agentic/API/MCP surfaces.
+**Actionable Scope:**
+1. Phase 2 — connect/create the You.md repo (create `you-md` public/private; or connect an existing repo) and seed it. — TODO
+2. Phase 3 — sync engine: pull repo MD → compile pipeline → bundles/profiles; push web/CLI edits back as commits; conflict policy; optional webhook re-pull. — TODO
+3. Phase 4 — server-side clone/mirror cache keyed by `lastSyncedSha`; stacks + MCP/API read from the mirror; private repos stay behind authenticated surfaces. — TODO
+4. Phase 5 — harden OAuth App → GitHub App (fine-grained, per-repo, least-privilege). — TODO
+**Design:** `project-context/GITHUB_NATIVE_PLAN.md` (schema already supports the linked-repo metadata; defaults: repo name `you-md`, default visibility private, email-match links to existing account, repo-as-truth opt-in per account).
+**Why deferred:** This is a multi-phase storage/infra change (sync engine + server-side mirror). Phase 1 (auth + connection foundation) is the unblocking prerequisite and is what this branch ships. Phases 2–5 should each be their own slice; flagged for Houston to confirm the defaults in the plan before Phase 2 build.
+
+---
 
 ## Tracking Rules
 - Every request gets its own entry with status

@@ -16,6 +16,7 @@ import type * as chat from "../chat.js";
 import type * as cleanup from "../cleanup.js";
 import type * as contextLinks from "../contextLinks.js";
 import type * as crons from "../crons.js";
+import type * as github from "../github.js";
 import type * as http from "../http.js";
 import type * as lib_agentDetect from "../lib/agentDetect.js";
 import type * as lib_auth from "../lib/auth.js";
@@ -61,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   cleanup: typeof cleanup;
   contextLinks: typeof contextLinks;
   crons: typeof crons;
+  github: typeof github;
   http: typeof http;
   "lib/agentDetect": typeof lib_agentDetect;
   "lib/auth": typeof lib_auth;

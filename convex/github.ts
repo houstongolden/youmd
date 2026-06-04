@@ -1,0 +1,318 @@
+import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
+import type { MutationCtx } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { createUserAndProfile } from "./users";
+import { requireOwner } from "./lib/auth";
+import { encryptSecret } from "./lib/secretCrypto";
+
+/**
+ * GitHub OAuth + repo connection backend.
+ *
+ * This powers free GitHub sign-up and the "host your You.md in your own GitHub
+ * repo" story. The web OAuth callback validates the GitHub handshake, then
+ * calls `findOrCreateGithubUser` (gated by the trusted-internal token, since
+ * there is no per-request challenge like the email-code flow has) to resolve
+ * or create the You.md account and store the encrypted access token.
+ */
+
+// 3-30 chars, lowercase alphanumeric + hyphens, no leading/trailing hyphen.
+const USERNAME_REGEX = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
+
+function randomHex(bytes = 12): string {
+  const array = new Uint8Array(bytes);
+  crypto.getRandomValues(array);
+  return Array.from(array)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function generateAuthSubject(): string {
+  return `ym_gh_${randomHex(12)}`;
+}
+
+/**
+ * The github bootstrap mutation has no per-request challenge, so we gate it on
+ * the server-side-only trusted internal token (256-bit secret). Public callers
+ * to /api/mutation cannot guess it, which prevents identity forgery / username
+ * squatting via a crafted githubUserId.
+ */
+function assertTrustedInternal(token: string | undefined) {
+  const trusted = process.env.TRUSTED_INTERNAL_AUTH_TOKEN;
+  if (!token || !trusted || token.length < 32 || token !== trusted) {
+    throw new Error(
+      "unauthorized: github bootstrap requires the trusted internal token"
+    );
+  }
+}
+
+async function isUsernameAvailable(
+  ctx: MutationCtx,
+  username: string
+): Promise<boolean> {
+  const existingUser = await ctx.db
+    .query("users")
+    .withIndex("by_username", (q) => q.eq("username", username))
+    .first();
+  if (existingUser) return false;
+  const existingProfile = await ctx.db
+    .query("profiles")
+    .withIndex("by_username", (q) => q.eq("username", username))
+    .first();
+  if (existingProfile && existingProfile.isClaimed) return false;
+  return true;
+}
+
+/**
+ * Derive a valid, available You.md username from a GitHub login. Falls back to
+ * numeric suffixes (and finally a random suffix) on collision so signup never
+ * hard-fails just because the obvious handle is taken.
+ */
+async function deriveUsername(
+  ctx: MutationCtx,
+  githubLogin: string
+): Promise<string> {
+  let base = githubLogin
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (base.length < 3) base = `${base}-you`.replace(/^-+/, "");
+  base = base.slice(0, 30).replace(/-+$/g, "");
+  if (base.length < 3) base = `you-${randomHex(3)}`;
+
+  const candidates = [base];
+  for (let i = 2; i <= 9; i += 1) {
+    candidates.push(`${base.slice(0, 28)}-${i}`.replace(/-+/g, "-"));
+  }
+  candidates.push(`${base.slice(0, 21)}-${randomHex(3)}`);
+
+  for (const candidate of candidates) {
+    if (!USERNAME_REGEX.test(candidate)) continue;
+    if (await isUsernameAvailable(ctx, candidate)) return candidate;
+  }
+  // Last resort: guaranteed-unique random handle.
+  return `you-${randomHex(4)}`;
+}
+
+/**
+ * Resolve-or-create a You.md account from a verified GitHub identity, and store
+ * the encrypted OAuth token + scopes. Returns the same shape the email-auth
+ * finalize path returns so the web route can mint a session the same way.
+ */
+export const findOrCreateGithubUser = mutation({
+  args: {
+    _internalAuthToken: v.optional(v.string()),
+    githubUserId: v.number(),
+    githubLogin: v.string(),
+    githubName: v.optional(v.string()),
+    githubEmail: v.optional(v.string()),
+    githubAvatarUrl: v.optional(v.string()),
+    accessToken: v.optional(v.string()),
+    scopes: v.array(v.string()),
+    tokenType: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertTrustedInternal(args._internalAuthToken);
+
+    const now = Date.now();
+    const email = args.githubEmail?.trim().toLowerCase() || undefined;
+
+    let encrypted: { ciphertext: string; iv: string } | null = null;
+    if (args.accessToken) {
+      encrypted = await encryptSecret(args.accessToken);
+    }
+
+    const tokenPatch = encrypted
+      ? {
+          accessTokenEncrypted: encrypted.ciphertext,
+          accessTokenIv: encrypted.iv,
+        }
+      : {};
+
+    // 1) Existing GitHub connection → log that user back in.
+    const existingConnection = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_githubUserId", (q) =>
+        q.eq("githubUserId", args.githubUserId)
+      )
+      .first();
+
+    if (existingConnection) {
+      const user = await ctx.db.get(existingConnection.userId);
+      if (user) {
+        await ctx.db.patch(existingConnection._id, {
+          githubLogin: args.githubLogin,
+          githubName: args.githubName,
+          githubEmail: email,
+          githubAvatarUrl: args.githubAvatarUrl,
+          scopes: args.scopes,
+          tokenType: args.tokenType,
+          updatedAt: now,
+          ...tokenPatch,
+        });
+        return {
+          ok: true,
+          userId: user._id,
+          clerkId: user.clerkId,
+          username: user.username,
+          email: user.email,
+          displayName: user.displayName,
+          plan: user.plan,
+          isNewUser: false,
+        };
+      }
+      // Orphaned connection (user deleted) — drop it and fall through.
+      await ctx.db.delete(existingConnection._id);
+    }
+
+    // 2) No connection yet, but a verified GitHub email matches an existing
+    //    account → link GitHub to it instead of creating a duplicate.
+    let user: Doc<"users"> | null = null;
+    if (email) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .first();
+    }
+
+    let isNewUser = false;
+    if (!user) {
+      // 3) Brand-new account.
+      const username = await deriveUsername(ctx, args.githubLogin);
+      const userId = await createUserAndProfile(ctx, {
+        clerkId: generateAuthSubject(),
+        username,
+        email: email || `${username}@users.noreply.github.com`,
+        displayName: args.githubName || args.githubLogin,
+        verificationSource: "github_oauth",
+      });
+      user = await ctx.db.get(userId);
+      isNewUser = true;
+    }
+
+    if (!user) throw new Error("Failed to resolve GitHub account.");
+
+    await ctx.db.insert("githubConnections", {
+      userId: user._id,
+      githubUserId: args.githubUserId,
+      githubLogin: args.githubLogin,
+      githubName: args.githubName,
+      githubEmail: email,
+      githubAvatarUrl: args.githubAvatarUrl,
+      scopes: args.scopes,
+      tokenType: args.tokenType,
+      connectedAt: now,
+      updatedAt: now,
+      ...tokenPatch,
+    });
+
+    await ctx.db.insert("securityLogs", {
+      eventType: isNewUser ? "profile_created" : "github_linked",
+      userId: user._id,
+      details: {
+        provider: "github",
+        githubLogin: args.githubLogin,
+        githubUserId: args.githubUserId,
+        linkedToExisting: !isNewUser,
+      },
+      createdAt: now,
+    });
+
+    return {
+      ok: true,
+      userId: user._id,
+      clerkId: user.clerkId,
+      username: user.username,
+      email: user.email,
+      displayName: user.displayName,
+      plan: user.plan,
+      isNewUser,
+    };
+  },
+});
+
+/** Owner-only: read the GitHub connection state (no token plaintext). */
+export const getConnection = query({
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return null;
+
+    const connection = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    if (!connection) return null;
+
+    return {
+      githubLogin: connection.githubLogin,
+      githubName: connection.githubName ?? null,
+      githubAvatarUrl: connection.githubAvatarUrl ?? null,
+      scopes: connection.scopes,
+      hasToken: !!connection.accessTokenEncrypted,
+      repoFullName: connection.repoFullName ?? null,
+      repoVisibility: connection.repoVisibility ?? null,
+      repoDefaultBranch: connection.repoDefaultBranch ?? null,
+      repoConnectedAt: connection.repoConnectedAt ?? null,
+      lastSyncedSha: connection.lastSyncedSha ?? null,
+      lastSyncedAt: connection.lastSyncedAt ?? null,
+      connectedAt: connection.connectedAt,
+    };
+  },
+});
+
+/**
+ * Owner-only: link (or update) the You.md repo this account syncs to. Set when
+ * the user connects an existing repo or creates a new one through the app.
+ */
+export const linkRepo = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    repoFullName: v.string(),
+    repoVisibility: v.union(v.literal("public"), v.literal("private")),
+    repoDefaultBranch: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+
+    const connection = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    if (!connection) {
+      throw new Error("Connect your GitHub account before linking a repo.");
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(connection._id, {
+      repoFullName: args.repoFullName,
+      repoVisibility: args.repoVisibility,
+      repoDefaultBranch: args.repoDefaultBranch || "main",
+      repoConnectedAt: now,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("securityLogs", {
+      eventType: "github_repo_linked",
+      userId: user._id,
+      details: {
+        repoFullName: args.repoFullName,
+        repoVisibility: args.repoVisibility,
+      },
+      createdAt: now,
+    });
+
+    return { ok: true, repoFullName: args.repoFullName };
+  },
+});

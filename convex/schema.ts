@@ -42,6 +42,45 @@ export default defineSchema({
     .index("by_tokenHash", ["tokenHash"])
     .index("by_userId", ["userId"]),
 
+  // ── GitHub OAuth connections ───────────────────────────────
+  // Backs free GitHub sign-up and the "host your You.md in your own repo"
+  // story. One row per user. Holds the GitHub identity (used to resolve the
+  // account on every OAuth login), the encrypted OAuth access token (so we
+  // can create/read/write the user's repo and clone it server-side for the
+  // agentic/API/MCP surfaces), and the metadata for the linked You.md repo.
+  githubConnections: defineTable({
+    userId: v.id("users"),
+
+    // GitHub identity (numeric id is the stable key; login can change)
+    githubUserId: v.number(),
+    githubLogin: v.string(),
+    githubName: v.optional(v.string()),
+    githubEmail: v.optional(v.string()),
+    githubAvatarUrl: v.optional(v.string()),
+
+    // OAuth token, encrypted at rest (AES-GCM, same secret as apiKeys).
+    accessTokenEncrypted: v.optional(v.string()),
+    accessTokenIv: v.optional(v.string()),
+    scopes: v.array(v.string()),
+    tokenType: v.optional(v.string()),
+
+    // Linked You.md repo — set when the user connects or creates a repo.
+    repoFullName: v.optional(v.string()),    // "owner/you-md"
+    repoVisibility: v.optional(v.string()),  // "public" | "private"
+    repoDefaultBranch: v.optional(v.string()),
+    repoConnectedAt: v.optional(v.number()),
+
+    // Server-side mirror/sync bookkeeping.
+    lastSyncedSha: v.optional(v.string()),
+    lastSyncedAt: v.optional(v.number()),
+
+    connectedAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_githubUserId", ["githubUserId"])
+    .index("by_repoFullName", ["repoFullName"]),
+
   // ── Profiles (can exist without auth) ──────────────────────
   profiles: defineTable({
     username: v.string(),

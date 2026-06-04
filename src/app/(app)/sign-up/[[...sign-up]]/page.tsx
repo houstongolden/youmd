@@ -5,6 +5,10 @@ import { useState, useEffect, useRef, useCallback, type ReactNode } from "react"
 import Link from "next/link";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { TerminalAuthInput } from "@/components/terminal/TerminalAuthInput";
+import {
+  GithubAuthButton,
+  githubErrorMessage,
+} from "@/components/terminal/GithubAuthButton";
 import { useUser } from "@/lib/you-auth";
 import { sanitizeNextPath } from "@/lib/redirects";
 
@@ -24,6 +28,7 @@ export default function SignUpPage() {
 
   const nextPathRaw = searchParams.get("next");
   const nextPath = sanitizeNextPath(nextPathRaw, "/shell");
+  const oauthError = githubErrorMessage(searchParams.get("error"));
 
   useEffect(() => {
     if (isSignedIn) router.replace(nextPath);
@@ -33,6 +38,18 @@ export default function SignUpPage() {
     const id = `l${lineCounter.current++}`;
     setLines((prev) => [...prev, { id, content, className }]);
   }, []);
+
+  useEffect(() => {
+    if (!oauthError) return;
+    const timer = setTimeout(
+      () =>
+        addLine(
+          <span className="text-[hsl(var(--accent))]">ERR: {oauthError}</span>
+        ),
+      1000
+    );
+    return () => clearTimeout(timer);
+  }, [oauthError, addLine]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -262,6 +279,19 @@ export default function SignUpPage() {
 
           {isInputStep && (
             <div className="shrink-0 border-t border-[hsl(var(--border))] px-5 pt-3 pb-5">
+              {step === "email" && (
+                <div className="mb-3 flex flex-col gap-3">
+                  <GithubAuthButton
+                    nextPath={nextPath}
+                    label="sign up free with github"
+                  />
+                  <div className="flex items-center gap-3 font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40">
+                    <span className="h-px flex-1 bg-[hsl(var(--border))]" />
+                    or use email
+                    <span className="h-px flex-1 bg-[hsl(var(--border))]" />
+                  </div>
+                </div>
+              )}
               <TerminalAuthInput prompt=">" {...inputProps} />
             </div>
           )}
