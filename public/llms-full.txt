@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: a2d30324e5cbc778fb97b71a138eee90afdaf10c80fceee0f6044465bfe9c745. CLI version: 0.6.23. Endpoints: 68. MCP tools: 24. Reference intelligence: 2026-06-03T17:12:14.740Z.
+> Generated full agent context. Source hash: 4150bffcaedeb8793a3ffb1a08480ef02135b3e32b9a6a3c51755a24ea7a503e. CLI version: 0.6.23. Endpoints: 73. MCP tools: 24. Reference intelligence: 2026-06-03T17:12:14.740Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 

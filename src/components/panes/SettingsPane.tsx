@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useUser, useSessionAuth } from "@/lib/you-auth";
 import { useRouter } from "next/navigation";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader, PaneCard, PaneButton } from "./shared";
+import { GithubRepoSection } from "./GithubRepoSection";
 
 interface SettingsPaneProps {
   clerkId: string;
@@ -514,6 +515,11 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
             )}
           </div>
         )}
+
+        <Divider />
+
+        {/* GitHub repo (Phase 2: host your You.md in your own repo) */}
+        <GithubRepoSection clerkId={clerkId} />
 
         <Divider />
 

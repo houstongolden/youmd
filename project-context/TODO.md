@@ -1,11 +1,23 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-03
+Last Updated: 2026-06-04
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-06-04
+- [x] Add free GitHub OAuth signup foundation (Phase 1): `githubConnections` table, `convex/github.ts` find-or-create + connection + repo-link, `/api/auth/github/start` + `/callback` routes reusing the opaque-session/JWKS path, and "continue with github" on sign-in + sign-up
+- [x] Encrypt the GitHub OAuth token at rest via shared `convex/lib/secretCrypto.ts` (AES-GCM)
+- [x] Write `project-context/GITHUB_OAUTH_SETUP.md` (operator runbook) and `project-context/GITHUB_NATIVE_PLAN.md` (full vision + Phases 1–5)
+- [ ] **Operator:** register the GitHub OAuth App + set `GITHUB_OAUTH_CLIENT_ID` / `GITHUB_OAUTH_CLIENT_SECRET` (scopes must include `repo`), deploy Convex + Vercel from `main`, verify signup/sign-in end-to-end
+- [x] Phase 2 — connect/create the user's You.md repo (public/private) + seed it: `convex/githubRepo.ts` actions (create/connect/list) + `GithubRepoSection` in the Settings pane
+- [x] Phase 3 (first slice) — repo↔bundle sync: `pushToRepo` / `pullFromRepo` actions + push/pull controls in the Settings pane (last-writer-wins, `lastSyncedSha` tracking)
+- [x] Phase 3 follow-up — webhook auto-pull on external push (`POST /api/github/webhook`, HMAC-verified, auto-registered on create/connect)
+- [x] Phase 4 (first slice) — server-side `repoMirror` (identity + `stacks/**`), `syncMirror`, and authenticated `GET /api/v1/me/repo/files` + `/stacks` so API/MCP read from our servers
+- [ ] Phase 3/4 follow-ups — 3-way merge, sync `private/*` to vault, wire MCP server + public profile to read stacks from the mirror
+- [ ] Phase 5 — harden OAuth App → GitHub App (fine-grained per-repo perms)
 
 ### 2026-06-03
 - [x] Re-sync reference intelligence and version the new `project-context/reference-intelligence/LATEST.md` + `TASKS.md` artifacts from the 2026-06-03 upstream wave

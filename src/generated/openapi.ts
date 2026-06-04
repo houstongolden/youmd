@@ -488,6 +488,84 @@ export const openApiSpec = {
         ]
       }
     },
+    "/api/v1/me/repo/files": {
+      "get": {
+        "operationId": "get_api_v1_me_repo_files",
+        "summary": "> file list + stacks (or ?path= for one file) GET /api/v1/me/repo/stacks -> derived stacks list Both authenticate via the standard API-key Bearer token. ------------------------------------------------------------------…",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/repo/stacks": {
+      "get": {
+        "operationId": "get_api_v1_me_repo_stacks",
+        "summary": "Convex HTTP action",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/me/rollback": {
       "post": {
         "operationId": "post_api_v1_me_rollback",
@@ -757,6 +835,74 @@ export const openApiSpec = {
             "bearerAuth": []
           }
         ]
+      }
+    },
+    "/api/auth/github/callback": {
+      "get": {
+        "operationId": "get_api_auth_github_callback",
+        "summary": "Next.js route",
+        "tags": [
+          "Auth"
+        ],
+        "x-youmd-auth": "HTTP-only session flow",
+        "x-youmd-source": "next",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/github/start": {
+      "get": {
+        "operationId": "get_api_auth_github_start",
+        "summary": "Next.js route",
+        "tags": [
+          "Auth"
+        ],
+        "x-youmd-auth": "HTTP-only session flow",
+        "x-youmd-source": "next",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/auth/logout": {

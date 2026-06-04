@@ -1,5 +1,67 @@
 # You.md — Changelog
 
+## 2026-06-04 — Server-side repo mirror + stacks (Phase 4, first slice)
+
+### Mirror (clone/host on our servers for API/MCP)
+- New `repoMirror` Convex table: a snapshot of the user's repo tree (identity files + `stacks/**` + top-level markdown), one row per user, refreshed on pull/webhook/create-connect. Bounded by caps (≤100 files, ≤128KB/file, ≤700KB total; `truncated` flag).
+- New `convex/githubRepo.ts` mirror layer: `performMirror` (reads the head commit → recursive git tree → fetches allowlisted blobs within caps), public `syncMirror` action, and `internalMirrorForConnection` (webhook/post-create). Mirror refresh is scheduled after create/connect and on every webhook push.
+- New `convex/github.ts`: `internalUpsertMirror`, `internalGetMirrorByClerkId`, owner-only `getRepoMirror` (paths+sizes, no content, + derived stacks), and `deriveStacks` (groups `stacks/<slug>/...` into named stacks with file counts + manifest detection).
+- New authenticated HTTP reads so agents consume the repo from our servers (not GitHub) — `GET /api/v1/me/repo/files` (list, or `?path=` for one file's content) and `GET /api/v1/me/repo/stacks` (derived stacks). Docs reference regenerated (73 endpoints).
+- `GithubRepoSection` shows a "server mirror" status (file count, stack slugs, capped flag) with a "refresh mirror" button.
+
+### Notes / next
+- This directly serves "use stacks on their own repos": `stacks/**` is captured into the mirror and exposed via the stacks API. Next: wire the MCP server + public profile to read stacks from the mirror, and serve private files only through authenticated/token surfaces.
+
+### Validation
+- `npx tsc --noEmit` (web) and `convex/tsconfig.json`: 0 errors. ESLint clean on new files (no new issues in `http.ts`). `docs:check` passes.
+
+## 2026-06-04 — Repo Sync Engine: push / pull (Phase 3, first slice)
+
+### GitHub repo sync
+- New `convex/githubRepo.ts` actions:
+  - `pushToRepo` — writes the user's current compiled `you.md` + `you.json` to their linked repo (reads each file's current sha and updates it; skips byte-identical files to avoid empty commits), then records the commit sha as `lastSyncedSha`.
+  - `pullFromRepo` — reads `you.md` + `you.json` from the repo (repo is source of truth on pull), parses the JSON, and saves them as a new bundle version, syncing the public profile and marking synced.
+- New `convex/github.ts` internal mutations: `internalMarkSynced` (record a push) and `internalSaveBundleFromRepo` (write a bundle from repo content + sync profile + mark synced, reusing `computeContentHash`). `internalGetConnectionContext` now also returns the repo default branch.
+- Added GitHub Contents API helpers (`getRepoFile` returns null on 404; `putRepoFile` create-or-update with sha) and UTF-8-safe base64 decode.
+- `GithubRepoSection` now shows **push to repo** / **pull from repo** controls and a "last synced" timestamp in the linked-repo view, with success/error feedback.
+
+### Notes / next
+- Conflict policy in this slice is last-writer-wins (push updates by sha; pull overwrites the bundle). The existing `saveBundleFromForm` ANCESTOR_MISMATCH guard remains for the form path. A 3-way merge + webhook-driven auto-pull are Phase 3 follow-ups.
+
+### Validation
+- `npx tsc --noEmit` (web) and `convex/tsconfig.json`: 0 errors. ESLint clean. Not deployed — needs Convex deploy + the OAuth App with `repo` scope.
+
+## 2026-06-04 — Connect / Create Your You.md Repo (Phase 2)
+
+### GitHub repo (own repo as source of truth — first slice)
+- New `convex/githubRepo.ts` Convex **actions** (so the decrypted OAuth token never leaves the Convex trust boundary; called from the browser with `requireOwner` auth):
+  - `createRepo` — creates a `you-md` repo (public or private per the user's choice), then seeds it with `README.md`, `you.md` (the user's latest compiled bundle, or a starter), `you.json`, and a `stacks/.gitkeep`, and links it to the account.
+  - `connectRepo` — verifies write access to an existing repo the user owns and links it as their You.md repo (visibility read from GitHub).
+  - `listRepos` — lists the user's push-access repos for the connect picker.
+- New internal helpers in `convex/github.ts`: `internalGetConnectionContext` (resolve connection + encrypted token by clerkId), `internalGetSeedContent` (latest bundle/profile content to seed with), `internalSetRepo` (persist the linked repo + audit). Repo-scope is enforced before create/connect; missing `repo` scope returns a clear "reconnect and approve repository access" error.
+- New `src/components/panes/GithubRepoSection.tsx`, wired into the Settings pane: terminal-native, **no text-input forms** — visibility is a `private`/`public` toggle, existing repos are a pickable list. Shows linked-repo status (repo link, visibility, branch, GitHub handle) with a "change repo" path, and a "connect github" prompt for email-only accounts.
+
+### Validation
+- `npx tsc --noEmit` (web) and `npx tsc -p convex/tsconfig.json --noEmit`: 0 errors. Targeted ESLint clean.
+- Not deployed — same branch. Needs Convex deploy (new actions) + the GitHub OAuth App configured with `repo` scope.
+
+## 2026-06-04 — Free GitHub OAuth Signup (Phase 1)
+
+### Auth
+- New `githubConnections` Convex table: GitHub identity (numeric id + login + name + email + avatar), AES-GCM-encrypted OAuth access token + scopes, and linked You.md repo metadata (`repoFullName`, `repoVisibility`, default branch, sync bookkeeping). Indexed by user, GitHub id, and repo.
+- New `convex/github.ts`: `findOrCreateGithubUser` (resolve by GitHub id → verified email → create new user+profile; gated on `TRUSTED_INTERNAL_AUTH_TOKEN` since there's no per-request challenge), `getConnection` (owner-only, no token plaintext), and `linkRepo` (owner-only repo linking, public/private).
+- New `convex/lib/secretCrypto.ts`: shared AES-GCM `encryptSecret`/`decryptSecret` using `API_KEY_ENCRYPTION_SECRET` (falls back to the internal token) so OAuth tokens are recoverable for repo ops but encrypted at rest.
+- New web routes `/api/auth/github/start` (CSRF `state` cookie + GitHub authorize redirect) and `/api/auth/github/callback` (state check → token exchange → identity fetch incl. verified primary email → resolve/create account → mint the existing opaque session cookie → redirect new users to `/initialize`, returning users to their destination). Reuses the existing session/JWKS plumbing — no change to email-code auth.
+- New `src/lib/github-oauth.ts` (config, authorize URL, token exchange, identity fetch) and `src/components/terminal/GithubAuthButton.tsx` (terminal-native button + error copy). Wired into both `/sign-in` and `/sign-up`; the button degrades gracefully to a `?error=github_unconfigured` redirect until the OAuth App is configured.
+
+### Docs / Planning
+- `project-context/GITHUB_OAUTH_SETUP.md`: operator runbook for registering the GitHub OAuth App + env vars (`GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`, optional `GITHUB_OAUTH_SCOPES`) and verifying end-to-end.
+- `project-context/GITHUB_NATIVE_PLAN.md`: the full "repo as source of truth" vision broken into Phases 1–5 (signup → connect/create repo → sync engine → server-side clone/mirror for API/MCP → GitHub App hardening), with chosen defaults flagged for confirmation.
+
+### Validation
+- `npx tsc --noEmit` (web) and `npx tsc -p convex/tsconfig.json --noEmit`: 0 errors. Targeted ESLint on all new/changed files: clean.
+- Not deployed — branch `claude/github-oauth-free-signup` only, no PR. Needs the OAuth App + Convex/Vercel deploy from `main` to go live.
+
 ## 2026-06-03 — Reference Follow-Up Audit
 
 ### Strategy / Tracking

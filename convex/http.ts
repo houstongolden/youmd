@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { detectAgent } from "./lib/agentDetect";
+import { deriveStacks } from "./github";
 
 const http = httpRouter();
 
@@ -3100,5 +3101,160 @@ http.route({
 });
 
 http.route({ path: "/api/admin/reseed", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+
+// ---------------------------------------------------------------------------
+// Repo mirror reads (Phase 4) — agents read the user's repo-hosted identity +
+// stacks from our server-side mirror without hitting GitHub.
+// GET /api/v1/me/repo/files            -> file list + stacks (or ?path= for one file)
+// GET /api/v1/me/repo/stacks           -> derived stacks list
+// Both authenticate via the standard API-key Bearer token.
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: "/api/v1/me/repo/files",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const mirror = await ctx.runQuery(
+      internal.github.internalGetMirrorByClerkId,
+      { clerkId: auth.userId }
+    );
+    if (!mirror) {
+      return json({ repo: null, files: [], stacks: [], message: "No repo mirror yet. Link a repo and sync." });
+    }
+
+    const url = new URL(request.url);
+    const path = url.searchParams.get("path");
+    if (path) {
+      const file = mirror.files.find((f: { path: string }) => f.path === path);
+      if (!file) return json({ error: `File not found in mirror: ${path}` }, 404);
+      return json({ path: file.path, size: file.size, content: file.content });
+    }
+
+    return json({
+      repo: mirror.repoFullName,
+      commitSha: mirror.commitSha ?? null,
+      syncedAt: mirror.syncedAt,
+      truncated: mirror.truncated,
+      files: mirror.files.map((f: { path: string; size: number }) => ({
+        path: f.path,
+        size: f.size,
+      })),
+      stacks: deriveStacks(mirror.files),
+    });
+  }),
+});
+
+http.route({ path: "/api/v1/me/repo/files", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+
+http.route({
+  path: "/api/v1/me/repo/stacks",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const mirror = await ctx.runQuery(
+      internal.github.internalGetMirrorByClerkId,
+      { clerkId: auth.userId }
+    );
+    if (!mirror) {
+      return json({ repo: null, stacks: [], message: "No repo mirror yet. Link a repo and sync." });
+    }
+    return json({ repo: mirror.repoFullName, stacks: deriveStacks(mirror.files) });
+  }),
+});
+
+http.route({ path: "/api/v1/me/repo/stacks", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+
+// ---------------------------------------------------------------------------
+// GitHub webhook — auto-pull on external push to a linked You.md repo
+// POST /api/github/webhook  (verified via X-Hub-Signature-256 / HMAC-SHA256)
+// ---------------------------------------------------------------------------
+
+async function verifyGithubSignature(
+  secret: string,
+  body: string,
+  signatureHeader: string
+): Promise<boolean> {
+  if (!signatureHeader.startsWith("sha256=")) return false;
+  const provided = signatureHeader.slice("sha256=".length);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sigBuf = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(body)
+  );
+  const expected = Array.from(new Uint8Array(sigBuf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  if (expected.length !== provided.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i += 1) {
+    diff |= expected.charCodeAt(i) ^ provided.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+http.route({
+  path: "/api/github/webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const secret = process.env.GITHUB_WEBHOOK_SECRET;
+    if (!secret) return json({ error: "webhook not configured" }, 503);
+
+    const event = request.headers.get("x-github-event") ?? "";
+    const signature = request.headers.get("x-hub-signature-256") ?? "";
+    const body = await request.text();
+
+    if (!(await verifyGithubSignature(secret, body, signature))) {
+      return json({ error: "invalid signature" }, 401);
+    }
+    if (event === "ping") return json({ ok: true, pong: true });
+    if (event !== "push") return json({ ok: true, ignored: event });
+
+    let payload: { repository?: { full_name?: string }; ref?: string };
+    try {
+      payload = JSON.parse(body);
+    } catch {
+      return json({ error: "bad payload" }, 400);
+    }
+
+    const repoFullName = payload.repository?.full_name;
+    if (!repoFullName) return json({ ok: true, ignored: "no repo" });
+
+    const lookup = await ctx.runQuery(internal.github.internalGetClerkIdByRepo, {
+      repoFullName,
+    });
+    if (!lookup) return json({ ok: true, ignored: "no linked account" });
+
+    // Only react to pushes on the linked default branch.
+    if (payload.ref && payload.ref !== `refs/heads/${lookup.defaultBranch}`) {
+      return json({ ok: true, ignored: "non-default branch" });
+    }
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.githubRepo.internalPullForConnection,
+      { clerkId: lookup.clerkId }
+    );
+    await ctx.scheduler.runAfter(
+      0,
+      internal.githubRepo.internalMirrorForConnection,
+      { clerkId: lookup.clerkId }
+    );
+    return json({ ok: true, scheduled: true });
+  }),
+});
+
+http.route({ path: "/api/github/webhook", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
 
 export default http;
