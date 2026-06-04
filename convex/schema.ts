@@ -74,6 +74,9 @@ export default defineSchema({
     lastSyncedSha: v.optional(v.string()),
     lastSyncedAt: v.optional(v.number()),
 
+    // GitHub webhook id for the linked repo (auto-pull on external push).
+    webhookId: v.optional(v.number()),
+
     connectedAt: v.number(),
     updatedAt: v.optional(v.number()),
   })

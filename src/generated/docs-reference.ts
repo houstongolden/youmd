@@ -19,15 +19,15 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "a2d30324e5cbc778fb97b71a138eee90afdaf10c80fceee0f6044465bfe9c745",
+  "sourceHash": "50fea900eab97bcaed4b496c1f2d59e1eb600f8a6d66843654cb268b1a0fcb7a",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
-    "endpoints": 68,
+    "endpoints": 71,
     "mcpTools": 24,
-    "convexRoutes": 54,
-    "nextRoutes": 20
+    "convexRoutes": 55,
+    "nextRoutes": 22
   },
   "endpoints": [
     {
@@ -248,6 +248,28 @@ export const docsReference = {
       "summary": "Authorization: Bearer <TRUSTED_INTERNAL_AUTH_TOKEN> ---------------------------------------------------------------------------",
       "sources": [
         "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github/callback",
+      "category": "Auth",
+      "auth": "HTTP-only session flow",
+      "source": "next",
+      "summary": "Next.js route",
+      "sources": [
+        "next"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github/start",
+      "category": "Auth",
+      "auth": "HTTP-only session flow",
+      "source": "next",
+      "summary": "Next.js route",
+      "sources": [
+        "next"
       ]
     },
     {
@@ -595,6 +617,17 @@ export const docsReference = {
       "summary": "Next.js route",
       "sources": [
         "next"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/webhook",
+      "category": "Other",
+      "auth": "Public or rate-limited",
+      "source": "convex",
+      "summary": "Convex HTTP action",
+      "sources": [
+        "convex"
       ]
     },
     {

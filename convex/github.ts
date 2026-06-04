@@ -346,7 +346,34 @@ export const internalGetConnectionContext = internalQuery({
       accessTokenIv: conn.accessTokenIv ?? null,
       repoFullName: conn.repoFullName ?? null,
       repoDefaultBranch: conn.repoDefaultBranch ?? null,
+      webhookId: conn.webhookId ?? null,
     };
+  },
+});
+
+/** Internal: resolve the owner's clerkId from a linked repo full name. */
+export const internalGetClerkIdByRepo = internalQuery({
+  args: { repoFullName: v.string() },
+  handler: async (ctx, { repoFullName }) => {
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_repoFullName", (q) => q.eq("repoFullName", repoFullName))
+      .first();
+    if (!conn) return null;
+    const user = await ctx.db.get(conn.userId);
+    if (!user) return null;
+    return { clerkId: user.clerkId, defaultBranch: conn.repoDefaultBranch ?? "main" };
+  },
+});
+
+/** Internal: store the registered webhook id on the connection. */
+export const internalSetWebhook = internalMutation({
+  args: { connectionId: v.id("githubConnections"), webhookId: v.number() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.connectionId, {
+      webhookId: args.webhookId,
+      updatedAt: Date.now(),
+    });
   },
 });
 

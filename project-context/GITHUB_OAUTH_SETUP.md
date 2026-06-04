@@ -47,8 +47,11 @@ existing API-key + internal-auth flows):
 |---|---|
 | `TRUSTED_INTERNAL_AUTH_TOKEN` | gates the github bootstrap mutation; passed server-side from the callback route |
 | `API_KEY_ENCRYPTION_SECRET` | AES-GCM key for the stored OAuth token (falls back to `TRUSTED_INTERNAL_AUTH_TOKEN`) |
+| `GITHUB_WEBHOOK_SECRET` | optional — enables auto-pull on external `git push`. When set, create/connect auto-registers a `push` webhook (Convex `CONVEX_SITE_URL` + `/api/github/webhook`), and the receiver verifies the `X-Hub-Signature-256` HMAC. If unset, webhook auto-pull is skipped and the manual "pull from repo" button still works. |
 
-No new Convex secret is required if those are already configured.
+Set `GITHUB_WEBHOOK_SECRET` to a random 32+ char string. The OAuth `repo`
+scope also covers creating the repo webhook for repos the user administers.
+No other new Convex secret is required.
 
 ## 4. Deploy
 

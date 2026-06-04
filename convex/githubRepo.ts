@@ -1,4 +1,4 @@
-import { action } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
@@ -29,6 +29,7 @@ type ConnectionContext = {
   accessTokenIv: string | null;
   repoFullName: string | null;
   repoDefaultBranch: string | null;
+  webhookId: number | null;
 };
 
 function githubHeaders(token: string): Record<string, string> {
@@ -342,6 +343,8 @@ export const createRepo = action({
       lastSyncedSha: lastSha,
     });
 
+    await ensureWebhook(ctx, context, token, fullName);
+
     return {
       ok: true,
       created: true,
@@ -390,6 +393,8 @@ export const connectRepo = action({
       repoVisibility: repo.private ? "private" : "public",
       repoDefaultBranch: repo.default_branch || "main",
     });
+
+    await ensureWebhook(ctx, context, token, repo.full_name);
 
     return {
       ok: true,
@@ -467,57 +472,133 @@ export const pushToRepo = action({
 });
 
 /**
- * Pull you.md + you.json out of the linked repo and save them as a new bundle
- * (repo is the source of truth on pull). The public profile is synced too.
+ * Shared pull: read you.md + you.json out of the linked repo and save them as a
+ * new bundle (repo is the source of truth on pull). Used by the owner-facing
+ * `pullFromRepo` action and the webhook-driven `internalPullForConnection`.
  */
+async function performPull(
+  ctx: ActionCtx,
+  clerkId: string
+): Promise<{ ok: true; version: number; pulledFiles: string[] }> {
+  const { context, token } = await loadConnectionToken(ctx, clerkId, {
+    requireRepoScope: true,
+  });
+  if (!context.repoFullName) {
+    throw new Error("No repo linked yet. Create or connect a repo first.");
+  }
+  const fullName = context.repoFullName;
+  const branch = context.repoDefaultBranch || "main";
+
+  const youMdFile = await getRepoFile(token, fullName, "you.md", branch);
+  const youJsonFile = await getRepoFile(token, fullName, "you.json", branch);
+
+  if (!youMdFile && !youJsonFile) {
+    throw new Error(
+      "No you.md or you.json found in the repo. Push first, or add them to the repo."
+    );
+  }
+
+  let youJson: unknown = {};
+  if (youJsonFile?.content) {
+    try {
+      youJson = JSON.parse(youJsonFile.content);
+    } catch {
+      throw new Error("you.json in the repo is not valid JSON.");
+    }
+  }
+
+  const result = (await ctx.runMutation(
+    internal.github.internalSaveBundleFromRepo,
+    {
+      userId: context.userId,
+      connectionId: context.connectionId,
+      youMd: youMdFile?.content ?? "",
+      youJson,
+      repoSha: youMdFile?.sha ?? youJsonFile?.sha,
+    }
+  )) as { version: number; contentHash: string };
+
+  return {
+    ok: true,
+    version: result.version,
+    pulledFiles: [
+      youMdFile ? "you.md" : null,
+      youJsonFile ? "you.json" : null,
+    ].filter((x): x is string => x !== null),
+  };
+}
+
 export const pullFromRepo = action({
   args: { clerkId: v.string() },
   handler: async (ctx, { clerkId }) => {
     await requireOwner(ctx, clerkId);
-    const { context, token } = await loadConnectionToken(ctx, clerkId, {
-      requireRepoScope: true,
-    });
-    if (!context.repoFullName) {
-      throw new Error("No repo linked yet. Create or connect a repo first.");
-    }
-    const fullName = context.repoFullName;
-    const branch = context.repoDefaultBranch || "main";
-
-    const youMdFile = await getRepoFile(token, fullName, "you.md", branch);
-    const youJsonFile = await getRepoFile(token, fullName, "you.json", branch);
-
-    if (!youMdFile && !youJsonFile) {
-      throw new Error(
-        "No you.md or you.json found in the repo. Push first, or add them to the repo."
-      );
-    }
-
-    let youJson: unknown = {};
-    if (youJsonFile?.content) {
-      try {
-        youJson = JSON.parse(youJsonFile.content);
-      } catch {
-        throw new Error("you.json in the repo is not valid JSON.");
-      }
-    }
-
-    const result = (await ctx.runMutation(
-      internal.github.internalSaveBundleFromRepo,
-      {
-        userId: context.userId,
-        connectionId: context.connectionId,
-        youMd: youMdFile?.content ?? "",
-        youJson,
-        repoSha: youMdFile?.sha ?? youJsonFile?.sha,
-      }
-    )) as { version: number; contentHash: string };
-
-    return {
-      ok: true,
-      version: result.version,
-      pulledFiles: [youMdFile ? "you.md" : null, youJsonFile ? "you.json" : null].filter(
-        Boolean
-      ),
-    };
+    return await performPull(ctx, clerkId);
   },
 });
+
+/**
+ * Internal: webhook-driven pull. Called (via the scheduler) from the GitHub
+ * webhook route when an external push lands on the linked repo's default
+ * branch. No requireOwner — internal functions are server-only.
+ */
+export const internalPullForConnection = internalAction({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
+    try {
+      return await performPull(ctx, clerkId);
+    } catch {
+      // Best-effort: a webhook for a repo without you.md yet is not an error.
+      return { ok: false as const };
+    }
+  },
+});
+
+/**
+ * Best-effort: ensure a push webhook exists on the repo so external commits
+ * auto-pull. Requires GITHUB_WEBHOOK_SECRET + a reachable Convex site URL.
+ * Failures (e.g. missing hook scope) are swallowed — sync still works via the
+ * manual pull button.
+ */
+async function ensureWebhook(
+  ctx: ActionCtx,
+  context: ConnectionContext,
+  token: string,
+  repoFullName: string
+): Promise<void> {
+  if (context.webhookId) return; // already registered
+  const secret = process.env.GITHUB_WEBHOOK_SECRET;
+  const siteUrl = process.env.CONVEX_SITE_URL;
+  if (!secret || !siteUrl || !repoFullName) return;
+
+  try {
+    const res = await fetch(
+      `${GITHUB_API}/repos/${repoFullName}/hooks`,
+      {
+        method: "POST",
+        headers: { ...githubHeaders(token), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "web",
+          active: true,
+          events: ["push"],
+          config: {
+            url: `${siteUrl}/api/github/webhook`,
+            content_type: "json",
+            secret,
+            insecure_ssl: "0",
+          },
+        }),
+      }
+    );
+    if (res.ok) {
+      const hook = (await res.json()) as { id?: number };
+      if (hook.id) {
+        await ctx.runMutation(internal.github.internalSetWebhook, {
+          connectionId: context.connectionId,
+          webhookId: hook.id,
+        });
+      }
+    }
+  } catch {
+    // swallow — webhook is an enhancement, not required
+  }
+}
