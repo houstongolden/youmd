@@ -41,6 +41,11 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
   const listRepos = useAction(api.githubRepo.listRepos);
   const pushToRepo = useAction(api.githubRepo.pushToRepo);
   const pullFromRepo = useAction(api.githubRepo.pullFromRepo);
+  const syncMirror = useAction(api.githubRepo.syncMirror);
+  const mirror = useQuery(
+    api.github.getRepoMirror,
+    clerkId ? { clerkId } : "skip"
+  );
 
   const [visibility, setVisibility] = useState<"private" | "public">("private");
   const [busy, setBusy] = useState<string | null>(null);
@@ -86,6 +91,24 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "pull failed.");
+    }
+    setBusy(null);
+  };
+
+  const handleMirror = async () => {
+    setBusy("mirror");
+    setError(null);
+    setSyncMsg(null);
+    try {
+      const res = (await syncMirror({ clerkId })) as {
+        fileCount: number;
+        truncated: boolean;
+      };
+      setSyncMsg(
+        `mirrored ${res.fileCount} file${res.fileCount === 1 ? "" : "s"} from your repo${res.truncated ? " (capped)" : ""}.`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "mirror refresh failed.");
     }
     setBusy(null);
   };
@@ -253,7 +276,40 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
           <PaneButton onClick={handlePull} disabled={busy !== null} variant="secondary">
             {busy === "pull" ? "pulling..." : "pull from repo"}
           </PaneButton>
+          <PaneButton onClick={handleMirror} disabled={busy !== null} variant="secondary">
+            {busy === "mirror" ? "mirroring..." : "refresh mirror"}
+          </PaneButton>
         </div>
+
+        {mirror && (
+          <div
+            className="mt-2 border border-[hsl(var(--border))] p-3 font-mono text-[10px] space-y-1"
+            style={{ borderRadius: "2px" }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[hsl(var(--text-secondary))] opacity-60">
+                server mirror
+              </span>
+              <span className="text-[hsl(var(--text-primary))] opacity-70">
+                {mirror.fileCount} file{mirror.fileCount === 1 ? "" : "s"}
+                {mirror.truncated ? " (capped)" : ""}
+              </span>
+            </div>
+            {mirror.stacks.length > 0 && (
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-[hsl(var(--text-secondary))] opacity-60 shrink-0">
+                  stacks
+                </span>
+                <span className="text-[hsl(var(--accent-mid))] text-right">
+                  {mirror.stacks.map((s) => s.slug).join(", ")}
+                </span>
+              </div>
+            )}
+            <p className="text-[hsl(var(--text-secondary))] opacity-40 pt-1">
+              agents read these via the API at /api/v1/me/repo/files
+            </p>
+          </div>
+        )}
 
         {syncMsg && (
           <p className="mt-2 font-mono text-[10px] text-[hsl(var(--success))] opacity-80">

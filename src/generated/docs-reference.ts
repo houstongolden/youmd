@@ -19,14 +19,14 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "50fea900eab97bcaed4b496c1f2d59e1eb600f8a6d66843654cb268b1a0fcb7a",
+  "sourceHash": "4150bffcaedeb8793a3ffb1a08480ef02135b3e32b9a6a3c51755a24ea7a503e",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
-    "endpoints": 71,
+    "endpoints": 73,
     "mcpTools": 24,
-    "convexRoutes": 55,
+    "convexRoutes": 57,
     "nextRoutes": 22
   },
   "endpoints": [
@@ -158,6 +158,28 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Publish latest bundle",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/repo/files",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "> file list + stacks (or ?path= for one file) GET /api/v1/me/repo/stacks -> derived stacks list Both authenticate via the standard API-key Bearer token. ------------------------------------------------------------------…",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/repo/stacks",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Convex HTTP action",
       "sources": [
         "convex"
       ]

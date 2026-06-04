@@ -81,14 +81,16 @@ one-click via GitHub OAuth.
   3-way merge; GitHub webhook → re-pull on external `git push`.
 - **Needs:** Convex deploy + the OAuth App configured with `repo` scope.
 
-### Phase 4 — Clone & host for agentic/API/MCP
-- Server-side clone/mirror of the repo (shallow, token-auth) into our managed
-  store so `/api/v1/*`, `/api/v1/mcp`, and context links serve fast without
-  hitting GitHub per request. The clone is a cache keyed by `lastSyncedSha`.
-- Stacks resolve from `stacks/<slug>/` in the mirror; the YouStacks runtime and
-  MCP stack tools read from there.
-- Private repos: contents only ever leave the mirror through the existing
-  authenticated/token-scoped surfaces (never public profile).
+### Phase 4 — Clone & host for agentic/API/MCP — first slice ✅
+- **Done:** `repoMirror` table snapshots the repo tree (identity files +
+  `stacks/**` + top-level markdown), refreshed on create/connect, pull, and
+  webhook push (capped to stay within Convex doc limits). Authenticated
+  `GET /api/v1/me/repo/files` (+ `?path=`) and `GET /api/v1/me/repo/stacks`
+  serve it so agents read from our servers, not GitHub. `deriveStacks` groups
+  `stacks/<slug>/` into named stacks.
+- **Remaining:** wire the MCP server + public profile to read stacks from the
+  mirror; serve private files only through authenticated/token-scoped surfaces
+  (never the public profile); larger-repo handling beyond the inline caps.
 
 ### Phase 5 — Harden to a GitHub App
 - Migrate from OAuth App `repo` scope to a GitHub App with fine-grained,

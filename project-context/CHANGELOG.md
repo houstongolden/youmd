@@ -1,5 +1,20 @@
 # You.md — Changelog
 
+## 2026-06-04 — Server-side repo mirror + stacks (Phase 4, first slice)
+
+### Mirror (clone/host on our servers for API/MCP)
+- New `repoMirror` Convex table: a snapshot of the user's repo tree (identity files + `stacks/**` + top-level markdown), one row per user, refreshed on pull/webhook/create-connect. Bounded by caps (≤100 files, ≤128KB/file, ≤700KB total; `truncated` flag).
+- New `convex/githubRepo.ts` mirror layer: `performMirror` (reads the head commit → recursive git tree → fetches allowlisted blobs within caps), public `syncMirror` action, and `internalMirrorForConnection` (webhook/post-create). Mirror refresh is scheduled after create/connect and on every webhook push.
+- New `convex/github.ts`: `internalUpsertMirror`, `internalGetMirrorByClerkId`, owner-only `getRepoMirror` (paths+sizes, no content, + derived stacks), and `deriveStacks` (groups `stacks/<slug>/...` into named stacks with file counts + manifest detection).
+- New authenticated HTTP reads so agents consume the repo from our servers (not GitHub) — `GET /api/v1/me/repo/files` (list, or `?path=` for one file's content) and `GET /api/v1/me/repo/stacks` (derived stacks). Docs reference regenerated (73 endpoints).
+- `GithubRepoSection` shows a "server mirror" status (file count, stack slugs, capped flag) with a "refresh mirror" button.
+
+### Notes / next
+- This directly serves "use stacks on their own repos": `stacks/**` is captured into the mirror and exposed via the stacks API. Next: wire the MCP server + public profile to read stacks from the mirror, and serve private files only through authenticated/token surfaces.
+
+### Validation
+- `npx tsc --noEmit` (web) and `convex/tsconfig.json`: 0 errors. ESLint clean on new files (no new issues in `http.ts`). `docs:check` passes.
+
 ## 2026-06-04 — Repo Sync Engine: push / pull (Phase 3, first slice)
 
 ### GitHub repo sync

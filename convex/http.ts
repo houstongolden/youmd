@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { detectAgent } from "./lib/agentDetect";
+import { deriveStacks } from "./github";
 
 const http = httpRouter();
 
@@ -3102,6 +3103,73 @@ http.route({
 http.route({ path: "/api/admin/reseed", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
 
 // ---------------------------------------------------------------------------
+// Repo mirror reads (Phase 4) — agents read the user's repo-hosted identity +
+// stacks from our server-side mirror without hitting GitHub.
+// GET /api/v1/me/repo/files            -> file list + stacks (or ?path= for one file)
+// GET /api/v1/me/repo/stacks           -> derived stacks list
+// Both authenticate via the standard API-key Bearer token.
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: "/api/v1/me/repo/files",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const mirror = await ctx.runQuery(
+      internal.github.internalGetMirrorByClerkId,
+      { clerkId: auth.userId }
+    );
+    if (!mirror) {
+      return json({ repo: null, files: [], stacks: [], message: "No repo mirror yet. Link a repo and sync." });
+    }
+
+    const url = new URL(request.url);
+    const path = url.searchParams.get("path");
+    if (path) {
+      const file = mirror.files.find((f: { path: string }) => f.path === path);
+      if (!file) return json({ error: `File not found in mirror: ${path}` }, 404);
+      return json({ path: file.path, size: file.size, content: file.content });
+    }
+
+    return json({
+      repo: mirror.repoFullName,
+      commitSha: mirror.commitSha ?? null,
+      syncedAt: mirror.syncedAt,
+      truncated: mirror.truncated,
+      files: mirror.files.map((f: { path: string; size: number }) => ({
+        path: f.path,
+        size: f.size,
+      })),
+      stacks: deriveStacks(mirror.files),
+    });
+  }),
+});
+
+http.route({ path: "/api/v1/me/repo/files", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+
+http.route({
+  path: "/api/v1/me/repo/stacks",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+
+    const mirror = await ctx.runQuery(
+      internal.github.internalGetMirrorByClerkId,
+      { clerkId: auth.userId }
+    );
+    if (!mirror) {
+      return json({ repo: null, stacks: [], message: "No repo mirror yet. Link a repo and sync." });
+    }
+    return json({ repo: mirror.repoFullName, stacks: deriveStacks(mirror.files) });
+  }),
+});
+
+http.route({ path: "/api/v1/me/repo/stacks", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+
+// ---------------------------------------------------------------------------
 // GitHub webhook — auto-pull on external push to a linked You.md repo
 // POST /api/github/webhook  (verified via X-Hub-Signature-256 / HMAC-SHA256)
 // ---------------------------------------------------------------------------
@@ -3176,6 +3244,11 @@ http.route({
     await ctx.scheduler.runAfter(
       0,
       internal.githubRepo.internalPullForConnection,
+      { clerkId: lookup.clerkId }
+    );
+    await ctx.scheduler.runAfter(
+      0,
+      internal.githubRepo.internalMirrorForConnection,
       { clerkId: lookup.clerkId }
     );
     return json({ ok: true, scheduled: true });

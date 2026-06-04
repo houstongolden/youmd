@@ -84,6 +84,29 @@ export default defineSchema({
     .index("by_githubUserId", ["githubUserId"])
     .index("by_repoFullName", ["repoFullName"]),
 
+  // ── Server-side repo mirror (Phase 4) ──────────────────────
+  // A snapshot of the user's You.md repo tree (identity files + stacks/**),
+  // refreshed on pull/webhook, so the agentic/API/MCP surfaces can read from
+  // our servers without hitting GitHub per request. One row per user.
+  repoMirror: defineTable({
+    userId: v.id("users"),
+    repoFullName: v.string(),
+    commitSha: v.optional(v.string()),
+    files: v.array(
+      v.object({
+        path: v.string(),
+        content: v.string(),
+        size: v.number(),
+      })
+    ),
+    fileCount: v.number(),
+    totalBytes: v.number(),
+    truncated: v.boolean(), // some files skipped due to caps
+    syncedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_repoFullName", ["repoFullName"]),
+
   // ── Profiles (can exist without auth) ──────────────────────
   profiles: defineTable({
     username: v.string(),

@@ -14,9 +14,9 @@ PRD Version: 2.3
 - [ ] **Operator:** register the GitHub OAuth App + set `GITHUB_OAUTH_CLIENT_ID` / `GITHUB_OAUTH_CLIENT_SECRET` (scopes must include `repo`), deploy Convex + Vercel from `main`, verify signup/sign-in end-to-end
 - [x] Phase 2 — connect/create the user's You.md repo (public/private) + seed it: `convex/githubRepo.ts` actions (create/connect/list) + `GithubRepoSection` in the Settings pane
 - [x] Phase 3 (first slice) — repo↔bundle sync: `pushToRepo` / `pullFromRepo` actions + push/pull controls in the Settings pane (last-writer-wins, `lastSyncedSha` tracking)
-- [ ] Phase 3 follow-ups — 3-way merge, webhook-driven auto-pull on external push, sync `private/*` + `stacks/*` (not just you.md/you.json)
-- [ ] Phase 4 — server-side clone/mirror powering API/MCP/stacks
-- [ ] Phase 4 — server-side clone/mirror powering API/MCP/stacks
+- [x] Phase 3 follow-up — webhook auto-pull on external push (`POST /api/github/webhook`, HMAC-verified, auto-registered on create/connect)
+- [x] Phase 4 (first slice) — server-side `repoMirror` (identity + `stacks/**`), `syncMirror`, and authenticated `GET /api/v1/me/repo/files` + `/stacks` so API/MCP read from our servers
+- [ ] Phase 3/4 follow-ups — 3-way merge, sync `private/*` to vault, wire MCP server + public profile to read stacks from the mirror
 - [ ] Phase 5 — harden OAuth App → GitHub App (fine-grained per-repo perms)
 
 ### 2026-06-03

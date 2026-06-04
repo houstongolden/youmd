@@ -93,6 +93,35 @@ async function getRepoFile(
   };
 }
 
+// Mirror caps — keep the snapshot inside Convex document limits.
+const MIRROR_MAX_FILES = 100;
+const MIRROR_MAX_FILE_BYTES = 128 * 1024;
+const MIRROR_MAX_TOTAL_BYTES = 700 * 1024;
+
+/** Whether a repo path should be mirrored server-side. */
+function isMirrorablePath(path: string): boolean {
+  if (path === "you.md" || path === "you.json" || path === "README.md") return true;
+  if (path.startsWith("stacks/")) return true;
+  if (/^[^/]+\.md$/.test(path)) return true; // top-level markdown
+  return false;
+}
+
+/** Fetch a blob's decoded UTF-8 content by sha. */
+async function getRepoBlob(
+  token: string,
+  fullName: string,
+  sha: string
+): Promise<string | null> {
+  const res = await fetch(`${GITHUB_API}/repos/${fullName}/git/blobs/${sha}`, {
+    headers: githubHeaders(token),
+  });
+  if (!res.ok) return null;
+  const body = (await res.json()) as { content?: string; encoding?: string };
+  if (!body.content) return null;
+  if (body.encoding && body.encoding !== "base64") return null;
+  return decodeBase64Utf8(body.content);
+}
+
 /** Create or update a single file. Returns the resulting commit sha. */
 async function putRepoFile(
   token: string,
@@ -344,6 +373,11 @@ export const createRepo = action({
     });
 
     await ensureWebhook(ctx, context, token, fullName);
+    await ctx.scheduler.runAfter(
+      0,
+      internal.githubRepo.internalMirrorForConnection,
+      { clerkId: args.clerkId }
+    );
 
     return {
       ok: true,
@@ -395,6 +429,11 @@ export const connectRepo = action({
     });
 
     await ensureWebhook(ctx, context, token, repo.full_name);
+    await ctx.scheduler.runAfter(
+      0,
+      internal.githubRepo.internalMirrorForConnection,
+      { clerkId: args.clerkId }
+    );
 
     return {
       ok: true,
@@ -602,3 +641,103 @@ async function ensureWebhook(
     // swallow — webhook is an enhancement, not required
   }
 }
+
+/**
+ * Shared mirror: snapshot the repo tree (identity files + stacks/**) into the
+ * repoMirror table so API/MCP can read from our servers. Bounded by caps.
+ */
+async function performMirror(
+  ctx: ActionCtx,
+  clerkId: string
+): Promise<{ ok: true; fileCount: number; truncated: boolean }> {
+  const { context, token } = await loadConnectionToken(ctx, clerkId, {
+    requireRepoScope: true,
+  });
+  if (!context.repoFullName) {
+    throw new Error("No repo linked yet. Create or connect a repo first.");
+  }
+  const fullName = context.repoFullName;
+  const branch = context.repoDefaultBranch || "main";
+
+  // Resolve head commit + its tree.
+  const commitRes = await fetch(
+    `${GITHUB_API}/repos/${fullName}/commits/${encodeURIComponent(branch)}`,
+    { headers: githubHeaders(token) }
+  );
+  if (!commitRes.ok) {
+    throw new Error(`Could not read the repo head (${commitRes.status}).`);
+  }
+  const commit = (await commitRes.json()) as {
+    sha: string;
+    commit: { tree: { sha: string } };
+  };
+  const treeSha = commit.commit.tree.sha;
+
+  const treeRes = await fetch(
+    `${GITHUB_API}/repos/${fullName}/git/trees/${treeSha}?recursive=1`,
+    { headers: githubHeaders(token) }
+  );
+  if (!treeRes.ok) {
+    throw new Error(`Could not read the repo tree (${treeRes.status}).`);
+  }
+  const tree = (await treeRes.json()) as {
+    tree: Array<{ path: string; type: string; sha: string; size?: number }>;
+  };
+
+  const candidates = tree.tree.filter(
+    (e) =>
+      e.type === "blob" &&
+      isMirrorablePath(e.path) &&
+      (e.size ?? 0) <= MIRROR_MAX_FILE_BYTES
+  );
+
+  const files: { path: string; content: string; size: number }[] = [];
+  let totalBytes = 0;
+  let truncated = candidates.length > MIRROR_MAX_FILES;
+  for (const entry of candidates) {
+    if (files.length >= MIRROR_MAX_FILES) {
+      truncated = true;
+      break;
+    }
+    const content = await getRepoBlob(token, fullName, entry.sha);
+    if (content == null) continue;
+    const size = entry.size ?? content.length;
+    if (totalBytes + size > MIRROR_MAX_TOTAL_BYTES) {
+      truncated = true;
+      break;
+    }
+    files.push({ path: entry.path, content, size });
+    totalBytes += size;
+  }
+
+  await ctx.runMutation(internal.github.internalUpsertMirror, {
+    userId: context.userId,
+    repoFullName: fullName,
+    commitSha: commit.sha,
+    files,
+    truncated,
+  });
+
+  return { ok: true, fileCount: files.length, truncated };
+}
+
+/** Owner-facing: refresh the server-side mirror of the linked repo. */
+export const syncMirror = action({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
+    await requireOwner(ctx, clerkId);
+    return await performMirror(ctx, clerkId);
+  },
+});
+
+/** Internal: webhook/post-create mirror refresh (server-only, no requireOwner). */
+export const internalMirrorForConnection = internalAction({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
+    try {
+      return await performMirror(ctx, clerkId);
+    } catch {
+      return { ok: false as const };
+    }
+  },
+});

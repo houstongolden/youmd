@@ -377,6 +377,116 @@ export const internalSetWebhook = internalMutation({
   },
 });
 
+// ── Repo mirror (Phase 4) ──────────────────────────────────
+
+/** Internal: upsert the repo mirror snapshot for a user (one row per user). */
+export const internalUpsertMirror = internalMutation({
+  args: {
+    userId: v.id("users"),
+    repoFullName: v.string(),
+    commitSha: v.optional(v.string()),
+    files: v.array(
+      v.object({ path: v.string(), content: v.string(), size: v.number() })
+    ),
+    truncated: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const totalBytes = args.files.reduce((n, f) => n + f.size, 0);
+    const existing = await ctx.db
+      .query("repoMirror")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first();
+    const row = {
+      userId: args.userId,
+      repoFullName: args.repoFullName,
+      commitSha: args.commitSha,
+      files: args.files,
+      fileCount: args.files.length,
+      totalBytes,
+      truncated: args.truncated,
+      syncedAt: Date.now(),
+    };
+    if (existing) {
+      await ctx.db.patch(existing._id, row);
+    } else {
+      await ctx.db.insert("repoMirror", row);
+    }
+    return { fileCount: args.files.length, totalBytes };
+  },
+});
+
+/** Internal: read a user's mirror by clerkId (for authenticated API/MCP reads). */
+export const internalGetMirrorByClerkId = internalQuery({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+      .first();
+    if (!user) return null;
+    return await ctx.db
+      .query("repoMirror")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+  },
+});
+
+/**
+ * Owner-only: mirror summary (file paths + sizes, no content) plus derived
+ * stacks. Powers the Settings-pane mirror status and the stacks list.
+ */
+export const getRepoMirror = query({
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return null;
+    const mirror = await ctx.db
+      .query("repoMirror")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    if (!mirror) return null;
+
+    return {
+      repoFullName: mirror.repoFullName,
+      commitSha: mirror.commitSha ?? null,
+      fileCount: mirror.fileCount,
+      totalBytes: mirror.totalBytes,
+      truncated: mirror.truncated,
+      syncedAt: mirror.syncedAt,
+      files: mirror.files.map((f) => ({ path: f.path, size: f.size })),
+      stacks: deriveStacks(mirror.files),
+    };
+  },
+});
+
+/**
+ * Derive named stacks from mirrored `stacks/<slug>/...` files. A stack is any
+ * top-level folder under `stacks/`; we report its file count + whether it has
+ * a manifest so the UI/API can list the user's repo-hosted YouStacks.
+ */
+export function deriveStacks(
+  files: { path: string }[]
+): { slug: string; fileCount: number; hasManifest: boolean }[] {
+  const bySlug = new Map<string, { fileCount: number; hasManifest: boolean }>();
+  for (const f of files) {
+    const m = f.path.match(/^stacks\/([^/]+)\/(.+)$/);
+    if (!m) continue;
+    const slug = m[1];
+    const rest = m[2];
+    const entry = bySlug.get(slug) ?? { fileCount: 0, hasManifest: false };
+    entry.fileCount += 1;
+    if (/^(manifest|youstack)\.(json|ya?ml)$/i.test(rest)) {
+      entry.hasManifest = true;
+    }
+    bySlug.set(slug, entry);
+  }
+  return Array.from(bySlug.entries()).map(([slug, v]) => ({ slug, ...v }));
+}
+
 /** Internal: latest compiled identity content to seed a new repo with. */
 export const internalGetSeedContent = internalQuery({
   args: { userId: v.id("users") },
