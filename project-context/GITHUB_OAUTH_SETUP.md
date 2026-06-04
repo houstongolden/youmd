@@ -16,7 +16,8 @@ untouched.
    - **Homepage URL:** `https://you.md`
    - **Authorization callback URL:** `https://you.md/api/auth/github/callback`
      - For local dev also add a second app (or use the same one) with
-       `http://localhost:3000/api/auth/github/callback`.
+       `http://localhost:3100/api/auth/github/callback` because
+       `npm run dev:frontend` serves Next on port `3100`.
 3. Generate a **client secret**.
 
 > We use an **OAuth App** (not a GitHub App) for v1 because it ships fastest and

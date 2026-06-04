@@ -36,7 +36,7 @@ export function getAppUrl(): string {
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
     process.env.AUTH_ISSUER_URL?.trim() ||
     (process.env.NODE_ENV === "development"
-      ? "http://localhost:3000"
+      ? "http://localhost:3100"
       : "https://you.md")
   );
 }
