@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
@@ -314,5 +314,92 @@ export const linkRepo = mutation({
     });
 
     return { ok: true, repoFullName: args.repoFullName };
+  },
+});
+
+// ── Internal helpers for the repo action layer (convex/githubRepo.ts) ──────
+// These skip auth on purpose: the calling action already authorized the owner
+// via requireOwner before invoking them.
+
+/** Internal: resolve a user's GitHub connection + encrypted token by clerkId. */
+export const internalGetConnectionContext = internalQuery({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+      .first();
+    if (!user) return null;
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    if (!conn) return null;
+    return {
+      connectionId: conn._id,
+      userId: user._id,
+      username: user.username,
+      githubLogin: conn.githubLogin,
+      scopes: conn.scopes,
+      accessTokenEncrypted: conn.accessTokenEncrypted ?? null,
+      accessTokenIv: conn.accessTokenIv ?? null,
+      repoFullName: conn.repoFullName ?? null,
+    };
+  },
+});
+
+/** Internal: latest compiled identity content to seed a new repo with. */
+export const internalGetSeedContent = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    const bundles = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    const latest = bundles.sort((a, b) => b.version - a.version)[0];
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", userId))
+      .first();
+    return {
+      youMd: latest?.youMd ?? null,
+      youJson: latest?.youJson ?? null,
+      name: profile?.name ?? null,
+      username: profile?.username ?? null,
+      tagline: profile?.tagline ?? null,
+    };
+  },
+});
+
+/** Internal: persist the linked repo on the connection + audit it. */
+export const internalSetRepo = internalMutation({
+  args: {
+    connectionId: v.id("githubConnections"),
+    userId: v.id("users"),
+    repoFullName: v.string(),
+    repoVisibility: v.string(),
+    repoDefaultBranch: v.string(),
+    lastSyncedSha: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    await ctx.db.patch(args.connectionId, {
+      repoFullName: args.repoFullName,
+      repoVisibility: args.repoVisibility,
+      repoDefaultBranch: args.repoDefaultBranch,
+      repoConnectedAt: now,
+      lastSyncedSha: args.lastSyncedSha,
+      lastSyncedAt: args.lastSyncedSha ? now : undefined,
+      updatedAt: now,
+    });
+    await ctx.db.insert("securityLogs", {
+      eventType: "github_repo_linked",
+      userId: args.userId,
+      details: {
+        repoFullName: args.repoFullName,
+        repoVisibility: args.repoVisibility,
+      },
+      createdAt: now,
+    });
   },
 });

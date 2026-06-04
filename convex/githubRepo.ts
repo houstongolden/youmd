@@ -1,0 +1,343 @@
+import { action } from "./_generated/server";
+import { v } from "convex/values";
+import { internal } from "./_generated/api";
+import type { ActionCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { requireOwner } from "./lib/auth";
+import { decryptSecret } from "./lib/secretCrypto";
+
+/**
+ * GitHub repo actions (Phase 2): create or connect the user's own You.md repo
+ * — public or private — from the web shell. These are Convex actions so the
+ * decrypted OAuth token never leaves the Convex trust boundary; the browser
+ * only ever calls them with the authenticated user's identity (requireOwner).
+ *
+ * The repo becomes the source of truth for the user's identity `.md` + stacks;
+ * later phases pull/compile it and mirror it server-side for API/MCP.
+ */
+
+const DEFAULT_REPO_NAME = "you-md";
+const GITHUB_API = "https://api.github.com";
+
+type ConnectionContext = {
+  connectionId: Id<"githubConnections">;
+  userId: Id<"users">;
+  username: string;
+  githubLogin: string;
+  scopes: string[];
+  accessTokenEncrypted: string | null;
+  accessTokenIv: string | null;
+  repoFullName: string | null;
+};
+
+function githubHeaders(token: string): Record<string, string> {
+  return {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+    "User-Agent": "you.md-app",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+}
+
+function sanitizeRepoName(name: string | undefined): string {
+  const cleaned = (name || DEFAULT_REPO_NAME)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-.]+|[-.]+$/g, "")
+    .slice(0, 100);
+  return cleaned || DEFAULT_REPO_NAME;
+}
+
+function base64Utf8(input: string): string {
+  // btoa needs a binary string; encode UTF-8 first so non-ASCII content survives.
+  const bytes = new TextEncoder().encode(input);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+async function loadConnectionToken(
+  ctx: ActionCtx,
+  clerkId: string,
+  opts: { requireRepoScope?: boolean } = {}
+): Promise<{ context: ConnectionContext; token: string }> {
+  const context = (await ctx.runQuery(
+    internal.github.internalGetConnectionContext,
+    { clerkId }
+  )) as ConnectionContext | null;
+
+  if (!context) {
+    throw new Error(
+      "No GitHub account connected. Sign in with GitHub first to host your You.md in a repo."
+    );
+  }
+  if (!context.accessTokenEncrypted || !context.accessTokenIv) {
+    throw new Error(
+      "GitHub token unavailable. Reconnect GitHub to refresh access."
+    );
+  }
+  if (opts.requireRepoScope && !context.scopes.includes("repo")) {
+    throw new Error(
+      "GitHub access was granted without repo permission. Reconnect GitHub and approve repository access."
+    );
+  }
+
+  const token = await decryptSecret(
+    context.accessTokenEncrypted,
+    context.accessTokenIv
+  );
+  return { context, token };
+}
+
+/** Build the starter files for a freshly created repo. */
+function buildSeedFiles(seed: {
+  youMd: string | null;
+  youJson: unknown;
+  name: string | null;
+  username: string | null;
+  tagline: string | null;
+}): { path: string; content: string }[] {
+  const displayName = seed.name || seed.username || "you";
+  const handle = seed.username || "you";
+
+  const readme = `# ${displayName} — You.md
+
+This repository is **${handle}**'s [You.md](https://you.md) — a portable agent
+brain. The Markdown here is the source of truth for ${handle}'s identity context
+and expertise stacks. AI agents read it so they don't start from scratch.
+
+- Public profile: https://you.md/${handle}
+- Edit on the web: https://you.md/shell
+- Learn more: https://you.md
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| \`you.md\` | The compiled identity context (human + agent readable) |
+| \`you.json\` | The structured identity bundle |
+| \`stacks/\` | Named YouStacks (one folder per stack) |
+
+> Managed by You.md. Edits here sync back to your You.md account.
+`;
+
+  const youMd =
+    seed.youMd ||
+    `# ${displayName}\n\n${seed.tagline ? seed.tagline + "\n\n" : ""}> This is ${handle}'s You.md. Start building your agent brain at https://you.md/shell\n`;
+
+  const youJson = JSON.stringify(
+    seed.youJson ?? {
+      schema: "you-md/v1",
+      username: handle,
+      name: displayName,
+      tagline: seed.tagline ?? null,
+    },
+    null,
+    2
+  );
+
+  return [
+    { path: "README.md", content: readme },
+    { path: "you.md", content: youMd },
+    { path: "you.json", content: youJson },
+    {
+      path: "stacks/.gitkeep",
+      content: "# YouStacks live here. One folder per named stack.\n",
+    },
+  ];
+}
+
+/** List the authenticated user's repos so they can connect an existing one. */
+export const listRepos = action({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
+    await requireOwner(ctx, clerkId);
+    const { token } = await loadConnectionToken(ctx, clerkId);
+
+    const res = await fetch(
+      `${GITHUB_API}/user/repos?per_page=100&sort=updated&affiliation=owner`,
+      { headers: githubHeaders(token) }
+    );
+    if (!res.ok) {
+      throw new Error(`Could not list your GitHub repos (${res.status}).`);
+    }
+    const repos = (await res.json()) as Array<{
+      full_name: string;
+      name: string;
+      private: boolean;
+      default_branch: string;
+      updated_at: string;
+      permissions?: { push?: boolean };
+    }>;
+
+    return repos
+      .filter((r) => r.permissions?.push !== false)
+      .map((r) => ({
+        fullName: r.full_name,
+        name: r.name,
+        visibility: r.private ? "private" : "public",
+        defaultBranch: r.default_branch,
+        updatedAt: r.updated_at,
+      }));
+  },
+});
+
+/** Create a new You.md repo (public or private) and seed it. */
+export const createRepo = action({
+  args: {
+    clerkId: v.string(),
+    name: v.optional(v.string()),
+    visibility: v.union(v.literal("public"), v.literal("private")),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId);
+    const { context, token } = await loadConnectionToken(ctx, args.clerkId, {
+      requireRepoScope: true,
+    });
+
+    const repoName = sanitizeRepoName(args.name);
+
+    // Create the repo (no auto_init — we seed our own files, which initializes
+    // the default branch on first commit).
+    const createRes = await fetch(`${GITHUB_API}/user/repos`, {
+      method: "POST",
+      headers: { ...githubHeaders(token), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: repoName,
+        private: args.visibility === "private",
+        description: "My You.md — portable agent brain. https://you.md",
+        auto_init: false,
+        has_issues: false,
+        has_wiki: false,
+        has_projects: false,
+      }),
+    });
+
+    if (createRes.status === 422) {
+      throw new Error(
+        `You already have a repo named "${repoName}". Connect it instead, or pick a different name.`
+      );
+    }
+    if (!createRes.ok) {
+      const text = await createRes.text();
+      throw new Error(`GitHub repo creation failed (${createRes.status}): ${text}`);
+    }
+
+    const repo = (await createRes.json()) as {
+      full_name: string;
+      default_branch: string;
+      html_url: string;
+      owner: { login: string };
+      private: boolean;
+    };
+    const fullName = repo.full_name;
+    const defaultBranch = repo.default_branch || "main";
+
+    // Seed the repo with the user's current identity content.
+    const seed = (await ctx.runQuery(internal.github.internalGetSeedContent, {
+      userId: context.userId,
+    })) as {
+      youMd: string | null;
+      youJson: unknown;
+      name: string | null;
+      username: string | null;
+      tagline: string | null;
+    };
+
+    const files = buildSeedFiles(seed);
+    let lastSha: string | undefined;
+    for (const file of files) {
+      const putRes = await fetch(
+        `${GITHUB_API}/repos/${fullName}/contents/${file.path}`,
+        {
+          method: "PUT",
+          headers: {
+            ...githubHeaders(token),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: `chore(you.md): seed ${file.path}`,
+            content: base64Utf8(file.content),
+            branch: defaultBranch,
+          }),
+        }
+      );
+      if (putRes.ok) {
+        const body = (await putRes.json()) as { commit?: { sha?: string } };
+        lastSha = body.commit?.sha ?? lastSha;
+      }
+      // Non-fatal: if one seed file fails the repo still exists and is linked.
+    }
+
+    await ctx.runMutation(internal.github.internalSetRepo, {
+      connectionId: context.connectionId,
+      userId: context.userId,
+      repoFullName: fullName,
+      repoVisibility: args.visibility,
+      repoDefaultBranch: defaultBranch,
+      lastSyncedSha: lastSha,
+    });
+
+    return {
+      ok: true,
+      created: true,
+      repoFullName: fullName,
+      visibility: args.visibility,
+      defaultBranch,
+      htmlUrl: repo.html_url,
+    };
+  },
+});
+
+/** Connect an existing repo the user already owns as their You.md repo. */
+export const connectRepo = action({
+  args: { clerkId: v.string(), repoFullName: v.string() },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId);
+    const { context, token } = await loadConnectionToken(ctx, args.clerkId, {
+      requireRepoScope: true,
+    });
+
+    const res = await fetch(
+      `${GITHUB_API}/repos/${args.repoFullName}`,
+      { headers: githubHeaders(token) }
+    );
+    if (res.status === 404) {
+      throw new Error("That repo doesn't exist or you don't have access to it.");
+    }
+    if (!res.ok) {
+      throw new Error(`Could not read that repo (${res.status}).`);
+    }
+    const repo = (await res.json()) as {
+      full_name: string;
+      default_branch: string;
+      html_url: string;
+      private: boolean;
+      permissions?: { push?: boolean };
+    };
+    if (repo.permissions?.push === false) {
+      throw new Error("You need write access to connect a repo as your You.md.");
+    }
+
+    await ctx.runMutation(internal.github.internalSetRepo, {
+      connectionId: context.connectionId,
+      userId: context.userId,
+      repoFullName: repo.full_name,
+      repoVisibility: repo.private ? "private" : "public",
+      repoDefaultBranch: repo.default_branch || "main",
+    });
+
+    return {
+      ok: true,
+      created: false,
+      repoFullName: repo.full_name,
+      visibility: repo.private ? "private" : "public",
+      defaultBranch: repo.default_branch || "main",
+      htmlUrl: repo.html_url,
+    };
+  },
+});

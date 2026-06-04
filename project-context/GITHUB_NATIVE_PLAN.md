@@ -57,14 +57,17 @@ one-click via GitHub OAuth.
 - Setup/runbook: `GITHUB_OAUTH_SETUP.md`.
 - **Operator step:** register the OAuth App + set env vars.
 
-### Phase 2 — Connect / create the You.md repo (UI)
-- Settings/onboarding pane: "create my You.md repo" (calls GitHub API to create
-  `you-md` repo, public or private per user choice) and "connect an existing
-  repo" (list the user's repos via the stored token, pick one).
-- Persist via `linkRepo`. Seed a freshly created repo with the user's current
-  compiled `you.md` / `you.json` + a starter README.
-- Reuse the encrypted token (add `decryptSecret` read path in a server action /
-  Convex action that holds the token server-side only).
+### Phase 2 — Connect / create the You.md repo (UI) ✅ (code complete on branch)
+- Settings pane `GithubRepoSection`: "create my You.md repo" (creates `you-md`,
+  public or private per a visibility toggle) and "connect an existing repo"
+  (lists the user's push-access repos via the stored token, pick one). No
+  text-input forms — toggle + list only.
+- `convex/githubRepo.ts` **actions** `createRepo` / `connectRepo` / `listRepos`
+  hold the decrypted token inside Convex (never sent to the browser/Next), call
+  GitHub, and persist via internal helpers (`internalSetRepo`). A new repo is
+  seeded with `README.md`, `you.md` (latest bundle or starter), `you.json`, and
+  `stacks/.gitkeep`. `repo` scope is required and checked before create/connect.
+- **Needs:** Convex deploy + the OAuth App configured with `repo` scope.
 
 ### Phase 3 — Repo as source of truth for MD files (sync engine)
 - Pull: read `you.md` / `you.json` / `private/*` / `stacks/*` from the repo, run

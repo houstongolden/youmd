@@ -22,18 +22,18 @@ Last Updated: 2026-06-04
 **Progress (2026-06-04):** Built the full Phase-1 foundation on `claude/github-oauth-free-signup`. `npx tsc --noEmit` (web + `convex/tsconfig.json`) passes with 0 errors; targeted ESLint clean. Email-code auth is untouched. Not deployed (branch only, no PR).
 
 ### 107. Repo-native You.md — host MD files + stacks in the user's own GitHub repo (public/private)
-**Status:** PLANNED (Phases 2–5 — design + tracking landed; implementation deferred)
+**Status:** IN PROGRESS (Phase 2 code complete on branch; Phases 3–5 planned)
 **Verified:** NO
 **Production Verified:** NO
-**Source:** 2026-06-04 — same message: "host their full UMD and use stacks on their own GitHub repos and make those repos either public or private... use that for all the MD files and everything... since we have access to repo, we can clone it and host it on our own servers for the agentic and API MCP stuff."
+**Source:** 2026-06-04 — same message: "host their full UMD and use stacks on their own GitHub repos and make those repos either public or private... use that for all the MD files and everything... since we have access to repo, we can clone it and host it on our own servers for the agentic and API MCP stuff." Then: "Start phase 2".
 **Request:** Make the user's own GitHub repo the source of truth for their identity `.md` + stacks (public or private), and clone/mirror it server-side to power the agentic/API/MCP surfaces.
 **Actionable Scope:**
-1. Phase 2 — connect/create the You.md repo (create `you-md` public/private; or connect an existing repo) and seed it. — TODO
+1. Phase 2 — connect/create the You.md repo (create `you-md` public/private; or connect an existing repo) and seed it. **DONE (code complete, needs deploy):** `convex/githubRepo.ts` actions `createRepo`/`connectRepo`/`listRepos` (OAuth token decrypted only inside Convex actions), internal helpers in `convex/github.ts`, and `GithubRepoSection` wired into the Settings pane (visibility toggle + repo picker, no forms). tsc + eslint clean.
 2. Phase 3 — sync engine: pull repo MD → compile pipeline → bundles/profiles; push web/CLI edits back as commits; conflict policy; optional webhook re-pull. — TODO
 3. Phase 4 — server-side clone/mirror cache keyed by `lastSyncedSha`; stacks + MCP/API read from the mirror; private repos stay behind authenticated surfaces. — TODO
 4. Phase 5 — harden OAuth App → GitHub App (fine-grained, per-repo, least-privilege). — TODO
-**Design:** `project-context/GITHUB_NATIVE_PLAN.md` (schema already supports the linked-repo metadata; defaults: repo name `you-md`, default visibility private, email-match links to existing account, repo-as-truth opt-in per account).
-**Why deferred:** This is a multi-phase storage/infra change (sync engine + server-side mirror). Phase 1 (auth + connection foundation) is the unblocking prerequisite and is what this branch ships. Phases 2–5 should each be their own slice; flagged for Houston to confirm the defaults in the plan before Phase 2 build.
+**Design:** `project-context/GITHUB_NATIVE_PLAN.md` (defaults in use: repo name `you-md`, default visibility private, email-match links to existing account, repo-as-truth opt-in per account).
+**Progress (2026-06-04):** Phase 2 built on `claude/github-oauth-free-signup-sj6Nn`. Needs Convex deploy (new actions) + the OAuth App configured with `repo` scope, then end-to-end verify (create repo → seeded files appear → linked status shows). Phases 3–5 each remain their own slice.
 
 ---
 

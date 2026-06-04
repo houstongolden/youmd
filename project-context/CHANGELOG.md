@@ -1,5 +1,19 @@
 # You.md — Changelog
 
+## 2026-06-04 — Connect / Create Your You.md Repo (Phase 2)
+
+### GitHub repo (own repo as source of truth — first slice)
+- New `convex/githubRepo.ts` Convex **actions** (so the decrypted OAuth token never leaves the Convex trust boundary; called from the browser with `requireOwner` auth):
+  - `createRepo` — creates a `you-md` repo (public or private per the user's choice), then seeds it with `README.md`, `you.md` (the user's latest compiled bundle, or a starter), `you.json`, and a `stacks/.gitkeep`, and links it to the account.
+  - `connectRepo` — verifies write access to an existing repo the user owns and links it as their You.md repo (visibility read from GitHub).
+  - `listRepos` — lists the user's push-access repos for the connect picker.
+- New internal helpers in `convex/github.ts`: `internalGetConnectionContext` (resolve connection + encrypted token by clerkId), `internalGetSeedContent` (latest bundle/profile content to seed with), `internalSetRepo` (persist the linked repo + audit). Repo-scope is enforced before create/connect; missing `repo` scope returns a clear "reconnect and approve repository access" error.
+- New `src/components/panes/GithubRepoSection.tsx`, wired into the Settings pane: terminal-native, **no text-input forms** — visibility is a `private`/`public` toggle, existing repos are a pickable list. Shows linked-repo status (repo link, visibility, branch, GitHub handle) with a "change repo" path, and a "connect github" prompt for email-only accounts.
+
+### Validation
+- `npx tsc --noEmit` (web) and `npx tsc -p convex/tsconfig.json --noEmit`: 0 errors. Targeted ESLint clean.
+- Not deployed — same branch. Needs Convex deploy (new actions) + the GitHub OAuth App configured with `repo` scope.
+
 ## 2026-06-04 — Free GitHub OAuth Signup (Phase 1)
 
 ### Auth
