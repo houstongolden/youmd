@@ -47,6 +47,23 @@ Last Updated: 2026-06-04
 
 ---
 
+## 2026-06-04 Remote Main Sync + Full Audit
+
+### 108. Pull remote main, merge local state, verify, audit, and identify owner-only setup
+**Status:** IN PROGRESS
+**Verified:** NO
+**Source:** 2026-06-04 — Houston said "Pull down all the changes from the remote main repo... Continue from there comprehensively."
+**Request:** Bring local `main` fully up to date with remote, merge it with existing local work, prove the repo still builds/tests/runs, audit new improvements and docs, identify any keys/setup only Houston can complete, test new behavior, and keep moving comprehensively from the resulting state.
+**Actionable Scope:**
+1. Fetch/pull all changes from remote `main`.
+2. Merge remote changes with local modifications without losing existing work.
+3. Run the relevant build, lint, docs, CLI, and smoke checks.
+4. Audit new improvements and docs introduced by the sync.
+5. Identify required keys, credentials, environment variables, deploy permissions, or owner-only setup.
+6. Test and fix new functionality where possible from this machine.
+7. Update project context, commit logical local follow-through changes if any, and report remaining blocked/user-only work.
+**Progress (2026-06-04):** Pulled `origin/main` and fast-forwarded local `main` from `22b09ea` to `cf56f07`, preserving and reapplying the local reference-intelligence artifacts. Audited the incoming GitHub-native wave: GitHub OAuth signup, repo create/connect, repo push/pull, webhook auto-pull, server-side repo mirror, authenticated repo file/stack APIs, setup docs, OpenAPI/docs updates, and project-context tracking. Fixed local follow-through issues found during the audit: regenerated stale `llms` docs, regenerated Convex API bindings for `lib/secretCrypto`, corrected GitHub OAuth local-dev fallback/docs/env from port `3000` to this repo's `3100`, and upgraded Next.js from `16.2.2` to `16.2.7` with root manual markers updated. Verification passed `npm run agent-docs:ci`, targeted GitHub integration ESLint, `next typegen && tsc --noEmit`, `npx convex codegen --typecheck enable`, `npm --prefix cli run build`, `npm --prefix cli test` (12 files / 69 tests), `git diff --check`, and local HTTP smoke for `/api/auth/github/start` returning `http://localhost:3100/sign-in?error=github_unconfigured` when GitHub OAuth is not configured. **Blocked/remaining:** local `next build` hangs silently with both default and `--webpack` even after the Next patch upgrade; full end-to-end GitHub OAuth/repo verification requires Houston/operator to configure the GitHub OAuth App and deployment secrets, then deploy Convex + Vercel.
+
 ## 2026-06-03 Reference-Intelligence Follow-Through
 
 ### 105. Turn the Jun 3 reference-intelligence wave into tracked You.md follow-up slices

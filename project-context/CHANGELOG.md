@@ -37,6 +37,23 @@
 ### Validation
 - `tsc` (web + convex) 0 errors; ESLint clean on changed files (only pre-existing warnings remain). `docs:check` passes (24 MCP tools / 73 endpoints unchanged in the generated reference — the web MCP tools live in the http route).
 
+## 2026-06-04 — Remote main sync audit + local follow-through
+
+### Sync / audit
+- Fast-forwarded local `main` from `22b09ea` to `cf56f07` and preserved local reference-intelligence artifacts across the pull.
+- Audited the merged GitHub-native wave: free GitHub OAuth signup, GitHub repo create/connect, repo push/pull sync, webhook auto-pull, server-side repo mirror, authenticated repo file/stack APIs, setup docs, OpenAPI/docs updates, and project-context tracking.
+
+### Fixes
+- Regenerated stale `public/llms.txt` and `public/llms-full.txt` after the June 4 reference-intelligence refresh.
+- Regenerated Convex API bindings so `convex/_generated/api.d.ts` includes `convex/lib/secretCrypto.ts`.
+- Fixed GitHub OAuth local-dev fallback/docs/env to use the repo's actual frontend port `3100` instead of stale `3000`.
+- Upgraded Next.js from `16.2.2` to `16.2.7` and updated root agent-manual stack markers.
+
+### Validation / blockers
+- Passed `npm run agent-docs:ci`, targeted GitHub integration ESLint, `NEXT_TELEMETRY_DISABLED=1 npx next typegen && npx tsc --noEmit`, `npx convex codegen --typecheck enable`, `npm --prefix cli run build`, `npm --prefix cli test` (12 files / 69 tests), `git diff --check`, and local GitHub OAuth unconfigured-route smoke.
+- `next build` still hangs silently on this machine before route output with both default and `--webpack`; this remains a local production-build blocker to investigate before deploy confidence.
+- Owner/operator setup is still required: GitHub OAuth App credentials, production env/secrets, Convex deploy, Vercel deploy, and live end-to-end OAuth/repo verification.
+
 ## 2026-06-04 — Server-side repo mirror + stacks (Phase 4, first slice)
 
 ### Mirror (clone/host on our servers for API/MCP)

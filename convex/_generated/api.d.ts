@@ -26,6 +26,7 @@ import type * as lib_hash from "../lib/hash.js";
 import type * as lib_openrouter from "../lib/openrouter.js";
 import type * as lib_profileDirectory from "../lib/profileDirectory.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
+import type * as lib_secretCrypto from "../lib/secretCrypto.js";
 import type * as lib_spendCap from "../lib/spendCap.js";
 import type * as me from "../me.js";
 import type * as memories from "../memories.js";
@@ -73,6 +74,7 @@ declare const fullApi: ApiFromModules<{
   "lib/openrouter": typeof lib_openrouter;
   "lib/profileDirectory": typeof lib_profileDirectory;
   "lib/rateLimit": typeof lib_rateLimit;
+  "lib/secretCrypto": typeof lib_secretCrypto;
   "lib/spendCap": typeof lib_spendCap;
   me: typeof me;
   memories: typeof memories;
