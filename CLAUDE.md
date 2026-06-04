@@ -144,7 +144,7 @@ These are patterns that have caused problems in this project. Do not repeat them
 
 | Layer | Technology | Version |
 |---|---|---|
-| Frontend | Next.js (App Router) | 16.2.2 |
+| Frontend | Next.js (App Router) | 16.2.7 |
 | UI | React | 19.2.3 |
 | Styling | Tailwind CSS | v4 |
 | Animation | Motion | 12.37.0 |

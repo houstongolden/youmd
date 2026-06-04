@@ -181,7 +181,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Profile page sections are somewhat rigid (custom sections possible but not intuitive)
 
 ### Next.js / Middleware
-- Next.js 16.1.6 has moderate vulnerabilities (upgrade to 16.2.2 pending testing)
+- Next.js is now 16.2.7 locally after the June 4 sync audit; rerun production build/deploy verification after this patch upgrade lands.
 - Middleware deprecation warning (cosmetic, not blocking)
 
 ### Missing/Incomplete
