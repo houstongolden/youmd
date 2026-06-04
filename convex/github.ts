@@ -2,6 +2,7 @@ import { mutation, query, internalQuery, internalMutation } from "./_generated/s
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
+import { computeContentHash } from "./lib/hash";
 import { createUserAndProfile } from "./users";
 import { requireOwner } from "./lib/auth";
 import { encryptSecret } from "./lib/secretCrypto";
@@ -344,6 +345,7 @@ export const internalGetConnectionContext = internalQuery({
       accessTokenEncrypted: conn.accessTokenEncrypted ?? null,
       accessTokenIv: conn.accessTokenIv ?? null,
       repoFullName: conn.repoFullName ?? null,
+      repoDefaultBranch: conn.repoDefaultBranch ?? null,
     };
   },
 });
@@ -401,5 +403,93 @@ export const internalSetRepo = internalMutation({
       },
       createdAt: now,
     });
+  },
+});
+
+/** Internal: record a successful push (repo is now in sync at this sha). */
+export const internalMarkSynced = internalMutation({
+  args: {
+    connectionId: v.id("githubConnections"),
+    repoSha: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    await ctx.db.patch(args.connectionId, {
+      lastSyncedSha: args.repoSha,
+      lastSyncedAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+/**
+ * Internal: write a new bundle from content pulled out of the user's repo, sync
+ * it to the public profile, and mark the connection synced. The repo is the
+ * source of truth on pull, so we store its content as-is (no form validation).
+ */
+export const internalSaveBundleFromRepo = internalMutation({
+  args: {
+    userId: v.id("users"),
+    connectionId: v.id("githubConnections"),
+    youMd: v.string(),
+    youJson: v.any(),
+    repoSha: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect();
+    const maxVersion = existing.reduce((m, b) => Math.max(m, b.version), 0);
+    const latest = existing.sort((a, b) => b.version - a.version)[0];
+    const youJson = (args.youJson ?? {}) as Record<string, unknown>;
+    const contentHash = await computeContentHash(youJson, args.youMd);
+
+    await ctx.db.insert("bundles", {
+      userId: args.userId,
+      version: maxVersion + 1,
+      schemaVersion: "you-md/v1",
+      manifest: {},
+      youJson,
+      youMd: args.youMd,
+      isPublished: false,
+      createdAt: Date.now(),
+      contentHash,
+      parentHash: latest?.contentHash ?? undefined,
+      source: "github-repo",
+      changeNote: "pulled from GitHub repo",
+    });
+
+    // Keep the public profile current (mirror of saveBundleFromForm's sync).
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", args.userId))
+      .first();
+    if (profile) {
+      const updates: Record<string, unknown> = {
+        youJson,
+        youMd: args.youMd,
+        updatedAt: Date.now(),
+      };
+      const identity = youJson?.identity as Record<string, unknown> | undefined;
+      if (identity?.name) updates.name = identity.name;
+      if (identity?.tagline) updates.tagline = identity.tagline;
+      if (identity?.location) updates.location = identity.location;
+      if (identity?.bio) updates.bio = identity.bio;
+      if (youJson?.links) updates.links = youJson.links;
+      if (youJson?.projects) updates.projects = youJson.projects;
+      if (youJson?.values) updates.values = youJson.values;
+      if (youJson?.preferences) updates.preferences = youJson.preferences;
+      await ctx.db.patch(profile._id, updates);
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(args.connectionId, {
+      lastSyncedSha: args.repoSha,
+      lastSyncedAt: now,
+      updatedAt: now,
+    });
+
+    return { version: maxVersion + 1, contentHash };
   },
 });

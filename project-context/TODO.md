@@ -13,7 +13,9 @@ PRD Version: 2.3
 - [x] Write `project-context/GITHUB_OAUTH_SETUP.md` (operator runbook) and `project-context/GITHUB_NATIVE_PLAN.md` (full vision + Phases 1–5)
 - [ ] **Operator:** register the GitHub OAuth App + set `GITHUB_OAUTH_CLIENT_ID` / `GITHUB_OAUTH_CLIENT_SECRET` (scopes must include `repo`), deploy Convex + Vercel from `main`, verify signup/sign-in end-to-end
 - [x] Phase 2 — connect/create the user's You.md repo (public/private) + seed it: `convex/githubRepo.ts` actions (create/connect/list) + `GithubRepoSection` in the Settings pane
-- [ ] Phase 3 — repo→bundle sync engine (pull/compile/push/conflict)
+- [x] Phase 3 (first slice) — repo↔bundle sync: `pushToRepo` / `pullFromRepo` actions + push/pull controls in the Settings pane (last-writer-wins, `lastSyncedSha` tracking)
+- [ ] Phase 3 follow-ups — 3-way merge, webhook-driven auto-pull on external push, sync `private/*` + `stacks/*` (not just you.md/you.json)
+- [ ] Phase 4 — server-side clone/mirror powering API/MCP/stacks
 - [ ] Phase 4 — server-side clone/mirror powering API/MCP/stacks
 - [ ] Phase 5 — harden OAuth App → GitHub App (fine-grained per-repo perms)
 

@@ -69,14 +69,17 @@ one-click via GitHub OAuth.
   `stacks/.gitkeep`. `repo` scope is required and checked before create/connect.
 - **Needs:** Convex deploy + the OAuth App configured with `repo` scope.
 
-### Phase 3 — Repo as source of truth for MD files (sync engine)
-- Pull: read `you.md` / `you.json` / `private/*` / `stacks/*` from the repo, run
-  them through the existing compile pipeline into the `bundles`/`profiles` shape.
-- Push: when the user edits in the web shell/CLI, commit back to the repo
-  (Contents API), tracking `lastSyncedSha`.
-- Conflict policy: repo wins on pull; last-writer-wins commit on push with a
-  visible diff; later, optional 3-way merge.
-- Optional GitHub webhook → re-pull on external `git push` to the repo.
+### Phase 3 — Repo as source of truth for MD files (sync engine) — first slice ✅
+- **Done:** `pushToRepo` writes the current compiled `you.md` + `you.json` to the
+  repo (Contents API, update-by-sha, skips byte-identical files), tracking
+  `lastSyncedSha`. `pullFromRepo` reads `you.md` + `you.json` back and saves a
+  new bundle (repo wins on pull) + syncs the public profile. Push/pull controls
+  live in the Settings pane `GithubRepoSection`. Conflict policy here is
+  last-writer-wins.
+- **Remaining:** extend sync to `private/*` and `stacks/*`; run pulled content
+  through the compile pipeline where appropriate; a visible diff + optional
+  3-way merge; GitHub webhook → re-pull on external `git push`.
+- **Needs:** Convex deploy + the OAuth App configured with `repo` scope.
 
 ### Phase 4 — Clone & host for agentic/API/MCP
 - Server-side clone/mirror of the repo (shallow, token-auth) into our managed

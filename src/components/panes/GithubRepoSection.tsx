@@ -39,6 +39,8 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
   const createRepo = useAction(api.githubRepo.createRepo);
   const connectRepo = useAction(api.githubRepo.connectRepo);
   const listRepos = useAction(api.githubRepo.listRepos);
+  const pushToRepo = useAction(api.githubRepo.pushToRepo);
+  const pullFromRepo = useAction(api.githubRepo.pullFromRepo);
 
   const [visibility, setVisibility] = useState<"private" | "public">("private");
   const [busy, setBusy] = useState<string | null>(null);
@@ -46,8 +48,47 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
   const [result, setResult] = useState<RepoResult | null>(null);
   const [repoList, setRepoList] = useState<RepoListItem[] | null>(null);
   const [reconfiguring, setReconfiguring] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
   const startUrl = `/api/auth/github/start?next=${encodeURIComponent("/shell")}`;
+
+  const handlePush = async () => {
+    setBusy("push");
+    setError(null);
+    setSyncMsg(null);
+    try {
+      const res = (await pushToRepo({ clerkId })) as {
+        upToDate: boolean;
+        pushed: string[];
+      };
+      setSyncMsg(
+        res.upToDate
+          ? "already up to date — nothing to push."
+          : `pushed ${res.pushed.join(", ")} to your repo.`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "push failed.");
+    }
+    setBusy(null);
+  };
+
+  const handlePull = async () => {
+    setBusy("pull");
+    setError(null);
+    setSyncMsg(null);
+    try {
+      const res = (await pullFromRepo({ clerkId })) as {
+        version: number;
+        pulledFiles: string[];
+      };
+      setSyncMsg(
+        `pulled ${res.pulledFiles.join(", ")} from your repo (saved as v${res.version}).`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "pull failed.");
+    }
+    setBusy(null);
+  };
 
   const handleCreate = async () => {
     setBusy("create");
@@ -183,16 +224,51 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
               </span>
             </div>
           )}
+          {connection.lastSyncedAt && (
+            <div className="flex items-center justify-between">
+              <span className="text-[hsl(var(--text-secondary))] opacity-60">
+                last synced
+              </span>
+              <span className="text-[hsl(var(--text-primary))] opacity-70">
+                {new Date(connection.lastSyncedAt).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+          )}
           {result?.created && (
             <p className="text-[hsl(var(--success))] opacity-80 pt-1">
               {"\u2713"} repo created and seeded with your identity files.
             </p>
           )}
         </PaneCard>
+
+        <div className="mt-2 flex items-center gap-2">
+          <PaneButton onClick={handlePush} disabled={busy !== null} variant="secondary">
+            {busy === "push" ? "pushing..." : "push to repo"}
+          </PaneButton>
+          <PaneButton onClick={handlePull} disabled={busy !== null} variant="secondary">
+            {busy === "pull" ? "pulling..." : "pull from repo"}
+          </PaneButton>
+        </div>
+
+        {syncMsg && (
+          <p className="mt-2 font-mono text-[10px] text-[hsl(var(--success))] opacity-80">
+            {syncMsg}
+          </p>
+        )}
+        {error && (
+          <p className="mt-2 font-mono text-[10px] text-[hsl(var(--accent))]">{error}</p>
+        )}
+
         <button
           onClick={() => {
             setReconfiguring(true);
             setResult(null);
+            setSyncMsg(null);
           }}
           className="mt-2 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-100 transition-opacity"
         >

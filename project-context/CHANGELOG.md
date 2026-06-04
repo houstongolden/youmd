@@ -1,5 +1,21 @@
 # You.md — Changelog
 
+## 2026-06-04 — Repo Sync Engine: push / pull (Phase 3, first slice)
+
+### GitHub repo sync
+- New `convex/githubRepo.ts` actions:
+  - `pushToRepo` — writes the user's current compiled `you.md` + `you.json` to their linked repo (reads each file's current sha and updates it; skips byte-identical files to avoid empty commits), then records the commit sha as `lastSyncedSha`.
+  - `pullFromRepo` — reads `you.md` + `you.json` from the repo (repo is source of truth on pull), parses the JSON, and saves them as a new bundle version, syncing the public profile and marking synced.
+- New `convex/github.ts` internal mutations: `internalMarkSynced` (record a push) and `internalSaveBundleFromRepo` (write a bundle from repo content + sync profile + mark synced, reusing `computeContentHash`). `internalGetConnectionContext` now also returns the repo default branch.
+- Added GitHub Contents API helpers (`getRepoFile` returns null on 404; `putRepoFile` create-or-update with sha) and UTF-8-safe base64 decode.
+- `GithubRepoSection` now shows **push to repo** / **pull from repo** controls and a "last synced" timestamp in the linked-repo view, with success/error feedback.
+
+### Notes / next
+- Conflict policy in this slice is last-writer-wins (push updates by sha; pull overwrites the bundle). The existing `saveBundleFromForm` ANCESTOR_MISMATCH guard remains for the form path. A 3-way merge + webhook-driven auto-pull are Phase 3 follow-ups.
+
+### Validation
+- `npx tsc --noEmit` (web) and `convex/tsconfig.json`: 0 errors. ESLint clean. Not deployed — needs Convex deploy + the OAuth App with `repo` scope.
+
 ## 2026-06-04 — Connect / Create Your You.md Repo (Phase 2)
 
 ### GitHub repo (own repo as source of truth — first slice)

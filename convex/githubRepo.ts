@@ -28,6 +28,7 @@ type ConnectionContext = {
   accessTokenEncrypted: string | null;
   accessTokenIv: string | null;
   repoFullName: string | null;
+  repoDefaultBranch: string | null;
 };
 
 function githubHeaders(token: string): Record<string, string> {
@@ -58,6 +59,65 @@ function base64Utf8(input: string): string {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
+}
+
+function decodeBase64Utf8(b64: string): string {
+  const binary = atob(b64.replace(/\n/g, ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+/** Read a single file from a repo. Returns null on 404. */
+async function getRepoFile(
+  token: string,
+  fullName: string,
+  path: string,
+  ref: string
+): Promise<{ content: string; sha: string } | null> {
+  const res = await fetch(
+    `${GITHUB_API}/repos/${fullName}/contents/${path}?ref=${encodeURIComponent(ref)}`,
+    { headers: githubHeaders(token) }
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(`Could not read ${path} from the repo (${res.status}).`);
+  }
+  const body = (await res.json()) as { content?: string; sha: string };
+  return {
+    content: body.content ? decodeBase64Utf8(body.content) : "",
+    sha: body.sha,
+  };
+}
+
+/** Create or update a single file. Returns the resulting commit sha. */
+async function putRepoFile(
+  token: string,
+  fullName: string,
+  path: string,
+  content: string,
+  branch: string,
+  message: string,
+  sha?: string
+): Promise<string | undefined> {
+  const res = await fetch(`${GITHUB_API}/repos/${fullName}/contents/${path}`, {
+    method: "PUT",
+    headers: { ...githubHeaders(token), "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message,
+      content: base64Utf8(content),
+      branch,
+      ...(sha ? { sha } : {}),
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Could not write ${path} to the repo (${res.status}): ${text}`);
+  }
+  const body = (await res.json()) as { commit?: { sha?: string } };
+  return body.commit?.sha;
 }
 
 async function loadConnectionToken(
@@ -338,6 +398,126 @@ export const connectRepo = action({
       visibility: repo.private ? "private" : "public",
       defaultBranch: repo.default_branch || "main",
       htmlUrl: repo.html_url,
+    };
+  },
+});
+
+/**
+ * Push the user's current compiled identity (you.md + you.json) to their linked
+ * repo. Last-writer-wins: we read each file's current sha and update it.
+ */
+export const pushToRepo = action({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
+    await requireOwner(ctx, clerkId);
+    const { context, token } = await loadConnectionToken(ctx, clerkId, {
+      requireRepoScope: true,
+    });
+    if (!context.repoFullName) {
+      throw new Error("No repo linked yet. Create or connect a repo first.");
+    }
+    const fullName = context.repoFullName;
+    const branch = context.repoDefaultBranch || "main";
+
+    const seed = (await ctx.runQuery(internal.github.internalGetSeedContent, {
+      userId: context.userId,
+    })) as {
+      youMd: string | null;
+      youJson: unknown;
+      name: string | null;
+      username: string | null;
+      tagline: string | null;
+    };
+
+    if (!seed.youMd && seed.youJson == null) {
+      throw new Error("Nothing to push yet — build your You.md first.");
+    }
+
+    const files: { path: string; content: string }[] = [
+      { path: "you.md", content: seed.youMd ?? "" },
+      { path: "you.json", content: JSON.stringify(seed.youJson ?? {}, null, 2) },
+    ];
+
+    let commitSha: string | undefined;
+    const pushed: string[] = [];
+    for (const file of files) {
+      const existing = await getRepoFile(token, fullName, file.path, branch);
+      // Skip writing if content is byte-identical (avoids empty commits).
+      if (existing && existing.content === file.content) continue;
+      commitSha =
+        (await putRepoFile(
+          token,
+          fullName,
+          file.path,
+          file.content,
+          branch,
+          `chore(you.md): sync ${file.path} from you.md`,
+          existing?.sha
+        )) ?? commitSha;
+      pushed.push(file.path);
+    }
+
+    await ctx.runMutation(internal.github.internalMarkSynced, {
+      connectionId: context.connectionId,
+      repoSha: commitSha,
+    });
+
+    return { ok: true, pushed, commitSha: commitSha ?? null, upToDate: pushed.length === 0 };
+  },
+});
+
+/**
+ * Pull you.md + you.json out of the linked repo and save them as a new bundle
+ * (repo is the source of truth on pull). The public profile is synced too.
+ */
+export const pullFromRepo = action({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
+    await requireOwner(ctx, clerkId);
+    const { context, token } = await loadConnectionToken(ctx, clerkId, {
+      requireRepoScope: true,
+    });
+    if (!context.repoFullName) {
+      throw new Error("No repo linked yet. Create or connect a repo first.");
+    }
+    const fullName = context.repoFullName;
+    const branch = context.repoDefaultBranch || "main";
+
+    const youMdFile = await getRepoFile(token, fullName, "you.md", branch);
+    const youJsonFile = await getRepoFile(token, fullName, "you.json", branch);
+
+    if (!youMdFile && !youJsonFile) {
+      throw new Error(
+        "No you.md or you.json found in the repo. Push first, or add them to the repo."
+      );
+    }
+
+    let youJson: unknown = {};
+    if (youJsonFile?.content) {
+      try {
+        youJson = JSON.parse(youJsonFile.content);
+      } catch {
+        throw new Error("you.json in the repo is not valid JSON.");
+      }
+    }
+
+    const result = (await ctx.runMutation(
+      internal.github.internalSaveBundleFromRepo,
+      {
+        userId: context.userId,
+        connectionId: context.connectionId,
+        youMd: youMdFile?.content ?? "",
+        youJson,
+        repoSha: youMdFile?.sha ?? youJsonFile?.sha,
+      }
+    )) as { version: number; contentHash: string };
+
+    return {
+      ok: true,
+      version: result.version,
+      pulledFiles: [youMdFile ? "you.md" : null, youJsonFile ? "you.json" : null].filter(
+        Boolean
+      ),
     };
   },
 });

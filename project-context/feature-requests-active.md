@@ -29,11 +29,11 @@ Last Updated: 2026-06-04
 **Request:** Make the user's own GitHub repo the source of truth for their identity `.md` + stacks (public or private), and clone/mirror it server-side to power the agentic/API/MCP surfaces.
 **Actionable Scope:**
 1. Phase 2 — connect/create the You.md repo (create `you-md` public/private; or connect an existing repo) and seed it. **DONE (code complete, needs deploy):** `convex/githubRepo.ts` actions `createRepo`/`connectRepo`/`listRepos` (OAuth token decrypted only inside Convex actions), internal helpers in `convex/github.ts`, and `GithubRepoSection` wired into the Settings pane (visibility toggle + repo picker, no forms). tsc + eslint clean.
-2. Phase 3 — sync engine: pull repo MD → compile pipeline → bundles/profiles; push web/CLI edits back as commits; conflict policy; optional webhook re-pull. — TODO
+2. Phase 3 — sync engine: pull repo MD → bundles/profiles; push edits back as commits; conflict policy; optional webhook re-pull. **FIRST SLICE DONE (code complete, needs deploy):** `pushToRepo` / `pullFromRepo` actions (you.md + you.json, last-writer-wins via file sha, `lastSyncedSha` tracking) + push/pull controls in the Settings pane. **Remaining:** 3-way merge, webhook auto-pull, syncing `private/*` + `stacks/*`.
 3. Phase 4 — server-side clone/mirror cache keyed by `lastSyncedSha`; stacks + MCP/API read from the mirror; private repos stay behind authenticated surfaces. — TODO
 4. Phase 5 — harden OAuth App → GitHub App (fine-grained, per-repo, least-privilege). — TODO
 **Design:** `project-context/GITHUB_NATIVE_PLAN.md` (defaults in use: repo name `you-md`, default visibility private, email-match links to existing account, repo-as-truth opt-in per account).
-**Progress (2026-06-04):** Phase 2 built on `claude/github-oauth-free-signup-sj6Nn`. Needs Convex deploy (new actions) + the OAuth App configured with `repo` scope, then end-to-end verify (create repo → seeded files appear → linked status shows). Phases 3–5 each remain their own slice.
+**Progress (2026-06-04):** Phases 2 + 3-first-slice built on `claude/github-oauth-free-signup-sj6Nn`. Needs Convex deploy (new actions) + the OAuth App configured with `repo` scope, then end-to-end verify (create repo → seeded files appear → push/pull round-trips → linked status + last-synced show). Phase 3 follow-ups + Phases 4–5 each remain their own slice.
 
 ---
 
