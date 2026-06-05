@@ -5,6 +5,7 @@ import type { ActionCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { requireOwner } from "./lib/auth";
 import { decryptSecret } from "./lib/secretCrypto";
+import { isGithubAppConfigured, mintInstallationToken } from "./githubApp";
 
 /**
  * GitHub repo actions (Phase 2): create or connect the user's own You.md repo
@@ -30,6 +31,7 @@ type ConnectionContext = {
   repoFullName: string | null;
   repoDefaultBranch: string | null;
   webhookId: number | null;
+  installationId: number | null;
 };
 
 function githubHeaders(token: string): Record<string, string> {
@@ -165,6 +167,16 @@ async function loadConnectionToken(
       "No GitHub account connected. Sign in with GitHub first to host your You.md in a repo."
     );
   }
+
+  // Phase 5: prefer a fine-grained, short-lived GitHub App installation token
+  // when the App is configured and this user has installed it. Installation
+  // tokens carry repo permissions (not OAuth scopes), so the scope check below
+  // only applies to the OAuth fallback.
+  if (context.installationId && isGithubAppConfigured()) {
+    const token = await mintInstallationToken(context.installationId);
+    return { context, token };
+  }
+
   if (!context.accessTokenEncrypted || !context.accessTokenIv) {
     throw new Error(
       "GitHub token unavailable. Reconnect GitHub to refresh access."

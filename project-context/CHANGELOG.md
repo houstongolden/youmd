@@ -1,5 +1,18 @@
 # You.md — Changelog
 
+## 2026-06-04 — GitHub App foundation (Phase 5, additive)
+
+### GitHub App (fine-grained tokens — optional, untested e2e)
+- New `convex/githubApp.ts`: signs an RS256 app JWT (Web Crypto, PKCS#8) and mints short-lived installation access tokens. `isGithubAppConfigured()` gates the whole path.
+- `convex/githubRepo.ts` `loadConnectionToken` now prefers a GitHub App installation token when the App is configured AND the user has an `installationId`; otherwise it falls back to the OAuth token (the verified default). OAuth scope check only applies to the fallback.
+- `convex/github.ts`: `setInstallation` mutation + `installationId` on the connection context/schema; `getConnection` returns `appInstalled`.
+- New web route `GET /api/auth/github/app/setup` — the App's post-install Setup URL; authenticates the session and records the installation id.
+- `GithubRepoSection` shows GitHub App status + an install link when `NEXT_PUBLIC_GITHUB_APP_SLUG` is configured.
+- Documented registration + PKCS#8 conversion + env in `GITHUB_OAUTH_SETUP.md`.
+
+### Honest status
+- Compiles clean and is fully additive — but **untested end-to-end** (needs a real registered App). The OAuth `repo`-scope path remains the verified default. Follow-ups: installation-token caching, `installation` webhook handling for revocation.
+
 ## 2026-06-04 — MCP + public profile read repo-hosted stacks (Phase 3/4 follow-up)
 
 ### MCP

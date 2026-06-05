@@ -262,6 +262,7 @@ export const getConnection = query({
       repoConnectedAt: connection.repoConnectedAt ?? null,
       lastSyncedSha: connection.lastSyncedSha ?? null,
       lastSyncedAt: connection.lastSyncedAt ?? null,
+      appInstalled: !!connection.installationId,
       connectedAt: connection.connectedAt,
     };
   },
@@ -347,7 +348,43 @@ export const internalGetConnectionContext = internalQuery({
       repoFullName: conn.repoFullName ?? null,
       repoDefaultBranch: conn.repoDefaultBranch ?? null,
       webhookId: conn.webhookId ?? null,
+      installationId: conn.installationId ?? null,
     };
+  },
+});
+
+/** Owner-only: record the GitHub App installation id for this user (Phase 5). */
+export const setInstallation = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    installationId: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    if (!conn) {
+      throw new Error("Connect GitHub before installing the GitHub App.");
+    }
+    await ctx.db.patch(conn._id, {
+      installationId: args.installationId,
+      updatedAt: Date.now(),
+    });
+    await ctx.db.insert("securityLogs", {
+      eventType: "github_app_installed",
+      userId: user._id,
+      details: { installationId: args.installationId },
+      createdAt: Date.now(),
+    });
+    return { ok: true };
   },
 });
 

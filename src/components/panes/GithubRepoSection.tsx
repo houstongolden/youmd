@@ -56,6 +56,7 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
   const startUrl = `/api/auth/github/start?next=${encodeURIComponent("/shell")}`;
+  const appSlug = process.env.NEXT_PUBLIC_GITHUB_APP_SLUG;
 
   const handlePush = async () => {
     setBusy("push");
@@ -245,6 +246,27 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
               <span className="text-[hsl(var(--text-primary))] opacity-70">
                 @{connection.githubLogin}
               </span>
+            </div>
+          )}
+          {appSlug && (
+            <div className="flex items-center justify-between">
+              <span className="text-[hsl(var(--text-secondary))] opacity-60">
+                github app
+              </span>
+              {connection.appInstalled ? (
+                <span className="text-[hsl(var(--success))]">
+                  installed (fine-grained)
+                </span>
+              ) : (
+                <a
+                  href={`https://github.com/apps/${appSlug}/installations/new`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[hsl(var(--accent))] opacity-80 hover:opacity-100"
+                >
+                  install {"\u2192"}
+                </a>
+              )}
             </div>
           )}
           {connection.lastSyncedAt && (

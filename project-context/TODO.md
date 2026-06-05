@@ -18,7 +18,8 @@ PRD Version: 2.3
 - [x] Phase 4 (first slice) — server-side `repoMirror` (identity + `stacks/**`), `syncMirror`, and authenticated `GET /api/v1/me/repo/files` + `/stacks` so API/MCP read from our servers
 - [x] Phase 3/4 follow-up — MCP tools `get_my_stacks` + `get_repo_file`, `get_identity` includes public `repo_stacks`, and the public profile renders repo-hosted stacks (public repos only, via `getPublicRepoStacks`)
 - [ ] Phase 3/4 follow-ups — 3-way merge, sync `private/*` to vault, larger-repo mirror handling
-- [ ] Phase 5 — harden OAuth App → GitHub App (fine-grained per-repo perms)
+- [x] Phase 5 (foundation, untested) — GitHub App support: `convex/githubApp.ts` (app JWT + installation tokens), `loadConnectionToken` prefers installation tokens, `setInstallation` + `/api/auth/github/app/setup` callback, Settings install link
+- [ ] Phase 5 follow-ups — installation-token caching, `installation` webhook revocation handling, App-first auth option; register the App + set `GITHUB_APP_ID`/`GITHUB_APP_PRIVATE_KEY_PEM`/`NEXT_PUBLIC_GITHUB_APP_SLUG` and verify e2e
 
 ### 2026-06-03
 - [x] Re-sync reference intelligence and version the new `project-context/reference-intelligence/LATEST.md` + `TASKS.md` artifacts from the 2026-06-03 upstream wave

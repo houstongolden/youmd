@@ -77,6 +77,11 @@ export default defineSchema({
     // GitHub webhook id for the linked repo (auto-pull on external push).
     webhookId: v.optional(v.number()),
 
+    // GitHub App installation id (Phase 5). When set + the App is configured,
+    // repo ops use fine-grained, short-lived installation tokens instead of the
+    // broad OAuth token.
+    installationId: v.optional(v.number()),
+
     connectedAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
