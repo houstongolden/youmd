@@ -16,7 +16,8 @@ PRD Version: 2.3
 - [x] Phase 3 (first slice) — repo↔bundle sync: `pushToRepo` / `pullFromRepo` actions + push/pull controls in the Settings pane (last-writer-wins, `lastSyncedSha` tracking)
 - [x] Phase 3 follow-up — webhook auto-pull on external push (`POST /api/github/webhook`, HMAC-verified, auto-registered on create/connect)
 - [x] Phase 4 (first slice) — server-side `repoMirror` (identity + `stacks/**`), `syncMirror`, and authenticated `GET /api/v1/me/repo/files` + `/stacks` so API/MCP read from our servers
-- [ ] Phase 3/4 follow-ups — 3-way merge, sync `private/*` to vault, wire MCP server + public profile to read stacks from the mirror
+- [x] Phase 3/4 follow-up — MCP tools `get_my_stacks` + `get_repo_file`, `get_identity` includes public `repo_stacks`, and the public profile renders repo-hosted stacks (public repos only, via `getPublicRepoStacks`)
+- [ ] Phase 3/4 follow-ups — 3-way merge, sync `private/*` to vault, larger-repo mirror handling
 - [ ] Phase 5 — harden OAuth App → GitHub App (fine-grained per-repo perms)
 
 ### 2026-06-03

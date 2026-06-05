@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-06-04 — MCP + public profile read repo-hosted stacks (Phase 3/4 follow-up)
+
+### MCP
+- Two new authenticated `/api/v1/mcp` tools: `get_my_stacks` (lists the YouStacks the user hosts in their repo, from the mirror) and `get_repo_file` (reads one mirrored file, e.g. `you.md` or `stacks/<slug>/manifest.json`). The public `get_identity` tool now also includes `repo_stacks` when the user's repo is public.
+
+### Public profile
+- New public `convex/github.ts` query `getPublicRepoStacks(username)` — returns repo-hosted stacks ONLY when the linked repo is public (never leaks private-repo stack names).
+- The `/api/v1/profiles` response now carries `_profile.repoStacks`, and the public profile page renders a "stacks in their repo" section linking each stack folder on GitHub.
+
+### Validation
+- `tsc` (web + convex) 0 errors; ESLint clean on changed files (only pre-existing warnings remain). `docs:check` passes (24 MCP tools / 73 endpoints unchanged in the generated reference — the web MCP tools live in the http route).
+
 ## 2026-06-04 — Server-side repo mirror + stacks (Phase 4, first slice)
 
 ### Mirror (clone/host on our servers for API/MCP)

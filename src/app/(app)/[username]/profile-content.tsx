@@ -271,6 +271,14 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
     isOwner || stack.visibility === "public-open"
   );
 
+  // YouStacks hosted in the user's own (public) GitHub repo — surfaced from the
+  // You.md server-side mirror via the profile API's `_profile.repoStacks`.
+  const repoStacks = (ssrData?._profile?.repoStacks ?? null) as {
+    repoFullName: string;
+    repoUrl: string;
+    stacks: { slug: string; fileCount: number; hasManifest: boolean }[];
+  } | null;
+
   const handleCopyRawJson = () => {
     if (!data) return;
     navigator.clipboard.writeText(JSON.stringify(data, null, 2));
@@ -904,6 +912,51 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                           </code>
                         )}
                       </div>
+                    ))}
+                  </div>
+                </motion.section>
+              </>
+            )}
+
+            {repoStacks && repoStacks.stacks.length > 0 && (
+              <>
+                <Divider />
+                <motion.section {...delay(8)}>
+                  <SectionLabel editKey="youstacks">stacks in their repo</SectionLabel>
+                  <p className="mt-2 text-[12px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+                    Hosted in{" "}
+                    <a
+                      href={repoStacks.repoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[hsl(var(--accent))] opacity-80 hover:opacity-100"
+                    >
+                      {repoStacks.repoFullName}
+                    </a>
+                    {" "}— this user keeps their You.md and stacks in their own GitHub repo.
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {repoStacks.stacks.map((stack) => (
+                      <a
+                        key={stack.slug}
+                        href={`${repoStacks.repoUrl}/tree/HEAD/stacks/${stack.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 hover:border-[hsl(var(--accent))] transition-colors"
+                        style={{ borderRadius: "2px" }}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <p className="font-mono text-[12px] text-[hsl(var(--text-primary))] opacity-85">
+                            {stack.slug}
+                          </p>
+                          <span className="font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--accent))] opacity-70">
+                            {stack.hasManifest ? "youstack" : "files"}
+                          </span>
+                        </div>
+                        <p className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
+                          {stack.fileCount} file{stack.fileCount === 1 ? "" : "s"}
+                        </p>
+                      </a>
                     ))}
                   </div>
                 </motion.section>

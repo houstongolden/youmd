@@ -487,6 +487,40 @@ export function deriveStacks(
   return Array.from(bySlug.entries()).map(([slug, v]) => ({ slug, ...v }));
 }
 
+/**
+ * Public: the YouStacks a user hosts in their own repo — but ONLY when that
+ * repo is public. Returns null for users with no public repo so the public
+ * profile / MCP never leak private-repo stack names.
+ */
+export const getPublicRepoStacks = query({
+  args: { username: v.string() },
+  handler: async (ctx, { username }) => {
+    const uname = username.toLowerCase().replace(/^@/, "");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_username", (q) => q.eq("username", uname))
+      .first();
+    if (!user) return null;
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    if (!conn || conn.repoVisibility !== "public" || !conn.repoFullName) {
+      return null;
+    }
+    const repoUrl = `https://github.com/${conn.repoFullName}`;
+    const mirror = await ctx.db
+      .query("repoMirror")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    return {
+      repoFullName: conn.repoFullName,
+      repoUrl,
+      stacks: mirror ? deriveStacks(mirror.files) : [],
+    };
+  },
+});
+
 /** Internal: latest compiled identity content to seed a new repo with. */
 export const internalGetSeedContent = internalQuery({
   args: { userId: v.id("users") },
