@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-06-04 — GitHub repo follow-ups: token caching, App revocation, private-file safety
+
+### GitHub App hardening
+- Installation-token **caching**: `mintInstallationToken` now returns the GitHub-provided expiry; `loadConnectionToken` caches the token (AES-GCM encrypted) on the connection (`installationTokenEnc`/`Iv`/`Exp`) and reuses it until ~1 min before expiry instead of minting one per repo op. New `internalCacheInstallationToken`.
+- Installation **revocation**: the GitHub webhook now handles `installation` events — `deleted`/`suspend` clears the user's `installationId` + cached token (so repo ops fall back to OAuth). New `by_installationId` index + `internalClearInstallationById`.
+
+### Private-file safety
+- `private/**` is now explicitly excluded from the server-side mirror (defensive early-return + comment). Private files belong in the zero-knowledge vault (client-side encrypted), not the plaintext mirror — so `private/*` ↔ vault sync stays a deliberate client-side follow-up, not a server action that would store plaintext.
+
+### Validation
+- `tsc` (web + convex) 0 errors; ESLint clean; `docs:check` passes (regenerated — the Phase 5 setup route is now in the reference, 74 endpoints).
+
 ## 2026-06-04 — GitHub App foundation (Phase 5, additive)
 
 ### GitHub App (fine-grained tokens — optional, untested e2e)

@@ -4,7 +4,7 @@ import { internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { requireOwner } from "./lib/auth";
-import { decryptSecret } from "./lib/secretCrypto";
+import { decryptSecret, encryptSecret } from "./lib/secretCrypto";
 import { isGithubAppConfigured, mintInstallationToken } from "./githubApp";
 
 /**
@@ -32,6 +32,9 @@ type ConnectionContext = {
   repoDefaultBranch: string | null;
   webhookId: number | null;
   installationId: number | null;
+  installationTokenEnc: string | null;
+  installationTokenIv: string | null;
+  installationTokenExp: number | null;
 };
 
 function githubHeaders(token: string): Record<string, string> {
@@ -102,6 +105,9 @@ const MIRROR_MAX_TOTAL_BYTES = 700 * 1024;
 
 /** Whether a repo path should be mirrored server-side. */
 function isMirrorablePath(path: string): boolean {
+  // Never mirror private/* server-side. Private files belong in the
+  // zero-knowledge vault (client-side encrypted), not the plaintext mirror.
+  if (path.startsWith("private/")) return false;
   if (path === "you.md" || path === "you.json" || path === "README.md") return true;
   if (path.startsWith("stacks/")) return true;
   if (/^[^/]+\.md$/.test(path)) return true; // top-level markdown
@@ -171,10 +177,30 @@ async function loadConnectionToken(
   // Phase 5: prefer a fine-grained, short-lived GitHub App installation token
   // when the App is configured and this user has installed it. Installation
   // tokens carry repo permissions (not OAuth scopes), so the scope check below
-  // only applies to the OAuth fallback.
+  // only applies to the OAuth fallback. The minted token is cached (encrypted)
+  // until ~1 min before expiry to avoid minting one per op.
   if (context.installationId && isGithubAppConfigured()) {
-    const token = await mintInstallationToken(context.installationId);
-    return { context, token };
+    if (
+      context.installationTokenEnc &&
+      context.installationTokenIv &&
+      context.installationTokenExp &&
+      context.installationTokenExp - Date.now() > 60_000
+    ) {
+      const token = await decryptSecret(
+        context.installationTokenEnc,
+        context.installationTokenIv
+      );
+      return { context, token };
+    }
+    const minted = await mintInstallationToken(context.installationId);
+    const enc = await encryptSecret(minted.token);
+    await ctx.runMutation(internal.github.internalCacheInstallationToken, {
+      connectionId: context.connectionId,
+      enc: enc.ciphertext,
+      iv: enc.iv,
+      exp: minted.expiresAt,
+    });
+    return { context, token: minted.token };
   }
 
   if (!context.accessTokenEncrypted || !context.accessTokenIv) {

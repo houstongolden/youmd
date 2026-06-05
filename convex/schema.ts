@@ -81,13 +81,19 @@ export default defineSchema({
     // repo ops use fine-grained, short-lived installation tokens instead of the
     // broad OAuth token.
     installationId: v.optional(v.number()),
+    // Cached installation token (encrypted) + expiry, to avoid minting one per
+    // op. Refreshed when within ~1 min of expiry.
+    installationTokenEnc: v.optional(v.string()),
+    installationTokenIv: v.optional(v.string()),
+    installationTokenExp: v.optional(v.number()),
 
     connectedAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
     .index("by_githubUserId", ["githubUserId"])
-    .index("by_repoFullName", ["repoFullName"]),
+    .index("by_repoFullName", ["repoFullName"])
+    .index("by_installationId", ["installationId"]),
 
   // ── Server-side repo mirror (Phase 4) ──────────────────────
   // A snapshot of the user's You.md repo tree (identity files + stacks/**),

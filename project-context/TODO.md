@@ -17,9 +17,9 @@ PRD Version: 2.3
 - [x] Phase 3 follow-up — webhook auto-pull on external push (`POST /api/github/webhook`, HMAC-verified, auto-registered on create/connect)
 - [x] Phase 4 (first slice) — server-side `repoMirror` (identity + `stacks/**`), `syncMirror`, and authenticated `GET /api/v1/me/repo/files` + `/stacks` so API/MCP read from our servers
 - [x] Phase 3/4 follow-up — MCP tools `get_my_stacks` + `get_repo_file`, `get_identity` includes public `repo_stacks`, and the public profile renders repo-hosted stacks (public repos only, via `getPublicRepoStacks`)
-- [ ] Phase 3/4 follow-ups — 3-way merge, sync `private/*` to vault, larger-repo mirror handling
-- [x] Phase 5 (foundation, untested) — GitHub App support: `convex/githubApp.ts` (app JWT + installation tokens), `loadConnectionToken` prefers installation tokens, `setInstallation` + `/api/auth/github/app/setup` callback, Settings install link
-- [ ] Phase 5 follow-ups — installation-token caching, `installation` webhook revocation handling, App-first auth option; register the App + set `GITHUB_APP_ID`/`GITHUB_APP_PRIVATE_KEY_PEM`/`NEXT_PUBLIC_GITHUB_APP_SLUG` and verify e2e
+- [x] Phase 5 follow-up — installation-token caching (encrypted, reused until ~1 min before expiry) + `installation` webhook revocation (`deleted`/`suspend` clears installation + cached token)
+- [x] Private-file safety — `private/**` explicitly excluded from the server mirror (belongs in the zero-knowledge vault, not plaintext)
+- [ ] Remaining follow-ups (own slices, some need product/security decisions) — `private/*` ↔ vault sync (client-side E2E), 3-way merge/diff on push, larger-repo mirror handling, App-first auth option; register the OAuth App (+ optional GitHub App) and verify e2e
 
 ### 2026-06-03
 - [x] Re-sync reference intelligence and version the new `project-context/reference-intelligence/LATEST.md` + `TASKS.md` artifacts from the 2026-06-03 upstream wave

@@ -83,11 +83,12 @@ async function signAppJwt(): Promise<string> {
 
 /**
  * Mint a short-lived installation access token for the given installation id.
- * Throws if the App is not configured or GitHub rejects the request.
+ * Returns the token + its expiry (ms epoch). Throws if the App is not
+ * configured or GitHub rejects the request.
  */
 export async function mintInstallationToken(
   installationId: number
-): Promise<string> {
+): Promise<{ token: string; expiresAt: number }> {
   const jwt = await signAppJwt();
   const res = await fetch(
     `${GITHUB_API}/app/installations/${installationId}/access_tokens`,
@@ -104,7 +105,10 @@ export async function mintInstallationToken(
   if (!res.ok) {
     throw new Error(`Failed to mint GitHub App installation token (${res.status}).`);
   }
-  const body = (await res.json()) as { token?: string };
+  const body = (await res.json()) as { token?: string; expires_at?: string };
   if (!body.token) throw new Error("GitHub App did not return an installation token.");
-  return body.token;
+  const expiresAt = body.expires_at
+    ? Date.parse(body.expires_at)
+    : Date.now() + 55 * 60 * 1000;
+  return { token: body.token, expiresAt };
 }

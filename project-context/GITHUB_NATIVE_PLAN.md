@@ -103,9 +103,19 @@ one-click via GitHub OAuth.
 - **Needs:** register the GitHub App, convert the key to PKCS#8, set
   `GITHUB_APP_ID` / `GITHUB_APP_PRIVATE_KEY_PEM` (Convex) +
   `NEXT_PUBLIC_GITHUB_APP_SLUG` (Vercel). See `GITHUB_OAUTH_SETUP.md`.
-- **Remaining:** installation token caching (currently minted per op), handling
-  `installation`/`installation_repositories` webhook events for revocation,
-  and a full App-first auth option (vs OAuth + App install).
+- **Done (follow-up):** installation-token caching (encrypted on the connection,
+  reused until ~1 min before expiry) and `installation` webhook revocation
+  (`deleted`/`suspend` clears the installation + cached token → OAuth fallback).
+- **Remaining:** `installation_repositories` (per-repo grant changes), a full
+  App-first auth option (vs OAuth + App install), and e2e verification with a
+  registered App.
+
+### Private files
+- `private/**` is intentionally **excluded** from the server-side mirror —
+  private content belongs in the zero-knowledge vault (client-side encrypted),
+  not the plaintext mirror. Syncing `private/*` ↔ vault is therefore a
+  deliberate **client-side** effort (the browser holds the vault key); it is a
+  tracked follow-up, not a server action.
 
 ## Open product questions (defaults chosen; confirm if wrong)
 - Default repo name: `you-md`. Default visibility on "create": **private**

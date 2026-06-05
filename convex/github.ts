@@ -349,7 +349,60 @@ export const internalGetConnectionContext = internalQuery({
       repoDefaultBranch: conn.repoDefaultBranch ?? null,
       webhookId: conn.webhookId ?? null,
       installationId: conn.installationId ?? null,
+      installationTokenEnc: conn.installationTokenEnc ?? null,
+      installationTokenIv: conn.installationTokenIv ?? null,
+      installationTokenExp: conn.installationTokenExp ?? null,
     };
+  },
+});
+
+/** Internal: cache an encrypted installation token + expiry on the connection. */
+export const internalCacheInstallationToken = internalMutation({
+  args: {
+    connectionId: v.id("githubConnections"),
+    enc: v.string(),
+    iv: v.string(),
+    exp: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.connectionId, {
+      installationTokenEnc: args.enc,
+      installationTokenIv: args.iv,
+      installationTokenExp: args.exp,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Internal: clear a GitHub App installation (and its cached token) when the
+ * App is uninstalled/suspended. Called from the `installation` webhook.
+ */
+export const internalClearInstallationById = internalMutation({
+  args: { installationId: v.number() },
+  handler: async (ctx, { installationId }) => {
+    const conns = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_installationId", (q) =>
+        q.eq("installationId", installationId)
+      )
+      .collect();
+    for (const conn of conns) {
+      await ctx.db.patch(conn._id, {
+        installationId: undefined,
+        installationTokenEnc: undefined,
+        installationTokenIv: undefined,
+        installationTokenExp: undefined,
+        updatedAt: Date.now(),
+      });
+      await ctx.db.insert("securityLogs", {
+        eventType: "github_app_uninstalled",
+        userId: conn.userId,
+        details: { installationId },
+        createdAt: Date.now(),
+      });
+    }
+    return { cleared: conns.length };
   },
 });
 

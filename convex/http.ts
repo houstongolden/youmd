@@ -3302,6 +3302,26 @@ http.route({
       return json({ error: "invalid signature" }, 401);
     }
     if (event === "ping") return json({ ok: true, pong: true });
+
+    // GitHub App lifecycle — revoke installation on uninstall/suspend.
+    if (event === "installation") {
+      let p: { action?: string; installation?: { id?: number } };
+      try {
+        p = JSON.parse(body);
+      } catch {
+        return json({ error: "bad payload" }, 400);
+      }
+      const instId = p.installation?.id;
+      if (instId && (p.action === "deleted" || p.action === "suspend")) {
+        const cleared = await ctx.runMutation(
+          internal.github.internalClearInstallationById,
+          { installationId: instId }
+        );
+        return json({ ok: true, cleared });
+      }
+      return json({ ok: true, ignored: `installation.${p.action ?? "?"}` });
+    }
+
     if (event !== "push") return json({ ok: true, ignored: event });
 
     let payload: { repository?: { full_name?: string }; ref?: string };
