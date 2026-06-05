@@ -19,15 +19,15 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "4150bffcaedeb8793a3ffb1a08480ef02135b3e32b9a6a3c51755a24ea7a503e",
+  "sourceHash": "de7206ded1b54f2b493ee9b2b19f37026ce9a59adda8549190d8cc6ee638a2ee",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
-    "endpoints": 73,
+    "endpoints": 74,
     "mcpTools": 24,
     "convexRoutes": 57,
-    "nextRoutes": 22
+    "nextRoutes": 23
   },
   "endpoints": [
     {
@@ -270,6 +270,17 @@ export const docsReference = {
       "summary": "Authorization: Bearer <TRUSTED_INTERNAL_AUTH_TOKEN> ---------------------------------------------------------------------------",
       "sources": [
         "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github/app/setup",
+      "category": "Auth",
+      "auth": "HTTP-only session flow",
+      "source": "next",
+      "summary": "Next.js route",
+      "sources": [
+        "next"
       ]
     },
     {

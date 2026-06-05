@@ -69,6 +69,40 @@ No other new Convex secret is required.
 4. Confirm a `githubConnections` row exists for the user (Convex dashboard) with
    `hasToken: true` and the granted scopes.
 
+## GitHub App (optional, Phase 5 — fine-grained tokens)
+
+The OAuth `repo` scope is broad. To harden to least-privilege, per-repo,
+short-lived tokens, register a **GitHub App** and have users install it on just
+their You.md repo. The code path is additive: when the App is configured AND a
+user has installed it, repo ops use installation tokens; otherwise they fall
+back to the OAuth token. Nothing changes until you configure it.
+
+1. Register a GitHub App (https://github.com/settings/apps/new):
+   - **Repository permissions:** Contents: Read & write; Webhooks: Read & write
+     (for auto-registering the push hook); Metadata: Read.
+   - **Setup URL:** `https://you.md/api/auth/github/app/setup` (and check
+     "Redirect on update").
+   - Generate a private key (GitHub gives PKCS#1).
+2. Convert the key to PKCS#8 (Web Crypto requires it):
+   ```
+   openssl pkcs8 -topk8 -nocrypt -in app.private-key.pem -out app.pkcs8.pem
+   ```
+3. Set Convex env vars:
+   | Var | Value |
+   |---|---|
+   | `GITHUB_APP_ID` | the numeric App id |
+   | `GITHUB_APP_PRIVATE_KEY_PEM` | contents of `app.pkcs8.pem` |
+4. Set the Vercel public env var so the UI shows the install link:
+   | Var | Value |
+   |---|---|
+   | `NEXT_PUBLIC_GITHUB_APP_SLUG` | the App's slug (from its public page URL) |
+5. Users: sign in with GitHub (OAuth, as today) → Settings → "github app:
+   install" → approve on the You.md repo. The setup callback records the
+   installation; subsequent repo ops use installation tokens automatically.
+
+> Status: code complete + compiles, but untested end-to-end (needs a real App).
+> The OAuth path remains the verified default.
+
 ## What the code does
 
 - `src/app/api/auth/github/start/route.ts` — sets a signed-ish CSRF `state`

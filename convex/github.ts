@@ -262,6 +262,7 @@ export const getConnection = query({
       repoConnectedAt: connection.repoConnectedAt ?? null,
       lastSyncedSha: connection.lastSyncedSha ?? null,
       lastSyncedAt: connection.lastSyncedAt ?? null,
+      appInstalled: !!connection.installationId,
       connectedAt: connection.connectedAt,
     };
   },
@@ -347,7 +348,96 @@ export const internalGetConnectionContext = internalQuery({
       repoFullName: conn.repoFullName ?? null,
       repoDefaultBranch: conn.repoDefaultBranch ?? null,
       webhookId: conn.webhookId ?? null,
+      installationId: conn.installationId ?? null,
+      installationTokenEnc: conn.installationTokenEnc ?? null,
+      installationTokenIv: conn.installationTokenIv ?? null,
+      installationTokenExp: conn.installationTokenExp ?? null,
     };
+  },
+});
+
+/** Internal: cache an encrypted installation token + expiry on the connection. */
+export const internalCacheInstallationToken = internalMutation({
+  args: {
+    connectionId: v.id("githubConnections"),
+    enc: v.string(),
+    iv: v.string(),
+    exp: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.connectionId, {
+      installationTokenEnc: args.enc,
+      installationTokenIv: args.iv,
+      installationTokenExp: args.exp,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Internal: clear a GitHub App installation (and its cached token) when the
+ * App is uninstalled/suspended. Called from the `installation` webhook.
+ */
+export const internalClearInstallationById = internalMutation({
+  args: { installationId: v.number() },
+  handler: async (ctx, { installationId }) => {
+    const conns = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_installationId", (q) =>
+        q.eq("installationId", installationId)
+      )
+      .collect();
+    for (const conn of conns) {
+      await ctx.db.patch(conn._id, {
+        installationId: undefined,
+        installationTokenEnc: undefined,
+        installationTokenIv: undefined,
+        installationTokenExp: undefined,
+        updatedAt: Date.now(),
+      });
+      await ctx.db.insert("securityLogs", {
+        eventType: "github_app_uninstalled",
+        userId: conn.userId,
+        details: { installationId },
+        createdAt: Date.now(),
+      });
+    }
+    return { cleared: conns.length };
+  },
+});
+
+/** Owner-only: record the GitHub App installation id for this user (Phase 5). */
+export const setInstallation = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    installationId: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    if (!conn) {
+      throw new Error("Connect GitHub before installing the GitHub App.");
+    }
+    await ctx.db.patch(conn._id, {
+      installationId: args.installationId,
+      updatedAt: Date.now(),
+    });
+    await ctx.db.insert("securityLogs", {
+      eventType: "github_app_installed",
+      userId: user._id,
+      details: { installationId: args.installationId },
+      createdAt: Date.now(),
+    });
+    return { ok: true };
   },
 });
 
@@ -486,6 +576,40 @@ export function deriveStacks(
   }
   return Array.from(bySlug.entries()).map(([slug, v]) => ({ slug, ...v }));
 }
+
+/**
+ * Public: the YouStacks a user hosts in their own repo — but ONLY when that
+ * repo is public. Returns null for users with no public repo so the public
+ * profile / MCP never leak private-repo stack names.
+ */
+export const getPublicRepoStacks = query({
+  args: { username: v.string() },
+  handler: async (ctx, { username }) => {
+    const uname = username.toLowerCase().replace(/^@/, "");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_username", (q) => q.eq("username", uname))
+      .first();
+    if (!user) return null;
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    if (!conn || conn.repoVisibility !== "public" || !conn.repoFullName) {
+      return null;
+    }
+    const repoUrl = `https://github.com/${conn.repoFullName}`;
+    const mirror = await ctx.db
+      .query("repoMirror")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    return {
+      repoFullName: conn.repoFullName,
+      repoUrl,
+      stacks: mirror ? deriveStacks(mirror.files) : [],
+    };
+  },
+});
 
 /** Internal: latest compiled identity content to seed a new repo with. */
 export const internalGetSeedContent = internalQuery({

@@ -186,6 +186,14 @@ http.route({
       });
     }
 
+    // Repo-hosted public stacks (only present when the user's repo is public).
+    let repoStacks: unknown = null;
+    try {
+      repoStacks = await ctx.runQuery(api.github.getPublicRepoStacks, { username });
+    } catch {
+      // non-fatal — never break the profile read
+    }
+
     // Merge profile-level fields into youJson for richer SEO data
     const enrichedJson = {
       ...(profile.youJson as Record<string, unknown>),
@@ -195,6 +203,7 @@ http.route({
         displayName: profile.displayName ?? null,
         isClaimed: profile.isClaimed ?? false,
         source: profile.source,
+        repoStacks: repoStacks ?? null,
       },
     };
     return new Response(JSON.stringify(enrichedJson, null, 2), {
@@ -2818,6 +2827,28 @@ http.route({
                   properties: {},
                 },
               },
+              {
+                name: "get_my_stacks",
+                description: "List the YouStacks the authenticated user hosts in their own GitHub repo (from the You.md server-side mirror). Requires a you.md API key as Bearer token.",
+                inputSchema: {
+                  type: "object",
+                  properties: {},
+                },
+              },
+              {
+                name: "get_repo_file",
+                description: "Read one file (e.g. you.md, you.json, or a stacks/<slug>/... file) from the authenticated user's repo via the You.md server-side mirror. Requires a you.md API key as Bearer token.",
+                inputSchema: {
+                  type: "object",
+                  properties: {
+                    path: {
+                      type: "string",
+                      description: "Repo-relative path, e.g. 'you.md' or 'stacks/coding/manifest.json'",
+                    },
+                  },
+                  required: ["path"],
+                },
+              },
             ],
           });
         }
@@ -2864,7 +2895,17 @@ http.route({
               now: (profile.youJson as Record<string, unknown>)?.now ?? null,
               meta: (profile.youJson as Record<string, unknown>)?.meta ?? null,
               _profile_url: `https://you.md/${profile.username}`,
-            };
+            } as Record<string, unknown>;
+
+            // Repo-hosted stacks, only if the user's repo is public.
+            try {
+              const repoStacks = await ctx.runQuery(api.github.getPublicRepoStacks, {
+                username: username.toLowerCase().replace(/^@/, ""),
+              });
+              if (repoStacks && repoStacks.stacks.length > 0) {
+                result.repo_stacks = repoStacks;
+              }
+            } catch { /* non-fatal */ }
 
             return mcpToolOk(id, JSON.stringify(result, null, 2), "application/json");
           }
@@ -2933,6 +2974,48 @@ http.route({
             };
 
             return mcpToolOk(id, JSON.stringify(result, null, 2), "application/json");
+          }
+
+          if (toolName === "get_my_stacks") {
+            const auth = await authenticateRequest(ctx, request);
+            if (auth instanceof Response) {
+              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
+            }
+            const mirror = await ctx.runQuery(
+              internal.github.internalGetMirrorByClerkId,
+              { clerkId: auth.userId }
+            );
+            if (!mirror) {
+              return mcpToolOk(id, JSON.stringify({ repo: null, stacks: [], message: "No repo mirror yet. Link a repo and sync in settings." }, null, 2), "application/json");
+            }
+            return mcpToolOk(
+              id,
+              JSON.stringify({ repo: mirror.repoFullName, stacks: deriveStacks(mirror.files) }, null, 2),
+              "application/json"
+            );
+          }
+
+          if (toolName === "get_repo_file") {
+            const auth = await authenticateRequest(ctx, request);
+            if (auth instanceof Response) {
+              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
+            }
+            const path = toolArgs.path as string;
+            if (!path || typeof path !== "string") {
+              return mcpToolError(id, "path is required");
+            }
+            const mirror = await ctx.runQuery(
+              internal.github.internalGetMirrorByClerkId,
+              { clerkId: auth.userId }
+            );
+            if (!mirror) {
+              return mcpToolError(id, "No repo mirror yet. Link a repo and sync in settings.");
+            }
+            const file = mirror.files.find((f: { path: string }) => f.path === path);
+            if (!file) {
+              return mcpToolError(id, `File not found in mirror: ${path}`);
+            }
+            return mcpToolOk(id, file.content, "text/plain");
           }
 
           return mcpError(id, -32601, `Unknown tool: ${toolName}`);
@@ -3219,6 +3302,26 @@ http.route({
       return json({ error: "invalid signature" }, 401);
     }
     if (event === "ping") return json({ ok: true, pong: true });
+
+    // GitHub App lifecycle — revoke installation on uninstall/suspend.
+    if (event === "installation") {
+      let p: { action?: string; installation?: { id?: number } };
+      try {
+        p = JSON.parse(body);
+      } catch {
+        return json({ error: "bad payload" }, 400);
+      }
+      const instId = p.installation?.id;
+      if (instId && (p.action === "deleted" || p.action === "suspend")) {
+        const cleared = await ctx.runMutation(
+          internal.github.internalClearInstallationById,
+          { installationId: instId }
+        );
+        return json({ ok: true, cleared });
+      }
+      return json({ ok: true, ignored: `installation.${p.action ?? "?"}` });
+    }
+
     if (event !== "push") return json({ ok: true, ignored: event });
 
     let payload: { repository?: { full_name?: string }; ref?: string };

@@ -1,5 +1,42 @@
 # You.md — Changelog
 
+## 2026-06-04 — GitHub repo follow-ups: token caching, App revocation, private-file safety
+
+### GitHub App hardening
+- Installation-token **caching**: `mintInstallationToken` now returns the GitHub-provided expiry; `loadConnectionToken` caches the token (AES-GCM encrypted) on the connection (`installationTokenEnc`/`Iv`/`Exp`) and reuses it until ~1 min before expiry instead of minting one per repo op. New `internalCacheInstallationToken`.
+- Installation **revocation**: the GitHub webhook now handles `installation` events — `deleted`/`suspend` clears the user's `installationId` + cached token (so repo ops fall back to OAuth). New `by_installationId` index + `internalClearInstallationById`.
+
+### Private-file safety
+- `private/**` is now explicitly excluded from the server-side mirror (defensive early-return + comment). Private files belong in the zero-knowledge vault (client-side encrypted), not the plaintext mirror — so `private/*` ↔ vault sync stays a deliberate client-side follow-up, not a server action that would store plaintext.
+
+### Validation
+- `tsc` (web + convex) 0 errors; ESLint clean; `docs:check` passes (regenerated — the Phase 5 setup route is now in the reference, 74 endpoints).
+
+## 2026-06-04 — GitHub App foundation (Phase 5, additive)
+
+### GitHub App (fine-grained tokens — optional, untested e2e)
+- New `convex/githubApp.ts`: signs an RS256 app JWT (Web Crypto, PKCS#8) and mints short-lived installation access tokens. `isGithubAppConfigured()` gates the whole path.
+- `convex/githubRepo.ts` `loadConnectionToken` now prefers a GitHub App installation token when the App is configured AND the user has an `installationId`; otherwise it falls back to the OAuth token (the verified default). OAuth scope check only applies to the fallback.
+- `convex/github.ts`: `setInstallation` mutation + `installationId` on the connection context/schema; `getConnection` returns `appInstalled`.
+- New web route `GET /api/auth/github/app/setup` — the App's post-install Setup URL; authenticates the session and records the installation id.
+- `GithubRepoSection` shows GitHub App status + an install link when `NEXT_PUBLIC_GITHUB_APP_SLUG` is configured.
+- Documented registration + PKCS#8 conversion + env in `GITHUB_OAUTH_SETUP.md`.
+
+### Honest status
+- Compiles clean and is fully additive — but **untested end-to-end** (needs a real registered App). The OAuth `repo`-scope path remains the verified default. Follow-ups: installation-token caching, `installation` webhook handling for revocation.
+
+## 2026-06-04 — MCP + public profile read repo-hosted stacks (Phase 3/4 follow-up)
+
+### MCP
+- Two new authenticated `/api/v1/mcp` tools: `get_my_stacks` (lists the YouStacks the user hosts in their repo, from the mirror) and `get_repo_file` (reads one mirrored file, e.g. `you.md` or `stacks/<slug>/manifest.json`). The public `get_identity` tool now also includes `repo_stacks` when the user's repo is public.
+
+### Public profile
+- New public `convex/github.ts` query `getPublicRepoStacks(username)` — returns repo-hosted stacks ONLY when the linked repo is public (never leaks private-repo stack names).
+- The `/api/v1/profiles` response now carries `_profile.repoStacks`, and the public profile page renders a "stacks in their repo" section linking each stack folder on GitHub.
+
+### Validation
+- `tsc` (web + convex) 0 errors; ESLint clean on changed files (only pre-existing warnings remain). `docs:check` passes (24 MCP tools / 73 endpoints unchanged in the generated reference — the web MCP tools live in the http route).
+
 ## 2026-06-04 — Server-side repo mirror + stacks (Phase 4, first slice)
 
 ### Mirror (clone/host on our servers for API/MCP)
