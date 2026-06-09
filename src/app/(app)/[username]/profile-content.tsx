@@ -11,7 +11,9 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import AsciiAvatar from "@/components/AsciiAvatar";
 import type { PreRenderedPortrait } from "@/components/AsciiAvatar";
+import ProfilePortrait from "@/components/ProfilePortrait";
 import { generateYouJson, generateYouMd, downloadFile } from "@/lib/exportProfile";
+import { hasRenderableAsciiPortrait } from "@/lib/profilePortrait";
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -195,7 +197,9 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
     youJson: ssrData,
     displayName: ssrData.identity?.name || username,
     avatarUrl: sanitizeImageUrl(ssrData._profile?.avatarUrl ?? ssrData.meta?.avatarUrl),
-    asciiPortrait: ssrData._profile?.asciiPortrait as PreRenderedPortrait | undefined,
+    asciiPortrait: hasRenderableAsciiPortrait(ssrData._profile?.asciiPortrait)
+      ? ssrData._profile.asciiPortrait as PreRenderedPortrait
+      : undefined,
     isClaimed: (ssrData.meta?.isClaimed as boolean) ?? true,
   } : null;
 
@@ -263,7 +267,9 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const data = resolvedProfile.youJson as ProfileJson | null;
   const resolvedRecord = resolvedProfile as Record<string, unknown>;
   const resolvedAvatarUrl = sanitizeImageUrl(resolvedRecord.avatarUrl);
-  const storedPortrait = resolvedRecord.asciiPortrait as PreRenderedPortrait | undefined;
+  const storedPortrait = hasRenderableAsciiPortrait(resolvedRecord.asciiPortrait)
+    ? (resolvedRecord.asciiPortrait as PreRenderedPortrait)
+    : undefined;
   const allProfileStacks = normalizeProfileYouStacks(
     data?.youstacks ?? data?.youStacks ?? data?.identity?.youstacks ?? data?.identity?.youStacks
   );
@@ -293,15 +299,16 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         <ProfileHeader username={username} />
         <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
           <div className="flex items-end gap-4 mb-4">
-            {resolvedAvatarUrl && (
-              <img
-                src={resolvedAvatarUrl}
-                alt={resolvedProfile.displayName || username}
-                className="w-16 h-16 border-2 border-[hsl(var(--bg))] object-cover"
-                style={{ borderRadius: "4px" }}
-                loading="lazy"
-              />
-            )}
+            <ProfilePortrait
+              username={username}
+              name={resolvedProfile.displayName || username}
+              avatarUrl={resolvedAvatarUrl}
+              asciiPortrait={storedPortrait}
+              className="h-16 w-16"
+              cols={36}
+              canvasWidth={64}
+              showPhotoOnHover
+            />
             <div className="pb-1 flex-1 min-w-0">
               <h1 className="text-[hsl(var(--text-primary))] font-mono text-lg font-medium tracking-tight truncate">
                 {resolvedProfile.displayName || `@${username}`}
@@ -322,7 +329,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
             )}
           </div>
         </main>
-        <ProfileFooter username={username} />
+        <ProfileFooter />
 
         {/* Claim banner */}
         {!resolvedProfile.isClaimed && <ClaimBanner username={username} />}
@@ -393,6 +400,14 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                 canvasWidth={680}
                 className="w-full opacity-80"
                 preRendered={storedPortrait}
+                fallback={
+                  <div
+                    className="flex min-h-[180px] items-center justify-center border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))]/35"
+                    style={{ borderRadius: "2px" }}
+                  >
+                    portrait refresh queued
+                  </div>
+                }
               />
             </div>
           </motion.div>
@@ -415,15 +430,16 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         <motion.section {...delay(0)} className="mt-4 mb-6">
           {/* Name + real photo + tagline */}
           <div className="flex items-end gap-4 mb-4">
-            {resolvedAvatarUrl && (
-              <img
-                src={resolvedAvatarUrl}
-                alt={name as string}
-                className="w-16 h-16 md:w-20 md:h-20 border-2 border-[hsl(var(--bg))] object-cover"
-                style={{ borderRadius: "4px" }}
-                loading="lazy"
-              />
-            )}
+            <ProfilePortrait
+              username={username}
+              name={name as string}
+              avatarUrl={resolvedAvatarUrl}
+              asciiPortrait={storedPortrait}
+              className="h-16 w-16 md:h-20 md:w-20"
+              cols={40}
+              canvasWidth={80}
+              showPhotoOnHover
+            />
             <div className="pb-1 flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-[hsl(var(--text-primary))] font-mono text-lg md:text-xl font-medium tracking-tight truncate">{name}</h1>
@@ -1096,7 +1112,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         )}
       </main>
 
-      <ProfileFooter username={username} />
+      <ProfileFooter />
 
       {/* Claim banner for unclaimed profiles */}
       {!resolvedProfile.isClaimed && <ClaimBanner username={username} />}
@@ -1189,7 +1205,7 @@ function ProfileHeader({ username }: { username: string }) {
   );
 }
 
-function ProfileFooter({ username }: { username: string }) {
+function ProfileFooter() {
   return (
     <footer className="border-t border-[hsl(var(--border))] shrink-0">
       {/* Cycle 63: bumped both inline-text links to min-h-[44px] standalone tap targets. */}
@@ -1238,15 +1254,6 @@ function ClaimBanner({ username }: { username: string }) {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function PortraitFrame({ src, preRendered }: { src: string; preRendered?: PreRenderedPortrait | null }) {
-  return (
-    <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "2px" }}>
-      <AsciiAvatar src={src} cols={120} canvasWidth={240} className="hidden sm:block" preRendered={preRendered && preRendered.sourceUrl === src ? preRendered : undefined} />
-      <AsciiAvatar src={src} cols={60} canvasWidth={120} className="block sm:hidden" />
     </div>
   );
 }
@@ -1354,6 +1361,7 @@ function LinkFavicon({ url }: { url: string }) {
   const domain = extractDomain(url);
   if (!domain || failed) return null;
   return (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
       alt=""

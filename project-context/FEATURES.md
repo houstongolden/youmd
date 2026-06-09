@@ -42,7 +42,9 @@ Last Updated: 2026-06-09
 | BAMFStack public lighthouse example | Done local | `cli/examples/youstack-bamfstack-public` is a public-safe example stack with manifest, bundled skill, workflow, prompt, docs, doctor/smoke tests, auto-update policy, improvement policy, protected-capability boundaries, and public-readiness routing |
 | Compact conversion homepage | Done | Homepage now follows a calmer conversion flow with one primary hero CTA, compact profile proof, compressed problem/how-it-works/inside sections, combined integrations/builders credibility band, balanced pricing, compact FAQ, and simple final CTA |
 | App control normalization | Done | Terminal auth/input, install tabs, dashboard tabs, pane headers, empty states, sources, share, private context, files, settings, and edit surfaces now share more consistent heights, padding, focus rings, card treatment, and muted text behavior |
-| Public profile directory hygiene | Done | `/profiles` now canonicalizes/dedupes usernames, suppresses QA/test rows, sanitizes public image URLs, prefers stored ASCII portraits, and falls back to deterministic terminal placeholders instead of blank cards |
+| Public profile directory hygiene | Done local / deploy pending | `/profiles` now canonicalizes/dedupes usernames, suppresses QA/test rows, sanitizes public image URLs, defaults to grid view, prefers stored ASCII portraits, and falls back to real image/terminal portrait tiles instead of blank cards |
+| Public profile portrait contract | Done local / deploy pending | Shared `ProfilePortrait` + `hasRenderableAsciiPortrait` enforce the same renderability contract on `/profiles` and individual public profile pages. `profiles:portrait-contract` catches code regressions; `profiles:portrait-audit` and `profiles:portrait-audit:pages` verify live/local profile data and individual pages |
+| Public profile indexing + refresh plan | Planned | `PUBLIC_PROFILE_INDEXING_AND_REFRESH_PLAN.md` defines the low-cost crawler direction: Scrapy/Crawl4AI/Trafilatura first, Playwright/Crawlee only for JS-heavy sources, paid APIs as constrained fallbacks, freshness tiers, cron refresh, source ledgers, cheap LLM enrichment, and SEO/claim-profile loops |
 | Profile enrichment URL safety | Done | Public-profile crawler/enrichment now keeps third-party API keys out of persisted avatar URLs and includes an internal cleanup mutation for old image URL secrets |
 | Profile seed/backfill cleanup | Done | Sample profile seeding/backfill/cleanup now avoids duplicate/orphan profile rows and preserves avatar data when reconstructing profile records from bundles |
 | Open spec you-md/v1 | Done | Directory-based identity bundles |
@@ -138,6 +140,7 @@ Last Updated: 2026-06-09
 | Endpoint | Status |
 |---|---|
 | GET /api/v1/profiles | Done |
+| GET /api/v1/profiles (same-origin web proxy) | Done local / deploy pending |
 | GET /api/v1/check-username | Done |
 | GET /.well-known/mcp.json | Done | Web-domain MCP discovery now proxied through Next to the Convex MCP discovery document with JSON bodies preserved |
 | POST /api/v1/mcp | Done | Web-domain MCP transport now proxied through Next to the Convex MCP server with JSON-RPC bodies preserved |

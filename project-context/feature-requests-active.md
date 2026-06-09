@@ -81,6 +81,25 @@ Last Updated: 2026-06-09
 6. Commit and push the resulting local follow-through to `main`.
 **Progress (2026-06-09):** Re-ran chat hygiene and the reference sync, which fetched new upstream heads for GStack and GBrain and regenerated the two reference-intelligence artifacts. The first pass surfaced two high-signal tasks, which are now preserved in `project-context/REFERENCE_INTELLIGENCE_AUDIT_2026-06-09.md`: deterministic review/report packaging for YouStacks and fail-closed protected retrieval plus malformed-frontmatter resilience for repo-native/context reads. A same-session verification re-run of `npm run references:sync` then correctly returned zero new candidates because the local reference heads were already updated. Updated project-context tracking so the two tasks stay durable even though the generated queue is now back to a caught-up steady state. Remaining in this run: commit/push and recording any prod blockers versus the unchanged live baseline.
 
+### 110. Fix public profile portraits, default grid view, and harden scalable profile crawling
+**Status:** IN PROGRESS (code complete locally; needs deploy + production smoke + user verification)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-09 — Houston said "please fix the profiles that are missing their ASCII portraits and let's default to grid view instead of the list view on the /profiles page... create a rule... harden how our own crawler creates and indexes and monitors and enhances these public profiles... cheap/open-source version of firecrawl... google search for agents looking up anything about real people..."
+**Request:** Make public profiles reliably display a profile image or ASCII portrait on the `/profiles` index and individual public profile pages, default the directory to grid view, and design the scalable crawler/enrichment loop so You.md can grow a large SEO-friendly people index without runaway Firecrawl spend.
+**Actionable Scope:**
+1. Default `/profiles` to grid view. DONE locally.
+2. Replace blank/broken portrait slots with a shared renderer that prefers stored ASCII, then real image, then a visible terminal fallback. DONE locally.
+3. Validate stored ASCII before counting/rendering it and reject malformed empty portrait payloads in Convex directory normalization. DONE locally.
+4. Add guardrails so future code/data regressions fail before deploy. DONE locally with `profiles:portrait-contract`, `profiles:portrait-audit`, and `profiles:portrait-audit:pages`.
+5. Ensure individual public profile pages use the same portrait contract as the directory. DONE locally.
+6. Add autonomous refresh hooks for unclaimed profile portraits. DONE locally via monthly Convex cron using existing enrichment/backfill action.
+7. Preserve public profile API availability through the web domain. DONE locally via same-origin `/api/v1/profiles` proxy.
+8. Document the low-cost crawler/indexing plan for thousands to hundreds of thousands of profiles. DONE locally in `PUBLIC_PROFILE_INDEXING_AND_REFRESH_PLAN.md`.
+9. Deploy to production and run prod profile audits. TODO.
+10. Build the production crawler/source-ledger/job-state implementation from the plan. TODO.
+**Progress (2026-06-09):** Added shared `ProfilePortrait`, frontend + Convex `hasRenderableAsciiPortrait` checks, `AsciiAvatar` overlay fallbacks, grid default, SSR profile fallback hydration, individual-profile portrait replacement, same-origin public profile API proxy, monthly Convex portrait QA cron, static contract script, dynamic API/page audit scripts, and the crawler/indexing plan. Local verification passed `profiles:portrait-contract`, `profiles:portrait-audit`, `profiles:portrait-audit:pages`, `next typegen`, web TypeScript, Convex TypeScript, targeted ESLint, `git diff --check`, local HTTP smoke for `/profiles`, `/karpathy`, and `/api/v1/profiles?username=karpathy`, plus headless Chrome screenshots showing no blank portrait boxes.
+
 ## 2026-06-03 Reference-Intelligence Follow-Through
 
 ### 105. Turn the Jun 3 reference-intelligence wave into tracked You.md follow-up slices

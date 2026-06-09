@@ -6,9 +6,10 @@ import { api } from "../../../../convex/_generated/api";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowRight, MapPin, LayoutGrid, List } from "lucide-react";
-import AsciiAvatar from "@/components/AsciiAvatar";
 import type { PreRenderedPortrait } from "@/components/AsciiAvatar";
+import ProfilePortrait from "@/components/ProfilePortrait";
 import FadeUp from "@/components/landing/FadeUp";
+import { hasRenderableAsciiPortrait } from "@/lib/profilePortrait";
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -22,11 +23,22 @@ interface DirectoryEntry {
   asciiPortrait: PreRenderedPortrait | null;
   hasPortrait: boolean;
   isClaimed: boolean;
-  source: "profiles" | "legacy";
+  source: "profiles" | "legacy" | "ssr";
   projectCount: number;
   nowItems: string[];
   links: Record<string, string>;
   updatedAt: number | null;
+}
+
+interface InitialDirectoryProfile {
+  username: string;
+  name?: string | null;
+  tagline?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  avatarUrl?: string | null;
+  isClaimed?: boolean;
+  updatedAt?: number | null;
 }
 
 function canonicalUsername(value: unknown) {
@@ -115,61 +127,6 @@ function resolveAvatarUrl(profile: Record<string, unknown>, youJson: Record<stri
   return null;
 }
 
-function DirectoryPortrait({
-  entry,
-  sizeClass,
-  cols,
-  canvasWidth,
-}: {
-  entry: DirectoryEntry;
-  sizeClass: string;
-  cols: number;
-  canvasWidth: number;
-}) {
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const portrait = entry.asciiPortrait;
-  const src = entry.avatarUrl || portrait?.sourceUrl || "";
-  const useStoredPortrait = Boolean(!src && portrait?.lines?.length);
-
-  return (
-    <div
-      className={`${sizeClass} overflow-hidden border border-[hsl(var(--border))] group-hover:border-[hsl(var(--accent))]/30 transition-colors shrink-0 bg-[hsl(var(--bg))] relative`}
-      style={{ borderRadius: "2px" }}
-    >
-      {src || portrait ? (
-        <>
-          <AsciiAvatar
-            src={src || `profile:${entry.username}`}
-            cols={cols}
-            canvasWidth={canvasWidth}
-            className="flex h-full w-full items-center justify-center"
-            showLoadingText={false}
-            preRendered={useStoredPortrait ? portrait : null}
-          />
-          {entry.avatarUrl && !photoFailed && (
-            <img
-              src={entry.avatarUrl}
-              alt={entry.name || entry.username}
-              className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-              loading="lazy"
-              onError={() => setPhotoFailed(true)}
-            />
-          )}
-        </>
-      ) : (
-        <div className="flex h-full w-full flex-col items-center justify-center bg-[hsl(var(--accent))]/[0.04]">
-          <span className="font-mono text-[13px] text-[hsl(var(--accent))]/70">
-            {(entry.name || entry.username).slice(0, 2).toUpperCase()}
-          </span>
-          <span className="mt-0.5 max-w-full truncate px-1 font-mono text-[6px] text-[hsl(var(--text-secondary))]/30">
-            /{entry.username.slice(0, 8)}
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ── List Card ────────────────────────────────────────────── */
 
 function ProfileListCard({ entry, index }: { entry: DirectoryEntry; index: number }) {
@@ -185,7 +142,16 @@ function ProfileListCard({ entry, index }: { entry: DirectoryEntry; index: numbe
         style={{ borderRadius: "2px" }}
       >
         <div className="flex items-center gap-4">
-          <DirectoryPortrait entry={entry} sizeClass="w-10 h-10" cols={30} canvasWidth={40} />
+          <ProfilePortrait
+            username={entry.username}
+            name={entry.name}
+            avatarUrl={entry.avatarUrl}
+            asciiPortrait={entry.asciiPortrait}
+            className="h-10 w-10"
+            cols={30}
+            canvasWidth={40}
+            showPhotoOnHover
+          />
 
           {/* Info */}
           <div className="flex-1 min-w-0">
@@ -277,7 +243,16 @@ function ProfileGridCard({ entry, index }: { entry: DirectoryEntry; index: numbe
       >
         {/* Avatar + status row */}
         <div className="flex items-start justify-between mb-3">
-          <DirectoryPortrait entry={entry} sizeClass="w-12 h-12" cols={30} canvasWidth={48} />
+          <ProfilePortrait
+            username={entry.username}
+            name={entry.name}
+            avatarUrl={entry.avatarUrl}
+            asciiPortrait={entry.asciiPortrait}
+            className="h-12 w-12"
+            cols={30}
+            canvasWidth={48}
+            showPhotoOnHover
+          />
           <div className="flex flex-col items-end gap-1">
             <span className={`inline-block w-1.5 h-1.5 rounded-full ${
               entry.isClaimed ? "bg-[hsl(var(--success))]/60" : "bg-[hsl(var(--text-secondary))]/20"
@@ -345,22 +320,28 @@ function ProfileGridCard({ entry, index }: { entry: DirectoryEntry; index: numbe
 
 /* ── Main ─────────────────────────────────────────────────── */
 
-export function ProfilesDirectoryContent() {
+export function ProfilesDirectoryContent({
+  initialProfiles = [],
+}: {
+  initialProfiles?: InitialDirectoryProfile[];
+}) {
   const profiles = useQuery(api.profiles.listAll);
   const legacyUsers = useQuery(api.users.listAllLegacy);
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "verified" | "has-projects" | "has-portrait">("all");
   const [sort, setSort] = useState<"recent" | "projects" | "alpha">("recent");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
 
   // Build entries — dedup by canonical username (profiles source wins over legacy)
   const entries: DirectoryEntry[] = useMemo(() => {
     const seen = new Set<string>();
     const result: DirectoryEntry[] = [];
 
-    if (profiles) {
-      for (const p of profiles) {
+    const primaryProfiles = profiles ?? initialProfiles;
+
+    if (primaryProfiles) {
+      for (const p of primaryProfiles) {
         const username = canonicalUsername(p.username);
         if (!username || isSuppressedDirectoryUsername(username) || seen.has(username)) continue;
         seen.add(username);
@@ -376,10 +357,13 @@ export function ProfilesDirectoryContent() {
         const projects = youJson?.projects as Array<Record<string, string>> | undefined;
         const nowRecord = (youJson?.now ?? {}) as Record<string, unknown>;
         const now = nowRecord.focus as string[] | undefined;
-        const links = normalizeLinks(p.links, youJson?.links);
+        const links = normalizeLinks(profileRecord.links, youJson?.links);
         const avatarUrl = resolveAvatarUrl(profileRecord, youJson);
-        const asciiPortrait =
-          ((p.asciiPortrait ?? (youJson?._profile as Record<string, unknown> | undefined)?.asciiPortrait) as PreRenderedPortrait | undefined) ?? null;
+        const rawPortrait =
+          profileRecord.asciiPortrait ?? (youJson?._profile as Record<string, unknown> | undefined)?.asciiPortrait;
+        const asciiPortrait = hasRenderableAsciiPortrait(rawPortrait)
+          ? (rawPortrait as PreRenderedPortrait)
+          : null;
 
         result.push({
           username,
@@ -398,9 +382,9 @@ export function ProfilesDirectoryContent() {
             null,
           avatarUrl,
           asciiPortrait,
-          hasPortrait: Boolean(avatarUrl || asciiPortrait?.lines?.length),
+          hasPortrait: Boolean(avatarUrl || asciiPortrait),
           isClaimed: Boolean(p.isClaimed),
-          source: "profiles",
+          source: profiles ? "profiles" : "ssr",
           projectCount: projects?.length ?? 0,
           nowItems: (now || []).slice(0, 2),
           links,
@@ -435,7 +419,7 @@ export function ProfilesDirectoryContent() {
     }
 
     return result;
-  }, [profiles, legacyUsers]);
+  }, [profiles, initialProfiles, legacyUsers]);
 
   const filteredEntries = useMemo(() => {
     let result = [...entries];
@@ -478,7 +462,7 @@ export function ProfilesDirectoryContent() {
     return result;
   }, [entries, search, filter, sort]);
 
-  const isLoading = profiles === undefined || legacyUsers === undefined;
+  const isLoading = entries.length === 0 && (profiles === undefined || legacyUsers === undefined);
   const claimedCount = entries.filter((e) => e.isClaimed).length;
   const portraitCount = entries.filter((e) => e.hasPortrait).length;
 

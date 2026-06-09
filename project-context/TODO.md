@@ -11,8 +11,13 @@ PRD Version: 2.3
 - [x] Re-run the daily reference-intelligence loop, archive stale Codex automation threads first, and version the fresh `project-context/reference-intelligence/LATEST.md` + `TASKS.md` outputs
 - [x] Write `project-context/REFERENCE_INTELLIGENCE_AUDIT_2026-06-09.md` so the Jun 9 upstream signals become durable You.md follow-up work instead of staying only in generated files
 - [x] Update roadmap/tracking docs for the Jun 9 reference-intelligence wave
+- [x] Harden public profile portrait rendering: default `/profiles` to grid, render stored ASCII first, fall back to real image/terminal initials instead of blank boxes, and add static + runtime portrait audits
+- [x] Add same-origin `GET /api/v1/profiles` proxy plus a monthly Convex portrait-refresh cron so public profile payloads and directory/profile pages share the same portrait contract
+- [x] Capture the low-cost public-profile crawler/indexing direction in `project-context/PUBLIC_PROFILE_INDEXING_AND_REFRESH_PLAN.md`
 - [ ] Audit current YouStacks maintainer/adapter docs for a deterministic review artifact and unresolved-decision contract
 - [ ] Audit protected retrieval and repo-mirror read paths for fail-closed multi-source grant enforcement plus malformed-frontmatter resilience
+- [ ] Deploy the public profile portrait/API/crons patch to production and run `npm run profiles:portrait-audit -- --base-url https://www.you.md` plus `npm run profiles:portrait-audit:pages -- --base-url https://www.you.md`
+- [ ] Build the first production public-profile refresh worker around cheap crawler/extractor routing, profile-source freshness state, and cost-capped LLM enrichment
 
 ### 2026-06-04
 - [x] Add free GitHub OAuth signup foundation (Phase 1): `githubConnections` table, `convex/github.ts` find-or-create + connection + repo-link, `/api/auth/github/start` + `/callback` routes reusing the opaque-session/JWKS path, and "continue with github" on sign-in + sign-up

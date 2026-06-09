@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, type ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
 // ASCII character ramps — different visual styles
@@ -177,6 +177,7 @@ interface AsciiAvatarProps {
   format?: AsciiFormat;
   className?: string;
   showLoadingText?: boolean;
+  fallback?: ReactNode;
   /** Pre-rendered portrait data from the database — skips canvas generation entirely */
   preRendered?: PreRenderedPortrait | null;
   /** Callback when canvas generation completes — use to save result to DB */
@@ -190,6 +191,7 @@ const AsciiAvatar = ({
   format = "block",
   className = "",
   showLoadingText = true,
+  fallback,
   preRendered,
   onRendered,
 }: AsciiAvatarProps) => {
@@ -217,6 +219,7 @@ const AsciiAvatar = ({
       className={className}
       onRendered={onRendered}
       showLoadingText={showLoadingText}
+      fallback={fallback}
       canvasRef={canvasRef}
       status={status}
       setStatus={setStatus}
@@ -234,6 +237,7 @@ function AsciiAvatarCanvas({
   className,
   onRendered,
   showLoadingText,
+  fallback,
   canvasRef,
   status,
   setStatus,
@@ -246,12 +250,16 @@ function AsciiAvatarCanvas({
   className: string;
   onRendered?: (result: RenderedResult) => void;
   showLoadingText: boolean;
+  fallback?: ReactNode;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   status: "loading" | "ready" | "error";
   setStatus: (s: "loading" | "ready" | "error") => void;
   renderedKeyRef: React.MutableRefObject<string>;
 }) {
   const onRenderedRef = useRef(onRendered);
+  const retriedNoCorsRef = useRef(false);
+  const [failedFallbackSrc, setFailedFallbackSrc] = useState<string | null>(null);
+  const fallbackImageFailed = failedFallbackSrc === src;
 
   useEffect(() => {
     onRenderedRef.current = onRendered;
@@ -282,6 +290,7 @@ function AsciiAvatarCanvas({
   useEffect(() => {
     if (!src) { setStatus("error"); return; }
     setStatus("loading");
+    retriedNoCorsRef.current = false;
 
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -307,25 +316,34 @@ function AsciiAvatarCanvas({
         style={{ imageRendering: "auto", width: "100%", height: "auto" }}
       />
       {/* Fallback: show the actual photo with an orange tint overlay when canvas fails */}
-      {status === "error" && src && (
-        <div className="relative overflow-hidden" style={{ borderRadius: "2px" }}>
+      {status === "error" && src && !fallbackImageFailed && (
+        <div className="absolute inset-0 overflow-hidden" style={{ borderRadius: "2px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={src}
             alt=""
             crossOrigin="anonymous"
-            className="w-full opacity-60"
+            className="h-full w-full object-cover opacity-60"
             style={{ filter: "grayscale(1) brightness(0.9) contrast(1.1)" }}
             onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              if (target.crossOrigin) {
-                target.crossOrigin = "";
+              const target = e.currentTarget;
+              if (target.crossOrigin && !retriedNoCorsRef.current) {
+                retriedNoCorsRef.current = true;
+                target.removeAttribute("crossorigin");
                 target.src = src;
+                return;
               }
+              setFailedFallbackSrc(src);
             }}
           />
           <div className="absolute inset-0 bg-[hsl(var(--accent))]/10 mix-blend-multiply" />
         </div>
+      )}
+      {status === "error" && (!src || fallbackImageFailed) && fallback && (
+        <div className="absolute inset-0">{fallback}</div>
+      )}
+      {status === "loading" && !showLoadingText && fallback && (
+        <div className="absolute inset-0">{fallback}</div>
       )}
       {status === "loading" && showLoadingText && (
         <div className="flex items-center justify-center py-8">

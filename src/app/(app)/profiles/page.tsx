@@ -110,7 +110,7 @@ export default async function ProfilesPage() {
           ))}
         </ul>
       </div>
-      <ProfilesDirectoryContent />
+      <ProfilesDirectoryContent initialProfiles={ssrProfiles} />
     </>
   );
 }

@@ -3,6 +3,7 @@
  *
  * Created cycle 50. Currently runs:
  *   - hourly: rateLimits table cleanup (delete rows older than 1 hour)
+ *   - monthly: unclaimed public profile portrait/avatar QA
  *
  * Add new crons here as needed. Each entry runs in the Convex scheduler
  * — there's no separate cron daemon to manage.
@@ -28,6 +29,18 @@ crons.hourly(
   { minuteUTC: 17 }, // arbitrary minute offset to avoid the top-of-hour spike
   internal.lib.rateLimit.cleanupOldRateLimits,
   { maxAgeMs: 60 * 60 * 1000 } // 1 hour
+);
+
+// Public profile directory guardrail.
+//
+// The action resolves durable avatar URLs and fills missing ASCII portraits for
+// unclaimed seeded profiles. It skips existing portraits unless the resolved
+// avatar changed, so the monthly cron is cheap in steady state.
+crons.monthly(
+  "refresh unclaimed profile portraits",
+  { day: 9, hourUTC: 10, minuteUTC: 41 },
+  internal.seed.enrichAndQaAllProfiles,
+  { dryRun: false, forceRegenerate: false }
 );
 
 export default crons;

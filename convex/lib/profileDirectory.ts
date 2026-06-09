@@ -136,12 +136,19 @@ export function resolveProfileAvatar(profile: AnyRecord): string | undefined {
   return undefined;
 }
 
+export function hasRenderableAsciiPortrait(portrait: unknown): boolean {
+  if (!portrait || typeof portrait !== "object") return false;
+  const lines = (portrait as AnyRecord).lines;
+  if (!Array.isArray(lines) || lines.length === 0) return false;
+  return lines.some((line) => typeof line === "string" && line.trim().length > 0);
+}
+
 export function sanitizeAsciiPortrait(portrait: unknown): unknown {
-  if (!portrait || typeof portrait !== "object") return null;
+  if (!hasRenderableAsciiPortrait(portrait)) return null;
   const sourceUrl = sanitizePublicImageUrl((portrait as AnyRecord).sourceUrl);
   return {
     ...(portrait as AnyRecord),
-    ...(sourceUrl ? { sourceUrl } : {}),
+    sourceUrl: sourceUrl ?? firstString((portrait as AnyRecord).sourceUrl) ?? "",
   };
 }
 
@@ -150,8 +157,7 @@ export function isDirectorySuppressedUsername(username: unknown): boolean {
 }
 
 function hasPortrait(profile: AnyRecord): boolean {
-  const portrait = profile.asciiPortrait as AnyRecord | undefined;
-  return Array.isArray(portrait?.lines) && portrait.lines.length > 0;
+  return hasRenderableAsciiPortrait(profile.asciiPortrait);
 }
 
 export function profileQualityScore(profile: AnyRecord): number {

@@ -1,5 +1,24 @@
 # You.md — Changelog
 
+## 2026-06-09 — Public profile portrait hardening
+
+### Profiles directory + public pages
+- Defaulted `/profiles` to grid view and reused the SSR profile payload while Convex client queries hydrate, so the directory does not briefly collapse into a sparse/blank state.
+- Added a shared `ProfilePortrait` renderer and frontend/Convex `hasRenderableAsciiPortrait` validation so stored ASCII is only treated as present when it has nonblank lines.
+- Hardened `AsciiAvatar` loading/error fallbacks so missing or CORS-blocked generated ASCII never renders as an empty square; cards now fall back to a real image tile or visible terminal initials.
+- Swapped individual public profile header portraits from raw image tags to the same shared portrait contract.
+
+### Guardrails + crawler strategy
+- Added `profiles:portrait-contract`, `profiles:portrait-audit`, and `profiles:portrait-audit:pages` so code structure, public profile payloads, and individual profile pages can be checked before deploy.
+- Added a same-origin `GET /api/v1/profiles` web proxy for the public profile API and preserved content type, ETag, pagination/link, cache, and CORS headers from Convex.
+- Added a monthly Convex cron for unclaimed public profile portrait QA using the existing enrichment/backfill action.
+- Wrote `PUBLIC_PROFILE_INDEXING_AND_REFRESH_PLAN.md` to define the low-cost crawling/enrichment direction around Scrapy/Crawl4AI/Trafilatura, JS-heavy Playwright/Crawlee fallback, source ledgers, cheap LLM enrichment, cron refresh, SEO, and claim-profile conversion.
+
+### Verification
+- Passed `profiles:portrait-contract`, `profiles:portrait-audit`, and `profiles:portrait-audit:pages` locally.
+- Passed `next typegen`, root TypeScript, Convex TypeScript, targeted ESLint on changed files, and `git diff --check`.
+- Local HTTP smoke passed for `/profiles`, `/karpathy`, and `/api/v1/profiles?username=karpathy`; headless Chrome visual QA confirmed `/profiles` grid has no blank portrait boxes and `/karpathy` no longer shows a broken small portrait tile.
+
 ## 2026-06-09 — Daily reference-intelligence follow-through
 
 ### Reference intelligence
