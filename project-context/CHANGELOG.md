@@ -8,6 +8,7 @@
 - Added internal import and refresh actions that upsert unclaimed public profiles, queue source/portrait jobs, fetch cheap native HTML metadata, hash source content, track freshness, and avoid paid crawling by default.
 - Added a daily Convex cron to refresh due public profile sources in bounded batches.
 - Added admin-only HTTP controls for dry-running/importing the target batch and refreshing due sources via `Authorization: Bearer <TRUSTED_INTERNAL_AUTH_TOKEN>`.
+- Added same-origin Next proxies for those admin controls so the documented `you.md/api/admin/profiles/*` routes reach Convex on production.
 
 ### Guardrails
 - Added `npm run profiles:targets-check` to enforce exactly 50 unique seed targets, valid username slugs, names, and HTTPS source links before scaling batches.

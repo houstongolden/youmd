@@ -19,7 +19,7 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "000797ae4c491b36e9394236b1c5d20ba13a27980def88f3288286fc508fca9c",
+  "sourceHash": "f131113e8ad43fefd0830811f11986e9885cb364a6f8ae0a68f880ea5827417b",
   "cli": {
     "version": "0.6.23"
   },
@@ -27,7 +27,7 @@ export const docsReference = {
     "endpoints": 76,
     "mcpTools": 24,
     "convexRoutes": 59,
-    "nextRoutes": 24
+    "nextRoutes": 26
   },
   "endpoints": [
     {
@@ -266,10 +266,11 @@ export const docsReference = {
       "path": "/api/admin/profiles/fetch-sources",
       "category": "Admin",
       "auth": "Admin secret",
-      "source": "convex",
+      "source": "convex + next",
       "summary": "Convex HTTP action",
       "sources": [
-        "convex"
+        "convex",
+        "next"
       ]
     },
     {
@@ -277,10 +278,11 @@ export const docsReference = {
       "path": "/api/admin/profiles/import-targets",
       "category": "Admin",
       "auth": "Admin secret",
-      "source": "convex",
+      "source": "convex + next",
       "summary": "Convex HTTP action",
       "sources": [
-        "convex"
+        "convex",
+        "next"
       ]
     },
     {
