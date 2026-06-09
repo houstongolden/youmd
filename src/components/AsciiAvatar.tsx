@@ -128,18 +128,29 @@ function renderToCanvas(canvas: HTMLCanvasElement, data: AsciiCell[][], width: n
 
 function PreRenderedAscii({
   portrait,
+  targetCols,
+  canvasWidth,
   className = "",
 }: {
   portrait: PreRenderedPortrait;
+  targetCols?: number;
+  canvasWidth?: number;
   className?: string;
 }) {
-  const coloredLines = portrait.coloredLines as Array<Array<{ char: string; color: string }>> | undefined;
+  const renderedPortrait = compactPreRenderedPortrait(portrait, targetCols);
+  const coloredLines = renderedPortrait.coloredLines as Array<Array<{ char: string; color: string }>> | undefined;
+  const fontSize = Math.max(
+    3,
+    Math.min(6, ((canvasWidth || renderedPortrait.cols * 4) / Math.max(renderedPortrait.cols, 1)) * 1.2)
+  );
+  const preStyle = { fontSize, lineHeight: 1.08 };
 
   if (coloredLines && coloredLines.length > 0) {
     // Rich colored rendering
     return (
       <pre
-        className={`font-mono text-[4px] sm:text-[5px] md:text-[6px] leading-[1.1] select-none whitespace-pre overflow-hidden ${className}`}
+        className={`font-mono select-none whitespace-pre overflow-hidden ${className}`}
+        style={preStyle}
         aria-hidden="true"
       >
         {coloredLines.map((row, y) => (
@@ -158,11 +169,68 @@ function PreRenderedAscii({
   // Plain text fallback (monochrome orange)
   return (
     <pre
-      className={`font-mono text-[4px] sm:text-[5px] md:text-[6px] leading-[1.1] select-none whitespace-pre overflow-hidden text-[hsl(20_60%_42%)] ${className}`}
+      className={`font-mono select-none whitespace-pre overflow-hidden text-[hsl(20_60%_42%)] ${className}`}
+      style={preStyle}
       aria-hidden="true"
     >
-      {portrait.lines.join("\n")}
+      {renderedPortrait.lines.join("\n")}
     </pre>
+  );
+}
+
+function compactPreRenderedPortrait(
+  portrait: PreRenderedPortrait,
+  targetCols?: number
+): PreRenderedPortrait {
+  const lines = portrait.lines;
+  const sourceCols = Math.max(
+    portrait.cols || 0,
+    ...lines.map((line) => line.length),
+    1
+  );
+  const cols = Math.max(1, Math.min(targetCols || sourceCols, sourceCols));
+  if (cols >= sourceCols) return portrait;
+
+  const sourceRows = lines.length;
+  const rows = Math.max(1, Math.min(sourceRows, Math.round(sourceRows * (cols / sourceCols))));
+  const rowIndexes = sampleIndexes(sourceRows, rows);
+  const colIndexes = sampleIndexes(sourceCols, cols);
+  const coloredLines = portrait.coloredLines as Array<Array<{ char: string; color: string }>> | undefined;
+
+  const sampledLines = rowIndexes.map((rowIndex) => {
+    const line = lines[rowIndex] || "";
+    return colIndexes.map((colIndex) => line[colIndex] || " ").join("");
+  });
+
+  const sampledColoredLines = coloredLines
+    ? rowIndexes.map((rowIndex, y) => {
+        const row = coloredLines[rowIndex] || [];
+        return colIndexes.map((colIndex, x) => {
+          const cell = row[Math.min(colIndex, Math.max(row.length - 1, 0))];
+          return cell || {
+            char: sampledLines[y]?.[x] || " ",
+            color: "hsl(20 60% 42%)",
+          };
+        });
+      })
+    : undefined;
+
+  return {
+    ...portrait,
+    lines: sampledLines,
+    coloredLines: sampledColoredLines,
+    cols,
+    rows,
+  };
+}
+
+function sampleIndexes(sourceLength: number, targetLength: number): number[] {
+  if (sourceLength <= targetLength) {
+    return Array.from({ length: sourceLength }, (_, index) => index);
+  }
+  const step = sourceLength / targetLength;
+  return Array.from({ length: targetLength }, (_, index) =>
+    Math.min(sourceLength - 1, Math.floor(index * step))
   );
 }
 
@@ -205,7 +273,7 @@ const AsciiAvatar = ({
   if (preRendered && preRendered.lines.length > 0) {
     return (
       <div className={`relative ${className}`}>
-        <PreRenderedAscii portrait={preRendered} />
+        <PreRenderedAscii portrait={preRendered} targetCols={cols} canvasWidth={canvasWidth} />
       </div>
     );
   }

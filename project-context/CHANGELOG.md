@@ -6,6 +6,7 @@
 - Defaulted `/profiles` to grid view and reused the SSR profile payload while Convex client queries hydrate, so the directory does not briefly collapse into a sparse/blank state.
 - Added a shared `ProfilePortrait` renderer and frontend/Convex `hasRenderableAsciiPortrait` validation so stored ASCII is only treated as present when it has nonblank lines.
 - Hardened `AsciiAvatar` loading/error fallbacks so missing or CORS-blocked generated ASCII never renders as an empty square; cards now fall back to a real image tile or visible terminal initials.
+- Downsampled stored 120-column ASCII portraits to the requested tile size before rendering, so directory cards show the full portrait instead of an empty-looking top-left crop.
 - Swapped individual public profile header portraits from raw image tags to the same shared portrait contract.
 
 ### Guardrails + crawler strategy
