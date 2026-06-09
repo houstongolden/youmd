@@ -1,25 +1,26 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
+import PositioningStory from "@/components/landing/PositioningStory";
 import CTAFooter from "@/components/landing/CTAFooter";
 
 export const metadata: Metadata = {
-  title: "you.md — Your agent brain and expertise stacks",
+  title: "you.md — Stop re-explaining yourself to every agent",
   description:
-    "Give Claude Code, Codex, Cursor, and every AI agent your brain, memory, preferences, project context, and named YouStacks of expertise through one simple runtime.",
+    "You.md gives every AI agent your context, preferences, memory, and best workflows through one runtime, so new sessions stop starting from zero.",
   openGraph: {
-    title: "you.md — Agent brain + expertise stacks",
+    title: "you.md — Stop re-explaining yourself to every agent",
     description:
-      "Install once. Agents get your brain, your named expertise stacks, and protected API/MCP access only when private context or connected tools are needed.",
+      "Build one identity and workflow layer for every AI agent. Public context stays easy to share. Private context stays protected.",
     url: "https://you.md",
     siteName: "you.md",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "you.md — Agent brain + expertise stacks",
+    title: "you.md — Stop re-explaining yourself to every agent",
     description:
-      "Give every agent your brain, memory, project context, and named YouStacks of expertise through one curl-installed runtime.",
+      "One runtime for your context, memory, preferences, and best workflows across Claude Code, Codex, Cursor, ChatGPT, and more.",
   },
   alternates: {
     canonical: "https://you.md",
@@ -32,6 +33,7 @@ export default function Home() {
       <Navbar />
       <main id="main">
         <Hero />
+        <PositioningStory />
         <CTAFooter />
       </main>
     </div>

@@ -10,16 +10,16 @@ import { TerminalCard } from "@/components/ui/Card";
 const proofItems = ["Claude Code", "Cursor", "Codex", "ChatGPT"];
 
 const terminalLines = [
-  ["$ curl -fsSL https://you.md/install.sh | bash", "install the You.md runtime"],
-  ["$ you", "build and sync your agent brain"],
-  ["$ /stacks", "choose the expertise stacks agents should use"],
+  ["$ curl -fsSL https://you.md/install.sh | bash", "install one runtime instead of retraining every agent separately"],
+  ["$ you", "give the agent your identity, memory, project context, and preferences"],
+  ["$ youmd stack link", "make your best workflows portable across tools"],
 ];
 
 const Hero = () => {
   return (
     <Section
       hero
-      className="flex min-h-[720px] items-center overflow-hidden pt-24 md:min-h-[calc(100svh-16px)]"
+      className="flex min-h-[720px] items-start overflow-hidden pt-28 md:min-h-[760px] md:pt-24"
     >
       <div className="pointer-events-none absolute left-1/2 top-0 h-[78%] w-[96px] -translate-x-1/2 beam-glow opacity-70" />
 
@@ -40,17 +40,24 @@ const Hero = () => {
             </div>
 
             <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/75">
-              agent brain + expertise stacks
+              context for the agent internet
             </p>
 
-            <h1 className="max-w-[720px] font-mono text-[44px] leading-[1.02] text-foreground sm:text-[56px] lg:text-[64px]">
-              give every agent your brain and best workflows
+            <h1 className="max-w-[760px] font-mono text-[42px] leading-[1.01] text-foreground sm:text-[56px] lg:text-[66px]">
+              stop re-explaining yourself
+              <br />
+              to every new agent
             </h1>
 
-            <p className="mt-6 max-w-[620px] text-[17px] leading-[1.58] text-muted-foreground md:text-[18px]">
-              Install once. You.md gives Claude Code, Codex, Cursor, ChatGPT,
-              and any agent your public profile, memory, preferences, project context,
-              and named stacks of skills and workflows you want it to use.
+            <p className="mt-6 max-w-[640px] text-[17px] leading-[1.62] text-muted-foreground md:text-[18px]">
+              You.md gives every agent the same portable layer of context:
+              your public identity, private memory, preferences, project context,
+              and named stacks of workflows. Install once, then stop starting from zero.
+            </p>
+
+            <p className="mt-4 max-w-[620px] font-mono text-[12px] leading-[1.7] text-accent/82">
+              not another chat app. not another prompt library.
+              one system layer between you and every agent you use.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -63,7 +70,7 @@ const Hero = () => {
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[11px] text-muted-foreground/55">
-              <span className="text-accent/70">works with</span>
+              <span className="text-accent/70">works across</span>
               {proofItems.map((item) => (
                 <span key={item} className="border-l border-border pl-3">
                   {item}
@@ -74,9 +81,23 @@ const Hero = () => {
           </div>
 
           <div className="grid gap-4">
+            <TerminalCard title="what agents stop missing" bodyClassName="space-y-3">
+              {[
+                "who you are",
+                "what you are working on",
+                "how you like to operate",
+                "which workflows are actually good",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-3 border-b border-border/65 pb-3 last:border-b-0 last:pb-0">
+                  <span className="font-mono text-[11px] text-accent">+</span>
+                  <p className="text-[14px] leading-relaxed text-muted-foreground">{item}</p>
+                </div>
+              ))}
+            </TerminalCard>
+
             <Link href="/houstongolden" className="group block" aria-label="view houstongolden live profile">
-              <TerminalCard title="live portrait preview" bodyClassName="p-3">
-                <div className="aspect-[1.16/1] overflow-hidden rounded-[2px] border border-border bg-background">
+              <TerminalCard title="live identity surface" bodyClassName="p-3">
+                <div className="aspect-[1.22/1] overflow-hidden rounded-[2px] border border-border bg-background">
                   <HeroPortrait />
                 </div>
                 <p className="mt-3 text-center font-mono text-[10px] text-muted-foreground/45 transition-colors group-hover:text-accent/75">
@@ -85,7 +106,7 @@ const Hero = () => {
               </TerminalCard>
             </Link>
 
-            <TerminalCard title="context pipeline" bodyClassName="space-y-3">
+            <TerminalCard title="one runtime, three steps" bodyClassName="space-y-3">
               {terminalLines.map(([command, detail]) => (
                 <div key={command} className="grid gap-1 font-mono">
                   <code className="text-[12px] leading-relaxed text-accent">{command}</code>

@@ -7,37 +7,12 @@ import { CliInstallTabs } from "@/components/install/CliInstallTabs";
 import { ButtonLink } from "@/components/ui/Button";
 import { Container, Section } from "@/components/ui/Layout";
 
-const footerGroups = [
-  {
-    label: "product",
-    links: [
-      ["create", "/create"],
-      ["profiles", "/profiles"],
-      ["skills", "/docs#skills"],
-    ],
-  },
-  {
-    label: "developers",
-    links: [
-      ["docs", "/docs"],
-      ["api", "/docs#api"],
-      ["cli", "/docs#cli"],
-    ],
-  },
-  {
-    label: "open",
-    links: [
-      ["github", "https://github.com/houstongolden/youmd"],
-      ["npm", "https://www.npmjs.com/package/youmd"],
-    ],
-  },
-  {
-    label: "connect",
-    links: [
-      ["x", "https://x.com/haborngolden"],
-      ["linkedin", "https://linkedin.com/in/houstongolden"],
-    ],
-  },
+const footerLinks = [
+  ["create", "/create"],
+  ["docs", "/docs"],
+  ["profiles", "/profiles"],
+  ["github", "https://github.com/houstongolden/youmd"],
+  ["npm", "https://www.npmjs.com/package/youmd"],
 ];
 
 function FooterLink({ href, children }: { href: string; children: string }) {
@@ -72,11 +47,11 @@ const CTAFooter = () => {
                 -- get started --
               </p>
               <h2 className="mt-4 font-mono text-[30px] leading-tight text-foreground md:text-[42px]">
-                stop re-explaining yourself to machines
+                make every new agent session start with you
               </h2>
               <p className="mx-auto mt-4 max-w-[620px] text-[16px] leading-relaxed text-muted-foreground">
-                Create one brain, add named stacks, then let every agent start
-                with your context and your best workflows.
+                Build your context layer once, add the stacks that reflect how you work,
+                and let agents meet the same version of you everywhere.
               </p>
               <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
                 <ButtonLink href="/create" variant="primary" size="lg">
@@ -101,20 +76,11 @@ const CTAFooter = () => {
 
       <footer className="px-6 py-10">
         <div className="mx-auto max-w-[1120px] border-t border-border pt-9">
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-            {footerGroups.map((group) => (
-              <div key={group.label}>
-                <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/42">
-                  {group.label}
-                </p>
-                <div className="flex flex-col">
-                  {group.links.map(([label, href]) => (
-                    <FooterLink key={label} href={href}>
-                      {label}
-                    </FooterLink>
-                  ))}
-                </div>
-              </div>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 md:justify-between">
+            {footerLinks.map(([label, href]) => (
+              <FooterLink key={label} href={href}>
+                {label}
+              </FooterLink>
             ))}
           </div>
 
