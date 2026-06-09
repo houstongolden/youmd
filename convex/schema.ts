@@ -176,6 +176,77 @@ export default defineSchema({
     .index("by_sessionToken", ["sessionToken"])
     .index("by_isClaimed", ["isClaimed"]),
 
+  // ── Public profile source ledger ───────────────────────────
+  // Tracks crawler/enrichment provenance for unclaimed public profiles. The
+  // profile record stays the renderable/public surface; this table explains
+  // which URLs were consulted, whether they changed, and when they should be
+  // refreshed without re-spending on unchanged sources.
+  profileSources: defineTable({
+    username: v.string(),
+    profileId: v.optional(v.id("profiles")),
+    url: v.string(),
+    platform: v.string(), // "github" | "x" | "website" | "linkedin" | ...
+    sourceType: v.string(), // "profile" | "personal_site" | "company" | "social" | ...
+    priority: v.number(),
+    status: v.string(), // "queued" | "current" | "changed" | "failed" | "skipped"
+    contentHash: v.optional(v.string()),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    lastFetchedAt: v.optional(v.number()),
+    lastChangedAt: v.optional(v.number()),
+    nextRefreshAt: v.optional(v.number()),
+    fetchCostCents: v.optional(v.number()),
+    qualityScore: v.optional(v.number()),
+    failureCount: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_username", ["username"])
+    .index("by_profileId", ["profileId"])
+    .index("by_status_nextRefreshAt", ["status", "nextRefreshAt"])
+    .index("by_platform", ["platform"]),
+
+  profileRefreshJobs: defineTable({
+    username: v.string(),
+    profileId: v.optional(v.id("profiles")),
+    sourceId: v.optional(v.id("profileSources")),
+    kind: v.string(), // "import" | "fetch" | "extract" | "enrich" | "portrait"
+    status: v.string(), // "queued" | "running" | "succeeded" | "failed" | "skipped"
+    priority: v.number(),
+    scheduledFor: v.number(),
+    attempts: v.number(),
+    maxAttempts: v.number(),
+    startedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    result: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_status_scheduledFor", ["status", "scheduledFor"])
+    .index("by_username", ["username"])
+    .index("by_kind_status", ["kind", "status"]),
+
+  profileImportBatches: defineTable({
+    batchKey: v.string(),
+    targetSegment: v.string(),
+    status: v.string(), // "dry_run" | "imported" | "failed"
+    dryRun: v.boolean(),
+    total: v.number(),
+    created: v.number(),
+    patched: v.number(),
+    skipped: v.number(),
+    failed: v.number(),
+    results: v.any(),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_batchKey", ["batchKey"])
+    .index("by_status", ["status"]),
+
   // ── Profile reports ────────────────────────────────────────
   profileReports: defineTable({
     profileId: v.id("profiles"),

@@ -19,14 +19,14 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "d322367ae79b6fc964ffebf325e2124be74953636f5a2b4eea03ebda3c84a072",
+  "sourceHash": "000797ae4c491b36e9394236b1c5d20ba13a27980def88f3288286fc508fca9c",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
-    "endpoints": 74,
+    "endpoints": 76,
     "mcpTools": 24,
-    "convexRoutes": 57,
+    "convexRoutes": 59,
     "nextRoutes": 24
   },
   "endpoints": [
@@ -257,6 +257,28 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "interaction summary (authenticated) Returns aggregated stats for each agent that has touched this user's identity, powered by the cross-agent activity log.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/profiles/fetch-sources",
+      "category": "Admin",
+      "auth": "Admin secret",
+      "source": "convex",
+      "summary": "Convex HTTP action",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/profiles/import-targets",
+      "category": "Admin",
+      "auth": "Admin secret",
+      "source": "convex",
+      "summary": "Convex HTTP action",
       "sources": [
         "convex"
       ]

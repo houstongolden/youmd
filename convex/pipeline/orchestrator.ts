@@ -157,7 +157,7 @@ export const runPipeline = internalAction({
       const successfulSources = extractedSources
         .filter((s: { status: string }) => s.status === "extracted")
         .map(
-          (s) => ({
+          (s: { sourceType: string; extracted?: unknown }) => ({
             sourceType: s.sourceType,
             extracted: s.extracted ?? null,
           })

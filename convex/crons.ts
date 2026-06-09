@@ -4,6 +4,7 @@
  * Created cycle 50. Currently runs:
  *   - hourly: rateLimits table cleanup (delete rows older than 1 hour)
  *   - monthly: unclaimed public profile portrait/avatar QA
+ *   - daily: due public-profile source metadata refresh
  *
  * Add new crons here as needed. Each entry runs in the Convex scheduler
  * — there's no separate cron daemon to manage.
@@ -41,6 +42,13 @@ crons.monthly(
   { day: 9, hourUTC: 10, minuteUTC: 41 },
   internal.seed.enrichAndQaAllProfiles,
   { dryRun: false, forceRegenerate: false }
+);
+
+crons.daily(
+  "refresh due public profile sources",
+  { hourUTC: 10, minuteUTC: 55 },
+  internal.profileIndexing.fetchDueProfileSources,
+  { dryRun: false, limit: 50 }
 );
 
 export default crons;

@@ -87,7 +87,7 @@ http.route({
     // No username param — return list of all public profiles (for sitemap, directory)
     if (!username) {
       const profiles = await ctx.runQuery(api.profiles.listAll);
-      const usernames = profiles.map((profile) => {
+      const usernames = profiles.map((profile: Record<string, unknown>) => {
         const p = profile as Record<string, unknown>;
         return {
           username: String(p.username ?? ""),
@@ -2916,7 +2916,7 @@ http.route({
 
             const profiles = await ctx.runQuery(api.profiles.listAll);
             const filtered = query
-              ? profiles.filter((profile) => {
+              ? profiles.filter((profile: Record<string, unknown>) => {
                   const p = profile as Record<string, unknown>;
                   return p.username?.toString().toLowerCase().includes(query.toLowerCase()) ||
                     p.name?.toString().toLowerCase().includes(query.toLowerCase());
@@ -3184,6 +3184,92 @@ http.route({
 });
 
 http.route({ path: "/api/admin/reseed", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+
+// ---------------------------------------------------------------------------
+// Admin — public profile indexing controls
+// POST /api/admin/profiles/import-targets  Authorization: Bearer <TRUSTED_INTERNAL_AUTH_TOKEN>
+// POST /api/admin/profiles/fetch-sources   Authorization: Bearer <TRUSTED_INTERNAL_AUTH_TOKEN>
+// ---------------------------------------------------------------------------
+
+async function readJsonBody(request: Request): Promise<Record<string, unknown>> {
+  try {
+    const body = await request.json();
+    return typeof body === "object" && body !== null ? body as Record<string, unknown> : {};
+  } catch {
+    return {};
+  }
+}
+
+function isTrustedAdminRequest(request: Request): boolean {
+  const auth = request.headers.get("Authorization") ?? "";
+  const token = auth.replace(/^Bearer\s+/, "");
+  return Boolean(TRUSTED_INTERNAL_AUTH_TOKEN && token === TRUSTED_INTERNAL_AUTH_TOKEN);
+}
+
+function optionalNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function omitUndefined<T extends Record<string, unknown>>(value: T): T {
+  for (const key of Object.keys(value)) {
+    if (value[key] === undefined) delete value[key];
+  }
+  return value;
+}
+
+http.route({
+  path: "/api/admin/profiles/import-targets",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!isTrustedAdminRequest(request)) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const body = await readJsonBody(request);
+    try {
+      const result = await ctx.runAction(internal.profileIndexing.importInitialPublicProfileTargets, omitUndefined({
+        dryRun: optionalBoolean(body.dryRun),
+        limit: optionalNumber(body.limit),
+        offset: optionalNumber(body.offset),
+        batchKey: optionalString(body.batchKey),
+        forcePatch: optionalBoolean(body.forcePatch),
+      }));
+      return json(result);
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "Public profile import failed" }, 500);
+    }
+  }),
+});
+
+http.route({
+  path: "/api/admin/profiles/fetch-sources",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!isTrustedAdminRequest(request)) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const body = await readJsonBody(request);
+    try {
+      const result = await ctx.runAction(internal.profileIndexing.fetchDueProfileSources, omitUndefined({
+        dryRun: optionalBoolean(body.dryRun),
+        limit: optionalNumber(body.limit),
+      }));
+      return json(result);
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "Public profile source refresh failed" }, 500);
+    }
+  }),
+});
+
+http.route({ path: "/api/admin/profiles/import-targets", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+http.route({ path: "/api/admin/profiles/fetch-sources", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
 
 // ---------------------------------------------------------------------------
 // Repo mirror reads (Phase 4) — agents read the user's repo-hosted identity +

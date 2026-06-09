@@ -1,5 +1,23 @@
 # You.md — Changelog
 
+## 2026-06-09 — Public profile indexing pipeline foundation
+
+### Crawler/indexer backend
+- Added Convex source-ledger tables for public profile sources, refresh jobs, and import-batch audit records.
+- Added a 50-target initial catalog for top tech, AI, SaaS founders/builders/investors with source URLs, segments, priorities, and source-backed starter profile payloads.
+- Added internal import and refresh actions that upsert unclaimed public profiles, queue source/portrait jobs, fetch cheap native HTML metadata, hash source content, track freshness, and avoid paid crawling by default.
+- Added a daily Convex cron to refresh due public profile sources in bounded batches.
+- Added admin-only HTTP controls for dry-running/importing the target batch and refreshing due sources via `Authorization: Bearer <TRUSTED_INTERNAL_AUTH_TOKEN>`.
+
+### Guardrails
+- Added `npm run profiles:targets-check` to enforce exactly 50 unique seed targets, valid username slugs, names, and HTTPS source links before scaling batches.
+- Regenerated Convex API bindings and repaired surfaced type holes in existing Convex HTTP/pipeline code.
+
+### Verification
+- Passed `profiles:targets-check`, Convex codegen, Convex TypeScript, root TypeScript, targeted ESLint for the new crawler files, and `git diff --check`.
+- Full-file ESLint on `convex/http.ts` still reports pre-existing `no-explicit-any` debt unrelated to this slice; the touched http changes are covered by TypeScript.
+- Production import is intentionally pending until this commit is deployed; next step is an admin dry-run of 50 targets, then a real import if the dry-run is clean.
+
 ## 2026-06-09 — Public profile portrait hardening
 
 ### Profiles directory + public pages

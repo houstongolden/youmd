@@ -14,10 +14,12 @@ PRD Version: 2.3
 - [x] Harden public profile portrait rendering: default `/profiles` to grid, render stored ASCII first, fall back to real image/terminal initials instead of blank boxes, and add static + runtime portrait audits
 - [x] Add same-origin `GET /api/v1/profiles` proxy plus a monthly Convex portrait-refresh cron so public profile payloads and directory/profile pages share the same portrait contract
 - [x] Capture the low-cost public-profile crawler/indexing direction in `project-context/PUBLIC_PROFILE_INDEXING_AND_REFRESH_PLAN.md`
+- [x] Add the first public-profile indexing foundation: source ledger, refresh-job/import-batch tables, 50-target AI/SaaS/builder catalog, admin dry-run/import route, native metadata refresh action, daily Convex refresh cron, and `profiles:targets-check`
 - [ ] Audit current YouStacks maintainer/adapter docs for a deterministic review artifact and unresolved-decision contract
 - [ ] Audit protected retrieval and repo-mirror read paths for fail-closed multi-source grant enforcement plus malformed-frontmatter resilience
 - [ ] Deploy the public profile portrait/API/crons patch to production and run `npm run profiles:portrait-audit -- --base-url https://www.you.md` plus `npm run profiles:portrait-audit:pages -- --base-url https://www.you.md`
-- [ ] Build the first production public-profile refresh worker around cheap crawler/extractor routing, profile-source freshness state, and cost-capped LLM enrichment
+- [ ] After deploy, run the admin public-profile dry-run for all 50 seed targets, inspect skipped/created/patch results, then run the real import only if the dry-run is clean
+- [ ] Extend public-profile refresh beyond native HTML metadata into cheap extractor routing, source-backed profile compilation, and cost-capped LLM enrichment
 
 ### 2026-06-04
 - [x] Add free GitHub OAuth signup foundation (Phase 1): `githubConnections` table, `convex/github.ts` find-or-create + connection + repo-link, `/api/auth/github/start` + `/callback` routes reusing the opaque-session/JWKS path, and "continue with github" on sign-in + sign-up
