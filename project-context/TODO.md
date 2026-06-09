@@ -1,11 +1,18 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-04
+Last Updated: 2026-06-09
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-06-09
+- [x] Re-run the daily reference-intelligence loop, archive stale Codex automation threads first, and version the fresh `project-context/reference-intelligence/LATEST.md` + `TASKS.md` outputs
+- [x] Write `project-context/REFERENCE_INTELLIGENCE_AUDIT_2026-06-09.md` so the Jun 9 upstream signals become durable You.md follow-up work instead of staying only in generated files
+- [x] Update roadmap/tracking docs for the Jun 9 reference-intelligence wave
+- [ ] Audit current YouStacks maintainer/adapter docs for a deterministic review artifact and unresolved-decision contract
+- [ ] Audit protected retrieval and repo-mirror read paths for fail-closed multi-source grant enforcement plus malformed-frontmatter resilience
 
 ### 2026-06-04
 - [x] Add free GitHub OAuth signup foundation (Phase 1): `githubConnections` table, `convex/github.ts` find-or-create + connection + repo-link, `/api/auth/github/start` + `/callback` routes reusing the opaque-session/JWKS path, and "continue with github" on sign-in + sign-up

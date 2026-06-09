@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-04
+Last Updated: 2026-06-09
 
 ---
 
@@ -63,6 +63,23 @@ Last Updated: 2026-06-04
 6. Test and fix new functionality where possible from this machine.
 7. Update project context, commit logical local follow-through changes if any, and report remaining blocked/user-only work.
 **Progress (2026-06-04):** Pulled `origin/main` and fast-forwarded local `main` from `22b09ea` to `cf56f07`, preserving and reapplying the local reference-intelligence artifacts. Audited the incoming GitHub-native wave: GitHub OAuth signup, repo create/connect, repo push/pull, webhook auto-pull, server-side repo mirror, authenticated repo file/stack APIs, setup docs, OpenAPI/docs updates, and project-context tracking. Fixed local follow-through issues found during the audit: regenerated stale `llms` docs, regenerated Convex API bindings for `lib/secretCrypto`, corrected GitHub OAuth local-dev fallback/docs/env from port `3000` to this repo's `3100`, and upgraded Next.js from `16.2.2` to `16.2.7` with root manual markers updated. Verification passed `npm run agent-docs:ci`, targeted GitHub integration ESLint, `next typegen && tsc --noEmit`, `npx convex codegen --typecheck enable`, `npm --prefix cli run build`, `npm --prefix cli test` (12 files / 69 tests), `git diff --check`, and local HTTP smoke for `/api/auth/github/start` returning `http://localhost:3100/sign-in?error=github_unconfigured` when GitHub OAuth is not configured. **Blocked/remaining:** local `next build` hangs silently with both default and `--webpack` even after the Next patch upgrade; full end-to-end GitHub OAuth/repo verification requires Houston/operator to configure the GitHub OAuth App and deployment secrets, then deploy Convex + Vercel.
+
+## 2026-06-09 Reference-Intelligence Follow-Through
+
+### 109. Turn the Jun 9 reference-intelligence wave into tracked You.md follow-up slices
+**Status:** IN PROGRESS
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-09 — Houston said "continue and also please commit and push to main and ensure everything works live on prod" after the daily reference-intelligence run completed.
+**Request:** Continue the Jun 9 daily reference-intelligence run all the way through by turning the new upstream signals into durable tracked work, verifying the local monitor path, committing/pushing the resulting project-context updates, and smoke-checking production so the original automation goal is fully realized.
+**Actionable Scope:**
+1. Version the regenerated `project-context/reference-intelligence/LATEST.md` and `TASKS.md` outputs from the 2026-06-09 sync.
+2. Distill the highest-value follow-up work from GStack `1626d48` and GBrain `1eb430a`.
+3. Write a dated audit that maps those upstream changes to explicit You.md next steps.
+4. Update TODO/features/changelog/request tracking/prompt archive so future sessions can continue without re-deriving the same two tasks.
+5. Run local verification for the reference loop and smoke current public docs/API/MCP surfaces on production.
+6. Commit and push the resulting local follow-through to `main`.
+**Progress (2026-06-09):** Re-ran chat hygiene and the reference sync, which fetched new upstream heads for GStack and GBrain and regenerated the two reference-intelligence artifacts. The first pass surfaced two high-signal tasks, which are now preserved in `project-context/REFERENCE_INTELLIGENCE_AUDIT_2026-06-09.md`: deterministic review/report packaging for YouStacks and fail-closed protected retrieval plus malformed-frontmatter resilience for repo-native/context reads. A same-session verification re-run of `npm run references:sync` then correctly returned zero new candidates because the local reference heads were already updated. Updated project-context tracking so the two tasks stay durable even though the generated queue is now back to a caught-up steady state. Remaining in this run: commit/push and recording any prod blockers versus the unchanged live baseline.
 
 ## 2026-06-03 Reference-Intelligence Follow-Through
 

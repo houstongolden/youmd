@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-09 — Daily reference-intelligence follow-through
+
+### Reference intelligence
+- Ran `npm run codex:chat-hygiene -- --apply --older-than-minutes 120` before the daily monitor and archived 2 stale active automation threads while preserving transcripts and backup indices.
+- Re-ran `npm run references:sync` and regenerated `project-context/reference-intelligence/LATEST.md` plus `TASKS.md`.
+- Updated the tracked upstream heads to GStack `1626d48`, GBrain `1eb430a`, Agent Scripts `3bd6b21`, and The Library `47f455c`.
+- Captured the Jun 9 follow-through in `project-context/REFERENCE_INTELLIGENCE_AUDIT_2026-06-09.md`, narrowing the new work to two explicit You.md slices: YouStacks review/report packaging and fail-closed protected retrieval plus malformed-frontmatter resilience.
+
+### Tracking
+- Updated `project-context/TODO.md`, `FEATURES.md`, `feature-requests-active.md`, and `PROMPTS.md` so the Jun 9 reference-intelligence work is durable and future sessions can continue from tracked next steps instead of re-deriving them from generated files.
+
 ## 2026-06-04 — GitHub repo follow-ups: token caching, App revocation, private-file safety
 
 ### GitHub App hardening

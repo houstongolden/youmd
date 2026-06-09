@@ -1,6 +1,6 @@
 # You.md Reference Intelligence
 
-Last updated: 2026-06-04T16:57:20.958Z
+Last updated: 2026-06-09T19:27:42.274Z
 
 You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under `.reference-repos/` and are ignored by git.
 
@@ -22,8 +22,8 @@ npm run references:sync
 - URL: https://github.com/garrytan/gstack
 - Local path: `.reference-repos/garrytan/gstack`
 - Branch: `main`
-- Latest commit: `c43c850cae77`
-- Mode: No new commits since c43c850
+- Latest commit: `1626d4857bfe`
+- Mode: No new commits since 1626d48
 
 - No commits found.
 
@@ -32,28 +32,20 @@ npm run references:sync
 - URL: https://github.com/garrytan/gbrain
 - Local path: `.reference-repos/garrytan/gbrain`
 - Branch: `master`
-- Latest commit: `9a0bae8d62cd`
-- Mode: Changes since f3ade6c
+- Latest commit: `1eb430a2df9f`
+- Mode: No new commits since 1eb430a
 
-- `9a0bae8` 2026-06-03 — v0.42.25.0 fix(pricing): unify chat-model pricing into one canonical source; add Opus 4.8 (#1819) (#1827)
-  Files: `CHANGELOG.md`, `CLAUDE.md`, `TODOS.md`, `VERSION`, `docs/architecture/KEY_FILES.md`, `docs/eval/SEARCH_MODE_METHODOLOGY.md`, `llms-full.txt`, `package.json`, +11 more
-- `f868257` 2026-06-03 — v0.42.24.0 fix(minions): route lock claim/renewLock through direct session pool (#1822)
-  Files: `CHANGELOG.md`, `TODOS.md`, `VERSION`, `docs/architecture/KEY_FILES.md`, `package.json`, `src/core/engine.ts`, `src/core/minions/queue.ts`, `src/core/pglite-engine.ts`, +4 more
-- `f11d56c` 2026-06-03 — v0.42.23.0 feat(jobs): --nice scheduling-priority flag for jobs work/supervisor (#1815) (#1820)
-  Files: `CHANGELOG.md`, `VERSION`, `docs/architecture/KEY_FILES.md`, `docs/guides/minions-deployment.md`, `package.json`, `src/commands/doctor.ts`, `src/commands/jobs.ts`, `src/core/doctor-categories.ts`, +14 more
-- `f495934` 2026-06-03 — v0.42.22.0 fix(minions): supervisor progress watchdog + worker DB self-defense — alive-but-wedged worker self-heals (#1801) (#1824)
-  Files: `CHANGELOG.md`, `VERSION`, `docs/architecture/KEY_FILES.md`, `docs/guides/queue-operations-runbook.md`, `package.json`, `src/commands/doctor.ts`, `src/commands/jobs.ts`, `src/core/doctor-categories.ts`, +10 more
+- No commits found.
 
 ## Agent Scripts
 
 - URL: https://github.com/steipete/agent-scripts
 - Local path: `.reference-repos/steipete/agent-scripts`
 - Branch: `main`
-- Latest commit: `0bb3bb96fb2a`
-- Mode: Changes since 5dc3c24
+- Latest commit: `3bd6b211f393`
+- Mode: No new commits since 3bd6b21
 
-- `0bb3bb9` 2026-06-03 — docs: note zsh array loop behavior
-  Files: `AGENTS.MD`
+- No commits found.
 
 ## The Library
 
@@ -67,13 +59,4 @@ npm run references:sync
 
 ## Candidate Tasks
 
-- [ ] You.md brain schema/context: Review whether this upstream brain/context change should improve You.md memory categories, private context, profile files, or agent startup briefs.
-  Source: GBrain 9a0bae8: v0.42.25.0 fix(pricing): unify chat-model pricing into one canonical source; add Opus 4.8 (#1819) (#1827)
-- [ ] Docs/product education: Compare this upstream docs/example change against the homepage, `/docs`, quickstarts, and stack/brain examples.
-  Source: GBrain f868257: v0.42.24.0 fix(minions): route lock claim/renewLock through direct session pool (#1822)
-- [ ] You.md brain sync: Evaluate whether this upstream sync or migration pattern should change GitHub repo sync, local bundle export/import, or backup behavior.
-  Source: GBrain f11d56c: v0.42.23.0 feat(jobs): --nice scheduling-priority flag for jobs work/supervisor (#1815) (#1820)
-- [ ] Docs/product education: Compare this upstream docs/example change against the homepage, `/docs`, quickstarts, and stack/brain examples.
-  Source: GBrain f495934: v0.42.22.0 fix(minions): supervisor progress watchdog + worker DB self-defense — alive-but-wedged worker self-heals (#1801) (#1824)
-- [ ] Cross-agent instruction portability: Review whether this upstream shared-instruction pattern should improve `youmd skill init-project`, host adapters, or repo-local pointer rules.
-  Source: Agent Scripts 0bb3bb9: docs: note zsh array loop behavior
+- No task candidates generated.
