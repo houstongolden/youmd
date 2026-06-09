@@ -19,7 +19,7 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "de7206ded1b54f2b493ee9b2b19f37026ce9a59adda8549190d8cc6ee638a2ee",
+  "sourceHash": "d322367ae79b6fc964ffebf325e2124be74953636f5a2b4eea03ebda3c84a072",
   "cli": {
     "version": "0.6.23"
   },
@@ -27,7 +27,7 @@ export const docsReference = {
     "endpoints": 74,
     "mcpTools": 24,
     "convexRoutes": 57,
-    "nextRoutes": 23
+    "nextRoutes": 24
   },
   "endpoints": [
     {
@@ -745,10 +745,11 @@ export const docsReference = {
       "path": "/api/v1/profiles",
       "category": "Public Identity",
       "auth": "Public or rate-limited",
-      "source": "convex",
+      "source": "convex + next",
       "summary": "List all profiles (no params) or get single profile (?username=xxx)",
       "sources": [
-        "convex"
+        "convex",
+        "next"
       ]
     },
     {
