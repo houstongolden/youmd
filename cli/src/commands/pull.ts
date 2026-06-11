@@ -5,21 +5,75 @@ import { getMe, getPublicProfile, getPrivateContext } from "../lib/api";
 import { readGlobalConfig, writeGlobalConfig, getLocalBundleDir, readLocalConfig, writeLocalConfig } from "../lib/config";
 import { writePrivateContextToLocal } from "./private";
 import { computeContentHash, shortHash } from "../lib/hash";
+import { compileBundle } from "../lib/compiler";
 import { syncAllSkills } from "../lib/skills";
 import { readSkillCatalog } from "../lib/skill-catalog";
 import { decompileToFilesystem, detectFormat } from "../lib/decompile";
 
-export async function pullCommand() {
+export interface LocalDirtyState {
+  dirty: boolean;
+  localHash?: string;
+  hasBaseline: boolean;
+}
+
+/**
+ * Content hash that ignores volatile compile output. The compiler stamps
+ * `generated_at` and `meta.last_updated` into you.json and `generated_at`
+ * into you.md on every compile, so the raw contentHash changes even when no
+ * source file changed. Strip them before hashing so identical source files
+ * always hash the same.
+ */
+export function stableContentHash(youJson: unknown, youMd: string): string {
+  const cleaned = { ...((youJson as Record<string, unknown>) || {}) };
+  delete cleaned.generated_at;
+  if (cleaned.meta && typeof cleaned.meta === "object" && !Array.isArray(cleaned.meta)) {
+    const meta = { ...(cleaned.meta as Record<string, unknown>) };
+    delete meta.last_updated;
+    cleaned.meta = meta;
+  }
+  const cleanedMd = (youMd || "")
+    .split("\n")
+    .filter((line) => !line.startsWith("generated_at:"))
+    .join("\n");
+  return computeContentHash(cleaned, cleanedMd);
+}
+
+/**
+ * Detect whether the local bundle has edits that haven't been pushed.
+ * Compiles the local bundle and compares its stable content hash against
+ * the baseline recorded by the last pull in .youmd/config.json.
+ */
+export function detectLocalDirtyState(bundleDir: string): LocalDirtyState {
+  const lc = readLocalConfig();
+  const baseline = lc?.lastPulledStableHash;
+  if (!baseline) return { dirty: false, hasBaseline: false };
+  if (!fs.existsSync(path.join(bundleDir, "you.json"))) {
+    return { dirty: false, hasBaseline: true };
+  }
+  try {
+    const compiled = compileBundle(bundleDir);
+    if (!compiled) return { dirty: false, hasBaseline: true };
+    const localHash = stableContentHash(compiled.youJson, compiled.markdown);
+    return { dirty: localHash !== baseline, localHash, hasBaseline: true };
+  } catch {
+    // Can't compile — don't block the pull on a broken local bundle
+    return { dirty: false, hasBaseline: true };
+  }
+}
+
+export type PullOutcome = "ok" | "dirty" | "no-remote" | "auth-required";
+
+export async function pullCommand(options: { force?: boolean } = {}): Promise<PullOutcome> {
   const config = readGlobalConfig();
 
   if (!config.token) {
     console.log(chalk.hex("#C46A3A")("  not authenticated. run: youmd login"));
-    return;
+    return "auth-required";
   }
 
   if (!config.username) {
     console.log(chalk.hex("#C46A3A")("  no username configured. run: youmd login"));
-    return;
+    return "auth-required";
   }
 
   const username = config.username;
@@ -59,11 +113,30 @@ export async function pullCommand() {
   if (!youJsonSource) {
     console.log(chalk.hex("#C46A3A")("  no published bundle found on you.md"));
     console.log(chalk.dim("  publish your local bundle first: youmd build && youmd publish"));
-    return;
+    return "no-remote";
   }
 
   const bundleDir = getLocalBundleDir();
   const youJson = youJsonSource.youJson as Record<string, unknown>;
+
+  // Refuse to clobber unpushed local edits unless --force. If the local
+  // bundle compiles to the same content as the remote (e.g. the user just
+  // pushed), there is nothing to lose and the pull proceeds.
+  if (!options.force) {
+    const dirtyState = detectLocalDirtyState(bundleDir);
+    if (dirtyState.dirty) {
+      const remoteStable = stableContentHash(youJson, youJsonSource.youMd ?? "");
+      if (dirtyState.localHash !== remoteStable) {
+        console.log(chalk.hex("#C46A3A")("  local edits detected that haven't been pushed"));
+        console.log(
+          chalk.dim("  run ") + chalk.cyan("youmd push") + chalk.dim(" first, or ") +
+          chalk.cyan("youmd pull --force") + chalk.dim(" to overwrite local edits")
+        );
+        process.exitCode = 1;
+        return "dirty";
+      }
+    }
+  }
 
   // Detect format and log it
   const format = detectFormat(youJson);
@@ -119,30 +192,45 @@ export async function pullCommand() {
     console.log(chalk.dim("  skipped private context (not available)"));
   }
 
+  // Record the dirty-check baseline: the stable hash of the bundle as it
+  // compiles from the files we just wrote (compile(decompile(x)) may differ
+  // from x, and generated_at changes on every compile — stableContentHash
+  // makes this comparable on future pulls).
+  try {
+    const compiledAfterWrite = compileBundle(bundleDir);
+    if (compiledAfterWrite) {
+      const lc = readLocalConfig() || { version: 1, sources: [] };
+      lc.lastPulledStableHash = stableContentHash(compiledAfterWrite.youJson, compiledAfterWrite.markdown);
+      writeLocalConfig(lc);
+    }
+  } catch {
+    // non-fatal — without a baseline the dirty check simply stays inert
+  }
+
   // Track the remote hash we pulled so push/publish can detect divergence
   try {
     const meRes = await getMe();
     if (meRes.ok) {
       const remoteVersion = meRes.data.publishedBundle?.version || meRes.data.latestBundle?.version || 0;
-      const remoteContentHash = meRes.data.latestBundle?.contentHash;
+      // Record the hash of what we actually wrote to disk — NOT the newest
+      // draft's hash, which may be content we never pulled.
+      const writtenHash = computeContentHash(youJson, youJsonSource.youMd ?? "");
       const lc = readLocalConfig() || { version: 1, sources: [] };
       lc.lastKnownRemoteVersion = remoteVersion;
-      lc.localContentHash = remoteContentHash || computeContentHash(
-        youJson,
-        youJsonSource.youMd ?? ""
-      );
-      if (remoteContentHash) {
-        lc.lastPulledHash = remoteContentHash;
-      }
+      lc.lastPulledHash = writtenHash;
+      lc.localContentHash = writtenHash;
       writeLocalConfig(lc);
+
+      const draftHash = meRes.data.latestBundle?.contentHash;
+      if (draftHash && draftHash !== writtenHash) {
+        console.log(chalk.dim("  note: a newer unpublished draft exists on you.md — pushing will overwrite it"));
+      }
 
       // Save base.json — the "common ancestor" for future merges
       const baseJsonPath = path.join(bundleDir, "base.json");
       fs.writeFileSync(baseJsonPath, JSON.stringify(youJson, null, 2));
 
-      if (remoteContentHash) {
-        console.log(chalk.dim(`  remote hash: ${shortHash(remoteContentHash)}`));
-      }
+      console.log(chalk.dim(`  remote hash: ${shortHash(writtenHash)}`));
     }
   } catch {
     // non-fatal
@@ -187,4 +275,5 @@ export async function pullCommand() {
     console.log(chalk.dim(`  ${summaryParts.join(chalk.dim(" / "))}`));
   }
   console.log(chalk.dim(`  bundle dir: ${bundleDir}`));
+  return "ok";
 }

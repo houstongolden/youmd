@@ -52,7 +52,22 @@ import { agentsCommand } from "./commands/agents";
 import { stackCommand } from "./commands/stack";
 
 const program = new Command();
-const CURRENT_VERSION = "0.6.23";
+
+// Read the version from package.json so the CLI never drifts from the
+// published package. Works from both src/ (ts-node) and dist/ (tsc build):
+// in each case package.json sits one directory above this file.
+function readCliVersion(): string {
+  try {
+    const pkgPath = path.join(__dirname, "..", "package.json");
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+    if (pkg && typeof pkg.version === "string") return pkg.version;
+  } catch {
+    // fall through to placeholder
+  }
+  return "0.0.0";
+}
+
+const CURRENT_VERSION = readCliVersion();
 const CLI_NAME = process.env.YOUMD_LAUNCH_SURFACE === "you" ? "you" : "youmd";
 
 program
@@ -466,7 +481,10 @@ program
 program
   .command("pull")
   .description("Download your profile from you.md to local .youmd/ files")
-  .action(pullCommand);
+  .option("-f, --force", "Overwrite local edits that haven't been pushed")
+  .action(async (options) => {
+    await pullCommand(options);
+  });
 
 program
   .command("push")
@@ -479,6 +497,7 @@ program
   .command("sync")
   .description("Sync local files with you.md (pull + push)")
   .option("-w, --watch", "Watch for local changes and auto-push")
+  .option("-f, --force", "Sync even when local and remote have both changed")
   .action(syncCommand);
 
 const linkCmd = program
