@@ -25,6 +25,7 @@ const AI_AGENT_UA_PATTERNS = [
 const RESERVED_PATHS = new Set([
   "", "api", "create", "claim", "dashboard", "docs", "initialize",
   "profiles", "reset-password", "sign-in", "sign-up", "ctx", "_next", "icon.svg",
+  "llms.txt", "llms-full.txt", "shell", "schema", "install.sh",
 ]);
 
 function isAgentRequest(req: Request): boolean {
