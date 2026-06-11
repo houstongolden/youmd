@@ -1,7 +1,9 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { detectAgent } from "./lib/agentDetect";
+import { isKnownScope, type ApiScope } from "./lib/scopes";
 import { deriveStacks } from "./github";
 
 const http = httpRouter();
@@ -382,11 +384,24 @@ http.route({
 // AUTHENTICATED ENDPOINTS (API key auth)
 // ============================================================
 
+// Cycle 57: auth context now carries the key's scopes for enforcement.
+// `scopes: null` = legacy grandfathered key (full access, scope_missing
+// telemetry); `declaredScopes` = raw scopes stored on the key (for logging).
+type AuthContext = {
+  userId: string; // clerkId (compat with /me convex functions)
+  username: string;
+  plan: string;
+  scopes: string[] | null;
+  declaredScopes: string[];
+  userDbId: Id<"users">;
+  apiKeyId: Id<"apiKeys">;
+};
+
 // Helper: validate API key and return user
 async function authenticateRequest(
   ctx: { runQuery: (ref: any, args: any) => Promise<any> },
   request: Request
-): Promise<{ userId: string; username: string; plan: string } | Response> {
+): Promise<AuthContext | Response> {
   const authHeader = request.headers.get("authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return json({ error: "Missing or invalid Authorization header" }, 401);
@@ -426,7 +441,93 @@ async function authenticateRequest(
     userId: apiKey.userId,
     username: apiKey.username,
     plan: apiKey.plan,
+    scopes: apiKey.scopes ?? null,
+    declaredScopes: apiKey.declaredScopes ?? [],
+    userDbId: apiKey.userDbId,
+    apiKeyId: apiKey._id,
   };
+}
+
+/**
+ * Cycle 57 (audit finding #1): per-route scope enforcement.
+ *
+ * Returns null when the request may proceed, or a 403 Response when the key
+ * lacks the required scope. Legacy grandfathered keys (`auth.scopes === null`
+ * — pre-enforcement keys and "cli-auth" login session keys) always proceed,
+ * but a `scope_missing` activity event is logged whenever their declared
+ * scopes wouldn't have covered the call, so real usage can be measured before
+ * tightening. Denied calls for scoped keys are logged with status "denied".
+ *
+ * Usage, immediately after the auth guard in every authenticated route:
+ *   const denied = await requireScope(ctx, request, auth, "write:bundle");
+ *   if (denied) return denied;
+ */
+async function requireScope(
+  ctx: { runMutation: (ref: any, args: any) => Promise<any> },
+  request: Request,
+  auth: AuthContext,
+  scope: ApiScope
+): Promise<Response | null> {
+  const hasScope =
+    auth.scopes === null
+      ? auth.declaredScopes.includes(scope)
+      : auth.scopes.includes(scope);
+
+  if (auth.scopes === null) {
+    // Legacy grandfathered key: allow, but record scope_missing telemetry
+    // when its declared scopes wouldn't have covered this call.
+    if (!hasScope) {
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: agent.name,
+          agentSource: agent.source === "mcp" ? "mcp" : "api-key",
+          agentVersion: agent.version,
+          action: "scope_missing",
+          resource: new URL(request.url).pathname,
+          scope,
+          apiKeyId: auth.apiKeyId,
+          status: "allowed",
+          details: { declaredScopes: auth.declaredScopes, legacy: true },
+        });
+      } catch {
+        // telemetry is best-effort — never block the request on it
+      }
+    }
+    return null;
+  }
+
+  if (!hasScope) {
+    try {
+      const agent = detectAgent(request.headers.get("user-agent"));
+      await ctx.runMutation(internal.activity.logActivity, {
+        userId: auth.userDbId,
+        agentName: agent.name,
+        agentSource: agent.source === "mcp" ? "mcp" : "api-key",
+        agentVersion: agent.version,
+        action: "scope_missing",
+        resource: new URL(request.url).pathname,
+        scope,
+        apiKeyId: auth.apiKeyId,
+        status: "denied",
+        details: { declaredScopes: auth.declaredScopes, legacy: false },
+      });
+    } catch {
+      // best-effort
+    }
+    return json(
+      {
+        error: {
+          code: "scope_missing",
+          message: `API key lacks required scope: ${scope}`,
+        },
+      },
+      403
+    );
+  }
+
+  return null;
 }
 
 // POST /api/v1/me/bundle — Save a bundle
@@ -436,6 +537,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
 
     const startedAt = Date.now();
     const agent = detectAgent(request.headers.get("user-agent"));
@@ -539,6 +642,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
 
     const startedAt = Date.now();
     const agent = detectAgent(request.headers.get("user-agent"));
@@ -587,6 +692,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
 
     try {
       const body = await request.json();
@@ -670,6 +777,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const profile = await ctx.runQuery(api.me.getMyProfile, {
       clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -686,6 +795,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
 
     try {
       const body = await request.json();
@@ -711,6 +822,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const sources = await ctx.runQuery(api.me.getSources, {
       clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -727,6 +840,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const analytics = await ctx.runQuery(api.me.getAnalytics, {
       clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -747,6 +862,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
 
     try {
       const result = await ctx.runMutation(api.pipeline.index.startPipeline, {
@@ -769,6 +886,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const status = await ctx.runQuery(api.pipeline.index.getPipelineStatus, {
       clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -1270,6 +1389,9 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    // Compaction processes the owner's chat history → private-read tier
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     try {
       const body = await request.json();
@@ -1732,6 +1854,10 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    // Context links delegate read access (incl. private scope) — a key must
+    // itself be able to read private context before it can mint such links.
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     try {
       const body = await request.json();
@@ -1759,6 +1885,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const links = await ctx.runQuery(api.contextLinks.listLinks, {
       clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -1774,6 +1902,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     try {
       const body = await request.json();
@@ -1808,10 +1938,50 @@ http.route({
 
     try {
       const body = await request.json();
+
+      // Cycle 57: validate requested scopes against the known vocabulary and
+      // block privilege escalation — a scoped key can only mint keys whose
+      // scopes are a subset of its own. Legacy grandfathered keys (scopes ===
+      // null) keep full minting ability, matching their full-access status.
+      const requestedScopes: string[] =
+        Array.isArray(body.scopes) && body.scopes.length > 0
+          ? body.scopes
+          : ["read:public"];
+
+      const unknown = requestedScopes.filter(
+        (s) => typeof s !== "string" || !isKnownScope(s)
+      );
+      if (unknown.length > 0) {
+        return json(
+          {
+            error: {
+              code: "invalid_scope",
+              message: `Unknown scope(s): ${unknown.join(", ")}`,
+            },
+          },
+          400
+        );
+      }
+
+      if (auth.scopes !== null) {
+        const escalated = requestedScopes.find((s) => !auth.scopes!.includes(s));
+        if (escalated) {
+          return json(
+            {
+              error: {
+                code: "scope_missing",
+                message: `API key lacks required scope: ${escalated}`,
+              },
+            },
+            403
+          );
+        }
+      }
+
       const result = await ctx.runMutation(api.apiKeys.createKey, {
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         label: body.label,
-        scopes: body.scopes || ["read:public"],
+        scopes: requestedScopes,
       });
       return json(result);
     } catch (err) {
@@ -1830,6 +2000,9 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    // Key metadata is account-management surface → private-read tier
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const keys = await ctx.runQuery(api.apiKeys.listKeys, {
       clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -1845,6 +2018,10 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    // Revoking keys can lock out the owner's other agents — gate it on the
+    // private tier rather than letting any read:public key do it.
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     try {
       const body = await request.json();
@@ -1961,6 +2138,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
@@ -1984,6 +2163,9 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    // Private-context writes map to write:bundle (vocabulary has no write:private)
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
@@ -2037,6 +2219,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const url = new URL(request.url);
     const category = url.searchParams.get("category") || undefined;
@@ -2065,6 +2249,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:memories");
+    if (denied) return denied;
 
     const body = await request.json();
     if (!body.memories || !Array.isArray(body.memories) || body.memories.length === 0) {
@@ -2145,6 +2331,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
@@ -2165,6 +2353,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
 
     let body: any;
     try {
@@ -2220,6 +2410,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
 
     let body: any;
     try {
@@ -2261,6 +2453,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
 
     let body: any;
     try {
@@ -2299,6 +2493,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
 
     let body: any;
     try {
@@ -2339,6 +2535,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
@@ -2359,6 +2557,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const url = new URL(request.url);
     const versionParam = url.searchParams.get("version");
@@ -2403,6 +2603,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
 
     let body: any;
     try { body = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
@@ -2438,6 +2640,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     try {
       const agents = await ctx.runQuery((api as any).activity.agentSummary, {
@@ -2465,6 +2669,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const url = new URL(request.url);
     const limitStr = url.searchParams.get("limit");
@@ -2500,6 +2706,9 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    // Cycle 57 (deliberate): no scope check here. Any valid key may self-report
+    // activity telemetry about its own usage — requiring e.g. read:private
+    // would silence the audit trail for narrowly-scoped agent keys.
 
     let body: {
       agentName?: string;
@@ -2574,6 +2783,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
 
     try {
       const body = await request.json();
@@ -2614,6 +2825,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
 
     try {
       const body = await request.json();
@@ -2651,6 +2864,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
 
     try {
       const vault = await ctx.runQuery(api.vault.getEncryptedVault, {
@@ -2940,6 +3155,10 @@ http.route({
             if (auth instanceof Response) {
               return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
             }
+            const denied = await requireScope(ctx, request, auth, "read:private");
+            if (denied) {
+              return mcpToolError(id, "API key lacks required scope: read:private");
+            }
 
             const user = await ctx.runQuery(api.users.getByClerkId, {
               clerkId: auth.userId,
@@ -2981,6 +3200,10 @@ http.route({
             if (auth instanceof Response) {
               return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
             }
+            const denied = await requireScope(ctx, request, auth, "read:private");
+            if (denied) {
+              return mcpToolError(id, "API key lacks required scope: read:private");
+            }
             const mirror = await ctx.runQuery(
               internal.github.internalGetMirrorByClerkId,
               { clerkId: auth.userId }
@@ -2999,6 +3222,10 @@ http.route({
             const auth = await authenticateRequest(ctx, request);
             if (auth instanceof Response) {
               return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
+            }
+            const denied = await requireScope(ctx, request, auth, "read:private");
+            if (denied) {
+              return mcpToolError(id, "API key lacks required scope: read:private");
             }
             const path = toolArgs.path as string;
             if (!path || typeof path !== "string") {
@@ -3141,6 +3368,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     try {
       const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
@@ -3285,6 +3514,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const mirror = await ctx.runQuery(
       internal.github.internalGetMirrorByClerkId,
@@ -3324,6 +3555,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
 
     const mirror = await ctx.runQuery(
       internal.github.internalGetMirrorByClerkId,

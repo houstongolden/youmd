@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 import { secureRandomString } from "./lib/secureToken";
+import { isLegacyGrandfatheredKey } from "./lib/scopes";
 import type { MutationCtx } from "./_generated/server";
 
 /**
@@ -369,12 +370,20 @@ export const getByHash = query({
     const user = await ctx.db.get(key.userId);
     if (!user) return null;
 
+    // Cycle 57: scope enforcement. `scopes: null` means the key is legacy
+    // grandfathered (full access + scope_missing telemetry in http.ts);
+    // `declaredScopes` is what's stored on the key, for logging either way.
+    const declaredScopes = key.scopes ?? [];
+    const legacy = isLegacyGrandfatheredKey(key);
+
     return {
       _id: key._id,
       userId: user.clerkId, // Return clerkId for compatibility with /me endpoints
+      userDbId: key.userId, // Convex users._id — needed for activity logging
       username: user.username,
       plan: user.plan,
-      scopes: key.scopes,
+      scopes: legacy ? null : declaredScopes,
+      declaredScopes,
       revokedAt: key.revokedAt,
       // Cycle 56: surface expiresAt so authenticateRequest can enforce it.
       // Existing keys without expiresAt are returned as undefined → never expire (backward-compat).
