@@ -28,7 +28,7 @@
 | P3 | Canonical `assembleAgentContext()` for web agent, CLI chat, hosted MCP, /ctx links + parity test | PRODUCT-AUDIT #3; FEATURE-ROADMAP 2.1 | L | todo |
 | P4 | Shared `generateSecureToken` replacing Math.random in apiKeys.ts:17, contextLinks.ts:18, private.ts:82, profiles.ts:26 | PRODUCT-AUDIT #4; FEATURE-ROADMAP 0.1 | S | done (1ce525d: CSPRNG via secureToken.ts, shapes preserved) |
 | P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | todo |
-| P6 | Fix `youmd mcp --install claude --auto` → ~/.claude.json or `claude mcp add`; post-install verify | PRODUCT-AUDIT #8; FEATURE-ROADMAP 1.3 | S | todo |
+| P6 | Fix `youmd mcp --install claude --auto` → ~/.claude.json or `claude mcp add`; post-install verify | PRODUCT-AUDIT #8; FEATURE-ROADMAP 1.3 | S | done (bf2e647: claude mcp add / ~/.claude.json + verify) |
 | P7 | Publish CLI to npm + version-skew CI check | PRODUCT-AUDIT #9; FEATURE-ROADMAP 0.3 | S | blocked(otp) |
 | P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning | PRODUCT-AUDIT #10 | M | todo |
 | P9 | `youmd stack install <user>/<slug>` + registry endpoint | PRODUCT-AUDIT #11; FEATURE-ROADMAP 2.5 | L | todo |
@@ -51,7 +51,7 @@
 | P26 | `login --key` validates before persisting; preserve apiUrl/appUrl | PRODUCT-AUDIT #31; FEATURE-ROADMAP 0.5 | S | done (308ad0b) |
 | P27 | Headless auth via YOUMD_API_KEY/YOUMD_API_URL env vars | PRODUCT-AUDIT #32; FEATURE-ROADMAP 1.4 | S | done (308ad0b: env auth, zero-write verified) |
 | P28 | Fix `skill browse` registry: install hint | PRODUCT-AUDIT #33; FEATURE-ROADMAP 3.16 | S | todo |
-| P29 | Per-host YOUMD_AGENT_NAME + clientInfo.name fallback for attribution | PRODUCT-AUDIT #35; FEATURE-ROADMAP 3.10 | S | todo |
+| P29 | Per-host YOUMD_AGENT_NAME + clientInfo.name fallback for attribution | PRODUCT-AUDIT #35; FEATURE-ROADMAP 3.10 | S | done (bf2e647: per-host YOUMD_AGENT_NAME + clientInfo fallback) |
 | P30 | Username canonicalization migration; delete 500-profile fallback scan | PRODUCT-AUDIT #38; FEATURE-ROADMAP 3.13 | S | todo |
 | P31 | Deprecation/Sunset headers + schemaVersion on payloads | PRODUCT-AUDIT #39; FEATURE-ROADMAP 3.14 | S | todo |
 | P32 | ARCHITECTURE.md YouStacks section + PRD layout reconciliation | PRODUCT-AUDIT #40; FEATURE-ROADMAP 3.17 | S | todo |
@@ -139,8 +139,8 @@
 | T14 | Unified MCP tool registry; official SDK Streamable HTTP; remote serves all tools | M-L | todo |
 | T15 | Fix lastPulledHash ancestry bug | S | done (a984939) |
 | T16 | Bounded-batch rateLimits cleanup w/ index + reschedule | S | todo |
-| T17 | API client timeout + retry w/ jitter; consistent offline message | S | todo |
-| T18 | Fix fs.watch recursive crash on Linux/Node 18 | S | todo |
+| T17 | API client timeout + retry w/ jitter; consistent offline message | S | done (9cbb89e) |
+| T18 | Fix fs.watch recursive crash on Linux/Node 18 | S | done (5895375) |
 | T19 | Lazy-load dashboard panes; docs page → server component | M | todo |
 | T20 | Profiles searchIndex for MCP search_profiles | S | todo |
 | T21 | ARIA live regions on terminal chat + skip link | S | todo |
