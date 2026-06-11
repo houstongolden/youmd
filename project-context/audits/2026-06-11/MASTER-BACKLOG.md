@@ -23,7 +23,7 @@
 
 | ID | Item | Sources | Effort | Status |
 |---|---|---|---|---|
-| P1 | Enforce API-key scopes: scopes from `authenticateRequest`, `requireScope()` per route/MCP tool, log `scope_missing` for legacy keys | PRODUCT-AUDIT #1; FEATURE-ROADMAP 1.1 | M | in-progress (agent) |
+| P1 | Enforce API-key scopes: scopes from `authenticateRequest`, `requireScope()` per route/MCP tool, log `scope_missing` for legacy keys | PRODUCT-AUDIT #1; FEATURE-ROADMAP 1.1 | M | done (scope enforcement live; grandfathered pre-epoch + cli-auth keys w/ telemetry) |
 | P2 | Resolve draft/publish semantics (save==publish w/ rollback patching profile, or true drafts) | PRODUCT-AUDIT #2; FEATURE-ROADMAP 1.2 | M | blocked(needs-spec: Houston call) |
 | P3 | Canonical `assembleAgentContext()` for web agent, CLI chat, hosted MCP, /ctx links + parity test | PRODUCT-AUDIT #3; FEATURE-ROADMAP 2.1 | L | todo |
 | P4 | Shared `generateSecureToken` replacing Math.random in apiKeys.ts:17, contextLinks.ts:18, private.ts:82, profiles.ts:26 | PRODUCT-AUDIT #4; FEATURE-ROADMAP 0.1 | S | done (1ce525d: CSPRNG via secureToken.ts, shapes preserved) |
@@ -48,8 +48,8 @@
 | P23 | Idempotency-Key support + memory content-hash dedupe | PRODUCT-AUDIT #25; FEATURE-ROADMAP 3.3 | M | todo |
 | P24 | Outbound webhooks + MCP subscribe/listChanged | PRODUCT-AUDIT #26; FEATURE-ROADMAP 3.4 | L | todo |
 | P25 | Honest endpoint counts (exclude retired/internal) in docs generator | PRODUCT-AUDIT #27; FEATURE-ROADMAP 3.10 | S | todo |
-| P26 | `login --key` validates before persisting; preserve apiUrl/appUrl | PRODUCT-AUDIT #31; FEATURE-ROADMAP 0.5 | S | todo |
-| P27 | Headless auth via YOUMD_API_KEY/YOUMD_API_URL env vars | PRODUCT-AUDIT #32; FEATURE-ROADMAP 1.4 | S | todo |
+| P26 | `login --key` validates before persisting; preserve apiUrl/appUrl | PRODUCT-AUDIT #31; FEATURE-ROADMAP 0.5 | S | in-progress (agent) |
+| P27 | Headless auth via YOUMD_API_KEY/YOUMD_API_URL env vars | PRODUCT-AUDIT #32; FEATURE-ROADMAP 1.4 | S | in-progress (agent) |
 | P28 | Fix `skill browse` registry: install hint | PRODUCT-AUDIT #33; FEATURE-ROADMAP 3.16 | S | todo |
 | P29 | Per-host YOUMD_AGENT_NAME + clientInfo.name fallback for attribution | PRODUCT-AUDIT #35; FEATURE-ROADMAP 3.10 | S | todo |
 | P30 | Username canonicalization migration; delete 500-profile fallback scan | PRODUCT-AUDIT #38; FEATURE-ROADMAP 3.13 | S | todo |
@@ -57,7 +57,8 @@
 | P32 | ARCHITECTURE.md YouStacks section + PRD layout reconciliation | PRODUCT-AUDIT #40; FEATURE-ROADMAP 3.17 | S | todo |
 | P33 | Project attribution: nearest-marker-wins by depth | PRODUCT-AUDIT #41 | S | todo |
 | P34 | Generate CLI command table from commander; docs:check assertion | PRODUCT-AUDIT #42 | S | todo |
-| P35 | TTY/EOF guard on interactive prompts | PRODUCT-AUDIT #43; FEATURE-ROADMAP 0.7 | S | todo |
+| P35 | TTY/EOF guard on interactive prompts | PRODUCT-AUDIT #43; FEATURE-ROADMAP 0.7 | S | in-progress (agent) |
+| P36 | Issue real owner scopes for cli-auth login keys (convex/auth.ts) + settings UI scope selection, then remove the cli-auth grandfather carve-out in lib/scopes.ts; regen docs with the 403 scope contract | P1 follow-up | M | todo |
 
 ## M3 — UX items (UX-AUDIT)
 
@@ -82,7 +83,7 @@
 | U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | todo |
 | U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | todo |
 | U19 | Status-bar freshness segment + staleness nudge on session restore | S | todo |
-| U20 | Renderer: strip ANSI before padEnd; spinner update() preserves startTime | S | todo |
+| U20 | Renderer: strip ANSI before padEnd; spinner update() preserves startTime | S | in-progress (agent) |
 | U21 | Lowercase CTAs on landing | S | todo |
 | U22 | Sweep font-medium/semibold per opacity-not-weight rule (19 instances) | S | todo |
 | U23 | Boot sequence checkmarks tied to real events; enter-to-skip | S | todo |
