@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { spawnSync } from "child_process";
 import chalk from "chalk";
 import { bundleLooksInitialized, getHomeBundleDir, getLocalBundleDir, readGlobalConfig, isAuthenticated } from "../lib/config";
 
@@ -8,11 +9,25 @@ const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
 const PUBLISHED_MCP_PACKAGE = process.env.YOUMD_MCP_PACKAGE || "youmd@latest";
 
-function getPublishedMcpEntry(): Record<string, unknown> {
-  return {
+/**
+ * Per-host agent names injected as YOUMD_AGENT_NAME so the MCP activity log
+ * attributes tool calls to the actual host instead of a hardcoded default.
+ */
+const HOST_AGENT_NAMES: Record<string, string> = {
+  claude: "Claude Code",
+  codex: "Codex",
+  cursor: "Cursor",
+};
+
+export function getPublishedMcpEntry(agentName?: string): Record<string, unknown> {
+  const entry: Record<string, unknown> = {
     command: "npx",
     args: ["--yes", PUBLISHED_MCP_PACKAGE, "mcp"],
   };
+  if (agentName) {
+    entry.env = { YOUMD_AGENT_NAME: agentName };
+  }
+  return entry;
 }
 
 function hasActiveBundle(): boolean {
@@ -63,9 +78,10 @@ function getMcpConfig(): Record<string, unknown> {
 }
 
 function mergeMcpServers(
-  existing: Record<string, unknown> | undefined
+  existing: Record<string, unknown> | undefined,
+  agentName?: string
 ): Record<string, unknown> {
-  return { ...(existing || {}), youmd: getPublishedMcpEntry() };
+  return { ...(existing || {}), youmd: getPublishedMcpEntry(agentName) };
 }
 
 function backupAndWrite(filePath: string, content: string): string {
@@ -79,18 +95,143 @@ function backupAndWrite(filePath: string, content: string): string {
   return backupPath;
 }
 
-function installClaudeAuto(): boolean {
-  const settingsPath = path.join(os.homedir(), ".claude", "settings.json");
+/** Locate the `claude` binary on PATH (Claude Code CLI). */
+function findClaudeBinary(): string | null {
+  const finder = process.platform === "win32" ? "where" : "which";
+  try {
+    const r = spawnSync(finder, ["claude"], { encoding: "utf-8", timeout: 5_000 });
+    if (r.status === 0 && typeof r.stdout === "string") {
+      const first = r.stdout
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean)[0];
+      return first || null;
+    }
+  } catch {
+    // fall through
+  }
+  return null;
+}
 
-  let settings: Record<string, unknown> = {};
-  const existed = fs.existsSync(settingsPath);
+/**
+ * Parse `claude mcp list` for a youmd entry. Output format (verified against
+ * Claude Code 2.x):
+ *
+ *   Checking MCP server health\u2026
+ *   youmd: npx --yes youmd@latest mcp - \u2713 Connected
+ *
+ * Returns true/false when the list was readable, null when the command
+ * failed or timed out (verification unavailable \u2014 caller should fall back
+ * to checking ~/.claude.json directly).
+ */
+export function parseClaudeMcpListForYoumd(output: string): boolean {
+  return /^\s*youmd:\s/m.test(output);
+}
+
+function claudeListShowsYoumd(claudeBin: string): boolean | null {
+  try {
+    const r = spawnSync(claudeBin, ["mcp", "list"], {
+      encoding: "utf-8",
+      timeout: 60_000, // `claude mcp list` health-checks each server
+    });
+    if (typeof r.stdout !== "string" || (r.status !== 0 && !r.stdout.trim())) {
+      return null;
+    }
+    return parseClaudeMcpListForYoumd(r.stdout);
+  } catch {
+    return null;
+  }
+}
+
+function getClaudeJsonPath(): string {
+  return path.join(os.homedir(), ".claude.json");
+}
+
+/** Check ~/.claude.json (the file Claude Code actually reads) for a youmd mcpServers entry. */
+function claudeJsonHasYoumd(): boolean {
+  try {
+    const raw = fs.readFileSync(getClaudeJsonPath(), "utf-8");
+    const cfg = JSON.parse(raw) as Record<string, unknown>;
+    const servers = cfg.mcpServers as Record<string, unknown> | undefined;
+    return Boolean(servers && typeof servers === "object" && "youmd" in servers);
+  } catch {
+    return false;
+  }
+}
+
+/** Verify the install: prefer parsing `claude mcp list`, fall back to ~/.claude.json. */
+function verifyClaudeInstall(claudeBin: string | null): boolean {
+  if (claudeBin) {
+    const listed = claudeListShowsYoumd(claudeBin);
+    if (listed !== null) return listed;
+  }
+  return claudeJsonHasYoumd();
+}
+
+/**
+ * Install the youmd MCP server for Claude Code.
+ *
+ * Preferred path: shell out to `claude mcp add --scope user` so Claude Code
+ * owns the schema and scope. Fallback: merge an mcpServers entry into
+ * ~/.claude.json \u2014 the file Claude Code actually reads (NOT
+ * ~/.claude/settings.json, which it ignores for MCP servers).
+ */
+function installClaudeAuto(): boolean {
+  console.log("");
+  console.log("  " + ACCENT("you.md mcp") + DIM(" -- claude code (auto)"));
+  console.log("");
+
+  const claudeBin = findClaudeBinary();
+
+  if (claudeBin) {
+    const addArgs = [
+      "mcp", "add",
+      "--scope", "user",
+      "--env", `YOUMD_AGENT_NAME=${HOST_AGENT_NAMES.claude}`,
+      "youmd",
+      "--",
+      "npx", "--yes", PUBLISHED_MCP_PACKAGE, "mcp",
+    ];
+    let r = spawnSync(claudeBin, addArgs, { encoding: "utf-8", timeout: 30_000 });
+
+    // Upsert: if youmd already exists, remove the stale entry and re-add so
+    // the env block and package spec are current.
+    const stderr = `${r.stderr || ""}${r.stdout || ""}`;
+    if (r.status !== 0 && /already exists/i.test(stderr)) {
+      spawnSync(claudeBin, ["mcp", "remove", "--scope", "user", "youmd"], {
+        encoding: "utf-8",
+        timeout: 30_000,
+      });
+      r = spawnSync(claudeBin, addArgs, { encoding: "utf-8", timeout: 30_000 });
+    }
+
+    if (r.status === 0) {
+      console.log(
+        "  " + chalk.green("\u2713") + " registered via " + chalk.cyan("claude mcp add --scope user")
+      );
+      if (verifyClaudeInstall(claudeBin)) {
+        console.log("  " + chalk.green("\u2713") + " verified: youmd appears in " + chalk.cyan("claude mcp list"));
+        console.log("");
+        console.log("  " + chalk.bold("Installed. Restart Claude Code to activate."));
+        console.log("");
+        return true;
+      }
+      console.log("  " + chalk.yellow("!") + " could not verify install \u2014 trying config fallback");
+    } else {
+      console.log("  " + chalk.yellow("!") + " " + DIM("claude mcp add failed \u2014 falling back to ~/.claude.json"));
+    }
+  }
+
+  // Fallback: write ~/.claude.json directly (the file Claude Code reads).
+  const configPath = getClaudeJsonPath();
+  let config: Record<string, unknown> = {};
+  const existed = fs.existsSync(configPath);
   if (existed) {
     try {
-      const raw = fs.readFileSync(settingsPath, "utf-8");
-      settings = raw.trim().length > 0 ? JSON.parse(raw) : {};
+      const raw = fs.readFileSync(configPath, "utf-8");
+      config = raw.trim().length > 0 ? JSON.parse(raw) : {};
     } catch (err) {
-      console.log("");
-      console.log(chalk.yellow("  could not parse ~/.claude/settings.json:"));
+      console.log(chalk.yellow("  could not parse ~/.claude.json:"));
       console.log("  " + DIM(err instanceof Error ? err.message : String(err)));
       console.log(DIM("  falling back to manual instructions."));
       console.log("");
@@ -99,22 +240,28 @@ function installClaudeAuto(): boolean {
   }
 
   const mcpServers = mergeMcpServers(
-    settings.mcpServers as Record<string, unknown> | undefined
+    config.mcpServers as Record<string, unknown> | undefined,
+    HOST_AGENT_NAMES.claude
   );
-  const next = { ...settings, mcpServers };
+  const next = { ...config, mcpServers };
 
   const json = JSON.stringify(next, null, 2) + "\n";
-  const backupPath = backupAndWrite(settingsPath, json);
+  const backupPath = backupAndWrite(configPath, json);
 
-  console.log("");
-  console.log("  " + ACCENT("you.md mcp") + DIM(" -- claude code (auto)"));
-  console.log("");
   console.log(
-    "  " + chalk.green("\u2713") + " merged youmd into " + chalk.cyan(settingsPath)
+    "  " + chalk.green("\u2713") + " merged youmd into " + chalk.cyan(configPath)
   );
   if (existed) {
     console.log("  " + DIM("backup: " + backupPath));
   }
+
+  if (!verifyClaudeInstall(claudeBin)) {
+    console.log("  " + chalk.yellow("!") + " could not verify the install \u2014 check " + chalk.cyan(configPath));
+    console.log("");
+    return false;
+  }
+
+  console.log("  " + chalk.green("\u2713") + " verified: youmd present in MCP config");
   console.log("");
   console.log("  " + chalk.bold("Installed. Restart Claude Code to activate."));
   console.log("");
@@ -141,7 +288,8 @@ function installCursorAuto(): boolean {
   }
 
   const mcpServers = mergeMcpServers(
-    settings.mcpServers as Record<string, unknown> | undefined
+    settings.mcpServers as Record<string, unknown> | undefined,
+    HOST_AGENT_NAMES.cursor
   );
   const next = { ...settings, mcpServers };
 
@@ -173,11 +321,12 @@ function renderTomlStringArray(values: string[]): string {
   return `[${values.map(renderTomlString).join(", ")}]`;
 }
 
-function upsertCodexMcpServerConfig(raw: string): string {
+export function upsertCodexMcpServerConfig(raw: string): string {
   const entry = [
     "[mcp_servers.youmd]",
     `command = ${renderTomlString("npx")}`,
     `args = ${renderTomlStringArray(["--yes", PUBLISHED_MCP_PACKAGE, "mcp"])}`,
+    `env = { YOUMD_AGENT_NAME = ${renderTomlString(HOST_AGENT_NAMES.codex)} }`,
   ].join("\n");
   const lines = raw.trimEnd().split("\n");
   const nextLines: string[] = [];
@@ -185,7 +334,7 @@ function upsertCodexMcpServerConfig(raw: string): string {
   let skippingYoumdBlock = false;
 
   for (const line of lines) {
-    if (/^\s*\[mcp_servers\.youmd\]\s*$/.test(line)) {
+    if (/^\s*\[mcp_servers\.youmd(\.[A-Za-z0-9_.-]+)?\]\s*$/.test(line)) {
       if (!replaced) {
         if (nextLines.length > 0 && nextLines[nextLines.length - 1] !== "") {
           nextLines.push("");
@@ -283,14 +432,26 @@ async function installMcp(target: string, auto?: boolean): Promise<void> {
     console.log("");
     console.log("  " + ACCENT("you.md mcp") + DIM(" -- claude code"));
     console.log("");
-    console.log("  add to " + chalk.cyan("~/.claude/settings.json") + ":");
+    console.log("  preferred — let the claude CLI register it:");
+    console.log("");
+    console.log(
+      "  " +
+        chalk.white(
+          `claude mcp add --scope user --env YOUMD_AGENT_NAME="${HOST_AGENT_NAMES.claude}" youmd -- npx --yes ${PUBLISHED_MCP_PACKAGE} mcp`
+        )
+    );
+    console.log("");
+    console.log("  or add to " + chalk.cyan("~/.claude.json") + DIM(" (NOT ~/.claude/settings.json)") + ":");
     console.log("");
     console.log(DIM("  {"));
     console.log(DIM("    \"mcpServers\": {"));
     console.log(`      ${chalk.green('"youmd"')}: {`);
     console.log(`        "command": ${chalk.green('"npx"')},`);
     console.log(
-      `        "args": [${chalk.green('"--yes"')}, ${chalk.green(`"${PUBLISHED_MCP_PACKAGE}"`)}, ${chalk.green('"mcp"')}]`
+      `        "args": [${chalk.green('"--yes"')}, ${chalk.green(`"${PUBLISHED_MCP_PACKAGE}"`)}, ${chalk.green('"mcp"')}],`
+    );
+    console.log(
+      `        "env": { ${chalk.green('"YOUMD_AGENT_NAME"')}: ${chalk.green(`"${HOST_AGENT_NAMES.claude}"`)} }`
     );
     console.log("      }");
     console.log(DIM("    }"));
@@ -315,6 +476,7 @@ async function installMcp(target: string, auto?: boolean): Promise<void> {
     console.log("  " + chalk.white("[mcp_servers.youmd]"));
     console.log("  " + chalk.white(`command = ${renderTomlString("npx")}`));
     console.log("  " + chalk.white(`args = ${renderTomlStringArray(["--yes", PUBLISHED_MCP_PACKAGE, "mcp"])}`));
+    console.log("  " + chalk.white(`env = { YOUMD_AGENT_NAME = ${renderTomlString(HOST_AGENT_NAMES.codex)} }`));
     console.log("");
     console.log("  then restart codex.");
     console.log("");
@@ -339,6 +501,7 @@ async function installMcp(target: string, auto?: boolean): Promise<void> {
         youmd: {
           command: "npx",
           args: ["--yes", PUBLISHED_MCP_PACKAGE, "mcp"],
+          env: { YOUMD_AGENT_NAME: HOST_AGENT_NAMES.cursor },
         },
       },
     };

@@ -485,6 +485,39 @@ async function apiRequest(path: string, opts?: { method?: string; body?: unknown
 }
 
 /**
+ * Agent attribution. Resolution order:
+ *   1. YOUMD_AGENT_NAME env (set by generated MCP configs per host)
+ *   2. MCP clientInfo.name from the initialize handshake
+ *   3. "MCP Agent" — honest unknown instead of misattributing to one host
+ */
+let mcpClientName: string | null = null;
+
+export function setMcpClientName(name: string | undefined | null): void {
+  mcpClientName = typeof name === "string" && name.trim() ? name.trim() : null;
+}
+
+/** Friendly display names for well-known MCP clientInfo.name values. */
+const CLIENT_NAME_MAP: Record<string, string> = {
+  "claude-code": "Claude Code",
+  "claude": "Claude Code",
+  "claude-desktop": "Claude Desktop",
+  "cursor": "Cursor",
+  "cursor-vscode": "Cursor",
+  "codex": "Codex",
+  "codex-cli": "Codex",
+  "windsurf": "Windsurf",
+};
+
+export function resolveAgentName(): string {
+  const envName = process.env.YOUMD_AGENT_NAME?.trim();
+  if (envName) return envName;
+  if (mcpClientName) {
+    return CLIENT_NAME_MAP[mcpClientName.toLowerCase()] || mcpClientName;
+  }
+  return "MCP Agent";
+}
+
+/**
  * Fire-and-forget activity logger. Logs every MCP tool call so the user can
  * see which agents are using their you.md identity via `youmd logs` or the
  * web shell. Non-fatal — failures are swallowed so logging can't break tool
@@ -502,7 +535,7 @@ async function logMcpActivity(action: string, resource?: string, details?: Recor
         "User-Agent": "youmd-mcp/0.6.23",
       },
       body: JSON.stringify({
-        agentName: process.env.YOUMD_AGENT_NAME || "Claude Code",
+        agentName: resolveAgentName(),
         agentSource: "mcp",
         action,
         resource,
@@ -1013,6 +1046,12 @@ export async function startMcpServer(): Promise<void> {
       },
     }
   );
+
+  // Capture clientInfo.name from the initialize handshake for activity
+  // attribution (fallback when YOUMD_AGENT_NAME isn't set by the host config).
+  server.oninitialized = () => {
+    setMcpClientName(server.getClientVersion()?.name);
+  };
 
   // ── LIST RESOURCES ─────────────────────────────────────────────────
 
@@ -1946,7 +1985,7 @@ export async function startMcpServer(): Promise<void> {
                 category,
                 content: memContent,
                 source: "mcp",
-                sourceAgent: "youmd-mcp",
+                sourceAgent: resolveAgentName(),
                 tags,
               }],
             },
