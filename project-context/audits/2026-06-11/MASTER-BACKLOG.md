@@ -1,0 +1,172 @@
+# MASTER-BACKLOG.md — Mission Audit Execution
+
+**Mandate:** Implement, test end-to-end, and deploy every improvement identified across the 13 audit deliverables in this directory. Nothing deferred. Loop continues until every item is `done` (= built, verified e2e, deployed, working in prod).
+
+**Status legend:** `todo` / `in-progress` / `verify` / `done` / `blocked(<reason>)`
+
+**Ingestion state:** all 13 deliverables ingested 2026-06-11 (red-team verified). FEATURE-ROADMAP.md tasks are folded into P#/T# items below (its Milestone 0 maps to: 0.1=P4, 0.2=T1, 0.3=P7, 0.4=T5, 0.5=P26, 0.6=T7, 0.7=P35). ONE-CLICK PRs map to: PR1=T1+T15+T5, PR2=T4, PR3=T6; bonus fixes=T11,T12,T28,T29,T30.
+
+---
+
+## M1 — Vision/GTM items (final)
+
+| ID | Item | Source | Effort | Status | Verification |
+|---|---|---|---|---|---|
+| V1 | Hero rework: kicker kept, headline → "every agent meets the same you", handshake triad (agent.md/soul.md/you.md) added below CTAs, install command in hero, quiet bullet "one runtime" → "one brain across your agents" | POSITIONING-PLAYBOOK §2 (R1+R2) | S | todo | Visual check in browser vs PRD v2.3; build passes; Vercel deploy live |
+| V2 | Demote "stop re-explaining yourself" to problem-statement line on landing (keep as pain hook section, not headline) | POSITIONING-PLAYBOOK §1 | S | todo | Landing renders; copy consistent across sections |
+| V3 | Freshness-moat copy: "a copied YouStack freezes at copy time; yours stays current" added to YouStacks landing section + README | VISION-AUDIT R5 | S | todo | Copy live on landing + README; no overstated "clone-proof" claims |
+| V4 | Lighthouse growth loop: ASCII-portrait OG share card framing "this is what agents see when they meet me" on public profiles | VISION-AUDIT R4 | M | todo | OG card renders for a real profile; share preview correct |
+| V5 | Honesty-ledger guard: no copy promises encrypted vault until AES-256-GCM ships; audit landing/pricing copy now ("scoped access" not "encrypted") | POSITIONING-PLAYBOOK §4 / risk X2 | S | todo | Grep landing+docs for encryption promises; none ahead of shipped reality |
+| V6 | Protocol positioning: publish/promote `you-md/v1` schema as open standard page in docs; "an MCP where the context is you" line into developer docs | VISION-AUDIT R3 | M | todo | Docs page live; llms surfaces regenerated + docs:check passes |
+
+## M2 — Product items (PRODUCT-AUDIT + GAP-VS-VISION + FEATURE-ROADMAP)
+
+| ID | Item | Sources | Effort | Status |
+|---|---|---|---|---|
+| P1 | Enforce API-key scopes: scopes from `authenticateRequest`, `requireScope()` per route/MCP tool, log `scope_missing` for legacy keys | PRODUCT-AUDIT #1; FEATURE-ROADMAP 1.1 | M | todo |
+| P2 | Resolve draft/publish semantics (save==publish w/ rollback patching profile, or true drafts) | PRODUCT-AUDIT #2; FEATURE-ROADMAP 1.2 | M | blocked(needs-spec: Houston call) |
+| P3 | Canonical `assembleAgentContext()` for web agent, CLI chat, hosted MCP, /ctx links + parity test | PRODUCT-AUDIT #3; FEATURE-ROADMAP 2.1 | L | todo |
+| P4 | Shared `generateSecureToken` replacing Math.random in apiKeys.ts:17, contextLinks.ts:18, private.ts:82, profiles.ts:26 | PRODUCT-AUDIT #4; FEATURE-ROADMAP 0.1 | S | todo |
+| P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | todo |
+| P6 | Fix `youmd mcp --install claude --auto` → ~/.claude.json or `claude mcp add`; post-install verify | PRODUCT-AUDIT #8; FEATURE-ROADMAP 1.3 | S | todo |
+| P7 | Publish CLI to npm + version-skew CI check | PRODUCT-AUDIT #9; FEATURE-ROADMAP 0.3 | S | blocked(otp) |
+| P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning | PRODUCT-AUDIT #10 | M | todo |
+| P9 | `youmd stack install <user>/<slug>` + registry endpoint | PRODUCT-AUDIT #11; FEATURE-ROADMAP 2.5 | L | todo |
+| P10 | Truthful capability contract w/ transport tags + CI curl test | PRODUCT-AUDIT #12; FEATURE-ROADMAP 2.6 | M | todo |
+| P11 | One host-link engine emitting `.claude/skills/<name>/SKILL.md`; empirical discovery release gate | PRODUCT-AUDIT #13; FEATURE-ROADMAP 3.7 | M | todo |
+| P12 | Single project-context engine (repo project-context/ + ~/.youmd/projects/ overlay); delete dup impls | PRODUCT-AUDIT #14; FEATURE-ROADMAP 3.8 | M | todo |
+| P13 | Pagination cursors on all list endpoints + OpenAPI docs | PRODUCT-AUDIT #15; FEATURE-ROADMAP 2.9 | M | todo |
+| P14 | Memory durability: pinned/importance/supersededBy, decay exemptions, review queue | PRODUCT-AUDIT #16; FEATURE-ROADMAP 2.4 | M | todo |
+| P15 | One `MEMORY_CATEGORIES` module + validation + migration + `correction` category | PRODUCT-AUDIT #17; FEATURE-ROADMAP 2.10 | M | todo |
+| P16 | Pipeline honesty: compile merges chat-refined content, or de-document discover→review | PRODUCT-AUDIT #18; FEATURE-ROADMAP 3.5 | L | blocked(needs-spec: Houston call) |
+| P17 | GitHub repo freshness: debounced auto-push on save/publish + ancestor check on repo pulls | PRODUCT-AUDIT #19; FEATURE-ROADMAP 2.7 | M | todo |
+| P18 | Shared capability router package for CLI + API route + golden parity tests | PRODUCT-AUDIT #20; FEATURE-ROADMAP 3.6 | M | todo |
+| P19 | Typed brainScopes + identity-bearing adapters + doctor skill-ref validation | PRODUCT-AUDIT #21; FEATURE-ROADMAP 3.9 | M | todo |
+| P20 | Documented precedence model + shadowing warning + `youmd status` active-roots line | PRODUCT-AUDIT #22; FEATURE-ROADMAP 3.15 | M | todo |
+| P21 | Standard error envelope `{error:{code,message}}` + real OpenAPI schemas | PRODUCT-AUDIT #23; FEATURE-ROADMAP 3.1 | M | todo |
+| P22 | Per-key rate limits on writes + Retry-After/X-RateLimit headers | PRODUCT-AUDIT #24; FEATURE-ROADMAP 3.2 | M | todo |
+| P23 | Idempotency-Key support + memory content-hash dedupe | PRODUCT-AUDIT #25; FEATURE-ROADMAP 3.3 | M | todo |
+| P24 | Outbound webhooks + MCP subscribe/listChanged | PRODUCT-AUDIT #26; FEATURE-ROADMAP 3.4 | L | todo |
+| P25 | Honest endpoint counts (exclude retired/internal) in docs generator | PRODUCT-AUDIT #27; FEATURE-ROADMAP 3.10 | S | todo |
+| P26 | `login --key` validates before persisting; preserve apiUrl/appUrl | PRODUCT-AUDIT #31; FEATURE-ROADMAP 0.5 | S | todo |
+| P27 | Headless auth via YOUMD_API_KEY/YOUMD_API_URL env vars | PRODUCT-AUDIT #32; FEATURE-ROADMAP 1.4 | S | todo |
+| P28 | Fix `skill browse` registry: install hint | PRODUCT-AUDIT #33; FEATURE-ROADMAP 3.16 | S | todo |
+| P29 | Per-host YOUMD_AGENT_NAME + clientInfo.name fallback for attribution | PRODUCT-AUDIT #35; FEATURE-ROADMAP 3.10 | S | todo |
+| P30 | Username canonicalization migration; delete 500-profile fallback scan | PRODUCT-AUDIT #38; FEATURE-ROADMAP 3.13 | S | todo |
+| P31 | Deprecation/Sunset headers + schemaVersion on payloads | PRODUCT-AUDIT #39; FEATURE-ROADMAP 3.14 | S | todo |
+| P32 | ARCHITECTURE.md YouStacks section + PRD layout reconciliation | PRODUCT-AUDIT #40; FEATURE-ROADMAP 3.17 | S | todo |
+| P33 | Project attribution: nearest-marker-wins by depth | PRODUCT-AUDIT #41 | S | todo |
+| P34 | Generate CLI command table from commander; docs:check assertion | PRODUCT-AUDIT #42 | S | todo |
+| P35 | TTY/EOF guard on interactive prompts | PRODUCT-AUDIT #43; FEATURE-ROADMAP 0.7 | S | todo |
+
+## M3 — UX items (UX-AUDIT)
+
+| ID | Item | Effort | Status |
+|---|---|---|---|
+| U1 | Strip `@` from CLI celebration URLs + normalize `@`/`%40` in [username] route w/ 301 | S | todo |
+| U2 | Fix onboarding done-phrase false positives (bare no/yes/ready); gate on wrap-up offer | S | todo |
+| U3 | Fix fake "[saved private project]" — real updatePrivateContext write or honest message | S | todo |
+| U4 | Gate /initialize redirect on onboarding-complete marker, not bare username | M | todo |
+| U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | todo |
+| U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | todo |
+| U7 | Device-flow login (CLI code → browser approve → poll) | L | todo |
+| U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | todo |
+| U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | todo |
+| U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | todo |
+| U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | todo |
+| U12 | Profile preview: direct ProfileContent render w/ preview prop (kill iframe) | M | todo |
+| U13 | Local-first portrait cache (instant render, background refresh) | M | todo |
+| U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | todo |
+| U15 | Tappable /help + cmd+k hints (mobile palette) | S | todo |
+| U16 | Onboarding turns 2+ stream via shared helper | S | todo |
+| U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | todo |
+| U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | todo |
+| U19 | Status-bar freshness segment + staleness nudge on session restore | S | todo |
+| U20 | Renderer: strip ANSI before padEnd; spinner update() preserves startTime | S | todo |
+| U21 | Lowercase CTAs on landing | S | todo |
+| U22 | Sweep font-medium/semibold per opacity-not-weight rule (19 instances) | S | todo |
+| U23 | Boot sequence checkmarks tied to real events; enter-to-skip | S | todo |
+
+## M3 — Self-improving loop items (SELF-IMPROVING-SYSTEM-DESIGN + GLOBAL-EVOLUTION-ROADMAP)
+
+| ID | Item | Effort | Status |
+|---|---|---|---|
+| L1 | Render memory content in formatAgentBriefMarkdown; includeMemories default true | S | todo |
+| L2 | Lift whoami + get_agent_brief (Bearer-authed) to hosted MCP | M | todo |
+| L3 | Hosted MCP hygiene: protocol pin upgrade, auth in mcp.json, proxy guards, cache only 200s | S | todo |
+| L4 | Replace hardcoded identity://houstongolden with resources/templates/list URI template | S | todo |
+| L5 | Delete hand-maintained tool-inventory comment (http.ts:2699-2702) | S | todo |
+| L6 | Reference-intelligence v2: dedupe, Haiku batch pass, weekly Action cron → PR | M | todo |
+| L7 | Golden Q&A eval suite for You Agent in CI | M | todo |
+| L8 | Schedule audit forever-loop (Actions cron) w/ atomic mkdir lock | M | todo |
+| L9 | trackSkillEvent outcomes + MCP report_skill_outcome tool | M | todo |
+| L10 | activityInsights query → `youmd skill improve` + dashboard | M | todo |
+| L11 | Fix improveCmd sync heuristic (lastSyncedAt vs identity-change timestamp) | S | todo |
+| L12 | Stack guard: `youmd stack guard` + enforcement in route/MCP (T0-T3 tiers) | M-L | todo |
+| L13 | Golden-prompt eval runner: `youmd stack eval` → tests/eval-results.json | M | todo |
+| L14 | Stack improvement runner: journal/ + `youmd stack improve` (propose/auto_pr) | L | todo |
+| L15 | Visible heartbeat: "stack wants to improve" card + doctor NEXT line | S | todo |
+| L16 | One machine-checkable SAFETY-CONTRACT spec (T0-T3), enforced by guard/doctor/smoke | M | todo |
+| L17 | Stack update channel: registry version metadata + `youmd stack update` | M | todo |
+| L18 | YouStack workflows manifest section + Convex per-user scheduler | L | todo |
+| L19 | First dreaming loop: nightly memory consolidation cron | M | todo |
+| L20 | Fleet learning: aggregate-only queries (k-anon ≥20) + weekly fleet report | M | todo |
+| L21 | Telemetry consent surface + privacy contract in docs/llms.txt | M | todo |
+| L22 | User-facing fleet feedback notices | M | blocked(needs-spec) |
+| L23 | Per-stack MCP namespace /api/v1/mcp/{user}/{stack} | L | todo (design-first, after L14) |
+| L24 | Scheduled maintainer agent mining journal → guarded auto_pr | L | todo (after L12+L14) |
+| L25 | Cross-stack proposals → human-gated registry candidates | L | todo (after L20) |
+| L26 | Server-orchestrated evolution (Convex crons) | L | blocked(sequenced-last by design: requires Stage 2-3 gates) |
+
+## M4 — Tech items (TECH-STACK-AUDIT + ARCHITECTURE-EVOLUTION + ENGINEERING-ROADMAP + ONE-CLICK)
+
+| ID | Item | Effort | Status |
+|---|---|---|---|
+| T1 | Pull/sync dirty-check guard (refuse overwrite unless --force); safe sync ordering | M | todo |
+| T2 | Per-section 3-way merge using base.json (cli/src/lib/merge.ts) | M | todo |
+| T3 | convex-test contract tests: auth/scopes, MCP dispatch, rate+spend caps, pipeline | L | todo |
+| T4 | Installer hardening: npm default channel, tag-pinned source, auto-upgrade health check + rollback | M | todo |
+| T5 | Atomic JSON writes (tmp+rename+lock), 0600/0700 perms, .bak on corrupt config | S | todo |
+| T6 | CI: tsc+lint+build+cli-tests on PR; gated Convex prod deploys | S | todo |
+| T7 | pull/push home-first resolution; project-local needs flag + auto-gitignore | S | todo |
+| T8 | ISR for /[username] + /profiles; skip anonymous Convex live queries | M | todo |
+| T9 | Server-assembled system prompt; chat proxy rejects client system messages | L | todo |
+| T10 | Lossless identity round-trip (markdown per-section source of truth + property test) | L | todo |
+| T11 | Load JetBrains Mono + Inter via next/font | S | todo |
+| T12 | export const viewport; drop user-scalable=no (WCAG) | S | todo |
+| T13 | Sentry + sanitized error codes + scheduled smoke alerts + /api/v1/health | M | todo |
+| T14 | Unified MCP tool registry; official SDK Streamable HTTP; remote serves all tools | M-L | todo |
+| T15 | Fix lastPulledHash ancestry bug | S | todo |
+| T16 | Bounded-batch rateLimits cleanup w/ index + reschedule | S | todo |
+| T17 | API client timeout + retry w/ jitter; consistent offline message | S | todo |
+| T18 | Fix fs.watch recursive crash on Linux/Node 18 | S | todo |
+| T19 | Lazy-load dashboard panes; docs page → server component | M | todo |
+| T20 | Profiles searchIndex for MCP search_profiles | S | todo |
+| T21 | ARIA live regions on terminal chat + skip link | S | todo |
+| T22 | Delete 12 dead landing sections + unused reactbits/ + ogl dep; dedupe components | M | todo |
+| T23 | Route-level loading.tsx + error.tsx for key routes | M | todo |
+| T24 | Single canonical host (apex vs www) alignment | S | todo |
+| T25 | MCP tool-call test harness (table-driven over all tools) | M | todo |
+| T26 | Playwright smoke: landing → sign-in → dashboard + anon profile | M | todo |
+| T27 | Per-section sha256 manifest + shared canonicalJsonString package | M | todo |
+| T28 | Add llms.txt/shell/schema/install.sh to proxy RESERVED_PATHS | S | todo |
+| T29 | CLI version from package.json; postinstall banner TTY gate; publish version-exists check | S | todo |
+| T30 | Spend-cap doc/code drift fix; pre-hydration theme script | S | todo |
+
+## Execution order (waves)
+
+1. **Wave 1 (safety net / ONE-CLICK):** T1+T15+T5 (PR1), T4 (PR2), T6 (PR3), bonus T11/T12/T28/T29/T30, P4, P26, P35, T7 — stops data loss, fleet-bricking, untested deploys, insecure tokens
+2. **Wave 2 (critical correctness):** P1 (scopes), T2 (3-way merge), P6 (claude install), P27, U1-U6, L1-L5, T16-T18, T3 start
+3. **Wave 3 (same-version-of-you):** P3, P5, P13-P15, P17, T8-T10, T14, T20, U7-U17, L6-L11
+4. **Wave 4 (protocol + polish + evolution):** P8-P12, P18-P25, P28-P34, U18-U23, L12-L21, T13, T19, T21-T27, V1-V6
+5. **Wave 5 (living stacks):** L23-L25; unblock P2/P16/L22/L26 with Houston decisions
+
+---
+
+## Execution rules
+
+1. Order: safety-net/Milestone-0 items first (tests, CI guards), then Critical, then ONE-CLICK PRs, then High-leverage, then Polish.
+2. Every item: build passes (`npx next build` / `cli npm run build`), e2e verified (real flow, not just compile), deployed (Vercel push + `npx convex deploy` if convex/ touched), docs surfaces regenerated when contracts change (`npm run agent-docs:ci`).
+3. Conventional, bisected commits per logical change.
+4. CLI publish steps require Houston's npm OTP — mark `blocked(otp)` and batch them, never skip version bump.
+5. Update this file every iteration; an item is `done` only after verification evidence is noted.
