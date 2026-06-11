@@ -23,10 +23,10 @@
 
 | ID | Item | Sources | Effort | Status |
 |---|---|---|---|---|
-| P1 | Enforce API-key scopes: scopes from `authenticateRequest`, `requireScope()` per route/MCP tool, log `scope_missing` for legacy keys | PRODUCT-AUDIT #1; FEATURE-ROADMAP 1.1 | M | todo |
+| P1 | Enforce API-key scopes: scopes from `authenticateRequest`, `requireScope()` per route/MCP tool, log `scope_missing` for legacy keys | PRODUCT-AUDIT #1; FEATURE-ROADMAP 1.1 | M | in-progress (agent) |
 | P2 | Resolve draft/publish semantics (save==publish w/ rollback patching profile, or true drafts) | PRODUCT-AUDIT #2; FEATURE-ROADMAP 1.2 | M | blocked(needs-spec: Houston call) |
 | P3 | Canonical `assembleAgentContext()` for web agent, CLI chat, hosted MCP, /ctx links + parity test | PRODUCT-AUDIT #3; FEATURE-ROADMAP 2.1 | L | todo |
-| P4 | Shared `generateSecureToken` replacing Math.random in apiKeys.ts:17, contextLinks.ts:18, private.ts:82, profiles.ts:26 | PRODUCT-AUDIT #4; FEATURE-ROADMAP 0.1 | S | todo |
+| P4 | Shared `generateSecureToken` replacing Math.random in apiKeys.ts:17, contextLinks.ts:18, private.ts:82, profiles.ts:26 | PRODUCT-AUDIT #4; FEATURE-ROADMAP 0.1 | S | done (1ce525d: CSPRNG via secureToken.ts, shapes preserved) |
 | P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | todo |
 | P6 | Fix `youmd mcp --install claude --auto` → ~/.claude.json or `claude mcp add`; post-install verify | PRODUCT-AUDIT #8; FEATURE-ROADMAP 1.3 | S | todo |
 | P7 | Publish CLI to npm + version-skew CI check | PRODUCT-AUDIT #9; FEATURE-ROADMAP 0.3 | S | blocked(otp) |
@@ -122,21 +122,21 @@
 
 | ID | Item | Effort | Status |
 |---|---|---|---|
-| T1 | Pull/sync dirty-check guard (refuse overwrite unless --force); safe sync ordering | M | todo |
+| T1 | Pull/sync dirty-check guard (refuse overwrite unless --force); safe sync ordering | M | done (a984939: dirty-check guard + state-aware sync, 13 tests) |
 | T2 | Per-section 3-way merge using base.json (cli/src/lib/merge.ts) | M | todo |
 | T3 | convex-test contract tests: auth/scopes, MCP dispatch, rate+spend caps, pipeline | L | todo |
-| T4 | Installer hardening: npm default channel, tag-pinned source, auto-upgrade health check + rollback | M | todo |
-| T5 | Atomic JSON writes (tmp+rename+lock), 0600/0700 perms, .bak on corrupt config | S | todo |
-| T6 | CI: tsc+lint+build+cli-tests on PR; gated Convex prod deploys | S | todo |
+| T4 | Installer hardening: npm default channel, tag-pinned source, auto-upgrade health check + rollback | M | done (9d4a6e0: npm default, tag-pinned source, upgrade rollback) |
+| T5 | Atomic JSON writes (tmp+rename+lock), 0600/0700 perms, .bak on corrupt config | S | done (e514a2b: atomic+locked writes, 0600/0700, .bak on corrupt) |
+| T6 | CI: tsc+lint+build+cli-tests on PR; gated Convex prod deploys | S | done (28d90b5+cd8b29c: CI gate live; lint warn-only until T31) |
 | T7 | pull/push home-first resolution; project-local needs flag + auto-gitignore | S | todo |
 | T8 | ISR for /[username] + /profiles; skip anonymous Convex live queries | M | todo |
 | T9 | Server-assembled system prompt; chat proxy rejects client system messages | L | todo |
 | T10 | Lossless identity round-trip (markdown per-section source of truth + property test) | L | todo |
-| T11 | Load JetBrains Mono + Inter via next/font | S | todo |
-| T12 | export const viewport; drop user-scalable=no (WCAG) | S | todo |
+| T11 | Load JetBrains Mono + Inter via next/font | S | done (aca29f3) |
+| T12 | export const viewport; drop user-scalable=no (WCAG) | S | done (aca29f3) |
 | T13 | Sentry + sanitized error codes + scheduled smoke alerts + /api/v1/health | M | todo |
 | T14 | Unified MCP tool registry; official SDK Streamable HTTP; remote serves all tools | M-L | todo |
-| T15 | Fix lastPulledHash ancestry bug | S | todo |
+| T15 | Fix lastPulledHash ancestry bug | S | done (a984939) |
 | T16 | Bounded-batch rateLimits cleanup w/ index + reschedule | S | todo |
 | T17 | API client timeout + retry w/ jitter; consistent offline message | S | todo |
 | T18 | Fix fs.watch recursive crash on Linux/Node 18 | S | todo |
@@ -149,9 +149,11 @@
 | T25 | MCP tool-call test harness (table-driven over all tools) | M | todo |
 | T26 | Playwright smoke: landing → sign-in → dashboard + anon profile | M | todo |
 | T27 | Per-section sha256 manifest + shared canonicalJsonString package | M | todo |
-| T28 | Add llms.txt/shell/schema/install.sh to proxy RESERVED_PATHS | S | todo |
-| T29 | CLI version from package.json; postinstall banner TTY gate; publish version-exists check | S | todo |
-| T30 | Spend-cap doc/code drift fix; pre-hydration theme script | S | todo |
+| T28 | Add llms.txt/shell/schema/install.sh to proxy RESERVED_PATHS | S | done (f0f7925) |
+| T29 | CLI version from package.json; postinstall banner TTY gate; publish version-exists check | S | partial (a984939 version-from-package.json; banner TTY gate + publish version-exists check pending) |
+| T30 | Spend-cap doc/code drift fix; pre-hydration theme script | S | partial (ab0277d spend-cap done; theme script pending) |
+
+| T31 | Lint-zero: fix 169 pre-existing eslint errors in src/, then flip CI lint step to blocking | S-M | in-progress (agent) |
 
 ## Execution order (waves)
 
