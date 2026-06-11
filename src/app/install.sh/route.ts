@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
+import cliPackageJson from "../../../cli/package.json";
 
 export const dynamic = "force-dynamic";
 
 function buildInstallerScript() {
+  const cliVersion = cliPackageJson.version;
   return `#!/usr/bin/env bash
 set -euo pipefail
 
 PACKAGE="youmd@latest"
+CLI_VERSION="${cliVersion}"
 REPO_URL="\${YOUMD_REPO_URL:-https://github.com/houstongolden/youmd.git}"
-INSTALL_CHANNEL="\${YOUMD_INSTALL_CHANNEL:-source}"
+INSTALL_CHANNEL="\${YOUMD_INSTALL_CHANNEL:-npm}"
+SOURCE_REF="\${YOUMD_SOURCE_REF:-cli-v$CLI_VERSION}"
 YOUMD_HOME_DIR="\${YOUMD_HOME:-$HOME/.youmd}"
 YOUMD_BIN_DIR="$YOUMD_HOME_DIR/bin"
 TMP_DIR=""
@@ -49,9 +53,9 @@ install_from_source() {
   fi
 
   TMP_DIR="$(mktemp -d)"
-  echo "Installing current You.md runtime from GitHub..."
-  git clone --depth 1 "$REPO_URL" "$TMP_DIR/youmd" >/dev/null
-  cd "$TMP_DIR/youmd/cli"
+  echo "Installing You.md runtime from GitHub ($SOURCE_REF)..."
+  GIT_TERMINAL_PROMPT=0 git clone --depth 1 --branch "$SOURCE_REF" "$REPO_URL" "$TMP_DIR/youmd" >/dev/null || return 1
+  cd "$TMP_DIR/youmd/cli" || return 1
   npm ci >/dev/null
   npm run build >/dev/null
   npm install -g . >/dev/null
@@ -107,12 +111,27 @@ if [ "\${1:-}" != "--quiet" ]; then
   echo "Refreshing You.md runtime..."
 fi
 
-curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL="\${YOUMD_INSTALL_CHANNEL:-source}" bash >/tmp/youmd-auto-upgrade.log 2>&1 || {
+LOG_FILE="/tmp/youmd-auto-upgrade.log"
+PREV_VERSION="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
+
+curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL="\${YOUMD_INSTALL_CHANNEL:-npm}" bash >"$LOG_FILE" 2>&1 || {
   if [ "\${1:-}" != "--quiet" ]; then
-    cat /tmp/youmd-auto-upgrade.log
+    cat "$LOG_FILE"
   fi
   exit 1
 }
+
+# Post-upgrade health check: if the new binary is broken, roll back.
+if ! youmd --version >/dev/null 2>&1; then
+  echo "youmd upgrade failed health check, rolling back to \${PREV_VERSION:-unknown}" >> "$LOG_FILE"
+  if [ -n "$PREV_VERSION" ]; then
+    npm install -g "youmd@$PREV_VERSION" >>"$LOG_FILE" 2>&1 || true
+  fi
+  if [ "\${1:-}" != "--quiet" ]; then
+    cat "$LOG_FILE"
+  fi
+  exit 1
+fi
 AUTOUPGRADE
 chmod +x "$YOUMD_BIN_DIR/youmd-auto-upgrade"
 
