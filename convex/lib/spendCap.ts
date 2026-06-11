@@ -4,7 +4,7 @@
  * Defense-in-depth above the cycle 46 per-IP rate limits. Tracks total
  * estimated cost across ALL chat.* endpoints per UTC day. When today's
  * accumulated cost exceeds CHAT_DAILY_SPEND_LIMIT_USD (Convex env var,
- * default $50), all further chat calls fail with 503 until midnight UTC.
+ * default $500), all further chat calls fail with 503 until midnight UTC.
  *
  * Per-IP rate limits handle single-attacker abuse. The spend cap handles
  * botnet abuse (where many IPs each stay under their per-IP limit but
@@ -33,8 +33,8 @@ function todayBucket(): string {
 
 /**
  * Estimated cost per call by endpoint, in USD. Pessimistic — real costs
- * are usually lower. Tuned so a $50/day cap = ~1000 chat calls/day worst
- * case, which is far above legitimate single-user usage.
+ * are usually lower. Tuned so the $500/day cap = ~10,000 chat calls/day
+ * worst case, which is far above legitimate single-user usage.
  */
 const COST_ESTIMATES = {
   chat: 0.05,       // Sonnet 4.6, ~4k tokens worst case
