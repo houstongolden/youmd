@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
+import { secureRandomString } from "./lib/secureToken";
 
 /**
  * Internal: restore privateNotes to a specific value, bypassing auth.
@@ -76,12 +77,8 @@ async function hashToken(token: string): Promise<string> {
 }
 
 function generateToken(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let token = "ym_";
-  for (let i = 0; i < 40; i++) {
-    token += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return token;
+  // "ym_" + 40 base62 chars (CSPRNG)
+  return "ym_" + secureRandomString(40);
 }
 
 // ── Private context queries ──────────────────────────────────

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
+import { secureRandomString } from "./lib/secureToken";
 
 /**
  * Context links — shareable URLs that return identity context.
@@ -9,15 +10,9 @@ import { requireOwner } from "./lib/auth";
 
 const CONTEXT_LINK_ORIGIN = "https://www.you.md";
 
-// Generate a URL-safe random token
+// Generate a URL-safe random token (32 base62 chars, CSPRNG)
 function generateToken(): string {
-  const chars =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let token = "";
-  for (let i = 0; i < 32; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
+  return secureRandomString(32);
 }
 
 export const createLink = mutation({

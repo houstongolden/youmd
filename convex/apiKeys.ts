@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
+import { secureRandomString } from "./lib/secureToken";
 import type { MutationCtx } from "./_generated/server";
 
 /**
@@ -10,13 +11,8 @@ import type { MutationCtx } from "./_generated/server";
  */
 
 export function generateApiKey(): string {
-  const chars =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let key = "ym_";
-  for (let i = 0; i < 40; i++) {
-    key += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return key;
+  // "ym_" + 40 base62 chars (CSPRNG)
+  return "ym_" + secureRandomString(40);
 }
 
 export async function hashKey(key: string): Promise<string> {

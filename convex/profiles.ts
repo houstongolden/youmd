@@ -2,6 +2,10 @@ import { v } from "convex/values";
 import { query, mutation, internalMutation, internalQuery } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 import {
+  LOWERCASE_BASE36_ALPHABET,
+  secureRandomString,
+} from "./lib/secureToken";
+import {
   canonicalUsername,
   normalizeDirectoryProfile,
   resolveProfileAvatar,
@@ -20,12 +24,8 @@ const RESERVED_USERNAMES = [
 ];
 
 function generateSessionToken(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let token = "";
-  for (let i = 0; i < 32; i++) {
-    token += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return token;
+  // 32 lowercase base36 chars (CSPRNG) — keep lowercase shape for URL/display
+  return secureRandomString(32, LOWERCASE_BASE36_ALPHABET);
 }
 
 // ── Queries ──────────────────────────────────────────────────
