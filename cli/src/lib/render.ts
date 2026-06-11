@@ -22,6 +22,46 @@ const BOX = {
   cross: "\u253C",
 };
 
+/* -- ANSI-aware width helpers ------------------------------- */
+
+const ANSI_PATTERN = /\x1b\[[0-9;]*m/g;
+
+/** Strip ANSI escape codes so we can measure visible width. */
+export function stripAnsi(text: string): string {
+  return text.replace(ANSI_PATTERN, "");
+}
+
+/** Visible (ANSI-stripped) length of a string. */
+export function visibleLength(text: string): number {
+  return stripAnsi(text).length;
+}
+
+/**
+ * padEnd that pads based on VISIBLE length. Plain String.padEnd counts
+ * ANSI escape bytes, which under-pads colored text and breaks box/panel
+ * alignment.
+ */
+export function padEndVisible(text: string, width: number): string {
+  const pad = width - visibleLength(text);
+  return pad > 0 ? text + " ".repeat(pad) : text;
+}
+
+/* -- TTY guard for interactive flows ------------------------ */
+
+/**
+ * Guard interactive commands against piped/CI stdin. Without a TTY,
+ * readline prompts hang or consume the pipe; fail fast with one
+ * machine-readable line instead.
+ */
+export function requireInteractiveTTY(): void {
+  if (!process.stdin.isTTY) {
+    console.error(
+      "error: interactive terminal required -- use `youmd login --key <key>` or YOUMD_API_KEY env var"
+    );
+    process.exit(1);
+  }
+}
+
 /* ── Block parsing ─────────────────────────────────────────── */
 
 interface TextBlock { type: "text"; lines: string[] }
@@ -151,8 +191,8 @@ function wordWrap(text: string, maxWidth: number, indent: string = "  "): string
 
   for (const word of words) {
     // Strip ANSI codes for length calculation
-    const plainCurrent = currentLine.replace(/\x1b\[[0-9;]*m/g, "");
-    const plainWord = word.replace(/\x1b\[[0-9;]*m/g, "");
+    const plainCurrent = stripAnsi(currentLine);
+    const plainWord = stripAnsi(word);
 
     if (plainCurrent.length + plainWord.length + 1 > maxWidth && plainCurrent.trim().length > 0) {
       lines.push(currentLine);
@@ -194,24 +234,25 @@ function formatInline(text: string): string {
 }
 
 function renderTable(headers: string[], rows: string[][]): string {
-  const cols = headers.length;
+  // Column widths are computed from VISIBLE lengths (post-inline-format,
+  // ANSI stripped) so colored cells don't break alignment.
   const widths = headers.map((h, i) => {
-    const vals = [h, ...rows.map(r => r[i] || "")];
-    return Math.max(...vals.map(v => v.length)) + 2;
+    const cellWidths = rows.map(r => visibleLength(formatInline(r[i] || "")));
+    return Math.max(h.length, ...cellWidths) + 2;
   });
 
   const line = (left: string, mid: string, right: string, fill: string) =>
     left + widths.map(w => fill.repeat(w)).join(mid) + right;
 
   const row = (cells: string[]) =>
-    BOX.v + cells.map((c, i) => ` ${c.padEnd(widths[i] - 1)}`).join(BOX.v) + BOX.v;
+    BOX.v + cells.map((c, i) => ` ${padEndVisible(c, widths[i] - 1)}`).join(BOX.v) + BOX.v;
 
   const out: string[] = [];
   out.push(DIM(line(BOX.tl, BOX.tt, BOX.tr, BOX.h)));
-  out.push(row(headers.map(h => ACCENT(h) + " ".repeat(Math.max(0, h.length - h.length)))));
+  out.push(row(headers.map(h => ACCENT(h))));
   out.push(DIM(line(BOX.lt, BOX.cross, BOX.rt, BOX.h)));
   for (const r of rows) {
-    out.push(row(r.map((c, i) => formatInline(c).padEnd(widths[i] - 1))));
+    out.push(row(r.map(c => formatInline(c))));
   }
   out.push(DIM(line(BOX.bl, BOX.bt, BOX.br, BOX.h)));
   return out.join("\n");
@@ -235,11 +276,11 @@ function renderCodeBlock(content: string, lang?: string): string {
 
   out.push(top);
   if (lang) {
-    out.push(DIM(BOX.v) + ` ${DIM(lang)}`.padEnd(width - 1) + DIM(BOX.v));
+    out.push(DIM(BOX.v) + padEndVisible(` ${DIM(lang)}`, width - 2) + DIM(BOX.v));
     out.push(DIM(BOX.lt + BOX.h.repeat(width - 2) + BOX.rt));
   }
   for (const line of lines) {
-    out.push(DIM(BOX.v) + ` ${ACCENT(line)}`.padEnd(width - 1 + ACCENT("").length - "".length) + "  " + DIM(BOX.v));
+    out.push(DIM(BOX.v) + padEndVisible(` ${ACCENT(line)}`, width - 2) + DIM(BOX.v));
   }
   out.push(bot);
   return out.join("\n");
@@ -365,9 +406,17 @@ export class BrailleSpinner {
     }, 80);
   }
 
-  update(label: string): void {
+  /**
+   * Swap the label without resetting the elapsed timer — label rotations
+   * are cosmetic; the operation is still the same one that started.
+   * Pass `resetTimer: true` when a genuinely new phase begins.
+   */
+  update(label: string, options: { resetTimer?: boolean } = {}): void {
     this.label = label;
-    this.startTime = Date.now();
+    this.sweepPos = this.sweepPos % (label.length + 6);
+    if (options.resetTimer) {
+      this.startTime = Date.now();
+    }
   }
 
   stop(result?: string): void {

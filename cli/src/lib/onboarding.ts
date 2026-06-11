@@ -12,7 +12,7 @@ import {
   getConvexSiteUrl,
 } from "./config";
 import { compileBundle, writeBundle } from "./compiler";
-import { BrailleSpinner } from "./render";
+import { BrailleSpinner, requireInteractiveTTY } from "./render";
 import { printPortraitEncounter } from "./ascii";
 import {
   getRecentProjectInsights,
@@ -1554,6 +1554,9 @@ export interface OnboardingResult {
 }
 
 export async function runOnboarding(): Promise<void> {
+  // Onboarding is fully conversational — bail fast on piped/CI stdin
+  requireInteractiveTTY();
+
   const rl = createRL();
 
   // ── ASCII logo splash ──────────────────────────────────────────────

@@ -16,6 +16,7 @@ import {
   detectProjectContext,
 } from "./lib/config";
 import { printPortraitEncounter, printYouLogo, resolvePortraitLines } from "./lib/ascii";
+import { requireInteractiveTTY } from "./lib/render";
 import {
   getRecentProjectInsights,
   getFeaturedRecentProjectNames,
@@ -334,6 +335,8 @@ function promptInput(prompt: string): Promise<string> {
 }
 
 async function runYouGuidedSetup(): Promise<void> {
+  requireInteractiveTTY();
+
   const ACCENT = chalk.hex("#C46A3A");
   const DIM = chalk.dim;
 

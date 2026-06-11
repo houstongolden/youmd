@@ -19,6 +19,7 @@ import {
 import { initProject as skillInitProject, installSkill, installSkillAsync } from "../lib/skills";
 import { readSkillCatalog } from "../lib/skill-catalog";
 import { compileBundle, writeBundle } from "../lib/compiler";
+import { requireInteractiveTTY } from "../lib/render";
 
 // Available example bundle names. Resolved to cli/examples/<name>/ relative
 // to the installed package.
@@ -164,6 +165,7 @@ export async function initCommand(options: {
   }
 
   // Interactive: run the full onboarding wizard
+  requireInteractiveTTY();
   try {
     await runOnboarding();
   } catch (err) {

@@ -2,11 +2,13 @@ import * as readline from "readline";
 import chalk from "chalk";
 import { checkUsername, startEmailRegister, verifyEmailCode } from "../lib/api";
 import { readGlobalConfig, writeGlobalConfig, getConvexSiteUrl } from "../lib/config";
-import { BrailleSpinner } from "../lib/render";
+import { BrailleSpinner, requireInteractiveTTY } from "../lib/render";
 
 const ACCENT = chalk.hex("#C46A3A");
 
 export async function registerCommand(): Promise<void> {
+  requireInteractiveTTY();
+
   console.log("");
   console.log(ACCENT("you.md") + " -- register");
   console.log("");

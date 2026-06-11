@@ -31,7 +31,7 @@ import type { RecentProjectInsight } from "../lib/project";
 import { compileBundle, writeBundle } from "../lib/compiler";
 import { uploadBundle, publishLatest, saveMemories, updatePrivateContext } from "../lib/api";
 import { initProject } from "../lib/skills";
-import { BrailleSpinner } from "../lib/render";
+import { BrailleSpinner, requireInteractiveTTY } from "../lib/render";
 import {
   callLLM,
   parseUpdatesFromResponse,
@@ -2151,6 +2151,9 @@ async function handleLocalChatIntent(args: {
 // ─── Main chat command ────────────────────────────────────────────────
 
 export async function chatCommand(): Promise<void> {
+  // Chat is a readline loop — piped/CI stdin would hang or spin
+  requireInteractiveTTY();
+
   const bundleDir = resolveBundleDirForChat();
 
   if (!bundleDir) {
