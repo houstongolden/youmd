@@ -11,6 +11,58 @@ interface ApiResponse<T = unknown> {
   data: T;
 }
 
+/** Default per-request timeout. Keeps the CLI snappy when offline. */
+const DEFAULT_TIMEOUT_MS = 15_000;
+
+/** One consistent message for any network-level failure. */
+export const OFFLINE_ERROR_MESSAGE =
+  "can't reach you.md — check your connection";
+
+/** Network-level failures worth retrying: timeouts, aborts, fetch/socket errors. */
+function isNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  if (err.name === "TimeoutError" || err.name === "AbortError") return true;
+  // undici/fetch surfaces connection failures as TypeError ("fetch failed")
+  return err instanceof TypeError;
+}
+
+/**
+ * fetch with a default timeout and exactly one retry (with short jitter) for
+ * idempotent GETs that fail at the network level. Non-GET requests are NEVER
+ * retried — they may not be idempotent. Any final network failure surfaces
+ * as one consistent offline error instead of a raw fetch error.
+ */
+async function fetchWithPolicy(
+  url: string,
+  fetchOptions: RequestInit,
+  method: string
+): Promise<Response> {
+  const attempt = () =>
+    fetch(url, {
+      ...fetchOptions,
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+    });
+
+  try {
+    return await attempt();
+  } catch (err) {
+    if (!isNetworkError(err)) throw err;
+
+    if (method === "GET") {
+      // short jitter so a flaky network isn't hammered in lockstep
+      await new Promise((r) => setTimeout(r, 150 + Math.random() * 350));
+      try {
+        return await attempt();
+      } catch (retryErr) {
+        if (!isNetworkError(retryErr)) throw retryErr;
+        throw new Error(OFFLINE_ERROR_MESSAGE);
+      }
+    }
+
+    throw new Error(OFFLINE_ERROR_MESSAGE);
+  }
+}
+
 async function request<T = unknown>(
   baseUrl: string,
   path: string,
@@ -43,7 +95,7 @@ async function request<T = unknown>(
 
   const url = `${baseUrl}${path}`;
 
-  const res = await fetch(url, fetchOptions);
+  const res = await fetchWithPolicy(url, fetchOptions, method);
 
   let data: T;
   const contentType = res.headers.get("content-type") ?? "";
