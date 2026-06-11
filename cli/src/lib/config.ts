@@ -28,6 +28,7 @@ export interface LocalConfig {
   lastPulledHash?: string;      // contentHash of last bundle pulled from remote
   lastPushedHash?: string;      // contentHash of last bundle pushed to remote
   localContentHash?: string;    // contentHash of current local compiled bundle
+  lastPulledStableHash?: string; // timestamp-insensitive hash of the bundle as written by pull (dirty-check baseline)
 }
 
 export function getGlobalConfigDir(): string {
@@ -86,23 +87,118 @@ export function getDefaultAppUrl(): string {
   return DEFAULT_APP_URL;
 }
 
+// ─── Atomic, locked config writes ─────────────────────────────────────
+
+/**
+ * Write JSON to a file atomically: write to a tmp file in the same
+ * directory, then rename over the target (atomic on the same volume).
+ * Prevents partial/corrupt files when parallel agents write concurrently.
+ */
+export function writeJsonAtomic(file: string, data: unknown, mode = 0o600): void {
+  const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2) + "\n", { mode });
+    fs.renameSync(tmp, file);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch { /* tmp may not exist */ }
+    throw err;
+  }
+}
+
+/** Synchronous sleep without busy-looping (Atomics.wait works on the Node main thread). */
+function sleepSync(ms: number): void {
+  try {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  } catch {
+    // SharedArrayBuffer unavailable — skip the wait
+  }
+}
+
+const LOCK_STALE_MS = 5000;
+
+/**
+ * Acquire a simple O_EXCL lockfile next to `file`. Retries 5x with ~50ms
+ * jitter. Returns a release function, or null if the lock could not be
+ * acquired (callers proceed anyway — the atomic rename still prevents
+ * corruption; the lock just narrows read-modify-write races).
+ */
+function acquireFileLock(file: string): (() => void) | null {
+  const lockPath = `${file}.lock`;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      const fd = fs.openSync(lockPath, "wx"); // O_CREAT | O_EXCL
+      fs.writeSync(fd, String(process.pid));
+      fs.closeSync(fd);
+      return () => {
+        try { fs.unlinkSync(lockPath); } catch { /* already gone */ }
+      };
+    } catch {
+      // Lock held — clear it if stale (holder crashed), else wait + retry
+      try {
+        const stat = fs.statSync(lockPath);
+        if (Date.now() - stat.mtimeMs > LOCK_STALE_MS) {
+          fs.unlinkSync(lockPath);
+          continue;
+        }
+      } catch { /* lock vanished between attempts */ }
+      sleepSync(40 + Math.floor(Math.random() * 40));
+    }
+  }
+  return null;
+}
+
+/** Ensure ~/.youmd is 0700 and config.json is 0600 (fix on read if wrong). */
+function enforceGlobalConfigPermissions(): void {
+  if (process.platform === "win32") return;
+  try {
+    const dirMode = fs.statSync(GLOBAL_CONFIG_DIR).mode & 0o777;
+    if (dirMode !== 0o700) fs.chmodSync(GLOBAL_CONFIG_DIR, 0o700);
+  } catch { /* dir may not exist yet */ }
+  try {
+    const fileMode = fs.statSync(GLOBAL_CONFIG_FILE).mode & 0o777;
+    if (fileMode !== 0o600) fs.chmodSync(GLOBAL_CONFIG_FILE, 0o600);
+  } catch { /* file may not exist yet */ }
+}
+
 export function readGlobalConfig(): GlobalConfig {
   if (!fs.existsSync(GLOBAL_CONFIG_FILE)) {
     return {};
   }
+  let raw: string;
   try {
-    const raw = fs.readFileSync(GLOBAL_CONFIG_FILE, "utf-8");
-    return JSON.parse(raw);
+    raw = fs.readFileSync(GLOBAL_CONFIG_FILE, "utf-8");
   } catch {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    enforceGlobalConfigPermissions();
+    return parsed;
+  } catch {
+    // Preserve evidence instead of silently logging the user out
+    try {
+      fs.copyFileSync(GLOBAL_CONFIG_FILE, GLOBAL_CONFIG_FILE + ".bak");
+      console.error(
+        `warning: ${GLOBAL_CONFIG_FILE} is corrupt — saved a copy to config.json.bak`
+      );
+    } catch {
+      console.error(`warning: ${GLOBAL_CONFIG_FILE} is corrupt and could not be backed up`);
+    }
     return {};
   }
 }
 
 export function writeGlobalConfig(config: GlobalConfig): void {
   if (!fs.existsSync(GLOBAL_CONFIG_DIR)) {
-    fs.mkdirSync(GLOBAL_CONFIG_DIR, { recursive: true });
+    fs.mkdirSync(GLOBAL_CONFIG_DIR, { recursive: true, mode: 0o700 });
   }
-  fs.writeFileSync(GLOBAL_CONFIG_FILE, JSON.stringify(config, null, 2) + "\n");
+  const release = acquireFileLock(GLOBAL_CONFIG_FILE);
+  try {
+    writeJsonAtomic(GLOBAL_CONFIG_FILE, config, 0o600);
+    enforceGlobalConfigPermissions();
+  } finally {
+    if (release) release();
+  }
 }
 
 export function clearGlobalAuth(options: { resetEndpoints?: boolean } = {}): void {
@@ -148,7 +244,12 @@ export function readBundleConfig(bundleDir: string): LocalConfig | null {
 
 export function writeLocalConfig(config: LocalConfig): void {
   const configPath = getBundleConfigPath(getLocalBundleDir());
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+  const release = acquireFileLock(configPath);
+  try {
+    writeJsonAtomic(configPath, config);
+  } finally {
+    if (release) release();
+  }
 }
 
 export function localBundleExists(): boolean {
