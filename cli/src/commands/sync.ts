@@ -24,12 +24,16 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean })
     }
 
     const bundleDir = getLocalBundleDir();
+    // Each bundle directory decompile writes (and the compiler reads) is
+    // flat, so we watch every relevant subdirectory explicitly instead of
+    // using { recursive: true } — which throws on Linux with Node 18.
     const profileDir = path.join(bundleDir, "profile");
     const prefsDir = path.join(bundleDir, "preferences");
     const voiceDir = path.join(bundleDir, "voice");
+    const directivesDir = path.join(bundleDir, "directives");
 
-    const watchDirs = [profileDir, prefsDir, voiceDir].filter((d) =>
-      fs.existsSync(d)
+    const watchDirs = [profileDir, prefsDir, voiceDir, directivesDir].filter(
+      (d) => fs.existsSync(d)
     );
 
     if (watchDirs.length === 0) {
@@ -49,7 +53,7 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean })
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     for (const dir of watchDirs) {
-      fs.watch(dir, { recursive: true }, (eventType, filename) => {
+      fs.watch(dir, (eventType, filename) => {
         if (!filename || filename.startsWith(".")) return;
         if (!filename.endsWith(".md")) return;
 
