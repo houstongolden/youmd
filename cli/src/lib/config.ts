@@ -69,7 +69,29 @@ export function resolveActiveBundleDir(): string | null {
   return null;
 }
 
+// ─── Headless auth env overrides ─────────────────────────────────────
+// YOUMD_API_KEY / YOUMD_API_URL let agents and CI run authenticated
+// commands with zero filesystem state (no ~/.youmd/config.json needed).
+// Env always wins over the config file.
+
+export function getEnvApiKey(): string | undefined {
+  const key = process.env.YOUMD_API_KEY?.trim();
+  return key || undefined;
+}
+
+export function getEnvApiUrl(): string | undefined {
+  const url = process.env.YOUMD_API_URL?.trim();
+  return url || undefined;
+}
+
+/** Resolve the auth token: YOUMD_API_KEY env var first, then config file. */
+export function getAuthToken(): string | undefined {
+  return getEnvApiKey() || readGlobalConfig().token || undefined;
+}
+
 export function getConvexSiteUrl(): string {
+  const envUrl = getEnvApiUrl();
+  if (envUrl) return envUrl;
   const config = readGlobalConfig();
   return config.apiUrl || DEFAULT_API_URL;
 }
@@ -257,8 +279,7 @@ export function localBundleExists(): boolean {
 }
 
 export function isAuthenticated(): boolean {
-  const config = readGlobalConfig();
-  return !!config.token;
+  return !!getAuthToken();
 }
 
 // ─── Project Context Detection ────────────────────────────────────────

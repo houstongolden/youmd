@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { readGlobalConfig } from "../lib/config";
+import { readGlobalConfig, getAuthToken, getEnvApiKey } from "../lib/config";
 import { getMe, getMeUser, listApiKeys } from "../lib/api";
 import { readSkillCatalog } from "../lib/skill-catalog";
 
@@ -13,13 +13,16 @@ function label(name: string): string {
 
 export async function whoamiCommand(): Promise<void> {
   const config = readGlobalConfig();
+  // YOUMD_API_KEY env var wins over the config file (headless/CI auth)
+  const envKey = getEnvApiKey();
+  const token = getAuthToken();
 
   console.log("");
 
-  if (!config.token) {
+  if (!token) {
     console.log("  " + chalk.yellow("not authenticated."));
     console.log("");
-    console.log("  run " + chalk.cyan("youmd login") + " to connect your identity.");
+    console.log("  run " + chalk.cyan("youmd login") + DIM(" or set ") + chalk.cyan("YOUMD_API_KEY") + DIM(" to connect your identity."));
     console.log("");
     return;
   }
@@ -27,15 +30,16 @@ export async function whoamiCommand(): Promise<void> {
   console.log("  " + chalk.bold("you.md") + DIM(" -- identity"));
   console.log("");
 
-  // Show cached info while fetching
-  if (config.username) {
+  // Show cached info while fetching (config cache only applies to file auth)
+  if (!envKey && config.username) {
     console.log("  " + label("user") + chalk.green("@" + config.username));
   }
-  if (config.email) {
+  if (!envKey && config.email) {
     console.log("  " + label("email") + config.email);
   }
   console.log(
-    "  " + label("token") + DIM(config.token.slice(0, 8) + "..." + config.token.slice(-4))
+    "  " + label("token") + DIM(token.slice(0, 8) + "..." + token.slice(-4)) +
+      (envKey ? DIM(" (from YOUMD_API_KEY)") : "")
   );
 
   console.log("");
@@ -134,12 +138,15 @@ export async function whoamiCommand(): Promise<void> {
     );
     console.log("");
 
-    // Update cached config
-    if (u.username) config.username = u.username;
-    if (u.email) config.email = u.email;
+    // Update cached config — skip entirely under env-var auth so headless
+    // runs stay zero-write and env identity never leaks into the file.
+    if (!envKey) {
+      if (u.username) config.username = u.username;
+      if (u.email) config.email = u.email;
 
-    const { writeGlobalConfig } = require("../lib/config");
-    writeGlobalConfig(config);
+      const { writeGlobalConfig } = require("../lib/config");
+      writeGlobalConfig(config);
+    }
   } catch (err) {
     console.log(
       "  " + chalk.yellow("could not reach server")

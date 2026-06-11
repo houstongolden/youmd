@@ -7,8 +7,8 @@ import {
   getDefaultAppUrl,
   getDefaultConvexSiteUrl,
 } from "../lib/config";
-import { getMe, getMeUser, startEmailLogin, verifyEmailCode } from "../lib/api";
-import { BrailleSpinner } from "../lib/render";
+import { getMeWithToken, getMeUser, startEmailLogin, verifyEmailCode } from "../lib/api";
+import { BrailleSpinner, requireInteractiveTTY } from "../lib/render";
 
 const ACCENT = chalk.hex("#C46A3A");
 
@@ -24,6 +24,8 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
   }
 
   // Interactive email-code login
+  requireInteractiveTTY();
+
   console.log("");
   console.log(ACCENT("you.md") + " -- login");
   console.log("");
@@ -89,13 +91,13 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
 
     const { username, apiKey, user } = verifyRes.data;
 
-    // Save credentials
+    // Save credentials — preserve any custom apiUrl/appUrl across re-login
     const config = readGlobalConfig();
     config.token = apiKey || undefined;
     config.username = username;
     config.email = user.email;
-    config.apiUrl = getDefaultConvexSiteUrl();
-    config.appUrl = getDefaultAppUrl();
+    if (!config.apiUrl) config.apiUrl = getDefaultConvexSiteUrl();
+    if (!config.appUrl) config.appUrl = getDefaultAppUrl();
     writeGlobalConfig(config);
 
     verifySpinner.stop();
@@ -158,84 +160,80 @@ function openBrowserLogin(): void {
 }
 
 async function loginWithKey(key: string): Promise<void> {
-  // Save the key first
-  const config = readGlobalConfig();
-  config.token = key;
-  delete config.username;
-  delete config.email;
-  config.apiUrl = getDefaultConvexSiteUrl();
-  config.appUrl = getDefaultAppUrl();
-  writeGlobalConfig(config);
-
   console.log("");
 
   const spinner = new BrailleSpinner("verifying key");
   spinner.start();
 
-  // Validate the key by fetching the user's profile
+  // Validate the candidate key BEFORE persisting anything — a bad key must
+  // never clobber a working session in ~/.youmd/config.json.
+  let res;
   try {
-    const res = await getMe();
-
-    if (!res.ok) {
-      spinner.fail();
-      console.log("");
-      console.log(
-        chalk.yellow("  warning") +
-          " -- key saved but could not verify with the server"
-      );
-      console.log(
-        "  server responded with status " + res.status
-      );
-      console.log("");
-      console.log(
-        "  the key has been stored. if it is valid, " +
-          chalk.cyan("youmd whoami") +
-          " will show your identity."
-      );
-      console.log("");
-      return;
-    }
-
-    const me = res.data;
-    const user = getMeUser(me);
-    config.username = user.username;
-    config.email = user.email;
-    writeGlobalConfig(config);
-
-    spinner.stop();
-    console.log("");
-    console.log(
-      "  " + chalk.green("authenticated") +
-        " as " +
-        chalk.hex("#C46A3A")("@" + (user.username || "unknown"))
-    );
-    console.log("");
-    console.log("  user:  " + (user.username || "unknown"));
-    if (user.email) {
-      console.log("  email: " + user.email);
-    }
-    console.log("  plan:  " + (user.plan || "free"));
-    console.log("  key:   " + key.slice(0, 8) + "..." + key.slice(-4));
-    console.log("");
-    console.log("  run " + chalk.cyan("you") + " to meet U.");
-    console.log("");
+    res = await getMeWithToken(key);
   } catch (err) {
     spinner.fail();
     console.log("");
     console.log(
-      chalk.green("  key saved") +
-        " to ~/.youmd/config.json"
-    );
-    console.log("");
-    console.log(
-      chalk.yellow("  note") +
-        " -- could not reach the server to verify the key"
+      chalk.yellow("  could not reach the server to verify the key")
     );
     if (err instanceof Error) {
       console.log("  " + err.message);
     }
     console.log("");
+    console.log("  " + chalk.dim("existing config was left untouched. retry when you're back online."));
+    console.log("");
+    process.exitCode = 1;
+    return;
   }
+
+  if (!res.ok) {
+    spinner.fail();
+    const errData = res.data as any;
+    console.log("");
+    console.log(
+      "  " + chalk.yellow("invalid key") +
+        " -- server responded with status " + res.status +
+        (errData?.error ? ` (${errData.error})` : "")
+    );
+    console.log("");
+    console.log("  " + chalk.dim("nothing was saved. your existing login (if any) is intact."));
+    console.log(
+      "  " + chalk.dim("check the key at ") + chalk.cyan("https://you.md/settings") +
+        chalk.dim(" and try again.")
+    );
+    console.log("");
+    process.exitCode = 1;
+    return;
+  }
+
+  // Key is valid — persist it, preserving any custom apiUrl/appUrl
+  const me = res.data;
+  const user = getMeUser(me);
+  const config = readGlobalConfig();
+  config.token = key;
+  config.username = user.username;
+  config.email = user.email;
+  if (!config.apiUrl) config.apiUrl = getDefaultConvexSiteUrl();
+  if (!config.appUrl) config.appUrl = getDefaultAppUrl();
+  writeGlobalConfig(config);
+
+  spinner.stop();
+  console.log("");
+  console.log(
+    "  " + chalk.green("authenticated") +
+      " as " +
+      chalk.hex("#C46A3A")("@" + (user.username || "unknown"))
+  );
+  console.log("");
+  console.log("  user:  " + (user.username || "unknown"));
+  if (user.email) {
+    console.log("  email: " + user.email);
+  }
+  console.log("  plan:  " + (user.plan || "free"));
+  console.log("  key:   " + key.slice(0, 8) + "..." + key.slice(-4));
+  console.log("");
+  console.log("  run " + chalk.cyan("you") + " to meet U.");
+  console.log("");
 }
 
 // ─── Input helpers ───────────────────────────────────────────────────

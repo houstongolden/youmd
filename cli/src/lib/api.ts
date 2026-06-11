@@ -3,7 +3,7 @@
  * Uses the HTTP action endpoints at the Convex site URL.
  */
 
-import { readGlobalConfig, getConvexSiteUrl, getAppUrl } from "./config";
+import { getAuthToken, getConvexSiteUrl, getAppUrl } from "./config";
 
 interface ApiResponse<T = unknown> {
   ok: boolean;
@@ -184,11 +184,14 @@ export async function getPublicProfile(
 // ─── Authenticated endpoints ─────────────────────────────────────────
 
 function getToken(): string {
-  const config = readGlobalConfig();
-  if (!config.token) {
-    throw new Error("Not authenticated. Run `youmd login` first.");
+  // Env var (YOUMD_API_KEY) wins over the config file — headless/CI auth.
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error(
+      "Not authenticated. Run `youmd login` or set YOUMD_API_KEY."
+    );
   }
-  return config.token;
+  return token;
 }
 
 export interface MeResponse {
@@ -255,6 +258,16 @@ export async function getMe(): Promise<ApiResponse<MeResponse>> {
   return apiRequest<MeResponse>("/api/v1/me", {
     token: getToken(),
   });
+}
+
+/**
+ * Fetch /me with an explicit candidate token instead of stored auth.
+ * Used by `youmd login --key` to validate a key BEFORE persisting it.
+ */
+export async function getMeWithToken(
+  token: string
+): Promise<ApiResponse<MeResponse>> {
+  return apiRequest<MeResponse>("/api/v1/me", { token });
 }
 
 export interface BundleVersionData {
