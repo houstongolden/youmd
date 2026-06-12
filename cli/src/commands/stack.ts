@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { detectShadowing } from "../lib/projectContext";
 import {
   getYouStackCapabilities,
   getYouStackReadiness,
@@ -148,6 +149,11 @@ export async function stackCommand(
     console.log("");
     for (const diagnostic of result.diagnostics) {
       console.log("  " + chalk.cyan("INFO") + " " + diagnostic);
+    }
+    // P20: one dim line per actually-active shadowing (env over session,
+    // canonical stack over legacy, repo project-context over global overlay).
+    for (const shadow of detectShadowing()) {
+      console.log("  " + DIM(`shadowed: ${shadow.message}`));
     }
     console.log("");
     for (const recommendation of result.recommendations) {

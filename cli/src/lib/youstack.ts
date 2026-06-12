@@ -726,7 +726,22 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
     warnings.push(
       `stack manifest found outside the canonical layout; move it to stacks/${slugHint}/youstack.json so cli discovery and you.md repo sync agree (legacy youstack.json, .you/, and youstacks/ locations still load)`
     );
-  } else if (slugHint !== "<slug>" && stackDirName !== manifest.slug) {
+  } else {
+    // P20 shadowing: a canonical manifest wins discovery — surface any
+    // legacy manifests it silently shadows so stale copies get cleaned up.
+    const shadowedLegacy = findYouStackManifestCandidates(path.dirname(loaded.manifestPath))
+      .filter(
+        (candidate) =>
+          path.resolve(candidate) !== path.resolve(loaded.manifestPath) &&
+          !isCanonicalYouStackManifestPath(candidate)
+      );
+    if (shadowedLegacy.length > 0) {
+      warnings.push(
+        `legacy stack manifest${shadowedLegacy.length === 1 ? "" : "s"} shadowed by the canonical layout: ${shadowedLegacy.join(", ")} (canonical ${loaded.manifestPath} wins discovery; migrate or remove the legacy cop${shadowedLegacy.length === 1 ? "y" : "ies"})`
+      );
+    }
+  }
+  if (canonicalLayout && slugHint !== "<slug>" && stackDirName !== manifest.slug) {
     warnings.push(
       `stack folder name "${stackDirName}" does not match manifest slug "${manifest.slug}"; rename the folder to stacks/${manifest.slug}/ so repo stack derivation uses the right slug`
     );

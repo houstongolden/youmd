@@ -9,6 +9,11 @@ import {
   resolveActiveBundleDir,
 } from "../lib/config";
 import { getMe, getMeUser } from "../lib/api";
+import {
+  buildActiveRootsLines,
+  detectShadowing,
+  getActiveRoots,
+} from "../lib/projectContext";
 import { shortHash } from "../lib/hash";
 import { readSkillCatalog } from "../lib/skill-catalog";
 import { loadIdentityData, resolveVariable } from "../lib/skill-renderer";
@@ -94,6 +99,16 @@ export async function statusCommand(): Promise<void> {
     "  " + label("mcp") + chalk.green("available") +
     DIM(" (youmd mcp --install claude|codex|cursor --auto)")
   );
+
+  // ── Active roots (P20: config / project-context / stack in effect) ──
+  console.log("");
+  console.log("  " + chalk.bold("active roots:"));
+  for (const line of buildActiveRootsLines(getActiveRoots())) {
+    console.log("  " + label(line.label) + DIM(line.value));
+  }
+  for (const shadow of detectShadowing()) {
+    console.log("  " + DIM(`shadowed: ${shadow.message}`));
+  }
 
   if (!hasBundle) {
     console.log("");
