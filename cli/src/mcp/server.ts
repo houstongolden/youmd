@@ -48,6 +48,12 @@ import {
   addProjectMemory,
 } from "../lib/project";
 import {
+  findRepoContextRoot,
+  readContextFile,
+  readMergedProjectContext,
+  resolveProjectContext,
+} from "../lib/projectContext";
+import {
   getYouStackReadiness,
   getYouStackCapabilities,
   loadYouStackManifest,
@@ -415,27 +421,28 @@ async function fetchPrivateContextEnvelope(): Promise<PrivateContextRetrievalEnv
 }
 
 function fetchProjectContextEnvelope(projectName?: string): ProjectContextEnvelope {
+  // Reads route through the single project-context engine: the repo
+  // project-context/ directory is overlaid on the global store, repo wins
+  // on file conflicts, and readers see the union (PRODUCT-AUDIT #14).
   if (projectName) {
-    const root = findProjectsRoot();
-    if (!root) {
-      return {
-        readiness: {
-          status: "not_found",
-          ready: false,
-          reason: "No projects directory was found for the requested named project.",
-          fallback: "Use local project-context files from the current repo, public identity, or a current project detection flow before retrying a named project lookup.",
-        },
-        project: {
-          name: projectName,
-          source: "named",
-        },
-        projectContext: null,
-      };
-    }
-
-    const projDir = getProjectDir(root, projectName);
-    const ctx = readProjectContext(projDir);
+    const ctx = readMergedProjectContext({ projectName });
     if (!ctx) {
+      const hasAnyRoot = !!findProjectsRoot() || !!findRepoContextRoot();
+      if (!hasAnyRoot) {
+        return {
+          readiness: {
+            status: "not_found",
+            ready: false,
+            reason: "No projects directory was found for the requested named project.",
+            fallback: "Use local project-context files from the current repo, public identity, or a current project detection flow before retrying a named project lookup.",
+          },
+          project: {
+            name: projectName,
+            source: "named",
+          },
+          projectContext: null,
+        };
+      }
       return {
         readiness: {
           status: "not_found",
@@ -468,6 +475,24 @@ function fetchProjectContextEnvelope(projectName?: string): ProjectContextEnvelo
 
   const current = getCurrentProject();
   if (!current) {
+    // No managed project matches the cwd — the repo overlay alone may
+    // still provide the context union.
+    const repoCtx = readMergedProjectContext({});
+    if (repoCtx) {
+      return {
+        readiness: {
+          status: "ready",
+          ready: true,
+          reason: `Project context for ${repoCtx.meta.name} is available.`,
+          fallback: "None needed.",
+        },
+        project: {
+          name: repoCtx.meta.name,
+          source: "current",
+        },
+        projectContext: repoCtx,
+      };
+    }
     return {
       readiness: {
         status: "not_found",
@@ -483,7 +508,7 @@ function fetchProjectContextEnvelope(projectName?: string): ProjectContextEnvelo
     };
   }
 
-  const ctx = readProjectContext(current.dir);
+  const ctx = readMergedProjectContext({ projectName: current.name }) || readProjectContext(current.dir);
   if (!ctx) {
     return {
       readiness: {
@@ -701,56 +726,23 @@ function buildIdentityMarkdown(): string {
 }
 
 /**
- * Find the nearest project-context/ directory by walking up from cwd.
- * Also treats a `.youmd-project` marker file as a valid project root.
- * Returns the directory that contains project-context/ or the marker.
- */
-function findLocalProjectContextRoot(startDir: string = process.cwd()): string | null {
-  let dir = startDir;
-  // Walk up at most 8 levels to avoid runaway searches
-  for (let i = 0; i < 8; i++) {
-    const contextDir = path.join(dir, "project-context");
-    const marker = path.join(dir, ".youmd-project");
-    if (fs.existsSync(contextDir) && fs.statSync(contextDir).isDirectory()) {
-      return dir;
-    }
-    if (fs.existsSync(marker)) {
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return null;
-}
-
-/**
  * Returns true if the current cwd has local project context available
  * (either via project-context/ directory or a .youmd-project marker).
+ * Detection and reads route through the single project-context engine
+ * (lib/projectContext.ts) — repo files overlay the global store.
  */
 function hasLocalProjectContext(): boolean {
-  return findLocalProjectContextRoot() !== null;
+  return findRepoContextRoot() !== null;
 }
 
 /**
- * Read a single project-context markdown file. Tries project-context/<name>.md
- * in the detected project root. Returns empty string if not found.
+ * Read a single project-context markdown file via the engine's overlay
+ * union (repo project-context/ wins over the global overlay; legacy
+ * top-level repo files still resolve). Returns empty string if not found.
  */
 function readLocalProjectContextFile(name: string): string {
-  const root = findLocalProjectContextRoot();
-  if (!root) return "";
-  const candidates = [
-    path.join(root, "project-context", `${name}.md`),
-    path.join(root, "project-context", `${name.toUpperCase()}.md`),
-    path.join(root, `${name}.md`),
-    path.join(root, `${name.toUpperCase()}.md`),
-  ];
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      return readFileOr(candidate, "");
-    }
-  }
-  return "";
+  const resolved = resolveProjectContext();
+  return readContextFile(resolved, name)?.content || "";
 }
 
 interface AgentBriefFile {
@@ -912,7 +904,7 @@ function extractSectionBullets(content: string, heading: string, limit = 6): str
 
 function buildProjectBrief(): AgentBriefProject | null {
   const detected = detectProjectContext();
-  const fallbackRoot = findLocalProjectContextRoot();
+  const fallbackRoot = findRepoContextRoot();
   const root = detected?.root || fallbackRoot;
   if (!root) return null;
 

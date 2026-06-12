@@ -5,9 +5,11 @@ import chalk from "chalk";
 import {
   isAuthenticated,
   detectProjectContext,
+} from "../lib/config";
+import {
   readProjectPrivateNotes,
   writeProjectPrivateNotes,
-} from "../lib/config";
+} from "../lib/projectContext";
 import { getPrivateContext, updatePrivateContext, PrivateContext, initVault as apiInitVault, saveVaultData, getVaultData } from "../lib/api";
 import { BrailleSpinner } from "../lib/render";
 import {

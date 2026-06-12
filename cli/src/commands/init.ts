@@ -5,9 +5,9 @@ import chalk from "chalk";
 import {
   getLocalBundleDir,
   detectProjectContext,
-  ensureProjectDirs,
   YoumdProjectFile,
 } from "../lib/config";
+import { ensureProjectDirs } from "../lib/projectContext";
 import { runOnboarding, createBundle } from "../lib/onboarding";
 import {
   findProjectsRoot,

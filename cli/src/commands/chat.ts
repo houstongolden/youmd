@@ -10,15 +10,12 @@ import {
   isAuthenticated,
   readGlobalConfig,
   detectProjectContext,
-  readProjectPrivateNotes,
 } from "../lib/config";
 import {
   findProjectsRoot,
   detectCurrentProject,
-  getProjectDir,
-  buildProjectContextInjection,
+  buildProjectContextInjectionFromContext,
   parseProjectUpdates,
-  updateProjectFile,
   readProjectContext as readFilesystemProjectContext,
   getRecentProjectInsights,
   getFeaturedRecentProjectNames,
@@ -26,6 +23,14 @@ import {
   getWorkspaceRootCandidates,
   getProjectMarkerSignals,
 } from "../lib/project";
+import {
+  projectContextReadPaths,
+  readMergedProjectContext,
+  readProjectPrivateNotes,
+  resolveProjectContext,
+  writeProjectUpdate,
+} from "../lib/projectContext";
+import type { ResolvedProjectContext } from "../lib/projectContext";
 import type { RecentProjectInsight } from "../lib/project";
 import { compileBundle, writeBundle } from "../lib/compiler";
 import { uploadBundle, publishLatest, saveMemories, updatePrivateContext, listMemories, getPrivateContext } from "../lib/api";
@@ -1653,18 +1658,17 @@ function readSnippet(filePath: string, maxChars = 1800): string | null {
 }
 
 function extractProjectActionItems(projectDir: string, maxItems = 5): string[] {
-  const files = [
-    "project-context/TODO.md",
-    "project-context/CURRENT_STATE.md",
-    "project-context/feature-requests-active.md",
-    ".you/project-context/TODO.md",
-    ".you/project-context/CURRENT_STATE.md",
-  ];
+  // Read paths come from the single project-context engine: repo
+  // project-context/, the generated .you/ layer, then the global overlay.
+  const files = projectContextReadPaths(projectDir, [
+    "TODO.md",
+    "CURRENT_STATE.md",
+    "feature-requests-active.md",
+  ]);
   const seen = new Set<string>();
   const items: string[] = [];
 
-  for (const relativePath of files) {
-    const fullPath = path.join(projectDir, relativePath);
+  for (const { path: fullPath } of files) {
     const content = readSnippet(fullPath, 12000);
     if (!content) continue;
 
@@ -1692,24 +1696,32 @@ function extractProjectActionItems(projectDir: string, maxItems = 5): string[] {
 }
 
 function formatProjectReadToolResult(project: RecentProjectInsight): string {
-  const files = [
+  const entrypointFiles = [
     "AGENTS.md",
     "CLAUDE.md",
     "package.json",
     "pyproject.toml",
     "Cargo.toml",
     "go.mod",
-    "project-context/CURRENT_STATE.md",
-    "project-context/TODO.md",
-    "project-context/PRD.md",
-    "project-context/ARCHITECTURE.md",
-    ".you/project-context/CURRENT_STATE.md",
-    ".you/project-context/TODO.md",
+  ].map((relativePath) => ({
+    label: relativePath,
+    path: path.join(project.projectDir, relativePath),
+  }));
+  // Context reads route through the single project-context engine (repo
+  // project-context/, .you/ layer, then the global overlay union).
+  const files = [
+    ...entrypointFiles,
+    ...projectContextReadPaths(project.projectDir, [
+      "CURRENT_STATE.md",
+      "TODO.md",
+      "PRD.md",
+      "ARCHITECTURE.md",
+    ]),
   ];
   const snippets = files
-    .map((relativePath) => {
-      const snippet = readSnippet(path.join(project.projectDir, relativePath));
-      return snippet ? `file: ${relativePath}\n${snippet}` : null;
+    .map(({ label, path: fullPath }) => {
+      const snippet = readSnippet(fullPath);
+      return snippet ? `file: ${label}\n${snippet}` : null;
     })
     .filter((item): item is string => !!item)
     .slice(0, 5);
@@ -2060,19 +2072,22 @@ export async function chatCommand(): Promise<void> {
       ? rawProjectCtx
       : null;
   let projectContextBlock = "";
-  let activeProjectDir: string | null = null;
+  let activeProjectResolution: ResolvedProjectContext | null = null;
 
   if (projectCtx) {
-    // Try the new file-system project context first
+    // Single project-context engine: managed store + repo project-context/
+    // overlay (repo wins on conflicts; the union feeds the injection).
     const projectsRoot = findProjectsRoot();
-    if (projectsRoot) {
-      const detected = detectCurrentProject(projectsRoot);
-      if (detected) {
-        activeProjectDir = getProjectDir(projectsRoot, detected);
-        const injection = buildProjectContextInjection(activeProjectDir);
-        if (injection) {
-          projectContextBlock = `\n\n--- project context ---\n${injection}`;
-        }
+    const detected = projectsRoot ? detectCurrentProject(projectsRoot) : null;
+    const resolved = resolveProjectContext(
+      detected ? { projectName: detected } : {},
+    );
+    if (detected || resolved.repoContextDir) {
+      activeProjectResolution = resolved;
+      const merged = readMergedProjectContext(detected ? { projectName: detected } : {});
+      const injection = merged ? buildProjectContextInjectionFromContext(merged) : null;
+      if (injection) {
+        projectContextBlock = `\n\n--- project context ---\n${injection}`;
       }
     }
 
@@ -2544,13 +2559,15 @@ export async function chatCommand(): Promise<void> {
       }
     }
 
-    // Handle project context updates
-    if (activeProjectDir) {
+    // Handle project context updates — the engine routes context/ files to
+    // the repo project-context/ copy when inside the repo, otherwise to the
+    // global ~/.youmd/projects/<name>/ store.
+    if (activeProjectResolution) {
       const projUpdates = parseProjectUpdates(response);
       if (projUpdates.length > 0) {
         for (const pu of projUpdates) {
           try {
-            updateProjectFile(activeProjectDir, pu.file, pu.content);
+            writeProjectUpdate(activeProjectResolution, pu.file, pu.content);
             console.log(chalk.hex("#C46A3A")(`  [updated project context: ${pu.file}]`));
           } catch {
             console.log(chalk.yellow(`  [project context update failed: ${pu.file}]`));

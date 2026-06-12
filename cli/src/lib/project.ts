@@ -703,7 +703,14 @@ export function detectCurrentProject(projectsRoot: string): string | null {
 export function buildProjectContextInjection(projectDir: string): string | null {
   const ctx = readProjectContext(projectDir);
   if (!ctx) return null;
+  return buildProjectContextInjectionFromContext(ctx);
+}
 
+/**
+ * Formats an already-resolved project context (managed or merged via
+ * lib/projectContext.ts) into the LLM system-prompt injection block.
+ */
+export function buildProjectContextInjectionFromContext(ctx: ProjectContext): string | null {
   const parts: string[] = [];
   parts.push(`[PROJECT CONTEXT — the user is working in project "${ctx.meta.name}"]`);
 

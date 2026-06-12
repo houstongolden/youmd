@@ -15,10 +15,14 @@ import {
   getLocalBundleDir,
   localBundleExists,
   detectProjectContext,
-  ensureProjectDirs,
-  readProjectPrivateNotes,
   YoumdProjectFile,
 } from "../lib/config";
+import {
+  ensureProjectDirs,
+  readMergedProjectContext,
+  readProjectPrivateNotes,
+  resolveProjectContext,
+} from "../lib/projectContext";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -226,7 +230,8 @@ function showProject(args: string[]): void {
   }
 
   const projectsRoot = findProjectsRoot();
-  if (!projectsRoot) {
+  const resolved = resolveProjectContext({ projectName });
+  if (!projectsRoot && !resolved.repoContextDir) {
     console.log("");
     console.log(chalk.yellow("  no projects directory found."));
     console.log("");
@@ -234,8 +239,10 @@ function showProject(args: string[]): void {
   }
 
   const slug = slugify(projectName);
-  const projectDir = getProjectDir(projectsRoot, projectName);
-  const ctx = readProjectContext(projectDir);
+  // Merged read: repo project-context/ overlays the managed store copy.
+  const ctx = readMergedProjectContext({ projectName });
+  const projectDir = resolved.globalDir ||
+    (projectsRoot ? getProjectDir(projectsRoot, projectName) : resolved.repoContextDir || "");
 
   if (!ctx) {
     console.log("");

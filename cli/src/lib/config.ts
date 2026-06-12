@@ -407,84 +407,9 @@ function buildProjectContext(projectRoot: string, marker: string): ProjectContex
   };
 }
 
-/**
- * Sanitize a project name for use as a directory name.
- */
-function sanitizeProjectName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-/**
- * Get the global .youmd/projects/{project-name}/ directory for project-specific files.
- */
-export function getProjectBundleDir(projectName: string): string {
-  return path.join(GLOBAL_CONFIG_DIR, "projects", sanitizeProjectName(projectName));
-}
-
-/**
- * Get the private context directory for a project.
- */
-export function getProjectPrivateDir(projectName: string): string {
-  return path.join(getProjectBundleDir(projectName), "private");
-}
-
-/**
- * Ensure the project bundle directory structure exists.
- */
-export function ensureProjectDirs(projectName: string): string {
-  const projectDir = getProjectBundleDir(projectName);
-  const privateDir = path.join(projectDir, "private");
-  fs.mkdirSync(privateDir, { recursive: true });
-  return projectDir;
-}
-
-/**
- * Read project-specific private notes from .youmd/projects/{name}/private/notes.md
- */
-export function readProjectPrivateNotes(projectName: string): string | null {
-  const notesPath = path.join(getProjectPrivateDir(projectName), "notes.md");
-  if (!fs.existsSync(notesPath)) return null;
-  try {
-    return fs.readFileSync(notesPath, "utf-8");
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Write project-specific private notes.
- */
-export function writeProjectPrivateNotes(projectName: string, content: string): void {
-  const privateDir = getProjectPrivateDir(projectName);
-  fs.mkdirSync(privateDir, { recursive: true });
-  fs.writeFileSync(path.join(privateDir, "notes.md"), content);
-}
-
-/**
- * Read project-specific config/context from .youmd/projects/{name}/context.json
- */
-export function readProjectContext(projectName: string): Record<string, unknown> | null {
-  const contextPath = path.join(getProjectBundleDir(projectName), "context.json");
-  if (!fs.existsSync(contextPath)) return null;
-  try {
-    return JSON.parse(fs.readFileSync(contextPath, "utf-8"));
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Write project-specific context.
- */
-export function writeProjectContext(projectName: string, context: Record<string, unknown>): void {
-  const projectDir = getProjectBundleDir(projectName);
-  fs.mkdirSync(projectDir, { recursive: true });
-  fs.writeFileSync(path.join(projectDir, "context.json"), JSON.stringify(context, null, 2) + "\n");
-}
+// Project store path helpers (slug, ~/.youmd/projects/<name>/ dirs, private
+// notes) live in lib/projectContext.ts — the single project-context engine.
+// The duplicate copies that used to live here were removed (PRODUCT-AUDIT #14).
 
 // ─── Skills Directories ──────────────────────────────────────────────
 
@@ -527,25 +452,3 @@ export function ensureSkillsDir(): string {
   return dir;
 }
 
-/**
- * List all known projects from .youmd/projects/
- */
-export function listProjects(): Array<{ name: string; dir: string }> {
-  const projectsDir = path.join(GLOBAL_CONFIG_DIR, "projects");
-  if (!fs.existsSync(projectsDir)) return [];
-
-  try {
-    return fs
-      .readdirSync(projectsDir)
-      .filter((entry) => {
-        const entryPath = path.join(projectsDir, entry);
-        return fs.statSync(entryPath).isDirectory();
-      })
-      .map((entry) => ({
-        name: entry,
-        dir: path.join(projectsDir, entry),
-      }));
-  } catch {
-    return [];
-  }
-}
