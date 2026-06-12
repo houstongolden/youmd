@@ -2630,8 +2630,20 @@ export async function chatCommand(): Promise<void> {
             await updatePrivateContext({ privateNotes: pu.content });
             console.log(chalk.green("  [saved private note]"));
           } else if (pu.field === "privateProjects" && pu.action === "add" && pu.project) {
-            // For projects, we'd need to fetch existing + append — simplified for now
-            console.log(chalk.green(`  [saved private project: ${pu.project.name || "unnamed"}]`));
+            const existing = await getPrivateContext();
+            const projects = existing.ok ? existing.data?.privateProjects ?? [] : [];
+            const res = await updatePrivateContext({
+              privateProjects: [...projects, {
+                name: pu.project.name || "unnamed",
+                description: pu.project.description || "",
+                status: pu.project.status || "active",
+              }],
+            });
+            if (res.ok) {
+              console.log(chalk.green(`  [saved private project: ${pu.project.name || "unnamed"}]`));
+            } else {
+              console.log(chalk.yellow("  [private context update failed]"));
+            }
           }
         } catch {
           console.log(chalk.yellow("  [private context update failed]"));
