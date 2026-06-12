@@ -309,41 +309,58 @@ const PROJECT_MARKERS = [
 
 /**
  * Walk up from cwd looking for project markers.
+ *
+ * Nearest-marker-wins: the first directory (walking up from cwd) that
+ * contains ANY marker is the project root. Marker priority only breaks
+ * ties between markers at that same depth. This prevents a stray
+ * `.youmd-project` high in the tree (e.g. ~/Desktop) from outranking the
+ * nested repo the user is actually working in.
+ *
+ * The home directory itself is never treated as a project root — dotfiles
+ * and stray Makefiles in ~ are not a project.
+ *
  * Returns project context if found, null otherwise.
  */
 export function detectProjectContext(): ProjectContext | null {
   let dir = process.cwd();
   const root = path.parse(dir).root;
-  const candidates: ProjectContext[] = [];
+  const home = os.homedir();
 
   while (dir !== root) {
-    for (const marker of PROJECT_MARKERS) {
-      const markerPath = path.join(dir, marker);
-      const isDir = marker === ".git";
+    if (dir !== home) {
+      const found: ProjectContext[] = [];
 
-      if (isDir) {
-        if (fs.existsSync(markerPath) && fs.statSync(markerPath).isDirectory()) {
-          candidates.push(buildProjectContext(dir, marker));
+      for (const marker of PROJECT_MARKERS) {
+        const markerPath = path.join(dir, marker);
+        const isDir = marker === ".git";
+
+        if (isDir) {
+          if (fs.existsSync(markerPath) && fs.statSync(markerPath).isDirectory()) {
+            found.push(buildProjectContext(dir, marker));
+          }
+        } else {
+          if (fs.existsSync(markerPath) && fs.statSync(markerPath).isFile()) {
+            found.push(buildProjectContext(dir, marker));
+          }
         }
-      } else {
-        if (fs.existsSync(markerPath) && fs.statSync(markerPath).isFile()) {
-          candidates.push(buildProjectContext(dir, marker));
-        }
+      }
+
+      if (found.length > 0) {
+        // Equal-depth tie-break preserves the original marker priorities.
+        return (
+          found.find((candidate) => candidate.marker === ".youmd-project") ||
+          found.find((candidate) => candidate.marker === ".git") ||
+          found.find((candidate) => fs.existsSync(path.join(candidate.root, "AGENTS.md"))) ||
+          found.find((candidate) => fs.existsSync(path.join(candidate.root, "project-context"))) ||
+          found[0]
+        );
       }
     }
 
     dir = path.dirname(dir);
   }
 
-  if (candidates.length === 0) return null;
-
-  return (
-    candidates.find((candidate) => candidate.marker === ".youmd-project") ||
-    candidates.find((candidate) => candidate.marker === ".git") ||
-    candidates.find((candidate) => fs.existsSync(path.join(candidate.root, "AGENTS.md"))) ||
-    candidates.find((candidate) => fs.existsSync(path.join(candidate.root, "project-context"))) ||
-    candidates[0]
-  );
+  return null;
 }
 
 function buildProjectContext(projectRoot: string, marker: string): ProjectContext {
