@@ -122,11 +122,24 @@ const OwnerContext = createContext<boolean>(false);
 
 interface ProfileContentProps {
   ssrData?: ProfileJson | null;
+  /**
+   * Inline dashboard preview mode. When true:
+   * - no view-count / analytics side effects (recordView is skipped)
+   * - renders exactly what the public sees: owner affordances (view-mode
+   *   toggle, edit pencils, private context) are disabled
+   * - no fixed claim banner overlay
+   * - natural height instead of min-h-[100dvh] so it fits the host pane
+   * Behavior is byte-identical to the public page when this prop is absent.
+   */
+  preview?: boolean;
+  /** Username to render in preview mode (route params are unavailable
+   *  outside the /[username] route). */
+  previewUsername?: string;
 }
 
-export function ProfileContent({ ssrData }: ProfileContentProps) {
+export function ProfileContent({ ssrData, preview = false, previewUsername }: ProfileContentProps) {
   const params = useParams();
-  const username = params.username as string;
+  const username = (preview && previewUsername ? previewUsername : params.username) as string;
   const profile = useQuery(api.profiles.getPublicProfile, { username });
   const recordView = useMutation(api.profiles.recordView);
   const hasRecordedView = useRef(false);
@@ -155,7 +168,8 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
     api.profiles.getByOwnerId,
     convexUser?._id ? { ownerId: convexUser._id } : "skip"
   );
-  const isOwner = ownedProfile?.username === username;
+  // Preview renders the public view — owner affordances stay off
+  const isOwner = !preview && ownedProfile?.username === username;
 
   // ── Public stats (social proof) ──────────────────────────────
   const publicStats = useQuery(api.profiles.getPublicStats, { username });
@@ -204,6 +218,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   } : null;
 
   useEffect(() => {
+    if (preview) return; // dashboard preview must not count as a view
     if (hasRecordedView.current) return;
     if (profile === undefined || profile === null) return;
     hasRecordedView.current = true;
@@ -220,10 +235,13 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
     setTimeout(() => setCopied(false), 1500);
   };
 
+  // Natural height inside the dashboard pane; full viewport on the public page
+  const rootMinH = preview ? "min-h-full" : "min-h-[100dvh]";
+
   // Not found — only trust the live Convex response
   if (profile === null) {
     return (
-      <main className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))] p-4">
+      <main className={`${rootMinH} flex items-center justify-center bg-[hsl(var(--bg))] p-4`}>
         <div className="w-full max-w-md">
           <div className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "var(--radius)" }}>
             <TerminalHeader title="you.md -- error" asHeading />
@@ -256,7 +274,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   // Loading — only show spinner if no data at all (neither SSR nor Convex)
   if (!resolvedProfile) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))]">
+      <div className={`${rootMinH} flex items-center justify-center bg-[hsl(var(--bg))]`}>
         <p className="text-[hsl(var(--text-secondary))] font-mono text-sm animate-pulse">
           loading...
         </p>
@@ -267,9 +285,8 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   const data = resolvedProfile.youJson as ProfileJson | null;
   const resolvedRecord = resolvedProfile as Record<string, unknown>;
   const resolvedAvatarUrl = sanitizeImageUrl(resolvedRecord.avatarUrl);
-  const storedPortrait = hasRenderableAsciiPortrait(resolvedRecord.asciiPortrait)
-    ? (resolvedRecord.asciiPortrait as PreRenderedPortrait)
-    : undefined;
+  // Local-first: cached portrait fills in while the fresh one loads (U13)
+  const storedPortrait = displayPortrait ?? undefined;
   const allProfileStacks = normalizeProfileYouStacks(
     data?.youstacks ?? data?.youStacks ?? data?.identity?.youstacks ?? data?.identity?.youStacks
   );
@@ -295,7 +312,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
   // Profile exists but no youJson yet
   if (!data) {
     return (
-      <div className="profile-page min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
+      <div className={`profile-page ${rootMinH} flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]`}>
         <ProfileHeader username={username} />
         <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
           <div className="flex items-end gap-4 mb-4">
@@ -331,8 +348,8 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
         </main>
         <ProfileFooter />
 
-        {/* Claim banner */}
-        {!resolvedProfile.isClaimed && <ClaimBanner username={username} />}
+        {/* Claim banner — fixed overlay, suppressed in the dashboard preview */}
+        {!preview && !resolvedProfile.isClaimed && <ClaimBanner username={username} />}
       </div>
     );
   }
@@ -351,7 +368,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
 
   return (
     <OwnerContext.Provider value={isOwner}>
-    <div className="profile-page min-h-[100dvh] flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
+    <div className={`profile-page ${rootMinH} flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]`}>
 
       <ProfileHeader username={username} />
 
@@ -1110,8 +1127,8 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
 
       <ProfileFooter />
 
-      {/* Claim banner for unclaimed profiles */}
-      {!resolvedProfile.isClaimed && <ClaimBanner username={username} />}
+      {/* Claim banner for unclaimed profiles — fixed overlay, suppressed in preview */}
+      {!preview && !resolvedProfile.isClaimed && <ClaimBanner username={username} />}
     </div>
     </OwnerContext.Provider>
   );

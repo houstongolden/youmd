@@ -20,6 +20,7 @@ import { AgentsPane } from "@/components/panes/AgentsPane";
 import { VaultPane } from "@/components/panes/VaultPane";
 import { HelpPane } from "@/components/panes/HelpPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ProfileContent } from "../[username]/profile-content";
 
 type PrimaryPaneGroup = "profile" | "content" | "share" | "agents" | "insights" | "portrait" | "account";
 
@@ -547,11 +548,13 @@ export function DashboardContent() {
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <ErrorBoundary>
                   {rightPane === "profile" && (
-                    <iframe
-                      src={`/${username}`}
-                      className="w-full h-full border-0"
-                      title="profile preview"
-                    />
+                    /* Direct inline render of the public profile (no iframe —
+                       no double app load, no style clashes). Same Convex query
+                       the public page subscribes to; preview mode disables
+                       view counting, owner affordances, and the claim banner. */
+                    <div className="min-h-full w-full">
+                      <ProfileContent preview previewUsername={username} />
+                    </div>
                   )}
                   {rightPane === "portrait" && (
                     <PortraitPane username={username} ownerId={convexUser._id} />
