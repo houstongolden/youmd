@@ -13,6 +13,7 @@ import {
   runYouStackDoctor,
   runYouStackSmoke,
   validateYouStackManifest,
+  verifyYouStackClaudeDiscovery,
 } from "../lib/youstack";
 
 describe("youstack manifest", () => {
@@ -384,6 +385,84 @@ describe("youstack manifest", () => {
     expect(fs.readFileSync(adapterPath, "utf-8")).toContain("Test Stack YouStack");
     expect(fs.readFileSync(adapterPath, "utf-8")).toContain("protected-memory-search");
     expect(fs.readFileSync(adapterPath, "utf-8")).toContain("Protected reads may return readiness states");
+  });
+
+  it("links claude-code adapters into the .claude/skills/<slug>/SKILL.md discovery layout", () => {
+    writeStack(validManifest({ description: "Test stack description." }));
+    const targetDir = path.join(tmpDir, "project");
+    const results = linkYouStackAdapters(loadYouStackManifest(tmpDir), {
+      hosts: ["claude-code"],
+      targetDir,
+    });
+    const skillPath = path.join(targetDir, ".claude", "skills", "test-stack", "SKILL.md");
+
+    expect(results).toHaveLength(1);
+    expect(results[0].targetPath).toBe(skillPath);
+    expect(fs.existsSync(skillPath)).toBe(true);
+    const content = fs.readFileSync(skillPath, "utf-8");
+    expect(content.startsWith("---\nname: test-stack\ndescription: Test stack description.\n---\n\n")).toBe(true);
+    expect(content).toContain("# Test Stack YouStack");
+  });
+
+  it("verifyYouStackClaudeDiscovery passes for a valid stack and fails for broken declared paths", () => {
+    writeStack(validManifest());
+    const ok = verifyYouStackClaudeDiscovery(loadYouStackManifest(tmpDir));
+    expect(ok.ok).toBe(true);
+    expect(ok.checks).toHaveLength(1);
+    expect(ok.checks[0].name).toBe("test-stack");
+
+    // A declared claude adapter path outside the discovery layout breaks the
+    // name-matches-directory contract.
+    fs.writeFileSync(
+      path.join(tmpDir, "youstack.json"),
+      JSON.stringify(
+        validManifest({
+          adapters: {
+            "claude-code": { files: [".claude/skills/wrong-dir/SKILL.md"] },
+          },
+        }),
+        null,
+        2
+      )
+    );
+    const bad = verifyYouStackClaudeDiscovery(loadYouStackManifest(tmpDir));
+    expect(bad.ok).toBe(false);
+    expect(bad.checks[0].problems.join("\n")).toContain('does not match its directory "wrong-dir"');
+  });
+
+  it("doctor runs the claude discovery gate with per-skill results", () => {
+    writeStack(validManifest());
+    const doctor = runYouStackDoctor(loadYouStackManifest(tmpDir));
+
+    expect(doctor.ok).toBe(true);
+    expect(doctor.discovery).toHaveLength(1);
+    expect(doctor.discovery[0].ok).toBe(true);
+    expect(doctor.checks.join("\n")).toContain("claude discovery ok:");
+  });
+
+  it("doctor fails when the stack's claude SKILL.md would not be discoverable", () => {
+    writeStack(
+      validManifest({
+        adapters: {
+          "claude-code": { files: [".claude/skills/wrong-dir/SKILL.md"] },
+        },
+      })
+    );
+    const doctor = runYouStackDoctor(loadYouStackManifest(tmpDir));
+
+    expect(doctor.ok).toBe(false);
+    expect(doctor.discovery[0].ok).toBe(false);
+    expect(doctor.errors.join("\n")).toContain("claude discovery failed for");
+  });
+
+  it("doctor skips the discovery gate for invalid manifests", () => {
+    const manifest = validManifest();
+    delete (manifest as Record<string, unknown>).name;
+    writeStack(manifest);
+    const doctor = runYouStackDoctor(loadYouStackManifest(tmpDir));
+
+    expect(doctor.discovery).toEqual([]);
+    expect(doctor.diagnostics.join("\n")).toContain("claude discovery: skipped (manifest invalid)");
   });
 
   it("supports dry-run adapter generation without writing files", () => {

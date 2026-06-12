@@ -1,5 +1,6 @@
 import chalk from "chalk";
 import { detectShadowing } from "../lib/projectContext";
+import { SkillDiscoveryCheck, verifySkillDiscovery } from "../lib/host-link";
 import {
   getYouStackCapabilities,
   getYouStackReadiness,
@@ -21,6 +22,7 @@ interface StackCommandOptions {
   hosts?: string;
   target?: string;
   dryRun?: boolean;
+  verify?: boolean;
 }
 
 function printHelp(): void {
@@ -35,7 +37,7 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("route \"...\"") + DIM("   Pick the best local capability for a request"));
   console.log("    " + chalk.cyan("link") + DIM("          Generate host adapter files from the manifest"));
   console.log("");
-  console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--json"));
+  console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--verify") + DIM(", ") + chalk.cyan("--json"));
   console.log("");
   console.log("  " + DIM("Canonical layout: ") + chalk.cyan("stacks/<slug>/youstack.json") + DIM(" (legacy youstack.json, .you/, and youstacks/ still load)"));
   console.log("");
@@ -156,6 +158,21 @@ export async function stackCommand(
       console.log("  " + DIM(`shadowed: ${shadow.message}`));
     }
     console.log("");
+    // P11: empirical Claude Code discovery gate — per-skill pass/fail for
+    // the SKILL.md files `youmd stack link` would emit for claude-code.
+    if (result.discovery.length > 0) {
+      for (const check of result.discovery) {
+        if (check.ok) {
+          console.log("  " + chalk.green("PASS") + " claude discovery: " + check.path);
+        } else {
+          console.log("  " + chalk.red("FAIL") + " claude discovery: " + check.path);
+          for (const problem of check.problems) {
+            console.log("       " + DIM(problem));
+          }
+        }
+      }
+      console.log("");
+    }
     for (const recommendation of result.recommendations) {
       console.log("  " + ACCENT("NEXT") + " " + recommendation);
     }
@@ -250,8 +267,16 @@ export async function stackCommand(
       return;
     }
 
+    // P11 release gate: --verify checks every emitted SKILL.md against the
+    // Claude Code discovery contract and exits non-zero on failures.
+    let verification: { ok: boolean; checks: SkillDiscoveryCheck[] } | undefined;
+    if (options.verify) {
+      verification = verifySkillDiscovery(results);
+      if (!verification.ok) process.exitCode = 1;
+    }
+
     if (options.json) {
-      console.log(JSON.stringify({ results }, null, 2));
+      console.log(JSON.stringify({ results, verification }, null, 2));
       return;
     }
 
@@ -263,6 +288,24 @@ export async function stackCommand(
       console.log("  " + status + " " + chalk.cyan(result.host) + DIM(" -> ") + result.targetPath);
     }
     console.log("");
+    if (verification) {
+      for (const check of verification.checks) {
+        if (check.ok) {
+          console.log("  " + chalk.green("PASS") + " skill discovery: " + check.path);
+        } else {
+          console.log("  " + chalk.red("FAIL") + " skill discovery: " + check.path);
+          for (const problem of check.problems) {
+            console.log("       " + DIM(problem));
+          }
+        }
+      }
+      console.log("");
+      if (!verification.ok) {
+        console.log("  " + chalk.red("Verification failed.") + " " + DIM("Fix the SKILL.md issues above and rerun."));
+        console.log("");
+        return;
+      }
+    }
     if (!options.dryRun) {
       console.log("  " + chalk.green("Adapter files generated.") + " " + DIM("No brain data or connected tools were touched."));
       console.log("");

@@ -2,6 +2,16 @@ import * as crypto from "crypto";
 import { execFileSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import {
+  buildHostLinkPlan,
+  HostSkillUnit,
+  hostLinkRelativePath,
+  SkillDiscoveryCheck,
+  SkillDiscoveryReport,
+  verifySkillDiscovery,
+  writeHostLinkPlan,
+  youStackHostAdapterConfig,
+} from "./host-link";
 
 export type YouStackVisibility = "private" | "scoped-link" | "public-open" | "team";
 
@@ -105,6 +115,11 @@ export interface YouStackSmokeResult extends YouStackValidationResult {
 export interface YouStackDoctorResult extends YouStackSmokeResult {
   diagnostics: string[];
   recommendations: string[];
+  /**
+   * Empirical Claude Code discovery gate: per-skill pass/fail for the
+   * SKILL.md files this stack would emit for the claude-code host.
+   */
+  discovery: SkillDiscoveryCheck[];
 }
 
 export type YouStackReadinessStatus = "not_found" | "invalid" | "ready";
@@ -813,6 +828,31 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
     recommendations.push("No structural recommendations. Keep watching route misses, user corrections, eval failures, and reference-intelligence tasks.");
   }
 
+  // Empirical Claude Code discovery gate: verify the SKILL.md files this
+  // stack would emit for the claude-code host. Only meaningful once the
+  // manifest itself is valid.
+  let discovery: SkillDiscoveryCheck[] = [];
+  if (loaded.validation.ok) {
+    try {
+      discovery = verifyYouStackClaudeDiscovery(loaded).checks;
+      for (const check of discovery) {
+        if (check.ok) {
+          checks.push(`claude discovery ok: ${check.path}`);
+        } else {
+          for (const problem of check.problems) {
+            errors.push(`claude discovery failed for ${check.path}: ${problem}`);
+          }
+        }
+      }
+    } catch (error) {
+      errors.push(
+        `claude discovery check failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  } else {
+    diagnostics.push("claude discovery: skipped (manifest invalid)");
+  }
+
   return {
     ok: errors.length === 0,
     errors,
@@ -820,6 +860,7 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
     checks,
     diagnostics,
     recommendations,
+    discovery,
   };
 }
 
@@ -894,44 +935,46 @@ export function normalizeYouStackHost(host: string): string {
   return value;
 }
 
+/** Default link path for one host — derived from the engine adapter config. */
 export function defaultAdapterPath(host: string, slug: string): string {
-  switch (normalizeYouStackHost(host)) {
-    case "claude-code":
-      return path.join(".claude", "skills", "youstacks", slug, "SKILL.md");
-    case "codex":
-      return path.join(".codex", "skills", "youstacks", slug, "SKILL.md");
-    case "cursor":
-      return path.join(".cursor", "rules", `youstacks-${slug}.md`);
-    default:
-      return path.join(".you", "adapters", normalizeYouStackHost(host), `${slug}.md`);
-  }
+  return hostLinkRelativePath(
+    youStackHostAdapterConfig(normalizeYouStackHost(host)),
+    slug
+  );
 }
 
-function adapterPathsForHost(manifest: YouStackManifest, host: string): string[] {
+function declaredAdapterPaths(manifest: YouStackManifest, host: string): string[] | undefined {
   const normalized = normalizeYouStackHost(host);
   const declared = manifest.adapters?.[normalized]?.files || manifest.adapters?.[host]?.files;
-  if (declared && declared.length > 0) return declared;
-  return [defaultAdapterPath(normalized, manifest.slug)];
+  return declared && declared.length > 0 ? declared : undefined;
 }
 
+/** The stack rendered as one linkable skill unit for the host-link engine. */
+function youStackSkillUnit(manifest: YouStackManifest): HostSkillUnit {
+  return {
+    name: manifest.slug,
+    description: manifest.description || `Use the ${manifest.name} YouStack safely.`,
+    content: generateYouStackAdapterBody(manifest),
+  };
+}
+
+/**
+ * Render the stack adapter content for a host. Frontmatter shape is decided
+ * by the engine's per-host adapter config, not by host conditionals here.
+ */
 export function generateYouStackAdapterContent(
   manifest: YouStackManifest,
   host: string
 ): string {
-  const normalized = normalizeYouStackHost(host);
+  const config = youStackHostAdapterConfig(normalizeYouStackHost(host));
+  const entries = buildHostLinkPlan([youStackSkillUnit(manifest)], config);
+  return entries[0]?.content || "";
+}
+
+function generateYouStackAdapterBody(manifest: YouStackManifest): string {
   const capabilities = getYouStackCapabilities(manifest);
   const brainScopes = manifest.brainScopes || [];
   const lines: string[] = [];
-
-  if (normalized === "claude-code" || normalized === "codex") {
-    lines.push("---");
-    lines.push(`name: ${manifest.slug}`);
-    lines.push(
-      `description: ${manifest.description || `Use the ${manifest.name} YouStack safely.`}`
-    );
-    lines.push("---");
-    lines.push("");
-  }
 
   lines.push(`# ${manifest.name} YouStack`);
   lines.push("");
@@ -1011,37 +1054,50 @@ export function generateYouStackAdapterContent(
   return lines.join("\n");
 }
 
+/**
+ * Build the per-host link plans (paths + rendered content) for a stack
+ * without touching the filesystem. All hosts go through the one engine;
+ * manifest-declared adapter paths still override the default layout.
+ */
+export function planYouStackAdapterLinks(
+  loaded: LoadedYouStack,
+  hosts?: string[]
+): Array<{ host: string; relativePath: string; content: string }> {
+  const hostList =
+    hosts && hosts.length > 0
+      ? hosts.map(normalizeYouStackHost)
+      : Object.keys(loaded.manifest.adapters || {}).map(normalizeYouStackHost);
+  const resolvedHosts =
+    hostList.length > 0 ? [...new Set(hostList)] : ["claude-code", "codex", "cursor"];
+  const unit = youStackSkillUnit(loaded.manifest);
+
+  return resolvedHosts.flatMap((host) =>
+    buildHostLinkPlan([unit], youStackHostAdapterConfig(host), {
+      explicitRelativePaths: declaredAdapterPaths(loaded.manifest, host),
+    })
+  );
+}
+
 export function linkYouStackAdapters(
   loaded: LoadedYouStack,
   options: { hosts?: string[]; targetDir?: string; dryRun?: boolean } = {}
 ): YouStackLinkResult[] {
-  const hostList =
-    options.hosts && options.hosts.length > 0
-      ? options.hosts.map(normalizeYouStackHost)
-      : Object.keys(loaded.manifest.adapters || {}).map(normalizeYouStackHost);
-  const hosts = hostList.length > 0 ? [...new Set(hostList)] : ["claude-code", "codex", "cursor"];
   const targetDir = path.resolve(options.targetDir || process.cwd());
-  const results: YouStackLinkResult[] = [];
+  const plan = planYouStackAdapterLinks(loaded, options.hosts);
+  return writeHostLinkPlan(plan, targetDir, { dryRun: options.dryRun }).map((result) => ({
+    host: result.host,
+    targetPath: result.targetPath,
+    wrote: result.wrote,
+    content: result.content,
+  }));
+}
 
-  for (const host of hosts) {
-    for (const relativePath of adapterPathsForHost(loaded.manifest, host)) {
-      if (!isSafeRelativePath(relativePath)) {
-        throw new Error(`Unsafe adapter path for ${host}: ${relativePath}`);
-      }
-      const targetPath = path.join(targetDir, relativePath);
-      const content = generateYouStackAdapterContent(loaded.manifest, host);
-      if (!options.dryRun) {
-        fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-        fs.writeFileSync(targetPath, content);
-      }
-      results.push({
-        host,
-        targetPath,
-        wrote: !options.dryRun,
-        content,
-      });
-    }
-  }
-
-  return results;
+/**
+ * Empirical Claude Code discovery release gate (exported for CI use):
+ * verify that every SKILL.md this stack would emit for the claude-code
+ * host parses, carries name + description, name matches its directory,
+ * and has a non-empty body.
+ */
+export function verifyYouStackClaudeDiscovery(loaded: LoadedYouStack): SkillDiscoveryReport {
+  return verifySkillDiscovery(planYouStackAdapterLinks(loaded, ["claude-code"]));
 }

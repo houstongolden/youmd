@@ -16,6 +16,7 @@ import {
 } from "../lib/projectContext";
 import { shortHash } from "../lib/hash";
 import { readSkillCatalog } from "../lib/skill-catalog";
+import { hasLinkedClaudeSkills } from "../lib/host-link";
 import { loadIdentityData, resolveVariable } from "../lib/skill-renderer";
 
 const ACCENT = chalk.hex("#C46A3A");
@@ -255,8 +256,8 @@ export async function statusCommand(): Promise<void> {
     if (catalog.skills.filter((s) => s.installed).length === 0) {
       recs.push("Run " + chalk.cyan("youmd skill install all") + " to set up agent skills");
     }
-    const claudeSkills = path.join(process.cwd(), ".claude", "skills", "youmd");
-    if (catalog.skills.some((s) => s.installed) && !fs.existsSync(claudeSkills)) {
+    const installedNames = catalog.skills.filter((s) => s.installed).map((s) => s.name);
+    if (installedNames.length > 0 && !hasLinkedClaudeSkills(process.cwd(), installedNames)) {
       recs.push("Run " + chalk.cyan("youmd skill link claude") + " to connect skills to this project");
     }
   } catch { /* skip */ }

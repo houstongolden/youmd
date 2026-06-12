@@ -1494,7 +1494,7 @@ async function finishBundle(
   }
   console.log("  " + accent("agent tools:"));
   console.log("");
-  console.log(`    ${chalk.cyan("youmd skill link claude")}  ${chalk.dim("-- sync skills to .claude/skills/youmd/")}`);
+  console.log(`    ${chalk.cyan("youmd skill link claude")}  ${chalk.dim("-- sync skills to .claude/skills/<name>/SKILL.md")}`);
   console.log(`    ${chalk.cyan("youmd skill link cursor")}  ${chalk.dim("-- sync skills to .cursor/rules/youmd.md")}`);
   console.log(`    ${chalk.cyan("youmd link create")}        ${chalk.dim("-- shareable context link for any agent")}`);
   console.log(`    ${chalk.cyan("you")}                      ${chalk.dim("-- main live U entrypoint")}`);

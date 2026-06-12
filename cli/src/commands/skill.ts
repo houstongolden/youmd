@@ -37,6 +37,7 @@ import { BrailleSpinner, renderRichResponse } from "../lib/render";
 import { isAuthenticated } from "../lib/config";
 import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill } from "../lib/api";
 import { readSkillFile, getSkillDir } from "../lib/skills";
+import { hasLinkedClaudeSkills } from "../lib/host-link";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -914,12 +915,13 @@ function improveCmd(): void {
     );
   }
 
-  // Propose linking if skills installed but no .claude/skills/youmd exists
-  if (installed.length > 0) {
-    const claudeSkillsDir = path.join(process.cwd(), ".claude", "skills", "youmd");
-    if (!fs.existsSync(claudeSkillsDir)) {
-      proposals.push("run \"youmd skill link claude\" — skills aren't linked to this project's agent");
-    }
+  // Propose linking if skills are installed but not linked into the Claude
+  // Code discovery layout (.claude/skills/<name>/SKILL.md)
+  if (
+    installed.length > 0 &&
+    !hasLinkedClaudeSkills(process.cwd(), installed.map((s: { name: string }) => s.name))
+  ) {
+    proposals.push("run \"youmd skill link claude\" — skills aren't linked to this project's agent");
   }
 
   if (proposals.length > 0) {

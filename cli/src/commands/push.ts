@@ -7,6 +7,7 @@ import { uploadBundle, publishLatest, updatePrivateContext, getMe } from "../lib
 import { readPrivateContextFromLocal } from "./private";
 import { computeContentHash, shortHash } from "../lib/hash";
 import { syncAllSkills } from "../lib/skills";
+import { hasLinkedClaudeSkills } from "../lib/host-link";
 import { readSkillCatalog } from "../lib/skill-catalog";
 
 export async function pushCommand(options: { publish?: boolean; force?: boolean }) {
@@ -291,11 +292,15 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
     // Recommendations after push
     const recs: string[] = [];
     const catalog2 = readSkillCatalog();
-    const installedCount2 = catalog2.skills.filter((s) => s.installed).length;
-    const claudeSkills = path.join(bundleDir, "..", ".claude", "skills", "youmd");
-    if (installedCount2 === 0) {
+    const installedSkills2 = catalog2.skills.filter((s) => s.installed);
+    if (installedSkills2.length === 0) {
       recs.push("run " + chalk.cyan("youmd skill install all") + " to set up agent skills");
-    } else if (!fs.existsSync(claudeSkills)) {
+    } else if (
+      !hasLinkedClaudeSkills(
+        path.join(bundleDir, ".."),
+        installedSkills2.map((s) => s.name)
+      )
+    ) {
       recs.push("run " + chalk.cyan("youmd skill link claude") + " to update this project's agent context");
     }
 
