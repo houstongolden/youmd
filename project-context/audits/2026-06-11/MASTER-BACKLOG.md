@@ -25,9 +25,9 @@
 |---|---|---|---|---|
 | P1 | Enforce API-key scopes: scopes from `authenticateRequest`, `requireScope()` per route/MCP tool, log `scope_missing` for legacy keys | PRODUCT-AUDIT #1; FEATURE-ROADMAP 1.1 | M | done (scope enforcement live; grandfathered pre-epoch + cli-auth keys w/ telemetry) |
 | P2 | Resolve draft/publish semantics (save==publish w/ rollback patching profile, or true drafts) | PRODUCT-AUDIT #2; FEATURE-ROADMAP 1.2 | M | blocked(needs-spec: Houston call) |
-| P3 | Canonical `assembleAgentContext()` for web agent, CLI chat, hosted MCP, /ctx links + parity test | PRODUCT-AUDIT #3; FEATURE-ROADMAP 2.1 | L | todo |
+| P3 | Canonical `assembleAgentContext()` for web agent, CLI chat, hosted MCP, /ctx links + parity test | PRODUCT-AUDIT #3; FEATURE-ROADMAP 2.1 | L | in-progress (agent) |
 | P4 | Shared `generateSecureToken` replacing Math.random in apiKeys.ts:17, contextLinks.ts:18, private.ts:82, profiles.ts:26 | PRODUCT-AUDIT #4; FEATURE-ROADMAP 0.1 | S | done (1ce525d: CSPRNG via secureToken.ts, shapes preserved) |
-| P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | done (4b943a2; prod e2e: REST ?q= + MCP search_memories verified; docs regen queued behind cli lane) |
+| P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | done (4b943a2; prod e2e: REST ?q= + MCP search_memories verified; docs regenerated 2a0abb2) |
 | P6 | Fix `youmd mcp --install claude --auto` → ~/.claude.json or `claude mcp add`; post-install verify | PRODUCT-AUDIT #8; FEATURE-ROADMAP 1.3 | S | done (bf2e647: claude mcp add / ~/.claude.json + verify) |
 | P7 | Publish CLI to npm + version-skew CI check | PRODUCT-AUDIT #9; FEATURE-ROADMAP 0.3 | S | blocked(otp) |
 | P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning; also reconcile YOUSTACKS_PRODUCT_LAYER_PRD.md:201-210 drifted table + fix example manifest minYoumdCli 0.7.0 vs cli 0.6.23 | PRODUCT-AUDIT #10; P32 findings | M | todo |
@@ -64,9 +64,9 @@
 
 | ID | Item | Effort | Status |
 |---|---|---|---|
-| U1 | Strip `@` from CLI celebration URLs + normalize `@`/`%40` in [username] route w/ 301 | S | web done (65cd878, 308 redirect verified vs next start); CLI half with lint lane |
-| U2 | Fix onboarding done-phrase false positives (bare no/yes/ready); gate on wrap-up offer | S | todo |
-| U3 | Fix fake "[saved private project]" — real updatePrivateContext write or honest message | S | todo |
+| U1 | Strip `@` from CLI celebration URLs + normalize `@`/`%40` in [username] route w/ 301 | S | done (65cd878 web, verified 308 on prod; e218877 CLI URLs) |
+| U2 | Fix onboarding done-phrase false positives (bare no/yes/ready); gate on wrap-up offer | S | in-progress (agent) |
+| U3 | Fix fake "[saved private project]" — real updatePrivateContext write or honest message | S | in-progress (agent) |
 | U4 | Gate /initialize redirect on onboarding-complete marker, not bare username | M | done (51a7f38; gated on published bundle, resumes mid-flow users) |
 | U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | done (e66a58b; default-open + localStorage persist + skeleton parity) |
 | U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | todo |
@@ -77,7 +77,7 @@
 | U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | done (e66a58b; activity=agent log, analytics=stats, session log=account events) |
 | U12 | Profile preview: direct ProfileContent render w/ preview prop (kill iframe) | M | todo |
 | U13 | Local-first portrait cache (instant render, background refresh) | M | todo |
-| U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | todo |
+| U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | in-progress (agent) |
 | U15 | Tappable /help + cmd+k hints (mobile palette) | S | todo |
 | U16 | Onboarding turns 2+ stream via shared helper | S | todo |
 | U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | todo |
@@ -118,7 +118,7 @@
 | L24 | Scheduled maintainer agent mining journal → guarded auto_pr | L | todo (after L12+L14) |
 | L25 | Cross-stack proposals → human-gated registry candidates | L | todo (after L20) |
 | L26 | Server-orchestrated evolution (Convex crons) | L | blocked(sequenced-last by design: requires Stage 2-3 gates) |
-| L27 | CLI stdio MCP brief parity: render memory content + includeMemories default true (match hosted) | S | in-progress (agent) |
+| L27 | CLI stdio MCP brief parity: render memory content + includeMemories default true (match hosted) | S | done (34ce3b3; stdio brief renders memories, includeMemories default true) |
 
 ## M4 — Tech items (TECH-STACK-AUDIT + ARCHITECTURE-EVOLUTION + ENGINEERING-ROADMAP + ONE-CLICK)
 
@@ -155,7 +155,7 @@
 | T29 | CLI version from package.json; postinstall banner TTY gate; publish version-exists check | S | partial (a984939 version-from-package.json; banner TTY gate + publish version-exists check pending) |
 | T30 | Spend-cap doc/code drift fix; pre-hydration theme script | S | done (ab0277d spend-cap; 70efbe3 pre-hydration theme script) |
 
-| T31 | Lint-zero: fix 169 pre-existing eslint errors in src/, then flip CI lint step to blocking | S-M | in-progress (agent) |
+| T31 | Lint-zero: fix 169 pre-existing eslint errors in src/, then flip CI lint step to blocking | S-M | done (0060f68 lint-zero 169→0 repo-wide; 76dfcac lint blocking in CI) |
 
 ## Execution order (waves)
 
