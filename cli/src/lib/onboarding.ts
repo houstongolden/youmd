@@ -1565,39 +1565,68 @@ export async function runOnboarding(): Promise<void> {
   await showAsciiLogo();
 
   // ── Phase 1: Identity basics (fast, no LLM) ────────────────────────
+  // One question at a time; "back" re-asks the previous question.
 
-  // Username
   let username = "";
-  let usernameValid = false;
+  let name = "";
+  let website = "";
+  let twitter = "";
+  let github = "";
+  let linkedin = "";
 
-  while (!usernameValid) {
-    username = await ask(
-      rl,
-      chalk.hex("#C46A3A")("  > ") + "pick a username: "
-    );
+  const IDENTITY_STEPS = [
+    "username",
+    "name",
+    "website",
+    "twitter",
+    "github",
+    "linkedin",
+  ] as const;
+  let stepIdx = 0;
+  let backHintShown = false;
 
-    if (!username) {
-      console.log(chalk.red("    username is required"));
-      continue;
-    }
+  while (stepIdx < IDENTITY_STEPS.length) {
+    const step = IDENTITY_STEPS[stepIdx];
 
-    const localError = validateUsernameLocal(username.toLowerCase());
-    if (localError) {
-      console.log(chalk.red("    " + localError));
-      continue;
-    }
+    if (step === "username") {
+      const raw = await ask(
+        rl,
+        chalk.hex("#C46A3A")("  > ") + "pick a username: "
+      );
 
-    username = username.toLowerCase();
+      if (isBackCommand(raw)) {
+        console.log(chalk.dim("    first question — nowhere to go back to."));
+        continue;
+      }
 
-    process.stdout.write(chalk.dim("    checking... "));
-    const result = await checkUsernameRemote(username);
+      if (!raw) {
+        console.log(chalk.red("    username is required"));
+        continue;
+      }
 
-    if (result.available) {
+      const candidate = raw.toLowerCase();
+      const localError = validateUsernameLocal(candidate);
+      if (localError) {
+        console.log(chalk.red("    " + localError));
+        continue;
+      }
+
+      process.stdout.write(chalk.dim("    checking... "));
+      const result = await checkUsernameRemote(candidate);
+
+      if (!result.available) {
+        console.log(
+          chalk.red(candidate + " is taken.") +
+            (result.reason ? " " + result.reason : "")
+        );
+        continue;
+      }
+
       // Check if a profile already exists on you.md for this username
       let profileExists = false;
       try {
         const profileRes = await fetch(
-          `https://you.md/${encodeURIComponent(username)}/context`,
+          `https://you.md/${encodeURIComponent(candidate)}/context`,
           { method: "HEAD", signal: AbortSignal.timeout(5_000) }
         );
         profileExists = profileRes.ok;
@@ -1606,59 +1635,68 @@ export async function runOnboarding(): Promise<void> {
       }
 
       if (profileExists) {
-        console.log(chalk.green(username + " is available."));
+        console.log(chalk.green(candidate + " is available."));
         console.log(
-          chalk.dim(`    a profile for @${username} already exists on you.md -- you can claim it after login with `) +
+          chalk.dim(`    a profile for @${candidate} already exists on you.md -- you can claim it after login with `) +
           chalk.cyan("youmd login") +
           chalk.dim(" then ") +
           chalk.cyan("youmd pull")
         );
       } else {
-        console.log(chalk.green(username + " is yours."));
+        console.log(chalk.green(candidate + " is yours."));
       }
-      usernameValid = true;
-    } else {
-      console.log(
-        chalk.red(username + " is taken.") +
-          (result.reason ? " " + result.reason : "")
-      );
+
+      username = candidate;
+      console.log("");
+      if (!backHintShown) {
+        console.log(
+          chalk.dim('    (type "back" anytime to fix a previous answer)')
+        );
+        console.log("");
+        backHintShown = true;
+      }
+      stepIdx++;
+      continue;
     }
+
+    const stepPrompts: Record<Exclude<(typeof IDENTITY_STEPS)[number], "username">, string> = {
+      name: "what's your name? ",
+      website: "website URL " + chalk.dim("(optional)") + ": ",
+      twitter:
+        "X/Twitter username " + chalk.dim("(optional, e.g. @houston)") + ": ",
+      github: "GitHub username " + chalk.dim("(optional)") + ": ",
+      linkedin: "LinkedIn URL " + chalk.dim("(optional)") + ": ",
+    };
+
+    const raw = await ask(
+      rl,
+      chalk.hex("#C46A3A")("  > ") + stepPrompts[step]
+    );
+
+    if (isBackCommand(raw)) {
+      stepIdx--;
+      continue;
+    }
+
+    switch (step) {
+      case "name":
+        name = raw;
+        break;
+      case "website":
+        website = raw;
+        break;
+      case "twitter":
+        twitter = raw;
+        break;
+      case "github":
+        github = raw;
+        break;
+      case "linkedin":
+        linkedin = raw;
+        break;
+    }
+    stepIdx++;
   }
-
-  console.log("");
-
-  const name = await ask(
-    rl,
-    chalk.hex("#C46A3A")("  > ") + "what's your name? "
-  );
-  const website = await ask(
-    rl,
-    chalk.hex("#C46A3A")("  > ") +
-      "website URL " +
-      chalk.dim("(optional)") +
-      ": "
-  );
-  const twitter = await ask(
-    rl,
-    chalk.hex("#C46A3A")("  > ") +
-      "X/Twitter username " +
-      chalk.dim("(optional, e.g. @houston)") +
-      ": "
-  );
-  const github = await ask(
-    rl,
-    chalk.hex("#C46A3A")("  > ") +
-      "GitHub username " +
-      chalk.dim("(optional)") +
-      ": "
-  );
-  const linkedin = await ask(
-    rl,
-    chalk.hex("#C46A3A")("  > ") +
-      "LinkedIn URL " +
-      chalk.dim("(optional)") +
-      ": "
-  );
 
   console.log("");
 
