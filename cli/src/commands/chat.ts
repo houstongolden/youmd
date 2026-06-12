@@ -31,6 +31,7 @@ import { compileBundle, writeBundle } from "../lib/compiler";
 import { uploadBundle, publishLatest, saveMemories, updatePrivateContext, listMemories, getPrivateContext } from "../lib/api";
 import { initProject } from "../lib/skills";
 import { BrailleSpinner, requireInteractiveTTY, renderRichResponse } from "../lib/render";
+import { streamAssistantTurn } from "../lib/stream";
 import {
   callLLM,
   parseUpdatesFromResponse,
@@ -56,135 +57,27 @@ const CURRENT_VERSION = "0.6.23";
 
 // ─── Streaming LLM client ─────────────────────────────────────────────
 
-async function streamLLM(
-  _apiKey: string | null,
-  messages: ChatMessage[],
-  onToken: (text: string) => void
-): Promise<string> {
-  const res = await fetch(STREAM_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
-    signal: AbortSignal.timeout(120_000),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Stream error (${res.status}): ${body}`);
-  }
-
-  if (!res.body) {
-    throw new Error("No response body from stream endpoint");
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = "";
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-
-    // Process complete SSE lines
-    const lines = buffer.split("\n");
-    // Keep the last potentially incomplete line in the buffer
-    buffer = lines.pop() || "";
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-
-      if (trimmed.startsWith("data: ")) {
-        const data = trimmed.slice(6);
-
-        if (data === "[DONE]") {
-          continue;
-        }
-
-        try {
-          const parsed = JSON.parse(data) as { text?: string };
-          if (parsed.text) {
-            fullText += parsed.text;
-            onToken(parsed.text);
-          }
-        } catch {
-          // Skip malformed JSON chunks
-        }
-      }
-    }
-  }
-
-  // Process any remaining buffer
-  if (buffer.trim()) {
-    const trimmed = buffer.trim();
-    if (trimmed.startsWith("data: ")) {
-      const data = trimmed.slice(6);
-      if (data !== "[DONE]") {
-        try {
-          const parsed = JSON.parse(data) as { text?: string };
-          if (parsed.text) {
-            fullText += parsed.text;
-            onToken(parsed.text);
-          }
-        } catch {
-          // Skip
-        }
-      }
-    }
-  }
-
-  return fullText;
-}
-
 /**
- * Call LLM with streaming, falling back to blocking callLLM on failure.
- * Returns the full response text.
+ * Call LLM with streaming (shared helper: spinner until first token, then
+ * live tokens with ```json directive blocks filtered from the display),
+ * falling back to blocking callLLM on failure.
+ *
+ * Returns the full RAW response text — directive blocks intact — so the
+ * post-stream parsers (parseUpdatesFromResponse, parseMemorySaves,
+ * parsePrivateUpdates, parseProjectUpdates) keep working unchanged.
  */
 async function callLLMWithStreaming(
   apiKey: string | null,
   messages: ChatMessage[],
   spinnerLabel: string
 ): Promise<{ text: string; streamed: boolean }> {
-  const thinkSpinner = new BrailleSpinner(spinnerLabel);
-  thinkSpinner.start();
-
-  try {
-    let firstToken = true;
-    const response = await streamLLM(apiKey, messages, (token) => {
-      if (firstToken) {
-        // Clear the spinner line before writing streamed text
-        thinkSpinner.stop();
-        process.stdout.write("  ");
-        firstToken = false;
-      }
-      process.stdout.write(token);
-    });
-
-    if (!firstToken) {
-      // We streamed something -- add trailing newline
-      process.stdout.write("\n");
-    } else {
-      // No tokens received -- clear spinner
-      thinkSpinner.stop();
-    }
-
-    return { text: response, streamed: !firstToken };
-  } catch {
-    // Streaming failed -- fall back to blocking call
-    thinkSpinner.update("streaming unavailable, waiting for response");
-
-    try {
-      const response = await callLLM(apiKey, messages);
-      thinkSpinner.stop();
-      return { text: response, streamed: false };
-    } catch (err) {
-      thinkSpinner.fail(err instanceof Error ? err.message : "failed");
-      throw err;
-    }
-  }
+  return streamAssistantTurn({
+    streamUrl: STREAM_URL,
+    messages,
+    spinnerLabel,
+    timeoutMs: 120_000,
+    fallback: () => callLLM(apiKey, messages),
+  });
 }
 
 interface DetectedSource {
