@@ -1,7 +1,25 @@
 import { ProfileContent } from "./profile-content";
 import type { Metadata } from "next";
+import { permanentRedirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+
+// ── Normalize handles that arrive with a leading @ (or %40) ──
+// /@houston and /%40houston should 301 to the canonical /houston.
+// permanentRedirect() throws, so callers can treat this as a pass-through.
+function normalizeUsernameParam(raw: string): string {
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    // malformed percent-encoding — fall through with the raw value
+  }
+  if (decoded.startsWith("@")) {
+    const stripped = decoded.replace(/^@+/, "");
+    permanentRedirect(stripped ? `/${encodeURIComponent(stripped)}` : "/");
+  }
+  return raw;
+}
 
 // The public profile payload is protocol-shaped but intentionally extensible.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,7 +67,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
-  const { username } = await params;
+  const { username: rawUsername } = await params;
+  const username = normalizeUsernameParam(rawUsername);
 
   const fallback: Metadata = {
     title: `${username} — you.md`,
@@ -306,7 +325,8 @@ export default async function ProfilePage({
 }: {
   params: Promise<{ username: string }>;
 }) {
-  const { username } = await params;
+  const { username: rawUsername } = await params;
+  const username = normalizeUsernameParam(rawUsername);
   const ssrData = await fetchProfileData(username);
 
   // Build JSON-LD server-side so it's in the initial HTML for crawlers
