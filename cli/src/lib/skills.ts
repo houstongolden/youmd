@@ -13,6 +13,7 @@ import {
   getSkillMetricsPath,
   ensureSkillsDir,
   detectProjectContext,
+  resolveActiveBundleDir,
 } from "./config";
 import {
   readSkillCatalog,
@@ -28,7 +29,17 @@ import {
   recordSkillInstall as apiRecordInstall,
   trackSkillUsage as apiTrackUsage,
   removeSkillInstall as apiRemoveInstall,
+  getRegistrySkill as apiGetRegistrySkill,
 } from "./api";
+
+/** Source prefixes that require network access (handled by the async path). */
+export function isRemoteSkillSource(source: string): boolean {
+  return (
+    source.startsWith("github:") ||
+    source.startsWith("https://") ||
+    source.startsWith("registry:")
+  );
+}
 
 // ─── Skill File I/O ───────────────────────────────────────────────────
 
@@ -126,6 +137,24 @@ export async function resolveSkillSourceAsync(source: string): Promise<string | 
   const syncResult = resolveSkillSource(source);
   if (syncResult) return syncResult;
 
+  // you.md registry: registry:<skill-name>
+  // Skills installed from `youmd skill browse` / the registry fallback get a
+  // `registry:` source in the catalog — without this branch they could never
+  // be reinstalled after a remove.
+  if (source.startsWith("registry:")) {
+    const name = source.slice("registry:".length).trim();
+    if (!name) return null;
+    try {
+      const res = await apiGetRegistrySkill(name);
+      if (res.ok && res.data.content) {
+        return res.data.content;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
   // GitHub: github:owner/repo/path/to/file.md
   if (source.startsWith("github:")) {
     const ghPath = source.slice("github:".length);
@@ -187,7 +216,7 @@ export function installSkill(skillName: string): { ok: boolean; error?: string }
   const content = resolveSkillSource(entry.source);
   if (!content) {
     // If source is remote, caller should use installSkillAsync instead
-    if (entry.source.startsWith("github:") || entry.source.startsWith("https://")) {
+    if (isRemoteSkillSource(entry.source)) {
       return { ok: false, error: `remote source — use installSkillAsync for: ${entry.source}` };
     }
     return { ok: false, error: `could not resolve source: ${entry.source}` };
@@ -361,6 +390,8 @@ export function syncAllSkills(): { synced: string[]; errors: string[] } {
     }
   }
 
+  if (synced.length > 0) recordSkillSyncTimestamp();
+
   return { synced, errors };
 }
 
@@ -393,6 +424,8 @@ export function syncAffectedSkills(changedFields: string[]): { synced: string[];
       errors.push(`${entry.name}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
+
+  if (synced.length > 0) recordSkillSyncTimestamp();
 
   return { synced, errors };
 }
@@ -928,6 +961,8 @@ interface SkillMetrics {
   }>;
   identityFields: Record<string, { references: number }>;
   lastUpdated: string;
+  /** When installed skills were last re-rendered against identity (skill sync). */
+  lastSyncedAt?: string;
 }
 
 function readMetrics(): SkillMetrics {
@@ -981,4 +1016,53 @@ export function trackSkillEvent(skillName: string, event: "use" | "install" | "r
 
 export function getMetrics(): SkillMetrics {
   return readMetrics();
+}
+
+/** Record that installed skills were just re-rendered against identity. */
+function recordSkillSyncTimestamp(): void {
+  const metrics = readMetrics();
+  metrics.lastSyncedAt = new Date().toISOString();
+  writeMetrics(metrics);
+}
+
+/**
+ * Last time the identity bundle content changed, as epoch ms.
+ *
+ * Uses the max mtime of the bundle's identity surfaces (profile/,
+ * preferences/, voice/, directives/ markdown plus you.json). This is the
+ * same content syncAllSkills() interpolates, so comparing it against
+ * metrics.lastSyncedAt answers "did identity change after the last sync?"
+ * Returns null when no bundle exists.
+ */
+export function getIdentityLastChangedAt(): number | null {
+  const bundleDir = resolveActiveBundleDir();
+  if (!bundleDir) return null;
+
+  let latest = 0;
+  const identityDirs = ["profile", "preferences", "voice", "directives"];
+  for (const dirName of identityDirs) {
+    const dir = path.join(bundleDir, dirName);
+    if (!fs.existsSync(dir)) continue;
+    try {
+      for (const file of fs.readdirSync(dir)) {
+        if (!file.endsWith(".md")) continue;
+        const stat = fs.statSync(path.join(dir, file));
+        if (stat.mtimeMs > latest) latest = stat.mtimeMs;
+      }
+    } catch {
+      // unreadable dir — skip
+    }
+  }
+
+  try {
+    const youJson = path.join(bundleDir, "you.json");
+    if (fs.existsSync(youJson)) {
+      const stat = fs.statSync(youJson);
+      if (stat.mtimeMs > latest) latest = stat.mtimeMs;
+    }
+  } catch {
+    // skip
+  }
+
+  return latest > 0 ? latest : null;
 }

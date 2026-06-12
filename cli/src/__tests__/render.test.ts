@@ -106,3 +106,41 @@ describe("BrailleSpinner elapsed timer", () => {
     expect(stripAnsi(finalWrite)).not.toContain("4s");
   });
 });
+
+describe("BrailleSpinner minimum display time", () => {
+  let writeSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    writeSpy.mockRestore();
+  });
+
+  it("stop() holds a sub-250ms spinner so it doesn't flash", () => {
+    const spinner = new BrailleSpinner("quick op");
+    spinner.start();
+    const before = Date.now();
+    spinner.stop("done");
+    const elapsed = Date.now() - before;
+    // ~250ms minimum display, with a little scheduling slack
+    expect(elapsed).toBeGreaterThanOrEqual(200);
+  });
+
+  it("stop() adds no extra hold once the minimum has elapsed", async () => {
+    const spinner = new BrailleSpinner("slow op");
+    spinner.start();
+    await new Promise((r) => setTimeout(r, 300));
+    const before = Date.now();
+    spinner.stop("done");
+    expect(Date.now() - before).toBeLessThan(100);
+  });
+
+  it("stop() on a never-started spinner returns immediately", () => {
+    const spinner = new BrailleSpinner("never started");
+    const before = Date.now();
+    spinner.stop();
+    expect(Date.now() - before).toBeLessThan(100);
+  });
+});

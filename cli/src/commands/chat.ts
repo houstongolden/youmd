@@ -57,10 +57,6 @@ const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
 const CURRENT_VERSION = "0.6.23";
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 // ─── Streaming LLM client ─────────────────────────────────────────────
 
 async function streamLLM(
@@ -1194,7 +1190,6 @@ async function runYouLaunchInvestigation(
   spinner.start();
 
   try {
-    await delay(600);
     try {
       const hasPreferences = fs.existsSync(path.join(bundleDir, "preferences", "agent.md"));
       const hasDirectives = fs.existsSync(path.join(bundleDir, "directives", "agent.md"));
@@ -1278,7 +1273,6 @@ async function runYouLaunchInvestigation(
     const homeSignals = collectHomeAgentSignals();
     findings.push(...homeSignals.slice(0, 2));
 
-    await delay(900);
     spinner.stop("looked through local context");
     return {
       findings: findings.slice(0, 3),

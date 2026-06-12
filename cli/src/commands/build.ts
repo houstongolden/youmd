@@ -59,8 +59,6 @@ export async function buildCommand(): Promise<void> {
 
   const result = compileBundle(bundleDir);
 
-  await new Promise((r) => setTimeout(r, 400));
-
   spinner.stop();
 
   // Print each file read, organized by directory

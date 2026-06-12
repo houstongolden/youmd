@@ -20,12 +20,14 @@ import {
 import {
   installSkill,
   installSkillAsync,
+  isRemoteSkillSource,
   removeSkill,
   useSkill,
   syncAllSkills,
   linkToAgent,
   initProject,
   getMetrics,
+  getIdentityLastChangedAt,
   AgentTarget,
   InitProjectMode,
 } from "../lib/skills";
@@ -189,12 +191,11 @@ async function installSkillCmd(args: string[]): Promise<void> {
     console.log("");
     const spinner = new BrailleSpinner(randomSpinner("install"));
     spinner.start();
-    await new Promise((r) => setTimeout(r, 300));
 
     let installed = 0;
     for (const entry of toInstall) {
       let result = installSkill(entry.name);
-      if (!result.ok && (entry.source.startsWith("github:") || entry.source.startsWith("https://"))) {
+      if (!result.ok && isRemoteSkillSource(entry.source)) {
         result = await installSkillAsync(entry.name);
       }
       if (result.ok) installed++;
@@ -222,7 +223,6 @@ async function installSkillCmd(args: string[]): Promise<void> {
       console.log("");
       const regSpinner = new BrailleSpinner("checking the skill registry");
       regSpinner.start();
-      await new Promise((r) => setTimeout(r, 200));
 
       try {
         const regRes = await browseSkills();
@@ -307,11 +307,9 @@ async function installSkillCmd(args: string[]): Promise<void> {
   const spinner = new BrailleSpinner(randomSpinner("install"));
   spinner.start();
 
-  await new Promise((r) => setTimeout(r, 300));
-
   // Try sync install, fall back to async for remote sources
   let result = installSkill(entry.name);
-  if (!result.ok && (entry.source.startsWith("github:") || entry.source.startsWith("https://"))) {
+  if (!result.ok && isRemoteSkillSource(entry.source)) {
     result = await installSkillAsync(entry.name);
   }
 
@@ -349,7 +347,6 @@ async function removeSkillCmd(args: string[]): Promise<void> {
     console.log("");
     const spinner = new BrailleSpinner(randomSpinner("remove"));
     spinner.start();
-    await new Promise((r) => setTimeout(r, 200));
 
     let removed = 0;
     for (const entry of toRemove) {
@@ -374,8 +371,6 @@ async function removeSkillCmd(args: string[]): Promise<void> {
   const spinner = new BrailleSpinner(randomSpinner("remove"));
   spinner.start();
 
-  await new Promise((r) => setTimeout(r, 200));
-
   const result = removeSkill(name);
 
   if (result.ok) {
@@ -398,8 +393,6 @@ async function useSkillCmd(args: string[]): Promise<void> {
   console.log("");
   const spinner = new BrailleSpinner(randomSpinner("use"));
   spinner.start();
-
-  await new Promise((r) => setTimeout(r, 400));
 
   const result = useSkill(name);
 
@@ -449,8 +442,6 @@ async function syncSkillsCmd(): Promise<void> {
   const spinner = new BrailleSpinner(randomSpinner("sync"));
   spinner.start();
 
-  await new Promise((r) => setTimeout(r, 400));
-
   const result = syncAllSkills();
 
   if (result.synced.length > 0) {
@@ -478,7 +469,7 @@ function addSkillCmd(args: string[]): void {
   if (!name || !source) {
     console.log("");
     console.log(chalk.yellow("  usage: youmd skill add <name> <source>"));
-    console.log(DIM("  source: local:/path/to/skill.md or github:owner/repo/path"));
+    console.log(DIM("  source: local:/path/to/skill.md, github:owner/repo/path, or registry:<name>"));
     console.log("");
     return;
   }
@@ -670,8 +661,6 @@ async function linkSkillsCmd(args: string[]): Promise<void> {
   const spinner = new BrailleSpinner(randomSpinner("link"));
   spinner.start();
 
-  await new Promise((r) => setTimeout(r, 300));
-
   const result = linkToAgent(target);
 
   if (result.ok) {
@@ -714,12 +703,11 @@ async function initProjectCmd(args: string[] = []): Promise<void> {
   if (toInstall.length > 0) {
     const installSpinner = new BrailleSpinner(randomSpinner("install"));
     installSpinner.start();
-    await new Promise((r) => setTimeout(r, 300));
 
     let installed = 0;
     for (const entry of toInstall) {
       let result = installSkill(entry.name);
-      if (!result.ok && (entry.source.startsWith("github:") || entry.source.startsWith("https://"))) {
+      if (!result.ok && isRemoteSkillSource(entry.source)) {
         result = await installSkillAsync(entry.name);
       }
       if (result.ok) installed++;
@@ -730,8 +718,6 @@ async function initProjectCmd(args: string[] = []): Promise<void> {
 
   const spinner = new BrailleSpinner(randomSpinner("init"));
   spinner.start();
-
-  await new Promise((r) => setTimeout(r, 500));
 
   const result = initProject({ mode });
 
@@ -913,10 +899,21 @@ function improveCmd(): void {
     proposals.push("install voice-sync — you have voice data that could propagate to all agents");
   }
 
-  // Propose running sync if skills are installed but metrics show 0 syncs
-  const syncCount = Object.values(metrics.skills).reduce((sum, s) => sum + s.uses, 0);
-  if (installed.length > 0 && syncCount === 0) {
-    proposals.push("run \"youmd skill sync\" — installed skills haven't been synced yet");
+  // Propose running sync only when identity actually changed after the last
+  // skill sync (lastSyncedAt is recorded by the sync paths in lib/skills).
+  // Previously this keyed off total uses, which is unrelated to sync state.
+  const identityChangedAt = getIdentityLastChangedAt();
+  const lastSyncedAtMs = metrics.lastSyncedAt ? Date.parse(metrics.lastSyncedAt) : NaN;
+  if (
+    installed.length > 0 &&
+    identityChangedAt !== null &&
+    (Number.isNaN(lastSyncedAtMs) || identityChangedAt > lastSyncedAtMs)
+  ) {
+    proposals.push(
+      Number.isNaN(lastSyncedAtMs)
+        ? "run \"youmd skill sync\" — installed skills haven't been synced against your identity yet"
+        : "run \"youmd skill sync\" — your identity changed after the last skill sync"
+    );
   }
 
   // Propose linking if skills installed but no .claude/skills/youmd exists
@@ -976,7 +973,6 @@ async function browseCmd(): Promise<void> {
   console.log("");
   const spinner = new BrailleSpinner("scanning the skill registry");
   spinner.start();
-  await new Promise((r) => setTimeout(r, 300));
 
   try {
     const res = await browseSkills();
@@ -1007,7 +1003,7 @@ async function browseCmd(): Promise<void> {
       console.log(`    ${DIM("v" + s.version)} ${DIM(s.scope)} ${DIM(`[${s.identityFields.join(", ")}]`)}`);
     }
     console.log("");
-    console.log(DIM(`  install with: youmd skill add <name> registry:<name>`));
+    console.log(DIM(`  install with: youmd skill install <name>`));
   } catch {
     spinner.fail("registry unreachable");
   }
@@ -1052,7 +1048,6 @@ async function publishSkillCmd(args: string[]): Promise<void> {
   console.log("");
   const spinner = new BrailleSpinner("publishing to the skill registry");
   spinner.start();
-  await new Promise((r) => setTimeout(r, 400));
 
   try {
     const res = await apiPublishSkill({
@@ -1070,7 +1065,7 @@ async function publishSkillCmd(args: string[]): Promise<void> {
       console.log(
         chalk.green("  \u2713") + ` ${chalk.bold(entry.name)} is live on the registry`
       );
-      console.log(DIM(`  others can install with: youmd skill add ${entry.name} registry:${entry.name}`));
+      console.log(DIM(`  others can install with: youmd skill install ${entry.name}`));
     } else {
       spinner.fail(String((res.data as any)?.error || "publish failed"));
     }
@@ -1091,7 +1086,6 @@ async function remoteStatusCmd(): Promise<void> {
   console.log("");
   const spinner = new BrailleSpinner("fetching your skill profile from the cloud");
   spinner.start();
-  await new Promise((r) => setTimeout(r, 300));
 
   try {
     const res = await getMySkills();

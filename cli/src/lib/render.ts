@@ -362,6 +362,14 @@ const ORANGE_SHADES = [
  * Inspired by Claude Code's spinner aesthetic.
  */
 export class BrailleSpinner {
+  /**
+   * Minimum visible time for a started spinner. Real operations keep their
+   * real duration; sub-250ms operations hold the final frame briefly so the
+   * spinner reads as a state change instead of a flash. This replaces the
+   * old pattern of sprinkling fake `setTimeout` delays around fast work.
+   */
+  private static readonly MIN_DISPLAY_MS = 250;
+
   private frames = ["\u280B", "\u2819", "\u2839", "\u2838", "\u283C", "\u2834", "\u2826", "\u2827", "\u2807", "\u280F"];
   private frameIndex = 0;
   private colorIndex = 0;
@@ -419,10 +427,28 @@ export class BrailleSpinner {
     }
   }
 
+  /**
+   * Synchronously hold the last frame until MIN_DISPLAY_MS has elapsed
+   * since start(). Synchronous (Atomics.wait) so the 69 existing
+   * `spinner.stop()` call sites keep their output ordering without
+   * becoming async.
+   */
+  private blockUntilMinDisplay(): void {
+    if (this.startTime <= 0) return; // never started — nothing to smooth
+    const remaining = BrailleSpinner.MIN_DISPLAY_MS - (Date.now() - this.startTime);
+    if (remaining <= 0) return;
+    try {
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, remaining);
+    } catch {
+      // SharedArrayBuffer unavailable — skip the hold
+    }
+  }
+
   stop(result?: string): void {
     if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
+      this.blockUntilMinDisplay();
     }
     const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
     const time = elapsed >= 1 ? DIM(` ${elapsed}s`) : "";

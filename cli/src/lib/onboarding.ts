@@ -119,10 +119,6 @@ const ASCII_LOGO_LINES = [
   "   \u2569  \u255A\u2550\u255D \u255A\u2550\u255D  \u2550\u2569\u255D \u2550\u2569\u255D",
 ];
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function showAsciiLogo(): Promise<void> {
   const accent = chalk.hex("#C46A3A");
   console.log("");
