@@ -12,9 +12,9 @@
 
 | ID | Item | Source | Effort | Status | Verification |
 |---|---|---|---|---|---|
-| V1 | Hero rework: kicker kept, headline → "every agent meets the same you", handshake triad (agent.md/soul.md/you.md) added below CTAs, install command in hero, quiet bullet "one runtime" → "one brain across your agents" | POSITIONING-PLAYBOOK §2 (R1+R2) | S | in-progress (agent) | Visual check in browser vs PRD v2.3; build passes; Vercel deploy live |
-| V2 | Demote "stop re-explaining yourself" to problem-statement line on landing (keep as pain hook section, not headline) | POSITIONING-PLAYBOOK §1 | S | in-progress (agent) | Landing renders; copy consistent across sections |
-| V3 | Freshness-moat copy: "a copied YouStack freezes at copy time; yours stays current" added to YouStacks landing section + README | VISION-AUDIT R5 | S | in-progress (agent) | Copy live on landing + README; no overstated "clone-proof" claims |
+| V1 | Hero rework: kicker kept, headline → "every agent meets the same you", handshake triad (agent.md/soul.md/you.md) added below CTAs, install command in hero, quiet bullet "one runtime" → "one brain across your agents" | POSITIONING-PLAYBOOK §2 (R1+R2) | S | done (645d9d9; deployed, hero markup verified on prod) | Visual check in browser vs PRD v2.3; build passes; Vercel deploy live |
+| V2 | Demote "stop re-explaining yourself" to problem-statement line on landing (keep as pain hook section, not headline) | POSITIONING-PLAYBOOK §1 | S | done (645d9d9; subhead carries pain hook, verified on prod) | Landing renders; copy consistent across sections |
+| V3 | Freshness-moat copy: "a copied YouStack freezes at copy time; yours stays current" added to YouStacks landing section + README | VISION-AUDIT R5 | S | done (645d9d9; freshness-moat copy live) | Copy live on landing + README; no overstated "clone-proof" claims |
 | V4 | Lighthouse growth loop: ASCII-portrait OG share card framing "this is what agents see when they meet me" on public profiles | VISION-AUDIT R4 | M | todo | OG card renders for a real profile; share preview correct |
 | V5 | Honesty-ledger guard: no copy promises encrypted vault until AES-256-GCM ships; audit landing/pricing copy now ("scoped access" not "encrypted") | POSITIONING-PLAYBOOK §4 / risk X2 | S | todo | Grep landing+docs for encryption promises; none ahead of shipped reality |
 | V6 | Protocol positioning: publish/promote `you-md/v1` schema as open standard page in docs; "an MCP where the context is you" line into developer docs | VISION-AUDIT R3 | M | todo | Docs page live; llms surfaces regenerated + docs:check passes |
@@ -27,7 +27,7 @@
 | P2 | Resolve draft/publish semantics (save==publish w/ rollback patching profile, or true drafts) | PRODUCT-AUDIT #2; FEATURE-ROADMAP 1.2 | M | blocked(needs-spec: Houston call) |
 | P3 | Canonical `assembleAgentContext()` for web agent, CLI chat, hosted MCP, /ctx links + parity test | PRODUCT-AUDIT #3; FEATURE-ROADMAP 2.1 | L | todo |
 | P4 | Shared `generateSecureToken` replacing Math.random in apiKeys.ts:17, contextLinks.ts:18, private.ts:82, profiles.ts:26 | PRODUCT-AUDIT #4; FEATURE-ROADMAP 0.1 | S | done (1ce525d: CSPRNG via secureToken.ts, shapes preserved) |
-| P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | todo |
+| P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | in-progress (agent) |
 | P6 | Fix `youmd mcp --install claude --auto` → ~/.claude.json or `claude mcp add`; post-install verify | PRODUCT-AUDIT #8; FEATURE-ROADMAP 1.3 | S | done (bf2e647: claude mcp add / ~/.claude.json + verify) |
 | P7 | Publish CLI to npm + version-skew CI check | PRODUCT-AUDIT #9; FEATURE-ROADMAP 0.3 | S | blocked(otp) |
 | P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning; also reconcile YOUSTACKS_PRODUCT_LAYER_PRD.md:201-210 drifted table + fix example manifest minYoumdCli 0.7.0 vs cli 0.6.23 | PRODUCT-AUDIT #10; P32 findings | M | todo |
@@ -84,8 +84,8 @@
 | U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | todo |
 | U19 | Status-bar freshness segment + staleness nudge on session restore | S | todo |
 | U20 | Renderer: strip ANSI before padEnd; spinner update() preserves startTime | S | done (5028339) |
-| U21 | Lowercase CTAs on landing | S | in-progress (agent) |
-| U22 | Sweep font-medium/semibold per opacity-not-weight rule (19 instances) | S | in-progress (agent) |
+| U21 | Lowercase CTAs on landing | S | done (645d9d9; lowercase CTAs verified on prod) |
+| U22 | Sweep font-medium/semibold per opacity-not-weight rule (19 instances) | S | done (645d9d9) |
 | U23 | Boot sequence checkmarks tied to real events; enter-to-skip | S | todo |
 
 ## M3 — Self-improving loop items (SELF-IMPROVING-SYSTEM-DESIGN + GLOBAL-EVOLUTION-ROADMAP)
@@ -118,7 +118,7 @@
 | L24 | Scheduled maintainer agent mining journal → guarded auto_pr | L | todo (after L12+L14) |
 | L25 | Cross-stack proposals → human-gated registry candidates | L | todo (after L20) |
 | L26 | Server-orchestrated evolution (Convex crons) | L | blocked(sequenced-last by design: requires Stage 2-3 gates) |
-| L27 | CLI stdio MCP brief parity: render memory content + includeMemories default true (match hosted) | S | todo |
+| L27 | CLI stdio MCP brief parity: render memory content + includeMemories default true (match hosted) | S | in-progress (agent) |
 
 ## M4 — Tech items (TECH-STACK-AUDIT + ARCHITECTURE-EVOLUTION + ENGINEERING-ROADMAP + ONE-CLICK)
 
