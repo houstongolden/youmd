@@ -156,7 +156,8 @@ function FreshnessSegment({ timestamp }: { timestamp: number }) {
   return (
     <span className="flex items-center gap-1.5" title={new Date(timestamp).toLocaleString()}>
       <span
-        aria-hidden="true"
+        role="img"
+        aria-label={isFresh ? "fresh" : "stale"}
         className={`w-1.5 h-1.5 rounded-full ${
           isFresh ? "bg-[hsl(var(--success))]" : "bg-[hsl(var(--accent))]"
         }`}
@@ -270,7 +271,7 @@ export function DashboardContent() {
 
   if (!convexUser) {
     return (
-      <div className="h-[calc(100dvh-2.25rem)] bg-[hsl(var(--bg))] flex flex-col">
+      <main aria-busy="true" className="h-[calc(100dvh-2.25rem)] bg-[hsl(var(--bg))] flex flex-col">
         <div className="flex-1 flex flex-col max-w-[1400px] mx-auto w-full p-0 md:p-4 min-h-0">
           <div
             className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] md:border md:border-[hsl(var(--border))] overflow-hidden min-h-0"
@@ -319,7 +320,7 @@ export function DashboardContent() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -337,7 +338,7 @@ export function DashboardContent() {
   const activeMobileTab = mobileView === "terminal" ? "terminal" : activePreviewTab;
 
   return (
-    <div className="h-[calc(100dvh-2.25rem)] bg-[hsl(var(--bg))] flex flex-col">
+    <main className="h-[calc(100dvh-2.25rem)] bg-[hsl(var(--bg))] flex flex-col">
       <div className="flex-1 flex flex-col max-w-[1400px] mx-auto w-full p-0 md:p-4 min-h-0">
         <div
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] md:border md:border-[hsl(var(--border))] overflow-hidden min-h-0"
@@ -417,7 +418,8 @@ export function DashboardContent() {
               <div className="flex items-center gap-1.5 pr-2 shrink-0">
                 {syncedAt != null && (
                   <span
-                    aria-hidden="true"
+                    role="img"
+                    aria-label={`synced ${formatRelativeTime(syncedAt)}${isFreshTimestamp(syncedAt) ? "" : " — stale"}`}
                     title={`synced ${formatRelativeTime(syncedAt)}`}
                     className={`w-1.5 h-1.5 rounded-full ${
                       isFreshTimestamp(syncedAt)
@@ -599,6 +601,6 @@ export function DashboardContent() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

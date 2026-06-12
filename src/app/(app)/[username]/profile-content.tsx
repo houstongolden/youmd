@@ -252,10 +252,14 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
   // Natural height inside the dashboard pane; full viewport on the public page
   const rootMinH = preview ? "min-h-full" : "min-h-[100dvh]";
 
+  // The dashboard already provides the <main> landmark — avoid nesting a
+  // second <main> when this component renders inline as the profile preview.
+  const MainEl: "main" | "div" = preview ? "div" : "main";
+
   // Not found — only trust the live Convex response
   if (profile === null) {
     return (
-      <main className={`${rootMinH} flex items-center justify-center bg-[hsl(var(--bg))] p-4`}>
+      <MainEl className={`${rootMinH} flex items-center justify-center bg-[hsl(var(--bg))] p-4`}>
         <div className="w-full max-w-md">
           <div className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "var(--radius)" }}>
             <TerminalHeader title="you.md -- error" asHeading />
@@ -278,7 +282,7 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
             </div>
           </div>
         </div>
-      </main>
+      </MainEl>
     );
   }
 
@@ -328,7 +332,7 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
     return (
       <div className={`profile-page ${rootMinH} flex flex-col bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]`}>
         <ProfileHeader username={username} />
-        <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
+        <MainEl className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pt-8 md:pt-12 pb-16">
           <div className="flex items-end gap-4 mb-4">
             <ProfilePortrait
               username={username}
@@ -359,7 +363,7 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
               </Link>
             )}
           </div>
-        </main>
+        </MainEl>
         <ProfileFooter />
 
         {/* Claim banner — fixed overlay, suppressed in the dashboard preview */}
@@ -445,7 +449,7 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
         );
       })()}
 
-      <main className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pb-20 relative z-10">
+      <MainEl className="flex-1 max-w-[680px] mx-auto w-full px-4 md:px-6 pb-20 relative z-10">
 
         {/* ═══ AGENT PREVIEW MODE ═══ */}
         {viewMode === "agent" ? (
@@ -1137,7 +1141,7 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
 
         </>
         )}
-      </main>
+      </MainEl>
 
       <ProfileFooter />
 

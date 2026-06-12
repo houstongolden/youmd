@@ -72,6 +72,15 @@ export default function RootLayout({
       <body
         className="antialiased"
       >
+        {/* Skip link — first focusable element; visually hidden until focused.
+            Targets the #main content landmark (marketing page + (app) layout). */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:block focus:border focus:border-[hsl(var(--accent))] focus:bg-[hsl(var(--bg-raised))] focus:px-3 focus:py-2 focus:font-mono focus:text-xs focus:text-[hsl(var(--accent))] focus:outline-none"
+          style={{ borderRadius: "var(--radius)" }}
+        >
+          skip to content
+        </a>
         {children}
       </body>
     </html>

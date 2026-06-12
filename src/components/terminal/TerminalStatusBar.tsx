@@ -18,8 +18,11 @@ export function TerminalStatusBar({
   isPublished,
 }: TerminalStatusBarProps) {
   return (
-    <nav className="flex items-center justify-between px-4 py-2.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))] shrink-0">
-      <Link href="/" className="inline-block">
+    <nav
+      aria-label="account status"
+      className="flex items-center justify-between px-4 py-2.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))] shrink-0"
+    >
+      <Link href="/" className="inline-block" aria-label="you.md home">
         <PixelYOU />
       </Link>
       <div className="flex items-center gap-3 text-xs font-mono text-[hsl(var(--text-secondary))]">

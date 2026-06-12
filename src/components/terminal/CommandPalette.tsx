@@ -146,6 +146,9 @@ export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProp
       onClick={handleBackdropClick}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="command palette"
         className="w-full max-w-md border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] shadow-2xl overflow-hidden"
         style={{ borderRadius: "var(--radius)" }}
         onKeyDown={handleKeyDown}
@@ -162,6 +165,13 @@ export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProp
               setSelectedIndex(0);
             }}
             placeholder="type a command..."
+            aria-label="filter commands"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="command-palette-list"
+            aria-activedescendant={
+              filtered[selectedIndex] ? `palette-option-${selectedIndex}` : undefined
+            }
             autoComplete="off"
             spellCheck={false}
             className="flex-1 bg-transparent border-none outline-none font-mono text-[13px] text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/20"
@@ -172,15 +182,21 @@ export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProp
         </div>
 
         {/* Command list */}
-        <div ref={listRef} className="max-h-[min(300px,45dvh)] overflow-y-auto overscroll-contain py-1">
+        <div
+          ref={listRef}
+          id="command-palette-list"
+          role="listbox"
+          aria-label="commands"
+          className="max-h-[min(300px,45dvh)] overflow-y-auto overscroll-contain py-1"
+        >
           {filtered.length === 0 ? (
             <div className="px-3 py-4 text-center font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-30">
               no matching commands
             </div>
           ) : (
             grouped.map((group) => (
-              <div key={group.category}>
-                <div className="px-3 pt-2 pb-1">
+              <div key={group.category} role="group" aria-label={categoryLabel(group.category)}>
+                <div className="px-3 pt-2 pb-1" role="presentation">
                   <span className="font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--text-secondary))] opacity-25">
                     {categoryLabel(group.category)}
                   </span>
@@ -192,6 +208,9 @@ export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProp
                     <button
                       key={cmd.command}
                       data-palette-item
+                      id={`palette-option-${idx}`}
+                      role="option"
+                      aria-selected={isSelected}
                       onClick={() => {
                         onSelect(cmd.command);
                         onClose();

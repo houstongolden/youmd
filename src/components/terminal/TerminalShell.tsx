@@ -158,13 +158,66 @@ export function TerminalShell({
     setPastedImageUrl(null);
   }, [sendMessage, pastedImageUrl, input]);
 
-  // Find the ID of the last assistant message for typewriter effect
-  const latestAssistantId = useMemo(() => {
+  // Find the last assistant message — id drives the typewriter cursor,
+  // content drives the screen-reader live region below.
+  const latestAssistant = useMemo(() => {
     for (let i = displayMessages.length - 1; i >= 0; i--) {
-      if (displayMessages[i].role === "assistant") return displayMessages[i].id;
+      if (displayMessages[i].role === "assistant") return displayMessages[i];
     }
     return null;
   }, [displayMessages]);
+  const latestAssistantId = latestAssistant?.id ?? null;
+  const latestAssistantContent = latestAssistant?.content ?? "";
+
+  // --- a11y: announce completed agent messages (not per streamed token) ---
+  // There is no explicit streaming flag on DisplayMessage, so completion is
+  // detected by quiescence: a message that GREW (streamed) and then stopped
+  // changing for SETTLE_MS is considered done and announced once. Messages
+  // that arrive fully formed in a single snapshot (restored history) are
+  // never announced.
+  const [announcement, setAnnouncement] = useState("");
+  const [streamSettled, setStreamSettled] = useState(true);
+  const announcedIdRef = useRef<string | null>(null);
+  const streamTrackRef = useRef<{ id: string | null; length: number; active: boolean }>({
+    id: null,
+    length: 0,
+    active: false,
+  });
+
+  useEffect(() => {
+    const SETTLE_MS = 1200;
+    if (!latestAssistantId || announcedIdRef.current === latestAssistantId) return;
+    const track = streamTrackRef.current;
+    if (track.id !== latestAssistantId) {
+      // First snapshot of this message: an empty placeholder means a stream
+      // is starting (announce when it settles); full content means restored
+      // history (never announce).
+      streamTrackRef.current = {
+        id: latestAssistantId,
+        length: latestAssistantContent.length,
+        active: latestAssistantContent.length === 0,
+      };
+      return;
+    }
+    if (latestAssistantContent.length !== track.length) {
+      track.active = true;
+      track.length = latestAssistantContent.length;
+    }
+    if (!track.active || latestAssistantContent.length === 0) return;
+    // Mark busy asynchronously (synchronous setState in effects is banned);
+    // each new token re-runs the effect, clearing both timers, so the settle
+    // timer only fires once the stream has been quiet for SETTLE_MS.
+    const busyTimer = setTimeout(() => setStreamSettled(false), 0);
+    const settleTimer = setTimeout(() => {
+      announcedIdRef.current = latestAssistantId;
+      setAnnouncement(latestAssistantContent);
+      setStreamSettled(true);
+    }, SETTLE_MS);
+    return () => {
+      clearTimeout(busyTimer);
+      clearTimeout(settleTimer);
+    };
+  }, [latestAssistantId, latestAssistantContent]);
 
   // Scroll-up indicator: show when user has scrolled away from top
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -194,6 +247,9 @@ export function TerminalShell({
           ref={scrollContainerRef}
           onScroll={handleScroll}
           className="h-full overflow-y-auto px-4 py-4"
+          role="group"
+          aria-label="conversation"
+          aria-busy={isThinking || !streamSettled}
         >
           <div className="space-y-3">
             {displayMessages.map((msg) => (
@@ -208,6 +264,12 @@ export function TerminalShell({
             <div ref={messagesEndRef} />
           </div>
         </div>
+      </div>
+
+      {/* Screen-reader live region — announces each agent message once it has
+          finished streaming. Visually hidden; never announces per-token. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {announcement}
       </div>
 
       {/* Input area */}

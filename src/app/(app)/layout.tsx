@@ -12,9 +12,13 @@ export default function AppLayout({
     <ConvexClientProvider>
       <MotionConfigProvider>
         <SiteNav />
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
+        {/* Skip-link target — pages render their own <main> landmark inside;
+            tabIndex={-1} makes the anchor focusable for the skip link. */}
+        <div id="main" tabIndex={-1} className="focus:outline-none">
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </div>
       </MotionConfigProvider>
     </ConvexClientProvider>
   );
