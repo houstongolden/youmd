@@ -17,7 +17,7 @@
 | V3 | Freshness-moat copy: "a copied YouStack freezes at copy time; yours stays current" added to YouStacks landing section + README | VISION-AUDIT R5 | S | done (645d9d9; freshness-moat copy live) | Copy live on landing + README; no overstated "clone-proof" claims |
 | V4 | Lighthouse growth loop: ASCII-portrait OG share card framing "this is what agents see when they meet me" on public profiles | VISION-AUDIT R4 | M | todo | OG card renders for a real profile; share preview correct |
 | V5 | Honesty-ledger guard: no copy promises encrypted vault until AES-256-GCM ships; audit landing/pricing copy now ("scoped access" not "encrypted") | POSITIONING-PLAYBOOK §4 / risk X2 | S | done (audit clean: all encryption claims map to shipped AES-256-GCM vault surfaces; landing/llms docs make no encryption promises) | Grep landing+docs for encryption promises; none ahead of shipped reality |
-| V6 | Protocol positioning: publish/promote `you-md/v1` schema as open standard page in docs; "an MCP where the context is you" line into developer docs | VISION-AUDIT R3 | M | in-progress (agent) | Docs page live; llms surfaces regenerated + docs:check passes |
+| V6 | Protocol positioning: publish/promote `you-md/v1` schema as open standard page in docs; "an MCP where the context is you" line into developer docs | VISION-AUDIT R3 | M | done (2e3ce77; open-standard section grounded in served schema, positioning line in docs+llms; prod check after Vercel) | Docs page live; llms surfaces regenerated + docs:check passes |
 
 ## M2 — Product items (PRODUCT-AUDIT + GAP-VS-VISION + FEATURE-ROADMAP)
 
