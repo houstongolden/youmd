@@ -22,9 +22,11 @@
  *   npx convex run --prod migrations/canonicalizeUsernames:canonicalize
  */
 
-import { internalMutation } from "../_generated/server";
+import { internalAction, internalMutation } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { internal } from "../_generated/api";
+import { v } from "convex/values";
 import { canonicalUsername } from "../lib/profileDirectory";
 
 const BATCH_SIZE = 200;
@@ -151,10 +153,25 @@ async function canonicalizeTable(
   return { scanned, canonicalized, conflicts };
 }
 
-export const canonicalize = internalMutation({
+// Convex allows only ONE paginated query per mutation, so each table runs in
+// its own mutation; the action below orchestrates both for a single CLI call.
+export const canonicalizeOneTable = internalMutation({
+  args: { table: v.union(v.literal("users"), v.literal("profiles")) },
+  handler: async (ctx, { table }) => {
+    return await canonicalizeTable(ctx, table);
+  },
+});
+
+export const canonicalize = internalAction({
   handler: async (ctx) => {
-    const users = await canonicalizeTable(ctx, "users");
-    const profiles = await canonicalizeTable(ctx, "profiles");
+    const users: TableReport = await ctx.runMutation(
+      internal.migrations.canonicalizeUsernames.canonicalizeOneTable,
+      { table: "users" }
+    );
+    const profiles: TableReport = await ctx.runMutation(
+      internal.migrations.canonicalizeUsernames.canonicalizeOneTable,
+      { table: "profiles" }
+    );
 
     return {
       users: { scanned: users.scanned, canonicalized: users.canonicalized },

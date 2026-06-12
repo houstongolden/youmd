@@ -81,7 +81,7 @@ describe("migrations/canonicalizeUsernames.canonicalize", () => {
     const userId = await seedUser(t, "MixedCase");
     const profileId = await seedProfile(t, " Mixed-Profile ");
 
-    const report = await t.mutation(
+    const report = await t.action(
       internal.migrations.canonicalizeUsernames.canonicalize,
       {}
     );
@@ -115,7 +115,7 @@ describe("migrations/canonicalizeUsernames.canonicalize", () => {
       createdAt: 200,
     });
 
-    const report = await t.mutation(
+    const report = await t.action(
       internal.migrations.canonicalizeUsernames.canonicalize,
       {}
     );
@@ -152,7 +152,7 @@ describe("migrations/canonicalizeUsernames.canonicalize", () => {
       createdAt: 200,
     });
 
-    const report = await t.mutation(
+    const report = await t.action(
       internal.migrations.canonicalizeUsernames.canonicalize,
       {}
     );
@@ -178,13 +178,13 @@ describe("migrations/canonicalizeUsernames.canonicalize", () => {
     const t = convexTest(schema);
     await seedUser(t, "MixedCase");
 
-    const first = await t.mutation(
+    const first = await t.action(
       internal.migrations.canonicalizeUsernames.canonicalize,
       {}
     );
     expect(first.users.canonicalized).toBe(1);
 
-    const second = await t.mutation(
+    const second = await t.action(
       internal.migrations.canonicalizeUsernames.canonicalize,
       {}
     );
