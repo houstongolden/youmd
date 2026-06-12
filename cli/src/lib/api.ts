@@ -5,7 +5,7 @@
 
 import { getAuthToken, getConvexSiteUrl, getAppUrl } from "./config";
 
-interface ApiResponse<T = unknown> {
+export interface ApiResponse<T = unknown> {
   ok: boolean;
   status: number;
   data: T;
@@ -196,6 +196,55 @@ export async function verifyEmailCode(
     "/api/auth/verify-code",
     { method: "POST", body: { email, code, issueApiKey: true } }
   );
+}
+
+// ─── Device-flow auth (U7, RFC 8628-shaped) ──────────────────────────
+
+export interface DeviceStartData {
+  deviceCode: string;
+  userCode: string;
+  verificationUrl: string;
+  expiresIn: number; // seconds
+  interval: number; // seconds between polls
+}
+
+export interface DeviceApprovedData {
+  status: "approved";
+  apiKey: string;
+  username: string;
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    displayName?: string;
+    plan?: string;
+  };
+}
+
+export type DevicePollData =
+  | DeviceApprovedData
+  | { status: "pending" | "slow_down"; interval?: number }
+  // error envelope responses also carry a top-level status mirror
+  | { status?: "denied" | "expired" | "invalid"; error?: unknown; message?: string };
+
+/** Begin a device-flow login. No auth. Returns codes + poll parameters. */
+export async function startDeviceLogin(
+  clientName?: string
+): Promise<ApiResponse<DeviceStartData>> {
+  return apiRequest<DeviceStartData>("/api/v1/auth/device/start", {
+    method: "POST",
+    body: clientName ? { clientName } : {},
+  });
+}
+
+/** Poll a device-flow login with the secret deviceCode. */
+export async function pollDeviceLogin(
+  deviceCode: string
+): Promise<ApiResponse<DevicePollData>> {
+  return apiRequest<DevicePollData>("/api/v1/auth/device/poll", {
+    method: "POST",
+    body: { deviceCode },
+  });
 }
 
 // ─── Public endpoints ────────────────────────────────────────────────

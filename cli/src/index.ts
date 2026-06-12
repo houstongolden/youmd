@@ -418,6 +418,7 @@ program
   .description("Authenticate with the You.md platform")
   .option("-k, --key <apiKey>", "API key for authentication")
   .option("-w, --web", "Open browser sign-in directly")
+  .option("-e, --email", "Email-code login in the terminal (skip the device flow)")
   .action(loginCommand);
 
 program
@@ -569,6 +570,7 @@ program
   .option("--hosts <hosts>", "Comma-separated host list for stack link (claude-code,codex,cursor)")
   .option("--target <dir>", "Target project directory for stack link")
   .option("--dry-run", "Preview stack link writes without changing files")
+  .option("--verify", "Verify emitted SKILL.md files pass agent discovery; exit non-zero on failure")
   .option("--json", "Print JSON output")
   .action((subcommand, args, options) => {
     return stackCommand(subcommand, args || [], options);
