@@ -30,7 +30,7 @@
 | P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | done (4b943a2; prod e2e: REST ?q= + MCP search_memories verified; docs regenerated 2a0abb2) |
 | P6 | Fix `youmd mcp --install claude --auto` → ~/.claude.json or `claude mcp add`; post-install verify | PRODUCT-AUDIT #8; FEATURE-ROADMAP 1.3 | S | done (bf2e647: claude mcp add / ~/.claude.json + verify) |
 | P7 | Publish CLI to npm + version-skew CI check | PRODUCT-AUDIT #9; FEATURE-ROADMAP 0.3 | S | blocked(otp) |
-| P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning; also reconcile YOUSTACKS_PRODUCT_LAYER_PRD.md:201-210 drifted table + fix example manifest minYoumdCli 0.7.0 vs cli 0.6.23 | PRODUCT-AUDIT #10; P32 findings | M | todo |
+| P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning; also reconcile YOUSTACKS_PRODUCT_LAYER_PRD.md:201-210 drifted table + fix example manifest minYoumdCli 0.7.0 vs cli 0.6.23 | PRODUCT-AUDIT #10; P32 findings | M | in-progress (agent) |
 | P9 | `youmd stack install <user>/<slug>` + registry endpoint | PRODUCT-AUDIT #11; FEATURE-ROADMAP 2.5 | L | todo |
 | P10 | Truthful capability contract w/ transport tags + CI curl test | PRODUCT-AUDIT #12; FEATURE-ROADMAP 2.6 | M | todo |
 | P11 | One host-link engine emitting `.claude/skills/<name>/SKILL.md`; empirical discovery release gate | PRODUCT-AUDIT #13; FEATURE-ROADMAP 3.7 | M | todo |
@@ -43,11 +43,11 @@
 | P18 | Shared capability router package for CLI + API route + golden parity tests | PRODUCT-AUDIT #20; FEATURE-ROADMAP 3.6 | M | todo |
 | P19 | Typed brainScopes + identity-bearing adapters + doctor skill-ref validation | PRODUCT-AUDIT #21; FEATURE-ROADMAP 3.9 | M | todo |
 | P20 | Documented precedence model + shadowing warning + `youmd status` active-roots line | PRODUCT-AUDIT #22; FEATURE-ROADMAP 3.15 | M | todo |
-| P21 | Standard error envelope `{error:{code,message}}` + real OpenAPI schemas | PRODUCT-AUDIT #23; FEATURE-ROADMAP 3.1 | M | todo |
+| P21 | Standard error envelope `{error:{code,message}}` + real OpenAPI schemas | PRODUCT-AUDIT #23; FEATURE-ROADMAP 3.1 | M | in-progress (agent) |
 | P22 | Per-key rate limits on writes + Retry-After/X-RateLimit headers | PRODUCT-AUDIT #24; FEATURE-ROADMAP 3.2 | M | todo |
 | P23 | Idempotency-Key support + memory content-hash dedupe | PRODUCT-AUDIT #25; FEATURE-ROADMAP 3.3 | M | todo |
 | P24 | Outbound webhooks + MCP subscribe/listChanged | PRODUCT-AUDIT #26; FEATURE-ROADMAP 3.4 | L | todo |
-| P25 | Honest endpoint counts (exclude retired/internal) in docs generator | PRODUCT-AUDIT #27; FEATURE-ROADMAP 3.10 | S | in-progress (agent) |
+| P25 | Honest endpoint counts (exclude retired/internal) in docs generator | PRODUCT-AUDIT #27; FEATURE-ROADMAP 3.10 | S | done (3b5b000; 69 honest endpoints, 7 documented exclusions, stale-exclusion guard) |
 | P26 | `login --key` validates before persisting; preserve apiUrl/appUrl | PRODUCT-AUDIT #31; FEATURE-ROADMAP 0.5 | S | done (308ad0b) |
 | P27 | Headless auth via YOUMD_API_KEY/YOUMD_API_URL env vars | PRODUCT-AUDIT #32; FEATURE-ROADMAP 1.4 | S | done (308ad0b: env auth, zero-write verified) |
 | P28 | Fix `skill browse` registry: install hint | PRODUCT-AUDIT #33; FEATURE-ROADMAP 3.16 | S | done (b0ddedb: hint fixed + registry: resolver) |
@@ -56,7 +56,7 @@
 | P31 | Deprecation/Sunset headers + schemaVersion on payloads | PRODUCT-AUDIT #39; FEATURE-ROADMAP 3.14 | S | todo |
 | P32 | ARCHITECTURE.md YouStacks section + PRD layout reconciliation | PRODUCT-AUDIT #40; FEATURE-ROADMAP 3.17 | S | done (YouStacks layer + storage map + drift notes) |
 | P33 | Project attribution: nearest-marker-wins by depth | PRODUCT-AUDIT #41 | S | done (0c32304) |
-| P34 | Generate CLI command table from commander; docs:check assertion | PRODUCT-AUDIT #42 | S | in-progress (agent) |
+| P34 | Generate CLI command table from commander; docs:check assertion | PRODUCT-AUDIT #42 | S | done (3b5b000; 27 commands parsed from commander, drift-checked) |
 | P35 | TTY/EOF guard on interactive prompts | PRODUCT-AUDIT #43; FEATURE-ROADMAP 0.7 | S | done (5028339: 6 entry points guarded) |
 | P36 | Issue real owner scopes for cli-auth login keys (convex/auth.ts) + settings UI scope selection, then remove the cli-auth grandfather carve-out in lib/scopes.ts; regen docs with the 403 scope contract | P1 follow-up | M | done (05512ab; prod e2e: read:public key → 403 scope_missing on private read/write, grandfathered session 200, test key revoked) |
 
@@ -71,7 +71,7 @@
 | U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | done (e66a58b; default-open + localStorage persist + skeleton parity) |
 | U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | done (b72d07a CLI, web commit; 30 tests incl. every-split parity) |
 | U7 | Device-flow login (CLI code → browser approve → poll) | L | todo |
-| U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | in-progress (agent) |
+| U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | done (3b5b000; 8 hosted vs 24 local split, get_identity example fixed, 9 public examples replayed in smoke) |
 | U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | todo |
 | U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | done (b0ddedb: 16 fake delays removed, 250ms min spinner display) |
 | U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | done (e66a58b; activity=agent log, analytics=stats, session log=account events) |
@@ -81,7 +81,7 @@
 | U15 | Tappable /help + cmd+k hints (mobile palette) | S | todo |
 | U16 | Onboarding turns 2+ stream via shared helper | S | done (1a5d949; all onboarding turns stream filtered) |
 | U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | todo |
-| U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | todo |
+| U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | in-progress (agent) |
 | U19 | Status-bar freshness segment + staleness nudge on session restore | S | todo |
 | U20 | Renderer: strip ANSI before padEnd; spinner update() preserves startTime | S | done (5028339) |
 | U21 | Lowercase CTAs on landing | S | done (645d9d9; lowercase CTAs verified on prod) |
