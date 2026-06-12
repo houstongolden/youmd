@@ -1,7 +1,16 @@
 import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
-import { readGlobalConfig, getLocalBundleDir, localBundleExists, readLocalConfig, writeLocalConfig } from "../lib/config";
+import {
+  readGlobalConfig,
+  readBundleConfig,
+  writeBundleConfig,
+  resolveSyncBundleDir,
+  bundleResolutionNotice,
+  bundleLooksInitialized,
+  markLocalBundle,
+  ensureYoumdGitignored,
+} from "../lib/config";
 import { compileBundle, writeBundle } from "../lib/compiler";
 import { uploadBundle, publishLatest, updatePrivateContext, getMe } from "../lib/api";
 import { readPrivateContextFromLocal } from "./private";
@@ -10,7 +19,7 @@ import { syncAllSkills } from "../lib/skills";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
 import { readSkillCatalog } from "../lib/skill-catalog";
 
-export async function pushCommand(options: { publish?: boolean; force?: boolean }) {
+export async function pushCommand(options: { publish?: boolean; force?: boolean; local?: boolean }) {
   const config = readGlobalConfig();
 
   if (!config.token) {
@@ -18,13 +27,22 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
     return;
   }
 
-  if (!localBundleExists()) {
-    console.log(chalk.hex("#C46A3A")("  no local bundle found."));
-    console.log(chalk.dim("  run: youmd init"));
+  // T7 — home-first: identity pushes compile ~/.youmd unless --local or a
+  // deliberate youmd.local.json marker targets the project-local bundle.
+  const resolution = resolveSyncBundleDir({ local: options.local });
+  const bundleDir = resolution.dir;
+  const notice = bundleResolutionNotice(resolution);
+  if (notice) console.log(chalk.dim(`  ${notice}`));
+
+  if (!bundleLooksInitialized(bundleDir)) {
+    console.log(chalk.hex("#C46A3A")(`  no bundle found at ${bundleDir}.`));
+    if (resolution.scope === "home" && resolution.localBundlePresent) {
+      console.log(chalk.dim("  run: youmd init (or youmd push --local for the project-local bundle)"));
+    } else {
+      console.log(chalk.dim("  run: youmd init"));
+    }
     return;
   }
-
-  const bundleDir = getLocalBundleDir();
 
   // Step 1: Compile the bundle from local files
   console.log(chalk.dim("  compiling local bundle..."));
@@ -69,6 +87,16 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
   // Write compiled files locally
   writeBundle(bundleDir, compiled);
 
+  // T7 — writing a project-local bundle is deliberate: persist the marker
+  // and make sure the repo never silently commits identity data.
+  if (resolution.scope === "local") {
+    markLocalBundle(bundleDir);
+    const gitignore = ensureYoumdGitignored(bundleDir);
+    if (gitignore === "appended" || gitignore === "created") {
+      console.log(chalk.dim("  added .youmd/ to .gitignore — identity data stays out of git"));
+    }
+  }
+
   const youJson = compiled.youJson;
   const youMd = compiled.markdown;
   const manifest = compiled.manifest;
@@ -94,7 +122,7 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
 
   // Step 2: Hash-based ancestry check — prevent overwriting diverged remote
   const localHash = computeContentHash(youJson, youMd);
-  const localConfig = readLocalConfig();
+  const localConfig = readBundleConfig(bundleDir);
   const parentHash = localConfig?.lastPulledHash;
 
   let remoteHash: string | undefined;
@@ -128,7 +156,7 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
       // Track the remote version we've seen
       if (localConfig) {
         localConfig.lastKnownRemoteVersion = remoteVersion;
-        writeLocalConfig(localConfig);
+        writeBundleConfig(bundleDir, localConfig);
       }
     }
   } catch {
@@ -174,7 +202,7 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
       localConfig.lastPushedHash = localHash;
       localConfig.lastPulledHash = localHash;
       localConfig.localContentHash = localHash;
-      writeLocalConfig(localConfig);
+      writeBundleConfig(bundleDir, localConfig);
     }
 
     console.log(
@@ -189,10 +217,10 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
       const pubResult = await publishLatest();
 
       if (pubResult.ok) {
-        const currentConfig = readLocalConfig();
+        const currentConfig = readBundleConfig(bundleDir);
         if (currentConfig) {
           currentConfig.lastPublished = new Date().toISOString();
-          writeLocalConfig(currentConfig);
+          writeBundleConfig(bundleDir, currentConfig);
         }
         console.log(
           chalk.green("  \u2713") +

@@ -2,7 +2,16 @@ import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
 import { getMe, getPublicProfile, getPrivateContext } from "../lib/api";
-import { readGlobalConfig, writeGlobalConfig, getLocalBundleDir, readLocalConfig, writeLocalConfig } from "../lib/config";
+import {
+  readGlobalConfig,
+  writeGlobalConfig,
+  readBundleConfig,
+  writeBundleConfig,
+  resolveSyncBundleDir,
+  bundleResolutionNotice,
+  markLocalBundle,
+  ensureYoumdGitignored,
+} from "../lib/config";
 import { writePrivateContextToLocal } from "./private";
 import { computeContentHash, shortHash } from "../lib/hash";
 import { compileBundle } from "../lib/compiler";
@@ -44,7 +53,7 @@ export function stableContentHash(youJson: unknown, youMd: string): string {
  * the baseline recorded by the last pull in .youmd/config.json.
  */
 export function detectLocalDirtyState(bundleDir: string): LocalDirtyState {
-  const lc = readLocalConfig();
+  const lc = readBundleConfig(bundleDir);
   const baseline = lc?.lastPulledStableHash;
   if (!baseline) return { dirty: false, hasBaseline: false };
   if (!fs.existsSync(path.join(bundleDir, "you.json"))) {
@@ -63,7 +72,7 @@ export function detectLocalDirtyState(bundleDir: string): LocalDirtyState {
 
 export type PullOutcome = "ok" | "dirty" | "no-remote" | "auth-required";
 
-export async function pullCommand(options: { force?: boolean } = {}): Promise<PullOutcome> {
+export async function pullCommand(options: { force?: boolean; local?: boolean } = {}): Promise<PullOutcome> {
   const config = readGlobalConfig();
 
   if (!config.token) {
@@ -77,6 +86,13 @@ export async function pullCommand(options: { force?: boolean } = {}): Promise<Pu
   }
 
   const username = config.username;
+
+  // T7 — home-first: identity pulls land in ~/.youmd unless --local or a
+  // deliberate youmd.local.json marker targets the project-local bundle.
+  const resolution = resolveSyncBundleDir({ local: options.local });
+  const notice = bundleResolutionNotice(resolution);
+  if (notice) console.log(chalk.dim(`  ${notice}`));
+
   console.log(chalk.dim(`  pulling profile for @${username}...`));
 
   // Fetch the published profile from the API
@@ -116,7 +132,7 @@ export async function pullCommand(options: { force?: boolean } = {}): Promise<Pu
     return "no-remote";
   }
 
-  const bundleDir = getLocalBundleDir();
+  const bundleDir = resolution.dir;
   const youJson = youJsonSource.youJson as Record<string, unknown>;
 
   // Refuse to clobber unpushed local edits unless --force. If the local
@@ -141,6 +157,19 @@ export async function pullCommand(options: { force?: boolean } = {}): Promise<Pu
   // Detect format and log it
   const format = detectFormat(youJson);
   console.log(chalk.dim(`  format: ${format}`));
+
+  fs.mkdirSync(bundleDir, { recursive: true });
+
+  // T7 — writing a project-local bundle is deliberate: persist the marker so
+  // future pull/push/sync target it without --local, and make sure the repo
+  // never silently commits identity data.
+  if (resolution.scope === "local") {
+    markLocalBundle(bundleDir);
+    const gitignore = ensureYoumdGitignored(bundleDir);
+    if (gitignore === "appended" || gitignore === "created") {
+      console.log(chalk.dim("  added .youmd/ to .gitignore — identity data stays out of git"));
+    }
+  }
 
   // Decompile youJson → all markdown files in standard directories
   const filesWritten = decompileToFilesystem(bundleDir, youJson);
@@ -199,9 +228,9 @@ export async function pullCommand(options: { force?: boolean } = {}): Promise<Pu
   try {
     const compiledAfterWrite = compileBundle(bundleDir);
     if (compiledAfterWrite) {
-      const lc = readLocalConfig() || { version: 1, sources: [] };
+      const lc = readBundleConfig(bundleDir) || { version: 1, sources: [] };
       lc.lastPulledStableHash = stableContentHash(compiledAfterWrite.youJson, compiledAfterWrite.markdown);
-      writeLocalConfig(lc);
+      writeBundleConfig(bundleDir, lc);
     }
   } catch {
     // non-fatal — without a baseline the dirty check simply stays inert
@@ -215,11 +244,11 @@ export async function pullCommand(options: { force?: boolean } = {}): Promise<Pu
       // Record the hash of what we actually wrote to disk — NOT the newest
       // draft's hash, which may be content we never pulled.
       const writtenHash = computeContentHash(youJson, youJsonSource.youMd ?? "");
-      const lc = readLocalConfig() || { version: 1, sources: [] };
+      const lc = readBundleConfig(bundleDir) || { version: 1, sources: [] };
       lc.lastKnownRemoteVersion = remoteVersion;
       lc.lastPulledHash = writtenHash;
       lc.localContentHash = writtenHash;
-      writeLocalConfig(lc);
+      writeBundleConfig(bundleDir, lc);
 
       const draftHash = meRes.data.latestBundle?.contentHash;
       if (draftHash && draftHash !== writtenHash) {

@@ -69,6 +69,168 @@ export function resolveActiveBundleDir(): string | null {
   return null;
 }
 
+// ─── T7: home-first bundle resolution for identity sync ──────────────
+//
+// pull/push/sync are IDENTITY operations — they default to the home brain
+// (~/.youmd/) ALWAYS. Operating on a project-local .youmd/ requires either
+// the explicit --local flag or a deliberate marker file
+// (.youmd/youmd.local.json) written by `youmd init` / a previous --local
+// run. This stops `youmd pull` inside a random repo from scattering
+// identity copies into project-local .youmd/ directories.
+
+const LOCAL_BUNDLE_MARKER_FILE = "youmd.local.json";
+
+export interface BundleDirResolution {
+  /** The bundle directory pull/push/sync should operate on. */
+  dir: string;
+  scope: "home" | "local";
+  /** Why this scope was chosen. */
+  reason: "flag" | "marker" | "default" | "home-is-cwd";
+  /** Whether an initialized project-local .youmd/ exists in cwd. */
+  localBundlePresent: boolean;
+}
+
+export function getLocalBundleMarkerPath(bundleDir: string): string {
+  return path.join(bundleDir, LOCAL_BUNDLE_MARKER_FILE);
+}
+
+export function hasLocalBundleMarker(bundleDir: string): boolean {
+  return fs.existsSync(getLocalBundleMarkerPath(bundleDir));
+}
+
+/**
+ * Canonicalize a path for comparison: resolve symlinks where possible
+ * (macOS tmp/home paths often traverse /var → /private/var) and fall back
+ * to plain resolution when the path doesn't exist yet.
+ */
+function canonicalPath(p: string): string {
+  const resolved = path.resolve(p);
+  try {
+    return fs.realpathSync(resolved);
+  } catch {
+    try {
+      return path.join(fs.realpathSync(path.dirname(resolved)), path.basename(resolved));
+    } catch {
+      return resolved;
+    }
+  }
+}
+
+export function isHomeBundleDir(bundleDir: string): boolean {
+  return canonicalPath(bundleDir) === canonicalPath(getHomeBundleDir());
+}
+
+/**
+ * Mark a project-local .youmd/ as a deliberate local bundle. Idempotent.
+ * Never marks the home bundle dir — home needs no marker.
+ */
+export function markLocalBundle(bundleDir: string): void {
+  if (isHomeBundleDir(bundleDir)) return;
+  fs.mkdirSync(bundleDir, { recursive: true });
+  const markerPath = getLocalBundleMarkerPath(bundleDir);
+  if (!fs.existsSync(markerPath)) {
+    writeJsonAtomic(markerPath, { localBundle: true, createdAt: new Date().toISOString() }, 0o644);
+  }
+}
+
+/**
+ * Resolve the bundle dir for identity sync operations (pull/push/sync).
+ *
+ * Home-first: defaults to ~/.youmd/. A project-local .youmd/ is used only
+ * when explicitly requested (--local) or deliberately marked
+ * (.youmd/youmd.local.json). When cwd IS the home directory, local and home
+ * are the same dir.
+ */
+export function resolveSyncBundleDir(options: { local?: boolean } = {}): BundleDirResolution {
+  const localDir = getLocalBundleDir();
+  const homeDir = getHomeBundleDir();
+
+  if (isHomeBundleDir(localDir)) {
+    return { dir: homeDir, scope: "home", reason: "home-is-cwd", localBundlePresent: false };
+  }
+
+  const localBundlePresent = bundleLooksInitialized(localDir);
+
+  if (options.local) {
+    return { dir: localDir, scope: "local", reason: "flag", localBundlePresent };
+  }
+  if (hasLocalBundleMarker(localDir)) {
+    return { dir: localDir, scope: "local", reason: "marker", localBundlePresent };
+  }
+  return { dir: homeDir, scope: "home", reason: "default", localBundlePresent };
+}
+
+/**
+ * One-line notice explaining which bundle root is in use and how to target
+ * the other. Returns null when there is nothing ambiguous to explain.
+ * Callers print it dim — this stays plain text so it is unit-testable.
+ */
+export function bundleResolutionNotice(res: BundleDirResolution): string | null {
+  if (res.scope === "home" && res.localBundlePresent) {
+    return `using home bundle ${res.dir} (project-local .youmd/ ignored — pass --local to target it)`;
+  }
+  if (res.scope === "local") {
+    const why = res.reason === "flag" ? "--local" : "youmd.local.json marker";
+    return `using project-local bundle ${res.dir} (${why}) — omit --local and remove the marker to target ~/.youmd`;
+  }
+  return null;
+}
+
+// ─── T7: auto-gitignore project-local .youmd/ ─────────────────────────
+
+/** Walk up from startDir looking for a .git directory. */
+export function findGitRoot(startDir: string): string | null {
+  let dir = path.resolve(startDir);
+  const root = path.parse(dir).root;
+  for (;;) {
+    if (fs.existsSync(path.join(dir, ".git"))) return dir;
+    if (dir === root) return null;
+    dir = path.dirname(dir);
+  }
+}
+
+const GITIGNORE_YOUMD_PATTERNS = new Set([
+  ".youmd",
+  ".youmd/",
+  "/.youmd",
+  "/.youmd/",
+  "**/.youmd",
+  "**/.youmd/",
+]);
+
+const GITIGNORE_YOUMD_BLOCK =
+  "# You.md identity bundle — never commit identity data\n.youmd/\n";
+
+/**
+ * Ensure the repo containing a project-local .youmd/ gitignores it, so
+ * identity data is never silently committed. Appends `.youmd/` when a
+ * .gitignore exists without coverage; creates one at the git root when the
+ * repo has none; no-ops outside a git repo or when already covered.
+ */
+export function ensureYoumdGitignored(
+  bundleDir: string
+): "appended" | "created" | "covered" | "no-repo" {
+  if (isHomeBundleDir(bundleDir)) return "no-repo";
+  const gitRoot = findGitRoot(path.dirname(path.resolve(bundleDir)));
+  if (!gitRoot) return "no-repo";
+
+  const gitignorePath = path.join(gitRoot, ".gitignore");
+  if (!fs.existsSync(gitignorePath)) {
+    fs.writeFileSync(gitignorePath, GITIGNORE_YOUMD_BLOCK);
+    return "created";
+  }
+
+  const content = fs.readFileSync(gitignorePath, "utf-8");
+  const covered = content
+    .split("\n")
+    .some((line) => GITIGNORE_YOUMD_PATTERNS.has(line.trim()));
+  if (covered) return "covered";
+
+  const sep = content.length === 0 || content.endsWith("\n") ? "" : "\n";
+  fs.appendFileSync(gitignorePath, `${sep}\n${GITIGNORE_YOUMD_BLOCK}`);
+  return "appended";
+}
+
 // ─── Headless auth env overrides ─────────────────────────────────────
 // YOUMD_API_KEY / YOUMD_API_URL let agents and CI run authenticated
 // commands with zero filesystem state (no ~/.youmd/config.json needed).
@@ -265,7 +427,18 @@ export function readBundleConfig(bundleDir: string): LocalConfig | null {
 }
 
 export function writeLocalConfig(config: LocalConfig): void {
-  const configPath = getBundleConfigPath(getLocalBundleDir());
+  writeBundleConfig(getLocalBundleDir(), config);
+}
+
+/**
+ * Bundle-dir-aware twin of writeLocalConfig (T7). Same lock + atomic-rename
+ * write path; at the home bundle dir this file (~/.youmd/config.json) also
+ * carries GlobalConfig fields — callers must read-modify-write via
+ * readBundleConfig so those fields are preserved.
+ */
+export function writeBundleConfig(bundleDir: string, config: LocalConfig): void {
+  fs.mkdirSync(bundleDir, { recursive: true });
+  const configPath = getBundleConfigPath(bundleDir);
   const release = acquireFileLock(configPath);
   try {
     writeJsonAtomic(configPath, config);

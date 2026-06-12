@@ -62,6 +62,14 @@ describe("pull dirty-check guard", () => {
     process.chdir(tmpCwd);
     bundleDir = path.join(fs.realpathSync(tmpCwd), ".youmd");
 
+    // T7 — pull is home-first by default; these tests exercise a deliberate
+    // project-local bundle, marked the way init / --local would mark it.
+    fs.mkdirSync(bundleDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(bundleDir, "youmd.local.json"),
+      JSON.stringify({ localBundle: true }) + "\n"
+    );
+
     writeGlobalConfigRaw({ token: "test-token", username: "tester" });
 
     vi.mocked(api.getPublicProfile).mockResolvedValue({
@@ -218,6 +226,44 @@ describe("pull dirty-check guard", () => {
     fs.appendFileSync(path.join(bundleDir, "profile", "about.md"), "\nedited\n");
     state = pull.detectLocalDirtyState(bundleDir);
     expect(state.dirty).toBe(true);
+  });
+
+  it("T7: without a marker or --local, pull targets ~/.youmd, not cwd/.youmd", async () => {
+    // Remove the deliberate-local marker — cwd/.youmd is now just a stray dir
+    fs.rmSync(path.join(bundleDir, "youmd.local.json"), { force: true });
+
+    const result = await pull.pullCommand({});
+    expect(result).toBe("ok");
+
+    // Identity landed in the home brain
+    const homeYouJson = path.join(tmpHome, ".youmd", "you.json");
+    expect(fs.existsSync(homeYouJson)).toBe(true);
+    expect(JSON.parse(fs.readFileSync(homeYouJson, "utf-8")).identity.name).toBe("Remote Person");
+    // ...and NOT scattered into the project-local dir
+    expect(fs.existsSync(path.join(bundleDir, "you.json"))).toBe(false);
+    // The auth token in ~/.youmd/config.json survived the baseline writes
+    const homeConfig = JSON.parse(fs.readFileSync(globalConfigPath(), "utf-8"));
+    expect(homeConfig.token).toBe("test-token");
+    expect(homeConfig.lastPulledHash).toBeTruthy();
+
+    // Clean up home identity files so other tests see a fresh home bundle
+    for (const f of fs.readdirSync(path.join(tmpHome, ".youmd"))) {
+      if (f !== "config.json") {
+        fs.rmSync(path.join(tmpHome, ".youmd", f), { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("T7: pulling a project-local bundle in a git repo auto-gitignores .youmd/", async () => {
+    // cwd is a git repo with no .gitignore; the marker makes the bundle local
+    fs.mkdirSync(path.join(tmpCwd, ".git"));
+
+    const result = await pull.pullCommand({});
+    expect(result).toBe("ok");
+
+    expect(fs.existsSync(path.join(bundleDir, "you.json"))).toBe(true);
+    const gitignore = fs.readFileSync(path.join(fs.realpathSync(tmpCwd), ".gitignore"), "utf-8");
+    expect(gitignore).toContain(".youmd/");
   });
 
   it("stableContentHash ignores generated_at but not real content", () => {

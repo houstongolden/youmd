@@ -5,6 +5,9 @@ import chalk from "chalk";
 import {
   getLocalBundleDir,
   detectProjectContext,
+  isHomeBundleDir,
+  markLocalBundle,
+  ensureYoumdGitignored,
   YoumdProjectFile,
 } from "../lib/config";
 import { ensureProjectDirs } from "../lib/projectContext";
@@ -38,6 +41,20 @@ function findExamplesDir(): string | null {
     if (fs.existsSync(c)) return c;
   }
   return null;
+}
+
+/**
+ * T7 — an init'd project-local .youmd/ is deliberate: mark it so pull/push/
+ * sync target it without --local, and make sure the repo gitignores it so
+ * identity data is never silently committed. No-op for the home bundle.
+ */
+function markDeliberateLocalBundle(bundleDir: string): void {
+  if (isHomeBundleDir(bundleDir) || !fs.existsSync(bundleDir)) return;
+  markLocalBundle(bundleDir);
+  const gitignore = ensureYoumdGitignored(bundleDir);
+  if (gitignore === "appended" || gitignore === "created") {
+    console.log(chalk.dim("  added .youmd/ to .gitignore — identity data stays out of git"));
+  }
 }
 
 function copyDirRecursive(src: string, dest: string): void {
@@ -104,6 +121,7 @@ async function initFromExample(exampleName: string): Promise<void> {
   );
 
   copyDirRecursive(sourceDir, bundleDir);
+  markDeliberateLocalBundle(bundleDir);
 
   // Compile the bundle so users immediately see you.json + you.md.
   try {
@@ -161,6 +179,7 @@ export async function initCommand(options: {
       name: "Anonymous",
       tagline: "",
     });
+    markDeliberateLocalBundle(bundleDir);
     return;
   }
 
@@ -177,6 +196,8 @@ export async function initCommand(options: {
     }
     throw err;
   }
+
+  markDeliberateLocalBundle(bundleDir);
 
   // After onboarding, check if we're in a project directory and offer project context
   const projectCtx = detectProjectContext();

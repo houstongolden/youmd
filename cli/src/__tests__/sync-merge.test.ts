@@ -58,6 +58,14 @@ describe("sync 3-way merge (both local and remote changed)", () => {
     process.chdir(tmpCwd);
     bundleDir = path.join(fs.realpathSync(tmpCwd), ".youmd");
 
+    // T7 — sync is home-first by default; these tests exercise a deliberate
+    // project-local bundle, marked the way init / --local would mark it.
+    fs.mkdirSync(bundleDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(bundleDir, "youmd.local.json"),
+      JSON.stringify({ localBundle: true }) + "\n"
+    );
+
     writeGlobalConfigRaw({ token: "test-token", username: "tester" });
 
     vi.mocked(api.uploadBundle).mockResolvedValue({

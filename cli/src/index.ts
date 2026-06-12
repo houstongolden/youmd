@@ -483,24 +483,27 @@ program
 
 program
   .command("pull")
-  .description("Download your profile from you.md to local .youmd/ files")
+  .description("Download your profile from you.md to ~/.youmd/ files")
   .option("-f, --force", "Overwrite local edits that haven't been pushed")
+  .option("--local", "Target the project-local .youmd/ instead of ~/.youmd/")
   .action(async (options) => {
     await pullCommand(options);
   });
 
 program
   .command("push")
-  .description("Upload local .youmd/ files to you.md and publish")
+  .description("Upload ~/.youmd/ files to you.md and publish")
   .option("--no-publish", "Upload without publishing")
   .option("-f, --force", "Push even if remote has richer data")
+  .option("--local", "Target the project-local .youmd/ instead of ~/.youmd/")
   .action(pushCommand);
 
 program
   .command("sync")
-  .description("Sync local files with you.md (pull + push)")
+  .description("Sync ~/.youmd/ files with you.md (pull + push)")
   .option("-w, --watch", "Watch for local changes and auto-push")
   .option("-f, --force", "Sync even when local and remote have both changed")
+  .option("--local", "Target the project-local .youmd/ instead of ~/.youmd/")
   .action(syncCommand);
 
 const linkCmd = program

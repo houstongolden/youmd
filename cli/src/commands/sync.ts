@@ -1,7 +1,14 @@
 import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
-import { readGlobalConfig, readLocalConfig, writeLocalConfig, getLocalBundleDir, localBundleExists } from "../lib/config";
+import {
+  readGlobalConfig,
+  readBundleConfig,
+  writeBundleConfig,
+  resolveSyncBundleDir,
+  bundleResolutionNotice,
+  bundleLooksInitialized,
+} from "../lib/config";
 import { getMe } from "../lib/api";
 import { pushCommand } from "./push";
 import { pullCommand, detectLocalDirtyState, stableContentHash } from "./pull";
@@ -12,7 +19,7 @@ import { decompileToFilesystem } from "../lib/decompile";
 import { mergeSections, decisionLabel } from "../lib/merge";
 import { BrailleSpinner } from "../lib/render";
 
-export async function syncCommand(options: { watch?: boolean; force?: boolean }) {
+export async function syncCommand(options: { watch?: boolean; force?: boolean; local?: boolean }) {
   const config = readGlobalConfig();
 
   if (!config.token) {
@@ -20,14 +27,19 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean })
     return;
   }
 
+  // T7 — home-first: sync operates on ~/.youmd unless --local or a
+  // deliberate youmd.local.json marker targets the project-local bundle.
+  const resolution = resolveSyncBundleDir({ local: options.local });
+  const bundleDir = resolution.dir;
+  const notice = bundleResolutionNotice(resolution);
+  if (notice) console.log(chalk.dim(`  ${notice}`));
+
   if (options.watch) {
     // Watch mode — auto-push on file changes
-    if (!localBundleExists()) {
-      console.log(chalk.hex("#C46A3A")("  no local bundle found. run: youmd pull"));
+    if (!bundleLooksInitialized(bundleDir)) {
+      console.log(chalk.hex("#C46A3A")(`  no bundle found at ${bundleDir}. run: youmd pull`));
       return;
     }
-
-    const bundleDir = getLocalBundleDir();
     // Each bundle directory decompile writes (and the compiler reads) is
     // flat, so we watch every relevant subdirectory explicitly instead of
     // using { recursive: true } — which throws on Linux with Node 18.
@@ -67,7 +79,7 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean })
           console.log(
             chalk.dim(`  change detected: ${filename}`)
           );
-          await pushCommand({ publish: true });
+          await pushCommand({ publish: true, local: options.local });
 
           // Also re-interpolate installed skills on identity changes
           const catalog = readSkillCatalog();
@@ -97,8 +109,7 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean })
     console.log(chalk.dim("  syncing with you.md..."));
     console.log("");
 
-    const bundleDir = getLocalBundleDir();
-    const dirtyState = localBundleExists()
+    const dirtyState = fs.existsSync(bundleDir)
       ? detectLocalDirtyState(bundleDir)
       : { dirty: false, hasBaseline: false };
 
@@ -108,7 +119,7 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean })
       youMd?: string;
       contentHash?: string;
     } | null = null;
-    const localConfig = readLocalConfig();
+    const localConfig = readBundleConfig(bundleDir);
     if (dirtyState.dirty) {
       try {
         const meRes = await getMe();
@@ -131,7 +142,7 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean })
       if (mergeOutcome === "merged") {
         console.log("");
         console.log(chalk.dim("  ── push ──"));
-        await pushCommand({ publish: true });
+        await pushCommand({ publish: true, local: options.local });
         console.log("");
         console.log(chalk.green("  sync complete."));
         console.log(chalk.dim("  merged local + remote changes per section."));
@@ -156,15 +167,15 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean })
       // Local edits, remote unchanged — push first so pull can't destroy them
       console.log(chalk.dim("  local edits detected — pushing first..."));
       console.log(chalk.dim("  ── push ──"));
-      await pushCommand({ publish: true, force: options.force });
+      await pushCommand({ publish: true, force: options.force, local: options.local });
 
       console.log("");
       console.log(chalk.dim("  ── pull ──"));
-      await pullCommand({ force: options.force });
+      await pullCommand({ force: options.force, local: options.local });
     } else {
       // Clean local (or --force) — pull then push
       console.log(chalk.dim("  ── pull ──"));
-      const pullResult = await pullCommand({ force: options.force });
+      const pullResult = await pullCommand({ force: options.force, local: options.local });
       if (pullResult === "dirty" || pullResult === "auth-required") {
         console.log("");
         console.log(chalk.hex("#C46A3A")("  sync aborted: pull refused."));
@@ -174,7 +185,7 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean })
 
       console.log("");
       console.log(chalk.dim("  ── push ──"));
-      await pushCommand({ publish: true, force: options.force });
+      await pushCommand({ publish: true, force: options.force, local: options.local });
     }
 
     console.log("");
@@ -267,7 +278,7 @@ export async function attemptThreeWayMergeSync(
     // Advance ancestry so push accepts the merge:
     //   lastPulledHash → the remote hash we just incorporated
     //   lastPulledStableHash → dirty-check baseline of what's now on disk
-    const lc = readLocalConfig() || { version: 1, sources: [] };
+    const lc = readBundleConfig(bundleDir) || { version: 1, sources: [] };
     if (remoteBundle?.contentHash) {
       lc.lastPulledHash = remoteBundle.contentHash;
     }
@@ -279,7 +290,7 @@ export async function attemptThreeWayMergeSync(
     } catch {
       // non-fatal — without a baseline the dirty check stays inert
     }
-    writeLocalConfig(lc);
+    writeBundleConfig(bundleDir, lc);
     spinner.stop(`${result.sections.filter((s) => s.decision !== "unchanged").length} sections merged`);
   } catch (err) {
     spinner.fail(err instanceof Error ? err.message : String(err));
