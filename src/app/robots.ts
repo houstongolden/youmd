@@ -62,6 +62,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/shell", "/initialize", "/dashboard", "/api/v1/me"],
       },
     ],
-    sitemap: "https://you.md/sitemap.xml",
+    sitemap: "https://www.you.md/sitemap.xml",
   };
 }

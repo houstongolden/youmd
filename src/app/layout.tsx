@@ -13,6 +13,11 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  // Canonical host: Vercel's domain config 307s apex you.md → www.you.md at
+  // the platform edge, so www is the host that actually serves content.
+  // Apex URLs (used in generated agent docs and marketing one-liners) keep
+  // working via the redirect; metadata/canonicals/sitemap all use www.
+  metadataBase: new URL("https://www.you.md"),
   title: "you.md — Agent brain and expertise stacks for the agent internet",
   description:
     "Your durable agent brain, named expertise stacks, local runtime, and protected API/MCP layer for Claude Code, Codex, Cursor, and every AI tool you use.",

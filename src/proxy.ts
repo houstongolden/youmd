@@ -85,7 +85,7 @@ export default async function proxy(req: NextRequest) {
               "Cache-Control": "public, max-age=60, s-maxage=300",
               "X-Robots-Tag": "noindex",
               // Tell agents about machine-readable alternatives
-              "Link": `<https://you.md/${username}/you.json>; rel="alternate"; type="application/json", <https://you.md/${username}/you.txt>; rel="alternate"; type="text/plain"`,
+              "Link": `<https://www.you.md/${username}/you.json>; rel="alternate"; type="application/json", <https://www.you.md/${username}/you.txt>; rel="alternate"; type="text/plain"`,
             },
           });
         }

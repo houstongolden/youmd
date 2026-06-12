@@ -92,6 +92,28 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  /**
+   * Canonical host enforcement (T24): www.you.md is the single canonical host.
+   *
+   * Vercel's domain configuration already redirects apex you.md → www.you.md
+   * at the platform edge (currently a 307, set in the Vercel dashboard), so
+   * this app-level rule normally never fires for apex traffic. It exists as a
+   * permanent (308) backstop so the canonical choice is explicit in code and
+   * survives any future change to the dashboard domain settings.
+   *
+   * Generated agent docs and marketing one-liners intentionally use the short
+   * apex form (https://you.md/...) — those keep working via this redirect.
+   */
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "you.md" }],
+        destination: "https://www.you.md/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

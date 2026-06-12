@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     title: "you.md — Stop re-explaining yourself to every agent",
     description:
       "Build one identity and workflow layer for every AI agent. Public context stays easy to share. Private context stays protected.",
-    url: "https://you.md",
+    url: "https://www.you.md",
     siteName: "you.md",
     type: "website",
   },
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
       "One runtime for your context, memory, preferences, and best workflows across Claude Code, Codex, Cursor, ChatGPT, and more.",
   },
   alternates: {
-    canonical: "https://you.md",
+    canonical: "https://www.you.md",
   },
 };
 

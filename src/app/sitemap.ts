@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { CONVEX_SITE_URL } from "@/lib/constants";
 
-const BASE_URL = "https://you.md";
+// Canonical host is www — Vercel's domain config redirects apex → www.
+const BASE_URL = "https://www.you.md";
 
 interface ProfileEntry {
   username: string;
