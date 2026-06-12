@@ -142,7 +142,7 @@ export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProp
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[max(2rem,min(15vh,15dvh))] bg-black/60 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
       <div
@@ -172,7 +172,7 @@ export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProp
         </div>
 
         {/* Command list */}
-        <div ref={listRef} className="max-h-[300px] overflow-y-auto py-1">
+        <div ref={listRef} className="max-h-[min(300px,45dvh)] overflow-y-auto overscroll-contain py-1">
           {filtered.length === 0 ? (
             <div className="px-3 py-4 text-center font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-30">
               no matching commands
@@ -197,7 +197,7 @@ export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProp
                         onClose();
                       }}
                       onMouseEnter={() => setSelectedIndex(idx)}
-                      className={`w-full text-left px-3 py-1.5 flex items-center gap-3 transition-colors ${
+                      className={`w-full text-left px-3 py-2.5 sm:py-1.5 flex items-center gap-3 transition-colors ${
                         isSelected
                           ? "bg-[hsl(var(--accent))]/8 text-[hsl(var(--text-primary))]"
                           : "text-[hsl(var(--text-secondary))]"

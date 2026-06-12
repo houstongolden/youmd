@@ -3,6 +3,13 @@
 import { KeyboardEvent, ClipboardEvent, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 
+/** mac/iOS → ⌘k, everything else → ctrl+k. SSR defaults to mac; the hint
+ *  is suppressHydrationWarning'd so other platforms correct on hydration. */
+function detectMacPlatform(): boolean {
+  if (typeof navigator === "undefined") return true;
+  return /mac|iphone|ipad|ipod/i.test(navigator.platform || navigator.userAgent || "");
+}
+
 interface TerminalInputProps {
   input: string;
   setInput: (v: string) => void;
@@ -12,6 +19,8 @@ interface TerminalInputProps {
   onSend: () => void;
   /** Called when an image is pasted — receives the data URL */
   onImagePaste?: (dataUrl: string) => void;
+  /** Opens the command palette (cmd+k hint on desktop, /help chip on mobile) */
+  onOpenPalette?: () => void;
 }
 
 export function TerminalInput({
@@ -21,8 +30,10 @@ export function TerminalInput({
   onKeyDown,
   onSend,
   onImagePaste,
+  onOpenPalette,
 }: TerminalInputProps) {
   const [pastedImage, setPastedImage] = useState<string | null>(null);
+  const isMac = detectMacPlatform();
 
   const handlePaste = useCallback((e: ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData?.items;
@@ -114,18 +125,30 @@ export function TerminalInput({
         </Button>
       </div>
       <div className="flex items-center gap-3 mt-1 ml-5">
-        <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-20">
+        <span className="hidden sm:inline text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-20">
           enter to send
         </span>
-        <span className="text-[hsl(var(--text-secondary))] opacity-10">|</span>
-        <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-20">
+        <span className="hidden sm:inline text-[hsl(var(--text-secondary))] opacity-10">|</span>
+        {/* Mobile: tappable /help chip — opens the command palette */}
+        <button
+          type="button"
+          onClick={onOpenPalette}
+          aria-label="show commands"
+          className="sm:hidden text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-50 active:opacity-80 transition-opacity py-2 -my-2 px-1.5 -mx-1.5"
+        >
           /help
-        </span>
+        </button>
+        {/* Desktop: platform-aware shortcut hint — clicking also opens the palette */}
+        <button
+          type="button"
+          onClick={onOpenPalette}
+          aria-label="open command palette"
+          className="hidden sm:inline text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-60 transition-opacity"
+          suppressHydrationWarning
+        >
+          {isMac ? "⌘k" : "ctrl+k"} commands
+        </button>
         <span className="text-[hsl(var(--text-secondary))] opacity-10">|</span>
-        <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-20 hidden sm:inline">
-          cmd+k commands
-        </span>
-        <span className="text-[hsl(var(--text-secondary))] opacity-10 hidden sm:inline">|</span>
         <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-20">
           paste images
         </span>

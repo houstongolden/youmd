@@ -219,6 +219,7 @@ export function TerminalShell({
         onKeyDown={handleKeyDown}
         onSend={handleSend}
         onImagePaste={setPastedImageUrl}
+        onOpenPalette={() => setPaletteOpen(true)}
       />
 
       {/* Command palette */}
