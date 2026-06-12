@@ -16,7 +16,7 @@
 | V2 | Demote "stop re-explaining yourself" to problem-statement line on landing (keep as pain hook section, not headline) | POSITIONING-PLAYBOOK §1 | S | done (645d9d9; subhead carries pain hook, verified on prod) | Landing renders; copy consistent across sections |
 | V3 | Freshness-moat copy: "a copied YouStack freezes at copy time; yours stays current" added to YouStacks landing section + README | VISION-AUDIT R5 | S | done (645d9d9; freshness-moat copy live) | Copy live on landing + README; no overstated "clone-proof" claims |
 | V4 | Lighthouse growth loop: ASCII-portrait OG share card framing "this is what agents see when they meet me" on public profiles | VISION-AUDIT R4 | M | todo | OG card renders for a real profile; share preview correct |
-| V5 | Honesty-ledger guard: no copy promises encrypted vault until AES-256-GCM ships; audit landing/pricing copy now ("scoped access" not "encrypted") | POSITIONING-PLAYBOOK §4 / risk X2 | S | todo | Grep landing+docs for encryption promises; none ahead of shipped reality |
+| V5 | Honesty-ledger guard: no copy promises encrypted vault until AES-256-GCM ships; audit landing/pricing copy now ("scoped access" not "encrypted") | POSITIONING-PLAYBOOK §4 / risk X2 | S | done (audit clean: all encryption claims map to shipped AES-256-GCM vault surfaces; landing/llms docs make no encryption promises) | Grep landing+docs for encryption promises; none ahead of shipped reality |
 | V6 | Protocol positioning: publish/promote `you-md/v1` schema as open standard page in docs; "an MCP where the context is you" line into developer docs | VISION-AUDIT R3 | M | todo | Docs page live; llms surfaces regenerated + docs:check passes |
 
 ## M2 — Product items (PRODUCT-AUDIT + GAP-VS-VISION + FEATURE-ROADMAP)
@@ -58,7 +58,7 @@
 | P33 | Project attribution: nearest-marker-wins by depth | PRODUCT-AUDIT #41 | S | done (0c32304) |
 | P34 | Generate CLI command table from commander; docs:check assertion | PRODUCT-AUDIT #42 | S | todo |
 | P35 | TTY/EOF guard on interactive prompts | PRODUCT-AUDIT #43; FEATURE-ROADMAP 0.7 | S | done (5028339: 6 entry points guarded) |
-| P36 | Issue real owner scopes for cli-auth login keys (convex/auth.ts) + settings UI scope selection, then remove the cli-auth grandfather carve-out in lib/scopes.ts; regen docs with the 403 scope contract | P1 follow-up | M | todo |
+| P36 | Issue real owner scopes for cli-auth login keys (convex/auth.ts) + settings UI scope selection, then remove the cli-auth grandfather carve-out in lib/scopes.ts; regen docs with the 403 scope contract | P1 follow-up | M | in-progress (agent) |
 
 ## M3 — UX items (UX-AUDIT)
 
@@ -69,7 +69,7 @@
 | U3 | Fix fake "[saved private project]" — real updatePrivateContext write or honest message | S | done (026fd0b; real getPrivateContext+append+updatePrivateContext write) |
 | U4 | Gate /initialize redirect on onboarding-complete marker, not bare username | M | done (51a7f38; gated on published bundle, resumes mid-flow users) |
 | U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | done (e66a58b; default-open + localStorage persist + skeleton parity) |
-| U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | todo |
+| U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | in-progress (agent) |
 | U7 | Device-flow login (CLI code → browser approve → poll) | L | todo |
 | U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | todo |
 | U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | todo |
@@ -79,7 +79,7 @@
 | U13 | Local-first portrait cache (instant render, background refresh) | M | todo |
 | U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | done (5256355; back//email/resend + 5 tests) |
 | U15 | Tappable /help + cmd+k hints (mobile palette) | S | todo |
-| U16 | Onboarding turns 2+ stream via shared helper | S | todo |
+| U16 | Onboarding turns 2+ stream via shared helper | S | in-progress (agent) |
 | U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | todo |
 | U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | todo |
 | U19 | Status-bar freshness segment + staleness nudge on session restore | S | todo |
