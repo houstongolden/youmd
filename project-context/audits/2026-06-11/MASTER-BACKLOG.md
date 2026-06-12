@@ -100,18 +100,18 @@
 | L6 | Reference-intelligence v2: dedupe, Haiku batch pass, weekly Action cron → PR | M | todo |
 | L7 | Golden Q&A eval suite for You Agent in CI | M | todo |
 | L8 | Schedule audit forever-loop (Actions cron) w/ atomic mkdir lock | M | todo |
-| L9 | trackSkillEvent outcomes + MCP report_skill_outcome tool | M | todo |
-| L10 | activityInsights query → `youmd skill improve` + dashboard | M | todo |
+| L9 | trackSkillEvent outcomes + MCP report_skill_outcome tool | M | in-progress (agent) |
+| L10 | activityInsights query → `youmd skill improve` + dashboard | M | in-progress (agent) |
 | L11 | Fix improveCmd sync heuristic (lastSyncedAt vs identity-change timestamp) | S | done (b0ddedb: lastSyncedAt vs identity mtimes) |
-| L12 | Stack guard: `youmd stack guard` + enforcement in route/MCP (T0-T3 tiers) | M-L | todo |
-| L13 | Golden-prompt eval runner: `youmd stack eval` → tests/eval-results.json | M | todo |
+| L12 | Stack guard: `youmd stack guard` + enforcement in route/MCP (T0-T3 tiers) | M-L | in-progress (agent) |
+| L13 | Golden-prompt eval runner: `youmd stack eval` → tests/eval-results.json | M | in-progress (agent) |
 | L14 | Stack improvement runner: journal/ + `youmd stack improve` (propose/auto_pr) | L | todo |
 | L15 | Visible heartbeat: "stack wants to improve" card + doctor NEXT line | S | todo |
-| L16 | One machine-checkable SAFETY-CONTRACT spec (T0-T3), enforced by guard/doctor/smoke | M | todo |
+| L16 | One machine-checkable SAFETY-CONTRACT spec (T0-T3), enforced by guard/doctor/smoke | M | in-progress (agent) |
 | L17 | Stack update channel: registry version metadata + `youmd stack update` | M | todo |
 | L18 | YouStack workflows manifest section + Convex per-user scheduler | L | todo |
-| L19 | First dreaming loop: nightly memory consolidation cron | M | todo |
-| L20 | Fleet learning: aggregate-only queries (k-anon ≥20) + weekly fleet report | M | todo |
+| L19 | First dreaming loop: nightly memory consolidation cron | M | in-progress (agent) |
+| L20 | Fleet learning: aggregate-only queries (k-anon ≥20) + weekly fleet report | M | in-progress (agent) |
 | L21 | Telemetry consent surface + privacy contract in docs/llms.txt | M | todo |
 | L22 | User-facing fleet feedback notices | M | blocked(needs-spec) |
 | L23 | Per-stack MCP namespace /api/v1/mcp/{user}/{stack} | L | todo (design-first, after L14) |
@@ -136,7 +136,7 @@
 | T10 | Lossless identity round-trip (markdown per-section source of truth + property test) | L | todo |
 | T11 | Load JetBrains Mono + Inter via next/font | S | done (aca29f3) |
 | T12 | export const viewport; drop user-scalable=no (WCAG) | S | done (aca29f3) |
-| T13 | Sentry + sanitized error codes + scheduled smoke alerts + /api/v1/health | M | done (34fc522; health route, 26 sanitized 500 sites, 30-min smoke cron; Sentry = Houston decision) |
+| T13 | Sentry + sanitized error codes + scheduled smoke alerts + /api/v1/health | M | done (34fc522; health route, 26 sanitized 500 sites, 30-min smoke cron; prod health 200 verified; Sentry = Houston decision) |
 | T14 | Unified MCP tool registry; official SDK Streamable HTTP; remote serves all tools | M-L | todo |
 | T15 | Fix lastPulledHash ancestry bug | S | done (a984939) |
 | T16 | Bounded-batch rateLimits cleanup w/ index + reschedule | S | done (683f014) |
