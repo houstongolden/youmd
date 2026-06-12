@@ -44,7 +44,7 @@ export async function createUserAndProfile(
     verificationSource?: string;
   }
 ) {
-  const username = args.username.toLowerCase();
+  const username = canonicalUsername(args.username);
 
   if (!USERNAME_REGEX.test(username)) {
     throw new Error("Invalid username format.");
@@ -137,7 +137,7 @@ export async function createUserAndProfile(
 export const checkUsername = query({
   args: { username: v.string() },
   handler: async (ctx, args) => {
-    const username = args.username.toLowerCase();
+    const username = canonicalUsername(args.username);
 
     if (!USERNAME_REGEX.test(username)) {
       return {
@@ -231,7 +231,7 @@ export const setUserPlan = internalMutation({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_username", (q) => q.eq("username", args.username.toLowerCase()))
+      .withIndex("by_username", (q) => q.eq("username", canonicalUsername(args.username)))
       .first();
     if (!user) throw new Error("user not found");
     await ctx.db.patch(user._id, { plan: args.plan });
@@ -278,7 +278,7 @@ export const getByUsername = internalQuery({
     return await ctx.db
       .query("users")
       .withIndex("by_username", (q) =>
-        q.eq("username", args.username.toLowerCase())
+        q.eq("username", canonicalUsername(args.username))
       )
       .first();
   },
@@ -496,13 +496,27 @@ export const _internalUpdateByClerkId = internalMutation({
       updates.email = args.email;
       changedFields.push("email");
     }
-    if (
-      args.username !== undefined &&
-      args.username.length > 0 &&
-      args.username !== user.username
-    ) {
-      updates.username = args.username;
-      changedFields.push("username");
+    // Usernames are stored in canonical form (lowercase, trimmed) — see
+    // lib/profileDirectory.canonicalUsername + migrations/canonicalizeUsernames.
+    // Reject (skip) a change that collides with another account's canonical
+    // username, including names differing only by case.
+    const nextUsername =
+      args.username !== undefined ? canonicalUsername(args.username) : "";
+    let usernameConflict: string | null = null;
+    if (nextUsername.length > 0 && nextUsername !== user.username) {
+      const taken = await ctx.db
+        .query("users")
+        .withIndex("by_username", (q) => q.eq("username", nextUsername))
+        .first();
+      if (taken && taken._id !== user._id) {
+        usernameConflict = nextUsername;
+        console.warn(
+          `[users._internalUpdateByClerkId] skipped username change to "${nextUsername}" — already taken by ${taken._id}`
+        );
+      } else {
+        updates.username = nextUsername;
+        changedFields.push("username");
+      }
     }
     if (
       args.displayName !== undefined &&
@@ -513,7 +527,13 @@ export const _internalUpdateByClerkId = internalMutation({
     }
 
     if (Object.keys(updates).length === 0) {
-      return { updated: false, reason: "no fields changed" };
+      return {
+        updated: false,
+        reason: usernameConflict
+          ? "username conflict — no other fields changed"
+          : "no fields changed",
+        usernameConflict,
+      };
     }
 
     await ctx.db.patch(user._id, updates);
@@ -537,7 +557,7 @@ export const _internalUpdateByClerkId = internalMutation({
       createdAt: Date.now(),
     });
 
-    return { updated: true, clerkId: args.clerkId, changedFields };
+    return { updated: true, clerkId: args.clerkId, changedFields, usernameConflict };
   },
 });
 

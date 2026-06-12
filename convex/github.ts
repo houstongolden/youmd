@@ -6,6 +6,7 @@ import { computeContentHash } from "./lib/hash";
 import { createUserAndProfile } from "./users";
 import { requireOwner } from "./lib/auth";
 import { encryptSecret } from "./lib/secretCrypto";
+import { canonicalUsername } from "./lib/profileDirectory";
 
 /**
  * GitHub OAuth + repo connection backend.
@@ -585,7 +586,7 @@ export function deriveStacks(
 export const getPublicRepoStacks = query({
   args: { username: v.string() },
   handler: async (ctx, { username }) => {
-    const uname = username.toLowerCase().replace(/^@/, "");
+    const uname = canonicalUsername(username).replace(/^@/, "");
     const user = await ctx.db
       .query("users")
       .withIndex("by_username", (q) => q.eq("username", uname))

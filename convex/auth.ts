@@ -5,6 +5,7 @@ import { v } from "convex/values";
 import { createUserAndProfile } from "./users";
 import { issueApiKeyForUser } from "./apiKeys";
 import { OWNER_SESSION_SCOPES } from "./lib/scopes";
+import { canonicalUsername } from "./lib/profileDirectory";
 
 const CHALLENGE_LIFETIME_MS = 15 * 60 * 1000;
 const SESSION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
@@ -61,7 +62,7 @@ export const startEmailAuth = mutation({
       if (!args.username) {
         throw new Error("Username is required for signup.");
       }
-      const username = args.username.toLowerCase();
+      const username = canonicalUsername(args.username);
       const usernameTaken = await ctx.db
         .query("users")
         .withIndex("by_username", (q) => q.eq("username", username))
@@ -91,7 +92,7 @@ export const startEmailAuth = mutation({
       type: args.type,
       codeHash: args.codeHash,
       tokenHash: args.tokenHash,
-      username: args.username?.toLowerCase(),
+      username: args.username !== undefined ? canonicalUsername(args.username) : undefined,
       displayName: args.displayName,
       expiresAt: Date.now() + CHALLENGE_LIFETIME_MS,
       attempts: 0,

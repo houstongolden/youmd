@@ -10,6 +10,7 @@ import {
 } from "./lib/compile";
 import { computeContentHash } from "./lib/hash";
 import { requireOwner } from "./lib/auth";
+import { canonicalUsername } from "./lib/profileDirectory";
 
 /**
  * Authenticated user endpoints (/me/*).
@@ -1220,7 +1221,7 @@ export const scaffoldProjectsForUser = internalMutation({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_username", (q) => q.eq("username", args.username))
+      .withIndex("by_username", (q) => q.eq("username", canonicalUsername(args.username)))
       .first();
     if (!user) throw new Error(`User not found: ${args.username}`);
     const existing = await ctx.db
@@ -1298,7 +1299,7 @@ export const publishLatestForUser = internalMutation({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_username", (q) => q.eq("username", args.username))
+      .withIndex("by_username", (q) => q.eq("username", canonicalUsername(args.username)))
       .first();
     if (!user) throw new Error(`User not found: ${args.username}`);
 

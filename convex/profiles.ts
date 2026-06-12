@@ -36,21 +36,16 @@ export const getPublicProfile = query({
   handler: async (ctx, args) => {
     const uname = canonicalUsername(args.username);
 
-    // Check profiles table first
+    // Stored usernames are canonical (lowercase, trimmed) — enforced at every
+    // write path and backfilled by migrations/canonicalizeUsernames. Input is
+    // normalized through canonicalUsername above, so the indexed exact lookup
+    // resolves old mixed-case URLs too. (The old .take(500) case-insensitive
+    // fallback scan was removed in P30.)
     const exactProfiles = await ctx.db
       .query("profiles")
       .withIndex("by_username", (q) => q.eq("username", uname))
       .collect();
-    let profile = selectBestProfile(exactProfiles);
-
-    // Older seed/import paths could leave mixed-case or whitespace variants.
-    // Keep direct profile reads resilient even before a data cleanup run lands.
-    if (!profile) {
-      const allProfiles = await ctx.db.query("profiles").take(500);
-      profile = selectBestProfile(
-        allProfiles.filter((p) => canonicalUsername(p.username) === uname)
-      );
-    }
+    const profile = selectBestProfile(exactProfiles);
 
     // Try to find the user and their published bundle
     const user = await ctx.db
@@ -145,7 +140,7 @@ export const getByUsername = query({
   handler: async (ctx, args) => {
     return ctx.db
       .query("profiles")
-      .withIndex("by_username", (q) => q.eq("username", args.username.toLowerCase()))
+      .withIndex("by_username", (q) => q.eq("username", canonicalUsername(args.username)))
       .first();
   },
 });
@@ -262,7 +257,7 @@ export const searchPublicProfiles = query({
 export const checkUsername = query({
   args: { username: v.string() },
   handler: async (ctx, args) => {
-    const uname = args.username.toLowerCase();
+    const uname = canonicalUsername(args.username);
 
     // Validate format
     if (!USERNAME_RE.test(uname)) {
@@ -354,7 +349,7 @@ export const getReports = internalQuery({
 export const getPublicStats = query({
   args: { username: v.string() },
   handler: async (ctx, args) => {
-    const uname = args.username.toLowerCase();
+    const uname = canonicalUsername(args.username);
 
     // Try profiles table first
     const profile = await ctx.db
@@ -410,7 +405,7 @@ export const createProfile = mutation({
     links: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const uname = args.username.toLowerCase();
+    const uname = canonicalUsername(args.username);
 
     // Validate
     if (!USERNAME_RE.test(uname)) {
@@ -697,19 +692,17 @@ export const recordView = mutation({
     isContextLink: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const uname = canonicalUsername(args.username);
+
     const user = await ctx.db
       .query("users")
-      .withIndex("by_username", (q) =>
-        q.eq("username", args.username.toLowerCase())
-      )
+      .withIndex("by_username", (q) => q.eq("username", uname))
       .first();
 
     // Also check profiles table
     const profile = await ctx.db
       .query("profiles")
-      .withIndex("by_username", (q) =>
-        q.eq("username", args.username.toLowerCase())
-      )
+      .withIndex("by_username", (q) => q.eq("username", uname))
       .first();
 
     if (!user && !profile) return;
@@ -993,7 +986,7 @@ export const deleteByUsername = internalMutation({
   handler: async (ctx, args) => {
     const profile = await ctx.db
       .query("profiles")
-      .withIndex("by_username", (q) => q.eq("username", args.username.toLowerCase()))
+      .withIndex("by_username", (q) => q.eq("username", canonicalUsername(args.username)))
       .first();
     if (profile) {
       await ctx.db.delete(profile._id);
@@ -1014,7 +1007,7 @@ export const createSocialVerification = internalMutation({
   handler: async (ctx, args) => {
     const profile = await ctx.db
       .query("profiles")
-      .withIndex("by_username", (q) => q.eq("username", args.username.toLowerCase()))
+      .withIndex("by_username", (q) => q.eq("username", canonicalUsername(args.username)))
       .first();
     if (!profile) return;
 

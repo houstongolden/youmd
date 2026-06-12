@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
+import { canonicalUsername } from "./lib/profileDirectory";
 
 export const getPublishedBundle = query({
   args: { username: v.string() },
@@ -8,7 +9,7 @@ export const getPublishedBundle = query({
     const user = await ctx.db
       .query("users")
       .withIndex("by_username", (q) =>
-        q.eq("username", args.username.toLowerCase())
+        q.eq("username", canonicalUsername(args.username))
       )
       .first();
 
