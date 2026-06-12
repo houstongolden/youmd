@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import {
   compileYouJson,
   compileYouMd,
@@ -18,11 +20,15 @@ import { requireOwner } from "./lib/auth";
  * Validate profile data before save to catch common data-quality
  * mistakes (e.g. agents pasting markdown into string fields).
  */
-function validateProfileData(data: any): { valid: boolean; errors: string[] } {
+function validateProfileData(data: unknown): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
+  const record = (data ?? {}) as {
+    preferences?: { agent?: { tone?: unknown } };
+    projects?: unknown[];
+  };
 
   // Check tone field doesn't start with markdown heading
-  const tone = data?.preferences?.agent?.tone;
+  const tone = record.preferences?.agent?.tone;
   if (tone && typeof tone === "string" && tone.trim().startsWith("#")) {
     errors.push(
       `preferences.agent.tone cannot start with '#' (got: "${tone.slice(0, 50)}")`
@@ -30,9 +36,10 @@ function validateProfileData(data: any): { valid: boolean; errors: string[] } {
   }
 
   // Check project names don't start with #
-  if (Array.isArray(data?.projects)) {
-    data.projects.forEach((p: any, i: number) => {
-      const name = p?.name || p?.title;
+  if (Array.isArray(record.projects)) {
+    record.projects.forEach((p, i: number) => {
+      const project = p as { name?: unknown; title?: unknown } | null | undefined;
+      const name = project?.name || project?.title;
       if (name && typeof name === "string" && name.trim().startsWith("#")) {
         errors.push(
           `projects[${i}].name cannot start with '#' (got: "${name.slice(0, 50)}")`
@@ -308,17 +315,17 @@ function buildProfileDataFromYouJson(yj: Record<string, unknown>, username: stri
 }
 
 async function persistBundleFromYouJson(
-  ctx: any,
-  user: { _id: any; username: string },
+  ctx: MutationCtx,
+  user: { _id: Id<"users">; username: string },
   yj: Record<string, unknown>,
   source: string
 ) {
-  const existing: any[] = await ctx.db
+  const existing = await ctx.db
     .query("bundles")
-    .withIndex("by_userId", (q: any) => q.eq("userId", user._id))
+    .withIndex("by_userId", (q) => q.eq("userId", user._id))
     .collect();
-  const latestBundle = existing.sort((a: any, b: any) => b.version - a.version)[0];
-  const maxVersion = existing.reduce((max: number, bundle: any) => Math.max(max, bundle.version), 0);
+  const latestBundle = existing.sort((a, b) => b.version - a.version)[0];
+  const maxVersion = existing.reduce((max, bundle) => Math.max(max, bundle.version), 0);
   const data = buildProfileDataFromYouJson(yj, user.username);
   const youMd = compileYouMd(data);
   const manifest = compileManifest(data);
@@ -340,7 +347,7 @@ async function persistBundleFromYouJson(
 
   const profile = await ctx.db
     .query("profiles")
-    .withIndex("by_ownerId", (q: any) => q.eq("ownerId", user._id))
+    .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
     .first();
 
   if (profile) {
@@ -366,10 +373,14 @@ async function persistBundleFromYouJson(
   return { bundleId, version: maxVersion + 1, contentHash };
 }
 
-async function publishBundleForUser(ctx: any, userId: any, bundleId: any) {
-  const bundles: any[] = await ctx.db
+async function publishBundleForUser(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  bundleId: Id<"bundles">
+) {
+  const bundles = await ctx.db
     .query("bundles")
-    .withIndex("by_userId", (q: any) => q.eq("userId", userId))
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
     .collect();
 
   for (const bundle of bundles) {
@@ -839,8 +850,8 @@ export const scaffoldProjectDirectories = mutation({
     }
 
     baseYouJson.custom_files = customFiles;
-    const persisted = await persistBundleFromYouJson(ctx as any, user as any, baseYouJson, "web-shell:project-scaffold");
-    await publishBundleForUser(ctx as any, user._id, persisted.bundleId);
+    const persisted = await persistBundleFromYouJson(ctx, user, baseYouJson, "web-shell:project-scaffold");
+    await publishBundleForUser(ctx, user._id, persisted.bundleId);
 
     return {
       changed: true,
@@ -1264,8 +1275,8 @@ export const scaffoldProjectsForUser = internalMutation({
     }
 
     baseYouJson.custom_files = customFiles;
-    const persisted = await persistBundleFromYouJson(ctx as any, user as any, baseYouJson, "internal:project-scaffold");
-    await publishBundleForUser(ctx as any, user._id, persisted.bundleId);
+    const persisted = await persistBundleFromYouJson(ctx, user, baseYouJson, "internal:project-scaffold");
+    await publishBundleForUser(ctx, user._id, persisted.bundleId);
 
     return {
       changed: true,

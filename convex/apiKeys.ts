@@ -4,6 +4,7 @@ import { requireOwner } from "./lib/auth";
 import { secureRandomString } from "./lib/secureToken";
 import { isLegacyGrandfatheredKey } from "./lib/scopes";
 import type { MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 /**
  * API key management.
@@ -104,7 +105,7 @@ const DEFAULT_API_KEY_LIFETIME_DAYS = 365;
 
 export async function issueApiKeyForUser(
   ctx: MutationCtx,
-  user: { _id: any; plan: "free" | "pro" },
+  user: { _id: Id<"users">; plan: "free" | "pro" },
   options: {
     label?: string;
     scopes: string[];

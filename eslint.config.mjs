@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Gitignored local-only noise — excluded so local lint matches CI.
+    ".reference-repos/**",
+    "cli/dist/**",
   ]),
 ]);
 

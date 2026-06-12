@@ -136,11 +136,17 @@ async function fetchGitHubProfile(username: string): Promise<ProfileResult> {
         }
       );
       if (reposRes.ok) {
-        const repos = await reposRes.json();
+        const repos: Array<{
+          fork?: boolean;
+          name?: string;
+          description?: string | null;
+          stargazers_count?: number;
+          language?: string | null;
+        }> = await reposRes.json();
         const topRepos = repos
-          .filter((r: any) => !r.fork)
+          .filter((r) => !r.fork)
           .slice(0, 5)
-          .map((r: any) => ({
+          .map((r) => ({
             name: r.name,
             description: r.description,
             stars: r.stargazers_count,
@@ -149,7 +155,7 @@ async function fetchGitHubProfile(username: string): Promise<ProfileResult> {
         if (topRepos.length > 0) {
           result.extras.topRepos = JSON.stringify(topRepos);
           const langSet: Record<string, boolean> = {};
-          topRepos.forEach((r: any) => {
+          topRepos.forEach((r) => {
             if (r.language) langSet[r.language] = true;
           });
           const langs = Object.keys(langSet);

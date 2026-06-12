@@ -1,5 +1,6 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
+import type { ActionCtx } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { detectAgent } from "./lib/agentDetect";
@@ -152,7 +153,8 @@ http.route({
       const agent = detectAgent(request.headers.get("user-agent"));
       const ownerUser = await ctx.runQuery(internal.users.getByUsername, { username });
       if (ownerUser) {
-        const profileIdRaw = (profileAny.profileId as any) ?? undefined;
+        const profileIdRaw =
+          (profileAny.profileId as Id<"profiles"> | undefined) ?? undefined;
         await ctx.runMutation(internal.activity.logActivity, {
           userId: ownerUser._id,
           profileId: profileIdRaw,
@@ -399,7 +401,7 @@ type AuthContext = {
 
 // Helper: validate API key and return user
 async function authenticateRequest(
-  ctx: { runQuery: (ref: any, args: any) => Promise<any> },
+  ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
   request: Request
 ): Promise<AuthContext | Response> {
   const authHeader = request.headers.get("authorization");
@@ -433,7 +435,7 @@ async function authenticateRequest(
   }
 
   // Update last used (cycle 49: now via internal.* — was api.* before)
-  await (ctx as any).runMutation(internal.apiKeys.updateLastUsed, {
+  await ctx.runMutation(internal.apiKeys.updateLastUsed, {
     keyId: apiKey._id,
   });
 
@@ -463,7 +465,7 @@ async function authenticateRequest(
  *   if (denied) return denied;
  */
 async function requireScope(
-  ctx: { runMutation: (ref: any, args: any) => Promise<any> },
+  ctx: Pick<ActionCtx, "runMutation">,
   request: Request,
   auth: AuthContext,
   scope: ApiScope
@@ -922,8 +924,9 @@ function totalMessageChars(messages: unknown): number {
   if (!Array.isArray(messages)) return 0;
   let n = 0;
   for (const m of messages) {
-    if (m && typeof m === "object" && typeof (m as any).content === "string") {
-      n += (m as any).content.length;
+    if (m && typeof m === "object") {
+      const content = (m as { content?: unknown }).content;
+      if (typeof content === "string") n += content.length;
     }
   }
   return n;
@@ -1086,7 +1089,9 @@ http.route({
     // Helper: transform upstream SSE into our simplified format (for OpenRouter/OpenAI format)
     function transformStream(
       upstream: ReadableStream<Uint8Array>,
-      extractText: (parsed: any) => string | null
+      extractText: (parsed: {
+        choices?: Array<{ delta?: { content?: string } }>;
+      }) => string | null
     ): ReadableStream {
       const reader = upstream.getReader();
       const decoder = new TextDecoder();
@@ -1487,7 +1492,7 @@ http.route({
         platform: body.platform,
       });
       if (!result || !result.success) {
-        return json({ success: false, error: (result as any)?.error || "Scrape returned no data" }, 400);
+        return json({ success: false, error: (result as { error?: string } | null)?.error || "Scrape returned no data" }, 400);
       }
       return json(result);
     } catch (err) {
@@ -1689,7 +1694,7 @@ http.route({
       // console.log(`LinkedIn enrichment: normalizing ${linkedinUrl} -> ${normalizedUrl}`);
 
       // If userId provided, look up user; otherwise run without pipeline storage
-      let userId = body.userId;
+      const userId = body.userId;
 
       // Create a temporary source record if we have a userId
       let sourceId: string | undefined;
@@ -2356,7 +2361,14 @@ http.route({
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
 
-    let body: any;
+    let body: {
+      name?: unknown;
+      content?: unknown;
+      description?: unknown;
+      version?: unknown;
+      scope?: unknown;
+      identityFields?: unknown;
+    };
     try {
       body = await request.json();
     } catch {
@@ -2382,8 +2394,8 @@ http.route({
         name: body.name.trim(),
         description: typeof body.description === "string" ? body.description.slice(0, 500) : "",
         version: typeof body.version === "string" ? body.version.slice(0, 20) : "1.0.0",
-        scope: ["shared", "project", "private"].includes(body.scope) ? body.scope : "shared",
-        identityFields: Array.isArray(body.identityFields) ? body.identityFields.filter((f: unknown) => typeof f === "string").slice(0, 20) : [],
+        scope: body.scope === "shared" || body.scope === "project" || body.scope === "private" ? body.scope : "shared",
+        identityFields: Array.isArray(body.identityFields) ? body.identityFields.filter((f: unknown): f is string => typeof f === "string").slice(0, 20) : [],
         content: body.content,
       });
 
@@ -2413,7 +2425,12 @@ http.route({
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
 
-    let body: any;
+    let body: {
+      skillName?: unknown;
+      source?: unknown;
+      scope?: unknown;
+      identityFields?: unknown;
+    };
     try {
       body = await request.json();
     } catch {
@@ -2430,7 +2447,7 @@ http.route({
         skillName: body.skillName.trim().slice(0, 100),
         source: typeof body.source === "string" ? body.source.slice(0, 200) : "cli",
         scope: typeof body.scope === "string" ? body.scope.slice(0, 20) : "shared",
-        identityFields: Array.isArray(body.identityFields) ? body.identityFields.filter((f: unknown) => typeof f === "string").slice(0, 20) : [],
+        identityFields: Array.isArray(body.identityFields) ? body.identityFields.filter((f: unknown): f is string => typeof f === "string").slice(0, 20) : [],
       });
 
       return json(result);
@@ -2456,7 +2473,7 @@ http.route({
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
 
-    let body: any;
+    let body: { skillName?: unknown };
     try {
       body = await request.json();
     } catch {
@@ -2496,7 +2513,7 @@ http.route({
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
 
-    let body: any;
+    let body: { skillName?: unknown };
     try {
       body = await request.json();
     } catch {
@@ -2606,7 +2623,7 @@ http.route({
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
 
-    let body: any;
+    let body: { version?: unknown };
     try { body = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
 
     if (typeof body.version !== "number") {
@@ -2644,7 +2661,7 @@ http.route({
     if (denied) return denied;
 
     try {
-      const agents = await ctx.runQuery((api as any).activity.agentSummary, {
+      const agents = await ctx.runQuery(api.activity.agentSummary, {
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       });
       return json({ agents: agents ?? [] });
@@ -2679,7 +2696,7 @@ http.route({
     const limit = limitStr ? parseInt(limitStr, 10) : 30;
 
     try {
-      const activity = await ctx.runQuery((api as any).activity.listActivity, {
+      const activity = await ctx.runQuery(api.activity.listActivity, {
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         limit: Number.isFinite(limit) ? limit : 30,
         agentName: agent,
@@ -2741,7 +2758,7 @@ http.route({
 
       const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
 
-      await ctx.runMutation((internal as any).activity.logActivity, {
+      await ctx.runMutation(internal.activity.logActivity, {
         userId: user._id,
         profileId: profile?._id,
         agentName: body.agentName,
@@ -3641,7 +3658,7 @@ function buildHostedWhoamiSummary(
  * latest bundle, falling back to the profile's embedded youJson).
  */
 async function loadAuthedUserIdentity(
-  ctx: { runQuery: (ref: any, args: any) => Promise<any> },
+  ctx: Pick<ActionCtx, "runQuery">,
   auth: AuthContext
 ): Promise<{
   user: { _id: Id<"users">; username: string; plan?: string };

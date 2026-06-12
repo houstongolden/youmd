@@ -1,4 +1,6 @@
 import { internalQuery, mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { createUserAndProfile } from "./users";
 import { issueApiKeyForUser } from "./apiKeys";
@@ -134,7 +136,9 @@ export const inspectAuthChallenges = internalQuery({
   },
 });
 
-async function consumeChallenge(challenge: any) {
+async function consumeChallenge(
+  challenge: Doc<"authChallenges"> | null
+): Promise<Doc<"authChallenges">> {
   if (!challenge) {
     throw new Error("Invalid or expired verification.");
   }
@@ -151,14 +155,14 @@ async function consumeChallenge(challenge: any) {
 }
 
 async function finalizeChallenge(
-  ctx: any,
-  challenge: any,
+  ctx: MutationCtx,
+  challenge: Doc<"authChallenges">,
   issueApiKey: boolean | undefined
 ) {
-  const email = challenge.email as string;
+  const email = challenge.email;
   let user = await ctx.db
     .query("users")
-    .withIndex("by_email", (q: any) => q.eq("email", email))
+    .withIndex("by_email", (q) => q.eq("email", email))
     .first();
 
   if (challenge.type === "signup") {
@@ -168,7 +172,8 @@ async function finalizeChallenge(
     const clerkId = generateAuthSubject();
     const userId = await createUserAndProfile(ctx, {
       clerkId,
-      username: challenge.username,
+      // startEmailAuth requires username for signup challenges.
+      username: challenge.username!,
       email,
       displayName: challenge.displayName,
       verificationSource: "passwordless_email",

@@ -3,6 +3,7 @@
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import jpegJs from "jpeg-js";
+import zlib from "zlib";
 
 // ---------------------------------------------------------------------------
 // ASCII character ramps — same as client-side AsciiAvatar component
@@ -84,7 +85,6 @@ function decodePNG(buffer: Uint8Array): { width: number; height: number; data: U
     }
 
     // Decompress using Node.js zlib
-    const zlib = require("zlib");
     const decompressed = zlib.inflateSync(Buffer.from(compressed));
 
     // Determine bytes per pixel

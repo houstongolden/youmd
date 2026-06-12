@@ -218,9 +218,9 @@ export const getHistory = query({
         publishedAt: b.publishedAt,
         contentHash: b.contentHash?.slice(0, 12),
         parentHash: b.parentHash?.slice(0, 12),
-        source: (b as any).source || "unknown",
-        changeNote: (b as any).changeNote || null,
-        changedSections: (b as any).changedSections || null,
+        source: b.source || "unknown",
+        changeNote: b.changeNote || null,
+        changedSections: b.changedSections || null,
       }));
   },
 });

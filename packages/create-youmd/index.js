@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- published CommonJS bin script (package has no "type": "module"); ESM import would break it
 const { execSync, spawn } = require("child_process");
 
 // Check if youmd is installed globally
