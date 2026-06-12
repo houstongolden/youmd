@@ -197,17 +197,18 @@ V1 requirements:
 - Owned repo model: let users connect an existing repo or create a new private repo such as `youmd-brain` or `youstacks`.
 - Sync boundaries: keep safe, portable files in GitHub. Keep secrets, sensitive prompts, connected-account tokens, and proprietary hosted logic in You.md services or encrypted references.
 
-Potential repo layout:
+Canonical repo layout (matches shipped code — server seed/mirror in `convex/githubRepo.ts` + `deriveStacks` in `convex/github.ts`, CLI discovery in `cli/src/lib/youstack.ts`):
 
-| Path                               | Purpose                                                                                                   |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `.youmd/you.md`                    | Human-readable compiled identity summary.                                                                 |
-| `.youmd/you.json`                  | Machine-readable bundle with schema version, sources, profile, preferences, and references.               |
-| `.youmd/brain/`                    | Safe exported brain summaries, memory indexes, project summaries, source manifests, and retrieval policy. |
-| `.youstacks/<slug>/stack.json`     | YouStack manifest: name, slug, domain, aliases, tags, brain scopes, files, tools, adapters, versions, sharing policy, improvement policy, and update channel. |
-| `.youstacks/<slug>/skills/`        | Host-readable skills, workflows, examples, and rendered instruction files.                                |
-| `.youstacks/<slug>/adapters/`      | Generated `CLAUDE.md`, `AGENTS.md`, Cursor rules, MCP config, install scripts, and host-specific docs.    |
-| `.youstacks/<slug>/protected.json` | References to hosted services, encrypted blobs, scoped API routes, and policies. No plaintext secrets.    |
+| Path                            | Purpose                                                                                                   |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `you.md`                        | Human-readable compiled identity summary (seeded at repo root, mirrored by You.md).                       |
+| `you.json`                      | Machine-readable bundle with schema version, sources, profile, preferences, and references.               |
+| `stacks/<slug>/youstack.json`   | YouStack manifest (schema `youstack/v1`). Required: `schemaVersion`, `kind`, `slug`, `name`, `version`, `visibility`. Optional: `id`, `domain`, `aliases`, `tags`, `description`, `owner`, `compatibility`, `brainScopes`, `files`, `adapters`, `capabilities`, `accessPolicy`, `sharing`, `repoSync`, `docs`, `tests`, `improvement`, `update`, `provenance`. |
+| `stacks/<slug>/skills/`         | Host-readable skills, workflows, examples, and rendered instruction files.                                |
+| `stacks/<slug>/...`             | Other stack files declared in the manifest `files` array (workflows, docs, tests). Host adapter files are generated into the target project by `youmd stack link`, not committed here. |
+| `private/`                      | Never mirrored server-side; secrets and sensitive prompts stay in You.md services or the encrypted vault. |
+
+Legacy CLI-only manifest locations (`<dir>/youstack.json`, `<dir>/.you/youstack.json`, `<dir>/youstacks/<slug>/youstack.json`) still load, but `youmd stack doctor` warns and recommends moving to `stacks/<slug>/youstack.json` so CLI discovery and server repo sync agree.
 
 ## PRD Requirements
 
