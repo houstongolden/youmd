@@ -92,6 +92,78 @@ const MOBILE_PRIMARY_PANES: Array<{ key: PrimaryPaneGroup | "terminal"; label: s
 ];
 
 const PANEL_OPEN_STORAGE_KEY = "youmd.dashboard.panelOpen";
+const STALE_NUDGE_SESSION_KEY = "youmd.dashboard.staleNudgeShown";
+const STALE_NUDGE_DAYS = 7;
+const FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function formatRelativeTime(ts: number): string {
+  const diffMin = Math.floor((Date.now() - ts) / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${Math.floor(diffHr / 24)}d ago`;
+}
+
+function isFreshTimestamp(ts: number): boolean {
+  return Date.now() - ts < FRESH_WINDOW_MS;
+}
+
+/**
+ * Once-per-session staleness nudge. Computed lazily on the first render where
+ * bundle data has loaded; result is cached for the page lifetime so the line
+ * stays stable across re-renders, and a sessionStorage guard ensures the nudge
+ * fires at most once per tab session (reloads included).
+ */
+let staleNoticeCache: string | null | undefined;
+function getStaleNotice(syncedAt: number | null): string | null {
+  if (staleNoticeCache !== undefined) return staleNoticeCache;
+  if (typeof window === "undefined") return null; // never cache during SSR
+  if (syncedAt == null) {
+    staleNoticeCache = null;
+    return null;
+  }
+  const days = Math.floor((Date.now() - syncedAt) / 86400000);
+  if (days < STALE_NUDGE_DAYS) {
+    staleNoticeCache = null;
+    return null;
+  }
+  try {
+    if (window.sessionStorage.getItem(STALE_NUDGE_SESSION_KEY) === "1") {
+      staleNoticeCache = null;
+      return null;
+    }
+    window.sessionStorage.setItem(STALE_NUDGE_SESSION_KEY, "1");
+  } catch {
+    // sessionStorage unavailable — skip the nudge rather than risk repeating it
+    staleNoticeCache = null;
+    return null;
+  }
+  staleNoticeCache = `your profile hasn't changed in ${days} days — tell me what's new and i'll update it`;
+  return staleNoticeCache;
+}
+
+/** Status-bar freshness segment: dim relative time + green dot (<24h) / orange dot (older). */
+function FreshnessSegment({ timestamp }: { timestamp: number }) {
+  // Re-render once a minute so the relative label stays honest
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60000);
+    return () => clearInterval(id);
+  }, []);
+  const isFresh = isFreshTimestamp(timestamp);
+  return (
+    <span className="flex items-center gap-1.5" title={new Date(timestamp).toLocaleString()}>
+      <span
+        aria-hidden="true"
+        className={`w-1.5 h-1.5 rounded-full ${
+          isFresh ? "bg-[hsl(var(--success))]" : "bg-[hsl(var(--accent))]"
+        }`}
+      />
+      <span className="opacity-40">synced {formatRelativeTime(timestamp)}</span>
+    </span>
+  );
+}
 
 /** Open by default; persisted user choice wins. Read lazily so SSR never touches localStorage. */
 function readStoredPanelOpen(): boolean {
@@ -127,6 +199,12 @@ export function DashboardContent() {
   const [rightPane, setRightPane] = useState<RightPane>("profile");
   const [mobileView, setMobileView] = useState<"terminal" | "preview">("terminal");
   const [panelOpen, setPanelOpen] = useState<boolean>(readStoredPanelOpen);
+
+  // Staleness nudge — derived once bundle data loads; guarded once per session
+  const staleNotice =
+    latestBundle === undefined
+      ? null
+      : getStaleNotice(latestBundle ? latestBundle.publishedAt ?? latestBundle.createdAt : null);
 
   // Persist the user's panel choice
   useEffect(() => {
@@ -248,6 +326,7 @@ export function DashboardContent() {
   const plan = convexUser.plan ?? "free";
   const version = latestBundle?.version ?? null;
   const isPublished = latestBundle?.isPublished ?? false;
+  const syncedAt = latestBundle ? latestBundle.publishedAt ?? latestBundle.createdAt : null;
   const activePaneGroup =
     PANE_GROUPS.find((group) => group.panes.some((pane) => pane.key === rightPane)) ??
     PANE_GROUPS[0];
@@ -282,6 +361,12 @@ export function DashboardContent() {
               <span className={isPublished ? "text-[hsl(var(--success))]" : "opacity-40"}>
                 {isPublished ? "published" : "draft"}
               </span>
+              {syncedAt != null && (
+                <>
+                  <span className="opacity-20">|</span>
+                  <FreshnessSegment timestamp={syncedAt} />
+                </>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -329,6 +414,17 @@ export function DashboardContent() {
                 ))}
               </div>
               <div className="flex items-center gap-1.5 pr-2 shrink-0">
+                {syncedAt != null && (
+                  <span
+                    aria-hidden="true"
+                    title={`synced ${formatRelativeTime(syncedAt)}`}
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isFreshTimestamp(syncedAt)
+                        ? "bg-[hsl(var(--success))]"
+                        : "bg-[hsl(var(--accent))]"
+                    }`}
+                  />
+                )}
                 <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
                   v{version ?? "0"}
                 </span>
@@ -387,6 +483,7 @@ export function DashboardContent() {
                 messagesEndRef={agent.messagesEndRef}
                 textareaRef={agent.textareaRef}
                 sendMessage={agent.sendMessage}
+                staleNotice={staleNotice}
               />
             </div>
 

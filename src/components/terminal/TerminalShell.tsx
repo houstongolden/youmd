@@ -19,6 +19,8 @@ interface TerminalShellProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   sendMessage: (pastedImageUrl?: string) => void;
   className?: string;
+  /** One-off dim line rendered after the messages (e.g. staleness nudge). Not part of chat history. */
+  staleNotice?: string | null;
 }
 
 const MAX_HISTORY = 50;
@@ -35,6 +37,7 @@ export function TerminalShell({
   textareaRef,
   sendMessage,
   className = "",
+  staleNotice,
 }: TerminalShellProps) {
   const [pastedImageUrl, setPastedImageUrl] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -196,6 +199,11 @@ export function TerminalShell({
             {displayMessages.map((msg) => (
               <MessageBubble key={msg.id} message={msg} isLatest={msg.id === latestAssistantId} />
             ))}
+            {staleNotice && (
+              <div className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-50">
+                {staleNotice}
+              </div>
+            )}
             {isThinking && <ThinkingIndicator phrase={thinkingPhrase} category={thinkingCategory} progressSteps={progressSteps} />}
             <div ref={messagesEndRef} />
           </div>
