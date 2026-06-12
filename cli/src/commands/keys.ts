@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import { isAuthenticated, readGlobalConfig } from "../lib/config";
 import {
+  apiErrorMessage,
   createApiKey,
   listApiKeys,
   revokeApiKey,
@@ -67,7 +68,7 @@ async function keysList(): Promise<void> {
     const res = await listApiKeys();
 
     if (!res.ok) {
-      spinner.fail((res.data as any)?.error || `HTTP ${res.status}`);
+      spinner.fail(apiErrorMessage(res.data) || `HTTP ${res.status}`);
       console.log("");
       return;
     }
@@ -147,7 +148,7 @@ async function keysCreate(options: { label?: string; scopes?: string }): Promise
     const res = await createApiKey({ label, scopes });
 
     if (!res.ok) {
-      spinner.fail((res.data as any)?.error || `HTTP ${res.status}`);
+      spinner.fail(apiErrorMessage(res.data) || `HTTP ${res.status}`);
       console.log("");
       return;
     }
@@ -215,7 +216,7 @@ async function keysRevoke(id?: string): Promise<void> {
     const res = await revokeApiKey(id);
 
     if (!res.ok) {
-      spinner.fail((res.data as any)?.error || `HTTP ${res.status}`);
+      spinner.fail(apiErrorMessage(res.data) || `HTTP ${res.status}`);
       console.log("");
       return;
     }

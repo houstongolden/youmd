@@ -7,14 +7,15 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import * as os from "os";
+import * as readline from "readline";
+import * as yaml from "js-yaml";
 import chalk from "chalk";
 import {
   readSkillCatalog,
   findSkill,
   addSkillEntry,
-  removeSkillEntry,
   searchSkills,
-  SkillEntry,
   SkillScope,
 } from "../lib/skill-catalog";
 import {
@@ -22,7 +23,7 @@ import {
   installSkillAsync,
   isRemoteSkillSource,
   removeSkill,
-  useSkill,
+  applySkill,
   syncAllSkills,
   linkToAgent,
   initProject,
@@ -31,10 +32,10 @@ import {
   AgentTarget,
   InitProjectMode,
 } from "../lib/skills";
-import { loadIdentityData, resolveVariable, IdentityData } from "../lib/skill-renderer";
+import { loadIdentityData, resolveVariable, renderSkillTemplate } from "../lib/skill-renderer";
 import { BrailleSpinner, renderRichResponse } from "../lib/render";
 import { isAuthenticated } from "../lib/config";
-import { browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill } from "../lib/api";
+import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill } from "../lib/api";
 import { readSkillFile, getSkillDir } from "../lib/skills";
 
 const ACCENT = chalk.hex("#C46A3A");
@@ -240,8 +241,7 @@ async function installSkillCmd(args: string[]): Promise<void> {
               fs.writeFileSync(path.join(skillDir, "SKILL.md"), contentRes.data.content);
 
               // Render with identity
-              const { renderSkillTemplate, loadIdentityData: loadId } = require("../lib/skill-renderer");
-              const rendered = renderSkillTemplate(contentRes.data.content, loadId());
+              const rendered = renderSkillTemplate(contentRes.data.content, loadIdentityData());
               fs.writeFileSync(path.join(skillDir, "RENDERED.md"), rendered);
 
               // Add to catalog and mark installed
@@ -381,7 +381,7 @@ async function removeSkillCmd(args: string[]): Promise<void> {
   console.log("");
 }
 
-async function useSkillCmd(args: string[]): Promise<void> {
+async function skillUseCmd(args: string[]): Promise<void> {
   const name = args[0];
   if (!name) {
     console.log("");
@@ -394,7 +394,7 @@ async function useSkillCmd(args: string[]): Promise<void> {
   const spinner = new BrailleSpinner(randomSpinner("use"));
   spinner.start();
 
-  const result = useSkill(name);
+  const result = applySkill(name);
 
   if (!result.ok) {
     spinner.fail(result.error);
@@ -493,7 +493,6 @@ function addSkillCmd(args: string[]): void {
 }
 
 async function createSkillCmd(args: string[]): Promise<void> {
-  const readline = require("readline");
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const ask = (q: string): Promise<string> => new Promise((res) => rl.question(q, (a: string) => res(a.trim())));
 
@@ -560,7 +559,6 @@ async function createSkillCmd(args: string[]): Promise<void> {
   ].join("\n");
 
   // Write to ~/.youmd/skills/<name>/SKILL.md
-  const os = require("os");
   const skillDir = path.join(os.homedir(), ".youmd", "skills", slug);
   fs.mkdirSync(skillDir, { recursive: true });
   fs.writeFileSync(path.join(skillDir, "SKILL.md"), skillContent);
@@ -616,7 +614,7 @@ function pushSkillCmd(args: string[]): void {
   }
 
   const skillPath = path.join(
-    require("os").homedir(), ".youmd", "skills", entry.name, "SKILL.md"
+    os.homedir(), ".youmd", "skills", entry.name, "SKILL.md"
   );
   if (!fs.existsSync(skillPath)) {
     console.log(chalk.yellow(`  SKILL.md not found for "${name}". install first.`));
@@ -1067,7 +1065,7 @@ async function publishSkillCmd(args: string[]): Promise<void> {
       );
       console.log(DIM(`  others can install with: youmd skill install ${entry.name}`));
     } else {
-      spinner.fail(String((res.data as any)?.error || "publish failed"));
+      spinner.fail(apiErrorMessage(res.data) || "publish failed");
     }
   } catch (err) {
     spinner.fail(err instanceof Error ? err.message : "failed");
@@ -1207,14 +1205,14 @@ function exportSkillsCmd(args: string[]): void {
     // Export the raw SKILL.md
     const outPath = path.join(outputDir, `${entry.name}.md`);
     const raw = fs.readFileSync(
-      path.join(require("os").homedir(), ".youmd", "skills", entry.name, "SKILL.md"),
+      path.join(os.homedir(), ".youmd", "skills", entry.name, "SKILL.md"),
       "utf-8"
     );
     fs.writeFileSync(outPath, raw);
 
     // Also export the rendered version
     const renderedPath = path.join(
-      require("os").homedir(), ".youmd", "skills", entry.name, "RENDERED.md"
+      os.homedir(), ".youmd", "skills", entry.name, "RENDERED.md"
     );
     if (fs.existsSync(renderedPath)) {
       fs.writeFileSync(
@@ -1228,7 +1226,6 @@ function exportSkillsCmd(args: string[]): void {
   }
 
   // Write catalog.yaml
-  const yaml = require("js-yaml");
   const exportCatalog = {
     version: 1,
     exported: new Date().toISOString(),
@@ -1270,7 +1267,7 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       break;
     case "use":
     case "run":
-      await useSkillCmd(args);
+      await skillUseCmd(args);
       break;
     case "sync":
       await syncSkillsCmd();

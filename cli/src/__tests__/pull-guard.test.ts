@@ -82,13 +82,14 @@ describe("pull dirty-check guard", () => {
           youMd: REMOTE_YOU_MD,
         },
         publishedBundle: { version: 2 },
+        bundleCount: 3,
       },
-    } as any);
+    });
     vi.mocked(api.getPrivateContext).mockResolvedValue({
       ok: false,
       status: 404,
       data: null,
-    } as any);
+    });
   });
 
   afterEach(() => {

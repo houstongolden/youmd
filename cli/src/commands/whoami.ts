@@ -1,6 +1,6 @@
 import chalk from "chalk";
-import { readGlobalConfig, getAuthToken, getEnvApiKey } from "../lib/config";
-import { getMe, getMeUser, listApiKeys } from "../lib/api";
+import { readGlobalConfig, writeGlobalConfig, getAuthToken, getEnvApiKey } from "../lib/config";
+import { apiErrorMessage, getMe, getMeUser, listApiKeys } from "../lib/api";
 import { readSkillCatalog } from "../lib/skill-catalog";
 
 const ACCENT = chalk.hex("#C46A3A");
@@ -49,11 +49,10 @@ export async function whoamiCommand(): Promise<void> {
     const res = await getMe();
 
     if (!res.ok) {
-      const errData = res.data as any;
       console.log(
         "  " +
           chalk.yellow("server error") +
-          DIM(" -- " + (errData?.error || `status ${res.status}`))
+          DIM(" -- " + (apiErrorMessage(res.data) || `status ${res.status}`))
       );
 
       if (res.status === 401) {
@@ -144,7 +143,6 @@ export async function whoamiCommand(): Promise<void> {
       if (u.username) config.username = u.username;
       if (u.email) config.email = u.email;
 
-      const { writeGlobalConfig } = require("../lib/config");
       writeGlobalConfig(config);
     }
   } catch (err) {

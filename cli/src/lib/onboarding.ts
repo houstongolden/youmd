@@ -8,11 +8,10 @@ import {
   writeLocalConfig,
   readGlobalConfig,
   writeGlobalConfig,
-  isAuthenticated,
   getConvexSiteUrl,
 } from "./config";
 import { compileBundle, writeBundle } from "./compiler";
-import { BrailleSpinner, requireInteractiveTTY } from "./render";
+import { BrailleSpinner, requireInteractiveTTY, renderRichResponse } from "./render";
 import { printPortraitEncounter } from "./ascii";
 import {
   getRecentProjectInsights,
@@ -92,24 +91,6 @@ function randomPortraitComment(): string {
   return PORTRAIT_COMMENTS[Math.floor(Math.random() * PORTRAIT_COMMENTS.length)];
 }
 
-function showPortraitPlaceholder(handle: string): void {
-  const accent = chalk.hex("#C46A3A");
-  const dim = chalk.dim;
-  const displayHandle = handle.startsWith("@") ? handle : `@${handle}`;
-  const innerWidth = Math.max(displayHandle.length + 4, 28);
-  const portraitLine = "\u2591\u2592\u2593\u2588 portrait loaded \u2588\u2593\u2592\u2591";
-  const portraitPad = Math.max(0, innerWidth - portraitLine.length);
-  const handlePad = Math.max(0, innerWidth - displayHandle.length);
-
-  console.log("");
-  console.log("  " + dim("\u250C" + "\u2500".repeat(innerWidth + 2) + "\u2510"));
-  console.log("  " + dim("\u2502") + "  " + accent(portraitLine) + " ".repeat(portraitPad) + dim("\u2502"));
-  console.log("  " + dim("\u2502") + "  " + chalk.white(displayHandle) + " ".repeat(handlePad) + dim("\u2502"));
-  console.log("  " + dim("\u2514" + "\u2500".repeat(innerWidth + 2) + "\u2518"));
-  console.log("");
-  console.log("  " + accent(randomPortraitComment()));
-  console.log("");
-}
 
 // ─── ASCII logo ──────────────────────────────────────────────────────
 
@@ -741,7 +722,7 @@ function parseUpdatesFromResponse(text: string): {
           ? parsed.updates
           : [];
       updates = arr.filter(
-        (u: any) =>
+        (u: Partial<SectionUpdate> | null) =>
           u &&
           typeof u.section === "string" &&
           typeof u.content === "string" &&
@@ -1429,8 +1410,7 @@ function printAgentMessage(text: string): void {
     .replace(/\n{3,}/g, "\n\n")  // collapse 3+ newlines to 2
     .replace(/([.?!])\n([a-z])/g, "$1\n\n$2");  // add blank line between sentences that run together
 
-  const { renderRichResponse } = require("./render");
-  const rendered = renderRichResponse(normalizedText) as string;
+  const rendered = renderRichResponse(normalizedText);
 
   // Find the last line that ends with "?" and highlight it in accent color
   const lines = rendered.split("\n");
@@ -1687,28 +1667,12 @@ export async function runOnboarding(): Promise<void> {
 
       portraitLines = [];
       for (let y = 0; y < rows; y++) {
-        let coloredLine = "";
         let plainLine = "";
         for (let x = 0; x < cols; x++) {
           const pixel = Jimp.intToRGBA(img.getPixelColor(x, y));
           const lum = 0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b;
           const ch = RAMP[Math.floor((lum / 255) * (RAMP.length - 1))];
           plainLine += ch;
-          // Orange-tinted colors based on luminance
-          const brightness = Math.floor((lum / 255) * 100);
-          if (brightness < 10) {
-            coloredLine += chalk.hidden(ch);
-          } else if (brightness < 30) {
-            coloredLine += chalk.hex("#5A3018")(ch);
-          } else if (brightness < 50) {
-            coloredLine += chalk.hex("#8A4828")(ch);
-          } else if (brightness < 70) {
-            coloredLine += chalk.hex("#B06038")(ch);
-          } else if (brightness < 85) {
-            coloredLine += chalk.hex("#C46A3A")(ch);
-          } else {
-            coloredLine += chalk.hex("#E09060")(ch);
-          }
         }
         portraitLines.push(plainLine);
       }

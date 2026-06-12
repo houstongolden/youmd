@@ -1,6 +1,6 @@
 import * as readline from "readline";
 import chalk from "chalk";
-import { checkUsername, startEmailRegister, verifyEmailCode } from "../lib/api";
+import { apiErrorMessage, checkUsername, startEmailRegister, verifyEmailCode } from "../lib/api";
 import { readGlobalConfig, writeGlobalConfig, getConvexSiteUrl } from "../lib/config";
 import { BrailleSpinner, requireInteractiveTTY } from "../lib/render";
 
@@ -96,8 +96,7 @@ export async function registerCommand(): Promise<void> {
 
     if (!res.ok) {
       spinner.fail();
-      const errData = res.data as any;
-      const errMsg = errData?.error || `server returned ${res.status}`;
+      const errMsg = apiErrorMessage(res.data) || `server returned ${res.status}`;
       console.log("");
       console.log("  " + chalk.yellow(errMsg));
       console.log("");
@@ -107,8 +106,8 @@ export async function registerCommand(): Promise<void> {
     spinner.stop();
     console.log("");
     console.log("  verification code sent to " + email);
-    if ((res.data as any).devCode) {
-      console.log("  " + chalk.dim("dev code: ") + (res.data as any).devCode);
+    if (res.data.devCode) {
+      console.log("  " + chalk.dim("dev code: ") + res.data.devCode);
     }
     console.log("");
 
@@ -125,9 +124,8 @@ export async function registerCommand(): Promise<void> {
     const verifyRes = await verifyEmailCode(email, code);
     if (!verifyRes.ok) {
       verifySpinner.fail();
-      const errData = verifyRes.data as any;
       console.log("");
-      console.log("  " + chalk.yellow(errData?.error || `server returned ${verifyRes.status}`));
+      console.log("  " + chalk.yellow(apiErrorMessage(verifyRes.data) || `server returned ${verifyRes.status}`));
       console.log("");
       return;
     }

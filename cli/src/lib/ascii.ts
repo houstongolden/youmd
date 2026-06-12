@@ -16,19 +16,6 @@ const ACCENT = chalk.hex("#C46A3A");
 // Character ramp — dark to light (same as web AsciiAvatar "classic" ramp)
 const RAMP = `$@B%8&#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/|()1{}?-_+~<>i!lI;:,". `;
 
-// Luminance to terminal color (orange-tinted, matching the web version)
-function lumToAnsi(l: number): chalk.Chalk {
-  if (l < 25) return chalk.hidden;
-  if (l < 55) return chalk.hex("#3D2010");
-  if (l < 85) return chalk.hex("#5A3018");
-  if (l < 115) return chalk.hex("#7A4020");
-  if (l < 145) return chalk.hex("#9A5030");
-  if (l < 175) return chalk.hex("#B06038");
-  if (l < 205) return chalk.hex("#C47040");
-  if (l < 230) return chalk.hex("#D48050");
-  return chalk.hex("#E09060");
-}
-
 /**
  * Fetch an image URL and render it as colored ASCII art in the terminal.
  * Returns the ASCII lines as an array of strings (for potential saving).

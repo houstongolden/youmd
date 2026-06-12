@@ -12,7 +12,6 @@ import chalk from "chalk";
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
 const SUCCESS = chalk.green;
-const WARN = chalk.yellow;
 
 // Box-drawing characters
 const BOX = {
@@ -286,11 +285,6 @@ function renderCodeBlock(content: string, lang?: string): string {
   return out.join("\n");
 }
 
-function renderBar(label: string, value: number, max: number, width = 30): string {
-  const filled = Math.round((value / max) * width);
-  const bar = ACCENT("\u2588".repeat(filled)) + DIM("\u2591".repeat(width - filled));
-  return `  ${DIM(label.padEnd(12))}${bar} ${DIM(String(value))}`;
-}
 
 /* ── Main renderer ─────────────────────────────────────────── */
 

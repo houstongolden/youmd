@@ -7,6 +7,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import chalk from "chalk";
 import matter from "gray-matter";
 import {
   getSkillsDir,
@@ -17,11 +18,9 @@ import {
 } from "./config";
 import {
   readSkillCatalog,
-  writeSkillCatalog,
   findSkill,
   setSkillInstalled,
   SkillEntry,
-  SkillCatalog,
 } from "./skill-catalog";
 import { renderSkillTemplate, loadIdentityData, checkTemplateReadiness, IdentityData } from "./skill-renderer";
 import { isAuthenticated } from "./config";
@@ -304,7 +303,6 @@ export function removeSkill(skillName: string): { ok: boolean; error?: string } 
   // Sync removal to Convex (non-blocking, warn on failure)
   if (isAuthenticated()) {
     apiRemoveInstall(entry.name).catch((err) => {
-      const chalk = require("chalk");
       console.log(chalk.dim(`  sync: ${entry.name} remote removal sync failed (non-fatal)`));
       if (process.env.DEBUG) console.error(`[skill sync] remove failed: ${err}`);
     });
@@ -319,7 +317,7 @@ export function removeSkill(skillName: string): { ok: boolean; error?: string } 
  * Use a skill — render it with current identity data.
  * Returns the rendered content.
  */
-export function useSkill(skillName: string): { ok: boolean; content?: string; readiness?: ReturnType<typeof checkTemplateReadiness>; error?: string } {
+export function applySkill(skillName: string): { ok: boolean; content?: string; readiness?: ReturnType<typeof checkTemplateReadiness>; error?: string } {
   const catalog = readSkillCatalog();
   const entry = findSkill(catalog, skillName);
 
@@ -351,7 +349,6 @@ export function useSkill(skillName: string): { ok: boolean; content?: string; re
   // Sync usage to Convex (non-blocking, warn on failure)
   if (isAuthenticated()) {
     apiTrackUsage(entry.name).catch((err) => {
-      const chalk = require("chalk");
       console.log(chalk.dim(`  sync: usage tracking failed for ${entry.name} (non-fatal)`));
       if (process.env.DEBUG) console.error(`[skill sync] usage tracking failed: ${err}`);
     });
@@ -944,7 +941,6 @@ function syncInstallToRemote(entry: SkillEntry): void {
     identityFields: entry.identity_fields,
   }).catch((err) => {
     // Dim warning instead of silent swallow
-    const chalk = require("chalk");
     console.log(chalk.dim(`  sync: ${entry.name} remote sync failed (non-fatal)`));
     if (process.env.DEBUG) console.error(`[skill sync] install sync failed: ${err}`);
   });

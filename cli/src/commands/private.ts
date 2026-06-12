@@ -7,7 +7,6 @@ import {
   detectProjectContext,
   readProjectPrivateNotes,
   writeProjectPrivateNotes,
-  getProjectPrivateDir,
 } from "../lib/config";
 import { getPrivateContext, updatePrivateContext, PrivateContext, initVault as apiInitVault, saveVaultData, getVaultData } from "../lib/api";
 import { BrailleSpinner } from "../lib/render";

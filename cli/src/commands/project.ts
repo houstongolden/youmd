@@ -10,7 +10,6 @@ import {
   getProjectDir,
   getProjectMemories,
   addProjectMemory,
-  updateProjectFile,
 } from "../lib/project";
 import {
   getLocalBundleDir,

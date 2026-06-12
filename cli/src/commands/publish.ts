@@ -5,7 +5,6 @@ import {
   getLocalBundleDir,
   localBundleExists,
   isAuthenticated,
-  readGlobalConfig,
   readLocalConfig,
   writeLocalConfig,
 } from "../lib/config";
@@ -47,8 +46,6 @@ export async function publishCommand(): Promise<void> {
     console.log("");
     return;
   }
-
-  const config = readGlobalConfig();
 
   console.log("  " + chalk.bold("you.md") + chalk.dim(" -- publishing bundle"));
   console.log("");
@@ -124,7 +121,7 @@ export async function publishCommand(): Promise<void> {
 
     if (uploadRes.status === 409) {
       spinner.stop();
-      const errData = uploadRes.data as any;
+      const errData = uploadRes.data;
       console.log("");
       console.log(chalk.yellow("  remote has changed since your last pull."));
       console.log("");
@@ -139,7 +136,7 @@ export async function publishCommand(): Promise<void> {
 
     if (!uploadRes.ok) {
       spinner.stop();
-      const errData = uploadRes.data as any;
+      const errData = uploadRes.data;
       console.log("");
       console.log(
         chalk.red("  upload failed") +
@@ -164,7 +161,7 @@ export async function publishCommand(): Promise<void> {
     spinner.stop();
 
     if (!pubRes.ok) {
-      const errData = pubRes.data as any;
+      const errData = pubRes.data;
       console.log("");
       console.log(
         chalk.red("  publish failed") +

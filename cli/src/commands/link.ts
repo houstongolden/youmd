@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import { isAuthenticated } from "../lib/config";
 import {
+  apiErrorMessage,
   createContextLink,
   listContextLinks,
   revokeContextLink,
@@ -115,7 +116,7 @@ async function linkCreate(options: {
     const res = await createContextLink({ scope, ttl, maxUses, name });
 
     if (!res.ok) {
-      spinner.fail((res.data as any)?.error || `HTTP ${res.status}`);
+      spinner.fail(apiErrorMessage(res.data) || `HTTP ${res.status}`);
       console.log("");
       return;
     }
@@ -169,7 +170,7 @@ async function linkList(): Promise<void> {
     const res = await listContextLinks();
 
     if (!res.ok) {
-      spinner.fail((res.data as any)?.error || `HTTP ${res.status}`);
+      spinner.fail(apiErrorMessage(res.data) || `HTTP ${res.status}`);
       console.log("");
       return;
     }
@@ -386,7 +387,7 @@ async function linkRevoke(id?: string): Promise<void> {
     const res = await revokeContextLink(id);
 
     if (!res.ok) {
-      spinner.fail((res.data as any)?.error || `HTTP ${res.status}`);
+      spinner.fail(apiErrorMessage(res.data) || `HTTP ${res.status}`);
       console.log("");
       return;
     }

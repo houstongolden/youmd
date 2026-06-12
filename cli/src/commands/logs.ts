@@ -76,7 +76,7 @@ export async function logsCommand(options: {
     console.log(DIM("  --- youmd activity (live, ctrl-c to stop) ---"));
     console.log("");
     let lastSeen: number | null = null;
-    // eslint-disable-next-line no-constant-condition
+     
     while (true) {
       const events = await fetchActivity({
         limit: 50,

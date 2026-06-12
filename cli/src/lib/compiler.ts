@@ -382,7 +382,7 @@ export function compileBundle(bundleDir: string): CompileResult {
   });
 
   // Load existing skeleton from you.json or base.json to preserve fields we don't model
-  let skeleton: Record<string, unknown> = {};
+  let skeleton: SkeletonYouJson = {};
   const youJsonPath = path.join(bundleDir, "you.json");
   const baseJsonPath = path.join(bundleDir, "base.json");
   if (fs.existsSync(youJsonPath)) {
@@ -476,70 +476,70 @@ export function compileBundle(bundleDir: string): CompileResult {
     generated_at: now,
 
     identity: {
-      name: about.name || (skeleton as any)?.identity?.name || "",
-      tagline: about.tagline || (skeleton as any)?.identity?.tagline || "",
-      location: about.location || (skeleton as any)?.identity?.location || "",
+      name: about.name || skeleton?.identity?.name || "",
+      tagline: about.tagline || skeleton?.identity?.tagline || "",
+      location: about.location || skeleton?.identity?.location || "",
       bio: {
-        short: about.bio.short || (skeleton as any)?.identity?.bio?.short || "",
-        medium: about.bio.medium || (skeleton as any)?.identity?.bio?.medium || "",
-        long: about.bio.long || (skeleton as any)?.identity?.bio?.long || "",
+        short: about.bio.short || skeleton?.identity?.bio?.short || "",
+        medium: about.bio.medium || skeleton?.identity?.bio?.medium || "",
+        long: about.bio.long || skeleton?.identity?.bio?.long || "",
       },
     },
 
     now: {
-      focus: nowItems.length > 0 ? nowItems : ((skeleton as any)?.now?.focus || []),
+      focus: nowItems.length > 0 ? nowItems : (skeleton?.now?.focus || []),
       updated_at: now.split("T")[0],
     },
 
-    projects: projects.length > 0 ? projects : ((skeleton as any)?.projects || []),
-    values: values.length > 0 ? values : ((skeleton as any)?.values || []),
-    links: Object.keys(links).length > 0 ? links : ((skeleton as any)?.links || {}),
+    projects: projects.length > 0 ? projects : (skeleton?.projects || []),
+    values: values.length > 0 ? values : (skeleton?.values || []),
+    links: Object.keys(links).length > 0 ? links : (skeleton?.links || {}),
 
     preferences: {
       agent: {
-        tone: agentPrefs.tone || (skeleton as any)?.preferences?.agent?.tone || "",
-        formality: agentPrefs.formality || (skeleton as any)?.preferences?.agent?.formality || "casual-professional",
-        avoid: agentPrefs.avoid.length > 0 ? agentPrefs.avoid : ((skeleton as any)?.preferences?.agent?.avoid || []),
-        markdown: agentPrefSection?.content || (skeleton as any)?.preferences?.agent?.markdown || "",
+        tone: agentPrefs.tone || skeleton?.preferences?.agent?.tone || "",
+        formality: agentPrefs.formality || skeleton?.preferences?.agent?.formality || "casual-professional",
+        avoid: agentPrefs.avoid.length > 0 ? agentPrefs.avoid : (skeleton?.preferences?.agent?.avoid || []),
+        markdown: agentPrefSection?.content || skeleton?.preferences?.agent?.markdown || "",
       },
       writing: {
-        style: writingPrefs.style || (skeleton as any)?.preferences?.writing?.style || "",
-        format: writingPrefs.format || (skeleton as any)?.preferences?.writing?.format || "",
-        markdown: writingPrefSection?.content || (skeleton as any)?.preferences?.writing?.markdown || "",
+        style: writingPrefs.style || skeleton?.preferences?.writing?.style || "",
+        format: writingPrefs.format || skeleton?.preferences?.writing?.format || "",
+        markdown: writingPrefSection?.content || skeleton?.preferences?.writing?.markdown || "",
       },
     },
 
     voice: {
-      overall: voiceOverall ? parseVoiceMd(voiceOverall.content) : ((skeleton as any)?.voice?.overall || ""),
-      markdown: voiceOverall?.content || (skeleton as any)?.voice?.markdown || "",
+      overall: voiceOverall ? parseVoiceMd(voiceOverall.content) : (skeleton?.voice?.overall || ""),
+      markdown: voiceOverall?.content || skeleton?.voice?.markdown || "",
       platforms: {
-        linkedin: voicePlatforms.linkedin || (skeleton as any)?.voice?.platforms?.linkedin || null,
-        x: voicePlatforms.x || (skeleton as any)?.voice?.platforms?.x || null,
-        blog: voicePlatforms.blog || (skeleton as any)?.voice?.platforms?.blog || null,
+        linkedin: voicePlatforms.linkedin || skeleton?.voice?.platforms?.linkedin || null,
+        x: voicePlatforms.x || skeleton?.voice?.platforms?.x || null,
+        blog: voicePlatforms.blog || skeleton?.voice?.platforms?.blog || null,
         ...(Object.fromEntries(
           Object.entries(voicePlatforms).filter(([k]) => !["linkedin", "x", "blog"].includes(k))
         )),
       },
     },
 
-    analysis: (skeleton as any)?.analysis || {
+    analysis: skeleton?.analysis || {
       topics: [],
       voice_summary: voiceOverall ? parseVoiceMd(voiceOverall.content) : "",
       credibility_signals: [],
     },
 
-    social_images: (skeleton as any)?.social_images || {},
+    social_images: skeleton?.social_images || {},
 
     agent_directives: {
-      communication_style: directives.communication_style || (skeleton as any)?.agent_directives?.communication_style || "",
-      negative_prompts: directives.negative_prompts.length > 0 ? directives.negative_prompts : ((skeleton as any)?.agent_directives?.negative_prompts || []),
-      default_stack: directives.default_stack || (skeleton as any)?.agent_directives?.default_stack || "",
-      decision_framework: directives.decision_framework || (skeleton as any)?.agent_directives?.decision_framework || "",
-      current_goal: directives.current_goal || (skeleton as any)?.agent_directives?.current_goal || "",
-      markdown: agentDirective?.content || (skeleton as any)?.agent_directives?.markdown || "",
+      communication_style: directives.communication_style || skeleton?.agent_directives?.communication_style || "",
+      negative_prompts: directives.negative_prompts.length > 0 ? directives.negative_prompts : (skeleton?.agent_directives?.negative_prompts || []),
+      default_stack: directives.default_stack || skeleton?.agent_directives?.default_stack || "",
+      decision_framework: directives.decision_framework || skeleton?.agent_directives?.decision_framework || "",
+      current_goal: directives.current_goal || skeleton?.agent_directives?.current_goal || "",
+      markdown: agentDirective?.content || skeleton?.agent_directives?.markdown || "",
     },
 
-    agent_guide: (skeleton as any)?.agent_guide || {
+    agent_guide: skeleton?.agent_guide || {
       summary: "this is a you-md/v1 identity context protocol. use it to understand who this person is before working with them.",
       quick_context: [
         "identity.bio.short -- one-line summary",
@@ -554,15 +554,15 @@ export function compileBundle(bundleDir: string): CompileResult {
       for_research: "check analysis.topics and links for their areas of expertise",
     },
 
-    custom_sections: customSections.length > 0 ? customSections : ((skeleton as any)?.custom_sections || []),
+    custom_sections: customSections.length > 0 ? customSections : (skeleton?.custom_sections || []),
 
     meta: {
-      sources_used: (skeleton as any)?.meta?.sources_used || [],
+      sources_used: skeleton?.meta?.sources_used || [],
       last_updated: now,
       compiler_version: "0.5.0",
     },
 
-    verification: (skeleton as any)?.verification || null,
+    verification: skeleton?.verification || null,
   };
 
   // ── Build you.md ───────────────────────────────────────────────

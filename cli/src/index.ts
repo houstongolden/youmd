@@ -8,7 +8,6 @@ import * as path from "path";
 import * as readline from "readline";
 import {
   isAuthenticated,
-  localBundleExists,
   readGlobalConfig,
   getLocalBundleDir,
   getHomeBundleDir,

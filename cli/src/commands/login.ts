@@ -7,7 +7,7 @@ import {
   getDefaultAppUrl,
   getDefaultConvexSiteUrl,
 } from "../lib/config";
-import { getMeWithToken, getMeUser, startEmailLogin, verifyEmailCode } from "../lib/api";
+import { apiErrorMessage, getMeWithToken, getMeUser, startEmailLogin, verifyEmailCode } from "../lib/api";
 import { BrailleSpinner, requireInteractiveTTY } from "../lib/render";
 
 const ACCENT = chalk.hex("#C46A3A");
@@ -49,8 +49,7 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
 
     if (!res.ok) {
       spinner.fail();
-      const errData = res.data as any;
-      const errMsg = errData?.error || `server returned ${res.status}`;
+      const errMsg = apiErrorMessage(res.data) || `server returned ${res.status}`;
       console.log("");
       console.log("  " + chalk.yellow(errMsg));
       console.log("");
@@ -64,8 +63,8 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
     spinner.stop();
     console.log("");
     console.log("  verification code sent to " + email);
-    if ((res.data as any).devCode) {
-      console.log("  " + chalk.dim("dev code: ") + (res.data as any).devCode);
+    if (res.data.devCode) {
+      console.log("  " + chalk.dim("dev code: ") + res.data.devCode);
     }
     console.log("");
 
@@ -82,9 +81,8 @@ export async function loginCommand(options: { key?: string; web?: boolean }): Pr
     const verifyRes = await verifyEmailCode(email, code);
     if (!verifyRes.ok) {
       verifySpinner.fail();
-      const errData = verifyRes.data as any;
       console.log("");
-      console.log("  " + chalk.yellow(errData?.error || `server returned ${verifyRes.status}`));
+      console.log("  " + chalk.yellow(apiErrorMessage(verifyRes.data) || `server returned ${verifyRes.status}`));
       console.log("");
       return;
     }
@@ -188,12 +186,12 @@ async function loginWithKey(key: string): Promise<void> {
 
   if (!res.ok) {
     spinner.fail();
-    const errData = res.data as any;
+    const errMsg = apiErrorMessage(res.data);
     console.log("");
     console.log(
       "  " + chalk.yellow("invalid key") +
         " -- server responded with status " + res.status +
-        (errData?.error ? ` (${errData.error})` : "")
+        (errMsg ? ` (${errMsg})` : "")
     );
     console.log("");
     console.log("  " + chalk.dim("nothing was saved. your existing login (if any) is intact."));
@@ -251,67 +249,3 @@ function promptInput(prompt: string): Promise<string> {
   });
 }
 
-function promptPassword(prompt: string): Promise<string> {
-  return new Promise((resolve) => {
-    // Write the prompt manually
-    process.stdout.write(prompt);
-
-    const rl = readline.createInterface({
-      input: process.stdin,
-      terminal: false,
-    });
-
-    // If stdin is a TTY, enable raw mode for character-by-character masking
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(true);
-    }
-    process.stdin.resume();
-
-    let password = "";
-
-    const onData = (ch: Buffer) => {
-      const char = ch.toString("utf8");
-
-      // Enter
-      if (char === "\n" || char === "\r" || char === "\u0004") {
-        if (process.stdin.isTTY) {
-          process.stdin.setRawMode(false);
-        }
-        process.stdin.removeListener("data", onData);
-        process.stdin.pause();
-        rl.close();
-        process.stdout.write("\n");
-        resolve(password);
-        return;
-      }
-
-      // Ctrl+C
-      if (char === "\u0003") {
-        if (process.stdin.isTTY) {
-          process.stdin.setRawMode(false);
-        }
-        process.stdin.removeListener("data", onData);
-        process.stdin.pause();
-        rl.close();
-        process.stdout.write("\n");
-        resolve("");
-        return;
-      }
-
-      // Backspace
-      if (char === "\u007F" || char === "\b") {
-        if (password.length > 0) {
-          password = password.slice(0, -1);
-          process.stdout.write("\b \b");
-        }
-        return;
-      }
-
-      // Regular character
-      password += char;
-      process.stdout.write("*");
-    };
-
-    process.stdin.on("data", onData);
-  });
-}

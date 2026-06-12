@@ -11,6 +11,19 @@ interface ApiResponse<T = unknown> {
   data: T;
 }
 
+/**
+ * Extract the server's error message from a failed response payload.
+ * Error responses are JSON objects with an `error` field regardless of the
+ * endpoint's success type, so this narrows safely from `unknown`.
+ */
+export function apiErrorMessage(data: unknown): string | undefined {
+  if (data && typeof data === "object" && "error" in data) {
+    const msg = (data as { error?: unknown }).error;
+    if (typeof msg === "string" && msg) return msg;
+  }
+  return undefined;
+}
+
 /** Default per-request timeout. Keeps the CLI snappy when offline. */
 const DEFAULT_TIMEOUT_MS = 15_000;
 
@@ -193,7 +206,7 @@ export async function getPublicProfile(
   username: string
 ): Promise<{ youJson: unknown; youMd: string; username: string; displayName?: string } | null> {
   const path = `/api/v1/profiles?username=${encodeURIComponent(username)}`;
-  const res = await apiRequest<any>(
+  const res = await apiRequest<Record<string, unknown>>(
     path
   );
   if (!res.ok) return null;
@@ -230,7 +243,7 @@ export async function getPublicProfile(
     }
   }
 
-  return data;
+  return data as { youJson: unknown; youMd: string; username: string; displayName?: string } | null;
 }
 
 // ─── Authenticated endpoints ─────────────────────────────────────────
@@ -404,13 +417,21 @@ export async function saveBundle(
   });
 }
 
+/** Response shape for bundle uploads — error/conflict fields populated on failure. */
+export interface UploadBundleResult {
+  version?: number;
+  error?: string;
+  remoteHash?: string;
+  remoteVersion?: number;
+}
+
 export async function uploadBundle(
   args: SaveBundleArgs & { parentHash?: string }
-): Promise<ApiResponse<any>> {
+): Promise<ApiResponse<UploadBundleResult>> {
   // Upload raw bundle data - manifest, youJson, youMd
   // The /api/v1/me/bundle endpoint expects profileData for server-side compilation.
   // For CLI uploads where we already have compiled artifacts, we send them directly.
-  return apiRequest<any>("/api/v1/me/bundle", {
+  return apiRequest<UploadBundleResult>("/api/v1/me/bundle", {
     method: "POST",
     token: getToken(),
     body: {
@@ -429,6 +450,8 @@ export interface PublishResult {
   version: number;
   username: string;
   url?: string;
+  /** Populated on non-ok responses. */
+  error?: string;
 }
 
 export async function publishLatest(): Promise<ApiResponse<PublishResult>> {
@@ -451,8 +474,8 @@ export async function addSource(
   });
 }
 
-export async function listSources(): Promise<ApiResponse<any[]>> {
-  return apiRequest<any[]>("/api/v1/me/sources", {
+export async function listSources(): Promise<ApiResponse<Array<Record<string, unknown>>>> {
+  return apiRequest<Array<Record<string, unknown>>>("/api/v1/me/sources", {
     token: getToken(),
   });
 }
@@ -495,8 +518,8 @@ export async function saveMemories(
 
 // ─── Analytics ───────────────────────────────────────────────────────
 
-export async function getAnalytics(): Promise<ApiResponse<any>> {
-  return apiRequest<any>("/api/v1/me/analytics", {
+export async function getAnalytics(): Promise<ApiResponse<Record<string, unknown>>> {
+  return apiRequest<Record<string, unknown>>("/api/v1/me/analytics", {
     token: getToken(),
   });
 }

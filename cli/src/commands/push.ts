@@ -148,7 +148,7 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
 
     if (uploadResult.status === 409) {
       // Server rejected due to hash conflict
-      const errData = uploadResult.data as any;
+      const errData = uploadResult.data;
       console.log("");
       console.log(chalk.yellow("  remote has changed since your last pull."));
       console.log("");
@@ -178,7 +178,7 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean 
 
     console.log(
       chalk.green("  \u2713") +
-        chalk.dim(` bundle uploaded (v${(uploadResult.data as any)?.version || "?"})`) +
+        chalk.dim(` bundle uploaded (v${uploadResult.data?.version || "?"})`) +
         chalk.dim(` [${shortHash(localHash)}]`)
     );
 
