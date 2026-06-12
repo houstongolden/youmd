@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireOwner } from "./lib/auth";
+import { AGENT_WRITABLE_MEMORY_CATEGORIES } from "./lib/memoryCategories";
 
 /**
  * Cycle 46: ALL chat.* exports converted from `action` (public) to
@@ -402,7 +403,7 @@ export const compactSession = action({
 
 1. A concise context summary (3-5 sentences) capturing what was discussed, decided, and any open threads. Write it as a briefing for someone continuing this conversation.
 
-2. Key facts to remember as a JSON array. Each fact has: category (one of: "fact", "preference", "decision", "project", "goal"), content (the fact itself), tags (1-3 relevant keywords).
+2. Key facts to remember as a JSON array. Each fact has: category (one of: ${AGENT_WRITABLE_MEMORY_CATEGORIES.map((c) => `"${c}"`).join(", ")}), content (the fact itself), tags (1-3 relevant keywords).
 
 Respond in this exact format:
 SUMMARY:
