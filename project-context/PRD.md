@@ -1,7 +1,7 @@
 # You.md — Product Requirements Document
 
 Version: 2.3
-Last Updated: 2026-06-02
+Last Updated: 2026-06-11
 Founder: Houston Golden
 
 ---
@@ -15,7 +15,7 @@ You.md is your agent brain and named expertise stack layer for the agent interne
 **Simple product model:** Brain → Stacks → Runtime → Protected API/MCP.
 
 - **Brain:** identity, memory, preferences, private context, project context, sources, provenance, and trust rules.
-- **Stacks:** named packages of expertise, skills, workflows, prompts, examples, docs, tests, host adapters, improvement policy, and update policy.
+- **Stacks:** named packages of expertise, skills, workflows, prompts, examples, docs, tests, host adapters, improvement policy, and update policy. A stack is a `youstack.json` (`youstack/v1`) manifest plus its files; in a connected GitHub repo, stacks live under `stacks/<slug>/` — the layout the server seeds and parses (`deriveStacks` in `convex/github.ts`). Known drift: CLI discovery and the example stack still use `youstack.json` / `.you/` / `youstacks/` paths instead of `stacks/`; reconciliation tracked as backlog P8.
 - **Runtime:** the one curl-installed helper layer that gets You.md into Claude Code, Codex, Cursor, and other agent hosts.
 - **Protected API/MCP:** the authenticated boundary for private memory retrieval, tokens, repo sync, connected tools, visibility changes, and sensitive actions.
 

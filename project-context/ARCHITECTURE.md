@@ -1,6 +1,6 @@
 # You.md — Architecture Reference
 
-Last Updated: 2026-06-02
+Last Updated: 2026-06-11
 
 ## System Overview
 
@@ -398,6 +398,92 @@ Terminal left panel is persistent. Right pane switches via slash commands:
 ├── context/             # PRD, TODO, features, changelog, decisions
 └── agent/               # Instructions, preferences, memory
 ```
+
+---
+
+## YouStacks Layer
+
+YouStacks are named, portable packages of expertise (skills, workflows, prompts, docs, tests, host adapters) layered on top of the brain. The layer spans three code surfaces: the CLI manifest engine (`cli/src/lib/youstack.ts` + `cli/src/commands/stack.ts`), the published server-side capability contract (`src/lib/youstack-routing.ts`), and the GitHub repo mirror parser (`convex/github.ts` + `convex/githubRepo.ts`).
+
+### Manifest (youstack.json, schema `youstack/v1`)
+
+Validated by `validateYouStackManifest` in `cli/src/lib/youstack.ts`.
+
+| Field | Required | Notes |
+|---|---|---|
+| schemaVersion | yes | Must be `"youstack/v1"` |
+| kind | yes | Must be `"youstack"` |
+| slug | yes | Shell-safe identifier (letters, numbers, dot, underscore, dash) |
+| name, version | yes | |
+| visibility | yes | `private` \| `scoped-link` \| `public-open` \| `team` |
+| id, domain, aliases, tags, description, owner | no | Metadata (single-line recommended) |
+| compatibility | no | `{hosts, minYoumdCli, requiresYoumdApi, requiresYoumdMcp}` |
+| brainScopes | no | `[{scope, required?, reason?}]` — free text today (see drift) |
+| files | no | `[{path, type, required?, checksum?}]` — safe relative paths only |
+| adapters | no | `{<host>: {files?, bootstrap?}}` keyed by host id |
+| capabilities | no | `[{id, intent?, workflow?, skill?, localOnly?, mcpTool?, apiEndpoint?, requiredScopes?, mutationPolicy?}]` |
+| accessPolicy | no | `protectedByDefault: true` expected for v1 stacks |
+| sharing, repoSync, docs, tests, provenance | no | Freeform objects |
+| improvement | no | `{mode: observe\|propose\|auto_pr\|auto_apply_local, cadence, signals, evals, appliesTo, approvalRequiredFor}` |
+| update | no | `{channel, check, source, autoApply, pin}` |
+
+Canonical example: `cli/examples/youstack-personal/` (`youstack.json` + `skills/youstack-start/SKILL.md`, `workflows/startup.md`, `docs/quickstart.md`, `tests/smoke.md`).
+
+### Capabilities & Routing
+
+- **CLI built-ins** (always merged into every manifest's capabilities by `getYouStackCapabilities`): `manifest.inspect`, `manifest.smoke`, `stack.diagnose`, `stack.improve`, `stack.update`, `stack.maintain`.
+- **CLI router:** `routeYouStackRequest` — keyword scorer over id/intent/workflow/skill/mcpTool/apiEndpoint/scopes.
+- **Server contract:** `src/lib/youstack-routing.ts` exports `DEFAULT_YOUSTACK_CAPABILITIES` (different vocabulary: `local-static`, `stack-improvement-loop`, `protected-memory-search`, `repo-sync`, etc.) plus its own scorer `routeYouStackCapability`, and `getYouStackCapabilityContract` (readiness states `auth_required`/`unavailable`/`ready`, fallback order, API/MCP threshold).
+- **CLI surface:** `youmd stack inspect | doctor | smoke | capabilities | route "<request>" | link` (`cli/src/commands/stack.ts`, registered in `cli/src/index.ts`).
+- **Capability boundary:** `localOnly` capabilities use local stack files and never contact You.md; protected capabilities declare `mcpTool`/`apiEndpoint` + `requiredScopes`. `mutationPolicy` on the server type is `read_only | write_local | write_remote | server_action` (CLI type leaves it an open string). Doctor warns when a non-local mutating capability has no `requiredScopes`.
+
+### Adapter Generation
+
+`youmd stack link` (`linkYouStackAdapters`) renders host files from the manifest via `generateYouStackAdapterContent` (stack identity, startup steps, capability list, brain scopes, improvement/update policy, local commands). Default output paths when the manifest declares no `adapters.<host>.files`:
+
+| Host | Generated path |
+|---|---|
+| claude-code | `.claude/skills/youstacks/<slug>/SKILL.md` |
+| codex | `.codex/skills/youstacks/<slug>/SKILL.md` |
+| cursor | `.cursor/rules/youstacks-<slug>.md` |
+| other | `.you/adapters/<host>/<slug>.md` |
+
+Adapters contain stack routing instructions but no identity content (drift, see below).
+
+### CLI Local Discovery
+
+`findManifestCandidates` (`cli/src/lib/youstack.ts`) walks **up** from cwd to the filesystem root and collects, per directory: `<dir>/youstack.json`, `<dir>/.you/youstack.json`, and `<dir>/youstacks/<name>/youstack.json`. It does NOT look in `stacks/` — the layout the server seeds and parses (see drift).
+
+### Repo Mirror Layout (server source of truth)
+
+GitHub connection state lives in the `githubConnections` table; the mirrored snapshot lives in `repoMirror` (one row per user). Both are written by `convex/github.ts` / `convex/githubRepo.ts`.
+
+- **Seeded repo contents** (`convex/githubRepo.ts`): `README.md`, `you.md`, `you.json`, and `stacks/.gitkeep` ("YouStacks live here. One folder per named stack.").
+- **Mirror filter** (`isMirrorablePath`): `you.md`, `you.json`, `README.md`, anything under `stacks/`, and top-level `*.md`. `private/*` is never mirrored server-side (belongs in the encrypted vault). Caps: 100 files, 128 KB/file, 700 KB total.
+- **deriveStacks** (`convex/github.ts`) — THE server-side stack parser: a stack is any top-level folder under `stacks/` (path matches `^stacks/<slug>/<rest>`); it counts files per slug and sets `hasManifest` when `<rest>` is `manifest.json|yaml|yml` or `youstack.json|yaml|yml` at the stack root. Output: `{slug, fileCount, hasManifest}[]`.
+- **Read surfaces:** `getRepoMirror` (owner; paths + sizes + derived stacks), `getPublicRepoStacks` (public, only when `repoVisibility === "public"` — never leaks private-repo stack names), and the hosted MCP tool `get_my_stacks` (`convex/http.ts`, requires `read:private`).
+- **Pull path:** `internalSaveBundleFromRepo` treats repo `you.md`/`you.json` as source of truth, versions a new bundle (`source: "github-repo"`), and syncs the public profile.
+
+### Storage Map
+
+| Location | Layout | Written by | Read by |
+|---|---|---|---|
+| `~/.youmd/` | `config.json` (0600) + home bundle: `profile/`, `preferences/`, `private/`, `you.json`, `you.md`, `manifest.json` | CLI | CLI (fallback bundle root) |
+| `~/.youmd/projects/<name>/` | `project.json`, `private/`, `context/`, `agent/` | CLI `youmd project` | CLI |
+| `<cwd>/.youmd/` | Same bundle layout as home; when initialized it silently shadows `~/.youmd` (`resolveActiveBundleDir`, `cli/src/lib/config.ts`) | CLI | CLI |
+| `<dir>/youstack.json`, `<dir>/.you/youstack.json`, `<dir>/youstacks/<slug>/youstack.json` | CLI manifest discovery candidates (upward walk) | Stack author | CLI `youmd stack` |
+| `.claude/skills/youstacks/<slug>/SKILL.md` (+ codex/cursor equivalents) | Generated host adapters | CLI `youmd stack link` | Host agents |
+| GitHub repo `stacks/<slug>/...` | Server canonical stack layout; manifest = `stacks/<slug>/(youstack\|manifest).(json\|yaml\|yml)` | Server seed (`stacks/.gitkeep`) + user commits | Server mirror sync → `deriveStacks` → dashboard/API/MCP |
+| Convex `repoMirror` table | Snapshot of mirrorable repo files (100 files / 128 KB / 700 KB caps; no `private/*`) | `convex/githubRepo.ts` sync | `getRepoMirror`, `getPublicRepoStacks`, MCP `get_my_stacks` |
+
+### Known Drift (do not paper over)
+
+1. **Three incompatible stack layouts.** Server seeds/parses repo `stacks/<slug>/` (`deriveStacks`); CLI discovers only `youstack.json` / `.you/` / `youstacks/`; the example manifest's `repoSync.path` is `youstacks/personal-agent-start`; the YouStacks PRD proposed `.youstacks/<slug>/stack.json`. The CLI cannot find stacks laid out the way the server expects. Reconciliation tracked as backlog P8 (PRODUCT-AUDIT #10).
+2. **Two independent routers/vocabularies.** CLI built-ins (`manifest.inspect`, `stack.maintain`, ...) vs server `DEFAULT_YOUSTACK_CAPABILITIES` (`local-static`, `native-stack-maintainer`, ...) with different scorers — the same request can route differently (PRODUCT-AUDIT #20).
+3. **Phantom protected endpoints/scopes.** The published contract advertises `/api/v1/stacks/{stack_id}/...` routes and scopes like `stack.write`, `memories.search` that do not exist in the real API scope vocabulary (`read:public`, `read:private`, `write`) (PRODUCT-AUDIT #12).
+4. **No install/distribution flow.** `youmd stack` is local-manifest tooling only (inspect/doctor/smoke/capabilities/route/link); "installable YouStack" is manual file copying; stack HTTP endpoints are self-only (PRODUCT-AUDIT #11).
+5. **Example/CLI version contradiction.** `cli/examples/youstack-personal/youstack.json` declares `minYoumdCli: "0.7.0"` while the published CLI is `0.6.23` (`cli/package.json`).
+6. **brainScopes are unvalidated free text** and generated adapters contain no identity content (PRODUCT-AUDIT #21).
 
 ---
 
