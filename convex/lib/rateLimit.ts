@@ -63,6 +63,74 @@ export const checkAndRecord = internalMutation({
 });
 
 /**
+ * P22 — sliding-window check for authenticated WRITE endpoints.
+ *
+ * Same `rateLimits` table and window math as `checkAndRecord`, but:
+ *   - never throws — returns a structured decision so the HTTP layer can
+ *     emit a proper 429 envelope WITH Retry-After / X-RateLimit-* headers
+ *     (convex/lib/writeLimits.ts buildRateLimitHeaders)
+ *   - reports `remaining` and `resetAtMs` (when the oldest in-window call
+ *     ages out) so successful writes can carry the headers too
+ *
+ * Buckets are `<limitName>:<apiKeyId>` (per-key isolation; userDbId fallback
+ * for non-key callers). Blocked calls are NOT recorded — a client hammering
+ * a 429 does not push its own reset time further into the future.
+ */
+export const checkAndRecordWrite = internalMutation({
+  args: {
+    bucket: v.string(),
+    windowMs: v.number(),
+    maxCalls: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const since = now - args.windowMs;
+
+    const recent = await ctx.db
+      .query("rateLimits")
+      .withIndex("by_bucket_ts", (q) =>
+        q.eq("bucket", args.bucket).gt("timestamp", since)
+      )
+      .collect();
+
+    // Index scan is ascending on timestamp, but don't rely on it.
+    const oldestTs = recent.reduce(
+      (min, row) => Math.min(min, row.timestamp),
+      Number.POSITIVE_INFINITY
+    );
+
+    if (recent.length >= args.maxCalls) {
+      const resetAtMs = oldestTs + args.windowMs;
+      return {
+        allowed: false,
+        limit: args.maxCalls,
+        remaining: 0,
+        resetAtMs,
+        retryAfterSeconds: Math.max(1, Math.ceil((resetAtMs - now) / 1000)),
+      };
+    }
+
+    await ctx.db.insert("rateLimits", {
+      bucket: args.bucket,
+      timestamp: now,
+    });
+
+    // The window resets when its oldest call (possibly the one just
+    // recorded) ages out.
+    const resetAtMs =
+      (Number.isFinite(oldestTs) ? oldestTs : now) + args.windowMs;
+
+    return {
+      allowed: true,
+      limit: args.maxCalls,
+      remaining: args.maxCalls - (recent.length + 1),
+      resetAtMs,
+      retryAfterSeconds: 0,
+    };
+  },
+});
+
+/**
  * Periodic cleanup of stale rate limit rows. Wired up as an hourly cron in
  * convex/crons.ts; can also be run manually via Convex Dashboard.
  *

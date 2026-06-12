@@ -611,6 +611,23 @@ export default defineSchema({
     // (audit 2026-06-11 P0 #8) instead of a full-table collect.
     .index("by_timestamp", ["timestamp"]),
 
+  // ── Idempotency keys (P23, PRODUCT-AUDIT #25) ───────────────
+  // Response snapshots for mutating endpoints that received an
+  // `Idempotency-Key` header. One row per (subject = apiKeyId, route,
+  // keyHash = sha256 of the raw header) triple. TTL ~24h enforced at read
+  // time (convex/lib/idempotency.ts) — expired rows are ignored and
+  // overwritten in place on the next save for the same triple; no cron.
+  idempotencyKeys: defineTable({
+    subject: v.string(),  // apiKeyId (userDbId fallback for session callers)
+    route: v.string(),    // "POST /api/v1/me/bundle"
+    keyHash: v.string(),  // sha256 hex of the raw Idempotency-Key header
+    status: v.number(),   // stored response status
+    body: v.string(),     // stored response body (capped, JSON text)
+    createdAt: v.number(),
+  })
+    .index("by_subject_route_key", ["subject", "route", "keyHash"])
+    .index("by_createdAt", ["createdAt"]),
+
   // ── Daily LLM spend cap (cycle 48) ──────────────────────────
   // Per-day, per-endpoint counters tracking total estimated cost across all
   // chat.* endpoints. Acts as a kill switch: when today's cost exceeds the

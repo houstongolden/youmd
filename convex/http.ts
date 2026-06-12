@@ -16,6 +16,12 @@ import {
   type AssembledAgentContext,
 } from "./lib/agentContext";
 import { errorEnvelope, type ErrorCode } from "./lib/httpErrors";
+import {
+  BUILD_RATE_LIMIT,
+  WRITE_RATE_LIMIT,
+  buildRateLimitHeaders,
+  type WriteRateLimit,
+} from "./lib/writeLimits";
 
 const http = httpRouter();
 
@@ -40,7 +46,8 @@ const TRUSTED_INTERNAL_AUTH_TOKEN = process.env.TRUSTED_INTERNAL_AUTH_TOKEN;
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, If-None-Match",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, If-None-Match, Idempotency-Key",
 };
 
 // Helper for JSON responses
@@ -238,8 +245,13 @@ http.route({
       // non-fatal — never break the profile read
     }
 
-    // Merge profile-level fields into youJson for richer SEO data
+    // Merge profile-level fields into youJson for richer SEO data.
+    // P31 (PRODUCT-AUDIT #39): the compiled youJson already self-describes
+    // via `schema: "you-md/v1"` (convex/lib/compile.ts); `schemaVersion` is
+    // the additive alias matching the bundles-table field name, defaulted in
+    // for older/unclaimed payloads that predate it. Existing keys win.
     const enrichedJson = {
+      schemaVersion: "you-md/v1",
       ...(profile.youJson as Record<string, unknown>),
       _profile: {
         avatarUrl: profile.avatarUrl ?? null,
@@ -571,6 +583,118 @@ async function requireScope(
   return null;
 }
 
+/**
+ * P22 + P23 — shared guard for authenticated WRITE routes (POST/PUT/DELETE
+ * under /api/v1/me/*, plus the pipeline build trigger).
+ *
+ * Runs immediately after authenticateRequest/requireScope:
+ *
+ *   const guard = await guardWrite(ctx, request, auth);
+ *   if (guard.blocked) return guard.blocked;
+ *   ... handler body ...
+ *   return guard.finish(json(result));
+ *
+ * 1. Per-key rate limit (P22): sliding window keyed on the API key id
+ *    (`<limit>:<apiKeyId>`; userDbId fallback if a key-less session path
+ *    ever reuses the guard). Limits live in convex/lib/writeLimits.ts
+ *    (60 writes/min default, 5 builds/10min). On limit → 429
+ *    `rate_limited` envelope with Retry-After + X-RateLimit-* headers.
+ *
+ * 2. Idempotency-Key replay (P23): when the header is present and a stored
+ *    snapshot exists for (apiKeyId, "METHOD /path", sha256(key)) within the
+ *    24h TTL, the snapshot is returned verbatim with
+ *    `Idempotency-Replayed: true` — the handler body never runs.
+ *
+ * `finish()` attaches the X-RateLimit-* headers to the response and (when an
+ * Idempotency-Key was supplied) stores the response snapshot for replay.
+ * Handlers only route their SUCCESS return through finish(); error paths
+ * (400/404/409/500) return directly, so error responses carry no rate
+ * headers and are never replayed — a retried failure re-executes.
+ */
+type WriteGuard =
+  | { blocked: Response; finish?: never }
+  | { blocked: null; finish: (res: Response) => Promise<Response> };
+
+async function guardWrite(
+  ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
+  request: Request,
+  auth: AuthContext,
+  limit: WriteRateLimit = WRITE_RATE_LIMIT
+): Promise<WriteGuard> {
+  const subject = String(auth.apiKeyId ?? auth.userDbId);
+
+  const decision = await ctx.runMutation(
+    internal.lib.rateLimit.checkAndRecordWrite,
+    {
+      bucket: `${limit.name}:${subject}`,
+      windowMs: limit.windowMs,
+      maxCalls: limit.maxCalls,
+    }
+  );
+  const rateHeaders = buildRateLimitHeaders(decision);
+
+  if (!decision.allowed) {
+    return {
+      blocked: errorResponse(
+        "rate_limited",
+        `Rate limit exceeded: ${limit.maxCalls} ${limit.name} calls per ${Math.round(limit.windowMs / 1000)}s per API key. Retry after ${decision.retryAfterSeconds}s.`,
+        429,
+        { retryAfterSeconds: decision.retryAfterSeconds },
+        rateHeaders
+      ),
+    };
+  }
+
+  // Idempotency replay (P23) — opt-in via the Idempotency-Key header.
+  const rawKey = request.headers.get("idempotency-key")?.trim();
+  let idem: { subject: string; route: string; keyHash: string } | null = null;
+  if (rawKey) {
+    const route = `${request.method} ${new URL(request.url).pathname}`;
+    const keyHash = await sha256Hex(rawKey);
+    const stored = await ctx.runQuery(internal.lib.idempotency.getSnapshot, {
+      subject,
+      route,
+      keyHash,
+    });
+    if (stored) {
+      return {
+        blocked: new Response(stored.body, {
+          status: stored.status,
+          headers: {
+            "Content-Type": "application/json",
+            ...CORS_HEADERS,
+            ...rateHeaders,
+            "Idempotency-Replayed": "true",
+          },
+        }),
+      };
+    }
+    idem = { subject, route, keyHash };
+  }
+
+  const finish = async (res: Response): Promise<Response> => {
+    // Snapshot for replay (size cap enforced in lib/idempotency.ts;
+    // 5xx responses are never stored — retries should re-execute).
+    if (idem && res.status < 500) {
+      try {
+        const bodyText = await res.clone().text();
+        await ctx.runMutation(internal.lib.idempotency.saveSnapshot, {
+          ...idem,
+          status: res.status,
+          body: bodyText,
+        });
+      } catch {
+        // best-effort — never fail the write because the snapshot failed
+      }
+    }
+    const headers = new Headers(res.headers);
+    for (const [k, v] of Object.entries(rateHeaders)) headers.set(k, v);
+    return new Response(res.body, { status: res.status, headers });
+  };
+
+  return { blocked: null, finish };
+}
+
 // POST /api/v1/me/bundle — Save a bundle
 http.route({
   path: "/api/v1/me/bundle",
@@ -580,6 +704,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     const startedAt = Date.now();
     const agent = detectAgent(request.headers.get("user-agent"));
@@ -635,7 +761,7 @@ http.route({
         // swallow
       }
 
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save bundle";
 
@@ -681,6 +807,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     const startedAt = Date.now();
     const agent = detectAgent(request.headers.get("user-agent"));
@@ -712,7 +840,7 @@ http.route({
         // swallow
       }
 
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       return errorResponse(
         "server_error",
@@ -732,6 +860,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     try {
       const body = await request.json();
@@ -801,7 +931,7 @@ http.route({
         // swallow
       }
 
-      return json({ success: true });
+      return guard.finish(json({ success: true }));
     } catch (err) {
       return errorResponse("server_error", err instanceof Error ? err.message : "Failed to save portrait", 500);
     }
@@ -822,6 +952,12 @@ http.route({
       clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
     });
 
+    // P31 (PRODUCT-AUDIT #39): additive top-level schemaVersion marker. The
+    // nested bundles already carry it (bundles.schemaVersion + youJson.schema
+    // are both "you-md/v1"); this makes the envelope self-describing too.
+    if (profile && typeof profile === "object") {
+      return json({ schemaVersion: "you-md/v1", ...profile });
+    }
     return json(profile);
   }),
 });
@@ -835,6 +971,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     try {
       const body = await request.json();
@@ -843,7 +981,7 @@ http.route({
         sourceType: body.sourceType,
         sourceUrl: body.sourceUrl,
       });
-      return json({ sourceId });
+      return guard.finish(json({ sourceId }));
     } catch (err) {
       return errorResponse(
         "server_error",
@@ -903,12 +1041,15 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
+    // Pipeline builds are LLM-expensive — stricter per-key limit (P22).
+    const guard = await guardWrite(ctx, request, auth, BUILD_RATE_LIMIT);
+    if (guard.blocked) return guard.blocked;
 
     try {
       const result = await ctx.runMutation(api.pipeline.index.startPipeline, {
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       });
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       return errorResponse(
         "server_error",
@@ -1910,6 +2051,8 @@ http.route({
     // itself be able to read private context before it can mint such links.
     const denied = await requireScope(ctx, request, auth, "read:private");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     try {
       const body = await request.json();
@@ -1920,7 +2063,7 @@ http.route({
         maxUses: body.maxUses,
         name: body.name,
       });
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       return errorResponse(
         "server_error",
@@ -1957,6 +2100,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "read:private");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     try {
       const body = await request.json();
@@ -1967,7 +2112,7 @@ http.route({
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         linkId: body.linkId,
       });
-      return json({ success: true });
+      return guard.finish(json({ success: true }));
     } catch (err) {
       return errorResponse(
         "server_error",
@@ -1989,6 +2134,8 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const auth = await authenticateRequest(ctx, request);
     if (auth instanceof Response) return auth;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     try {
       const body = await request.json();
@@ -2032,7 +2179,7 @@ http.route({
         label: body.label,
         scopes: requestedScopes,
       });
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       return errorResponse(
         "server_error",
@@ -2072,6 +2219,8 @@ http.route({
     // private tier rather than letting any read:public key do it.
     const denied = await requireScope(ctx, request, auth, "read:private");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     try {
       const body = await request.json();
@@ -2082,7 +2231,7 @@ http.route({
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         keyId: body.keyId,
       });
-      return json({ success: true });
+      return guard.finish(json({ success: true }));
     } catch (err) {
       return errorResponse(
         "server_error",
@@ -2105,6 +2254,17 @@ http.route({
 //
 // Keep the legacy paths as explicit 410 responses so stale clients get a clear
 // migration message instead of silently hitting removed infrastructure.
+//
+// P31 (PRODUCT-AUDIT #39): the 410s also emit the standard `Deprecation:
+// true` + `Sunset: <http-date>` headers so HTTP-aware agents/tooling can
+// detect retirement mechanically. The Sunset date is in the past — these
+// routes are already retired; the header records when.
+
+const LEGACY_AUTH_DEPRECATION_HEADERS = {
+  Deprecation: "true",
+  // First-party passwordless auth replaced these routes; already sunset.
+  Sunset: "Thu, 01 Jan 2026 00:00:00 GMT",
+};
 
 http.route({
   path: "/api/v1/auth/register",
@@ -2113,7 +2273,9 @@ http.route({
     return errorResponse(
       "gone",
       "Password registration has been removed. Use /api/auth/send-verification or run `youmd register` from the latest CLI.",
-      410
+      410,
+      undefined,
+      LEGACY_AUTH_DEPRECATION_HEADERS
     );
   }),
 });
@@ -2125,7 +2287,9 @@ http.route({
     return errorResponse(
       "gone",
       "Password login has been removed. Use /api/auth/send-verification and /api/auth/verify-code, or run `youmd login` from the latest CLI.",
-      410
+      410,
+      undefined,
+      LEGACY_AUTH_DEPRECATION_HEADERS
     );
   }),
 });
@@ -2137,7 +2301,9 @@ http.route({
     return errorResponse(
       "gone",
       "The Clerk webhook endpoint has been retired. You.md now uses first-party passwordless auth and no longer accepts Clerk lifecycle events.",
-      410
+      410,
+      undefined,
+      LEGACY_AUTH_DEPRECATION_HEADERS
     );
   }),
 });
@@ -2211,6 +2377,8 @@ http.route({
     // Private-context writes map to write:bundle (vocabulary has no write:private)
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return errorResponse("not_found", "User not found", 404);
@@ -2247,7 +2415,7 @@ http.route({
       // swallow
     }
 
-    return json({ success: true });
+    return guard.finish(json({ success: true }));
   }),
 });
 
@@ -2306,6 +2474,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "write:memories");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     const body = await request.json();
     if (!body.memories || !Array.isArray(body.memories) || body.memories.length === 0) {
@@ -2343,7 +2513,7 @@ http.route({
       // swallow
     }
 
-    return json(result);
+    return guard.finish(json(result));
   }),
 });
 
@@ -2410,6 +2580,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     let body: {
       name?: unknown;
@@ -2449,7 +2621,7 @@ http.route({
         content: body.content,
       });
 
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to publish skill";
       if (message.includes("already taken")) return errorResponse("conflict", message, 409);
@@ -2474,6 +2646,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     let body: {
       skillName?: unknown;
@@ -2500,7 +2674,7 @@ http.route({
         identityFields: Array.isArray(body.identityFields) ? body.identityFields.filter((f: unknown): f is string => typeof f === "string").slice(0, 20) : [],
       });
 
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       return errorResponse("server_error", err instanceof Error ? err.message : "Failed", 500);
     }
@@ -2522,6 +2696,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     let body: { skillName?: unknown };
     try {
@@ -2540,7 +2716,7 @@ http.route({
         skillName: body.skillName.trim(),
       });
 
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       return errorResponse("server_error", err instanceof Error ? err.message : "Failed", 500);
     }
@@ -2562,6 +2738,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     let body: { skillName?: unknown };
     try {
@@ -2580,7 +2758,7 @@ http.route({
         skillName: body.skillName.trim(),
       });
 
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       return errorResponse("server_error", err instanceof Error ? err.message : "Failed", 500);
     }
@@ -2672,6 +2850,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "write:bundle");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     let body: { version?: unknown };
     try { body = await request.json(); } catch { return errorResponse("invalid_request", "Invalid JSON", 400); }
@@ -2685,7 +2865,7 @@ http.route({
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         targetVersion: body.version,
       });
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       return errorResponse("server_error", err instanceof Error ? err.message : "Rollback failed", 500);
     }
@@ -2776,6 +2956,8 @@ http.route({
     // Cycle 57 (deliberate): no scope check here. Any valid key may self-report
     // activity telemetry about its own usage — requiring e.g. read:private
     // would silence the audit trail for narrowly-scoped agent keys.
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     let body: {
       agentName?: string;
@@ -2826,7 +3008,7 @@ http.route({
         durationMs: body.durationMs,
       });
 
-      return json({ success: true });
+      return guard.finish(json({ success: true }));
     } catch (err) {
       return errorResponse("server_error", err instanceof Error ? err.message : "Failed to log activity", 500);
     }
@@ -2852,6 +3034,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "vault");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     try {
       const body = await request.json();
@@ -2875,7 +3059,7 @@ http.route({
         vaultSalt,
         vaultKeyIv,
       });
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to initialize vault";
       return errorResponse("server_error", message, 500);
@@ -2894,6 +3078,8 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "vault");
     if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
 
     try {
       const body = await request.json();
@@ -2916,7 +3102,7 @@ http.route({
         encryptedJson,
         iv,
       });
-      return json(result);
+      return guard.finish(json(result));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save vault data";
       return errorResponse("server_error", message, 500);
