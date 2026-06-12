@@ -13,6 +13,44 @@ import { readGlobalConfig } from "./config";
 
 // ─── Types ─────────────────────────────────────────────────────────
 
+/** Shape of an existing you.json / base.json skeleton (nested you-md/v1 format). */
+interface SkeletonYouJson {
+  username?: string;
+  identity?: {
+    name?: string;
+    tagline?: string;
+    location?: string;
+    bio?: { short?: string; medium?: string; long?: string };
+  };
+  now?: { focus?: string[] };
+  projects?: unknown[];
+  values?: string[];
+  links?: Record<string, string>;
+  preferences?: {
+    agent?: { tone?: string; formality?: string; avoid?: string[]; markdown?: string };
+    writing?: { style?: string; format?: string; markdown?: string };
+  };
+  voice?: {
+    overall?: string;
+    markdown?: string;
+    platforms?: Record<string, string | null>;
+  };
+  analysis?: { topics?: string[]; voice_summary?: string; credibility_signals?: string[] };
+  social_images?: Record<string, unknown>;
+  agent_directives?: {
+    communication_style?: string;
+    negative_prompts?: string[];
+    default_stack?: string;
+    decision_framework?: string;
+    current_goal?: string;
+    markdown?: string;
+  };
+  agent_guide?: unknown;
+  custom_sections?: Array<{ id: string; title: string; content: string }>;
+  meta?: { sources_used?: unknown[] };
+  verification?: unknown;
+}
+
 export interface CompileResult {
   youJson: Record<string, unknown>;
   markdown: string;
