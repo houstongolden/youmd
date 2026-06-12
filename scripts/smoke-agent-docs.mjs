@@ -370,7 +370,9 @@ async function main() {
   record("robots.txt allows agent docs", robotsResult.response.ok && missingRobots.length === 0, missingRobots.length ? `missing: ${missingRobots.join(", ")}` : `${robotsResult.response.status}`);
 
   const sitemapResult = await fetchText("/sitemap.xml");
-  const missingSitemap = includesAll(sitemapResult.body, ["https://you.md/llms.txt", "https://you.md/llms-full.txt"]);
+  // Host-agnostic: the sitemap uses the canonical host (www.you.md), so
+  // assert the llms paths are present rather than pinning the host.
+  const missingSitemap = includesAll(sitemapResult.body, ["/llms.txt", "/llms-full.txt"]);
   record("sitemap includes root agent docs", sitemapResult.response.ok && missingSitemap.length === 0, missingSitemap.length ? `missing: ${missingSitemap.join(", ")}` : `${sitemapResult.response.status}`);
 
   const docsResult = await fetchText("/docs");
