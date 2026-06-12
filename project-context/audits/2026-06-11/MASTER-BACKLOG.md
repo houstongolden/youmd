@@ -25,7 +25,7 @@
 |---|---|---|---|---|
 | P1 | Enforce API-key scopes: scopes from `authenticateRequest`, `requireScope()` per route/MCP tool, log `scope_missing` for legacy keys | PRODUCT-AUDIT #1; FEATURE-ROADMAP 1.1 | M | done (scope enforcement live; grandfathered pre-epoch + cli-auth keys w/ telemetry) |
 | P2 | Resolve draft/publish semantics (save==publish w/ rollback patching profile, or true drafts) | PRODUCT-AUDIT #2; FEATURE-ROADMAP 1.2 | M | blocked(needs-spec: Houston call) |
-| P3 | Canonical `assembleAgentContext()` for web agent, CLI chat, hosted MCP, /ctx links + parity test | PRODUCT-AUDIT #3; FEATURE-ROADMAP 2.1 | L | in-progress (agent) |
+| P3 | Canonical `assembleAgentContext()` for web agent, CLI chat, hosted MCP, /ctx links + parity test | PRODUCT-AUDIT #3; FEATURE-ROADMAP 2.1 | L | done (23910d4/59fd576/6b1eeb2; all 4 surfaces through assembleAgentContext + 12-test parity lock; prod e2e pending deploy) |
 | P4 | Shared `generateSecureToken` replacing Math.random in apiKeys.ts:17, contextLinks.ts:18, private.ts:82, profiles.ts:26 | PRODUCT-AUDIT #4; FEATURE-ROADMAP 0.1 | S | done (1ce525d: CSPRNG via secureToken.ts, shapes preserved) |
 | P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | done (4b943a2; prod e2e: REST ?q= + MCP search_memories verified; docs regenerated 2a0abb2) |
 | P6 | Fix `youmd mcp --install claude --auto` → ~/.claude.json or `claude mcp add`; post-install verify | PRODUCT-AUDIT #8; FEATURE-ROADMAP 1.3 | S | done (bf2e647: claude mcp add / ~/.claude.json + verify) |
@@ -65,8 +65,8 @@
 | ID | Item | Effort | Status |
 |---|---|---|---|
 | U1 | Strip `@` from CLI celebration URLs + normalize `@`/`%40` in [username] route w/ 301 | S | done (65cd878 web, verified 308 on prod; e218877 CLI URLs) |
-| U2 | Fix onboarding done-phrase false positives (bare no/yes/ready); gate on wrap-up offer | S | in-progress (agent) |
-| U3 | Fix fake "[saved private project]" — real updatePrivateContext write or honest message | S | in-progress (agent) |
+| U2 | Fix onboarding done-phrase false positives (bare no/yes/ready); gate on wrap-up offer | S | done (f9d75d4; intent-gated wrap-up + 11 tests) |
+| U3 | Fix fake "[saved private project]" — real updatePrivateContext write or honest message | S | done (026fd0b; real getPrivateContext+append+updatePrivateContext write) |
 | U4 | Gate /initialize redirect on onboarding-complete marker, not bare username | M | done (51a7f38; gated on published bundle, resumes mid-flow users) |
 | U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | done (e66a58b; default-open + localStorage persist + skeleton parity) |
 | U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | todo |
@@ -77,7 +77,7 @@
 | U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | done (e66a58b; activity=agent log, analytics=stats, session log=account events) |
 | U12 | Profile preview: direct ProfileContent render w/ preview prop (kill iframe) | M | todo |
 | U13 | Local-first portrait cache (instant render, background refresh) | M | todo |
-| U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | in-progress (agent) |
+| U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | done (5256355; back//email/resend + 5 tests) |
 | U15 | Tappable /help + cmd+k hints (mobile palette) | S | todo |
 | U16 | Onboarding turns 2+ stream via shared helper | S | todo |
 | U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | todo |
@@ -125,8 +125,8 @@
 | ID | Item | Effort | Status |
 |---|---|---|---|
 | T1 | Pull/sync dirty-check guard (refuse overwrite unless --force); safe sync ordering | M | done (a984939: dirty-check guard + state-aware sync, 13 tests) |
-| T2 | Per-section 3-way merge using base.json (cli/src/lib/merge.ts) | M | todo |
-| T3 | convex-test contract tests: auth/scopes, MCP dispatch, rate+spend caps, pipeline | L | todo |
+| T2 | Per-section 3-way merge using base.json (cli/src/lib/merge.ts) | M | in-progress (agent) |
+| T3 | convex-test contract tests: auth/scopes, MCP dispatch, rate+spend caps, pipeline | L | in-progress (agent) |
 | T4 | Installer hardening: npm default channel, tag-pinned source, auto-upgrade health check + rollback | M | done (9d4a6e0: npm default, tag-pinned source, upgrade rollback) |
 | T5 | Atomic JSON writes (tmp+rename+lock), 0600/0700 perms, .bak on corrupt config | S | done (e514a2b: atomic+locked writes, 0600/0700, .bak on corrupt) |
 | T6 | CI: tsc+lint+build+cli-tests on PR; gated Convex prod deploys | S | done (28d90b5+cd8b29c: CI gate live; lint warn-only until T31) |
