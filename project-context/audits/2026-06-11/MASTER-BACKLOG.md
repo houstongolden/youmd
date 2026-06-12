@@ -79,7 +79,7 @@
 | U13 | Local-first portrait cache (instant render, background refresh) | M | todo |
 | U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | done (5256355; back//email/resend + 5 tests) |
 | U15 | Tappable /help + cmd+k hints (mobile palette) | S | todo |
-| U16 | Onboarding turns 2+ stream via shared helper | S | in-progress (agent) |
+| U16 | Onboarding turns 2+ stream via shared helper | S | done (1a5d949; all onboarding turns stream filtered) |
 | U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | todo |
 | U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | todo |
 | U19 | Status-bar freshness segment + staleness nudge on session restore | S | todo |
