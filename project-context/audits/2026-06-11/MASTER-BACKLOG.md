@@ -75,12 +75,12 @@
 | U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | todo |
 | U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | done (b0ddedb: 16 fake delays removed, 250ms min spinner display) |
 | U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | done (e66a58b; activity=agent log, analytics=stats, session log=account events) |
-| U12 | Profile preview: direct ProfileContent render w/ preview prop (kill iframe) | M | in-progress (agent) |
-| U13 | Local-first portrait cache (instant render, background refresh) | M | in-progress (agent) |
+| U12 | Profile preview: direct ProfileContent render w/ preview prop (kill iframe) | M | done (7c7bbdf; inline ProfileContent preview prop, no view counting, public page unchanged) |
+| U13 | Local-first portrait cache (instant render, background refresh) | M | done (7c7bbdf; localStorage cache, instant paint, hash-gated swap) |
 | U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | done (5256355; back//email/resend + 5 tests) |
 | U15 | Tappable /help + cmd+k hints (mobile palette) | S | done (8b07564; /help chip mobile, cmd/ctrl+k hint desktop, touch-friendly palette) |
 | U16 | Onboarding turns 2+ stream via shared helper | S | done (1a5d949; all onboarding turns stream filtered) |
-| U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | in-progress (agent) |
+| U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | implemented (31 tests; commit queued behind P13 codegen) |
 | U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | done (7caa891; 213 instances, check:radius guard in lint chain) |
 | U19 | Status-bar freshness segment + staleness nudge on session restore | S | done (8b07564; synced-ago segment from existing bundle query, 7-day nudge once per session) |
 | U20 | Renderer: strip ANSI before padEnd; spinner update() preserves startTime | S | done (5028339) |
