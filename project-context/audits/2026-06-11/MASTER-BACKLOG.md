@@ -125,8 +125,8 @@
 | ID | Item | Effort | Status |
 |---|---|---|---|
 | T1 | Pull/sync dirty-check guard (refuse overwrite unless --force); safe sync ordering | M | done (a984939: dirty-check guard + state-aware sync, 13 tests) |
-| T2 | Per-section 3-way merge using base.json (cli/src/lib/merge.ts) | M | in-progress (agent) |
-| T3 | convex-test contract tests: auth/scopes, MCP dispatch, rate+spend caps, pipeline | L | in-progress (agent) |
+| T2 | Per-section 3-way merge using base.json (cli/src/lib/merge.ts) | M | done (atomic per-section merge, 19 tests, 183/183 green) |
+| T3 | convex-test contract tests: auth/scopes, MCP dispatch, rate+spend caps, pipeline | L | done (61 contract tests: scopes/agentContext/tokens/memories/apiKeys; CI step added) |
 | T4 | Installer hardening: npm default channel, tag-pinned source, auto-upgrade health check + rollback | M | done (9d4a6e0: npm default, tag-pinned source, upgrade rollback) |
 | T5 | Atomic JSON writes (tmp+rename+lock), 0600/0700 perms, .bak on corrupt config | S | done (e514a2b: atomic+locked writes, 0600/0700, .bak on corrupt) |
 | T6 | CI: tsc+lint+build+cli-tests on PR; gated Convex prod deploys | S | done (28d90b5+cd8b29c: CI gate live; lint warn-only until T31) |
