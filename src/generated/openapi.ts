@@ -1851,6 +1851,43 @@ export const openApiSpec = {
           }
         ]
       },
+      "patch": {
+        "operationId": "patch_api_v1_me_memories",
+        "summary": "Body: { memoryId, content?, category?, tags?, pinned?, importance?, supersededBy? }. `pinned: true` pins a memory so it never decays out of agent briefs; `supersededBy: <newMemoryId>` links old→new (the old row is hidde…",
+        "tags": [
+          "Memories"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
       "post": {
         "operationId": "post_api_v1_me_memories",
         "summary": "Save memories",

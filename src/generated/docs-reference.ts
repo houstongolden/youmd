@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "f30649ddc2e559dec4c20da6a64effb51e385b7fcdd7fec909dfa0bd25b5fb00",
+  "sourceHash": "5741cb79603cbf01b4e27ab006ff5e9cb5b942ae9e03492d5682983c49f2cf1a",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
-    "endpoints": 69,
+    "endpoints": 70,
     "internalRoutes": 7,
     "mcpTools": 24,
     "hostedMcpTools": 8,
     "cliCommands": 27,
-    "convexRoutes": 52,
+    "convexRoutes": 53,
     "nextRoutes": 24
   },
   "endpoints": [
@@ -607,6 +607,17 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "List memories (optional full-text search via ?q=; supports ?cursor= + ?limit= pagination — paginated calls add nextCursor + hasMore, including search via the native search-index paginator)",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/me/memories",
+      "category": "Memories",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Body: { memoryId, content?, category?, tags?, pinned?, importance?, supersededBy? }. `pinned: true` pins a memory so it never decays out of agent briefs; `supersededBy: <newMemoryId>` links old→new (the old row is hidde…",
       "sources": [
         "convex"
       ]
