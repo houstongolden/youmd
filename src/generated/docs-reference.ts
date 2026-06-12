@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "2072fa1c7669c2eea80a24e540d1d572e19ed01e82bf3af93bd4d6b7cd5e5581",
+  "sourceHash": "c3eb6f7ab64c38e03fb33b34cfb4e9eebefc668ac9d036e1d196ca148e28f977",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
-    "endpoints": 72,
+    "endpoints": 73,
     "internalRoutes": 7,
     "mcpTools": 24,
     "hostedMcpTools": 8,
     "cliCommands": 27,
-    "convexRoutes": 55,
+    "convexRoutes": 56,
     "nextRoutes": 24
   },
   "endpoints": [
@@ -529,6 +529,17 @@ export const docsReference = {
       "summary": "Machine-readable docs manifest generated from routes and MCP tools",
       "sources": [
         "next"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/health",
+      "category": "Docs",
+      "auth": "Public or rate-limited",
+      "source": "convex",
+      "summary": "Service health: status, schemaVersion, time + a cheap db probe (200 ok, 503 when the db probe fails)",
+      "sources": [
+        "convex"
       ]
     },
     {
@@ -1236,21 +1247,21 @@ export const docsReference = {
       "usage": "push",
       "group": "BUNDLE",
       "summary": "upload local bundle and publish",
-      "description": "Upload local .youmd/ files to you.md and publish"
+      "description": "Upload ~/.youmd/ files to you.md and publish"
     },
     {
       "name": "pull",
       "usage": "pull",
       "group": "BUNDLE",
       "summary": "download your profile into local .youmd/",
-      "description": "Download your profile from you.md to local .youmd/ files"
+      "description": "Download your profile from you.md to ~/.youmd/ files"
     },
     {
       "name": "sync",
       "usage": "sync",
       "group": "BUNDLE",
       "summary": "pull + push in one command",
-      "description": "Sync local files with you.md (pull + push)"
+      "description": "Sync ~/.youmd/ files with you.md (pull + push)"
     },
     {
       "name": "diff",
