@@ -30,6 +30,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:convex": "vitest run --config vitest.config.mts",
     "publish:cli": "./scripts/publish-cli-workflow.sh",
     "publish:cli:dry": "cd cli && npm pack --dry-run",
     "predev": "npx convex dev --until-success",
@@ -50,13 +51,16 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "convex-test": "^0.0.53",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.8"
   }
 }
