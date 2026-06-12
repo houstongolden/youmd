@@ -30,7 +30,7 @@
 | P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | todo |
 | P6 | Fix `youmd mcp --install claude --auto` → ~/.claude.json or `claude mcp add`; post-install verify | PRODUCT-AUDIT #8; FEATURE-ROADMAP 1.3 | S | done (bf2e647: claude mcp add / ~/.claude.json + verify) |
 | P7 | Publish CLI to npm + version-skew CI check | PRODUCT-AUDIT #9; FEATURE-ROADMAP 0.3 | S | blocked(otp) |
-| P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning | PRODUCT-AUDIT #10 | M | todo |
+| P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning; also reconcile YOUSTACKS_PRODUCT_LAYER_PRD.md:201-210 drifted table + fix example manifest minYoumdCli 0.7.0 vs cli 0.6.23 | PRODUCT-AUDIT #10; P32 findings | M | todo |
 | P9 | `youmd stack install <user>/<slug>` + registry endpoint | PRODUCT-AUDIT #11; FEATURE-ROADMAP 2.5 | L | todo |
 | P10 | Truthful capability contract w/ transport tags + CI curl test | PRODUCT-AUDIT #12; FEATURE-ROADMAP 2.6 | M | todo |
 | P11 | One host-link engine emitting `.claude/skills/<name>/SKILL.md`; empirical discovery release gate | PRODUCT-AUDIT #13; FEATURE-ROADMAP 3.7 | M | todo |
@@ -54,7 +54,7 @@
 | P29 | Per-host YOUMD_AGENT_NAME + clientInfo.name fallback for attribution | PRODUCT-AUDIT #35; FEATURE-ROADMAP 3.10 | S | done (bf2e647: per-host YOUMD_AGENT_NAME + clientInfo fallback) |
 | P30 | Username canonicalization migration; delete 500-profile fallback scan | PRODUCT-AUDIT #38; FEATURE-ROADMAP 3.13 | S | todo |
 | P31 | Deprecation/Sunset headers + schemaVersion on payloads | PRODUCT-AUDIT #39; FEATURE-ROADMAP 3.14 | S | todo |
-| P32 | ARCHITECTURE.md YouStacks section + PRD layout reconciliation | PRODUCT-AUDIT #40; FEATURE-ROADMAP 3.17 | S | todo |
+| P32 | ARCHITECTURE.md YouStacks section + PRD layout reconciliation | PRODUCT-AUDIT #40; FEATURE-ROADMAP 3.17 | S | done (YouStacks layer + storage map + drift notes) |
 | P33 | Project attribution: nearest-marker-wins by depth | PRODUCT-AUDIT #41 | S | todo |
 | P34 | Generate CLI command table from commander; docs:check assertion | PRODUCT-AUDIT #42 | S | todo |
 | P35 | TTY/EOF guard on interactive prompts | PRODUCT-AUDIT #43; FEATURE-ROADMAP 0.7 | S | done (5028339: 6 entry points guarded) |
