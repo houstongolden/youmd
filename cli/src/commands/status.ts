@@ -253,7 +253,7 @@ export async function statusCommand(): Promise<void> {
     const remoteUsername = config.username || "you";
     console.log(
       "  " + chalk.green("\u2713") + " Profile live at " +
-      chalk.cyan("https://you.md/@" + remoteUsername)
+      chalk.cyan("https://you.md/" + remoteUsername)
     );
   }
 
@@ -362,7 +362,7 @@ async function showRemoteStatus(): Promise<void> {
 
     console.log(
       "  " + label("url") +
-        chalk.cyan("https://you.md/@" + (remoteUsername || "unknown"))
+        chalk.cyan("https://you.md/" + (remoteUsername || "unknown"))
     );
     console.log("");
   } catch (err) {

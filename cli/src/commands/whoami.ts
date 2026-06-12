@@ -124,7 +124,7 @@ export async function whoamiCommand(): Promise<void> {
     );
 
     // Profile URL box
-    const profileUrl = "https://you.md/@" + (u.username || config.username || "unknown");
+    const profileUrl = "https://you.md/" + (u.username || config.username || "unknown");
     console.log("");
     console.log("  \u250C" + "\u2500".repeat(profileUrl.length + 4) + "\u2510");
     console.log("  \u2502  " + chalk.cyan.bold(profileUrl) + "  \u2502");
