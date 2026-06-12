@@ -6,6 +6,15 @@ import type { Id } from "./_generated/dataModel";
 import { detectAgent } from "./lib/agentDetect";
 import { isKnownScope, type ApiScope } from "./lib/scopes";
 import { deriveStacks } from "./github";
+import {
+  AGENT_CONTEXT_MEMORY_CAP,
+  asRecord,
+  assembleAgentContext,
+  memoryOneLine,
+  selectPublicIdentityFields,
+  type AgentContextMemory,
+  type AssembledAgentContext,
+} from "./lib/agentContext";
 
 const http = httpRouter();
 
@@ -3182,11 +3191,14 @@ http.route({
             const identity = await loadAuthedUserIdentity(ctx, auth);
             if (!identity) return mcpToolError(id, "user not found");
 
-            return mcpToolOk(
-              id,
-              buildHostedWhoamiSummary(identity.user.username, identity.youJson),
-              "text/plain"
-            );
+            // Canonical assembly (PRODUCT-AUDIT #3): whoami renders the
+            // identitySummary from assembleAgentContext, same as every surface.
+            const assembled = assembleAgentContext({
+              username: identity.user.username,
+              youJson: identity.youJson,
+              includeMemories: false,
+            });
+            return mcpToolOk(id, assembled.identitySummary, "text/plain");
           }
 
           if (toolName === "get_agent_brief") {
@@ -3206,18 +3218,16 @@ http.route({
             // must surface memory CONTENT, not a count — opt out explicitly).
             const includeMemories = toolArgs.includeMemories !== false;
 
-            let memories: BriefMemory[] = [];
+            let rawMemories: AgentContextMemory[] = [];
             if (includeMemories) {
               try {
                 const raw = await ctx.runQuery(api.memories.listMemories, {
                   clerkId: auth.userId,
                   _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
                   userId: identity.user._id,
-                  limit: AGENT_BRIEF_MEMORY_CAP * 3,
+                  limit: AGENT_CONTEXT_MEMORY_CAP * 3,
                 });
-                memories = orderBriefMemories(
-                  Array.isArray(raw) ? (raw as BriefMemory[]) : []
-                ).slice(0, AGENT_BRIEF_MEMORY_CAP);
+                rawMemories = Array.isArray(raw) ? (raw as AgentContextMemory[]) : [];
               } catch {
                 // memories are additive — never fail the brief on them
               }
@@ -3231,20 +3241,23 @@ http.route({
                 userId: identity.user._id,
               });
               installedSkills = (Array.isArray(installs) ? installs : [])
-                .map((install: { skillName: string }) => install.skillName)
-                .sort();
+                .map((install: { skillName: string }) => install.skillName);
             } catch {
               // skill installs are additive — never fail the brief on them
             }
 
-            const brief = buildHostedAgentBrief({
+            // Canonical assembly (PRODUCT-AUDIT #3): ordering, cap, and the
+            // identity summary all come from assembleAgentContext.
+            const assembled = assembleAgentContext({
               username: identity.user.username,
               plan: typeof identity.user.plan === "string" ? identity.user.plan : null,
-              summary: buildHostedWhoamiSummary(identity.user.username, identity.youJson),
+              youJson: identity.youJson,
+              memories: rawMemories,
               includeMemories,
-              memories,
               installedSkills,
             });
+
+            const brief = buildHostedAgentBrief(assembled);
 
             if (toolArgs.format === "json") {
               return mcpToolOk(id, JSON.stringify(brief, null, 2), "application/json");
@@ -3280,20 +3293,16 @@ http.route({
               });
             } catch { /* non-fatal */ }
 
+            // Canonical public field selection (PRODUCT-AUDIT #3): which
+            // youJson sections agents see is decided in lib/agentContext.
             const result = {
               username: profile.username,
               displayName: profile.displayName,
               avatarUrl: profile.avatarUrl,
               isClaimed: profile.isClaimed,
-              identity: (profile.youJson as Record<string, unknown>)?.identity ?? null,
-              projects: (profile.youJson as Record<string, unknown>)?.projects ?? null,
-              values: (profile.youJson as Record<string, unknown>)?.values ?? null,
-              voice: (profile.youJson as Record<string, unknown>)?.voice ?? null,
-              agent_directives: (profile.youJson as Record<string, unknown>)?.agent_directives ?? null,
-              preferences: (profile.youJson as Record<string, unknown>)?.preferences ?? null,
-              links: (profile.youJson as Record<string, unknown>)?.links ?? null,
-              now: (profile.youJson as Record<string, unknown>)?.now ?? null,
-              meta: (profile.youJson as Record<string, unknown>)?.meta ?? null,
+              ...selectPublicIdentityFields(
+                profile.youJson as Record<string, unknown> | null
+              ),
               _profile_url: `https://you.md/${profile.username}`,
             } as Record<string, unknown>;
 
@@ -3595,25 +3604,10 @@ function mcpToolError(id: unknown, message: string): Response {
 // Server-side analogs of the local stdio MCP's whoami + get_agent_brief
 // (cli/src/mcp/server.ts), built from data Convex already has: the user's
 // latest bundle/profile youJson, their memories, and their skill installs.
-
-/** Max memories rendered in the hosted agent brief. */
-const AGENT_BRIEF_MEMORY_CAP = 20;
-
-/** Categories considered durable — surfaced ahead of newer ephemeral notes. */
-const DURABLE_MEMORY_CATEGORIES = new Set([
-  "preference",
-  "decision",
-  "goal",
-  "fact",
-]);
-
-type BriefMemory = {
-  category: string;
-  content: string;
-  source?: string;
-  sourceAgent?: string;
-  createdAt: number;
-};
+//
+// PRODUCT-AUDIT #3: identity-core extraction, memory ordering/cap, and the
+// compact summary all live in convex/lib/agentContext.ts (canonical). The
+// helpers below only RENDER the hosted brief's stable output shape.
 
 type HostedAgentBrief = {
   generatedAt: string;
@@ -3640,87 +3634,6 @@ type HostedAgentBrief = {
   reminders: string[];
 };
 
-function briefRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-/**
- * Order memories durable-first, newest-first within each group. Input is
- * expected newest-first (memories.listMemories sorts by createdAt desc);
- * the partition is stable so that ordering is preserved.
- */
-function orderBriefMemories(memories: BriefMemory[]): BriefMemory[] {
-  const durable: BriefMemory[] = [];
-  const rest: BriefMemory[] = [];
-  for (const memory of memories) {
-    (DURABLE_MEMORY_CATEGORIES.has(memory.category) ? durable : rest).push(memory);
-  }
-  return [...durable, ...rest];
-}
-
-/** Collapse memory content to a single line capped at `max` chars. */
-function briefOneLine(content: string, max = 200): string {
-  const collapsed = content.replace(/\s+/g, " ").trim();
-  return collapsed.length > max ? `${collapsed.slice(0, max - 1).trimEnd()}…` : collapsed;
-}
-
-/**
- * Build the compact (~500 char) identity summary for the hosted whoami tool.
- * Mirrors the local MCP's buildWhoamiSummary field selection so agents get
- * the same shape regardless of transport.
- */
-function buildHostedWhoamiSummary(
-  username: string,
-  youJson: Record<string, unknown>
-): string {
-  const identity = briefRecord(youJson.identity);
-  const preferences = briefRecord(youJson.preferences);
-  const agentPrefs = briefRecord(preferences.agent);
-  const directives = briefRecord(youJson.agent_directives);
-  const projects = Array.isArray(youJson.projects) ? youJson.projects : [];
-
-  const bio = briefRecord(identity.bio);
-  const name = typeof identity.name === "string" && identity.name
-    ? identity.name
-    : username;
-  const role = typeof identity.tagline === "string"
-    ? identity.tagline
-    : typeof bio.short === "string" ? bio.short : "";
-  const stack = typeof directives.default_stack === "string" ? directives.default_stack : "";
-  const tone = typeof agentPrefs.tone === "string" ? agentPrefs.tone : "";
-  const avoidList = Array.isArray(agentPrefs.avoid)
-    ? agentPrefs.avoid.filter((item): item is string => typeof item === "string")
-    : [];
-  const avoid = avoidList.join(", ");
-  const topProjects = projects
-    .slice(0, 3)
-    .map((project) => {
-      if (typeof project === "string") return project;
-      const record = briefRecord(project);
-      return typeof record.name === "string" ? record.name : "";
-    })
-    .filter(Boolean)
-    .join(", ");
-  const goal = typeof directives.current_goal === "string" ? directives.current_goal : "";
-
-  const lines: string[] = [];
-  lines.push(`Name: ${name}`);
-  if (role) lines.push(`Role: ${role}`);
-  if (stack) lines.push(`Stack: ${stack}`);
-  if (tone) lines.push(`Tone: ${tone}`);
-  if (avoid) lines.push(`Avoid: ${avoid}`);
-  if (topProjects) lines.push(`Top projects: ${topProjects}`);
-  if (goal) lines.push(`Goal: ${goal}`);
-
-  let summary = lines.join("\n");
-  if (summary.length > 500) {
-    summary = summary.slice(0, 497) + "...";
-  }
-  return summary;
-}
-
 /**
  * Load the authenticated user's identity context (user row + youJson from the
  * latest bundle, falling back to the profile's embedded youJson).
@@ -3745,20 +3658,17 @@ async function loadAuthedUserIdentity(
     userId: user._id,
   });
 
-  const youJson = briefRecord(latestBundle?.youJson ?? profile?.youJson);
+  const youJson = asRecord(latestBundle?.youJson ?? profile?.youJson);
   return { user, youJson };
 }
 
-function buildHostedAgentBrief(input: {
-  username: string;
-  plan: string | null;
-  summary: string;
-  includeMemories: boolean;
-  memories: BriefMemory[];
-  installedSkills: string[];
-}): HostedAgentBrief {
+/**
+ * Render the hosted agent brief's stable output shape from the canonical
+ * assembled context (lib/agentContext.assembleAgentContext).
+ */
+function buildHostedAgentBrief(assembled: AssembledAgentContext): HostedAgentBrief {
   const nextMoves: string[] = [];
-  if (input.memories.length > 0) {
+  if (assembled.memories.items.length > 0) {
     nextMoves.push("Apply the durable preferences/decisions in Memories before proposing work.");
   }
   nextMoves.push("Call get_identity (or get_my_identity for private detail) when you need the full bundle.");
@@ -3767,23 +3677,23 @@ function buildHostedAgentBrief(input: {
   return {
     generatedAt: new Date().toISOString(),
     user: {
-      username: input.username,
-      plan: input.plan,
-      profileUrl: `https://you.md/${input.username}`,
-      summary: input.summary,
+      username: assembled.username ?? "",
+      plan: assembled.plan,
+      profileUrl: `https://you.md/${assembled.username ?? ""}`,
+      summary: assembled.identitySummary,
     },
     memories: {
-      included: input.includeMemories,
-      count: input.memories.length,
-      items: input.memories.map((memory) => ({
+      included: assembled.memories.included,
+      count: assembled.memories.items.length,
+      items: assembled.memories.items.map((memory) => ({
         category: memory.category,
-        content: briefOneLine(memory.content),
+        content: memoryOneLine(memory.content),
         source: memory.sourceAgent ?? memory.source ?? null,
-        createdAt: memory.createdAt,
+        createdAt: memory.createdAt ?? 0,
       })),
     },
     skills: {
-      installed: input.installedSkills,
+      installed: assembled.installedSkills,
     },
     nextMoves,
     reminders: [

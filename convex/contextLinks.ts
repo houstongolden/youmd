@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 import { secureRandomString } from "./lib/secureToken";
+import { selectPrivateContextFields } from "./lib/agentContext";
 
 /**
  * Context links — shareable URLs that return identity context.
@@ -226,21 +227,16 @@ export const resolveLink = query({
           scope: link.scope,
         };
 
-        // Include private context for full-scope links
+        // Include private context for full-scope links — field selection is
+        // canonical (convex/lib/agentContext.selectPrivateContextFields).
         if (link.scope === "full") {
           const privateCtx = await ctx.db
             .query("privateContext")
             .withIndex("by_profileId", (q) => q.eq("profileId", link.profileId!))
             .first();
-          if (privateCtx) {
-            result.privateContext = {
-              privateNotes: privateCtx.privateNotes,
-              privateProjects: privateCtx.privateProjects,
-              internalLinks: privateCtx.internalLinks,
-              calendarContext: privateCtx.calendarContext,
-              communicationPrefs: privateCtx.communicationPrefs,
-              customData: privateCtx.customData,
-            };
+          const selected = selectPrivateContextFields(privateCtx);
+          if (selected) {
+            result.privateContext = selected;
           }
         }
 
@@ -281,15 +277,9 @@ export const resolveLink = query({
           .query("privateContext")
           .withIndex("by_profileId", (q) => q.eq("profileId", userProfile._id))
           .first();
-        if (privateCtx) {
-          fallbackResult.privateContext = {
-            privateNotes: privateCtx.privateNotes,
-            privateProjects: privateCtx.privateProjects,
-            internalLinks: privateCtx.internalLinks,
-            calendarContext: privateCtx.calendarContext,
-            communicationPrefs: privateCtx.communicationPrefs,
-            customData: privateCtx.customData,
-          };
+        const selected = selectPrivateContextFields(privateCtx);
+        if (selected) {
+          fallbackResult.privateContext = selected;
         }
       }
     }
