@@ -12,6 +12,7 @@ import {
 } from "./config";
 import { compileBundle, writeBundle } from "./compiler";
 import { BrailleSpinner, requireInteractiveTTY, renderRichResponse } from "./render";
+import { createFilteredStdoutWriter, streamAssistantTurn, streamSSEText } from "./stream";
 import { printPortraitEncounter } from "./ascii";
 import {
   getRecentProjectInsights,
@@ -653,61 +654,11 @@ interface ChatMessage {
 }
 
 /**
- * Stream a chat response token-by-token via the you.md SSE proxy.
- * Calls onChunk for each text delta. Returns the full assembled response.
- *
- * Throws if streaming fails — callers should catch and fall back to callLLM.
+ * Streaming for onboarding turns goes through the shared helpers in
+ * lib/stream.ts (same path `youmd chat` uses), which also filter ```json
+ * directive blocks out of the live display. URL for the SSE proxy:
  */
-async function streamLLM(
-  messages: ChatMessage[],
-  onChunk: (chunk: string) => void
-): Promise<string> {
-  const streamUrl = `${_SITE}/api/v1/chat/stream`;
-  const res = await fetch(streamUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
-    signal: AbortSignal.timeout(60_000),
-  });
-
-  if (!res.ok || !res.body) {
-    throw new Error(`stream failed: ${res.status}`);
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buf = "";
-  let full = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop() || "";
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue;
-      const data = line.slice(6).trim();
-      if (!data) continue;
-      if (data === "[DONE]") continue;
-      try {
-        const parsed = JSON.parse(data);
-        if (parsed.text) {
-          full += parsed.text;
-          onChunk(parsed.text);
-        }
-      } catch {
-        // skip malformed line
-      }
-    }
-  }
-
-  if (!full) {
-    throw new Error("empty stream response");
-  }
-
-  return full;
-}
+const STREAM_CHAT_URL = `${_SITE}/api/v1/chat/stream`;
 
 async function callLLM(
   apiKey: string | null,
@@ -1174,13 +1125,21 @@ generate initial profile sections from what you know, show a brief summary, and 
 
   let response: string;
   let spinner: BrailleSpinner;
+  let streamedFirstTurn = false;
   try {
     // Try streaming first — first response feels alive instead of stalled.
-    process.stdout.write("  ");
-    response = await streamLLM(messages, (chunk) => {
-      process.stdout.write(chunk);
-    });
-    process.stdout.write("\n\n");
+    // The writer filters ```json directive blocks out of the live display;
+    // `response` keeps the full raw text for parseUpdatesFromResponse.
+    const writer = createFilteredStdoutWriter();
+    response = await streamSSEText(STREAM_CHAT_URL, messages, (chunk) => {
+      writer.write(chunk);
+    }, 60_000);
+    if (!response.trim()) {
+      throw new Error("empty stream response");
+    }
+    writer.finish();
+    process.stdout.write("\n");
+    streamedFirstTurn = true;
   } catch {
     // Stream failed — fall back to non-streaming with a spinner.
     spinner = new BrailleSpinner(randomLabel("llm"));
@@ -1218,8 +1177,11 @@ generate initial profile sections from what you know, show a brief summary, and 
     console.log("");
   }
 
-  // Show agent message
-  printAgentMessage(initial.display);
+  // Show agent message (already shown live when the first turn streamed —
+  // re-printing it would duplicate the response on screen)
+  if (!streamedFirstTurn) {
+    printAgentMessage(initial.display);
+  }
 
   // Show mini profile box after initial generation
   if (initial.updates.length > 0) {
@@ -1370,13 +1332,22 @@ generate initial profile sections from what you know, show a brief summary, and 
     // Also count the skip system message as ephemeral
     if (isSkip) ephemeralCount++;
 
-    spinner = new BrailleSpinner(randomLabel("llm"));
-    spinner.start();
-
+    // Turns 2+ stream through the same shared helper `youmd chat` uses
+    // (U16): BrailleSpinner while waiting for the first token, then live
+    // tokens with ```json directive blocks filtered from the display.
+    // `response` keeps the full raw text for parseUpdatesFromResponse.
+    let streamedTurn = false;
     try {
-      response = await callLLM(apiKey, messages);
+      const turn = await streamAssistantTurn({
+        streamUrl: STREAM_CHAT_URL,
+        messages,
+        spinnerLabel: randomLabel("llm"),
+        timeoutMs: 60_000,
+        fallback: () => callLLM(apiKey, messages),
+      });
+      response = turn.text;
+      streamedTurn = turn.streamed;
     } catch (err) {
-      spinner.stop();
       console.log(
         chalk.red(
           `  AI error: ${err instanceof Error ? err.message : String(err)}`
@@ -1391,8 +1362,6 @@ generate initial profile sections from what you know, show a brief summary, and 
       if (isSkip) messages.pop(); // also remove the "(skip)" user message
       continue;
     }
-
-    spinner.stop();
 
     // Remove ephemeral system messages from history (don't pollute context)
     // They sit between the user message and the response we're about to push
@@ -1416,8 +1385,10 @@ generate initial profile sections from what you know, show a brief summary, and 
       console.log("");
     }
 
-    // Show agent message
-    printAgentMessage(parsed.display);
+    // Show agent message (only when the turn didn't already stream live)
+    if (!streamedTurn) {
+      printAgentMessage(parsed.display);
+    }
 
     // If the agent just offered to wrap up, the next bare "yes"/"ready"
     // counts as done — handled at the top of the loop.
