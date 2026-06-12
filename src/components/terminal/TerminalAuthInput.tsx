@@ -15,6 +15,8 @@ interface TerminalAuthInputProps {
   name?: string;
   /** Accessible label — falls back to placeholder if not provided */
   ariaLabel?: string;
+  /** Prefill the input (e.g. a handle carried in from the landing funnel). Applied on mount — pass a `key` to remount when it should change. */
+  initialValue?: string;
   onSubmit: (value: string) => void;
   autoFocus?: boolean;
   disabled?: boolean;
@@ -28,11 +30,12 @@ export function TerminalAuthInput({
   inputMode,
   name,
   ariaLabel,
+  initialValue,
   onSubmit,
   autoFocus = true,
   disabled = false,
 }: TerminalAuthInputProps) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

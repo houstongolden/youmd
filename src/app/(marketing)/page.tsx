@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
+import HandlePreview from "@/components/landing/HandlePreview";
 import PositioningStory from "@/components/landing/PositioningStory";
 import CTAFooter from "@/components/landing/CTAFooter";
 
@@ -33,6 +34,7 @@ export default function Home() {
       <Navbar />
       <main id="main">
         <Hero />
+        <HandlePreview />
         <PositioningStory />
         <CTAFooter />
       </main>

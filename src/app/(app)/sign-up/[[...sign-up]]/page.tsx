@@ -29,6 +29,12 @@ export default function SignUpPage() {
   const nextPathRaw = searchParams.get("next");
   const nextPath = sanitizeNextPath(nextPathRaw, "/shell");
   const oauthError = githubErrorMessage(searchParams.get("error"));
+  // U9 — handle carried in from the landing preview / /create funnel,
+  // used to prefill the username claim step.
+  const prefillHandle = (searchParams.get("handle") || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .slice(0, 39);
 
   useEffect(() => {
     if (isSignedIn) router.replace(nextPath);
@@ -86,8 +92,15 @@ export default function SignUpPage() {
     );
     addLine("\u00A0");
     addLine("claim your username.", "text-[hsl(var(--text-secondary))] opacity-70");
+    if (prefillHandle) {
+      addLine(
+        <span className="text-[hsl(var(--text-secondary))] opacity-50">
+          @{prefillHandle} is prefilled {"\u2014"} press enter to claim it.
+        </span>
+      );
+    }
     setStep("username");
-  }, [addLine]);
+  }, [addLine, prefillHandle]);
 
   const handleUsername = useCallback(async (value: string) => {
     const clean = value.toLowerCase().replace(/[^a-z0-9-]/g, "");
@@ -235,6 +248,7 @@ export default function SignUpPage() {
             inputMode: "text" as const,
             name: "username",
             ariaLabel: "username",
+            ...(prefillHandle ? { initialValue: prefillHandle } : {}),
             onSubmit: handleUsername,
           }
         : step === "name"
@@ -292,7 +306,8 @@ export default function SignUpPage() {
                   </div>
                 </div>
               )}
-              <TerminalAuthInput prompt=">" {...inputProps} />
+              {/* key={step} remounts the input per step so initialValue (the funnel prefill) applies */}
+              <TerminalAuthInput key={step} prompt=">" {...inputProps} />
             </div>
           )}
         </div>

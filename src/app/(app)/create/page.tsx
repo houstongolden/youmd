@@ -24,6 +24,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function CreatePage() {
-  redirect("/sign-up");
+export default async function CreatePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ handle?: string }>;
+}) {
+  // U9 — the landing "magic moment" funnels here with ?handle=<github handle>
+  // so the claimed username can be prefilled in the sign-up terminal.
+  const { handle } = await searchParams;
+  const clean = (handle || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 39);
+  redirect(clean ? `/sign-up?handle=${encodeURIComponent(clean)}` : "/sign-up");
 }
