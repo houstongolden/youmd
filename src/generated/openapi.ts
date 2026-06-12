@@ -142,7 +142,7 @@ export const openApiSpec = {
       },
       "get": {
         "operationId": "get_api_v1_me_api_keys",
-        "summary": "List API keys",
+        "summary": "List API keys (supports ?cursor= + ?limit= pagination; paginated calls return { keys, nextCursor, hasMore })",
         "tags": [
           "Account"
         ],
@@ -374,7 +374,7 @@ export const openApiSpec = {
     "/api/v1/me/history": {
       "get": {
         "operationId": "get_api_v1_me_history",
-        "summary": "version history (authenticated)",
+        "summary": "Get bundle version history (authenticated; supports ?cursor= + ?limit= pagination in version-desc order — paginated calls add nextCursor + hasMore)",
         "tags": [
           "Account"
         ],
@@ -608,7 +608,7 @@ export const openApiSpec = {
     "/api/v1/me/sources": {
       "get": {
         "operationId": "get_api_v1_me_sources",
-        "summary": "List sources",
+        "summary": "List sources (supports ?cursor= + ?limit= pagination; paginated calls return { sources, nextCursor, hasMore })",
         "tags": [
           "Account"
         ],
@@ -723,7 +723,7 @@ export const openApiSpec = {
     "/api/v1/me/activity": {
       "get": {
         "operationId": "get_api_v1_me_activity",
-        "summary": "agent activity log (authenticated) GET /api/v1/me/activity?limit=30&agent=Claude%20Code&action=read",
+        "summary": "agent activity log (authenticated) GET /api/v1/me/activity?limit=30&agent=Claude%20Code&action=read — supports ?cursor= pagination (cursor or limit calls add nextCursor + hasMore)",
         "tags": [
           "Activity"
         ],
@@ -1324,7 +1324,7 @@ export const openApiSpec = {
       },
       "get": {
         "operationId": "get_api_v1_me_context_links",
-        "summary": "List context links",
+        "summary": "List context links (supports ?cursor= + ?limit= pagination; paginated calls return { links, nextCursor, hasMore })",
         "tags": [
           "Context Links"
         ],
@@ -1816,7 +1816,7 @@ export const openApiSpec = {
     "/api/v1/me/memories": {
       "get": {
         "operationId": "get_api_v1_me_memories",
-        "summary": "List memories (optional full-text search via ?q=)",
+        "summary": "List memories (optional full-text search via ?q=; supports ?cursor= + ?limit= pagination — paginated calls add nextCursor + hasMore, including search via the native search-index paginator)",
         "tags": [
           "Memories"
         ],
@@ -2253,7 +2253,7 @@ export const openApiSpec = {
     "/api/v1/me/skills": {
       "get": {
         "operationId": "get_api_v1_me_skills",
-        "summary": "installed skills (authenticated)",
+        "summary": "Get my installed skills (authenticated; supports ?cursor= + ?limit= pagination — paginated calls add nextCursor + hasMore)",
         "tags": [
           "Skills"
         ],
@@ -2446,7 +2446,7 @@ export const openApiSpec = {
     "/api/v1/skills": {
       "get": {
         "operationId": "get_api_v1_skills",
-        "summary": "Browse published skills (public, no auth required)",
+        "summary": "Browse published skills (public, no auth required; supports ?cursor= + ?limit= pagination — paginated calls add nextCursor + hasMore)",
         "tags": [
           "Skills"
         ],

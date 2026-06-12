@@ -41,7 +41,7 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "7af24680f18e8fcfadfe9da2192c3474a53f49bed0d2130db9988963c8f1a694",
+  "sourceHash": "f30649ddc2e559dec4c20da6a64effb51e385b7fcdd7fec909dfa0bd25b5fb00",
   "cli": {
     "version": "0.6.23"
   },
@@ -94,7 +94,7 @@ export const docsReference = {
       "category": "Account",
       "auth": "Bearer API key",
       "source": "convex",
-      "summary": "List API keys",
+      "summary": "List API keys (supports ?cursor= + ?limit= pagination; paginated calls return { keys, nextCursor, hasMore })",
       "sources": [
         "convex"
       ]
@@ -160,7 +160,7 @@ export const docsReference = {
       "category": "Account",
       "auth": "Bearer API key",
       "source": "convex",
-      "summary": "version history (authenticated)",
+      "summary": "Get bundle version history (authenticated; supports ?cursor= + ?limit= pagination in version-desc order — paginated calls add nextCursor + hasMore)",
       "sources": [
         "convex"
       ]
@@ -226,7 +226,7 @@ export const docsReference = {
       "category": "Account",
       "auth": "Bearer API key",
       "source": "convex",
-      "summary": "List sources",
+      "summary": "List sources (supports ?cursor= + ?limit= pagination; paginated calls return { sources, nextCursor, hasMore })",
       "sources": [
         "convex"
       ]
@@ -259,7 +259,7 @@ export const docsReference = {
       "category": "Activity",
       "auth": "Bearer API key",
       "source": "convex",
-      "summary": "agent activity log (authenticated) GET /api/v1/me/activity?limit=30&agent=Claude%20Code&action=read",
+      "summary": "agent activity log (authenticated) GET /api/v1/me/activity?limit=30&agent=Claude%20Code&action=read — supports ?cursor= pagination (cursor or limit calls add nextCursor + hasMore)",
       "sources": [
         "convex"
       ]
@@ -449,7 +449,7 @@ export const docsReference = {
       "category": "Context Links",
       "auth": "Bearer API key",
       "source": "convex",
-      "summary": "List context links",
+      "summary": "List context links (supports ?cursor= + ?limit= pagination; paginated calls return { links, nextCursor, hasMore })",
       "sources": [
         "convex"
       ]
@@ -606,7 +606,7 @@ export const docsReference = {
       "category": "Memories",
       "auth": "Bearer API key",
       "source": "convex",
-      "summary": "List memories (optional full-text search via ?q=)",
+      "summary": "List memories (optional full-text search via ?q=; supports ?cursor= + ?limit= pagination — paginated calls add nextCursor + hasMore, including search via the native search-index paginator)",
       "sources": [
         "convex"
       ]
@@ -739,7 +739,7 @@ export const docsReference = {
       "category": "Skills",
       "auth": "Bearer API key",
       "source": "convex",
-      "summary": "installed skills (authenticated)",
+      "summary": "Get my installed skills (authenticated; supports ?cursor= + ?limit= pagination — paginated calls add nextCursor + hasMore)",
       "sources": [
         "convex"
       ]
@@ -794,7 +794,7 @@ export const docsReference = {
       "category": "Skills",
       "auth": "Public or rate-limited",
       "source": "convex",
-      "summary": "Browse published skills (public, no auth required)",
+      "summary": "Browse published skills (public, no auth required; supports ?cursor= + ?limit= pagination — paginated calls add nextCursor + hasMore)",
       "sources": [
         "convex"
       ]
