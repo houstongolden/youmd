@@ -7,7 +7,6 @@ import {
   getLocalBundleDir,
   getHomeBundleDir,
   bundleLooksInitialized,
-  localBundleExists,
   isAuthenticated,
   readGlobalConfig,
   detectProjectContext,
@@ -29,9 +28,9 @@ import {
 } from "../lib/project";
 import type { RecentProjectInsight } from "../lib/project";
 import { compileBundle, writeBundle } from "../lib/compiler";
-import { uploadBundle, publishLatest, saveMemories, updatePrivateContext } from "../lib/api";
+import { uploadBundle, publishLatest, saveMemories, updatePrivateContext, listMemories, getPrivateContext } from "../lib/api";
 import { initProject } from "../lib/skills";
-import { BrailleSpinner, requireInteractiveTTY } from "../lib/render";
+import { BrailleSpinner, requireInteractiveTTY, renderRichResponse } from "../lib/render";
 import {
   callLLM,
   parseUpdatesFromResponse,
@@ -39,11 +38,9 @@ import {
   sectionLabel,
   showBundlePreview,
   getOpenRouterKey,
-  scrapeProfile,
   researchUser,
   Spinner,
   randomThinking,
-  BUNDLE_SECTIONS,
 } from "../lib/onboarding";
 import type { ChatMessage } from "../lib/onboarding";
 import { printPortraitEncounter, printSavedPortrait, printYouLogo, resolvePortraitLines } from "../lib/ascii";
@@ -239,7 +236,7 @@ function detectSourcesInMessage(text: string): DetectedSource[] {
 
   const bareDomainRegex = /(?<![/\w])([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.(?:com|co|io|ai|dev|org|net|app|xyz|me)(?:\/[^\s<>"']*)?)/gi;
   while ((match = bareDomainRegex.exec(text)) !== null) {
-    let domain = match[1].replace(/[.,;:)\]]+$/, "");
+    const domain = match[1].replace(/[.,;:)\]]+$/, "");
     if (domain.includes("x.com") || domain.includes("github.com") || domain.includes("linkedin.com")) continue;
     const url = `https://${domain}`;
     if (!seen.has(url)) {
@@ -573,7 +570,7 @@ function loadCurrentBundle(bundleDir: string): string {
     { dir: "preferences", label: "Preferences" },
   ];
 
-  for (const { dir, label } of dirs) {
+  for (const { dir } of dirs) {
     const dirPath = path.join(bundleDir, dir);
     if (!fs.existsSync(dirPath)) continue;
 
@@ -662,8 +659,8 @@ function showStatus(bundleDir: string): void {
   console.log("");
 }
 
-function showLinkInfo(bundleDir: string): void {
-  // Try to read username from the about.md or config
+function showLinkInfo(): void {
+  // Try to read username from the config
   const config = readGlobalConfig();
   const username = config.username || "your-username";
 
@@ -736,7 +733,7 @@ async function handlePublish(bundleDir: string): Promise<void> {
     });
 
     if (!uploadRes.ok) {
-      const errData = uploadRes.data as any;
+      const errData = uploadRes.data;
       console.log(
         chalk.red(
           "  upload failed: " +
@@ -750,7 +747,7 @@ async function handlePublish(bundleDir: string): Promise<void> {
     const pubRes = await publishLatest();
 
     if (!pubRes.ok) {
-      const errData = pubRes.data as any;
+      const errData = pubRes.data;
       console.log(
         chalk.red(
           "  publish failed: " +
@@ -822,7 +819,7 @@ function showShareBlock(bundleDir: string): void {
 
   // Try to load profile data for rich context
   const youJsonPath = path.join(bundleDir, "you.json");
-  let youJson: Record<string, any> | null = null;
+  let youJson: Record<string, unknown> | null = null;
   if (fs.existsSync(youJsonPath)) {
     try {
       youJson = JSON.parse(fs.readFileSync(youJsonPath, "utf-8"));
@@ -842,21 +839,21 @@ function showShareBlock(bundleDir: string): void {
   // Build inline summary from you.json
   if (youJson) {
     lines.push("Quick summary:");
-    const identity = youJson.identity as Record<string, any> | undefined;
+    const identity = youJson.identity as Record<string, string> | undefined;
     if (identity?.name) lines.push(`- Name: ${identity.name}`);
     if (identity?.tagline) lines.push(`- Role: ${identity.tagline}`);
 
-    const now = youJson.now as Record<string, any> | undefined;
+    const now = youJson.now as { focus?: string[] } | undefined;
     if (now?.focus && Array.isArray(now.focus) && now.focus.length > 0) {
       lines.push(`- Currently working on: ${now.focus.join(", ")}`);
     }
 
     const projects = youJson.projects as Array<Record<string, string>> | undefined;
     if (projects && projects.length > 0) {
-      lines.push(`- Key projects: ${projects.map((p: any) => p.name).filter(Boolean).join(", ")}`);
+      lines.push(`- Key projects: ${projects.map((p) => p.name).filter(Boolean).join(", ")}`);
     }
 
-    const prefs = youJson.preferences as Record<string, Record<string, any>> | undefined;
+    const prefs = youJson.preferences as Record<string, Record<string, string>> | undefined;
     if (prefs?.agent?.tone) lines.push(`- Prefers: ${prefs.agent.tone}`);
     if (prefs?.writing?.style) lines.push(`- Writing style: ${prefs.writing.style}`);
   } else {
@@ -1033,10 +1030,6 @@ function readDisplayName(bundleDir: string): string {
   }
 
   return readGlobalConfig().username || "friend";
-}
-
-function getRecentProjectNames(limit = 3): string[] {
-  return getRecentProjectInsights(process.cwd(), limit).map((item) => item.name);
 }
 
 async function printUpdateHint(): Promise<void> {
@@ -2303,7 +2296,7 @@ export async function chatCommand(): Promise<void> {
     }
 
     if (lower === "/link") {
-      showLinkInfo(bundleDir);
+      showLinkInfo();
       continue;
     }
 
@@ -2314,12 +2307,12 @@ export async function chatCommand(): Promise<void> {
 
     if (lower === "/memory" || lower === "/memories") {
       try {
-        const { listMemories } = require("../lib/api");
         const res = await listMemories({ limit: 20 });
-        if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+        const memories = res.ok ? res.data?.memories ?? [] : [];
+        if (memories.length > 0) {
           const grouped = new Map<string, number>();
-          for (const m of res.data) grouped.set(m.category, (grouped.get(m.category) || 0) + 1);
-          console.log(chalk.dim(`  memory: ${res.data.length} total`));
+          for (const m of memories) grouped.set(m.category, (grouped.get(m.category) || 0) + 1);
+          console.log(chalk.dim(`  memory: ${memories.length} total`));
           for (const [cat, count] of grouped) {
             console.log(chalk.dim(`    ${cat}s: ${count}`));
           }
@@ -2334,12 +2327,12 @@ export async function chatCommand(): Promise<void> {
     if (lower === "/recall" || lower.startsWith("/recall ")) {
       const query = lower.startsWith("/recall ") ? lower.slice(8).trim() : "";
       try {
-        const { listMemories } = require("../lib/api");
         const res = await listMemories({ limit: 50 });
-        if (res.ok && Array.isArray(res.data)) {
+        if (res.ok && res.data?.memories) {
+          const memories = res.data.memories;
           const matches = query
-            ? res.data.filter((m: any) => m.content.toLowerCase().includes(query) || m.category.includes(query))
-            : res.data.slice(0, 10);
+            ? memories.filter((m) => m.content.toLowerCase().includes(query) || m.category.includes(query))
+            : memories.slice(0, 10);
           if (matches.length > 0) {
             console.log(chalk.dim(query ? `  ${matches.length} memories matching "${query}":` : "  recent memories:"));
             for (const m of matches.slice(0, 10)) {
@@ -2356,7 +2349,6 @@ export async function chatCommand(): Promise<void> {
 
     if (lower === "/private") {
       try {
-        const { getPrivateContext } = require("../lib/api");
         const res = await getPrivateContext();
         if (res.ok && res.data) {
           const p = res.data;
@@ -2723,7 +2715,6 @@ export async function chatCommand(): Promise<void> {
 function printAgentMessage(text: string): void {
   if (!text) return;
   // Use rich terminal renderer for structured content
-  const { renderRichResponse } = require("../lib/render");
   console.log(renderRichResponse(text));
   console.log("");
 }
