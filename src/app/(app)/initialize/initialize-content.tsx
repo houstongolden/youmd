@@ -83,18 +83,37 @@ function clearCookie(name: string): void {
 
 /* ── Boot sequence items ───────────────────────────────────── */
 
-const BOOT_SEQUENCE = [
+/**
+ * Boot lines are gated on real readiness events where one exists:
+ * - "auth"           -> web session resolved (useUser returned a user)
+ * - "agentNetwork"   -> Convex websocket auth established (useConvexAuth)
+ * - "userQuery"      -> users.getByClerkId query resolved
+ * - "sessionProfile" -> profiles.getBySessionToken resolved (or no session cookie)
+ *
+ * A line is appended only after its min delay elapses AND its gate is open,
+ * so a checkmark never claims "ready" while the real dependency is loading.
+ * Ungated lines stay on short timers. If a gate had to be waited on, the
+ * line resumes near-instantly once the gate opens.
+ */
+type BootGate = "auth" | "agentNetwork" | "userQuery" | "sessionProfile";
+
+const BOOT_STEPS: { text: string; className?: string; delay: number; gate?: BootGate }[] = [
   { text: "you.md", className: "text-[hsl(var(--accent))]", delay: 200 },
-  { text: "agent brain + expertise stacks for the agent internet", className: "text-[hsl(var(--text-secondary))] opacity-60", delay: 500 },
-  { text: "", delay: 700 },
-  { text: "loading brain runtime...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 900 },
-  { text: "connecting to agent network...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 1200 },
-  { text: "loading you-md/v1 engine...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 1500 },
-  { text: "  \u2713 brain schema loaded", className: "text-[hsl(var(--success))]", delay: 1800 },
-  { text: "  \u2713 agent framework ready", className: "text-[hsl(var(--success))]", delay: 2000 },
-  { text: "  \u2713 source connectors online", className: "text-[hsl(var(--success))]", delay: 2200 },
-  { text: "", delay: 2400 },
+  { text: "agent brain + expertise stacks for the agent internet", className: "text-[hsl(var(--text-secondary))] opacity-60", delay: 300 },
+  { text: "", delay: 200 },
+  { text: "loading brain runtime...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 200, gate: "auth" },
+  { text: "connecting to agent network...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 300 },
+  { text: "loading you-md/v1 engine...", className: "text-[hsl(var(--text-secondary))] opacity-50", delay: 300 },
+  { text: "  \u2713 brain schema loaded", className: "text-[hsl(var(--success))]", delay: 300, gate: "userQuery" },
+  { text: "  \u2713 agent framework ready", className: "text-[hsl(var(--success))]", delay: 200, gate: "agentNetwork" },
+  { text: "  \u2713 source connectors online", className: "text-[hsl(var(--success))]", delay: 200, gate: "sessionProfile" },
+  { text: "", delay: 200 },
 ];
+
+/** Per-line delay once the user has requested skip */
+const SKIP_DELAY = 25;
+/** Delay used when a line was blocked on a gate and the gate just opened */
+const GATE_RESUME_DELAY = 50;
 
 /* ── Main component ────────────────────────────────────────── */
 
@@ -133,13 +152,30 @@ export function InitializeContent() {
   const claimAttempted = useRef(false);
   // State mirror of claimAttempted for use during render (refs can't be read in render)
   const [claimFlowActive, setClaimFlowActive] = useState(false);
+  // How many boot lines have been emitted so far
+  const [bootIndex, setBootIndex] = useState(0);
+  // Enter / click fast-forwards the remaining boot theater
+  const [skipRequested, setSkipRequested] = useState(false);
+  const skipRef = useRef(false);
+  // id of the honest "still loading..." line shown when skip hits a pending gate
+  const stillLoadingId = useRef<string | null>(null);
+  // index of the boot line currently blocked on a real readiness gate (if any)
+  const blockedAtIndex = useRef<number | null>(null);
+  const claimStarted = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lineCounter = useRef(0);
 
   const addLine = useCallback((content: ReactNode, className?: string) => {
     const id = `l${lineCounter.current++}`;
     setLines((prev) => [...prev, { id, content, className }]);
+    return id;
   }, []);
+
+  /* Real readiness signals each boot gate maps to */
+  const authReady = Boolean(user);
+  const agentNetworkReady = isAuthenticated;
+  const userQueryReady = existingUser !== undefined;
+  const sessionProfileReady = !sessionToken || sessionProfile !== undefined;
 
   // Auto-scroll
   useEffect(() => {
@@ -161,7 +197,7 @@ export function InitializeContent() {
     }
   }, [existingUser, existingBundle, router]);
 
-  // Run boot sequence and auto-claim
+  // Start the boot flow for fresh sign-ups (no Convex user yet)
   useEffect(() => {
     if (!user || claimAttempted.current) return;
     // Wait for query to finish loading
@@ -173,26 +209,104 @@ export function InitializeContent() {
     claimAttempted.current = true;
     // Mirror into state for render-time checks (deferred — lint forbids sync setState in effects)
     setTimeout(() => setClaimFlowActive(true), 0);
+  }, [user, existingUser]);
+
+  // Keep a ref mirror of skipRequested for async callbacks below
+  useEffect(() => {
+    skipRef.current = skipRequested;
+  }, [skipRequested]);
+
+  // Enter fast-forwards the remaining boot theater
+  useEffect(() => {
+    if (!claimFlowActive || skipRequested) return;
+    if (phase === "ready" || phase === "error") return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        setSkipRequested(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [claimFlowActive, skipRequested, phase]);
+
+  // Advance the boot sequence one line at a time. Each line waits for its
+  // min delay AND its readiness gate (a real event) before appearing — a
+  // checkmark never claims "ready" while its dependency is still loading,
+  // and when data resolves fast the lines accelerate instead of stalling.
+  useEffect(() => {
+    if (!claimFlowActive || phase === "error") return;
+    if (bootIndex >= BOOT_STEPS.length) return;
+
+    const step = BOOT_STEPS[bootIndex];
+    const gates: Record<BootGate, boolean> = {
+      auth: authReady,
+      agentNetwork: agentNetworkReady,
+      userQuery: userQueryReady,
+      sessionProfile: sessionProfileReady,
+    };
+    const gateOpen = !step.gate || gates[step.gate];
+
+    if (!gateOpen) {
+      blockedAtIndex.current = bootIndex;
+      // Skip was requested but a real dependency is pending — show a single
+      // honest "still loading..." line until it resolves
+      if (skipRequested && stillLoadingId.current === null) {
+        const timer = setTimeout(() => {
+          stillLoadingId.current = addLine(
+            "still loading...",
+            "text-[hsl(var(--text-secondary))] opacity-50 animate-pulse"
+          );
+        }, 0);
+        return () => clearTimeout(timer);
+      }
+      return; // effect re-runs when the gate's readiness signal flips
+    }
+
+    const delay = skipRequested
+      ? SKIP_DELAY
+      : blockedAtIndex.current === bootIndex
+        ? GATE_RESUME_DELAY
+        : step.delay;
+    const timer = setTimeout(() => {
+      if (stillLoadingId.current !== null) {
+        const removeId = stillLoadingId.current;
+        stillLoadingId.current = null;
+        setLines((prev) => prev.filter((line) => line.id !== removeId));
+      }
+      addLine(step.text, step.className);
+      setBootIndex((index) => index + 1);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [
+    claimFlowActive,
+    phase,
+    bootIndex,
+    skipRequested,
+    authReady,
+    agentNetworkReady,
+    userQueryReady,
+    sessionProfileReady,
+    addLine,
+  ]);
+
+  // Claim phase — runs once every boot line (and its real gate) has finished.
+  // The "claimed and registered" checkmark is tied to the actual createUser
+  // mutation resolving, and the sessionProfile gate above guarantees any
+  // unclaimed /create-flow profile is known before we claim.
+  useEffect(() => {
+    if (!claimFlowActive || phase === "error") return;
+    if (bootIndex < BOOT_STEPS.length) return;
+    if (claimStarted.current || !user) return;
 
     const username =
       user.username ||
       user.firstName?.toLowerCase().replace(/[^a-z0-9-]/g, "") ||
       "user";
 
-    // Boot sequence
-    BOOT_SEQUENCE.forEach((item) => {
-      setTimeout(() => {
-        if (item.text) {
-          addLine(item.text, item.className);
-        } else {
-          addLine("\u00A0");
-        }
-      }, item.delay);
-    });
-
-    // Claim username phase
-    const claimDelay = 2600;
-    setTimeout(() => {
+    const timer = setTimeout(async () => {
+      if (claimStarted.current) return;
+      claimStarted.current = true;
       setPhase("claim");
       addLine(
         <span>
@@ -200,11 +314,8 @@ export function InitializeContent() {
         </span>,
         "text-[hsl(var(--text-secondary))]"
       );
-    }, claimDelay);
-
-    // Create user in Convex (also auto-creates/claims profile in the mutation)
-    setTimeout(async () => {
       try {
+        // Create user in Convex (also auto-creates/claims profile in the mutation)
         await createUser({
           clerkId: user.id,
           username: username.toLowerCase(),
@@ -228,27 +339,38 @@ export function InitializeContent() {
 
         addLine(
           <span>
-            <span className="text-[hsl(var(--success))]">{"\u2713"}</span>{" "}
+            <span className="text-[hsl(var(--success))]">{"✓"}</span>{" "}
             @<span className="text-[hsl(var(--accent))]">{username}</span>{" "}
-            <span className="text-[hsl(var(--text-secondary))]">{"\u2014"} claimed and registered</span>
+            <span className="text-[hsl(var(--text-secondary))]">{"—"} claimed and registered</span>
           </span>
         );
-        addLine("\u00A0");
+        addLine("");
 
         // Proceed to onboarding agent
         setTimeout(() => {
           addLine(
-            <span className="text-[hsl(var(--success))]">{"\u2713"} identity engine ready</span>
+            <span className="text-[hsl(var(--success))]">{"✓"} identity engine ready</span>
           );
-          addLine("\u00A0");
-          setTimeout(() => setPhase("ready"), 400);
-        }, 800);
+          addLine("");
+          setTimeout(() => setPhase("ready"), skipRef.current ? SKIP_DELAY : 400);
+        }, skipRef.current ? SKIP_DELAY : 800);
       } catch (err) {
         setError(err instanceof Error ? err.message : "failed to claim username");
         setPhase("error");
       }
-    }, claimDelay + 800);
-  }, [user, existingUser, createUser, claimProfile, sessionProfile, sessionToken, addLine]);
+    }, skipRef.current ? SKIP_DELAY : 300);
+    return () => clearTimeout(timer);
+  }, [
+    claimFlowActive,
+    phase,
+    bootIndex,
+    user,
+    createUser,
+    claimProfile,
+    sessionProfile,
+    sessionToken,
+    addLine,
+  ]);
 
   // Returning half-initialized user: claimed handle exists but nothing was ever
   // published — skip the claim boot animation and resume the onboarding agent
@@ -285,6 +407,7 @@ export function InitializeContent() {
           <div
             className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
             style={{ borderRadius: "2px" }}
+            onClick={() => setSkipRequested(true)}
           >
             <TerminalHeader title="you.md — initialize" asHeading />
             <div
@@ -296,6 +419,11 @@ export function InitializeContent() {
                   {line.content || "\u00A0"}
                 </div>
               ))}
+              {!skipRequested && phase !== "error" && (
+                <div className="mt-4 text-[11px] text-[hsl(var(--text-secondary))] opacity-40 select-none">
+                  press enter to skip
+                </div>
+              )}
               {phase === "error" && (
                 <div className="mt-2 space-y-2">
                   <div className="text-[hsl(var(--accent))]">ERR: {error}</div>
