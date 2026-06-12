@@ -12,9 +12,9 @@
 
 | ID | Item | Source | Effort | Status | Verification |
 |---|---|---|---|---|---|
-| V1 | Hero rework: kicker kept, headline → "every agent meets the same you", handshake triad (agent.md/soul.md/you.md) added below CTAs, install command in hero, quiet bullet "one runtime" → "one brain across your agents" | POSITIONING-PLAYBOOK §2 (R1+R2) | S | todo | Visual check in browser vs PRD v2.3; build passes; Vercel deploy live |
-| V2 | Demote "stop re-explaining yourself" to problem-statement line on landing (keep as pain hook section, not headline) | POSITIONING-PLAYBOOK §1 | S | todo | Landing renders; copy consistent across sections |
-| V3 | Freshness-moat copy: "a copied YouStack freezes at copy time; yours stays current" added to YouStacks landing section + README | VISION-AUDIT R5 | S | todo | Copy live on landing + README; no overstated "clone-proof" claims |
+| V1 | Hero rework: kicker kept, headline → "every agent meets the same you", handshake triad (agent.md/soul.md/you.md) added below CTAs, install command in hero, quiet bullet "one runtime" → "one brain across your agents" | POSITIONING-PLAYBOOK §2 (R1+R2) | S | in-progress (agent) | Visual check in browser vs PRD v2.3; build passes; Vercel deploy live |
+| V2 | Demote "stop re-explaining yourself" to problem-statement line on landing (keep as pain hook section, not headline) | POSITIONING-PLAYBOOK §1 | S | in-progress (agent) | Landing renders; copy consistent across sections |
+| V3 | Freshness-moat copy: "a copied YouStack freezes at copy time; yours stays current" added to YouStacks landing section + README | VISION-AUDIT R5 | S | in-progress (agent) | Copy live on landing + README; no overstated "clone-proof" claims |
 | V4 | Lighthouse growth loop: ASCII-portrait OG share card framing "this is what agents see when they meet me" on public profiles | VISION-AUDIT R4 | M | todo | OG card renders for a real profile; share preview correct |
 | V5 | Honesty-ledger guard: no copy promises encrypted vault until AES-256-GCM ships; audit landing/pricing copy now ("scoped access" not "encrypted") | POSITIONING-PLAYBOOK §4 / risk X2 | S | todo | Grep landing+docs for encryption promises; none ahead of shipped reality |
 | V6 | Protocol positioning: publish/promote `you-md/v1` schema as open standard page in docs; "an MCP where the context is you" line into developer docs | VISION-AUDIT R3 | M | todo | Docs page live; llms surfaces regenerated + docs:check passes |
@@ -50,12 +50,12 @@
 | P25 | Honest endpoint counts (exclude retired/internal) in docs generator | PRODUCT-AUDIT #27; FEATURE-ROADMAP 3.10 | S | todo |
 | P26 | `login --key` validates before persisting; preserve apiUrl/appUrl | PRODUCT-AUDIT #31; FEATURE-ROADMAP 0.5 | S | done (308ad0b) |
 | P27 | Headless auth via YOUMD_API_KEY/YOUMD_API_URL env vars | PRODUCT-AUDIT #32; FEATURE-ROADMAP 1.4 | S | done (308ad0b: env auth, zero-write verified) |
-| P28 | Fix `skill browse` registry: install hint | PRODUCT-AUDIT #33; FEATURE-ROADMAP 3.16 | S | todo |
+| P28 | Fix `skill browse` registry: install hint | PRODUCT-AUDIT #33; FEATURE-ROADMAP 3.16 | S | done (b0ddedb: hint fixed + registry: resolver) |
 | P29 | Per-host YOUMD_AGENT_NAME + clientInfo.name fallback for attribution | PRODUCT-AUDIT #35; FEATURE-ROADMAP 3.10 | S | done (bf2e647: per-host YOUMD_AGENT_NAME + clientInfo fallback) |
 | P30 | Username canonicalization migration; delete 500-profile fallback scan | PRODUCT-AUDIT #38; FEATURE-ROADMAP 3.13 | S | todo |
 | P31 | Deprecation/Sunset headers + schemaVersion on payloads | PRODUCT-AUDIT #39; FEATURE-ROADMAP 3.14 | S | todo |
 | P32 | ARCHITECTURE.md YouStacks section + PRD layout reconciliation | PRODUCT-AUDIT #40; FEATURE-ROADMAP 3.17 | S | done (YouStacks layer + storage map + drift notes) |
-| P33 | Project attribution: nearest-marker-wins by depth | PRODUCT-AUDIT #41 | S | todo |
+| P33 | Project attribution: nearest-marker-wins by depth | PRODUCT-AUDIT #41 | S | done (0c32304) |
 | P34 | Generate CLI command table from commander; docs:check assertion | PRODUCT-AUDIT #42 | S | todo |
 | P35 | TTY/EOF guard on interactive prompts | PRODUCT-AUDIT #43; FEATURE-ROADMAP 0.7 | S | done (5028339: 6 entry points guarded) |
 | P36 | Issue real owner scopes for cli-auth login keys (convex/auth.ts) + settings UI scope selection, then remove the cli-auth grandfather carve-out in lib/scopes.ts; regen docs with the 403 scope contract | P1 follow-up | M | todo |
@@ -64,17 +64,17 @@
 
 | ID | Item | Effort | Status |
 |---|---|---|---|
-| U1 | Strip `@` from CLI celebration URLs + normalize `@`/`%40` in [username] route w/ 301 | S | todo |
+| U1 | Strip `@` from CLI celebration URLs + normalize `@`/`%40` in [username] route w/ 301 | S | in-progress (agent) |
 | U2 | Fix onboarding done-phrase false positives (bare no/yes/ready); gate on wrap-up offer | S | todo |
 | U3 | Fix fake "[saved private project]" — real updatePrivateContext write or honest message | S | todo |
-| U4 | Gate /initialize redirect on onboarding-complete marker, not bare username | M | todo |
-| U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | todo |
+| U4 | Gate /initialize redirect on onboarding-complete marker, not bare username | M | in-progress (agent) |
+| U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | in-progress (agent) |
 | U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | todo |
 | U7 | Device-flow login (CLI code → browser approve → poll) | L | todo |
 | U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | todo |
 | U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | todo |
-| U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | todo |
-| U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | todo |
+| U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | done (b0ddedb: 16 fake delays removed, 250ms min spinner display) |
+| U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | in-progress (agent) |
 | U12 | Profile preview: direct ProfileContent render w/ preview prop (kill iframe) | M | todo |
 | U13 | Local-first portrait cache (instant render, background refresh) | M | todo |
 | U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | todo |
@@ -84,8 +84,8 @@
 | U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | todo |
 | U19 | Status-bar freshness segment + staleness nudge on session restore | S | todo |
 | U20 | Renderer: strip ANSI before padEnd; spinner update() preserves startTime | S | done (5028339) |
-| U21 | Lowercase CTAs on landing | S | todo |
-| U22 | Sweep font-medium/semibold per opacity-not-weight rule (19 instances) | S | todo |
+| U21 | Lowercase CTAs on landing | S | in-progress (agent) |
+| U22 | Sweep font-medium/semibold per opacity-not-weight rule (19 instances) | S | in-progress (agent) |
 | U23 | Boot sequence checkmarks tied to real events; enter-to-skip | S | todo |
 
 ## M3 — Self-improving loop items (SELF-IMPROVING-SYSTEM-DESIGN + GLOBAL-EVOLUTION-ROADMAP)
@@ -102,7 +102,7 @@
 | L8 | Schedule audit forever-loop (Actions cron) w/ atomic mkdir lock | M | todo |
 | L9 | trackSkillEvent outcomes + MCP report_skill_outcome tool | M | todo |
 | L10 | activityInsights query → `youmd skill improve` + dashboard | M | todo |
-| L11 | Fix improveCmd sync heuristic (lastSyncedAt vs identity-change timestamp) | S | todo |
+| L11 | Fix improveCmd sync heuristic (lastSyncedAt vs identity-change timestamp) | S | done (b0ddedb: lastSyncedAt vs identity mtimes) |
 | L12 | Stack guard: `youmd stack guard` + enforcement in route/MCP (T0-T3 tiers) | M-L | todo |
 | L13 | Golden-prompt eval runner: `youmd stack eval` → tests/eval-results.json | M | todo |
 | L14 | Stack improvement runner: journal/ + `youmd stack improve` (propose/auto_pr) | L | todo |
