@@ -2330,6 +2330,151 @@ http.route({
 });
 
 // ============================================================
+// DEVICE-FLOW AUTH (U7, RFC 8628-shaped, simplified)
+// ============================================================
+//
+// `youmd login` default path: the CLI starts a device authorization, shows
+// the short userCode + https://you.md/device, and polls until the user
+// approves in a signed-in browser session. The underlying state machine
+// lives in convex/auth.ts (startDeviceAuth / pollDeviceAuth — both
+// internalMutations so these rate-limited routes are the ONLY public
+// surface; anonymous /api/mutation callers cannot mint or poll codes).
+
+const DEVICE_START_RATE_LIMIT = { windowMs: 10 * 60_000, maxCalls: 10 };
+// Compliant polling is every 5s (12/min). 60/min leaves headroom for several
+// devices behind one NAT while still capping brute-force hammering.
+const DEVICE_POLL_RATE_LIMIT = { windowMs: 60_000, maxCalls: 60 };
+const DEVICE_VERIFICATION_URL = "https://you.md/device";
+
+// POST /api/v1/auth/device/start — begin a device-flow login (no auth)
+http.route({
+  path: "/api/v1/auth/device/start",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      await ctx.runMutation(internal.lib.rateLimit.checkAndRecord, {
+        bucket: `deviceStart:${getCallerIp(request)}`,
+        windowMs: DEVICE_START_RATE_LIMIT.windowMs,
+        maxCalls: DEVICE_START_RATE_LIMIT.maxCalls,
+      });
+    } catch {
+      return errorResponse(
+        "rate_limited",
+        "Too many device authorization requests. Try again in a few minutes.",
+        429
+      );
+    }
+
+    // Body is optional: { clientName?: string } for the approval page.
+    let clientName: string | undefined;
+    try {
+      const body = await request.json();
+      if (body && typeof body.clientName === "string" && body.clientName.trim()) {
+        clientName = body.clientName.trim().slice(0, 120);
+      }
+    } catch {
+      // empty / non-JSON body is fine
+    }
+
+    const started = await ctx.runMutation(internal.auth.startDeviceAuth, {
+      clientName,
+    });
+
+    return json({
+      deviceCode: started.deviceCode,
+      userCode: started.userCode,
+      verificationUrl: DEVICE_VERIFICATION_URL,
+      expiresIn: started.expiresIn,
+      interval: started.interval,
+    });
+  }),
+});
+
+// POST /api/v1/auth/device/poll — poll for approval with the deviceCode
+http.route({
+  path: "/api/v1/auth/device/poll",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      await ctx.runMutation(internal.lib.rateLimit.checkAndRecord, {
+        bucket: `devicePoll:${getCallerIp(request)}`,
+        windowMs: DEVICE_POLL_RATE_LIMIT.windowMs,
+        maxCalls: DEVICE_POLL_RATE_LIMIT.maxCalls,
+      });
+    } catch {
+      return errorResponse(
+        "rate_limited",
+        "Polling too fast. Slow down and try again shortly.",
+        429,
+        { status: "slow_down" }
+      );
+    }
+
+    let deviceCode: string | undefined;
+    try {
+      const body = await request.json();
+      if (body && typeof body.deviceCode === "string") {
+        deviceCode = body.deviceCode;
+      }
+    } catch {
+      // handled below
+    }
+    if (!deviceCode) {
+      return errorResponse("invalid_request", "deviceCode is required", 400);
+    }
+
+    // Hash here so the plaintext secret never enters mutation args/logs.
+    const result = await ctx.runMutation(internal.auth.pollDeviceAuth, {
+      deviceCodeHash: await sha256Hex(deviceCode),
+    });
+
+    switch (result.status) {
+      case "approved":
+        // The owner-session key is returned exactly once (row now consumed).
+        return json({
+          status: "approved",
+          apiKey: result.apiKey,
+          username: result.username,
+          user: {
+            id: result.clerkId,
+            username: result.username,
+            email: result.email,
+            displayName: result.displayName,
+            plan: result.plan,
+          },
+        });
+      case "pending":
+      case "slow_down":
+        return json({ status: result.status, interval: result.interval });
+      case "denied":
+        return errorResponse(
+          "forbidden",
+          "Authorization was denied in the browser.",
+          403,
+          { status: "denied" }
+        );
+      case "expired":
+        return errorResponse(
+          "gone",
+          "Device code expired. Run `youmd login` again for a fresh code.",
+          410,
+          { status: "expired" }
+        );
+      default:
+        return errorResponse(
+          "invalid_request",
+          "Invalid or already-used device code.",
+          400,
+          { status: "invalid" }
+        );
+    }
+  }),
+});
+
+http.route({ path: "/api/v1/auth/device/start", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+http.route({ path: "/api/v1/auth/device/poll", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+
+// ============================================================
 // LEGACY AUTH ROUTES (deprecated after first-party passwordless migration)
 // ============================================================
 

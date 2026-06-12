@@ -42,6 +42,37 @@ export default defineSchema({
     .index("by_tokenHash", ["tokenHash"])
     .index("by_userId", ["userId"]),
 
+  // ── Device-flow auth requests (U7, RFC 8628-shaped) ─────────
+  // One row per `youmd login` device-flow attempt. The CLI holds the secret
+  // deviceCode (256-bit, never displayed); the user carries the short
+  // userCode to https://you.md/device in an authenticated browser session.
+  // Both codes are stored as SHA-256 hashes only (same approach as apiKeys).
+  // State machine: pending → approved → consumed (key minted exactly once),
+  // or pending → denied/expired. Expired and denied rows are detected and
+  // deleted at read time (poll/lookup) — no cron.
+  deviceAuthRequests: defineTable({
+    deviceCodeHash: v.string(), // sha256 hex of the secret device code
+    userCodeHash: v.string(),   // sha256 hex of the normalized user code
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("denied"),
+      v.literal("expired"),
+      v.literal("consumed")
+    ),
+    // Bound on approval — the authenticated web user who approved the device.
+    userId: v.optional(v.id("users")),
+    clientName: v.optional(v.string()), // e.g. "youmd CLI on darwin"
+    expiresAt: v.number(),
+    approvedAt: v.optional(v.number()),
+    consumedAt: v.optional(v.number()),
+    // Poll pacing — polls faster than the advertised interval get slow_down.
+    lastPolledAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_deviceCodeHash", ["deviceCodeHash"])
+    .index("by_userCodeHash", ["userCodeHash"]),
+
   // ── GitHub OAuth connections ───────────────────────────────
   // Backs free GitHub sign-up and the "host your You.md in your own repo"
   // story. One row per user. Holds the GitHub identity (used to resolve the
