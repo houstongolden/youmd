@@ -35,7 +35,7 @@
 | P10 | Truthful capability contract w/ transport tags + CI curl test | PRODUCT-AUDIT #12; FEATURE-ROADMAP 2.6 | M | todo |
 | P11 | One host-link engine emitting `.claude/skills/<name>/SKILL.md`; empirical discovery release gate | PRODUCT-AUDIT #13; FEATURE-ROADMAP 3.7 | M | todo |
 | P12 | Single project-context engine (repo project-context/ + ~/.youmd/projects/ overlay); delete dup impls | PRODUCT-AUDIT #14; FEATURE-ROADMAP 3.8 | M | todo |
-| P13 | Pagination cursors on all list endpoints + OpenAPI docs | PRODUCT-AUDIT #15; FEATURE-ROADMAP 2.9 | M | todo |
+| P13 | Pagination cursors on all list endpoints + OpenAPI docs | PRODUCT-AUDIT #15; FEATURE-ROADMAP 2.9 | M | in-progress (agent) |
 | P14 | Memory durability: pinned/importance/supersededBy, decay exemptions, review queue | PRODUCT-AUDIT #16; FEATURE-ROADMAP 2.4 | M | todo |
 | P15 | One `MEMORY_CATEGORIES` module + validation + migration + `correction` category | PRODUCT-AUDIT #17; FEATURE-ROADMAP 2.10 | M | todo |
 | P16 | Pipeline honesty: compile merges chat-refined content, or de-document discover→review | PRODUCT-AUDIT #18; FEATURE-ROADMAP 3.5 | L | blocked(needs-spec: Houston call) |
@@ -44,8 +44,8 @@
 | P19 | Typed brainScopes + identity-bearing adapters + doctor skill-ref validation | PRODUCT-AUDIT #21; FEATURE-ROADMAP 3.9 | M | todo |
 | P20 | Documented precedence model + shadowing warning + `youmd status` active-roots line | PRODUCT-AUDIT #22; FEATURE-ROADMAP 3.15 | M | todo |
 | P21 | Standard error envelope `{error:{code,message}}` + real OpenAPI schemas | PRODUCT-AUDIT #23; FEATURE-ROADMAP 3.1 | M | done (63524a5; 115 error sites, CLI parser updated, 89/89 convex tests; prod e2e verified) |
-| P22 | Per-key rate limits on writes + Retry-After/X-RateLimit headers | PRODUCT-AUDIT #24; FEATURE-ROADMAP 3.2 | M | in-progress (agent) |
-| P23 | Idempotency-Key support + memory content-hash dedupe | PRODUCT-AUDIT #25; FEATURE-ROADMAP 3.3 | M | in-progress (agent) |
+| P22 | Per-key rate limits on writes + Retry-After/X-RateLimit headers | PRODUCT-AUDIT #24; FEATURE-ROADMAP 3.2 | M | done (a703c6a; prod e2e: 200 carries X-RateLimit trio) |
+| P23 | Idempotency-Key support + memory content-hash dedupe | PRODUCT-AUDIT #25; FEATURE-ROADMAP 3.3 | M | done (a703c6a/c0547ea; prod e2e: Idempotency-Replayed true, dedupe live, test memory archived) |
 | P24 | Outbound webhooks + MCP subscribe/listChanged | PRODUCT-AUDIT #26; FEATURE-ROADMAP 3.4 | L | todo |
 | P25 | Honest endpoint counts (exclude retired/internal) in docs generator | PRODUCT-AUDIT #27; FEATURE-ROADMAP 3.10 | S | done (3b5b000; 69 honest endpoints, 7 documented exclusions, stale-exclusion guard) |
 | P26 | `login --key` validates before persisting; preserve apiUrl/appUrl | PRODUCT-AUDIT #31; FEATURE-ROADMAP 0.5 | S | done (308ad0b) |
@@ -53,7 +53,7 @@
 | P28 | Fix `skill browse` registry: install hint | PRODUCT-AUDIT #33; FEATURE-ROADMAP 3.16 | S | done (b0ddedb: hint fixed + registry: resolver) |
 | P29 | Per-host YOUMD_AGENT_NAME + clientInfo.name fallback for attribution | PRODUCT-AUDIT #35; FEATURE-ROADMAP 3.10 | S | done (bf2e647: per-host YOUMD_AGENT_NAME + clientInfo fallback) |
 | P30 | Username canonicalization migration; delete 500-profile fallback scan | PRODUCT-AUDIT #38; FEATURE-ROADMAP 3.13 | S | done (995122e+1f9d0df; prod migration ran: 25 users/45 profiles, 0 rewrites, 0 conflicts; mixed-case API+web lookups verified) |
-| P31 | Deprecation/Sunset headers + schemaVersion on payloads | PRODUCT-AUDIT #39; FEATURE-ROADMAP 3.14 | S | in-progress (agent) |
+| P31 | Deprecation/Sunset headers + schemaVersion on payloads | PRODUCT-AUDIT #39; FEATURE-ROADMAP 3.14 | S | done (a703c6a; prod e2e: 410 Deprecation+Sunset, schemaVersion you-md/v1 on /me) |
 | P32 | ARCHITECTURE.md YouStacks section + PRD layout reconciliation | PRODUCT-AUDIT #40; FEATURE-ROADMAP 3.17 | S | done (YouStacks layer + storage map + drift notes) |
 | P33 | Project attribution: nearest-marker-wins by depth | PRODUCT-AUDIT #41 | S | done (0c32304) |
 | P34 | Generate CLI command table from commander; docs:check assertion | PRODUCT-AUDIT #42 | S | done (3b5b000; 27 commands parsed from commander, drift-checked) |
@@ -75,12 +75,12 @@
 | U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | todo |
 | U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | done (b0ddedb: 16 fake delays removed, 250ms min spinner display) |
 | U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | done (e66a58b; activity=agent log, analytics=stats, session log=account events) |
-| U12 | Profile preview: direct ProfileContent render w/ preview prop (kill iframe) | M | todo |
-| U13 | Local-first portrait cache (instant render, background refresh) | M | todo |
+| U12 | Profile preview: direct ProfileContent render w/ preview prop (kill iframe) | M | in-progress (agent) |
+| U13 | Local-first portrait cache (instant render, background refresh) | M | in-progress (agent) |
 | U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | done (5256355; back//email/resend + 5 tests) |
 | U15 | Tappable /help + cmd+k hints (mobile palette) | S | done (8b07564; /help chip mobile, cmd/ctrl+k hint desktop, touch-friendly palette) |
 | U16 | Onboarding turns 2+ stream via shared helper | S | done (1a5d949; all onboarding turns stream filtered) |
-| U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | todo |
+| U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | in-progress (agent) |
 | U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | done (7caa891; 213 instances, check:radius guard in lint chain) |
 | U19 | Status-bar freshness segment + staleness nudge on session restore | S | done (8b07564; synced-ago segment from existing bundle query, 7-day nudge once per session) |
 | U20 | Renderer: strip ANSI before padEnd; spinner update() preserves startTime | S | done (5028339) |
