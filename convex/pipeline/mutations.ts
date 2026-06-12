@@ -1,5 +1,9 @@
 import { v } from "convex/values";
 import { internalMutation } from "../_generated/server";
+import {
+  canonicalUsername,
+  hasRenderableAsciiPortrait,
+} from "../lib/profileDirectory";
 
 /**
  * Internal mutations used by pipeline actions to update database state.
@@ -212,6 +216,96 @@ export const getUserByClerkId = internalMutation({
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
       .first();
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Portrait source chain support (U17)
+// ---------------------------------------------------------------------------
+
+/**
+ * Read everything the portrait source-chain action needs about a profile:
+ * whether it already has a renderable portrait, plus all the link/handle
+ * surfaces the chain resolves from (avatarUrl, socialImages, profile links,
+ * embedded youJson links).
+ */
+export const getPortraitContext = internalMutation({
+  args: { username: v.string() },
+  handler: async (ctx, args) => {
+    const username = canonicalUsername(args.username);
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_username", (q) => q.eq("username", username))
+      .first();
+
+    if (!profile) return null;
+
+    const youJson =
+      profile.youJson && typeof profile.youJson === "object"
+        ? (profile.youJson as Record<string, unknown>)
+        : {};
+
+    return {
+      profileId: profile._id,
+      username: profile.username,
+      hasPortrait: hasRenderableAsciiPortrait(profile.asciiPortrait),
+      avatarUrl: profile.avatarUrl ?? null,
+      socialImages: profile.socialImages ?? null,
+      primaryImage: profile.primaryImage ?? null,
+      links: profile.links ?? null,
+      youJsonLinks: youJson.links ?? null,
+    };
+  },
+});
+
+/**
+ * Save a generated ASCII portrait — but ONLY if the profile still has no
+ * renderable portrait (or `force` is set). This is the write-side guard for
+ * the post-research retry: even if two pipeline runs race, a real existing
+ * portrait is never overwritten.
+ */
+export const savePortraitIfMissing = internalMutation({
+  args: {
+    profileId: v.id("profiles"),
+    portrait: v.object({
+      lines: v.array(v.string()),
+      coloredLines: v.optional(v.any()),
+      cols: v.number(),
+      rows: v.number(),
+      format: v.string(),
+      sourceUrl: v.string(),
+    }),
+    force: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile) return { saved: false, reason: "profile_not_found" as const };
+
+    if (!args.force && hasRenderableAsciiPortrait(profile.asciiPortrait)) {
+      return { saved: false, reason: "portrait_exists" as const };
+    }
+
+    const updates: Record<string, unknown> = {
+      asciiPortrait: {
+        lines: args.portrait.lines,
+        coloredLines: args.portrait.coloredLines,
+        cols: args.portrait.cols,
+        rows: args.portrait.rows,
+        format: args.portrait.format,
+        sourceUrl: args.portrait.sourceUrl,
+        generatedAt: Date.now(),
+      },
+      updatedAt: Date.now(),
+    };
+
+    // Keep avatarUrl in sync when the profile had none — mirrors the
+    // CLI portrait-push behavior in http.ts.
+    if (!profile.avatarUrl && args.portrait.sourceUrl.startsWith("http")) {
+      updates.avatarUrl = args.portrait.sourceUrl;
+    }
+
+    await ctx.db.patch(args.profileId, updates);
+    return { saved: true, reason: "saved" as const };
   },
 });
 

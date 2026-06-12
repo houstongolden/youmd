@@ -238,6 +238,18 @@ export const runPipeline = internalAction({
         stage: "review",
       });
 
+      // U17: retry portrait generation now that research has enriched the
+      // profile's links/handles. The action guards itself — it exits
+      // immediately when the profile already has a renderable portrait, and
+      // savePortraitIfMissing re-checks at write time, so a real existing
+      // portrait is never overwritten. Scheduled (not awaited) so portrait
+      // fetch latency/failures can't affect pipeline completion.
+      await ctx.scheduler.runAfter(
+        0,
+        internal.portrait.generatePortraitForProfile,
+        { username }
+      );
+
       return {
         success: true as const,
         bundleId: result.bundleId!,

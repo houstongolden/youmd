@@ -2,8 +2,14 @@
 
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
+import { internal } from "./_generated/api";
 import jpegJs from "jpeg-js";
 import zlib from "zlib";
+import {
+  extractOgImageUrl,
+  resolvePortraitSourceChain,
+  type PortraitSourceCandidate,
+} from "./pipeline/portraitSource";
 
 // ---------------------------------------------------------------------------
 // ASCII character ramps — same as client-side AsciiAvatar component
@@ -266,6 +272,137 @@ function pixelsToAscii(
 }
 
 // ---------------------------------------------------------------------------
+// Shared decode helper — PNG (built-in) + JPEG (jpeg-js)
+// ---------------------------------------------------------------------------
+
+function decodeImage(
+  buffer: Uint8Array,
+  contentType: string,
+  urlHint: string
+): { width: number; height: number; data: Uint8Array } | null {
+  let imageData: { width: number; height: number; data: Uint8Array } | null = null;
+
+  if (contentType.includes("png") || urlHint.toLowerCase().includes(".png")) {
+    imageData = decodePNG(buffer);
+  }
+
+  if (!imageData && (contentType.includes("jpeg") || contentType.includes("jpg"))) {
+    try {
+      const decoded = jpegJs.decode(Buffer.from(buffer), { useTArray: true });
+      imageData = { width: decoded.width, height: decoded.height, data: decoded.data };
+    } catch {
+      // fall through — caller treats null as "decode unsupported"
+    }
+  }
+
+  // Last resort: content-type was wrong/absent — sniff both formats.
+  if (!imageData) imageData = decodePNG(buffer);
+  if (!imageData) {
+    try {
+      const decoded = jpegJs.decode(Buffer.from(buffer), { useTArray: true });
+      imageData = { width: decoded.width, height: decoded.height, data: decoded.data };
+    } catch {
+      // give up — caller handles null
+    }
+  }
+
+  return imageData;
+}
+
+// ---------------------------------------------------------------------------
+// Validated fetching for the portrait source chain (U17)
+// ---------------------------------------------------------------------------
+
+const FETCH_TIMEOUT_MS = 10_000;
+const MIN_IMAGE_BYTES = 128; // anything smaller is a tracking pixel / error stub
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8MB cap — avatars are far smaller
+const MAX_HTML_BYTES = 1024 * 1024; // 1MB of HTML is plenty to find og:image
+const PORTRAIT_USER_AGENT = "You.md portrait-resolver/0.1 (+https://you.md)";
+
+async function fetchWithTimeout(url: string): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, {
+      signal: controller.signal,
+      headers: { "User-Agent": PORTRAIT_USER_AGENT },
+      redirect: "follow",
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Fetch a candidate image URL and validate it before use:
+ *   - HTTP 2xx
+ *   - content-type is image/* (SVG excluded — we can't rasterize it)
+ *   - payload between MIN_IMAGE_BYTES and MAX_IMAGE_BYTES
+ * Returns null (with a reason) on any failure so the chain falls through.
+ */
+async function fetchValidatedImage(
+  url: string
+): Promise<
+  | { ok: true; buffer: Uint8Array; contentType: string }
+  | { ok: false; reason: string }
+> {
+  try {
+    const response = await fetchWithTimeout(url);
+    if (!response.ok) {
+      return { ok: false, reason: `http_${response.status}` };
+    }
+
+    const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+    if (!contentType.startsWith("image/")) {
+      return { ok: false, reason: `not_image_content_type:${contentType || "missing"}` };
+    }
+    if (contentType.includes("svg")) {
+      return { ok: false, reason: "svg_not_rasterizable" };
+    }
+
+    const declaredLength = Number(response.headers.get("content-length") ?? "0");
+    if (declaredLength > MAX_IMAGE_BYTES) {
+      return { ok: false, reason: `too_large_declared:${declaredLength}` };
+    }
+
+    const buffer = new Uint8Array(await response.arrayBuffer());
+    if (buffer.byteLength < MIN_IMAGE_BYTES) {
+      return { ok: false, reason: `too_small:${buffer.byteLength}` };
+    }
+    if (buffer.byteLength > MAX_IMAGE_BYTES) {
+      return { ok: false, reason: `too_large:${buffer.byteLength}` };
+    }
+
+    return { ok: true, buffer, contentType };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "fetch_failed";
+    return { ok: false, reason: message };
+  }
+}
+
+/**
+ * Fetch a website's HTML (validated: 2xx + text/html + size cap) and extract
+ * its og:image URL. Returns null on any failure.
+ */
+async function fetchOgImageUrl(websiteUrl: string): Promise<string | null> {
+  try {
+    const response = await fetchWithTimeout(websiteUrl);
+    if (!response.ok) return null;
+
+    const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+    if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
+      return null;
+    }
+
+    const bytes = new Uint8Array(await response.arrayBuffer()).slice(0, MAX_HTML_BYTES);
+    const html = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    return extractOgImageUrl(html, response.url || websiteUrl);
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Convex action: generate ASCII portrait from image URL
 // ---------------------------------------------------------------------------
 
@@ -308,21 +445,7 @@ export const generatePortrait = internalAction({
       const contentType = response.headers.get("content-type") || "";
       const buffer = new Uint8Array(await response.arrayBuffer());
 
-      let imageData: { width: number; height: number; data: Uint8Array } | null = null;
-
-      if (contentType.includes("png") || args.imageUrl.toLowerCase().includes(".png")) {
-        imageData = decodePNG(buffer);
-      }
-
-      // JPEG support via jpeg-js
-      if (!imageData && (contentType.includes("jpeg") || contentType.includes("jpg"))) {
-        try {
-          const decoded = jpegJs.decode(Buffer.from(buffer), { useTArray: true });
-          imageData = { width: decoded.width, height: decoded.height, data: decoded.data };
-        } catch {
-          // fall through to error below
-        }
-      }
+      const imageData = decodeImage(buffer, contentType, args.imageUrl);
 
       if (!imageData) {
         return {
@@ -351,3 +474,141 @@ export const generatePortrait = internalAction({
     }
   },
 });
+
+// ---------------------------------------------------------------------------
+// U17 — generatePortraitForProfile: walk the portrait source chain
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve a source image for a profile via the ordered chain
+ * (explicit avatarUrl → social images → unavatar x → github → unavatar
+ * linkedin → website og:image), validate each candidate, generate the ASCII
+ * portrait from the first one that works, and save it.
+ *
+ * Guards (never overwrites a real portrait):
+ *   - exits early when the profile already has a renderable portrait
+ *   - savePortraitIfMissing re-checks at write time (race-safe)
+ *
+ * Scheduled from the pipeline orchestrator after the compile/review stage so
+ * profiles that had no portrait at onboarding get a retry once research has
+ * discovered their social links/handles. internalAction only — args are
+ * trusted (no SSRF surface beyond URLs derived from the profile's own links).
+ */
+export const generatePortraitForProfile = internalAction({
+  args: {
+    username: v.string(),
+    cols: v.optional(v.number()),
+    format: v.optional(v.string()),
+    force: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<
+    | { success: true; source: string; sourceUrl: string }
+    | { success: false; reason: string; attempted: string[] }
+  > => {
+    const cols = args.cols ?? 120;
+    const format = args.format ?? "classic";
+
+    const context = await ctx.runMutation(
+      internal.pipeline.mutations.getPortraitContext,
+      { username: args.username }
+    );
+
+    if (!context) {
+      console.log(`[portrait] ${args.username}: no profile found — skipping`);
+      return { success: false, reason: "profile_not_found", attempted: [] };
+    }
+
+    if (context.hasPortrait && !args.force) {
+      console.log(`[portrait] ${context.username}: portrait already exists — not overwriting`);
+      return { success: false, reason: "portrait_exists", attempted: [] };
+    }
+
+    const chain = resolvePortraitSourceChain({
+      avatarUrl: context.avatarUrl,
+      socialImages: context.socialImages,
+      primaryImage: context.primaryImage,
+      links: context.links,
+      youJsonLinks: context.youJsonLinks,
+    });
+
+    if (chain.length === 0) {
+      console.log(`[portrait] ${context.username}: no source candidates — keeping default (no portrait)`);
+      return { success: false, reason: "no_candidates", attempted: [] };
+    }
+
+    const attempted: string[] = [];
+
+    for (const candidate of chain) {
+      attempted.push(candidate.source);
+
+      const imageUrl = await resolveCandidateImageUrl(candidate, context.username);
+      if (!imageUrl) continue;
+
+      const fetched = await fetchValidatedImage(imageUrl);
+      if (!fetched.ok) {
+        console.log(
+          `[portrait] ${context.username}: ${candidate.source} failed validation (${fetched.reason}) — falling through`
+        );
+        continue;
+      }
+
+      const imageData = decodeImage(fetched.buffer, fetched.contentType, imageUrl);
+      if (!imageData) {
+        console.log(
+          `[portrait] ${context.username}: ${candidate.source} decode unsupported (${fetched.contentType}) — falling through`
+        );
+        continue;
+      }
+
+      const ascii = pixelsToAscii(imageData.data, imageData.width, imageData.height, cols, format);
+
+      const saveResult = await ctx.runMutation(
+        internal.pipeline.mutations.savePortraitIfMissing,
+        {
+          profileId: context.profileId,
+          portrait: {
+            lines: ascii.lines,
+            coloredLines: ascii.coloredLines,
+            cols: ascii.cols,
+            rows: ascii.rows,
+            format,
+            sourceUrl: imageUrl,
+          },
+          force: args.force,
+        }
+      );
+
+      if (!saveResult.saved) {
+        console.log(
+          `[portrait] ${context.username}: generated from ${candidate.source} but not saved (${saveResult.reason})`
+        );
+        return { success: false, reason: saveResult.reason, attempted };
+      }
+
+      console.log(`[portrait] ${context.username}: portrait generated from ${candidate.source} (${imageUrl})`);
+      return { success: true, source: candidate.source, sourceUrl: imageUrl };
+    }
+
+    console.log(
+      `[portrait] ${context.username}: all ${chain.length} source candidates failed — keeping default (no portrait)`
+    );
+    return { success: false, reason: "all_candidates_failed", attempted };
+  },
+});
+
+/** Turn a chain candidate into a concrete image URL (scraping og:image when needed). */
+async function resolveCandidateImageUrl(
+  candidate: PortraitSourceCandidate,
+  username: string
+): Promise<string | null> {
+  if (candidate.type === "image") return candidate.url;
+
+  const ogImage = await fetchOgImageUrl(candidate.url);
+  if (!ogImage) {
+    console.log(
+      `[portrait] ${username}: ${candidate.source} found no og:image at ${candidate.url} — falling through`
+    );
+    return null;
+  }
+  return ogImage;
+}
