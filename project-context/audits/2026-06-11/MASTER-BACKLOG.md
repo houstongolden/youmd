@@ -15,7 +15,7 @@
 | V1 | Hero rework: kicker kept, headline → "every agent meets the same you", handshake triad (agent.md/soul.md/you.md) added below CTAs, install command in hero, quiet bullet "one runtime" → "one brain across your agents" | POSITIONING-PLAYBOOK §2 (R1+R2) | S | done (645d9d9; deployed, hero markup verified on prod) | Visual check in browser vs PRD v2.3; build passes; Vercel deploy live |
 | V2 | Demote "stop re-explaining yourself" to problem-statement line on landing (keep as pain hook section, not headline) | POSITIONING-PLAYBOOK §1 | S | done (645d9d9; subhead carries pain hook, verified on prod) | Landing renders; copy consistent across sections |
 | V3 | Freshness-moat copy: "a copied YouStack freezes at copy time; yours stays current" added to YouStacks landing section + README | VISION-AUDIT R5 | S | done (645d9d9; freshness-moat copy live) | Copy live on landing + README; no overstated "clone-proof" claims |
-| V4 | Lighthouse growth loop: ASCII-portrait OG share card framing "this is what agents see when they meet me" on public profiles | VISION-AUDIT R4 | M | todo | OG card renders for a real profile; share preview correct |
+| V4 | Lighthouse growth loop: ASCII-portrait OG share card framing "this is what agents see when they meet me" on public profiles | VISION-AUDIT R4 | M | in-progress (agent) | OG card renders for a real profile; share preview correct |
 | V5 | Honesty-ledger guard: no copy promises encrypted vault until AES-256-GCM ships; audit landing/pricing copy now ("scoped access" not "encrypted") | POSITIONING-PLAYBOOK §4 / risk X2 | S | done (audit clean: all encryption claims map to shipped AES-256-GCM vault surfaces; landing/llms docs make no encryption promises) | Grep landing+docs for encryption promises; none ahead of shipped reality |
 | V6 | Protocol positioning: publish/promote `you-md/v1` schema as open standard page in docs; "an MCP where the context is you" line into developer docs | VISION-AUDIT R3 | M | done (2e3ce77; open-standard section grounded in served schema, positioning line in docs+llms; prod check after Vercel) | Docs page live; llms surfaces regenerated + docs:check passes |
 
@@ -34,15 +34,15 @@
 | P9 | `youmd stack install <user>/<slug>` + registry endpoint | PRODUCT-AUDIT #11; FEATURE-ROADMAP 2.5 | L | todo |
 | P10 | Truthful capability contract w/ transport tags + CI curl test | PRODUCT-AUDIT #12; FEATURE-ROADMAP 2.6 | M | todo |
 | P11 | One host-link engine emitting `.claude/skills/<name>/SKILL.md`; empirical discovery release gate | PRODUCT-AUDIT #13; FEATURE-ROADMAP 3.7 | M | todo |
-| P12 | Single project-context engine (repo project-context/ + ~/.youmd/projects/ overlay); delete dup impls | PRODUCT-AUDIT #14; FEATURE-ROADMAP 3.8 | M | todo |
-| P13 | Pagination cursors on all list endpoints + OpenAPI docs | PRODUCT-AUDIT #15; FEATURE-ROADMAP 2.9 | M | in-progress (agent) |
-| P14 | Memory durability: pinned/importance/supersededBy, decay exemptions, review queue | PRODUCT-AUDIT #16; FEATURE-ROADMAP 2.4 | M | todo |
-| P15 | One `MEMORY_CATEGORIES` module + validation + migration + `correction` category | PRODUCT-AUDIT #17; FEATURE-ROADMAP 2.10 | M | todo |
+| P12 | Single project-context engine (repo project-context/ + ~/.youmd/projects/ overlay); delete dup impls | PRODUCT-AUDIT #14; FEATURE-ROADMAP 3.8 | M | in-progress (agent) |
+| P13 | Pagination cursors on all list endpoints + OpenAPI docs | PRODUCT-AUDIT #15; FEATURE-ROADMAP 2.9 | M | done (904ba31; 8 endpoints, prod e2e cursor verified, legacy shape unchanged) |
+| P14 | Memory durability: pinned/importance/supersededBy, decay exemptions, review queue | PRODUCT-AUDIT #16; FEATURE-ROADMAP 2.4 | M | in-progress (agent) |
+| P15 | One `MEMORY_CATEGORIES` module + validation + migration + `correction` category | PRODUCT-AUDIT #17; FEATURE-ROADMAP 2.10 | M | in-progress (agent) |
 | P16 | Pipeline honesty: compile merges chat-refined content, or de-document discover→review | PRODUCT-AUDIT #18; FEATURE-ROADMAP 3.5 | L | blocked(needs-spec: Houston call) |
 | P17 | GitHub repo freshness: debounced auto-push on save/publish + ancestor check on repo pulls | PRODUCT-AUDIT #19; FEATURE-ROADMAP 2.7 | M | todo |
 | P18 | Shared capability router package for CLI + API route + golden parity tests | PRODUCT-AUDIT #20; FEATURE-ROADMAP 3.6 | M | todo |
 | P19 | Typed brainScopes + identity-bearing adapters + doctor skill-ref validation | PRODUCT-AUDIT #21; FEATURE-ROADMAP 3.9 | M | todo |
-| P20 | Documented precedence model + shadowing warning + `youmd status` active-roots line | PRODUCT-AUDIT #22; FEATURE-ROADMAP 3.15 | M | todo |
+| P20 | Documented precedence model + shadowing warning + `youmd status` active-roots line | PRODUCT-AUDIT #22; FEATURE-ROADMAP 3.15 | M | in-progress (agent) |
 | P21 | Standard error envelope `{error:{code,message}}` + real OpenAPI schemas | PRODUCT-AUDIT #23; FEATURE-ROADMAP 3.1 | M | done (63524a5; 115 error sites, CLI parser updated, 89/89 convex tests; prod e2e verified) |
 | P22 | Per-key rate limits on writes + Retry-After/X-RateLimit headers | PRODUCT-AUDIT #24; FEATURE-ROADMAP 3.2 | M | done (a703c6a; prod e2e: 200 carries X-RateLimit trio) |
 | P23 | Idempotency-Key support + memory content-hash dedupe | PRODUCT-AUDIT #25; FEATURE-ROADMAP 3.3 | M | done (a703c6a/c0547ea; prod e2e: Idempotency-Replayed true, dedupe live, test memory archived) |
@@ -72,7 +72,7 @@
 | U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | done (b72d07a CLI, web commit; 30 tests incl. every-split parity) |
 | U7 | Device-flow login (CLI code → browser approve → poll) | L | todo |
 | U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | done (3b5b000; 8 hosted vs 24 local split, get_identity example fixed, 9 public examples replayed in smoke) |
-| U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | todo |
+| U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | in-progress (agent) |
 | U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | done (b0ddedb: 16 fake delays removed, 250ms min spinner display) |
 | U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | done (e66a58b; activity=agent log, analytics=stats, session log=account events) |
 | U12 | Profile preview: direct ProfileContent render w/ preview prop (kill iframe) | M | done (7c7bbdf; inline ProfileContent preview prop, no view counting, public page unchanged) |
@@ -80,7 +80,7 @@
 | U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | done (5256355; back//email/resend + 5 tests) |
 | U15 | Tappable /help + cmd+k hints (mobile palette) | S | done (8b07564; /help chip mobile, cmd/ctrl+k hint desktop, touch-friendly palette) |
 | U16 | Onboarding turns 2+ stream via shared helper | S | done (1a5d949; all onboarding turns stream filtered) |
-| U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | implemented (31 tests; commit queued behind P13 codegen) |
+| U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | done (904ba31; deployed) |
 | U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | done (7caa891; 213 instances, check:radius guard in lint chain) |
 | U19 | Status-bar freshness segment + staleness nudge on session restore | S | done (8b07564; synced-ago segment from existing bundle query, 7-day nudge once per session) |
 | U20 | Renderer: strip ANSI before padEnd; spinner update() preserves startTime | S | done (5028339) |
