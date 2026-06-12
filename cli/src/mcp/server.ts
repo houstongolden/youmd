@@ -183,18 +183,24 @@ interface MemoryRetrievalEnvelope {
   count: number;
 }
 
+// Mirror of the canonical convex/lib/agentContext.ts assembly. The CLI is a
+// separately published npm package and cannot import the convex module at
+// runtime; cli/src/__tests__/agent-context-parity.test.ts asserts the two
+// implementations never drift (cap, durable set, ordering, one-line collapse,
+// identity summary). Exported for that parity test.
+
 /** Max memories rendered into the agent brief (parity with hosted MCP). */
-const AGENT_BRIEF_MEMORY_CAP = 20;
+export const AGENT_BRIEF_MEMORY_CAP = 20;
 
 /** Categories considered durable — surfaced ahead of newer ephemeral notes. */
-const DURABLE_MEMORY_CATEGORIES = new Set([
+export const DURABLE_MEMORY_CATEGORIES = new Set([
   "preference",
   "decision",
   "goal",
   "fact",
 ]);
 
-interface BriefMemory {
+export interface BriefMemory {
   category: string;
   content: string;
   source?: string;
@@ -213,7 +219,7 @@ function asBriefMemories(memories: unknown[]): BriefMemory[] {
 }
 
 /** Durable categories first, preserving server order (newest-first) within each group. */
-function orderBriefMemories(memories: BriefMemory[]): BriefMemory[] {
+export function orderBriefMemories(memories: BriefMemory[]): BriefMemory[] {
   const durable: BriefMemory[] = [];
   const rest: BriefMemory[] = [];
   for (const memory of memories) {
@@ -223,7 +229,7 @@ function orderBriefMemories(memories: BriefMemory[]): BriefMemory[] {
 }
 
 /** Collapse memory content to a single line capped at `max` chars. */
-function briefOneLine(content: string, max = 200): string {
+export function briefOneLine(content: string, max = 200): string {
   const collapsed = content.replace(/\s+/g, " ").trim();
   return collapsed.length > max ? `${collapsed.slice(0, max - 1).trimEnd()}…` : collapsed;
 }
@@ -607,8 +613,17 @@ const MEMORY_CATEGORIES = [
  * first call an agent makes so it can orient on the user in <1 tool round.
  */
 function buildWhoamiSummary(): string {
-  const youJson = getYouJson();
+  return buildWhoamiSummaryFromYouJson(getYouJson());
+}
 
+/**
+ * Pure whoami summary from a youJson bundle. Mirror of the canonical
+ * extractIdentityCore + renderIdentitySummary in convex/lib/agentContext.ts;
+ * exported for the agent-context parity test.
+ */
+export function buildWhoamiSummaryFromYouJson(
+  youJson: Record<string, unknown>
+): string {
   const identity = asRecord(youJson.identity);
   const preferences = asRecord(youJson.preferences);
   const agentPrefs = asRecord(preferences.agent);
