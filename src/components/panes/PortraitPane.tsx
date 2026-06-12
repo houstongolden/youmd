@@ -7,6 +7,8 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import AsciiAvatar from "@/components/AsciiAvatar";
 import type { AsciiFormat, RenderedResult, PreRenderedPortrait } from "@/components/AsciiAvatar";
+import { hasRenderableAsciiPortrait } from "@/lib/profilePortrait";
+import { useCachedPortrait } from "@/lib/portraitCache";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader } from "./shared";
 
 interface PortraitPaneProps {
@@ -56,6 +58,16 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
 
   // Pre-rendered portrait from DB
   const storedPortrait = userProfile?.asciiPortrait as PreRenderedPortrait | undefined;
+
+  // Local-first cache (U13): paint the last rendered portrait instantly
+  // while the profile query resolves; the fresh result swaps in + recaches.
+  const freshPortrait: PreRenderedPortrait | null | undefined =
+    userProfile === undefined
+      ? undefined
+      : hasRenderableAsciiPortrait(storedPortrait)
+        ? storedPortrait
+        : null;
+  const cachedPortrait = useCachedPortrait(username, freshPortrait);
 
   // Check if stored portrait matches current settings
   const portraitMatchesSettings = storedPortrait &&
@@ -205,7 +217,13 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
               canvasWidth={Math.min(500, cols * 4)}
               format={format}
               className="w-full"
-              preRendered={portraitMatchesSettings ? storedPortrait : undefined}
+              preRendered={
+                portraitMatchesSettings
+                  ? storedPortrait
+                  : userProfile === undefined
+                    ? cachedPortrait ?? undefined
+                    : undefined
+              }
               onRendered={handlePortraitRendered}
             />
           </div>

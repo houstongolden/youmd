@@ -14,6 +14,7 @@ import type { PreRenderedPortrait } from "@/components/AsciiAvatar";
 import ProfilePortrait from "@/components/ProfilePortrait";
 import { generateYouJson, generateYouMd, downloadFile } from "@/lib/exportProfile";
 import { hasRenderableAsciiPortrait } from "@/lib/profilePortrait";
+import { useCachedPortrait } from "@/lib/portraitCache";
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -227,7 +228,20 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
       referrer: typeof document !== "undefined" ? document.referrer || undefined : undefined,
       isAgentRead: false,
     }).catch(() => {});
-  }, [profile, username, recordView]);
+  }, [profile, username, recordView, preview]);
+
+  // ── Local-first portrait (U13) ────────────────────────────────
+  // Resolve the freshest portrait the existing fetch path knows about:
+  // undefined while loading, null once resolved without one. The hook
+  // backfills from localStorage so the portrait paints instantly.
+  const portraitSource = (profile ?? ssrData?._profile ?? null) as Record<string, unknown> | null;
+  const freshPortrait: PreRenderedPortrait | null | undefined =
+    portraitSource && hasRenderableAsciiPortrait(portraitSource.asciiPortrait)
+      ? (portraitSource.asciiPortrait as PreRenderedPortrait)
+      : profile === undefined
+        ? undefined
+        : null;
+  const displayPortrait = useCachedPortrait(username, freshPortrait);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(`you.md/${username}`);
