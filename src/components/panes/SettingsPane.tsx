@@ -3,6 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { API_SCOPES, DEFAULT_OWNER_KEY_SCOPES } from "../../../convex/lib/scopes";
 import { useState } from "react";
 import { useUser, useSessionAuth } from "@/lib/you-auth";
 import { useRouter } from "next/navigation";
@@ -85,6 +86,25 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
   const [revealingKeyId, setRevealingKeyId] = useState<string | null>(null);
   const [copiedExistingKeyId, setCopiedExistingKeyId] = useState<string | null>(null);
 
+  // P36: scope selection for new keys. Default: everything except vault
+  // (vault must be opted into). Free plan keys are capped at read:public
+  // server-side, so start free users there.
+  const [selectedScopes, setSelectedScopes] = useState<string[]>(() =>
+    plan === "free" ? ["read:public"] : [...DEFAULT_OWNER_KEY_SCOPES]
+  );
+
+  const toggleScope = (scope: string) => {
+    setSelectedScopes((prev) => {
+      if (prev.includes(scope)) {
+        // never mint a zero-scope key (it would classify as legacy full-access)
+        if (prev.length === 1) return prev;
+        return prev.filter((s) => s !== scope);
+      }
+      // keep canonical vocabulary ordering
+      return API_SCOPES.filter((s) => prev.includes(s) || s === scope);
+    });
+  };
+
   // Sort: active (not revoked) first, then revoked. Within each group, newest first.
   const sortedKeys = keys
     ? [...keys].sort((a, b) => {
@@ -138,7 +158,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
       const result = await createKey({
         clerkId,
         label: "CLI key",
-        scopes: ["read:public"],
+        scopes: selectedScopes,
       });
       setNewKey(result.key);
     } catch (err) {
@@ -162,7 +182,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
       const result = await createKey({
         clerkId,
         label: "CLI key",
-        scopes: ["read:public"],
+        scopes: selectedScopes,
         revokeExisting: true,
       });
       setNewKey(result.key);
@@ -276,6 +296,35 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
               {creatingKey ? "creating..." : "create key"}
             </PaneButton>
           </div>
+        </div>
+
+        {/* P36: scope selection for new keys — terminal-style bracket toggles */}
+        <div className="mb-3">
+          <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-45 mb-1.5">
+            scopes for new keys
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {API_SCOPES.map((scope) => {
+              const selected = selectedScopes.includes(scope);
+              return (
+                <button
+                  key={scope}
+                  onClick={() => toggleScope(scope)}
+                  className={`px-2 py-1 font-mono text-[10px] border transition-colors ${
+                    selected
+                      ? "border-[hsl(var(--accent))]/50 bg-[hsl(var(--accent-wash))] text-[hsl(var(--accent-mid))]"
+                      : "border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-90"
+                  }`}
+                  style={{ borderRadius: "2px" }}
+                >
+                  [{selected ? "x" : " "}] {scope}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-30 mt-1.5">
+            vault stays off unless you switch it on. at least one scope required.
+          </p>
         </div>
 
         <p className="text-[10px] text-[hsl(var(--text-secondary))] opacity-45 font-mono mb-3">
