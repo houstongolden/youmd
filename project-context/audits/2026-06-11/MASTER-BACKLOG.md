@@ -43,7 +43,7 @@
 | P18 | Shared capability router package for CLI + API route + golden parity tests | PRODUCT-AUDIT #20; FEATURE-ROADMAP 3.6 | M | todo |
 | P19 | Typed brainScopes + identity-bearing adapters + doctor skill-ref validation | PRODUCT-AUDIT #21; FEATURE-ROADMAP 3.9 | M | todo |
 | P20 | Documented precedence model + shadowing warning + `youmd status` active-roots line | PRODUCT-AUDIT #22; FEATURE-ROADMAP 3.15 | M | todo |
-| P21 | Standard error envelope `{error:{code,message}}` + real OpenAPI schemas | PRODUCT-AUDIT #23; FEATURE-ROADMAP 3.1 | M | in-progress (agent) |
+| P21 | Standard error envelope `{error:{code,message}}` + real OpenAPI schemas | PRODUCT-AUDIT #23; FEATURE-ROADMAP 3.1 | M | done (63524a5; 115 error sites, CLI parser updated, 89/89 convex tests; prod e2e pending deploy) |
 | P22 | Per-key rate limits on writes + Retry-After/X-RateLimit headers | PRODUCT-AUDIT #24; FEATURE-ROADMAP 3.2 | M | todo |
 | P23 | Idempotency-Key support + memory content-hash dedupe | PRODUCT-AUDIT #25; FEATURE-ROADMAP 3.3 | M | todo |
 | P24 | Outbound webhooks + MCP subscribe/listChanged | PRODUCT-AUDIT #26; FEATURE-ROADMAP 3.4 | L | todo |
@@ -81,7 +81,7 @@
 | U15 | Tappable /help + cmd+k hints (mobile palette) | S | todo |
 | U16 | Onboarding turns 2+ stream via shared helper | S | done (1a5d949; all onboarding turns stream filtered) |
 | U17 | Portrait source chain: LinkedIn unavatar + og:image; retry after research | M | todo |
-| U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | in-progress (agent) |
+| U18 | --radius:2px token; migrate 178 inline styles; ban rounded-md/2xl | S | done (7caa891; 213 instances, check:radius guard in lint chain) |
 | U19 | Status-bar freshness segment + staleness nudge on session restore | S | todo |
 | U20 | Renderer: strip ANSI before padEnd; spinner update() preserves startTime | S | done (5028339) |
 | U21 | Lowercase CTAs on landing | S | done (645d9d9; lowercase CTAs verified on prod) |
