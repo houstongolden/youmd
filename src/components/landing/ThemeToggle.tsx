@@ -12,6 +12,7 @@ const ThemeToggle = () => {
   useEffect(() => {
     const stored = localStorage.getItem("theme") as Theme | null;
     if (stored && ["light", "dark", "system"].includes(stored)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is unavailable during SSR; hydrating the stored theme must happen post-mount
       setTheme(stored);
     }
     setMounted(true);

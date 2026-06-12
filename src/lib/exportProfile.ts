@@ -26,12 +26,25 @@ export function generateYouJson(profile: {
   };
 }
 
+interface YouJsonData {
+  identity?: {
+    name?: string;
+    tagline?: string;
+    location?: string;
+    bio?: { short?: string; medium?: string; long?: string };
+  };
+  now?: { focus?: string[] };
+  projects?: Array<{ name?: string; role?: string; status?: string; description?: string }>;
+  values?: string[];
+  links?: Record<string, string | undefined>;
+}
+
 export function generateYouMd(profile: {
   username: string;
   name: string;
   youJson?: Record<string, unknown> | null;
 }): string {
-  const data = profile.youJson as Record<string, any> | null;
+  const data = (profile.youJson ?? null) as YouJsonData | null;
   const lines: string[] = [];
   const name = data?.identity?.name || profile.name || profile.username;
 
@@ -56,7 +69,7 @@ export function generateYouMd(profile: {
 
   if (data?.projects?.length) {
     lines.push("## Projects");
-    data.projects.forEach((p: any) => {
+    data.projects.forEach((p) => {
       lines.push(`- **${p.name}** ${p.role ? `(${p.role})` : ""} ${p.status ? `[${p.status}]` : ""}`);
       if (p.description) lines.push(`  ${p.description}`);
     });

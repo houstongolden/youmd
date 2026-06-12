@@ -65,9 +65,6 @@ export function AgentsPane() {
   const events: ActivityEvent[] = activity || [];
   const agents: AgentSummary[] = summary || [];
 
-  const FIVE_MIN = 5 * 60 * 1000;
-  const now = Date.now();
-
   const filtered = filter
     ? events.filter((e) => e.action.includes(filter))
     : events;
@@ -86,7 +83,7 @@ export function AgentsPane() {
         ) : (
           <div className="space-y-2">
             {agents.map((a) => {
-              const isActive = now - a.lastSeen < FIVE_MIN;
+              const isActive = isRecentlySeen(a.lastSeen);
               return (
                 <div
                   key={a.agentName}
@@ -217,6 +214,12 @@ export function AgentsPane() {
       </div>
     </div>
   );
+}
+
+const FIVE_MIN = 5 * 60 * 1000;
+
+function isRecentlySeen(lastSeen: number): boolean {
+  return Date.now() - lastSeen < FIVE_MIN;
 }
 
 function relativeTime(ts: number): string {

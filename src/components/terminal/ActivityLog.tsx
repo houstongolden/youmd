@@ -24,14 +24,14 @@ const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", 
  * Error: x + label in accent color
  */
 export function ActivityLog({ steps }: ActivityLogProps) {
-  if (steps.length === 0) return null;
-
   const orderedSteps = useMemo(() => {
     const running = steps.filter((step) => step.status === "running");
     const errors = steps.filter((step) => step.status === "error");
     const done = steps.filter((step) => step.status === "done");
     return [...running, ...errors, ...done];
   }, [steps]);
+
+  if (steps.length === 0) return null;
 
   return (
     <div className="space-y-0">
@@ -63,18 +63,26 @@ export function ActivityLog({ steps }: ActivityLogProps) {
   );
 }
 
+function finalElapsedSeconds(startedAt: number): number {
+  return Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+}
+
+function runningElapsedSeconds(startedAt: number): number {
+  return Math.floor((Date.now() - startedAt) / 1000);
+}
+
 function ActivityStep({ step }: { step: ProgressStep }) {
-  const [elapsed, setElapsed] = useState(0);
+  // Tick once per second while running so the derived elapsed time re-renders.
+  const [, setClockTick] = useState(0);
   const [spinnerFrame, setSpinnerFrame] = useState(0);
 
   useEffect(() => {
     if (step.status !== "running") return;
-    setElapsed(Math.floor((Date.now() - step.startedAt) / 1000));
     const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - step.startedAt) / 1000));
+      setClockTick((tick) => tick + 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [step.status, step.startedAt]);
+  }, [step.status]);
 
   useEffect(() => {
     if (step.status !== "running") return;
@@ -86,9 +94,9 @@ function ActivityStep({ step }: { step: ProgressStep }) {
 
   const displayElapsed =
     step.status === "running"
-      ? elapsed
+      ? runningElapsedSeconds(step.startedAt)
       : step.status === "done"
-        ? Math.max(1, Math.floor((Date.now() - step.startedAt) / 1000))
+        ? finalElapsedSeconds(step.startedAt)
         : 0;
 
   return (
@@ -137,7 +145,7 @@ function ActivityStep({ step }: { step: ProgressStep }) {
       </span>
 
       {/* Elapsed time */}
-      {step.status === "running" && elapsed >= 1 && (
+      {step.status === "running" && displayElapsed >= 1 && (
         <span className="shrink-0 text-[10px] text-[hsl(var(--text-secondary))] opacity-40 tabular-nums">
           {displayElapsed}s
         </span>

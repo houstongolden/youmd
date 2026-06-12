@@ -52,27 +52,33 @@ function buildRotationPhrases(basePhrase: string, steps: ProgressStep[]) {
  * Uses braille spinner, plain text phrases, and step-by-step progress.
  * No decorative borders or pulsing dots — just clean terminal output.
  */
-export function ThinkingIndicator({ phrase, category, progressSteps = [] }: ThinkingIndicatorProps) {
+export function ThinkingIndicator({ phrase, progressSteps = [] }: ThinkingIndicatorProps) {
   const [spinnerFrame, setSpinnerFrame] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [displayIndex, setDisplayIndex] = useState(0);
-  const startRef = useRef(Date.now());
+  const startRef = useRef<number | null>(null);
 
   const rotationPhrases = useMemo(
     () => buildRotationPhrases(phrase, progressSteps.filter((step) => step.label !== "thinking")),
     [phrase, progressSteps]
   );
 
-  useEffect(() => {
+  // Reset rotation when the phrase list changes (React-recommended
+  // "adjust state during render" pattern instead of a cascading effect).
+  const [prevRotationPhrases, setPrevRotationPhrases] = useState(rotationPhrases);
+  if (prevRotationPhrases !== rotationPhrases) {
+    setPrevRotationPhrases(rotationPhrases);
     setDisplayIndex(0);
-  }, [rotationPhrases]);
+  }
 
   useEffect(() => {
+    if (startRef.current === null) startRef.current = Date.now();
+    const start = startRef.current;
     const spinnerInterval = setInterval(() => {
       setSpinnerFrame((prev) => (prev + 1) % SPINNER_FRAMES.length);
     }, 80);
     const timeInterval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
+      setElapsed(Math.floor((Date.now() - start) / 1000));
     }, 1000);
     return () => {
       clearInterval(spinnerInterval);

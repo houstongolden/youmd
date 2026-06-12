@@ -47,6 +47,9 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const portraitContainerRef = useRef<HTMLDivElement>(null);
 
+  const profileId = userProfile?._id;
+  const userId = user?.id;
+
   const avatarUrl = userProfile?.avatarUrl;
   const socialImages = (userProfile?.socialImages as Record<string, string | undefined>) || {};
   const primaryImage = (userProfile?.primaryImage as string) || "";
@@ -81,11 +84,11 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
 
   // Save portrait to DB when first rendered client-side
   const handlePortraitRendered = useCallback(async (result: RenderedResult) => {
-    if (!userProfile?._id || !user?.id) return;
+    if (!profileId || !userId) return;
     try {
       await savePortrait({
-        profileId: userProfile._id,
-        clerkId: user.id,
+        profileId,
+        clerkId: userId,
         portrait: {
           lines: result.lines,
           coloredLines: result.coloredLines,
@@ -98,16 +101,16 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
     } catch {
       // Fail silently — portrait will regenerate next time
     }
-  }, [userProfile?._id, user?.id, savePortrait]);
+  }, [profileId, userId, savePortrait]);
 
   // Handle selecting a different primary image
   const handleSelectPrimary = useCallback(async (platform: string) => {
-    if (!userProfile?._id || !user?.id) return;
+    if (!profileId || !userId) return;
     setSaving(true);
     try {
       await setProfileImages({
-        profileId: userProfile._id,
-        clerkId: user.id,
+        profileId,
+        clerkId: userId,
         socialImages: {
           x: socialImages.x,
           github: socialImages.github,
@@ -120,12 +123,12 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
       // fail silently
     }
     setSaving(false);
-  }, [userProfile?._id, user?.id, socialImages, setProfileImages]);
+  }, [profileId, userId, socialImages, setProfileImages]);
 
   // Handle custom image upload
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !userProfile?._id || !user?.id) return;
+    if (!file || !profileId || !userId) return;
 
     setUploading(true);
     try {
@@ -141,8 +144,8 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
 
       // Save to profile
       await setProfileImages({
-        profileId: userProfile._id,
-        clerkId: user.id,
+        profileId,
+        clerkId: userId,
         socialImages: {
           x: socialImages.x,
           github: socialImages.github,
@@ -161,7 +164,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  }, [userProfile?._id, user?.id, socialImages, setProfileImages]);
+  }, [profileId, userId, socialImages, setProfileImages]);
 
   // Handle PNG export
   const handleDownloadPng = useCallback(() => {

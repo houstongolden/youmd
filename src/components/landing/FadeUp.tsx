@@ -24,6 +24,7 @@ const FadeUp = ({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional progressive-enhancement mount flag: SSR/no-JS must render visible, JS hides post-hydration
     setMounted(true);
     const el = ref.current;
     if (!el) return;

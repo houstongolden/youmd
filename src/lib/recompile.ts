@@ -41,9 +41,7 @@ export function recompileYouJson(originalYouJson: any, editedFiles: Record<strin
   const yj = JSON.parse(JSON.stringify(originalYouJson));
 
   // Ensure custom_files array exists for unstructured edits
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (!Array.isArray(yj.custom_files)) yj.custom_files = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const customFiles: Array<{ path: string; content: string; isPublic?: boolean }> =
     yj.custom_files;
 

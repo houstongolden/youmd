@@ -1,6 +1,5 @@
 "use client";
 
-import { useUser } from "@/lib/you-auth";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { PaneSectionLabel, PaneDivider, PaneEmptyState } from "./shared";

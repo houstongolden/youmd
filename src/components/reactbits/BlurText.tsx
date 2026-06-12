@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, type Target, type TargetAndTransition } from "motion/react";
 import { useEffect, useRef, useState, useMemo } from "react";
 
 type AnimationValue = string | number | undefined;
@@ -120,8 +120,8 @@ export default function BlurText({
           <motion.span
             className="inline-block will-change-[transform,filter,opacity]"
             key={index}
-            initial={fromSnapshot as any}
-            animate={(inView ? animateKeyframes : fromSnapshot) as any}
+            initial={fromSnapshot as Target}
+            animate={(inView ? animateKeyframes : fromSnapshot) as TargetAndTransition}
             transition={spanTransition}
             onAnimationComplete={
               index === elements.length - 1

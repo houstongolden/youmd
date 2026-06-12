@@ -69,6 +69,7 @@ export default function GlobalError({
           >
             &gt; retry
           </button>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- global-error replaces the root layout; the router may be broken, so a full-page <a> reload is intentional */}
           <a
             href="/"
             style={{
