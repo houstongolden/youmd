@@ -24,7 +24,9 @@ const crons = cronJobs();
 // across many IPs it grows fast.
 //
 // This cron runs every hour and deletes rows older than 1 hour (well outside
-// the 60-second sliding window used by the rate-limit checks).
+// the 60-second sliding window used by the rate-limit checks). The mutation
+// deletes in bounded take(1000) batches via the by_timestamp index and
+// self-reschedules until the backlog is drained (audit 2026-06-11 P0 #8).
 crons.hourly(
   "cleanup stale rate limit rows",
   { minuteUTC: 17 }, // arbitrary minute offset to avoid the top-of-hour spike

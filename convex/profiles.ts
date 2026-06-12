@@ -196,6 +196,68 @@ export const listAll = query({
   },
 });
 
+/**
+ * Index-backed public profile search (audit 2026-06-11 P1 #16).
+ *
+ * Replaces the MCP search_profiles in-memory filter over the newest 500
+ * profiles. Matches the same surface the old filter matched on:
+ *   - username  → prefix range scan on the by_username index
+ *   - name      → full-text match on the search_name search index
+ * Results are normalized/deduped with the same directory helpers as listAll.
+ */
+export const searchPublicProfiles = query({
+  args: {
+    query: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(Math.max(Math.floor(args.limit ?? 20), 1), 100);
+    const term = args.query.trim();
+    if (!term) return [];
+
+    const uname = canonicalUsername(term.replace(/^@/, ""));
+
+    // Username prefix matches (bounded index range scan).
+    const usernameMatches = uname
+      ? await ctx.db
+          .query("profiles")
+          .withIndex("by_username", (q) =>
+            q.gte("username", uname).lt("username", `${uname}\uffff`)
+          )
+          .take(limit * 2)
+      : [];
+
+    // Full-text name matches (search index — relevance-ordered).
+    const nameMatches = await ctx.db
+      .query("profiles")
+      .withSearchIndex("search_name", (q) => q.search("name", term))
+      .take(limit * 2);
+
+    const byUsername = new Map<string, NonNullable<ReturnType<typeof normalizeDirectoryProfile>>>();
+    for (const rawProfile of [...usernameMatches, ...nameMatches]) {
+      const profile = normalizeDirectoryProfile(rawProfile);
+      if (!profile) continue;
+
+      const existing = byUsername.get(profile.username);
+      if (!existing || selectBestProfile([existing, profile])?._id === profile._id) {
+        byUsername.set(profile.username, profile);
+      }
+    }
+
+    const timestamp = (profile: Record<string, unknown>) => {
+      for (const key of ["updatedAt", "createdAt", "_creationTime"]) {
+        const value = profile[key];
+        if (typeof value === "number") return value;
+      }
+      return 0;
+    };
+
+    return Array.from(byUsername.values())
+      .sort((a, b) => timestamp(b) - timestamp(a))
+      .slice(0, limit);
+  },
+});
+
 /** Check username availability across both tables (v2 — fresh deploy) */
 export const checkUsername = query({
   args: { username: v.string() },

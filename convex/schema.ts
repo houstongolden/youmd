@@ -174,7 +174,11 @@ export default defineSchema({
     .index("by_username", ["username"])
     .index("by_ownerId", ["ownerId"])
     .index("by_sessionToken", ["sessionToken"])
-    .index("by_isClaimed", ["isClaimed"]),
+    .index("by_isClaimed", ["isClaimed"])
+    // Full-text search over display names for MCP search_profiles (audit
+    // 2026-06-11 P1 #16). Username prefix matching uses by_username; this
+    // index covers fuzzy/name discovery without loading the whole table.
+    .searchIndex("search_name", { searchField: "name" }),
 
   // ── Public profile source ledger ───────────────────────────
   // Tracks crawler/enrichment provenance for unclaimed public profiles. The
@@ -593,7 +597,10 @@ export default defineSchema({
     bucket: v.string(),     // e.g. "chat:1.2.3.4" or "research:anon"
     timestamp: v.number(),  // Date.now() at call time
   })
-    .index("by_bucket_ts", ["bucket", "timestamp"]),
+    .index("by_bucket_ts", ["bucket", "timestamp"])
+    // Cleanup cron scans stale rows oldest-first in bounded batches
+    // (audit 2026-06-11 P0 #8) instead of a full-table collect.
+    .index("by_timestamp", ["timestamp"]),
 
   // ── Daily LLM spend cap (cycle 48) ──────────────────────────
   // Per-day, per-endpoint counters tracking total estimated cost across all

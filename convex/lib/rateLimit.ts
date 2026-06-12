@@ -18,6 +18,7 @@
  */
 
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
 
 /**
@@ -62,11 +63,17 @@ export const checkAndRecord = internalMutation({
 });
 
 /**
- * Periodic cleanup of stale rate limit rows. Should be called from a cron
- * (not yet wired up) or manually via Convex Dashboard.
+ * Periodic cleanup of stale rate limit rows. Wired up as an hourly cron in
+ * convex/crons.ts; can also be run manually via Convex Dashboard.
  *
- * Deletes rows older than `maxAgeMs`.
+ * Deletes rows older than `maxAgeMs` in bounded batches (audit 2026-06-11
+ * P0 #8): each invocation deletes at most CLEANUP_BATCH_SIZE rows via the
+ * `by_timestamp` index (oldest-first, never a full-table collect) and
+ * self-reschedules immediately when a full batch was deleted, until the
+ * backlog is drained.
  */
+const CLEANUP_BATCH_SIZE = 1000;
+
 export const cleanupOldRateLimits = internalMutation({
   args: {
     maxAgeMs: v.optional(v.number()), // default: 1 hour
@@ -74,14 +81,26 @@ export const cleanupOldRateLimits = internalMutation({
   handler: async (ctx, args) => {
     const cutoff = Date.now() - (args.maxAgeMs ?? 60 * 60 * 1000);
 
-    const stale = await ctx.db.query("rateLimits").collect();
-    let deleted = 0;
+    const stale = await ctx.db
+      .query("rateLimits")
+      .withIndex("by_timestamp", (q) => q.lt("timestamp", cutoff))
+      .take(CLEANUP_BATCH_SIZE);
+
     for (const row of stale) {
-      if (row.timestamp < cutoff) {
-        await ctx.db.delete(row._id);
-        deleted++;
-      }
+      await ctx.db.delete(row._id);
     }
-    return { deleted };
+
+    // A full batch means more stale rows likely remain — drain them in a
+    // follow-up run instead of scanning unboundedly in this transaction.
+    const rescheduled = stale.length === CLEANUP_BATCH_SIZE;
+    if (rescheduled) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.lib.rateLimit.cleanupOldRateLimits,
+        args.maxAgeMs === undefined ? {} : { maxAgeMs: args.maxAgeMs }
+      );
+    }
+
+    return { deleted: stale.length, rescheduled };
   },
 });
