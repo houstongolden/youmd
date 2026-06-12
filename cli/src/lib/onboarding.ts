@@ -246,27 +246,62 @@ const THINKING_PHRASES = [
   "wiring your identity into the network",
 ];
 
-const DONE_PHRASES = [
+// Explicit done phrases — unambiguous, end the conversation at any point.
+const EXPLICIT_DONE_PHRASES = [
   "done",
-  "publish",
-  "that's it",
-  "thats it",
-  "looks good",
   "i'm done",
   "im done",
+  "publish",
   "ship it",
-  "good enough",
-  "let's go",
-  "lets go",
-  "ready",
-  "finish",
-  "all good",
+  "that's it",
+  "thats it",
   "that's all",
   "thats all",
+  "that's everything",
+  "thats everything",
   "nothing else",
-  "nah",
-  "no",
-  "nope",
+  "finish",
+  "finished",
+  "wrap it up",
+  "good enough",
+];
+
+// Bare acknowledgments — these only mean "done" right after the agent has
+// offered to wrap up. mid-flow, "ready" or "yes" is an answer, not an exit.
+const WRAP_UP_ACKS = [
+  "yes",
+  "yeah",
+  "yep",
+  "yea",
+  "y",
+  "sure",
+  "ok",
+  "okay",
+  "ready",
+  "looks good",
+  "all good",
+  "sounds good",
+  "perfect",
+  "let's go",
+  "lets go",
+  "go for it",
+  "do it",
+  "ship",
+];
+
+// Agent phrasings that count as an offer to wrap up the conversation.
+const WRAP_UP_OFFER_PATTERNS: RegExp[] = [
+  /ready to publish/,
+  /ready to go/,
+  /ready to ship/,
+  /looking solid/,
+  /wrap (this |it )?up/,
+  /call it (done|good|a day)/,
+  /good to publish/,
+  /shall we (finish|publish|ship)/,
+  /want to (finish|publish|wrap)/,
+  /finish up/,
+  /we're done/,
 ];
 
 const BUNDLE_SECTIONS = [
@@ -416,9 +451,48 @@ function randomThinking(): string {
   ];
 }
 
-function isDonePhrase(input: string): boolean {
+/**
+ * Did the agent's last message offer to wrap up?
+ * Gates the bare-acknowledgment exit path in isDoneIntent.
+ */
+export function detectWrapUpOffer(agentMessage: string): boolean {
+  const lower = (agentMessage || "").toLowerCase();
+  return WRAP_UP_OFFER_PATTERNS.some((re) => re.test(lower));
+}
+
+/**
+ * Does this user input mean "i'm done"?
+ * Explicit phrases ("i'm done", "that's everything", "publish") work anytime.
+ * Bare acknowledgments ("yes", "ready", "ok") only count when the agent has
+ * just offered to wrap up — otherwise "no" / "ready" mid-flow are answers,
+ * not exits.
+ */
+export function isDoneIntent(input: string, wrapUpOffered: boolean): boolean {
+  const lower = input
+    .toLowerCase()
+    .trim()
+    .replace(/[.!?]+$/, "")
+    .trim();
+  if (!lower) return false;
+  if (
+    EXPLICIT_DONE_PHRASES.some((p) => lower === p || lower.startsWith(p + " "))
+  ) {
+    return true;
+  }
+  if (wrapUpOffered) {
+    if (WRAP_UP_ACKS.some((p) => lower === p)) return true;
+    // affirmative-with-extras after an offer ("yeah let's publish", "ship it now")
+    if (/\b(publish|ship it|go ahead)\b/.test(lower)) return true;
+  }
+  return false;
+}
+
+/**
+ * "back" / "/back" re-asks the previous sign-up question.
+ */
+export function isBackCommand(input: string): boolean {
   const lower = input.toLowerCase().trim();
-  return DONE_PHRASES.some((p) => lower === p || lower.startsWith(p + " "));
+  return lower === "back" || lower === "/back";
 }
 
 function validateUsernameLocal(username: string): string | null {
@@ -1184,11 +1258,14 @@ generate initial profile sections from what you know, show a brief summary, and 
   // ── Conversation loop ──────────────────────────────────────────────
   let exchangeCount = 0;
   let skipCount = 0;
+  // Bare acks ("yes", "ready") only end the conversation when the agent's
+  // previous message offered to wrap up.
+  let wrapUpOffered = detectWrapUpOffer(initial.display);
 
   while (true) {
     const userInput = await ask(rl, chalk.hex("#C46A3A")("  > ") + "");
 
-    if (isDonePhrase(userInput)) {
+    if (isDoneIntent(userInput, wrapUpOffered)) {
       break;
     }
 
@@ -1342,61 +1419,9 @@ generate initial profile sections from what you know, show a brief summary, and 
     // Show agent message
     printAgentMessage(parsed.display);
 
-    // Check if agent is suggesting we're done
-    const lowerDisplay = parsed.display.toLowerCase();
-    if (
-      lowerDisplay.includes("ready to publish") ||
-      lowerDisplay.includes("bundle is looking solid") ||
-      lowerDisplay.includes("ready to go")
-    ) {
-      const answer = await ask(rl, chalk.hex("#C46A3A")("  > ") + "");
-      if (
-        isDonePhrase(answer) ||
-        answer.toLowerCase().includes("publish") ||
-        answer.toLowerCase().includes("yes") ||
-        answer.toLowerCase().includes("yeah") ||
-        answer.toLowerCase().includes("yep")
-      ) {
-        break;
-      } else {
-        messages.push({ role: "user", content: answer });
-
-        spinner = new BrailleSpinner(randomLabel("llm"));
-        spinner.start();
-
-        try {
-          response = await callLLM(apiKey, messages);
-        } catch (err) {
-          spinner.stop();
-          console.log(
-            chalk.red(
-              `  AI error: ${err instanceof Error ? err.message : String(err)}`
-            )
-          );
-          messages.pop();
-          continue;
-        }
-
-        spinner.stop();
-
-        messages.push({ role: "assistant", content: response });
-        const more = parseUpdatesFromResponse(response);
-
-        if (more.updates.length > 0) {
-          for (const update of more.updates) {
-            writeSectionFile(bundleDir, update.section, update.content);
-          }
-          console.log(
-            chalk.cyan(
-              `  [updated: ${more.updates.map((u) => sectionLabel(u.section)).join(", ")}]`
-            )
-          );
-          console.log("");
-        }
-
-        printAgentMessage(more.display);
-      }
-    }
+    // If the agent just offered to wrap up, the next bare "yes"/"ready"
+    // counts as done — handled at the top of the loop.
+    wrapUpOffered = detectWrapUpOffer(parsed.display);
   }
 
   // Finish up
