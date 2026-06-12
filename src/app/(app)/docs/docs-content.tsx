@@ -35,6 +35,7 @@ const navigation: NavItem[] = [
       { id: "simple-model", label: "Simple Model" },
       { id: "brain-architecture", label: "Brain" },
       { id: "identity-protocol", label: "Protocol" },
+      { id: "open-standard", label: "Open Standard" },
       { id: "context-surfaces", label: "Context Surfaces" },
       { id: "docs-standard", label: "API/MCP/Stack Standard" },
       { id: "reference-intelligence", label: "Reference Intelligence" },
@@ -923,9 +924,9 @@ export default function DocsContent() {
               </p>
               <H1>you.md</H1>
               <P>
-                Your agent brain, named expertise stacks, one installable
-                runtime, and protected API/MCP for private memory, sync, tokens,
-                and connected tools.
+                An MCP where the context is you: your agent brain, named
+                expertise stacks, one installable runtime, and protected
+                API/MCP for private memory, sync, tokens, and connected tools.
               </P>
             </div>
 
@@ -1069,6 +1070,89 @@ export default function DocsContent() {
                 },
               ]}
             />
+
+            <H3 id="open-standard">Open Standard: you-md/v1</H3>
+            <P>
+              <InlineCode>you-md/v1</InlineCode> is an open, versioned schema
+              for portable identity context: the structured document an AI
+              agent reads to understand who someone is — identity, current
+              focus, projects, values, voice, and agent-interaction
+              preferences — before doing work for them. You.md publishes the
+              schema as JSON Schema (draft 2020-12) and serves it publicly.
+              Anyone can implement it; no account or permission is required.
+            </P>
+            <CodeBlock title="schema discovery">{`# canonical JSON Schema for the format
+GET https://you.md/schema/you-md/v1.json
+
+# every public profile response advertises it
+Link: <https://you.md/schema/you-md/v1.json>; rel="describedby"; type="application/schema+json"`}</CodeBlock>
+            <P>
+              Core sections of a <InlineCode>you-md/v1</InlineCode> document,
+              exactly as defined by the published schema (only{" "}
+              <InlineCode>schema</InlineCode> and{" "}
+              <InlineCode>identity</InlineCode> are required):
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "schema", desc: "required. the literal string 'you-md/v1'" },
+                { cmd: "identity", desc: "required. name, tagline, location, and a bio at three detail levels (short / medium / long)" },
+                { cmd: "now", desc: "current focus areas plus the date they were last updated" },
+                { cmd: "projects", desc: "active projects: name (required), role, status, description, url" },
+                { cmd: "values", desc: "core values as short phrases, one per item" },
+                { cmd: "links", desc: "map of link name to url (e.g. twitter, github, website)" },
+                { cmd: "preferences", desc: "agent preferences (tone, formality, things to avoid) and writing preferences (style, format)" },
+                { cmd: "voice", desc: "overall voice summary plus per-platform variations (linkedin, x, blog, ...)" },
+                { cmd: "agent_directives", desc: "behavioral instructions: communication style, default stack, current goal, negative prompts" },
+                { cmd: "agent_guide", desc: "navigation guide telling agents which fields to read for coding, writing, and research tasks" },
+              ]}
+            />
+            <SystemPanel title="versioning policy">
+              <div className="grid gap-3 text-[13px] leading-relaxed text-[hsl(var(--text-secondary))]">
+                <p>
+                  additive within v1: new optional fields may be added over
+                  time, but existing v1 fields are never removed, renamed, or
+                  repurposed. a document that validates today keeps validating.
+                </p>
+                <p>
+                  extensible by design: the schema sets{" "}
+                  <InlineCode>additionalProperties: true</InlineCode>, so
+                  implementations can carry their own extra fields without
+                  failing validation.
+                </p>
+                <p>
+                  breaking changes go to v2: anything incompatible ships as{" "}
+                  <InlineCode>you-md/v2</InlineCode> at a new schema URL, and{" "}
+                  <InlineCode>/schema/you-md/v1.json</InlineCode> stays served
+                  for existing documents.
+                </p>
+              </div>
+            </SystemPanel>
+            <P>To implement the format on your own site or product:</P>
+            <StepList>
+              <Step n={1}>
+                Serve a <InlineCode>you.json</InlineCode> document with{" "}
+                <InlineCode>&quot;schema&quot;: &quot;you-md/v1&quot;</InlineCode>{" "}
+                and an <InlineCode>identity</InlineCode> object, and validate
+                it against the published schema with any JSON Schema validator.
+              </Step>
+              <Step n={2}>
+                Optionally serve a companion <InlineCode>you.md</InlineCode>{" "}
+                markdown render of the same content for agents that prefer
+                plain text.
+              </Step>
+              <Step n={3}>
+                Advertise the schema on your responses with the{" "}
+                <InlineCode>Link ... rel=&quot;describedby&quot;</InlineCode>{" "}
+                header shown above so agents can discover and validate the
+                format.
+              </Step>
+            </StepList>
+            <Callout type="info">
+              honest framing: you-md/v1 is an open schema that You.md publishes
+              and invites implementations of. it is versioned and stable — not
+              a ratified industry standard, and we do not claim adoption beyond
+              what actually ships.
+            </Callout>
 
             <H3 id="brain-architecture">Brain Architecture</H3>
             <P>
@@ -2440,7 +2524,15 @@ youmd mcp --json             # Print the exact MCP config JSON`}</CodeBlock>
               Public profile responses point to the canonical{" "}
               <InlineCode>you-md/v1</InlineCode> schema with a{" "}
               <InlineCode>Link</InlineCode> header. Agents can validate the
-              identity document before caching or mutating it.
+              identity document before caching or mutating it. The format
+              itself is an open standard — see{" "}
+              <a
+                href="#open-standard"
+                className="text-[hsl(var(--accent))] hover:opacity-80"
+              >
+                Open Standard: you-md/v1
+              </a>{" "}
+              for sections, versioning policy, and how to implement it.
             </P>
             <CodeBlock title="HTTP">{`GET /schema/you-md/v1.json
 Accept: application/json

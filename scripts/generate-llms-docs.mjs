@@ -135,7 +135,7 @@ You.md is the agent brain and expertise-stack layer for the agent internet. It g
 - [OpenAPI Inventory](https://you.md/api/v1/docs/openapi.json): Generated OpenAPI-style API inventory.
 - [MCP Discovery](https://you.md/.well-known/mcp.json): MCP discovery metadata for web-capable agents.
 - [MCP Endpoint](https://you.md/api/v1/mcp): Same-origin JSON-RPC endpoint for web-capable MCP clients.
-- [You.md Schema](https://you.md/schema/you-md/v1.json): Canonical \`you-md/v1\` public brain schema.
+- [You.md Schema](https://you.md/schema/you-md/v1.json): Canonical \`you-md/v1\` public brain schema — an open, versioned identity-context format (additive within v1; breaking changes ship as v2). Implementation guide: https://you.md/docs#open-standard.
 - [YouStacks Capabilities](https://you.md/api/v1/stacks/capabilities): Default capability map for stack-aware routing.
 
 ## Core Concepts
@@ -155,6 +155,8 @@ You.md is the agent brain and expertise-stack layer for the agent internet. It g
 - [Errors](https://you.md/docs#errors-troubleshooting): Common HTTP errors and recovery paths.
 
 ## MCP
+
+You.md is an MCP where the context is you: the tools below resolve a specific person's identity, preferences, memory, and project context rather than generic data.
 
 - [MCP Server](https://you.md/docs#mcp-server): Local stdio MCP and same-origin JSON-RPC MCP surfaces.
 - Local stdio MCP (via the runtime) exposes ${docsReference.counts.mcpTools} tools, including \`whoami\`, \`get_identity\`, \`get_agent_brief\`, \`get_project_context\`, \`add_memory\`, \`add_project_memory\`, \`get_stack_manifest\`, \`get_stack_capabilities\`, \`route_stack_request\`, and \`smoke_stack\`.
@@ -403,6 +405,8 @@ GET /ctx/<username>/<token>
 Schema endpoints:
 
 ${schemaEndpoints || "- No generated schema endpoints found."}
+
+The \`you-md/v1\` format is an open, versioned schema: additive within v1, breaking changes ship as \`you-md/v2\` at a new URL. Third parties can implement it by serving a \`you.json\` that validates against \`https://you.md/schema/you-md/v1.json\` plus an optional \`you.md\` markdown render. Guide: https://you.md/docs#open-standard.
 
 Authenticated user, private context, and memory endpoints use Bearer API keys:
 

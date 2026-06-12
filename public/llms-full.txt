@@ -258,6 +258,8 @@ Schema endpoints:
 
 - `GET /schema/you-md/v1.json`: Canonical you-md/v1 public brain JSON Schema (Public or rate-limited)
 
+The `you-md/v1` format is an open, versioned schema: additive within v1, breaking changes ship as `you-md/v2` at a new URL. Third parties can implement it by serving a `you.json` that validates against `https://you.md/schema/you-md/v1.json` plus an optional `you.md` markdown render. Guide: https://you.md/docs#open-standard.
+
 Authenticated user, private context, and memory endpoints use Bearer API keys:
 
 ```http
