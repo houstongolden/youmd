@@ -11,7 +11,7 @@
   "visibility": "private",
   "compatibility": {
     "hosts": ["claude-code", "codex", "cursor"],
-    "minYoumdCli": "0.7.0",
+    "minYoumdCli": "0.6.0",
     "requiresYoumdApi": false,
     "requiresYoumdMcp": false
   },
@@ -98,7 +98,7 @@
   "repoSync": {
     "enabled": false,
     "provider": "github",
-    "path": "youstacks/personal-agent-start"
+    "path": "stacks/personal-agent-start"
   },
   "docs": {
     "quickstart": "docs/quickstart.md"

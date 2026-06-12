@@ -4,7 +4,9 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import {
+  findYouStackManifestCandidates,
   getYouStackReadiness,
+  isCanonicalYouStackManifestPath,
   linkYouStackAdapters,
   loadYouStackManifest,
   routeYouStackRequest,
@@ -24,13 +26,17 @@ describe("youstack manifest", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
+  function writeStackAt(baseDir: string, manifest: Record<string, unknown>): string {
+    fs.mkdirSync(path.join(baseDir, "skills", "start"), { recursive: true });
+    fs.mkdirSync(path.join(baseDir, "workflows"), { recursive: true });
+    fs.writeFileSync(path.join(baseDir, "skills", "start", "SKILL.md"), "# Start\n");
+    fs.writeFileSync(path.join(baseDir, "workflows", "startup.md"), "# Startup\n");
+    fs.writeFileSync(path.join(baseDir, "youstack.json"), JSON.stringify(manifest, null, 2));
+    return baseDir;
+  }
+
   function writeStack(manifest: Record<string, unknown>): string {
-    fs.mkdirSync(path.join(tmpDir, "skills", "start"), { recursive: true });
-    fs.mkdirSync(path.join(tmpDir, "workflows"), { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, "skills", "start", "SKILL.md"), "# Start\n");
-    fs.writeFileSync(path.join(tmpDir, "workflows", "startup.md"), "# Startup\n");
-    fs.writeFileSync(path.join(tmpDir, "youstack.json"), JSON.stringify(manifest, null, 2));
-    return tmpDir;
+    return writeStackAt(tmpDir, manifest);
   }
 
   function validManifest(extra: Record<string, unknown> = {}) {
@@ -190,6 +196,98 @@ describe("youstack manifest", () => {
     const ready = getYouStackReadiness(loadYouStackManifest(tmpDir));
     expect(ready.ready).toBe(true);
     expect(ready.status).toBe("ready");
+  });
+
+  it("discovers stacks in the canonical stacks/<slug>/youstack.json layout", () => {
+    const stackDir = path.join(tmpDir, "stacks", "test-stack");
+    writeStackAt(stackDir, validManifest());
+
+    const candidates = findYouStackManifestCandidates(tmpDir);
+    const canonicalManifest = path.join(stackDir, "youstack.json");
+
+    expect(candidates).toContain(canonicalManifest);
+    expect(isCanonicalYouStackManifestPath(canonicalManifest)).toBe(true);
+
+    const loaded = loadYouStackManifest(stackDir);
+    expect(loaded.validation.ok).toBe(true);
+    expect(loaded.manifest.slug).toBe("test-stack");
+  });
+
+  it("prefers canonical-layout manifests over legacy candidates", () => {
+    const legacyDir = path.join(tmpDir, "youstacks", "a-legacy-stack");
+    writeStackAt(legacyDir, validManifest({ slug: "a-legacy-stack" }));
+    const dotYouDir = path.join(tmpDir, ".you");
+    fs.mkdirSync(dotYouDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(dotYouDir, "youstack.json"),
+      JSON.stringify(validManifest({ slug: "dot-you-stack" }), null, 2)
+    );
+    const canonicalDir = path.join(tmpDir, "stacks", "test-stack");
+    writeStackAt(canonicalDir, validManifest());
+
+    const candidates = findYouStackManifestCandidates(tmpDir);
+
+    expect(candidates[0]).toBe(path.join(canonicalDir, "youstack.json"));
+    expect(candidates).toContain(path.join(legacyDir, "youstack.json"));
+    expect(candidates).toContain(path.join(dotYouDir, "youstack.json"));
+  });
+
+  it("still discovers legacy manifest locations by walking up", () => {
+    writeStack(validManifest());
+    const nested = path.join(tmpDir, "deep", "nested");
+    fs.mkdirSync(nested, { recursive: true });
+
+    const candidates = findYouStackManifestCandidates(nested);
+
+    expect(candidates).toContain(path.join(tmpDir, "youstack.json"));
+    expect(isCanonicalYouStackManifestPath(path.join(tmpDir, "youstack.json"))).toBe(false);
+  });
+
+  it("doctor warns when the manifest is outside the canonical layout", () => {
+    writeStack(validManifest());
+    const doctor = runYouStackDoctor(loadYouStackManifest(tmpDir));
+
+    expect(doctor.ok).toBe(true);
+    expect(doctor.diagnostics.join("\n")).toContain("layout: legacy");
+    expect(doctor.warnings.join("\n")).toContain(
+      "stack manifest found outside the canonical layout; move it to stacks/test-stack/youstack.json"
+    );
+  });
+
+  it("doctor accepts the canonical layout without a layout warning", () => {
+    const stackDir = path.join(tmpDir, "stacks", "test-stack");
+    writeStackAt(stackDir, validManifest());
+    const doctor = runYouStackDoctor(loadYouStackManifest(stackDir));
+
+    expect(doctor.ok).toBe(true);
+    expect(doctor.diagnostics.join("\n")).toContain("layout: canonical (stacks/<slug>/youstack.json)");
+    expect(doctor.warnings.join("\n")).not.toContain("outside the canonical layout");
+  });
+
+  it("doctor warns when the canonical stack folder does not match the slug", () => {
+    const stackDir = path.join(tmpDir, "stacks", "wrong-folder");
+    writeStackAt(stackDir, validManifest());
+    const doctor = runYouStackDoctor(loadYouStackManifest(stackDir));
+
+    expect(doctor.warnings.join("\n")).toContain(
+      'stack folder name "wrong-folder" does not match manifest slug "test-stack"; rename the folder to stacks/test-stack/'
+    );
+  });
+
+  it("doctor reports invalid manifests with an actionable hint", () => {
+    const manifest = validManifest();
+    delete (manifest as Record<string, unknown>).name;
+    delete (manifest as Record<string, unknown>).version;
+    writeStack(manifest);
+
+    const doctor = runYouStackDoctor(loadYouStackManifest(tmpDir));
+
+    expect(doctor.ok).toBe(false);
+    expect(doctor.errors.join("\n")).toContain("missing required field: name");
+    expect(doctor.errors.join("\n")).toContain("missing required field: version");
+    expect(doctor.warnings.join("\n")).toContain(
+      "manifest is invalid (2 errors); fix the missing or invalid fields reported above, then rerun youmd stack doctor"
+    );
   });
 
   it("runs read-only doctor diagnostics for stack health", () => {

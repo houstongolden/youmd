@@ -264,7 +264,37 @@ function parseJsonFile(filePath: string): unknown {
   return JSON.parse(raw);
 }
 
-function findManifestCandidates(startDir: string): string[] {
+/** Canonical layout: stacks/<slug>/youstack.json inside the user's repo/brain. */
+const CANONICAL_STACKS_DIRNAME = "stacks";
+/** Legacy layout (still readable): youstacks/<slug>/youstack.json. */
+const LEGACY_STACKS_DIRNAME = "youstacks";
+
+export function isCanonicalYouStackManifestPath(manifestPath: string): boolean {
+  const resolved = path.resolve(manifestPath);
+  if (path.basename(resolved) !== "youstack.json") return false;
+  const slugDir = path.dirname(resolved);
+  const stacksDir = path.dirname(slugDir);
+  if (slugDir === stacksDir) return false;
+  return path.basename(stacksDir) === CANONICAL_STACKS_DIRNAME;
+}
+
+function collectStacksDirManifests(
+  dir: string,
+  stacksDirName: string,
+  candidates: string[]
+): void {
+  const stacksDir = path.join(dir, stacksDirName);
+  if (!fs.existsSync(stacksDir) || !fs.statSync(stacksDir).isDirectory()) return;
+  for (const entry of fs.readdirSync(stacksDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const manifest = path.join(stacksDir, entry.name, "youstack.json");
+    if (fs.existsSync(manifest) && fs.statSync(manifest).isFile()) {
+      candidates.push(manifest);
+    }
+  }
+}
+
+export function findYouStackManifestCandidates(startDir: string): string[] {
   const candidates: string[] = [];
   let dir = path.resolve(startDir);
   const root = path.parse(dir).root;
@@ -279,21 +309,19 @@ function findManifestCandidates(startDir: string): string[] {
       }
     }
 
-    const stacksDir = path.join(dir, "youstacks");
-    if (fs.existsSync(stacksDir) && fs.statSync(stacksDir).isDirectory()) {
-      for (const entry of fs.readdirSync(stacksDir, { withFileTypes: true })) {
-        if (!entry.isDirectory()) continue;
-        const manifest = path.join(stacksDir, entry.name, "youstack.json");
-        if (fs.existsSync(manifest) && fs.statSync(manifest).isFile()) {
-          candidates.push(manifest);
-        }
-      }
-    }
+    // Canonical layout first-class: stacks/<slug>/youstack.json
+    collectStacksDirManifests(dir, CANONICAL_STACKS_DIRNAME, candidates);
+    // Legacy layout kept readable: youstacks/<slug>/youstack.json
+    collectStacksDirManifests(dir, LEGACY_STACKS_DIRNAME, candidates);
 
     dir = path.dirname(dir);
   }
 
-  return [...new Set(candidates)].sort();
+  return [...new Set(candidates)].sort(
+    (a, b) =>
+      Number(isCanonicalYouStackManifestPath(b)) -
+        Number(isCanonicalYouStackManifestPath(a)) || a.localeCompare(b)
+  );
 }
 
 export function resolveYouStackManifestPath(inputPath?: string): string {
@@ -305,10 +333,10 @@ export function resolveYouStackManifestPath(inputPath?: string): string {
     return resolved;
   }
 
-  const candidates = findManifestCandidates(process.cwd());
+  const candidates = findYouStackManifestCandidates(process.cwd());
   if (candidates.length === 0) {
     throw new Error(
-      "No youstack.json found. Run from a stack directory or pass --path <manifest-or-dir>."
+      "No youstack.json found. Create stacks/<slug>/youstack.json (canonical layout), run from a stack directory, or pass --path <manifest-or-dir>."
     );
   }
 
@@ -683,6 +711,30 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
 
   for (const file of files) {
     fileTypes.set(file.type, (fileTypes.get(file.type) || 0) + 1);
+  }
+
+  const canonicalLayout = isCanonicalYouStackManifestPath(loaded.manifestPath);
+  const stackDirName = path.basename(path.dirname(loaded.manifestPath));
+  const slugHint =
+    typeof manifest.slug === "string" && manifest.slug.trim().length > 0
+      ? manifest.slug
+      : "<slug>";
+  diagnostics.push(
+    `layout: ${canonicalLayout ? "canonical (stacks/<slug>/youstack.json)" : "legacy"}`
+  );
+  if (!canonicalLayout) {
+    warnings.push(
+      `stack manifest found outside the canonical layout; move it to stacks/${slugHint}/youstack.json so cli discovery and you.md repo sync agree (legacy youstack.json, .you/, and youstacks/ locations still load)`
+    );
+  } else if (slugHint !== "<slug>" && stackDirName !== manifest.slug) {
+    warnings.push(
+      `stack folder name "${stackDirName}" does not match manifest slug "${manifest.slug}"; rename the folder to stacks/${manifest.slug}/ so repo stack derivation uses the right slug`
+    );
+  }
+  if (!loaded.validation.ok) {
+    warnings.push(
+      `manifest is invalid (${loaded.validation.errors.length} error${loaded.validation.errors.length === 1 ? "" : "s"}); fix the missing or invalid fields reported above, then rerun youmd stack doctor`
+    );
   }
 
   diagnostics.push(`manifest bytes: ${manifestBytes}`);

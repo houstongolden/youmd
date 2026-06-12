@@ -36,6 +36,8 @@ function printHelp(): void {
   console.log("");
   console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--json"));
   console.log("");
+  console.log("  " + DIM("Canonical layout: ") + chalk.cyan("stacks/<slug>/youstack.json") + DIM(" (legacy youstack.json, .you/, and youstacks/ still load)"));
+  console.log("");
 }
 
 function printValidation(validation: YouStackValidationResult): void {
