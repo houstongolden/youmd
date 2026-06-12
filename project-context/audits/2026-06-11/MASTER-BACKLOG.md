@@ -70,7 +70,7 @@
 | U4 | Gate /initialize redirect on onboarding-complete marker, not bare username | M | done (51a7f38; gated on published bundle, resumes mid-flow users) |
 | U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | done (e66a58b; default-open + localStorage persist + skeleton parity) |
 | U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | done (b72d07a CLI, web commit; 30 tests incl. every-split parity) |
-| U7 | Device-flow login (CLI code → browser approve → poll) | L | done (07dce12/cb3a834/4721ef1; prod e2e pending deploy) |
+| U7 | Device-flow login (CLI code → browser approve → poll) | L | done (07dce12/cb3a834/4721ef1; prod e2e: start/poll/page verified) |
 | U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | done (3b5b000; 8 hosted vs 24 local split, get_identity example fixed, 9 public examples replayed in smoke) |
 | U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | done (f3bc25c; terminal preview prompt, in-browser ascii, /create?handle prefill; landing section live on prod) |
 | U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | done (b0ddedb: 16 fake delays removed, 250ms min spinner display) |
@@ -130,13 +130,13 @@
 | T4 | Installer hardening: npm default channel, tag-pinned source, auto-upgrade health check + rollback | M | done (9d4a6e0: npm default, tag-pinned source, upgrade rollback) |
 | T5 | Atomic JSON writes (tmp+rename+lock), 0600/0700 perms, .bak on corrupt config | S | done (e514a2b: atomic+locked writes, 0600/0700, .bak on corrupt) |
 | T6 | CI: tsc+lint+build+cli-tests on PR; gated Convex prod deploys | S | done (28d90b5+cd8b29c: CI gate live; lint warn-only until T31) |
-| T7 | pull/push home-first resolution; project-local needs flag + auto-gitignore | S | todo |
+| T7 | pull/push home-first resolution; project-local needs flag + auto-gitignore | S | in-progress (agent) |
 | T8 | ISR for /[username] + /profiles; skip anonymous Convex live queries | M | todo |
 | T9 | Server-assembled system prompt; chat proxy rejects client system messages | L | todo |
 | T10 | Lossless identity round-trip (markdown per-section source of truth + property test) | L | todo |
 | T11 | Load JetBrains Mono + Inter via next/font | S | done (aca29f3) |
 | T12 | export const viewport; drop user-scalable=no (WCAG) | S | done (aca29f3) |
-| T13 | Sentry + sanitized error codes + scheduled smoke alerts + /api/v1/health | M | todo |
+| T13 | Sentry + sanitized error codes + scheduled smoke alerts + /api/v1/health | M | in-progress (agent) |
 | T14 | Unified MCP tool registry; official SDK Streamable HTTP; remote serves all tools | M-L | todo |
 | T15 | Fix lastPulledHash ancestry bug | S | done (a984939) |
 | T16 | Bounded-batch rateLimits cleanup w/ index + reschedule | S | done (683f014) |
@@ -144,10 +144,10 @@
 | T18 | Fix fs.watch recursive crash on Linux/Node 18 | S | done (5895375) |
 | T19 | Lazy-load dashboard panes; docs page → server component | M | todo |
 | T20 | Profiles searchIndex for MCP search_profiles | S | done (683f014) |
-| T21 | ARIA live regions on terminal chat + skip link | S | todo |
-| T22 | Delete 12 dead landing sections + unused reactbits/ + ogl dep; dedupe components | M | todo |
-| T23 | Route-level loading.tsx + error.tsx for key routes | M | todo |
-| T24 | Single canonical host (apex vs www) alignment | S | todo |
+| T21 | ARIA live regions on terminal chat + skip link | S | in-progress (agent) |
+| T22 | Delete 12 dead landing sections + unused reactbits/ + ogl dep; dedupe components | M | in-progress (agent) |
+| T23 | Route-level loading.tsx + error.tsx for key routes | M | in-progress (agent) |
+| T24 | Single canonical host (apex vs www) alignment | S | in-progress (agent) |
 | T25 | MCP tool-call test harness (table-driven over all tools) | M | todo |
 | T26 | Playwright smoke: landing → sign-in → dashboard + anon profile | M | todo |
 | T27 | Per-section sha256 manifest + shared canonicalJsonString package | M | todo |
