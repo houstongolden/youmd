@@ -183,6 +183,51 @@ interface MemoryRetrievalEnvelope {
   count: number;
 }
 
+/** Max memories rendered into the agent brief (parity with hosted MCP). */
+const AGENT_BRIEF_MEMORY_CAP = 20;
+
+/** Categories considered durable — surfaced ahead of newer ephemeral notes. */
+const DURABLE_MEMORY_CATEGORIES = new Set([
+  "preference",
+  "decision",
+  "goal",
+  "fact",
+]);
+
+interface BriefMemory {
+  category: string;
+  content: string;
+  source?: string;
+  sourceAgent?: string;
+  createdAt?: number;
+}
+
+function asBriefMemories(memories: unknown[]): BriefMemory[] {
+  return memories.filter(
+    (m): m is BriefMemory =>
+      !!m &&
+      typeof m === "object" &&
+      typeof (m as BriefMemory).category === "string" &&
+      typeof (m as BriefMemory).content === "string"
+  );
+}
+
+/** Durable categories first, preserving server order (newest-first) within each group. */
+function orderBriefMemories(memories: BriefMemory[]): BriefMemory[] {
+  const durable: BriefMemory[] = [];
+  const rest: BriefMemory[] = [];
+  for (const memory of memories) {
+    (DURABLE_MEMORY_CATEGORIES.has(memory.category) ? durable : rest).push(memory);
+  }
+  return [...durable, ...rest];
+}
+
+/** Collapse memory content to a single line capped at `max` chars. */
+function briefOneLine(content: string, max = 200): string {
+  const collapsed = content.replace(/\s+/g, " ").trim();
+  return collapsed.length > max ? `${collapsed.slice(0, max - 1).trimEnd()}…` : collapsed;
+}
+
 interface PrivateContextRetrievalEnvelope {
   readiness: ProtectedReadiness;
   privateContext: Record<string, unknown> | null;
@@ -209,11 +254,6 @@ interface ProjectContextEnvelope {
     source: "current" | "named";
   };
   projectContext: ReturnType<typeof readProjectContext>;
-}
-
-async function fetchMemories(category?: string, limit?: number): Promise<unknown[]> {
-  const result = await fetchMemoriesEnvelope(category, limit);
-  return result.memories;
 }
 
 async function fetchMemoriesEnvelope(category?: string, limit?: number): Promise<MemoryRetrievalEnvelope> {
@@ -734,7 +774,7 @@ export interface AgentBrief {
     recommended: string[];
   };
   memoriesReadiness?: MemoryRetrievalEnvelope["readiness"];
-  memories?: unknown[];
+  memories?: BriefMemory[];
   nextMoves: string[];
   reminders: string[];
 }
@@ -935,10 +975,13 @@ export async function buildAgentBrief(options: { includeMemories?: boolean } = {
     ],
   };
 
-  if (options.includeMemories) {
-    const memoryResult = await fetchMemoriesEnvelope(undefined, 8);
+  // Memories are included by default (parity with hosted get_agent_brief:
+  // the brief must surface memory CONTENT, not a count — opt out explicitly).
+  if (options.includeMemories !== false) {
+    const memoryResult = await fetchMemoriesEnvelope(undefined, AGENT_BRIEF_MEMORY_CAP * 3);
     brief.memoriesReadiness = memoryResult.readiness;
-    brief.memories = memoryResult.memories;
+    brief.memories = orderBriefMemories(asBriefMemories(memoryResult.memories))
+      .slice(0, AGENT_BRIEF_MEMORY_CAP);
   }
 
   return brief;
@@ -1005,13 +1048,19 @@ export function formatAgentBriefMarkdown(brief: AgentBrief, maxChars = 6000): st
   lines.push("");
 
   if (brief.memories) {
-    lines.push("## Memories");
-    lines.push(`- included: ${brief.memories.length}`);
-    if (brief.memoriesReadiness) {
-      lines.push(`- readiness: ${brief.memoriesReadiness.status} (${brief.memoriesReadiness.reason})`);
-      if (!brief.memoriesReadiness.ready) {
-        lines.push(`- fallback: ${brief.memoriesReadiness.fallback}`);
+    // Render actual memory content lines, not a bare count (parity with the
+    // hosted get_agent_brief).
+    lines.push(`## Memories (${brief.memories.length})`);
+    if (brief.memories.length === 0) {
+      lines.push("- none recorded yet");
+    } else {
+      for (const memory of brief.memories) {
+        lines.push(`- [${memory.category}] ${briefOneLine(memory.content)}`);
       }
+    }
+    if (brief.memoriesReadiness && !brief.memoriesReadiness.ready) {
+      lines.push(`- readiness: ${brief.memoriesReadiness.status} (${brief.memoriesReadiness.reason})`);
+      lines.push(`- fallback: ${brief.memoriesReadiness.fallback}`);
     }
     lines.push("");
   }
@@ -1424,7 +1473,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "get_agent_brief",
-          description: "Return a YouStack startup brief for local agents. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines compact identity, current repo instructions, project-context active requests, open TODOs, installed skills, and recommended next moves so the agent can act without asking the user to re-explain the project.",
+          description: "Return a YouStack startup brief for local agents. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines compact identity, the user's recent durable memories (rendered inline by default), current repo instructions, project-context active requests, open TODOs, installed skills, and recommended next moves so the agent can act without asking the user to re-explain the project.",
           inputSchema: {
             type: "object" as const,
             properties: {
@@ -1435,7 +1484,7 @@ export async function startMcpServer(): Promise<void> {
               },
               includeMemories: {
                 type: "boolean",
-                description: "Include up to 8 protected memories plus retrieval readiness/fallback guidance. Default false for speed.",
+                description: "Include up to 20 memories (category + content, durable categories first, then newest) plus retrieval readiness/fallback guidance. Default true.",
               },
               maxChars: {
                 type: "number",
@@ -1770,10 +1819,11 @@ export async function startMcpServer(): Promise<void> {
 
       case "get_agent_brief": {
         const briefArgs = (args || {}) as { format?: string; includeMemories?: boolean; maxChars?: number };
-        const brief = await buildAgentBrief({ includeMemories: briefArgs.includeMemories === true });
+        const includeMemories = briefArgs.includeMemories !== false;
+        const brief = await buildAgentBrief({ includeMemories });
         void logMcpActivity("read", "agent/brief", {
           format: briefArgs.format || "markdown",
-          includeMemories: briefArgs.includeMemories === true,
+          includeMemories,
         });
 
         if (briefArgs.format === "json") {
