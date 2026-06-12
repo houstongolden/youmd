@@ -63,3 +63,26 @@ export function errorEnvelope(
     message,
   };
 }
+
+/**
+ * T13 — sanitized 500s (TECH-STACK-AUDIT).
+ *
+ * Internal errors must never reach clients: err.message can carry stack
+ * fragments, table names, env hints, or upstream provider detail. This
+ * builds the canonical `server_error` envelope with a generic, route-scoped
+ * public message and logs the REAL error server-side (Convex log stream)
+ * tagged with the route context so it stays debuggable.
+ *
+ * `log` is injectable for tests; production callers use the default
+ * console.error.
+ */
+export function sanitizedServerErrorEnvelope(
+  context: string,
+  err: unknown,
+  publicMessage: string,
+  extra?: Record<string, unknown>,
+  log: (...args: unknown[]) => void = console.error
+): ErrorEnvelope {
+  log(`[http:${context}] internal error:`, err);
+  return errorEnvelope(ERROR_CODES.serverError, publicMessage, extra);
+}

@@ -16,9 +16,9 @@
  * including the precise envelope the memories/auth routes return for an
  * unauthorized request (authenticateRequest's 401).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { errorEnvelope, ERROR_CODES } from "./lib/httpErrors";
+import { errorEnvelope, sanitizedServerErrorEnvelope, ERROR_CODES } from "./lib/httpErrors";
 import { codeForStatus, errorResponse } from "./http";
 
 /**
@@ -135,6 +135,56 @@ describe("errorResponse (http.ts route helper)", () => {
     // The top-level mirror keeps a human string available for legacy readers.
     expect(typeof body.message).toBe("string");
     expect(body.message).toBe("User not found");
+  });
+});
+
+describe("sanitizedServerErrorEnvelope (T13 — no internal leakage on 500s)", () => {
+  it("never puts err.message, stack, or class detail in the client body", () => {
+    const log = vi.fn();
+    const internalErr = new Error(
+      'Uncaught Error: db.query("apiKeys").withIndex("by_secret_hash") failed at convex/lib/auth.ts:42'
+    );
+
+    const body = sanitizedServerErrorEnvelope("me/keys", internalErr, "Failed to create API key", undefined, log);
+
+    const serialized = JSON.stringify(body);
+    expect(serialized).not.toContain("db.query");
+    expect(serialized).not.toContain("convex/lib/auth.ts");
+    expect(serialized).not.toContain(internalErr.message);
+    expect(body).toEqual({
+      error: { code: "server_error", message: "Failed to create API key" },
+      message: "Failed to create API key",
+    });
+  });
+
+  it("keeps the machine-readable server_error code", () => {
+    const body = sanitizedServerErrorEnvelope("chat", new Error("boom"), "Chat failed", undefined, vi.fn());
+    expect(body.error.code).toBe(ERROR_CODES.serverError);
+  });
+
+  it("logs the real error server-side with the route context", () => {
+    const log = vi.fn();
+    const err = new Error("OPENROUTER_API_KEY invalid");
+
+    sanitizedServerErrorEnvelope("chat/stream", err, "Stream failed", undefined, log);
+
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log.mock.calls[0][0]).toContain("chat/stream");
+    expect(log.mock.calls[0]).toContain(err);
+  });
+
+  it("preserves legacy extra top-level fields (success: false routes)", () => {
+    const body = sanitizedServerErrorEnvelope("scrape", new Error("apify token leaked?"), "Scrape failed", { success: false }, vi.fn());
+    expect(body.success).toBe(false);
+    expect(body.message).toBe("Scrape failed");
+    expect(JSON.stringify(body)).not.toContain("apify");
+  });
+
+  it("handles non-Error throwables without leaking them", () => {
+    const log = vi.fn();
+    const body = sanitizedServerErrorEnvelope("me/vault/init", "raw string with secret=abc123", "Failed to initialize vault", undefined, log);
+    expect(JSON.stringify(body)).not.toContain("abc123");
+    expect(log).toHaveBeenCalled();
   });
 });
 

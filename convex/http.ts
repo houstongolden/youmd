@@ -15,7 +15,7 @@ import {
   type AgentContextMemory,
   type AssembledAgentContext,
 } from "./lib/agentContext";
-import { errorEnvelope, type ErrorCode } from "./lib/httpErrors";
+import { errorEnvelope, sanitizedServerErrorEnvelope, type ErrorCode } from "./lib/httpErrors";
 import {
   AGENT_WRITABLE_MEMORY_CATEGORIES,
   invalidMemoryCategoryMessage,
@@ -82,6 +82,21 @@ export function errorResponse(
   extraHeaders?: Record<string, string>
 ) {
   return json(errorEnvelope(code, message, extra), status, extraHeaders);
+}
+
+/**
+ * T13 — every unexpected-exception 500 in this file routes through here.
+ * The caught error is logged server-side with its route context; the client
+ * only ever sees the generic, route-scoped `publicMessage`. NEVER pass
+ * err.message into a 5xx response body.
+ */
+function serverErrorResponse(
+  context: string,
+  err: unknown,
+  publicMessage: string,
+  extra?: Record<string, unknown>
+) {
+  return json(sanitizedServerErrorEnvelope(context, err, publicMessage, extra), 500);
 }
 
 /**
@@ -167,6 +182,33 @@ function wantsMarkdown(accept: string): boolean {
 
   return normalized.includes("text/markdown") || normalized.includes("text/plain");
 }
+
+// GET /api/v1/health — Service health: status, schemaVersion, time + a cheap db probe (200 ok, 503 when the db probe fails)
+http.route({
+  path: "/api/v1/health",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    const time = new Date().toISOString();
+    try {
+      await ctx.runQuery(internal.health.probe, {});
+      return json(
+        { status: "ok", schemaVersion: "you-md/v1", time, checks: { db: "ok" } },
+        200,
+        { "Cache-Control": "no-store" }
+      );
+    } catch (err) {
+      // Sanitized: the probe failure detail goes to server logs only.
+      console.error("[http:health] db probe failed:", err);
+      return errorResponse(
+        "upstream_unavailable",
+        "database probe failed",
+        503,
+        { status: "error", schemaVersion: "you-md/v1", time, checks: { db: "error" } },
+        { "Cache-Control": "no-store" }
+      );
+    }
+  }),
+});
 
 // GET /api/v1/profiles — List all profiles (no params) or get single profile (?username=xxx)
 http.route({
@@ -835,7 +877,7 @@ http.route({
         // 409 ANCESTOR_MISMATCH contract (docs show the conflict semantics).
         return errorResponse("ancestor_mismatch", message, 409);
       }
-      return errorResponse("server_error", message, 500);
+      return serverErrorResponse("me/bundles", err, "Failed to save bundle");
     }
   }),
 });
@@ -884,11 +926,7 @@ http.route({
 
       return guard.finish(json(result));
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Failed to publish",
-        500
-      );
+      return serverErrorResponse("me/publish", err, "Failed to publish");
     }
   }),
 });
@@ -975,7 +1013,7 @@ http.route({
 
       return guard.finish(json({ success: true }));
     } catch (err) {
-      return errorResponse("server_error", err instanceof Error ? err.message : "Failed to save portrait", 500);
+      return serverErrorResponse("me/portrait", err, "Failed to save portrait");
     }
   }),
 });
@@ -1025,11 +1063,7 @@ http.route({
       });
       return guard.finish(json({ sourceId }));
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Failed to add source",
-        500
-      );
+      return serverErrorResponse("me/sources", err, "Failed to add source");
     }
   }),
 });
@@ -1108,11 +1142,7 @@ http.route({
       });
       return guard.finish(json(result));
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Failed to start pipeline",
-        500
-      );
+      return serverErrorResponse("me/build", err, "Failed to start pipeline");
     }
   }),
 });
@@ -1206,11 +1236,7 @@ http.route({
       });
       return json({ content });
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Chat failed",
-        500
-      );
+      return serverErrorResponse("chat", err, "Chat failed");
     }
   }),
 });
@@ -1612,7 +1638,7 @@ http.route({
           }));
         }
       } catch (err) {
-        return errorResponse("server_error", err instanceof Error ? err.message : "Stream failed", 500);
+        return serverErrorResponse("chat/stream", err, "Stream failed");
       }
     }
 
@@ -1679,7 +1705,7 @@ http.route({
 
       return json(result);
     } catch (err) {
-      return errorResponse("server_error", err instanceof Error ? err.message : "compaction failed", 500);
+      return serverErrorResponse("chat/compact", err, "compaction failed");
     }
   }),
 });
@@ -1733,12 +1759,7 @@ http.route({
       }
       return json(result);
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Scrape failed",
-        500,
-        { success: false }
-      );
+      return serverErrorResponse("scrape", err, "Scrape failed", { success: false });
     }
   }),
 });
@@ -1783,12 +1804,7 @@ http.route({
       });
       return json(result);
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Research failed",
-        500,
-        { success: false }
-      );
+      return serverErrorResponse("research", err, "Research failed", { success: false });
     }
   }),
 });
@@ -1827,12 +1843,7 @@ http.route({
       });
       return json(result);
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Verification failed",
-        500,
-        { success: false }
-      );
+      return serverErrorResponse("verify", err, "Verification failed", { success: false });
     }
   }),
 });
@@ -1870,12 +1881,7 @@ http.route({
       });
       return json(result);
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Enrichment failed",
-        500,
-        { success: false }
-      );
+      return serverErrorResponse("enrich-x", err, "Enrichment failed", { success: false });
     }
   }),
 });
@@ -2083,12 +2089,7 @@ http.route({
         voiceAnalysis,
       });
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "LinkedIn enrichment failed",
-        500,
-        { success: false }
-      );
+      return serverErrorResponse("enrich-linkedin", err, "LinkedIn enrichment failed", { success: false });
     }
   }),
 });
@@ -2122,11 +2123,7 @@ http.route({
       });
       return guard.finish(json(result));
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Failed to create context link",
-        500
-      );
+      return serverErrorResponse("me/context-links", err, "Failed to create context link");
     }
   }),
 });
@@ -2186,11 +2183,7 @@ http.route({
       });
       return guard.finish(json({ success: true }));
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Failed to revoke link",
-        500
-      );
+      return serverErrorResponse("me/context-links/revoke", err, "Failed to revoke link");
     }
   }),
 });
@@ -2253,11 +2246,7 @@ http.route({
       });
       return guard.finish(json(result));
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Failed to create API key",
-        500
-      );
+      return serverErrorResponse("me/keys", err, "Failed to create API key");
     }
   }),
 });
@@ -2320,11 +2309,7 @@ http.route({
       });
       return guard.finish(json({ success: true }));
     } catch (err) {
-      return errorResponse(
-        "server_error",
-        err instanceof Error ? err.message : "Failed to revoke API key",
-        500
-      );
+      return serverErrorResponse("me/keys/revoke", err, "Failed to revoke API key");
     }
   }),
 });
@@ -3052,7 +3037,7 @@ http.route({
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to publish skill";
       if (message.includes("already taken")) return errorResponse("conflict", message, 409);
-      return errorResponse("server_error", message, 500);
+      return serverErrorResponse("me/skills/publish", err, "Failed to publish skill");
     }
   }),
 });
@@ -3103,7 +3088,7 @@ http.route({
 
       return guard.finish(json(result));
     } catch (err) {
-      return errorResponse("server_error", err instanceof Error ? err.message : "Failed", 500);
+      return serverErrorResponse("me/skills/install", err, "Failed to record skill install");
     }
   }),
 });
@@ -3145,7 +3130,7 @@ http.route({
 
       return guard.finish(json(result));
     } catch (err) {
-      return errorResponse("server_error", err instanceof Error ? err.message : "Failed", 500);
+      return serverErrorResponse("me/skills/usage", err, "Failed to track skill usage");
     }
   }),
 });
@@ -3187,7 +3172,7 @@ http.route({
 
       return guard.finish(json(result));
     } catch (err) {
-      return errorResponse("server_error", err instanceof Error ? err.message : "Failed", 500);
+      return serverErrorResponse("me/skills/remove", err, "Failed to remove skill install");
     }
   }),
 });
@@ -3311,7 +3296,7 @@ http.route({
       });
       return guard.finish(json(result));
     } catch (err) {
-      return errorResponse("server_error", err instanceof Error ? err.message : "Rollback failed", 500);
+      return serverErrorResponse("me/rollback", err, "Rollback failed");
     }
   }),
 });
@@ -3471,7 +3456,7 @@ http.route({
 
       return guard.finish(json({ success: true }));
     } catch (err) {
-      return errorResponse("server_error", err instanceof Error ? err.message : "Failed to log activity", 500);
+      return serverErrorResponse("me/activity/log", err, "Failed to log activity");
     }
   }),
 });
@@ -3522,8 +3507,7 @@ http.route({
       });
       return guard.finish(json(result));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to initialize vault";
-      return errorResponse("server_error", message, 500);
+      return serverErrorResponse("me/vault/init", err, "Failed to initialize vault");
     }
   }),
 });
@@ -3565,8 +3549,7 @@ http.route({
       });
       return guard.finish(json(result));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to save vault data";
-      return errorResponse("server_error", message, 500);
+      return serverErrorResponse("me/vault/save", err, "Failed to save vault data");
     }
   }),
 });
@@ -3606,8 +3589,7 @@ http.route({
         updatedAt: vault.updatedAt,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to get vault data";
-      return errorResponse("server_error", message, 500);
+      return serverErrorResponse("me/vault/get", err, "Failed to get vault data");
     }
   }),
 });
@@ -4219,7 +4201,10 @@ http.route({
           return mcpError(id, -32601, `Method not found: ${method}`);
       }
     } catch (err) {
-      return mcpError(id, -32603, err instanceof Error ? err.message : "Internal error");
+      // T13 — sanitized: JSON-RPC -32603 is the MCP equivalent of a 500.
+      // The real error goes to server logs only.
+      console.error("[http:mcp] internal error:", err);
+      return mcpError(id, -32603, "Internal error");
     }
   }),
 });
@@ -4453,7 +4438,7 @@ http.route({
       const verifications = await ctx.runQuery(api.profiles.listVerifications, { profileId: profile._id });
       return json({ verifications });
     } catch (err) {
-      return errorResponse("server_error", err instanceof Error ? err.message : "Failed to get verifications", 500);
+      return serverErrorResponse("me/verifications", err, "Failed to get verifications");
     }
   }),
 });
@@ -4479,7 +4464,7 @@ http.route({
       const seedResult = await ctx.runMutation(internal.seed.seedSampleProfiles, {});
       return json({ cleanup: cleanupResult, seed: seedResult });
     } catch (err) {
-      return errorResponse("server_error", err instanceof Error ? err.message : "Reseed failed", 500);
+      return serverErrorResponse("admin/reseed", err, "Reseed failed");
     }
   }),
 });
@@ -4544,7 +4529,7 @@ http.route({
       }));
       return json(result);
     } catch (err) {
-      return errorResponse("server_error", err instanceof Error ? err.message : "Public profile import failed", 500);
+      return serverErrorResponse("admin/profiles/import-targets", err, "Public profile import failed");
     }
   }),
 });
@@ -4564,7 +4549,7 @@ http.route({
       }));
       return json(result);
     } catch (err) {
-      return errorResponse("server_error", err instanceof Error ? err.message : "Public profile source refresh failed", 500);
+      return serverErrorResponse("admin/profiles/fetch-sources", err, "Public profile source refresh failed");
     }
   }),
 });

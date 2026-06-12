@@ -20,6 +20,7 @@ import type * as github from "../github.js";
 import type * as githubApp from "../githubApp.js";
 import type * as githubAutoPush from "../githubAutoPush.js";
 import type * as githubRepo from "../githubRepo.js";
+import type * as health from "../health.js";
 import type * as http from "../http.js";
 import type * as lib_agentContext from "../lib/agentContext.js";
 import type * as lib_agentDetect from "../lib/agentDetect.js";
@@ -84,6 +85,7 @@ declare const fullApi: ApiFromModules<{
   githubApp: typeof githubApp;
   githubAutoPush: typeof githubAutoPush;
   githubRepo: typeof githubRepo;
+  health: typeof health;
   http: typeof http;
   "lib/agentContext": typeof lib_agentContext;
   "lib/agentDetect": typeof lib_agentDetect;

@@ -123,6 +123,8 @@ function categoryFor(routePath) {
   if (routePath.startsWith("/api/v1/me/activity") || routePath.startsWith("/api/v1/me/agents")) return "Activity";
   if (routePath.startsWith("/api/v1/me")) return "Account";
   if (routePath.startsWith("/api/v1/chat")) return "Chat";
+  // T13 — service health probe; documented alongside the docs/meta surface.
+  if (routePath === "/api/v1/health") return "Docs";
   if (routePath.startsWith("/api/v1/docs")) return "Docs";
   if (
     routePath.startsWith("/api/v1/scrape") ||
