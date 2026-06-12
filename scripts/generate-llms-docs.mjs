@@ -423,7 +423,7 @@ Common error recovery:
 
 - \`401\`: missing, expired, invalid, or revoked API key. Re-run \`youmd login\` or rotate the key.
 - \`404\`: profile, context token, bundle version, or local section not found.
-- \`409 ANCESTOR_MISMATCH\`: remote bundle changed since local parent hash. Pull, inspect diff, then push again.
+- \`409 ancestor_mismatch\` (error.code): remote bundle changed since local parent hash. Pull, inspect diff, then push again.
 - \`413\`: chat or compaction payload is too large.
 - \`429\`: rate limit hit.
 - \`503\`: spend cap or provider kill switch is active.

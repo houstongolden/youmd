@@ -2495,7 +2495,7 @@ Accept: application/vnd.you-md.v1+json`}</CodeBlock>
               commands={[
                 { cmd: "401", desc: "Missing, expired, invalid, or revoked API key. Re-run youmd login or rotate a key." },
                 { cmd: "404", desc: "Profile, context token, bundle version, or local section not found." },
-                { cmd: "409 ANCESTOR_MISMATCH", desc: "Remote bundle changed since your local parent hash. Pull, inspect diff, then push again." },
+                { cmd: "409 ancestor_mismatch", desc: "Remote bundle changed since your local parent hash. Pull, inspect diff, then push again." },
                 { cmd: "413", desc: "Chat or compaction payload is too large for the protected LLM route." },
                 { cmd: "429", desc: "Rate limit hit on public chat, research, scraping, enrichment, or per-user compacting." },
                 { cmd: "503", desc: "Spend-cap or provider kill switch is active. Retry after the service window resets." },
