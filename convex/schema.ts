@@ -74,6 +74,22 @@ export default defineSchema({
     lastSyncedSha: v.optional(v.string()),
     lastSyncedAt: v.optional(v.number()),
 
+    // P17 (PRODUCT-AUDIT #19) — debounced auto-push + mirror ancestry.
+    // pendingPushAt: when the currently scheduled auto-push will run; saves
+    // inside that window do NOT schedule another push (debounce gate).
+    pendingPushAt: v.optional(v.number()),
+    // The commit sha we last wrote to the repo (push-time ancestry anchor).
+    // Unlike lastSyncedSha (which the pull path overwrites with a file blob
+    // sha), this is ALWAYS a commit sha recorded at push time.
+    lastPushedCommitSha: v.optional(v.string()),
+    // Set when the repo/mirror head moved past lastPushedCommitSha (manual
+    // user pushes count). Reads prefer canonical Convex content while set;
+    // the next successful auto-push force-updates the repo and clears it.
+    mirrorStale: v.optional(v.boolean()),
+    // Last auto-push failure (observability; cleared on success).
+    lastPushError: v.optional(v.string()),
+    lastPushErrorAt: v.optional(v.number()),
+
     // GitHub webhook id for the linked repo (auto-pull on external push).
     webhookId: v.optional(v.number()),
 

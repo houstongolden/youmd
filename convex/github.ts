@@ -1,12 +1,19 @@
 import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { computeContentHash } from "./lib/hash";
 import { createUserAndProfile } from "./users";
 import { requireOwner } from "./lib/auth";
 import { encryptSecret } from "./lib/secretCrypto";
 import { canonicalUsername } from "./lib/profileDirectory";
+import {
+  GITHUB_PUSH_DEBOUNCE_MS,
+  hasMirrorDiverged,
+  isMirrorStale,
+  shouldDebounceAutoPush,
+} from "./lib/githubSync";
 
 /**
  * GitHub OAuth + repo connection backend.
@@ -353,6 +360,10 @@ export const internalGetConnectionContext = internalQuery({
       installationTokenEnc: conn.installationTokenEnc ?? null,
       installationTokenIv: conn.installationTokenIv ?? null,
       installationTokenExp: conn.installationTokenExp ?? null,
+      // P17: auto-push bookkeeping for convex/githubAutoPush.ts.
+      pendingPushAt: conn.pendingPushAt ?? null,
+      lastPushedCommitSha: conn.lastPushedCommitSha ?? null,
+      mirrorStale: conn.mirrorStale ?? false,
     };
   },
 });
@@ -502,11 +513,36 @@ export const internalUpsertMirror = internalMutation({
     } else {
       await ctx.db.insert("repoMirror", row);
     }
+
+    // P17 ancestry check: if the mirrored head moved past the commit we last
+    // pushed, the repo changed out from under us (manual pushes count). Flag
+    // the connection stale so reads prefer canonical content; clear the flag
+    // when the heads agree again (the next auto-push reconciles the repo).
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first();
+    if (conn && conn.lastPushedCommitSha) {
+      const stale = hasMirrorDiverged(conn.lastPushedCommitSha, args.commitSha);
+      if (stale !== (conn.mirrorStale === true)) {
+        await ctx.db.patch(conn._id, { mirrorStale: stale, updatedAt: Date.now() });
+      }
+    }
+
     return { fileCount: args.files.length, totalBytes };
   },
 });
 
-/** Internal: read a user's mirror by clerkId (for authenticated API/MCP reads). */
+/**
+ * Internal: read a user's mirror by clerkId (for authenticated API/MCP reads).
+ *
+ * P17 ancestor check: when the mirror is stale (head moved past what we last
+ * pushed, or the staleness flag is set), the canonical Convex store wins —
+ * the latest bundle's you.md/you.json are overlaid onto the returned files so
+ * repo-file reads never serve stale identity content. We never merge FROM the
+ * mirror. Stack files can't be overlaid (no canonical copy), so callers get a
+ * `stale` flag alongside.
+ */
 export const internalGetMirrorByClerkId = internalQuery({
   args: { clerkId: v.string() },
   handler: async (ctx, { clerkId }) => {
@@ -515,10 +551,45 @@ export const internalGetMirrorByClerkId = internalQuery({
       .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
       .first();
     if (!user) return null;
-    return await ctx.db
+    const mirror = await ctx.db
       .query("repoMirror")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .first();
+    if (!mirror) return null;
+
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    const stale = isMirrorStale(conn, mirror.commitSha);
+    if (!stale) return { ...mirror, stale: false };
+
+    const latest = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId_version", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .first();
+    if (!latest) return { ...mirror, stale: true };
+
+    const canonical = new Map<string, string>([
+      ["you.md", latest.youMd ?? ""],
+      ["you.json", JSON.stringify(latest.youJson ?? {}, null, 2)],
+    ]);
+    const files = mirror.files.map((f) =>
+      canonical.has(f.path)
+        ? {
+            path: f.path,
+            content: canonical.get(f.path)!,
+            size: canonical.get(f.path)!.length,
+          }
+        : f
+    );
+    canonical.forEach((content, path) => {
+      if (!files.some((f) => f.path === path)) {
+        files.push({ path, content, size: content.length });
+      }
+    });
+    return { ...mirror, files, stale: true };
   },
 });
 
@@ -541,6 +612,11 @@ export const getRepoMirror = query({
       .first();
     if (!mirror) return null;
 
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+
     return {
       repoFullName: mirror.repoFullName,
       commitSha: mirror.commitSha ?? null,
@@ -548,6 +624,11 @@ export const getRepoMirror = query({
       totalBytes: mirror.totalBytes,
       truncated: mirror.truncated,
       syncedAt: mirror.syncedAt,
+      // P17: mirror moved out from under us (manual pushes) — canonical
+      // content wins; the next auto-push force-updates the repo.
+      stale: isMirrorStale(conn, mirror.commitSha),
+      pendingPushAt: conn?.pendingPushAt ?? null,
+      lastPushError: conn?.lastPushError ?? null,
       files: mirror.files.map((f) => ({ path: f.path, size: f.size })),
       stacks: deriveStacks(mirror.files),
     };
@@ -608,6 +689,8 @@ export const getPublicRepoStacks = query({
       repoFullName: conn.repoFullName,
       repoUrl,
       stacks: mirror ? deriveStacks(mirror.files) : [],
+      // P17: surfaced so consumers know the stack list may lag canonical.
+      stale: mirror ? isMirrorStale(conn, mirror.commitSha) : false,
     };
   },
 });
@@ -679,6 +762,146 @@ export const internalMarkSynced = internalMutation({
     await ctx.db.patch(args.connectionId, {
       lastSyncedSha: args.repoSha,
       lastSyncedAt: now,
+      // P17: a push (manual included) re-anchors ancestry and reconciles any
+      // mirror divergence — the canonical store just force-won.
+      lastPushedCommitSha: args.repoSha,
+      mirrorStale: false,
+      updatedAt: now,
+    });
+  },
+});
+
+// ── P17: debounced auto-push on save/publish (PRODUCT-AUDIT #19) ───────────
+
+/**
+ * Schedule a debounced GitHub mirror push for a user. Called from the bundle
+ * save/publish mutations (convex/me.ts, convex/bundles.ts) so the repo mirror
+ * stops going stale between explicit syncs.
+ *
+ * Debounce: pendingPushAt on the connection records when the scheduled push
+ * will run. While that time is in the future, further saves are no-ops — the
+ * pending push reads the LATEST bundle when it runs, so it captures them.
+ * Best-effort by design: never throws, so a scheduling hiccup can't fail the
+ * save itself. No-op for users without a linked repo.
+ */
+export async function scheduleGithubAutoPush(
+  ctx: MutationCtx,
+  userId: Id<"users">
+): Promise<{ scheduled: boolean; reason?: string; runAt?: number }> {
+  try {
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
+    if (!conn || !conn.repoFullName) {
+      return { scheduled: false, reason: "no_repo" };
+    }
+    const now = Date.now();
+    if (shouldDebounceAutoPush(conn.pendingPushAt, now)) {
+      return { scheduled: false, reason: "debounced", runAt: conn.pendingPushAt };
+    }
+    const user = await ctx.db.get(userId);
+    if (!user) return { scheduled: false, reason: "no_user" };
+
+    const runAt = now + GITHUB_PUSH_DEBOUNCE_MS;
+    await ctx.db.patch(conn._id, { pendingPushAt: runAt, updatedAt: now });
+    await ctx.scheduler.runAfter(
+      GITHUB_PUSH_DEBOUNCE_MS,
+      internal.githubAutoPush.runAutoPush,
+      { clerkId: user.clerkId, attempt: 0 }
+    );
+    return { scheduled: true, runAt };
+  } catch (err) {
+    // Scheduling must never break the save/publish that triggered it.
+    console.error("[github auto-push] scheduling failed", err);
+    return { scheduled: false, reason: "error" };
+  }
+}
+
+/** Internal: scheduling entry point for tests/tooling (same logic as the hook). */
+export const internalScheduleAutoPush = internalMutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    return await scheduleGithubAutoPush(ctx, userId);
+  },
+});
+
+/** Internal: flag (or clear) mirror divergence detected by the push action. */
+export const internalSetMirrorStale = internalMutation({
+  args: { connectionId: v.id("githubConnections"), stale: v.boolean() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.connectionId, {
+      mirrorStale: args.stale,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Internal: record a completed auto-push. Re-anchors ancestry at the new
+ * commit, clears the debounce marker, the staleness flag, and any prior
+ * failure note. `commitSha` is the pushed commit (or the observed head when
+ * the repo was already up to date).
+ */
+export const internalMarkAutoPushed = internalMutation({
+  args: {
+    connectionId: v.id("githubConnections"),
+    commitSha: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    await ctx.db.patch(args.connectionId, {
+      lastPushedCommitSha: args.commitSha,
+      lastSyncedSha: args.commitSha,
+      lastSyncedAt: now,
+      pendingPushAt: undefined,
+      mirrorStale: false,
+      lastPushError: undefined,
+      lastPushErrorAt: undefined,
+      updatedAt: now,
+    });
+  },
+});
+
+/** Internal: clear the debounce marker without claiming a sync happened. */
+export const internalClearPendingPush = internalMutation({
+  args: { connectionId: v.id("githubConnections") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.connectionId, {
+      pendingPushAt: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Internal: record an auto-push failure. When a retry is scheduled, the
+ * debounce marker is moved to the retry time so saves in between don't
+ * double-schedule; when retries are exhausted it is cleared so the NEXT
+ * save can schedule a fresh push (no infinite loops, no wedged state).
+ */
+export const internalRecordAutoPushFailure = internalMutation({
+  args: {
+    clerkId: v.string(),
+    error: v.string(),
+    retryAt: v.union(v.number(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return;
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    if (!conn) return;
+    const now = Date.now();
+    await ctx.db.patch(conn._id, {
+      lastPushError: args.error.slice(0, 500),
+      lastPushErrorAt: now,
+      pendingPushAt: args.retryAt ?? undefined,
       updatedAt: now,
     });
   },

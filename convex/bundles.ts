@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 import { canonicalUsername } from "./lib/profileDirectory";
+import { scheduleGithubAutoPush } from "./github";
 import { pageArgs, clampPageSize } from "./lib/pagination";
 import type { Doc } from "./_generated/dataModel";
 
@@ -180,6 +181,9 @@ export const publishBundle = mutation({
       isPublished: true,
       publishedAt: Date.now(),
     });
+
+    // P17: keep the GitHub mirror fresh (debounced, no-op without a linked repo).
+    await scheduleGithubAutoPush(ctx, bundle.userId);
   },
 });
 
@@ -313,6 +317,9 @@ export const rollbackToVersion = mutation({
       source: "rollback",
       changeNote: `rolled back to v${args.targetVersion}`,
     });
+
+    // P17: keep the GitHub mirror fresh (debounced, no-op without a linked repo).
+    await scheduleGithubAutoPush(ctx, user._id);
 
     return { bundleId, version: maxVersion + 1 };
   },

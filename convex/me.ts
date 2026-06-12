@@ -10,6 +10,7 @@ import {
 } from "./lib/compile";
 import { computeContentHash } from "./lib/hash";
 import { requireOwner } from "./lib/auth";
+import { scheduleGithubAutoPush } from "./github";
 import { canonicalUsername } from "./lib/profileDirectory";
 import { pageArgs, clampPageSize } from "./lib/pagination";
 
@@ -372,6 +373,9 @@ async function persistBundleFromYouJson(
     await ctx.db.patch(profile._id, profileUpdates);
   }
 
+  // P17: keep the GitHub mirror fresh (debounced, no-op without a linked repo).
+  await scheduleGithubAutoPush(ctx, user._id);
+
   return { bundleId, version: maxVersion + 1, contentHash };
 }
 
@@ -548,6 +552,9 @@ export const saveBundleFromForm = mutation({
       await ctx.db.patch(profile._id, profileUpdates);
     }
 
+    // P17: keep the GitHub mirror fresh (debounced, no-op without a linked repo).
+    await scheduleGithubAutoPush(ctx, user._id);
+
     return { bundleId, version: maxVersion + 1, contentHash };
   },
 });
@@ -657,6 +664,9 @@ export const saveYouJsonDirect = mutation({
 
       await ctx.db.patch(profile._id, profileUpdates);
     }
+
+    // P17: keep the GitHub mirror fresh (debounced, no-op without a linked repo).
+    await scheduleGithubAutoPush(ctx, user._id);
 
     return { bundleId, version: maxVersion + 1, contentHash };
   },
@@ -776,6 +786,9 @@ export const createCustomDirectory = mutation({
       parentHash: latestBundle.contentHash ?? undefined,
       source: "web-shell",
     });
+
+    // P17: keep the GitHub mirror fresh (debounced, no-op without a linked repo).
+    await scheduleGithubAutoPush(ctx, user._id);
 
     return {
       bundleId,
@@ -958,6 +971,9 @@ export const publishLatest = mutation({
 
       await ctx.db.patch(profile._id, profileUpdates);
     }
+
+    // P17: keep the GitHub mirror fresh (debounced, no-op without a linked repo).
+    await scheduleGithubAutoPush(ctx, user._id);
 
     return {
       version: latest.version,
@@ -1363,6 +1379,9 @@ export const publishLatestForUser = internalMutation({
         updatedAt: Date.now(),
       });
     }
+
+    // P17: keep the GitHub mirror fresh (debounced, no-op without a linked repo).
+    await scheduleGithubAutoPush(ctx, user._id);
 
     return { published: true, version: latest.version };
   },
