@@ -34,15 +34,15 @@
 | P9 | `youmd stack install <user>/<slug>` + registry endpoint | PRODUCT-AUDIT #11; FEATURE-ROADMAP 2.5 | L | todo |
 | P10 | Truthful capability contract w/ transport tags + CI curl test | PRODUCT-AUDIT #12; FEATURE-ROADMAP 2.6 | M | todo |
 | P11 | One host-link engine emitting `.claude/skills/<name>/SKILL.md`; empirical discovery release gate | PRODUCT-AUDIT #13; FEATURE-ROADMAP 3.7 | M | todo |
-| P12 | Single project-context engine (repo project-context/ + ~/.youmd/projects/ overlay); delete dup impls | PRODUCT-AUDIT #14; FEATURE-ROADMAP 3.8 | M | in-progress (agent) |
+| P12 | Single project-context engine (repo project-context/ + ~/.youmd/projects/ overlay); delete dup impls | PRODUCT-AUDIT #14; FEATURE-ROADMAP 3.8 | M | done (d83f718; one engine, repo-over-global overlay, dup impls deleted, 237/237) |
 | P13 | Pagination cursors on all list endpoints + OpenAPI docs | PRODUCT-AUDIT #15; FEATURE-ROADMAP 2.9 | M | done (904ba31; 8 endpoints, prod e2e cursor verified, legacy shape unchanged) |
-| P14 | Memory durability: pinned/importance/supersededBy, decay exemptions, review queue | PRODUCT-AUDIT #16; FEATURE-ROADMAP 2.4 | M | in-progress (agent) |
-| P15 | One `MEMORY_CATEGORIES` module + validation + migration + `correction` category | PRODUCT-AUDIT #17; FEATURE-ROADMAP 2.10 | M | in-progress (agent) |
+| P14 | Memory durability: pinned/importance/supersededBy, decay exemptions, review queue | PRODUCT-AUDIT #16; FEATURE-ROADMAP 2.4 | M | done (b285d99; pinned/importance/supersede + review queue; prod migration + e2e pending deploy) |
+| P15 | One `MEMORY_CATEGORIES` module + validation + migration + `correction` category | PRODUCT-AUDIT #17; FEATURE-ROADMAP 2.10 | M | done (b285d99; one category module + correction; migration queued) |
 | P16 | Pipeline honesty: compile merges chat-refined content, or de-document discover→review | PRODUCT-AUDIT #18; FEATURE-ROADMAP 3.5 | L | blocked(needs-spec: Houston call) |
 | P17 | GitHub repo freshness: debounced auto-push on save/publish + ancestor check on repo pulls | PRODUCT-AUDIT #19; FEATURE-ROADMAP 2.7 | M | todo |
 | P18 | Shared capability router package for CLI + API route + golden parity tests | PRODUCT-AUDIT #20; FEATURE-ROADMAP 3.6 | M | todo |
 | P19 | Typed brainScopes + identity-bearing adapters + doctor skill-ref validation | PRODUCT-AUDIT #21; FEATURE-ROADMAP 3.9 | M | todo |
-| P20 | Documented precedence model + shadowing warning + `youmd status` active-roots line | PRODUCT-AUDIT #22; FEATURE-ROADMAP 3.15 | M | in-progress (agent) |
+| P20 | Documented precedence model + shadowing warning + `youmd status` active-roots line | PRODUCT-AUDIT #22; FEATURE-ROADMAP 3.15 | M | done (d83f718; PRECEDENCE table, shadow warnings, active-roots in status) |
 | P21 | Standard error envelope `{error:{code,message}}` + real OpenAPI schemas | PRODUCT-AUDIT #23; FEATURE-ROADMAP 3.1 | M | done (63524a5; 115 error sites, CLI parser updated, 89/89 convex tests; prod e2e verified) |
 | P22 | Per-key rate limits on writes + Retry-After/X-RateLimit headers | PRODUCT-AUDIT #24; FEATURE-ROADMAP 3.2 | M | done (a703c6a; prod e2e: 200 carries X-RateLimit trio) |
 | P23 | Idempotency-Key support + memory content-hash dedupe | PRODUCT-AUDIT #25; FEATURE-ROADMAP 3.3 | M | done (a703c6a/c0547ea; prod e2e: Idempotency-Replayed true, dedupe live, test memory archived) |
