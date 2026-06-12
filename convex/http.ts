@@ -79,6 +79,43 @@ export function errorResponse(
   return json(errorEnvelope(code, message, extra), status, extraHeaders);
 }
 
+/**
+ * P13 — cursor pagination on list endpoints (PRODUCT-AUDIT #15,
+ * FEATURE-ROADMAP 2.9).
+ *
+ * Contract (additive, fully backward compatible):
+ *   - Every list endpoint accepts optional `?cursor=` + `?limit=` params.
+ *   - When NEITHER is supplied the response is byte-identical to the legacy
+ *     behavior (same query, same counts, same ordering, same shape).
+ *   - When either is supplied the underlying Convex-native `.paginate()`
+ *     query runs and the response carries the existing array field PLUS
+ *     `nextCursor` (string | null) and `hasMore` (boolean). Endpoints that
+ *     historically returned a bare JSON array return the envelope object
+ *     only in this opted-in mode (a bare array cannot carry extra fields).
+ *   - Cursors are opaque Convex index cursors — never offsets over
+ *     in-memory slices. Pass `nextCursor` back as `?cursor=` to continue.
+ */
+function parseListPagination(
+  url: URL,
+  maxLimit = 200
+): { cursor: string | null; limit: number | null; paginated: boolean } {
+  const cursor = url.searchParams.get("cursor");
+  let limit: number | null = null;
+  if (url.searchParams.has("limit")) {
+    const raw = parseInt(url.searchParams.get("limit")!, 10);
+    if (Number.isFinite(raw)) limit = Math.min(Math.max(raw, 1), maxLimit);
+  }
+  return { cursor, limit, paginated: cursor !== null || limit !== null };
+}
+
+/** Additive pagination fields derived from a Convex PaginationResult. */
+function pageMeta(result: { isDone: boolean; continueCursor: string }) {
+  return {
+    nextCursor: result.isDone ? null : result.continueCursor,
+    hasMore: !result.isDone,
+  };
+}
+
 /** Map a dynamic HTTP status to a sensible machine code (pass-through errors). */
 export function codeForStatus(status: number): ErrorCode {
   if (status === 401) return "unauthorized";
@@ -992,7 +1029,7 @@ http.route({
   }),
 });
 
-// GET /api/v1/me/sources — List sources
+// GET /api/v1/me/sources — List sources (supports ?cursor= + ?limit= pagination; paginated calls return { sources, nextCursor, hasMore })
 http.route({
   path: "/api/v1/me/sources",
   method: "GET",
@@ -1001,6 +1038,21 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "read:private");
     if (denied) return denied;
+
+    const { cursor, limit, paginated } = parseListPagination(new URL(request.url));
+    if (paginated) {
+      try {
+        const result = await ctx.runQuery(api.me.getSourcesPage, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          cursor,
+          numItems: limit ?? 50,
+        });
+        return json({ sources: result.page, ...pageMeta(result) });
+      } catch {
+        return errorResponse("invalid_request", "Invalid pagination cursor", 400);
+      }
+    }
 
     const sources = await ctx.runQuery(api.me.getSources, {
       clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -2074,7 +2126,7 @@ http.route({
   }),
 });
 
-// GET /api/v1/me/context-links — List context links
+// GET /api/v1/me/context-links — List context links (supports ?cursor= + ?limit= pagination; paginated calls return { links, nextCursor, hasMore })
 http.route({
   path: "/api/v1/me/context-links",
   method: "GET",
@@ -2083,6 +2135,21 @@ http.route({
     if (auth instanceof Response) return auth;
     const denied = await requireScope(ctx, request, auth, "read:private");
     if (denied) return denied;
+
+    const { cursor, limit, paginated } = parseListPagination(new URL(request.url));
+    if (paginated) {
+      try {
+        const result = await ctx.runQuery(api.contextLinks.listLinksPage, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          cursor,
+          numItems: limit ?? 50,
+        });
+        return json({ links: result.page, ...pageMeta(result) });
+      } catch {
+        return errorResponse("invalid_request", "Invalid pagination cursor", 400);
+      }
+    }
 
     const links = await ctx.runQuery(api.contextLinks.listLinks, {
       clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -2190,7 +2257,7 @@ http.route({
   }),
 });
 
-// GET /api/v1/me/api-keys — List API keys
+// GET /api/v1/me/api-keys — List API keys (supports ?cursor= + ?limit= pagination; paginated calls return { keys, nextCursor, hasMore })
 http.route({
   path: "/api/v1/me/api-keys",
   method: "GET",
@@ -2200,6 +2267,21 @@ http.route({
     // Key metadata is account-management surface → private-read tier
     const denied = await requireScope(ctx, request, auth, "read:private");
     if (denied) return denied;
+
+    const { cursor, limit, paginated } = parseListPagination(new URL(request.url));
+    if (paginated) {
+      try {
+        const result = await ctx.runQuery(api.apiKeys.listKeysPage, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          cursor,
+          numItems: limit ?? 50,
+        });
+        return json({ keys: result.page, ...pageMeta(result) });
+      } catch {
+        return errorResponse("invalid_request", "Invalid pagination cursor", 400);
+      }
+    }
 
     const keys = await ctx.runQuery(api.apiKeys.listKeys, {
       clerkId: auth.userId,      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -2425,7 +2507,7 @@ http.route({ path: "/api/v1/me/private", method: "OPTIONS", handler: corsPreflig
 // MEMORY API (authenticated — API key or access token)
 // ============================================================
 
-// GET /api/v1/me/memories — List memories (optional full-text search via ?q=)
+// GET /api/v1/me/memories — List memories (optional full-text search via ?q=; supports ?cursor= + ?limit= pagination — paginated calls add nextCursor + hasMore, including search via the native search-index paginator)
 http.route({
   path: "/api/v1/me/memories",
   method: "GET",
@@ -2438,11 +2520,39 @@ http.route({
     const url = new URL(request.url);
     const category = url.searchParams.get("category") || undefined;
     const q = url.searchParams.get("q")?.trim() || undefined;
+    const cursor = url.searchParams.get("cursor");
     const limitRaw = url.searchParams.has("limit") ? parseInt(url.searchParams.get("limit")!, 10) : undefined;
     const limit = limitRaw !== undefined && Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : undefined;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return errorResponse("not_found", "User not found", 404);
+
+    // P13: ?cursor= or ?limit= opts into cursor pagination. Search (?q=)
+    // paginates too — Convex search-index queries support .paginate natively.
+    if (cursor !== null || limit !== undefined) {
+      try {
+        const result = q
+          ? await ctx.runQuery(api.memories.searchMemoriesPage, {
+              clerkId: auth.userId,
+              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+              userId: user._id,
+              searchText: q,
+              cursor,
+              numItems: limit !== undefined ? Math.min(limit, 100) : 20,
+            })
+          : await ctx.runQuery(api.memories.listMemoriesPage, {
+              clerkId: auth.userId,
+              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+              userId: user._id,
+              category,
+              cursor,
+              numItems: limit ?? 100,
+            });
+        return json({ memories: result.page, count: result.page.length, ...pageMeta(result) });
+      } catch {
+        return errorResponse("invalid_request", "Invalid pagination cursor", 400);
+      }
+    }
 
     // Full-text search when ?q= is present (P5: memory search); list otherwise.
     const memories = q
@@ -2451,14 +2561,12 @@ http.route({
           _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
           userId: user._id,
           searchText: q,
-          limit: limit !== undefined ? Math.min(limit, 100) : undefined,
         })
       : await ctx.runQuery(api.memories.listMemories, {
           clerkId: auth.userId,
           _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
           userId: user._id,
           category,
-          limit,
         });
 
     return json({ memories, count: memories.length });
@@ -2519,7 +2627,7 @@ http.route({
 
 // ── Skills Registry ──────────────────────────────────────────
 
-// Browse published skills (public, no auth required)
+// GET /api/v1/skills — Browse published skills (public, no auth required; supports ?cursor= + ?limit= pagination — paginated calls add nextCursor + hasMore)
 http.route({
   path: "/api/v1/skills",
   method: "GET",
@@ -2536,6 +2644,20 @@ http.route({
       return json(skill);
     }
 
+    // P13: cursor pagination over the registry (downloads-desc index order)
+    const { cursor, limit, paginated } = parseListPagination(url);
+    if (paginated) {
+      try {
+        const result = await ctx.runQuery(api.skills.listPublishedPage, {
+          cursor,
+          numItems: limit ?? 50,
+        });
+        return json({ skills: result.page, count: result.page.length, ...pageMeta(result) });
+      } catch {
+        return errorResponse("invalid_request", "Invalid pagination cursor", 400);
+      }
+    }
+
     // Otherwise list all published
     const skills = await ctx.runQuery(api.skills.listPublished, { limit: 50 });
     return json({ skills, count: skills.length });
@@ -2549,7 +2671,7 @@ http.route({
   handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
 });
 
-// Get my installed skills (authenticated)
+// GET /api/v1/me/skills — Get my installed skills (authenticated; supports ?cursor= + ?limit= pagination — paginated calls add nextCursor + hasMore)
 http.route({
   path: "/api/v1/me/skills",
   method: "GET",
@@ -2561,6 +2683,23 @@ http.route({
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return errorResponse("not_found", "User not found", 404);
+
+    // P13: cursor pagination in installedAt-desc index order
+    const { cursor, limit, paginated } = parseListPagination(new URL(request.url));
+    if (paginated) {
+      try {
+        const result = await ctx.runQuery(api.skills.listInstallsPage, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          userId: user._id,
+          cursor,
+          numItems: limit ?? 50,
+        });
+        return json({ skills: result.page, count: result.page.length, ...pageMeta(result) });
+      } catch {
+        return errorResponse("invalid_request", "Invalid pagination cursor", 400);
+      }
+    }
 
     const installs = await ctx.runQuery(api.skills.listInstalls, {
       clerkId: auth.userId,
@@ -2773,7 +2912,7 @@ http.route({
 
 // ── Version History & Agent Activity ─────────────────────
 
-// Get bundle version history (authenticated)
+// GET /api/v1/me/history — Get bundle version history (authenticated; supports ?cursor= + ?limit= pagination in version-desc order — paginated calls add nextCursor + hasMore)
 http.route({
   path: "/api/v1/me/history",
   method: "GET",
@@ -2785,6 +2924,23 @@ http.route({
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return errorResponse("not_found", "User not found", 404);
+
+    // P13: cursor pagination via the by_userId_version index (version desc)
+    const { cursor, limit, paginated } = parseListPagination(new URL(request.url));
+    if (paginated) {
+      try {
+        const result = await ctx.runQuery(api.bundles.getHistoryPage, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          userId: user._id,
+          cursor,
+          numItems: limit ?? 50,
+        });
+        return json({ history: result.page, count: result.page.length, ...pageMeta(result) });
+      } catch {
+        return errorResponse("invalid_request", "Invalid pagination cursor", 400);
+      }
+    }
 
     const history = await ctx.runQuery(api.bundles.getHistory, {
       clerkId: auth.userId,
@@ -2909,7 +3065,7 @@ http.route({
 });
 
 // Get raw agent activity log (authenticated)
-// GET /api/v1/me/activity?limit=30&agent=Claude%20Code&action=read
+// GET /api/v1/me/activity?limit=30&agent=Claude%20Code&action=read — supports ?cursor= pagination (cursor or limit calls add nextCursor + hasMore)
 http.route({
   path: "/api/v1/me/activity",
   method: "GET",
@@ -2920,15 +3076,32 @@ http.route({
     if (denied) return denied;
 
     const url = new URL(request.url);
-    const limitStr = url.searchParams.get("limit");
     const agent = url.searchParams.get("agent") || undefined;
     const action = url.searchParams.get("action") || undefined;
-    const limit = limitStr ? parseInt(limitStr, 10) : 30;
+
+    // P13: ?cursor= or ?limit= opts into cursor pagination over the
+    // by_userId_date index (newest first, filters applied natively).
+    const { cursor, limit, paginated } = parseListPagination(url);
+    if (paginated) {
+      try {
+        const result = await ctx.runQuery(api.activity.listActivityPage, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          agentName: agent,
+          action,
+          cursor,
+          numItems: limit ?? 30,
+        });
+        return json({ activity: result.page, count: result.page.length, ...pageMeta(result) });
+      } catch {
+        return errorResponse("invalid_request", "Invalid pagination cursor", 400);
+      }
+    }
 
     try {
       const activity = await ctx.runQuery(api.activity.listActivity, {
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-        limit: Number.isFinite(limit) ? limit : 30,
+        limit: 30,
         agentName: agent,
         action,
       });

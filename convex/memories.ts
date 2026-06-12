@@ -3,6 +3,7 @@ import { query, mutation, type MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { requireOwner } from "./lib/auth";
 import { computeMemoryContentHash } from "./lib/hash";
+import { pageArgs, clampPageSize } from "./lib/pagination";
 
 // ── P23: content-hash dedupe (PRODUCT-AUDIT #25) ────────────────
 //
@@ -71,6 +72,61 @@ export const listMemories = query({
   },
 });
 
+/**
+ * P13: cursor-paginated variant of listMemories.
+ *
+ * Same auth + visibility contract (owner only, archived rows never surface),
+ * same newest-first ordering. The no-category branch uses the
+ * by_userId_archived index so pages are full; the category branch filters
+ * archived rows inside pagination (Convex-native — pages may run short but
+ * cursors stay correct).
+ */
+export const listMemoriesPage = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+    category: v.optional(v.string()),
+    ...pageArgs,
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
+    const paginationOpts = {
+      cursor: args.cursor ?? null,
+      numItems: clampPageSize(args.numItems, 100, 500),
+    };
+
+    if (args.category) {
+      const result = await ctx.db
+        .query("memories")
+        .withIndex("by_userId_category", (q) =>
+          q.eq("userId", args.userId).eq("category", args.category!)
+        )
+        .order("desc")
+        .filter((q) => q.neq(q.field("isArchived"), true))
+        .paginate(paginationOpts);
+      return result;
+    }
+
+    return await ctx.db
+      .query("memories")
+      .withIndex("by_userId_archived", (q) =>
+        q.eq("userId", args.userId).eq("isArchived", false)
+      )
+      .order("desc")
+      .paginate(paginationOpts);
+  },
+});
+
 /** Full-text search across a user's active memories (P5: memory search) */
 export const searchMemories = query({
   args: {
@@ -110,6 +166,53 @@ export const searchMemories = query({
           .eq("isArchived", false)
       )
       .take(limit);
+  },
+});
+
+/**
+ * P13: cursor-paginated variant of searchMemories.
+ *
+ * Convex search-index queries return an OrderedQuery, which natively
+ * supports .paginate() (verified against convex 1.33 types) — so search
+ * results page in relevance order with real cursors, same auth and
+ * archived-row exclusion as searchMemories.
+ */
+export const searchMemoriesPage = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+    searchText: v.string(),
+    ...pageArgs,
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
+    const searchText = args.searchText.trim();
+    if (!searchText) {
+      return { page: [], isDone: true, continueCursor: "" };
+    }
+
+    return await ctx.db
+      .query("memories")
+      .withSearchIndex("search_content", (q) =>
+        q
+          .search("content", searchText)
+          .eq("userId", args.userId)
+          .eq("isArchived", false)
+      )
+      .paginate({
+        cursor: args.cursor ?? null,
+        numItems: clampPageSize(args.numItems, 20, 100),
+      });
   },
 });
 

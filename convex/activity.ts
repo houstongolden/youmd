@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, query } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
+import { pageArgs, clampPageSize } from "./lib/pagination";
 
 // Internal mutation — called by HTTP handlers and other server code
 export const logActivity = internalMutation({
@@ -83,6 +84,56 @@ export const listActivity = query({
       ...item,
       trust: computeTrust(item.agentSource, !!item.tokenId, !!item.apiKeyId),
     }));
+  },
+});
+
+/**
+ * P13: cursor-paginated variant of listActivity. Same by_userId_date
+ * newest-first ordering; agentName/action filters apply via Convex-native
+ * .filter() inside pagination (pages may run short of numItems when filters
+ * are active — matching the legacy take-then-filter semantics — but cursors
+ * remain real index cursors).
+ */
+export const listActivityPage = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    agentName: v.optional(v.string()),
+    action: v.optional(v.string()),
+    ...pageArgs,
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return { page: [], isDone: true, continueCursor: "" };
+
+    let q = ctx.db
+      .query("agentActivity")
+      .withIndex("by_userId_date", (q) => q.eq("userId", user._id))
+      .order("desc");
+    if (args.agentName) {
+      q = q.filter((f) => f.eq(f.field("agentName"), args.agentName));
+    }
+    if (args.action) {
+      q = q.filter((f) => f.eq(f.field("action"), args.action));
+    }
+
+    const result = await q.paginate({
+      cursor: args.cursor ?? null,
+      numItems: clampPageSize(args.numItems),
+    });
+
+    return {
+      ...result,
+      page: result.page.map((item) => ({
+        ...item,
+        trust: computeTrust(item.agentSource, !!item.tokenId, !!item.apiKeyId),
+      })),
+    };
   },
 });
 

@@ -551,7 +551,10 @@ export default defineSchema({
   })
     .index("by_name", ["name"])
     .index("by_authorId", ["authorId"])
-    .index("by_isPublished", ["isPublished"]),
+    .index("by_isPublished", ["isPublished"])
+    // P13 pagination: registry browse pages in downloads-desc order without
+    // collecting the whole table (skills.listPublishedPage).
+    .index("by_isPublished_downloads", ["isPublished", "downloads"]),
 
   skillInstalls: defineTable({
     userId: v.id("users"),
@@ -564,7 +567,10 @@ export default defineSchema({
     useCount: v.number(),
   })
     .index("by_userId", ["userId"])
-    .index("by_userId_skillName", ["userId", "skillName"]),
+    .index("by_userId_skillName", ["userId", "skillName"])
+    // P13 pagination: installed skills page in installedAt-desc order
+    // (reinstalls bump installedAt, so _creationTime order is not enough).
+    .index("by_userId_installedAt", ["userId", "installedAt"]),
 
   // ── Cross-agent activity log (unified agent action feed) ──────
   agentActivity: defineTable({

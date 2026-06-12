@@ -11,6 +11,7 @@ import {
 import { computeContentHash } from "./lib/hash";
 import { requireOwner } from "./lib/auth";
 import { canonicalUsername } from "./lib/profileDirectory";
+import { pageArgs, clampPageSize } from "./lib/pagination";
 
 /**
  * Authenticated user endpoints (/me/*).
@@ -1030,6 +1031,36 @@ export const getSources = query({
       .query("sources")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
+  },
+});
+
+/**
+ * P13: cursor-paginated variant of getSources. Same auth contract and the
+ * same index order (by_userId, _creationTime ascending) as the legacy
+ * collect() path, so page 1 of N items matches the first N legacy rows.
+ */
+export const getSourcesPage = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    ...pageArgs,
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return { page: [], isDone: true, continueCursor: "" };
+
+    return await ctx.db
+      .query("sources")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .paginate({
+        cursor: args.cursor ?? null,
+        numItems: clampPageSize(args.numItems),
+      });
   },
 });
 

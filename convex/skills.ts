@@ -1,6 +1,8 @@
 import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireOwner } from "./lib/auth";
+import { pageArgs, clampPageSize } from "./lib/pagination";
+import type { Doc } from "./_generated/dataModel";
 
 // ---------------------------------------------------------------------------
 // Bundled skill content — full templates, seeded on deploy
@@ -436,17 +438,46 @@ export const listPublished = query({
     return skills
       .sort((a, b) => b.downloads - a.downloads)
       .slice(0, args.limit ?? 50)
-      .map((s) => ({
-        _id: s._id,
-        name: s.name,
-        description: s.description,
-        version: s.version,
-        scope: s.scope,
-        identityFields: s.identityFields,
-        downloads: s.downloads,
-        authorId: s.authorId,
-        createdAt: s.createdAt,
-      }));
+      .map(toRegistrySkill);
+  },
+});
+
+/** Shared public registry shape for listPublished / listPublishedPage (P13). */
+function toRegistrySkill(s: Doc<"skills">) {
+  return {
+    _id: s._id,
+    name: s.name,
+    description: s.description,
+    version: s.version,
+    scope: s.scope,
+    identityFields: s.identityFields,
+    downloads: s.downloads,
+    authorId: s.authorId,
+    createdAt: s.createdAt,
+  };
+}
+
+/**
+ * P13: cursor-paginated registry browse. Pages in downloads-desc order via
+ * the by_isPublished_downloads index (same documented ordering as
+ * listPublished; ties between equal download counts break newest-first by
+ * index order instead of the legacy in-memory stable sort).
+ */
+export const listPublishedPage = query({
+  args: {
+    ...pageArgs,
+  },
+  handler: async (ctx, args) => {
+    const result = await ctx.db
+      .query("skills")
+      .withIndex("by_isPublished_downloads", (q) => q.eq("isPublished", true))
+      .order("desc")
+      .paginate({
+        cursor: args.cursor ?? null,
+        numItems: clampPageSize(args.numItems),
+      });
+
+    return { ...result, page: result.page.map(toRegistrySkill) };
   },
 });
 
@@ -509,6 +540,40 @@ export const listInstalls = query({
       .collect();
 
     return installs.sort((a, b) => b.installedAt - a.installedAt);
+  },
+});
+
+/**
+ * P13: cursor-paginated variant of listInstalls. Pages in installedAt-desc
+ * order via the by_userId_installedAt index — identical to the legacy
+ * in-memory sort.
+ */
+export const listInstallsPage = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+    ...pageArgs,
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
+    return await ctx.db
+      .query("skillInstalls")
+      .withIndex("by_userId_installedAt", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .paginate({
+        cursor: args.cursor ?? null,
+        numItems: clampPageSize(args.numItems),
+      });
   },
 });
 

@@ -3,6 +3,8 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 import { secureRandomString } from "./lib/secureToken";
 import { selectPrivateContextFields } from "./lib/agentContext";
+import { pageArgs, clampPageSize } from "./lib/pagination";
+import type { Doc } from "./_generated/dataModel";
 
 /**
  * Context links — shareable URLs that return identity context.
@@ -98,6 +100,27 @@ export const createLink = mutation({
   },
 });
 
+/** Shared view shape for listLinks / listLinksPage (P13). */
+function toLinkView(link: Doc<"contextLinks">, username: string) {
+  return {
+    id: link._id,
+    name: link.name ?? null,
+    token: link.token,
+    url: `${CONTEXT_LINK_ORIGIN}/ctx/${username}/${link.token}`,
+    scope: link.scope,
+    expiresAt: link.expiresAt
+      ? new Date(link.expiresAt).toISOString()
+      : "never",
+    maxUses: link.maxUses ?? "unlimited",
+    useCount: link.useCount,
+    lastUsedAt: link.lastUsedAt
+      ? new Date(link.lastUsedAt).toISOString()
+      : null,
+    createdAt: new Date(link.createdAt).toISOString(),
+    isExpired: link.expiresAt ? link.expiresAt < Date.now() : false,
+  };
+}
+
 export const listLinks = query({
   args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
@@ -119,23 +142,43 @@ export const listLinks = query({
     // Filter out revoked links
     return links
       .filter((link) => !link.revokedAt)
-      .map((link) => ({
-        id: link._id,
-        name: link.name ?? null,
-        token: link.token,
-        url: `${CONTEXT_LINK_ORIGIN}/ctx/${user.username}/${link.token}`,
-        scope: link.scope,
-        expiresAt: link.expiresAt
-          ? new Date(link.expiresAt).toISOString()
-          : "never",
-        maxUses: link.maxUses ?? "unlimited",
-        useCount: link.useCount,
-        lastUsedAt: link.lastUsedAt
-          ? new Date(link.lastUsedAt).toISOString()
-          : null,
-        createdAt: new Date(link.createdAt).toISOString(),
-        isExpired: link.expiresAt ? link.expiresAt < Date.now() : false,
-      }));
+      .map((link) => toLinkView(link, user.username));
+  },
+});
+
+/**
+ * P13: cursor-paginated variant of listLinks. Revoked links are excluded via
+ * a Convex-native .filter() inside pagination (pages may run short of
+ * numItems, but cursors remain real index cursors — never in-memory slices).
+ */
+export const listLinksPage = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    ...pageArgs,
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return { page: [], isDone: true, continueCursor: "" };
+
+    const result = await ctx.db
+      .query("contextLinks")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .filter((q) => q.eq(q.field("revokedAt"), undefined))
+      .paginate({
+        cursor: args.cursor ?? null,
+        numItems: clampPageSize(args.numItems),
+      });
+
+    return {
+      ...result,
+      page: result.page.map((link) => toLinkView(link, user.username)),
+    };
   },
 });
 

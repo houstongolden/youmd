@@ -2,6 +2,8 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 import { canonicalUsername } from "./lib/profileDirectory";
+import { pageArgs, clampPageSize } from "./lib/pagination";
+import type { Doc } from "./_generated/dataModel";
 
 export const getPublishedBundle = query({
   args: { username: v.string() },
@@ -211,18 +213,59 @@ export const getHistory = query({
     return bundles
       .sort((a, b) => b.version - a.version)
       .slice(0, 50)
-      .map((b) => ({
-        _id: b._id,
-        version: b.version,
-        isPublished: b.isPublished,
-        createdAt: b.createdAt,
-        publishedAt: b.publishedAt,
-        contentHash: b.contentHash?.slice(0, 12),
-        parentHash: b.parentHash?.slice(0, 12),
-        source: b.source || "unknown",
-        changeNote: b.changeNote || null,
-        changedSections: b.changedSections || null,
-      }));
+      .map(toHistoryEntry);
+  },
+});
+
+/** Shared history-entry shape for getHistory / getHistoryPage (P13). */
+function toHistoryEntry(b: Doc<"bundles">) {
+  return {
+    _id: b._id,
+    version: b.version,
+    isPublished: b.isPublished,
+    createdAt: b.createdAt,
+    publishedAt: b.publishedAt,
+    contentHash: b.contentHash?.slice(0, 12),
+    parentHash: b.parentHash?.slice(0, 12),
+    source: b.source || "unknown",
+    changeNote: b.changeNote || null,
+    changedSections: b.changedSections || null,
+  };
+}
+
+/**
+ * P13: cursor-paginated variant of getHistory. Pages in version-desc order
+ * via the by_userId_version index — identical ordering to the legacy
+ * in-memory sort, without the fixed 50-entry cap.
+ */
+export const getHistoryPage = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+    ...pageArgs,
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
+    const result = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId_version", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .paginate({
+        cursor: args.cursor ?? null,
+        numItems: clampPageSize(args.numItems),
+      });
+
+    return { ...result, page: result.page.map(toHistoryEntry) };
   },
 });
 

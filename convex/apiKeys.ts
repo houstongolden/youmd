@@ -3,8 +3,9 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 import { secureRandomString } from "./lib/secureToken";
 import { isKnownScope, isLegacyGrandfatheredKey } from "./lib/scopes";
+import { pageArgs, clampPageSize } from "./lib/pagination";
 import type { MutationCtx } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 
 /**
  * API key management.
@@ -252,22 +253,59 @@ export const listKeys = query({
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
 
-    return keys.map((k) => ({
-      id: k._id,
-      label: k.label,
-      scopes: k.scopes,
-      lastUsedAt: k.lastUsedAt
-        ? new Date(k.lastUsedAt).toISOString()
-        : null,
-      createdAt: new Date(k.createdAt).toISOString(),
-      isRevoked: !!k.revokedAt,
-      // Cycle 56: surface expiresAt + isExpired so the UI can show it
-      expiresAt: k.expiresAt ? new Date(k.expiresAt).toISOString() : null,
-      isExpired: k.expiresAt ? k.expiresAt < Date.now() : false,
-      canReveal: !!k.encryptedKey && !!k.keyIv && !k.revokedAt,
-      // Never return the hash
-      keyPrefix: "ym_****",
-    }));
+    return keys.map(toKeyView);
+  },
+});
+
+/** Shared metadata shape for listKeys / listKeysPage (P13). Never returns the hash. */
+function toKeyView(k: Doc<"apiKeys">) {
+  return {
+    id: k._id,
+    label: k.label,
+    scopes: k.scopes,
+    lastUsedAt: k.lastUsedAt
+      ? new Date(k.lastUsedAt).toISOString()
+      : null,
+    createdAt: new Date(k.createdAt).toISOString(),
+    isRevoked: !!k.revokedAt,
+    // Cycle 56: surface expiresAt + isExpired so the UI can show it
+    expiresAt: k.expiresAt ? new Date(k.expiresAt).toISOString() : null,
+    isExpired: k.expiresAt ? k.expiresAt < Date.now() : false,
+    canReveal: !!k.encryptedKey && !!k.keyIv && !k.revokedAt,
+    // Never return the hash
+    keyPrefix: "ym_****",
+  };
+}
+
+/**
+ * P13: cursor-paginated variant of listKeys. Same auth contract, same
+ * index order (by_userId, _creationTime ascending), same metadata shape —
+ * revoked keys are included, exactly like listKeys.
+ */
+export const listKeysPage = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    ...pageArgs,
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return { page: [], isDone: true, continueCursor: "" };
+
+    const result = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .paginate({
+        cursor: args.cursor ?? null,
+        numItems: clampPageSize(args.numItems),
+      });
+
+    return { ...result, page: result.page.map(toKeyView) };
   },
 });
 
