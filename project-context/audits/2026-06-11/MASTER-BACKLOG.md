@@ -15,7 +15,7 @@
 | V1 | Hero rework: kicker kept, headline → "every agent meets the same you", handshake triad (agent.md/soul.md/you.md) added below CTAs, install command in hero, quiet bullet "one runtime" → "one brain across your agents" | POSITIONING-PLAYBOOK §2 (R1+R2) | S | done (645d9d9; deployed, hero markup verified on prod) | Visual check in browser vs PRD v2.3; build passes; Vercel deploy live |
 | V2 | Demote "stop re-explaining yourself" to problem-statement line on landing (keep as pain hook section, not headline) | POSITIONING-PLAYBOOK §1 | S | done (645d9d9; subhead carries pain hook, verified on prod) | Landing renders; copy consistent across sections |
 | V3 | Freshness-moat copy: "a copied YouStack freezes at copy time; yours stays current" added to YouStacks landing section + README | VISION-AUDIT R5 | S | done (645d9d9; freshness-moat copy live) | Copy live on landing + README; no overstated "clone-proof" claims |
-| V4 | Lighthouse growth loop: ASCII-portrait OG share card framing "this is what agents see when they meet me" on public profiles | VISION-AUDIT R4 | M | in-progress (agent) | OG card renders for a real profile; share preview correct |
+| V4 | Lighthouse growth loop: ASCII-portrait OG share card framing "this is what agents see when they meet me" on public profiles | VISION-AUDIT R4 | M | done (f3bc25c; portrait-hero OG card, bundled mono font, fixed displayName bug; share-debugger check after deploy) | OG card renders for a real profile; share preview correct |
 | V5 | Honesty-ledger guard: no copy promises encrypted vault until AES-256-GCM ships; audit landing/pricing copy now ("scoped access" not "encrypted") | POSITIONING-PLAYBOOK §4 / risk X2 | S | done (audit clean: all encryption claims map to shipped AES-256-GCM vault surfaces; landing/llms docs make no encryption promises) | Grep landing+docs for encryption promises; none ahead of shipped reality |
 | V6 | Protocol positioning: publish/promote `you-md/v1` schema as open standard page in docs; "an MCP where the context is you" line into developer docs | VISION-AUDIT R3 | M | done (2e3ce77; open-standard section grounded in served schema, positioning line in docs+llms; prod check after Vercel) | Docs page live; llms surfaces regenerated + docs:check passes |
 
@@ -72,7 +72,7 @@
 | U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | done (b72d07a CLI, web commit; 30 tests incl. every-split parity) |
 | U7 | Device-flow login (CLI code → browser approve → poll) | L | todo |
 | U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | done (3b5b000; 8 hosted vs 24 local split, get_identity example fixed, 9 public examples replayed in smoke) |
-| U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | in-progress (agent) |
+| U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | done (f3bc25c; terminal preview prompt, in-browser ascii, /create?handle prefill; prod visual check after deploy) |
 | U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | done (b0ddedb: 16 fake delays removed, 250ms min spinner display) |
 | U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | done (e66a58b; activity=agent log, analytics=stats, session log=account events) |
 | U12 | Profile preview: direct ProfileContent render w/ preview prop (kill iframe) | M | done (7c7bbdf; inline ProfileContent preview prop, no view counting, public page unchanged) |
