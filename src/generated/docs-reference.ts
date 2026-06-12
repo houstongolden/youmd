@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "5741cb79603cbf01b4e27ab006ff5e9cb5b942ae9e03492d5682983c49f2cf1a",
+  "sourceHash": "2072fa1c7669c2eea80a24e540d1d572e19ed01e82bf3af93bd4d6b7cd5e5581",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
-    "endpoints": 70,
+    "endpoints": 72,
     "internalRoutes": 7,
     "mcpTools": 24,
     "hostedMcpTools": 8,
     "cliCommands": 27,
-    "convexRoutes": 53,
+    "convexRoutes": 55,
     "nextRoutes": 24
   },
   "endpoints": [
@@ -383,6 +383,28 @@ export const docsReference = {
       "summary": "Next.js route",
       "sources": [
         "next"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/device/poll",
+      "category": "Auth",
+      "auth": "Public or rate-limited",
+      "source": "convex",
+      "summary": "poll for approval with the deviceCode",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/device/start",
+      "category": "Auth",
+      "auth": "Public or rate-limited",
+      "source": "convex",
+      "summary": "begin a device-flow login (no auth)",
+      "sources": [
+        "convex"
       ]
     },
     {

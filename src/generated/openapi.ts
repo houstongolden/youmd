@@ -1143,6 +1143,74 @@ export const openApiSpec = {
         }
       }
     },
+    "/api/v1/auth/device/poll": {
+      "post": {
+        "operationId": "post_api_v1_auth_device_poll",
+        "summary": "poll for approval with the deviceCode",
+        "tags": [
+          "Auth"
+        ],
+        "x-youmd-auth": "Public or rate-limited",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/device/start": {
+      "post": {
+        "operationId": "post_api_v1_auth_device_start",
+        "summary": "begin a device-flow login (no auth)",
+        "tags": [
+          "Auth"
+        ],
+        "x-youmd-auth": "Public or rate-limited",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/chat": {
       "post": {
         "operationId": "post_api_v1_chat",
