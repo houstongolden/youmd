@@ -2909,19 +2909,25 @@ http.route({ path: "/api/v1/me/vault", method: "OPTIONS", handler: corsPreflight
 // being manually briefed each session.
 //
 // Spec: https://spec.modelcontextprotocol.io/specification/
-// Protocol version: 2024-11-05
 //
-// Tools:
-//   get_identity       — get a user's public identity bundle by username
-//   search_profiles    — list/search public profiles
-//   get_my_identity    — get authenticated user's full identity (API key)
-//
-// Resources:
-//   identity://{username} — identity bundle for a username
+// The tool/resource inventory is NOT documented here — hand-maintained
+// inventories drift. The generated reference is the source of truth:
+//   https://you.md/api/v1/docs/reference  (src/generated/docs-reference.ts)
 //
 // Discovery: GET /.well-known/mcp.json
 
-const MCP_PROTOCOL_VERSION = "2024-11-05";
+// Newest spec revision this implementation satisfies: stateless streamable
+// HTTP (single JSON-RPC message per POST, no batching), tool content
+// results, resources/list + resources/templates/list + resources/read.
+const MCP_PROTOCOL_VERSION = "2025-06-18";
+// Older revisions we can also serve (the surface is a strict subset that is
+// valid under all of these). initialize echoes the client's requested
+// version when supported, per spec version negotiation.
+const SUPPORTED_MCP_PROTOCOL_VERSIONS = [
+  "2025-06-18",
+  "2025-03-26",
+  "2024-11-05",
+];
 const MCP_SERVER_INFO = { name: "you.md", version: "1.0.0" };
 
 // ─── Discovery ────────────────────────────────────────────────────────────────
@@ -2939,9 +2945,17 @@ http.route({
           type: "http",
           url: "https://you.md/api/v1/mcp",
         },
+        protocol_version: MCP_PROTOCOL_VERSION,
         capabilities: {
           tools: true,
           resources: true,
+        },
+        authentication: {
+          type: "bearer",
+          required: false,
+          description:
+            "Public identity tools work unauthenticated. Tools that read the authenticated user's own data (whoami, get_agent_brief, get_my_identity, get_my_stacks, get_repo_file) require a you.md API key with the read:private scope, passed as `Authorization: Bearer <key>`.",
+          instructions_url: "https://you.md/docs#api-keys",
         },
       }, null, 2),
       {
@@ -2983,8 +2997,16 @@ http.route({
       switch (method) {
         // ── Lifecycle ──────────────────────────────────────────────────────────
         case "initialize": {
+          // Spec version negotiation: echo the client's requested version when
+          // we support it; otherwise answer with our newest supported version.
+          const requestedVersion = (params as Record<string, unknown>).protocolVersion;
+          const negotiatedVersion =
+            typeof requestedVersion === "string" &&
+            SUPPORTED_MCP_PROTOCOL_VERSIONS.includes(requestedVersion)
+              ? requestedVersion
+              : MCP_PROTOCOL_VERSION;
           return mcpOk(id, {
-            protocolVersion: MCP_PROTOCOL_VERSION,
+            protocolVersion: negotiatedVersion,
             capabilities: {
               tools: { listChanged: false },
               resources: { listChanged: false, subscribe: false },
@@ -3003,6 +3025,36 @@ http.route({
         case "tools/list": {
           return mcpOk(id, {
             tools: [
+              {
+                name: "whoami",
+                description: "Return a compact ~500-char identity summary of the authenticated user: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation — it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSON. Requires a you.md API key passed as Bearer token in the Authorization header.",
+                inputSchema: {
+                  type: "object",
+                  properties: {},
+                },
+              },
+              {
+                name: "get_agent_brief",
+                description: "Return a startup brief for the authenticated user. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines a compact identity summary, the user's recent durable memories (rendered inline by default), installed skills, and recommended next moves so the agent can act without asking the user to re-explain everything. Requires a you.md API key passed as Bearer token in the Authorization header.",
+                inputSchema: {
+                  type: "object",
+                  properties: {
+                    format: {
+                      type: "string",
+                      enum: ["markdown", "json"],
+                      description: "Output format. markdown is default and best for agent context; json is best for automation.",
+                    },
+                    includeMemories: {
+                      type: "boolean",
+                      description: "Include up to 20 memories (category + content, durable categories first, then newest). Default true.",
+                    },
+                    maxChars: {
+                      type: "number",
+                      description: "Maximum markdown characters when format=markdown. Default 6000.",
+                    },
+                  },
+                },
+              },
               {
                 name: "get_identity",
                 description: "Get a user's public identity bundle from you.md. Returns their structured identity: bio, projects, values, agent directives, communication preferences, and more. Use this at the start of a session to understand who you're working with.",
@@ -3072,6 +3124,94 @@ http.route({
           const toolName = (params as Record<string, unknown>).name as string;
           const toolArgs = ((params as Record<string, unknown>).arguments as Record<string, unknown>) || {};
 
+          if (toolName === "whoami") {
+            const auth = await authenticateRequest(ctx, request);
+            if (auth instanceof Response) {
+              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
+            }
+            const denied = await requireScope(ctx, request, auth, "read:private");
+            if (denied) {
+              return mcpToolError(id, "API key lacks required scope: read:private");
+            }
+
+            const identity = await loadAuthedUserIdentity(ctx, auth);
+            if (!identity) return mcpToolError(id, "user not found");
+
+            return mcpToolOk(
+              id,
+              buildHostedWhoamiSummary(identity.user.username, identity.youJson),
+              "text/plain"
+            );
+          }
+
+          if (toolName === "get_agent_brief") {
+            const auth = await authenticateRequest(ctx, request);
+            if (auth instanceof Response) {
+              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
+            }
+            const denied = await requireScope(ctx, request, auth, "read:private");
+            if (denied) {
+              return mcpToolError(id, "API key lacks required scope: read:private");
+            }
+
+            const identity = await loadAuthedUserIdentity(ctx, auth);
+            if (!identity) return mcpToolError(id, "user not found");
+
+            // Memories are included by default (audit 2026-06-11 L1: the brief
+            // must surface memory CONTENT, not a count — opt out explicitly).
+            const includeMemories = toolArgs.includeMemories !== false;
+
+            let memories: BriefMemory[] = [];
+            if (includeMemories) {
+              try {
+                const raw = await ctx.runQuery(api.memories.listMemories, {
+                  clerkId: auth.userId,
+                  _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+                  userId: identity.user._id,
+                  limit: AGENT_BRIEF_MEMORY_CAP * 3,
+                });
+                memories = orderBriefMemories(
+                  Array.isArray(raw) ? (raw as BriefMemory[]) : []
+                ).slice(0, AGENT_BRIEF_MEMORY_CAP);
+              } catch {
+                // memories are additive — never fail the brief on them
+              }
+            }
+
+            let installedSkills: string[] = [];
+            try {
+              const installs = await ctx.runQuery(api.skills.listInstalls, {
+                clerkId: auth.userId,
+                _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+                userId: identity.user._id,
+              });
+              installedSkills = (Array.isArray(installs) ? installs : [])
+                .map((install: { skillName: string }) => install.skillName)
+                .sort();
+            } catch {
+              // skill installs are additive — never fail the brief on them
+            }
+
+            const brief = buildHostedAgentBrief({
+              username: identity.user.username,
+              plan: typeof identity.user.plan === "string" ? identity.user.plan : null,
+              summary: buildHostedWhoamiSummary(identity.user.username, identity.youJson),
+              includeMemories,
+              memories,
+              installedSkills,
+            });
+
+            if (toolArgs.format === "json") {
+              return mcpToolOk(id, JSON.stringify(brief, null, 2), "application/json");
+            }
+
+            const maxChars =
+              typeof toolArgs.maxChars === "number" && toolArgs.maxChars > 500
+                ? Math.min(toolArgs.maxChars, 20000)
+                : 6000;
+            return mcpToolOk(id, formatAgentBriefMarkdown(brief, maxChars), "text/markdown");
+          }
+
           if (toolName === "get_identity") {
             const username = toolArgs.username as string;
             if (!username || typeof username !== "string") {
@@ -3129,14 +3269,15 @@ http.route({
             const query = (toolArgs.query as string | undefined) || "";
             const limit = Math.min(Number(toolArgs.limit) || 20, 100);
 
-            const profiles = await ctx.runQuery(api.profiles.listAll);
-            const filtered = query
-              ? profiles.filter((profile: Record<string, unknown>) => {
-                  const p = profile as Record<string, unknown>;
-                  return p.username?.toString().toLowerCase().includes(query.toLowerCase()) ||
-                    p.name?.toString().toLowerCase().includes(query.toLowerCase());
+            // Index-backed search (audit 2026-06-11 P1 #16): username prefix +
+            // full-text name via profiles.searchPublicProfiles instead of the
+            // old in-memory filter over the newest 500 profiles.
+            const filtered = query.trim()
+              ? await ctx.runQuery(api.profiles.searchPublicProfiles, {
+                  query: query.trim(),
+                  limit,
                 })
-              : profiles;
+              : await ctx.runQuery(api.profiles.listAll);
 
             const results = filtered.slice(0, limit).map((p: Record<string, unknown>) => ({
               username: p.username,
@@ -3250,13 +3391,20 @@ http.route({
 
         // ── Resources ──────────────────────────────────────────────────────────
         case "resources/list": {
+          // No fixed concrete resources — identities are parameterized by
+          // username and exposed via the identity://{username} URI template
+          // (see resources/templates/list).
+          return mcpOk(id, { resources: [] });
+        }
+
+        case "resources/templates/list": {
           return mcpOk(id, {
-            resources: [
+            resourceTemplates: [
               {
-                uri: "identity://houstongolden",
-                name: "Example identity (houstongolden)",
-                description: "Example you.md identity bundle. Replace username with any you.md user.",
-                mimeType: "application/json",
+                uriTemplate: "identity://{username}",
+                name: "you.md identity",
+                description: "Public you.md identity bundle for a username. resources/read also accepts https://you.md/{username} URIs.",
+                mimeType: "application/vnd.you-md.v1+json",
               },
             ],
           });
@@ -3355,6 +3503,257 @@ function mcpToolError(id: unknown, message: string): Response {
     content: [{ type: "text", text: message }],
     isError: true,
   });
+}
+
+// ─── Hosted whoami / get_agent_brief helpers ─────────────────────────────────
+//
+// Server-side analogs of the local stdio MCP's whoami + get_agent_brief
+// (cli/src/mcp/server.ts), built from data Convex already has: the user's
+// latest bundle/profile youJson, their memories, and their skill installs.
+
+/** Max memories rendered in the hosted agent brief. */
+const AGENT_BRIEF_MEMORY_CAP = 20;
+
+/** Categories considered durable — surfaced ahead of newer ephemeral notes. */
+const DURABLE_MEMORY_CATEGORIES = new Set([
+  "preference",
+  "decision",
+  "goal",
+  "fact",
+]);
+
+type BriefMemory = {
+  category: string;
+  content: string;
+  source?: string;
+  sourceAgent?: string;
+  createdAt: number;
+};
+
+type HostedAgentBrief = {
+  generatedAt: string;
+  user: {
+    username: string;
+    plan: string | null;
+    profileUrl: string;
+    summary: string;
+  };
+  memories: {
+    included: boolean;
+    count: number;
+    items: Array<{
+      category: string;
+      content: string;
+      source: string | null;
+      createdAt: number;
+    }>;
+  };
+  skills: {
+    installed: string[];
+  };
+  nextMoves: string[];
+  reminders: string[];
+};
+
+function briefRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+/**
+ * Order memories durable-first, newest-first within each group. Input is
+ * expected newest-first (memories.listMemories sorts by createdAt desc);
+ * the partition is stable so that ordering is preserved.
+ */
+function orderBriefMemories(memories: BriefMemory[]): BriefMemory[] {
+  const durable: BriefMemory[] = [];
+  const rest: BriefMemory[] = [];
+  for (const memory of memories) {
+    (DURABLE_MEMORY_CATEGORIES.has(memory.category) ? durable : rest).push(memory);
+  }
+  return [...durable, ...rest];
+}
+
+/** Collapse memory content to a single line capped at `max` chars. */
+function briefOneLine(content: string, max = 200): string {
+  const collapsed = content.replace(/\s+/g, " ").trim();
+  return collapsed.length > max ? `${collapsed.slice(0, max - 1).trimEnd()}…` : collapsed;
+}
+
+/**
+ * Build the compact (~500 char) identity summary for the hosted whoami tool.
+ * Mirrors the local MCP's buildWhoamiSummary field selection so agents get
+ * the same shape regardless of transport.
+ */
+function buildHostedWhoamiSummary(
+  username: string,
+  youJson: Record<string, unknown>
+): string {
+  const identity = briefRecord(youJson.identity);
+  const preferences = briefRecord(youJson.preferences);
+  const agentPrefs = briefRecord(preferences.agent);
+  const directives = briefRecord(youJson.agent_directives);
+  const projects = Array.isArray(youJson.projects) ? youJson.projects : [];
+
+  const bio = briefRecord(identity.bio);
+  const name = typeof identity.name === "string" && identity.name
+    ? identity.name
+    : username;
+  const role = typeof identity.tagline === "string"
+    ? identity.tagline
+    : typeof bio.short === "string" ? bio.short : "";
+  const stack = typeof directives.default_stack === "string" ? directives.default_stack : "";
+  const tone = typeof agentPrefs.tone === "string" ? agentPrefs.tone : "";
+  const avoidList = Array.isArray(agentPrefs.avoid)
+    ? agentPrefs.avoid.filter((item): item is string => typeof item === "string")
+    : [];
+  const avoid = avoidList.join(", ");
+  const topProjects = projects
+    .slice(0, 3)
+    .map((project) => {
+      if (typeof project === "string") return project;
+      const record = briefRecord(project);
+      return typeof record.name === "string" ? record.name : "";
+    })
+    .filter(Boolean)
+    .join(", ");
+  const goal = typeof directives.current_goal === "string" ? directives.current_goal : "";
+
+  const lines: string[] = [];
+  lines.push(`Name: ${name}`);
+  if (role) lines.push(`Role: ${role}`);
+  if (stack) lines.push(`Stack: ${stack}`);
+  if (tone) lines.push(`Tone: ${tone}`);
+  if (avoid) lines.push(`Avoid: ${avoid}`);
+  if (topProjects) lines.push(`Top projects: ${topProjects}`);
+  if (goal) lines.push(`Goal: ${goal}`);
+
+  let summary = lines.join("\n");
+  if (summary.length > 500) {
+    summary = summary.slice(0, 497) + "...";
+  }
+  return summary;
+}
+
+/**
+ * Load the authenticated user's identity context (user row + youJson from the
+ * latest bundle, falling back to the profile's embedded youJson).
+ */
+async function loadAuthedUserIdentity(
+  ctx: { runQuery: (ref: any, args: any) => Promise<any> },
+  auth: AuthContext
+): Promise<{
+  user: { _id: Id<"users">; username: string; plan?: string };
+  youJson: Record<string, unknown>;
+} | null> {
+  const user = await ctx.runQuery(api.users.getByClerkId, {
+    clerkId: auth.userId,
+    _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+  });
+  if (!user) return null;
+
+  const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
+  const latestBundle = await ctx.runQuery(api.bundles.getLatestBundle, {
+    clerkId: auth.userId,
+    _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+    userId: user._id,
+  });
+
+  const youJson = briefRecord(latestBundle?.youJson ?? profile?.youJson);
+  return { user, youJson };
+}
+
+function buildHostedAgentBrief(input: {
+  username: string;
+  plan: string | null;
+  summary: string;
+  includeMemories: boolean;
+  memories: BriefMemory[];
+  installedSkills: string[];
+}): HostedAgentBrief {
+  const nextMoves: string[] = [];
+  if (input.memories.length > 0) {
+    nextMoves.push("Apply the durable preferences/decisions in Memories before proposing work.");
+  }
+  nextMoves.push("Call get_identity (or get_my_identity for private detail) when you need the full bundle.");
+  nextMoves.push("Log meaningful new durable facts back with the memories API so future sessions start smarter.");
+
+  return {
+    generatedAt: new Date().toISOString(),
+    user: {
+      username: input.username,
+      plan: input.plan,
+      profileUrl: `https://you.md/${input.username}`,
+      summary: input.summary,
+    },
+    memories: {
+      included: input.includeMemories,
+      count: input.memories.length,
+      items: input.memories.map((memory) => ({
+        category: memory.category,
+        content: briefOneLine(memory.content),
+        source: memory.sourceAgent ?? memory.source ?? null,
+        createdAt: memory.createdAt,
+      })),
+    },
+    skills: {
+      installed: input.installedSkills,
+    },
+    nextMoves,
+    reminders: [
+      "Read the whole user request before acting; split multi-part asks into tracked items.",
+      "Do not claim work is done unless it actually succeeded end-to-end.",
+    ],
+  };
+}
+
+/**
+ * Render the hosted agent brief as markdown. Memories are rendered as actual
+ * content lines (category + one-line content), not a bare count (audit
+ * 2026-06-11 L1).
+ */
+function formatAgentBriefMarkdown(brief: HostedAgentBrief, maxChars = 6000): string {
+  const lines: string[] = [];
+
+  lines.push("# You.md Agent Brief");
+  lines.push("");
+  lines.push("## User");
+  lines.push(brief.user.summary || "(no identity summary available)");
+  lines.push("");
+  lines.push(`- profile: ${brief.user.profileUrl}`);
+  if (brief.user.plan) lines.push(`- plan: ${brief.user.plan}`);
+  lines.push("");
+
+  lines.push(`## Memories (${brief.memories.count})`);
+  if (!brief.memories.included) {
+    lines.push("- excluded (includeMemories=false)");
+  } else if (brief.memories.items.length === 0) {
+    lines.push("- none recorded yet");
+  } else {
+    for (const memory of brief.memories.items) {
+      lines.push(`- [${memory.category}] ${memory.content}`);
+    }
+  }
+  lines.push("");
+
+  lines.push("## Skills");
+  lines.push(
+    `- installed: ${brief.skills.installed.length > 0 ? brief.skills.installed.join(", ") : "none"}`
+  );
+  lines.push("");
+
+  lines.push("## Next Moves");
+  lines.push(brief.nextMoves.map((move) => `- ${move}`).join("\n"));
+  lines.push("");
+  lines.push("## Reminders");
+  lines.push(brief.reminders.map((reminder) => `- ${reminder}`).join("\n"));
+
+  let markdown = lines.join("\n");
+  if (markdown.length > maxChars) {
+    markdown = markdown.slice(0, Math.max(0, maxChars - 32)).trimEnd() + "\n\n[truncated]";
+  }
+  return markdown;
 }
 
 // ============================================================

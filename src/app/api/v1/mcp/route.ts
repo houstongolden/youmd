@@ -29,11 +29,32 @@ async function proxyMcp(request: NextRequest): Promise<NextResponse> {
     signal: AbortSignal.timeout(15_000),
   });
 
-  const json = await upstream.json();
+  // Guard against non-JSON upstream responses (HTML error pages, gateway
+  // timeouts, etc.) — surface a JSON-RPC error instead of an unhandled 500.
+  let json: unknown;
+  try {
+    json = await upstream.json();
+  } catch {
+    return NextResponse.json(
+      {
+        jsonrpc: "2.0",
+        id: null,
+        error: { code: -32603, message: "upstream returned a non-JSON response" },
+      },
+      {
+        status: 502,
+        headers: { ...CORS_HEADERS, "Cache-Control": "no-store" },
+      }
+    );
+  }
 
   return NextResponse.json(json, {
     status: upstream.status,
-    headers: CORS_HEADERS,
+    headers: {
+      ...CORS_HEADERS,
+      // JSON-RPC responses are per-request — never cacheable.
+      "Cache-Control": "no-store",
+    },
   });
 }
 
