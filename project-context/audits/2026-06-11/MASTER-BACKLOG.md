@@ -130,13 +130,13 @@
 | T4 | Installer hardening: npm default channel, tag-pinned source, auto-upgrade health check + rollback | M | done (9d4a6e0: npm default, tag-pinned source, upgrade rollback) |
 | T5 | Atomic JSON writes (tmp+rename+lock), 0600/0700 perms, .bak on corrupt config | S | done (e514a2b: atomic+locked writes, 0600/0700, .bak on corrupt) |
 | T6 | CI: tsc+lint+build+cli-tests on PR; gated Convex prod deploys | S | done (28d90b5+cd8b29c: CI gate live; lint warn-only until T31) |
-| T7 | pull/push home-first resolution; project-local needs flag + auto-gitignore | S | in-progress (agent) |
+| T7 | pull/push home-first resolution; project-local needs flag + auto-gitignore | S | done (34fc522; home-first, --local + marker, auto-gitignore; 13 tests) |
 | T8 | ISR for /[username] + /profiles; skip anonymous Convex live queries | M | todo |
 | T9 | Server-assembled system prompt; chat proxy rejects client system messages | L | todo |
 | T10 | Lossless identity round-trip (markdown per-section source of truth + property test) | L | todo |
 | T11 | Load JetBrains Mono + Inter via next/font | S | done (aca29f3) |
 | T12 | export const viewport; drop user-scalable=no (WCAG) | S | done (aca29f3) |
-| T13 | Sentry + sanitized error codes + scheduled smoke alerts + /api/v1/health | M | in-progress (agent) |
+| T13 | Sentry + sanitized error codes + scheduled smoke alerts + /api/v1/health | M | done (34fc522; health route, 26 sanitized 500 sites, 30-min smoke cron; Sentry = Houston decision) |
 | T14 | Unified MCP tool registry; official SDK Streamable HTTP; remote serves all tools | M-L | todo |
 | T15 | Fix lastPulledHash ancestry bug | S | done (a984939) |
 | T16 | Bounded-batch rateLimits cleanup w/ index + reschedule | S | done (683f014) |
