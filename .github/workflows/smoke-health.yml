@@ -1,0 +1,44 @@
+# T13 — scheduled production smoke (TECH-STACK-AUDIT).
+#
+# Curls the public surfaces every 30 minutes and fails the run on any
+# non-200 — GitHub's workflow-failure notification IS the alert (no Sentry
+# yet; that needs a DSN/account decision).
+#
+# Why the Convex site URL for the health check: /api/v1/* on www.you.md is
+# only reachable for routes with an explicit Next proxy handler under
+# src/app/api/v1/ (there is no catch-all rewrite; src/proxy.ts only passes
+# /api through as a reserved path). GET /api/v1/health ships in
+# convex/http.ts, so it lives on the Convex prod site domain until a
+# src/app/api/v1/health proxy route is added. The homepage check mirrors
+# the llms:smoke base (https://www.you.md).
+name: Smoke / health
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Homepage responds 200 (www.you.md)
+        run: |
+          code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 --retry 2 --retry-delay 5 https://www.you.md/)
+          echo "homepage status: $code"
+          test "$code" = "200"
+
+      - name: API health responds 200 with status ok (Convex prod)
+        run: |
+          url="https://kindly-cassowary-600.convex.site/api/v1/health"
+          body=$(mktemp)
+          code=$(curl -sS -o "$body" -w "%{http_code}" --max-time 30 --retry 2 --retry-delay 5 "$url")
+          echo "health status: $code"
+          cat "$body"
+          test "$code" = "200"
+          grep -q '"status": "ok"' "$body"
+          grep -q '"schemaVersion": "you-md/v1"' "$body"
