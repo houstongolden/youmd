@@ -36,14 +36,28 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+// Pre-hydration theme bootstrap — dark is the default; ThemeToggle persists
+// "theme" in localStorage ("light" | "dark" | "system") and toggles the
+// .light class on <html>. Applying it synchronously before first paint
+// prevents a dark→light flash for light/system-light users.
+// Constant string, no interpolation — XSS-safe by construction.
+const THEME_INIT_SCRIPT =
+  '(function(){try{var t=localStorage.getItem("theme");if(t==="light"||(t==="system"&&!window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("light")}}catch(e){}})();';
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="en"
+      className={`dark ${inter.variable} ${jetbrainsMono.variable}`}
+      // The theme script below may add .light before hydration — expected mismatch
+      suppressHydrationWarning
+    >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(regs){for(var i=0;i<regs.length;i++){regs[i].unregister();}}).catch(function(){});}if(typeof caches!=='undefined'&&caches.keys){caches.keys().then(function(ks){for(var j=0;j<ks.length;j++){caches.delete(ks[j]);}}).catch(function(){});}}catch(e){}})();`,
