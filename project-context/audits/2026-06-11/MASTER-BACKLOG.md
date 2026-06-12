@@ -145,9 +145,9 @@
 | T19 | Lazy-load dashboard panes; docs page → server component | M | todo |
 | T20 | Profiles searchIndex for MCP search_profiles | S | done (683f014) |
 | T21 | ARIA live regions on terminal chat + skip link | S | in-progress (agent) |
-| T22 | Delete 12 dead landing sections + unused reactbits/ + ogl dep; dedupe components | M | in-progress (agent) |
+| T22 | Delete 12 dead landing sections + unused reactbits/ + ogl dep; dedupe components | M | done (9451a9d; 17 dead files + ogl removed, live components verified kept) |
 | T23 | Route-level loading.tsx + error.tsx for key routes | M | in-progress (agent) |
-| T24 | Single canonical host (apex vs www) alignment | S | in-progress (agent) |
+| T24 | Single canonical host (apex vs www) alignment | S | done (9451a9d; www canonical, 308 backstop + metadata/sitemap aligned; post-deploy curls pending) |
 | T25 | MCP tool-call test harness (table-driven over all tools) | M | todo |
 | T26 | Playwright smoke: landing → sign-in → dashboard + anon profile | M | todo |
 | T27 | Per-section sha256 manifest + shared canonicalJsonString package | M | todo |
