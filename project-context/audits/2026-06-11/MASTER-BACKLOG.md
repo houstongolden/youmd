@@ -27,7 +27,7 @@
 | P2 | Resolve draft/publish semantics (save==publish w/ rollback patching profile, or true drafts) | PRODUCT-AUDIT #2; FEATURE-ROADMAP 1.2 | M | blocked(needs-spec: Houston call) |
 | P3 | Canonical `assembleAgentContext()` for web agent, CLI chat, hosted MCP, /ctx links + parity test | PRODUCT-AUDIT #3; FEATURE-ROADMAP 2.1 | L | todo |
 | P4 | Shared `generateSecureToken` replacing Math.random in apiKeys.ts:17, contextLinks.ts:18, private.ts:82, profiles.ts:26 | PRODUCT-AUDIT #4; FEATURE-ROADMAP 0.1 | S | done (1ce525d: CSPRNG via secureToken.ts, shapes preserved) |
-| P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | in-progress (agent) |
+| P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | done (4b943a2; prod e2e: REST ?q= + MCP search_memories verified; docs regen queued behind cli lane) |
 | P6 | Fix `youmd mcp --install claude --auto` → ~/.claude.json or `claude mcp add`; post-install verify | PRODUCT-AUDIT #8; FEATURE-ROADMAP 1.3 | S | done (bf2e647: claude mcp add / ~/.claude.json + verify) |
 | P7 | Publish CLI to npm + version-skew CI check | PRODUCT-AUDIT #9; FEATURE-ROADMAP 0.3 | S | blocked(otp) |
 | P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning; also reconcile YOUSTACKS_PRODUCT_LAYER_PRD.md:201-210 drifted table + fix example manifest minYoumdCli 0.7.0 vs cli 0.6.23 | PRODUCT-AUDIT #10; P32 findings | M | todo |
@@ -64,17 +64,17 @@
 
 | ID | Item | Effort | Status |
 |---|---|---|---|
-| U1 | Strip `@` from CLI celebration URLs + normalize `@`/`%40` in [username] route w/ 301 | S | in-progress (agent) |
+| U1 | Strip `@` from CLI celebration URLs + normalize `@`/`%40` in [username] route w/ 301 | S | web done (65cd878, 308 redirect verified vs next start); CLI half with lint lane |
 | U2 | Fix onboarding done-phrase false positives (bare no/yes/ready); gate on wrap-up offer | S | todo |
 | U3 | Fix fake "[saved private project]" — real updatePrivateContext write or honest message | S | todo |
-| U4 | Gate /initialize redirect on onboarding-complete marker, not bare username | M | in-progress (agent) |
-| U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | in-progress (agent) |
+| U4 | Gate /initialize redirect on onboarding-complete marker, not bare username | M | done (51a7f38; gated on published bundle, resumes mid-flow users) |
+| U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | done (e66a58b; default-open + localStorage persist + skeleton parity) |
 | U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | todo |
 | U7 | Device-flow login (CLI code → browser approve → poll) | L | todo |
 | U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | todo |
 | U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | todo |
 | U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | done (b0ddedb: 16 fake delays removed, 250ms min spinner display) |
-| U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | in-progress (agent) |
+| U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | done (e66a58b; activity=agent log, analytics=stats, session log=account events) |
 | U12 | Profile preview: direct ProfileContent render w/ preview prop (kill iframe) | M | todo |
 | U13 | Local-first portrait cache (instant render, background refresh) | M | todo |
 | U14 | Sign-up correction commands (`back`, `/email`) + resend/change-email on verify failure | S | todo |
@@ -153,7 +153,7 @@
 | T27 | Per-section sha256 manifest + shared canonicalJsonString package | M | todo |
 | T28 | Add llms.txt/shell/schema/install.sh to proxy RESERVED_PATHS | S | done (f0f7925) |
 | T29 | CLI version from package.json; postinstall banner TTY gate; publish version-exists check | S | partial (a984939 version-from-package.json; banner TTY gate + publish version-exists check pending) |
-| T30 | Spend-cap doc/code drift fix; pre-hydration theme script | S | partial (ab0277d spend-cap done; theme script pending) |
+| T30 | Spend-cap doc/code drift fix; pre-hydration theme script | S | done (ab0277d spend-cap; 70efbe3 pre-hydration theme script) |
 
 | T31 | Lint-zero: fix 169 pre-existing eslint errors in src/, then flip CI lint step to blocking | S-M | in-progress (agent) |
 
