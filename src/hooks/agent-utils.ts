@@ -3,6 +3,10 @@
 // ---------------------------------------------------------------------------
 
 import { CONVEX_SITE_URL } from "@/lib/constants";
+import {
+  assembleAgentContext,
+  type AgentContextMemory,
+} from "../../convex/lib/agentContext";
 
 export const CHAT_PROXY_URL = "/api/v1/chat";
 export const CHAT_ACK_URL = "/api/v1/chat/ack";
@@ -1182,15 +1186,24 @@ export function parseCustomSectionsFromResponse(text: string): CustomSection[] {
 export function buildProfileContext(youJson: Record<string, unknown> | null, recentMemories?: Array<{ category: string; content: string; tags?: string[] }>): string {
   if (!youJson && (!recentMemories || recentMemories.length === 0)) return "the user has no existing profile data yet.";
 
+  // Canonical assembly (PRODUCT-AUDIT #3): the web You Agent draws the same
+  // identity core and the same memory ordering/cap as the hosted MCP brief,
+  // the /ctx links, and the CLI brief — from convex/lib/agentContext.ts.
+  const assembled = assembleAgentContext({
+    youJson,
+    memories: (recentMemories ?? []) as AgentContextMemory[],
+  });
+  const core = assembled.identityCore;
+
   const parts: string[] = [];
 
   if (youJson) {
     parts.push("here is the user's current profile data:");
     const identity = youJson.identity as Record<string, unknown> | undefined;
     if (identity) {
-      if (identity.name) parts.push(`name: ${identity.name}`);
+      if (core.name) parts.push(`name: ${core.name}`);
       if (identity.tagline) parts.push(`tagline: ${identity.tagline}`);
-      if (identity.location) parts.push(`location: ${identity.location}`);
+      if (core.location) parts.push(`location: ${core.location}`);
       const bio = identity.bio as Record<string, string> | undefined;
       if (bio?.short) parts.push(`bio (short): ${bio.short}`);
       if (bio?.medium) parts.push(`bio (medium): ${bio.medium}`);
@@ -1223,7 +1236,7 @@ export function buildProfileContext(youJson: Record<string, unknown> | null, rec
     }
 
     const prefs = youJson.preferences as Record<string, Record<string, unknown>> | undefined;
-    if (prefs?.agent?.tone) parts.push(`agent tone preference: ${prefs.agent.tone}`);
+    if (core.tone) parts.push(`agent tone preference: ${core.tone}`);
     if (prefs?.writing?.style) parts.push(`writing style: ${prefs.writing.style}`);
 
     const dirs = youJson.agent_directives as Record<string, unknown> | undefined;
@@ -1231,25 +1244,18 @@ export function buildProfileContext(youJson: Record<string, unknown> | null, rec
       if (dirs.communication_style) parts.push(`agent directive — communication style: ${dirs.communication_style}`);
       if (Array.isArray(dirs.negative_prompts) && dirs.negative_prompts.length > 0)
         parts.push(`agent directive — never: ${(dirs.negative_prompts as string[]).join("; ")}`);
-      if (dirs.default_stack) parts.push(`agent directive — default stack: ${dirs.default_stack}`);
+      if (core.stack) parts.push(`agent directive — default stack: ${core.stack}`);
       if (dirs.decision_framework) parts.push(`agent directive — decision framework: ${dirs.decision_framework}`);
-      if (dirs.current_goal) parts.push(`agent directive — current goal: ${dirs.current_goal}`);
+      if (core.goal) parts.push(`agent directive — current goal: ${core.goal}`);
     }
   }
 
-  // Inject memories with relevance-based ordering
-  // Priority: preference > decision > goal > fact > project > session_summary > other
-  if (recentMemories && recentMemories.length > 0) {
-    const PRIORITY: Record<string, number> = {
-      preference: 0, decision: 1, goal: 2, fact: 3, project: 4,
-      insight: 5, relationship: 6, context: 7, session_summary: 8,
-    };
-    const sorted = [...recentMemories].sort(
-      (a, b) => (PRIORITY[a.category] ?? 9) - (PRIORITY[b.category] ?? 9)
-    );
+  // Inject memories — canonical durable-first ordering + cap from
+  // assembleAgentContext (same order/cap as the hosted + CLI agent briefs).
+  if (assembled.memories.items.length > 0) {
     parts.push("");
     parts.push("--- your memory ---");
-    for (const m of sorted) {
+    for (const m of assembled.memories.items) {
       parts.push(`- [${m.category}] ${m.content}`);
     }
     parts.push("reference these memories to be personal and specific.");
