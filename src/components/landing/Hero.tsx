@@ -70,7 +70,7 @@ const Hero = () => {
               ))}
             </div>
 
-            <div className="mt-7 max-w-[520px] rounded-[2px] border border-border bg-[hsl(var(--bg-raised))] px-4 py-3">
+            <div className="mt-7 max-w-[520px] rounded-sm border border-border bg-[hsl(var(--bg-raised))] px-4 py-3">
               <code className="break-all font-mono text-[11px] leading-relaxed text-accent">
                 $ curl -fsSL https://you.md/install.sh | bash
               </code>
@@ -110,7 +110,7 @@ const Hero = () => {
           <div className="lg:pt-3">
             <Link href="/houstongolden" className="group block" aria-label="view houstongolden live profile">
               <TerminalCard title="live identity surface" bodyClassName="space-y-4 p-3">
-                <div className="aspect-[1.18/1] overflow-hidden rounded-[2px] border border-border bg-background">
+                <div className="aspect-[1.18/1] overflow-hidden rounded-sm border border-border bg-background">
                   <HeroPortrait />
                 </div>
                 <div className="space-y-3 px-1 pb-1">

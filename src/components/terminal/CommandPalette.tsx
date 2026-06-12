@@ -147,7 +147,7 @@ export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProp
     >
       <div
         className="w-full max-w-md border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] shadow-2xl overflow-hidden"
-        style={{ borderRadius: "2px" }}
+        style={{ borderRadius: "var(--radius)" }}
         onKeyDown={handleKeyDown}
       >
         {/* Header */}
@@ -166,7 +166,7 @@ export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProp
             spellCheck={false}
             className="flex-1 bg-transparent border-none outline-none font-mono text-[13px] text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] placeholder:text-[hsl(var(--text-secondary))]/20"
           />
-          <kbd className="hidden sm:inline-block px-1.5 py-0.5 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 border border-[hsl(var(--border))]" style={{ borderRadius: "2px" }}>
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 border border-[hsl(var(--border))]" style={{ borderRadius: "var(--radius)" }}>
             esc
           </kbd>
         </div>

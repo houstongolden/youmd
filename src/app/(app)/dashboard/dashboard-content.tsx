@@ -348,7 +348,7 @@ export function DashboardContent() {
                         ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border-[hsl(var(--border))]"
                         : "text-[hsl(var(--text-secondary))] opacity-40 border-transparent hover:opacity-75"
                     }`}
-                    style={{ borderRadius: "2px" }}
+                    style={{ borderRadius: "var(--radius)" }}
                   >
                     {pane.label}
                   </button>
@@ -419,7 +419,7 @@ export function DashboardContent() {
                             ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))]"
                             : "border-transparent text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"
                         }`}
-                        style={{ borderRadius: "2px" }}
+                        style={{ borderRadius: "var(--radius)" }}
                       >
                         {group.label}
                       </button>
@@ -437,7 +437,7 @@ export function DashboardContent() {
                             ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border-[hsl(var(--border))]"
                             : "text-[hsl(var(--text-secondary))] opacity-40 border-transparent hover:opacity-75"
                         }`}
-                        style={{ borderRadius: "2px" }}
+                        style={{ borderRadius: "var(--radius)" }}
                       >
                         {pane.label}
                       </button>

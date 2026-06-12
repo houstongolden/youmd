@@ -37,7 +37,6 @@ function DocLink({ href, label, hint }: DocLinkProps) {
       target="_blank"
       rel="noreferrer"
       className="block group font-mono text-[11px] py-1.5 px-2 border border-transparent hover:border-[hsl(var(--accent))]/30 hover:bg-[hsl(var(--bg))] transition-colors"
-      style={{ borderRadius: "2px" }}
     >
       <span className="text-[hsl(var(--accent))] opacity-80 group-hover:opacity-100">
         &gt; {label}

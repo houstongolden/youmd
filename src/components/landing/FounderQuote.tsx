@@ -48,7 +48,7 @@ const FounderQuote = () => (
             {/* Cycle 67: bumped to min-h-[44px] tap area (was 40 tall, constrained
                 by the 40x40 avatar div). Cycle 65 missed this file. */}
             <Link href="/houstongolden" className="flex items-center gap-3 min-h-[44px] py-1 group">
-              <div className="w-10 h-10 overflow-hidden border border-[hsl(var(--border))] group-hover:border-accent/30 transition-colors" style={{ borderRadius: "2px" }}>
+              <div className="w-10 h-10 overflow-hidden border border-[hsl(var(--border))] group-hover:border-accent/30 transition-colors" style={{ borderRadius: "var(--radius)" }}>
                 <AsciiAvatar
                   src="/assets/houston-portrait.jpeg"
                   cols={40}

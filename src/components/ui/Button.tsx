@@ -26,7 +26,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 };
 
 const baseClasses =
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-[2px] border font-mono font-medium leading-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-35";
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-sm border font-mono font-medium leading-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-35";
 
 type ButtonOwnProps = {
   variant?: ButtonVariant;

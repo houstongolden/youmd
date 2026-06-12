@@ -262,7 +262,7 @@ export default function SignUpPage() {
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4 min-h-0">
         <div
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden min-h-0"
-          style={{ borderRadius: "2px" }}
+          style={{ borderRadius: "var(--radius)" }}
         >
           <TerminalHeader title="you.md — sign up" asHeading />
 

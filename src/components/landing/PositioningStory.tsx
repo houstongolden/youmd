@@ -97,7 +97,7 @@ export default function PositioningStory() {
           <TerminalCard title="how it works" bodyClassName="space-y-5">
             {steps.map(([label, body], index) => (
               <div key={label} className="flex items-start gap-4">
-                <div className="mt-0.5 flex h-7 min-w-7 items-center justify-center rounded-[2px] border border-border font-mono text-[11px] text-accent">
+                <div className="mt-0.5 flex h-7 min-w-7 items-center justify-center rounded-sm border border-border font-mono text-[11px] text-accent">
                   {index + 1}
                 </div>
                 <div>

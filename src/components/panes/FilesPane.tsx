@@ -305,7 +305,7 @@ function FileViewer({
         <div className="flex items-center gap-2 shrink-0">
           {/* Markdown preview toggle */}
           {isMarkdown && (
-            <div className="flex items-center border border-[hsl(var(--border))]" style={{ borderRadius: "2px" }}>
+            <div className="flex items-center border border-[hsl(var(--border))]" style={{ borderRadius: "var(--radius)" }}>
               <button
                 onClick={() => setPreviewMode(false)}
                 className={`font-mono text-[9px] px-1.5 py-0.5 transition-colors ${
@@ -333,7 +333,7 @@ function FileViewer({
             {getExtLabel(file.path)}
           </span>
           {!file.editable && (
-            <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 uppercase border border-[hsl(var(--border))] px-1.5 py-0.5" style={{ borderRadius: "2px" }}>
+            <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 uppercase border border-[hsl(var(--border))] px-1.5 py-0.5" style={{ borderRadius: "var(--radius)" }}>
               read-only
             </span>
           )}
@@ -341,7 +341,6 @@ function FileViewer({
             <button
               onClick={onAddFileInDir}
               className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100 border border-[hsl(var(--accent))]/40 px-1.5 py-0.5 hover:bg-[hsl(var(--accent))]/10 transition-colors"
-              style={{ borderRadius: "2px" }}
               title="add a new markdown file inside this custom directory"
             >
               + new file in dir

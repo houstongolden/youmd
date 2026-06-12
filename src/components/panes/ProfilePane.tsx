@@ -89,7 +89,6 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
             target="_blank"
             rel="noopener noreferrer"
             className="text-[10px] font-mono px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-            style={{ borderRadius: "2px" }}
           >
             open
           </a>
@@ -102,7 +101,7 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
         <section>
           <div className="flex items-start gap-4">
             {avatarUrl && (
-              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "2px" }}>
+              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "var(--radius)" }}>
                 <AsciiAvatar
                   src={avatarUrl}
                   cols={50}
@@ -183,7 +182,7 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
                   <div
                     key={i}
                     className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
-                    style={{ borderRadius: "2px" }}
+                    style={{ borderRadius: "var(--radius)" }}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono text-sm text-[hsl(var(--text-primary))]">
@@ -218,7 +217,7 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
                   <span
                     key={i}
                     className="text-xs px-2.5 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] bg-[hsl(var(--bg-raised))]"
-                    style={{ borderRadius: "2px" }}
+                    style={{ borderRadius: "var(--radius)" }}
                   >
                     {value}
                   </span>
@@ -268,7 +267,7 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
               <SectionLabel>agent preferences</SectionLabel>
               <div
                 className="mt-3 border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] font-mono text-xs space-y-1.5"
-                style={{ borderRadius: "2px" }}
+                style={{ borderRadius: "var(--radius)" }}
               >
                 {data.preferences.agent.tone && (
                   <div className="flex gap-2">
@@ -315,7 +314,7 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
                 <div
                   key={src.platform}
                   className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 overflow-hidden"
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 >
                   <AsciiAvatar src={src.url} cols={40} canvasWidth={180} className="w-full" />
                   <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60 mt-1 block">

@@ -17,7 +17,6 @@ export function GithubAuthButton({
     <a
       href={href}
       className="group flex items-center justify-between border border-[hsl(var(--border))] px-4 py-3 font-mono text-[13px] text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))] transition-colors"
-      style={{ borderRadius: "2px" }}
     >
       <span className="opacity-90 group-hover:opacity-100">{label}</span>
       <span className="text-[hsl(var(--accent))] opacity-70 group-hover:opacity-100">

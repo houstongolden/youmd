@@ -41,7 +41,7 @@ function barChart(
 
 function StatBox({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
   return (
-    <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg))] flex-1 min-w-[100px]" style={{ borderRadius: "2px" }}>
+    <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg))] flex-1 min-w-[100px]" style={{ borderRadius: "var(--radius)" }}>
       <div className={`font-mono text-lg font-bold ${accent ? "text-[#C46A3A]" : "text-[hsl(var(--text-primary))]"}`}>
         {value}
       </div>
@@ -123,7 +123,7 @@ export function AnalyticsPane({ clerkId, profileId }: AnalyticsPaneProps) {
         </div>
 
         {/* Daily breakdown table (last 7 days) */}
-        <div className="mt-4 border border-[hsl(var(--border))] bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+        <div className="mt-4 border border-[hsl(var(--border))] bg-[hsl(var(--bg))]" style={{ borderRadius: "var(--radius)" }}>
           <div className="px-3 py-1.5 border-b border-[hsl(var(--border))] flex justify-between">
             <span className="text-[10px] text-[hsl(var(--text-secondary))] opacity-50">date</span>
             <div className="flex gap-4">
@@ -195,7 +195,7 @@ export function AnalyticsPane({ clerkId, profileId }: AnalyticsPaneProps) {
                 {agentStats.totalInteractions} total
               </span>
             </div>
-            <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+            <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))]" style={{ borderRadius: "var(--radius)" }}>
               {agentStats.agents.map((agent, i) => (
                 <div
                   key={`${agent.name}-${i}`}
@@ -203,7 +203,7 @@ export function AnalyticsPane({ clerkId, profileId }: AnalyticsPaneProps) {
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-[#C46A3A]">{agent.name}</span>
-                    <span className="text-[10px] text-[hsl(var(--text-secondary))] opacity-30 border border-[hsl(var(--border))] px-1" style={{ borderRadius: "2px" }}>
+                    <span className="text-[10px] text-[hsl(var(--text-secondary))] opacity-30 border border-[hsl(var(--border))] px-1" style={{ borderRadius: "var(--radius)" }}>
                       {agent.type}
                     </span>
                   </div>

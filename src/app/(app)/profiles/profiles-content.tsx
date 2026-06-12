@@ -139,7 +139,6 @@ function ProfileListCard({ entry, index }: { entry: DirectoryEntry; index: numbe
       <Link
         href={`/${entry.username}`}
         className="block py-4 border-b border-[hsl(var(--border))] group hover:bg-[hsl(var(--accent))]/[0.03] transition-all duration-200 px-3 -mx-3"
-        style={{ borderRadius: "2px" }}
       >
         <div className="flex items-center gap-4">
           <ProfilePortrait
@@ -161,7 +160,7 @@ function ProfileListCard({ entry, index }: { entry: DirectoryEntry; index: numbe
                   {entry.name || `@${entry.username}`}
                 </h3>
                 {!entry.isClaimed && (
-                  <span className="font-mono text-[8px] text-[hsl(var(--text-secondary))]/40 border border-[hsl(var(--border))] px-1 shrink-0" style={{ borderRadius: "2px" }}>
+                  <span className="font-mono text-[8px] text-[hsl(var(--text-secondary))]/40 border border-[hsl(var(--border))] px-1 shrink-0" style={{ borderRadius: "var(--radius)" }}>
                     unclaimed
                   </span>
                 )}
@@ -239,7 +238,6 @@ function ProfileGridCard({ entry, index }: { entry: DirectoryEntry; index: numbe
       <Link
         href={`/${entry.username}`}
         className="flex flex-col bg-[hsl(var(--raised))] border border-[hsl(var(--border))] group hover:border-[hsl(var(--accent))]/30 transition-all duration-200 p-3 h-full"
-        style={{ borderRadius: "2px" }}
       >
         {/* Avatar + status row */}
         <div className="flex items-start justify-between mb-3">
@@ -258,7 +256,7 @@ function ProfileGridCard({ entry, index }: { entry: DirectoryEntry; index: numbe
               entry.isClaimed ? "bg-[hsl(var(--success))]/60" : "bg-[hsl(var(--text-secondary))]/20"
             }`} />
             {!entry.isClaimed && (
-              <span className="font-mono text-[7px] text-[hsl(var(--text-secondary))]/40 border border-[hsl(var(--border))] px-1" style={{ borderRadius: "2px" }}>
+              <span className="font-mono text-[7px] text-[hsl(var(--text-secondary))]/40 border border-[hsl(var(--border))] px-1" style={{ borderRadius: "var(--radius)" }}>
                 unclaimed
               </span>
             )}
@@ -511,7 +509,7 @@ export function ProfilesDirectoryContent({
                   autoComplete="off"
                   spellCheck={false}
                   className="h-11 w-full border border-[hsl(var(--border))] bg-[hsl(var(--raised))] py-2 pl-7 pr-3 font-mono text-[12px] text-[hsl(var(--text-primary))] caret-[hsl(var(--accent))] transition-colors placeholder:text-[hsl(var(--text-secondary))]/30 focus:border-[hsl(var(--accent))]/50 focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-[hsl(var(--accent))]/20"
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 />
               </div>
 
@@ -536,7 +534,7 @@ export function ProfilesDirectoryContent({
                           ? "border-[hsl(var(--accent))]/60 text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
                           : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))]/70 hover:border-[hsl(var(--accent))]/30 hover:text-[hsl(var(--accent))]"
                       }`}
-                      style={{ borderRadius: "2px" }}
+                      style={{ borderRadius: "var(--radius)" }}
                     >
                       {f.label}
                     </button>
@@ -553,7 +551,7 @@ export function ProfilesDirectoryContent({
                     onChange={(e) => setSort(e.target.value as "recent" | "projects" | "alpha")}
                     aria-label="sort profiles"
                     className="h-10 min-w-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-2 font-mono text-[10px] text-[hsl(var(--text-secondary))] transition-colors hover:border-[hsl(var(--accent))]/30 hover:text-[hsl(var(--accent))] focus:border-[hsl(var(--accent))]/50 focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-[hsl(var(--accent))]/20 sm:h-9 sm:w-auto"
-                    style={{ borderRadius: "2px" }}
+                    style={{ borderRadius: "var(--radius)" }}
                   >
                     <option value="recent">recently active</option>
                     <option value="projects">most projects</option>
@@ -561,7 +559,7 @@ export function ProfilesDirectoryContent({
                   </select>
 
                   {/* View mode toggle */}
-                  <div className="flex h-10 items-stretch border border-[hsl(var(--border))] sm:h-9" style={{ borderRadius: "2px" }}>
+                  <div className="flex h-10 items-stretch border border-[hsl(var(--border))] sm:h-9" style={{ borderRadius: "var(--radius)" }}>
                     <button
                       type="button"
                       onClick={() => setViewMode("list")}

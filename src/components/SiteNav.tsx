@@ -132,7 +132,7 @@ export function SiteNav() {
                   className="flex items-center gap-2 group"
                 >
                   {avatarUrl ? (
-                    <div className="w-6 h-6 border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+                    <div className="w-6 h-6 border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "var(--radius)" }}>
                       <AsciiAvatar
                         src={avatarUrl}
                         cols={160}
@@ -142,7 +142,7 @@ export function SiteNav() {
                       />
                     </div>
                   ) : (
-                    <span className="w-6 h-6 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent" style={{ borderRadius: "2px" }}>
+                    <span className="w-6 h-6 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent" style={{ borderRadius: "var(--radius)" }}>
                       {username?.[0]?.toUpperCase() ?? ">"}
                     </span>
                   )}
@@ -151,7 +151,7 @@ export function SiteNav() {
                   </span>
                 </button>
                 {avatarDropdown && (
-                  <div className="absolute right-0 top-full mt-2 w-44 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-1 z-50" style={{ borderRadius: "2px" }}>
+                  <div className="absolute right-0 top-full mt-2 w-44 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-1 z-50" style={{ borderRadius: "var(--radius)" }}>
                     <Link href="/shell" className="block px-3 py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--accent))]/5 transition-colors">
                       &gt; shell
                     </Link>
@@ -174,7 +174,6 @@ export function SiteNav() {
               <Link
                 href="/create"
                 className="hidden h-7 items-center border border-[hsl(var(--accent))]/35 bg-[hsl(var(--accent))]/[0.08] px-2.5 font-mono text-[10px] leading-none text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]/60 hover:bg-[hsl(var(--accent))]/[0.14] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--accent))]/70 md:inline-flex"
-                style={{ borderRadius: "2px" }}
               >
                 create you.md
               </Link>
@@ -221,7 +220,7 @@ export function SiteNav() {
               className="flex items-center gap-2 mt-4"
             >
               {avatarUrl ? (
-                <div className="w-6 h-6 border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+                <div className="w-6 h-6 border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "var(--radius)" }}>
                   <AsciiAvatar
                     src={avatarUrl}
                     cols={160}
@@ -231,7 +230,7 @@ export function SiteNav() {
                   />
                 </div>
               ) : (
-                <span className="w-6 h-6 border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[10px] text-accent" style={{ borderRadius: "2px" }}>
+                <span className="w-6 h-6 border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[10px] text-accent" style={{ borderRadius: "var(--radius)" }}>
                   {username?.[0] ?? ">"}
                 </span>
               )}
@@ -244,7 +243,7 @@ export function SiteNav() {
               href="/create"
               onClick={() => setMobileOpen(false)}
               className="mt-4 inline-flex h-11 items-center justify-center border border-[hsl(var(--accent))]/45 bg-[hsl(var(--accent))]/10 px-5 font-mono text-[12px] text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]/70 hover:bg-[hsl(var(--accent))]/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--accent))]/70"
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
             >
               create you.md
             </Link>

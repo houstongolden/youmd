@@ -58,7 +58,7 @@ export default function ProfilePortrait({
   return (
     <div
       className={`${className} relative shrink-0 overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--bg))] transition-colors group-hover:border-[hsl(var(--accent))]/30`}
-      style={{ borderRadius: "2px" }}
+      style={{ borderRadius: "var(--radius)" }}
       aria-label={`${name || username} profile portrait`}
       role="img"
     >

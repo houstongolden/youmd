@@ -406,7 +406,7 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
         {/* ── Always-visible explainer ─────────────────────────── */}
         <div
           className="border border-[hsl(var(--accent))] border-opacity-40 bg-[hsl(var(--accent))] bg-opacity-[0.03] p-4 space-y-3"
-          style={{ borderRadius: "2px" }}
+          style={{ borderRadius: "var(--radius)" }}
         >
           <div className="text-[11px] font-mono text-[hsl(var(--accent))] uppercase tracking-wider">
             the vault
@@ -454,7 +454,7 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
         </div>
 
         {error && (
-          <div className="text-[11px] font-mono text-[hsl(var(--destructive))] border border-[hsl(var(--destructive))] border-opacity-30 rounded px-2 py-1">
+          <div className="text-[11px] font-mono text-[hsl(var(--destructive))] border border-[hsl(var(--destructive))] border-opacity-30 rounded-sm px-2 py-1">
             {error}
           </div>
         )}
@@ -465,7 +465,7 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
         )}
 
         {!unlocked && !initialized && (
-          <div className="space-y-3 border border-[hsl(var(--border))] p-4" style={{ borderRadius: "2px" }}>
+          <div className="space-y-3 border border-[hsl(var(--border))] p-4" style={{ borderRadius: "var(--radius)" }}>
             <SectionLabel>set up vault</SectionLabel>
             <p className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-60">
               choose a passphrase to create your encrypted vault. only you can decrypt it — we never see it, and we can&apos;t recover it.
@@ -501,7 +501,7 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
         )}
 
         {!unlocked && initialized && (
-          <div className="space-y-3 border border-[hsl(var(--border))] p-4" style={{ borderRadius: "2px" }}>
+          <div className="space-y-3 border border-[hsl(var(--border))] p-4" style={{ borderRadius: "var(--radius)" }}>
             <SectionLabel>unlock vault</SectionLabel>
             <p className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-60">
               {hasCiphertext

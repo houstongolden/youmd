@@ -97,7 +97,7 @@ function IdentityFieldTag({ field }: { field: string }) {
   return (
     <span
       className="text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-30 bg-[hsl(var(--bg))] px-1.5 py-0.5 border border-[hsl(var(--border))]"
-      style={{ borderRadius: "2px" }}
+      style={{ borderRadius: "var(--radius)" }}
     >
       {`{{${field}}}`}
     </span>
@@ -129,7 +129,7 @@ function SkillCard({
   return (
     <div
       className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))] p-4 space-y-3"
-      style={{ borderRadius: "2px" }}
+      style={{ borderRadius: "var(--radius)" }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -243,7 +243,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
       {/* ── Always-visible explainer ─────────────────────────── */}
       <div
         className="border border-[hsl(var(--accent))] border-opacity-40 bg-[hsl(var(--accent))] bg-opacity-[0.03] p-4 space-y-3"
-        style={{ borderRadius: "2px" }}
+        style={{ borderRadius: "var(--radius)" }}
       >
         <div className="text-[11px] font-mono text-[hsl(var(--accent))] uppercase tracking-wider">
           skills
@@ -299,7 +299,6 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           <button
             onClick={handleInstallMcp}
             className="text-[10px] font-mono text-[hsl(var(--accent))] border border-[hsl(var(--accent))] px-3 py-1.5 hover:bg-[hsl(var(--accent))] hover:bg-opacity-10 transition-colors"
-            style={{ borderRadius: "2px" }}
             title="copy install command"
           >
             {mcpCopied ? "copied Claude MCP install command" : "install MCP"}
@@ -307,7 +306,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           <button
             onClick={() => setShowAllSkills((v) => !v)}
             className="text-[10px] font-mono text-[hsl(var(--text-secondary))] border border-[hsl(var(--border))] px-3 py-1.5 hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))] transition-colors"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           >
             {showAllSkills ? "hide all skills" : "view all skills"}
           </button>
@@ -491,7 +490,6 @@ function CommandRow({ command, description }: { command: string; description: st
       <button
         onClick={handleCopy}
         className="text-[hsl(var(--accent))] bg-[hsl(var(--bg))] px-2 py-1 border border-[hsl(var(--border))] shrink-0 hover:bg-[hsl(var(--border))] transition-colors cursor-pointer text-left"
-        style={{ borderRadius: "2px" }}
         title="click to copy"
       >
         {copied ? (

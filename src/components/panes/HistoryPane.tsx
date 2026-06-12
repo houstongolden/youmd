@@ -161,7 +161,7 @@ export function HistoryPane({ userId, clerkId }: HistoryPaneProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     {v.isPublished && (
-                      <span className="text-[8px] font-mono text-[hsl(var(--success))] border border-[hsl(var(--success))]/20 px-1.5 py-0.5" style={{ borderRadius: "2px" }}>
+                      <span className="text-[8px] font-mono text-[hsl(var(--success))] border border-[hsl(var(--success))]/20 px-1.5 py-0.5" style={{ borderRadius: "var(--radius)" }}>
                         HEAD
                       </span>
                     )}

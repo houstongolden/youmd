@@ -235,7 +235,7 @@ function CodeBlock({ lang, content }: { lang?: string; content: string }) {
   }, [content]);
 
   return (
-    <div className="my-2 border border-[hsl(var(--border))] overflow-hidden relative group" style={{ borderRadius: "2px" }}>
+    <div className="my-2 border border-[hsl(var(--border))] overflow-hidden relative group" style={{ borderRadius: "var(--radius)" }}>
       {lang && (
         <div className="bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-3 py-1 flex items-center justify-between">
           <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-40">{lang}</span>
@@ -264,7 +264,7 @@ function CodeBlock({ lang, content }: { lang?: string; content: string }) {
 
 function TableBlock({ headers, rows }: { headers: string[]; rows: string[][] }) {
   return (
-    <div className="my-2 border border-[hsl(var(--border))] overflow-x-auto" style={{ borderRadius: "2px" }}>
+    <div className="my-2 border border-[hsl(var(--border))] overflow-x-auto" style={{ borderRadius: "var(--radius)" }}>
       <table className="w-full text-[12px] font-mono">
         <thead>
           <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))]">
@@ -293,7 +293,7 @@ function TableBlock({ headers, rows }: { headers: string[]; rows: string[][] }) 
 
 function StatsBlock({ items }: { items: { label: string; value: string; accent?: boolean }[] }) {
   return (
-    <div className="my-2 grid gap-px bg-[hsl(var(--border))] border border-[hsl(var(--border))]" style={{ gridTemplateColumns: `repeat(${Math.min(items.length, 4)}, 1fr)`, borderRadius: "2px" }}>
+    <div className="my-2 grid gap-px bg-[hsl(var(--border))] border border-[hsl(var(--border))]" style={{ gridTemplateColumns: `repeat(${Math.min(items.length, 4)}, 1fr)`, borderRadius: "var(--radius)" }}>
       {items.map((item, i) => (
         <div key={i} className="bg-[hsl(var(--bg-raised))] px-3 py-2">
           <p className="text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-50 uppercase tracking-wider">
@@ -310,7 +310,7 @@ function StatsBlock({ items }: { items: { label: string; value: string; accent?:
 
 function BarBlock({ items }: { items: { label: string; value: number; max: number }[] }) {
   return (
-    <div className="my-2 border border-[hsl(var(--border))] p-3 space-y-1.5" style={{ borderRadius: "2px" }}>
+    <div className="my-2 border border-[hsl(var(--border))] p-3 space-y-1.5" style={{ borderRadius: "var(--radius)" }}>
       {items.map((item, i) => {
         const pct = Math.min((item.value / item.max) * 100, 100);
         return (
@@ -372,7 +372,7 @@ function ListBlock({ items }: { items: string[] }) {
 
 function ImageBlock({ alt, url }: { alt: string; url: string }) {
   return (
-    <div className="my-3 border border-[hsl(var(--border))] overflow-hidden inline-block" style={{ borderRadius: "2px" }}>
+    <div className="my-3 border border-[hsl(var(--border))] overflow-hidden inline-block" style={{ borderRadius: "var(--radius)" }}>
       {/* Label */}
       <div className="bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-3 py-1 flex items-center justify-between">
         <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-50">{alt || "image"}</span>
@@ -453,7 +453,7 @@ function formatInline(text: string): ReactNode {
         }
         if (part.type === "code") {
           return (
-            <code key={i} className="px-1 py-0.5 text-[12px] bg-[hsl(var(--bg))]/50 text-[hsl(var(--accent-mid))] border border-[hsl(var(--border))]" style={{ borderRadius: "2px" }}>
+            <code key={i} className="px-1 py-0.5 text-[12px] bg-[hsl(var(--bg))]/50 text-[hsl(var(--accent-mid))] border border-[hsl(var(--border))]" style={{ borderRadius: "var(--radius)" }}>
               {part.text}
             </code>
           );

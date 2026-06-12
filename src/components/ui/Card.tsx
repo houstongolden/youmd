@@ -19,7 +19,7 @@ export function Card({
   padding?: CardPadding;
 }) {
   return (
-    <div className={cn("rounded-[2px] border border-border bg-card", paddingClasses[padding], className)}>
+    <div className={cn("rounded-sm border border-border bg-card", paddingClasses[padding], className)}>
       {children}
     </div>
   );
@@ -37,7 +37,7 @@ export function TerminalCard({
   bodyClassName?: string;
 }) {
   return (
-    <div className={cn("overflow-hidden rounded-[2px] border border-border bg-card", className)}>
+    <div className={cn("overflow-hidden rounded-sm border border-border bg-card", className)}>
       <div className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
         <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/18" />
         <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/18" />

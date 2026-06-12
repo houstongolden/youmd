@@ -197,7 +197,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
           <div
             ref={portraitContainerRef}
             className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 mb-2 overflow-hidden"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           >
             <AsciiAvatar
               src={primaryUrl}
@@ -213,7 +213,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
           <div
             ref={portraitContainerRef}
             className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-6 mb-2 text-center"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           >
             <p className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
               no portrait source yet.
@@ -229,7 +229,6 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
           <button
             onClick={handleDownloadPng}
             className="w-full border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-2 px-3 font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-90 hover:border-[hsl(var(--accent))]/40 transition-all mb-2"
-            style={{ borderRadius: "2px" }}
           >
             &gt; download as .png
           </button>
@@ -249,7 +248,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
                   ? "border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent-wash))] text-[hsl(var(--accent))]"
                   : "border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-80"
               }`}
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
             >
               <span className="block text-[14px] mb-0.5">{opt.desc.slice(0, 4)}</span>
               {opt.label}
@@ -269,7 +268,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
                   ? "border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent-wash))] text-[hsl(var(--accent))]"
                   : "border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-80"
               }`}
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
             >
               {p.label}
             </button>
@@ -293,7 +292,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
                   ? "border-[hsl(var(--accent))]/50 bg-[hsl(var(--accent-wash))] ring-1 ring-[hsl(var(--accent))]/20"
                   : "border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] hover:border-[hsl(var(--text-secondary))]/30"
               }`}
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
             >
               {/* Real photo preview */}
               <div className="relative overflow-hidden bg-black/20" style={{ aspectRatio: "1" }}>
@@ -353,7 +352,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading || !userProfile?._id || !user?.id}
           className="w-full border border-dashed border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-4 px-3 font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-80 hover:border-[hsl(var(--accent))]/40 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-          style={{ borderRadius: "2px" }}
+          style={{ borderRadius: "var(--radius)" }}
         >
           {uploading ? "uploading..." : "> select image file"}
         </button>
@@ -362,7 +361,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
         {(uploadPreview || socialImages.custom) && (
           <div
             className="mt-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 overflow-hidden"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           >
             <div className="flex items-center gap-2 mb-2">
               <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40 uppercase tracking-wider">
@@ -379,7 +378,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
               src={uploadPreview || socialImages.custom}
               alt=""
               className="w-full max-h-48 object-contain opacity-70"
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
             />
           </div>
         )}
@@ -390,7 +389,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
         <SectionLabel>settings</SectionLabel>
         <div
           className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] space-y-2"
-          style={{ borderRadius: "2px" }}
+          style={{ borderRadius: "var(--radius)" }}
         >
           {[
             { label: "format", value: format },
@@ -413,7 +412,7 @@ export function PortraitPane({ username, ownerId }: PortraitPaneProps) {
         <SectionLabel>regenerate</SectionLabel>
         <div
           className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
-          style={{ borderRadius: "2px" }}
+          style={{ borderRadius: "var(--radius)" }}
         >
           <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">
             regenerate via terminal or add more source images:

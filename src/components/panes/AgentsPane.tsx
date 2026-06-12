@@ -99,27 +99,27 @@ export function AgentsPane() {
                   <span className="font-bold w-40 truncate">{a.agentName}</span>
                   {a.trustLevel === "verified-third-party" && (
                     <span
-                      className="text-[hsl(var(--success))] text-[9px] px-1 border border-[hsl(var(--success))]/40 rounded"
+                      className="text-[hsl(var(--success))] text-[9px] px-1 border border-[hsl(var(--success))]/40 rounded-sm"
                       title="External agent fetched anonymously or via context-link token. This is a real third-party read."
-                      style={{ borderRadius: "2px" }}
+                      style={{ borderRadius: "var(--radius)" }}
                     >
                       verified
                     </span>
                   )}
                   {a.trustLevel === "self-attributed" && (
                     <span
-                      className="text-yellow-500 text-[9px] px-1 border border-yellow-500/40 rounded"
+                      className="text-yellow-500 text-[9px] px-1 border border-yellow-500/40 rounded-sm"
                       title="Authenticated as you (API key or MCP). The 'agent name' is self-reported, not verified."
-                      style={{ borderRadius: "2px" }}
+                      style={{ borderRadius: "var(--radius)" }}
                     >
                       self
                     </span>
                   )}
                   {a.trustLevel === "mixed" && (
                     <span
-                      className="text-cyan-400 text-[9px] px-1 border border-cyan-400/40 rounded"
+                      className="text-cyan-400 text-[9px] px-1 border border-cyan-400/40 rounded-sm"
                       title="Mix of verified third-party and self-attributed events"
-                      style={{ borderRadius: "2px" }}
+                      style={{ borderRadius: "var(--radius)" }}
                     >
                       mixed
                     </span>
@@ -158,7 +158,7 @@ export function AgentsPane() {
                   ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"
                   : "border-white/10 opacity-60 hover:opacity-100"
               }`}
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
             >
               {f}
             </button>

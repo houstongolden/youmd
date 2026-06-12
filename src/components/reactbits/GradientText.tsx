@@ -108,7 +108,7 @@ export default function GradientText({
 
   return (
     <motion.span
-      className={`inline-block relative ${showBorder ? "px-3 py-1 rounded-2xl backdrop-blur-sm" : ""} ${className}`}
+      className={`inline-block relative ${showBorder ? "px-3 py-1 rounded-sm backdrop-blur-sm" : ""} ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >

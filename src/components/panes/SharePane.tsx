@@ -181,7 +181,7 @@ function LinkPreviewModal({
       <div className="absolute inset-0 bg-black/80" />
       <div
         className="relative w-full max-w-2xl max-h-[80vh] mx-4 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] flex flex-col"
-        style={{ borderRadius: "2px" }}
+        style={{ borderRadius: "var(--radius)" }}
       >
         <div className="flex items-center justify-between px-3 py-2 border-b border-[hsl(var(--border))]">
           <div className="flex items-center gap-1.5">
@@ -254,7 +254,6 @@ function LinkPreviewModal({
                   ? "border-[hsl(var(--success))]/40 text-[hsl(var(--success))] bg-[hsl(var(--success))]/5"
                   : "border-[hsl(var(--accent))]/30 text-[hsl(var(--accent))] hover:bg-[hsl(var(--accent-wash))]"
               }`}
-              style={{ borderRadius: "2px" }}
             >
               {copiedContent ? "copied" : "copy agent text"}
             </button>
@@ -463,7 +462,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
         {/* Publish status — compact */}
         <div
           className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] mb-4"
-          style={{ borderRadius: "2px" }}
+          style={{ borderRadius: "var(--radius)" }}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -504,7 +503,6 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[9px] font-mono px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-                style={{ borderRadius: "2px" }}
               >
                 open
               </a>
@@ -521,7 +519,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
         <div
           className="border-2 p-4 mb-4"
           style={{
-            borderRadius: "2px",
+            borderRadius: "var(--radius)",
             borderColor: scope === "full" ? scopeAccent("full") + "55" : scopeAccent("public") + "55",
             background:
               scope === "full" ? scopeAccent("full") + "08" : scopeAccent("public") + "08",
@@ -537,7 +535,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
               onClick={() => setScope("public")}
               className="text-left p-3 border-2 transition-all"
               style={{
-                borderRadius: "2px",
+                borderRadius: "var(--radius)",
                 borderColor:
                   scope === "public" ? scopeAccent("public") : "hsl(var(--border))",
                 background:
@@ -581,7 +579,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
               onClick={() => setScope("full")}
               className="text-left p-3 border-2 transition-all"
               style={{
-                borderRadius: "2px",
+                borderRadius: "var(--radius)",
                 borderColor: scope === "full" ? scopeAccent("full") : "hsl(var(--border))",
                 background: scope === "full" ? scopeAccent("full") + "12" : "hsl(var(--bg))",
               }}
@@ -616,7 +614,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                     style={{
                       borderColor: scopeAccent("full") + "60",
                       color: scopeAccent("full"),
-                      borderRadius: "2px",
+                      borderRadius: "var(--radius)",
                     }}
                   >
                     PRO
@@ -632,7 +630,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
 
         {/* ── SECTION 2: Link options ─────────────────────────────────── */}
         {scope === "public" ? (
-          <div className="mb-4 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "2px" }}>
+          <div className="mb-4 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "var(--radius)" }}>
             <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60 leading-relaxed">
               <span style={{ color: scopeAccent("public") }}>public link</span> -- never expires, unlimited uses. anyone with the URL reads your published profile.
             </p>
@@ -645,7 +643,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
               style={{
                 borderLeftColor: scopeAccent("full"),
                 background: scopeAccent("full") + "0a",
-                borderRadius: "2px",
+                borderRadius: "var(--radius)",
               }}
             >
               <div
@@ -746,7 +744,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
             style={{
               borderColor: scopeAccent("full") + "60",
               background: scopeAccent("full") + "0f",
-              borderRadius: "2px",
+              borderRadius: "var(--radius)",
             }}
           >
             <div
@@ -764,7 +762,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
               style={{
                 borderColor: scopeAccent("full"),
                 color: scopeAccent("full"),
-                borderRadius: "2px",
+                borderRadius: "var(--radius)",
               }}
             >
               upgrade to pro &rarr;
@@ -807,7 +805,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
             <div
               className="border-2 p-4 space-y-3"
               style={{
-                borderRadius: "2px",
+                borderRadius: "var(--radius)",
                 borderColor: scopeAccent(generated.scope),
                 background: scopeAccent(generated.scope) + "08",
               }}
@@ -820,7 +818,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                     background: scopeAccent(generated.scope) + "20",
                     color: scopeAccent(generated.scope),
                     border: `1px solid ${scopeAccent(generated.scope)}60`,
-                    borderRadius: "2px",
+                    borderRadius: "var(--radius)",
                   }}
                 >
                   {generated.scope === "full" ? "full context" : "public"}
@@ -838,7 +836,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
               {/* The URL itself, large and prominent */}
               <div
                 className="bg-[hsl(var(--bg))] p-2.5 border border-[hsl(var(--border))]"
-                style={{ borderRadius: "2px" }}
+                style={{ borderRadius: "var(--radius)" }}
               >
                 <code className="font-mono text-[11px] text-[hsl(var(--accent-mid))] break-all select-all">
                   {generatedActiveUrl}
@@ -862,7 +860,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                           ? "text-[hsl(var(--accent))] border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent))]/5"
                           : "text-[hsl(var(--text-secondary))] opacity-40 border-[hsl(var(--border))] hover:opacity-70"
                       }`}
-                      style={{ borderRadius: "2px" }}
+                      style={{ borderRadius: "var(--radius)" }}
                     >
                       {labels[mode]}
                     </button>
@@ -872,7 +870,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
 
               {/* Output text preview */}
               {outputFormat === "prompt" && (
-                <pre className="font-mono text-[10px] text-[hsl(var(--text-primary))] opacity-70 whitespace-pre-wrap leading-relaxed bg-[hsl(var(--bg))] p-2.5 border border-[hsl(var(--border))] select-all" style={{ borderRadius: "2px" }}>
+                <pre className="font-mono text-[10px] text-[hsl(var(--text-primary))] opacity-70 whitespace-pre-wrap leading-relaxed bg-[hsl(var(--bg))] p-2.5 border border-[hsl(var(--border))] select-all" style={{ borderRadius: "var(--radius)" }}>
                   {outputText}
                 </pre>
               )}
@@ -885,7 +883,6 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                     ? "border-[hsl(var(--success))]/60 text-[hsl(var(--success))] bg-[hsl(var(--success))]/10"
                     : "border-[hsl(var(--accent))]/60 text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/5 hover:bg-[hsl(var(--accent-wash))]"
                 }`}
-                style={{ borderRadius: "2px" }}
               >
                 {copiedPrimary ? (
                   <>
@@ -913,7 +910,6 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
               <button
                 onClick={handlePreviewAsAgent}
                 className="w-full px-3 py-1.5 text-[10px] font-mono border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-                style={{ borderRadius: "2px" }}
               >
                 preview as agent (see what they&apos;ll receive)
               </button>
@@ -921,7 +917,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
               {agentPreviewOpen && (
                 <div
                   className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))] p-3"
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60">
@@ -1000,7 +996,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                     link.isExpired ? "opacity-30" : ""
                   }`}
                   style={{
-                    borderRadius: "2px",
+                    borderRadius: "var(--radius)",
                     borderLeftColor: accent,
                     borderTopColor: "hsl(var(--border))",
                     borderRightColor: "hsl(var(--border))",
@@ -1017,7 +1013,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                             background: accent + "20",
                             color: accent,
                             border: `1px solid ${accent}60`,
-                            borderRadius: "2px",
+                            borderRadius: "var(--radius)",
                           }}
                         >
                           {link.scope === "full" ? "full" : "public"}
@@ -1069,7 +1065,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                             })
                           }
                           className="px-2 py-1 text-[9px] font-mono border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-                          style={{ borderRadius: "2px" }}
+                          style={{ borderRadius: "var(--radius)" }}
                         >
                           preview
                         </button>
@@ -1094,7 +1090,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
                               ? "border-red-400/60 text-red-400 hover:text-red-300"
                               : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/40"
                           }`}
-                          style={{ borderRadius: "2px" }}
+                          style={{ borderRadius: "var(--radius)" }}
                         >
                           {confirmRevokeLink === link.id ? "confirm?" : "revoke"}
                         </button>
@@ -1109,7 +1105,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
               <button
                 onClick={() => setShowAllLinks(true)}
                 className="w-full px-3 py-2 text-[10px] font-mono border border-dashed border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-                style={{ borderRadius: "2px" }}
+                style={{ borderRadius: "var(--radius)" }}
               >
                 load {hiddenLinkCount} more {hiddenLinkCount === 1 ? "link" : "links"}
               </button>
@@ -1118,7 +1114,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
               <button
                 onClick={() => setShowAllLinks(false)}
                 className="w-full px-3 py-2 text-[10px] font-mono border border-dashed border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-100 transition-opacity"
-                style={{ borderRadius: "2px" }}
+                style={{ borderRadius: "var(--radius)" }}
               >
                 show fewer
               </button>
@@ -1134,7 +1130,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
             <div className="grid grid-cols-2 gap-2">
               <div
                 className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] text-center"
-                style={{ borderRadius: "2px" }}
+                style={{ borderRadius: "var(--radius)" }}
               >
                 <p className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-50 uppercase">
                   interactions
@@ -1147,7 +1143,7 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
               </div>
               <div
                 className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] text-center"
-                style={{ borderRadius: "2px" }}
+                style={{ borderRadius: "var(--radius)" }}
               >
                 <p className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-50 uppercase">
                   agents

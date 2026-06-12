@@ -178,7 +178,6 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
           <a
             href={startUrl}
             className="inline-flex items-center gap-2 border border-[hsl(var(--border))] px-3 py-2 text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))] transition-colors"
-            style={{ borderRadius: "2px" }}
           >
             connect github{" "}
             <span className="text-[hsl(var(--accent))]">{"\u2192"}</span>
@@ -306,7 +305,7 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
         {mirror && (
           <div
             className="mt-2 border border-[hsl(var(--border))] p-3 font-mono text-[10px] space-y-1"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           >
             <div className="flex items-center justify-between">
               <span className="text-[hsl(var(--text-secondary))] opacity-60">
@@ -377,7 +376,7 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
                   ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"
                   : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-100"
               }`}
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
             >
               {visibility === v ? "\u25C9 " : "\u25CB "}
               {v}
@@ -420,7 +419,7 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
                 onClick={() => handleConnect(r.fullName)}
                 disabled={busy !== null}
                 className="w-full flex items-center justify-between px-2 py-1.5 border border-[hsl(var(--border))] hover:border-[hsl(var(--accent))] transition-colors text-left disabled:opacity-40"
-                style={{ borderRadius: "2px" }}
+                style={{ borderRadius: "var(--radius)" }}
               >
                 <span className="text-[hsl(var(--text-primary))] opacity-80 truncate">
                   {r.name}

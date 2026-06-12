@@ -52,7 +52,8 @@
   --input: 0 0% 12%;
   --ring: var(--accent);
 
-  --radius: 0.25rem;
+  /* PRD v2.3: border radius is 2px EVERYWHERE (rounded-full reserved for status dots) */
+  --radius: 2px;
 
   /* Layout rhythm */
   --page-max: 1120px;
@@ -146,10 +147,18 @@
   --font-sans: var(--font-body);
   --font-mono: var(--font-mono);
 
-  /* Border radius */
+  /* Border radius — entire Tailwind scale capped at the 2px design token.
+     Every radius utility from xs through 4xl renders 2px; rounded-full
+     stays circular (status dots, terminal traffic lights, ASCII avatars).
+     Guarded by scripts/check-radius.mjs (runs in `npm run lint`). */
+  --radius-xs: var(--radius);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
   --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-xl: var(--radius);
+  --radius-2xl: var(--radius);
+  --radius-3xl: var(--radius);
+  --radius-4xl: var(--radius);
 
   /* Animations */
   --animate-accordion-down: accordion-down 0.2s ease-out;
@@ -507,5 +516,5 @@ code, pre, .font-mono {
 
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.15);
-  border-radius: 3px;
+  border-radius: var(--radius);
 }

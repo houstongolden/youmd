@@ -9,7 +9,7 @@ export default function ResetPasswordContent() {
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4 min-h-0">
         <div
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden min-h-0"
-          style={{ borderRadius: "2px" }}
+          style={{ borderRadius: "var(--radius)" }}
         >
           <TerminalHeader title="you.md — auth" asHeading />
           <div className="flex-1 overflow-y-auto p-5 font-mono text-[14px] leading-relaxed text-[hsl(var(--text-secondary))]">

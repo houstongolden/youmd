@@ -225,7 +225,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
     return (
       <main className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))] p-4">
         <div className="w-full max-w-md">
-          <div className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "2px" }}>
+          <div className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden" style={{ borderRadius: "var(--radius)" }}>
             <TerminalHeader title="you.md -- error" asHeading />
             <div className="p-6 font-mono text-[14px] space-y-2">
               <p className="text-[hsl(var(--text-secondary))] opacity-60">
@@ -318,7 +318,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               )}
             </div>
           </div>
-          <div className="mt-8 border border-[hsl(var(--border))] p-5 bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "2px" }}>
+          <div className="mt-8 border border-[hsl(var(--border))] p-5 bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "var(--radius)" }}>
             <p className="text-[hsl(var(--text-secondary))] opacity-50 font-mono text-[13px]">
               this identity is being built. check back soon.
             </p>
@@ -361,7 +361,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
           <div className="max-w-[680px] w-full px-4 md:px-6">
             <div
               className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-1 inline-flex gap-1 font-mono text-[11px]"
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
             >
               {(["public", "private", "agent"] as const).map((mode) => (
                 <button
@@ -374,7 +374,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                       ? "border border-[hsl(var(--accent))]/60 bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))]"
                       : "border border-transparent text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-80"
                   }`}
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 >
                   {mode === "agent" ? "agent preview" : mode}
                 </button>
@@ -403,7 +403,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                 fallback={
                   <div
                     className="flex min-h-[180px] items-center justify-center border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))]/35"
-                    style={{ borderRadius: "2px" }}
+                    style={{ borderRadius: "var(--radius)" }}
                   >
                     portrait refresh queued
                   </div>
@@ -457,7 +457,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                     <span
                       key={v._id}
                       className="inline-flex items-center gap-1 text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-40 border border-[hsl(var(--border))] px-1.5 py-0.5"
-                      style={{ borderRadius: "2px" }}
+                      style={{ borderRadius: "var(--radius)" }}
                     >
                       {v.platform ? `${v.method}:${v.platform}` : v.method}
                     </span>
@@ -475,7 +475,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
           />
 
           {/* Status panel */}
-          <div className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] space-y-1.5" style={{ borderRadius: "2px" }}>
+          <div className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] space-y-1.5" style={{ borderRadius: "var(--radius)" }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button onClick={handleCopy} className="flex items-center gap-1.5 text-[hsl(var(--accent))] font-mono text-[12px] hover:opacity-80 transition-opacity">
@@ -498,7 +498,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                       ? "border-[hsl(var(--accent))]/40 text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/5"
                       : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-50 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30"
                   }`}
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                   title={showRawJson ? "show rendered profile" : "show raw JSON"}
                 >
                   {"<>"}
@@ -547,7 +547,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
             {roles.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {roles.map((role: string) => (
-                  <span key={role} className="font-mono text-[9px] px-1.5 py-0.5 border border-[hsl(var(--accent))]/15 text-[hsl(var(--accent))] opacity-60" style={{ borderRadius: "2px" }}>
+                  <span key={role} className="font-mono text-[9px] px-1.5 py-0.5 border border-[hsl(var(--accent))]/15 text-[hsl(var(--accent))] opacity-60" style={{ borderRadius: "var(--radius)" }}>
                     {role}
                   </span>
                 ))}
@@ -565,7 +565,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
           >
             <div
               className="relative border border-[hsl(var(--accent))]/40 bg-[hsl(var(--accent))]/[0.03] p-4 font-mono text-[11px]"
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
             >
               {/* Accent stripe */}
               <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[hsl(var(--accent))]/60" />
@@ -573,7 +573,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               {/* Header row: AGENT-READY tag + label */}
               <div className="flex items-center justify-between mb-3 pl-2">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-[hsl(var(--accent))] font-medium border border-[hsl(var(--accent))]/40 bg-[hsl(var(--accent))]/10 px-1.5 py-0.5" style={{ borderRadius: "2px" }}>
+                  <span className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-[hsl(var(--accent))] font-medium border border-[hsl(var(--accent))]/40 bg-[hsl(var(--accent))]/10 px-1.5 py-0.5" style={{ borderRadius: "var(--radius)" }}>
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--accent))] status-dot-pulse" />
                     agent brain
                   </span>
@@ -640,14 +640,13 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               <button
                 onClick={handleCopyRawJson}
                 className="flex items-center gap-1.5 font-mono text-[10px] px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-60 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30 transition-colors"
-                style={{ borderRadius: "2px" }}
               >
                 {rawCopied ? "copied" : "copy"}
               </button>
             </div>
             <div
               className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 overflow-x-auto"
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
             >
               <RawJsonRenderer json={data} />
             </div>
@@ -665,7 +664,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
               {topics.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {topics.map((t: string) => (
-                    <span key={t} className="font-mono text-[10px] px-2 py-0.5 border border-[hsl(var(--accent))]/20 text-[hsl(var(--accent))]/70" style={{ borderRadius: "2px" }}>
+                    <span key={t} className="font-mono text-[10px] px-2 py-0.5 border border-[hsl(var(--accent))]/20 text-[hsl(var(--accent))]/70" style={{ borderRadius: "var(--radius)" }}>
                       {t}
                     </span>
                   ))}
@@ -698,7 +697,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                     )}
                     {/* Per-platform voice breakdown */}
                     {data.voice?.platforms && (
-                      <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] space-y-2" style={{ borderRadius: "2px" }}>
+                      <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] space-y-2" style={{ borderRadius: "var(--radius)" }}>
                         {data.voice.platforms.linkedin && (
                           <div>
                             <span className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-60 uppercase tracking-wider">linkedin</span>
@@ -752,7 +751,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                       <div
                         key={i}
                         className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] hover:border-[hsl(var(--accent))]/20 transition-colors group"
-                        style={{ borderRadius: "2px" }}
+                        style={{ borderRadius: "var(--radius)" }}
                       >
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <div className="flex items-center gap-2 min-w-0">
@@ -815,7 +814,6 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 text-[hsl(var(--accent))]/80 hover:text-[hsl(var(--accent))] font-mono text-[11px] transition-colors border border-[hsl(var(--border))] px-3 py-1.5 hover:border-[hsl(var(--accent))]/30"
-                          style={{ borderRadius: "2px" }}
                         >
                           <LinkFavicon url={url as string} />
                           {platform}
@@ -838,7 +836,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                       <span
                         key={i}
                         className="inline-flex items-center gap-1.5 font-mono text-[10px] px-2.5 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-60"
-                        style={{ borderRadius: "2px" }}
+                        style={{ borderRadius: "var(--radius)" }}
                       >
                         <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--success))] opacity-60" />
                         {source}
@@ -865,7 +863,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                       <span
                         key={i}
                         className="font-mono text-[10px] px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-60"
-                        style={{ borderRadius: "2px" }}
+                        style={{ borderRadius: "var(--radius)" }}
                       >
                         {skill}
                       </span>
@@ -890,7 +888,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                       <div
                         key={stack.slug}
                         className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3"
-                        style={{ borderRadius: "2px" }}
+                        style={{ borderRadius: "var(--radius)" }}
                       >
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div>
@@ -959,7 +957,6 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 hover:border-[hsl(var(--accent))] transition-colors"
-                        style={{ borderRadius: "2px" }}
                       >
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <p className="font-mono text-[12px] text-[hsl(var(--text-primary))] opacity-85">
@@ -1013,7 +1010,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                     downloadFile(JSON.stringify(json, null, 2), `${username}.you.json`, "application/json");
                   }}
                   className="flex items-center gap-1.5 font-mono text-[11px] px-3 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-70 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30 transition-colors"
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 >
                   {"\u2193"} you.json
                 </button>
@@ -1023,7 +1020,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                     downloadFile(md, `${username}.you.md`, "text/markdown");
                   }}
                   className="flex items-center gap-1.5 font-mono text-[11px] px-3 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-70 hover:text-[hsl(var(--accent))] hover:border-[hsl(var(--accent))]/30 transition-colors"
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 >
                   {"\u2193"} you.md
                 </button>
@@ -1044,7 +1041,6 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[10px] font-mono px-2.5 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-                  style={{ borderRadius: "2px" }}
                 >
                   share on x
                 </a>
@@ -1055,7 +1051,7 @@ export function ProfileContent({ ssrData }: ProfileContentProps) {
             <Divider />
             <motion.section {...delay(11)}>
               <SectionLabel>maintenance</SectionLabel>
-              <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] mt-3 space-y-1.5 font-mono text-[10px]" style={{ borderRadius: "2px" }}>
+              <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] mt-3 space-y-1.5 font-mono text-[10px]" style={{ borderRadius: "var(--radius)" }}>
                 <p className="text-[hsl(var(--text-secondary))] opacity-50">
                   maintained by: <span className="text-[hsl(var(--text-primary))] opacity-70">human + agent</span>
                 </p>
@@ -1234,7 +1230,7 @@ function ClaimBanner({ username }: { username: string }) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-3">
       <div className="max-w-[680px] mx-auto">
-        <div className="border border-[hsl(var(--accent))]/30 bg-[hsl(var(--bg-raised))] p-3 sm:p-4" style={{ borderRadius: "2px" }}>
+        <div className="border border-[hsl(var(--accent))]/30 bg-[hsl(var(--bg-raised))] p-3 sm:p-4" style={{ borderRadius: "var(--radius)" }}>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="font-mono text-[12px] text-[hsl(var(--text-primary))] opacity-80">
@@ -1247,7 +1243,6 @@ function ClaimBanner({ username }: { username: string }) {
             <Link
               href="/sign-up"
               className="shrink-0 font-mono text-[11px] px-3 py-1.5 bg-[hsl(var(--accent))] text-[hsl(var(--bg))] hover:opacity-90 transition-opacity"
-              style={{ borderRadius: "2px" }}
             >
               claim profile
             </Link>
@@ -1336,7 +1331,7 @@ function RenderInlineMarkdown({ text }: { text: string }) {
     } else if (match[4]) {
       // `code`
       parts.push(
-        <code key={key++} className="px-1 py-0.5 text-[11px] bg-[hsl(var(--bg))]/50 text-[hsl(var(--accent-mid))] border border-[hsl(var(--border))]" style={{ borderRadius: "2px" }}>
+        <code key={key++} className="px-1 py-0.5 text-[11px] bg-[hsl(var(--bg))]/50 text-[hsl(var(--accent-mid))] border border-[hsl(var(--border))]" style={{ borderRadius: "var(--radius)" }}>
           {match[4]}
         </code>
       );
@@ -1482,7 +1477,7 @@ function AgentPreviewPane({
       </p>
       <div
         className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden"
-        style={{ borderRadius: "2px" }}
+        style={{ borderRadius: "var(--radius)" }}
       >
         <div className="flex items-center gap-2 px-4 py-2 border-b border-[hsl(var(--border))]">
           <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">
@@ -1563,7 +1558,7 @@ function PrivateContextPane({
           <SectionLabel>private context</SectionLabel>
           <span
             className="font-mono text-[9px] px-1.5 py-0.5 border border-[hsl(var(--accent))]/30 text-[hsl(var(--accent))] opacity-70 uppercase tracking-wider"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           >
             private
           </span>
@@ -1572,7 +1567,7 @@ function PrivateContextPane({
         {!hasContent ? (
           <div
             className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           >
             <p className="text-[hsl(var(--text-secondary))] opacity-40 font-mono text-[11px]">
               no private context yet. add private notes, projects, and links from your dashboard.
@@ -1588,7 +1583,7 @@ function PrivateContextPane({
                 </h3>
                 <div
                   className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4"
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 >
                   <p className="text-[hsl(var(--text-secondary))] opacity-70 text-[13px] leading-[1.7] whitespace-pre-wrap">
                     {privateContext.privateNotes}
@@ -1608,7 +1603,7 @@ function PrivateContextPane({
                     <div
                       key={i}
                       className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
-                      style={{ borderRadius: "2px" }}
+                      style={{ borderRadius: "var(--radius)" }}
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-[12px] text-[hsl(var(--text-primary))]">
@@ -1656,7 +1651,6 @@ function PrivateContextPane({
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-[hsl(var(--accent))]/70 hover:text-[hsl(var(--accent))] font-mono text-[11px] transition-colors border border-[hsl(var(--border))] px-3 py-1.5 hover:border-[hsl(var(--accent))]/30"
-                        style={{ borderRadius: "2px" }}
                       >
                         {label}
                         <span className="text-[9px] opacity-50">{"\u2197"}</span>
@@ -1675,7 +1669,7 @@ function PrivateContextPane({
                 </h3>
                 <div
                   className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3"
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 >
                   <p className="text-[hsl(var(--text-secondary))] opacity-60 font-mono text-[11px] whitespace-pre-wrap">
                     {privateContext.calendarContext}
@@ -1692,7 +1686,7 @@ function PrivateContextPane({
                 </h3>
                 <div
                   className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3"
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 >
                   <p className="text-[hsl(var(--text-secondary))] opacity-60 text-[12px] leading-[1.7] whitespace-pre-wrap">
                     {privateContext.investmentThesis}

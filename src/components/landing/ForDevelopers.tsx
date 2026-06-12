@@ -36,7 +36,7 @@ const ForDevelopers = () => (
       <FadeUp>
         <div className="text-center mb-12">
           <span className="inline-block font-mono text-[9px] uppercase tracking-widest text-accent/70 border border-accent/20 px-3 py-1 mb-4"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           >
             for AI builders
           </span>
@@ -57,7 +57,7 @@ const ForDevelopers = () => (
             <motion.div
               key={uc.label}
               className="border border-border/40 bg-[hsl(var(--bg-raised))]/50 p-4"
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
               whileInView={{ opacity: [0, 1], y: [8, 0] }}
               viewport={{ once: true }}
               transition={{ delay: 0.15 + i * 0.06 }}

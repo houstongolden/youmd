@@ -131,7 +131,7 @@ export function PrivateContextPane({ clerkId, profileId }: PrivateContextPanePro
             {/* Private Links */}
             <SectionLabel>private links</SectionLabel>
             {currentLinks.length > 0 && (
-              <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] mb-3 space-y-1" style={{ borderRadius: "2px" }}>
+              <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] mb-3 space-y-1" style={{ borderRadius: "var(--radius)" }}>
                 {currentLinks.map((link, i) => (
                   <div key={i} className="flex items-center justify-between py-1 border-b border-[hsl(var(--border))]/20 last:border-0">
                     <div className="min-w-0 flex-1">
@@ -174,7 +174,7 @@ export function PrivateContextPane({ clerkId, profileId }: PrivateContextPanePro
             {/* Private Projects */}
             <SectionLabel>private projects</SectionLabel>
             {currentProjects.length > 0 && (
-              <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] mb-3 space-y-2" style={{ borderRadius: "2px" }}>
+              <div className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] mb-3 space-y-2" style={{ borderRadius: "var(--radius)" }}>
                 {currentProjects.map((proj, i) => (
                   <div key={i} className="flex items-start justify-between py-1.5 border-b border-[hsl(var(--border))]/20 last:border-0">
                     <div className="min-w-0 flex-1">

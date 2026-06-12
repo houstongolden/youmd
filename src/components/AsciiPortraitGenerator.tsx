@@ -163,7 +163,7 @@ const AsciiPortraitGenerator = () => {
   return (
     <div className="w-full">
       {/* Portrait display */}
-      <div className="relative w-full aspect-square max-w-md mx-auto mb-6 overflow-hidden rounded border border-border bg-background flex items-center justify-center">
+      <div className="relative w-full aspect-square max-w-md mx-auto mb-6 overflow-hidden rounded-sm border border-border bg-background flex items-center justify-center">
         {asciiData && !showPhoto && (
           <canvas ref={portraitRef} width={500} className="w-full" />
         )}

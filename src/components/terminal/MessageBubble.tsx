@@ -33,7 +33,7 @@ export function MessageBubble({ message, isLatest = false }: MessageBubbleProps)
                 ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/5 border border-[hsl(var(--accent))]/15"
                 : "text-[hsl(var(--accent-mid))] bg-[hsl(var(--accent-wash))] border border-[hsl(var(--accent))]/15"
         }`}
-        style={{ borderRadius: "2px" }}
+        style={{ borderRadius: "var(--radius)" }}
       >
         {content}
       </div>
@@ -118,12 +118,12 @@ function ShareArtifact({ content }: { content: string }) {
     <div className="space-y-2">
       <div
         className="px-3 py-1.5 text-xs font-mono text-[hsl(var(--success))] bg-[hsl(var(--success))]/5 border border-[hsl(var(--success))]/15"
-        style={{ borderRadius: "2px" }}
+        style={{ borderRadius: "var(--radius)" }}
       >
         {headerText}
       </div>
       {shareContent && (
-        <div className="border border-[hsl(var(--accent))]/20 bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+        <div className="border border-[hsl(var(--accent))]/20 bg-[hsl(var(--bg))]" style={{ borderRadius: "var(--radius)" }}>
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-[hsl(var(--border))]">
             <span className="font-mono text-[9px] text-[hsl(var(--accent))]/60 uppercase tracking-wider">
               agent prompt + context link
@@ -135,7 +135,6 @@ function ShareArtifact({ content }: { content: string }) {
                   ? "text-[hsl(var(--success))] border-[hsl(var(--success))]/50 bg-[hsl(var(--success))]/10"
                   : "text-[hsl(var(--accent))] border-[hsl(var(--accent))]/30 hover:bg-[hsl(var(--accent))]/10"
               }`}
-              style={{ borderRadius: "2px" }}
             >
               {copied ? "copied!" : "copy prompt"}
             </button>

@@ -37,7 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex items-center justify-center min-h-[200px] p-6">
           <div className="max-w-md w-full">
-            <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-5 font-mono text-[13px]" style={{ borderRadius: "2px" }}>
+            <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-5 font-mono text-[13px]" style={{ borderRadius: "var(--radius)" }}>
               <p className="text-[hsl(var(--accent))] mb-2">ERR: render failed</p>
               <p className="text-[hsl(var(--text-secondary))] opacity-50 text-[11px] mb-3">
                 {this.state.error?.message || "an unexpected error occurred."}

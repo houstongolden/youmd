@@ -385,7 +385,7 @@ function AsciiAvatarCanvas({
       />
       {/* Fallback: show the actual photo with an orange tint overlay when canvas fails */}
       {status === "error" && src && !fallbackImageFailed && (
-        <div className="absolute inset-0 overflow-hidden" style={{ borderRadius: "2px" }}>
+        <div className="absolute inset-0 overflow-hidden" style={{ borderRadius: "var(--radius)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={src}

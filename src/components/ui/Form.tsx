@@ -2,7 +2,7 @@ import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react
 import { cn } from "@/lib/cn";
 
 const fieldControlClasses =
-  "w-full rounded-[2px] border border-border bg-background px-3 font-mono text-[13px] text-foreground transition-colors placeholder:text-muted-foreground/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40";
+  "w-full rounded-sm border border-border bg-background px-3 font-mono text-[13px] text-foreground transition-colors placeholder:text-muted-foreground/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40";
 
 export function Label({
   className,

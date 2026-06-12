@@ -172,7 +172,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function InlineCode({ children }: { children: React.ReactNode }) {
   return (
-    <code className="bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-1.5 py-0.5 rounded-[2px] text-[13px] font-mono text-[hsl(var(--accent))]">
+    <code className="bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-1.5 py-0.5 rounded-sm text-[13px] font-mono text-[hsl(var(--accent))]">
       {children}
     </code>
   );
@@ -193,7 +193,7 @@ function CodeBlock({ title, children }: { title?: string; children: string }) {
   const copyAriaLabel = title ? `copy ${title}` : "copy code";
 
   return (
-    <div className="my-4 rounded-[2px] border border-[hsl(var(--border))] overflow-hidden">
+    <div className="my-4 rounded-sm border border-[hsl(var(--border))] overflow-hidden">
       {title && (
         <div className="bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-2 py-1 flex items-center justify-between">
           <span className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-60 px-2">
@@ -243,7 +243,7 @@ function Callout({
 
   return (
     <div
-      className={`border-l-2 ${colors[type]} rounded-r-[2px] px-4 py-3 my-4 text-[14px] text-[hsl(var(--text-secondary))] leading-relaxed`}
+      className={`border-l-2 ${colors[type]} rounded-r-sm px-4 py-3 my-4 text-[14px] text-[hsl(var(--text-secondary))] leading-relaxed`}
     >
       {children}
     </div>
@@ -257,7 +257,7 @@ function StepList({ children }: { children: React.ReactNode }) {
 function Step({ n, children }: { n: number; children: React.ReactNode }) {
   return (
     <li className="flex gap-3 text-[15px] text-[hsl(var(--text-secondary))] leading-relaxed">
-      <span className="shrink-0 w-6 h-6 rounded-[2px] bg-[hsl(var(--accent))/0.12] text-[hsl(var(--accent))] text-[12px] font-mono flex items-center justify-center mt-0.5">
+      <span className="shrink-0 w-6 h-6 rounded-sm bg-[hsl(var(--accent))/0.12] text-[hsl(var(--accent))] text-[12px] font-mono flex items-center justify-center mt-0.5">
         {n}
       </span>
       <span>{children}</span>
@@ -286,7 +286,7 @@ function QuickStart() {
   return (
     <div
       className="my-6 border-2 border-[hsl(var(--accent))]/50 bg-[hsl(var(--accent))]/[0.04] overflow-hidden"
-      style={{ borderRadius: "2px" }}
+      style={{ borderRadius: "var(--radius)" }}
     >
       {/* Title bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-[hsl(var(--accent))]/30 bg-[hsl(var(--accent))]/[0.06]">
@@ -303,12 +303,12 @@ function QuickStart() {
       <ol className="divide-y divide-[hsl(var(--accent))]/15">
         {steps.map((s, i) => (
           <li key={s.key} className="flex items-start gap-3 px-4 py-3">
-            <span className="shrink-0 w-5 h-5 rounded-[2px] bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))] text-[11px] font-mono flex items-center justify-center mt-0.5">
+            <span className="shrink-0 w-5 h-5 rounded-sm bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))] text-[11px] font-mono flex items-center justify-center mt-0.5">
               {i + 1}
             </span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <code className="font-mono text-[13px] text-[hsl(var(--accent))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-2 py-0.5 rounded-[2px]">
+                <code className="font-mono text-[13px] text-[hsl(var(--accent))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))] px-2 py-0.5 rounded-sm">
                   $ {s.cmd}
                 </code>
                 <button
@@ -347,7 +347,7 @@ function CommandTable({
   commands: { cmd: string; desc: string }[];
 }) {
   return (
-    <div className="my-4 border border-[hsl(var(--border))] rounded-[2px] overflow-hidden">
+    <div className="my-4 border border-[hsl(var(--border))] rounded-sm overflow-hidden">
       <table className="w-full text-[14px]">
         <thead>
           <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))]">
@@ -391,7 +391,7 @@ function SystemPanel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="my-5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden rounded-[2px]">
+    <div className="my-5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden rounded-sm">
       <div className="flex items-center gap-1.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 py-2">
         <span className="h-2 w-2 rounded-full bg-[hsl(var(--accent))]/80" />
         <span className="h-2 w-2 rounded-full bg-[hsl(var(--text-secondary))]/30" />
@@ -420,7 +420,7 @@ function ReferenceStats() {
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 rounded-[2px]"
+          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 rounded-sm"
         >
           <div className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))] opacity-50">
             {stat.label}
@@ -481,7 +481,7 @@ function DocsSurfaceMap() {
           <Link
             key={surface.label}
             href={surface.href}
-            className="group border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 rounded-[2px] transition-colors hover:border-[hsl(var(--accent))]/60"
+            className="group border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 rounded-sm transition-colors hover:border-[hsl(var(--accent))]/60"
           >
             <div className="flex items-start justify-between gap-3">
               <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--accent))]">
@@ -516,7 +516,7 @@ function DocsStandard() {
             {["guide", "api", "mcp", "stack", "smoke"].map((label) => (
               <div
                 key={label}
-                className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 py-2 rounded-[2px]"
+                className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 py-2 rounded-sm"
               >
                 <span className="font-mono text-[11px] text-[hsl(var(--text-primary))]">
                   {label}
@@ -560,7 +560,7 @@ function FeatureMatrix({
       {items.map((item) => (
         <div
           key={item.title}
-          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 rounded-[2px]"
+          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 rounded-sm"
         >
           <h4 className="font-mono text-[12px] text-[hsl(var(--text-primary))] mb-2">
             {item.title}
@@ -576,7 +576,7 @@ function FeatureMatrix({
 
 function MethodBadge({ method }: { method: string }) {
   return (
-    <span className="inline-flex min-w-12 justify-center border border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-1.5 py-0.5 font-mono text-[10px] text-[hsl(var(--accent))] rounded-[2px]">
+    <span className="inline-flex min-w-12 justify-center border border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-1.5 py-0.5 font-mono text-[10px] text-[hsl(var(--accent))] rounded-sm">
       {method}
     </span>
   );
@@ -597,7 +597,7 @@ function EndpointReference({
     .slice(0, limit ?? 999);
 
   return (
-    <div className="my-4 overflow-x-auto border border-[hsl(var(--border))] rounded-[2px]">
+    <div className="my-4 overflow-x-auto border border-[hsl(var(--border))] rounded-sm">
       <table className="w-full min-w-[680px] text-[13px]">
         <thead>
           <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))]">
@@ -654,7 +654,7 @@ function McpToolReference({
       {tools.map((tool) => (
         <div
           key={tool.name}
-          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 rounded-[2px]"
+          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 rounded-sm"
         >
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-[13px] text-[hsl(var(--accent))]">
@@ -688,7 +688,7 @@ function HostedMcpToolReference() {
       {tools.map((tool) => (
         <div
           key={tool.name}
-          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 rounded-[2px]"
+          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 rounded-sm"
         >
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-[13px] text-[hsl(var(--accent))]">
@@ -782,7 +782,7 @@ function Sidebar({
             href={`#${item.id}`}
             onClick={(e) => handleClick(e, item.id)}
             aria-current={activeId === item.id ? "location" : undefined}
-            className={`block w-full text-left px-3 py-1.5 rounded text-[13px] transition-colors ${
+            className={`block w-full text-left px-3 py-1.5 rounded-sm text-[13px] transition-colors ${
               activeId === item.id
                 ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))/0.08]"
                 : "text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--bg-raised))]"
@@ -798,7 +798,7 @@ function Sidebar({
                   href={`#${child.id}`}
                   onClick={(e) => handleClick(e, child.id)}
                   aria-current={activeId === child.id ? "location" : undefined}
-                  className={`block w-full text-left px-3 py-1 rounded text-[12px] transition-colors ${
+                  className={`block w-full text-left px-3 py-1 rounded-sm text-[12px] transition-colors ${
                     activeId === child.id
                       ? "text-[hsl(var(--accent))]"
                       : "text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-100 hover:text-[hsl(var(--text-primary))]"

@@ -96,7 +96,7 @@ const Navbar = () => {
                   className="flex items-center gap-2 group"
                 >
                   {avatarUrl ? (
-                    <div className="w-6 h-6 border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+                    <div className="w-6 h-6 border border-[hsl(var(--border))] group-hover:border-accent transition-colors overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "var(--radius)" }}>
                       <AsciiAvatar
                         src={avatarUrl}
                         cols={160}
@@ -106,7 +106,7 @@ const Navbar = () => {
                       />
                     </div>
                   ) : (
-                    <span className="w-6 h-6 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent" style={{ borderRadius: "2px" }}>
+                    <span className="w-6 h-6 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] flex items-center justify-center font-mono text-[9px] text-accent" style={{ borderRadius: "var(--radius)" }}>
                       {username?.[0]?.toUpperCase() ?? ">"}
                     </span>
                   )}
@@ -115,7 +115,7 @@ const Navbar = () => {
                   </span>
                 </button>
                 {avatarDropdown && (
-                  <div className="absolute right-0 top-full mt-2 w-44 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-1 z-50" style={{ borderRadius: "2px" }}>
+                  <div className="absolute right-0 top-full mt-2 w-44 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-1 z-50" style={{ borderRadius: "var(--radius)" }}>
                     <Link href="/shell" className="block px-3 py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--accent))]/5 transition-colors">
                       &gt; shell
                     </Link>
@@ -184,7 +184,7 @@ const Navbar = () => {
                 className="flex items-center gap-2 mt-4"
               >
                 {avatarUrl ? (
-                  <div className="w-6 h-6 border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "2px" }}>
+                  <div className="w-6 h-6 border border-[hsl(var(--border))] overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "var(--radius)" }}>
                     <AsciiAvatar
                       src={avatarUrl}
                       cols={160}
@@ -194,7 +194,7 @@ const Navbar = () => {
                     />
                   </div>
                 ) : (
-                  <span className="w-6 h-6 border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[10px] text-accent" style={{ borderRadius: "2px" }}>
+                  <span className="w-6 h-6 border border-[hsl(var(--border))] bg-accent/10 flex items-center justify-center font-mono text-[10px] text-accent" style={{ borderRadius: "var(--radius)" }}>
                     {username?.[0] ?? ">"}
                   </span>
                 )}

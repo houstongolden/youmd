@@ -85,7 +85,7 @@ const HeroPortrait = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded border border-border bg-background">
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-sm border border-border bg-background">
       <canvas
         ref={canvasRef}
         className={`w-full transition-opacity duration-500 ${

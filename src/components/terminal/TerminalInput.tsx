@@ -55,7 +55,7 @@ export function TerminalInput({
       {/* Pasted image preview */}
       {pastedImage && (
         <div className="mb-2 ml-5 flex items-start gap-2">
-          <div className="border border-[hsl(var(--border))] overflow-hidden shrink-0" style={{ borderRadius: "2px" }}>
+          <div className="border border-[hsl(var(--border))] overflow-hidden shrink-0" style={{ borderRadius: "var(--radius)" }}>
             <img
               src={pastedImage}
               alt="pasted"

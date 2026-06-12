@@ -161,7 +161,7 @@ export function SourcesPane({}: SourcesPaneProps) {
             <div
               key={s.label}
               className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] text-center"
-              style={{ borderRadius: "2px" }}
+              style={{ borderRadius: "var(--radius)" }}
             >
               <p className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-50 uppercase">
                 {s.label}
@@ -178,7 +178,7 @@ export function SourcesPane({}: SourcesPaneProps) {
         {totalSources === 0 ? (
           <div
             className="border border-[hsl(var(--border))] p-6 bg-[hsl(var(--bg-raised))] text-center"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           >
             <p className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-40">
               no sources added yet
@@ -198,7 +198,7 @@ export function SourcesPane({}: SourcesPaneProps) {
                 <div
                   key={s._id}
                   className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -277,7 +277,7 @@ export function SourcesPane({}: SourcesPaneProps) {
         <SectionLabel>pipeline</SectionLabel>
         <div
           className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))] space-y-2"
-          style={{ borderRadius: "2px" }}
+          style={{ borderRadius: "var(--radius)" }}
         >
           <div className="flex items-center justify-between font-mono text-[11px]">
             <span className="text-[hsl(var(--text-secondary))] opacity-60">total sources</span>

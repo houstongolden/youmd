@@ -406,7 +406,7 @@ export function InitializeContent() {
         <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4">
           <div
             className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
             onClick={() => setSkipRequested(true)}
           >
             <TerminalHeader title="you.md — initialize" asHeading />
@@ -518,7 +518,7 @@ instructions for this greeting:
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4">
         <div
           className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-hidden"
-          style={{ borderRadius: "2px" }}
+          style={{ borderRadius: "var(--radius)" }}
         >
           <TerminalHeader title="you.md — agent" asHeading />
 
@@ -608,7 +608,7 @@ function InitializeEncounter({
           </div>
           <div
             className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           >
             {avatarUrl || storedPortrait ? (
               <AsciiAvatar

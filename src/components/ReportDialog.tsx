@@ -54,7 +54,7 @@ export function ReportDialog({ profileId }: ReportDialogProps) {
   }
 
   return (
-    <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 space-y-3" style={{ borderRadius: "2px" }}>
+    <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 space-y-3" style={{ borderRadius: "var(--radius)" }}>
       <div className="flex items-center justify-between">
         <span className="font-mono text-[11px] text-[hsl(var(--text-secondary))]">
           report profile
@@ -83,7 +83,7 @@ export function ReportDialog({ profileId }: ReportDialogProps) {
                     ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))] bg-[hsl(var(--accent-wash))]"
                     : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:border-[hsl(var(--accent))]/30"
                 }`}
-                style={{ borderRadius: "2px" }}
+                style={{ borderRadius: "var(--radius)" }}
               >
                 {r.label}
               </button>
@@ -94,7 +94,7 @@ export function ReportDialog({ profileId }: ReportDialogProps) {
             onChange={(e) => setDetails(e.target.value)}
             placeholder="additional details (optional)"
             className="w-full bg-[hsl(var(--bg))] border border-[hsl(var(--border))] p-2 font-mono text-[11px] text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-secondary))]/30 resize-none h-16 outline-none"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           />
           {error && (
             <p className="font-mono text-[11px] text-[hsl(var(--accent))]">{error}</p>
@@ -103,7 +103,6 @@ export function ReportDialog({ profileId }: ReportDialogProps) {
             onClick={handleSubmit}
             disabled={!reason}
             className="w-full py-2 font-mono text-[11px] bg-[hsl(var(--accent))] text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[hsl(var(--accent-dark))] transition-colors"
-            style={{ borderRadius: "2px" }}
           >
             submit report
           </button>

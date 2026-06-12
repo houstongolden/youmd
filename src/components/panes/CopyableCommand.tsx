@@ -24,7 +24,6 @@ export function CopyableCommand({ command, dimmed = false }: CopyableCommandProp
           ? "text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-70"
           : "text-[hsl(var(--accent))]"
       }`}
-      style={{ borderRadius: "2px" }}
     >
       <span className="truncate">&gt; {command}</span>
       <span className="shrink-0 ml-2 text-[9px] opacity-0 group-hover:opacity-60 transition-opacity">
@@ -71,14 +70,12 @@ export function CopyableLink({ url, label, withPrompt }: CopyableLinkProps) {
       <button
         onClick={copyLink}
         className="shrink-0 px-1.5 py-0.5 text-[8px] font-mono border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-        style={{ borderRadius: "2px" }}
       >
         {copiedType === "link" ? "\u2713" : "copy link"}
       </button>
       <button
         onClick={copyWithPrompt}
         className="shrink-0 px-1.5 py-0.5 text-[8px] font-mono border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
-        style={{ borderRadius: "2px" }}
       >
         {copiedType === "prompt" ? "\u2713" : "copy w/ prompt"}
       </button>

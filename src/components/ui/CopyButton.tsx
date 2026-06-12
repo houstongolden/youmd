@@ -22,7 +22,7 @@ export function CopyButton({ text, className, label = "Copy" }: CopyButtonProps)
       onClick={handleCopy}
       className={
         className ??
-        "text-xs px-2.5 py-1 border border-border rounded-md text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-colors"
+        "text-xs px-2.5 py-1 border border-border rounded-sm text-foreground-secondary hover:text-foreground hover:border-accent-secondary transition-colors"
       }
     >
       {copied ? (

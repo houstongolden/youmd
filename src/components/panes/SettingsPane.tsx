@@ -315,7 +315,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
                       ? "border-[hsl(var(--accent))]/50 bg-[hsl(var(--accent-wash))] text-[hsl(var(--accent-mid))]"
                       : "border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-90"
                   }`}
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 >
                   [{selected ? "x" : " "}] {scope}
                 </button>
@@ -344,7 +344,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
         {newKey && (
           <div
             className="p-3 border border-[hsl(var(--accent))]/20 bg-[hsl(var(--accent-wash))] space-y-2 mb-3"
-            style={{ borderRadius: "2px" }}
+            style={{ borderRadius: "var(--radius)" }}
           >
             <p className="text-[10px] text-[hsl(var(--accent-mid))] font-mono">
               fresh key ready. copy it now, then hide this card when you&apos;re done.
@@ -379,7 +379,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
                 <div
                   key={k.id}
                   className="flex items-center justify-between px-3 py-2.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[10px] font-mono"
-                  style={{ borderRadius: "2px" }}
+                  style={{ borderRadius: "var(--radius)" }}
                 >
                   <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -473,7 +473,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
             ) : (
               <div
                 className="flex items-center justify-between px-3 py-2.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[10px] font-mono"
-                style={{ borderRadius: "2px" }}
+                style={{ borderRadius: "var(--radius)" }}
               >
                 <span className="text-[hsl(var(--text-secondary))] opacity-35">
                   no active api keys. rotate or create one when you need local agent access.
@@ -516,7 +516,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
                   <div
                     key={k.id}
                     className="flex items-center justify-between px-3 py-2 border border-[hsl(var(--border))]/60 bg-[hsl(var(--bg-raised))]/50 text-[10px] font-mono opacity-65"
-                    style={{ borderRadius: "2px" }}
+                    style={{ borderRadius: "var(--radius)" }}
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
