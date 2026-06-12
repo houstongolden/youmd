@@ -33,13 +33,13 @@
 | P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning; also reconcile YOUSTACKS_PRODUCT_LAYER_PRD.md:201-210 drifted table + fix example manifest minYoumdCli 0.7.0 vs cli 0.6.23 | PRODUCT-AUDIT #10; P32 findings | M | done (canonical discovery + doctor warnings + PRD reconciled; 220/220 tests) |
 | P9 | `youmd stack install <user>/<slug>` + registry endpoint | PRODUCT-AUDIT #11; FEATURE-ROADMAP 2.5 | L | todo |
 | P10 | Truthful capability contract w/ transport tags + CI curl test | PRODUCT-AUDIT #12; FEATURE-ROADMAP 2.6 | M | todo |
-| P11 | One host-link engine emitting `.claude/skills/<name>/SKILL.md`; empirical discovery release gate | PRODUCT-AUDIT #13; FEATURE-ROADMAP 3.7 | M | in-progress (agent) |
+| P11 | One host-link engine emitting `.claude/skills/<name>/SKILL.md`; empirical discovery release gate | PRODUCT-AUDIT #13; FEATURE-ROADMAP 3.7 | M | done (0fd58b1; one engine, claude .claude/skills/<name>/SKILL.md layout, verify gate, snapshot parity) |
 | P12 | Single project-context engine (repo project-context/ + ~/.youmd/projects/ overlay); delete dup impls | PRODUCT-AUDIT #14; FEATURE-ROADMAP 3.8 | M | done (d83f718; one engine, repo-over-global overlay, dup impls deleted, 237/237) |
 | P13 | Pagination cursors on all list endpoints + OpenAPI docs | PRODUCT-AUDIT #15; FEATURE-ROADMAP 2.9 | M | done (904ba31; 8 endpoints, prod e2e cursor verified, legacy shape unchanged) |
 | P14 | Memory durability: pinned/importance/supersededBy, decay exemptions, review queue | PRODUCT-AUDIT #16; FEATURE-ROADMAP 2.4 | M | done (b285d99; pinned/importance/supersede + review queue; prod verified) |
 | P15 | One `MEMORY_CATEGORIES` module + validation + migration + `correction` category | PRODUCT-AUDIT #17; FEATURE-ROADMAP 2.10 | M | done (b285d99; one category module + correction; prod migration: 48 scanned/14 normalized, 400 on invalid) |
 | P16 | Pipeline honesty: compile merges chat-refined content, or de-document discover→review | PRODUCT-AUDIT #18; FEATURE-ROADMAP 3.5 | L | blocked(needs-spec: Houston call) |
-| P17 | GitHub repo freshness: debounced auto-push on save/publish + ancestor check on repo pulls | PRODUCT-AUDIT #19; FEATURE-ROADMAP 2.7 | M | in-progress (agent) |
+| P17 | GitHub repo freshness: debounced auto-push on save/publish + ancestor check on repo pulls | PRODUCT-AUDIT #19; FEATURE-ROADMAP 2.7 | M | done (3d92c04; debounced auto-push, retry-once, canonical-wins staleness) |
 | P18 | Shared capability router package for CLI + API route + golden parity tests | PRODUCT-AUDIT #20; FEATURE-ROADMAP 3.6 | M | todo |
 | P19 | Typed brainScopes + identity-bearing adapters + doctor skill-ref validation | PRODUCT-AUDIT #21; FEATURE-ROADMAP 3.9 | M | todo |
 | P20 | Documented precedence model + shadowing warning + `youmd status` active-roots line | PRODUCT-AUDIT #22; FEATURE-ROADMAP 3.15 | M | done (d83f718; PRECEDENCE table, shadow warnings, active-roots in status) |
@@ -70,7 +70,7 @@
 | U4 | Gate /initialize redirect on onboarding-complete marker, not bare username | M | done (51a7f38; gated on published bundle, resumes mid-flow users) |
 | U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | done (e66a58b; default-open + localStorage persist + skeleton parity) |
 | U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | done (b72d07a CLI, web commit; 30 tests incl. every-split parity) |
-| U7 | Device-flow login (CLI code → browser approve → poll) | L | in-progress (agent) |
+| U7 | Device-flow login (CLI code → browser approve → poll) | L | done (07dce12/cb3a834/4721ef1; prod e2e pending deploy) |
 | U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | done (3b5b000; 8 hosted vs 24 local split, get_identity example fixed, 9 public examples replayed in smoke) |
 | U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | done (f3bc25c; terminal preview prompt, in-browser ascii, /create?handle prefill; landing section live on prod) |
 | U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | done (b0ddedb: 16 fake delays removed, 250ms min spinner display) |
