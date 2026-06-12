@@ -481,12 +481,17 @@ export default defineSchema({
     tags: v.optional(v.array(v.string())), // searchable tags
     sessionId: v.optional(v.string()), // which chat session produced this
     isArchived: v.boolean(),
+    // P23 dedupe: sha256(normalized content + category) — see
+    // convex/lib/hash.ts computeMemoryContentHash. Optional because rows
+    // created before P23 have no hash (they simply never dedupe-match).
+    contentHash: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
     .index("by_userId_category", ["userId", "category"])
     .index("by_userId_archived", ["userId", "isArchived"])
+    .index("by_userId_contentHash", ["userId", "contentHash"])
     .index("by_sessionId", ["sessionId"])
     .searchIndex("search_content", {
       searchField: "content",

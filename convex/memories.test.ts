@@ -238,7 +238,11 @@ describe("memories.saveMemories", () => {
         },
       ],
     });
-    expect(saved).toEqual({ saved: 1 });
+    // P23: `saved` stays the inserted count; `deduped`/`results` are additive
+    // (see memoryDedupe.test.ts for the dedupe contract).
+    expect(saved).toMatchObject({ saved: 1, deduped: 0 });
+    expect(saved.results).toHaveLength(1);
+    expect(saved.results[0].deduped).toBe(false);
 
     const results = await asAlice.query(api.memories.searchMemories, {
       clerkId: ALICE_CLERK,

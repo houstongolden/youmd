@@ -1,6 +1,31 @@
 import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, type MutationCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
 import { requireOwner } from "./lib/auth";
+import { computeMemoryContentHash } from "./lib/hash";
+
+// ── P23: content-hash dedupe (PRODUCT-AUDIT #25) ────────────────
+//
+// Saving the exact same fact twice (same normalized content + category) for
+// the same user is a no-op: the existing ACTIVE memory is returned marked
+// `deduped: true` instead of inserting a duplicate row. Archived duplicates
+// do NOT block — re-learning an archived fact inserts a fresh active row.
+// Pre-P23 rows have no contentHash and therefore never dedupe-match.
+
+/** Find an active memory with the same content hash, if any. */
+async function findActiveDuplicate(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  contentHash: string
+): Promise<Doc<"memories"> | null> {
+  const matches = await ctx.db
+    .query("memories")
+    .withIndex("by_userId_contentHash", (q) =>
+      q.eq("userId", userId).eq("contentHash", contentHash)
+    )
+    .collect();
+  return matches.find((m) => !m.isArchived) ?? null;
+}
 
 // ── Memory queries ──────────────────────────────────────────────
 
@@ -154,8 +179,18 @@ export const saveMemories = mutation({
       .first();
     if (!user) throw new Error("not authenticated");
 
-    const ids = [];
+    const results: Array<{ id: Id<"memories">; deduped: boolean }> = [];
+    let saved = 0;
     for (const mem of args.memories) {
+      const contentHash = await computeMemoryContentHash(
+        mem.content,
+        mem.category
+      );
+      const existing = await findActiveDuplicate(ctx, user._id, contentHash);
+      if (existing) {
+        results.push({ id: existing._id, deduped: true });
+        continue;
+      }
       const id = await ctx.db.insert("memories", {
         userId: user._id,
         category: mem.category,
@@ -165,12 +200,16 @@ export const saveMemories = mutation({
         tags: mem.tags,
         sessionId: mem.sessionId,
         isArchived: false,
+        contentHash,
         createdAt: Date.now(),
       });
-      ids.push(id);
+      saved++;
+      results.push({ id, deduped: false });
     }
 
-    return { saved: ids.length };
+    // `saved` stays "rows actually inserted" (back-compat); `deduped` and
+    // per-item `results` are additive (P23).
+    return { saved, deduped: results.length - saved, results };
   },
 });
 
@@ -228,6 +267,14 @@ export const updateMemory = mutation({
     if (args.content !== undefined) updates.content = args.content;
     if (args.category !== undefined) updates.category = args.category;
     if (args.tags !== undefined) updates.tags = args.tags;
+
+    // Keep the dedupe hash truthful when content/category changes (P23).
+    if (args.content !== undefined || args.category !== undefined) {
+      updates.contentHash = await computeMemoryContentHash(
+        args.content ?? memory.content,
+        args.category ?? memory.category
+      );
+    }
 
     await ctx.db.patch(args.memoryId, updates);
   },
@@ -446,8 +493,18 @@ export const saveFromAgent = mutation({
       throw new Error("not authorized: userId does not match authenticated user");
     }
 
-    const ids = [];
+    const results: Array<{ id: Id<"memories">; deduped: boolean }> = [];
+    let saved = 0;
     for (const mem of args.memories) {
+      const contentHash = await computeMemoryContentHash(
+        mem.content,
+        mem.category
+      );
+      const existing = await findActiveDuplicate(ctx, args.userId, contentHash);
+      if (existing) {
+        results.push({ id: existing._id, deduped: true });
+        continue;
+      }
       const id = await ctx.db.insert("memories", {
         userId: args.userId,
         category: mem.category,
@@ -456,11 +513,15 @@ export const saveFromAgent = mutation({
         sourceAgent: args.agentName,
         tags: mem.tags,
         isArchived: false,
+        contentHash,
         createdAt: Date.now(),
       });
-      ids.push(id);
+      saved++;
+      results.push({ id, deduped: false });
     }
-    return { saved: ids.length };
+    // `saved` stays "rows actually inserted" (back-compat); `deduped` and
+    // per-item `results` are additive (P23).
+    return { saved, deduped: results.length - saved, results };
   },
 });
 
