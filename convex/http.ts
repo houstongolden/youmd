@@ -2217,7 +2217,7 @@ http.route({ path: "/api/v1/me/private", method: "OPTIONS", handler: corsPreflig
 // MEMORY API (authenticated — API key or access token)
 // ============================================================
 
-// GET /api/v1/me/memories — List memories
+// GET /api/v1/me/memories — List memories (optional full-text search via ?q=)
 http.route({
   path: "/api/v1/me/memories",
   method: "GET",

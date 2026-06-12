@@ -1850,7 +1850,7 @@ export const openApiSpec = {
     "/api/v1/me/memories": {
       "get": {
         "operationId": "get_api_v1_me_memories",
-        "summary": "List memories",
+        "summary": "List memories (optional full-text search via ?q=)",
         "tags": [
           "Memories"
         ],

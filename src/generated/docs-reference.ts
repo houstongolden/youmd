@@ -19,7 +19,7 @@ export type DocsMcpTool = {
 };
 
 export const docsReference = {
-  "sourceHash": "f131113e8ad43fefd0830811f11986e9885cb364a6f8ae0a68f880ea5827417b",
+  "sourceHash": "d9d6cfc2438396ac5025a659818dd4c143324fe027068cf44b199a90d98d9524",
   "cli": {
     "version": "0.6.23"
   },
@@ -627,7 +627,7 @@ export const docsReference = {
       "category": "Memories",
       "auth": "Bearer API key",
       "source": "convex",
-      "summary": "List memories",
+      "summary": "List memories (optional full-text search via ?q=)",
       "sources": [
         "convex"
       ]
@@ -948,7 +948,7 @@ export const docsReference = {
     },
     {
       "name": "get_agent_brief",
-      "description": "Return a YouStack startup brief for local agents. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines compact identity, current repo instructions, project-context active requests, open TODOs, installed skills, and recommended next moves so the agent can act without asking the user to re-explain t…",
+      "description": "Return a YouStack startup brief for local agents. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines compact identity, the user's recent durable memories (rendered inline by default), current repo instructions, project-context active requests, open TODOs, installed skills, and recommended next m…",
       "inputFields": [
         "format",
         "includeMemories",
