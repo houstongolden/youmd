@@ -92,11 +92,11 @@
 
 | ID | Item | Effort | Status |
 |---|---|---|---|
-| L1 | Render memory content in formatAgentBriefMarkdown; includeMemories default true | S | todo |
-| L2 | Lift whoami + get_agent_brief (Bearer-authed) to hosted MCP | M | todo |
-| L3 | Hosted MCP hygiene: protocol pin upgrade, auth in mcp.json, proxy guards, cache only 200s | S | todo |
-| L4 | Replace hardcoded identity://houstongolden with resources/templates/list URI template | S | todo |
-| L5 | Delete hand-maintained tool-inventory comment (http.ts:2699-2702) | S | todo |
+| L1 | Render memory content in formatAgentBriefMarkdown; includeMemories default true | S | done (11a32bb: hosted brief renders memories, default on) |
+| L2 | Lift whoami + get_agent_brief (Bearer-authed) to hosted MCP | M | done (11a32bb: hosted tools 5->7) |
+| L3 | Hosted MCP hygiene: protocol pin upgrade, auth in mcp.json, proxy guards, cache only 200s | S | done (11a32bb: protocol 2025-06-18 negotiation, auth block, proxy guards) |
+| L4 | Replace hardcoded identity://houstongolden with resources/templates/list URI template | S | done (11a32bb: identity://{username} uriTemplate) |
+| L5 | Delete hand-maintained tool-inventory comment (http.ts:2699-2702) | S | done (11a32bb) |
 | L6 | Reference-intelligence v2: dedupe, Haiku batch pass, weekly Action cron → PR | M | todo |
 | L7 | Golden Q&A eval suite for You Agent in CI | M | todo |
 | L8 | Schedule audit forever-loop (Actions cron) w/ atomic mkdir lock | M | todo |
@@ -118,6 +118,7 @@
 | L24 | Scheduled maintainer agent mining journal → guarded auto_pr | L | todo (after L12+L14) |
 | L25 | Cross-stack proposals → human-gated registry candidates | L | todo (after L20) |
 | L26 | Server-orchestrated evolution (Convex crons) | L | blocked(sequenced-last by design: requires Stage 2-3 gates) |
+| L27 | CLI stdio MCP brief parity: render memory content + includeMemories default true (match hosted) | S | todo |
 
 ## M4 — Tech items (TECH-STACK-AUDIT + ARCHITECTURE-EVOLUTION + ENGINEERING-ROADMAP + ONE-CLICK)
 
@@ -138,11 +139,11 @@
 | T13 | Sentry + sanitized error codes + scheduled smoke alerts + /api/v1/health | M | todo |
 | T14 | Unified MCP tool registry; official SDK Streamable HTTP; remote serves all tools | M-L | todo |
 | T15 | Fix lastPulledHash ancestry bug | S | done (a984939) |
-| T16 | Bounded-batch rateLimits cleanup w/ index + reschedule | S | todo |
+| T16 | Bounded-batch rateLimits cleanup w/ index + reschedule | S | done (683f014) |
 | T17 | API client timeout + retry w/ jitter; consistent offline message | S | done (9cbb89e) |
 | T18 | Fix fs.watch recursive crash on Linux/Node 18 | S | done (5895375) |
 | T19 | Lazy-load dashboard panes; docs page → server component | M | todo |
-| T20 | Profiles searchIndex for MCP search_profiles | S | todo |
+| T20 | Profiles searchIndex for MCP search_profiles | S | done (683f014) |
 | T21 | ARIA live regions on terminal chat + skip link | S | todo |
 | T22 | Delete 12 dead landing sections + unused reactbits/ + ogl dep; dedupe components | M | todo |
 | T23 | Route-level loading.tsx + error.tsx for key routes | M | todo |
