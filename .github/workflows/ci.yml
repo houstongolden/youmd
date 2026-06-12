@@ -25,12 +25,8 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      # Warn-only until the lint-zero cleanup (backlog T31) lands, then remove
-      # continue-on-error to make this blocking. 169 pre-existing errors as of
-      # 2026-06-11 — do not add new ones.
       - name: Lint
         run: npm run lint
-        continue-on-error: true
 
       - name: Build web app
         run: npx next build
