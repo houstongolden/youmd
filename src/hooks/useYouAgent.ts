@@ -38,6 +38,7 @@ import {
   type UseYouAgentOptions,
   type DetectedSource,
 } from "./agent-utils";
+import { JsonDirectiveStreamFilter, DIRECTIVE_SWALLOW_PLACEHOLDER } from "./stream-filter";
 
 // Re-export types and functions that other files import from this module
 export type { ThinkingCategory, ProgressStep, ChatMessage, DisplayMessage, SectionUpdate, PrivateUpdate, RightPane, MemorySave, PortraitUpdate, CustomSection } from "./agent-utils";
@@ -609,6 +610,19 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     let fullText = "";
     const toolCalls: AgentToolCall[] = [];
 
+    // U6: filter ```json directive blocks (profile updates, memory saves,
+    // private updates) out of the LIVE display while keeping fullText raw —
+    // the post-stream parsers (parseUpdatesFromResponse etc.) need the
+    // unfiltered text.
+    const displayFilter = new JsonDirectiveStreamFilter();
+    let displayText = "";
+    const currentDisplay = () => {
+      if (displayFilter.hasVisibleOutput) return displayText;
+      // Nothing visible yet — show a subtle placeholder while a directive
+      // block is being swallowed so the message doesn't look stuck/empty.
+      return displayFilter.hasSwallowedDirective ? DIRECTIVE_SWALLOW_PLACEHOLDER : displayText;
+    };
+
     try {
       const res = await fetch(streamUrl, {
         method: "POST",
@@ -654,6 +668,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
                 onFirstToken?.();
               }
               fullText += parsed.text;
+              displayText += displayFilter.feed(parsed.text);
               textAdded = true;
             }
             // Collect complete tool_use blocks emitted by transformAnthropicStream
@@ -704,7 +719,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         // Batch display updates via requestAnimationFrame to reduce React re-renders
         if (textAdded && !rafPending) {
           rafPending = true;
-          const currentText = fullText;
+          const currentText = currentDisplay();
           requestAnimationFrame(() => {
             rafPending = false;
             setDisplayMessages(prev => prev.map(m =>
@@ -714,9 +729,13 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         }
       }
 
-      // Final update to ensure all text is displayed
+      // Final update to ensure all (filtered) text is displayed. The caller
+      // re-cleans from the raw response after parsing, so this is the
+      // directive-free view of the same content.
+      displayText += displayFilter.flush();
+      const finalDisplay = currentDisplay();
       setDisplayMessages(prev => prev.map(m =>
-        m.id === displayMessageId ? { ...m, content: fullText } : m
+        m.id === displayMessageId ? { ...m, content: finalDisplay } : m
       ));
 
       return { text: fullText || "", toolCalls };
