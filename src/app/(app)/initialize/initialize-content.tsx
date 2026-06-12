@@ -109,6 +109,11 @@ export function InitializeContent() {
     api.users.getByClerkId,
     isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
   );
+  // Used to decide whether onboarding actually finished (see redirect effect below)
+  const existingBundle = useQuery(
+    api.bundles.getLatestBundle,
+    user?.id && existingUser?._id ? { clerkId: user.id, userId: existingUser._id } : "skip"
+  );
 
   // Check if there's an unclaimed profile from /create flow (session cookie)
   const [sessionToken] = useState<string | null>(() => {
@@ -126,6 +131,8 @@ export function InitializeContent() {
   const [lines, setLines] = useState<{ id: string; content: ReactNode; className?: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const claimAttempted = useRef(false);
+  // State mirror of claimAttempted for use during render (refs can't be read in render)
+  const [claimFlowActive, setClaimFlowActive] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lineCounter = useRef(0);
 
@@ -139,12 +146,20 @@ export function InitializeContent() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [lines, phase]);
 
-  // Redirect if user already exists
+  // Redirect only when onboarding actually finished. A bare username alone means
+  // a half-initialized account (claimed handle, never finished onboarding) — those
+  // resume the onboarding agent instead of skipping ahead. There is no explicit
+  // onboardingComplete flag in the client payload, so the closest truthful proxy
+  // is a published bundle (onboarding auto-publishes after the first saved update).
   useEffect(() => {
-    if (existingUser && existingUser.username) {
+    // Fresh sign-up flow (claim in progress) manages its own phase transitions
+    if (claimAttempted.current) return;
+    if (!existingUser?.username) return;
+    if (existingBundle === undefined) return; // bundle query still loading
+    if (existingBundle?.isPublished) {
       router.replace("/shell");
     }
-  }, [existingUser, router]);
+  }, [existingUser, existingBundle, router]);
 
   // Run boot sequence and auto-claim
   useEffect(() => {
@@ -156,6 +171,8 @@ export function InitializeContent() {
 
     // existingUser is null — no Convex user yet, time to create
     claimAttempted.current = true;
+    // Mirror into state for render-time checks (deferred — lint forbids sync setState in effects)
+    setTimeout(() => setClaimFlowActive(true), 0);
 
     const username =
       user.username ||
@@ -233,8 +250,24 @@ export function InitializeContent() {
     }, claimDelay + 800);
   }, [user, existingUser, createUser, claimProfile, sessionProfile, sessionToken, addLine]);
 
-  // Loading state
-  if (!user || existingUser === undefined) {
+  // Returning half-initialized user: claimed handle exists but nothing was ever
+  // published — skip the claim boot animation and resume the onboarding agent
+  const resumeOnboarding =
+    !claimFlowActive &&
+    Boolean(existingUser?.username) &&
+    existingBundle !== undefined &&
+    !existingBundle?.isPublished;
+
+  // Loading state — for returning users, also wait for the bundle check (and the
+  // /shell redirect, if published) so the resume-vs-redirect decision happens
+  // before any boot UI renders
+  if (
+    !user ||
+    existingUser === undefined ||
+    (!claimFlowActive &&
+      existingUser?.username &&
+      (existingBundle === undefined || existingBundle?.isPublished))
+  ) {
     return (
       <main className="min-h-[100dvh] flex items-center justify-center bg-[hsl(var(--bg))]">
         <p className="text-[hsl(var(--text-secondary))] font-mono text-sm animate-pulse">
@@ -245,7 +278,7 @@ export function InitializeContent() {
   }
 
   // Boot/claim phase — show centered terminal
-  if (phase !== "ready") {
+  if (phase !== "ready" && !resumeOnboarding) {
     return (
       <main className="min-h-[100dvh] bg-[hsl(var(--bg))] flex flex-col">
         <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4">
