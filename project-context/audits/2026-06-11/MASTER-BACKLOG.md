@@ -47,16 +47,16 @@
 | P22 | Per-key rate limits on writes + Retry-After/X-RateLimit headers | PRODUCT-AUDIT #24; FEATURE-ROADMAP 3.2 | M | todo |
 | P23 | Idempotency-Key support + memory content-hash dedupe | PRODUCT-AUDIT #25; FEATURE-ROADMAP 3.3 | M | todo |
 | P24 | Outbound webhooks + MCP subscribe/listChanged | PRODUCT-AUDIT #26; FEATURE-ROADMAP 3.4 | L | todo |
-| P25 | Honest endpoint counts (exclude retired/internal) in docs generator | PRODUCT-AUDIT #27; FEATURE-ROADMAP 3.10 | S | todo |
+| P25 | Honest endpoint counts (exclude retired/internal) in docs generator | PRODUCT-AUDIT #27; FEATURE-ROADMAP 3.10 | S | in-progress (agent) |
 | P26 | `login --key` validates before persisting; preserve apiUrl/appUrl | PRODUCT-AUDIT #31; FEATURE-ROADMAP 0.5 | S | done (308ad0b) |
 | P27 | Headless auth via YOUMD_API_KEY/YOUMD_API_URL env vars | PRODUCT-AUDIT #32; FEATURE-ROADMAP 1.4 | S | done (308ad0b: env auth, zero-write verified) |
 | P28 | Fix `skill browse` registry: install hint | PRODUCT-AUDIT #33; FEATURE-ROADMAP 3.16 | S | done (b0ddedb: hint fixed + registry: resolver) |
 | P29 | Per-host YOUMD_AGENT_NAME + clientInfo.name fallback for attribution | PRODUCT-AUDIT #35; FEATURE-ROADMAP 3.10 | S | done (bf2e647: per-host YOUMD_AGENT_NAME + clientInfo fallback) |
-| P30 | Username canonicalization migration; delete 500-profile fallback scan | PRODUCT-AUDIT #38; FEATURE-ROADMAP 3.13 | S | todo |
+| P30 | Username canonicalization migration; delete 500-profile fallback scan | PRODUCT-AUDIT #38; FEATURE-ROADMAP 3.13 | S | in-progress (agent) |
 | P31 | Deprecation/Sunset headers + schemaVersion on payloads | PRODUCT-AUDIT #39; FEATURE-ROADMAP 3.14 | S | todo |
 | P32 | ARCHITECTURE.md YouStacks section + PRD layout reconciliation | PRODUCT-AUDIT #40; FEATURE-ROADMAP 3.17 | S | done (YouStacks layer + storage map + drift notes) |
 | P33 | Project attribution: nearest-marker-wins by depth | PRODUCT-AUDIT #41 | S | done (0c32304) |
-| P34 | Generate CLI command table from commander; docs:check assertion | PRODUCT-AUDIT #42 | S | todo |
+| P34 | Generate CLI command table from commander; docs:check assertion | PRODUCT-AUDIT #42 | S | in-progress (agent) |
 | P35 | TTY/EOF guard on interactive prompts | PRODUCT-AUDIT #43; FEATURE-ROADMAP 0.7 | S | done (5028339: 6 entry points guarded) |
 | P36 | Issue real owner scopes for cli-auth login keys (convex/auth.ts) + settings UI scope selection, then remove the cli-auth grandfather carve-out in lib/scopes.ts; regen docs with the 403 scope contract | P1 follow-up | M | done (05512ab; prod e2e: read:public key → 403 scope_missing on private read/write, grandfathered session 200, test key revoked) |
 
@@ -69,9 +69,9 @@
 | U3 | Fix fake "[saved private project]" — real updatePrivateContext write or honest message | S | done (026fd0b; real getPrivateContext+append+updatePrivateContext write) |
 | U4 | Gate /initialize redirect on onboarding-complete marker, not bare username | M | done (51a7f38; gated on published bundle, resumes mid-flow users) |
 | U5 | Dashboard panelOpen=true default + localStorage persist; align skeleton | S | done (e66a58b; default-open + localStorage persist + skeleton parity) |
-| U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | in-progress (agent) |
+| U6 | Buffer-and-filter streamed tokens (no raw ```json blocks) in CLI + web | M | done (b72d07a CLI, web commit; 30 tests incl. every-split parity) |
 | U7 | Device-flow login (CLI code → browser approve → poll) | L | todo |
-| U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | todo |
+| U8 | Split docs counts hosted/local tools; fix failing JSON-RPC example; replay all doc examples in llms:smoke | M | in-progress (agent) |
 | U9 | Homepage magic moment: handle → live ASCII portrait → /create funnel | M | todo |
 | U10 | Delete fixed fake delays; min spinner display 250ms; elapsed timer never resets | S | done (b0ddedb: 16 fake delays removed, 250ms min spinner display) |
 | U11 | Pane taxonomy MECE pass (activity vs analytics naming) | S | done (e66a58b; activity=agent log, analytics=stats, session log=account events) |
@@ -86,7 +86,7 @@
 | U20 | Renderer: strip ANSI before padEnd; spinner update() preserves startTime | S | done (5028339) |
 | U21 | Lowercase CTAs on landing | S | done (645d9d9; lowercase CTAs verified on prod) |
 | U22 | Sweep font-medium/semibold per opacity-not-weight rule (19 instances) | S | done (645d9d9) |
-| U23 | Boot sequence checkmarks tied to real events; enter-to-skip | S | todo |
+| U23 | Boot sequence checkmarks tied to real events; enter-to-skip | S | in-progress (agent) |
 
 ## M3 — Self-improving loop items (SELF-IMPROVING-SYSTEM-DESIGN + GLOBAL-EVOLUTION-ROADMAP)
 
