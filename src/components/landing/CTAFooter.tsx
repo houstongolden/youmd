@@ -55,10 +55,10 @@ const CTAFooter = () => {
               </p>
               <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
                 <ButtonLink href="/create" variant="primary" size="lg">
-                  Create your you.md
+                  create your you.md
                 </ButtonLink>
                 <ButtonLink href="/docs" variant="secondary" size="lg">
-                  Read docs
+                  read docs
                 </ButtonLink>
               </div>
             </div>

@@ -234,7 +234,7 @@ const AsciiPortraitGenerator = () => {
             onClick={() => setTab(t)}
             className={`font-mono text-[10px] px-4 py-1 border border-b-0 rounded-t transition-colors ${
               tab === t
-                ? "bg-primary text-primary-foreground font-bold border-primary"
+                ? "bg-primary text-primary-foreground border-primary"
                 : "bg-transparent text-muted-foreground/50 border-border hover:text-muted-foreground"
             }`}
           >

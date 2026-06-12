@@ -39,7 +39,7 @@ const FounderQuote = () => (
             <p>
               <span className="text-accent">&gt;</span> then I turned
               it into{" "}
-              <span className="text-accent font-medium">you.md</span>
+              <span className="text-accent">you.md</span>
               {" "}-- so anyone can have it.
             </p>
           </blockquote>

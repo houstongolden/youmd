@@ -69,7 +69,7 @@ const Pricing = () => (
               <FeatureList items={freeFeatures} />
             </div>
             <ButtonLink href="/create" variant="primary" size="md" className="mt-7 w-full">
-              Create your you.md
+              create your you.md
             </ButtonLink>
           </Card>
         </FadeUp>
@@ -101,7 +101,7 @@ const Pricing = () => (
               <FeatureList items={proFeatures} />
             </div>
             <ButtonLink href="/create" variant="secondary" size="md" className="mt-7 w-full">
-              Start free, upgrade later
+              start free, upgrade later
             </ButtonLink>
           </Card>
         </FadeUp>

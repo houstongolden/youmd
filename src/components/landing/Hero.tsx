@@ -11,8 +11,14 @@ const proofItems = ["Claude Code", "Cursor", "Codex", "ChatGPT"];
 
 const quietPoints = [
   "public identity + private context",
-  "one runtime across your agents",
+  "one brain across your agents",
   "stacks for your best workflows",
+];
+
+const handshakeTriad = [
+  { file: "agent.md", pad: " ", desc: "the agent's instructions", yours: false },
+  { file: "soul.md", pad: "  ", desc: "the agent's identity", yours: false },
+  { file: "you.md", pad: "   ", desc: "yours.", yours: true },
 ];
 
 const Hero = () => {
@@ -44,14 +50,15 @@ const Hero = () => {
             </p>
 
             <h1 className="max-w-[760px] font-mono text-[40px] leading-[0.98] tracking-[-0.04em] text-foreground sm:text-[54px] lg:text-[66px]">
-              stop re-explaining yourself
+              every agent meets
               <br />
-              to every new agent
+              the same you
             </h1>
 
             <p className="mt-5 max-w-[570px] text-[16px] leading-[1.46] text-muted-foreground md:text-[17px]">
-              One elegant layer for your identity, context, memory, and workflows,
-              so the agents you use can meet the same version of you from the first turn.
+              Stop re-explaining yourself to every new agent. One elegant layer for
+              your identity, context, memory, and workflows — loaded from the first
+              turn, every time.
             </p>
 
             <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/44">
@@ -63,13 +70,30 @@ const Hero = () => {
               ))}
             </div>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-7 max-w-[520px] rounded-[2px] border border-border bg-[hsl(var(--bg-raised))] px-4 py-3">
+              <code className="break-all font-mono text-[11px] leading-relaxed text-accent">
+                $ curl -fsSL https://you.md/install.sh | bash
+              </code>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="/create" variant="primary" size="lg">
-                Create your you.md
+                create your you.md
               </ButtonLink>
               <ButtonLink href="/docs" variant="secondary" size="lg">
-                Read docs
+                read docs
               </ButtonLink>
+            </div>
+
+            <div className="mt-7 font-mono text-[11px] leading-[1.8] text-muted-foreground/55">
+              {handshakeTriad.map(({ file, pad, desc, yours }) => (
+                <p key={file} className="whitespace-pre">
+                  <span className="text-foreground/65">{file}</span>
+                  {pad}
+                  {"— "}
+                  {yours ? <span className="text-accent">{desc}</span> : desc}
+                </p>
+              ))}
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] text-muted-foreground/50">

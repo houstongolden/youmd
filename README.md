@@ -255,6 +255,8 @@ YouStacks are named packages of your expertise: skills, sub-agents, workflows, p
 
 Think "your own GStack." You can keep a private coding stack, a private scientific research stack, a private content stack, and a public/open BAMFStack-style lighthouse stack without blending the skills or memory scopes together.
 
+A copied stack freezes at copy time. Yours stays current — every stack re-renders against your live brain.
+
 ```bash
 curl -fsSL https://you.md/install.sh | bash
 youmd stack inspect --path cli/examples/youstack-personal

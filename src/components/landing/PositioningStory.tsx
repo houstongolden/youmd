@@ -114,10 +114,10 @@ export default function PositioningStory() {
         <FadeUp delay={0.18}>
           <div className="flex flex-col items-center gap-3 border-t border-border pt-8 text-center sm:flex-row sm:justify-center sm:text-left">
             <ButtonLink href="/create" variant="primary" size="lg">
-              Create your you.md
+              create your you.md
             </ButtonLink>
             <ButtonLink href="/docs" variant="secondary" size="lg">
-              Read docs
+              read docs
             </ButtonLink>
             <Link
               href="/profiles"

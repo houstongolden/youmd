@@ -67,6 +67,10 @@ const YouStacks = () => (
                   needs private context, connected tools, sync, or sensitive
                   actions.
                 </p>
+                <p className="mt-3 font-mono text-[12px] leading-relaxed text-muted-foreground/72">
+                  a copied stack freezes at copy time. yours stays current —
+                  every stack re-renders against your live brain.
+                </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <ButtonLink href="/docs#youstacks" variant="primary" size="sm">
                     read stack docs

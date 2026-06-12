@@ -140,7 +140,7 @@ const Navbar = () => {
                 size="sm"
                 className="hidden whitespace-nowrap md:inline-flex"
               >
-                Create your you.md
+                create your you.md
               </ButtonLink>
             )}
             <button
@@ -219,7 +219,7 @@ const Navbar = () => {
               size="lg"
               className="mt-4"
             >
-              Create your you.md
+              create your you.md
             </ButtonLink>
           )}
         </div>
