@@ -111,7 +111,6 @@ export async function generateMetadata({
     : bio
       ? bio.slice(0, 200)
       : `${name}'s public agent brain on you.md`;
-  const avatarUrl = sanitizeImageUrl(data?._profile?.avatarUrl || data?.social_images?.github || data?.social_images?.x || "");
   const location = data?.identity?.location || "";
   const firstName = name.split(" ")[0];
   const lastName = name.split(" ").slice(1).join(" ");
@@ -137,16 +136,19 @@ export async function generateMetadata({
       url: `https://you.md/${username}`,
       siteName: "you.md",
       type: "profile",
-      ...(avatarUrl ? { images: [{ url: avatarUrl, width: 400, height: 400, alt: `${name} profile photo` }] } : {}),
+      // og:image intentionally NOT set here — the file-convention
+      // opengraph-image.tsx (ASCII portrait share card, V4) is the canonical
+      // card. Listing the raw avatar too would compete with it on crawlers.
       ...(firstName ? { firstName } : {}),
       ...(lastName ? { lastName } : {}),
       username,
     },
     twitter: {
+      // summary_large_image + no explicit images → twitter:image falls
+      // through to the generated opengraph-image (ASCII portrait card).
       card: "summary_large_image",
       title,
       description,
-      ...(avatarUrl ? { images: [avatarUrl] } : {}),
     },
     alternates: {
       canonical: `https://you.md/${username}`,

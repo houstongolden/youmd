@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { CONVEX_SITE_URL } from "@/lib/constants";
 
 export const runtime = "edge";
-export const alt = "you.md profile card";
+export const alt = "you.md profile card — this is what agents see when they meet me";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -17,39 +17,85 @@ const COLORS = {
   border: "#2E2E2E",
 };
 
-interface ProfileResponse {
-  username: string;
-  displayName: string;
-  youJson: {
-    identity: {
-      name: string;
-      tagline: string;
-      bio: {
-        short: string;
-        medium: string;
-        long: string;
-      };
-    };
-    [key: string]: unknown;
+// JetBrains Mono is required for the ASCII portrait to align — bundled
+// locally so the edge function makes zero extra network calls per render.
+const jetbrainsMono = fetch(
+  new URL("../../../assets/fonts/JetBrainsMono-Regular.ttf", import.meta.url)
+).then((res) => res.arrayBuffer());
+
+interface AsciiPortrait {
+  lines: string[];
+  cols: number;
+  rows: number;
+}
+
+// The public profile API returns the compiled youJson with profile-level
+// fields merged under `_profile` (see convex/http.ts GET /api/v1/profiles).
+interface ProfileData {
+  identity?: {
+    name?: string;
+    tagline?: string;
+  };
+  _profile?: {
+    displayName?: string | null;
+    asciiPortrait?: AsciiPortrait | null;
   };
 }
 
-async function fetchProfile(
-  username: string
-): Promise<ProfileResponse | null> {
+async function fetchProfile(username: string): Promise<ProfileData | null> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8_000);
     const res = await fetch(
       `${CONVEX_SITE_URL}/api/v1/profiles?username=${encodeURIComponent(username)}`,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { next: { revalidate: 60 }, signal: controller.signal } as any
+      {
+        headers: { Accept: "application/json" },
+        next: { revalidate: 60 },
+        signal: controller.signal,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
     ).finally(() => clearTimeout(timeout));
     if (!res.ok) return null;
-    return (await res.json()) as ProfileResponse;
+    return (await res.json()) as ProfileData;
   } catch {
     return null;
   }
+}
+
+function isRenderablePortrait(value: unknown): value is AsciiPortrait {
+  if (!value || typeof value !== "object") return false;
+  const p = value as Partial<AsciiPortrait>;
+  return (
+    Array.isArray(p.lines) &&
+    p.lines.length > 0 &&
+    p.lines.some((l) => typeof l === "string" && l.trim().length > 0)
+  );
+}
+
+/**
+ * Downsample a stored portrait (often 120x55) to fit the card by nearest
+ * sampling — keeps the render to one text block, no per-char spans.
+ */
+function fitPortrait(
+  portrait: AsciiPortrait,
+  maxCols: number,
+  maxRows: number
+): { text: string; cols: number; rows: number } {
+  const srcRows = portrait.lines.length;
+  const srcCols = Math.max(...portrait.lines.map((l) => l.length), 1);
+  const scale = Math.min(1, maxCols / srcCols, maxRows / srcRows);
+  const cols = Math.max(1, Math.floor(srcCols * scale));
+  const rows = Math.max(1, Math.floor(srcRows * scale));
+  const lines: string[] = [];
+  for (let y = 0; y < rows; y++) {
+    const srcLine = portrait.lines[Math.floor((y / rows) * srcRows)] ?? "";
+    let line = "";
+    for (let x = 0; x < cols; x++) {
+      line += srcLine[Math.floor((x / cols) * srcCols)] ?? " ";
+    }
+    lines.push(line);
+  }
+  return { text: lines.join("\n"), cols, rows };
 }
 
 export default async function OgImage({
@@ -58,14 +104,28 @@ export default async function OgImage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const profile = await fetchProfile(username);
+  const [profile, fontData] = await Promise.all([
+    fetchProfile(username),
+    jetbrainsMono,
+  ]);
 
   const displayName =
-    profile?.displayName ||
-    profile?.youJson?.identity?.name ||
-    username;
-  const tagline =
-    profile?.youJson?.identity?.tagline || "";
+    profile?._profile?.displayName || profile?.identity?.name || username;
+
+  const rawPortrait = profile?._profile?.asciiPortrait;
+  const portrait = isRenderablePortrait(rawPortrait)
+    ? fitPortrait(rawPortrait, 84, 46)
+    : null;
+
+  // Size the portrait text so the block fits its panel.
+  // JetBrains Mono advance width is 0.6em; line-height set to 1.
+  const PANEL_W = 520;
+  const PANEL_H = 510;
+  const portraitFontSize = portrait
+    ? Math.min(PANEL_W / (portrait.cols * 0.6), PANEL_H / portrait.rows)
+    : 0;
+
+  const taglineLine = "this is what agents see when they meet me";
 
   return new ImageResponse(
     (
@@ -74,93 +134,101 @@ export default async function OgImage({
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
+          flexDirection: "row",
           alignItems: "center",
-          background: `linear-gradient(to top, ${COLORS.bgRaised} 0%, ${COLORS.bg} 100%)`,
+          background: COLORS.bg,
+          fontFamily: '"JetBrains Mono"',
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Subtle accent glow at center */}
+        {/* Left panel — the ASCII portrait is the hero */}
         <div
           style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: "600px",
-            height: "600px",
-            borderRadius: "50%",
-            background: `radial-gradient(circle, ${COLORS.accent}15 0%, ${COLORS.accent}06 40%, transparent 70%)`,
             display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: portrait ? "580px" : "0px",
+            height: "100%",
+            borderRight: portrait ? `1px solid ${COLORS.border}` : "none",
+            background: COLORS.bgRaised,
           }}
-        />
+        >
+          {portrait ? (
+            <div
+              style={{
+                fontSize: `${portraitFontSize}px`,
+                lineHeight: 1,
+                whiteSpace: "pre",
+                color: COLORS.accent,
+                display: "flex",
+              }}
+            >
+              {portrait.text}
+            </div>
+          ) : null}
+        </div>
 
-        {/* Content container — the "terminal card" */}
+        {/* Right panel — identity */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
             justifyContent: "center",
-            padding: "48px 64px",
+            flex: 1,
+            height: "100%",
+            padding: portrait ? "0 56px" : "0 120px",
             position: "relative",
-            zIndex: 1,
+            alignItems: portrait ? "flex-start" : "center",
           }}
         >
-          {/* Username in monospace at the top */}
           <div
             style={{
-              fontFamily: "monospace",
-              fontSize: "28px",
+              fontSize: "26px",
               color: COLORS.accent,
-              letterSpacing: "0.05em",
-              marginBottom: "24px",
+              letterSpacing: "0.04em",
+              marginBottom: "20px",
               display: "flex",
             }}
           >
             you.md/{username}
           </div>
 
-          {/* Display name — large */}
           <div
             style={{
-              fontSize: "72px",
-              fontWeight: 700,
-              color: "#EDEDED",
-              lineHeight: 1.1,
-              textAlign: "center",
-              maxWidth: "900px",
-              marginBottom: "20px",
+              fontSize: portrait ? "54px" : "68px",
+              fontWeight: 400,
+              color: COLORS.text,
+              lineHeight: 1.12,
+              maxWidth: portrait ? "500px" : "900px",
+              marginBottom: "28px",
               display: "flex",
+              textAlign: portrait ? "left" : "center",
             }}
           >
             {displayName}
           </div>
 
-          {/* Tagline */}
-          {tagline ? (
-            <div
-              style={{
-                fontSize: "28px",
-                color: COLORS.textSecondary,
-                textAlign: "center",
-                maxWidth: "800px",
-                lineHeight: 1.4,
-                display: "flex",
-              }}
-            >
-              {tagline}
-            </div>
-          ) : null}
+          <div
+            style={{
+              fontSize: "21px",
+              color: COLORS.textSecondary,
+              opacity: 0.75,
+              lineHeight: 1.5,
+              maxWidth: portrait ? "440px" : "700px",
+              display: "flex",
+              textAlign: portrait ? "left" : "center",
+            }}
+          >
+            {taglineLine}
+          </div>
         </div>
 
         {/* Brand mark — bottom right corner */}
         <div
           style={{
             position: "absolute",
-            bottom: "32px",
+            bottom: "30px",
             right: "40px",
             display: "flex",
             alignItems: "center",
@@ -178,7 +246,6 @@ export default async function OgImage({
           />
           <div
             style={{
-              fontFamily: "monospace",
               fontSize: "20px",
               color: COLORS.textSecondary,
               letterSpacing: "0.08em",
@@ -188,34 +255,18 @@ export default async function OgImage({
             you.md
           </div>
         </div>
-
-        {/* Decorative: faint horizontal line to reinforce "terminal" feel */}
-        <div
-          style={{
-            position: "absolute",
-            top: "48px",
-            left: "40px",
-            right: "40px",
-            height: "1px",
-            background: `linear-gradient(to right, transparent, ${COLORS.textSecondary}30, transparent)`,
-            display: "flex",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: "80px",
-            left: "40px",
-            right: "40px",
-            height: "1px",
-            background: `linear-gradient(to right, transparent, ${COLORS.textSecondary}30, transparent)`,
-            display: "flex",
-          }}
-        />
       </div>
     ),
     {
       ...size,
+      fonts: [
+        {
+          name: "JetBrains Mono",
+          data: fontData,
+          style: "normal",
+          weight: 400,
+        },
+      ],
       headers: {
         // OG images don't change unless the profile changes. Social media
         // crawlers (Facebook, Twitter, LinkedIn, Slack, etc.) hammer this
