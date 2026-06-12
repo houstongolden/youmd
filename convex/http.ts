@@ -15,6 +15,7 @@ import {
   type AgentContextMemory,
   type AssembledAgentContext,
 } from "./lib/agentContext";
+import { errorEnvelope, type ErrorCode } from "./lib/httpErrors";
 
 const http = httpRouter();
 
@@ -52,6 +53,36 @@ function json(data: unknown, status = 200, extraHeaders?: Record<string, string>
       ...extraHeaders,
     },
   });
+}
+
+/**
+ * P21 — canonical error responses. Every error return in this file routes
+ * through here so the body is always `{ error: { code, message }, message }`
+ * (see convex/lib/httpErrors.ts for the envelope contract and the CLI
+ * back-compat rationale for the top-level message mirror). Status codes and
+ * CORS behavior are unchanged — this wraps the same json() helper.
+ */
+export function errorResponse(
+  code: ErrorCode,
+  message: string,
+  status: number,
+  extra?: Record<string, unknown>,
+  extraHeaders?: Record<string, string>
+) {
+  return json(errorEnvelope(code, message, extra), status, extraHeaders);
+}
+
+/** Map a dynamic HTTP status to a sensible machine code (pass-through errors). */
+export function codeForStatus(status: number): ErrorCode {
+  if (status === 401) return "unauthorized";
+  if (status === 403) return "forbidden";
+  if (status === 404) return "not_found";
+  if (status === 409) return "conflict";
+  if (status === 410) return "gone";
+  if (status === 413) return "payload_too_large";
+  if (status === 429) return "rate_limited";
+  if (status >= 500) return "server_error";
+  return "invalid_request";
 }
 
 // ============================================================
@@ -120,7 +151,7 @@ http.route({
     });
 
     if (!profile) {
-      return json({ error: "Profile not found" }, 404);
+      return errorResponse("not_found", "Profile not found", 404);
     }
 
     // Compute a stable ETag.
@@ -241,7 +272,7 @@ http.route({
     const username = url.searchParams.get("username");
 
     if (!username) {
-      return json({ error: "Username parameter required" }, 400);
+      return errorResponse("invalid_request", "Username parameter required", 400);
     }
 
     const result = await ctx.runQuery(api.profiles.checkUsername, { username });
@@ -263,14 +294,14 @@ http.route({
       const token = url.searchParams.get("token");
 
       if (!token) {
-        return json({ error: "Token parameter required" }, 400, CONTEXT_LINK_CACHE_HEADERS);
+        return errorResponse("invalid_request", "Token parameter required", 400, undefined, CONTEXT_LINK_CACHE_HEADERS);
       }
 
       const raw = await ctx.runQuery(api.contextLinks.resolveLink, { token });
       const result = raw as Record<string, unknown>;
 
       if ("error" in result) {
-        return json({ error: result.error }, (result.status as number) || 400, CONTEXT_LINK_CACHE_HEADERS);
+        return errorResponse(codeForStatus((result.status as number) || 400), String(result.error), (result.status as number) || 400, undefined, CONTEXT_LINK_CACHE_HEADERS);
       }
 
       // Increment use count. This is observability/rate-accounting, not the
@@ -382,9 +413,11 @@ http.route({
         },
       });
     } catch {
-      return json(
-        { error: "Failed to resolve context link" },
+      return errorResponse(
+        "server_error",
+        "Failed to resolve context link",
         500,
+        undefined,
         CONTEXT_LINK_CACHE_HEADERS
       );
     }
@@ -415,12 +448,12 @@ async function authenticateRequest(
 ): Promise<AuthContext | Response> {
   const authHeader = request.headers.get("authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return json({ error: "Missing or invalid Authorization header" }, 401);
+    return errorResponse("unauthorized", "Missing or invalid Authorization header", 401);
   }
 
   const key = authHeader.substring(7);
   if (!key) {
-    return json({ error: "Missing API key in Authorization header" }, 401);
+    return errorResponse("unauthorized", "Missing API key in Authorization header", 401);
   }
 
   // Hash the key and look it up
@@ -433,14 +466,14 @@ async function authenticateRequest(
   const apiKey = await ctx.runQuery(api.apiKeys.getByHash, { keyHash });
 
   if (!apiKey || apiKey.revokedAt) {
-    return json({ error: "Invalid or revoked API key" }, 401);
+    return errorResponse("unauthorized", "Invalid or revoked API key", 401);
   }
 
   // Cycle 56: enforce key expiry. Existing keys without expiresAt continue
   // working indefinitely (backward-compat — getByHash returns undefined for
   // keys created before cycle 56's schema change).
   if (apiKey.expiresAt && apiKey.expiresAt < Date.now()) {
-    return json({ error: "API key has expired" }, 401);
+    return errorResponse("unauthorized", "API key has expired", 401);
   }
 
   // Update last used (cycle 49: now via internal.* — was api.* before)
@@ -528,13 +561,9 @@ async function requireScope(
     } catch {
       // best-effort
     }
-    return json(
-      {
-        error: {
-          code: "scope_missing",
-          message: `API key lacks required scope: ${scope}`,
-        },
-      },
+    return errorResponse(
+      "scope_missing",
+      `API key lacks required scope: ${scope}`,
       403
     );
   }
@@ -634,15 +663,11 @@ http.route({
 
       // Return 409 Conflict for ancestor mismatch (client needs to pull first)
       if (message.includes("ANCESTOR_MISMATCH")) {
-        return json(
-          {
-            error: "ANCESTOR_MISMATCH",
-            message,
-          },
-          409
-        );
+        // Machine code kept recognizable for agents that pinned the documented
+        // 409 ANCESTOR_MISMATCH contract (docs show the conflict semantics).
+        return errorResponse("ancestor_mismatch", message, 409);
       }
-      return json({ error: message }, 500);
+      return errorResponse("server_error", message, 500);
     }
   }),
 });
@@ -689,8 +714,9 @@ http.route({
 
       return json(result);
     } catch (err) {
-      return json(
-        { error: err instanceof Error ? err.message : "Failed to publish" },
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Failed to publish",
         500
       );
     }
@@ -712,15 +738,15 @@ http.route({
       const { portrait } = body;
 
       if (!portrait || !portrait.lines || !portrait.cols || !portrait.rows) {
-        return json({ error: "portrait object with lines, cols, rows, format, sourceUrl required" }, 400);
+        return errorResponse("invalid_request", "portrait object with lines, cols, rows, format, sourceUrl required", 400);
       }
 
       // Find user's profile
       const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-      if (!user) return json({ error: "user not found" }, 404);
+      if (!user) return errorResponse("not_found", "user not found", 404);
 
       const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
-      if (!profile) return json({ error: "profile not found" }, 404);
+      if (!profile) return errorResponse("not_found", "profile not found", 404);
 
       await ctx.runMutation(api.profiles.savePortrait, {
         profileId: profile._id,
@@ -777,7 +803,7 @@ http.route({
 
       return json({ success: true });
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "Failed to save portrait" }, 500);
+      return errorResponse("server_error", err instanceof Error ? err.message : "Failed to save portrait", 500);
     }
   }),
 });
@@ -819,8 +845,9 @@ http.route({
       });
       return json({ sourceId });
     } catch (err) {
-      return json(
-        { error: err instanceof Error ? err.message : "Failed to add source" },
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Failed to add source",
         500
       );
     }
@@ -883,8 +910,9 @@ http.route({
       });
       return json(result);
     } catch (err) {
-      return json(
-        { error: err instanceof Error ? err.message : "Failed to start pipeline" },
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Failed to start pipeline",
         500
       );
     }
@@ -952,7 +980,7 @@ http.route({
       // Cycle 46: payload size cap before any LLM call
       const chars = totalMessageChars(body.messages);
       if (chars > CHAT_MAX_PAYLOAD_CHARS) {
-        return json({ error: `payload too large (${chars} > ${CHAT_MAX_PAYLOAD_CHARS} chars)` }, 413);
+        return errorResponse("payload_too_large", `payload too large (${chars} > ${CHAT_MAX_PAYLOAD_CHARS} chars)`, 413);
       }
 
       // Cycle 46: per-IP rate limit
@@ -963,7 +991,7 @@ http.route({
           maxCalls: CHAT_PUBLIC_RATE_LIMIT.maxCalls,
         });
       } catch (err) {
-        return json({ error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+        return errorResponse("rate_limited", err instanceof Error ? err.message : "rate limit exceeded", 429);
       }
 
       // Cycle 48: daily spend cap kill switch (defense-in-depth vs botnets)
@@ -972,7 +1000,7 @@ http.route({
           endpoint: "chat",
         });
       } catch (err) {
-        return json({ error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+        return errorResponse("upstream_unavailable", err instanceof Error ? err.message : "service temporarily unavailable", 503);
       }
 
       const content = await ctx.runAction(internal.chat.onboardingChat, {
@@ -980,8 +1008,9 @@ http.route({
       });
       return json({ content });
     } catch (err) {
-      return json(
-        { error: err instanceof Error ? err.message : "Chat failed" },
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Chat failed",
         500
       );
     }
@@ -1077,7 +1106,7 @@ http.route({
     const openrouterKey = process.env.OPENROUTER_API_KEY;
 
     if (!anthropicKey && !openrouterKey) {
-      return json({ error: "No LLM API key configured" }, 500);
+      return errorResponse("not_configured", "No LLM API key configured", 500);
     }
 
     const systemMessage = messages.find((m) => m.role === "system");
@@ -1385,11 +1414,11 @@ http.route({
           }));
         }
       } catch (err) {
-        return json({ error: err instanceof Error ? err.message : "Stream failed" }, 500);
+        return errorResponse("server_error", err instanceof Error ? err.message : "Stream failed", 500);
       }
     }
 
-    return json({ error: "No API key or all providers failed" }, 500);
+    return errorResponse("server_error", "No API key or all providers failed", 500);
   }),
 });
 
@@ -1413,13 +1442,13 @@ http.route({
       const { sessionId, messages, keepRecent } = body;
 
       if (!sessionId || !messages || !Array.isArray(messages)) {
-        return json({ error: "sessionId and messages[] required" }, 400);
+        return errorResponse("invalid_request", "sessionId and messages[] required", 400);
       }
 
       // Cycle 46: payload cap
       const chars = totalMessageChars(messages);
       if (chars > CHAT_MAX_PAYLOAD_CHARS * 4) {
-        return json({ error: `payload too large` }, 413);
+        return errorResponse("payload_too_large", `payload too large`, 413);
       }
 
       // Cycle 46: per-user rate limit (more generous than anonymous endpoints)
@@ -1430,7 +1459,7 @@ http.route({
           maxCalls: 60,
         });
       } catch (err) {
-        return json({ error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+        return errorResponse("rate_limited", err instanceof Error ? err.message : "rate limit exceeded", 429);
       }
 
       // Cycle 48: daily spend cap (compact is cheap so it counts less)
@@ -1439,7 +1468,7 @@ http.route({
           endpoint: "compact",
         });
       } catch (err) {
-        return json({ error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+        return errorResponse("upstream_unavailable", err instanceof Error ? err.message : "service temporarily unavailable", 503);
       }
 
       const result = await ctx.runAction(api.chat.compactSession, {
@@ -1452,7 +1481,7 @@ http.route({
 
       return json(result);
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "compaction failed" }, 500);
+      return errorResponse("server_error", err instanceof Error ? err.message : "compaction failed", 500);
     }
   }),
 });
@@ -1484,7 +1513,7 @@ http.route({
           maxCalls: 10,
         });
       } catch (err) {
-        return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+        return errorResponse("rate_limited", err instanceof Error ? err.message : "rate limit exceeded", 429, { success: false });
       }
 
       // Cycle 54: daily spend cap
@@ -1493,7 +1522,7 @@ http.route({
           endpoint: "scrape",
         });
       } catch (err) {
-        return json({ success: false, error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+        return errorResponse("upstream_unavailable", err instanceof Error ? err.message : "service temporarily unavailable", 503, { success: false });
       }
 
       const result = await ctx.runAction(internal.scrape.scrapeProfile, {
@@ -1502,16 +1531,15 @@ http.route({
         platform: body.platform,
       });
       if (!result || !result.success) {
-        return json({ success: false, error: (result as { error?: string } | null)?.error || "Scrape returned no data" }, 400);
+        return errorResponse("invalid_request", (result as { error?: string } | null)?.error || "Scrape returned no data", 400, { success: false });
       }
       return json(result);
     } catch (err) {
-      return json(
-        {
-          success: false,
-          error: err instanceof Error ? err.message : "Scrape failed",
-        },
-        500
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Scrape failed",
+        500,
+        { success: false }
       );
     }
   }),
@@ -1537,7 +1565,7 @@ http.route({
           maxCalls: 10,
         });
       } catch (err) {
-        return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+        return errorResponse("rate_limited", err instanceof Error ? err.message : "rate limit exceeded", 429, { success: false });
       }
 
       // Cycle 48: daily spend cap
@@ -1546,7 +1574,7 @@ http.route({
           endpoint: "research",
         });
       } catch (err) {
-        return json({ success: false, error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+        return errorResponse("upstream_unavailable", err instanceof Error ? err.message : "service temporarily unavailable", 503, { success: false });
       }
 
       const result = await ctx.runAction(internal.chat.researchUser, {
@@ -1557,9 +1585,11 @@ http.route({
       });
       return json(result);
     } catch (err) {
-      return json(
-        { success: false, error: err instanceof Error ? err.message : "Research failed" },
-        500
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Research failed",
+        500,
+        { success: false }
       );
     }
   }),
@@ -1581,7 +1611,7 @@ http.route({
           maxCalls: 10,
         });
       } catch (err) {
-        return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+        return errorResponse("rate_limited", err instanceof Error ? err.message : "rate limit exceeded", 429, { success: false });
       }
 
       try {
@@ -1589,7 +1619,7 @@ http.route({
           endpoint: "verify",
         });
       } catch (err) {
-        return json({ success: false, error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+        return errorResponse("upstream_unavailable", err instanceof Error ? err.message : "service temporarily unavailable", 503, { success: false });
       }
 
       const result = await ctx.runAction(internal.chat.verifyIdentity, {
@@ -1599,9 +1629,11 @@ http.route({
       });
       return json(result);
     } catch (err) {
-      return json(
-        { success: false, error: err instanceof Error ? err.message : "Verification failed" },
-        500
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Verification failed",
+        500,
+        { success: false }
       );
     }
   }),
@@ -1623,7 +1655,7 @@ http.route({
           maxCalls: 10,
         });
       } catch (err) {
-        return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+        return errorResponse("rate_limited", err instanceof Error ? err.message : "rate limit exceeded", 429, { success: false });
       }
 
       try {
@@ -1631,7 +1663,7 @@ http.route({
           endpoint: "enrich",
         });
       } catch (err) {
-        return json({ success: false, error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+        return errorResponse("upstream_unavailable", err instanceof Error ? err.message : "service temporarily unavailable", 503, { success: false });
       }
 
       const result = await ctx.runAction(internal.chat.enrichXProfile, {
@@ -1640,9 +1672,11 @@ http.route({
       });
       return json(result);
     } catch (err) {
-      return json(
-        { success: false, error: err instanceof Error ? err.message : "Enrichment failed" },
-        500
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Enrichment failed",
+        500,
+        { success: false }
       );
     }
   }),
@@ -1664,14 +1698,16 @@ http.route({
       const linkedinUrl = body.linkedinUrl;
 
       if (!linkedinUrl || typeof linkedinUrl !== "string") {
-        return json({ success: false, error: "linkedinUrl is required" }, 400);
+        return errorResponse("invalid_request", "linkedinUrl is required", 400, { success: false });
       }
 
       // Validate it looks like a LinkedIn URL
       if (!linkedinUrl.includes("linkedin.com/in/")) {
-        return json(
-          { success: false, error: "Invalid LinkedIn URL. Expected format: https://linkedin.com/in/username" },
-          400
+        return errorResponse(
+          "invalid_request",
+          "Invalid LinkedIn URL. Expected format: https://linkedin.com/in/username",
+          400,
+          { success: false }
         );
       }
 
@@ -1683,7 +1719,7 @@ http.route({
           maxCalls: 5,
         });
       } catch (err) {
-        return json({ success: false, error: err instanceof Error ? err.message : "rate limit exceeded" }, 429);
+        return errorResponse("rate_limited", err instanceof Error ? err.message : "rate limit exceeded", 429, { success: false });
       }
 
       // Cycle 54: daily spend cap (counts $0.10 per call since it runs 2 actors)
@@ -1692,7 +1728,7 @@ http.route({
           endpoint: "linkedin",
         });
       } catch (err) {
-        return json({ success: false, error: err instanceof Error ? err.message : "service temporarily unavailable" }, 503);
+        return errorResponse("upstream_unavailable", err instanceof Error ? err.message : "service temporarily unavailable", 503, { success: false });
       }
 
       // Normalize LinkedIn URL to ensure consistent format for Apify
@@ -1719,7 +1755,7 @@ http.route({
       // Fetch LinkedIn profile + posts via Apify
       const apiKey = process.env.APIFY_API_KEY;
       if (!apiKey) {
-        return json({ success: false, error: "APIFY_API_KEY not configured" }, 500);
+        return errorResponse("not_configured", "APIFY_API_KEY not configured", 500, { success: false });
       }
 
       const profileActorId = "VhxlqQXRwhW8H5hNV";
@@ -1764,9 +1800,11 @@ http.route({
 
       if (!profileRes.ok) {
         const err = await profileRes.text();
-        return json(
-          { success: false, error: `Profile fetch failed: ${err.slice(0, 300)}` },
-          502
+        return errorResponse(
+          "upstream_unavailable",
+          `Profile fetch failed: ${err.slice(0, 300)}`,
+          502,
+          { success: false }
         );
       }
 
@@ -1847,12 +1885,11 @@ http.route({
         voiceAnalysis,
       });
     } catch (err) {
-      return json(
-        {
-          success: false,
-          error: err instanceof Error ? err.message : "LinkedIn enrichment failed",
-        },
-        500
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "LinkedIn enrichment failed",
+        500,
+        { success: false }
       );
     }
   }),
@@ -1885,8 +1922,9 @@ http.route({
       });
       return json(result);
     } catch (err) {
-      return json(
-        { error: err instanceof Error ? err.message : "Failed to create context link" },
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Failed to create context link",
         500
       );
     }
@@ -1923,7 +1961,7 @@ http.route({
     try {
       const body = await request.json();
       if (!body.linkId) {
-        return json({ error: "linkId is required" }, 400);
+        return errorResponse("invalid_request", "linkId is required", 400);
       }
       await ctx.runMutation(api.contextLinks.revokeLink, {
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -1931,8 +1969,9 @@ http.route({
       });
       return json({ success: true });
     } catch (err) {
-      return json(
-        { error: err instanceof Error ? err.message : "Failed to revoke link" },
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Failed to revoke link",
         500
       );
     }
@@ -1970,13 +2009,9 @@ http.route({
         (s) => typeof s !== "string" || !isKnownScope(s)
       );
       if (unknown.length > 0) {
-        return json(
-          {
-            error: {
-              code: "invalid_scope",
-              message: `Unknown scope(s): ${unknown.join(", ")}`,
-            },
-          },
+        return errorResponse(
+          "invalid_scope",
+          `Unknown scope(s): ${unknown.join(", ")}`,
           400
         );
       }
@@ -1984,13 +2019,9 @@ http.route({
       if (auth.scopes !== null) {
         const escalated = requestedScopes.find((s) => !auth.scopes!.includes(s));
         if (escalated) {
-          return json(
-            {
-              error: {
-                code: "scope_missing",
-                message: `API key lacks required scope: ${escalated}`,
-              },
-            },
+          return errorResponse(
+            "scope_missing",
+            `API key lacks required scope: ${escalated}`,
             403
           );
         }
@@ -2003,8 +2034,9 @@ http.route({
       });
       return json(result);
     } catch (err) {
-      return json(
-        { error: err instanceof Error ? err.message : "Failed to create API key" },
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Failed to create API key",
         500
       );
     }
@@ -2044,7 +2076,7 @@ http.route({
     try {
       const body = await request.json();
       if (!body.keyId) {
-        return json({ error: "keyId is required" }, 400);
+        return errorResponse("invalid_request", "keyId is required", 400);
       }
       await ctx.runMutation(api.apiKeys.revokeKey, {
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -2052,8 +2084,9 @@ http.route({
       });
       return json({ success: true });
     } catch (err) {
-      return json(
-        { error: err instanceof Error ? err.message : "Failed to revoke API key" },
+      return errorResponse(
+        "server_error",
+        err instanceof Error ? err.message : "Failed to revoke API key",
         500
       );
     }
@@ -2077,11 +2110,9 @@ http.route({
   path: "/api/v1/auth/register",
   method: "POST",
   handler: httpAction(async () => {
-    return json(
-      {
-        error:
-          "Password registration has been removed. Use /api/auth/send-verification or run `youmd register` from the latest CLI.",
-      },
+    return errorResponse(
+      "gone",
+      "Password registration has been removed. Use /api/auth/send-verification or run `youmd register` from the latest CLI.",
       410
     );
   }),
@@ -2091,11 +2122,9 @@ http.route({
   path: "/api/v1/auth/login",
   method: "POST",
   handler: httpAction(async () => {
-    return json(
-      {
-        error:
-          "Password login has been removed. Use /api/auth/send-verification and /api/auth/verify-code, or run `youmd login` from the latest CLI.",
-      },
+    return errorResponse(
+      "gone",
+      "Password login has been removed. Use /api/auth/send-verification and /api/auth/verify-code, or run `youmd login` from the latest CLI.",
       410
     );
   }),
@@ -2105,11 +2134,9 @@ http.route({
   path: "/api/v1/webhooks/clerk",
   method: "POST",
   handler: httpAction(async () => {
-    return json(
-      {
-        error:
-          "The Clerk webhook endpoint has been retired. You.md now uses first-party passwordless auth and no longer accepts Clerk lifecycle events.",
-      },
+    return errorResponse(
+      "gone",
+      "The Clerk webhook endpoint has been retired. You.md now uses first-party passwordless auth and no longer accepts Clerk lifecycle events.",
       410
     );
   }),
@@ -2160,7 +2187,7 @@ http.route({
     if (denied) return denied;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-    if (!user) return json({ error: "User not found" }, 404);
+    if (!user) return errorResponse("not_found", "User not found", 404);
 
     // Find the user's profile
     const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
@@ -2186,10 +2213,10 @@ http.route({
     if (denied) return denied;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-    if (!user) return json({ error: "User not found" }, 404);
+    if (!user) return errorResponse("not_found", "User not found", 404);
 
     const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
-    if (!profile) return json({ error: "Profile not found" }, 404);
+    if (!profile) return errorResponse("not_found", "Profile not found", 404);
 
     const body = await request.json();
     await ctx.runMutation(api.private.updatePrivateContext, {
@@ -2247,7 +2274,7 @@ http.route({
     const limit = limitRaw !== undefined && Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : undefined;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-    if (!user) return json({ error: "User not found" }, 404);
+    if (!user) return errorResponse("not_found", "User not found", 404);
 
     // Full-text search when ?q= is present (P5: memory search); list otherwise.
     const memories = q
@@ -2282,11 +2309,11 @@ http.route({
 
     const body = await request.json();
     if (!body.memories || !Array.isArray(body.memories) || body.memories.length === 0) {
-      return json({ error: "Request body must contain a non-empty 'memories' array" }, 400);
+      return errorResponse("invalid_request", "Request body must contain a non-empty 'memories' array", 400);
     }
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-    if (!user) return json({ error: "User not found" }, 404);
+    if (!user) return errorResponse("not_found", "User not found", 404);
 
     const result = await ctx.runMutation(api.memories.saveFromAgent, {
       clerkId: auth.userId,
@@ -2334,7 +2361,7 @@ http.route({
     if (name) {
       const skill = await ctx.runQuery(api.skills.getByName, { name });
       if (!skill || !skill.isPublished) {
-        return json({ error: "Skill not found" }, 404);
+        return errorResponse("not_found", "Skill not found", 404);
       }
       return json(skill);
     }
@@ -2363,7 +2390,7 @@ http.route({
     if (denied) return denied;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-    if (!user) return json({ error: "User not found" }, 404);
+    if (!user) return errorResponse("not_found", "User not found", 404);
 
     const installs = await ctx.runQuery(api.skills.listInstalls, {
       clerkId: auth.userId,
@@ -2395,21 +2422,21 @@ http.route({
     try {
       body = await request.json();
     } catch {
-      return json({ error: "Invalid JSON body" }, 400);
+      return errorResponse("invalid_request", "Invalid JSON body", 400);
     }
 
     try {
       if (typeof body.name !== "string" || !body.name.trim()) {
-        return json({ error: "name is required (string)" }, 400);
+        return errorResponse("invalid_request", "name is required (string)", 400);
       }
       if (typeof body.content !== "string" || !body.content.trim()) {
-        return json({ error: "content is required (string)" }, 400);
+        return errorResponse("invalid_request", "content is required (string)", 400);
       }
       if (body.name.length > 100) {
-        return json({ error: "name must be 100 characters or less" }, 400);
+        return errorResponse("invalid_request", "name must be 100 characters or less", 400);
       }
       if (body.content.length > 50000) {
-        return json({ error: "content must be 50KB or less" }, 400);
+        return errorResponse("invalid_request", "content must be 50KB or less", 400);
       }
 
       const result = await ctx.runMutation(api.skills.publish, {
@@ -2425,8 +2452,8 @@ http.route({
       return json(result);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to publish skill";
-      if (message.includes("already taken")) return json({ error: message }, 409);
-      return json({ error: message }, 500);
+      if (message.includes("already taken")) return errorResponse("conflict", message, 409);
+      return errorResponse("server_error", message, 500);
     }
   }),
 });
@@ -2457,12 +2484,12 @@ http.route({
     try {
       body = await request.json();
     } catch {
-      return json({ error: "Invalid JSON body" }, 400);
+      return errorResponse("invalid_request", "Invalid JSON body", 400);
     }
 
     try {
       if (typeof body.skillName !== "string" || !body.skillName.trim()) {
-        return json({ error: "skillName is required (string)" }, 400);
+        return errorResponse("invalid_request", "skillName is required (string)", 400);
       }
 
       const result = await ctx.runMutation(api.skills.recordInstall, {
@@ -2475,7 +2502,7 @@ http.route({
 
       return json(result);
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "Failed" }, 500);
+      return errorResponse("server_error", err instanceof Error ? err.message : "Failed", 500);
     }
   }),
 });
@@ -2500,12 +2527,12 @@ http.route({
     try {
       body = await request.json();
     } catch {
-      return json({ error: "Invalid JSON body" }, 400);
+      return errorResponse("invalid_request", "Invalid JSON body", 400);
     }
 
     try {
       if (typeof body.skillName !== "string" || !body.skillName.trim()) {
-        return json({ error: "skillName is required (string)" }, 400);
+        return errorResponse("invalid_request", "skillName is required (string)", 400);
       }
 
       const result = await ctx.runMutation(api.skills.trackUsage, {
@@ -2515,7 +2542,7 @@ http.route({
 
       return json(result);
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "Failed" }, 500);
+      return errorResponse("server_error", err instanceof Error ? err.message : "Failed", 500);
     }
   }),
 });
@@ -2540,12 +2567,12 @@ http.route({
     try {
       body = await request.json();
     } catch {
-      return json({ error: "Invalid JSON body" }, 400);
+      return errorResponse("invalid_request", "Invalid JSON body", 400);
     }
 
     try {
       if (typeof body.skillName !== "string" || !body.skillName.trim()) {
-        return json({ error: "skillName is required (string)" }, 400);
+        return errorResponse("invalid_request", "skillName is required (string)", 400);
       }
 
       const result = await ctx.runMutation(api.skills.removeInstall, {
@@ -2555,7 +2582,7 @@ http.route({
 
       return json(result);
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "Failed" }, 500);
+      return errorResponse("server_error", err instanceof Error ? err.message : "Failed", 500);
     }
   }),
 });
@@ -2579,7 +2606,7 @@ http.route({
     if (denied) return denied;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-    if (!user) return json({ error: "User not found" }, 404);
+    if (!user) return errorResponse("not_found", "User not found", 404);
 
     const history = await ctx.runQuery(api.bundles.getHistory, {
       clerkId: auth.userId,
@@ -2603,12 +2630,12 @@ http.route({
     const url = new URL(request.url);
     const versionParam = url.searchParams.get("version");
     if (!versionParam) {
-      return json({ error: "version query parameter is required" }, 400);
+      return errorResponse("invalid_request", "version query parameter is required", 400);
     }
 
     const version = Number(versionParam);
     if (!Number.isFinite(version) || !Number.isInteger(version) || version < 1) {
-      return json({ error: "version must be a positive integer" }, 400);
+      return errorResponse("invalid_request", "version must be a positive integer", 400);
     }
 
     const bundle = await ctx.runQuery(api.bundles.getBundleByVersion, {
@@ -2617,7 +2644,7 @@ http.route({
     });
 
     if (!bundle) {
-      return json({ error: `Version ${version} not found` }, 404);
+      return errorResponse("not_found", `Version ${version} not found`, 404);
     }
 
     return json(bundle);
@@ -2647,10 +2674,10 @@ http.route({
     if (denied) return denied;
 
     let body: { version?: unknown };
-    try { body = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    try { body = await request.json(); } catch { return errorResponse("invalid_request", "Invalid JSON", 400); }
 
     if (typeof body.version !== "number") {
-      return json({ error: "version is required (number)" }, 400);
+      return errorResponse("invalid_request", "version is required (number)", 400);
     }
 
     try {
@@ -2660,7 +2687,7 @@ http.route({
       });
       return json(result);
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "Rollback failed" }, 500);
+      return errorResponse("server_error", err instanceof Error ? err.message : "Rollback failed", 500);
     }
   }),
 });
@@ -2768,16 +2795,16 @@ http.route({
     try {
       body = await request.json();
     } catch {
-      return json({ error: "Invalid JSON body" }, 400);
+      return errorResponse("invalid_request", "Invalid JSON body", 400);
     }
 
     if (!body.agentName || !body.action) {
-      return json({ error: "agentName and action required" }, 400);
+      return errorResponse("invalid_request", "agentName and action required", 400);
     }
 
     try {
       const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-      if (!user) return json({ error: "User not found" }, 404);
+      if (!user) return errorResponse("not_found", "User not found", 404);
 
       const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
 
@@ -2801,7 +2828,7 @@ http.route({
 
       return json({ success: true });
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "Failed to log activity" }, 500);
+      return errorResponse("server_error", err instanceof Error ? err.message : "Failed to log activity", 500);
     }
   }),
 });
@@ -2829,7 +2856,7 @@ http.route({
     try {
       const body = await request.json();
       if (!body.wrappedVaultKey || !body.vaultSalt || !body.vaultKeyIv) {
-        return json({ error: "Missing wrappedVaultKey, vaultSalt, or vaultKeyIv" }, 400);
+        return errorResponse("invalid_request", "Missing wrappedVaultKey, vaultSalt, or vaultKeyIv", 400);
       }
 
       // Convert base64 strings to ArrayBuffer for Convex bytes fields
@@ -2851,7 +2878,7 @@ http.route({
       return json(result);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to initialize vault";
-      return json({ error: message }, 500);
+      return errorResponse("server_error", message, 500);
     }
   }),
 });
@@ -2871,7 +2898,7 @@ http.route({
     try {
       const body = await request.json();
       if (!body.encryptedMd || !body.encryptedJson || !body.iv) {
-        return json({ error: "Missing encryptedMd, encryptedJson, or iv" }, 400);
+        return errorResponse("invalid_request", "Missing encryptedMd, encryptedJson, or iv", 400);
       }
 
       const encryptedMd = new ArrayBuffer(Buffer.from(body.encryptedMd, "base64").length);
@@ -2892,7 +2919,7 @@ http.route({
       return json(result);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save vault data";
-      return json({ error: message }, 500);
+      return errorResponse("server_error", message, 500);
     }
   }),
 });
@@ -2933,7 +2960,7 @@ http.route({
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to get vault data";
-      return json({ error: message }, 500);
+      return errorResponse("server_error", message, 500);
     }
   }),
 });
@@ -3771,7 +3798,7 @@ http.route({
 
     try {
       const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
-      if (!user) return json({ error: "User not found" }, 404);
+      if (!user) return errorResponse("not_found", "User not found", 404);
 
       const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
       if (!profile) return json({ verifications: [], message: "No profile found" });
@@ -3779,7 +3806,7 @@ http.route({
       const verifications = await ctx.runQuery(api.profiles.listVerifications, { profileId: profile._id });
       return json({ verifications });
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "Failed to get verifications" }, 500);
+      return errorResponse("server_error", err instanceof Error ? err.message : "Failed to get verifications", 500);
     }
   }),
 });
@@ -3798,14 +3825,14 @@ http.route({
     const auth = request.headers.get("Authorization") ?? "";
     const token = auth.replace(/^Bearer\s+/, "");
     if (!TRUSTED_INTERNAL_AUTH_TOKEN || token !== TRUSTED_INTERNAL_AUTH_TOKEN) {
-      return json({ error: "Unauthorized" }, 401);
+      return errorResponse("unauthorized", "Unauthorized", 401);
     }
     try {
       const cleanupResult = await ctx.runMutation(internal.seed.cleanupSampleProfiles, {});
       const seedResult = await ctx.runMutation(internal.seed.seedSampleProfiles, {});
       return json({ cleanup: cleanupResult, seed: seedResult });
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "Reseed failed" }, 500);
+      return errorResponse("server_error", err instanceof Error ? err.message : "Reseed failed", 500);
     }
   }),
 });
@@ -3857,7 +3884,7 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     if (!isTrustedAdminRequest(request)) {
-      return json({ error: "Unauthorized" }, 401);
+      return errorResponse("unauthorized", "Unauthorized", 401);
     }
     const body = await readJsonBody(request);
     try {
@@ -3870,7 +3897,7 @@ http.route({
       }));
       return json(result);
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "Public profile import failed" }, 500);
+      return errorResponse("server_error", err instanceof Error ? err.message : "Public profile import failed", 500);
     }
   }),
 });
@@ -3880,7 +3907,7 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     if (!isTrustedAdminRequest(request)) {
-      return json({ error: "Unauthorized" }, 401);
+      return errorResponse("unauthorized", "Unauthorized", 401);
     }
     const body = await readJsonBody(request);
     try {
@@ -3890,7 +3917,7 @@ http.route({
       }));
       return json(result);
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "Public profile source refresh failed" }, 500);
+      return errorResponse("server_error", err instanceof Error ? err.message : "Public profile source refresh failed", 500);
     }
   }),
 });
@@ -3927,7 +3954,7 @@ http.route({
     const path = url.searchParams.get("path");
     if (path) {
       const file = mirror.files.find((f: { path: string }) => f.path === path);
-      if (!file) return json({ error: `File not found in mirror: ${path}` }, 404);
+      if (!file) return errorResponse("not_found", `File not found in mirror: ${path}`, 404);
       return json({ path: file.path, size: file.size, content: file.content });
     }
 
@@ -4009,14 +4036,14 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const secret = process.env.GITHUB_WEBHOOK_SECRET;
-    if (!secret) return json({ error: "webhook not configured" }, 503);
+    if (!secret) return errorResponse("not_configured", "webhook not configured", 503);
 
     const event = request.headers.get("x-github-event") ?? "";
     const signature = request.headers.get("x-hub-signature-256") ?? "";
     const body = await request.text();
 
     if (!(await verifyGithubSignature(secret, body, signature))) {
-      return json({ error: "invalid signature" }, 401);
+      return errorResponse("unauthorized", "invalid signature", 401);
     }
     if (event === "ping") return json({ ok: true, pong: true });
 
@@ -4026,7 +4053,7 @@ http.route({
       try {
         p = JSON.parse(body);
       } catch {
-        return json({ error: "bad payload" }, 400);
+        return errorResponse("invalid_request", "bad payload", 400);
       }
       const instId = p.installation?.id;
       if (instId && (p.action === "deleted" || p.action === "suspend")) {
@@ -4045,7 +4072,7 @@ http.route({
     try {
       payload = JSON.parse(body);
     } catch {
-      return json({ error: "bad payload" }, 400);
+      return errorResponse("invalid_request", "bad payload", 400);
     }
 
     const repoFullName = payload.repository?.full_name;
