@@ -18,8 +18,15 @@ interface ApiResponse<T = unknown> {
  */
 export function apiErrorMessage(data: unknown): string | undefined {
   if (data && typeof data === "object" && "error" in data) {
-    const msg = (data as { error?: unknown }).error;
-    if (typeof msg === "string" && msg) return msg;
+    const err = (data as { error?: unknown }).error;
+    if (typeof err === "string" && err) return err;
+    // Standard envelope: { error: { code, message }, message }
+    if (err && typeof err === "object" && "message" in err) {
+      const msg = (err as { message?: unknown }).message;
+      if (typeof msg === "string" && msg) return msg;
+    }
+    const mirror = (data as { message?: unknown }).message;
+    if (typeof mirror === "string" && mirror) return mirror;
   }
   return undefined;
 }
