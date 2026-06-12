@@ -10,6 +10,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   API_SCOPES,
+  DEFAULT_OWNER_KEY_SCOPES,
+  OWNER_SESSION_SCOPES,
   SCOPE_ENFORCEMENT_EPOCH,
   isKnownScope,
   isLegacyGrandfatheredKey,
@@ -85,11 +87,30 @@ describe("isLegacyGrandfatheredKey", () => {
     ).toBe(false);
   });
 
-  it('grandfathers "cli-auth" login session keys regardless of age/scopes', () => {
+  it('P36: post-epoch "cli-auth" keys are NOT grandfathered (carve-out removed)', () => {
+    // auth.ts now issues real owner scopes for new logins, so the label no
+    // longer grants a bypass — these keys are enforced like any other.
     expect(
       isLegacyGrandfatheredKey({
         scopes: ["read:public"],
         createdAt: POST_EPOCH,
+        label: "cli-auth",
+      })
+    ).toBe(false);
+    expect(
+      isLegacyGrandfatheredKey({
+        scopes: [...OWNER_SESSION_SCOPES],
+        createdAt: POST_EPOCH,
+        label: "cli-auth",
+      })
+    ).toBe(false);
+  });
+
+  it('pre-epoch "cli-auth" keys stay grandfathered via the epoch rule (old sessions keep working)', () => {
+    expect(
+      isLegacyGrandfatheredKey({
+        scopes: ["read:public"],
+        createdAt: PRE_EPOCH,
         label: "cli-auth",
       })
     ).toBe(true);
@@ -111,24 +132,36 @@ describe("isLegacyGrandfatheredKey", () => {
     ).toBe(false);
   });
 
-  it('label matching is exact — "cli-auth-2" or "CLI-AUTH" do not qualify', () => {
-    expect(
-      isLegacyGrandfatheredKey({
-        scopes: ["read:public"],
-        createdAt: POST_EPOCH,
-        label: "cli-auth-2",
-      })
-    ).toBe(false);
-    expect(
-      isLegacyGrandfatheredKey({
-        scopes: ["read:public"],
-        createdAt: POST_EPOCH,
-        label: "CLI-AUTH",
-      })
-    ).toBe(false);
+  it("P36: a post-epoch cli-auth key with full owner scopes passes requireScope-style write checks", () => {
+    const key = {
+      scopes: [...OWNER_SESSION_SCOPES],
+      createdAt: POST_EPOCH,
+      label: "cli-auth",
+    };
+    // Not grandfathered → http.ts requireScope checks `scopes.includes(scope)`.
+    expect(isLegacyGrandfatheredKey(key)).toBe(false);
+    for (const scope of ["write:bundle", "write:memories", "vault"] as const) {
+      expect(key.scopes.includes(scope)).toBe(true);
+    }
   });
 
   it("pins the epoch itself (2026-06-12T00:00:00Z) so it cannot drift silently", () => {
     expect(SCOPE_ENFORCEMENT_EPOCH).toBe(Date.UTC(2026, 5, 12));
+  });
+});
+
+describe("scope defaults (P36)", () => {
+  it("OWNER_SESSION_SCOPES is the full vocabulary (login keys are the owner's credential)", () => {
+    expect(OWNER_SESSION_SCOPES).toEqual([...API_SCOPES]);
+  });
+
+  it("DEFAULT_OWNER_KEY_SCOPES is everything except vault (vault is opt-in)", () => {
+    expect(DEFAULT_OWNER_KEY_SCOPES).toEqual([
+      "read:public",
+      "read:private",
+      "write:bundle",
+      "write:memories",
+    ]);
+    expect(DEFAULT_OWNER_KEY_SCOPES).not.toContain("vault");
   });
 });

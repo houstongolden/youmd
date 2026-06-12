@@ -16,7 +16,7 @@ import { convexTest } from "convex-test";
 import { api } from "./_generated/api";
 import schema from "./schema";
 import { generateApiKey, hashKey } from "./apiKeys";
-import { SCOPE_ENFORCEMENT_EPOCH } from "./lib/scopes";
+import { OWNER_SESSION_SCOPES, SCOPE_ENFORCEMENT_EPOCH } from "./lib/scopes";
 
 const PRO_CLERK = "clerk_pro";
 const FREE_CLERK = "clerk_free";
@@ -169,6 +169,119 @@ describe("apiKeys.createKey", () => {
       })
     ).rejects.toThrow(/Free plan only supports read:public/);
   });
+
+  it("P36: rejects empty scopes (would classify as legacy full-access)", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    const asPro = t.withIdentity({ subject: PRO_CLERK });
+
+    await expect(
+      asPro.mutation(api.apiKeys.createKey, {
+        clerkId: PRO_CLERK,
+        scopes: [],
+      })
+    ).rejects.toThrow(/At least one scope is required/);
+  });
+
+  it("P36: rejects unknown scope strings", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    const asPro = t.withIdentity({ subject: PRO_CLERK });
+
+    await expect(
+      asPro.mutation(api.apiKeys.createKey, {
+        clerkId: PRO_CLERK,
+        scopes: ["read:public", "admin"],
+      })
+    ).rejects.toThrow(/Unknown scope\(s\): admin/);
+  });
+});
+
+describe("auth login flow — cli-auth key scope issuance (P36)", () => {
+  async function seedLoginChallenge(
+    t: ReturnType<typeof convexTest>,
+    email: string,
+    codeHash: string
+  ) {
+    await t.run(async (ctx) => {
+      await ctx.db.insert("authChallenges", {
+        email,
+        type: "login",
+        codeHash,
+        tokenHash: `token-${codeHash}`,
+        expiresAt: Date.now() + 60_000,
+        attempts: 0,
+        createdAt: Date.now(),
+      });
+    });
+  }
+
+  it("issues full owner scopes on the cli-auth key, enforced (not grandfathered)", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    await seedLoginChallenge(t, "pro@example.com", "code-pro");
+
+    const result = await t.mutation(api.auth.completeEmailAuthWithCode, {
+      email: "pro@example.com",
+      codeHash: "code-pro",
+      issueApiKey: true,
+    });
+    expect(result.apiKey).toMatch(/^ym_/);
+
+    const found = await t.query(api.apiKeys.getByHash, {
+      keyHash: await hashKey(result.apiKey!),
+    });
+    // Post-epoch cli-auth key: real scopes, no grandfathering. A
+    // requireScope-style check for write paths passes via declared scopes.
+    expect(found!.scopes).toEqual([...OWNER_SESSION_SCOPES]);
+    for (const scope of ["write:bundle", "write:memories", "vault"]) {
+      expect(found!.scopes).toContain(scope);
+    }
+
+    const rows = await t.run((ctx) => ctx.db.query("apiKeys").collect());
+    const cliKey = rows.find((k) => k.label === "cli-auth");
+    expect(cliKey?.scopes).toEqual([...OWNER_SESSION_SCOPES]);
+  });
+
+  it("free-plan logins also get full owner scopes (owner session bypasses the plan ceiling)", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    await seedLoginChallenge(t, "free@example.com", "code-free");
+
+    const result = await t.mutation(api.auth.completeEmailAuthWithCode, {
+      email: "free@example.com",
+      codeHash: "code-free",
+      issueApiKey: true,
+    });
+    expect(result.apiKey).toMatch(/^ym_/);
+
+    const found = await t.query(api.apiKeys.getByHash, {
+      keyHash: await hashKey(result.apiKey!),
+    });
+    expect(found!.scopes).toEqual([...OWNER_SESSION_SCOPES]);
+  });
+
+  it("login with issueApiKey revokes existing keys (free plan single-key invariant)", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    const asFree = t.withIdentity({ subject: FREE_CLERK });
+    await asFree.mutation(api.apiKeys.createKey, {
+      clerkId: FREE_CLERK,
+      scopes: ["read:public"],
+    });
+
+    await seedLoginChallenge(t, "free@example.com", "code-free-2");
+    await t.mutation(api.auth.completeEmailAuthWithCode, {
+      email: "free@example.com",
+      codeHash: "code-free-2",
+      issueApiKey: true,
+    });
+
+    const rows = await t.run((ctx) => ctx.db.query("apiKeys").collect());
+    const active = rows.filter((k) => !k.revokedAt);
+    expect(active).toHaveLength(1);
+    expect(active[0].label).toBe("cli-auth");
+  });
 });
 
 describe("apiKeys.getByHash — scope classification for http auth", () => {
@@ -216,7 +329,7 @@ describe("apiKeys.getByHash — scope classification for http auth", () => {
     expect(found!.declaredScopes).toEqual(["read:public"]);
   });
 
-  it('returns scopes: null (grandfathered) for a post-epoch "cli-auth" key', async () => {
+  it('P36: a post-epoch "cli-auth" key is NOT grandfathered — declared scopes are enforced', async () => {
     const t = convexTest(schema);
     const { proId } = await seedUsers(t);
 
@@ -228,6 +341,29 @@ describe("apiKeys.getByHash — scope classification for http auth", () => {
         label: "cli-auth",
         scopes: ["read:public"],
         createdAt: SCOPE_ENFORCEMENT_EPOCH + 1,
+      });
+    });
+
+    const found = await t.query(api.apiKeys.getByHash, {
+      keyHash: await hashKey(plaintext),
+    });
+    // Carve-out removed: scopes survive for requireScope enforcement.
+    expect(found!.scopes).toEqual(["read:public"]);
+    expect(found!.declaredScopes).toEqual(["read:public"]);
+  });
+
+  it('pre-epoch "cli-auth" keys stay grandfathered (scopes: null) — old sessions keep working', async () => {
+    const t = convexTest(schema);
+    const { proId } = await seedUsers(t);
+
+    const plaintext = generateApiKey();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("apiKeys", {
+        userId: proId,
+        keyHash: await hashKey(plaintext),
+        label: "cli-auth",
+        scopes: ["read:public"],
+        createdAt: SCOPE_ENFORCEMENT_EPOCH - 1,
       });
     });
 

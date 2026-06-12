@@ -28,6 +28,27 @@ export const API_SCOPES = [
 
 export type ApiScope = (typeof API_SCOPES)[number];
 
+/**
+ * Full owner scopes, issued to keys that ARE the owner's own credential
+ * (the "cli-auth" login session key minted by convex/auth.ts). The owner
+ * never chose a narrowed grant for their own session, so these keys get
+ * the complete vocabulary. Third-party/agent keys should request only the
+ * scopes they need via createKey / POST /api/v1/me/api-keys.
+ */
+export const OWNER_SESSION_SCOPES: ApiScope[] = [...API_SCOPES];
+
+/**
+ * Default scope selection the settings UI offers when the owner creates a
+ * key for themselves: everything except `vault` (vault access is sensitive
+ * enough that it must be opted into explicitly).
+ */
+export const DEFAULT_OWNER_KEY_SCOPES: ApiScope[] = [
+  "read:public",
+  "read:private",
+  "write:bundle",
+  "write:memories",
+];
+
 export function isKnownScope(scope: string): scope is ApiScope {
   return (API_SCOPES as readonly string[]).includes(scope);
 }
@@ -47,12 +68,13 @@ export const SCOPE_ENFORCEMENT_EPOCH = Date.UTC(2026, 5, 12); // 2026-06-12T00:0
  * A key is "legacy grandfathered" (treated as scope-less full access, with
  * scope_missing telemetry) when:
  *  - it has no scopes at all (defensive: pre-schema docs), or
- *  - it was created before enforcement shipped (see epoch above), or
- *  - it is a "cli-auth" login session key. convex/auth.ts still hardcodes
- *    scopes: ["read:public"] for these even though they are the owner's own
- *    session credential (the user never chose read-only). Until the login
- *    flow issues real owner scopes, enforcing would break `youmd push` for
- *    every new login. Remove this carve-out once auth.ts issues full scopes.
+ *  - it was created before enforcement shipped (see epoch above).
+ *
+ * P36: the old `label === "cli-auth"` carve-out is gone. convex/auth.ts now
+ * issues OWNER_SESSION_SCOPES (full owner scopes) for login session keys, so
+ * new logins carry real scopes and are enforced like any other key. Pre-epoch
+ * cli-auth keys remain grandfathered via the epoch rule above — existing
+ * logged-in CLI sessions keep working unchanged.
  */
 export function isLegacyGrandfatheredKey(key: {
   scopes?: string[] | null;
@@ -61,6 +83,5 @@ export function isLegacyGrandfatheredKey(key: {
 }): boolean {
   if (!key.scopes || key.scopes.length === 0) return true;
   if (key.createdAt < SCOPE_ENFORCEMENT_EPOCH) return true;
-  if (key.label === "cli-auth") return true;
   return false;
 }

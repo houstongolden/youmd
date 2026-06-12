@@ -4,6 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { createUserAndProfile } from "./users";
 import { issueApiKeyForUser } from "./apiKeys";
+import { OWNER_SESSION_SCOPES } from "./lib/scopes";
 
 const CHALLENGE_LIFETIME_MS = 15 * 60 * 1000;
 const SESSION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
@@ -189,10 +190,15 @@ async function finalizeChallenge(
 
   let apiKey: string | null = null;
   if (issueApiKey && user) {
+    // P36: the login session key IS the owner's own credential, so it gets
+    // full owner scopes (the user never chose a narrowed grant for their own
+    // session). `ownerSession: true` bypasses the free-plan scope ceiling —
+    // that ceiling gates third-party agent keys, not the owner's login.
     const issued = await issueApiKeyForUser(ctx, user, {
       label: "cli-auth",
-      scopes: ["read:public"],
+      scopes: [...OWNER_SESSION_SCOPES],
       revokeExisting: true,
+      ownerSession: true,
     });
     apiKey = issued.key;
   }

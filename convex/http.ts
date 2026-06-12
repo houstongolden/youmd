@@ -464,7 +464,8 @@ async function authenticateRequest(
  *
  * Returns null when the request may proceed, or a 403 Response when the key
  * lacks the required scope. Legacy grandfathered keys (`auth.scopes === null`
- * — pre-enforcement keys and "cli-auth" login session keys) always proceed,
+ * — keys created before the enforcement epoch, including pre-epoch "cli-auth"
+ * login keys; new logins get full owner scopes — P36) always proceed,
  * but a `scope_missing` activity event is logged whenever their declared
  * scopes wouldn't have covered the call, so real usage can be measured before
  * tightening. Denied calls for scoped keys are logged with status "denied".
@@ -1957,6 +1958,9 @@ http.route({
       // block privilege escalation — a scoped key can only mint keys whose
       // scopes are a subset of its own. Legacy grandfathered keys (scopes ===
       // null) keep full minting ability, matching their full-access status.
+      // Default when no scopes are requested stays least-privilege
+      // ["read:public"]; owner login session keys get full scopes via
+      // convex/auth.ts, and the settings UI defaults to all-but-vault (P36).
       const requestedScopes: string[] =
         Array.isArray(body.scopes) && body.scopes.length > 0
           ? body.scopes

@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 import { secureRandomString } from "./lib/secureToken";
-import { isLegacyGrandfatheredKey } from "./lib/scopes";
+import { isKnownScope, isLegacyGrandfatheredKey } from "./lib/scopes";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
@@ -103,6 +103,19 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 /** Cycle 56: default API key lifetime if `expiresInDays` not specified. */
 const DEFAULT_API_KEY_LIFETIME_DAYS = 365;
 
+/**
+ * Shared key-issuance helper. Scope defaults per caller (P36):
+ *  - convex/auth.ts login flow: OWNER_SESSION_SCOPES (all five) with
+ *    `ownerSession: true` — the key is the owner's own credential.
+ *  - apiKeys.createKey (settings UI): whatever the owner selected; the UI
+ *    defaults to DEFAULT_OWNER_KEY_SCOPES (everything except vault).
+ *  - POST /api/v1/me/api-keys (http.ts): whatever the caller requests,
+ *    defaulting to ["read:public"], capped at the minting key's own scopes.
+ *
+ * `ownerSession: true` bypasses the free-plan scope ceiling (which exists to
+ * gate third-party agent keys, not the owner's own login session). It is not
+ * exposed on any public mutation arg.
+ */
 export async function issueApiKeyForUser(
   ctx: MutationCtx,
   user: { _id: Id<"users">; plan: "free" | "pro" },
@@ -111,8 +124,19 @@ export async function issueApiKeyForUser(
     scopes: string[];
     expiresInDays?: number | null;
     revokeExisting?: boolean;
+    ownerSession?: boolean;
   }
 ) {
+  // A key stored with zero scopes would classify as legacy grandfathered
+  // (full access) in lib/scopes.ts — never allow that to be minted.
+  if (options.scopes.length === 0) {
+    throw new Error("At least one scope is required.");
+  }
+  const unknown = options.scopes.filter((s) => !isKnownScope(s));
+  if (unknown.length > 0) {
+    throw new Error(`Unknown scope(s): ${unknown.join(", ")}`);
+  }
+
   if (user.plan === "free") {
     const existingKeys = await ctx.db
       .query("apiKeys")
@@ -134,7 +158,13 @@ export async function issueApiKeyForUser(
       }
     }
 
-    if (options.scopes.some((s) => s !== "read:public")) {
+    // The scope ceiling gates extra third-party/agent keys on the free plan.
+    // Owner login session keys (cli-auth, via convex/auth.ts) are exempt —
+    // they are the owner's own credential and always carry full scopes.
+    if (
+      !options.ownerSession &&
+      options.scopes.some((s) => s !== "read:public")
+    ) {
       throw new Error(
         "Free plan only supports read:public scope. Upgrade to Pro for all scopes."
       );
