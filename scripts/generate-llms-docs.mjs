@@ -77,6 +77,36 @@ function mcpToolLines(docsReference, names) {
     .join("\n");
 }
 
+function hostedMcpToolLines(docsReference) {
+  return (docsReference.hostedMcpTools || [])
+    .map(
+      (tool) =>
+        `- \`${tool.name}\` (${tool.requiresAuth ? "Bearer API key required" : "public"}): ${asciiText(tool.description)}`
+    )
+    .join("\n");
+}
+
+function hostedMcpToolNames(docsReference) {
+  return (docsReference.hostedMcpTools || [])
+    .map((tool) => `\`${tool.name}\``)
+    .join(", ");
+}
+
+function cliCommandLines(docsReference) {
+  const groups = [];
+  for (const command of docsReference.cliCommands || []) {
+    let group = groups.find((entry) => entry.title === command.group);
+    if (!group) {
+      group = { title: command.group, lines: [] };
+      groups.push(group);
+    }
+    group.lines.push(`- \`youmd ${command.usage}\`: ${asciiText(command.description)}`);
+  }
+  return groups
+    .map((group) => `### ${group.title}\n\n${group.lines.join("\n")}`)
+    .join("\n\n");
+}
+
 function referenceRepoLines(reference) {
   return reference.repos
     .map((repo) => `- ${repo.name}: ${repo.url} (${repo.branch} @ ${repo.commit.slice(0, 12)}; ${asciiText(repo.mode)})`)
@@ -101,7 +131,7 @@ You.md is the agent brain and expertise-stack layer for the agent internet. It g
 
 ## Agent-Readable Surfaces
 
-- [Docs Reference](https://you.md/api/v1/docs/reference): Machine-readable docs manifest generated from ${docsReference.counts.endpoints} shipped routes and ${docsReference.counts.mcpTools} MCP tools.
+- [Docs Reference](https://you.md/api/v1/docs/reference): Machine-readable docs manifest generated from ${docsReference.counts.endpoints} documented routes (${docsReference.counts.internalRoutes} internal/retired routes excluded), ${docsReference.counts.mcpTools} local MCP tools, ${docsReference.counts.hostedMcpTools} hosted MCP tools, and ${docsReference.counts.cliCommands} CLI commands.
 - [OpenAPI Inventory](https://you.md/api/v1/docs/openapi.json): Generated OpenAPI-style API inventory.
 - [MCP Discovery](https://you.md/.well-known/mcp.json): MCP discovery metadata for web-capable agents.
 - [MCP Endpoint](https://you.md/api/v1/mcp): Same-origin JSON-RPC endpoint for web-capable MCP clients.
@@ -127,7 +157,8 @@ You.md is the agent brain and expertise-stack layer for the agent internet. It g
 ## MCP
 
 - [MCP Server](https://you.md/docs#mcp-server): Local stdio MCP and same-origin JSON-RPC MCP surfaces.
-- Important tools include \`whoami\`, \`get_identity\`, \`get_agent_brief\`, \`get_project_context\`, \`add_memory\`, \`add_project_memory\`, \`get_stack_manifest\`, \`get_stack_capabilities\`, \`route_stack_request\`, and \`smoke_stack\`.
+- Local stdio MCP (via the runtime) exposes ${docsReference.counts.mcpTools} tools, including \`whoami\`, \`get_identity\`, \`get_agent_brief\`, \`get_project_context\`, \`add_memory\`, \`add_project_memory\`, \`get_stack_manifest\`, \`get_stack_capabilities\`, \`route_stack_request\`, and \`smoke_stack\`.
+- Hosted JSON-RPC MCP (\`POST /api/v1/mcp\`) exposes ${docsReference.counts.hostedMcpTools} tools: ${hostedMcpToolNames(docsReference)}.
 - Preferred local setup: \`curl -fsSL https://you.md/install.sh | bash\`, then \`youmd mcp --install codex --auto\` or \`youmd mcp --install claude --auto\`.
 
 ## Agent Workflows
@@ -138,6 +169,8 @@ You.md is the agent brain and expertise-stack layer for the agent internet. It g
 - [Agent Docs](https://you.md/docs#agent-docs): How to use \`llms.txt\`, \`llms-full.txt\`, docs reference, OpenAPI, MCP, and stack routes.
 
 ## Local Runtime Commands
+
+The runtime registers ${docsReference.counts.cliCommands} CLI commands; the full generated list lives in [llms-full.txt](https://you.md/llms-full.txt) and [the docs CLI reference](https://you.md/docs#cli). Highlights:
 
 - \`curl -fsSL https://you.md/install.sh | bash\`: Install the runtime.
 - \`you\`: Open the live You.md agent conversation.
@@ -184,7 +217,7 @@ function buildLlmsFullTxt(docsReference, reference) {
 
   return `# You.md Full Agent Context
 
-> Generated full agent context. Source hash: ${docsReference.sourceHash}. CLI version: ${docsReference.cli.version}. Endpoints: ${docsReference.counts.endpoints}. MCP tools: ${docsReference.counts.mcpTools}. Reference intelligence: ${reference.updated}.
+> Generated full agent context. Source hash: ${docsReference.sourceHash}. CLI version: ${docsReference.cli.version}. Endpoints: ${docsReference.counts.endpoints} documented (${docsReference.counts.internalRoutes} internal/retired routes excluded). Local MCP tools: ${docsReference.counts.mcpTools}. Hosted MCP tools: ${docsReference.counts.hostedMcpTools}. CLI commands: ${docsReference.counts.cliCommands}. Reference intelligence: ${reference.updated}.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -294,12 +327,18 @@ youmd mcp --install cursor --auto
 
 Use \`you\` for the live U conversation. Use \`youmd\` for non-interactive commands inside coding agents.
 
+## CLI Commands
+
+All ${docsReference.counts.cliCommands} registered runtime commands, generated from the commander registrations in \`cli/src/index.ts\` (run \`youmd <command> --help\` for per-command options; namespaces like \`skill\`, \`stack\`, \`memories\`, and \`private\` take subcommands):
+
+${cliCommandLines(docsReference) || "- No generated CLI commands found."}
+
 ## MCP
 
-You.md has two MCP surfaces:
+You.md has two MCP surfaces with distinct tool sets:
 
-- Local stdio MCP through the runtime. This is the preferred surface for Claude Code, Codex, Cursor, and other local coding agents.
-- Same-origin JSON-RPC MCP at \`POST /api/v1/mcp\` for web-capable clients.
+- Local stdio MCP through the runtime: ${docsReference.counts.mcpTools} tools. This is the preferred surface for Claude Code, Codex, Cursor, and other local coding agents.
+- Hosted same-origin JSON-RPC MCP at \`POST /api/v1/mcp\`: ${docsReference.counts.hostedMcpTools} tools, for web-capable clients.
 
 Discovery:
 
@@ -311,7 +350,13 @@ Generated MCP endpoints:
 
 ${mcpEndpoints || "- No generated MCP endpoints found."}
 
-Example JSON-RPC request:
+List the hosted tools:
+
+\`\`\`json
+{ "jsonrpc": "2.0", "method": "tools/list", "params": {}, "id": 1 }
+\`\`\`
+
+Call a public hosted tool (\`get_identity\` requires \`username\`):
 
 \`\`\`json
 {
@@ -319,13 +364,17 @@ Example JSON-RPC request:
   "method": "tools/call",
   "params": {
     "name": "get_identity",
-    "arguments": { "format": "compact" }
+    "arguments": { "username": "houstongolden" }
   },
-  "id": 1
+  "id": 2
 }
 \`\`\`
 
-Important MCP tools and resources:
+Hosted MCP tools (\`POST /api/v1/mcp\`):
+
+${hostedMcpToolLines(docsReference) || "- No generated hosted MCP tools found."}
+
+Key local stdio MCP tools (of ${docsReference.counts.mcpTools} total):
 
 ${keyMcpTools || "- No generated MCP tools found."}
 

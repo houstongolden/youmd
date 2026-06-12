@@ -3,7 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { docsReference } from "@/generated/docs-reference";
-import type { DocsEndpoint, DocsMcpTool } from "@/generated/docs-reference";
+import type {
+  DocsCliCommand,
+  DocsEndpoint,
+  DocsHostedMcpTool,
+  DocsMcpTool,
+} from "@/generated/docs-reference";
 
 /* ── Navigation structure ────────────────────────────────── */
 
@@ -402,14 +407,16 @@ function SystemPanel({
 
 function ReferenceStats() {
   const stats = [
-    { label: "HTTP endpoints", value: docsReference.counts.endpoints },
-    { label: "MCP tools", value: docsReference.counts.mcpTools },
+    { label: "documented endpoints", value: docsReference.counts.endpoints },
+    { label: "local MCP tools", value: docsReference.counts.mcpTools },
+    { label: "hosted MCP tools", value: docsReference.counts.hostedMcpTools },
+    { label: "CLI commands", value: docsReference.counts.cliCommands },
     { label: "CLI", value: `v${docsReference.cli.version}` },
     { label: "manifest", value: docsReference.sourceHash.slice(0, 8) },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 my-5">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 my-5">
       {stats.map((stat) => (
         <div
           key={stat.label}
@@ -582,8 +589,10 @@ function EndpointReference({
   categories?: string[];
   limit?: number;
 }) {
+  // Internal/retired routes are excluded at generation time
+  // (scripts/generate-docs-reference.mjs INTERNAL_ROUTES), so every endpoint
+  // in the manifest is documentable and the published count stays honest.
   const rows = (docsReference.endpoints as readonly DocsEndpoint[])
-    .filter((endpoint) => !["Admin", "Other"].includes(endpoint.category))
     .filter((endpoint) => !categories || categories.includes(endpoint.category))
     .slice(0, limit ?? 999);
 
@@ -668,6 +677,78 @@ function McpToolReference({
         </div>
       ))}
     </div>
+  );
+}
+
+function HostedMcpToolReference() {
+  const tools = docsReference.hostedMcpTools as readonly DocsHostedMcpTool[];
+
+  return (
+    <div className="my-4 grid gap-2">
+      {tools.map((tool) => (
+        <div
+          key={tool.name}
+          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 rounded-[2px]"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[13px] text-[hsl(var(--accent))]">
+              {tool.name}
+            </span>
+            <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">
+              {tool.requiresAuth ? "Bearer API key required" : "public"}
+            </span>
+            {tool.required.length > 0 && (
+              <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">
+                required: {tool.required.join(", ")}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-[12px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-80">
+            {tool.description}
+          </p>
+          {tool.inputFields.length > 0 && (
+            <p className="mt-2 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">
+              input: {tool.inputFields.join(", ")}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// CLI command tables generated from the commander registrations in
+// cli/src/index.ts (via scripts/generate-docs-reference.mjs), grouped the
+// same way as `youmd --help`. Hand-maintained command tables drift; this
+// one fails docs:check when a command is added without regenerating.
+function CliCommandReference() {
+  const commands = docsReference.cliCommands as readonly DocsCliCommand[];
+  const groups: { title: string; rows: { cmd: string; desc: string }[] }[] = [];
+  for (const command of commands) {
+    let group = groups.find((entry) => entry.title === command.group);
+    if (!group) {
+      group = { title: command.group, rows: [] };
+      groups.push(group);
+    }
+    group.rows.push({
+      cmd: `youmd ${command.usage}`,
+      desc: command.description,
+    });
+  }
+
+  return (
+    <>
+      {groups.map((group) => (
+        <div key={group.title}>
+          <P>
+            <strong className="text-[hsl(var(--text-primary))]">
+              {group.title}
+            </strong>
+          </P>
+          <CommandTable commands={group.rows} />
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -1319,152 +1400,23 @@ preferences: terminal-native, monochrome
             </P>
 
             <P>
-              <strong className="text-[hsl(var(--text-primary))]">Identity</strong>
+              The {docsReference.counts.cliCommands} commands below are
+              generated from the commander registrations in{" "}
+              <InlineCode>cli/src/index.ts</InlineCode> and grouped the same
+              way as <InlineCode>youmd --help</InlineCode>. Namespaces like{" "}
+              <InlineCode>skill</InlineCode>, <InlineCode>stack</InlineCode>,{" "}
+              <InlineCode>memories</InlineCode>, <InlineCode>private</InlineCode>,{" "}
+              <InlineCode>project</InlineCode>, <InlineCode>link</InlineCode>,
+              and <InlineCode>keys</InlineCode> take subcommands — run{" "}
+              <InlineCode>youmd &lt;command&gt; --help</InlineCode> for
+              per-command options, and see the{" "}
+              <a href="#skills-cli" className="text-[hsl(var(--accent))] hover:underline">
+                skill subcommand reference
+              </a>{" "}
+              for the full <InlineCode>youmd skill ...</InlineCode> surface.
             </P>
-            <CommandTable
-              commands={[
-                {
-                  cmd: "youmd init",
-                  desc: "Conversational AI onboarding -- builds your agent brain through dialogue",
-                },
-                { cmd: "you", desc: "Open U, the proactive local agent that keeps shaping your brain" },
-                { cmd: "youmd chat", desc: "Explicit long-form chat command when you want the older path" },
-                {
-                  cmd: "youmd build",
-                  desc: "Compile local markdown files into you.json + you.md",
-                },
-                {
-                  cmd: "youmd publish",
-                  desc: "Upload and publish compiled bundle to you.md",
-                },
-                {
-                  cmd: "youmd status",
-                  desc: "Show bundle version, publish status, and auth state",
-                },
-                {
-                  cmd: "youmd diff",
-                  desc: "Show changes between local files and published version",
-                },
-                {
-                  cmd: "youmd export",
-                  desc: "Export you.json and/or you.md to disk (--json, --md, -o path)",
-                },
-                {
-                  cmd: "youmd add TYPE URL",
-                  desc: "Add a source (website, linkedin, x, blog, github)",
-                },
-              ]}
-            />
 
-            <P>
-              <strong className="text-[hsl(var(--text-primary))]">Auth & Sync</strong>
-            </P>
-            <CommandTable
-              commands={[
-                {
-                  cmd: "youmd login",
-                  desc: "Browser sign-in, email-code login, or --key KEY for direct auth",
-                },
-                {
-                  cmd: "youmd logout",
-                  desc: "Clear local auth state on this machine",
-                },
-                {
-                  cmd: "youmd register",
-                  desc: "Create a new account from the CLI",
-                },
-                {
-                  cmd: "youmd whoami",
-                  desc: "Show current authenticated user",
-                },
-                {
-                  cmd: "youmd pull",
-                  desc: "Download profile from web to local .youmd/ files",
-                },
-                {
-                  cmd: "youmd push",
-                  desc: "Upload local files to web and publish",
-                },
-                {
-                  cmd: "youmd sync",
-                  desc: "Pull + push in one command (--watch for auto-sync on save)",
-                },
-              ]}
-            />
-
-            <P>
-              <strong className="text-[hsl(var(--text-primary))]">Access & Sharing</strong>
-            </P>
-            <CommandTable
-              commands={[
-                {
-                  cmd: "youmd link create",
-                  desc: "Generate shareable context link (--scope, --ttl, --max-uses)",
-                },
-                { cmd: "youmd link list", desc: "List active context links" },
-                { cmd: "youmd link preview TOKEN", desc: "Preview what an agent sees for a link" },
-                { cmd: "youmd link revoke ID", desc: "Revoke a context link" },
-                {
-                  cmd: "youmd keys list",
-                  desc: "List API keys",
-                },
-                { cmd: "youmd keys create", desc: "Create a new API key" },
-              ]}
-            />
-
-            <P>
-              <strong className="text-[hsl(var(--text-primary))]">Memory & Context</strong>
-            </P>
-            <CommandTable
-              commands={[
-                { cmd: "youmd memories list", desc: "List saved memories" },
-                { cmd: "youmd memories add CATEGORY \"content\"", desc: "Add a memory (fact, preference, goal, etc.)" },
-                { cmd: "youmd memories stats", desc: "Memory count by category" },
-                { cmd: "youmd private", desc: "View all private context" },
-                { cmd: "youmd private notes set", desc: "Set private notes (stdin or interactive)" },
-                { cmd: "youmd private notes append \"text\"", desc: "Append to private notes" },
-                { cmd: "youmd private projects add NAME", desc: "Add a private project" },
-              ]}
-            />
-
-            <P>
-              <strong className="text-[hsl(var(--text-primary))]">Projects</strong>
-            </P>
-            <CommandTable
-              commands={[
-                { cmd: "youmd project init NAME", desc: "Initialize project-specific You.md context and private project memory" },
-                { cmd: "youmd project list", desc: "List known projects" },
-                { cmd: "youmd project show NAME", desc: "Display project details and context paths" },
-                { cmd: "youmd project memories NAME", desc: "List memories for a specific project" },
-                { cmd: "youmd project remember NAME \"content\"", desc: "Save a memory scoped to a project" },
-                { cmd: "youmd project edit NAME", desc: "Open project context files for editing" },
-              ]}
-            />
-
-            <P>
-              <strong className="text-[hsl(var(--text-primary))]">Skills</strong>
-            </P>
-            <CommandTable
-              commands={[
-                { cmd: "youmd skill list", desc: "List installed skills" },
-                { cmd: "youmd skill install NAME", desc: "Install a skill from the registry" },
-                { cmd: "youmd skill remove NAME", desc: "Remove an installed skill" },
-                { cmd: "youmd skill use NAME", desc: "Run a skill with {{var}} interpolation" },
-                { cmd: "youmd skill sync", desc: "Sync skills with your published bundle" },
-                { cmd: "youmd skill create", desc: "Scaffold a new skill from a template" },
-                { cmd: "youmd skill publish", desc: "Publish a skill to the registry" },
-                { cmd: "youmd skill browse", desc: "Browse the public skill registry" },
-                { cmd: "youmd skill remote NAME", desc: "Fetch and preview a remote skill" },
-                { cmd: "youmd skill link NAME PATH", desc: "Symlink a local skill for development" },
-                { cmd: "youmd skill init-project", desc: "Bootstrap AGENTS/CLAUDE + project-context/ + .you/ + host links for current repo" },
-                { cmd: "youmd skill improve NAME", desc: "Use AI to improve a skill's template" },
-                { cmd: "youmd skill metrics NAME", desc: "View usage stats for a published skill" },
-                { cmd: "youmd skill search QUERY", desc: "Search the registry by keyword" },
-                { cmd: "youmd skill export NAME", desc: "Export a skill as a standalone markdown file" },
-                { cmd: "youmd skill info NAME", desc: "Show full metadata for an installed skill" },
-                { cmd: "youmd stack smoke --path DIR", desc: "Validate a local YouStack manifest without writing files or touching the brain" },
-              ]}
-            />
+            <CliCommandReference />
 
             <Callout type="info">
               The <InlineCode>init</InlineCode> and <InlineCode>chat</InlineCode>{" "}
@@ -2424,10 +2376,12 @@ Content-Type: application/json`}</CodeBlock>
 
             <H3 id="mcp-server">MCP Server</H3>
             <P>
-              You.md ships two MCP surfaces: a local stdio server through the
-              CLI and a same-origin JSON-RPC endpoint for clients that can speak
-              HTTP. The local server is the power path for Claude Code, Codex,
-              Cursor, and similar coding agents.
+              You.md ships two MCP surfaces with distinct tool sets: a local
+              stdio server through the CLI ({docsReference.counts.mcpTools}{" "}
+              tools) and a hosted same-origin JSON-RPC endpoint (
+              {docsReference.counts.hostedMcpTools} tools) for clients that can
+              speak HTTP. The local server is the power path for Claude Code,
+              Codex, Cursor, and similar coding agents.
             </P>
             <CodeBlock title="HTTP">{`# MCP discovery — auto-configure any MCP-compatible client
 GET /.well-known/mcp.json
@@ -2439,16 +2393,27 @@ Content-Type: application/json
 # Example: list available tools
 { "jsonrpc": "2.0", "method": "tools/list", "params": {}, "id": 1 }
 
-# Example: get a user's identity
+# Example: get a user's public identity (username is required)
 {
   "jsonrpc": "2.0",
   "method": "tools/call",
   "params": {
     "name": "get_identity",
-    "arguments": { "format": "compact" }
+    "arguments": { "username": "houstongolden" }
   },
   "id": 2
 }`}</CodeBlock>
+            <P>
+              <strong className="text-[hsl(var(--text-primary))]">
+                Hosted MCP tools
+              </strong>{" "}
+              — the {docsReference.counts.hostedMcpTools} tools served by{" "}
+              <InlineCode>POST /api/v1/mcp</InlineCode>.{" "}
+              <InlineCode>get_identity</InlineCode> and{" "}
+              <InlineCode>search_profiles</InlineCode> are public; the rest
+              require a Bearer API key.
+            </P>
+            <HostedMcpToolReference />
             <P>
               The local stdio server also exposes <InlineCode>get_agent_brief</InlineCode>,
               a YouStack startup brief that combines identity, repo instructions,
@@ -2461,6 +2426,13 @@ Content-Type: application/json
             <CodeBlock title="bash">{`npx --yes youmd@latest mcp --install claude --auto
 npx --yes youmd@latest mcp --install cursor --auto
 youmd mcp --json             # Print the exact MCP config JSON`}</CodeBlock>
+            <P>
+              <strong className="text-[hsl(var(--text-primary))]">
+                Local stdio MCP tools
+              </strong>{" "}
+              — all {docsReference.counts.mcpTools} tools served by the local
+              runtime:
+            </P>
             <McpToolReference />
 
             <H3 id="schema-reference">Schema</H3>
@@ -2498,6 +2470,14 @@ Accept: application/vnd.you-md.v1+json`}</CodeBlock>
                   exposes an OpenAPI-style spec for API reference tooling.{" "}
                   <InlineCode>npm run docs:check</InlineCode> fails when the
                   committed generated files are stale.
+                </p>
+                <p>
+                  Counts are honest: {docsReference.counts.internalRoutes}{" "}
+                  internal, retired, or webhook-only routes are excluded at
+                  generation time and listed (with reasons) under{" "}
+                  <InlineCode>internalRoutes</InlineCode> in the docs manifest,
+                  so the published endpoint count equals what this page
+                  documents.
                 </p>
               </div>
             </SystemPanel>

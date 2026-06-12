@@ -837,6 +837,40 @@ export const openApiSpec = {
         ]
       }
     },
+    "/.well-known/jwks.json": {
+      "get": {
+        "operationId": "get_well_known_jwks_json",
+        "summary": "Public JWKS used to verify first-party session JWTs",
+        "tags": [
+          "Auth"
+        ],
+        "x-youmd-auth": "Public or rate-limited",
+        "x-youmd-source": "next",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/github/app/setup": {
       "get": {
         "operationId": "get_api_auth_github_app_setup",
@@ -1084,74 +1118,6 @@ export const openApiSpec = {
         ],
         "x-youmd-auth": "HTTP-only session flow",
         "x-youmd-source": "next",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "default": {
-            "description": "Error response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/auth/login": {
-      "post": {
-        "operationId": "post_api_v1_auth_login",
-        "summary": "Legacy CLI auth route with migration response",
-        "tags": [
-          "Auth"
-        ],
-        "x-youmd-auth": "Public or rate-limited",
-        "x-youmd-source": "convex",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "default": {
-            "description": "Error response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/auth/register": {
-      "post": {
-        "operationId": "post_api_v1_auth_register",
-        "summary": "Legacy CLI registration route with migration response",
-        "tags": [
-          "Auth"
-        ],
-        "x-youmd-auth": "Public or rate-limited",
-        "x-youmd-source": "convex",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -2112,6 +2078,74 @@ export const openApiSpec = {
             "bearerAuth": []
           }
         ]
+      }
+    },
+    "/{username}/you.json": {
+      "get": {
+        "operationId": "get_username_you_json",
+        "summary": "Direct public brain JSON for a username (no JS required; ETag + schema Link preserved)",
+        "tags": [
+          "Public Identity"
+        ],
+        "x-youmd-auth": "Public or rate-limited",
+        "x-youmd-source": "next",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{username}/you.txt": {
+      "get": {
+        "operationId": "get_username_you_txt",
+        "summary": "Direct public brain markdown for a username (no JS required; ETag + schema Link preserved)",
+        "tags": [
+          "Public Identity"
+        ],
+        "x-youmd-auth": "Public or rate-limited",
+        "x-youmd-source": "next",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/check-username": {

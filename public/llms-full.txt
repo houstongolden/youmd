@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: d9d6cfc2438396ac5025a659818dd4c143324fe027068cf44b199a90d98d9524. CLI version: 0.6.23. Endpoints: 76. MCP tools: 24. Reference intelligence: 2026-06-09T19:27:42.274Z.
+> Generated full agent context. Source hash: 7af24680f18e8fcfadfe9da2192c3474a53f49bed0d2130db9988963c8f1a694. CLI version: 0.6.23. Endpoints: 69 documented (7 internal/retired routes excluded). Local MCP tools: 24. Hosted MCP tools: 8. CLI commands: 27. Reference intelligence: 2026-06-09T19:27:42.274Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -69,6 +69,8 @@ Accept: application/vnd.you-md.v1+json
 
 Public identity endpoints:
 
+- `GET /{username}/you.json`: Direct public brain JSON for a username (no JS required; ETag + schema Link preserved) (Public or rate-limited)
+- `GET /{username}/you.txt`: Direct public brain markdown for a username (no JS required; ETag + schema Link preserved) (Public or rate-limited)
 - `GET /api/v1/check-username`: Check availability (Public or rate-limited)
 - `GET /api/v1/profiles`: List all profiles (no params) or get single profile (?username=xxx) (Public or rate-limited)
 
@@ -111,12 +113,67 @@ youmd mcp --install cursor --auto
 
 Use `you` for the live U conversation. Use `youmd` for non-interactive commands inside coding agents.
 
+## CLI Commands
+
+All 27 registered runtime commands, generated from the commander registrations in `cli/src/index.ts` (run `youmd <command> --help` for per-command options; namespaces like `skill`, `stack`, `memories`, and `private` take subcommands):
+
+### AUTH
+
+- `youmd login`: Authenticate with the You.md platform
+- `youmd logout`: Clear local authentication for this machine
+- `youmd register`: Register a new You.md identity
+- `youmd whoami`: Show current authenticated user
+
+### BUNDLE
+
+- `youmd init`: Initialize a local .youmd/ identity context (interactive)
+- `youmd build`: Compile local you.md bundle from profile/ and preferences/ files
+- `youmd status`: Show pipeline/build status
+- `youmd push`: Upload local .youmd/ files to you.md and publish
+- `youmd pull`: Download your profile from you.md to local .youmd/ files
+- `youmd sync`: Sync local files with you.md (pull + push)
+- `youmd diff [v1] [v2]`: Compare bundle versions: `youmd diff` (local vs remote) or `youmd diff <v1> <v2>`
+- `youmd export`: Export profile to you.json and/or you.md
+- `youmd publish`: Push compiled bundle to the platform API
+
+### CHAT
+
+- `youmd chat`: Talk to the You agent - update your profile, add sources, ask questions
+- `youmd memories [subcommand] [args...]`: Manage your memory brain (list, add, stats)
+- `youmd private [subcommand] [args...]`: Manage private context (notes, links, projects)
+- `youmd project [subcommand] [args...]`: Manage project agent context (init, list, show, memories)
+- `youmd prompts [subcommand] [args...]`: Search and browse your past messages across agent sessions
+
+### SKILLS
+
+- `youmd skill [subcommand] [args...]`: Identity-aware agent skills (list, install, use, sync, init-project)
+- `youmd stack [subcommand] [args...]`: Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link)
+
+### MONITORING
+
+- `youmd logs`: View agent activity log -- see what agents read/wrote and when
+- `youmd agents`: List connected agents and their activity summary
+
+### MCP
+
+- `youmd mcp`: Start the You.md MCP server (identity context for Claude, Cursor, any MCP client)
+
+### SHARING
+
+- `youmd link [subcommand] [arg]`: Manage context links (create, list, revoke, preview)
+- `youmd keys [subcommand]`: Manage API keys (list, create, revoke)
+- `youmd add <source> <url>`: Add a source URL to local config (website, linkedin, x, blog, youtube, github)
+
+### PREVIEW
+
+- `youmd preview`: Start a local preview server
+
 ## MCP
 
-You.md has two MCP surfaces:
+You.md has two MCP surfaces with distinct tool sets:
 
-- Local stdio MCP through the runtime. This is the preferred surface for Claude Code, Codex, Cursor, and other local coding agents.
-- Same-origin JSON-RPC MCP at `POST /api/v1/mcp` for web-capable clients.
+- Local stdio MCP through the runtime: 24 tools. This is the preferred surface for Claude Code, Codex, Cursor, and other local coding agents.
+- Hosted same-origin JSON-RPC MCP at `POST /api/v1/mcp`: 8 tools, for web-capable clients.
 
 Discovery:
 
@@ -130,7 +187,13 @@ Generated MCP endpoints:
 - `GET /api/v1/mcp`: MCP discovery ping and HTTP transport metadata (JSON-RPC, optional Bearer API key)
 - `POST /api/v1/mcp`: JSON-RPC MCP endpoint for web-capable clients (JSON-RPC, optional Bearer API key)
 
-Example JSON-RPC request:
+List the hosted tools:
+
+```json
+{ "jsonrpc": "2.0", "method": "tools/list", "params": {}, "id": 1 }
+```
+
+Call a public hosted tool (`get_identity` requires `username`):
 
 ```json
 {
@@ -138,13 +201,24 @@ Example JSON-RPC request:
   "method": "tools/call",
   "params": {
     "name": "get_identity",
-    "arguments": { "format": "compact" }
+    "arguments": { "username": "houstongolden" }
   },
-  "id": 1
+  "id": 2
 }
 ```
 
-Important MCP tools and resources:
+Hosted MCP tools (`POST /api/v1/mcp`):
+
+- `whoami` (Bearer API key required): Return a compact ~500-char identity summary of the authenticated user: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation - it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not...
+- `get_agent_brief` (Bearer API key required): Return a startup brief for the authenticated user. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines a compact identity summary, the user's recent durable memories (rendered inline by default), installed skills, and recommended next moves so the agent can act without asking the user to re-expla...
+- `get_identity` (public): Get a user's public identity bundle from you.md. Returns their structured identity: bio, projects, values, agent directives, communication preferences, and more. Use this at the start of a session to understand who you're working with.
+- `search_profiles` (public): Search or list public profiles on you.md.
+- `get_my_identity` (Bearer API key required): Get the authenticated user's full identity bundle, including private context. Requires a you.md API key passed as Bearer token in the Authorization header.
+- `get_my_stacks` (Bearer API key required): List the YouStacks the authenticated user hosts in their own GitHub repo (from the You.md server-side mirror). Requires a you.md API key as Bearer token.
+- `get_repo_file` (Bearer API key required): Read one file (e.g. you.md, you.json, or a stacks/<slug>/... file) from the authenticated user's repo via the You.md server-side mirror. Requires a you.md API key as Bearer token.
+- `search_memories` (Bearer API key required): Full-text search the authenticated user's durable memories on you.md. Use this to recall specific facts, preferences, decisions, or context the user has stored - e.g. before answering a question about their past work or stated preferences. Returns one memory per line as plain text, relevance-ordered. Requires a you.md API key with the read:private scope...
+
+Key local stdio MCP tools (of 24 total):
 
 - `whoami`: Return a compact ~500-char identity summary: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation - it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSON.
 - `get_identity`: Get the user's complete you.md identity bundle. Returns compact (default), full JSON, or human-readable markdown. For the fastest orient, call whoami first; call get_identity when you need full detail (preferences, voice, directives, projects).

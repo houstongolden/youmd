@@ -13,6 +13,7 @@ const CHECK_ONLY = process.argv.includes("--check");
 const HTTP_SOURCE = path.join(ROOT, "convex", "http.ts");
 const MCP_SOURCE = path.join(ROOT, "cli", "src", "mcp", "server.ts");
 const CLI_PACKAGE = path.join(ROOT, "cli", "package.json");
+const CLI_INDEX_SOURCE = path.join(ROOT, "cli", "src", "index.ts");
 const NEXT_API_ROOTS = [
   path.join(ROOT, "src", "app", "api"),
   path.join(ROOT, "src", "app", "(app)"),
@@ -60,8 +61,57 @@ function trailingRouteComment(source, index, method, routePath) {
   return trimDescription(joined || "Convex HTTP action");
 }
 
+// P25 (honest endpoint counts): routes that ship in convex/http.ts or Next
+// route files but are intentionally NOT documented for public agents.
+// convex/http.ts cannot carry doc markers (docs tooling must not edit it), so
+// this list is the single exclusion point. Every entry needs a reason; an
+// entry that no longer matches a parsed route fails generation so the list
+// cannot go stale.
+const INTERNAL_ROUTES = new Map([
+  // Retired auth surface: permanent 410 stubs that only return a migration
+  // message to stale CLI builds (convex/http.ts "LEGACY AUTH ROUTES").
+  ["POST /api/v1/auth/register", "retired 410 stub after the first-party passwordless migration"],
+  ["POST /api/v1/auth/login", "retired 410 stub after the first-party passwordless migration"],
+  // Retired webhook: permanent 410 stub kept so stale Clerk deliveries fail loudly.
+  ["POST /api/v1/webhooks/clerk", "retired 410 stub; Clerk auth was removed"],
+  // Internal admin plumbing: gated by the admin secret / trusted internal
+  // auth token, never meant for public agents.
+  ["POST /api/admin/reseed", "internal admin helper gated by the admin secret"],
+  ["POST /api/admin/profiles/import-targets", "internal admin helper gated by the admin secret"],
+  ["POST /api/admin/profiles/fetch-sources", "internal admin helper gated by the admin secret"],
+  // Machine-to-machine plumbing: GitHub App webhook receiver authenticated by
+  // an HMAC signature; agents cannot usefully call it.
+  ["POST /api/github/webhook", "GitHub App webhook receiver authenticated by HMAC signature"],
+]);
+
+// Every documented endpoint must land in one of these categories. The docs
+// page and llms docs render by category, so an endpoint outside this set
+// would be counted but never shown — exactly the dishonest-count bug P25
+// fixed. New routes must either get a category here or an INTERNAL_ROUTES
+// entry; otherwise generation fails.
+const DOCUMENTED_CATEGORIES = new Set([
+  "Account",
+  "Activity",
+  "Auth",
+  "Chat",
+  "Context Links",
+  "Docs",
+  "Enrichment",
+  "MCP",
+  "Memories",
+  "Private Context",
+  "Public Identity",
+  "Schema",
+  "Skills",
+  "YouStacks",
+]);
+
 function categoryFor(routePath) {
   if (routePath.startsWith("/api/admin")) return "Admin";
+  if (routePath === "/.well-known/jwks.json") return "Auth";
+  if (routePath === "/{username}/you.json" || routePath === "/{username}/you.txt") {
+    return "Public Identity";
+  }
   if (routePath === "/.well-known/mcp.json" || routePath === "/api/v1/mcp") return "MCP";
   if (routePath.startsWith("/api/auth") || routePath.startsWith("/api/v1/auth")) return "Auth";
   if (routePath.startsWith("/ctx")) return "Context Links";
@@ -107,9 +157,9 @@ const SUMMARY_OVERRIDES = new Map([
   ["POST /api/v1/chat", "Non-streaming You Agent chat route"],
   ["GET /api/v1/stacks/capabilities", "Shared YouStack capability contract and API/MCP threshold map"],
   ["POST /api/v1/stacks/route", "Deterministically route a request against default or manifest-supplied YouStack capabilities"],
-  ["POST /api/v1/auth/login", "Legacy CLI auth route with migration response"],
-  ["POST /api/v1/auth/register", "Legacy CLI registration route with migration response"],
-  ["POST /api/v1/webhooks/clerk", "Deprecated Clerk webhook route"],
+  ["GET /.well-known/jwks.json", "Public JWKS used to verify first-party session JWTs"],
+  ["GET /{username}/you.json", "Direct public brain JSON for a username (no JS required; ETag + schema Link preserved)"],
+  ["GET /{username}/you.txt", "Direct public brain markdown for a username (no JS required; ETag + schema Link preserved)"],
 ]);
 
 function summaryFor(method, routePath, fallback) {
@@ -226,6 +276,53 @@ function mergeRoutes(routes) {
   });
 }
 
+// P25: split merged routes into the documented set (what every count, docs
+// page table, llms file, and OpenAPI path reflects) and the internal set.
+// Fails loudly when the exclusion list is stale or a route has no documented
+// category, so the published count always equals what is actually documented.
+function partitionRoutes(mergedRoutes) {
+  const documented = [];
+  const internal = [];
+  const matchedExclusions = new Set();
+
+  for (const route of mergedRoutes) {
+    const key = `${route.method} ${route.path}`;
+    const reason = INTERNAL_ROUTES.get(key);
+    if (reason) {
+      matchedExclusions.add(key);
+      internal.push({ method: route.method, path: route.path, reason });
+      continue;
+    }
+    documented.push(route);
+  }
+
+  const staleExclusions = [...INTERNAL_ROUTES.keys()].filter(
+    (key) => !matchedExclusions.has(key)
+  );
+  if (staleExclusions.length > 0) {
+    console.error(
+      `INTERNAL_ROUTES entries no longer match any parsed route:\n${staleExclusions
+        .map((key) => `- ${key}`)
+        .join("\n")}\nRemove them from scripts/generate-docs-reference.mjs.`
+    );
+    process.exit(1);
+  }
+
+  const uncategorized = documented.filter(
+    (route) => !DOCUMENTED_CATEGORIES.has(route.category)
+  );
+  if (uncategorized.length > 0) {
+    console.error(
+      `Routes without a documented category (would be counted but never shown):\n${uncategorized
+        .map((route) => `- ${route.method} ${route.path} (${route.category})`)
+        .join("\n")}\nAdd a category in categoryFor() or an INTERNAL_ROUTES entry.`
+    );
+    process.exit(1);
+  }
+
+  return { documented, internal };
+}
+
 function extractBalanced(source, startIndex, openChar, closeChar) {
   let depth = 0;
   let inString = false;
@@ -304,6 +401,171 @@ function parseMcpTools() {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// Object keys directly inside the outermost braces of `objectSource`
+// (a balanced "{ ... }" slice). Used to read inputSchema.properties keys.
+function topLevelKeys(objectSource) {
+  const keys = [];
+  let depth = 0;
+  let inString = false;
+  let stringChar = "";
+  let escaped = false;
+
+  for (let i = 0; i < objectSource.length; i += 1) {
+    const ch = objectSource[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === stringChar) {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      inString = true;
+      stringChar = ch;
+      continue;
+    }
+    if (ch === "{" || ch === "[" || ch === "(") {
+      depth += 1;
+      continue;
+    }
+    if (ch === "}" || ch === "]" || ch === ")") {
+      depth -= 1;
+      continue;
+    }
+    if (depth === 1) {
+      const match = objectSource.slice(i).match(/^([A-Za-z_][A-Za-z0-9_]*)\s*:/);
+      if (match) {
+        keys.push(match[1]);
+        i += match[1].length;
+      }
+    }
+  }
+  return [...new Set(keys)];
+}
+
+// U8: hosted MCP tools are registered inline in convex/http.ts under the
+// JSON-RPC `tools/list` handler. Parse them read-only (same approach as
+// routes) so the docs can state hosted vs local tool counts distinctly.
+function parseHostedMcpTools() {
+  const source = read(HTTP_SOURCE);
+  const listToolsIndex = source.indexOf('case "tools/list"');
+  if (listToolsIndex === -1) return [];
+  const toolsIndex = source.indexOf("tools: [", listToolsIndex);
+  if (toolsIndex === -1) return [];
+
+  const arrayStart = source.indexOf("[", toolsIndex);
+  const arraySource = extractBalanced(source, arrayStart, "[", "]");
+
+  return splitTopLevelObjects(arraySource)
+    .map((objectSource) => {
+      const name = objectSource.match(/name:\s*"([^"]+)"/)?.[1];
+      const description = objectSource.match(/description:\s*"((?:[^"\\]|\\.)*)"/s)?.[1];
+      if (!name || !description) return null;
+
+      const requiredMatch = objectSource.match(/required:\s*\[([^\]]*)\]/s);
+      const required = requiredMatch
+        ? [...requiredMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1])
+        : [];
+
+      const propertiesIndex = objectSource.indexOf("properties: {");
+      const propertiesSource =
+        propertiesIndex === -1
+          ? ""
+          : extractBalanced(objectSource, objectSource.indexOf("{", propertiesIndex), "{", "}");
+      const inputFields = propertiesSource ? topLevelKeys(propertiesSource) : [];
+
+      return {
+        name,
+        description: trimDescription(description, 360),
+        inputFields,
+        required,
+        // Auth-gated hosted tools state the API-key requirement in their own
+        // registered description; public tools (get_identity, search_profiles)
+        // do not. Used by the docs and the smoke replay's public-example filter.
+        requiresAuth: /requires a you\.md api key/i.test(description),
+      };
+    })
+    .filter(Boolean);
+}
+
+// P34: CLI command inventory generated from the commander registrations in
+// cli/src/index.ts (`.command("...")` + `.description("...")` pairs) plus the
+// HELP_GROUPS metadata that buckets them for `youmd --help`. Because this
+// feeds the drift-checked generated output, a new commander command that is
+// not regenerated into the docs fails `npm run docs:check`.
+function parseCliCommands() {
+  const source = read(CLI_INDEX_SOURCE);
+
+  const groupsBlock = source.match(/const HELP_GROUPS[\s\S]*?\n\];/)?.[0] || "";
+  const groupOrder = [];
+  const groupMeta = new Map();
+  for (const groupMatch of groupsBlock.matchAll(
+    /title:\s*"([^"]+)",\s*commands:\s*\[([\s\S]*?)\]/g
+  )) {
+    const title = groupMatch[1];
+    groupOrder.push(title);
+    for (const commandMatch of groupMatch[2].matchAll(
+      /\{\s*name:\s*"([^"]+)",\s*summary:\s*"((?:[^"\\]|\\.)*)"\s*\}/g
+    )) {
+      groupMeta.set(commandMatch[1], { group: title, summary: commandMatch[2] });
+    }
+  }
+
+  const registered = new Map();
+  for (const match of source.matchAll(
+    /\.command\(\s*"([^"]+)"\s*\)\s*\.description\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g
+  )) {
+    const usage = match[1];
+    const name = usage.split(/\s+/)[0];
+    registered.set(name, {
+      name,
+      usage,
+      description: trimDescription(match[2].replace(/\\"/g, '"')),
+    });
+  }
+
+  // P34 docs:check assertion — commander registrations and HELP_GROUPS must
+  // stay in lockstep, so a new command cannot ship without help/docs coverage.
+  const missingFromHelp = [...registered.keys()].filter((name) => !groupMeta.has(name));
+  const missingFromCommander = [...groupMeta.keys()].filter((name) => !registered.has(name));
+  if (registered.size === 0 || missingFromHelp.length > 0 || missingFromCommander.length > 0) {
+    if (registered.size === 0) {
+      console.error("No commander commands parsed from cli/src/index.ts.");
+    }
+    if (missingFromHelp.length > 0) {
+      console.error(
+        `Commander commands missing from HELP_GROUPS in cli/src/index.ts: ${missingFromHelp.join(", ")}`
+      );
+    }
+    if (missingFromCommander.length > 0) {
+      console.error(
+        `HELP_GROUPS entries without a commander registration: ${missingFromCommander.join(", ")}`
+      );
+    }
+    process.exit(1);
+  }
+
+  // Emit in `youmd --help` order: group order, then group-internal order.
+  const commands = [];
+  for (const group of groupOrder) {
+    for (const [name, meta] of groupMeta) {
+      if (meta.group !== group) continue;
+      const command = registered.get(name);
+      commands.push({
+        name: command.name,
+        usage: command.usage,
+        group: meta.group,
+        summary: trimDescription(meta.summary),
+        description: command.description,
+      });
+    }
+  }
+  return commands;
+}
+
 function parseCliMetadata() {
   const pkg = JSON.parse(read(CLI_PACKAGE) || "{}");
   return {
@@ -326,8 +588,8 @@ function operationId(method, routePath) {
 function buildOpenApiSpec(endpoints, cli) {
   const paths = {};
   for (const endpoint of endpoints) {
-    if (["Admin", "Other"].includes(endpoint.category)) continue;
-
+    // Internal/retired routes are excluded centrally in partitionRoutes, so
+    // the OpenAPI inventory always matches the documented endpoint count.
     const apiPath = openApiPath(endpoint.path);
     paths[apiPath] ||= {};
     paths[apiPath][endpoint.method.toLowerCase()] = {
@@ -388,31 +650,46 @@ function buildOpenApiSpec(endpoints, cli) {
 
 const convexRoutes = parseConvexRoutes();
 const nextRoutes = parseNextRoutes();
-const endpoints = mergeRoutes([...convexRoutes, ...nextRoutes]);
+const { documented: endpoints, internal: internalRoutes } = partitionRoutes(
+  mergeRoutes([...convexRoutes, ...nextRoutes])
+);
 const mcpTools = parseMcpTools();
+const hostedMcpTools = parseHostedMcpTools();
+const cliCommands = parseCliCommands();
 const cli = parseCliMetadata();
 const openApiSpec = buildOpenApiSpec(endpoints, cli);
 
 const sourceHash = sha256(
   JSON.stringify({
     endpoints,
+    internalRoutes,
     mcpTools,
+    hostedMcpTools,
+    cliCommands,
     cli,
   })
 );
 
-const generated = `// This file is generated by scripts/generate-docs-reference.mjs.\n// Do not edit by hand; update the route/tool source and run npm run docs:generate.\n\nexport type DocsEndpoint = {\n  method: string;\n  path: string;\n  category: string;\n  auth: string;\n  source: string;\n  sources: readonly string[];\n  summary: string;\n};\n\nexport type DocsMcpTool = {\n  name: string;\n  description: string;\n  inputFields: readonly string[];\n  required: readonly string[];\n};\n\nexport const docsReference = ${JSON.stringify(
+const generated = `// This file is generated by scripts/generate-docs-reference.mjs.\n// Do not edit by hand; update the route/tool source and run npm run docs:generate.\n\nexport type DocsEndpoint = {\n  method: string;\n  path: string;\n  category: string;\n  auth: string;\n  source: string;\n  sources: readonly string[];\n  summary: string;\n};\n\nexport type DocsMcpTool = {\n  name: string;\n  description: string;\n  inputFields: readonly string[];\n  required: readonly string[];\n};\n\nexport type DocsHostedMcpTool = {\n  name: string;\n  description: string;\n  inputFields: readonly string[];\n  required: readonly string[];\n  requiresAuth: boolean;\n};\n\nexport type DocsCliCommand = {\n  name: string;\n  usage: string;\n  group: string;\n  summary: string;\n  description: string;\n};\n\nexport type DocsInternalRoute = {\n  method: string;\n  path: string;\n  reason: string;\n};\n\nexport const docsReference = ${JSON.stringify(
   {
     sourceHash,
     cli,
     counts: {
+      // Documented endpoints only; internal/retired routes are excluded in
+      // partitionRoutes and listed under internalRoutes for transparency.
       endpoints: endpoints.length,
+      internalRoutes: internalRoutes.length,
       mcpTools: mcpTools.length,
-      convexRoutes: convexRoutes.length,
-      nextRoutes: nextRoutes.length,
+      hostedMcpTools: hostedMcpTools.length,
+      cliCommands: cliCommands.length,
+      convexRoutes: endpoints.filter((endpoint) => endpoint.sources.includes("convex")).length,
+      nextRoutes: endpoints.filter((endpoint) => endpoint.sources.includes("next")).length,
     },
     endpoints,
+    internalRoutes,
     mcpTools,
+    hostedMcpTools,
+    cliCommands,
   },
   null,
   2
@@ -435,5 +712,5 @@ fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
 fs.writeFileSync(OUT_FILE, generated);
 fs.writeFileSync(OUT_OPENAPI_FILE, generatedOpenApi);
 console.log(
-  `generated docs reference: ${endpoints.length} endpoints, ${mcpTools.length} MCP tools`
+  `generated docs reference: ${endpoints.length} documented endpoints (${internalRoutes.length} internal/retired excluded), ${mcpTools.length} local MCP tools, ${hostedMcpTools.length} hosted MCP tools, ${cliCommands.length} CLI commands`
 );

@@ -18,16 +18,41 @@ export type DocsMcpTool = {
   required: readonly string[];
 };
 
+export type DocsHostedMcpTool = {
+  name: string;
+  description: string;
+  inputFields: readonly string[];
+  required: readonly string[];
+  requiresAuth: boolean;
+};
+
+export type DocsCliCommand = {
+  name: string;
+  usage: string;
+  group: string;
+  summary: string;
+  description: string;
+};
+
+export type DocsInternalRoute = {
+  method: string;
+  path: string;
+  reason: string;
+};
+
 export const docsReference = {
-  "sourceHash": "d9d6cfc2438396ac5025a659818dd4c143324fe027068cf44b199a90d98d9524",
+  "sourceHash": "7af24680f18e8fcfadfe9da2192c3474a53f49bed0d2130db9988963c8f1a694",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
-    "endpoints": 76,
+    "endpoints": 69,
+    "internalRoutes": 7,
     "mcpTools": 24,
-    "convexRoutes": 59,
-    "nextRoutes": 26
+    "hostedMcpTools": 8,
+    "cliCommands": 27,
+    "convexRoutes": 52,
+    "nextRoutes": 24
   },
   "endpoints": [
     {
@@ -262,38 +287,14 @@ export const docsReference = {
       ]
     },
     {
-      "method": "POST",
-      "path": "/api/admin/profiles/fetch-sources",
-      "category": "Admin",
-      "auth": "Admin secret",
-      "source": "convex + next",
-      "summary": "Convex HTTP action",
+      "method": "GET",
+      "path": "/.well-known/jwks.json",
+      "category": "Auth",
+      "auth": "Public or rate-limited",
+      "source": "next",
+      "summary": "Public JWKS used to verify first-party session JWTs",
       "sources": [
-        "convex",
         "next"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/api/admin/profiles/import-targets",
-      "category": "Admin",
-      "auth": "Admin secret",
-      "source": "convex + next",
-      "summary": "Convex HTTP action",
-      "sources": [
-        "convex",
-        "next"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/api/admin/reseed",
-      "category": "Admin",
-      "auth": "Admin secret",
-      "source": "convex",
-      "summary": "Authorization: Bearer <TRUSTED_INTERNAL_AUTH_TOKEN> ---------------------------------------------------------------------------",
-      "sources": [
-        "convex"
       ]
     },
     {
@@ -382,28 +383,6 @@ export const docsReference = {
       "summary": "Next.js route",
       "sources": [
         "next"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/api/v1/auth/login",
-      "category": "Auth",
-      "auth": "Public or rate-limited",
-      "source": "convex",
-      "summary": "Legacy CLI auth route with migration response",
-      "sources": [
-        "convex"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/api/v1/auth/register",
-      "category": "Auth",
-      "auth": "Public or rate-limited",
-      "source": "convex",
-      "summary": "Legacy CLI registration route with migration response",
-      "sources": [
-        "convex"
       ]
     },
     {
@@ -645,61 +624,6 @@ export const docsReference = {
     },
     {
       "method": "GET",
-      "path": "/.well-known/jwks.json",
-      "category": "Other",
-      "auth": "Public or rate-limited",
-      "source": "next",
-      "summary": "Next.js route",
-      "sources": [
-        "next"
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "/{username}/you.json",
-      "category": "Other",
-      "auth": "Public or rate-limited",
-      "source": "next",
-      "summary": "Next.js route",
-      "sources": [
-        "next"
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "/{username}/you.txt",
-      "category": "Other",
-      "auth": "Public or rate-limited",
-      "source": "next",
-      "summary": "Next.js route",
-      "sources": [
-        "next"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/api/github/webhook",
-      "category": "Other",
-      "auth": "Public or rate-limited",
-      "source": "convex",
-      "summary": "Convex HTTP action",
-      "sources": [
-        "convex"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/api/v1/webhooks/clerk",
-      "category": "Other",
-      "auth": "Public or rate-limited",
-      "source": "convex",
-      "summary": "Deprecated Clerk webhook route",
-      "sources": [
-        "convex"
-      ]
-    },
-    {
-      "method": "GET",
       "path": "/api/v1/me/private",
       "category": "Private Context",
       "auth": "Bearer API key",
@@ -751,6 +675,28 @@ export const docsReference = {
       "summary": "Initialize vault with wrapped key",
       "sources": [
         "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/{username}/you.json",
+      "category": "Public Identity",
+      "auth": "Public or rate-limited",
+      "source": "next",
+      "summary": "Direct public brain JSON for a username (no JS required; ETag + schema Link preserved)",
+      "sources": [
+        "next"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/{username}/you.txt",
+      "category": "Public Identity",
+      "auth": "Public or rate-limited",
+      "source": "next",
+      "summary": "Direct public brain markdown for a username (no JS required; ETag + schema Link preserved)",
+      "sources": [
+        "next"
       ]
     },
     {
@@ -874,6 +820,43 @@ export const docsReference = {
       "sources": [
         "next"
       ]
+    }
+  ],
+  "internalRoutes": [
+    {
+      "method": "POST",
+      "path": "/api/admin/profiles/fetch-sources",
+      "reason": "internal admin helper gated by the admin secret"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/profiles/import-targets",
+      "reason": "internal admin helper gated by the admin secret"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/reseed",
+      "reason": "internal admin helper gated by the admin secret"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "reason": "retired 410 stub after the first-party passwordless migration"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "reason": "retired 410 stub after the first-party passwordless migration"
+    },
+    {
+      "method": "POST",
+      "path": "/api/github/webhook",
+      "reason": "GitHub App webhook receiver authenticated by HMAC signature"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/webhooks/clerk",
+      "reason": "retired 410 stub; Clerk auth was removed"
     }
   ],
   "mcpTools": [
@@ -1085,6 +1068,275 @@ export const docsReference = {
       "description": "Return a compact ~500-char identity summary: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation — it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSON.",
       "inputFields": [],
       "required": []
+    }
+  ],
+  "hostedMcpTools": [
+    {
+      "name": "whoami",
+      "description": "Return a compact ~500-char identity summary of the authenticated user: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation — it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSO…",
+      "inputFields": [],
+      "required": [],
+      "requiresAuth": true
+    },
+    {
+      "name": "get_agent_brief",
+      "description": "Return a startup brief for the authenticated user. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines a compact identity summary, the user's recent durable memories (rendered inline by default), installed skills, and recommended next moves so the agent can act without asking the user to re-expla…",
+      "inputFields": [
+        "format",
+        "includeMemories",
+        "maxChars"
+      ],
+      "required": [],
+      "requiresAuth": true
+    },
+    {
+      "name": "get_identity",
+      "description": "Get a user's public identity bundle from you.md. Returns their structured identity: bio, projects, values, agent directives, communication preferences, and more. Use this at the start of a session to understand who you're working with.",
+      "inputFields": [
+        "username"
+      ],
+      "required": [
+        "username"
+      ],
+      "requiresAuth": false
+    },
+    {
+      "name": "search_profiles",
+      "description": "Search or list public profiles on you.md.",
+      "inputFields": [
+        "query",
+        "limit"
+      ],
+      "required": [],
+      "requiresAuth": false
+    },
+    {
+      "name": "get_my_identity",
+      "description": "Get the authenticated user's full identity bundle, including private context. Requires a you.md API key passed as Bearer token in the Authorization header.",
+      "inputFields": [],
+      "required": [],
+      "requiresAuth": true
+    },
+    {
+      "name": "get_my_stacks",
+      "description": "List the YouStacks the authenticated user hosts in their own GitHub repo (from the You.md server-side mirror). Requires a you.md API key as Bearer token.",
+      "inputFields": [],
+      "required": [],
+      "requiresAuth": true
+    },
+    {
+      "name": "get_repo_file",
+      "description": "Read one file (e.g. you.md, you.json, or a stacks/<slug>/... file) from the authenticated user's repo via the You.md server-side mirror. Requires a you.md API key as Bearer token.",
+      "inputFields": [
+        "path"
+      ],
+      "required": [
+        "path"
+      ],
+      "requiresAuth": true
+    },
+    {
+      "name": "search_memories",
+      "description": "Full-text search the authenticated user's durable memories on you.md. Use this to recall specific facts, preferences, decisions, or context the user has stored — e.g. before answering a question about their past work or stated preferences. Returns one memory per line as plain text, relevance-ordered. Requires a you.md API key with the read:private scope pas…",
+      "inputFields": [
+        "query",
+        "limit"
+      ],
+      "required": [
+        "query"
+      ],
+      "requiresAuth": true
+    }
+  ],
+  "cliCommands": [
+    {
+      "name": "login",
+      "usage": "login",
+      "group": "AUTH",
+      "summary": "sign in via browser or email code, or use --key",
+      "description": "Authenticate with the You.md platform"
+    },
+    {
+      "name": "logout",
+      "usage": "logout",
+      "group": "AUTH",
+      "summary": "clear local auth state for this machine",
+      "description": "Clear local authentication for this machine"
+    },
+    {
+      "name": "register",
+      "usage": "register",
+      "group": "AUTH",
+      "summary": "create a new you.md identity",
+      "description": "Register a new You.md identity"
+    },
+    {
+      "name": "whoami",
+      "usage": "whoami",
+      "group": "AUTH",
+      "summary": "show current authenticated user",
+      "description": "Show current authenticated user"
+    },
+    {
+      "name": "init",
+      "usage": "init",
+      "group": "BUNDLE",
+      "summary": "scaffold a local .youmd/ bundle",
+      "description": "Initialize a local .youmd/ identity context (interactive)"
+    },
+    {
+      "name": "build",
+      "usage": "build",
+      "group": "BUNDLE",
+      "summary": "compile local bundle from profile/ + preferences/",
+      "description": "Compile local you.md bundle from profile/ and preferences/ files"
+    },
+    {
+      "name": "status",
+      "usage": "status",
+      "group": "BUNDLE",
+      "summary": "show local + remote state and next steps",
+      "description": "Show pipeline/build status"
+    },
+    {
+      "name": "push",
+      "usage": "push",
+      "group": "BUNDLE",
+      "summary": "upload local bundle and publish",
+      "description": "Upload local .youmd/ files to you.md and publish"
+    },
+    {
+      "name": "pull",
+      "usage": "pull",
+      "group": "BUNDLE",
+      "summary": "download your profile into local .youmd/",
+      "description": "Download your profile from you.md to local .youmd/ files"
+    },
+    {
+      "name": "sync",
+      "usage": "sync",
+      "group": "BUNDLE",
+      "summary": "pull + push in one command",
+      "description": "Sync local files with you.md (pull + push)"
+    },
+    {
+      "name": "diff",
+      "usage": "diff [v1] [v2]",
+      "group": "BUNDLE",
+      "summary": "show changes vs published version",
+      "description": "Compare bundle versions: `youmd diff` (local vs remote) or `youmd diff <v1> <v2>`"
+    },
+    {
+      "name": "export",
+      "usage": "export",
+      "group": "BUNDLE",
+      "summary": "export you.json and/or you.md",
+      "description": "Export profile to you.json and/or you.md"
+    },
+    {
+      "name": "publish",
+      "usage": "publish",
+      "group": "BUNDLE",
+      "summary": "publish compiled bundle to the platform",
+      "description": "Push compiled bundle to the platform API"
+    },
+    {
+      "name": "chat",
+      "usage": "chat",
+      "group": "CHAT",
+      "summary": "talk to the you agent (update profile, ask questions)",
+      "description": "Talk to the You agent — update your profile, add sources, ask questions"
+    },
+    {
+      "name": "memories",
+      "usage": "memories [subcommand] [args...]",
+      "group": "CHAT",
+      "summary": "manage your memory brain",
+      "description": "Manage your memory brain (list, add, stats)"
+    },
+    {
+      "name": "private",
+      "usage": "private [subcommand] [args...]",
+      "group": "CHAT",
+      "summary": "manage private context (notes, links, projects)",
+      "description": "Manage private context (notes, links, projects)"
+    },
+    {
+      "name": "project",
+      "usage": "project [subcommand] [args...]",
+      "group": "CHAT",
+      "summary": "manage project-level agent context",
+      "description": "Manage project agent context (init, list, show, memories)"
+    },
+    {
+      "name": "prompts",
+      "usage": "prompts [subcommand] [args...]",
+      "group": "CHAT",
+      "summary": "search and browse past agent messages",
+      "description": "Search and browse your past messages across agent sessions"
+    },
+    {
+      "name": "skill",
+      "usage": "skill [subcommand] [args...]",
+      "group": "SKILLS",
+      "summary": "identity-aware agent skills (list/install/use/sync)",
+      "description": "Identity-aware agent skills (list, install, use, sync, init-project)"
+    },
+    {
+      "name": "stack",
+      "usage": "stack [subcommand] [args...]",
+      "group": "SKILLS",
+      "summary": "local YouStack manifests (inspect/doctor/smoke/capabilities/route)",
+      "description": "Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link)"
+    },
+    {
+      "name": "logs",
+      "usage": "logs",
+      "group": "MONITORING",
+      "summary": "view agent activity log (who read/wrote what, when)",
+      "description": "View agent activity log -- see what agents read/wrote and when"
+    },
+    {
+      "name": "agents",
+      "usage": "agents",
+      "group": "MONITORING",
+      "summary": "list connected agents and their activity summary",
+      "description": "List connected agents and their activity summary"
+    },
+    {
+      "name": "mcp",
+      "usage": "mcp",
+      "group": "MCP",
+      "summary": "run the you.md mcp server (for claude, codex, cursor, etc.)",
+      "description": "Start the You.md MCP server (identity context for Claude, Cursor, any MCP client)"
+    },
+    {
+      "name": "link",
+      "usage": "link [subcommand] [arg]",
+      "group": "SHARING",
+      "summary": "create, list, preview, revoke context links",
+      "description": "Manage context links (create, list, revoke, preview)"
+    },
+    {
+      "name": "keys",
+      "usage": "keys [subcommand]",
+      "group": "SHARING",
+      "summary": "manage api keys for agent access",
+      "description": "Manage API keys (list, create, revoke)"
+    },
+    {
+      "name": "add",
+      "usage": "add <source> <url>",
+      "group": "SHARING",
+      "summary": "add a source url (website, linkedin, x, github...)",
+      "description": "Add a source URL to local config (website, linkedin, x, blog, youtube, github)"
+    },
+    {
+      "name": "preview",
+      "usage": "preview",
+      "group": "PREVIEW",
+      "summary": "start a local preview server",
+      "description": "Start a local preview server"
     }
   ]
 } as const;
