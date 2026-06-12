@@ -104,7 +104,7 @@ export function AnalyticsPane({ clerkId, profileId }: AnalyticsPaneProps) {
 
       {/* ── 30-Day Chart ─────────────────────────────────── */}
       <div>
-        <PaneSectionLabel>30-day activity</PaneSectionLabel>
+        <PaneSectionLabel>30-day views</PaneSectionLabel>
 
         {/* Combined sparkline */}
         <div className="space-y-2">

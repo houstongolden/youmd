@@ -544,8 +544,8 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
 
         <Divider />
 
-        {/* Activity */}
-        <SectionLabel>activity log</SectionLabel>
+        {/* Session log — account/security events ("activity" = agent event log, lives in AgentsPane) */}
+        <SectionLabel>session log</SectionLabel>
         {logs === undefined ? (
           <p className="text-[10px] text-[hsl(var(--text-secondary))] opacity-40 font-mono mb-2 animate-pulse">
             loading...

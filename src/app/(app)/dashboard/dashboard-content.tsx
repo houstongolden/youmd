@@ -61,8 +61,10 @@ const PANE_GROUPS: Array<{
     ],
   },
   {
+    // analytics = aggregate stats (views, reads, referrers);
+    // "activity" (the agent event log) lives under stacks → AgentsPane
     key: "insights",
-    label: "activity",
+    label: "analytics",
     defaultPane: "analytics",
     panes: [{ key: "analytics", label: "analytics" }],
   },
@@ -89,6 +91,18 @@ const MOBILE_PRIMARY_PANES: Array<{ key: PrimaryPaneGroup | "terminal"; label: s
   ...PANE_GROUPS.map((group) => ({ key: group.key, label: group.label })),
 ];
 
+const PANEL_OPEN_STORAGE_KEY = "youmd.dashboard.panelOpen";
+
+/** Open by default; persisted user choice wins. Read lazily so SSR never touches localStorage. */
+function readStoredPanelOpen(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return window.localStorage.getItem(PANEL_OPEN_STORAGE_KEY) !== "false";
+  } catch {
+    return true;
+  }
+}
+
 export function DashboardContent() {
   const { user } = useUser();
   const { isAuthenticated } = useConvexAuth();
@@ -112,7 +126,16 @@ export function DashboardContent() {
 
   const [rightPane, setRightPane] = useState<RightPane>("profile");
   const [mobileView, setMobileView] = useState<"terminal" | "preview">("terminal");
-  const [panelOpen, setPanelOpen] = useState(false); // collapsed by default
+  const [panelOpen, setPanelOpen] = useState<boolean>(readStoredPanelOpen);
+
+  // Persist the user's panel choice
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PANEL_OPEN_STORAGE_KEY, String(panelOpen));
+    } catch {
+      // localStorage unavailable (private mode etc.) — non-fatal
+    }
+  }, [panelOpen]);
 
   const createUser = useMutation(api.users.createUser);
   const claimProfile = useMutation(api.profiles.claimProfile);
@@ -189,8 +212,12 @@ export function DashboardContent() {
             </div>
             {/* Skeleton split layout */}
             <div className="flex-1 flex min-h-0">
-              {/* Left: terminal skeleton */}
-              <div className="w-full md:w-[35%] md:border-r md:border-[hsl(var(--border))] flex flex-col p-4 gap-3 animate-pulse">
+              {/* Left: terminal skeleton — mirrors the panelOpen split so there is no layout flash */}
+              <div
+                className={`w-full ${
+                  panelOpen ? "md:w-[35%] md:border-r md:border-[hsl(var(--border))]" : "md:w-full"
+                } flex flex-col p-4 gap-3 animate-pulse`}
+              >
                 <div className="w-32 h-3 bg-[hsl(var(--text-secondary))] opacity-10 rounded-sm" />
                 <div className="w-full h-3 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
                 <div className="w-3/4 h-3 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
@@ -198,7 +225,7 @@ export function DashboardContent() {
                 <div className="w-full h-8 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
               </div>
               {/* Right: pane skeleton */}
-              <div className="hidden md:flex md:w-[65%] flex-col">
+              <div className={`hidden ${panelOpen ? "md:flex" : "md:hidden"} md:w-[65%] flex-col`}>
                 <div className="flex items-center px-4 py-1.5 border-b border-[hsl(var(--border))] gap-2 animate-pulse">
                   <div className="w-14 h-5 bg-[hsl(var(--text-secondary))] opacity-10 rounded-sm" />
                   <div className="w-14 h-5 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />

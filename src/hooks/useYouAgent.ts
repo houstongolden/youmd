@@ -1330,7 +1330,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         "/settings": "settings",
         "/billing": "settings",
         "/tokens": "settings",
-        "/activity": "settings",
+        "/activity": "agents", // agent activity event log (AgentsPane), not account settings
         "/json": "edit",
         "/sources": "edit",
         "/files": "edit",
