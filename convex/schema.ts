@@ -487,7 +487,11 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_category", ["userId", "category"])
     .index("by_userId_archived", ["userId", "isArchived"])
-    .index("by_sessionId", ["sessionId"]),
+    .index("by_sessionId", ["sessionId"])
+    .searchIndex("search_content", {
+      searchField: "content",
+      filterFields: ["userId", "isArchived"],
+    }),
 
   // ── Chat sessions (conversation history) ──────────────────────
   chatSessions: defineTable({

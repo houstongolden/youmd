@@ -46,6 +46,48 @@ export const listMemories = query({
   },
 });
 
+/** Full-text search across a user's active memories (P5: memory search) */
+export const searchMemories = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+    searchText: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
+    const searchText = args.searchText.trim();
+    if (!searchText) return [];
+
+    const limit =
+      args.limit !== undefined && Number.isFinite(args.limit)
+        ? Math.min(Math.max(Math.floor(args.limit), 1), 100)
+        : 20;
+
+    // Search index results come back in relevance order; isArchived filter
+    // mirrors the soft-delete behavior of listMemories.
+    return await ctx.db
+      .query("memories")
+      .withSearchIndex("search_content", (q) =>
+        q
+          .search("content", searchText)
+          .eq("userId", args.userId)
+          .eq("isArchived", false)
+      )
+      .take(limit);
+  },
+});
+
 /** Get memory count by category */
 export const getMemoryStats = query({
   // Cycle 44: added auth. Previously leaked memory category counts.

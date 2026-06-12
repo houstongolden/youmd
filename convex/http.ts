@@ -2229,19 +2229,29 @@ http.route({
 
     const url = new URL(request.url);
     const category = url.searchParams.get("category") || undefined;
+    const q = url.searchParams.get("q")?.trim() || undefined;
     const limitRaw = url.searchParams.has("limit") ? parseInt(url.searchParams.get("limit")!, 10) : undefined;
     const limit = limitRaw !== undefined && Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : undefined;
 
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return json({ error: "User not found" }, 404);
 
-    const memories = await ctx.runQuery(api.memories.listMemories, {
-      clerkId: auth.userId,
-      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-      userId: user._id,
-      category,
-      limit,
-    });
+    // Full-text search when ?q= is present (P5: memory search); list otherwise.
+    const memories = q
+      ? await ctx.runQuery(api.memories.searchMemories, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          userId: user._id,
+          searchText: q,
+          limit: limit !== undefined ? Math.min(limit, 100) : undefined,
+        })
+      : await ctx.runQuery(api.memories.listMemories, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          userId: user._id,
+          category,
+          limit,
+        });
 
     return json({ memories, count: memories.length });
   }),
@@ -2971,7 +2981,7 @@ http.route({
           type: "bearer",
           required: false,
           description:
-            "Public identity tools work unauthenticated. Tools that read the authenticated user's own data (whoami, get_agent_brief, get_my_identity, get_my_stacks, get_repo_file) require a you.md API key with the read:private scope, passed as `Authorization: Bearer <key>`.",
+            "Public identity tools work unauthenticated. Tools that read the authenticated user's own data (whoami, get_agent_brief, get_my_identity, get_my_stacks, get_repo_file, search_memories) require a you.md API key with the read:private scope, passed as `Authorization: Bearer <key>`.",
           instructions_url: "https://you.md/docs#api-keys",
         },
       }, null, 2),
@@ -3131,6 +3141,24 @@ http.route({
                     },
                   },
                   required: ["path"],
+                },
+              },
+              {
+                name: "search_memories",
+                description: "Full-text search the authenticated user's durable memories on you.md. Use this to recall specific facts, preferences, decisions, or context the user has stored — e.g. before answering a question about their past work or stated preferences. Returns one memory per line as plain text, relevance-ordered. Requires a you.md API key with the read:private scope passed as Bearer token in the Authorization header.",
+                inputSchema: {
+                  type: "object",
+                  properties: {
+                    query: {
+                      type: "string",
+                      description: "Full-text search query to match against memory content",
+                    },
+                    limit: {
+                      type: "number",
+                      description: "Max number of memories to return (default 20, max 100)",
+                    },
+                  },
+                  required: ["query"],
                 },
               },
             ],
@@ -3401,6 +3429,46 @@ http.route({
               return mcpToolError(id, `File not found in mirror: ${path}`);
             }
             return mcpToolOk(id, file.content, "text/plain");
+          }
+
+          if (toolName === "search_memories") {
+            const auth = await authenticateRequest(ctx, request);
+            if (auth instanceof Response) {
+              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
+            }
+            const denied = await requireScope(ctx, request, auth, "read:private");
+            if (denied) {
+              return mcpToolError(id, "API key lacks required scope: read:private");
+            }
+
+            const searchQuery = toolArgs.query as string;
+            if (!searchQuery || typeof searchQuery !== "string" || !searchQuery.trim()) {
+              return mcpToolError(id, "query is required");
+            }
+            const limit = Math.min(Math.max(Number(toolArgs.limit) || 20, 1), 100);
+
+            const user = await ctx.runQuery(api.users.getByClerkId, {
+              clerkId: auth.userId,
+              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+            });
+            if (!user) return mcpToolError(id, "user not found");
+
+            const found = await ctx.runQuery(api.memories.searchMemories, {
+              clerkId: auth.userId,
+              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+              userId: user._id,
+              searchText: searchQuery.trim(),
+              limit,
+            });
+
+            if (!Array.isArray(found) || found.length === 0) {
+              return mcpToolOk(id, `no memories matched "${searchQuery.trim()}"`, "text/plain");
+            }
+
+            const lines = found.map(
+              (m: { category: string; content: string }) => `[${m.category}] ${m.content}`
+            );
+            return mcpToolOk(id, lines.join("\n"), "text/plain");
           }
 
           return mcpError(id, -32601, `Unknown tool: ${toolName}`);
