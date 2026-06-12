@@ -10,7 +10,8 @@
  * npm package and keeps a mirrored copy; cli/src/__tests__/
  * agent-context-parity.test.ts asserts that mirror never drifts.
  *
- * DESIGN: this module is PURE and dependency-free on purpose.
+ * DESIGN: this module is PURE on purpose (its only import is the equally
+ * pure lib/memoryCategories.ts).
  * - No auth inside — callers pass only the data their scopes allow.
  * - No Convex imports — so it is importable from convex server functions,
  *   Next.js client code (src/hooks), and the CLI vitest suite alike.
@@ -18,18 +19,27 @@
  * ctx.db, useQuery) and hand them to `assembleAgentContext`.
  */
 
+import {
+  DURABLE_MEMORY_CATEGORIES as FULL_DURABLE_MEMORY_CATEGORIES,
+  MIRROR_PARITY_DURABLE_CATEGORIES,
+} from "./memoryCategories";
+
 // ─── Canonical constants ─────────────────────────────────────────────────────
 
 /** Max memories any surface renders into an agent-facing context block. */
 export const AGENT_CONTEXT_MEMORY_CAP = 20;
 
-/** Categories considered durable — surfaced ahead of newer ephemeral notes. */
-export const DURABLE_MEMORY_CATEGORIES: ReadonlySet<string> = new Set([
-  "preference",
-  "decision",
-  "goal",
-  "fact",
-]);
+/**
+ * FROZEN for CLI mirror parity (cli/src/__tests__/agent-context-parity.test.ts
+ * asserts set equality with the CLI mirror, which still ships the original
+ * four categories). The full durable set — including the P15 `correction`
+ * category — lives in lib/memoryCategories.ts (DURABLE_MEMORY_CATEGORIES)
+ * and is what orderAgentMemories actually uses. Follow-up: the CLI mirror
+ * should adopt `correction` + pinned-first ordering, then this re-export can
+ * point at the full set.
+ */
+export const DURABLE_MEMORY_CATEGORIES: ReadonlySet<string> =
+  MIRROR_PARITY_DURABLE_CATEGORIES;
 
 /** Char budget for the compact identity summary (whoami / brief header). */
 export const IDENTITY_SUMMARY_MAX_CHARS = 500;
@@ -43,6 +53,14 @@ export type AgentContextMemory = {
   sourceAgent?: string | null;
   tags?: string[];
   createdAt?: number;
+  // P14 durability fields — all optional/additive. Rows without them order
+  // exactly as before (frozen by the CLI parity test).
+  /** Pinned memories sort first and never fall out of the cap. */
+  pinned?: boolean;
+  /** 1-5; higher surfaces earlier within its pinned/durable tier. */
+  importance?: number;
+  /** Set when a newer memory replaces this one — excluded from briefs. */
+  supersededBy?: string | null;
 };
 
 /** The identity fields every surface agrees on — the "same version of you". */
@@ -106,18 +124,43 @@ export function asRecord(value: unknown): Record<string, unknown> {
 }
 
 /**
- * Canonical memory ordering: durable categories first, preserving input
- * order (newest-first) within each group. Stable partition.
+ * Canonical memory ordering (P14): pinned first (so pinned memories never
+ * fall out of AGENT_CONTEXT_MEMORY_CAP), then durable categories, then
+ * importance descending, then recency. Input is expected newest-first
+ * (memories.listMemories order), so preserving input order within ties IS
+ * the recency tier — and keeps behavior byte-identical to the legacy
+ * durable-first stable partition for rows without pinned/importance
+ * (frozen by cli/src/__tests__/agent-context-parity.test.ts).
+ *
+ * Durability uses the FULL set from lib/memoryCategories.ts, so the new
+ * `correction` category orders as durable here while the frozen
+ * DURABLE_MEMORY_CATEGORIES export stays parity-compatible with the CLI
+ * mirror (which should adopt correction + pinned-first in a follow-up).
  */
 export function orderAgentMemories(
   memories: AgentContextMemory[]
 ): AgentContextMemory[] {
-  const durable: AgentContextMemory[] = [];
-  const rest: AgentContextMemory[] = [];
-  for (const memory of memories) {
-    (DURABLE_MEMORY_CATEGORIES.has(memory.category) ? durable : rest).push(memory);
-  }
-  return [...durable, ...rest];
+  return memories
+    .map((memory, index) => ({ memory, index }))
+    .sort((a, b) => {
+      const pinnedA = a.memory.pinned === true ? 1 : 0;
+      const pinnedB = b.memory.pinned === true ? 1 : 0;
+      if (pinnedA !== pinnedB) return pinnedB - pinnedA;
+
+      const durableA = FULL_DURABLE_MEMORY_CATEGORIES.has(a.memory.category) ? 1 : 0;
+      const durableB = FULL_DURABLE_MEMORY_CATEGORIES.has(b.memory.category) ? 1 : 0;
+      if (durableA !== durableB) return durableB - durableA;
+
+      const importanceA =
+        typeof a.memory.importance === "number" ? a.memory.importance : 0;
+      const importanceB =
+        typeof b.memory.importance === "number" ? b.memory.importance : 0;
+      if (importanceA !== importanceB) return importanceB - importanceA;
+
+      // Explicit input-order tie-break (= recency for newest-first input).
+      return a.index - b.index;
+    })
+    .map(({ memory }) => memory);
 }
 
 /** Collapse memory content to a single line capped at `max` chars. */
@@ -257,8 +300,13 @@ export function assembleAgentContext(
 
   const identityCore = extractIdentityCore(youJson, username);
 
+  // P14: superseded memories (supersededBy set) never reach agent briefs —
+  // the replacement row carries the truth. Rows without the field pass.
+  const visibleMemories = (input.memories ?? []).filter(
+    (memory) => !memory.supersededBy
+  );
   const items = includeMemories
-    ? orderAgentMemories(input.memories ?? []).slice(0, AGENT_CONTEXT_MEMORY_CAP)
+    ? orderAgentMemories(visibleMemories).slice(0, AGENT_CONTEXT_MEMORY_CAP)
     : [];
 
   return {

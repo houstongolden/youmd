@@ -17,6 +17,11 @@ import {
 } from "./lib/agentContext";
 import { errorEnvelope, type ErrorCode } from "./lib/httpErrors";
 import {
+  AGENT_WRITABLE_MEMORY_CATEGORIES,
+  invalidMemoryCategoryMessage,
+  resolveMemoryCategory,
+} from "./lib/memoryCategories";
+import {
   BUILD_RATE_LIMIT,
   WRITE_RATE_LIMIT,
   buildRateLimitHeaders,
@@ -45,7 +50,7 @@ const TRUSTED_INTERNAL_AUTH_TOKEN = process.env.TRUSTED_INTERNAL_AUTH_TOKEN;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers":
     "Content-Type, Authorization, If-None-Match, Idempotency-Key",
 };
@@ -1539,7 +1544,7 @@ http.route({
                         properties: {
                           key: { type: "string", description: "Short descriptive key" },
                           value: { type: "string", description: "The fact or preference to remember" },
-                          category: { type: "string", enum: ["identity", "work", "preferences", "goals", "context"] },
+                          category: { type: "string", enum: [...AGENT_WRITABLE_MEMORY_CATEGORIES] },
                         },
                         required: ["key", "value", "category"],
                       },
@@ -2520,6 +2525,10 @@ http.route({
     const url = new URL(request.url);
     const category = url.searchParams.get("category") || undefined;
     const q = url.searchParams.get("q")?.trim() || undefined;
+    // P14: superseded memories are hidden by default; ?includeSuperseded=true
+    // opts list calls into seeing them (search always excludes superseded).
+    const includeSuperseded =
+      url.searchParams.get("includeSuperseded") === "true" ? true : undefined;
     const cursor = url.searchParams.get("cursor");
     const limitRaw = url.searchParams.has("limit") ? parseInt(url.searchParams.get("limit")!, 10) : undefined;
     const limit = limitRaw !== undefined && Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : undefined;
@@ -2545,6 +2554,7 @@ http.route({
               _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
               userId: user._id,
               category,
+              includeSuperseded,
               cursor,
               numItems: limit ?? 100,
             });
@@ -2567,6 +2577,7 @@ http.route({
           _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
           userId: user._id,
           category,
+          includeSuperseded,
         });
 
     return json({ memories, count: memories.length });
@@ -2590,6 +2601,46 @@ http.route({
       return errorResponse("invalid_request", "Request body must contain a non-empty 'memories' array", 400);
     }
 
+    // P15: validate categories up front (invalid_request envelope, never a
+    // mutation throw). Known legacy aliases normalize to canonical.
+    // P14: pinned/importance pass through (validated additively).
+    const sanitized: Array<{
+      category: string;
+      content: string;
+      tags?: string[];
+      pinned?: boolean;
+      importance?: number;
+    }> = [];
+    for (let i = 0; i < body.memories.length; i++) {
+      const mem = body.memories[i] ?? {};
+      const category = resolveMemoryCategory(mem.category);
+      if (!category) {
+        return errorResponse(
+          "invalid_request",
+          `memories[${i}]: ${invalidMemoryCategoryMessage(mem.category)}`,
+          400
+        );
+      }
+      if (typeof mem.content !== "string" || !mem.content.trim()) {
+        return errorResponse("invalid_request", `memories[${i}]: content must be a non-empty string`, 400);
+      }
+      if (
+        mem.importance !== undefined &&
+        (!Number.isInteger(mem.importance) || mem.importance < 1 || mem.importance > 5)
+      ) {
+        return errorResponse("invalid_request", `memories[${i}]: importance must be an integer between 1 and 5`, 400);
+      }
+      sanitized.push({
+        category,
+        content: mem.content,
+        tags: Array.isArray(mem.tags)
+          ? mem.tags.filter((t: unknown): t is string => typeof t === "string")
+          : undefined,
+        pinned: typeof mem.pinned === "boolean" ? mem.pinned : undefined,
+        importance: mem.importance,
+      });
+    }
+
     const user = await ctx.runQuery(api.users.getByClerkId, { clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN });
     if (!user) return errorResponse("not_found", "User not found", 404);
 
@@ -2598,7 +2649,7 @@ http.route({
       _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       userId: user._id,
       agentName: body.agentName || auth.username || "API",
-      memories: body.memories,
+      memories: sanitized,
     });
 
     // Log activity
@@ -2622,6 +2673,98 @@ http.route({
     }
 
     return guard.finish(json(result));
+  }),
+});
+
+// PATCH /api/v1/me/memories — Update one memory (P14, additive).
+// Body: { memoryId, content?, category?, tags?, pinned?, importance?,
+// supersededBy? }. `pinned: true` pins a memory so it never decays out of
+// agent briefs; `supersededBy: <newMemoryId>` links old→new (the old row is
+// hidden from briefs/search/default lists but stays auditable).
+http.route({
+  path: "/api/v1/me/memories",
+  method: "PATCH",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:memories");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    const body = await request.json();
+    if (typeof body.memoryId !== "string" || !body.memoryId) {
+      return errorResponse("invalid_request", "Request body must contain a 'memoryId' string", 400);
+    }
+
+    let category: string | undefined;
+    if (body.category !== undefined) {
+      const resolved = resolveMemoryCategory(body.category);
+      if (!resolved) {
+        return errorResponse("invalid_request", invalidMemoryCategoryMessage(body.category), 400);
+      }
+      category = resolved;
+    }
+    if (
+      body.importance !== undefined &&
+      (!Number.isInteger(body.importance) || body.importance < 1 || body.importance > 5)
+    ) {
+      return errorResponse("invalid_request", "importance must be an integer between 1 and 5", 400);
+    }
+    if (body.pinned !== undefined && typeof body.pinned !== "boolean") {
+      return errorResponse("invalid_request", "pinned must be a boolean", 400);
+    }
+    const hasUpdate =
+      body.content !== undefined ||
+      category !== undefined ||
+      body.tags !== undefined ||
+      body.pinned !== undefined ||
+      body.importance !== undefined;
+    if (!hasUpdate && body.supersededBy === undefined) {
+      return errorResponse(
+        "invalid_request",
+        "Provide at least one of content, category, tags, pinned, importance, or supersededBy",
+        400
+      );
+    }
+
+    try {
+      if (hasUpdate) {
+        await ctx.runMutation(api.memories.updateMemory, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          memoryId: body.memoryId as Id<"memories">,
+          content: typeof body.content === "string" ? body.content : undefined,
+          category,
+          tags: Array.isArray(body.tags)
+            ? body.tags.filter((t: unknown): t is string => typeof t === "string")
+            : undefined,
+          pinned: body.pinned,
+          importance: body.importance,
+        });
+      }
+      if (body.supersededBy !== undefined) {
+        if (typeof body.supersededBy !== "string" || !body.supersededBy) {
+          return errorResponse("invalid_request", "supersededBy must be a memory id string", 400);
+        }
+        await ctx.runMutation(api.memories.supersedeMemory, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          memoryId: body.memoryId as Id<"memories">,
+          supersededBy: body.supersededBy as Id<"memories">,
+        });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("memory not found")) {
+        return errorResponse("not_found", "Memory not found", 404);
+      }
+      // ConvexError (invalid importance/category/self-supersede) and invalid
+      // id strings (ArgumentValidationError) are caller errors.
+      return errorResponse("invalid_request", message, 400);
+    }
+
+    return guard.finish(json({ success: true }));
   }),
 });
 

@@ -23,6 +23,10 @@ import {
   selectPublicIdentityFields,
   type AgentContextMemory,
 } from "./lib/agentContext";
+import {
+  DURABLE_MEMORY_CATEGORIES as FULL_DURABLE_MEMORY_CATEGORIES,
+  MIRROR_PARITY_DURABLE_CATEGORIES,
+} from "./lib/memoryCategories";
 
 // ─── Fixtures (mirrored from cli/src/__tests__/agent-context-parity.test.ts) ─
 
@@ -74,8 +78,22 @@ describe("agent context — canonical constants", () => {
     expect(AGENT_CONTEXT_MEMORY_CAP).toBe(20);
   });
 
-  it("durable categories are exactly preference/decision/goal/fact", () => {
+  it("exported durable set stays FROZEN at preference/decision/goal/fact for CLI mirror parity", () => {
+    // cli/src/__tests__/agent-context-parity.test.ts compares this export
+    // against the published CLI mirror's set — it must not grow until the
+    // CLI mirror adopts `correction` in a follow-up release.
     expect(Array.from(DURABLE_MEMORY_CATEGORIES).sort()).toEqual([
+      "decision",
+      "fact",
+      "goal",
+      "preference",
+    ]);
+    expect(DURABLE_MEMORY_CATEGORIES).toBe(MIRROR_PARITY_DURABLE_CATEGORIES);
+  });
+
+  it("the FULL durable set (lib/memoryCategories) additionally includes correction", () => {
+    expect(Array.from(FULL_DURABLE_MEMORY_CATEGORIES).sort()).toEqual([
+      "correction",
       "decision",
       "fact",
       "goal",
@@ -125,6 +143,89 @@ describe("agent context — memory ordering and cap", () => {
       true
     );
     expect(assembled.memories.items[0].content).toBe("durable 0");
+  });
+
+  // ── P14: pinned / importance / superseded ordering semantics ──
+
+  it("treats the new correction category as durable in ordering", () => {
+    const ordered = orderAgentMemories([
+      { category: "context", content: "ephemeral", createdAt: 100 },
+      { category: "correction", content: "actually based in Miami, not Austin", createdAt: 90 },
+    ]);
+    expect(ordered.map((m) => m.category)).toEqual(["correction", "context"]);
+  });
+
+  it("pinned memories sort first, even ahead of durable categories", () => {
+    const ordered = orderAgentMemories([
+      { category: "preference", content: "durable newest", createdAt: 100 },
+      { category: "context", content: "pinned ephemeral", createdAt: 90, pinned: true },
+      { category: "fact", content: "durable older", createdAt: 80 },
+    ]);
+    expect(ordered.map((m) => m.content)).toEqual([
+      "pinned ephemeral",
+      "durable newest",
+      "durable older",
+    ]);
+  });
+
+  it("pinned memories NEVER fall out of the cap", () => {
+    const many: AgentContextMemory[] = [];
+    for (let i = 0; i < 40; i++) {
+      many.push({ category: "preference", content: `durable ${i}`, createdAt: 1000 - i });
+    }
+    // Pinned ephemeral note buried at the bottom of a newest-first list.
+    many.push({ category: "context", content: "pinned note", createdAt: 1, pinned: true });
+
+    const assembled = assembleAgentContext({
+      username: "houston",
+      youJson: YOU_JSON,
+      memories: many,
+    });
+    expect(assembled.memories.items).toHaveLength(AGENT_CONTEXT_MEMORY_CAP);
+    expect(assembled.memories.items[0].content).toBe("pinned note");
+  });
+
+  it("orders by importance desc within a tier, then input order (recency)", () => {
+    const ordered = orderAgentMemories([
+      { category: "fact", content: "newest no-importance", createdAt: 100 },
+      { category: "fact", content: "older important", createdAt: 90, importance: 5 },
+      { category: "fact", content: "older mid", createdAt: 80, importance: 3 },
+      { category: "fact", content: "oldest no-importance", createdAt: 70 },
+    ]);
+    expect(ordered.map((m) => m.content)).toEqual([
+      "older important",
+      "older mid",
+      "newest no-importance",
+      "oldest no-importance",
+    ]);
+  });
+
+  it("keeps legacy ordering byte-identical for rows without the new fields", () => {
+    // Same fixture the CLI parity test freezes — durable-first stable
+    // partition, input order within groups. P14 must not change this.
+    const ordered = orderAgentMemories(mixedMemories());
+    expect(ordered.map((m) => m.content)).toEqual([
+      "prefers terminal-native UI",
+      "chose burnt orange accent",
+      "launch you.md",
+      "based in Miami",
+      "talked about launch",
+      "was debugging convex",
+      "ships fast",
+      "working on hubify",
+    ]);
+  });
+
+  it("excludes superseded memories from the assembled brief", () => {
+    const assembled = assembleAgentContext({
+      username: "houston",
+      youJson: YOU_JSON,
+      memories: [
+        { category: "fact", content: "lives in Miami", createdAt: 100 },
+        { category: "fact", content: "lives in Austin", createdAt: 90, supersededBy: "mem_new" },
+      ],
+    });
+    expect(assembled.memories.items.map((m) => m.content)).toEqual(["lives in Miami"]);
   });
 
   it("includeMemories=false strips items but flags the exclusion", () => {

@@ -1,9 +1,37 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { query, mutation, type MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { requireOwner } from "./lib/auth";
 import { computeMemoryContentHash } from "./lib/hash";
 import { pageArgs, clampPageSize } from "./lib/pagination";
+import {
+  invalidMemoryCategoryMessage,
+  resolveMemoryCategory,
+} from "./lib/memoryCategories";
+
+// ── P15: category validation (writes strict, reads tolerant) ───────
+//
+// Write paths reject unknown categories (ConvexError here, invalid_request
+// envelope in convex/http.ts). Known legacy aliases normalize to canonical
+// on write so older agents keep working. Reads never filter by category
+// validity — legacy stored values surface as-is until
+// migrations/normalizeMemoryCategories.ts cleans them.
+
+/** Resolve a category for a write, throwing ConvexError when unknown. */
+function coerceMemoryCategory(raw: string): string {
+  const category = resolveMemoryCategory(raw);
+  if (!category) throw new ConvexError(invalidMemoryCategoryMessage(raw));
+  return category;
+}
+
+/** P14: importance must be an integer 1-5 when provided. */
+function coerceImportance(raw: number | undefined): number | undefined {
+  if (raw === undefined) return undefined;
+  if (!Number.isInteger(raw) || raw < 1 || raw > 5) {
+    throw new ConvexError("invalid importance: must be an integer between 1 and 5");
+  }
+  return raw;
+}
 
 // ── P23: content-hash dedupe (PRODUCT-AUDIT #25) ────────────────
 //
@@ -39,6 +67,8 @@ export const listMemories = query({
     userId: v.id("users"),
     category: v.optional(v.string()),
     limit: v.optional(v.number()),
+    // P14: superseded memories are hidden by default; pass true to audit them.
+    includeSuperseded: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await requireOwner(ctx, args.clerkId, args._internalAuthToken);
@@ -67,6 +97,7 @@ export const listMemories = query({
     const memories = await q.collect();
     return memories
       .filter((m) => !m.isArchived)
+      .filter((m) => args.includeSuperseded === true || !m.supersededBy)
       .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, Number.isFinite(args.limit) ? args.limit : 100);
   },
@@ -87,6 +118,8 @@ export const listMemoriesPage = query({
     _internalAuthToken: v.optional(v.string()),
     userId: v.id("users"),
     category: v.optional(v.string()),
+    // P14: superseded memories are hidden by default; pass true to audit them.
+    includeSuperseded: v.optional(v.boolean()),
     ...pageArgs,
   },
   handler: async (ctx, args) => {
@@ -105,25 +138,34 @@ export const listMemoriesPage = query({
       numItems: clampPageSize(args.numItems, 100, 500),
     };
 
+    // P14: filter superseded rows inside pagination (Convex-native — pages
+    // may run short but cursors stay correct, same as the archived filter).
+    const includeSuperseded = args.includeSuperseded === true;
+
     if (args.category) {
-      const result = await ctx.db
+      let q = ctx.db
         .query("memories")
         .withIndex("by_userId_category", (q) =>
           q.eq("userId", args.userId).eq("category", args.category!)
         )
         .order("desc")
-        .filter((q) => q.neq(q.field("isArchived"), true))
-        .paginate(paginationOpts);
-      return result;
+        .filter((q) => q.neq(q.field("isArchived"), true));
+      if (!includeSuperseded) {
+        q = q.filter((q) => q.eq(q.field("supersededBy"), undefined));
+      }
+      return await q.paginate(paginationOpts);
     }
 
-    return await ctx.db
+    let q = ctx.db
       .query("memories")
       .withIndex("by_userId_archived", (q) =>
         q.eq("userId", args.userId).eq("isArchived", false)
       )
-      .order("desc")
-      .paginate(paginationOpts);
+      .order("desc");
+    if (!includeSuperseded) {
+      q = q.filter((q) => q.eq(q.field("supersededBy"), undefined));
+    }
+    return await q.paginate(paginationOpts);
   },
 });
 
@@ -156,7 +198,8 @@ export const searchMemories = query({
         : 20;
 
     // Search index results come back in relevance order; isArchived filter
-    // mirrors the soft-delete behavior of listMemories.
+    // mirrors the soft-delete behavior of listMemories. P14: superseded
+    // memories never surface in search — the replacement row carries the truth.
     return await ctx.db
       .query("memories")
       .withSearchIndex("search_content", (q) =>
@@ -165,6 +208,7 @@ export const searchMemories = query({
           .eq("userId", args.userId)
           .eq("isArchived", false)
       )
+      .filter((q) => q.eq(q.field("supersededBy"), undefined))
       .take(limit);
   },
 });
@@ -201,6 +245,7 @@ export const searchMemoriesPage = query({
       return { page: [], isDone: true, continueCursor: "" };
     }
 
+    // P14: superseded memories never surface in search (see searchMemories).
     return await ctx.db
       .query("memories")
       .withSearchIndex("search_content", (q) =>
@@ -209,6 +254,7 @@ export const searchMemoriesPage = query({
           .eq("userId", args.userId)
           .eq("isArchived", false)
       )
+      .filter((q) => q.eq(q.field("supersededBy"), undefined))
       .paginate({
         cursor: args.cursor ?? null,
         numItems: clampPageSize(args.numItems, 20, 100),
@@ -254,6 +300,61 @@ export const getMemoryStats = query({
   },
 });
 
+// ── P14: review queue (cleanup proposals — humans/agents decide) ──
+
+/** Review-queue selection: active rows older than this many days. */
+const REVIEW_QUEUE_MAX_AGE_DAYS = 90;
+/** importance <= this (or unset) counts as low-importance. */
+const REVIEW_QUEUE_LOW_IMPORTANCE_MAX = 2;
+/** Hard cap on queue size. */
+const REVIEW_QUEUE_CAP = 50;
+
+/**
+ * Memories that are candidates for cleanup: active (not archived, not
+ * superseded), NOT pinned, low-importance (<= 2) or importance-unset, and
+ * older than 90 days. Capped at 50, oldest first. This is purely a surface
+ * for agents/UI to PROPOSE cleanup — no cron, no auto-delete.
+ */
+export const listReviewQueue = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
+    const cutoff = Date.now() - REVIEW_QUEUE_MAX_AGE_DAYS * 86400000;
+
+    const active = await ctx.db
+      .query("memories")
+      .withIndex("by_userId_archived", (q) =>
+        q.eq("userId", args.userId).eq("isArchived", false)
+      )
+      .collect();
+
+    return active
+      .filter(
+        (m) =>
+          !m.supersededBy &&
+          m.pinned !== true &&
+          (m.importance === undefined ||
+            m.importance <= REVIEW_QUEUE_LOW_IMPORTANCE_MAX) &&
+          m.createdAt < cutoff
+      )
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .slice(0, REVIEW_QUEUE_CAP);
+  },
+});
+
 // ── Memory mutations ────────────────────────────────────────────
 
 /** Save one or more memories (used by agent auto-capture) */
@@ -269,6 +370,9 @@ export const saveMemories = mutation({
         sourceAgent: v.optional(v.string()),
         tags: v.optional(v.array(v.string())),
         sessionId: v.optional(v.string()),
+        // P14 durability (optional/additive)
+        pinned: v.optional(v.boolean()),
+        importance: v.optional(v.number()),
       })
     ),
   },
@@ -285,9 +389,12 @@ export const saveMemories = mutation({
     const results: Array<{ id: Id<"memories">; deduped: boolean }> = [];
     let saved = 0;
     for (const mem of args.memories) {
+      // P15: reject unknown categories, normalize legacy aliases.
+      const category = coerceMemoryCategory(mem.category);
+      const importance = coerceImportance(mem.importance);
       const contentHash = await computeMemoryContentHash(
         mem.content,
-        mem.category
+        category
       );
       const existing = await findActiveDuplicate(ctx, user._id, contentHash);
       if (existing) {
@@ -296,12 +403,14 @@ export const saveMemories = mutation({
       }
       const id = await ctx.db.insert("memories", {
         userId: user._id,
-        category: mem.category,
+        category,
         content: mem.content,
         source: mem.source,
         sourceAgent: mem.sourceAgent,
         tags: mem.tags,
         sessionId: mem.sessionId,
+        pinned: mem.pinned,
+        importance,
         isArchived: false,
         contentHash,
         createdAt: Date.now(),
@@ -352,6 +461,9 @@ export const updateMemory = mutation({
     content: v.optional(v.string()),
     category: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
+    // P14 durability (optional/additive) — pinning support for the update path.
+    pinned: v.optional(v.boolean()),
+    importance: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
@@ -366,20 +478,72 @@ export const updateMemory = mutation({
     const memory = await ctx.db.get(args.memoryId);
     if (!memory || memory.userId !== user._id) throw new Error("memory not found");
 
+    // P15: reject unknown categories, normalize legacy aliases.
+    const category =
+      args.category !== undefined ? coerceMemoryCategory(args.category) : undefined;
+    const importance = coerceImportance(args.importance);
+
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (args.content !== undefined) updates.content = args.content;
-    if (args.category !== undefined) updates.category = args.category;
+    if (category !== undefined) updates.category = category;
     if (args.tags !== undefined) updates.tags = args.tags;
+    if (args.pinned !== undefined) updates.pinned = args.pinned;
+    if (importance !== undefined) updates.importance = importance;
 
     // Keep the dedupe hash truthful when content/category changes (P23).
-    if (args.content !== undefined || args.category !== undefined) {
+    if (args.content !== undefined || category !== undefined) {
       updates.contentHash = await computeMemoryContentHash(
         args.content ?? memory.content,
-        args.category ?? memory.category
+        category ?? memory.category
       );
     }
 
     await ctx.db.patch(args.memoryId, updates);
+  },
+});
+
+/**
+ * P14: mark an old memory as superseded by a newer one (old→new link).
+ * The old row stays stored (auditable via includeSuperseded=true) but is
+ * excluded from briefs, search, and default lists. Both memories must
+ * belong to the authenticated user.
+ */
+export const supersedeMemory = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    /** The OLD memory being replaced. */
+    memoryId: v.id("memories"),
+    /** The NEW memory that replaces it. */
+    supersededBy: v.id("memories"),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("not authenticated");
+
+    if (args.memoryId === args.supersededBy) {
+      throw new ConvexError("a memory cannot supersede itself");
+    }
+
+    const oldMemory = await ctx.db.get(args.memoryId);
+    if (!oldMemory || oldMemory.userId !== user._id) {
+      throw new Error("memory not found");
+    }
+    const newMemory = await ctx.db.get(args.supersededBy);
+    if (!newMemory || newMemory.userId !== user._id) {
+      throw new Error("memory not found");
+    }
+
+    await ctx.db.patch(args.memoryId, {
+      supersededBy: args.supersededBy,
+      updatedAt: Date.now(),
+    });
+    return { superseded: args.memoryId, by: args.supersededBy };
   },
 });
 
@@ -452,16 +616,17 @@ export const archiveStale = mutation({
 
     let archivedCount = 0;
 
-    // Archive by age
+    // Archive by age (P14: pinned memories are exempt — pinning means
+    // "never decays away", so age/overflow policies skip them)
     for (const m of active) {
-      if (m.createdAt < cutoff) {
+      if (m.pinned !== true && m.createdAt < cutoff) {
         await ctx.db.patch(m._id, { isArchived: true, updatedAt: Date.now() });
         archivedCount++;
       }
     }
 
-    // Archive excess (keep newest maxActive)
-    const remaining = active.filter((m) => m.createdAt >= cutoff);
+    // Archive excess (keep newest maxActive; pinned exempt)
+    const remaining = active.filter((m) => m.pinned !== true && m.createdAt >= cutoff);
     if (remaining.length > maxActive) {
       const toArchive = remaining.slice(maxActive);
       for (const m of toArchive) {
@@ -540,11 +705,14 @@ export const sessionMaintenance = mutation({
     const active = memories.filter((m) => !m.isArchived);
     const archived = memories.filter((m) => m.isArchived);
 
-    // Archive stale active memories (>90 days or >200 active)
+    // Archive stale active memories (>90 days or >200 active).
+    // P14: pinned memories are exempt — pinning means "never decays away".
     const ageCutoff = Date.now() - 90 * 86400000;
     let archivedCount = 0;
 
-    const sorted = active.sort((a, b) => b.createdAt - a.createdAt);
+    const sorted = active
+      .filter((m) => m.pinned !== true)
+      .sort((a, b) => b.createdAt - a.createdAt);
     for (let i = 0; i < sorted.length; i++) {
       if (sorted[i].createdAt < ageCutoff || i >= 200) {
         await ctx.db.patch(sorted[i]._id, { isArchived: true, updatedAt: Date.now() });
@@ -582,6 +750,9 @@ export const saveFromAgent = mutation({
         category: v.string(),
         content: v.string(),
         tags: v.optional(v.array(v.string())),
+        // P14 durability (optional/additive)
+        pinned: v.optional(v.boolean()),
+        importance: v.optional(v.number()),
       })
     ),
   },
@@ -599,9 +770,12 @@ export const saveFromAgent = mutation({
     const results: Array<{ id: Id<"memories">; deduped: boolean }> = [];
     let saved = 0;
     for (const mem of args.memories) {
+      // P15: reject unknown categories, normalize legacy aliases.
+      const category = coerceMemoryCategory(mem.category);
+      const importance = coerceImportance(mem.importance);
       const contentHash = await computeMemoryContentHash(
         mem.content,
-        mem.category
+        category
       );
       const existing = await findActiveDuplicate(ctx, args.userId, contentHash);
       if (existing) {
@@ -610,11 +784,13 @@ export const saveFromAgent = mutation({
       }
       const id = await ctx.db.insert("memories", {
         userId: args.userId,
-        category: mem.category,
+        category,
         content: mem.content,
         source: "external-agent",
         sourceAgent: args.agentName,
         tags: mem.tags,
+        pinned: mem.pinned,
+        importance,
         isArchived: false,
         contentHash,
         createdAt: Date.now(),

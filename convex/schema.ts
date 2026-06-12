@@ -474,8 +474,17 @@ export default defineSchema({
   // ── Memories (unified brain — auto-captured from conversations) ──
   memories: defineTable({
     userId: v.id("users"),
-    category: v.string(), // "fact" | "insight" | "decision" | "preference" | "context" | "goal" | "relationship"
+    // Canonical list + validation live in convex/lib/memoryCategories.ts
+    // (P15): fact | insight | decision | preference | context | goal |
+    // relationship | project | session_summary | correction. Writes are
+    // validated; legacy stored variants are tolerated on read and cleaned by
+    // migrations/normalizeMemoryCategories.ts.
+    category: v.string(),
     content: v.string(), // the actual memory content
+    // ── P14 durability (all optional/additive) ──
+    pinned: v.optional(v.boolean()), // pinned memories never fall out of agent briefs
+    importance: v.optional(v.number()), // 1-5; higher surfaces earlier
+    supersededBy: v.optional(v.id("memories")), // newer memory that replaces this one
     source: v.string(), // "you-agent" | "cli" | "external-agent" | "manual"
     sourceAgent: v.optional(v.string()), // agent name if from external agent
     tags: v.optional(v.array(v.string())), // searchable tags
