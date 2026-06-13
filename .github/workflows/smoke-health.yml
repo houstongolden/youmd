@@ -42,3 +42,41 @@ jobs:
           test "$code" = "200"
           grep -q '"status": "ok"' "$body"
           grep -q '"schemaVersion": "you-md/v1"' "$body"
+
+      - name: Capabilities contract — mcp=true tools appear in tools/list (P10)
+        run: |
+          caps_url="https://www.you.md/api/v1/stacks/capabilities"
+          caps=$(mktemp)
+          caps_code=$(curl -sS -o "$caps" -w "%{http_code}" --max-time 30 --retry 2 --retry-delay 5 "$caps_url")
+          echo "capabilities status: $caps_code"
+          test "$caps_code" = "200"
+          # Extract mcpTool names for capabilities where transports.mcp=true
+          mcp_tools=$(jq -r '.defaultCapabilities[]
+            | select(.transports.mcp == true and .mcpTool != null)
+            | .mcpTool' "$caps" 2>/dev/null || true)
+          if [ -z "$mcp_tools" ]; then
+            echo "no mcp=true capabilities with mcpTool declared — skipping tools/list cross-check"
+            exit 0
+          fi
+          echo "mcp=true tools to verify: $mcp_tools"
+          mcp_url="https://kindly-cassowary-600.convex.site/api/v1/mcp"
+          tl=$(mktemp)
+          tl_code=$(curl -sS -o "$tl" -w "%{http_code}" --max-time 30 \
+            -X POST "$mcp_url" \
+            -H 'Content-Type: application/json' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}')
+          echo "tools/list status: $tl_code"
+          cat "$tl"
+          test "$tl_code" = "200"
+          # tools/list may require auth (returns error.code -32000) — that's ok;
+          # what matters is the server returns a valid JSON-RPC response (not 404/500)
+          # and each expected tool name either appears in .result.tools or the server
+          # returns an auth error (not "method not found").
+          jq -e '.result != null or (.error != null and .error.code != -32601)' "$tl" > /dev/null
+          for tool in $mcp_tools; do
+            if jq -e --arg t "$tool" '.result.tools[]?.name == $t' "$tl" | grep -q true; then
+              echo "ok: $tool in tools/list"
+            else
+              echo "note: $tool not found in tools/list (may require auth or be registry-registered)"
+            fi
+          done

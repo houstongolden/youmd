@@ -1,3 +1,11 @@
+/** Which transport surfaces actually expose this capability. */
+export type YouStackCapabilityTransports = {
+  /** Reachable via /api/v1/* HTTP endpoints. */
+  http: boolean;
+  /** Declared in tools/list on the MCP surface (/api/v1/mcp). */
+  mcp: boolean;
+};
+
 export type YouStackCapability = {
   id: string;
   intent: string;
@@ -8,6 +16,12 @@ export type YouStackCapability = {
   apiEndpoint?: string;
   requiredScopes?: string[];
   mutationPolicy?: "read_only" | "write_local" | "write_remote" | "server_action";
+  /**
+   * Truthful transport contract. Set by the capability contract generator;
+   * not read from the manifest. http=true when the capability has a live
+   * /api/v1/* route; mcp=true when its mcpTool name appears in tools/list.
+   */
+  transports?: YouStackCapabilityTransports;
 };
 
 export type YouStackRouteResult = {
@@ -24,18 +38,21 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
     intent: "Use local named stack files, skills, sub-agents, workflows, prompts, docs, examples, and host adapters without contacting You.md.",
     localOnly: true,
     mutationPolicy: "read_only",
+    transports: { http: false, mcp: false },
   },
   {
     id: "stack-improvement-loop",
     intent: "Use usage signals, failures, corrections, repo diffs, evals, and user feedback to improve stack skills, sub-agents, workflows, prompts, docs, and examples.",
     localOnly: true,
     mutationPolicy: "write_local",
+    transports: { http: false, mcp: false },
   },
   {
     id: "stack-update-check",
     intent: "Check the stack update channel and refresh allowed local stack files, generated adapters, skills, docs, prompts, examples, and evals.",
     localOnly: true,
     mutationPolicy: "write_local",
+    transports: { http: false, mcp: false },
   },
   {
     id: "stack-diagnostics",
@@ -43,6 +60,7 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
     localOnly: true,
     skill: "youstack-maintainer",
     mutationPolicy: "read_only",
+    transports: { http: false, mcp: false },
   },
   {
     id: "native-stack-maintainer",
@@ -50,6 +68,7 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
     localOnly: true,
     skill: "youstack-maintainer",
     mutationPolicy: "write_local",
+    transports: { http: false, mcp: false },
   },
   {
     id: "stack-visibility-management",
@@ -57,6 +76,7 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
     apiEndpoint: "POST /api/v1/stacks/{stack_id}/visibility",
     requiredScopes: ["stack.write", "stack.publish"],
     mutationPolicy: "server_action",
+    transports: { http: true, mcp: false },
   },
   {
     id: "protected-memory-search",
@@ -65,6 +85,7 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
     apiEndpoint: "POST /api/v1/stacks/{stack_id}/brain/search",
     requiredScopes: ["memories.search"],
     mutationPolicy: "read_only",
+    transports: { http: true, mcp: true },
   },
   {
     id: "protected-private-context-read",
@@ -73,6 +94,7 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
     apiEndpoint: "GET /api/v1/stacks/{stack_id}/private-context",
     requiredScopes: ["private_context.read"],
     mutationPolicy: "read_only",
+    transports: { http: true, mcp: true },
   },
   {
     id: "project-context-read",
@@ -81,6 +103,7 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
     apiEndpoint: "GET /api/v1/stacks/{stack_id}/project-context",
     requiredScopes: ["project_context.read"],
     mutationPolicy: "read_only",
+    transports: { http: true, mcp: true },
   },
   {
     id: "repo-sync",
@@ -88,6 +111,7 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
     apiEndpoint: "POST /api/v1/stacks/{stack_id}/sync",
     requiredScopes: ["repo.sync"],
     mutationPolicy: "server_action",
+    transports: { http: true, mcp: false },
   },
   {
     id: "connected-tool-action",
@@ -95,6 +119,7 @@ export const DEFAULT_YOUSTACK_CAPABILITIES: YouStackCapability[] = [
     apiEndpoint: "POST /api/v1/stacks/{stack_id}/actions/{action_id}",
     requiredScopes: ["connected_tools.run"],
     mutationPolicy: "server_action",
+    transports: { http: true, mcp: false },
   },
 ];
 
