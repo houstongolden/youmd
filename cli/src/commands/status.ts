@@ -18,6 +18,7 @@ import { shortHash } from "../lib/hash";
 import { readSkillCatalog } from "../lib/skill-catalog";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
 import { loadIdentityData, resolveVariable } from "../lib/skill-renderer";
+import { getHeartbeatSignal } from "../lib/heartbeat";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -279,6 +280,14 @@ export async function statusCommand(): Promise<void> {
       console.log(`    ${ACCENT("\u2192")} ${r}`);
     }
   }
+
+  // ── Heartbeat signal ──────────────────────────────────────────────
+  try {
+    const signal = await getHeartbeatSignal();
+    if (signal.active) {
+      console.log("  " + chalk.dim(signal.message));
+    }
+  } catch { /* advisory only — never break status */ }
 
   // ── Remote status ─────────────────────────────────────────────────
   if (authed) {

@@ -24,6 +24,7 @@ import {
 } from "../lib/stackEval";
 import { runStackImprove, type ImproveMode } from "../lib/stackImprove";
 import { checkStackUpdate, applyStackUpdate } from "../lib/stackUpdate";
+import { getHeartbeatSignal } from "../lib/heartbeat";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -203,6 +204,13 @@ export async function stackCommand(
       console.log("  " + chalk.red("Doctor failed.") + " " + DIM("Fix the manifest errors above and rerun."));
       process.exitCode = 1;
     }
+    // Heartbeat: append NEXT dim line when stack wants to improve.
+    try {
+      const signal = await getHeartbeatSignal();
+      if (signal.active) {
+        console.log("  " + DIM("NEXT: " + signal.message));
+      }
+    } catch { /* advisory only — never break doctor */ }
     console.log("");
     return;
   }
