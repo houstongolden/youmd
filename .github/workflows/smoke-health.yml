@@ -82,3 +82,33 @@ jobs:
               echo "note: $tool not found in tools/list (may require auth or be registry-registered)"
             fi
           done
+
+      - name: Public routes shipped this audit cycle (P9, P24, L22, L23, P21)
+        run: |
+          B="https://kindly-cassowary-600.convex.site"
+          # P9 stack registry — expect 404 not_found envelope for an unknown stack
+          code=$(curl -sS -o /tmp/p9.json -w "%{http_code}" --max-time 30 \
+            "$B/api/v1/stacks/registry/__smoke__/__none__")
+          test "$code" = "404"
+          grep -q '"code": "not_found"' /tmp/p9.json
+          echo "ok: P9 stack registry returns not_found envelope"
+          # L23 per-stack MCP namespace — expect 404 envelope for unknown user/stack
+          code=$(curl -sS -o /tmp/l23.json -w "%{http_code}" --max-time 30 \
+            -X POST "$B/api/v1/mcp/__smoke__/__none__" \
+            -H 'Content-Type: application/json' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
+          test "$code" = "404"
+          echo "ok: L23 per-stack MCP namespace returns 404"
+          # P21 unauth → standard error envelope on /me/webhooks
+          code=$(curl -sS -o /tmp/p21.json -w "%{http_code}" --max-time 30 \
+            "$B/api/v1/me/webhooks")
+          test "$code" = "401"
+          grep -q '"code": "unauthorized"' /tmp/p21.json
+          echo "ok: P21 standard error envelope on unauthed write surface"
+          # MCP initialize advertises subscribe (P24)
+          curl -sS --max-time 30 -X POST "$B/api/v1/mcp" \
+            -H 'Content-Type: application/json' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","clientInfo":{"name":"smoke","version":"1"}}}' \
+            > /tmp/p24.json
+          jq -e '.result.capabilities.tools.subscribe == true' /tmp/p24.json > /dev/null
+          echo "ok: P24 MCP subscribe capability advertised"
