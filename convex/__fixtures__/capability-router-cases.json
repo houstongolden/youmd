@@ -1,0 +1,162 @@
+[
+  {
+    "description": "exact match — local-static capability",
+    "input": {
+      "manifest": {
+        "capabilities": [
+          { "id": "local-static", "intent": "Use local named stack files without contacting You.md.", "localOnly": true, "mutationPolicy": "read_only", "transports": { "http": false, "mcp": false } }
+        ]
+      },
+      "request": { "capability": "local-static" }
+    },
+    "expected": {
+      "matched": true,
+      "capability": "local-static",
+      "transports": { "http": false, "mcp": false }
+    }
+  },
+  {
+    "description": "exact match — protected capability with http+mcp transports",
+    "input": {
+      "manifest": {
+        "capabilities": [
+          { "id": "protected-memory-search", "intent": "Search protected memories.", "mcpTool": "search_memories", "apiEndpoint": "POST /api/v1/stacks/{stack_id}/brain/search", "requiredScopes": ["memories.search"], "mutationPolicy": "read_only", "transports": { "http": true, "mcp": true } }
+        ]
+      },
+      "request": { "capability": "protected-memory-search" }
+    },
+    "expected": {
+      "matched": true,
+      "capability": "protected-memory-search",
+      "transports": { "http": true, "mcp": true }
+    }
+  },
+  {
+    "description": "exact match — http-only transport",
+    "input": {
+      "manifest": {
+        "capabilities": [
+          { "id": "stack-visibility-management", "intent": "Manage stack visibility.", "apiEndpoint": "POST /api/v1/stacks/{stack_id}/visibility", "requiredScopes": ["stack.write"], "mutationPolicy": "server_action", "transports": { "http": true, "mcp": false } }
+        ]
+      },
+      "request": { "capability": "stack-visibility-management" }
+    },
+    "expected": {
+      "matched": true,
+      "capability": "stack-visibility-management",
+      "transports": { "http": true, "mcp": false }
+    }
+  },
+  {
+    "description": "unknown capability — not in manifest",
+    "input": {
+      "manifest": {
+        "capabilities": [
+          { "id": "local-static", "intent": "Use local stack files.", "localOnly": true, "mutationPolicy": "read_only", "transports": { "http": false, "mcp": false } }
+        ]
+      },
+      "request": { "capability": "does-not-exist" }
+    },
+    "expected": {
+      "matched": false,
+      "capability": null,
+      "transports": { "http": false, "mcp": false }
+    }
+  },
+  {
+    "description": "empty capability string — treated as unmatched",
+    "input": {
+      "manifest": {
+        "capabilities": [
+          { "id": "local-static", "intent": "Use local stack files.", "localOnly": true, "mutationPolicy": "read_only", "transports": { "http": false, "mcp": false } }
+        ]
+      },
+      "request": { "capability": "" }
+    },
+    "expected": {
+      "matched": false,
+      "capability": null,
+      "transports": { "http": false, "mcp": false }
+    }
+  },
+  {
+    "description": "empty manifest capabilities — still resolves known capability ID from defaults",
+    "input": {
+      "manifest": {
+        "capabilities": []
+      },
+      "request": { "capability": "local-static" }
+    },
+    "expected": {
+      "matched": false,
+      "capability": null,
+      "transports": { "http": false, "mcp": false }
+    }
+  },
+  {
+    "description": "capability with no transports field — defaults to http:false mcp:false",
+    "input": {
+      "manifest": {
+        "capabilities": [
+          { "id": "my-custom-cap", "intent": "Some custom capability.", "localOnly": true, "mutationPolicy": "read_only" }
+        ]
+      },
+      "request": { "capability": "my-custom-cap" }
+    },
+    "expected": {
+      "matched": true,
+      "capability": "my-custom-cap",
+      "transports": { "http": false, "mcp": false }
+    }
+  },
+  {
+    "description": "case-sensitive mismatch — IDs are case-sensitive",
+    "input": {
+      "manifest": {
+        "capabilities": [
+          { "id": "Local-Static", "intent": "Use local stack files.", "localOnly": true, "mutationPolicy": "read_only", "transports": { "http": false, "mcp": false } }
+        ]
+      },
+      "request": { "capability": "local-static" }
+    },
+    "expected": {
+      "matched": false,
+      "capability": null,
+      "transports": { "http": false, "mcp": false }
+    }
+  },
+  {
+    "description": "multiple capabilities — exact match selects the right one",
+    "input": {
+      "manifest": {
+        "capabilities": [
+          { "id": "local-static", "intent": "Use local stack files.", "localOnly": true, "mutationPolicy": "read_only", "transports": { "http": false, "mcp": false } },
+          { "id": "repo-sync", "intent": "Sync stack files with GitHub.", "apiEndpoint": "POST /api/v1/stacks/{stack_id}/sync", "mutationPolicy": "server_action", "transports": { "http": true, "mcp": false } },
+          { "id": "protected-memory-search", "intent": "Search protected memories.", "transports": { "http": true, "mcp": true } }
+        ]
+      },
+      "request": { "capability": "repo-sync" }
+    },
+    "expected": {
+      "matched": true,
+      "capability": "repo-sync",
+      "transports": { "http": true, "mcp": false }
+    }
+  },
+  {
+    "description": "args passthrough — args field is ignored by resolver but does not break it",
+    "input": {
+      "manifest": {
+        "capabilities": [
+          { "id": "project-context-read", "intent": "Load project context.", "mcpTool": "get_project_context", "apiEndpoint": "GET /api/v1/stacks/{stack_id}/project-context", "mutationPolicy": "read_only", "transports": { "http": true, "mcp": true } }
+        ]
+      },
+      "request": { "capability": "project-context-read", "args": { "stackId": "my-stack", "format": "json" } }
+    },
+    "expected": {
+      "matched": true,
+      "capability": "project-context-read",
+      "transports": { "http": true, "mcp": true }
+    }
+  }
+]
