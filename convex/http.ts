@@ -4524,7 +4524,7 @@ http.route({ path: "/api/v1/me/repo/stacks", method: "OPTIONS", handler: httpAct
 // ---------------------------------------------------------------------------
 
 http.route({
-  path: "/api/v1/stacks/registry",
+  pathPrefix: "/api/v1/stacks/registry/",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url);
@@ -4597,7 +4597,7 @@ http.route({
   }),
 });
 
-http.route({ path: "/api/v1/stacks/registry", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+http.route({ pathPrefix: "/api/v1/stacks/registry/", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
 
 // ---------------------------------------------------------------------------
 // GitHub webhook — auto-pull on external push to a linked You.md repo
