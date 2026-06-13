@@ -105,10 +105,10 @@
 | L11 | Fix improveCmd sync heuristic (lastSyncedAt vs identity-change timestamp) | S | done (b0ddedb: lastSyncedAt vs identity mtimes) |
 | L12 | Stack guard: `youmd stack guard` + enforcement in route/MCP (T0-T3 tiers) | M-L | done (afdc4af; stack guard + tier enforcement + doctor integration, 19 tests) |
 | L13 | Golden-prompt eval runner: `youmd stack eval` → tests/eval-results.json | M | done (6704814; stack eval golden-prompt runner, 28 tests) |
-| L14 | Stack improvement runner: journal/ + `youmd stack improve` (propose/auto_pr) | L | todo |
-| L15 | Visible heartbeat: "stack wants to improve" card + doctor NEXT line | S | todo |
+| L14 | Stack improvement runner: journal/ + `youmd stack improve` (propose/auto_pr) | L | done (83928d1; journal proposals + auto_pr tier gate, 27 tests) |
+| L15 | Visible heartbeat: "stack wants to improve" card + doctor NEXT line | S | partial (e6c1c43; module shipped, wiring into status+doctor pending) |
 | L16 | One machine-checkable SAFETY-CONTRACT spec (T0-T3), enforced by guard/doctor/smoke | M | done (2ed63e6; T0-T3 safety contract + validation, 47 tests) |
-| L17 | Stack update channel: registry version metadata + `youmd stack update` | M | todo |
+| L17 | Stack update channel: registry version metadata + `youmd stack update` | M | done (5cbd8b3; upstream version check + --apply) |
 | L18 | YouStack workflows manifest section + Convex per-user scheduler | L | todo |
 | L19 | First dreaming loop: nightly memory consolidation cron | M | done (9914771; nightly consolidation cron, deterministic, idempotent, 13 tests); prod e2e: archived 25 ephemerals) |
 | L20 | Fleet learning: aggregate-only queries (k-anon ≥20) + weekly fleet report | M | done (0fa2595; k-anon ≥20 fleet aggregates with weekly cron, 15 tests) |
