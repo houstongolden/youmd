@@ -109,12 +109,12 @@
 | L15 | Visible heartbeat: "stack wants to improve" card + doctor NEXT line | S | done (1d8b234; wired into status + doctor with try/catch) |
 | L16 | One machine-checkable SAFETY-CONTRACT spec (T0-T3), enforced by guard/doctor/smoke | M | done (2ed63e6; T0-T3 safety contract + validation, 47 tests) |
 | L17 | Stack update channel: registry version metadata + `youmd stack update` | M | done (5cbd8b3; upstream version check + --apply) |
-| L18 | YouStack workflows manifest section + Convex per-user scheduler | L | todo |
+| L18 | YouStack workflows manifest section + Convex per-user scheduler | L | done (9f7519c; workflows manifest + userWorkflowSchedules table + runUserWorkflow action) |
 | L19 | First dreaming loop: nightly memory consolidation cron | M | done (9914771; nightly consolidation cron, deterministic, idempotent, 13 tests); prod e2e: archived 25 ephemerals) |
 | L20 | Fleet learning: aggregate-only queries (k-anon ≥20) + weekly fleet report | M | done (0fa2595; k-anon ≥20 fleet aggregates with weekly cron, 15 tests) |
-| L21 | Telemetry consent surface + privacy contract in docs/llms.txt | M | todo |
+| L21 | Telemetry consent surface + privacy contract in docs/llms.txt | M | done (f3f9c3e; telemetry section in docs + llms.txt; consent model documented) |
 | L22 | User-facing fleet feedback notices | M | blocked(needs-spec) |
-| L23 | Per-stack MCP namespace /api/v1/mcp/{user}/{stack} | L | todo (design-first, after L14) |
+| L23 | Per-stack MCP namespace /api/v1/mcp/{user}/{stack} | L | done (3342caf; namespaced MCP with filtered tools; test gap noted) |
 | L24 | Scheduled maintainer agent mining journal → guarded auto_pr | L | todo (after L12+L14) |
 | L25 | Cross-stack proposals → human-gated registry candidates | L | todo (after L20) |
 | L26 | Server-orchestrated evolution (Convex crons) | L | blocked(sequenced-last by design: requires Stage 2-3 gates) |
