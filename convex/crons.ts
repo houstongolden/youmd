@@ -83,4 +83,18 @@ crons.weekly(
   {}
 );
 
+// L24 — Weekly maintainer agent mining stack journals.
+//
+// Pages every user, reads their repo mirror's stacks/<slug>/journal/ files,
+// counts skill-name tokens that appear in failure-mentioning entries, and
+// writes one maintainerProposals row per (stack, skill) pattern when the
+// failure threshold is met (and flags proposedForRegistry above the
+// cross-stack threshold).
+crons.weekly(
+  "weekly maintainer journal mining",
+  { dayOfWeek: "monday", hourUTC: 10, minuteUTC: 30 },
+  internal.maintainer.weeklyMaintainerMine,
+  {}
+);
+
 export default crons;

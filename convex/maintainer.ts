@@ -203,6 +203,41 @@ export const mineStackJournals = internalAction({
   },
 });
 
+// ── Weekly orchestrator (cron entry point) ──────────────────────────────────
+
+const PAGE_SIZE = 50;
+
+/**
+ * Pages through every user and runs mineStackJournals per user. Weekly cron
+ * entry point — keep the per-user step cheap (read mirror + write proposals).
+ */
+export const weeklyMaintainerMine = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    let skip = 0;
+    let usersProcessed = 0;
+    let proposalsWritten = 0;
+    for (;;) {
+      const userIds: Id<"users">[] = await ctx.runQuery(
+        internal.consolidation._listUserIds,
+        { pageSize: PAGE_SIZE, skip }
+      );
+      if (userIds.length === 0) break;
+      for (const userId of userIds) {
+        const n: number = await ctx.runAction(
+          internal.maintainer.mineStackJournals,
+          { userId }
+        );
+        proposalsWritten += n;
+        usersProcessed += 1;
+      }
+      if (userIds.length < PAGE_SIZE) break;
+      skip += PAGE_SIZE;
+    }
+    return { usersProcessed, proposalsWritten };
+  },
+});
+
 // ── L25 — listPendingRegistryCandidates ─────────────────────────────────────
 
 /**
