@@ -22,6 +22,8 @@ import {
   writeEvalResults,
   writeGoldenFile,
 } from "../lib/stackEval";
+import { runStackImprove, type ImproveMode } from "../lib/stackImprove";
+import { checkStackUpdate, applyStackUpdate } from "../lib/stackUpdate";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -34,6 +36,8 @@ interface StackCommandOptions {
   dryRun?: boolean;
   verify?: boolean;
   init?: boolean;
+  mode?: string;
+  apply?: boolean;
 }
 
 function printHelp(): void {
@@ -49,8 +53,10 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("link") + DIM("          Generate host adapter files from the manifest"));
   console.log("    " + chalk.cyan("guard") + DIM("         Check safety contract (T0-T3) and capability consistency"));
   console.log("    " + chalk.cyan("eval") + DIM("          Run golden-prompt eval suite (--init to scaffold)"));
+  console.log("    " + chalk.cyan("improve") + DIM("       Gather signals + write proposals to journal/ (--mode propose|auto_pr)"));
+  console.log("    " + chalk.cyan("update") + DIM("        Check for a newer upstream version (--apply to write it)"));
   console.log("");
-  console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--verify") + DIM(", ") + chalk.cyan("--json") + DIM(", ") + chalk.cyan("--init"));
+  console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--verify") + DIM(", ") + chalk.cyan("--json") + DIM(", ") + chalk.cyan("--init") + DIM(", ") + chalk.cyan("--mode propose|auto_pr") + DIM(", ") + chalk.cyan("--apply"));
   console.log("");
   console.log("  " + DIM("Canonical layout: ") + chalk.cyan("stacks/<slug>/youstack.json") + DIM(" (legacy youstack.json, .you/, and youstacks/ still load)"));
   console.log("");
@@ -461,6 +467,128 @@ export async function stackCommand(
       process.exitCode = 1;
     } else {
       console.log("  " + chalk.green("Eval passed.") + " " + DIM("All prompts routed as expected."));
+      console.log("");
+    }
+    return;
+  }
+
+  if (cmd === "improve") {
+    const rawMode = options.mode ?? "propose";
+    if (rawMode !== "propose" && rawMode !== "auto_pr") {
+      console.log("");
+      console.log(chalk.red("  stack improve: ") + `--mode must be "propose" or "auto_pr" (got: ${rawMode})`);
+      console.log("");
+      process.exitCode = 1;
+      return;
+    }
+
+    const improveMode = rawMode as ImproveMode;
+    const result = runStackImprove(loaded.manifest, loaded.rootDir, improveMode);
+
+    if (options.json) {
+      console.log(JSON.stringify(result, null, 2));
+      if (result.refused) process.exitCode = 1;
+      return;
+    }
+
+    console.log("");
+    console.log("  " + ACCENT("youstack improve") + DIM(` -- mode: ${result.mode}`));
+    console.log("  " + DIM("manifest: ") + loaded.manifestPath);
+    console.log("");
+
+    if (result.refused) {
+      console.log("  " + chalk.red("REFUSED") + " " + result.refused);
+      console.log("");
+      process.exitCode = 1;
+      return;
+    }
+
+    console.log("  " + DIM("journal: ") + result.journalPath);
+    if (result.appended) {
+      console.log("  " + DIM("(appended to existing entry — idempotent re-run)"));
+    } else {
+      console.log("  " + chalk.green("WROTE") + " " + result.journalPath);
+    }
+    console.log("");
+
+    if (result.summary.signals.length > 0) {
+      console.log("  " + ACCENT("signals:"));
+      for (const sig of result.summary.signals) {
+        console.log("    " + chalk.cyan(sig.name) + DIM(" = ") + sig.value);
+      }
+      console.log("");
+    }
+
+    if (result.summary.proposals.length === 0) {
+      console.log("  " + chalk.green("no proposals") + DIM(" — stack looks healthy"));
+    } else {
+      console.log("  " + ACCENT("proposals:"));
+      for (const p of result.summary.proposals) {
+        console.log("  " + chalk.cyan(p.id));
+        console.log("    " + p.description);
+        console.log("    " + DIM(p.rationale));
+      }
+    }
+
+    if (result.prUrl) {
+      console.log("");
+      if (result.prUrl === "no-gh") {
+        console.log("  " + chalk.yellow("gh CLI not found") + DIM(" — patch printed to journal only"));
+      } else if (result.prUrl.startsWith("pr-failed:")) {
+        console.log("  " + chalk.yellow("PR creation failed:") + " " + result.prUrl.replace("pr-failed: ", ""));
+      } else {
+        console.log("  " + chalk.green("PR opened:") + " " + chalk.cyan(result.prUrl));
+      }
+    }
+
+    console.log("");
+    return;
+  }
+
+  // ── L17: stack update ───────────────────────────────────────────────────────
+  if (cmd === "update") {
+    const info = await checkStackUpdate(loaded);
+
+    if (options.json) {
+      console.log(JSON.stringify(info, null, 2));
+      return;
+    }
+
+    console.log("");
+    console.log("  " + ACCENT("youstack update"));
+    console.log("  " + DIM("manifest: ") + loaded.manifestPath);
+    console.log("");
+    console.log("  " + DIM("current: ") + info.currentVersion);
+    console.log("  " + DIM("latest:  ") + (info.latestVersion ?? DIM("unknown")));
+    console.log("  " + DIM("source:  ") + info.source);
+    console.log("");
+    console.log("  " + (info.updateAvailable ? chalk.green("update available") : chalk.dim("up to date")));
+    if (info.changelogHint) {
+      console.log("  " + DIM("hint: ") + info.changelogHint);
+    }
+    console.log("");
+
+    if (options.apply) {
+      if (!info.updateAvailable) {
+        console.log("  " + DIM("nothing to apply — already at latest"));
+        console.log("");
+        return;
+      }
+      const applyResult = await applyStackUpdate(loaded);
+      if (applyResult.error) {
+        console.log("  " + chalk.red("apply failed: ") + applyResult.error);
+        console.log("");
+        process.exitCode = 1;
+        return;
+      }
+      for (const wrote of applyResult.wrote) {
+        console.log("  " + chalk.green("WROTE") + " " + wrote);
+      }
+      console.log("");
+      console.log("  " + chalk.green("applied.") + " " + DIM("re-run `youmd stack doctor` to validate the new manifest."));
+      console.log("");
+    } else if (info.updateAvailable) {
+      console.log("  " + DIM("run `youmd stack update --apply` to write the new manifest."));
       console.log("");
     }
     return;

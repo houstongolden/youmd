@@ -62,6 +62,23 @@ export interface YouStackImprovementPolicy {
   approvalRequiredFor?: string[];
 }
 
+// ── L18: YouStack workflow entries ───────────────────────────────────────────
+// An optional `workflows` array in the manifest declares scheduled or
+// triggered automations.  The `schedule` field is a cron string (standard
+// 5-field: "0 9 * * 1" = Monday 09:00).  Action types are intentionally
+// limited to a safe, auditable set.
+
+export type YouStackWorkflowActionType = "run_skill" | "report_skill_outcome";
+
+export interface YouStackWorkflow {
+  id: string;
+  /** Standard 5-field cron expression. */
+  schedule: string;
+  action: YouStackWorkflowActionType;
+  /** Free-form params forwarded to the action handler. */
+  params?: Record<string, unknown>;
+}
+
 export interface YouStackUpdatePolicy {
   channel?: string;
   check?: string;
@@ -100,6 +117,8 @@ export interface YouStackManifest {
   tests?: Record<string, unknown>;
   improvement?: YouStackImprovementPolicy;
   update?: YouStackUpdatePolicy;
+  /** L18: optional scheduled workflow declarations. */
+  workflows?: YouStackWorkflow[];
   provenance?: Record<string, unknown>;
   /** Machine-checkable safety contract (L16). */
   safety?: {
@@ -816,6 +835,24 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
   }
   if (adapters.length === 0) {
     recommendations.push("Add host adapters for Claude Code, Codex, and Cursor so the stack is useful after one install.");
+  }
+
+  // L18: validate workflow action types.
+  const VALID_WORKFLOW_ACTIONS = new Set<string>(["run_skill", "report_skill_outcome"]);
+  if (manifest.workflows) {
+    for (const wf of manifest.workflows) {
+      if (!wf.id) {
+        warnings.push("workflow entry is missing an id field");
+      }
+      if (!wf.schedule) {
+        warnings.push(`workflow ${wf.id || "?"}: missing schedule (cron string required)`);
+      }
+      if (!VALID_WORKFLOW_ACTIONS.has(wf.action)) {
+        warnings.push(
+          `workflow ${wf.id || "?"}: unknown action type "${wf.action}" — valid types are: ${[...VALID_WORKFLOW_ACTIONS].join(", ")}`
+        );
+      }
+    }
   }
   if (!files.some((file) => file.type === "test")) {
     recommendations.push("Add a read-only smoke test file so agents can verify the stack before using it.");

@@ -568,7 +568,7 @@ program
 
 program
   .command("stack [subcommand] [args...]")
-  .description("Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval)")
+  .description("Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval, update)")
   .option("--path <path>", "Path to a youstack.json file or stack directory")
   .option("--hosts <hosts>", "Comma-separated host list for stack link (claude-code,codex,cursor)")
   .option("--target <dir>", "Target project directory for stack link")
@@ -576,6 +576,7 @@ program
   .option("--verify", "Verify emitted SKILL.md files pass agent discovery; exit non-zero on failure")
   .option("--json", "Print JSON output")
   .option("--init", "Initialize a golden.json eval scaffold for youmd stack eval")
+  .option("--apply", "Apply the fetched update to the local manifest (stack update only)")
   .action((subcommand, args, options) => {
     return stackCommand(subcommand, args || [], options);
   });
