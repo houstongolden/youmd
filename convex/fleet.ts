@@ -93,20 +93,47 @@ export interface FleetMetrics {
 // ── Internal aggregate queries ───────────────────────────────────────────────
 
 /**
+ * _getRevokedFleetUserIds — L26 consent filter.
+ *
+ * Returns the set of userIds that have EXPLICITLY revoked fleet_aggregate consent.
+ * Structural note: the aggregate queries below do not retain userIds in their
+ * output, so consent must be enforced at the data-read stage (before counting).
+ * We pass this exclusion set into each aggregate query as a string[] arg.
+ * Default-grant means absence of a row = consented; only explicit granted=false
+ * rows appear here.
+ */
+export const _getRevokedFleetUserIds = internalQuery({
+  args: {},
+  handler: async (ctx): Promise<string[]> => {
+    const rows = await ctx.db
+      .query("userConsents")
+      .collect();
+    return rows
+      .filter((r) => r.scope === "fleet_aggregate" && r.granted === false)
+      .map((r) => r.userId as string);
+  },
+});
+
+/**
  * _categoryDistribution — per-category per-user memory counts for k-anon gating.
  *
  * Returns only category names and per-user counts — no userIds, no content.
+ * excludeUserIds: users who have revoked fleet_aggregate consent (L26).
  */
 export const _categoryDistribution = internalQuery({
-  args: {},
-  handler: async (ctx) => {
+  args: { excludeUserIds: v.array(v.string()) },
+  handler: async (ctx, { excludeUserIds }) => {
     // Fleet-wide scan — internal only, never a public endpoint.
     // Filters for active (non-archived, non-superseded) rows.
     const all = await ctx.db
       .query("memories")
       .collect();
 
-    const active = all.filter((m) => !m.isArchived && !m.supersededBy);
+    // L26: drop memories from users who have revoked fleet_aggregate consent.
+    const excluded = new Set(excludeUserIds);
+    const active = all.filter(
+      (m) => !m.isArchived && !m.supersededBy && !excluded.has(m.userId as string)
+    );
 
     // category → userId → count  (no user-identifying data leaves this handler)
     const catUserCount = new Map<string, Map<string, number>>();
@@ -129,15 +156,18 @@ export const _categoryDistribution = internalQuery({
  * _skillInstallCounts — per-skill distinct-user install counts for k-anon gating.
  *
  * Returns only skill names and a count of distinct installers.
+ * excludeUserIds: users who have revoked fleet_aggregate consent (L26).
  */
 export const _skillInstallCounts = internalQuery({
-  args: {},
-  handler: async (ctx) => {
+  args: { excludeUserIds: v.array(v.string()) },
+  handler: async (ctx, { excludeUserIds }) => {
     const all = await ctx.db.query("skillInstalls").collect();
+    const excluded = new Set(excludeUserIds);
 
     const skillUserIds = new Map<string, Set<string>>();
     for (const si of all) {
       const uid = si.userId as string;
+      if (excluded.has(uid)) continue; // L26 consent filter
       const users = skillUserIds.get(si.skillName) ?? new Set<string>();
       users.add(uid);
       skillUserIds.set(si.skillName, users);
@@ -155,13 +185,17 @@ export const _skillInstallCounts = internalQuery({
  * _activeUserMemoryCounts — count of active memories per active user.
  *
  * Returns an array of counts (one per user) — no user ids.
+ * excludeUserIds: users who have revoked fleet_aggregate consent (L26).
  */
 export const _activeUserMemoryCounts = internalQuery({
-  args: {},
-  handler: async (ctx) => {
+  args: { excludeUserIds: v.array(v.string()) },
+  handler: async (ctx, { excludeUserIds }) => {
     // Fleet-wide scan — internal only, never a public endpoint.
     const all = await ctx.db.query("memories").collect();
-    const active = all.filter((m) => !m.isArchived && !m.supersededBy);
+    const excluded = new Set(excludeUserIds);
+    const active = all.filter(
+      (m) => !m.isArchived && !m.supersededBy && !excluded.has(m.userId as string)
+    );
 
     const byUser = new Map<string, number>();
     for (const m of active) {
@@ -203,9 +237,17 @@ export const weeklyFleetAggregation = internalAction({
   handler: async (ctx): Promise<FleetMetrics> => {
     const ranAt = new Date().toISOString();
 
+    // L26: fetch users who have revoked fleet_aggregate consent once; pass to all
+    // aggregate queries so their per-user counts exclude revoking users before
+    // any data crosses a user boundary. k-anon floor still applies AFTER filtering.
+    const excludeUserIds: string[] = await ctx.runQuery(
+      internal.fleet._getRevokedFleetUserIds,
+      {}
+    );
+
     // ── categoryDistribution ─────────────────────────────────────────
     const rawCats: Array<{ category: string; perUserCounts: number[] }> =
-      await ctx.runQuery(internal.fleet._categoryDistribution, {});
+      await ctx.runQuery(internal.fleet._categoryDistribution, { excludeUserIds });
 
     // Gate per-category on that category's distinct user count.
     // We also need the total fleet size for the outer gate — use the sum
@@ -228,7 +270,7 @@ export const weeklyFleetAggregation = internalAction({
 
     // ── skillInstallCounts ───────────────────────────────────────────
     const rawSkills: Array<{ skillName: string; distinctUserCount: number }> =
-      await ctx.runQuery(internal.fleet._skillInstallCounts, {});
+      await ctx.runQuery(internal.fleet._skillInstallCounts, { excludeUserIds });
 
     // Gate on total distinct users across all skills (outer gate), then
     // suppress individual skills with < K_ANON_FLOOR distinct installers.
@@ -245,7 +287,7 @@ export const weeklyFleetAggregation = internalAction({
     // ── avgMemoriesPerActiveUser ─────────────────────────────────────
     const memoryCounts: number[] = await ctx.runQuery(
       internal.fleet._activeUserMemoryCounts,
-      {}
+      { excludeUserIds }
     );
 
     // Each user contributes one value; outer array length = distinct users.

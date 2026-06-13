@@ -32,7 +32,8 @@ describe("maintainer.mineStackJournals", () => {
     const userId = await seedWithMirror(t, "alice", [
       jf("s", "j1", "FAILURE: deploy-skill"), jf("s", "j2", "FAILURE: deploy-skill"), jf("s", "j3", "FAILURE: deploy-skill"),
     ]);
-    expect(await t.action(internal.maintainer.mineStackJournals, { userId })).toBe(1);
+    const r1 = await t.action(internal.maintainer.mineStackJournals, { userId });
+    expect(r1.proposalsWritten).toBe(1);
     const [p] = await t.run((ctx) => ctx.db.query("maintainerProposals").withIndex("by_userId", (q) => q.eq("userId", userId)).collect());
     expect(p.skillName).toBe("deploy-skill");
     expect(p.evidenceCount).toBe(3);
@@ -46,7 +47,8 @@ describe("maintainer.mineStackJournals", () => {
       jf("s", "j1", "FAILURE: lint-skill"), jf("s", "j2", "FAILURE: lint-skill"), jf("s", "j3", "FAILURE: lint-skill"),
       jf("s", "j4", "FAILURE: lint-skill"), jf("s", "j5", "FAILURE: lint-skill"),
     ]);
-    expect(await t.action(internal.maintainer.mineStackJournals, { userId })).toBe(1);
+    const r2 = await t.action(internal.maintainer.mineStackJournals, { userId });
+    expect(r2.proposalsWritten).toBe(1);
     const [p] = await t.run((ctx) => ctx.db.query("maintainerProposals").withIndex("by_userId", (q) => q.eq("userId", userId)).collect());
     expect(p.skillName).toBe("lint-skill");
     expect(p.evidenceCount).toBe(5);
@@ -56,7 +58,8 @@ describe("maintainer.mineStackJournals", () => {
   it("0 journal entries → 0 proposals", async () => {
     const t = convexTest(schema);
     const userId = await seedWithMirror(t, "carol", []);
-    expect(await t.action(internal.maintainer.mineStackJournals, { userId })).toBe(0);
+    const r3 = await t.action(internal.maintainer.mineStackJournals, { userId });
+    expect(r3.proposalsWritten).toBe(0);
     const rows = await t.run((ctx) => ctx.db.query("maintainerProposals").withIndex("by_userId", (q) => q.eq("userId", userId)).collect());
     expect(rows).toHaveLength(0);
   });
@@ -66,7 +69,8 @@ describe("maintainer.mineStackJournals", () => {
     const userId = await seedWithMirror(t, "dave", [
       jf("s", "j1", "FAILURE: quick-fix"), jf("s", "j2", "FAILURE: quick-fix"),
     ]);
-    expect(await t.action(internal.maintainer.mineStackJournals, { userId })).toBe(0);
+    const r4 = await t.action(internal.maintainer.mineStackJournals, { userId });
+    expect(r4.proposalsWritten).toBe(0);
   });
 });
 

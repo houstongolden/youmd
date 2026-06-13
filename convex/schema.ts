@@ -830,4 +830,17 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_events", ["events"]),
+
+  // ── User brainScope consent rows (L26 — server-cron consent gating) ──────────
+  // One row per (userId, scope) when a user has explicitly set consent.
+  // Absence of a row = DEFAULT_CONSENT[scope] (all true — existing users unaffected).
+  // A future revoke API writes granted=false; a grant API writes granted=true or
+  // deletes the row to restore the default.
+  userConsents: defineTable({
+    userId: v.id("users"),
+    scope: v.string(), // one of BRAIN_SCOPES
+    granted: v.boolean(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId_scope", ["userId", "scope"]),
 });

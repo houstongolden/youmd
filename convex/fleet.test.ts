@@ -145,7 +145,7 @@ describe("fleet aggregates — no identifying field keys in output", () => {
 
     const raw: Array<{ category: string; perUserCounts: number[] }> =
       await t.run(async (ctx) =>
-        ctx.runQuery(internal.fleet._categoryDistribution, {})
+        ctx.runQuery(internal.fleet._categoryDistribution, { excludeUserIds: [] })
       );
 
     // The raw query returns perUserCounts (not the final output shape).
@@ -170,7 +170,7 @@ describe("fleet aggregates — no identifying field keys in output", () => {
 
     const raw: Array<{ skillName: string; distinctUserCount: number }> =
       await t.run(async (ctx) =>
-        ctx.runQuery(internal.fleet._skillInstallCounts, {})
+        ctx.runQuery(internal.fleet._skillInstallCounts, { excludeUserIds: [] })
       );
 
     assertNoForbiddenKeys(raw);
@@ -186,7 +186,7 @@ describe("fleet aggregates — no identifying field keys in output", () => {
     await insertMemory(t, uid, "fact");
 
     const counts: number[] = await t.run(async (ctx) =>
-      ctx.runQuery(internal.fleet._activeUserMemoryCounts, {})
+      ctx.runQuery(internal.fleet._activeUserMemoryCounts, { excludeUserIds: [] })
     );
 
     // Must be a flat array of numbers — no objects, no user ids.
@@ -211,7 +211,7 @@ describe("categoryDistribution — per-category k-anon", () => {
 
     const raw: Array<{ category: string; perUserCounts: number[] }> =
       await t.run(async (ctx) =>
-        ctx.runQuery(internal.fleet._categoryDistribution, {})
+        ctx.runQuery(internal.fleet._categoryDistribution, { excludeUserIds: [] })
       );
 
     const factBucket = raw.find((r) => r.category === "fact");
@@ -235,7 +235,7 @@ describe("categoryDistribution — per-category k-anon", () => {
 
     const raw: Array<{ category: string; perUserCounts: number[] }> =
       await t.run(async (ctx) =>
-        ctx.runQuery(internal.fleet._categoryDistribution, {})
+        ctx.runQuery(internal.fleet._categoryDistribution, { excludeUserIds: [] })
       );
 
     const prefBucket = raw.find((r) => r.category === "preference");
@@ -262,7 +262,7 @@ describe("skillInstallCounts — per-skill k-anon", () => {
 
     const raw: Array<{ skillName: string; distinctUserCount: number }> =
       await t.run(async (ctx) =>
-        ctx.runQuery(internal.fleet._skillInstallCounts, {})
+        ctx.runQuery(internal.fleet._skillInstallCounts, { excludeUserIds: [] })
       );
 
     const skill = raw.find((r) => r.skillName === "rare-skill");
@@ -281,7 +281,7 @@ describe("skillInstallCounts — per-skill k-anon", () => {
 
     const raw: Array<{ skillName: string; distinctUserCount: number }> =
       await t.run(async (ctx) =>
-        ctx.runQuery(internal.fleet._skillInstallCounts, {})
+        ctx.runQuery(internal.fleet._skillInstallCounts, { excludeUserIds: [] })
       );
 
     const skill = raw.find((r) => r.skillName === "popular-skill");
@@ -300,7 +300,7 @@ describe("skillInstallCounts — per-skill k-anon", () => {
 
     const raw: Array<{ skillName: string; distinctUserCount: number }> =
       await t.run(async (ctx) =>
-        ctx.runQuery(internal.fleet._skillInstallCounts, {})
+        ctx.runQuery(internal.fleet._skillInstallCounts, { excludeUserIds: [] })
       );
 
     const skill = raw.find((r) => r.skillName === "reinstalled-skill");
@@ -321,7 +321,7 @@ describe("avgMemoriesPerActiveUser — k-anon gate", () => {
     }
 
     const counts: number[] = await t.run(async (ctx) =>
-      ctx.runQuery(internal.fleet._activeUserMemoryCounts, {})
+      ctx.runQuery(internal.fleet._activeUserMemoryCounts, { excludeUserIds: [] })
     );
 
     // 5 < 20 → gate returns null
@@ -343,7 +343,7 @@ describe("avgMemoriesPerActiveUser — k-anon gate", () => {
     }
 
     const counts: number[] = await t.run(async (ctx) =>
-      ctx.runQuery(internal.fleet._activeUserMemoryCounts, {})
+      ctx.runQuery(internal.fleet._activeUserMemoryCounts, { excludeUserIds: [] })
     );
 
     expect(counts).toHaveLength(K_ANON_FLOOR);

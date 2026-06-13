@@ -156,11 +156,21 @@ export const _writeProposal = internalMutation({
  */
 export const mineStackJournals = internalAction({
   args: { userId: v.id("users") },
-  handler: async (ctx, { userId }): Promise<number> => {
+  handler: async (ctx, { userId }): Promise<{ proposalsWritten: number; consent_skipped?: number }> => {
+    // L26 brainScope consent gate: skip if the user has revoked "journal_mine".
+    // Default-grant means existing users are unaffected (no userConsents row → granted=true).
+    const consentGranted: boolean = await ctx.runQuery(
+      internal.consent.getConsent,
+      { userId, scope: "journal_mine" }
+    );
+    if (!consentGranted) {
+      return { proposalsWritten: 0, consent_skipped: 1 };
+    }
+
     const entries: { stackSlug: string; entryPath: string; body: string }[] =
       await ctx.runQuery(internal.maintainer.listJournalEntries, { userId });
 
-    if (entries.length === 0) return 0;
+    if (entries.length === 0) return { proposalsWritten: 0 };
 
     // Group entries by stackSlug, keep only those mentioning "failure".
     const bySlug = new Map<string, string[]>();
@@ -199,7 +209,7 @@ export const mineStackJournals = internalAction({
       }
     }
 
-    return proposalsWritten;
+    return { proposalsWritten };
   },
 });
 
@@ -224,11 +234,11 @@ export const weeklyMaintainerMine = internalAction({
       );
       if (userIds.length === 0) break;
       for (const userId of userIds) {
-        const n: number = await ctx.runAction(
+        const result: { proposalsWritten: number; consent_skipped?: number } = await ctx.runAction(
           internal.maintainer.mineStackJournals,
           { userId }
         );
-        proposalsWritten += n;
+        proposalsWritten += result.proposalsWritten;
         usersProcessed += 1;
       }
       if (userIds.length < PAGE_SIZE) break;

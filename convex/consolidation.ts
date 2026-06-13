@@ -39,6 +39,7 @@ import { internalAction, internalMutation, internalQuery } from "./_generated/se
 import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { DURABLE_MEMORY_CATEGORIES } from "./lib/memoryCategories";
+import { hasConsent } from "./consent";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -153,6 +154,12 @@ export const consolidateUser = internalMutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     const today = todayUtc();
+
+    // L26 brainScope consent gate: skip if the user has revoked "consolidate".
+    // Default-grant means existing users are unaffected (no userConsents row → granted=true).
+    if (!(await hasConsent(ctx, args.userId, "consolidate"))) {
+      return { skipped: true, reason: "consent_revoked", consent_skipped: 1 };
+    }
 
     // 1. Idempotency: bail if already ran for this user today.
     const existing = await ctx.db
