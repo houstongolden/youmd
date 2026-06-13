@@ -304,17 +304,18 @@ All authenticated endpoints use Bearer token auth (API key with ym_ prefix).
 ## Ingestion Pipeline (convex/pipeline/)
 
 ```
-discover → fetch → extract → analyze → compile → review
+fetch → extract → analyze → compile → (review)
 ```
 
-1. **discover** — User adds source URL, type auto-detected
-2. **fetch** — `fetchWebsite` (native), `fetchWithApify` (LinkedIn), `fetchLinkedInFull` (detailed)
-3. **extract** — LLM extracts structured data from raw HTML/text using prompts per source type
-4. **analyze** — Parallel: voice analysis, topic mapping, bio generation, FAQ generation
-5. **compile** — `compileBundleFromPipeline` merges all artifacts into you.json + you.md
-6. **review** — Bundle saved, auto-published
+1. **fetch** — `fetchWebsite` (native), `fetchWithApify` (LinkedIn), `fetchLinkedInFull` (detailed)
+2. **extract** — LLM extracts structured data from raw HTML/text using prompts per source type
+3. **analyze** — Parallel: voice analysis, topic mapping, bio generation, FAQ generation
+4. **compile** — `compileBundleFromPipeline` merges extracted source artifacts into you.json + you.md
+5. **review** — A `pipelineJobs` entry is created to signal pipeline completion; bundle is not auto-published (P18 backlog: review stage needs a publish/diff surface or auto-publish wire)
 
-Pipeline is orchestrated by `convex/pipeline/orchestrator.ts`. Each stage creates `pipelineJobs` entries for tracking. Failures retry up to 3 times.
+> **Note:** `"discover"` is a valid `stage` enum value in the schema but is not executed by `orchestrator.ts`. It exists as a pre-pipeline marker for when a user registers a source URL. The orchestrator begins at `fetch`. Chat-refined content (memories, private vault, agent directives) is stored separately and surfaced via MCP — it is not merged into the compiled public bundle.
+
+Pipeline is orchestrated by `convex/pipeline/orchestrator.ts`. Each stage creates `pipelineJobs` entries for tracking.
 
 ### LLM Model Routing (convex/chat.ts)
 | Task | Model |
