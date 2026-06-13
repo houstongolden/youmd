@@ -45,6 +45,7 @@ import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_scopes from "../lib/scopes.js";
 import type * as lib_secretCrypto from "../lib/secretCrypto.js";
 import type * as lib_secureToken from "../lib/secureToken.js";
+import type * as lib_sentry from "../lib/sentry.js";
 import type * as lib_spendCap from "../lib/spendCap.js";
 import type * as lib_writeLimits from "../lib/writeLimits.js";
 import type * as maintainer from "../maintainer.js";
@@ -119,6 +120,7 @@ declare const fullApi: ApiFromModules<{
   "lib/scopes": typeof lib_scopes;
   "lib/secretCrypto": typeof lib_secretCrypto;
   "lib/secureToken": typeof lib_secureToken;
+  "lib/sentry": typeof lib_sentry;
   "lib/spendCap": typeof lib_spendCap;
   "lib/writeLimits": typeof lib_writeLimits;
   maintainer: typeof maintainer;

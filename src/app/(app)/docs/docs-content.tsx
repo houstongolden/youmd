@@ -2679,6 +2679,8 @@ npm run docs:check`}</CodeBlock>
               default and linked to your account so the improvement loop works. Fleet telemetry is
               anonymised before aggregation and published only when the k-anonymity threshold
               (k&nbsp;&ge;&nbsp;20) is met, so no individual can be identified from a fleet report.
+              Fleet snapshots returned to you show only fleet-wide aggregates respecting the k-anon
+              floor of 20 &mdash; your individual usage never appears in any other user&rsquo;s snapshot.
               You can review all telemetry stored against your account from the dashboard under
               Settings &rsaquo; Privacy.
             </P>

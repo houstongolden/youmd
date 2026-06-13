@@ -309,6 +309,37 @@ describe("skillInstallCounts — per-skill k-anon", () => {
   });
 });
 
+// ── L22. _fleetSkillCounts — k-anon per-skill snapshot ───────────────────────
+
+describe("_fleetSkillCounts — L22 fleet snapshot k-anon", () => {
+  it("returns null for below-floor skills and real counts for above-floor skills", async () => {
+    const t = convexTest(schema);
+
+    // "rare-skill" → only 5 installers (below K_ANON_FLOOR=20, should be null)
+    for (let i = 0; i < 5; i++) {
+      const uid = await insertUser(t, `rareuser${i}`);
+      await insertSkillInstall(t, uid, "rare-skill");
+    }
+
+    // "popular-skill" → exactly K_ANON_FLOOR installers (should return count)
+    for (let i = 0; i < K_ANON_FLOOR; i++) {
+      const uid = await insertUser(t, `popuser${i}`);
+      await insertSkillInstall(t, uid, "popular-skill");
+    }
+
+    const counts: Record<string, number | null> = await t.run(async (ctx) =>
+      ctx.runQuery(internal.fleet._fleetSkillCounts, {
+        skillNames: ["rare-skill", "popular-skill"],
+      })
+    );
+
+    // Below floor → null
+    expect(counts["rare-skill"]).toBeNull();
+    // At floor → real count
+    expect(counts["popular-skill"]).toBe(K_ANON_FLOOR);
+  });
+});
+
 // ── 5. avgMemoriesPerActiveUser k-anon ───────────────────────────────────────
 
 describe("avgMemoriesPerActiveUser — k-anon gate", () => {

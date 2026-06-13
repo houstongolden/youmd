@@ -35,7 +35,7 @@ import {
 import { loadIdentityData, resolveVariable, renderSkillTemplate } from "../lib/skill-renderer";
 import { BrailleSpinner, renderRichResponse } from "../lib/render";
 import { isAuthenticated } from "../lib/config";
-import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, type SkillInsight } from "../lib/api";
+import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, getFleetSnapshot, type SkillInsight } from "../lib/api";
 import { readSkillFile, getSkillDir } from "../lib/skills";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
 
@@ -808,6 +808,21 @@ async function improveCmd(): Promise<void> {
     }
   }
 
+  // ─── Fleet snapshot (L22) ────────────────────────────────────────
+  let fleetLines: string[] = [];
+  if (isAuthenticated()) {
+    try {
+      const fleetRes = await getFleetSnapshot();
+      if (fleetRes.ok && Array.isArray(fleetRes.data?.skills)) {
+        fleetLines = fleetRes.data.skills
+          .filter((s) => s.fleetInstallCount !== null)
+          .map((s) => DIM(`  ${s.skill}: shared by ~${s.fleetInstallCount} others`));
+      }
+    } catch {
+      // fleet data is best-effort — silently skip on error
+    }
+  }
+
   // ─── Live outcome table ───────────────────────────────────────────
   if (liveInsights && liveInsights.length > 0) {
     console.log("  " + ACCENT("outcome history:"));
@@ -1000,6 +1015,14 @@ async function improveCmd(): Promise<void> {
     console.log("");
   } else {
     console.log("  " + chalk.green("\u2713") + DIM(" no improvements to suggest right now."));
+    console.log("");
+  }
+
+  // \u2500\u2500\u2500 Fleet context (L22) \u2014 one dim line per skill with fleet data \u2500\u2500\u2500\u2500\u2500
+  if (fleetLines.length > 0) {
+    for (const line of fleetLines) {
+      console.log(line);
+    }
     console.log("");
   }
 }

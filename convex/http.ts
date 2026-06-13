@@ -3394,6 +3394,52 @@ http.route({
   handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
 });
 
+// GET /api/v1/me/fleet-snapshot — Fleet-wide install counts for the caller's installed skills (read:private; k-anon floor 20 applies — counts below floor are null). Returns { skills: Array<{ skill: string, fleetInstallCount: number | null }>, generatedAt: number }.
+http.route({
+  path: "/api/v1/me/fleet-snapshot",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
+
+    const user = await ctx.runQuery(api.users.getByClerkId, {
+      clerkId: auth.userId,
+      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+    });
+    if (!user) return errorResponse("not_found", "User not found", 404);
+
+    try {
+      // Fetch the caller's installed skill names.
+      const installs = await ctx.runQuery(api.skills.listInstalls, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        userId: user._id,
+      });
+      const skillNames = installs.map((s: { skillName: string }) => s.skillName);
+
+      // Get fleet-wide k-anon-gated counts for those skills.
+      const fleetCounts = await ctx.runQuery(internal.fleet._fleetSkillCounts, { skillNames });
+
+      const skills = skillNames.map((skill: string) => ({
+        skill,
+        fleetInstallCount: fleetCounts[skill] ?? null,
+      }));
+
+      return json({ skills, generatedAt: Date.now() });
+    } catch (err) {
+      return serverErrorResponse("me/fleet-snapshot", err, "Failed to fetch fleet snapshot");
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/fleet-snapshot",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
 // ── Version History & Agent Activity ─────────────────────
 
 // GET /api/v1/me/history — Get bundle version history (authenticated; supports ?cursor= + ?limit= pagination in version-desc order — paginated calls add nextCursor + hasMore)

@@ -207,6 +207,60 @@ export const _activeUserMemoryCounts = internalQuery({
   },
 });
 
+// ── L22: Per-user fleet snapshot (k-anon gated) ──────────────────────────────
+
+/**
+ * _fleetSkillCounts — on-demand fleet install counts for a specific skill list.
+ *
+ * Used by the /api/v1/me/fleet-snapshot HTTP route to show the requesting user
+ * how their installed skills compare against the fleet, WITHOUT exposing any
+ * other user's data. For each skill name in `skillNames`, returns the fleet-wide
+ * distinct installer count, gated through kAnonBucket:
+ *   - Returns the count when distinctInstallerCount >= K_ANON_FLOOR (20)
+ *   - Returns null when below the floor (k-anon suppressed)
+ *
+ * Privacy: only fleet-wide counts are returned — never per-user data.
+ * Consent: excludes users who have revoked fleet_aggregate consent (L26).
+ */
+export const _fleetSkillCounts = internalQuery({
+  args: { skillNames: v.array(v.string()) },
+  handler: async (ctx, { skillNames }): Promise<Record<string, number | null>> => {
+    // L26: honor fleet_aggregate consent revocations.
+    const revokedRows = await ctx.db.query("userConsents").collect();
+    const excluded = new Set(
+      revokedRows
+        .filter((r) => r.scope === "fleet_aggregate" && r.granted === false)
+        .map((r) => r.userId as string)
+    );
+
+    const wanted = new Set(skillNames);
+    const all = await ctx.db.query("skillInstalls").collect();
+
+    // Count distinct consented installers per skill (fleet-wide, not just caller).
+    const skillUserIds = new Map<string, Set<string>>();
+    for (const si of all) {
+      if (!wanted.has(si.skillName)) continue;
+      const uid = si.userId as string;
+      if (excluded.has(uid)) continue;
+      const users = skillUserIds.get(si.skillName) ?? new Set<string>();
+      users.add(uid);
+      skillUserIds.set(si.skillName, users);
+    }
+
+    const result: Record<string, number | null> = {};
+    for (const name of skillNames) {
+      const distinctCount = skillUserIds.get(name)?.size ?? 0;
+      // kAnonBucket: wrap as perUserValues of length = distinctCount.
+      const gated = kAnonBucket(
+        Array.from({ length: distinctCount }, () => [1]),
+        (xs) => xs.length
+      );
+      result[name] = gated !== null ? (gated as number) : null;
+    }
+    return result;
+  },
+});
+
 // ── Internal write mutation ───────────────────────────────────────────────────
 
 /** Persist a FleetMetrics blob to the fleetReports table. */

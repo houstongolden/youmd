@@ -8,7 +8,7 @@
  *   - reportSkillOutcome call shape (correct method + body)
  */
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { getSkillInsights, reportSkillOutcome, type SkillInsight } from "../lib/api";
+import { getSkillInsights, getFleetSnapshot, reportSkillOutcome, type SkillInsight } from "../lib/api";
 
 // CI runs without a ~/.youmd/config.json, so stub the env credential the api
 // client reads via getAuthToken(). Without this, every call-shape test throws
@@ -155,6 +155,43 @@ describe("getSkillInsights: API call shape", () => {
     const res = await getSkillInsights();
     expect(res.ok).toBe(false);
     expect(res.status).toBe(401);
+  });
+});
+
+// ─── getFleetSnapshot — L22 fleet dim notice ─────────────────────────────────
+
+describe("getFleetSnapshot: L22 fleet dim notice", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("includes 'shared by ~N others' dim line for skills with fleet data, silently skips nulls", async () => {
+    const fleetPayload = {
+      skills: [
+        { skill: "youstack-start", fleetInstallCount: 42 },
+        { skill: "rare-skill", fleetInstallCount: null },
+      ],
+      generatedAt: Date.now(),
+    };
+
+    const fetchMock = vi.fn().mockResolvedValue(okJsonResponse(fleetPayload));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await getFleetSnapshot();
+    expect(res.ok).toBe(true);
+
+    // Only skills with non-null counts produce a dim line.
+    const lines: string[] = res.data.skills
+      .filter((s) => s.fleetInstallCount !== null)
+      .map((s) => `  ${s.skill}: shared by ~${s.fleetInstallCount} others`);
+
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toBe("  youstack-start: shared by ~42 others");
+
+    // Null-count skill is silently absent.
+    const hasRare = lines.some((l) => l.includes("rare-skill"));
+    expect(hasRare).toBe(false);
   });
 });
 

@@ -874,6 +874,25 @@ export async function getSkillInsights(): Promise<ApiResponse<SkillInsights>> {
   });
 }
 
+// ── L22: Fleet snapshot ───────────────────────────────────────────────────────
+
+export interface FleetSnapshotEntry {
+  skill: string;
+  fleetInstallCount: number | null; // null = below k-anon floor of 20
+}
+
+export interface FleetSnapshot {
+  skills: FleetSnapshotEntry[];
+  generatedAt: number;
+}
+
+/** Fetch fleet-wide install counts for the caller's installed skills (L22). */
+export async function getFleetSnapshot(): Promise<ApiResponse<FleetSnapshot>> {
+  return apiRequest<FleetSnapshot>("/api/v1/me/fleet-snapshot", {
+    token: getToken(),
+  });
+}
+
 /** Report a skill execution outcome via the HTTP route (non-MCP callers). */
 export async function reportSkillOutcome(opts: {
   skill: string;
