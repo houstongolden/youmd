@@ -25,6 +25,7 @@
     "profiles:portrait-audit:pages": "node scripts/audit-public-profile-portraits.mjs --check-pages --page-limit=all",
     "profiles:targets-check": "node scripts/check-public-profile-targets.mjs",
     "references:sync": "node scripts/reference-intelligence.mjs",
+    "reference:dedupe": "node scripts/dedupe-reference-intelligence.mjs",
     "codex:chat-hygiene": "node scripts/codex-chat-hygiene.mjs",
     "prebuild": "npm run docs:generate",
     "build": "next build",
