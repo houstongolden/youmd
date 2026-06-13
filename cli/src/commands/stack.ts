@@ -11,7 +11,17 @@ import {
   runYouStackSmoke,
   YouStackCapability,
   YouStackValidationResult,
+  runStackGuard,
 } from "../lib/youstack";
+import {
+  buildInitGoldenFile,
+  goldenFilePath,
+  evalResultsFilePath,
+  readGoldenFile,
+  runEval,
+  writeEvalResults,
+  writeGoldenFile,
+} from "../lib/stackEval";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -23,6 +33,7 @@ interface StackCommandOptions {
   target?: string;
   dryRun?: boolean;
   verify?: boolean;
+  init?: boolean;
 }
 
 function printHelp(): void {
@@ -36,8 +47,10 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("capabilities") + DIM("  List declared local capabilities"));
   console.log("    " + chalk.cyan("route \"...\"") + DIM("   Pick the best local capability for a request"));
   console.log("    " + chalk.cyan("link") + DIM("          Generate host adapter files from the manifest"));
+  console.log("    " + chalk.cyan("guard") + DIM("         Check safety contract (T0-T3) and capability consistency"));
+  console.log("    " + chalk.cyan("eval") + DIM("          Run golden-prompt eval suite (--init to scaffold)"));
   console.log("");
-  console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--verify") + DIM(", ") + chalk.cyan("--json"));
+  console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--verify") + DIM(", ") + chalk.cyan("--json") + DIM(", ") + chalk.cyan("--init"));
   console.log("");
   console.log("  " + DIM("Canonical layout: ") + chalk.cyan("stacks/<slug>/youstack.json") + DIM(" (legacy youstack.json, .you/, and youstacks/ still load)"));
   console.log("");
@@ -308,6 +321,146 @@ export async function stackCommand(
     }
     if (!options.dryRun) {
       console.log("  " + chalk.green("Adapter files generated.") + " " + DIM("No brain data or connected tools were touched."));
+      console.log("");
+    }
+    return;
+  }
+
+  if (cmd === "guard") {
+    const guardResult = runStackGuard(loaded.manifest, loaded.manifestPath);
+
+    if (options.json) {
+      console.log(JSON.stringify(guardResult, null, 2));
+      if (!guardResult.ok) process.exitCode = 1;
+      return;
+    }
+
+    console.log("");
+    console.log("  " + ACCENT("youstack guard") + DIM(` -- T0-T3 safety contract (${guardResult.tier})`));
+    console.log("  " + DIM("manifest: ") + loaded.manifestPath);
+    console.log("");
+
+    for (const check of guardResult.checks) {
+      if (check.status === "PASS") {
+        const inferNote = check.inferred
+          ? DIM(` (inferred from: ${check.inferredFrom.join(", ")})`)
+          : "";
+        console.log("  " + chalk.green("PASS") + " " + chalk.cyan(check.capability) + " — " + check.message + inferNote);
+      } else {
+        const inferNote = check.inferred
+          ? DIM(` (inferred from: ${check.inferredFrom.join(", ")})`)
+          : "";
+        console.log("  " + chalk.red("VIOLATION") + " " + chalk.cyan(check.capability) + " — " + check.message + inferNote);
+        console.log("       " + DIM(`tier rule: ${check.tierRule}`));
+      }
+    }
+
+    if (guardResult.contractViolations.length > 0) {
+      console.log("");
+      console.log("  " + ACCENT("contract violations:"));
+      for (const violation of guardResult.contractViolations) {
+        console.log("  " + chalk.red("FAIL") + " " + violation.reason);
+        console.log("       " + DIM(`tier rule: ${violation.tierRule}`));
+      }
+    }
+
+    if (guardResult.warnings.length > 0) {
+      console.log("");
+      for (const warning of guardResult.warnings) {
+        console.log("  " + chalk.yellow("WARN") + " " + warning);
+      }
+    }
+
+    console.log("");
+    if (guardResult.ok) {
+      console.log(
+        "  " + chalk.green("Guard passed.") + " " +
+        DIM(`${guardResult.tier} contract is self-consistent and no inferred capabilities exceed the declared tier.`)
+      );
+    } else {
+      console.log(
+        "  " + chalk.red("Guard failed.") + " " +
+        DIM("Fix the violations above and rerun `youmd stack guard`.")
+      );
+      process.exitCode = 1;
+    }
+    console.log("");
+    return;
+  }
+
+  if (cmd === "eval") {
+    if (options.init) {
+      // Write example golden.json
+      const golden = buildInitGoldenFile(loaded.manifest);
+      const filePath = writeGoldenFile(loaded.rootDir, golden);
+
+      if (options.json) {
+        console.log(JSON.stringify({ wrote: filePath, entries: golden.entries.length }, null, 2));
+        return;
+      }
+
+      console.log("");
+      console.log("  " + ACCENT("youstack eval --init"));
+      console.log("  " + chalk.green("WROTE") + " " + filePath);
+      console.log("  " + DIM(`${golden.entries.length} example entries. Edit to add real assertions, then run \`youmd stack eval\`.`));
+      console.log("");
+      return;
+    }
+
+    // Run the eval suite
+    let goldenFile;
+    try {
+      goldenFile = readGoldenFile(loaded.rootDir);
+    } catch (error) {
+      console.log("");
+      console.log(chalk.red("  eval: ") + (error instanceof Error ? error.message : String(error)));
+      console.log("");
+      process.exitCode = 1;
+      return;
+    }
+
+    const evalResults = runEval(loaded.manifest, goldenFile);
+    const resultsPath = writeEvalResults(loaded.rootDir, evalResults);
+
+    if (options.json) {
+      console.log(JSON.stringify(evalResults, null, 2));
+      if (evalResults.failures.length > 0) process.exitCode = 1;
+      return;
+    }
+
+    console.log("");
+    console.log("  " + ACCENT("youstack eval") + DIM(` -- ${evalResults.total} prompts`));
+    console.log("  " + DIM("golden: ") + goldenFilePath(loaded.rootDir));
+    console.log("  " + DIM("results: ") + resultsPath);
+    console.log("");
+
+    for (const entry of goldenFile.entries) {
+      const failure = evalResults.failures.find((f) => f.label === entry.label);
+      if (!failure) {
+        console.log("  " + chalk.green("PASS") + " " + entry.label);
+      } else {
+        console.log("  " + ACCENT("FAIL") + " " + entry.label);
+        for (const diff of failure.diff) {
+          console.log("       " + DIM(diff));
+        }
+        console.log("       " + DIM(`routed to: ${failure.actual.routedTo}`));
+      }
+    }
+
+    console.log("");
+    const passCount = chalk.green(`${evalResults.passed} passed`);
+    const failCount = evalResults.failures.length > 0
+      ? ACCENT(`${evalResults.failures.length} failed`)
+      : chalk.dim("0 failed");
+    console.log("  " + passCount + DIM(" / ") + failCount + DIM(` of ${evalResults.total} total`));
+    console.log("");
+
+    if (evalResults.failures.length > 0) {
+      console.log("  " + chalk.red("Eval failed.") + " " + DIM("Fix routing assertions or update golden.json."));
+      console.log("");
+      process.exitCode = 1;
+    } else {
+      console.log("  " + chalk.green("Eval passed.") + " " + DIM("All prompts routed as expected."));
       console.log("");
     }
     return;

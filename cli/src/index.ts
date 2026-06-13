@@ -568,13 +568,14 @@ program
 
 program
   .command("stack [subcommand] [args...]")
-  .description("Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link)")
+  .description("Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval)")
   .option("--path <path>", "Path to a youstack.json file or stack directory")
   .option("--hosts <hosts>", "Comma-separated host list for stack link (claude-code,codex,cursor)")
   .option("--target <dir>", "Target project directory for stack link")
   .option("--dry-run", "Preview stack link writes without changing files")
   .option("--verify", "Verify emitted SKILL.md files pass agent discovery; exit non-zero on failure")
   .option("--json", "Print JSON output")
+  .option("--init", "Initialize a golden.json eval scaffold for youmd stack eval")
   .action((subcommand, args, options) => {
     return stackCommand(subcommand, args || [], options);
   });

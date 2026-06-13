@@ -12,6 +12,14 @@ import {
   writeHostLinkPlan,
   youStackHostAdapterConfig,
 } from "./host-link";
+import {
+  runStackGuard,
+  parseSafetyContract,
+  tierAllows,
+  tierRefusalMessage,
+  type StackGuardResult,
+  type SafetyCapabilityKey,
+} from "./stackSafety";
 
 export type YouStackVisibility = "private" | "scoped-link" | "public-open" | "team";
 
@@ -93,6 +101,20 @@ export interface YouStackManifest {
   improvement?: YouStackImprovementPolicy;
   update?: YouStackUpdatePolicy;
   provenance?: Record<string, unknown>;
+  /** Machine-checkable safety contract (L16). */
+  safety?: {
+    tier: "T0" | "T1" | "T2" | "T3";
+    capabilities: {
+      fs_write?: boolean;
+      network?: boolean;
+      shell?: boolean;
+      auto_pr?: boolean;
+    };
+    humanGate: {
+      required: boolean;
+      scopes?: string[];
+    };
+  };
 }
 
 export interface LoadedYouStack {
@@ -120,6 +142,12 @@ export interface YouStackDoctorResult extends YouStackSmokeResult {
    * SKILL.md files this stack would emit for the claude-code host.
    */
   discovery: SkillDiscoveryCheck[];
+  /**
+   * L12 safety guard result — present when the manifest has a `safety`
+   * section or when the guard detected inferred capability mismatches.
+   * Missing contract is treated as T0 with a warning.
+   */
+  guard?: StackGuardResult;
 }
 
 export type YouStackReadinessStatus = "not_found" | "invalid" | "ready";
@@ -853,6 +881,46 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
     diagnostics.push("claude discovery: skipped (manifest invalid)");
   }
 
+  // L12 safety guard: run for all manifests; missing contract → T0 with warning.
+  // When a safety contract is explicitly declared, violations are hard errors.
+  // When no contract is present (defaulting to T0), inferred-capability mismatches
+  // are surfaced as warnings so existing manifests without a safety section are
+  // not retroactively broken.
+  let guard: StackGuardResult | undefined;
+  try {
+    guard = runStackGuard(manifest, loaded.manifestPath);
+    const hasExplicitContract = parseSafetyContract(manifest) !== null;
+    for (const warning of guard.warnings) {
+      warnings.push(`guard: ${warning}`);
+    }
+    for (const violation of guard.contractViolations) {
+      // Contract violations are always hard errors regardless of whether the
+      // contract was explicit (the manifest declared a safety section that is
+      // internally inconsistent).
+      errors.push(`guard contract violation: ${violation.reason}`);
+    }
+    for (const check of guard.checks) {
+      if (check.status === "VIOLATION") {
+        if (hasExplicitContract) {
+          // Explicit contract: capability exceeds the declared tier → hard error
+          errors.push(`guard ${check.capability}: ${check.message}`);
+        } else {
+          // Implicit T0 default: inferred violations are advisory warnings only
+          warnings.push(`guard (advisory): ${check.capability}: ${check.message} — declare a safety section to enforce this`);
+        }
+      } else {
+        diagnostics.push(`guard ${check.capability}: ${check.message}`);
+      }
+    }
+    if (guard.ok || !hasExplicitContract) {
+      checks.push(`safety guard: ${guard.tier} — all capability checks passed`);
+    }
+  } catch (error) {
+    warnings.push(
+      `guard check failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
   return {
     ok: errors.length === 0,
     errors,
@@ -861,6 +929,7 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
     diagnostics,
     recommendations,
     discovery,
+    guard,
   };
 }
 
@@ -924,6 +993,38 @@ export function routeYouStackRequest(
     reasons,
     alternatives: scored.slice(1, 4),
   };
+}
+
+/**
+ * Runtime enforcement hook (L12).
+ *
+ * Maps a mutation policy to a capability key, then checks the safety contract.
+ * Returns a refusal message if the requested action exceeds the declared tier,
+ * or null if the action is allowed.
+ *
+ * Usage: call this before any write action in stack routing flows.
+ *
+ * Example refusal: "blocked: stack is T1 (suggest-only) — this action needs T2"
+ */
+export function checkTierAllows(
+  manifest: YouStackManifest,
+  capabilityKey: SafetyCapabilityKey
+): string | null {
+  const contract = parseSafetyContract(manifest);
+  if (!contract) {
+    // No contract → treat as T0; deny write capabilities
+    if (capabilityKey === "fs_write" || capabilityKey === "shell" || capabilityKey === "auto_pr") {
+      return (
+        `blocked: no safety contract declared (defaulting to T0, read-only). ` +
+        `Add a safety section to youstack.json to grant ${capabilityKey}.`
+      );
+    }
+    return null;
+  }
+  if (!tierAllows(contract, capabilityKey)) {
+    return tierRefusalMessage(contract, capabilityKey);
+  }
+  return null;
 }
 
 export function normalizeYouStackHost(host: string): string {
@@ -1101,3 +1202,15 @@ export function linkYouStackAdapters(
 export function verifyYouStackClaudeDiscovery(loaded: LoadedYouStack): SkillDiscoveryReport {
   return verifySkillDiscovery(planYouStackAdapterLinks(loaded, ["claude-code"]));
 }
+
+// Re-export the guard types and runner so callers only need one import.
+export { runStackGuard, parseSafetyContract, tierAllows, tierRefusalMessage } from "./stackSafety";
+export type {
+  StackGuardResult,
+  StackSafetyContract,
+  SafetyTier,
+  SafetyCapabilityKey,
+  ContractValidationResult,
+  ContractViolation,
+  GuardCheckResult,
+} from "./stackSafety";
