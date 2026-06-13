@@ -19,7 +19,7 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "node scripts/check-version-exists.mjs && npm run build",
     "postinstall": "node -e \"try{require('./dist/postinstall.js')}catch(e){if(e&&e.code!=='MODULE_NOT_FOUND')throw e}\""
   },
   "keywords": [
