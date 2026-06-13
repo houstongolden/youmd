@@ -594,6 +594,28 @@ export const internalGetMirrorByClerkId = internalQuery({
 });
 
 /**
+ * L23 — internal query to load the repo mirror by userId (no clerkId lookup).
+ * Used by the per-stack MCP namespace to resolve public stacks for a target
+ * user without requiring authentication.
+ */
+export const internalGetMirrorByUserId = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    const mirror = await ctx.db
+      .query("repoMirror")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
+    if (!mirror) return null;
+    const conn = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first();
+    const stale = isMirrorStale(conn, mirror.commitSha);
+    return { ...mirror, stale };
+  },
+});
+
+/**
  * Owner-only: mirror summary (file paths + sizes, no content) plus derived
  * stacks. Powers the Settings-pane mirror status and the stacks list.
  */

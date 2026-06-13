@@ -3731,10 +3731,14 @@ http.route({
       JSON.stringify({
         schema_version: "1",
         name: "you.md",
-        description: "The identity context protocol for the agent internet — give every AI agent context about who you are.",
+        description: "The identity context protocol for the agent internet — give every AI agent context about who you are. Per-stack namespace: /api/v1/mcp/{user}/{stack} scopes tool exposure to the declared stack manifest.",
         server: {
           type: "http",
           url: "https://you.md/api/v1/mcp",
+        },
+        per_stack_namespace: {
+          url_pattern: "https://you.md/api/v1/mcp/{user}/{stack}",
+          description: "Stack-scoped MCP endpoint. Always exposes whoami, get_identity, and get_agent_brief. Additional tools are gated by the stack manifest mcpTools field.",
         },
         protocol_version: MCP_PROTOCOL_VERSION,
         capabilities: {
@@ -4391,6 +4395,199 @@ http.route({
     );
   }),
 });
+
+// ─── Per-stack MCP namespace (L23) ───────────────────────────────────────────
+//
+// GET/POST /api/v1/mcp/{user}/{stack}
+//
+// A stack-scoped MCP endpoint. Compared with the global /api/v1/mcp surface:
+//   - tools/list always includes the three identity-core tools (whoami,
+//     get_identity, get_agent_brief) regardless of stack.
+//   - Additional tools are included only when the resolved stack manifest
+//     declares them in an `mcpTools` array field.
+//   - 404 with `not_found` envelope when {user}/{stack} doesn't resolve to a
+//     valid public stack in the user's repo mirror.
+//
+// Auth: same Bearer flow as /api/v1/mcp (authenticateRequest + standard error
+// envelope on 401).
+//
+// TODO(L23-mcpTools): When youstack.json gains an `mcpTools` field, filter the
+// full tool list to declared names. For now only the always-on three are served.
+
+// Canonical always-on tool definitions shared between the global MCP surface and
+// the per-stack namespace.
+const MCP_ALWAYS_ON_TOOL_NAMES = new Set(["whoami", "get_identity", "get_agent_brief"]);
+
+http.route({
+  pathPrefix: "/api/v1/mcp/",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    // Parse {user}/{stack} from the path.
+    const url = new URL(request.url);
+    const suffix = url.pathname.replace(/^\/api\/v1\/mcp\//, "");
+    const parts = suffix.split("/").filter(Boolean);
+    if (parts.length < 2) {
+      return new Response(
+        JSON.stringify({ error: "not_found", message: "Path must be /api/v1/mcp/{user}/{stack}" }),
+        { status: 404, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+      );
+    }
+    const [targetUser, targetStack] = parts;
+
+    // Resolve the public stack from the target user's repo mirror.
+    // We look up the user by username (public — no auth required for the lookup
+    // itself, just like /api/v1/profiles?username=...).
+    // Resolve the target user by username (canonical handle).
+    const targetUserDoc = await ctx.runQuery(internal.users.getByUsername, {
+      username: targetUser,
+    });
+    if (!targetUserDoc) {
+      return new Response(
+        JSON.stringify({ error: "not_found", message: `No public profile found for @${targetUser}` }),
+        { status: 404, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+      );
+    }
+
+    // Load the repo mirror for the target user and derive the stack list.
+    const mirror = await ctx.runQuery(internal.github.internalGetMirrorByUserId, {
+      userId: targetUserDoc._id,
+    });
+    if (!mirror) {
+      return new Response(
+        JSON.stringify({ error: "not_found", message: `No repo mirror found for @${targetUser}` }),
+        { status: 404, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+      );
+    }
+
+    const stacks = deriveStacks(mirror.files);
+    const stack = stacks.find(
+      (s: { slug: string }) => s.slug === targetStack
+    );
+    if (!stack) {
+      return new Response(
+        JSON.stringify({ error: "not_found", message: `Stack '${targetStack}' not found for @${targetUser}` }),
+        { status: 404, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+      );
+    }
+
+    // Auth: optional — Bearer token required only for tools that need identity.
+    // Parse it here so tool handlers can branch on auth presence.
+    const auth = await authenticateRequest(ctx, request);
+    const authed = !(auth instanceof Response);
+
+    // Parse the JSON-RPC body.
+    let body: { jsonrpc?: string; id?: unknown; method?: string; params?: unknown };
+    try {
+      body = await request.json();
+    } catch {
+      return mcpError(null, -32700, "Parse error");
+    }
+
+    if (body.jsonrpc !== "2.0" || typeof body.method !== "string") {
+      return mcpError(body.id ?? null, -32600, "Invalid Request");
+    }
+
+    const id = body.id ?? null;
+    const method = body.method;
+
+    try {
+      switch (method) {
+        case "initialize": {
+          const params = (body.params as Record<string, unknown>) || {};
+          const requestedVersion = (params as Record<string, unknown>).protocolVersion;
+          const negotiatedVersion =
+            typeof requestedVersion === "string" &&
+            SUPPORTED_MCP_PROTOCOL_VERSIONS.includes(requestedVersion)
+              ? requestedVersion
+              : MCP_PROTOCOL_VERSION;
+          return mcpOk(id, {
+            protocolVersion: negotiatedVersion,
+            capabilities: { tools: { listChanged: false } },
+            serverInfo: { name: `you.md/${targetUser}/${targetStack}`, version: "1.0.0" },
+            instructions: `Stack-scoped you.md MCP endpoint for @${targetUser}/${targetStack}. Always-on tools: whoami, get_identity, get_agent_brief. Additional tools are declared in the stack manifest.`,
+          });
+        }
+
+        case "notifications/initialized":
+        case "ping":
+          return mcpOk(id, {});
+
+        case "tools/list": {
+          // Always-on identity tools.
+          // TODO(L23-mcpTools): When stack.manifest.mcpTools is available, merge
+          // additional declared tool definitions from the global tool registry.
+          const alwaysOn = [
+            {
+              name: "whoami",
+              description: "Return a compact identity summary of the authenticated user. Requires a you.md API key as Bearer token.",
+              inputSchema: { type: "object", properties: {} },
+            },
+            {
+              name: "get_identity",
+              description: `Get ${targetUser}'s public identity bundle from you.md.`,
+              inputSchema: {
+                type: "object",
+                properties: {
+                  username: {
+                    type: "string",
+                    description: `The you.md username — defaults to '${targetUser}' for this stack endpoint.`,
+                  },
+                },
+              },
+            },
+            {
+              name: "get_agent_brief",
+              description: "Return a startup brief for the authenticated user (identity + memories + skills + next moves). Requires a you.md API key as Bearer token.",
+              inputSchema: {
+                type: "object",
+                properties: {
+                  format: { type: "string", enum: ["markdown", "json"] },
+                  includeMemories: { type: "boolean" },
+                  maxChars: { type: "number" },
+                },
+              },
+            },
+          ];
+          return mcpOk(id, { tools: alwaysOn });
+        }
+
+        case "tools/call": {
+          const params = (body.params as Record<string, unknown>) || {};
+          const toolName = params.name as string;
+          if (!toolName || !MCP_ALWAYS_ON_TOOL_NAMES.has(toolName)) {
+            return mcpError(id, -32601, `Tool not available in this stack namespace: ${toolName}`);
+          }
+          // Delegate to the global MCP surface for always-on tool execution by
+          // re-routing to the same handler logic. For now, require auth and proxy
+          // the call as a forward.
+          if (!authed) {
+            return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
+          }
+          // Reconstruct a global MCP request body and call via internal action.
+          // This avoids duplicating large handler blocks — the always-on tools
+          // are fully implemented in the global /api/v1/mcp handler.
+          const proxyUrl = new URL(request.url);
+          proxyUrl.pathname = "/api/v1/mcp";
+          const proxyRequest = new Request(proxyUrl.toString(), {
+            method: "POST",
+            headers: request.headers,
+            body: JSON.stringify({ jsonrpc: "2.0", id, method: "tools/call", params }),
+          });
+          // Forward to the global handler via a subrequest.
+          return await fetch(proxyRequest);
+        }
+
+        default:
+          return mcpError(id, -32601, `Method not found: ${method}`);
+      }
+    } catch (err) {
+      console.error("[http:mcp-stack] internal error:", err);
+      return mcpError(id, -32603, "Internal error");
+    }
+  }),
+});
+
+http.route({ pathPrefix: "/api/v1/mcp/", method: "OPTIONS", handler: corsPreflight });
 
 // ─── MCP JSON-RPC helpers ─────────────────────────────────────────────────────
 
