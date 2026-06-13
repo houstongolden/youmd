@@ -7,8 +7,20 @@
  *   - getSkillInsights call shape (correct URL + auth header)
  *   - reportSkillOutcome call shape (correct method + body)
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { getSkillInsights, reportSkillOutcome, type SkillInsight } from "../lib/api";
+
+// CI runs without a ~/.youmd/config.json, so stub the env credential the api
+// client reads via getAuthToken(). Without this, every call-shape test throws
+// "Not authenticated" before fetch is reached.
+const PRIOR_YOUMD_API_KEY = process.env.YOUMD_API_KEY;
+beforeAll(() => {
+  process.env.YOUMD_API_KEY = "ym_test_token_for_unit_tests";
+});
+afterAll(() => {
+  if (PRIOR_YOUMD_API_KEY === undefined) delete process.env.YOUMD_API_KEY;
+  else process.env.YOUMD_API_KEY = PRIOR_YOUMD_API_KEY;
+});
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
