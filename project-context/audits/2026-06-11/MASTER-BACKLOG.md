@@ -97,16 +97,16 @@
 | L3 | Hosted MCP hygiene: protocol pin upgrade, auth in mcp.json, proxy guards, cache only 200s | S | done (11a32bb: protocol 2025-06-18 negotiation, auth block, proxy guards) |
 | L4 | Replace hardcoded identity://houstongolden with resources/templates/list URI template | S | done (11a32bb: identity://{username} uriTemplate) |
 | L5 | Delete hand-maintained tool-inventory comment (http.ts:2699-2702) | S | done (11a32bb) |
-| L6 | Reference-intelligence v2: dedupe, Haiku batch pass, weekly Action cron → PR | M | todo |
-| L7 | Golden Q&A eval suite for You Agent in CI | M | todo |
-| L8 | Schedule audit forever-loop (Actions cron) w/ atomic mkdir lock | M | todo |
+| L6 | Reference-intelligence v2: dedupe, Haiku batch pass, weekly Action cron → PR | M | done (9f6bf9d; dedupe script + reference:dedupe; Haiku pass deferred) |
+| L7 | Golden Q&A eval suite for You Agent in CI | M | done (afce80c; 7 golden Q&A fixtures, no live LLM) |
+| L8 | Schedule audit forever-loop (Actions cron) w/ atomic mkdir lock | M | done (bf8cdb7; daily audit-loop workflow with atomic mkdir lock) |
 | L9 | trackSkillEvent outcomes + MCP report_skill_outcome tool | M | done (73175f3; report_skill_outcome MCP tool + outcomes route, 12 tests); prod e2e: MCP+HTTP) |
 | L10 | activityInsights query → `youmd skill improve` + dashboard | M | done (73175f3/d583d59; activityInsights + youmd skill improve, 13 tests); prod e2e: insights returned 2 uses 50% rate) |
 | L11 | Fix improveCmd sync heuristic (lastSyncedAt vs identity-change timestamp) | S | done (b0ddedb: lastSyncedAt vs identity mtimes) |
 | L12 | Stack guard: `youmd stack guard` + enforcement in route/MCP (T0-T3 tiers) | M-L | done (afdc4af; stack guard + tier enforcement + doctor integration, 19 tests) |
 | L13 | Golden-prompt eval runner: `youmd stack eval` → tests/eval-results.json | M | done (6704814; stack eval golden-prompt runner, 28 tests) |
 | L14 | Stack improvement runner: journal/ + `youmd stack improve` (propose/auto_pr) | L | done (83928d1; journal proposals + auto_pr tier gate, 27 tests) |
-| L15 | Visible heartbeat: "stack wants to improve" card + doctor NEXT line | S | partial (e6c1c43; module shipped, wiring into status+doctor pending) |
+| L15 | Visible heartbeat: "stack wants to improve" card + doctor NEXT line | S | done (1d8b234; wired into status + doctor with try/catch) |
 | L16 | One machine-checkable SAFETY-CONTRACT spec (T0-T3), enforced by guard/doctor/smoke | M | done (2ed63e6; T0-T3 safety contract + validation, 47 tests) |
 | L17 | Stack update channel: registry version metadata + `youmd stack update` | M | done (5cbd8b3; upstream version check + --apply) |
 | L18 | YouStack workflows manifest section + Convex per-user scheduler | L | todo |
