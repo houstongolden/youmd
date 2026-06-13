@@ -318,6 +318,36 @@ export const rollbackToVersion = mutation({
       changeNote: `rolled back to v${args.targetVersion}`,
     });
 
+    // P2 fix: rollback now patches profiles like save does, so the public
+    // profile actually reverts. Without this, rollback only affects history;
+    // the live profile keeps showing the latest-saved content.
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", user._id))
+      .first();
+    if (profile) {
+      const youJson = target.youJson as Record<string, unknown> | undefined;
+      const profileUpdates: Record<string, unknown> = {
+        youJson: target.youJson,
+        youMd: target.youMd,
+        updatedAt: Date.now(),
+      };
+      const identity = youJson?.identity as Record<string, unknown> | undefined;
+      if (identity?.name) profileUpdates.name = identity.name;
+      if (identity?.tagline) profileUpdates.tagline = identity.tagline;
+      if (identity?.location) profileUpdates.location = identity.location;
+      if (identity?.bio) profileUpdates.bio = identity.bio;
+      if (youJson?.links) profileUpdates.links = youJson.links;
+      if (youJson?.now) {
+        const now = youJson.now as Record<string, unknown>;
+        if (now?.focus) profileUpdates.now = now.focus;
+      }
+      if (youJson?.projects) profileUpdates.projects = youJson.projects;
+      if (youJson?.values) profileUpdates.values = youJson.values;
+      if (youJson?.preferences) profileUpdates.preferences = youJson.preferences;
+      await ctx.db.patch(profile._id, profileUpdates);
+    }
+
     // P17: keep the GitHub mirror fresh (debounced, no-op without a linked repo).
     await scheduleGithubAutoPush(ctx, user._id);
 
