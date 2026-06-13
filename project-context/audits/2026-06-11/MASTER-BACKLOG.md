@@ -38,7 +38,7 @@
 | P13 | Pagination cursors on all list endpoints + OpenAPI docs | PRODUCT-AUDIT #15; FEATURE-ROADMAP 2.9 | M | done (904ba31; 8 endpoints, prod e2e cursor verified, legacy shape unchanged) |
 | P14 | Memory durability: pinned/importance/supersededBy, decay exemptions, review queue | PRODUCT-AUDIT #16; FEATURE-ROADMAP 2.4 | M | done (b285d99; pinned/importance/supersede + review queue; prod verified) |
 | P15 | One `MEMORY_CATEGORIES` module + validation + migration + `correction` category | PRODUCT-AUDIT #17; FEATURE-ROADMAP 2.10 | M | done (b285d99; one category module + correction; prod migration: 48 scanned/14 normalized, 400 on invalid) |
-| P16 | Pipeline honesty: compile merges chat-refined content, or de-document discover→review | PRODUCT-AUDIT #18; FEATURE-ROADMAP 3.5 | L | blocked(needs-spec: Houston call) |
+| P16 | Pipeline honesty: compile merges chat-refined content, or de-document discover→review | PRODUCT-AUDIT #18; FEATURE-ROADMAP 3.5 | L | done (ARCHITECTURE.md corrected: phantom discover stage removed, auto-publish claim fixed, chat-content separation documented; no product call needed) |
 | P17 | GitHub repo freshness: debounced auto-push on save/publish + ancestor check on repo pulls | PRODUCT-AUDIT #19; FEATURE-ROADMAP 2.7 | M | done (3d92c04; debounced auto-push, retry-once, canonical-wins staleness) |
 | P18 | Shared capability router package for CLI + API route + golden parity tests | PRODUCT-AUDIT #20; FEATURE-ROADMAP 3.6 | M | done (54c8a6e/7b717eb; parity-locked resolver, 10 fixture cases × 2 runners) |
 | P19 | Typed brainScopes + identity-bearing adapters + doctor skill-ref validation | PRODUCT-AUDIT #21; FEATURE-ROADMAP 3.9 | M | done (982151c; scopes on MCP tools + doctor requiresScopes validation) |
