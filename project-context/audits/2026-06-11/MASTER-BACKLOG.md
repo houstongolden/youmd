@@ -115,8 +115,8 @@
 | L21 | Telemetry consent surface + privacy contract in docs/llms.txt | M | done (f3f9c3e; telemetry section in docs + llms.txt; consent model documented) |
 | L22 | User-facing fleet feedback notices | M | blocked(needs-spec) |
 | L23 | Per-stack MCP namespace /api/v1/mcp/{user}/{stack} | L | done (3342caf; namespaced MCP with filtered tools; test gap noted); prod 404 contract verified) |
-| L24 | Scheduled maintainer agent mining journal → guarded auto_pr | L | todo (after L12+L14) |
-| L25 | Cross-stack proposals → human-gated registry candidates | L | todo (after L20) |
+| L24 | Scheduled maintainer agent mining journal → guarded auto_pr | L | done (a5d8147 + cron orchestrator; mineStackJournals + weekly cron; test gap noted) |
+| L25 | Cross-stack proposals → human-gated registry candidates | L | done (a5d8147; listPendingRegistryCandidates query, ≥5 evidence threshold) |
 | L26 | Server-orchestrated evolution (Convex crons) | L | blocked(sequenced-last by design: requires Stage 2-3 gates) |
 | L27 | CLI stdio MCP brief parity: render memory content + includeMemories default true (match hosted) | S | done (34ce3b3; stdio brief renders memories, includeMemories default true) |
 
