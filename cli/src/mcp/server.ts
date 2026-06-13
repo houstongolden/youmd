@@ -103,7 +103,7 @@ function getBundleDir(): string {
   return localDir;
 }
 
-function activeBundleExists(): boolean {
+export function activeBundleExists(): boolean {
   return bundleLooksInitialized(getBundleDir());
 }
 
@@ -146,7 +146,7 @@ function getSectionFiles(): Array<{ slug: string; dir: string; content: string }
   return sections;
 }
 
-function getInstalledSkills(): Array<{ name: string; rendered: string; raw: string }> {
+export function getInstalledSkills(): Array<{ name: string; rendered: string; raw: string }> {
   const skillsDir = path.join(getGlobalConfigDir(), "skills");
   if (!fs.existsSync(skillsDir)) return [];
 
@@ -270,7 +270,7 @@ interface ProjectContextEnvelope {
   projectContext: ReturnType<typeof readProjectContext>;
 }
 
-async function fetchMemoriesEnvelope(category?: string, limit?: number): Promise<MemoryRetrievalEnvelope> {
+export async function fetchMemoriesEnvelope(category?: string, limit?: number): Promise<MemoryRetrievalEnvelope> {
   if (!isAuthenticated()) {
     return {
       readiness: {
@@ -335,7 +335,7 @@ async function fetchMemoriesEnvelope(category?: string, limit?: number): Promise
   }
 }
 
-async function fetchPrivateContextEnvelope(): Promise<PrivateContextRetrievalEnvelope> {
+export async function fetchPrivateContextEnvelope(): Promise<PrivateContextRetrievalEnvelope> {
   if (!isAuthenticated()) {
     return {
       readiness: {
@@ -542,7 +542,7 @@ function fetchProjectContextEnvelope(projectName?: string): ProjectContextEnvelo
   };
 }
 
-async function apiRequest(path: string, opts?: { method?: string; body?: unknown }): Promise<unknown> {
+export async function apiRequest(path: string, opts?: { method?: string; body?: unknown }): Promise<unknown> {
   const config = readGlobalConfig();
   const siteUrl = getConvexSiteUrl();
   const res = await fetch(`${siteUrl}${path}`, {
@@ -623,7 +623,7 @@ async function logMcpActivity(action: string, resource?: string, details?: Recor
 }
 
 // Valid memory categories enforced by add_memory
-const MEMORY_CATEGORIES = [
+export const MEMORY_CATEGORIES = [
   "fact",
   "preference",
   "decision",
@@ -1517,55 +1517,7 @@ export async function startMcpServer(): Promise<void> {
             required: ["section", "content"],
           },
         },
-        {
-          name: "add_memory",
-          description: "Save a memory about the user — facts, preferences, decisions, or context learned during this conversation. Memories persist across sessions and inform ALL future agent interactions. Use proactively when you learn something important about the user (a preference, a decision, a project detail). Requires authentication.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              category: {
-                type: "string",
-                enum: [...MEMORY_CATEGORIES],
-                description: "Memory category. Must be one of: fact, preference, decision, project, goal, insight, context, relationship.",
-              },
-              content: {
-                type: "string",
-                description: "The memory content — be specific and actionable",
-              },
-              tags: {
-                type: "array",
-                items: { type: "string" },
-                description: "Optional tags for searchability",
-              },
-            },
-            required: ["category", "content"],
-          },
-        },
-        {
-          name: "search_memories",
-          description: "Search the user's memories by category or list all active memories. Returns a readiness envelope plus memory objects so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              category: {
-                type: "string",
-                description: "Filter by category (optional): fact, preference, decision, project, goal, insight, context",
-              },
-              limit: {
-                type: "number",
-                description: "Max results (default 30)",
-              },
-            },
-          },
-        },
-        {
-          name: "get_private_context",
-          description: "Read protected private context — notes, internal links, and private projects. Returns a readiness envelope so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states before asking the user to restate private context.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {},
-          },
-        },
+        // add_memory, search_memories, get_private_context — migrated to registry.ts (T14).
         // get_project_context — migrated to registry.ts (T14).
         {
           name: "add_project_memory",
@@ -1589,20 +1541,7 @@ export async function startMcpServer(): Promise<void> {
             required: ["category", "content"],
           },
         },
-        {
-          name: "use_skill",
-          description: "Render an identity-aware skill — returns the skill content with the user's identity interpolated into {{var}} placeholders. Returns rendered markdown with instructions the agent should follow. Use when the user asks to generate a CLAUDE.md, sync voice, scaffold a project, or run a self-improvement review.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              name: {
-                type: "string",
-                description: "Skill name: youstack-start, youstack-maintainer, voice-sync, claude-md-generator, project-context-init, meta-improve, proactive-context-fill, you-logs",
-              },
-            },
-            required: ["name"],
-          },
-        },
+        // use_skill — migrated to registry.ts (T14).
         {
           name: "compile_bundle",
           description: "Recompile the local identity bundle from profile/, preferences/, voice/, directives/ files into you.json + you.md. Call after update_section to regenerate the compiled bundle. Returns compilation stats including version, section count, and files read.",
@@ -1633,65 +1572,9 @@ export async function startMcpServer(): Promise<void> {
           },
         },
         // list_skills — migrated to registry.ts (T14).
-        {
-          name: "add_source",
-          description: "Register an identity data source (LinkedIn, GitHub, X, website, blog, YouTube). Links an external profile to the user's identity so it can be scraped and indexed. Requires authentication. Use when the user wants to connect a new social profile or website to their identity.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              sourceType: {
-                type: "string",
-                enum: ["website", "linkedin", "x", "github", "blog", "youtube"],
-                description: "Type of source to register",
-              },
-              sourceUrl: {
-                type: "string",
-                description: "Full URL to the source (e.g., https://github.com/username)",
-              },
-            },
-            required: ["sourceType", "sourceUrl"],
-          },
-        },
-        {
-          name: "create_context_link",
-          description: "Generate a shareable context link for agents. The link gives any agent temporary or permanent read access to the user's identity context. Use when the user wants to share their identity with a third-party agent or service. Returns a URL that can be passed to any agent.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              scope: {
-                type: "string",
-                enum: ["public", "full"],
-                description: "Access scope: public (profile only) or full (includes memories, preferences, directives). Default: public",
-              },
-              ttl: {
-                type: "string",
-                enum: ["1h", "24h", "7d", "30d", "never"],
-                description: "Time-to-live for the link. Default: 24h",
-              },
-            },
-          },
-        },
+        // add_source, create_context_link — migrated to registry.ts (T14).
         // list_projects — migrated to registry.ts (T14).
-        {
-          name: "get_remote_status",
-          description: "Check sync status between local identity bundle and the remote you.md server. Returns whether the user is authenticated, whether the local bundle exists, and the current version info. Use to diagnose sync issues or confirm a push was successful.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {},
-          },
-        },
-        {
-          name: "get_activity_log",
-          description: "Get the user's recent agent activity log. Use this to see which agents have connected to their you.md identity and what they did. Returns an array of activity events with agent name, action, resource, timestamp. Useful for: showing the user proof their identity context is being used by other agents, debugging integration issues, auditing access.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              limit: { type: "number", description: "Max events (default 30)" },
-              agentName: { type: "string", description: "Filter by agent name (e.g. 'Claude Code')" },
-              action: { type: "string", description: "Filter by action (read|write|push|memory_add)" },
-            },
-          },
-        },
+        // get_remote_status, get_activity_log — migrated to registry.ts (T14).
       ],
       // T14: registry tools appended; inline tools above remain until migration.
       ...CLI_MCP_TOOLS.map(({ name, description, inputSchema }) => ({
@@ -1715,6 +1598,22 @@ export async function startMcpServer(): Promise<void> {
           void logMcpActivity(action, resource, details);
         },
         authenticated: isAuthenticated(),
+        // Injected helpers — avoids circular import (registry cannot import server).
+        fetchMemoriesEnvelope,
+        fetchPrivateContextEnvelope,
+        apiRequest,
+        memoryCategories: MEMORY_CATEGORIES,
+        resolveAgentName,
+        getInstalledSkills,
+        activeBundleExists,
+        getYouJson,
+        fetchActivityLog: (params: URLSearchParams) => {
+          const config = readGlobalConfig();
+          return fetch(`${getConvexSiteUrl()}/api/v1/me/activity?${params}`, {
+            headers: { Authorization: `Bearer ${config.token}` },
+            signal: AbortSignal.timeout(10_000),
+          });
+        },
       };
       const result = await registrySpec.handler((args || {}) as Record<string, unknown>, ctx);
       return { content: result.content, isError: result.isError };
@@ -1771,74 +1670,7 @@ export async function startMcpServer(): Promise<void> {
         return { content: [{ type: "text" as const, text: `updated ${section}` }] };
       }
 
-      case "add_memory": {
-        const { category, content: memContent, tags } = args as {
-          category: string;
-          content: string;
-          tags?: string[];
-        };
-
-        if (!isAuthenticated()) {
-          return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
-        }
-
-        // Validate category against known enum. Reject unknown categories so
-        // we don't pollute the memory store with one-off tags masquerading as
-        // categories.
-        if (!category || !(MEMORY_CATEGORIES as readonly string[]).includes(category)) {
-          return {
-            content: [{
-              type: "text" as const,
-              text: `invalid category: ${category || "(missing)"}. valid categories: ${MEMORY_CATEGORIES.join(", ")}`,
-            }],
-            isError: true,
-          };
-        }
-
-        try {
-          await apiRequest("/api/v1/me/memories", {
-            method: "POST",
-            body: {
-              memories: [{
-                category,
-                content: memContent,
-                source: "mcp",
-                sourceAgent: resolveAgentName(),
-                tags,
-              }],
-            },
-          });
-          void logMcpActivity("memory_add", category);
-          return { content: [{ type: "text" as const, text: `memory saved: [${category}] ${memContent.slice(0, 80)}${memContent.length > 80 ? "..." : ""}` }] };
-        } catch (err) {
-          return { content: [{ type: "text" as const, text: `failed to save memory: ${err instanceof Error ? err.message : "unknown error"}` }], isError: true };
-        }
-      }
-
-      case "search_memories": {
-        const { category, limit } = (args || {}) as { category?: string; limit?: number };
-        const result = await fetchMemoriesEnvelope(category, limit || 30);
-        void logMcpActivity("read", "memories");
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify(result, null, 2),
-          }],
-          isError: !result.readiness.ready,
-        };
-      }
-
-      case "get_private_context": {
-        const result = await fetchPrivateContextEnvelope();
-        void logMcpActivity("read", "private-context");
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify(result, null, 2),
-          }],
-          isError: !result.readiness.ready,
-        };
-      }
+      // add_memory, search_memories, get_private_context — dispatched via registry (T14).
 
       case "add_project_memory": {
         const { project: projName, category, content: memContent } = args as {
@@ -1865,17 +1697,7 @@ export async function startMcpServer(): Promise<void> {
         }
       }
 
-      case "use_skill": {
-        const skillName = (args as Record<string, unknown>).name as string;
-        const skills = getInstalledSkills();
-        const skill = skills.find((s) => s.name === skillName);
-        if (!skill) {
-          const available = skills.map((s) => s.name).join(", ") || "none installed";
-          return { content: [{ type: "text" as const, text: `skill not found: ${skillName}. available: ${available}` }], isError: true };
-        }
-        void logMcpActivity("skill_use", "skill/" + skillName);
-        return { content: [{ type: "text" as const, text: skill.rendered || skill.raw }] };
-      }
+      // use_skill — dispatched via registry (T14).
 
       case "compile_bundle": {
         try {
@@ -1990,124 +1812,7 @@ export async function startMcpServer(): Promise<void> {
         }
       }
 
-      case "add_source": {
-        if (!isAuthenticated()) {
-          return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
-        }
-        const { sourceType, sourceUrl } = args as { sourceType: string; sourceUrl: string };
-        try {
-          await apiRequest("/api/v1/me/sources", {
-            method: "POST",
-            body: { sourceType, sourceUrl },
-          });
-          void logMcpActivity("write", "source/" + sourceType);
-          return { content: [{ type: "text" as const, text: `source registered: [${sourceType}] ${sourceUrl}` }] };
-        } catch (err) {
-          return { content: [{ type: "text" as const, text: `failed to add source: ${err instanceof Error ? err.message : "unknown error"}` }], isError: true };
-        }
-      }
-
-      case "create_context_link": {
-        if (!isAuthenticated()) {
-          return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
-        }
-        const { scope, ttl } = (args || {}) as { scope?: string; ttl?: string };
-        try {
-          const result = await apiRequest("/api/v1/me/context-links", {
-            method: "POST",
-            body: { scope: scope || "public", ttl: ttl || "24h" },
-          }) as Record<string, unknown>;
-          const link = result.url || result.link || JSON.stringify(result);
-          void logMcpActivity("write", "context-link", { scope: scope || "public" });
-          return { content: [{ type: "text" as const, text: `context link created: ${link}\nscope: ${scope || "public"}, ttl: ${ttl || "24h"}` }] };
-        } catch (err) {
-          return { content: [{ type: "text" as const, text: `failed to create context link: ${err instanceof Error ? err.message : "unknown error"}` }], isError: true };
-        }
-      }
-
-      case "get_remote_status": {
-        const authenticated = isAuthenticated();
-        const bundleExists = activeBundleExists();
-        const youJson = getYouJson();
-        const version = (youJson as Record<string, unknown>)?.version || "unknown";
-
-        const status: Record<string, unknown> = {
-          authenticated,
-          localBundleExists: bundleExists,
-          localVersion: version,
-        };
-
-        if (authenticated) {
-          try {
-            const remote = await apiRequest("/api/v1/me/status") as Record<string, unknown>;
-            status.remote = remote;
-          } catch {
-            status.remote = "unreachable";
-          }
-        }
-
-        void logMcpActivity("read", "status");
-
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify(status, null, 2),
-          }],
-        };
-      }
-
-      case "get_activity_log": {
-        if (!isAuthenticated()) {
-          return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
-        }
-        const config = readGlobalConfig();
-        const params = new URLSearchParams();
-        const activityArgs = (args || {}) as { limit?: number; agentName?: string; action?: string };
-        if (activityArgs.limit) params.set("limit", String(activityArgs.limit));
-        if (activityArgs.agentName) params.set("agent", String(activityArgs.agentName));
-        if (activityArgs.action) params.set("action", String(activityArgs.action));
-
-        const res = await fetch(`${getConvexSiteUrl()}/api/v1/me/activity?${params}`, {
-          headers: { Authorization: `Bearer ${config.token}` },
-          signal: AbortSignal.timeout(10_000),
-        });
-
-        if (!res.ok) {
-          return { content: [{ type: "text" as const, text: `failed to fetch activity log: ${res.status}` }], isError: true };
-        }
-
-        type ActivityEvent = {
-          createdAt?: number;
-          agentName?: string;
-          action?: string;
-          resource?: string;
-          bundleVersionBefore?: number;
-          bundleVersionAfter?: number;
-        };
-        const data = await res.json() as { activity?: ActivityEvent[] };
-        const events = data.activity || [];
-
-        if (events.length === 0) {
-          return { content: [{ type: "text" as const, text: "No activity yet. Agents will appear here when they connect to your you.md identity." }] };
-        }
-
-        const formatted = events.slice(0, 30).reverse().map((e) => {
-          const time = new Date(e.createdAt || Date.now()).toTimeString().slice(0, 5);
-          const versions = e.bundleVersionBefore && e.bundleVersionAfter
-            ? ` v${e.bundleVersionBefore}→v${e.bundleVersionAfter}`
-            : '';
-          const agentName = (e.agentName || "unknown").padEnd(16);
-          const action = (e.action || "read").padEnd(12);
-          return `${time}  ${agentName}  ${action}  ${e.resource || ''}${versions}`;
-        }).join('\n');
-
-        return {
-          content: [{
-            type: "text" as const,
-            text: `── recent agent activity (${events.length} events) ──\n\n${formatted}`,
-          }],
-        };
-      }
+      // add_source, create_context_link, get_remote_status, get_activity_log — dispatched via registry (T14).
 
       default:
         throw new Error(`unknown tool: ${name}`);

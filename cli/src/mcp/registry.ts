@@ -11,7 +11,7 @@
  *
  * ─── MIGRATION STATUS ───────────────────────────────────────────────────────
  *
- * MIGRATED (10 tools):
+ * MIGRATED (17 tools):
  *   whoami              — local bundle read, no auth required
  *   get_identity        — local bundle read, compact/full/json/markdown
  *   list_skills         — pure local dir scan
@@ -22,24 +22,23 @@
  *   get_stack_capabilities — local youstack.json capability map
  *   route_stack_request — local routing algorithm, no network
  *   smoke_stack         — local manifest validation, no network
+ *   search_memories     — async fetch via ctx.fetchMemoriesEnvelope
+ *   get_private_context — async fetch via ctx.fetchPrivateContextEnvelope
+ *   add_memory          — async POST via ctx.apiRequest + ctx.memoryCategories
+ *   add_source          — async POST via ctx.apiRequest
+ *   create_context_link — async POST via ctx.apiRequest
+ *   get_remote_status   — conditional auth branch + ctx.apiRequest
+ *   use_skill           — ctx.getInstalledSkills()
+ *   get_activity_log    — auth-gated fetch via ctx.fetchActivityLog
  *
- * DEFERRED (11 tools):
+ * DEFERRED (4 tools — write-ops and dynamic-import tools):
  *   get_agent_brief     — >50 lines; delegates to buildAgentBrief() in server.ts
  *                         which has a deep async call-tree; keep in switch.
- *   search_memories     — async fetch; needs fetchMemoriesEnvelope from server.ts
- *   get_private_context — async fetch; needs fetchPrivateContextEnvelope
- *   add_memory          — async POST; needs apiRequest + MEMORY_CATEGORIES
- *   add_source          — async POST; needs apiRequest
- *   create_context_link — async POST; needs apiRequest
- *   get_activity_log    — async fetch with custom formatting; >50 lines
- *   get_remote_status   — async fetch with conditional branch
  *   update_section      — fs write; intentionally deferred (write-ops last)
  *   add_project_memory  — fs write via lib/project; intentionally deferred
  *   compile_bundle      — dynamic import('../lib/compiler'); deferred
  *   push_bundle         — dynamic imports compiler + api; deferred
  *   compile_and_push    — dynamic imports compiler + api; deferred
- *   use_skill           — delegates to getInstalledSkills() in server.ts;
- *                         trivial but low-value; deferred to keep diff small
  *
  * ────────────────────────────────────────────────────────────────────────────
  */
@@ -198,19 +197,54 @@ export interface CliToolResult {
   isError?: boolean;
 }
 
+/** Memory retrieval result shape (mirrors MemoryRetrievalEnvelope in server.ts). */
+export interface MemoryEnvelope {
+  readiness: { status: string; ready: boolean; reason: string; fallback: string };
+  memories: unknown[];
+  count: number;
+}
+
+/** Private context retrieval result shape (mirrors PrivateContextRetrievalEnvelope). */
+export interface PrivateContextEnvelope {
+  readiness: { status: string; ready: boolean; reason: string; fallback: string };
+  privateContext: Record<string, unknown> | null;
+  summary: { hasNotes: boolean; linkCount: number; projectCount: number };
+}
+
 /**
- * Minimal context passed to registry handlers by the MCP server at dispatch
- * time. Handlers receive this instead of importing from server.ts directly
- * (which would create a circular dependency since server.ts imports registry).
+ * Context passed to every registry handler by the MCP server at dispatch time.
  *
- * Currently unused — migrated tools are fully self-contained — but kept in
- * the signature for future handlers that need activity logging or auth access.
+ * Keeping helpers here (injected by server.ts) avoids a circular import:
+ *   server.ts imports registry.ts (CLI_MCP_TOOLS)
+ *   registry.ts must NOT import from server.ts
+ * So helpers that live in server.ts are passed in via this ctx object.
  */
 export interface CliMcpCtx {
   /** Fire-and-forget activity logger (non-fatal). */
   logActivity: (action: string, resource?: string, details?: Record<string, unknown>) => void;
   /** Whether a valid auth token is present in the global config. */
   authenticated: boolean;
+
+  // ── Injected by server.ts for network-capable tools ──────────────────────
+
+  /** Fetch memories envelope (auth-gated, returns readiness wrapper on failure). */
+  fetchMemoriesEnvelope: (category?: string, limit?: number) => Promise<MemoryEnvelope>;
+  /** Fetch private context envelope (auth-gated, returns readiness wrapper on failure). */
+  fetchPrivateContextEnvelope: () => Promise<PrivateContextEnvelope>;
+  /** Authenticated JSON API request helper. */
+  apiRequest: (path: string, opts?: { method?: string; body?: unknown }) => Promise<unknown>;
+  /** Valid memory category strings (as-const tuple from server.ts). */
+  memoryCategories: readonly string[];
+  /** Resolve the MCP client's friendly agent name for memory attribution. */
+  resolveAgentName: () => string;
+  /** Full installed skill list including rendered content (for use_skill). */
+  getInstalledSkills: () => Array<{ name: string; rendered: string; raw: string }>;
+  /** True when local bundle is found and initialized. */
+  activeBundleExists: () => boolean;
+  /** Raw fetch to the Convex site URL (for get_activity_log). */
+  fetchActivityLog: (params: URLSearchParams) => Promise<Response>;
+  /** Serialised local you.json bundle (plain object). */
+  getYouJson: () => Record<string, unknown>;
 }
 
 /** Single CLI MCP tool specification (metadata + handler). */
@@ -571,6 +605,319 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
       return {
         content: [{ type: "text", text: JSON.stringify({ readiness, ...smoke }, null, 2) }],
         isError: !smoke.ok,
+      };
+    },
+  },
+
+  // ── search_memories ──────────────────────────────────────────────────────────
+  {
+    name: "search_memories",
+    description:
+      "Search the user's memories by category or list all active memories. Returns a readiness envelope plus memory objects so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
+          description: "Filter by category (optional): fact, preference, decision, project, goal, insight, context",
+        },
+        limit: { type: "number", description: "Max results (default 30)" },
+      },
+    },
+    handler: async (args, ctx) => {
+      const { category, limit } = args as { category?: string; limit?: number };
+      const result = await ctx.fetchMemoriesEnvelope(category, limit ?? 30);
+      ctx.logActivity("read", "memories");
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        isError: !result.readiness.ready,
+      };
+    },
+  },
+
+  // ── get_private_context ──────────────────────────────────────────────────────
+  {
+    name: "get_private_context",
+    description:
+      "Read protected private context — notes, internal links, and private projects. Returns a readiness envelope so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states before asking the user to restate private context.",
+    inputSchema: { type: "object", properties: {} },
+    handler: async (_args, ctx) => {
+      const result = await ctx.fetchPrivateContextEnvelope();
+      ctx.logActivity("read", "private-context");
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        isError: !result.readiness.ready,
+      };
+    },
+  },
+
+  // ── add_memory ───────────────────────────────────────────────────────────────
+  {
+    name: "add_memory",
+    description:
+      "Save a memory about the user — facts, preferences, decisions, or context learned during this conversation. Memories persist across sessions and inform ALL future agent interactions. Use proactively when you learn something important about the user (a preference, a decision, a project detail). Requires authentication.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
+          enum: ["fact", "preference", "decision", "project", "goal", "insight", "context", "relationship"],
+          description: "Memory category. Must be one of: fact, preference, decision, project, goal, insight, context, relationship.",
+        },
+        content: { type: "string", description: "The memory content — be specific and actionable" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional tags for searchability",
+        },
+      },
+      required: ["category", "content"],
+    },
+    handler: async (args, ctx) => {
+      const { category, content: memContent, tags } = args as {
+        category: string; content: string; tags?: string[];
+      };
+      if (!ctx.authenticated) {
+        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+      }
+      if (!category || !ctx.memoryCategories.includes(category)) {
+        return {
+          content: [{
+            type: "text",
+            text: `invalid category: ${category || "(missing)"}. valid categories: ${ctx.memoryCategories.join(", ")}`,
+          }],
+          isError: true,
+        };
+      }
+      try {
+        await ctx.apiRequest("/api/v1/me/memories", {
+          method: "POST",
+          body: {
+            memories: [{
+              category,
+              content: memContent,
+              source: "mcp",
+              sourceAgent: ctx.resolveAgentName(),
+              tags,
+            }],
+          },
+        });
+        ctx.logActivity("memory_add", category);
+        return {
+          content: [{
+            type: "text",
+            text: `memory saved: [${category}] ${memContent.slice(0, 80)}${memContent.length > 80 ? "..." : ""}`,
+          }],
+        };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `failed to save memory: ${err instanceof Error ? err.message : "unknown error"}` }],
+          isError: true,
+        };
+      }
+    },
+  },
+
+  // ── add_source ───────────────────────────────────────────────────────────────
+  {
+    name: "add_source",
+    description:
+      "Register an identity data source (LinkedIn, GitHub, X, website, blog, YouTube). Links an external profile to the user's identity so it can be scraped and indexed. Requires authentication. Use when the user wants to connect a new social profile or website to their identity.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sourceType: {
+          type: "string",
+          enum: ["website", "linkedin", "x", "github", "blog", "youtube"],
+          description: "Type of source to register",
+        },
+        sourceUrl: {
+          type: "string",
+          description: "Full URL to the source (e.g., https://github.com/username)",
+        },
+      },
+      required: ["sourceType", "sourceUrl"],
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.authenticated) {
+        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+      }
+      const { sourceType, sourceUrl } = args as { sourceType: string; sourceUrl: string };
+      try {
+        await ctx.apiRequest("/api/v1/me/sources", {
+          method: "POST",
+          body: { sourceType, sourceUrl },
+        });
+        ctx.logActivity("write", "source/" + sourceType);
+        return { content: [{ type: "text", text: `source registered: [${sourceType}] ${sourceUrl}` }] };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `failed to add source: ${err instanceof Error ? err.message : "unknown error"}` }],
+          isError: true,
+        };
+      }
+    },
+  },
+
+  // ── create_context_link ──────────────────────────────────────────────────────
+  {
+    name: "create_context_link",
+    description:
+      "Generate a shareable context link for agents. The link gives any agent temporary or permanent read access to the user's identity context. Use when the user wants to share their identity with a third-party agent or service. Returns a URL that can be passed to any agent.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        scope: {
+          type: "string",
+          enum: ["public", "full"],
+          description: "Access scope: public (profile only) or full (includes memories, preferences, directives). Default: public",
+        },
+        ttl: {
+          type: "string",
+          enum: ["1h", "24h", "7d", "30d", "never"],
+          description: "Time-to-live for the link. Default: 24h",
+        },
+      },
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.authenticated) {
+        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+      }
+      const { scope, ttl } = args as { scope?: string; ttl?: string };
+      try {
+        const result = await ctx.apiRequest("/api/v1/me/context-links", {
+          method: "POST",
+          body: { scope: scope || "public", ttl: ttl || "24h" },
+        }) as Record<string, unknown>;
+        const link = result.url || result.link || JSON.stringify(result);
+        ctx.logActivity("write", "context-link", { scope: scope || "public" });
+        return {
+          content: [{ type: "text", text: `context link created: ${link}\nscope: ${scope || "public"}, ttl: ${ttl || "24h"}` }],
+        };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `failed to create context link: ${err instanceof Error ? err.message : "unknown error"}` }],
+          isError: true,
+        };
+      }
+    },
+  },
+
+  // ── get_remote_status ────────────────────────────────────────────────────────
+  {
+    name: "get_remote_status",
+    description:
+      "Check sync status between local identity bundle and the remote you.md server. Returns whether the user is authenticated, whether the local bundle exists, and the current version info. Use to diagnose sync issues or confirm a push was successful.",
+    inputSchema: { type: "object", properties: {} },
+    handler: async (_args, ctx) => {
+      const youJson = ctx.getYouJson();
+      const version = (youJson as Record<string, unknown>)?.version || "unknown";
+      const status: Record<string, unknown> = {
+        authenticated: ctx.authenticated,
+        localBundleExists: ctx.activeBundleExists(),
+        localVersion: version,
+      };
+      if (ctx.authenticated) {
+        try {
+          const remote = await ctx.apiRequest("/api/v1/me/status") as Record<string, unknown>;
+          status.remote = remote;
+        } catch {
+          status.remote = "unreachable";
+        }
+      }
+      ctx.logActivity("read", "status");
+      return { content: [{ type: "text", text: JSON.stringify(status, null, 2) }] };
+    },
+  },
+
+  // ── use_skill ────────────────────────────────────────────────────────────────
+  {
+    name: "use_skill",
+    description:
+      "Render an identity-aware skill — returns the skill content with the user's identity interpolated into {{var}} placeholders. Returns rendered markdown with instructions the agent should follow. Use when the user asks to generate a CLAUDE.md, sync voice, scaffold a project, or run a self-improvement review.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Skill name: youstack-start, youstack-maintainer, voice-sync, claude-md-generator, project-context-init, meta-improve, proactive-context-fill, you-logs",
+        },
+      },
+      required: ["name"],
+    },
+    handler: async (args, ctx) => {
+      const skillName = args.name as string;
+      const skills = ctx.getInstalledSkills();
+      const skill = skills.find((s) => s.name === skillName);
+      if (!skill) {
+        const available = skills.map((s) => s.name).join(", ") || "none installed";
+        return { content: [{ type: "text", text: `skill not found: ${skillName}. available: ${available}` }], isError: true };
+      }
+      ctx.logActivity("skill_use", "skill/" + skillName);
+      return { content: [{ type: "text", text: skill.rendered || skill.raw }] };
+    },
+  },
+
+  // ── get_activity_log ─────────────────────────────────────────────────────────
+  {
+    name: "get_activity_log",
+    description:
+      "Get the user's recent agent activity log. Use this to see which agents have connected to their you.md identity and what they did. Returns an array of activity events with agent name, action, resource, timestamp. Useful for: showing the user proof their identity context is being used by other agents, debugging integration issues, auditing access.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: { type: "number", description: "Max events (default 30)" },
+        agentName: { type: "string", description: "Filter by agent name (e.g. 'Claude Code')" },
+        action: { type: "string", description: "Filter by action (read|write|push|memory_add)" },
+      },
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.authenticated) {
+        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+      }
+      const params = new URLSearchParams();
+      const activityArgs = args as { limit?: number; agentName?: string; action?: string };
+      if (activityArgs.limit) params.set("limit", String(activityArgs.limit));
+      if (activityArgs.agentName) params.set("agent", String(activityArgs.agentName));
+      if (activityArgs.action) params.set("action", String(activityArgs.action));
+
+      const res = await ctx.fetchActivityLog(params);
+      if (!res.ok) {
+        return {
+          content: [{ type: "text", text: `failed to fetch activity log: ${res.status}` }],
+          isError: true,
+        };
+      }
+
+      type ActivityEvent = {
+        createdAt?: number;
+        agentName?: string;
+        action?: string;
+        resource?: string;
+        bundleVersionBefore?: number;
+        bundleVersionAfter?: number;
+      };
+      const data = await res.json() as { activity?: ActivityEvent[] };
+      const events = data.activity || [];
+
+      if (events.length === 0) {
+        return { content: [{ type: "text", text: "No activity yet. Agents will appear here when they connect to your you.md identity." }] };
+      }
+
+      const formatted = events.slice(0, 30).reverse().map((e) => {
+        const time = new Date(e.createdAt || Date.now()).toTimeString().slice(0, 5);
+        const versions = e.bundleVersionBefore && e.bundleVersionAfter
+          ? ` v${e.bundleVersionBefore}→v${e.bundleVersionAfter}` : "";
+        const agentName = (e.agentName || "unknown").padEnd(16);
+        const action = (e.action || "read").padEnd(12);
+        return `${time}  ${agentName}  ${action}  ${e.resource || ""}${versions}`;
+      }).join("\n");
+
+      return {
+        content: [{
+          type: "text",
+          text: `── recent agent activity (${events.length} events) ──\n\n${formatted}`,
+        }],
       };
     },
   },
