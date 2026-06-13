@@ -480,3 +480,109 @@ describe("youstack manifest", () => {
     expect(fs.existsSync(results[0].targetPath)).toBe(false);
   });
 });
+
+// ── L18: YouStack manifest workflows array ────────────────────────────────────
+
+describe("youstack manifest — workflows (L18)", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "youmd-youstack-wf-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function writeStack(manifest: Record<string, unknown>): string {
+    fs.mkdirSync(path.join(tmpDir, "skills", "start"), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, "workflows"), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, "skills", "start", "SKILL.md"), "# Start\n");
+    fs.writeFileSync(path.join(tmpDir, "workflows", "startup.md"), "# Startup\n");
+    fs.writeFileSync(path.join(tmpDir, "youstack.json"), JSON.stringify(manifest, null, 2));
+    return tmpDir;
+  }
+
+  function baseManifest(extra: Record<string, unknown> = {}) {
+    return {
+      schemaVersion: "youstack/v1",
+      kind: "youstack",
+      slug: "wf-test-stack",
+      name: "WF Test Stack",
+      version: "0.1.0",
+      visibility: "private",
+      accessPolicy: { protectedByDefault: true },
+      files: [
+        { path: "skills/start/SKILL.md", type: "skill" },
+        { path: "workflows/startup.md", type: "workflow" },
+      ],
+      improvement: { mode: "observe", evals: ["youmd stack smoke"] },
+      update: { channel: "local" },
+      ...extra,
+    };
+  }
+
+  it("parses a manifest with valid workflows — no warnings", () => {
+    writeStack(
+      baseManifest({
+        workflows: [
+          { id: "weekly-report", schedule: "0 9 * * 1", action: "report_skill_outcome" },
+          { id: "daily-run", schedule: "0 8 * * *", action: "run_skill", params: { skill: "hello" } },
+        ],
+      })
+    );
+
+    const loaded = loadYouStackManifest(tmpDir);
+    expect(loaded.manifest.workflows).toHaveLength(2);
+    expect(loaded.manifest.workflows![0].id).toBe("weekly-report");
+    expect(loaded.manifest.workflows![1].params).toEqual({ skill: "hello" });
+
+    const doctor = runYouStackDoctor(loaded);
+    // No workflow-action warnings for known actions
+    const wfWarnings = doctor.warnings.filter((w) => w.includes("unknown action type"));
+    expect(wfWarnings).toHaveLength(0);
+  });
+
+  it("doctor emits a warning for an unknown workflow action type", () => {
+    writeStack(
+      baseManifest({
+        workflows: [
+          { id: "bad-action", schedule: "0 9 * * 1", action: "teleport_somewhere" },
+        ],
+      })
+    );
+
+    const loaded = loadYouStackManifest(tmpDir);
+    const doctor = runYouStackDoctor(loaded);
+
+    const wfWarning = doctor.warnings.find((w) => w.includes("unknown action type"));
+    expect(wfWarning).toBeDefined();
+    expect(wfWarning).toContain("bad-action");
+    expect(wfWarning).toContain("teleport_somewhere");
+    expect(wfWarning).toContain("run_skill");
+    expect(wfWarning).toContain("report_skill_outcome");
+  });
+
+  it("doctor warns about workflows missing id or schedule", () => {
+    writeStack(
+      baseManifest({
+        workflows: [
+          { id: "", schedule: "", action: "run_skill" },
+        ],
+      })
+    );
+
+    const loaded = loadYouStackManifest(tmpDir);
+    const doctor = runYouStackDoctor(loaded);
+
+    const allWarnings = doctor.warnings.join("\n");
+    expect(allWarnings).toContain("missing an id field");
+  });
+
+  it("manifest without workflows parses cleanly — workflows field is optional", () => {
+    writeStack(baseManifest());
+    const loaded = loadYouStackManifest(tmpDir);
+    expect(loaded.manifest.workflows).toBeUndefined();
+    expect(loaded.validation.ok).toBe(true);
+  });
+});

@@ -757,4 +757,19 @@ export default defineSchema({
     ranAt: v.string(),   // ISO-8601 timestamp string
     metrics: v.any(),    // FleetMetrics — see convex/fleet.ts
   }),
+
+  // ── Per-user workflow schedules (L18 — YouStack workflows manifest) ─────────
+  // One row per workflow declared in a YouStack manifest that the user has
+  // registered for server-side tracking. Real cron registration is deferred
+  // (see convex/workflows.ts); this table holds the intent + last-run
+  // bookkeeping so the dashboard and CLI can show schedule state without
+  // hitting a cron scheduler.
+  userWorkflowSchedules: defineTable({
+    userId: v.id("users"),
+    workflowId: v.string(),   // matches YouStackWorkflow.id from the manifest
+    schedule: v.string(),     // cron string, e.g. "0 9 * * 1"
+    action: v.string(),       // "run_skill" | "report_skill_outcome"
+    lastRunAt: v.optional(v.number()),
+    createdAt: v.number(),
+  }).index("by_userId", ["userId"]),
 });
