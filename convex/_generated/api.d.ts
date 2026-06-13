@@ -27,12 +27,14 @@ import type * as http from "../http.js";
 import type * as lib_agentContext from "../lib/agentContext.js";
 import type * as lib_agentDetect from "../lib/agentDetect.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_capabilityRouter from "../lib/capabilityRouter.js";
 import type * as lib_compile from "../lib/compile.js";
 import type * as lib_githubPushApi from "../lib/githubPushApi.js";
 import type * as lib_githubSync from "../lib/githubSync.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as lib_httpErrors from "../lib/httpErrors.js";
 import type * as lib_idempotency from "../lib/idempotency.js";
+import type * as lib_mcpRegistry from "../lib/mcpRegistry.js";
 import type * as lib_memoryCategories from "../lib/memoryCategories.js";
 import type * as lib_openrouter from "../lib/openrouter.js";
 import type * as lib_pagination from "../lib/pagination.js";
@@ -68,6 +70,7 @@ import type * as seed from "../seed.js";
 import type * as skills from "../skills.js";
 import type * as users from "../users.js";
 import type * as vault from "../vault.js";
+import type * as webhooks from "../webhooks.js";
 import type * as workflows from "../workflows.js";
 
 import type {
@@ -96,12 +99,14 @@ declare const fullApi: ApiFromModules<{
   "lib/agentContext": typeof lib_agentContext;
   "lib/agentDetect": typeof lib_agentDetect;
   "lib/auth": typeof lib_auth;
+  "lib/capabilityRouter": typeof lib_capabilityRouter;
   "lib/compile": typeof lib_compile;
   "lib/githubPushApi": typeof lib_githubPushApi;
   "lib/githubSync": typeof lib_githubSync;
   "lib/hash": typeof lib_hash;
   "lib/httpErrors": typeof lib_httpErrors;
   "lib/idempotency": typeof lib_idempotency;
+  "lib/mcpRegistry": typeof lib_mcpRegistry;
   "lib/memoryCategories": typeof lib_memoryCategories;
   "lib/openrouter": typeof lib_openrouter;
   "lib/pagination": typeof lib_pagination;
@@ -137,6 +142,7 @@ declare const fullApi: ApiFromModules<{
   skills: typeof skills;
   users: typeof users;
   vault: typeof vault;
+  webhooks: typeof webhooks;
   workflows: typeof workflows;
 }>;
 

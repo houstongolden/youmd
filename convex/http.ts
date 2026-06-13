@@ -5,16 +5,10 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { detectAgent } from "./lib/agentDetect";
 import { isKnownScope, type ApiScope } from "./lib/scopes";
+import { HOSTED_MCP_TOOLS, type McpAuthContext } from "./lib/mcpRegistry";
 import { deriveStacks } from "./github";
-import {
-  AGENT_CONTEXT_MEMORY_CAP,
-  asRecord,
-  assembleAgentContext,
-  memoryOneLine,
-  selectPublicIdentityFields,
-  type AgentContextMemory,
-  type AssembledAgentContext,
-} from "./lib/agentContext";
+// T14: agentContext imports moved to convex/lib/mcpRegistry.ts (used by tool handlers).
+// http.ts retains only the imports it directly uses for non-MCP routes.
 import { errorEnvelope, sanitizedServerErrorEnvelope, type ErrorCode } from "./lib/httpErrors";
 import {
   AGENT_WRITABLE_MEMORY_CATEGORIES,
@@ -920,6 +914,16 @@ http.route({
             bundleVersionAfter: result.version,
             durationMs: Date.now() - startedAt,
           });
+          // P24 — dispatch outbound webhooks for bundle_published
+          try {
+            await ctx.runMutation(internal.webhooks.scheduleWebhookDeliveries, {
+              userId: ownerUser._id,
+              event: "bundle_published",
+              payload: { version: result.version, publishedAt: Date.now() },
+            });
+          } catch {
+            // swallow — webhook dispatch failure must not block publish response
+          }
         }
       } catch {
         // swallow
@@ -1952,9 +1956,8 @@ http.route({
       const userId = body.userId;
 
       // Create a temporary source record if we have a userId
-      let sourceId: string | undefined;
       if (userId) {
-        sourceId = await ctx.runMutation(api.me.addSource, {
+        await ctx.runMutation(api.me.addSource, {
           clerkId: userId,
           sourceType: "linkedin_full",
           sourceUrl: linkedinUrl,
@@ -2081,7 +2084,7 @@ http.route({
               { userId: user._id }
             );
           }
-        } catch (e) {
+        } catch {
           // console.log("Voice analysis failed:", e);
           // Non-fatal — still return the profile/posts data
         }
@@ -2320,6 +2323,113 @@ http.route({
 });
 
 // ============================================================
+// OUTBOUND WEBHOOKS (P24)
+// ============================================================
+
+// POST /api/v1/me/webhooks — Create a webhook subscription
+// Returns { id, signingSecret } — signingSecret is shown ONCE, never again.
+http.route({
+  path: "/api/v1/me/webhooks",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    try {
+      const body = await request.json();
+      const { url, events } = body as { url?: unknown; events?: unknown };
+      if (typeof url !== "string" || !url.startsWith("https://")) {
+        return errorResponse("invalid_request", "url must be an https:// string", 400);
+      }
+      if (!Array.isArray(events) || events.length === 0 || events.some((e) => typeof e !== "string")) {
+        return errorResponse("invalid_request", "events must be a non-empty string array", 400);
+      }
+
+      const user = await ctx.runQuery(api.users.getByClerkId, {
+        clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+      });
+      if (!user) return errorResponse("not_found", "user not found", 404);
+
+      const result = await ctx.runMutation(internal.webhooks.createSubscription, {
+        userId: user._id,
+        url,
+        events,
+      });
+
+      return guard.finish(json({ id: result.id, signingSecret: result.signingSecret }, 201));
+    } catch (err) {
+      return serverErrorResponse("me/webhooks/create", err, "Failed to create webhook subscription");
+    }
+  }),
+});
+
+// GET /api/v1/me/webhooks — List webhook subscriptions (without secret)
+http.route({
+  path: "/api/v1/me/webhooks",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
+
+    try {
+      const user = await ctx.runQuery(api.users.getByClerkId, {
+        clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+      });
+      if (!user) return errorResponse("not_found", "user not found", 404);
+
+      const subs = await ctx.runQuery(internal.webhooks.listSubscriptions, {
+        userId: user._id,
+      });
+
+      return json({ webhooks: subs });
+    } catch (err) {
+      return serverErrorResponse("me/webhooks/list", err, "Failed to list webhook subscriptions");
+    }
+  }),
+});
+
+// DELETE /api/v1/me/webhooks — Revoke a webhook subscription
+http.route({
+  path: "/api/v1/me/webhooks",
+  method: "DELETE",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    try {
+      const body = await request.json();
+      if (!body.id) {
+        return errorResponse("invalid_request", "id is required", 400);
+      }
+
+      const user = await ctx.runQuery(api.users.getByClerkId, {
+        clerkId: auth.userId, _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+      });
+      if (!user) return errorResponse("not_found", "user not found", 404);
+
+      await ctx.runMutation(internal.webhooks.revokeSubscription, {
+        userId: user._id,
+        subscriptionId: body.id,
+      });
+
+      return guard.finish(json({ deleted: true }));
+    } catch (err) {
+      return serverErrorResponse("me/webhooks/revoke", err, "Failed to revoke webhook subscription");
+    }
+  }),
+});
+
+// ============================================================
 // DEVICE-FLOW AUTH (U7, RFC 8628-shaped, simplified)
 // ============================================================
 //
@@ -2553,6 +2663,7 @@ http.route({ path: "/api/v1/me/build/status", method: "OPTIONS", handler: corsPr
 http.route({ path: "/api/v1/me/memories", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/context-links", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/api-keys", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/webhooks", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat/stream", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/scrape", method: "OPTIONS", handler: corsPreflight });
@@ -3731,7 +3842,7 @@ const MCP_SERVER_INFO = { name: "you.md", version: "1.0.0" };
 http.route({
   path: "/.well-known/mcp.json",
   method: "GET",
-  handler: httpAction(async (_ctx, _request) => {
+  handler: httpAction(async () => {
     return new Response(
       JSON.stringify({
         schema_version: "1",
@@ -3808,7 +3919,9 @@ http.route({
           return mcpOk(id, {
             protocolVersion: negotiatedVersion,
             capabilities: {
-              tools: { listChanged: false },
+              // P24: subscribe acknowledged (no-op ack — tools/list is static
+              // per server version; dispatch can publish list_changed in future).
+              tools: { listChanged: false, subscribe: true },
               resources: { listChanged: false, subscribe: false },
             },
             serverInfo: MCP_SERVER_INFO,
@@ -3821,505 +3934,59 @@ http.route({
           return mcpOk(id, {});
         }
 
+        // ── Subscribe (P24) ────────────────────────────────────────────────────
+        // The MCP spec defines a subscribe method for clients to opt into
+        // server-initiated notifications. Our tools/list is static per server
+        // version, so we acknowledge the subscription immediately without
+        // storing state. When tools/list changes in a future version, the
+        // dispatch layer can publish notifications/tools/list_changed here.
+        case "subscribe": {
+          return mcpOk(id, { subscribed: true });
+        }
+
         // ── Tools ──────────────────────────────────────────────────────────────
+        // T14: tools/list drives from HOSTED_MCP_TOOLS registry (one source of truth).
         case "tools/list": {
           return mcpOk(id, {
-            tools: [
-              {
-                name: "whoami",
-                description: "Return a compact ~500-char identity summary of the authenticated user: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation — it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSON. Requires a you.md API key passed as Bearer token in the Authorization header.",
-                inputSchema: {
-                  type: "object",
-                  properties: {},
-                },
-                // P19 (2026-06-12): scopes required at the handler level (enforced by requireScope).
-                scopes: ["read:private"],
-              },
-              {
-                name: "get_agent_brief",
-                description: "Return a startup brief for the authenticated user. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines a compact identity summary, the user's recent durable memories (rendered inline by default), installed skills, and recommended next moves so the agent can act without asking the user to re-explain everything. Requires a you.md API key passed as Bearer token in the Authorization header.",
-                inputSchema: {
-                  type: "object",
-                  properties: {
-                    format: {
-                      type: "string",
-                      enum: ["markdown", "json"],
-                      description: "Output format. markdown is default and best for agent context; json is best for automation.",
-                    },
-                    includeMemories: {
-                      type: "boolean",
-                      description: "Include up to 20 memories (category + content, durable categories first, then newest). Default true.",
-                    },
-                    maxChars: {
-                      type: "number",
-                      description: "Maximum markdown characters when format=markdown. Default 6000.",
-                    },
-                  },
-                },
-                scopes: ["read:private"],
-              },
-              {
-                name: "get_identity",
-                description: "Get a user's public identity bundle from you.md. Returns their structured identity: bio, projects, values, agent directives, communication preferences, and more. Use this at the start of a session to understand who you're working with.",
-                inputSchema: {
-                  type: "object",
-                  properties: {
-                    username: {
-                      type: "string",
-                      description: "The you.md username (e.g. 'houstongolden')",
-                    },
-                  },
-                  required: ["username"],
-                },
-                scopes: [],
-              },
-              {
-                name: "search_profiles",
-                description: "Search or list public profiles on you.md.",
-                inputSchema: {
-                  type: "object",
-                  properties: {
-                    query: {
-                      type: "string",
-                      description: "Optional search query to filter profiles by name or username",
-                    },
-                    limit: {
-                      type: "number",
-                      description: "Max number of results (default 20, max 100)",
-                    },
-                  },
-                },
-                scopes: [],
-              },
-              {
-                name: "get_my_identity",
-                description: "Get the authenticated user's full identity bundle, including private context. Requires a you.md API key passed as Bearer token in the Authorization header.",
-                inputSchema: {
-                  type: "object",
-                  properties: {},
-                },
-                scopes: ["read:private"],
-              },
-              {
-                name: "get_my_stacks",
-                description: "List the YouStacks the authenticated user hosts in their own GitHub repo (from the You.md server-side mirror). Requires a you.md API key as Bearer token.",
-                inputSchema: {
-                  type: "object",
-                  properties: {},
-                },
-                scopes: ["read:private"],
-              },
-              {
-                name: "get_repo_file",
-                description: "Read one file (e.g. you.md, you.json, or a stacks/<slug>/... file) from the authenticated user's repo via the You.md server-side mirror. Requires a you.md API key as Bearer token.",
-                inputSchema: {
-                  type: "object",
-                  properties: {
-                    path: {
-                      type: "string",
-                      description: "Repo-relative path, e.g. 'you.md' or 'stacks/coding/manifest.json'",
-                    },
-                  },
-                  required: ["path"],
-                },
-                scopes: ["read:private"],
-              },
-              {
-                name: "search_memories",
-                description: "Full-text search the authenticated user's durable memories on you.md. Use this to recall specific facts, preferences, decisions, or context the user has stored — e.g. before answering a question about their past work or stated preferences. Returns one memory per line as plain text, relevance-ordered. Requires a you.md API key with the read:private scope passed as Bearer token in the Authorization header.",
-                inputSchema: {
-                  type: "object",
-                  properties: {
-                    query: {
-                      type: "string",
-                      description: "Full-text search query to match against memory content",
-                    },
-                    limit: {
-                      type: "number",
-                      description: "Max number of memories to return (default 20, max 100)",
-                    },
-                  },
-                  required: ["query"],
-                },
-                scopes: ["read:private"],
-              },
-              {
-                name: "report_skill_outcome",
-                description: "Report the outcome of a skill execution for the authenticated user. Call this after running a you.md skill to feed the self-improvement telemetry loop — your success/failure data powers the `youmd skill improve` surface. Requires a you.md API key with the write:memories scope passed as Bearer token in the Authorization header.",
-                inputSchema: {
-                  type: "object",
-                  properties: {
-                    skill: {
-                      type: "string",
-                      description: "Skill name (e.g. 'youstack-start', 'claude-md-generator')",
-                    },
-                    outcome: {
-                      type: "string",
-                      enum: ["success", "failure", "partial"],
-                      description: "Execution outcome: success = worked as intended; failure = did not produce useful output; partial = partially successful",
-                    },
-                    note: {
-                      type: "string",
-                      description: "Optional free-text note about the outcome (max 500 chars)",
-                    },
-                    durationMs: {
-                      type: "number",
-                      description: "Optional wall-clock execution time in milliseconds",
-                    },
-                  },
-                  required: ["skill", "outcome"],
-                },
-                scopes: ["write:memories"],
-              },
-            ],
+            tools: HOSTED_MCP_TOOLS.map(({ name, description, inputSchema, scopes }) => ({
+              name,
+              description,
+              inputSchema,
+              scopes,
+            })),
           });
         }
 
+        // T14: tools/call — one-liner registry dispatch. Auth checked once via
+        // spec.scopes before calling the handler; handlers never re-authenticate.
         case "tools/call": {
           const toolName = (params as Record<string, unknown>).name as string;
           const toolArgs = ((params as Record<string, unknown>).arguments as Record<string, unknown>) || {};
 
-          if (toolName === "whoami") {
-            const auth = await authenticateRequest(ctx, request);
-            if (auth instanceof Response) {
+          const spec = HOSTED_MCP_TOOLS.find((t) => t.name === toolName);
+          if (!spec) {
+            return mcpError(id, -32601, `Unknown tool: ${toolName}`);
+          }
+
+          // Auth: run once, scoped to the declared required scope.
+          let toolAuth: McpAuthContext | null = null;
+          if (spec.scopes.length > 0) {
+            const authResult = await authenticateRequest(ctx, request);
+            if (authResult instanceof Response) {
               return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
             }
-            const denied = await requireScope(ctx, request, auth, "read:private");
+            const denied = await requireScope(ctx, request, authResult, spec.scopes[0]);
             if (denied) {
-              return mcpToolError(id, "API key lacks required scope: read:private");
+              return mcpToolError(id, `API key lacks required scope: ${spec.scopes[0]}`);
             }
-
-            const identity = await loadAuthedUserIdentity(ctx, auth);
-            if (!identity) return mcpToolError(id, "user not found");
-
-            // Canonical assembly (PRODUCT-AUDIT #3): whoami renders the
-            // identitySummary from assembleAgentContext, same as every surface.
-            const assembled = assembleAgentContext({
-              username: identity.user.username,
-              youJson: identity.youJson,
-              includeMemories: false,
-            });
-            return mcpToolOk(id, assembled.identitySummary, "text/plain");
+            toolAuth = authResult;
           }
 
-          if (toolName === "get_agent_brief") {
-            const auth = await authenticateRequest(ctx, request);
-            if (auth instanceof Response) {
-              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
-            }
-            const denied = await requireScope(ctx, request, auth, "read:private");
-            if (denied) {
-              return mcpToolError(id, "API key lacks required scope: read:private");
-            }
-
-            const identity = await loadAuthedUserIdentity(ctx, auth);
-            if (!identity) return mcpToolError(id, "user not found");
-
-            // Memories are included by default (audit 2026-06-11 L1: the brief
-            // must surface memory CONTENT, not a count — opt out explicitly).
-            const includeMemories = toolArgs.includeMemories !== false;
-
-            let rawMemories: AgentContextMemory[] = [];
-            if (includeMemories) {
-              try {
-                const raw = await ctx.runQuery(api.memories.listMemories, {
-                  clerkId: auth.userId,
-                  _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-                  userId: identity.user._id,
-                  limit: AGENT_CONTEXT_MEMORY_CAP * 3,
-                });
-                rawMemories = Array.isArray(raw) ? (raw as AgentContextMemory[]) : [];
-              } catch {
-                // memories are additive — never fail the brief on them
-              }
-            }
-
-            let installedSkills: string[] = [];
-            try {
-              const installs = await ctx.runQuery(api.skills.listInstalls, {
-                clerkId: auth.userId,
-                _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-                userId: identity.user._id,
-              });
-              installedSkills = (Array.isArray(installs) ? installs : [])
-                .map((install: { skillName: string }) => install.skillName);
-            } catch {
-              // skill installs are additive — never fail the brief on them
-            }
-
-            // Canonical assembly (PRODUCT-AUDIT #3): ordering, cap, and the
-            // identity summary all come from assembleAgentContext.
-            const assembled = assembleAgentContext({
-              username: identity.user.username,
-              plan: typeof identity.user.plan === "string" ? identity.user.plan : null,
-              youJson: identity.youJson,
-              memories: rawMemories,
-              includeMemories,
-              installedSkills,
-            });
-
-            const brief = buildHostedAgentBrief(assembled);
-
-            if (toolArgs.format === "json") {
-              return mcpToolOk(id, JSON.stringify(brief, null, 2), "application/json");
-            }
-
-            const maxChars =
-              typeof toolArgs.maxChars === "number" && toolArgs.maxChars > 500
-                ? Math.min(toolArgs.maxChars, 20000)
-                : 6000;
-            return mcpToolOk(id, formatAgentBriefMarkdown(brief, maxChars), "text/markdown");
-          }
-
-          if (toolName === "get_identity") {
-            const username = toolArgs.username as string;
-            if (!username || typeof username !== "string") {
-              return mcpToolError(id, "username is required");
-            }
-
-            const profile = await ctx.runQuery(api.profiles.getPublicProfile, {
-              username: username.toLowerCase().replace(/^@/, ""),
-            });
-
-            if (!profile) {
-              return mcpToolError(id, `no profile found for @${username}`);
-            }
-
-            // Log as agent read
-            try {
-              await ctx.runMutation(api.profiles.recordView, {
-                username: username.toLowerCase(),
-                referrer: "mcp",
-                isAgentRead: true,
-              });
-            } catch { /* non-fatal */ }
-
-            // Canonical public field selection (PRODUCT-AUDIT #3): which
-            // youJson sections agents see is decided in lib/agentContext.
-            const result = {
-              username: profile.username,
-              displayName: profile.displayName,
-              avatarUrl: profile.avatarUrl,
-              isClaimed: profile.isClaimed,
-              ...selectPublicIdentityFields(
-                profile.youJson as Record<string, unknown> | null
-              ),
-              _profile_url: `https://you.md/${profile.username}`,
-            } as Record<string, unknown>;
-
-            // Repo-hosted stacks, only if the user's repo is public.
-            try {
-              const repoStacks = await ctx.runQuery(api.github.getPublicRepoStacks, {
-                username: username.toLowerCase().replace(/^@/, ""),
-              });
-              if (repoStacks && repoStacks.stacks.length > 0) {
-                result.repo_stacks = repoStacks;
-              }
-            } catch { /* non-fatal */ }
-
-            return mcpToolOk(id, JSON.stringify(result, null, 2), "application/json");
-          }
-
-          if (toolName === "search_profiles") {
-            const query = (toolArgs.query as string | undefined) || "";
-            const limit = Math.min(Number(toolArgs.limit) || 20, 100);
-
-            // Index-backed search (audit 2026-06-11 P1 #16): username prefix +
-            // full-text name via profiles.searchPublicProfiles instead of the
-            // old in-memory filter over the newest 500 profiles.
-            const filtered = query.trim()
-              ? await ctx.runQuery(api.profiles.searchPublicProfiles, {
-                  query: query.trim(),
-                  limit,
-                })
-              : await ctx.runQuery(api.profiles.listAll);
-
-            const results = filtered.slice(0, limit).map((p: Record<string, unknown>) => ({
-              username: p.username,
-              name: p.name,
-              tagline: p.tagline,
-              profileUrl: `https://you.md/${p.username}`,
-              updatedAt: p.updatedAt || p.createdAt,
-            }));
-
-            return mcpToolOk(id, JSON.stringify({ profiles: results, total: results.length }, null, 2), "application/json");
-          }
-
-          if (toolName === "get_my_identity") {
-            // Require API key auth
-            const auth = await authenticateRequest(ctx, request);
-            if (auth instanceof Response) {
-              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
-            }
-            const denied = await requireScope(ctx, request, auth, "read:private");
-            if (denied) {
-              return mcpToolError(id, "API key lacks required scope: read:private");
-            }
-
-            const user = await ctx.runQuery(api.users.getByClerkId, {
-              clerkId: auth.userId,
-              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-            });
-            if (!user) return mcpToolError(id, "user not found");
-
-            const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
-
-            const latestBundle = user ? await ctx.runQuery(api.bundles.getLatestBundle, {
-              clerkId: auth.userId,
-              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-              userId: user._id,
-            }) : null;
-
-            const result = {
-              username: user.username,
-              email: user.email,
-              plan: user.plan,
-              profile: profile ? {
-                avatarUrl: profile.avatarUrl,
-                name: profile.name,
-                tagline: profile.tagline,
-              } : null,
-              bundle: latestBundle ? {
-                version: latestBundle.version,
-                isPublished: latestBundle.isPublished,
-                youJson: latestBundle.youJson,
-                youMd: latestBundle.youMd,
-              } : null,
-              _profile_url: `https://you.md/${user.username}`,
-            };
-
-            return mcpToolOk(id, JSON.stringify(result, null, 2), "application/json");
-          }
-
-          if (toolName === "get_my_stacks") {
-            const auth = await authenticateRequest(ctx, request);
-            if (auth instanceof Response) {
-              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
-            }
-            const denied = await requireScope(ctx, request, auth, "read:private");
-            if (denied) {
-              return mcpToolError(id, "API key lacks required scope: read:private");
-            }
-            const mirror = await ctx.runQuery(
-              internal.github.internalGetMirrorByClerkId,
-              { clerkId: auth.userId }
-            );
-            if (!mirror) {
-              return mcpToolOk(id, JSON.stringify({ repo: null, stacks: [], message: "No repo mirror yet. Link a repo and sync in settings." }, null, 2), "application/json");
-            }
-            return mcpToolOk(
-              id,
-              JSON.stringify({ repo: mirror.repoFullName, stacks: deriveStacks(mirror.files) }, null, 2),
-              "application/json"
-            );
-          }
-
-          if (toolName === "get_repo_file") {
-            const auth = await authenticateRequest(ctx, request);
-            if (auth instanceof Response) {
-              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
-            }
-            const denied = await requireScope(ctx, request, auth, "read:private");
-            if (denied) {
-              return mcpToolError(id, "API key lacks required scope: read:private");
-            }
-            const path = toolArgs.path as string;
-            if (!path || typeof path !== "string") {
-              return mcpToolError(id, "path is required");
-            }
-            const mirror = await ctx.runQuery(
-              internal.github.internalGetMirrorByClerkId,
-              { clerkId: auth.userId }
-            );
-            if (!mirror) {
-              return mcpToolError(id, "No repo mirror yet. Link a repo and sync in settings.");
-            }
-            const file = mirror.files.find((f: { path: string }) => f.path === path);
-            if (!file) {
-              return mcpToolError(id, `File not found in mirror: ${path}`);
-            }
-            return mcpToolOk(id, file.content, "text/plain");
-          }
-
-          if (toolName === "search_memories") {
-            const auth = await authenticateRequest(ctx, request);
-            if (auth instanceof Response) {
-              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
-            }
-            const denied = await requireScope(ctx, request, auth, "read:private");
-            if (denied) {
-              return mcpToolError(id, "API key lacks required scope: read:private");
-            }
-
-            const searchQuery = toolArgs.query as string;
-            if (!searchQuery || typeof searchQuery !== "string" || !searchQuery.trim()) {
-              return mcpToolError(id, "query is required");
-            }
-            const limit = Math.min(Math.max(Number(toolArgs.limit) || 20, 1), 100);
-
-            const user = await ctx.runQuery(api.users.getByClerkId, {
-              clerkId: auth.userId,
-              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-            });
-            if (!user) return mcpToolError(id, "user not found");
-
-            const found = await ctx.runQuery(api.memories.searchMemories, {
-              clerkId: auth.userId,
-              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-              userId: user._id,
-              searchText: searchQuery.trim(),
-              limit,
-            });
-
-            if (!Array.isArray(found) || found.length === 0) {
-              return mcpToolOk(id, `no memories matched "${searchQuery.trim()}"`, "text/plain");
-            }
-
-            const lines = found.map(
-              (m: { category: string; content: string }) => `[${m.category}] ${m.content}`
-            );
-            return mcpToolOk(id, lines.join("\n"), "text/plain");
-          }
-
-          if (toolName === "report_skill_outcome") {
-            const auth = await authenticateRequest(ctx, request);
-            if (auth instanceof Response) {
-              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
-            }
-            const denied = await requireScope(ctx, request, auth, "write:memories");
-            if (denied) {
-              return mcpToolError(id, "API key lacks required scope: write:memories");
-            }
-
-            const skill = toolArgs.skill as string;
-            if (!skill || typeof skill !== "string" || !skill.trim()) {
-              return mcpToolError(id, "skill is required");
-            }
-            const outcome = toolArgs.outcome as string;
-            if (outcome !== "success" && outcome !== "failure" && outcome !== "partial") {
-              return mcpToolError(id, "outcome must be one of: success, failure, partial");
-            }
-
-            const user = await ctx.runQuery(api.users.getByClerkId, {
-              clerkId: auth.userId,
-              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-            });
-            if (!user) return mcpToolError(id, "user not found");
-
-            const result = await ctx.runMutation(api.skills.recordOutcome, {
-              clerkId: auth.userId,
-              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-              skillName: skill.trim(),
-              outcome: outcome as "success" | "failure" | "partial",
-              agent: typeof toolArgs.agent === "string" ? toolArgs.agent : undefined,
-              note: typeof toolArgs.note === "string" ? toolArgs.note : undefined,
-              durationMs: typeof toolArgs.durationMs === "number" ? toolArgs.durationMs : undefined,
-            });
-
-            return mcpToolOk(id, `outcome recorded: ${result.skillName} → ${result.outcome}`, "text/plain");
-          }
-
-          return mcpError(id, -32601, `Unknown tool: ${toolName}`);
+          const handlerResult = await spec.handler(ctx, toolArgs, toolAuth);
+          return mcpOk(id, {
+            content: handlerResult.content,
+            isError: handlerResult.isError ?? false,
+          });
         }
 
         // ── Resources ──────────────────────────────────────────────────────────
@@ -4394,7 +4061,7 @@ http.route({ path: "/api/v1/mcp", method: "OPTIONS", handler: corsPreflight });
 http.route({
   path: "/api/v1/mcp",
   method: "GET",
-  handler: httpAction(async (_ctx, _request) => {
+  handler: httpAction(async () => {
     return new Response(
       JSON.stringify({
         name: "you.md MCP server",
@@ -4620,13 +4287,6 @@ function mcpError(id: unknown, code: number, message: string): Response {
   );
 }
 
-function mcpToolOk(id: unknown, text: string, mimeType = "text/plain"): Response {
-  return mcpOk(id, {
-    content: [{ type: "text", text, mimeType }],
-    isError: false,
-  });
-}
-
 function mcpToolError(id: unknown, message: string): Response {
   return mcpOk(id, {
     content: [{ type: "text", text: message }],
@@ -4634,157 +4294,11 @@ function mcpToolError(id: unknown, message: string): Response {
   });
 }
 
-// ─── Hosted whoami / get_agent_brief helpers ─────────────────────────────────
+// ─── Hosted MCP helpers ───────────────────────────────────────────────────────
 //
-// Server-side analogs of the local stdio MCP's whoami + get_agent_brief
-// (cli/src/mcp/server.ts), built from data Convex already has: the user's
-// latest bundle/profile youJson, their memories, and their skill installs.
-//
-// PRODUCT-AUDIT #3: identity-core extraction, memory ordering/cap, and the
-// compact summary all live in convex/lib/agentContext.ts (canonical). The
-// helpers below only RENDER the hosted brief's stable output shape.
-
-type HostedAgentBrief = {
-  generatedAt: string;
-  user: {
-    username: string;
-    plan: string | null;
-    profileUrl: string;
-    summary: string;
-  };
-  memories: {
-    included: boolean;
-    count: number;
-    items: Array<{
-      category: string;
-      content: string;
-      source: string | null;
-      createdAt: number;
-    }>;
-  };
-  skills: {
-    installed: string[];
-  };
-  nextMoves: string[];
-  reminders: string[];
-};
-
-/**
- * Load the authenticated user's identity context (user row + youJson from the
- * latest bundle, falling back to the profile's embedded youJson).
- */
-async function loadAuthedUserIdentity(
-  ctx: Pick<ActionCtx, "runQuery">,
-  auth: AuthContext
-): Promise<{
-  user: { _id: Id<"users">; username: string; plan?: string };
-  youJson: Record<string, unknown>;
-} | null> {
-  const user = await ctx.runQuery(api.users.getByClerkId, {
-    clerkId: auth.userId,
-    _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-  });
-  if (!user) return null;
-
-  const profile = await ctx.runQuery(api.profiles.getByOwnerId, { ownerId: user._id });
-  const latestBundle = await ctx.runQuery(api.bundles.getLatestBundle, {
-    clerkId: auth.userId,
-    _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
-    userId: user._id,
-  });
-
-  const youJson = asRecord(latestBundle?.youJson ?? profile?.youJson);
-  return { user, youJson };
-}
-
-/**
- * Render the hosted agent brief's stable output shape from the canonical
- * assembled context (lib/agentContext.assembleAgentContext).
- */
-function buildHostedAgentBrief(assembled: AssembledAgentContext): HostedAgentBrief {
-  const nextMoves: string[] = [];
-  if (assembled.memories.items.length > 0) {
-    nextMoves.push("Apply the durable preferences/decisions in Memories before proposing work.");
-  }
-  nextMoves.push("Call get_identity (or get_my_identity for private detail) when you need the full bundle.");
-  nextMoves.push("Log meaningful new durable facts back with the memories API so future sessions start smarter.");
-
-  return {
-    generatedAt: new Date().toISOString(),
-    user: {
-      username: assembled.username ?? "",
-      plan: assembled.plan,
-      profileUrl: `https://you.md/${assembled.username ?? ""}`,
-      summary: assembled.identitySummary,
-    },
-    memories: {
-      included: assembled.memories.included,
-      count: assembled.memories.items.length,
-      items: assembled.memories.items.map((memory) => ({
-        category: memory.category,
-        content: memoryOneLine(memory.content),
-        source: memory.sourceAgent ?? memory.source ?? null,
-        createdAt: memory.createdAt ?? 0,
-      })),
-    },
-    skills: {
-      installed: assembled.installedSkills,
-    },
-    nextMoves,
-    reminders: [
-      "Read the whole user request before acting; split multi-part asks into tracked items.",
-      "Do not claim work is done unless it actually succeeded end-to-end.",
-    ],
-  };
-}
-
-/**
- * Render the hosted agent brief as markdown. Memories are rendered as actual
- * content lines (category + one-line content), not a bare count (audit
- * 2026-06-11 L1).
- */
-function formatAgentBriefMarkdown(brief: HostedAgentBrief, maxChars = 6000): string {
-  const lines: string[] = [];
-
-  lines.push("# You.md Agent Brief");
-  lines.push("");
-  lines.push("## User");
-  lines.push(brief.user.summary || "(no identity summary available)");
-  lines.push("");
-  lines.push(`- profile: ${brief.user.profileUrl}`);
-  if (brief.user.plan) lines.push(`- plan: ${brief.user.plan}`);
-  lines.push("");
-
-  lines.push(`## Memories (${brief.memories.count})`);
-  if (!brief.memories.included) {
-    lines.push("- excluded (includeMemories=false)");
-  } else if (brief.memories.items.length === 0) {
-    lines.push("- none recorded yet");
-  } else {
-    for (const memory of brief.memories.items) {
-      lines.push(`- [${memory.category}] ${memory.content}`);
-    }
-  }
-  lines.push("");
-
-  lines.push("## Skills");
-  lines.push(
-    `- installed: ${brief.skills.installed.length > 0 ? brief.skills.installed.join(", ") : "none"}`
-  );
-  lines.push("");
-
-  lines.push("## Next Moves");
-  lines.push(brief.nextMoves.map((move) => `- ${move}`).join("\n"));
-  lines.push("");
-  lines.push("## Reminders");
-  lines.push(brief.reminders.map((reminder) => `- ${reminder}`).join("\n"));
-
-  let markdown = lines.join("\n");
-  if (markdown.length > maxChars) {
-    markdown = markdown.slice(0, Math.max(0, maxChars - 32)).trimEnd() + "\n\n[truncated]";
-  }
-  return markdown;
-}
+// T14: HostedAgentBrief type, loadAuthedUserIdentity, buildHostedAgentBrief,
+// and formatAgentBriefMarkdown have been moved to convex/lib/mcpRegistry.ts
+// (the unified tool registry). All tool dispatch logic also lives there.
 
 // ============================================================
 // VERIFICATIONS
@@ -4999,6 +4513,91 @@ http.route({
 });
 
 http.route({ path: "/api/v1/me/repo/stacks", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
+
+// ---------------------------------------------------------------------------
+// Public stack registry — no auth required (mirrors /api/v1/profiles pattern)
+// GET /api/v1/stacks/registry/{user}/{slug}
+//   Returns the stack manifest + files under stacks/<slug>/ from the user's
+//   public repo mirror. 404 when the user, mirror, or stack slug is not found.
+//   Files are capped at 200 entries; pass ?limit=N (1–200) to narrow further.
+//   Response shape: { user, slug, manifest, files[], truncated, fileCount, syncedAt }
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: "/api/v1/stacks/registry",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    // Path: /api/v1/stacks/registry/{user}/{slug}
+    const suffix = url.pathname.replace(/^\/api\/v1\/stacks\/registry\/?/, "");
+    const parts = suffix.split("/").filter(Boolean);
+    if (parts.length < 2) {
+      return errorResponse("invalid_request", "Path must be /api/v1/stacks/registry/{user}/{slug}", 400);
+    }
+    const [targetUser, targetSlug] = parts;
+
+    // Resolve user by username (same pattern as MCP namespace and public profile).
+    const userDoc = await ctx.runQuery(internal.users.getByUsername, { username: targetUser });
+    if (!userDoc) {
+      return errorResponse("not_found", `No profile found for @${targetUser}`, 404);
+    }
+
+    // Load the repo mirror (no auth check — public data only).
+    const mirror = await ctx.runQuery(internal.github.internalGetMirrorByUserId, {
+      userId: userDoc._id,
+    });
+    if (!mirror) {
+      return errorResponse("not_found", `No repo mirror found for @${targetUser}`, 404);
+    }
+
+    // Filter to files under stacks/<slug>/ and cap at 200.
+    const rawLimit = url.searchParams.has("limit")
+      ? Math.min(Math.max(parseInt(url.searchParams.get("limit")!, 10) || 200, 1), 200)
+      : 200;
+    const prefix = `stacks/${targetSlug}/`;
+    const allStackFiles = mirror.files.filter((f: { path: string }) => f.path.startsWith(prefix));
+    if (allStackFiles.length === 0) {
+      return errorResponse("not_found", `Stack '${targetSlug}' not found for @${targetUser}`, 404);
+    }
+    const truncated = allStackFiles.length > rawLimit;
+    const files = allStackFiles.slice(0, rawLimit);
+
+    // Extract the manifest file (youstack.json or manifest.json) content.
+    const manifestFile = files.find((f: { path: string }) =>
+      /\/(youstack|manifest)\.(json|ya?ml)$/i.test(f.path)
+    );
+    let manifest: unknown = null;
+    if (manifestFile) {
+      try {
+        manifest = JSON.parse((manifestFile as { content: string }).content);
+      } catch {
+        // Not valid JSON — return raw, consumer can handle
+        manifest = null;
+      }
+    }
+
+    return json(
+      {
+        user: targetUser,
+        slug: targetSlug,
+        manifest,
+        files: files.map((f: { path: string; size: number; content: string }) => ({
+          path: f.path,
+          size: f.size,
+          content: f.content,
+        })),
+        fileCount: files.length,
+        truncated,
+        syncedAt: mirror.syncedAt,
+        stale: mirror.stale ?? false,
+      },
+      200,
+      { "Cache-Control": "public, max-age=30" }
+    );
+  }),
+});
+
+http.route({ path: "/api/v1/stacks/registry", method: "OPTIONS", handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })) });
 
 // ---------------------------------------------------------------------------
 // GitHub webhook — auto-pull on external push to a linked You.md repo
