@@ -40,7 +40,7 @@
 | P15 | One `MEMORY_CATEGORIES` module + validation + migration + `correction` category | PRODUCT-AUDIT #17; FEATURE-ROADMAP 2.10 | M | done (b285d99; one category module + correction; prod migration: 48 scanned/14 normalized, 400 on invalid) |
 | P16 | Pipeline honesty: compile merges chat-refined content, or de-document discover→review | PRODUCT-AUDIT #18; FEATURE-ROADMAP 3.5 | L | blocked(needs-spec: Houston call) |
 | P17 | GitHub repo freshness: debounced auto-push on save/publish + ancestor check on repo pulls | PRODUCT-AUDIT #19; FEATURE-ROADMAP 2.7 | M | done (3d92c04; debounced auto-push, retry-once, canonical-wins staleness) |
-| P18 | Shared capability router package for CLI + API route + golden parity tests | PRODUCT-AUDIT #20; FEATURE-ROADMAP 3.6 | M | todo |
+| P18 | Shared capability router package for CLI + API route + golden parity tests | PRODUCT-AUDIT #20; FEATURE-ROADMAP 3.6 | M | done (54c8a6e/7b717eb; parity-locked resolver, 10 fixture cases × 2 runners) |
 | P19 | Typed brainScopes + identity-bearing adapters + doctor skill-ref validation | PRODUCT-AUDIT #21; FEATURE-ROADMAP 3.9 | M | done (982151c; scopes on MCP tools + doctor requiresScopes validation) |
 | P20 | Documented precedence model + shadowing warning + `youmd status` active-roots line | PRODUCT-AUDIT #22; FEATURE-ROADMAP 3.15 | M | done (d83f718; PRECEDENCE table, shadow warnings, active-roots in status) |
 | P21 | Standard error envelope `{error:{code,message}}` + real OpenAPI schemas | PRODUCT-AUDIT #23; FEATURE-ROADMAP 3.1 | M | done (63524a5; 115 error sites, CLI parser updated, 89/89 convex tests; prod e2e verified) |
@@ -132,8 +132,8 @@
 | T6 | CI: tsc+lint+build+cli-tests on PR; gated Convex prod deploys | S | done (28d90b5+cd8b29c: CI gate live; lint warn-only until T31) |
 | T7 | pull/push home-first resolution; project-local needs flag + auto-gitignore | S | done (34fc522; home-first, --local + marker, auto-gitignore; 13 tests) |
 | T8 | ISR for /[username] + /profiles; skip anonymous Convex live queries | M | done (aee87ca; revalidate=60 + anon skip live queries) |
-| T9 | Server-assembled system prompt; chat proxy rejects client system messages | L | todo |
-| T10 | Lossless identity round-trip (markdown per-section source of truth + property test) | L | todo |
+| T9 | Server-assembled system prompt; chat proxy rejects client system messages | L | done (ea10001; server-assembled prompt, client system messages stripped, 9 tests) |
+| T10 | Lossless identity round-trip (markdown per-section source of truth + property test) | L | done (e3eca29; roundtripIdentity + 2 decompiler fixes, 12 tests) |
 | T11 | Load JetBrains Mono + Inter via next/font | S | done (aca29f3) |
 | T12 | export const viewport; drop user-scalable=no (WCAG) | S | done (aca29f3) |
 | T13 | Sentry + sanitized error codes + scheduled smoke alerts + /api/v1/health | M | done (34fc522; health route, 26 sanitized 500 sites, 30-min smoke cron; prod health 200 verified; Sentry = Houston decision) |
@@ -150,7 +150,7 @@
 | T24 | Single canonical host (apex vs www) alignment | S | done (9451a9d; www canonical, 308 backstop + metadata/sitemap aligned; post-deploy curls pending) |
 | T25 | MCP tool-call test harness (table-driven over all tools) | M | done (16 tests across 9 hosted tools) |
 | T26 | Playwright smoke: landing → sign-in → dashboard + anon profile | M | done (chromium smoke; daily workflow) |
-| T27 | Per-section sha256 manifest + shared canonicalJsonString package | M | todo |
+| T27 | Per-section sha256 manifest + shared canonicalJsonString package | M | done (bb2b69d; manifest.sha256.json + canonical-json helper, 15 tests) |
 | T28 | Add llms.txt/shell/schema/install.sh to proxy RESERVED_PATHS | S | done (f0f7925) |
 | T29 | CLI version from package.json; postinstall banner TTY gate; publish version-exists check | S | partial (a984939 version-from-package.json; banner TTY gate + publish version-exists check pending) |
 | T30 | Spend-cap doc/code drift fix; pre-hydration theme script | S | done (ab0277d spend-cap; 70efbe3 pre-hydration theme script) |
