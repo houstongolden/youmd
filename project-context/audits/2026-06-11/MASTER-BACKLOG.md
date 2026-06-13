@@ -31,7 +31,7 @@
 | P6 | Fix `youmd mcp --install claude --auto` → ~/.claude.json or `claude mcp add`; post-install verify | PRODUCT-AUDIT #8; FEATURE-ROADMAP 1.3 | S | done (bf2e647: claude mcp add / ~/.claude.json + verify) |
 | P7 | Publish CLI to npm + version-skew CI check | PRODUCT-AUDIT #9; FEATURE-ROADMAP 0.3 | S | blocked(otp) |
 | P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning; also reconcile YOUSTACKS_PRODUCT_LAYER_PRD.md:201-210 drifted table + fix example manifest minYoumdCli 0.7.0 vs cli 0.6.23 | PRODUCT-AUDIT #10; P32 findings | M | done (canonical discovery + doctor warnings + PRD reconciled; 220/220 tests) |
-| P9 | `youmd stack install <user>/<slug>` + registry endpoint | PRODUCT-AUDIT #11; FEATURE-ROADMAP 2.5 | L | done (ea94c52/7baa585; install + GET /api/v1/stacks/registry/{user}/{slug}, 13 tests) |
+| P9 | `youmd stack install <user>/<slug>` + registry endpoint | PRODUCT-AUDIT #11; FEATURE-ROADMAP 2.5 | L | done (ea94c52/7baa585; install + GET /api/v1/stacks/registry/{user}/{slug}, 13 tests) ; prod e2e: registry route 404 envelope, mirror lookup OK) |
 | P10 | Truthful capability contract w/ transport tags + CI curl test | PRODUCT-AUDIT #12; FEATURE-ROADMAP 2.6 | M | done (982151c; transports tags + CI smoke cross-check) |
 | P11 | One host-link engine emitting `.claude/skills/<name>/SKILL.md`; empirical discovery release gate | PRODUCT-AUDIT #13; FEATURE-ROADMAP 3.7 | M | done (0fd58b1; one engine, claude .claude/skills/<name>/SKILL.md layout, verify gate, snapshot parity) |
 | P12 | Single project-context engine (repo project-context/ + ~/.youmd/projects/ overlay); delete dup impls | PRODUCT-AUDIT #14; FEATURE-ROADMAP 3.8 | M | done (d83f718; one engine, repo-over-global overlay, dup impls deleted, 237/237) |
@@ -46,7 +46,7 @@
 | P21 | Standard error envelope `{error:{code,message}}` + real OpenAPI schemas | PRODUCT-AUDIT #23; FEATURE-ROADMAP 3.1 | M | done (63524a5; 115 error sites, CLI parser updated, 89/89 convex tests; prod e2e verified) |
 | P22 | Per-key rate limits on writes + Retry-After/X-RateLimit headers | PRODUCT-AUDIT #24; FEATURE-ROADMAP 3.2 | M | done (a703c6a; prod e2e: 200 carries X-RateLimit trio) |
 | P23 | Idempotency-Key support + memory content-hash dedupe | PRODUCT-AUDIT #25; FEATURE-ROADMAP 3.3 | M | done (a703c6a/c0547ea; prod e2e: Idempotency-Replayed true, dedupe live, test memory archived) |
-| P24 | Outbound webhooks + MCP subscribe/listChanged | PRODUCT-AUDIT #26; FEATURE-ROADMAP 3.4 | L | done (a3fe9c5/7baa585; webhooks + HMAC delivery + MCP subscribe ack, 24 tests) |
+| P24 | Outbound webhooks + MCP subscribe/listChanged | PRODUCT-AUDIT #26; FEATURE-ROADMAP 3.4 | L | done (a3fe9c5/7baa585; webhooks + HMAC delivery + MCP subscribe ack, 24 tests) ; prod e2e: create returns whsec_*, delete deleted=true) |
 | P25 | Honest endpoint counts (exclude retired/internal) in docs generator | PRODUCT-AUDIT #27; FEATURE-ROADMAP 3.10 | S | done (3b5b000; 69 honest endpoints, 7 documented exclusions, stale-exclusion guard) |
 | P26 | `login --key` validates before persisting; preserve apiUrl/appUrl | PRODUCT-AUDIT #31; FEATURE-ROADMAP 0.5 | S | done (308ad0b) |
 | P27 | Headless auth via YOUMD_API_KEY/YOUMD_API_URL env vars | PRODUCT-AUDIT #32; FEATURE-ROADMAP 1.4 | S | done (308ad0b: env auth, zero-write verified) |
@@ -137,7 +137,7 @@
 | T11 | Load JetBrains Mono + Inter via next/font | S | done (aca29f3) |
 | T12 | export const viewport; drop user-scalable=no (WCAG) | S | done (aca29f3) |
 | T13 | Sentry + sanitized error codes + scheduled smoke alerts + /api/v1/health | M | done (34fc522; health route, 26 sanitized 500 sites, 30-min smoke cron; prod health 200 verified; Sentry = Houston decision) |
-| T14 | Unified MCP tool registry; official SDK Streamable HTTP; remote serves all tools | M-L | done (19c3caa; HOSTED_MCP_TOOLS registry, dispatch one-liner, 39 tests; SDK migration deferred) |
+| T14 | Unified MCP tool registry; official SDK Streamable HTTP; remote serves all tools | M-L | done (19c3caa; HOSTED_MCP_TOOLS registry, dispatch one-liner, 39 tests; SDK migration deferred) ; prod e2e: tools/list=9, whoami=434chars via registry) |
 | T15 | Fix lastPulledHash ancestry bug | S | done (a984939) |
 | T16 | Bounded-batch rateLimits cleanup w/ index + reschedule | S | done (683f014) |
 | T17 | API client timeout + retry w/ jitter; consistent offline message | S | done (9cbb89e) |
