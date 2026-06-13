@@ -475,12 +475,13 @@ program
 
 program
   .command("okf [subcommand] [arg]")
-  .description("Open Knowledge Format — export/import/validate portable OKF bundles (identity, skills, stacks)")
+  .description("Open Knowledge Format — export/import/validate/health for portable OKF bundles (identity, skills, stacks)")
   .option("-o, --out <dir>", "Output directory")
   .option("--stack [path]", "Export a YouStack (optionally at <path>) instead of your identity bundle")
   .option("--no-skills", "Exclude installed skills from an identity export")
   .option("--author <name>", "Stamp last_updated_by provenance on exported concepts")
   .option("--confidence <level>", "Stamp confidence provenance (low|medium|high) on exported concepts")
+  .option("--stale-days <n>", "Days before a concept is flagged stale by `okf health` (default 30)")
   .option("--json", "Print JSON output")
   .action((subcommand, arg, options) => okfCommand(subcommand, arg, options));
 

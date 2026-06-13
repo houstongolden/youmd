@@ -8,6 +8,7 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-13 — OKF integration
+- [x] Add `youmd okf health` brain-health audit (orphans, stale, un-sourced, low-confidence/needs-review, `[CONFLICT]`/`[STALE]`, missing type; 0-100 score) — Familiar graph-health pattern, OKF-native, no cron/inbox machinery
 - [x] Add provenance frontmatter (`last_updated_by`/`confidence`/`linked_sources`) to OKF concepts — Familiar pattern #1, stampable on export (`--author`/`--confidence`), preserved through round-trips; skipped the Familiar cron/inbox stack as redundant complexity
 - [x] Add a pure OKF core library (serialize/parse concept files, conformance validation, `index.md`/`log.md` builders) for `okf/v0.1`
 - [x] Add identity bundle ↔ OKF export/import with lossless round-trip (`youmd_kind` routing), including installed skills

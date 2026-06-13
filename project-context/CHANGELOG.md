@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-13 — OKF brain-health audit
+
+### `youmd okf health` (Familiar graph-health pattern, OKF-native)
+- Added `cli/src/lib/okf-health.ts`: a pure audit of an OKF bundle for the failure modes that rot agent knowledge bases — concepts missing `type` (error), thin/no-description concepts, un-sourced concepts ("no synthesis without a source"), agent-authored or low-confidence concepts that need a human pass, stale concepts (timestamp age or `[STALE]` markers), unresolved `[CONFLICT]` markers, and orphans nothing links to. Produces a 0-100 health score.
+- Added the `youmd okf health [dir]` subcommand (alias `doctor`): audits a directory on disk, or the live identity bundle built in memory when no dir is given; `--stale-days <n>` (default 30) and `--json`.
+- Bundles three of the four flagged Familiar follow-ups (graph/orphan check, `[CONFLICT]`/`[STALE]` markers, the un-sourced rule) into one self-auditing command — deliberately without the cron/inbox machinery.
+- +7 tests (44 OKF tests total); CLI build clean. Smoke: live example bundle scores 90/100 with honest advisory flags; a malformed bundle surfaces the error plus conflict/stale/orphan/un-sourced.
+
 ## 2026-06-13 — OKF (Open Knowledge Format) integration
 
 ### Portable OKF export/import for identity, skills, and stacks

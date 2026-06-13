@@ -8,11 +8,14 @@ import {
   exportBundleToOkf,
   importOkfToBundle,
   readOkfBundleDir,
+  collectBundleSections,
+  buildOkfBundleFiles,
   YoumdSection,
 } from "../lib/okf-bundle";
 import { exportYouStackToOkf } from "../lib/okf-stack";
 import { loadYouStackManifest } from "../lib/youstack";
 import { validateOkfBundle, OKF_VERSION } from "../lib/okf";
+import { auditOkfBundle, OkfHealthReport } from "../lib/okf-health";
 
 interface OkfOptions {
   out?: string;
@@ -20,6 +23,7 @@ interface OkfOptions {
   skills?: boolean; // commander sets `skills: false` for --no-skills
   author?: string;
   confidence?: string;
+  staleDays?: string;
   json?: boolean;
 }
 
@@ -78,6 +82,7 @@ export async function okfCommand(
   if (sub === "export") return exportSub(arg, options);
   if (sub === "import") return importSub(arg, options);
   if (sub === "validate" || sub === "check") return validateSub(arg, options);
+  if (sub === "health" || sub === "doctor") return healthSub(arg, options);
 
   console.log("");
   console.log(chalk.yellow(`  unknown okf subcommand: ${sub}`));
@@ -87,6 +92,7 @@ export async function okfCommand(
   console.log("  " + chalk.cyan("youmd okf export --stack") + chalk.dim("    export a YouStack as OKF"));
   console.log("  " + chalk.cyan("youmd okf import <dir>") + chalk.dim("      import an OKF bundle into You.md"));
   console.log("  " + chalk.cyan("youmd okf validate <dir>") + chalk.dim("    check an OKF bundle for conformance"));
+  console.log("  " + chalk.cyan("youmd okf health [dir]") + chalk.dim("      audit brain health (orphans, stale, un-sourced, conflicts)"));
   console.log("");
 }
 
@@ -292,6 +298,96 @@ async function validateSub(arg: string | undefined, options: OkfOptions): Promis
   if (validation.ok) {
     console.log("");
     console.log("  " + chalk.green(`conformant OKF bundle (okf/${OKF_VERSION}).`));
+  }
+  console.log("");
+}
+
+// ─── health ──────────────────────────────────────────────────────────────
+
+async function healthSub(arg: string | undefined, options: OkfOptions): Promise<void> {
+  console.log("");
+  const staleDays = options.staleDays ? Number(options.staleDays) : 30;
+
+  let files;
+  let label: string;
+
+  if (arg) {
+    const dir = path.resolve(process.cwd(), arg);
+    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+      console.log(chalk.yellow(`  not a directory: ${dir}`));
+      console.log("");
+      return;
+    }
+    files = readOkfBundleDir(dir);
+    label = dir;
+  } else {
+    // Audit the live identity bundle by building its OKF view in memory.
+    const bundleDir = resolveActiveBundleDir();
+    if (!bundleDir) {
+      console.log(chalk.yellow("  no active bundle found — run ") + chalk.cyan("youmd init"));
+      console.log("");
+      return;
+    }
+    const sections = [...collectBundleSections(bundleDir), ...collectInstalledSkillSections()];
+    files = buildOkfBundleFiles(sections, { defaultAuthor: resolveAuthor(options) });
+    label = `${bundleDir} (live)`;
+  }
+
+  const report = auditOkfBundle(files, { staleDays });
+
+  if (options.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  printHealth(report, label);
+}
+
+function printHealth(report: OkfHealthReport, label: string): void {
+  console.log("  " + chalk.dim(label));
+  const scoreColor = report.score >= 80 ? chalk.green : report.score >= 50 ? chalk.yellow : chalk.red;
+  console.log(
+    "  " +
+      scoreColor(`brain health: ${report.score}/100`) +
+      chalk.dim(`  (${report.totalConcepts} concepts)`),
+  );
+  console.log("");
+
+  const labels: Record<string, string> = {
+    missing_type: "missing type (error)",
+    needs_review: "needs human review",
+    conflict: "unresolved conflicts",
+    stale: "stale",
+    no_description: "no description",
+    unsourced: "un-sourced",
+    orphan: "orphans",
+  };
+  const order = ["missing_type", "conflict", "needs_review", "stale", "unsourced", "no_description", "orphan"];
+
+  let printedAny = false;
+  for (const category of order) {
+    const count = report.summary[category as keyof typeof report.summary];
+    if (!count) continue;
+    printedAny = true;
+    const examples = report.issues
+      .filter((i) => i.category === category)
+      .slice(0, 5)
+      .map((i) => i.file.replace(/\.md$/, ""));
+    const color = category === "missing_type" ? chalk.red : category === "orphan" || category === "no_description" || category === "unsourced" ? chalk.dim : chalk.yellow;
+    console.log("  " + color(`${labels[category]}: ${count}`));
+    console.log("    " + chalk.dim(examples.join(", ") + (count > 5 ? ", …" : "")));
+  }
+
+  console.log("");
+  if (report.ok && report.score === 100) {
+    console.log("  " + chalk.green("clean — nothing to review."));
+  } else if (report.ok) {
+    console.log("  " + chalk.dim("no errors. advisory items above are review candidates, not failures."));
+  } else {
+    console.log("  " + chalk.red("errors present — fix missing `type` fields above."));
+  }
+  if (!printedAny) {
+    console.log("  " + chalk.green("no issues found."));
   }
   console.log("");
 }

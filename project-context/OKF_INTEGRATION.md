@@ -42,8 +42,9 @@ All under `cli/`:
 | `src/lib/okf.ts` | Pure OKF core: serialize/parse concept files, conformance validation, `index.md` + `log.md` builders. No fs, no You.md specifics. |
 | `src/lib/okf-bundle.ts` | Identity bundle ↔ OKF. Lossless, round-trippable (each section keeps its title + body, gains `type`/`description`/`timestamp` + a `youmd_kind` field that routes it home on import). |
 | `src/lib/okf-stack.ts` | YouStack → OKF. Renders a stack (manifest + skills/workflows/docs/tests/prompts) as a conformant OKF bundle, carrying `youstack.json` alongside so it stays installable. |
-| `src/commands/okf.ts` | `youmd okf export \| import \| validate`. |
-| `src/__tests__/okf*.test.ts` | 30 tests: serialize/parse round-trips, the `type` requirement, validation rules, reserved-file formats, identity round-trip against the real `examples/houston` bundle, stack export against `examples/youstack-personal`. |
+| `src/lib/okf-health.ts` | Brain-health audit (Familiar's graph-health idea on OKF): orphans, stale, un-sourced, low-confidence / agent-authored-needs-review, unresolved `[CONFLICT]`/`[STALE]` markers, missing `type`. Pure; produces a 0-100 score. |
+| `src/commands/okf.ts` | `youmd okf export \| import \| validate \| health`. |
+| `src/__tests__/okf*.test.ts` | 44 tests: serialize/parse round-trips, the `type` requirement, validation rules, reserved-file formats, provenance round-trips, identity round-trip against the real `examples/houston` bundle, stack export against `examples/youstack-personal`, and the health audit. |
 
 CLI surface:
 
@@ -63,6 +64,11 @@ youmd okf import ./okf --out ~/.youmd-imported   # then `youmd build` + `youmd p
 
 # Validate any directory for OKF conformance
 youmd okf validate ./okf
+
+# Audit brain health: orphans, stale, un-sourced, low-confidence, conflicts
+youmd okf health                 # audits your live bundle in memory
+youmd okf health ./okf           # audits a directory on disk
+youmd okf health --stale-days 14 # tighten the stale threshold
 youmd okf export --json          # machine-readable output (all subcommands)
 ```
 
