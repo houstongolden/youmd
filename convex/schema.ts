@@ -803,4 +803,31 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_status", ["status"]),
+
+  // ── Outbound webhooks (P24) ────────────────────────────────────
+  // Subscriptions for event-driven push notifications to external URLs.
+  // The signing secret (HMAC-SHA256 key) is hashed before storage — like
+  // apiKeys — and is returned to the caller exactly ONCE at creation time.
+  //
+  // Supported events: "bundle_published" (more documented in convex/webhooks.ts)
+  //
+  // Delivery state machine: each delivery sets lastDeliveryStatus.
+  // After 10 consecutive failures the subscription is auto-disabled (skipped
+  // on next event dispatch until the caller revokes and re-creates).
+  webhookSubscriptions: defineTable({
+    userId: v.id("users"),
+    url: v.string(),
+    secretHash: v.string(),   // sha256 hex of the raw signing secret
+    secretEncrypted: v.optional(v.string()), // encrypted raw secret for delivery signing
+    secretIv: v.optional(v.string()),
+    events: v.array(v.string()),
+    createdAt: v.number(),
+    lastDeliveryAt: v.optional(v.number()),
+    lastDeliveryStatus: v.optional(
+      v.union(v.literal("success"), v.literal("failure"), v.literal("pending"))
+    ),
+    failureCount: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_events", ["events"]),
 });
