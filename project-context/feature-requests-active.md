@@ -4,6 +4,29 @@ Last Updated: 2026-06-13
 
 ---
 
+## 2026-06-13 — OKF (Open Knowledge Format) Integration
+
+### 112. Implement OKF and prove cross-machine sync of skills/stacks/context
+**Status:** IN PROGRESS (code complete on branch; Houston e2e + publish pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-13 — Houston: first asked "How can this help my youmd project?" about Google's OKF, then: "you must implement the OKF as suggested and planned and ensure all of this works... share local agentic skills/stack across machines... update a skill on my MacBook and my Mac mini also auto-updates... publishable youStacks ie like your own Gstack... I have purchased two brand new machines a new MacBook Air and a new Mac mini... once you're 100% confident I'll run it locally and test the goal end to end."
+**Request:** Adopt OKF as the portable, lock-in-free wire format for You.md so identity, skills, and YouStacks travel between machines and agents; make publishable youStacks expressible as OKF; get to 100% local confidence so Houston can run the end-to-end cross-machine test on the two new Macs.
+**Actionable Scope:**
+1. Implement OKF as proposed (conformant export/import). **DONE:** pure core `cli/src/lib/okf.ts` (serialize/parse, validation, `index.md`/`log.md` builders for `okf/v0.1`).
+2. Identity bundle ↔ OKF, lossless round-trip incl. installed skills. **DONE:** `cli/src/lib/okf-bundle.ts` (`youmd_kind` routes concepts home on import).
+3. YouStacks as publishable OKF ("Gstack" story). **DONE:** `cli/src/lib/okf-stack.ts` (manifest concept + typed files; `youstack.json` carried for installability).
+4. CLI surface. **DONE:** `youmd okf export|import|validate` + `youmd export --okf`, `--json`/`--stack`/`--out`/`--no-skills`.
+5. Skills/project-status/preferences sync across machines + background auto-update. **RIDES EXISTING ENGINE:** `youmd sync`/`sync --watch` + skills registry sync already move context server-side; OKF adds the portable, lock-in-free snapshot/exchange. No sync behavior changed. Cross-machine proof is steps A–C in `OKF_INTEGRATION.md`.
+6. Tests + verification. **DONE:** 30 OKF tests green; CLI build clean; end-to-end CLI smoke for identity + stack export (conformant) and import round-trip.
+7. Runbook for the two Macs. **DONE:** `project-context/OKF_INTEGRATION.md`.
+8. **Houston (user-only):** run the cross-machine end-to-end test on MacBook Air + Mac mini.
+9. **Owner-only:** bump CLI version, align root AGENTS.md/CLAUDE.md version markers, `npm publish` when ready (intentionally not bumped on this branch to keep the agent-docs version guardrail green).
+**Design/Runbook:** `project-context/OKF_INTEGRATION.md`. Spec: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md
+**Progress (2026-06-13):** Built the full OKF layer on `claude/okf-youmd-integration-7bxxt1`. `npm --prefix cli run build` passes; new OKF suite green (30 tests); CLI smoke confirmed identity export (7 concepts, conformant), import round-trip rebuilds section files, and stack export (`youstack-personal`, conformant) with `youstack.json` carried. Pre-existing live-network `integration.test.ts` cases still fail in the sandbox (no production reachability) — unrelated to this change. Remaining: Houston's cross-machine e2e, then owner-only version bump + publish.
+
+---
+
 ## 2026-06-04 — Free GitHub OAuth Signup + Repo-Native You.md
 
 ### 106. Free GitHub OAuth signup

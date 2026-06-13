@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 60
-**Total messages:** 457
+**Total sessions:** 61
+**Total messages:** 460
 **Last updated:** 2026-06-13
 
 ## Table of Contents
 
+1. [2026-06-13 (okf-youmd-integration)](#session-2026-06-13-okf-youmd-integration) --- 3 messages
 1. [2026-06-09 (public-profile-indexing-import-foundation)](#session-2026-06-09-public-profile-indexing-import-foundation) --- 1 message
 1. [2026-06-13 (remote-main-sync-continuation)](#session-2026-06-13-remote-main-sync-continuation) --- 1 message
 1. [2026-06-09 (public-profile-portrait-hardening)](#session-2026-06-09-public-profile-portrait-hardening) --- 1 message
@@ -15465,3 +15466,22 @@ Auto-maintained — new messages appended each session.
 > things and can recall my exact messages more easily that ive already sent  - this should be built into you.md and maybe should be one of our default skills too
 
 ---
+
+## Session: 2026-06-13 (okf-youmd-integration)
+
+**2026-06-13 18:08:03 UTC**
+> How can this help my youmd project?
+>
+> OKF is Google's new open standard: a portable "digital brain" as a plain directory of Markdown files.
+>
+> Each concept (metric, dataset, playbook, API...) gets its own .md file with simple YAML frontmatter + content. Markdown links turn it into a queryable graph. Agents read/edit it natively — no SDKs, no lock-in, just files.
+>
+> It formalizes the LLM-wiki pattern for interoperable knowledge any AI (or human) can use. Could standardize beyond Notion/Obsidian.
+>
+> Blog: cloud.google.com/blog/products/… SPEC.md: github.com/GoogleCloudPla… Super useful for agent projects!
+
+**2026-06-13 19:43:29 UTC**
+> You.md is more than just identity at this point. It's you- your whole stack/skills/projects/etc shared context so you can share your local agentic skills/stack across machines and environments - you update a skill on your MacBook and your synced skill on your Mac mini also auto-updates — same for your project statuses and personal preferences and whatever you are working on locally etc… and you can share these as stacks and context synced with yourself for your own use between machines/computers/agents/environments and another cool feature is we have been working on a way to also share them as publishable youStacks ie like your own Gstack you can share with the world like Gary tan with your own workflows and expertise etc baked in… anyways … this becoming very important and I have also just purchased two brand new machines a new MacBook Air and a new Mac mini - and my goal is to use you.md to fully realize the vision and prove it works syncing skills and having myself and my agents collaborating on projects and self-improving skills and everything always auto-updating and syncing in background etc across machines etc …you must implement the OKF as suggested and planned and ensure all of this works and keep improving and integrating until this goal is achieved /goal once your 100% confident I'll run it locally and we can really test the goal if its achieved end to end
+
+**2026-06-13 19:59:43 UTC**
+> This is interesting X article I just came across that seems like a relevant share not sure if it's already redundant with what we have via GBrain and OKF and our existing systems but might be worth looking into for any good architectural ideas or designs or patterns or code etc … don't like the Kimi stuff not for me but anyways just sharing for additional insight again… do with it only what you think is appropriate and worthwhile and aligned with the You.md vision and mission and goals generally too etc…. But don't create unnecessary complexity or problems just seemed relevant to share and I do think an Obsidian style desktop app client for You.md will make sense eventually and has already been partly covered in previous plans but if so we also need our web app to feel 100% consistent with that vision as well better combining our ability to have the terminal/chat and full shared shell context/content etc etc etc… I dunno Brain dump. [shared the "I Built My Own Obsidian / Familiar second-brain + KIMI Work" article — github.com/codejunkie99/familiar-second-brain]

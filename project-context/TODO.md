@@ -7,6 +7,16 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-13 — OKF integration
+- [x] Add a pure OKF core library (serialize/parse concept files, conformance validation, `index.md`/`log.md` builders) for `okf/v0.1`
+- [x] Add identity bundle ↔ OKF export/import with lossless round-trip (`youmd_kind` routing), including installed skills
+- [x] Add YouStack → OKF export (manifest concept + typed files), carrying `youstack.json` alongside for installability
+- [x] Add `youmd okf export|import|validate` command + `youmd export --okf` shortcut with `--json`/`--stack`/`--out`/`--no-skills`
+- [x] 30 OKF tests green; CLI build clean; end-to-end CLI smoke (identity + stack export → conformant; import round-trip)
+- [x] Write `project-context/OKF_INTEGRATION.md` (design + cross-machine MacBook Air/Mac mini test runbook)
+- [ ] Houston: run the cross-machine end-to-end test on the two new Macs (steps in `OKF_INTEGRATION.md`)
+- [ ] Owner-only: bump CLI version + update root AGENTS.md/CLAUDE.md version markers + `npm publish` when ready to release
+
 ### 2026-06-13
 - [x] Pull remote `main` to `376f967`, reapply local artifacts cleanly, and confirm there were no merge conflicts
 - [x] Audit the newly landed public stack registry/install, hosted MCP registry + subscribe support, outbound webhooks, generated docs, and backlog/reference-intelligence updates

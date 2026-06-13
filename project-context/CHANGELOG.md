@@ -1,5 +1,19 @@
 # You.md — Changelog
 
+## 2026-06-13 — OKF (Open Knowledge Format) integration
+
+### Portable OKF export/import for identity, skills, and stacks
+- Added a pure OKF core library (`cli/src/lib/okf.ts`): serialize/parse concept files (YAML frontmatter + body, required `type`), conformance validation, and `index.md`/`log.md` reserved-file builders for `okf/v0.1`.
+- Added identity bundle ↔ OKF (`cli/src/lib/okf-bundle.ts`): lossless, round-trippable export of `profile/`, `preferences/`, `voice/`, `directives/`, and installed `skills/` as conformant OKF concepts, each tagged with a `youmd_kind` field so import routes it home; carries `you.json` + `manifest.sha256.json` alongside as integrity value-adds.
+- Added YouStack → OKF (`cli/src/lib/okf-stack.ts`): renders a stack (manifest summary concept + skills/workflows/docs/tests/prompts) as a conformant OKF bundle, carrying `youstack.json` alongside so it stays installable — the shareable "Gstack" story.
+- Added the `youmd okf export | import | validate` command plus a `youmd export --okf` shortcut, all with `--json` output; `--stack [path]`, `--out <dir>`, and `--no-skills` flags.
+- OKF is a portable interchange/exchange format that rides the existing `youmd sync`/`pull`/`push` engine (3-way merge in `merge.ts`); no sync behavior changed.
+- Added `project-context/OKF_INTEGRATION.md` with the design rationale and a cross-machine (MacBook Air + Mac mini) end-to-end test runbook.
+
+### Verification
+- `npm --prefix cli run build` passes. New OKF suite green (30 tests) across serialize/parse round-trips, the `type` requirement, validation rules, reserved-file formats, an identity round-trip against the real `examples/houston` bundle, and a stack export against `examples/youstack-personal`. Full CLI suite green except pre-existing live-network `integration.test.ts` cases that require reaching production from the sandbox.
+- CLI smoke verified end-to-end: identity export → conformant; import round-trip rebuilds section files; stack export → conformant; `okf validate` passes on the written bundles.
+
 ## 2026-06-13 — Remote main sync continuation and verification fixes
 
 ### Sync + audit
