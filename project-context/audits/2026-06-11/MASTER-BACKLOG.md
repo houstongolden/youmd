@@ -32,7 +32,7 @@
 | P7 | Publish CLI to npm + version-skew CI check | PRODUCT-AUDIT #9; FEATURE-ROADMAP 0.3 | S | blocked(otp) |
 | P8 | Canonical stack layout `stacks/<slug>/youstack.json`; CLI discovery + doctor warning; also reconcile YOUSTACKS_PRODUCT_LAYER_PRD.md:201-210 drifted table + fix example manifest minYoumdCli 0.7.0 vs cli 0.6.23 | PRODUCT-AUDIT #10; P32 findings | M | done (canonical discovery + doctor warnings + PRD reconciled; 220/220 tests) |
 | P9 | `youmd stack install <user>/<slug>` + registry endpoint | PRODUCT-AUDIT #11; FEATURE-ROADMAP 2.5 | L | todo |
-| P10 | Truthful capability contract w/ transport tags + CI curl test | PRODUCT-AUDIT #12; FEATURE-ROADMAP 2.6 | M | todo |
+| P10 | Truthful capability contract w/ transport tags + CI curl test | PRODUCT-AUDIT #12; FEATURE-ROADMAP 2.6 | M | done (982151c; transports tags + CI smoke cross-check) |
 | P11 | One host-link engine emitting `.claude/skills/<name>/SKILL.md`; empirical discovery release gate | PRODUCT-AUDIT #13; FEATURE-ROADMAP 3.7 | M | done (0fd58b1; one engine, claude .claude/skills/<name>/SKILL.md layout, verify gate, snapshot parity) |
 | P12 | Single project-context engine (repo project-context/ + ~/.youmd/projects/ overlay); delete dup impls | PRODUCT-AUDIT #14; FEATURE-ROADMAP 3.8 | M | done (d83f718; one engine, repo-over-global overlay, dup impls deleted, 237/237) |
 | P13 | Pagination cursors on all list endpoints + OpenAPI docs | PRODUCT-AUDIT #15; FEATURE-ROADMAP 2.9 | M | done (904ba31; 8 endpoints, prod e2e cursor verified, legacy shape unchanged) |
@@ -41,7 +41,7 @@
 | P16 | Pipeline honesty: compile merges chat-refined content, or de-document discover→review | PRODUCT-AUDIT #18; FEATURE-ROADMAP 3.5 | L | blocked(needs-spec: Houston call) |
 | P17 | GitHub repo freshness: debounced auto-push on save/publish + ancestor check on repo pulls | PRODUCT-AUDIT #19; FEATURE-ROADMAP 2.7 | M | done (3d92c04; debounced auto-push, retry-once, canonical-wins staleness) |
 | P18 | Shared capability router package for CLI + API route + golden parity tests | PRODUCT-AUDIT #20; FEATURE-ROADMAP 3.6 | M | todo |
-| P19 | Typed brainScopes + identity-bearing adapters + doctor skill-ref validation | PRODUCT-AUDIT #21; FEATURE-ROADMAP 3.9 | M | todo |
+| P19 | Typed brainScopes + identity-bearing adapters + doctor skill-ref validation | PRODUCT-AUDIT #21; FEATURE-ROADMAP 3.9 | M | done (982151c; scopes on MCP tools + doctor requiresScopes validation) |
 | P20 | Documented precedence model + shadowing warning + `youmd status` active-roots line | PRODUCT-AUDIT #22; FEATURE-ROADMAP 3.15 | M | done (d83f718; PRECEDENCE table, shadow warnings, active-roots in status) |
 | P21 | Standard error envelope `{error:{code,message}}` + real OpenAPI schemas | PRODUCT-AUDIT #23; FEATURE-ROADMAP 3.1 | M | done (63524a5; 115 error sites, CLI parser updated, 89/89 convex tests; prod e2e verified) |
 | P22 | Per-key rate limits on writes + Retry-After/X-RateLimit headers | PRODUCT-AUDIT #24; FEATURE-ROADMAP 3.2 | M | done (a703c6a; prod e2e: 200 carries X-RateLimit trio) |
@@ -131,7 +131,7 @@
 | T5 | Atomic JSON writes (tmp+rename+lock), 0600/0700 perms, .bak on corrupt config | S | done (e514a2b: atomic+locked writes, 0600/0700, .bak on corrupt) |
 | T6 | CI: tsc+lint+build+cli-tests on PR; gated Convex prod deploys | S | done (28d90b5+cd8b29c: CI gate live; lint warn-only until T31) |
 | T7 | pull/push home-first resolution; project-local needs flag + auto-gitignore | S | done (34fc522; home-first, --local + marker, auto-gitignore; 13 tests) |
-| T8 | ISR for /[username] + /profiles; skip anonymous Convex live queries | M | todo |
+| T8 | ISR for /[username] + /profiles; skip anonymous Convex live queries | M | done (aee87ca; revalidate=60 + anon skip live queries) |
 | T9 | Server-assembled system prompt; chat proxy rejects client system messages | L | todo |
 | T10 | Lossless identity round-trip (markdown per-section source of truth + property test) | L | todo |
 | T11 | Load JetBrains Mono + Inter via next/font | S | done (aca29f3) |
@@ -142,14 +142,14 @@
 | T16 | Bounded-batch rateLimits cleanup w/ index + reschedule | S | done (683f014) |
 | T17 | API client timeout + retry w/ jitter; consistent offline message | S | done (9cbb89e) |
 | T18 | Fix fs.watch recursive crash on Linux/Node 18 | S | done (5895375) |
-| T19 | Lazy-load dashboard panes; docs page → server component | M | todo |
+| T19 | Lazy-load dashboard panes; docs page → server component | M | done (8d0e5b3; next/dynamic on 6 heavy panes; docs skipped) |
 | T20 | Profiles searchIndex for MCP search_profiles | S | done (683f014) |
 | T21 | ARIA live regions on terminal chat + skip link | S | done (2607f97; quiescence-based announce, dialog semantics, skip link; SR QA noted) |
 | T22 | Delete 12 dead landing sections + unused reactbits/ + ogl dep; dedupe components | M | done (9451a9d; 17 dead files + ogl removed, live components verified kept) |
 | T23 | Route-level loading.tsx + error.tsx for key routes | M | done (2607f97; shared RouteError + 10 boundary files) |
 | T24 | Single canonical host (apex vs www) alignment | S | done (9451a9d; www canonical, 308 backstop + metadata/sitemap aligned; post-deploy curls pending) |
-| T25 | MCP tool-call test harness (table-driven over all tools) | M | todo |
-| T26 | Playwright smoke: landing → sign-in → dashboard + anon profile | M | todo |
+| T25 | MCP tool-call test harness (table-driven over all tools) | M | done (16 tests across 9 hosted tools) |
+| T26 | Playwright smoke: landing → sign-in → dashboard + anon profile | M | done (chromium smoke; daily workflow) |
 | T27 | Per-section sha256 manifest + shared canonicalJsonString package | M | todo |
 | T28 | Add llms.txt/shell/schema/install.sh to proxy RESERVED_PATHS | S | done (f0f7925) |
 | T29 | CLI version from package.json; postinstall banner TTY gate; publish version-exists check | S | partial (a984939 version-from-package.json; banner TTY gate + publish version-exists check pending) |
