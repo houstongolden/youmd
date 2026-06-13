@@ -1,0 +1,30 @@
+name: Playwright Smoke
+
+on:
+  schedule:
+    # Run once daily at 08:00 UTC
+    - cron: "0 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  smoke:
+    name: E2E smoke (chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npm run e2e:install
+
+      - name: Run smoke tests
+        run: npm run e2e -- --reporter=line
+        env:
+          BASE_URL: https://www.you.md

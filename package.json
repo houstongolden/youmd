@@ -33,6 +33,8 @@
     "lint": "eslint && npm run check:radius",
     "check:radius": "node scripts/check-radius.mjs",
     "test:convex": "vitest run --config vitest.config.mts",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium",
     "publish:cli": "./scripts/publish-cli-workflow.sh",
     "publish:cli:dry": "cd cli && npm pack --dry-run",
     "predev": "npx convex dev --until-success",
@@ -62,6 +64,7 @@
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.8",
+    "@playwright/test": "^1.49.0"
   }
 }
