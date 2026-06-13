@@ -849,3 +849,41 @@ export async function getVaultData(): Promise<ApiResponse<VaultData>> {
     token: getToken(),
   });
 }
+
+// ─── Skill outcome telemetry (L9/L10) ────────────────────────────────
+
+export interface SkillInsight {
+  skill: string;
+  uses: number;
+  success: number;
+  failure: number;
+  partial: number;
+  successRate: number;  // 0–1
+  lastUsedAt: number;   // epoch ms
+}
+
+export interface SkillInsights {
+  insights: SkillInsight[];
+  total: number;
+}
+
+/** Fetch per-skill outcome aggregates for the authenticated user (L10). */
+export async function getSkillInsights(): Promise<ApiResponse<SkillInsights>> {
+  return apiRequest<SkillInsights>("/api/v1/me/skills/insights", {
+    token: getToken(),
+  });
+}
+
+/** Report a skill execution outcome via the HTTP route (non-MCP callers). */
+export async function reportSkillOutcome(opts: {
+  skill: string;
+  outcome: "success" | "failure" | "partial";
+  note?: string;
+  durationMs?: number;
+}): Promise<ApiResponse<{ success: boolean; id: string; skillName: string; outcome: string }>> {
+  return apiRequest("/api/v1/me/skills/outcomes", {
+    method: "POST",
+    token: getToken(),
+    body: opts,
+  });
+}

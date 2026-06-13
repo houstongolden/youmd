@@ -35,7 +35,7 @@ import {
 import { loadIdentityData, resolveVariable, renderSkillTemplate } from "../lib/skill-renderer";
 import { BrailleSpinner, renderRichResponse } from "../lib/render";
 import { isAuthenticated } from "../lib/config";
-import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill } from "../lib/api";
+import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, type SkillInsight } from "../lib/api";
 import { readSkillFile, getSkillDir } from "../lib/skills";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
 
@@ -778,7 +778,7 @@ function metricsCmd(): void {
   }
 }
 
-function improveCmd(): void {
+async function improveCmd(): Promise<void> {
   const metrics = getMetrics();
   const catalog = readSkillCatalog();
   const identity = loadIdentityData();
@@ -790,23 +790,91 @@ function improveCmd(): void {
   const installed = catalog.skills.filter((s) => s.installed);
   const notInstalled = catalog.skills.filter((s) => !s.installed);
 
+  // ─── Live outcome insights (L10) ──────────────────────────────────
+  let liveInsights: SkillInsight[] | null = null;
+  if (isAuthenticated()) {
+    const insightSpinner = new BrailleSpinner("fetching outcome telemetry");
+    insightSpinner.start();
+    try {
+      const res = await getSkillInsights();
+      if (res.ok && Array.isArray(res.data?.insights) && res.data.insights.length > 0) {
+        liveInsights = res.data.insights;
+        insightSpinner.stop(`${liveInsights.length} skill${liveInsights.length === 1 ? "" : "s"} with outcome data`);
+      } else {
+        insightSpinner.stop("no outcome data yet");
+      }
+    } catch {
+      insightSpinner.stop("offline — using local metrics");
+    }
+  }
+
+  // ─── Live outcome table ───────────────────────────────────────────
+  if (liveInsights && liveInsights.length > 0) {
+    console.log("  " + ACCENT("outcome history:"));
+    console.log("");
+
+    const maxName = Math.max(...liveInsights.map((s) => s.skill.length), 5);
+    const headerStr =
+      `  ${"skill".padEnd(maxName + 2)}` +
+      `${"uses".padStart(6)}  ` +
+      `${"success rate".padEnd(13)}  ` +
+      `last used`;
+    console.log(DIM(headerStr));
+    console.log(DIM("  " + "-".repeat(headerStr.length - 2)));
+
+    const lowPerformers: SkillInsight[] = [];
+
+    for (const s of liveInsights) {
+      const ratePct = Math.round(s.successRate * 100);
+      const rateStr = `${ratePct}%`.padStart(4);
+      const rateColored = s.successRate >= 0.8
+        ? chalk.green(rateStr)
+        : ACCENT(rateStr);
+      const lastUsed = s.lastUsedAt > 0
+        ? new Date(s.lastUsedAt).toISOString().slice(0, 10)
+        : "never";
+
+      console.log(
+        `  ${chalk.cyan(s.skill.padEnd(maxName + 2))}` +
+        `${String(s.uses).padStart(6)}  ` +
+        `${rateColored.padEnd(13)}  ` +
+        `${DIM(lastUsed)}`
+      );
+
+      if (s.successRate < 0.8 && s.failure + s.partial > 0) {
+        lowPerformers.push(s);
+      }
+    }
+
+    console.log("");
+
+    for (const s of lowPerformers) {
+      const failCount = s.failure + s.partial;
+      console.log(
+        DIM(`    consider revising ${s.skill} — ${failCount} failure${failCount === 1 ? "" : "s"} recently`)
+      );
+    }
+
+    if (lowPerformers.length > 0) console.log("");
+  }
+
   // ─── Activity Analysis ────────────────────────────────────────────
   const totalUses = Object.values(metrics.skills).reduce((sum, s) => sum + s.uses, 0);
   console.log(
     "  " + ACCENT("overview: ") +
-    `${installed.length} installed, ${totalUses} total uses, ` +
+    `${installed.length} installed, ${totalUses} total local uses, ` +
     `${Object.keys(metrics.identityFields).length} identity fields tracked`
   );
   console.log("");
 
-  // Most used
+  // Most used (local — only show when no live insights available)
   const mostUsed = Object.entries(metrics.skills)
     .filter(([, data]) => data.uses > 0)
     .sort((a, b) => b[1].uses - a[1].uses)
     .slice(0, 5);
 
-  if (mostUsed.length > 0) {
-    console.log("  " + ACCENT("most active:"));
+  if (mostUsed.length > 0 && !liveInsights) {
+    console.log("  " + ACCENT("most active (local):"));
     for (const [name, data] of mostUsed) {
       const bar = ACCENT("\u2588".repeat(Math.min(data.uses, 20))) + DIM("\u2591".repeat(Math.max(0, 20 - data.uses)));
       console.log(`    ${chalk.cyan(name.padEnd(24))} ${bar} ${data.uses}`);
@@ -1292,7 +1360,7 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       await initProjectCmd(args);
       break;
     case "improve":
-      improveCmd();
+      await improveCmd();
       break;
     case "metrics":
     case "stats":
