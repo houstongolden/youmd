@@ -5,7 +5,7 @@
  * Input:  { manifest: { capabilities? }, request: { capability, args? } }
  * Output: { matched, capability, transports, reason? }
  *
- * Twins: cli/src/lib/capability-router.ts, convex/lib/capability-router.ts.
+ * Twins: cli/src/lib/capability-router.ts, convex/lib/capabilityRouter.ts.
  * All three are pinned to the same JSON fixture:
  *   convex/__fixtures__/capability-router-cases.json
  *

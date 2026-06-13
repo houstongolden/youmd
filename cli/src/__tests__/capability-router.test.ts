@@ -4,7 +4,7 @@
  * Loads the shared fixture at convex/__fixtures__/capability-router-cases.json
  * and asserts that the CLI resolver produces the expected output for every case.
  *
- * An identical test suite runs against convex/lib/capability-router.ts in the
+ * An identical test suite runs against convex/lib/capabilityRouter.ts in the
  * convex test runner — both must pass against the same fixture JSON.
  *
  * P18 (2026-06-12)

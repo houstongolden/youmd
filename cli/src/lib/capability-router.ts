@@ -5,7 +5,7 @@
  * Input:  { manifest: { capabilities? }, request: { capability, args? } }
  * Output: { matched, capability, transports, reason? }
  *
- * A convex-side twin lives at convex/lib/capability-router.ts.
+ * A convex-side twin lives at convex/lib/capabilityRouter.ts.
  * Both are pinned to the same JSON fixture: convex/__fixtures__/capability-router-cases.json.
  *
  * P18 (2026-06-12)

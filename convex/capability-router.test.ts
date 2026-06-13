@@ -1,5 +1,5 @@
 /**
- * Parity tests for convex/lib/capability-router.ts.
+ * Parity tests for convex/lib/capabilityRouter.ts.
  *
  * Loads the shared fixture at convex/__fixtures__/capability-router-cases.json
  * and asserts that the Convex resolver produces the expected output for every case.
@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { resolveCapability } from "./lib/capability-router";
+import { resolveCapability } from "./lib/capabilityRouter";
 import cases from "./__fixtures__/capability-router-cases.json";
 
 type FixtureCase = {
