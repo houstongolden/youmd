@@ -3,6 +3,7 @@ import {
   normalizeYouStackCapabilities,
   routeYouStackCapability,
 } from "@/lib/youstack-routing";
+import { resolveCapability } from "@/lib/capability-router";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +27,15 @@ export async function POST(request: NextRequest) {
     ? body.stack as Record<string, unknown>
     : {};
   const capabilities = normalizeYouStackCapabilities(body.capabilities ?? stack.capabilities);
+  const fuzzyRoute = routeYouStackCapability(body.request, capabilities);
+
+  // Use the canonical resolver to report truthful transport availability for
+  // the matched capability (no behavior change for valid requests; adds
+  // transports field to the response).
+  const transport = resolveCapability(
+    { capabilities },
+    { capability: fuzzyRoute.capability?.id ?? "" },
+  );
 
   return NextResponse.json({
     schemaVersion: "youstack-route/v1",
@@ -37,7 +47,8 @@ export async function POST(request: NextRequest) {
         ? stack.tags.filter((tag): tag is string => typeof tag === "string").slice(0, 20)
         : [],
     },
-    ...routeYouStackCapability(body.request, capabilities),
+    ...fuzzyRoute,
+    transports: transport.transports,
   }, {
     headers: {
       ...CORS_HEADERS,

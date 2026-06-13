@@ -13,6 +13,7 @@ import {
   YouStackValidationResult,
   runStackGuard,
 } from "../lib/youstack";
+import { resolveCapability } from "../lib/capability-router";
 import {
   buildInitGoldenFile,
   goldenFilePath,
@@ -226,9 +227,11 @@ export async function stackCommand(
     }
 
     const route = routeYouStackRequest(loaded.manifest, request);
+    // Resolve transport availability for the matched capability via the canonical router.
+    const transport = resolveCapability(loaded.manifest, { capability: route.capability.id });
     const readiness = getYouStackReadiness(loaded);
     if (options.json) {
-      console.log(JSON.stringify({ readiness, ...route }, null, 2));
+      console.log(JSON.stringify({ readiness, ...route, transports: transport.transports }, null, 2));
       return;
     }
 
@@ -240,6 +243,9 @@ export async function stackCommand(
       console.log("  " + DIM("intent: ") + route.capability.intent);
     }
     console.log("  " + DIM("policy: ") + (route.capability.mutationPolicy || "unspecified"));
+    const http = transport.transports.http ? chalk.green("yes") : chalk.dim("no");
+    const mcp = transport.transports.mcp ? chalk.green("yes") : chalk.dim("no");
+    console.log("  " + DIM("transports: ") + `http=${http}  mcp=${mcp}`);
     if (route.capability.skill) console.log("  " + DIM("skill: ") + route.capability.skill);
     if (route.capability.mcpTool) console.log("  " + DIM("mcp: ") + route.capability.mcpTool);
     if (route.capability.apiEndpoint) console.log("  " + DIM("api: ") + route.capability.apiEndpoint);
