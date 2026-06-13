@@ -113,7 +113,7 @@
 | L19 | First dreaming loop: nightly memory consolidation cron | M | done (9914771; nightly consolidation cron, deterministic, idempotent, 13 tests); prod e2e: archived 25 ephemerals) |
 | L20 | Fleet learning: aggregate-only queries (k-anon ≥20) + weekly fleet report | M | done (0fa2595; k-anon ≥20 fleet aggregates with weekly cron, 15 tests) |
 | L21 | Telemetry consent surface + privacy contract in docs/llms.txt | M | done (f3f9c3e; telemetry section in docs + llms.txt; consent model documented) |
-| L22 | User-facing fleet feedback notices | M | blocked(needs-spec) |
+| L22 | User-facing fleet feedback notices | M | done (v0 minimal: fleet-snapshot route + CLI dim notice, k-anon ≥20 respected) |
 | L23 | Per-stack MCP namespace /api/v1/mcp/{user}/{stack} | L | done (3342caf; namespaced MCP with filtered tools; test gap noted); prod 404 contract verified) |
 | L24 | Scheduled maintainer agent mining journal → guarded auto_pr | L | done (a5d8147 + cron orchestrator; mineStackJournals + weekly cron; test gap noted) |
 | L25 | Cross-stack proposals → human-gated registry candidates | L | done (a5d8147; listPendingRegistryCandidates query, ≥5 evidence threshold) |
