@@ -53,4 +53,34 @@ crons.daily(
   { dryRun: false, limit: 50 }
 );
 
+// L19 — Nightly dreaming loop (deterministic v1, no LLM).
+//
+// Pages through all users in batches and runs a deterministic consolidation
+// pass for each: exact-duplicate hash-collision sweep (sets supersededBy),
+// and stale-ephemeral demotion (sets isArchived) for non-durable categories
+// only.  Pinned memories, durable categories (preference/decision/goal/fact),
+// and corrections are NEVER touched.  Each user run is idempotent per
+// (userId, UTC date) — a second run on the same day is a no-op.
+// 09:00 UTC = 2am PT (summer) / 1am PT (winter).
+crons.daily(
+  "nightly memory consolidation",
+  { hourUTC: 9, minuteUTC: 0 },
+  internal.consolidation.nightlyConsolidation,
+  {}
+);
+
+// L20 — Weekly fleet aggregation (k-anon ≥ 20).
+//
+// Runs all fleet aggregate queries (category distribution, skill install
+// counts, avg memories per active user) and writes a single fleetReports
+// row.  Every aggregate is gated by kAnonBucket — results from fewer than
+// 20 distinct contributing users are suppressed (null).  No usernames,
+// userId strings, or content strings are stored in the written row.
+crons.weekly(
+  "weekly fleet aggregation",
+  { dayOfWeek: "sunday", hourUTC: 10, minuteUTC: 0 },
+  internal.fleet.weeklyFleetAggregation,
+  {}
+);
+
 export default crons;
