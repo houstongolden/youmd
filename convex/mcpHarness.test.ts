@@ -193,10 +193,8 @@ describe("MCP tool: search_profiles", () => {
 
     // searchPublicProfiles uses a search index; convex-test supports this.
     // If the index isn't warmed, listAll is the fallback path.
-    const all = await t.query(api.profiles.listAll);
-    const found = all.filter((p: { username: string }) =>
-      p.username.includes("searchable")
-    );
+    const all = (await t.query(api.profiles.listAll)) as Array<{ username: string }>;
+    const found = all.filter((p) => p.username.includes("searchable"));
     expect(found.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -205,8 +203,8 @@ describe("MCP tool: search_profiles", () => {
     await seedPublicProfile(t, "list-profile-a");
     await seedPublicProfile(t, "list-profile-b");
 
-    const all = await t.query(api.profiles.listAll);
-    const usernames = all.map((p: { username: string }) => p.username);
+    const all = (await t.query(api.profiles.listAll)) as Array<{ username: string }>;
+    const usernames = all.map((p) => p.username);
     expect(usernames).toContain("list-profile-a");
     expect(usernames).toContain("list-profile-b");
   });
