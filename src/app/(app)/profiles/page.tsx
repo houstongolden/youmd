@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CONVEX_SITE_URL } from "@/lib/constants";
 import { ProfilesDirectoryContent } from "./profiles-content";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Profiles — you.md",

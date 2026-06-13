@@ -141,7 +141,15 @@ interface ProfileContentProps {
 export function ProfileContent({ ssrData, preview = false, previewUsername }: ProfileContentProps) {
   const params = useParams();
   const username = (preview && previewUsername ? previewUsername : params.username) as string;
-  const profile = useQuery(api.profiles.getPublicProfile, { username });
+
+  // ── Anon-vs-auth query branch ─────────────────────────────────
+  // Authenticated users get a live Convex subscription (data freshness +
+  // ownership detection). Anonymous visitors skip the subscription and rely
+  // on the ssrData already fetched server-side; this avoids an unnecessary
+  // WebSocket connection on every public profile page view.
+  const { isAuthenticated } = useConvexAuth();
+  const skipLiveQuery = !isAuthenticated && !preview;
+  const profile = useQuery(api.profiles.getPublicProfile, skipLiveQuery ? "skip" : { username });
   const recordView = useMutation(api.profiles.recordView);
   const hasRecordedView = useRef(false);
   const [copied, setCopied] = useState(false);
@@ -160,7 +168,7 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
 
   // ── Ownership detection ──────────────────────────────────────
   const { user: clerkUser } = useUser();
-  const { isAuthenticated } = useConvexAuth();
+  // isAuthenticated declared above (used for skipLiveQuery)
   const convexUser = useQuery(
     api.users.getByClerkId,
     isAuthenticated && clerkUser?.id ? { clerkId: clerkUser.id } : "skip"
@@ -256,8 +264,8 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
   // second <main> when this component renders inline as the profile preview.
   const MainEl: "main" | "div" = preview ? "div" : "main";
 
-  // Not found — only trust the live Convex response
-  if (profile === null) {
+  // Not found — live Convex null for auth'd visitors; null ssrData for anon
+  if (profile === null || (skipLiveQuery && ssrData === null)) {
     return (
       <MainEl className={`${rootMinH} flex items-center justify-center bg-[hsl(var(--bg))] p-4`}>
         <div className="w-full max-w-md">

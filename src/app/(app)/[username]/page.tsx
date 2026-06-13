@@ -2,7 +2,7 @@ import { ProfileContent } from "./profile-content";
 import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 // ── Normalize handles that arrive with a leading @ (or %40) ──
 // /@houston and /%40houston should 301 to the canonical /houston.
