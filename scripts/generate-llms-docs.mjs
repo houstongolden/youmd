@@ -603,6 +603,10 @@ Agents should:
 - return honest readiness state instead of bluffing a zero-result read
 - leave a trail in project context or activity logs
 
+## Telemetry
+
+You.md collects three categories of telemetry to power the self-improving skill loop. skillEvents and skillOutcomes are owner-scoped and identifiable — linked to your account so the improvement loop can surface per-skill success rates and personalised recommendations (default on for authenticated users). consolidationRuns are per-user metadata (run date, duplicate count, archive count, review-queue size) used for consolidation health and rate limiting (default on, identifiable). fleetReports are aggregate only — containing category names and counts but never content strings, usernames, or any per-user identifier — and are published only when the cohort meets a k-anonymity threshold of at least 20 users (never identifiable). You can review all telemetry stored against your account from Settings > Privacy.
+
 ## Important Links
 
 - Homepage: https://you.md/

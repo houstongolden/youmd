@@ -128,6 +128,7 @@ const navigation: NavItem[] = [
   },
   { id: "errors-troubleshooting", label: "Errors + Troubleshooting" },
   { id: "privacy", label: "Privacy" },
+  { id: "telemetry", label: "Telemetry" },
   { id: "commands", label: "Dashboard Commands" },
 ];
 
@@ -2635,6 +2636,52 @@ npm run docs:check`}</CodeBlock>
               You control what goes into each layer. Nothing is shared without
               your explicit action.
             </Callout>
+
+            {/* ── Telemetry ─────────────────────────────────── */}
+            <H2 id="telemetry">Telemetry &amp; Privacy</H2>
+            <P>
+              You.md collects three categories of telemetry to power the
+              self-improving skill loop. Each category has a distinct
+              privacy posture:
+            </P>
+            <div className="my-4 rounded-[2px] border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+              <div className="px-4 py-2 border-b border-[hsl(var(--border))] flex gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--text-secondary))] opacity-20 mt-1" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--text-secondary))] opacity-20 mt-1" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--text-secondary))] opacity-20 mt-1" />
+                <span className="ml-2 text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-50 uppercase tracking-widest">
+                  telemetry categories
+                </span>
+              </div>
+              <div className="divide-y divide-[hsl(var(--border))]">
+                <div className="px-4 py-3 flex gap-3 text-[13px]">
+                  <span className="shrink-0 font-mono text-[hsl(var(--accent))] w-40">skillEvents / skillOutcomes</span>
+                  <span className="text-[hsl(var(--text-secondary))]">
+                    Owner-scoped and identifiable. Linked to your account so the improvement loop can surface per-skill success rates, flag low performers, and generate personalised recommendations. Default on for authenticated users.
+                  </span>
+                </div>
+                <div className="px-4 py-3 flex gap-3 text-[13px]">
+                  <span className="shrink-0 font-mono text-[hsl(var(--accent))] w-40">consolidationRuns</span>
+                  <span className="text-[hsl(var(--text-secondary))]">
+                    Per-user metadata (run date, duplicate count, archive count, review-queue size). Identifiable to your account; used only for consolidation health dashboards and rate limiting. Default on for authenticated users.
+                  </span>
+                </div>
+                <div className="px-4 py-3 flex gap-3 text-[13px]">
+                  <span className="shrink-0 font-mono text-[hsl(var(--accent))] w-40">fleetReports</span>
+                  <span className="text-[hsl(var(--text-secondary))]">
+                    Aggregate only. Contains category names and counts — never content strings, usernames, or any per-user identifier. Published only when the cohort meets a k-anonymity threshold of at least 20 users. Never identifiable.
+                  </span>
+                </div>
+              </div>
+            </div>
+            <P>
+              Owner-scoped telemetry (skillEvents, skillOutcomes, consolidationRuns) is on by
+              default and linked to your account so the improvement loop works. Fleet telemetry is
+              anonymised before aggregation and published only when the k-anonymity threshold
+              (k&nbsp;&ge;&nbsp;20) is met, so no individual can be identified from a fleet report.
+              You can review all telemetry stored against your account from the dashboard under
+              Settings &rsaquo; Privacy.
+            </P>
 
             {/* ── Dashboard Commands ────────────────────────── */}
             <H2 id="commands">Dashboard Commands</H2>
