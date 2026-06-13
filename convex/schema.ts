@@ -709,4 +709,52 @@ export default defineSchema({
   })
     .index("by_bucketDay", ["bucketDay"])
     .index("by_bucketDay_endpoint", ["bucketDay", "endpoint"]),
+
+  // ── Skill outcome telemetry (L9) ───────────────────────────
+  // One row per agent-reported skill execution. Powers the L10 insights query
+  // and the `youmd skill improve` CLI surface (success-rate table + low-performer
+  // recommendations). Separate from skillInstalls/agentActivity so the
+  // improvement loop can aggregate outcomes without joining large tables.
+  skillOutcomes: defineTable({
+    userId: v.id("users"),
+    skillName: v.string(),
+    agent: v.optional(v.string()),           // reporting agent name (optional)
+    outcome: v.union(
+      v.literal("success"),
+      v.literal("failure"),
+      v.literal("partial"),
+    ),
+    note: v.optional(v.string()),            // free-text note (max 500 chars)
+    durationMs: v.optional(v.number()),      // wall-clock skill execution time
+    createdAt: v.number(),
+  })
+    // Primary lookup: per-user outcomes ordered by creation time
+    .index("by_userId", ["userId"])
+    // Insights query: aggregate by (userId, skillName) without a full scan
+    .index("by_userId_skillName", ["userId", "skillName"]),
+
+  // ── Consolidation run ledger (L19 — nightly dreaming loop) ────────
+  // One row per (userId, ranAt-date) written at the END of a successful
+  // nightly consolidation. The by_userId_ranAt index is the idempotency key:
+  // a second run for the same user on the same UTC date is a no-op.
+  // Outcome fields let product/dashboards query consolidation health without
+  // reading individual memory rows.
+  consolidationRuns: defineTable({
+    userId: v.id("users"),
+    ranAt: v.string(),              // "YYYY-MM-DD" UTC date string
+    duplicatesSuperseded: v.number(),
+    archived: v.number(),
+    reviewQueueSize: v.number(),
+  })
+    .index("by_userId_ranAt", ["userId", "ranAt"]),
+
+  // ── Fleet aggregate reports (L20 — k-anon fleet learning) ─────────
+  // One row per weekly Sunday 10:00 UTC fleet aggregation run.
+  // metrics is an opaque JSON blob whose shape is defined by FleetMetrics in
+  // convex/fleet.ts. Contains ONLY category names + counts — never content
+  // strings, usernames, or any per-user identifier.
+  fleetReports: defineTable({
+    ranAt: v.string(),   // ISO-8601 timestamp string
+    metrics: v.any(),    // FleetMetrics — see convex/fleet.ts
+  }),
 });

@@ -3183,6 +3183,101 @@ http.route({
   handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
 });
 
+// POST /api/v1/me/skills/outcomes — Report a skill execution outcome (authenticated, write:memories scope, idempotency-safe)
+http.route({
+  path: "/api/v1/me/skills/outcomes",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:memories");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    let body: {
+      skill?: unknown;
+      outcome?: unknown;
+      agent?: unknown;
+      note?: unknown;
+      durationMs?: unknown;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse("invalid_request", "Invalid JSON body", 400);
+    }
+
+    try {
+      if (typeof body.skill !== "string" || !body.skill.trim()) {
+        return errorResponse("invalid_request", "skill is required (string)", 400);
+      }
+      const outcome = body.outcome;
+      if (outcome !== "success" && outcome !== "failure" && outcome !== "partial") {
+        return errorResponse("invalid_request", "outcome must be one of: success, failure, partial", 400);
+      }
+
+      const result = await ctx.runMutation(api.skills.recordOutcome, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        skillName: (body.skill as string).trim(),
+        outcome: outcome as "success" | "failure" | "partial",
+        agent: typeof body.agent === "string" ? body.agent.slice(0, 100) : undefined,
+        note: typeof body.note === "string" ? body.note.slice(0, 500) : undefined,
+        durationMs: typeof body.durationMs === "number" && body.durationMs >= 0
+          ? body.durationMs
+          : undefined,
+      });
+
+      return guard.finish(json({ success: true, ...result }));
+    } catch (err) {
+      return serverErrorResponse("me/skills/outcomes", err, "Failed to record skill outcome");
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/skills/outcomes",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
+// GET /api/v1/me/skills/insights — Per-skill outcome aggregates for the authenticated user (read:private; ?cursor=&limit= additive pagination)
+http.route({
+  path: "/api/v1/me/skills/insights",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
+
+    const user = await ctx.runQuery(api.users.getByClerkId, {
+      clerkId: auth.userId,
+      _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+    });
+    if (!user) return errorResponse("not_found", "User not found", 404);
+
+    try {
+      const insights = await ctx.runQuery(api.skills.activityInsights, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        userId: user._id,
+      });
+
+      return json({ insights, total: insights.length });
+    } catch (err) {
+      return serverErrorResponse("me/skills/insights", err, "Failed to fetch skill insights");
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/skills/insights",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: CORS_HEADERS })),
+});
+
 // ── Version History & Agent Activity ─────────────────────
 
 // GET /api/v1/me/history — Get bundle version history (authenticated; supports ?cursor= + ?limit= pagination in version-desc order — paginated calls add nextCursor + hasMore)
@@ -3650,7 +3745,7 @@ http.route({
           type: "bearer",
           required: false,
           description:
-            "Public identity tools work unauthenticated. Tools that read the authenticated user's own data (whoami, get_agent_brief, get_my_identity, get_my_stacks, get_repo_file, search_memories) require a you.md API key with the read:private scope, passed as `Authorization: Bearer <key>`.",
+            "Public identity tools work unauthenticated. Tools that read the authenticated user's own data (whoami, get_agent_brief, get_my_identity, get_my_stacks, get_repo_file, search_memories) require a you.md API key with the read:private scope, passed as `Authorization: Bearer <key>`. Write tools (report_skill_outcome) require the write:memories scope.",
           instructions_url: "https://you.md/docs#api-keys",
         },
       }, null, 2),
@@ -3828,6 +3923,33 @@ http.route({
                     },
                   },
                   required: ["query"],
+                },
+              },
+              {
+                name: "report_skill_outcome",
+                description: "Report the outcome of a skill execution for the authenticated user. Call this after running a you.md skill to feed the self-improvement telemetry loop — your success/failure data powers the `youmd skill improve` surface. Requires a you.md API key with the write:memories scope passed as Bearer token in the Authorization header.",
+                inputSchema: {
+                  type: "object",
+                  properties: {
+                    skill: {
+                      type: "string",
+                      description: "Skill name (e.g. 'youstack-start', 'claude-md-generator')",
+                    },
+                    outcome: {
+                      type: "string",
+                      enum: ["success", "failure", "partial"],
+                      description: "Execution outcome: success = worked as intended; failure = did not produce useful output; partial = partially successful",
+                    },
+                    note: {
+                      type: "string",
+                      description: "Optional free-text note about the outcome (max 500 chars)",
+                    },
+                    durationMs: {
+                      type: "number",
+                      description: "Optional wall-clock execution time in milliseconds",
+                    },
+                  },
+                  required: ["skill", "outcome"],
                 },
               },
             ],
@@ -4138,6 +4260,44 @@ http.route({
               (m: { category: string; content: string }) => `[${m.category}] ${m.content}`
             );
             return mcpToolOk(id, lines.join("\n"), "text/plain");
+          }
+
+          if (toolName === "report_skill_outcome") {
+            const auth = await authenticateRequest(ctx, request);
+            if (auth instanceof Response) {
+              return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
+            }
+            const denied = await requireScope(ctx, request, auth, "write:memories");
+            if (denied) {
+              return mcpToolError(id, "API key lacks required scope: write:memories");
+            }
+
+            const skill = toolArgs.skill as string;
+            if (!skill || typeof skill !== "string" || !skill.trim()) {
+              return mcpToolError(id, "skill is required");
+            }
+            const outcome = toolArgs.outcome as string;
+            if (outcome !== "success" && outcome !== "failure" && outcome !== "partial") {
+              return mcpToolError(id, "outcome must be one of: success, failure, partial");
+            }
+
+            const user = await ctx.runQuery(api.users.getByClerkId, {
+              clerkId: auth.userId,
+              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+            });
+            if (!user) return mcpToolError(id, "user not found");
+
+            const result = await ctx.runMutation(api.skills.recordOutcome, {
+              clerkId: auth.userId,
+              _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+              skillName: skill.trim(),
+              outcome: outcome as "success" | "failure" | "partial",
+              agent: typeof toolArgs.agent === "string" ? toolArgs.agent : undefined,
+              note: typeof toolArgs.note === "string" ? toolArgs.note : undefined,
+              durationMs: typeof toolArgs.durationMs === "number" ? toolArgs.durationMs : undefined,
+            });
+
+            return mcpToolOk(id, `outcome recorded: ${result.skillName} → ${result.outcome}`, "text/plain");
           }
 
           return mcpError(id, -32601, `Unknown tool: ${toolName}`);

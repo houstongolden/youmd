@@ -4,6 +4,8 @@ import { requireOwner } from "./lib/auth";
 import { pageArgs, clampPageSize } from "./lib/pagination";
 import type { Doc } from "./_generated/dataModel";
 
+// ── L9: skill outcome telemetry ──────────────────────────────
+
 // ---------------------------------------------------------------------------
 // Bundled skill content — full templates, seeded on deploy
 // ---------------------------------------------------------------------------
@@ -745,6 +747,116 @@ export const trackUsage = mutation({
     }
 
     return { success: true };
+  },
+});
+
+/**
+ * L9 — Record a skill outcome (success / failure / partial).
+ *
+ * Auth: caller must be the authenticated owner (same path as publish /
+ * recordInstall). Rejects unknown outcome values via the standard pattern
+ * (throw + message string) so the HTTP layer surfaces them in the error envelope.
+ */
+export const recordOutcome = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    skillName: v.string(),
+    outcome: v.union(v.literal("success"), v.literal("failure"), v.literal("partial")),
+    agent: v.optional(v.string()),
+    note: v.optional(v.string()),
+    durationMs: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+
+    const id = await ctx.db.insert("skillOutcomes", {
+      userId: user._id,
+      skillName: args.skillName.trim().slice(0, 200),
+      outcome: args.outcome,
+      agent: typeof args.agent === "string" ? args.agent.slice(0, 100) : undefined,
+      note: typeof args.note === "string" ? args.note.slice(0, 500) : undefined,
+      durationMs: typeof args.durationMs === "number" && args.durationMs >= 0
+        ? Math.round(args.durationMs)
+        : undefined,
+      createdAt: Date.now(),
+    });
+
+    return { id, skillName: args.skillName, outcome: args.outcome };
+  },
+});
+
+/**
+ * L10 — Per-skill aggregate insights for the authenticated user.
+ *
+ * Returns success / failure / partial counts + success rate for each skill
+ * the user has outcome rows for. Sorted by uses desc, capped at 50 rows so
+ * the CLI table stays scannable.
+ */
+export const activityInsights = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
+    // Collect all outcome rows for this user (index-backed, no table scan).
+    const rows = await ctx.db
+      .query("skillOutcomes")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    // Aggregate per skill.
+    const agg = new Map<string, {
+      uses: number;
+      success: number;
+      failure: number;
+      partial: number;
+      lastUsedAt: number;
+    }>();
+
+    for (const row of rows) {
+      const existing = agg.get(row.skillName) ?? {
+        uses: 0, success: 0, failure: 0, partial: 0, lastUsedAt: 0,
+      };
+      existing.uses += 1;
+      if (row.outcome === "success") existing.success += 1;
+      else if (row.outcome === "failure") existing.failure += 1;
+      else existing.partial += 1;
+      if (row.createdAt > existing.lastUsedAt) existing.lastUsedAt = row.createdAt;
+      agg.set(row.skillName, existing);
+    }
+
+    const insights = Array.from(agg.entries())
+      .map(([skill, counts]) => ({
+        skill,
+        uses: counts.uses,
+        success: counts.success,
+        failure: counts.failure,
+        partial: counts.partial,
+        successRate: counts.uses > 0 ? counts.success / counts.uses : 0,
+        lastUsedAt: counts.lastUsedAt,
+      }))
+      .sort((a, b) => b.uses - a.uses)
+      .slice(0, 50);
+
+    return insights;
   },
 });
 
