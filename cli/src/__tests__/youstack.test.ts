@@ -586,3 +586,66 @@ describe("youstack manifest — workflows (L18)", () => {
     expect(loaded.validation.ok).toBe(true);
   });
 });
+
+// P19 — requiresScopes doctor validation
+describe("YouStack requiresScopes doctor (P19)", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "youstack-scopes-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function writeStack(manifest: unknown) {
+    fs.writeFileSync(path.join(tmpDir, "youstack.json"), JSON.stringify(manifest, null, 2));
+  }
+
+  function baseManifest(overrides: Record<string, unknown> = {}) {
+    return {
+      schemaVersion: "youstack/v1",
+      kind: "youstack",
+      slug: "test-scopes",
+      name: "Test Scopes",
+      version: "1.0.0",
+      visibility: "private",
+      ...overrides,
+    };
+  }
+
+  it("accepts all known scopes without warnings", () => {
+    writeStack(baseManifest({ requiresScopes: ["read:public", "read:private", "write:bundle", "write:memories", "vault"] }));
+    const loaded = loadYouStackManifest(tmpDir);
+    const doctor = runYouStackDoctor(loaded);
+    const warnings = doctor.warnings.join("\n");
+    expect(warnings).not.toContain("requiresScopes");
+  });
+
+  it("warns on unknown scope name", () => {
+    writeStack(baseManifest({ requiresScopes: ["read:public", "magic:sauce"] }));
+    const loaded = loadYouStackManifest(tmpDir);
+    const doctor = runYouStackDoctor(loaded);
+    const warnings = doctor.warnings.join("\n");
+    expect(warnings).toContain("magic:sauce");
+    expect(warnings).toContain("not a known API scope");
+  });
+
+  it("emits requires scopes diagnostic line when populated", () => {
+    writeStack(baseManifest({ requiresScopes: ["read:private", "write:memories"] }));
+    const loaded = loadYouStackManifest(tmpDir);
+    const doctor = runYouStackDoctor(loaded);
+    const diagnostics = doctor.diagnostics.join("\n");
+    expect(diagnostics).toContain("requires scopes: read:private, write:memories");
+  });
+
+  it("requiresScopes is optional — no warning when absent", () => {
+    writeStack(baseManifest());
+    const loaded = loadYouStackManifest(tmpDir);
+    expect(loaded.manifest.requiresScopes).toBeUndefined();
+    const doctor = runYouStackDoctor(loaded);
+    const warnings = doctor.warnings.join("\n");
+    expect(warnings).not.toContain("requiresScopes");
+  });
+});

@@ -3827,6 +3827,8 @@ http.route({
                   type: "object",
                   properties: {},
                 },
+                // P19 (2026-06-12): scopes required at the handler level (enforced by requireScope).
+                scopes: ["read:private"],
               },
               {
                 name: "get_agent_brief",
@@ -3849,6 +3851,7 @@ http.route({
                     },
                   },
                 },
+                scopes: ["read:private"],
               },
               {
                 name: "get_identity",
@@ -3863,6 +3866,7 @@ http.route({
                   },
                   required: ["username"],
                 },
+                scopes: [],
               },
               {
                 name: "search_profiles",
@@ -3880,6 +3884,7 @@ http.route({
                     },
                   },
                 },
+                scopes: [],
               },
               {
                 name: "get_my_identity",
@@ -3888,6 +3893,7 @@ http.route({
                   type: "object",
                   properties: {},
                 },
+                scopes: ["read:private"],
               },
               {
                 name: "get_my_stacks",
@@ -3896,6 +3902,7 @@ http.route({
                   type: "object",
                   properties: {},
                 },
+                scopes: ["read:private"],
               },
               {
                 name: "get_repo_file",
@@ -3910,6 +3917,7 @@ http.route({
                   },
                   required: ["path"],
                 },
+                scopes: ["read:private"],
               },
               {
                 name: "search_memories",
@@ -3928,6 +3936,7 @@ http.route({
                   },
                   required: ["query"],
                 },
+                scopes: ["read:private"],
               },
               {
                 name: "report_skill_outcome",
@@ -3955,6 +3964,7 @@ http.route({
                   },
                   required: ["skill", "outcome"],
                 },
+                scopes: ["write:memories"],
               },
             ],
           });

@@ -23,6 +23,19 @@ import {
 
 export type YouStackVisibility = "private" | "scoped-link" | "public-open" | "team";
 
+/**
+ * Canonical API scope vocabulary — mirrors convex/lib/scopes.ts API_SCOPES.
+ * P19 (2026-06-12): used by stack doctor to validate requiresScopes entries.
+ */
+export const KNOWN_API_SCOPES = [
+  "read:public",
+  "read:private",
+  "write:bundle",
+  "write:memories",
+  "vault",
+] as const;
+export type ApiScope = (typeof KNOWN_API_SCOPES)[number];
+
 export interface YouStackBrainScope {
   scope: string;
   required?: boolean;
@@ -107,6 +120,11 @@ export interface YouStackManifest {
     requiresYoumdMcp?: boolean;
   };
   brainScopes?: YouStackBrainScope[];
+  /**
+   * P19 (2026-06-12): optional list of API scopes this stack requires.
+   * Doctor validates each entry against KNOWN_API_SCOPES and warns on unknowns.
+   */
+  requiresScopes?: ApiScope[];
   files?: YouStackFile[];
   adapters?: Record<string, YouStackAdapter>;
   capabilities?: YouStackCapability[];
@@ -479,6 +497,24 @@ export function validateYouStackManifest(value: unknown): YouStackValidationResu
     }
   }
 
+  // P19 (2026-06-12): validate requiresScopes entries against known vocabulary.
+  if (value.requiresScopes !== undefined) {
+    if (!Array.isArray(value.requiresScopes)) {
+      errors.push("requiresScopes must be an array");
+    } else {
+      const knownSet = new Set<string>(KNOWN_API_SCOPES);
+      for (const [index, scope] of value.requiresScopes.entries()) {
+        if (typeof scope !== "string") {
+          errors.push(`requiresScopes[${index}] must be a string`);
+        } else if (!knownSet.has(scope)) {
+          warnings.push(
+            `requiresScopes[${index}] "${scope}" is not a known API scope — valid scopes: ${[...KNOWN_API_SCOPES].join(", ")}`
+          );
+        }
+      }
+    }
+  }
+
   if (value.capabilities !== undefined) {
     if (!Array.isArray(value.capabilities)) {
       errors.push("capabilities must be an array");
@@ -820,6 +856,17 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
   diagnostics.push(`capabilities: ${capabilities.length} (${localCapabilities} local, ${protectedCapabilities} protected)`);
   diagnostics.push(`adapters: ${adapters.join(", ") || "none"}`);
   diagnostics.push(`brain scopes: ${manifest.brainScopes?.length || 0}`);
+  // P19: surface requiresScopes count and any unknown scope names.
+  if (manifest.requiresScopes && manifest.requiresScopes.length > 0) {
+    const knownSet = new Set<string>(KNOWN_API_SCOPES);
+    const unknownScopes = manifest.requiresScopes.filter((s) => !knownSet.has(s));
+    diagnostics.push(`requires scopes: ${manifest.requiresScopes.join(", ")}`);
+    for (const unknown of unknownScopes) {
+      warnings.push(
+        `requiresScopes contains unknown scope "${unknown}" — valid: ${[...KNOWN_API_SCOPES].join(", ")}`
+      );
+    }
+  }
 
   if (manifestBytes > 64 * 1024) {
     warnings.push("manifest is over 64KB; move long docs/prompts into files and keep the manifest routable");
