@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: 3281118269db11886c67d2b7ed7f8ad12d8da1483322e7a0ce8932b430c58436. CLI version: 0.6.23. Endpoints: 75 documented (7 internal/retired routes excluded). Local MCP tools: 24. Hosted MCP tools: 9. CLI commands: 27. Reference intelligence: 2026-06-09T19:27:42.274Z.
+> Generated full agent context. Source hash: 41635067ab4779f4ccbea36e2d4eaffcf789b3c1c442509784a3e9746e0f43da. CLI version: 0.6.23. Endpoints: 75 documented (7 internal/retired routes excluded). Local MCP tools: 24. Hosted MCP tools: 9. CLI commands: 27. Reference intelligence: 2026-06-09T19:27:42.274Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -147,7 +147,7 @@ All 27 registered runtime commands, generated from the commander registrations i
 ### SKILLS
 
 - `youmd skill [subcommand] [args...]`: Identity-aware agent skills (list, install, use, sync, init-project)
-- `youmd stack [subcommand] [args...]`: Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval)
+- `youmd stack [subcommand] [args...]`: Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval, update)
 
 ### MONITORING
 
@@ -460,6 +460,10 @@ Agents should:
 - keep repo and branch identity local unless a protected hosted surface explicitly needs it
 - return honest readiness state instead of bluffing a zero-result read
 - leave a trail in project context or activity logs
+
+## Telemetry
+
+You.md collects three categories of telemetry to power the self-improving skill loop. skillEvents and skillOutcomes are owner-scoped and identifiable — linked to your account so the improvement loop can surface per-skill success rates and personalised recommendations (default on for authenticated users). consolidationRuns are per-user metadata (run date, duplicate count, archive count, review-queue size) used for consolidation health and rate limiting (default on, identifiable). fleetReports are aggregate only — containing category names and counts but never content strings, usernames, or any per-user identifier — and are published only when the cohort meets a k-anonymity threshold of at least 20 users (never identifiable). You can review all telemetry stored against your account from Settings > Privacy.
 
 ## Important Links
 

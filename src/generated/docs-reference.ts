@@ -41,7 +41,7 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "3281118269db11886c67d2b7ed7f8ad12d8da1483322e7a0ce8932b430c58436",
+  "sourceHash": "41635067ab4779f4ccbea36e2d4eaffcf789b3c1c442509784a3e9746e0f43da",
   "cli": {
     "version": "0.6.23"
   },
@@ -1368,7 +1368,7 @@ export const docsReference = {
       "usage": "stack [subcommand] [args...]",
       "group": "SKILLS",
       "summary": "local YouStack manifests (inspect/doctor/smoke/capabilities/route)",
-      "description": "Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval)"
+      "description": "Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval, update)"
     },
     {
       "name": "logs",
