@@ -41,14 +41,14 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "8144c16f1ebcefca699f73cc2fa6cf97bb01d11b934a598b9530df8353f9b635",
+  "sourceHash": "7b12765b9fb266d2861eb7e94572c8e81a5f91aec99b44bc874bb4316206adc0",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
     "endpoints": 79,
     "internalRoutes": 7,
-    "mcpTools": 24,
+    "mcpTools": 14,
     "hostedMcpTools": 0,
     "cliCommands": 27,
     "convexRoutes": 62,
@@ -150,6 +150,17 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Fetch a specific bundle version",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/fleet-snapshot",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Fleet-wide install counts for the caller's installed skills (read:private; k-anon floor 20 applies — counts below floor are null). Returns { skills: Array<{ skill: string, fleetInstallCount: number | null }>, generatedA…",
       "sources": [
         "convex"
       ]
@@ -910,17 +921,6 @@ export const docsReference = {
       ]
     },
     {
-      "method": "GET",
-      "path": "/api/v1/stacks/registry",
-      "category": "YouStacks",
-      "auth": "Public or rate-limited",
-      "source": "convex",
-      "summary": "public repo mirror. 404 when the user, mirror, or stack slug is not found. Files are capped at 200 entries; pass ?limit=N (1–200) to narrow further. Response shape: { user, slug, manifest, files[], truncated, fileCount,…",
-      "sources": [
-        "convex"
-      ]
-    },
-    {
       "method": "POST",
       "path": "/api/v1/stacks/route",
       "category": "YouStacks",
@@ -1050,68 +1050,14 @@ export const docsReference = {
       "required": []
     },
     {
-      "name": "get_identity",
-      "description": "Get the user's complete you.md identity bundle. Returns compact (default), full JSON, or human-readable markdown. For the fastest orient, call whoami first; call get_identity when you need full detail (preferences, voice, directives, projects).",
-      "inputFields": [
-        "format"
-      ],
-      "required": []
-    },
-    {
       "name": "get_private_context",
       "description": "Read protected private context — notes, internal links, and private projects. Returns a readiness envelope so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states before asking the user to restate private context.",
       "inputFields": [],
       "required": []
     },
     {
-      "name": "get_project_context",
-      "description": "Get the full project context for the current or named project — PRD, TODO, features, decisions, changelog, and project memories. Returns a readiness envelope so agents can distinguish missing project context from ready project context without parsing plain-text errors.",
-      "inputFields": [
-        "project"
-      ],
-      "required": []
-    },
-    {
       "name": "get_remote_status",
       "description": "Check sync status between local identity bundle and the remote you.md server. Returns whether the user is authenticated, whether the local bundle exists, and the current version info. Use to diagnose sync issues or confirm a push was successful.",
-      "inputFields": [],
-      "required": []
-    },
-    {
-      "name": "get_section",
-      "description": "Read a specific identity section by path. Use when you need just ONE section rather than the full bundle. Returns markdown content for the requested section. Available paths: profile/about, profile/projects, profile/now, profile/values, profile/links, preferences/agent, preferences/writing, voice/voice, directives/agent.",
-      "inputFields": [
-        "section"
-      ],
-      "required": [
-        "section"
-      ]
-    },
-    {
-      "name": "get_stack_capabilities",
-      "description": "Return the local YouStack capability map, including local/static capabilities and protected API/MCP capabilities declared by the manifest.",
-      "inputFields": [
-        "path"
-      ],
-      "required": []
-    },
-    {
-      "name": "get_stack_manifest",
-      "description": "Return the current local YouStack manifest discovered from cwd, or from a provided manifest/stack path. Use before trusting local stack files.",
-      "inputFields": [
-        "path"
-      ],
-      "required": []
-    },
-    {
-      "name": "list_projects",
-      "description": "List all detected projects with their metadata. Returns project names found in the projects root directory. Use to discover available projects before calling get_project_context with a specific project name.",
-      "inputFields": [],
-      "required": []
-    },
-    {
-      "name": "list_skills",
-      "description": "List all installed identity-aware skills with their names. Use to discover what skills are available before calling use_skill. Returns a simple list of installed skill names.",
       "inputFields": [],
       "required": []
     },
@@ -1124,30 +1070,11 @@ export const docsReference = {
       "required": []
     },
     {
-      "name": "route_stack_request",
-      "description": "Route a natural-language request to the safest matching local YouStack capability. This is deterministic and read-only.",
-      "inputFields": [
-        "request",
-        "path"
-      ],
-      "required": [
-        "request"
-      ]
-    },
-    {
       "name": "search_memories",
       "description": "Search the user's memories by category or list all active memories. Returns a readiness envelope plus memory objects so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states.",
       "inputFields": [
         "category",
         "limit"
-      ],
-      "required": []
-    },
-    {
-      "name": "smoke_stack",
-      "description": "Run read-only local YouStack smoke validation. It parses the manifest, verifies required files/checksums, checks adapter declarations, and performs no writes.",
-      "inputFields": [
-        "path"
       ],
       "required": []
     },
@@ -1172,12 +1099,6 @@ export const docsReference = {
       "required": [
         "name"
       ]
-    },
-    {
-      "name": "whoami",
-      "description": "Return a compact ~500-char identity summary: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation — it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSON.",
-      "inputFields": [],
-      "required": []
     }
   ],
   "hostedMcpTools": [],

@@ -371,6 +371,45 @@ export const openApiSpec = {
         ]
       }
     },
+    "/api/v1/me/fleet-snapshot": {
+      "get": {
+        "operationId": "get_api_v1_me_fleet_snapshot",
+        "summary": "Fleet-wide install counts for the caller's installed skills (read:private; k-anon floor 20 applies — counts below floor are null). Returns { skills: Array<{ skill: string, fleetInstallCount: number | null }>, generatedA…",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/me/history": {
       "get": {
         "operationId": "get_api_v1_me_history",
@@ -2816,40 +2855,6 @@ export const openApiSpec = {
         ],
         "x-youmd-auth": "Public or rate-limited",
         "x-youmd-source": "next",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "default": {
-            "description": "Error response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/stacks/registry": {
-      "get": {
-        "operationId": "get_api_v1_stacks_registry",
-        "summary": "public repo mirror. 404 when the user, mirror, or stack slug is not found. Files are capped at 200 entries; pass ?limit=N (1–200) to narrow further. Response shape: { user, slug, manifest, files[], truncated, fileCount,…",
-        "tags": [
-          "YouStacks"
-        ],
-        "x-youmd-auth": "Public or rate-limited",
-        "x-youmd-source": "convex",
         "responses": {
           "200": {
             "description": "Successful response"
