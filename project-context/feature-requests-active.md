@@ -6,6 +6,20 @@ Last Updated: 2026-06-13
 
 ## 2026-06-13 — OKF (Open Knowledge Format) Integration
 
+### 113. Provenance frontmatter on OKF concepts (Familiar-second-brain pattern)
+**Status:** IN PROGRESS (code complete on branch; Houston verification pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-13 — Houston shared the "Familiar second-brain / KIMI Work" article ("do with it only what you think is appropriate... don't create unnecessary complexity"), then after the assessment: "Just build it" (= build recommendation #1: provenance frontmatter).
+**Request:** Adopt the one genuinely-additive, low-complexity pattern from Familiar — `last_updated_by` / `confidence` / `linked_sources` provenance on each concept — so agents can audit who wrote a concept, how sure they were, and what it derives from. Explicitly NOT the cron/inbox/Whisper machinery (already covered by workflows/self-improving stacks).
+**Actionable Scope:**
+1. First-class provenance fields in the OKF core with stable ordering + light validation (bad `confidence` warns, never errors). **DONE** (`okf.ts`).
+2. Thread through identity + stack export/import; preserve through round-trips; never overwrite existing. **DONE** (`okf-bundle.ts`, `okf-stack.ts`).
+3. Stamp on export: `--author` (default logged-in username), skills stamped `agent`, `about` auto-linked to real `you.json` `meta.sources_used` (never fabricated); `--confidence` opt-in. **DONE** (`commands/okf.ts`, `--author`/`--confidence` flags).
+4. Tests + smoke. **DONE:** +7 tests (37 OKF total); CLI build clean; smoke confirms provenance frontmatter on export and survives import round-trip.
+5. **Houston (user-only):** confirm the provenance fields are useful in practice during the cross-machine test.
+**Progress (2026-06-13):** Built on the same branch in the same session. Did NOT build the Familiar cron/inbox/Whisper stack (redundant with existing workflows/self-improving stacks + would add the "second filing cabinet" complexity Houston warned against). The other Familiar ideas (`[CONFLICT]`/`[STALE]` markers, brain-health pass, immutable-source rule, Obsidian-style desktop client + web consistency) are noted as future tracks, not built.
+
 ### 112. Implement OKF and prove cross-machine sync of skills/stacks/context
 **Status:** IN PROGRESS (code complete on branch; Houston e2e + publish pending)
 **Verified:** NO

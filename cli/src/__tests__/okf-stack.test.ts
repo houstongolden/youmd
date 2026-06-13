@@ -87,6 +87,30 @@ describe("buildStackOkfFiles", () => {
   });
 });
 
+describe("stack provenance", () => {
+  it("stamps default author and preserves per-file provenance", () => {
+    const { files } = buildStackOkfFiles(
+      MANIFEST,
+      [
+        { path: "workflows/startup.md", declaredType: "workflow", content: "# Startup\n\nGo." },
+        {
+          path: "skills/demo/SKILL.md",
+          declaredType: "skill",
+          content: "---\nname: demo\nlast_updated_by: agent\nconfidence: medium\n---\n\n# Demo",
+        },
+      ],
+      { defaultAuthor: "houston" },
+    );
+    const wf = parseOkfFile(files.find((f) => f.path === "workflows/startup.md")!.content);
+    const skill = parseOkfFile(files.find((f) => f.path === "skills/demo/SKILL.md")!.content);
+    const manifest = parseOkfFile(files.find((f) => f.path === "youstack.md")!.content);
+    expect(wf.frontmatter.last_updated_by).toBe("houston"); // stamped default
+    expect(skill.frontmatter.last_updated_by).toBe("agent"); // preserved
+    expect(skill.frontmatter.confidence).toBe("medium");
+    expect(manifest.frontmatter.last_updated_by).toBe("houston");
+  });
+});
+
 describe("real example stack export", () => {
   let tmp: string;
   beforeAll(() => {

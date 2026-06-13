@@ -94,10 +94,30 @@ function typeMetaFor(file: StackSourceFile): { type: string; heading: string } {
   return { type: "Stack File", heading: "Other" };
 }
 
+/** Read provenance fields from a parsed frontmatter block, applying defaults. */
+function readProvenance(
+  data: Record<string, unknown>,
+  defaults: { author?: string; confidence?: string },
+): { last_updated_by?: string; confidence?: string; linked_sources?: string[] } {
+  const lastUpdatedBy =
+    (typeof data.last_updated_by === "string" && data.last_updated_by) || defaults.author;
+  const confidence =
+    (typeof data.confidence === "string" && data.confidence) || defaults.confidence;
+  const linkedSources = Array.isArray(data.linked_sources)
+    ? (data.linked_sources as unknown[]).filter((s): s is string => typeof s === "string")
+    : undefined;
+  return {
+    last_updated_by: lastUpdatedBy || undefined,
+    confidence: confidence || undefined,
+    linked_sources: linkedSources && linkedSources.length > 0 ? linkedSources : undefined,
+  };
+}
+
 /** Build the manifest summary concept (type: YouStack). */
 function buildStackManifestConcept(
   manifest: YouStackManifest,
   timestamp: string,
+  defaults: { author?: string; confidence?: string } = {},
 ): OkfBundleFile {
   const capabilities = getYouStackCapabilities(manifest);
   const lines: string[] = [];
@@ -136,6 +156,8 @@ function buildStackManifestConcept(
     description: manifest.description,
     tags: manifest.tags && manifest.tags.length > 0 ? manifest.tags : undefined,
     timestamp,
+    last_updated_by: defaults.author,
+    confidence: defaults.confidence,
     youmd_kind: "youstack",
     stack_slug: manifest.slug,
     stack_version: manifest.version,
@@ -158,12 +180,13 @@ export interface BuildStackOkfResult {
 export function buildStackOkfFiles(
   manifest: YouStackManifest,
   sourceFiles: StackSourceFile[],
-  options: { timestamp?: string } = {},
+  options: { timestamp?: string; defaultAuthor?: string; defaultConfidence?: string } = {},
 ): BuildStackOkfResult {
   const timestamp = options.timestamp || new Date().toISOString();
   const date = timestamp.split("T")[0];
+  const provDefaults = { author: options.defaultAuthor, confidence: options.defaultConfidence };
 
-  const manifestConcept = buildStackManifestConcept(manifest, timestamp);
+  const manifestConcept = buildStackManifestConcept(manifest, timestamp, provDefaults);
 
   const conceptFiles: OkfBundleFile[] = sourceFiles.map((file) => {
     const meta = typeMetaFor(file);
@@ -176,12 +199,16 @@ export function buildStackOkfFiles(
     const description =
       (typeof data.description === "string" && data.description.trim()) ||
       deriveDescription(content);
+    const provenance = readProvenance(data, provDefaults);
 
     const frontmatter = dropUndefined({
       type: meta.type,
       title,
       description,
       timestamp,
+      last_updated_by: provenance.last_updated_by,
+      confidence: provenance.confidence,
+      linked_sources: provenance.linked_sources,
       youmd_kind: file.path.replace(/\\/g, "/").replace(/\.md$/i, ""),
       stack_slug: manifest.slug,
     });
@@ -304,9 +331,13 @@ export function exportYouStackToOkf(
   manifest: YouStackManifest,
   rootDir: string,
   outDir: string,
+  options: { defaultAuthor?: string; defaultConfidence?: string } = {},
 ): ExportStackToOkfResult {
   const sourceFiles = collectStackSourceFiles(rootDir, manifest);
-  const built = buildStackOkfFiles(manifest, sourceFiles);
+  const built = buildStackOkfFiles(manifest, sourceFiles, {
+    defaultAuthor: options.defaultAuthor,
+    defaultConfidence: options.defaultConfidence,
+  });
 
   fs.mkdirSync(outDir, { recursive: true });
   const written: string[] = [];

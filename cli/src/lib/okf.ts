@@ -31,6 +31,18 @@ const RECOMMENDED_FIELD_ORDER = [
   "timestamp",
 ];
 
+/**
+ * Provenance fields (Familiar-second-brain convention). Optional, OKF-legal
+ * custom keys that let agents audit a concept: who last wrote it, how sure the
+ * writer is, and what it was derived from. Emitted in a stable position right
+ * after the recommended fields so audits are scannable.
+ */
+const PROVENANCE_FIELD_ORDER = ["last_updated_by", "confidence", "linked_sources"];
+
+/** Allowed `confidence` values (warned, not enforced — OKF tolerates unknowns). */
+export const OKF_CONFIDENCE_LEVELS = ["low", "medium", "high"] as const;
+export type OkfConfidence = (typeof OKF_CONFIDENCE_LEVELS)[number];
+
 export interface OkfFrontmatter {
   /** Required: a short string identifying the kind of concept. */
   type: string;
@@ -44,6 +56,12 @@ export interface OkfFrontmatter {
   tags?: string[];
   /** ISO 8601 datetime of last change. */
   timestamp?: string;
+  /** Provenance: who last wrote this concept (e.g. "houston", "agent"). */
+  last_updated_by?: string;
+  /** Provenance: writer's confidence — low | medium | high. */
+  confidence?: string;
+  /** Provenance: source concept IDs or URIs this concept derives from. */
+  linked_sources?: string[];
   /** Producers may add custom keys; consumers must preserve them. */
   [key: string]: unknown;
 }
@@ -93,12 +111,16 @@ export function serializeOkfFile(file: OkfFile): string {
     throw new Error("OKF concept file requires a non-empty `type` frontmatter field");
   }
 
+  const placed = new Set<string>();
   const ordered: Record<string, unknown> = {};
-  for (const key of RECOMMENDED_FIELD_ORDER) {
-    if (frontmatter[key] !== undefined) ordered[key] = frontmatter[key];
+  for (const key of [...RECOMMENDED_FIELD_ORDER, ...PROVENANCE_FIELD_ORDER]) {
+    if (frontmatter[key] !== undefined) {
+      ordered[key] = frontmatter[key];
+      placed.add(key);
+    }
   }
   for (const key of Object.keys(frontmatter).sort()) {
-    if (RECOMMENDED_FIELD_ORDER.includes(key)) continue;
+    if (placed.has(key)) continue;
     if (frontmatter[key] !== undefined) ordered[key] = frontmatter[key];
   }
 
@@ -195,13 +217,34 @@ export function validateOkfFileEntry(
     return issues;
   }
 
-  const type = (parsed.data as Record<string, unknown>)?.type;
+  const data = (parsed.data || {}) as Record<string, unknown>;
+  const type = data.type;
   if (typeof type !== "string" || type.trim() === "") {
     issues.push({
       file: rel,
       level: "error",
       message: "concept file is missing a non-empty `type` frontmatter field",
     });
+  }
+
+  // Provenance fields are optional; malformed values are warnings, not errors.
+  if (data.confidence !== undefined) {
+    const ok =
+      typeof data.confidence === "string" &&
+      (OKF_CONFIDENCE_LEVELS as readonly string[]).includes(data.confidence);
+    if (!ok) {
+      issues.push({
+        file: rel,
+        level: "warning",
+        message: `confidence should be one of: ${OKF_CONFIDENCE_LEVELS.join(", ")}`,
+      });
+    }
+  }
+  if (data.last_updated_by !== undefined && typeof data.last_updated_by !== "string") {
+    issues.push({ file: rel, level: "warning", message: "last_updated_by should be a string" });
+  }
+  if (data.linked_sources !== undefined && !Array.isArray(data.linked_sources)) {
+    issues.push({ file: rel, level: "warning", message: "linked_sources should be a list" });
   }
 
   return issues;

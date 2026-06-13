@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import chalk from "chalk";
 import matter from "gray-matter";
-import { resolveActiveBundleDir, getSkillsDir } from "../lib/config";
+import { resolveActiveBundleDir, getSkillsDir, readGlobalConfig } from "../lib/config";
 import { compileBundle, writeBundle } from "../lib/compiler";
 import {
   exportBundleToOkf,
@@ -18,7 +18,17 @@ interface OkfOptions {
   out?: string;
   stack?: string;
   skills?: boolean; // commander sets `skills: false` for --no-skills
+  author?: string;
+  confidence?: string;
   json?: boolean;
+}
+
+/** Resolve the default `last_updated_by` author: --author, else the logged-in
+ *  username, else "user". */
+function resolveAuthor(options: OkfOptions): string {
+  if (options.author && options.author.trim()) return options.author.trim();
+  const username = readGlobalConfig().username;
+  return username && username.trim() ? username.trim() : "user";
 }
 
 function titleCase(slug: string): string {
@@ -48,6 +58,11 @@ function collectInstalledSkillSections(): YoumdSection[] {
         titleCase(entry.name),
       body: content.trim(),
       timestamp: typeof data.timestamp === "string" ? data.timestamp : undefined,
+      // Skills are generated/interpolated by the skill system, not hand-authored
+      // — stamp them agent-authored unless the SKILL.md says otherwise.
+      lastUpdatedBy:
+        typeof data.last_updated_by === "string" ? data.last_updated_by : "agent",
+      confidence: typeof data.confidence === "string" ? data.confidence : undefined,
     });
   }
   return sections;
@@ -105,8 +120,13 @@ async function exportSub(arg: string | undefined, options: OkfOptions): Promise<
   const outDir = path.resolve(process.cwd(), options.out || "okf");
   const includeSkills = options.skills !== false;
   const extraSections = includeSkills ? collectInstalledSkillSections() : [];
+  const author = resolveAuthor(options);
 
-  const result = exportBundleToOkf(bundleDir, outDir, { extraSections });
+  const result = exportBundleToOkf(bundleDir, outDir, {
+    extraSections,
+    defaultAuthor: author,
+    defaultConfidence: options.confidence,
+  });
 
   if (options.json) {
     console.log(
@@ -162,7 +182,10 @@ async function exportStack(stackPath: string | undefined, options: OkfOptions): 
     process.cwd(),
     options.out || `okf-${loaded.manifest.slug}`,
   );
-  const result = exportYouStackToOkf(loaded.manifest, loaded.rootDir, outDir);
+  const result = exportYouStackToOkf(loaded.manifest, loaded.rootDir, outDir, {
+    defaultAuthor: resolveAuthor(options),
+    defaultConfidence: options.confidence,
+  });
 
   if (options.json) {
     console.log(

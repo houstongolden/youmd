@@ -10,6 +10,11 @@
 - OKF is a portable interchange/exchange format that rides the existing `youmd sync`/`pull`/`push` engine (3-way merge in `merge.ts`); no sync behavior changed.
 - Added `project-context/OKF_INTEGRATION.md` with the design rationale and a cross-machine (MacBook Air + Mac mini) end-to-end test runbook.
 
+### Provenance frontmatter (Familiar-second-brain convention)
+- Added optional `last_updated_by` / `confidence` / `linked_sources` provenance fields to OKF concepts (first-class in `okf.ts`, stable frontmatter ordering, light validation — bad `confidence` warns, never errors), so agents can audit who wrote a concept, how sure they were, and what it derives from.
+- Export stamps `last_updated_by` from `--author` (defaults to the logged-in username); installed skills are stamped `agent`; the `about` concept is auto-linked to the real `you.json` `meta.sources_used` (never fabricated). `--confidence` stamps `confidence` only when given.
+- Provenance is preserved through export → import → re-export round-trips, and existing per-section provenance is never overwritten. Added `--author`/`--confidence` flags to `youmd okf export`. +7 tests (37 OKF tests total).
+
 ### Verification
 - `npm --prefix cli run build` passes. New OKF suite green (30 tests) across serialize/parse round-trips, the `type` requirement, validation rules, reserved-file formats, an identity round-trip against the real `examples/houston` bundle, and a stack export against `examples/youstack-personal`. Full CLI suite green except pre-existing live-network `integration.test.ts` cases that require reaching production from the sandbox.
 - CLI smoke verified end-to-end: identity export → conformant; import round-trip rebuilds section files; stack export → conformant; `okf validate` passes on the written bundles.

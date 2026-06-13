@@ -109,6 +109,43 @@ describe("buildOkfBundleFiles", () => {
   });
 });
 
+describe("provenance stamping and round-trip", () => {
+  it("stamps defaultAuthor/defaultConfidence only on sections lacking their own", () => {
+    const sections: YoumdSection[] = [
+      { dir: "profile", slug: "about", title: "About", body: "Hi." },
+      {
+        dir: "skills",
+        slug: "voice-sync",
+        title: "Voice Sync",
+        body: "Sync.",
+        lastUpdatedBy: "agent",
+      },
+    ];
+    const files = buildOkfBundleFiles(sections, {
+      defaultAuthor: "houston",
+      defaultConfidence: "high",
+    });
+    const about = parseOkfFile(files.find((f) => f.path === "profile/about.md")!.content);
+    const skill = parseOkfFile(files.find((f) => f.path === "skills/voice-sync.md")!.content);
+    expect(about.frontmatter.last_updated_by).toBe("houston");
+    expect(about.frontmatter.confidence).toBe("high");
+    // The skill declared its own author — it is preserved, not overwritten.
+    expect(skill.frontmatter.last_updated_by).toBe("agent");
+  });
+
+  it("preserves provenance from a concept file back into a section", () => {
+    const file = {
+      path: "profile/about.md",
+      content:
+        "---\ntype: Identity Profile\ntitle: About\nlast_updated_by: agent\nconfidence: low\nlinked_sources:\n  - https://x.com/a\n---\n\nBody.",
+    };
+    const section = okfFileToSection(file)!;
+    expect(section.lastUpdatedBy).toBe("agent");
+    expect(section.confidence).toBe("low");
+    expect(section.linkedSources).toEqual(["https://x.com/a"]);
+  });
+});
+
 describe("filesystem export / import round-trip", () => {
   let tmp: string;
 

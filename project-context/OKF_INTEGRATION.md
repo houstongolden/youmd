@@ -70,6 +70,30 @@ Conformance: an exported identity bundle and an exported stack both pass
 `youmd okf validate` with zero errors. The root `index.md` declares
 `okf_version: "0.1"`; every concept carries a non-empty `type`.
 
+## Provenance (Familiar-second-brain convention)
+
+Each concept can carry optional provenance frontmatter so you and your agents can
+audit the brain — who wrote a concept, how sure they were, and what it derives
+from:
+
+- `last_updated_by` — `"houston"`, `"agent"`, … On export, identity sections are
+  stamped with `--author` (defaults to your logged-in username); installed skills
+  are stamped `agent` (they're generated/interpolated, not hand-authored) — the
+  human-vs-agent distinction Familiar is built around.
+- `confidence` — `low | medium | high` (only stamped when you pass `--confidence`;
+  never fabricated). Malformed values are a validation *warning*, not an error.
+- `linked_sources` — the `about` concept is auto-linked to the real sources the
+  bundle was compiled from (`you.json` `meta.sources_used`), never fabricated.
+
+These are OKF-legal custom fields (the spec requires consumers to preserve unknown
+keys), preserved through export → import → re-export round-trips. Any existing
+provenance in a section's own frontmatter is preserved and never overwritten.
+
+```bash
+youmd okf export --author houston --confidence high
+youmd okf export --stack --author houston
+```
+
 ## How OKF Rides The Existing Sync Engine
 
 Nothing about `youmd push/pull/sync` changed. OKF is a portable *view/exchange*
@@ -151,3 +175,9 @@ npm publish --otp=CODE
 - **Not yet verified by Houston** on the two Macs end-to-end (steps above).
 - Publishing + the mandatory version bump are deferred to the owner-only release
   step.
+- Generated root docs were intentionally NOT regenerated here: the new `okf`
+  command bumps the CLI command count in `src/generated/docs-reference.ts`
+  (27 → 28), but running `npm run docs:generate` in this sandbox also wrongly
+  collapsed the MCP tool list (14 → 6, an environment artifact). Run
+  `npm run docs:generate && npm run docs:check` in a full environment to refresh
+  the command count cleanly before/at merge.

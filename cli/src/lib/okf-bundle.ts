@@ -57,6 +57,12 @@ export interface YoumdSection {
   body: string;
   /** ISO timestamp of last change, if known. */
   timestamp?: string;
+  /** Provenance: who last wrote this section ("houston", "agent", …). */
+  lastUpdatedBy?: string;
+  /** Provenance: writer confidence — low | medium | high. */
+  confidence?: string;
+  /** Provenance: source IDs/URIs this section derives from. */
+  linkedSources?: string[];
 }
 
 export interface BuildOkfOptions {
@@ -66,6 +72,10 @@ export interface BuildOkfOptions {
   intro?: string;
   /** Log entries to write to log.md. */
   log?: OkfLogEntry[];
+  /** Stamp this `last_updated_by` on sections that don't already declare one. */
+  defaultAuthor?: string;
+  /** Stamp this `confidence` on sections that don't already declare one. */
+  defaultConfidence?: string;
 }
 
 // ─── Pure helpers ──────────────────────────────────────────────────────
@@ -108,6 +118,9 @@ export function sectionToOkfFile(section: YoumdSection): OkfBundleFile {
     title: section.title,
     description: deriveDescription(section.body),
     timestamp: section.timestamp,
+    last_updated_by: section.lastUpdatedBy,
+    confidence: section.confidence,
+    linked_sources: section.linkedSources,
     youmd_kind: `${section.dir}/${section.slug}`,
   });
   const content = serializeOkfFile({ frontmatter, body: section.body });
@@ -146,6 +159,12 @@ export function okfFileToSection(file: OkfBundleFile): YoumdSection | null {
     title,
     body,
     timestamp: typeof frontmatter.timestamp === "string" ? frontmatter.timestamp : undefined,
+    lastUpdatedBy:
+      typeof frontmatter.last_updated_by === "string" ? frontmatter.last_updated_by : undefined,
+    confidence: typeof frontmatter.confidence === "string" ? frontmatter.confidence : undefined,
+    linkedSources: Array.isArray(frontmatter.linked_sources)
+      ? (frontmatter.linked_sources as unknown[]).filter((s): s is string => typeof s === "string")
+      : undefined,
   };
 }
 
@@ -155,7 +174,13 @@ export function buildOkfBundleFiles(
   sections: YoumdSection[],
   options: BuildOkfOptions = {},
 ): OkfBundleFile[] {
-  const conceptFiles = sections.map(sectionToOkfFile);
+  // Stamp provenance defaults onto sections that don't already declare it.
+  const stamped = sections.map((section) => ({
+    ...section,
+    lastUpdatedBy: section.lastUpdatedBy ?? options.defaultAuthor,
+    confidence: section.confidence ?? options.defaultConfidence,
+  }));
+  const conceptFiles = stamped.map(sectionToOkfFile);
 
   // index.md grouped by directory, in the canonical section order.
   const order = [...OKF_SECTION_DIRS] as string[];
@@ -236,6 +261,30 @@ function readBundleName(bundleDir: string): string | undefined {
   }
 }
 
+/** Read the source URLs the bundle was compiled from (you.json meta.sources_used). */
+function readBundleSources(bundleDir: string): string[] {
+  const youJsonPath = path.join(bundleDir, "you.json");
+  if (!fs.existsSync(youJsonPath)) return [];
+  try {
+    const youJson = JSON.parse(fs.readFileSync(youJsonPath, "utf-8"));
+    const used = youJson?.meta?.sources_used;
+    if (!Array.isArray(used)) return [];
+    const urls = used
+      .map((s: unknown) => {
+        if (typeof s === "string") return s;
+        if (s && typeof s === "object") {
+          const rec = s as Record<string, unknown>;
+          return (rec.url as string) || (rec.source as string) || undefined;
+        }
+        return undefined;
+      })
+      .filter((u: unknown): u is string => typeof u === "string" && u.trim().length > 0);
+    return [...new Set(urls)];
+  } catch {
+    return [];
+  }
+}
+
 /** Read every section file from a You.md bundle directory into memory. */
 export function collectBundleSections(bundleDir: string): YoumdSection[] {
   const sections: YoumdSection[] = [];
@@ -257,6 +306,12 @@ export function collectBundleSections(bundleDir: string): YoumdSection[] {
         title,
         body: content.trim(),
         timestamp: typeof data.timestamp === "string" ? data.timestamp : fallbackTs,
+        lastUpdatedBy:
+          typeof data.last_updated_by === "string" ? data.last_updated_by : undefined,
+        confidence: typeof data.confidence === "string" ? data.confidence : undefined,
+        linkedSources: Array.isArray(data.linked_sources)
+          ? (data.linked_sources as unknown[]).filter((s): s is string => typeof s === "string")
+          : undefined,
       });
     }
   }
@@ -279,9 +334,24 @@ export interface ExportBundleToOkfResult {
 export function exportBundleToOkf(
   bundleDir: string,
   outDir: string,
-  options: { extraSections?: YoumdSection[] } = {},
+  options: {
+    extraSections?: YoumdSection[];
+    defaultAuthor?: string;
+    defaultConfidence?: string;
+  } = {},
 ): ExportBundleToOkfResult {
   const sections = [...collectBundleSections(bundleDir), ...(options.extraSections || [])];
+
+  // Attach real provenance: link the `about` concept to the sources the bundle
+  // was actually compiled from (you.json meta.sources_used). Not fabricated —
+  // only set when the data exists and the section hasn't declared its own.
+  const sources = readBundleSources(bundleDir);
+  if (sources.length > 0) {
+    const about = sections.find((s) => s.dir === "profile" && s.slug === "about");
+    if (about && (!about.linkedSources || about.linkedSources.length === 0)) {
+      about.linkedSources = sources;
+    }
+  }
 
   const name = readBundleName(bundleDir);
   const version = readBundleVersion(bundleDir);
@@ -299,6 +369,8 @@ export function exportBundleToOkf(
   const okfFiles = buildOkfBundleFiles(sections, {
     title: name ? `${name} — You.md` : undefined,
     log,
+    defaultAuthor: options.defaultAuthor,
+    defaultConfidence: options.defaultConfidence,
   });
 
   fs.mkdirSync(outDir, { recursive: true });
@@ -371,7 +443,17 @@ export function importOkfToBundle(okfDir: string, outDir: string): ImportOkfToBu
     const destDir = path.join(outDir, section.dir);
     fs.mkdirSync(destDir, { recursive: true });
     const dest = path.join(destDir, `${section.slug}.md`);
-    const frontmatter = `---\ntitle: "${section.title.replace(/"/g, '\\"')}"\n---\n\n`;
+
+    // Preserve title + any provenance the OKF concept carried, so it survives
+    // import and a later re-export round-trips cleanly.
+    const fmLines = [`title: "${section.title.replace(/"/g, '\\"')}"`];
+    if (section.lastUpdatedBy) fmLines.push(`last_updated_by: "${section.lastUpdatedBy}"`);
+    if (section.confidence) fmLines.push(`confidence: ${section.confidence}`);
+    if (section.linkedSources && section.linkedSources.length > 0) {
+      fmLines.push("linked_sources:");
+      for (const src of section.linkedSources) fmLines.push(`  - ${src}`);
+    }
+    const frontmatter = `---\n${fmLines.join("\n")}\n---\n\n`;
     fs.writeFileSync(dest, frontmatter + section.body.trim() + "\n");
     written.push(`${section.dir}/${section.slug}.md`);
   }

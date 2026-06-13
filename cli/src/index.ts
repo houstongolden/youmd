@@ -479,6 +479,8 @@ program
   .option("-o, --out <dir>", "Output directory")
   .option("--stack [path]", "Export a YouStack (optionally at <path>) instead of your identity bundle")
   .option("--no-skills", "Exclude installed skills from an identity export")
+  .option("--author <name>", "Stamp last_updated_by provenance on exported concepts")
+  .option("--confidence <level>", "Stamp confidence provenance (low|medium|high) on exported concepts")
   .option("--json", "Print JSON output")
   .action((subcommand, arg, options) => okfCommand(subcommand, arg, options));
 

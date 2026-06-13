@@ -177,6 +177,65 @@ describe("okf index.md builder", () => {
   });
 });
 
+describe("okf provenance fields", () => {
+  it("serializes provenance after timestamp, before custom keys", () => {
+    const out = serializeOkfFile({
+      frontmatter: {
+        type: "Identity Profile",
+        title: "About",
+        timestamp: "2026-06-13T00:00:00Z",
+        youmd_kind: "profile/about",
+        last_updated_by: "houston",
+        confidence: "high",
+        linked_sources: ["https://example.com/a"],
+      },
+      body: "body",
+    });
+    const fm = out.split("---")[1];
+    const tsIdx = fm.indexOf("timestamp:");
+    const authorIdx = fm.indexOf("last_updated_by:");
+    const confIdx = fm.indexOf("confidence:");
+    const srcIdx = fm.indexOf("linked_sources:");
+    const kindIdx = fm.indexOf("youmd_kind:");
+    expect(tsIdx).toBeLessThan(authorIdx);
+    expect(authorIdx).toBeLessThan(confIdx);
+    expect(confIdx).toBeLessThan(srcIdx);
+    expect(srcIdx).toBeLessThan(kindIdx); // custom keys come last
+  });
+
+  it("round-trips provenance through serialize/parse", () => {
+    const file = {
+      frontmatter: {
+        type: "Skill",
+        last_updated_by: "agent",
+        confidence: "medium",
+        linked_sources: ["profile/about", "https://example.com"],
+      },
+      body: "x",
+    };
+    const parsed = parseOkfFile(serializeOkfFile(file));
+    expect(parsed.frontmatter.last_updated_by).toBe("agent");
+    expect(parsed.frontmatter.confidence).toBe("medium");
+    expect(parsed.frontmatter.linked_sources).toEqual(["profile/about", "https://example.com"]);
+  });
+
+  it("warns (not errors) on an unknown confidence value", () => {
+    const result = validateOkfBundle([
+      { path: "a.md", content: "---\ntype: Note\nconfidence: superhigh\n---\n\nx" },
+    ]);
+    expect(result.ok).toBe(true); // still conformant
+    expect(result.warnings.some((w) => /confidence/.test(w.message))).toBe(true);
+  });
+
+  it("accepts a valid confidence value with no warning", () => {
+    const result = validateOkfBundle([
+      { path: "a.md", content: "---\ntype: Note\nconfidence: high\n---\n\nx" },
+    ]);
+    expect(result.ok).toBe(true);
+    expect(result.warnings.filter((w) => /confidence/.test(w.message))).toHaveLength(0);
+  });
+});
+
 describe("okf log.md builder", () => {
   it("groups by date newest-first with optional labels", () => {
     const md = buildLogMd([
