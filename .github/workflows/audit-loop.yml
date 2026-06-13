@@ -39,19 +39,26 @@ jobs:
             echo "result=fail" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Run lint
+      - name: Run lint (capture warning count)
         id: lint
         run: |
-          if npm run lint 2>&1; then
-            echo "result=pass" >> "$GITHUB_OUTPUT"
-          else
-            echo "result=fail" >> "$GITHUB_OUTPUT"
-          fi
+          OUT=$(npm run lint 2>&1) && RES=pass || RES=fail
+          WARNS=$(echo "$OUT" | grep -oE '[0-9]+ warning' | head -1 | grep -oE '[0-9]+' || echo "0")
+          echo "result=$RES" >> "$GITHUB_OUTPUT"
+          echo "warnings=$WARNS" >> "$GITHUB_OUTPUT"
 
-      - name: Count tests
-        id: tests
+      - name: Count CLI tests
+        id: cli_tests
         run: |
-          COUNT=$(cd cli && npm test -- --reporter=verbose 2>&1 | grep -c " ✓ \| × " || true)
+          OUT=$(cd cli && YOUMD_API_KEY="" HOME=/tmp/nohome npm test 2>&1) || true
+          COUNT=$(echo "$OUT" | grep -oE 'Tests +[0-9]+ passed' | tail -1 | grep -oE '[0-9]+' || echo "0")
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Count Convex tests
+        id: convex_tests
+        run: |
+          OUT=$(npm run test:convex 2>&1) || true
+          COUNT=$(echo "$OUT" | grep -oE 'Tests +[0-9]+ passed' | tail -1 | grep -oE '[0-9]+' || echo "0")
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"
 
       - name: Write findings
@@ -60,9 +67,12 @@ jobs:
           DIR="project-context/audits/auto/$DAY"
           mkdir -p "$DIR"
           FILE="$DIR/findings.md"
-          echo "tsc: ${{ steps.tsc.outputs.result }}" > "$FILE"
-          echo "lint: ${{ steps.lint.outputs.result }}" >> "$FILE"
-          echo "tests: ${{ steps.tests.outputs.count }}" >> "$FILE"
+          {
+            echo "tsc: ${{ steps.tsc.outputs.result }}"
+            echo "lint: ${{ steps.lint.outputs.result }} (${{ steps.lint.outputs.warnings }} warnings)"
+            echo "cli_tests: ${{ steps.cli_tests.outputs.count }}"
+            echo "convex_tests: ${{ steps.convex_tests.outputs.count }}"
+          } > "$FILE"
 
       - name: Commit findings if new
         run: |
