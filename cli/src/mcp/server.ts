@@ -27,6 +27,8 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+// T14: CLI tool registry — single source of truth for future tool additions.
+import { CLI_MCP_TOOLS } from "./registry.js";
 import * as fs from "fs";
 import * as path from "path";
 import {
@@ -1805,6 +1807,12 @@ export async function startMcpServer(): Promise<void> {
           },
         },
       ],
+      // T14: registry tools appended; inline tools above remain until migration.
+      ...CLI_MCP_TOOLS.map(({ name, description, inputSchema }) => ({
+        name,
+        description,
+        inputSchema,
+      })),
     };
   });
 
@@ -1812,6 +1820,13 @@ export async function startMcpServer(): Promise<void> {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+
+    // T14: Try registry dispatch first (grows as tools are migrated out of the switch).
+    const registrySpec = CLI_MCP_TOOLS.find((t) => t.name === name);
+    if (registrySpec) {
+      const result = await registrySpec.handler((args || {}) as Record<string, unknown>);
+      return { content: result.content, isError: result.isError };
+    }
 
     switch (name) {
       case "whoami": {
