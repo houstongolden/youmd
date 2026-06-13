@@ -7,9 +7,13 @@
  */
 
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
+import { createHash } from "node:crypto";
 import matter from "gray-matter";
 import { readGlobalConfig } from "./config";
+import { canonicalJsonString } from "./canonical-json";
+import { decompileToFilesystem } from "./decompile";
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -62,6 +66,23 @@ export interface CompileResult {
     filledSections: number;
     directories: string[];
   };
+}
+
+export interface Sha256Manifest {
+  schema_version: 1;
+  sections: Record<string, string>;
+  full_sha: string;
+}
+
+export interface RoundtripMismatch {
+  section: string;
+  before: string;
+  after: string;
+}
+
+export interface RoundtripResult {
+  ok: boolean;
+  mismatches: RoundtripMismatch[];
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────
@@ -649,6 +670,82 @@ export function compileBundle(bundleDir: string): CompileResult {
   };
 }
 
+// ─── SHA-256 manifest ──────────────────────────────────────────────
+
+/**
+ * Build a sha256 manifest from a compiled result.
+ * Sections are keyed by "<dir>/<slug>" (e.g. "profile/about").
+ * Each section hash is the sha256 of its normalized markdown content.
+ * full_sha is the sha256 of the canonical JSON string of you.json.
+ */
+export function buildSha256Manifest(result: CompileResult): Sha256Manifest {
+  const youJsonStr = canonicalJsonString(result.youJson);
+  const full_sha = createHash("sha256").update(youJsonStr, "utf-8").digest("hex");
+
+  const sections: Record<string, string> = {};
+  for (const entry of result.filesRead) {
+    const dirName = entry.type === "preference" ? "preferences"
+      : entry.type === "directive" ? "directives"
+      : entry.type === "voice" ? "voice"
+      : "profile";
+    const slug = path.basename(entry.file, ".md");
+    const sectionKey = `${dirName}/${slug}`;
+    // Read actual file content from bundleDir if available; stored hash computed from raw file bytes
+    // Since we don't store raw bytes in CompileResult, we use the youJson field that corresponds.
+    // For a stable hash, we hash the canonical section value from youJson.
+    const sectionValue = extractSectionValue(result.youJson, entry.type, slug);
+    sections[sectionKey] = createHash("sha256")
+      .update(canonicalJsonString(sectionValue), "utf-8")
+      .digest("hex");
+  }
+
+  return { schema_version: 1, sections, full_sha };
+}
+
+/**
+ * Extract the logical value for a section from a compiled youJson, used for
+ * deterministic per-section hashing. Returns the structured value (not raw
+ * markdown) so the hash is stable across whitespace normalization.
+ */
+function extractSectionValue(
+  youJson: Record<string, unknown>,
+  type: string,
+  slug: string,
+): unknown {
+  const identity = (youJson.identity as Record<string, unknown>) || {};
+  const now = (youJson.now as Record<string, unknown>) || {};
+  const prefs = (youJson.preferences as Record<string, unknown>) || {};
+  const voice = (youJson.voice as Record<string, unknown>) || {};
+  const directives = (youJson.agent_directives as Record<string, unknown>) || {};
+
+  if (type === "profile") {
+    if (slug === "about") return identity;
+    if (slug === "now") return now.focus;
+    if (slug === "projects") return youJson.projects;
+    if (slug === "values") return youJson.values;
+    if (slug === "links") return youJson.links;
+    // custom section
+    const customs = (youJson.custom_sections as Array<Record<string, unknown>>) || [];
+    return customs.find((s) => s.id === slug) ?? slug;
+  }
+  if (type === "preference") {
+    if (slug === "agent") return prefs.agent;
+    if (slug === "writing") return prefs.writing;
+    return slug;
+  }
+  if (type === "voice") {
+    if (slug === "voice") return { overall: voice.overall, markdown: voice.markdown };
+    const platforms = (voice.platforms as Record<string, unknown>) || {};
+    const platform = slug.startsWith("voice.") ? slug.slice("voice.".length) : slug;
+    return platforms[platform] ?? slug;
+  }
+  if (type === "directive") {
+    if (slug === "agent") return directives;
+    return slug;
+  }
+  return slug;
+}
+
 export function writeBundle(bundleDir: string, result: CompileResult): void {
   fs.writeFileSync(
     path.join(bundleDir, "you.json"),
@@ -659,4 +756,85 @@ export function writeBundle(bundleDir: string, result: CompileResult): void {
     path.join(bundleDir, "manifest.json"),
     JSON.stringify(result.manifest, null, 2) + "\n"
   );
+  // T27: emit sha256 manifest adjacent to you.json
+  const sha256Manifest = buildSha256Manifest(result);
+  fs.writeFileSync(
+    path.join(bundleDir, "manifest.sha256.json"),
+    JSON.stringify(sha256Manifest, null, 2) + "\n"
+  );
+}
+
+// ─── Round-trip identity check ─────────────────────────────────────
+
+/**
+ * Compile bundleDir, decompile the result into a temp dir, recompile the
+ * temp dir, and compare per-section values. Returns a list of mismatches.
+ *
+ * This is a semantic round-trip — whitespace normalization is applied so
+ * cosmetic differences in markdown formatting do not register as failures.
+ * The check covers: identity, now.focus, projects, values, links,
+ * preferences.agent (structured), preferences.writing (structured),
+ * voice.overall, agent_directives (structured).
+ */
+export function roundtripIdentity(bundleDir: string): RoundtripResult {
+  const first = compileBundle(bundleDir);
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "youmd-rt-"));
+  try {
+    decompileToFilesystem(tmpDir, first.youJson);
+    const second = compileBundle(tmpDir);
+
+    const mismatches: RoundtripMismatch[] = [];
+
+    function check(key: string, a: unknown, b: unknown): void {
+      const aStr = canonicalJsonString(normalizeValue(a));
+      const bStr = canonicalJsonString(normalizeValue(b));
+      if (aStr !== bStr) {
+        mismatches.push({ section: key, before: aStr, after: bStr });
+      }
+    }
+
+    const id1 = (first.youJson.identity as Record<string, unknown>) || {};
+    const id2 = (second.youJson.identity as Record<string, unknown>) || {};
+    check("identity.name", id1.name, id2.name);
+    check("identity.tagline", id1.tagline, id2.tagline);
+    check("identity.location", id1.location, id2.location);
+    check("identity.bio.long", (id1.bio as Record<string, unknown>)?.long, (id2.bio as Record<string, unknown>)?.long);
+
+    check("now.focus", (first.youJson.now as Record<string, unknown>)?.focus, (second.youJson.now as Record<string, unknown>)?.focus);
+    check("projects", first.youJson.projects, second.youJson.projects);
+    check("values", first.youJson.values, second.youJson.values);
+    check("links", first.youJson.links, second.youJson.links);
+
+    const p1 = (first.youJson.preferences as Record<string, Record<string, unknown>>) || {};
+    const p2 = (second.youJson.preferences as Record<string, Record<string, unknown>>) || {};
+    check("preferences.agent.tone", p1.agent?.tone, p2.agent?.tone);
+    check("preferences.agent.formality", p1.agent?.formality, p2.agent?.formality);
+    check("preferences.agent.avoid", p1.agent?.avoid, p2.agent?.avoid);
+    check("preferences.writing.style", p1.writing?.style, p2.writing?.style);
+    check("preferences.writing.format", p1.writing?.format, p2.writing?.format);
+
+    check("voice.overall", (first.youJson.voice as Record<string, unknown>)?.overall, (second.youJson.voice as Record<string, unknown>)?.overall);
+
+    const d1 = (first.youJson.agent_directives as Record<string, unknown>) || {};
+    const d2 = (second.youJson.agent_directives as Record<string, unknown>) || {};
+    check("agent_directives.communication_style", d1.communication_style, d2.communication_style);
+    check("agent_directives.negative_prompts", d1.negative_prompts, d2.negative_prompts);
+    check("agent_directives.default_stack", d1.default_stack, d2.default_stack);
+
+    return { ok: mismatches.length === 0, mismatches };
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+}
+
+/** Normalize a value for round-trip comparison (trim strings, sort arrays of strings). */
+function normalizeValue(v: unknown): unknown {
+  if (typeof v === "string") return v.trim();
+  if (Array.isArray(v)) return v.map(normalizeValue);
+  if (v !== null && typeof v === "object") {
+    const rec = v as Record<string, unknown>;
+    return Object.fromEntries(Object.keys(rec).sort().map((k) => [k, normalizeValue(rec[k])]));
+  }
+  return v;
 }

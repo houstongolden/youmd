@@ -8,6 +8,8 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { createHash } from "node:crypto";
+import { canonicalJsonString } from "./canonical-json";
 
 // ─── Format detection ────────────────────────────────────────────────
 
@@ -66,7 +68,13 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
   // profile/about.md
   {
     const lines: string[] = ['---', 'title: "About"', '---', ''];
-    lines.push(`# ${(identity.name as string) || youJson.username || ""}`);
+    const nameStr = (identity.name as string) || (youJson.username as string) || "";
+    // Only emit the # heading if we have a non-empty name — an empty `# ` would
+    // round-trip as `"#"` in bio.long because the compiler's parseAboutMd only
+    // matches `# <something>` (with a space and content after it).
+    if (nameStr) {
+      lines.push(`# ${nameStr}`);
+    }
     if (identity.tagline) lines.push(`\n${identity.tagline}`);
     if (identity.location) lines.push(`\n*${identity.location}*`);
     const bioText = bio.long || bio.medium || bio.short || "";
@@ -193,15 +201,18 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
     }
   }
 
-  // voice/voice.md
+  // voice/voice.md — only write if there is actual content
   {
     const rawMarkdown = typeof voice.markdown === "string" ? voice.markdown.trim() : "";
     const overall = (voice.overall as string) || (analysis.voice_summary as string) || "";
-    const lines: string[] = ['---', 'title: "Voice Profile"', '---', ''];
-    lines.push(rawMarkdown || overall || "(your overall communication style)");
-    lines.push("");
-    fs.writeFileSync(path.join(voiceDir, "voice.md"), lines.join("\n"));
-    filesWritten++;
+    const voiceContent = rawMarkdown || overall;
+    if (voiceContent) {
+      const lines: string[] = ['---', 'title: "Voice Profile"', '---', ''];
+      lines.push(voiceContent);
+      lines.push("");
+      fs.writeFileSync(path.join(voiceDir, "voice.md"), lines.join("\n"));
+      filesWritten++;
+    }
   }
 
   // voice/voice.{platform}.md
@@ -282,28 +293,129 @@ function decompileArray(bundleDir: string, youJson: Record<string, unknown>): nu
   return filesWritten;
 }
 
+// ─── Manifest verification ───────────────────────────────────────────
+
+interface Sha256Manifest {
+  schema_version: number;
+  sections: Record<string, string>;
+  full_sha: string;
+}
+
+/**
+ * Load manifest.sha256.json from a bundle directory if present.
+ * Returns null when the file is absent or unparseable.
+ */
+function loadSha256Manifest(bundleDir: string): Sha256Manifest | null {
+  const manifestPath = path.join(bundleDir, "manifest.sha256.json");
+  if (!fs.existsSync(manifestPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as Sha256Manifest;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Verify a single section hash from the manifest against the decompiled youJson.
+ * Returns a warning string if the hash mismatches, or null if it matches / cannot verify.
+ * Warnings are non-fatal — callers should print them dimly.
+ */
+function verifySectionHash(
+  sectionKey: string,
+  expectedHash: string,
+  youJson: Record<string, unknown>,
+): string | null {
+  const [dir, slug] = sectionKey.split("/");
+  let value: unknown;
+
+  // Mirror extractSectionValue logic from compiler.ts
+  const identity = (youJson.identity as Record<string, unknown>) || {};
+  const now = (youJson.now as Record<string, unknown>) || {};
+  const prefs = (youJson.preferences as Record<string, Record<string, unknown>>) || {};
+  const voice = (youJson.voice as Record<string, unknown>) || {};
+  const directives = (youJson.agent_directives as Record<string, unknown>) || {};
+
+  if (dir === "profile") {
+    if (slug === "about") value = identity;
+    else if (slug === "now") value = now.focus;
+    else if (slug === "projects") value = youJson.projects;
+    else if (slug === "values") value = youJson.values;
+    else if (slug === "links") value = youJson.links;
+    else {
+      const customs = (youJson.custom_sections as Array<Record<string, unknown>>) || [];
+      value = customs.find((s) => s.id === slug) ?? slug;
+    }
+  } else if (dir === "preferences") {
+    if (slug === "agent") value = prefs.agent;
+    else if (slug === "writing") value = prefs.writing;
+    else value = slug;
+  } else if (dir === "voice") {
+    if (slug === "voice") value = { overall: voice.overall, markdown: voice.markdown };
+    else {
+      const platforms = (voice.platforms as Record<string, unknown>) || {};
+      const platform = slug.startsWith("voice.") ? slug.slice("voice.".length) : slug;
+      value = platforms[platform] ?? slug;
+    }
+  } else if (dir === "directives") {
+    if (slug === "agent") value = directives;
+    else value = slug;
+  } else {
+    return null;
+  }
+
+  const actualHash = createHash("sha256")
+    .update(canonicalJsonString(value), "utf-8")
+    .digest("hex");
+
+  if (actualHash !== expectedHash) {
+    return `manifest.sha256.json: section "${sectionKey}" hash mismatch (expected ${expectedHash.slice(0, 12)}… got ${actualHash.slice(0, 12)}…)`;
+  }
+  return null;
+}
+
 // ─── Public API ──────────────────────────────────────────────────────
 
 /**
  * Decompile a youJson bundle to the filesystem.
  * Creates all standard directories and writes markdown files.
  * Returns the number of files written.
+ *
+ * If manifest.sha256.json is present in bundleDir, verifies each section hash
+ * and emits a dim warning (to stderr) for any mismatch — non-fatal.
  */
 export function decompileToFilesystem(
   bundleDir: string,
   youJson: Record<string, unknown>,
+  options?: { warnOnHashMismatch?: (msg: string) => void },
 ): number {
   ensureStandardDirs(bundleDir);
 
   const format = detectFormat(youJson);
+  let filesWritten = 0;
 
   switch (format) {
     case "nested":
-      return decompileNested(bundleDir, youJson);
+      filesWritten = decompileNested(bundleDir, youJson);
+      break;
     case "array":
-      return decompileArray(bundleDir, youJson);
+      filesWritten = decompileArray(bundleDir, youJson);
+      break;
     default:
       // Unknown format — still create scaffold files
-      return 0;
+      filesWritten = 0;
   }
+
+  // Verify manifest if present
+  const sha256Manifest = loadSha256Manifest(bundleDir);
+  if (sha256Manifest && typeof sha256Manifest.sections === "object") {
+    const warn = options?.warnOnHashMismatch ?? ((msg: string) => {
+      process.stderr.write("\x1b[2m" + msg + "\x1b[0m\n");
+    });
+    for (const [sectionKey, expectedHash] of Object.entries(sha256Manifest.sections)) {
+      const warning = verifySectionHash(sectionKey, expectedHash, youJson);
+      if (warning) warn(warning);
+    }
+  }
+
+  return filesWritten;
 }
