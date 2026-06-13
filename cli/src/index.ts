@@ -568,7 +568,7 @@ program
 
 program
   .command("stack [subcommand] [args...]")
-  .description("Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval, update)")
+  .description("Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval, update, install)")
   .option("--path <path>", "Path to a youstack.json file or stack directory")
   .option("--hosts <hosts>", "Comma-separated host list for stack link (claude-code,codex,cursor)")
   .option("--target <dir>", "Target project directory for stack link")
@@ -577,6 +577,8 @@ program
   .option("--json", "Print JSON output")
   .option("--init", "Initialize a golden.json eval scaffold for youmd stack eval")
   .option("--apply", "Apply the fetched update to the local manifest (stack update only)")
+  .option("--force", "Overwrite existing stacks/<slug>/ directory (stack install only)")
+  .option("--dir <path>", "Base directory to install into (stack install only; defaults to cwd)")
   .action((subcommand, args, options) => {
     return stackCommand(subcommand, args || [], options);
   });

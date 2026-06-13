@@ -25,6 +25,7 @@ import {
 } from "../lib/stackEval";
 import { runStackImprove, type ImproveMode } from "../lib/stackImprove";
 import { checkStackUpdate, applyStackUpdate } from "../lib/stackUpdate";
+import { installStack } from "../lib/stackInstall";
 import { getHeartbeatSignal } from "../lib/heartbeat";
 
 const ACCENT = chalk.hex("#C46A3A");
@@ -40,6 +41,8 @@ interface StackCommandOptions {
   init?: boolean;
   mode?: string;
   apply?: boolean;
+  force?: boolean;
+  dir?: string;
 }
 
 function printHelp(): void {
@@ -47,18 +50,19 @@ function printHelp(): void {
   console.log("  " + chalk.bold("youmd stack") + DIM(" -- local YouStack manifest tools"));
   console.log("");
   console.log("  " + ACCENT("Commands"));
-  console.log("    " + chalk.cyan("inspect") + DIM("       Show the local stack manifest summary"));
-  console.log("    " + chalk.cyan("doctor") + DIM("        Run read-only stack health diagnostics"));
-  console.log("    " + chalk.cyan("smoke") + DIM("         Run read-only local manifest/file checks"));
-  console.log("    " + chalk.cyan("capabilities") + DIM("  List declared local capabilities"));
-  console.log("    " + chalk.cyan("route \"...\"") + DIM("   Pick the best local capability for a request"));
-  console.log("    " + chalk.cyan("link") + DIM("          Generate host adapter files from the manifest"));
-  console.log("    " + chalk.cyan("guard") + DIM("         Check safety contract (T0-T3) and capability consistency"));
-  console.log("    " + chalk.cyan("eval") + DIM("          Run golden-prompt eval suite (--init to scaffold)"));
-  console.log("    " + chalk.cyan("improve") + DIM("       Gather signals + write proposals to journal/ (--mode propose|auto_pr)"));
-  console.log("    " + chalk.cyan("update") + DIM("        Check for a newer upstream version (--apply to write it)"));
+  console.log("    " + chalk.cyan("inspect") + DIM("              Show the local stack manifest summary"));
+  console.log("    " + chalk.cyan("doctor") + DIM("               Run read-only stack health diagnostics"));
+  console.log("    " + chalk.cyan("smoke") + DIM("                Run read-only local manifest/file checks"));
+  console.log("    " + chalk.cyan("capabilities") + DIM("         List declared local capabilities"));
+  console.log("    " + chalk.cyan("route \"...\"") + DIM("          Pick the best local capability for a request"));
+  console.log("    " + chalk.cyan("link") + DIM("                 Generate host adapter files from the manifest"));
+  console.log("    " + chalk.cyan("guard") + DIM("                Check safety contract (T0-T3) and capability consistency"));
+  console.log("    " + chalk.cyan("eval") + DIM("                 Run golden-prompt eval suite (--init to scaffold)"));
+  console.log("    " + chalk.cyan("improve") + DIM("              Gather signals + write proposals to journal/ (--mode propose|auto_pr)"));
+  console.log("    " + chalk.cyan("update") + DIM("               Check for a newer upstream version (--apply to write it)"));
+  console.log("    " + chalk.cyan("install <user>/<slug>") + DIM(" Install a public stack from the registry"));
   console.log("");
-  console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--verify") + DIM(", ") + chalk.cyan("--json") + DIM(", ") + chalk.cyan("--init") + DIM(", ") + chalk.cyan("--mode propose|auto_pr") + DIM(", ") + chalk.cyan("--apply"));
+  console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--verify") + DIM(", ") + chalk.cyan("--json") + DIM(", ") + chalk.cyan("--init") + DIM(", ") + chalk.cyan("--mode propose|auto_pr") + DIM(", ") + chalk.cyan("--apply") + DIM(", ") + chalk.cyan("--force") + DIM(", ") + chalk.cyan("--dir <path>"));
   console.log("");
   console.log("  " + DIM("Canonical layout: ") + chalk.cyan("stacks/<slug>/youstack.json") + DIM(" (legacy youstack.json, .you/, and youstacks/ still load)"));
   console.log("");
@@ -88,6 +92,83 @@ export async function stackCommand(
 
   if (cmd === "help" || cmd === "--help" || cmd === "-h") {
     printHelp();
+    return;
+  }
+
+  // ── P9: stack install ────────────────────────────────────────────────────────
+  if (cmd === "install") {
+    const ref = args[0] ?? "";
+    const slash = ref.indexOf("/");
+    if (!ref || slash <= 0 || slash === ref.length - 1) {
+      console.log("");
+      console.log(chalk.yellow("  usage: youmd stack install <user>/<slug>"));
+      console.log("  " + DIM("example: youmd stack install houston/coding-stack"));
+      console.log("");
+      process.exitCode = 1;
+      return;
+    }
+    const user = ref.slice(0, slash);
+    const slug = ref.slice(slash + 1);
+
+    const { BrailleSpinner } = await import("../lib/render");
+    const spinner = new BrailleSpinner(`fetching ${ACCENT(ref)} from registry`);
+    spinner.start();
+
+    try {
+      const result = await installStack(user, slug, {
+        dir: options.dir,
+        force: options.force,
+      });
+      spinner.stop();
+
+      if (options.json) {
+        console.log(JSON.stringify({
+          slug: result.slug,
+          targetDir: result.targetDir,
+          filesWritten: result.filesWritten,
+          hostLinks: result.hostLinks,
+        }, null, 2));
+        return;
+      }
+
+      console.log("");
+      console.log("  " + ACCENT("youstack install") + " " + chalk.bold(ref));
+      console.log("  " + DIM("slug: ") + chalk.cyan(result.slug));
+      console.log("  " + DIM("dir:  ") + result.targetDir);
+      console.log("");
+      for (const f of result.filesWritten) {
+        console.log("  " + chalk.green("WROTE") + " " + f);
+      }
+      if (result.hostLinks.length > 0) {
+        console.log("");
+        for (const link of result.hostLinks) {
+          console.log("  " + chalk.green("LINKED") + " " + link);
+        }
+      }
+      console.log("");
+      console.log("  " + chalk.green("installed.") + " " + DIM(`run \`youmd stack doctor --path ${result.targetDir}\` to validate.`));
+      console.log("");
+    } catch (err) {
+      spinner.fail("install failed");
+      const e = err as Error & { code?: string; validationErrors?: string[] };
+      console.log("");
+      if (e.code === "not_found") {
+        console.log(chalk.red("  not found: ") + e.message);
+      } else if (e.code === "conflict") {
+        console.log(chalk.red("  conflict: ") + e.message);
+      } else if (e.code === "invalid_manifest") {
+        console.log(chalk.red("  invalid manifest: ") + e.message);
+        if (e.validationErrors) {
+          for (const ve of e.validationErrors) {
+            console.log("    " + DIM(ve));
+          }
+        }
+      } else {
+        console.log(chalk.red("  error: ") + e.message);
+      }
+      console.log("");
+      process.exitCode = 1;
+    }
     return;
   }
 
