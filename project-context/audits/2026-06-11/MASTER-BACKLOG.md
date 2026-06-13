@@ -100,8 +100,8 @@
 | L6 | Reference-intelligence v2: dedupe, Haiku batch pass, weekly Action cron → PR | M | todo |
 | L7 | Golden Q&A eval suite for You Agent in CI | M | todo |
 | L8 | Schedule audit forever-loop (Actions cron) w/ atomic mkdir lock | M | todo |
-| L9 | trackSkillEvent outcomes + MCP report_skill_outcome tool | M | done (73175f3; report_skill_outcome MCP tool + outcomes route, 12 tests) |
-| L10 | activityInsights query → `youmd skill improve` + dashboard | M | done (73175f3/d583d59; activityInsights + youmd skill improve, 13 tests) |
+| L9 | trackSkillEvent outcomes + MCP report_skill_outcome tool | M | done (73175f3; report_skill_outcome MCP tool + outcomes route, 12 tests); prod e2e: MCP+HTTP) |
+| L10 | activityInsights query → `youmd skill improve` + dashboard | M | done (73175f3/d583d59; activityInsights + youmd skill improve, 13 tests); prod e2e: insights returned 2 uses 50% rate) |
 | L11 | Fix improveCmd sync heuristic (lastSyncedAt vs identity-change timestamp) | S | done (b0ddedb: lastSyncedAt vs identity mtimes) |
 | L12 | Stack guard: `youmd stack guard` + enforcement in route/MCP (T0-T3 tiers) | M-L | done (afdc4af; stack guard + tier enforcement + doctor integration, 19 tests) |
 | L13 | Golden-prompt eval runner: `youmd stack eval` → tests/eval-results.json | M | done (6704814; stack eval golden-prompt runner, 28 tests) |
@@ -110,7 +110,7 @@
 | L16 | One machine-checkable SAFETY-CONTRACT spec (T0-T3), enforced by guard/doctor/smoke | M | done (2ed63e6; T0-T3 safety contract + validation, 47 tests) |
 | L17 | Stack update channel: registry version metadata + `youmd stack update` | M | todo |
 | L18 | YouStack workflows manifest section + Convex per-user scheduler | L | todo |
-| L19 | First dreaming loop: nightly memory consolidation cron | M | done (9914771; nightly consolidation cron, deterministic, idempotent, 13 tests) |
+| L19 | First dreaming loop: nightly memory consolidation cron | M | done (9914771; nightly consolidation cron, deterministic, idempotent, 13 tests); prod e2e: archived 25 ephemerals) |
 | L20 | Fleet learning: aggregate-only queries (k-anon ≥20) + weekly fleet report | M | done (0fa2595; k-anon ≥20 fleet aggregates with weekly cron, 15 tests) |
 | L21 | Telemetry consent surface + privacy contract in docs/llms.txt | M | todo |
 | L22 | User-facing fleet feedback notices | M | blocked(needs-spec) |
