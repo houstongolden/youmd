@@ -772,4 +772,35 @@ export default defineSchema({
     lastRunAt: v.optional(v.number()),
     createdAt: v.number(),
   }).index("by_userId", ["userId"]),
+
+  // ── Maintainer agent proposals (L24 — stack journal mining) ─────────────
+  // One row per detected pattern (failure_pattern) per (userId, stackSlug,
+  // skillName). Written by mineStackJournals (convex/maintainer.ts) when a
+  // skill-name token appears in 3+ failure-mentioning journal entries for the
+  // same stack. When evidenceCount >= 5 the proposal is also flagged for the
+  // cross-stack registry (L25).
+  //
+  // Status state machine: open → applied | rejected.
+  // humanApprovalState: pending → approved | rejected.
+  maintainerProposals: defineTable({
+    userId: v.id("users"),
+    stackSlug: v.string(),
+    skillName: v.string(),
+    patternType: v.literal("failure_pattern"),
+    evidenceCount: v.number(),
+    status: v.union(
+      v.literal("open"),
+      v.literal("applied"),
+      v.literal("rejected")
+    ),
+    proposedForRegistry: v.boolean(),
+    humanApprovalState: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected")
+    ),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_status", ["status"]),
 });

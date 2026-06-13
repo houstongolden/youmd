@@ -43,6 +43,7 @@ import type * as lib_secretCrypto from "../lib/secretCrypto.js";
 import type * as lib_secureToken from "../lib/secureToken.js";
 import type * as lib_spendCap from "../lib/spendCap.js";
 import type * as lib_writeLimits from "../lib/writeLimits.js";
+import type * as maintainer from "../maintainer.js";
 import type * as me from "../me.js";
 import type * as memories from "../memories.js";
 import type * as migrations_backfillContentHash from "../migrations/backfillContentHash.js";
@@ -111,6 +112,7 @@ declare const fullApi: ApiFromModules<{
   "lib/secureToken": typeof lib_secureToken;
   "lib/spendCap": typeof lib_spendCap;
   "lib/writeLimits": typeof lib_writeLimits;
+  maintainer: typeof maintainer;
   me: typeof me;
   memories: typeof memories;
   "migrations/backfillContentHash": typeof migrations_backfillContentHash;
