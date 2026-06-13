@@ -2465,10 +2465,88 @@ export const openApiSpec = {
         ]
       }
     },
+    "/api/v1/me/skills/insights": {
+      "get": {
+        "operationId": "get_api_v1_me_skills_insights",
+        "summary": "Per-skill outcome aggregates for the authenticated user (read:private; ?cursor=&limit= additive pagination)",
+        "tags": [
+          "Skills"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/me/skills/install": {
       "post": {
         "operationId": "post_api_v1_me_skills_install",
         "summary": "Record a skill install (authenticated)",
+        "tags": [
+          "Skills"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/skills/outcomes": {
+      "post": {
+        "operationId": "post_api_v1_me_skills_outcomes",
+        "summary": "Report a skill execution outcome (authenticated, write:memories scope, idempotency-safe)",
         "tags": [
           "Skills"
         ],

@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "c3eb6f7ab64c38e03fb33b34cfb4e9eebefc668ac9d036e1d196ca148e28f977",
+  "sourceHash": "3281118269db11886c67d2b7ed7f8ad12d8da1483322e7a0ce8932b430c58436",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
-    "endpoints": 73,
+    "endpoints": 75,
     "internalRoutes": 7,
     "mcpTools": 24,
-    "hostedMcpTools": 8,
+    "hostedMcpTools": 9,
     "cliCommands": 27,
-    "convexRoutes": 56,
+    "convexRoutes": 58,
     "nextRoutes": 24
   },
   "endpoints": [
@@ -800,12 +800,34 @@ export const docsReference = {
       ]
     },
     {
+      "method": "GET",
+      "path": "/api/v1/me/skills/insights",
+      "category": "Skills",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Per-skill outcome aggregates for the authenticated user (read:private; ?cursor=&limit= additive pagination)",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
       "method": "POST",
       "path": "/api/v1/me/skills/install",
       "category": "Skills",
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Record a skill install (authenticated)",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/skills/outcomes",
+      "category": "Skills",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Report a skill execution outcome (authenticated, write:memories scope, idempotency-safe)",
       "sources": [
         "convex"
       ]
@@ -1190,6 +1212,21 @@ export const docsReference = {
         "query"
       ],
       "requiresAuth": true
+    },
+    {
+      "name": "report_skill_outcome",
+      "description": "Report the outcome of a skill execution for the authenticated user. Call this after running a you.md skill to feed the self-improvement telemetry loop — your success/failure data powers the `youmd skill improve` surface. Requires a you.md API key with the write:memories scope passed as Bearer token in the Authorization header.",
+      "inputFields": [
+        "skill",
+        "outcome",
+        "note",
+        "durationMs"
+      ],
+      "required": [
+        "skill",
+        "outcome"
+      ],
+      "requiresAuth": true
     }
   ],
   "cliCommands": [
@@ -1331,7 +1368,7 @@ export const docsReference = {
       "usage": "stack [subcommand] [args...]",
       "group": "SKILLS",
       "summary": "local YouStack manifests (inspect/doctor/smoke/capabilities/route)",
-      "description": "Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link)"
+      "description": "Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval)"
     },
     {
       "name": "logs",

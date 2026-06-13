@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: c3eb6f7ab64c38e03fb33b34cfb4e9eebefc668ac9d036e1d196ca148e28f977. CLI version: 0.6.23. Endpoints: 73 documented (7 internal/retired routes excluded). Local MCP tools: 24. Hosted MCP tools: 8. CLI commands: 27. Reference intelligence: 2026-06-09T19:27:42.274Z.
+> Generated full agent context. Source hash: 3281118269db11886c67d2b7ed7f8ad12d8da1483322e7a0ce8932b430c58436. CLI version: 0.6.23. Endpoints: 75 documented (7 internal/retired routes excluded). Local MCP tools: 24. Hosted MCP tools: 9. CLI commands: 27. Reference intelligence: 2026-06-09T19:27:42.274Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -147,7 +147,7 @@ All 27 registered runtime commands, generated from the commander registrations i
 ### SKILLS
 
 - `youmd skill [subcommand] [args...]`: Identity-aware agent skills (list, install, use, sync, init-project)
-- `youmd stack [subcommand] [args...]`: Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link)
+- `youmd stack [subcommand] [args...]`: Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval)
 
 ### MONITORING
 
@@ -173,7 +173,7 @@ All 27 registered runtime commands, generated from the commander registrations i
 You.md has two MCP surfaces with distinct tool sets:
 
 - Local stdio MCP through the runtime: 24 tools. This is the preferred surface for Claude Code, Codex, Cursor, and other local coding agents.
-- Hosted same-origin JSON-RPC MCP at `POST /api/v1/mcp`: 8 tools, for web-capable clients.
+- Hosted same-origin JSON-RPC MCP at `POST /api/v1/mcp`: 9 tools, for web-capable clients.
 
 Discovery:
 
@@ -217,6 +217,7 @@ Hosted MCP tools (`POST /api/v1/mcp`):
 - `get_my_stacks` (Bearer API key required): List the YouStacks the authenticated user hosts in their own GitHub repo (from the You.md server-side mirror). Requires a you.md API key as Bearer token.
 - `get_repo_file` (Bearer API key required): Read one file (e.g. you.md, you.json, or a stacks/<slug>/... file) from the authenticated user's repo via the You.md server-side mirror. Requires a you.md API key as Bearer token.
 - `search_memories` (Bearer API key required): Full-text search the authenticated user's durable memories on you.md. Use this to recall specific facts, preferences, decisions, or context the user has stored - e.g. before answering a question about their past work or stated preferences. Returns one memory per line as plain text, relevance-ordered. Requires a you.md API key with the read:private scope...
+- `report_skill_outcome` (Bearer API key required): Report the outcome of a skill execution for the authenticated user. Call this after running a you.md skill to feed the self-improvement telemetry loop - your success/failure data powers the `youmd skill improve` surface. Requires a you.md API key with the write:memories scope passed as Bearer token in the Authorization header.
 
 Key local stdio MCP tools (of 24 total):
 
