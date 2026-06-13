@@ -152,7 +152,7 @@
 | T26 | Playwright smoke: landing → sign-in → dashboard + anon profile | M | done (chromium smoke; daily workflow) |
 | T27 | Per-section sha256 manifest + shared canonicalJsonString package | M | done (bb2b69d; manifest.sha256.json + canonical-json helper, 15 tests) |
 | T28 | Add llms.txt/shell/schema/install.sh to proxy RESERVED_PATHS | S | done (f0f7925) |
-| T29 | CLI version from package.json; postinstall banner TTY gate; publish version-exists check | S | partial (a984939 version-from-package.json; banner TTY gate + publish version-exists check pending) |
+| T29 | CLI version from package.json; postinstall banner TTY gate; publish version-exists check | S | done (banner TTY gate + publish version-exists check shipped) |
 | T30 | Spend-cap doc/code drift fix; pre-hydration theme script | S | done (ab0277d spend-cap; 70efbe3 pre-hydration theme script) |
 
 | T31 | Lint-zero: fix 169 pre-existing eslint errors in src/, then flip CI lint step to blocking | S-M | done (0060f68 lint-zero 169→0 repo-wide; 76dfcac lint blocking in CI) |
