@@ -24,7 +24,7 @@
 | ID | Item | Sources | Effort | Status |
 |---|---|---|---|---|
 | P1 | Enforce API-key scopes: scopes from `authenticateRequest`, `requireScope()` per route/MCP tool, log `scope_missing` for legacy keys | PRODUCT-AUDIT #1; FEATURE-ROADMAP 1.1 | M | done (scope enforcement live; grandfathered pre-epoch + cli-auth keys w/ telemetry) |
-| P2 | Resolve draft/publish semantics (save==publish w/ rollback patching profile, or true drafts) | PRODUCT-AUDIT #2; FEATURE-ROADMAP 1.2 | M | blocked(needs-spec: Houston call) |
+| P2 | Resolve draft/publish semantics (save==publish w/ rollback patching profile, or true drafts) | PRODUCT-AUDIT #2; FEATURE-ROADMAP 1.2 | M | partial-done(semantics documented 2026-06-13 in ARCHITECTURE.md; chosen path: save==publish; remaining code work: rollback must also patch profiles table — not yet done) |
 | P3 | Canonical `assembleAgentContext()` for web agent, CLI chat, hosted MCP, /ctx links + parity test | PRODUCT-AUDIT #3; FEATURE-ROADMAP 2.1 | L | done (23910d4/59fd576/6b1eeb2; all 4 surfaces through assembleAgentContext + 12-test parity lock; prod e2e verified: whoami/brief byte-stable, get_identity OK) |
 | P4 | Shared `generateSecureToken` replacing Math.random in apiKeys.ts:17, contextLinks.ts:18, private.ts:82, profiles.ts:26 | PRODUCT-AUDIT #4; FEATURE-ROADMAP 0.1 | S | done (1ce525d: CSPRNG via secureToken.ts, shapes preserved) |
 | P5 | Memory full-text search: Convex searchIndex + `q` param + MCP `search_memories` | PRODUCT-AUDIT #6; FEATURE-ROADMAP 2.3 | L | done (4b943a2; prod e2e: REST ?q= + MCP search_memories verified; docs regenerated 2a0abb2) |

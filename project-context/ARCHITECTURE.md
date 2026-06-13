@@ -110,6 +110,40 @@ Last Updated: 2026-06-11
 | manifest, youJson, youMd | any/string | Bundle content |
 | isPublished | boolean | |
 | createdAt, publishedAt | number | |
+| contentHash, parentHash | string? | Content-addressed ancestry |
+| source | string? | "web-shell" \| "cli" \| "api" \| "rollback" \| "agent:<name>" |
+
+#### Draft/publish semantics (P2 resolved 2026-06-13)
+
+Every save creates a new bundle row with `isPublished: false`. Publish is a
+separate explicit step that unpublishes all prior bundles and sets
+`isPublished: true` on the target. There are no true drafts that stay hidden
+from the public profile — but the profile stays at the last-published version
+until publish is called, so unsaved-to-published bundles act as drafts in
+practice. Both saves and publishes also sync fields directly to the `profiles`
+table (profile stays readable without a bundle lookup).
+
+**Save** (`me.saveBundleFromForm`, `me.saveYouJsonDirect`) — inserts a new
+bundle at `version+1` with `isPublished: false`; patches `profiles.*` immediately
+(convex/me.ts:511-553). The live public profile does NOT update until publish.
+
+**Publish** (`me.publishLatest`, `bundles.publishBundle`) — unpublishes every
+existing bundle for the user, patches the target bundle to `isPublished: true`,
+and re-syncs fields to `profiles.*` (convex/me.ts:882-982, convex/bundles.ts:167-187).
+
+**Rollback** (`bundles.rollbackToVersion`) — creates a NEW bundle (version+1)
+from the old version's content with `isPublished: false`; does NOT auto-publish
+(convex/bundles.ts:306-324). Caller must publish separately.
+
+**Web agent auto-publish pattern** — `useYouAgent.ts` calls `saveUpdates` then
+immediately calls `publishLatest` in sequence (src/hooks/useYouAgent.ts:2242-2266),
+so the agent makes save and publish a single atomic UX action. The CLI `push`
+and MCP server do the same two-call sequence. This means in practice every
+agent-triggered save is immediately published; the draft window is typically
+zero milliseconds for agent-driven flows.
+
+**Single source of truth:** save==publish (with a mandatory explicit publish
+step after save; not auto-published by the mutation itself).
 
 ### Ingestion Pipeline
 
