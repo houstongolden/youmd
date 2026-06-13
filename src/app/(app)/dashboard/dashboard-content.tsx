@@ -11,14 +11,45 @@ import { TerminalHeader } from "@/components/terminal/TerminalHeader";
 import { EditPane } from "@/components/panes/EditPane";
 import { SharePane } from "@/components/panes/SharePane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
-import { PortraitPane } from "@/components/panes/PortraitPane";
-import { SkillsPane } from "@/components/panes/SkillsPane";
-import { StacksPane } from "@/components/panes/StacksPane";
-import { HistoryPane } from "@/components/panes/HistoryPane";
-import { AnalyticsPane } from "@/components/panes/AnalyticsPane";
-import { AgentsPane } from "@/components/panes/AgentsPane";
-import { VaultPane } from "@/components/panes/VaultPane";
+import dynamic from "next/dynamic";
+
+// Heavy panes — lazy-loaded so their JS only ships when the right-pane is opened.
+// A brief pulse skeleton fills the slot while the chunk loads.
+const PaneSkeleton = () => (
+  <div className="flex-1 p-4 space-y-4 animate-pulse">
+    <div className="w-40 h-4 bg-[hsl(var(--text-secondary))] opacity-10 rounded-sm" />
+    <div className="w-full h-24 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
+    <div className="w-2/3 h-4 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
+  </div>
+);
+
+const PortraitPane = dynamic(
+  () => import("@/components/panes/PortraitPane").then((m) => ({ default: m.PortraitPane })),
+  { ssr: false, loading: PaneSkeleton }
+);
+const SkillsPane = dynamic(
+  () => import("@/components/panes/SkillsPane").then((m) => ({ default: m.SkillsPane })),
+  { ssr: false, loading: PaneSkeleton }
+);
+const HistoryPane = dynamic(
+  () => import("@/components/panes/HistoryPane").then((m) => ({ default: m.HistoryPane })),
+  { ssr: false, loading: PaneSkeleton }
+);
+const AnalyticsPane = dynamic(
+  () => import("@/components/panes/AnalyticsPane").then((m) => ({ default: m.AnalyticsPane })),
+  { ssr: false, loading: PaneSkeleton }
+);
+const AgentsPane = dynamic(
+  () => import("@/components/panes/AgentsPane").then((m) => ({ default: m.AgentsPane })),
+  { ssr: false, loading: PaneSkeleton }
+);
+const VaultPane = dynamic(
+  () => import("@/components/panes/VaultPane").then((m) => ({ default: m.VaultPane })),
+  { ssr: false, loading: PaneSkeleton }
+);
+// Eager panes (commonly accessed on first open — keep synchronous)
 import { HelpPane } from "@/components/panes/HelpPane";
+import { StacksPane } from "@/components/panes/StacksPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProfileContent } from "../[username]/profile-content";
 
