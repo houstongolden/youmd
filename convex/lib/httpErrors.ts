@@ -1,3 +1,5 @@
+import { reportToSentry } from "./sentry";
+
 /**
  * P21 — canonical HTTP API error envelope (PRODUCT-AUDIT #23, FEATURE-ROADMAP 3.1).
  *
@@ -84,5 +86,7 @@ export function sanitizedServerErrorEnvelope(
   log: (...args: unknown[]) => void = console.error
 ): ErrorEnvelope {
   log(`[http:${context}] internal error:`, err);
+  // Fire-and-forget — Sentry down must never break user requests.
+  void reportToSentry({ error: err, context: { route: context, ...(extra ?? {}) } });
   return errorEnvelope(ERROR_CODES.serverError, publicMessage, extra);
 }
