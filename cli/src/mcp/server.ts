@@ -28,7 +28,7 @@ import {
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 // T14: CLI tool registry — single source of truth for future tool additions.
-import { CLI_MCP_TOOLS } from "./registry.js";
+import { CLI_MCP_TOOLS, type CliMcpCtx } from "./registry.js";
 import * as fs from "fs";
 import * as path from "path";
 import {
@@ -1472,14 +1472,9 @@ export async function startMcpServer(): Promise<void> {
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
       tools: [
-        {
-          name: "whoami",
-          description: "Return a compact ~500-char identity summary: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation — it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSON.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {},
-          },
-        },
+        // whoami, get_identity, list_skills, list_projects, get_section,
+        // get_project_context, get_stack_manifest, get_stack_capabilities,
+        // route_stack_request, smoke_stack — migrated to registry.ts (T14).
         {
           name: "get_agent_brief",
           description: "Return a YouStack startup brief for local agents. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines compact identity, the user's recent durable memories (rendered inline by default), current repo instructions, project-context active requests, open TODOs, installed skills, and recommended next moves so the agent can act without asking the user to re-explain the project.",
@@ -1502,91 +1497,8 @@ export async function startMcpServer(): Promise<void> {
             },
           },
         },
-        {
-          name: "get_stack_manifest",
-          description: "Return the current local YouStack manifest discovered from cwd, or from a provided manifest/stack path. Use before trusting local stack files.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              path: {
-                type: "string",
-                description: "Optional path to a youstack.json file or stack directory.",
-              },
-            },
-          },
-        },
-        {
-          name: "get_stack_capabilities",
-          description: "Return the local YouStack capability map, including local/static capabilities and protected API/MCP capabilities declared by the manifest.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              path: {
-                type: "string",
-                description: "Optional path to a youstack.json file or stack directory.",
-              },
-            },
-          },
-        },
-        {
-          name: "route_stack_request",
-          description: "Route a natural-language request to the safest matching local YouStack capability. This is deterministic and read-only.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              request: {
-                type: "string",
-                description: "The user's natural-language stack request.",
-              },
-              path: {
-                type: "string",
-                description: "Optional path to a youstack.json file or stack directory.",
-              },
-            },
-            required: ["request"],
-          },
-        },
-        {
-          name: "smoke_stack",
-          description: "Run read-only local YouStack smoke validation. It parses the manifest, verifies required files/checksums, checks adapter declarations, and performs no writes.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              path: {
-                type: "string",
-                description: "Optional path to a youstack.json file or stack directory.",
-              },
-            },
-          },
-        },
-        {
-          name: "get_identity",
-          description: "Get the user's complete you.md identity bundle. Returns compact (default), full JSON, or human-readable markdown. For the fastest orient, call whoami first; call get_identity when you need full detail (preferences, voice, directives, projects).",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              format: {
-                type: "string",
-                enum: ["compact", "full", "json", "markdown"],
-                description: "Output format: compact (500-char summary, default — same as whoami), full/json (complete identity bundle as JSON), markdown (human-readable markdown).",
-              },
-            },
-          },
-        },
-        {
-          name: "get_section",
-          description: "Read a specific identity section by path. Use when you need just ONE section rather than the full bundle. Returns markdown content for the requested section. Available paths: profile/about, profile/projects, profile/now, profile/values, profile/links, preferences/agent, preferences/writing, voice/voice, directives/agent.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              section: {
-                type: "string",
-                description: "Section path: profile/about, profile/projects, profile/now, profile/values, profile/links, preferences/agent, preferences/writing, voice/voice, directives/agent",
-              },
-            },
-            required: ["section"],
-          },
-        },
+        // get_stack_manifest, get_stack_capabilities, route_stack_request,
+        // smoke_stack, get_identity, get_section — migrated to registry.ts (T14).
         {
           name: "update_section",
           description: "Update a section of the user's identity. Writes markdown content to the local .youmd/ directory. Use after the user explicitly asks to change their profile, preferences, voice, or directives. Always confirm changes with the user before calling. Does NOT auto-push — call push_bundle afterward if the user wants to publish.",
@@ -1654,19 +1566,7 @@ export async function startMcpServer(): Promise<void> {
             properties: {},
           },
         },
-        {
-          name: "get_project_context",
-          description: "Get the full project context for the current or named project — PRD, TODO, features, decisions, changelog, and project memories. Returns a readiness envelope so agents can distinguish missing project context from ready project context without parsing plain-text errors.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {
-              project: {
-                type: "string",
-                description: "Project name. Omit to auto-detect from current directory.",
-              },
-            },
-          },
-        },
+        // get_project_context — migrated to registry.ts (T14).
         {
           name: "add_project_memory",
           description: "Save a memory scoped to a specific project. Unlike add_memory (which is global), project memories are stored locally in the project-context/ directory and only surface when working on that project. Use for architecture decisions, bug context, and feature-specific learnings.",
@@ -1732,14 +1632,7 @@ export async function startMcpServer(): Promise<void> {
             properties: {},
           },
         },
-        {
-          name: "list_skills",
-          description: "List all installed identity-aware skills with their names. Use to discover what skills are available before calling use_skill. Returns a simple list of installed skill names.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {},
-          },
-        },
+        // list_skills — migrated to registry.ts (T14).
         {
           name: "add_source",
           description: "Register an identity data source (LinkedIn, GitHub, X, website, blog, YouTube). Links an external profile to the user's identity so it can be scraped and indexed. Requires authentication. Use when the user wants to connect a new social profile or website to their identity.",
@@ -1778,14 +1671,7 @@ export async function startMcpServer(): Promise<void> {
             },
           },
         },
-        {
-          name: "list_projects",
-          description: "List all detected projects with their metadata. Returns project names found in the projects root directory. Use to discover available projects before calling get_project_context with a specific project name.",
-          inputSchema: {
-            type: "object" as const,
-            properties: {},
-          },
-        },
+        // list_projects — migrated to registry.ts (T14).
         {
           name: "get_remote_status",
           description: "Check sync status between local identity bundle and the remote you.md server. Returns whether the user is authenticated, whether the local bundle exists, and the current version info. Use to diagnose sync issues or confirm a push was successful.",
@@ -1824,21 +1710,20 @@ export async function startMcpServer(): Promise<void> {
     // T14: Try registry dispatch first (grows as tools are migrated out of the switch).
     const registrySpec = CLI_MCP_TOOLS.find((t) => t.name === name);
     if (registrySpec) {
-      const result = await registrySpec.handler((args || {}) as Record<string, unknown>);
+      const ctx: CliMcpCtx = {
+        logActivity: (action, resource, details) => {
+          void logMcpActivity(action, resource, details);
+        },
+        authenticated: isAuthenticated(),
+      };
+      const result = await registrySpec.handler((args || {}) as Record<string, unknown>, ctx);
       return { content: result.content, isError: result.isError };
     }
 
+    // whoami, get_identity, get_section, list_skills, list_projects,
+    // get_project_context, get_stack_manifest, get_stack_capabilities,
+    // route_stack_request, smoke_stack — dispatched via registry above (T14).
     switch (name) {
-      case "whoami": {
-        void logMcpActivity("read", "identity:compact");
-        return {
-          content: [{
-            type: "text" as const,
-            text: buildWhoamiSummary(),
-          }],
-        };
-      }
-
       case "get_agent_brief": {
         const briefArgs = (args || {}) as { format?: string; includeMemories?: boolean; maxChars?: number };
         const includeMemories = briefArgs.includeMemories !== false;
@@ -1866,145 +1751,6 @@ export async function startMcpServer(): Promise<void> {
             text: formatAgentBriefMarkdown(brief, maxChars),
           }],
         };
-      }
-
-      case "get_stack_manifest": {
-        const stackArgs = (args || {}) as { path?: string };
-        const loaded = tryLoadCurrentYouStack(stackArgs.path);
-        const readiness = getYouStackReadiness(loaded);
-        if (!loaded) {
-          return {
-            content: [{ type: "text" as const, text: JSON.stringify({ readiness, manifest: null, validation: null }, null, 2) }],
-            isError: true,
-          };
-        }
-        void logMcpActivity("read", "stack/manifest", { stack: loaded.manifest.slug });
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({
-              readiness,
-              manifestPath: loaded.manifestPath,
-              rootDir: loaded.rootDir,
-              manifest: loaded.manifest,
-              validation: loaded.validation,
-            }, null, 2),
-          }],
-        };
-      }
-
-      case "get_stack_capabilities": {
-        const stackArgs = (args || {}) as { path?: string };
-        const loaded = tryLoadCurrentYouStack(stackArgs.path);
-        const readiness = getYouStackReadiness(loaded);
-        if (!loaded) {
-          return {
-            content: [{ type: "text" as const, text: JSON.stringify({ readiness, capabilities: [] }, null, 2) }],
-            isError: true,
-          };
-        }
-        void logMcpActivity("read", "stack/capabilities", { stack: loaded.manifest.slug });
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({
-              readiness,
-              stack: loaded.manifest.slug,
-              capabilities: getYouStackCapabilities(loaded.manifest),
-            }, null, 2),
-          }],
-        };
-      }
-
-      case "route_stack_request": {
-        const stackArgs = (args || {}) as { path?: string; request?: string };
-        if (!stackArgs.request) {
-          return {
-            content: [{ type: "text" as const, text: "missing required argument: request" }],
-            isError: true,
-          };
-        }
-        const loaded = tryLoadCurrentYouStack(stackArgs.path);
-        const readiness = getYouStackReadiness(loaded);
-        if (!loaded) {
-          return {
-            content: [{ type: "text" as const, text: JSON.stringify({ readiness, request: stackArgs.request, capability: null, alternatives: [] }, null, 2) }],
-            isError: true,
-          };
-        }
-        const route = routeYouStackRequest(loaded.manifest, stackArgs.request);
-        void logMcpActivity("read", "stack/route", {
-          stack: loaded.manifest.slug,
-          capability: route.capability.id,
-        });
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({ readiness, ...route }, null, 2),
-          }],
-        };
-      }
-
-      case "smoke_stack": {
-        const stackArgs = (args || {}) as { path?: string };
-        const loaded = tryLoadCurrentYouStack(stackArgs.path);
-        const readiness = getYouStackReadiness(loaded);
-        if (!loaded) {
-          return {
-            content: [{ type: "text" as const, text: JSON.stringify({ readiness, ok: false, errors: ["no local YouStack manifest found"], warnings: [], checks: [] }, null, 2) }],
-            isError: true,
-          };
-        }
-        const smoke = runYouStackSmoke(loaded);
-        void logMcpActivity("read", "stack/smoke", {
-          stack: loaded.manifest.slug,
-          ok: smoke.ok,
-        });
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({ readiness, ...smoke }, null, 2),
-          }],
-          isError: !smoke.ok,
-        };
-      }
-
-      case "get_identity": {
-        const format = ((args as Record<string, unknown>)?.format as string) || "compact";
-        void logMcpActivity("read", "identity:" + format);
-        if (format === "markdown") {
-          return { content: [{ type: "text" as const, text: buildIdentityMarkdown() }] };
-        }
-        if (format === "full" || format === "json") {
-          return {
-            content: [{
-              type: "text" as const,
-              text: JSON.stringify(getYouJson(), null, 2),
-            }],
-          };
-        }
-        // compact (default) — matches whoami output
-        return {
-          content: [{
-            type: "text" as const,
-            text: buildWhoamiSummary(),
-          }],
-        };
-      }
-
-      case "get_section": {
-        const section = (args as Record<string, unknown>).section as string;
-        const parts = section.split("/");
-        if (parts.length !== 2) {
-          return { content: [{ type: "text" as const, text: "invalid section path — use format: dir/slug (e.g., profile/about)" }], isError: true };
-        }
-        const filePath = path.join(getBundleDir(), parts[0], `${parts[1]}.md`);
-        const content = readFileOr(filePath, "");
-        if (!content) {
-          return { content: [{ type: "text" as const, text: `section not found: ${section}` }], isError: true };
-        }
-        void logMcpActivity("read_section", section);
-        return { content: [{ type: "text" as const, text: content }] };
       }
 
       case "update_section": {
@@ -2090,16 +1836,6 @@ export async function startMcpServer(): Promise<void> {
             type: "text" as const,
             text: JSON.stringify(result, null, 2),
           }],
-          isError: !result.readiness.ready,
-        };
-      }
-
-      case "get_project_context": {
-        const projectName = (args as Record<string, unknown>)?.project as string | undefined;
-        const result = fetchProjectContextEnvelope(projectName);
-        void logMcpActivity("read", projectName ? "project/" + projectName : "project/current");
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
           isError: !result.readiness.ready,
         };
       }
@@ -2254,16 +1990,6 @@ export async function startMcpServer(): Promise<void> {
         }
       }
 
-      case "list_skills": {
-        const skills = getInstalledSkills();
-        if (skills.length === 0) {
-          return { content: [{ type: "text" as const, text: "no skills installed. run: youmd skill install voice-sync" }] };
-        }
-        const list = skills.map((s) => `- ${s.name}`).join("\n");
-        void logMcpActivity("read", "skills");
-        return { content: [{ type: "text" as const, text: `installed skills:\n${list}` }] };
-      }
-
       case "add_source": {
         if (!isAuthenticated()) {
           return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
@@ -2296,28 +2022,6 @@ export async function startMcpServer(): Promise<void> {
           return { content: [{ type: "text" as const, text: `context link created: ${link}\nscope: ${scope || "public"}, ttl: ${ttl || "24h"}` }] };
         } catch (err) {
           return { content: [{ type: "text" as const, text: `failed to create context link: ${err instanceof Error ? err.message : "unknown error"}` }], isError: true };
-        }
-      }
-
-      case "list_projects": {
-        try {
-          const root = findProjectsRoot();
-          if (!root) {
-            return { content: [{ type: "text" as const, text: "no projects directory found" }], isError: true };
-          }
-          const projects = listProjects(root);
-          if (projects.length === 0) {
-            return { content: [{ type: "text" as const, text: "no projects detected. create one with: youmd project init <name>" }] };
-          }
-          const current = getCurrentProject();
-          const list = projects.map((p) => {
-            const marker = current && current.name === p ? " (current)" : "";
-            return `- ${p}${marker}`;
-          }).join("\n");
-          void logMcpActivity("read", "projects");
-          return { content: [{ type: "text" as const, text: `projects:\n${list}` }] };
-        } catch (err) {
-          return { content: [{ type: "text" as const, text: `error listing projects: ${err instanceof Error ? err.message : "unknown"}` }], isError: true };
         }
       }
 
