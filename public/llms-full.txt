@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: 8144c16f1ebcefca699f73cc2fa6cf97bb01d11b934a598b9530df8353f9b635. CLI version: 0.6.23. Endpoints: 79 documented (7 internal/retired routes excluded). Local MCP tools: 24. Hosted MCP tools: 0. CLI commands: 27. Reference intelligence: 2026-06-09T19:27:42.274Z.
+> Generated full agent context. Source hash: 8144c16f1ebcefca699f73cc2fa6cf97bb01d11b934a598b9530df8353f9b635. CLI version: 0.6.23. Endpoints: 79 documented (7 internal/retired routes excluded). Local MCP tools: 24. Hosted MCP tools: 0. CLI commands: 27. Reference intelligence: 2026-06-12T08:31:29.816Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -369,9 +369,9 @@ Agents should prefer read-before-write and route-before-action:
 
 You.md keeps these as first-class inspiration and monitoring sources:
 
-- GStack: https://github.com/garrytan/gstack (main @ 1626d4857bfe; No new commits since 1626d48)
-- GBrain: https://github.com/garrytan/gbrain (master @ 1eb430a2df9f; No new commits since 1eb430a)
-- Agent Scripts: https://github.com/steipete/agent-scripts (main @ 3bd6b211f393; No new commits since 3bd6b21)
+- GStack: https://github.com/garrytan/gstack (main @ a5833c413f98; No new commits since a5833c4)
+- GBrain: https://github.com/garrytan/gbrain (master @ ecd6ae87722a; No new commits since ecd6ae8)
+- Agent Scripts: https://github.com/steipete/agent-scripts (main @ a3026aea93b9; Changes since 831d5c3)
 - The Library: https://github.com/disler/the-library (main @ 47f455cd139b; No new commits since 47f455c)
 
 The monitor writes:

@@ -1,5 +1,20 @@
 # You.md — Changelog
 
+## 2026-06-13 — Remote main sync continuation and verification fixes
+
+### Sync + audit
+- Fast-forwarded local `main` to `origin/main` commit `376f967` and reapplied local artifacts cleanly; no merge conflicts required manual resolution.
+- Audited the newly landed public stack registry/install path, hosted MCP registry + subscribe handling, outbound webhooks, generated agent docs, and backlog/reference-intelligence updates.
+- Refreshed reference-intelligence artifacts to the 2026-06-12 upstream state and regenerated `/llms.txt` + `/llms-full.txt`.
+
+### Fixes from verification
+- Renamed the Convex-side capability router twin from `convex/lib/capability-router.ts` to `convex/lib/capabilityRouter.ts` because Convex deployment rejects hyphenated module path components.
+- Stopped CLI decompile from treating `username` as `identity.name`, fixing the empty-bundle round-trip test and keeping handle metadata distinct from display-name identity.
+- Replaced a `/docs` arbitrary `rounded-[2px]` class with `rounded-sm` so the radius guardrail passes.
+
+### Verification
+- Passed `npm run lint` (0 errors, existing warnings), `npm run test:convex` (28 files / 355 tests), `npm --prefix cli test` (42 files / 472 tests), `npm --prefix cli run build`, root TypeScript, Convex TypeScript, Convex codegen/typecheck, `npm run agent-docs:ci`, `npm run docs:check`, production `npm run build`, and `git diff --check`.
+
 ## 2026-06-09 — Public profile indexing pipeline foundation
 
 ### Crawler/indexer backend

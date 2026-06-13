@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-09
+Last Updated: 2026-06-13
 
 ---
 
@@ -46,6 +46,24 @@ Last Updated: 2026-06-09
 - Source: date + commit or conversation reference
 
 ---
+
+## 2026-06-13 Remote Main Sync Continuation
+
+### 111. Pull remote main, resolve conflicts, verify new landed work, and keep moving
+**Status:** IN PROGRESS (local sync + verification complete; production/user verification pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-13 — Houston said "pull down all changes from remote main and resolve conflicts and continue"
+**Request:** Bring local `main` up to current `origin/main`, preserve and merge local work, resolve any conflicts, audit what landed, fix/test anything newly broken from the merge, and continue through verification/setup notes.
+**Actionable Scope:**
+1. Fetch/pull all changes from remote `main`.
+2. Reapply local work safely and resolve conflicts without losing user changes.
+3. Audit the newly landed stack registry, MCP registry/subscribe, webhook, CLI stack-install, generated docs, and backlog/reference-intelligence updates.
+4. Run local build, lint, docs, Convex, CLI, and production-build checks.
+5. Fix issues surfaced by verification.
+6. Identify owner-only setup/deploy needs.
+7. Update project context and commit logical follow-through changes.
+**Progress (2026-06-13):** Fast-forwarded local `main` to `origin/main` commit `376f967` after stashing/reapplying local artifacts; the stash pop was clean and there were no textual merge conflicts. Audited the newly landed stack install/public registry, hosted MCP registry + `subscribe`, outbound webhooks, generated agent docs, and backlog docs wave. Verification found and fixed three follow-through issues: Convex codegen/deploy rejected `convex/lib/capability-router.ts` because Convex module path components cannot contain hyphens, so the Convex-side twin is now `convex/lib/capabilityRouter.ts`; CLI round-trip decompile no longer treats `username` as an `identity.name`; `/docs` telemetry panel now uses the radius token accepted by the design guardrail. Verification passed `npm run lint` (0 errors, existing warnings), `npm run test:convex` (28 files / 355 tests), `npm --prefix cli test` (42 files / 472 tests), `npm --prefix cli run build`, `npx tsc --noEmit`, `npx tsc -p convex/tsconfig.json --noEmit`, `npx convex codegen --typecheck enable`, `npm run agent-docs:ci`, `npm run docs:check`, `npm run build`, and `git diff --check`. **Owner-only remaining:** deploy/push verification requires normal production ownership; GitHub OAuth/App/webhook setup still needs real secrets and app registration from Houston/operator where applicable.
 
 ## 2026-06-04 Remote Main Sync + Full Audit
 

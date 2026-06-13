@@ -1,11 +1,21 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-09
+Last Updated: 2026-06-13
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-06-13
+- [x] Pull remote `main` to `376f967`, reapply local artifacts cleanly, and confirm there were no merge conflicts
+- [x] Audit the newly landed public stack registry/install, hosted MCP registry + subscribe support, outbound webhooks, generated docs, and backlog/reference-intelligence updates
+- [x] Rename the Convex-side capability router module to `convex/lib/capabilityRouter.ts` so `npx convex codegen --typecheck enable` can bundle/deploy it
+- [x] Fix CLI round-trip decompile so a handle-only `username` does not become a fake `identity.name`
+- [x] Replace the `/docs` telemetry panel arbitrary radius with the design-system radius token
+- [x] Regenerate generated agent docs for the 2026-06-12 reference-intelligence state
+- [ ] Push the follow-through commit and watch production/CI deploy results
+- [ ] Operator: keep GitHub OAuth/App/webhook production secrets registered and verify the new registry/webhook flows against production credentials
 
 ### 2026-06-09
 - [x] Re-run the daily reference-intelligence loop, archive stale Codex automation threads first, and version the fresh `project-context/reference-intelligence/LATEST.md` + `TASKS.md` outputs
