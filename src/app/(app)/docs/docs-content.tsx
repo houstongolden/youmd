@@ -2644,7 +2644,7 @@ npm run docs:check`}</CodeBlock>
               self-improving skill loop. Each category has a distinct
               privacy posture:
             </P>
-            <div className="my-4 rounded-[2px] border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <div className="my-4 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
               <div className="px-4 py-2 border-b border-[hsl(var(--border))] flex gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--text-secondary))] opacity-20 mt-1" />
                 <span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--text-secondary))] opacity-20 mt-1" />

@@ -68,7 +68,7 @@ function decompileNested(bundleDir: string, youJson: Record<string, unknown>): n
   // profile/about.md
   {
     const lines: string[] = ['---', 'title: "About"', '---', ''];
-    const nameStr = (identity.name as string) || (youJson.username as string) || "";
+    const nameStr = (identity.name as string) || "";
     // Only emit the # heading if we have a non-empty name — an empty `# ` would
     // round-trip as `"#"` in bio.long because the compiler's parseAboutMd only
     // matches `# <something>` (with a space and content after it).
