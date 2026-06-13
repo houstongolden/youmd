@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "41635067ab4779f4ccbea36e2d4eaffcf789b3c1c442509784a3e9746e0f43da",
+  "sourceHash": "8144c16f1ebcefca699f73cc2fa6cf97bb01d11b934a598b9530df8353f9b635",
   "cli": {
     "version": "0.6.23"
   },
   "counts": {
-    "endpoints": 75,
+    "endpoints": 79,
     "internalRoutes": 7,
     "mcpTools": 24,
-    "hostedMcpTools": 9,
+    "hostedMcpTools": 0,
     "cliCommands": 27,
-    "convexRoutes": 58,
+    "convexRoutes": 62,
     "nextRoutes": 24
   },
   "endpoints": [
@@ -249,6 +249,39 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "list user's active verifications",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/me/webhooks",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Revoke a webhook subscription",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/webhooks",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "List webhook subscriptions (without secret)",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/webhooks",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Create a webhook subscription Returns { id, signingSecret } — signingSecret is shown ONCE, never again.",
       "sources": [
         "convex"
       ]
@@ -877,6 +910,17 @@ export const docsReference = {
       ]
     },
     {
+      "method": "GET",
+      "path": "/api/v1/stacks/registry",
+      "category": "YouStacks",
+      "auth": "Public or rate-limited",
+      "source": "convex",
+      "summary": "public repo mirror. 404 when the user, mirror, or stack slug is not found. Files are capped at 200 entries; pass ?limit=N (1–200) to narrow further. Response shape: { user, slug, manifest, files[], truncated, fileCount,…",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
       "method": "POST",
       "path": "/api/v1/stacks/route",
       "category": "YouStacks",
@@ -1136,99 +1180,7 @@ export const docsReference = {
       "required": []
     }
   ],
-  "hostedMcpTools": [
-    {
-      "name": "whoami",
-      "description": "Return a compact ~500-char identity summary of the authenticated user: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation — it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSO…",
-      "inputFields": [],
-      "required": [],
-      "requiresAuth": true
-    },
-    {
-      "name": "get_agent_brief",
-      "description": "Return a startup brief for the authenticated user. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines a compact identity summary, the user's recent durable memories (rendered inline by default), installed skills, and recommended next moves so the agent can act without asking the user to re-expla…",
-      "inputFields": [
-        "format",
-        "includeMemories",
-        "maxChars"
-      ],
-      "required": [],
-      "requiresAuth": true
-    },
-    {
-      "name": "get_identity",
-      "description": "Get a user's public identity bundle from you.md. Returns their structured identity: bio, projects, values, agent directives, communication preferences, and more. Use this at the start of a session to understand who you're working with.",
-      "inputFields": [
-        "username"
-      ],
-      "required": [
-        "username"
-      ],
-      "requiresAuth": false
-    },
-    {
-      "name": "search_profiles",
-      "description": "Search or list public profiles on you.md.",
-      "inputFields": [
-        "query",
-        "limit"
-      ],
-      "required": [],
-      "requiresAuth": false
-    },
-    {
-      "name": "get_my_identity",
-      "description": "Get the authenticated user's full identity bundle, including private context. Requires a you.md API key passed as Bearer token in the Authorization header.",
-      "inputFields": [],
-      "required": [],
-      "requiresAuth": true
-    },
-    {
-      "name": "get_my_stacks",
-      "description": "List the YouStacks the authenticated user hosts in their own GitHub repo (from the You.md server-side mirror). Requires a you.md API key as Bearer token.",
-      "inputFields": [],
-      "required": [],
-      "requiresAuth": true
-    },
-    {
-      "name": "get_repo_file",
-      "description": "Read one file (e.g. you.md, you.json, or a stacks/<slug>/... file) from the authenticated user's repo via the You.md server-side mirror. Requires a you.md API key as Bearer token.",
-      "inputFields": [
-        "path"
-      ],
-      "required": [
-        "path"
-      ],
-      "requiresAuth": true
-    },
-    {
-      "name": "search_memories",
-      "description": "Full-text search the authenticated user's durable memories on you.md. Use this to recall specific facts, preferences, decisions, or context the user has stored — e.g. before answering a question about their past work or stated preferences. Returns one memory per line as plain text, relevance-ordered. Requires a you.md API key with the read:private scope pas…",
-      "inputFields": [
-        "query",
-        "limit"
-      ],
-      "required": [
-        "query"
-      ],
-      "requiresAuth": true
-    },
-    {
-      "name": "report_skill_outcome",
-      "description": "Report the outcome of a skill execution for the authenticated user. Call this after running a you.md skill to feed the self-improvement telemetry loop — your success/failure data powers the `youmd skill improve` surface. Requires a you.md API key with the write:memories scope passed as Bearer token in the Authorization header.",
-      "inputFields": [
-        "skill",
-        "outcome",
-        "note",
-        "durationMs"
-      ],
-      "required": [
-        "skill",
-        "outcome"
-      ],
-      "requiresAuth": true
-    }
-  ],
+  "hostedMcpTools": [],
   "cliCommands": [
     {
       "name": "login",
@@ -1368,7 +1320,7 @@ export const docsReference = {
       "usage": "stack [subcommand] [args...]",
       "group": "SKILLS",
       "summary": "local YouStack manifests (inspect/doctor/smoke/capabilities/route)",
-      "description": "Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval, update)"
+      "description": "Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval, update, install)"
     },
     {
       "name": "logs",

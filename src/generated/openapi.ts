@@ -720,6 +720,119 @@ export const openApiSpec = {
         ]
       }
     },
+    "/api/v1/me/webhooks": {
+      "delete": {
+        "operationId": "delete_api_v1_me_webhooks",
+        "summary": "Revoke a webhook subscription",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "get_api_v1_me_webhooks",
+        "summary": "List webhook subscriptions (without secret)",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "post_api_v1_me_webhooks",
+        "summary": "Create a webhook subscription Returns { id, signingSecret } — signingSecret is shown ONCE, never again.",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/me/activity": {
       "get": {
         "operationId": "get_api_v1_me_activity",
@@ -2703,6 +2816,40 @@ export const openApiSpec = {
         ],
         "x-youmd-auth": "Public or rate-limited",
         "x-youmd-source": "next",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stacks/registry": {
+      "get": {
+        "operationId": "get_api_v1_stacks_registry",
+        "summary": "public repo mirror. 404 when the user, mirror, or stack slug is not found. Files are capped at 200 entries; pass ?limit=N (1–200) to narrow further. Response shape: { user, slug, manifest, files[], truncated, fileCount,…",
+        "tags": [
+          "YouStacks"
+        ],
+        "x-youmd-auth": "Public or rate-limited",
+        "x-youmd-source": "convex",
         "responses": {
           "200": {
             "description": "Successful response"
