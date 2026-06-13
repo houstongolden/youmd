@@ -55,6 +55,7 @@ cli/node_modules/
 .reference-repos/
 .env*.local
 audit/.lock
+project-context/audits/auto/.lock
 
 # claude code
 .claude/
