@@ -43,10 +43,65 @@ const MODELS = {
   classify: { provider: "anthropic", model: "claude-haiku-4-5-20251001" },
 } as const;
 
+// ---------------------------------------------------------------------------
+// Security: server-assembled system prompt — client system messages REJECTED
+// ---------------------------------------------------------------------------
+
+/**
+ * The server-assembled You Agent system prompt.
+ * Built from the canonical soul (you-agent/soul.md canonical content) and the
+ * agent identity directives baked in at deploy time — not from request payloads.
+ *
+ * This is the ONLY source of the system prompt for every LLM call routed
+ * through onboardingChat and /api/v1/chat/stream. Client-supplied system
+ * messages are always stripped before the request reaches the LLM.
+ */
+export const YOU_AGENT_SYSTEM_PROMPT =
+  "you are the you.md agent — an identity specialist for the agent internet. " +
+  "you help people build and refine their identity context protocol (ICP) so every AI they use " +
+  "starts with real context about who they are. " +
+  "you are NOT a generic chatbot. you are precise, dry, warm, terminal-native. " +
+  "lowercase always. no exclamation marks. no emoji. short sentences. " +
+  "2-4 sentences per turn max. one question at a time. " +
+  "always be building: update sections, save memories, extract directives. " +
+  "never idle. show your work in brackets: [updated: about], [saved memory].";
+
+/**
+ * Strip any client-supplied system messages from a message array and return
+ * both the sanitised conversation and the count of messages dropped.
+ *
+ * Called by onboardingChat (internalAction) and by the /api/v1/chat/stream
+ * httpAction before messages are forwarded to any LLM provider.  The caller
+ * is responsible for prepending the server-assembled system prompt.
+ *
+ * Exported so convex/chatProxy.test.ts can unit-test this logic in isolation.
+ */
+export function filterClientMessages(
+  messages: { role: string; content: string }[]
+): { filtered: { role: string; content: string }[]; droppedSystemCount: number } {
+  let droppedSystemCount = 0;
+  const filtered = messages.filter((m) => {
+    if (m.role === "system") {
+      droppedSystemCount++;
+      console.warn(
+        `[chat-proxy] dropped client-supplied system message (${m.content.slice(0, 80).replace(/\n/g, " ")}…)`
+      );
+      return false;
+    }
+    return true;
+  });
+  return { filtered, droppedSystemCount };
+}
+
 /**
  * Chat proxy — routes LLM calls through the backend.
  * Uses Claude Sonnet 4.6 via Anthropic API (best quality).
  * Falls back to OpenRouter.
+ *
+ * Security (T49): client-supplied system messages are silently dropped and
+ * replaced with the server-assembled YOU_AGENT_SYSTEM_PROMPT before any
+ * LLM provider receives the payload. The conversation body only ever carries
+ * user / assistant turns from the client.
  */
 export const onboardingChat = internalAction({
   args: {
@@ -58,11 +113,22 @@ export const onboardingChat = internalAction({
     ),
   },
   handler: async (_ctx, args) => {
+    // T49: strip any client-supplied system message; build ours server-side.
+    const { filtered, droppedSystemCount } = filterClientMessages(args.messages);
+    if (droppedSystemCount > 0) {
+      console.warn(`[chat-proxy] onboardingChat: dropped ${droppedSystemCount} client system message(s)`);
+    }
+    // Prepend the server-controlled system message.
+    const safeMessages: { role: string; content: string }[] = [
+      { role: "system", content: YOU_AGENT_SYSTEM_PROMPT },
+      ...filtered,
+    ];
+
     // Try Anthropic API directly first (Claude Sonnet 4.6)
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     if (anthropicKey) {
       try {
-        return await callAnthropic(anthropicKey, args.messages);
+        return await callAnthropic(anthropicKey, safeMessages);
       } catch (err) {
         console.error("Anthropic API failed, falling back to OpenRouter:", err);
       }
@@ -72,7 +138,7 @@ export const onboardingChat = internalAction({
     const openrouterKey = process.env.OPENROUTER_API_KEY;
     if (openrouterKey) {
       try {
-        return await callOpenRouter(openrouterKey, args.messages);
+        return await callOpenRouter(openrouterKey, safeMessages);
       } catch (err) {
         console.error("OpenRouter API also failed:", err);
         throw err;

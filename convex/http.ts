@@ -27,6 +27,7 @@ import {
   buildRateLimitHeaders,
   type WriteRateLimit,
 } from "./lib/writeLimits";
+import { filterClientMessages, YOU_AGENT_SYSTEM_PROMPT } from "./chat";
 
 const http = httpRouter();
 
@@ -1333,8 +1334,12 @@ http.route({
       return errorResponse("not_configured", "No LLM API key configured", 500);
     }
 
-    const systemMessage = messages.find((m) => m.role === "system");
-    const conversationMessages = messages.filter((m) => m.role !== "system");
+    // T49: strip client-supplied system messages; server controls the system prompt.
+    const { filtered: conversationMessages, droppedSystemCount } = filterClientMessages(messages);
+    if (droppedSystemCount > 0) {
+      console.warn(`[chat-proxy] /api/v1/chat/stream: dropped ${droppedSystemCount} client system message(s)`);
+    }
+    const systemMessage = { role: "system", content: YOU_AGENT_SYSTEM_PROMPT };
 
     // Helper: create SSE response from a ReadableStream
     function sseResponse(stream: ReadableStream): Response {
@@ -1625,7 +1630,7 @@ http.route({
           },
           body: JSON.stringify({
             model: "anthropic/claude-sonnet-4-6",
-            messages,
+            messages: [systemMessage, ...conversationMessages],
             temperature: 0.4,
             stream: true,
           }),
