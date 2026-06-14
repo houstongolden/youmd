@@ -209,6 +209,8 @@ export function buildStackOkfFiles(
       last_updated_by: provenance.last_updated_by,
       confidence: provenance.confidence,
       linked_sources: provenance.linked_sources,
+      // Every stack file belongs to the stack — link it to the manifest concept.
+      related: ["youstack"],
       youmd_kind: file.path.replace(/\\/g, "/").replace(/\.md$/i, ""),
       stack_slug: manifest.slug,
     });

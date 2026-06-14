@@ -10,6 +10,7 @@ import {
   collectBundleSections,
   exportBundleToOkf,
   importOkfToBundle,
+  deriveRelated,
   YoumdSection,
 } from "../lib/okf-bundle";
 import { validateOkfBundle, parseOkfFile } from "../lib/okf";
@@ -143,6 +144,55 @@ describe("provenance stamping and round-trip", () => {
     expect(section.lastUpdatedBy).toBe("agent");
     expect(section.confidence).toBe("low");
     expect(section.linkedSources).toEqual(["https://x.com/a"]);
+  });
+});
+
+describe("graph cross-linking (related edges)", () => {
+  const graphSections: YoumdSection[] = [
+    { dir: "profile", slug: "about", title: "About", body: "Me." },
+    { dir: "voice", slug: "voice", title: "Voice", body: "Overall." },
+    { dir: "voice", slug: "voice.linkedin", title: "LinkedIn Voice", body: "LI." },
+    { dir: "preferences", slug: "agent", title: "Agent Prefs", body: "Prefs." },
+    { dir: "directives", slug: "agent", title: "Directives", body: "Rules." },
+    { dir: "skills", slug: "voice-sync", title: "Voice Sync", body: "Sync." },
+  ];
+
+  it("derives only real structural edges", () => {
+    const edges = deriveRelated(graphSections);
+    expect(edges.get("voice/voice.linkedin")).toContain("voice/voice");
+    expect(edges.get("voice/voice.linkedin")).toContain("profile/about");
+    expect(edges.get("skills/voice-sync")).toContain("directives/agent");
+    expect(edges.get("preferences/agent")).toContain("directives/agent");
+    // about never links to itself
+    expect(edges.get("profile/about")).toBeUndefined();
+  });
+
+  it("does not link to concepts that are absent", () => {
+    const edges = deriveRelated([
+      { dir: "skills", slug: "x", title: "X", body: "x" }, // no directives/agent present
+    ]);
+    expect(edges.get("skills/x")).toBeUndefined();
+  });
+
+  it("emits merged related frontmatter and round-trips it", () => {
+    const withAuthored: YoumdSection[] = [
+      ...graphSections,
+      { dir: "profile", slug: "projects", title: "Projects", body: "P.", related: ["profile/values"] },
+      { dir: "profile", slug: "values", title: "Values", body: "V." },
+    ];
+    const files = buildOkfBundleFiles(withAuthored);
+    const li = parseOkfFile(files.find((f) => f.path === "voice/voice.linkedin.md")!.content);
+    expect(li.frontmatter.related).toContain("voice/voice");
+
+    const projects = parseOkfFile(files.find((f) => f.path === "profile/projects.md")!.content);
+    // author-declared edge is preserved AND the derived about anchor is added
+    expect(projects.frontmatter.related).toEqual(
+      expect.arrayContaining(["profile/values", "profile/about"]),
+    );
+
+    const back = okfBundleFilesToSections(files);
+    const recovered = back.find((s) => s.dir === "voice" && s.slug === "voice.linkedin")!;
+    expect(recovered.related).toContain("voice/voice");
   });
 });
 

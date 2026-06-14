@@ -63,6 +63,8 @@ export interface YoumdSection {
   confidence?: string;
   /** Provenance: source IDs/URIs this section derives from. */
   linkedSources?: string[];
+  /** Graph edges: concept IDs this section relates to (e.g. "profile/about"). */
+  related?: string[];
 }
 
 export interface BuildOkfOptions {
@@ -121,10 +123,43 @@ export function sectionToOkfFile(section: YoumdSection): OkfBundleFile {
     last_updated_by: section.lastUpdatedBy,
     confidence: section.confidence,
     linked_sources: section.linkedSources,
+    related: section.related,
     youmd_kind: `${section.dir}/${section.slug}`,
   });
   const content = serializeOkfFile({ frontmatter, body: section.body });
   return { path: `${section.dir}/${section.slug}.md`, content };
+}
+
+/**
+ * Derive graph edges between sections from real structural relationships only
+ * (no fabricated semantic links): every concept anchors to profile/about, each
+ * platform voice links to the overall voice, skills link to the agent
+ * directives they operate under, and agent preferences link to those directives.
+ * Returns a map keyed by "dir/slug".
+ */
+export function deriveRelated(sections: YoumdSection[]): Map<string, string[]> {
+  const ids = new Set(sections.map((s) => `${s.dir}/${s.slug}`));
+  const has = (id: string) => ids.has(id);
+  const edges = new Map<string, string[]>();
+  const link = (from: string, to: string) => {
+    if (from === to || !has(to)) return;
+    const list = edges.get(from) || [];
+    if (!list.includes(to)) list.push(to);
+    edges.set(from, list);
+  };
+
+  for (const s of sections) {
+    const id = `${s.dir}/${s.slug}`;
+    // Anchor every concept to the identity it describes.
+    link(id, "profile/about");
+    // Platform voices derive from the overall voice.
+    if (s.dir === "voice" && s.slug.startsWith("voice.")) link(id, "voice/voice");
+    // Skills operate under the agent directives.
+    if (s.dir === "skills") link(id, "directives/agent");
+    // Agent preferences and directives are two halves of agent behavior.
+    if (s.dir === "preferences" && s.slug === "agent") link(id, "directives/agent");
+  }
+  return edges;
 }
 
 /** Transform an OKF concept file back into a You.md section. Returns null for
@@ -165,6 +200,9 @@ export function okfFileToSection(file: OkfBundleFile): YoumdSection | null {
     linkedSources: Array.isArray(frontmatter.linked_sources)
       ? (frontmatter.linked_sources as unknown[]).filter((s): s is string => typeof s === "string")
       : undefined,
+    related: Array.isArray(frontmatter.related)
+      ? (frontmatter.related as unknown[]).filter((s): s is string => typeof s === "string")
+      : undefined,
   };
 }
 
@@ -174,12 +212,19 @@ export function buildOkfBundleFiles(
   sections: YoumdSection[],
   options: BuildOkfOptions = {},
 ): OkfBundleFile[] {
+  // Derive structural graph edges, unioned with any author-declared `related`.
+  const derived = deriveRelated(sections);
   // Stamp provenance defaults onto sections that don't already declare it.
-  const stamped = sections.map((section) => ({
-    ...section,
-    lastUpdatedBy: section.lastUpdatedBy ?? options.defaultAuthor,
-    confidence: section.confidence ?? options.defaultConfidence,
-  }));
+  const stamped = sections.map((section) => {
+    const id = `${section.dir}/${section.slug}`;
+    const merged = [...new Set([...(section.related || []), ...(derived.get(id) || [])])];
+    return {
+      ...section,
+      lastUpdatedBy: section.lastUpdatedBy ?? options.defaultAuthor,
+      confidence: section.confidence ?? options.defaultConfidence,
+      related: merged.length > 0 ? merged : undefined,
+    };
+  });
   const conceptFiles = stamped.map(sectionToOkfFile);
 
   // index.md grouped by directory, in the canonical section order.
@@ -311,6 +356,9 @@ export function collectBundleSections(bundleDir: string): YoumdSection[] {
         confidence: typeof data.confidence === "string" ? data.confidence : undefined,
         linkedSources: Array.isArray(data.linked_sources)
           ? (data.linked_sources as unknown[]).filter((s): s is string => typeof s === "string")
+          : undefined,
+        related: Array.isArray(data.related)
+          ? (data.related as unknown[]).filter((s): s is string => typeof s === "string")
           : undefined,
       });
     }
@@ -452,6 +500,10 @@ export function importOkfToBundle(okfDir: string, outDir: string): ImportOkfToBu
     if (section.linkedSources && section.linkedSources.length > 0) {
       fmLines.push("linked_sources:");
       for (const src of section.linkedSources) fmLines.push(`  - ${src}`);
+    }
+    if (section.related && section.related.length > 0) {
+      fmLines.push("related:");
+      for (const rel of section.related) fmLines.push(`  - ${rel}`);
     }
     const frontmatter = `---\n${fmLines.join("\n")}\n---\n\n`;
     fs.writeFileSync(dest, frontmatter + section.body.trim() + "\n");

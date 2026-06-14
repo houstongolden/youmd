@@ -16,6 +16,7 @@ import { exportYouStackToOkf } from "../lib/okf-stack";
 import { loadYouStackManifest } from "../lib/youstack";
 import { validateOkfBundle, OKF_VERSION } from "../lib/okf";
 import { auditOkfBundle, OkfHealthReport } from "../lib/okf-health";
+import { buildBrainView, renderBrainHtml } from "../lib/okf-view";
 
 interface OkfOptions {
   out?: string;
@@ -83,6 +84,7 @@ export async function okfCommand(
   if (sub === "import") return importSub(arg, options);
   if (sub === "validate" || sub === "check") return validateSub(arg, options);
   if (sub === "health" || sub === "doctor") return healthSub(arg, options);
+  if (sub === "view") return viewSub(arg, options);
 
   console.log("");
   console.log(chalk.yellow(`  unknown okf subcommand: ${sub}`));
@@ -93,6 +95,7 @@ export async function okfCommand(
   console.log("  " + chalk.cyan("youmd okf import <dir>") + chalk.dim("      import an OKF bundle into You.md"));
   console.log("  " + chalk.cyan("youmd okf validate <dir>") + chalk.dim("    check an OKF bundle for conformance"));
   console.log("  " + chalk.cyan("youmd okf health [dir]") + chalk.dim("      audit brain health (orphans, stale, un-sourced, conflicts)"));
+  console.log("  " + chalk.cyan("youmd okf view [dir]") + chalk.dim("        render a local HTML brain page (graph + health)"));
   console.log("");
 }
 
@@ -302,36 +305,42 @@ async function validateSub(arg: string | undefined, options: OkfOptions): Promis
   console.log("");
 }
 
+// ─── shared bundle resolution ──────────────────────────────────────────────
+
+/** Resolve OKF files from a directory arg, or build the live bundle in memory. */
+function loadOkfFiles(
+  arg: string | undefined,
+  options: OkfOptions,
+): { files: import("../lib/okf").OkfBundleFile[]; label: string } | null {
+  if (arg) {
+    const dir = path.resolve(process.cwd(), arg);
+    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+      console.log(chalk.yellow(`  not a directory: ${dir}`));
+      console.log("");
+      return null;
+    }
+    return { files: readOkfBundleDir(dir), label: dir };
+  }
+  const bundleDir = resolveActiveBundleDir();
+  if (!bundleDir) {
+    console.log(chalk.yellow("  no active bundle found — run ") + chalk.cyan("youmd init"));
+    console.log("");
+    return null;
+  }
+  const sections = [...collectBundleSections(bundleDir), ...collectInstalledSkillSections()];
+  const files = buildOkfBundleFiles(sections, { defaultAuthor: resolveAuthor(options) });
+  return { files, label: `${bundleDir} (live)` };
+}
+
 // ─── health ──────────────────────────────────────────────────────────────
 
 async function healthSub(arg: string | undefined, options: OkfOptions): Promise<void> {
   console.log("");
   const staleDays = options.staleDays ? Number(options.staleDays) : 30;
 
-  let files;
-  let label: string;
-
-  if (arg) {
-    const dir = path.resolve(process.cwd(), arg);
-    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
-      console.log(chalk.yellow(`  not a directory: ${dir}`));
-      console.log("");
-      return;
-    }
-    files = readOkfBundleDir(dir);
-    label = dir;
-  } else {
-    // Audit the live identity bundle by building its OKF view in memory.
-    const bundleDir = resolveActiveBundleDir();
-    if (!bundleDir) {
-      console.log(chalk.yellow("  no active bundle found — run ") + chalk.cyan("youmd init"));
-      console.log("");
-      return;
-    }
-    const sections = [...collectBundleSections(bundleDir), ...collectInstalledSkillSections()];
-    files = buildOkfBundleFiles(sections, { defaultAuthor: resolveAuthor(options) });
-    label = `${bundleDir} (live)`;
-  }
+  const loaded = loadOkfFiles(arg, options);
+  if (!loaded) return;
+  const { files, label } = loaded;
 
   const report = auditOkfBundle(files, { staleDays });
 
@@ -389,6 +398,40 @@ function printHealth(report: OkfHealthReport, label: string): void {
   if (!printedAny) {
     console.log("  " + chalk.green("no issues found."));
   }
+  console.log("");
+}
+
+// ─── view ──────────────────────────────────────────────────────────────────
+
+async function viewSub(arg: string | undefined, options: OkfOptions): Promise<void> {
+  console.log("");
+  const loaded = loadOkfFiles(arg, options);
+  if (!loaded) return;
+  const { files, label } = loaded;
+
+  const view = buildBrainView(files, {
+    staleDays: options.staleDays ? Number(options.staleDays) : undefined,
+  });
+
+  if (options.json) {
+    console.log(JSON.stringify(view, null, 2));
+    return;
+  }
+
+  const html = renderBrainHtml(view);
+  const outPath = path.resolve(process.cwd(), options.out || "you-brain.html");
+  fs.writeFileSync(outPath, html);
+
+  console.log(chalk.green("  rendered brain page"));
+  console.log("");
+  console.log("  " + chalk.dim(label));
+  console.log("  " + chalk.dim(outPath));
+  console.log(
+    "  " +
+      chalk.dim(`${view.concepts.length} concepts, ${view.edges.length} links, health ${view.health.score}/100`),
+  );
+  console.log("");
+  console.log("  " + chalk.dim("open it in a browser — same OKF model the web app and desktop client render."));
   console.log("");
 }
 

@@ -37,7 +37,7 @@ const RECOMMENDED_FIELD_ORDER = [
  * writer is, and what it was derived from. Emitted in a stable position right
  * after the recommended fields so audits are scannable.
  */
-const PROVENANCE_FIELD_ORDER = ["last_updated_by", "confidence", "linked_sources"];
+const PROVENANCE_FIELD_ORDER = ["last_updated_by", "confidence", "linked_sources", "related"];
 
 /** Allowed `confidence` values (warned, not enforced — OKF tolerates unknowns). */
 export const OKF_CONFIDENCE_LEVELS = ["low", "medium", "high"] as const;
@@ -62,6 +62,8 @@ export interface OkfFrontmatter {
   confidence?: string;
   /** Provenance: source concept IDs or URIs this concept derives from. */
   linked_sources?: string[];
+  /** Graph edges: concept IDs this concept relates to. */
+  related?: string[];
   /** Producers may add custom keys; consumers must preserve them. */
   [key: string]: unknown;
 }

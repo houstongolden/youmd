@@ -1,5 +1,18 @@
 # You.md — Changelog
 
+## 2026-06-14 — OKF concept graph + brain view
+
+### Concept graph cross-linking (#1)
+- Added `related` as a first-class OKF graph-edge field (stable ordering after `linked_sources`, round-trip-preserved through export/import).
+- `deriveRelated()` builds edges from real structural relationships only (no fabricated semantic links): every concept anchors to `profile/about`, platform voices link to the overall voice, skills link to the agent directives they run under, and agent preferences link to those directives. Author-declared `related` edges are preserved and unioned with derived ones.
+- Stack concepts link to their manifest concept (`youstack`) hub.
+- `youmd okf health` now counts `related` frontmatter as graph edges, so orphan detection respects the real graph.
+
+### Brain view — desktop-client seed + web consistency (#3)
+- Added `cli/src/lib/okf-view.ts`: a framework-agnostic view model (`buildBrainView`) over an OKF bundle (concepts grouped by type, graph edges, health) plus a dependency-free HTML renderer (`renderBrainHtml`) — terminal-native (monochrome + burnt orange, JetBrains Mono, 2px radius, no emoji, no JS/network).
+- Added `youmd okf view [dir]`: renders a self-contained local "brain page" (the Obsidian-style desktop-client seed) from a directory or the live bundle; `--out <file>` and `--json` (emits the view model the web app can render for a consistent surface).
+- +9 tests (53 OKF tests total); CLI build clean; verified end-to-end (graph edges present in export; `okf view` renders a 90/100 brain page from the example bundle).
+
 ## 2026-06-13 — OKF brain-health audit
 
 ### `youmd okf health` (Familiar graph-health pattern, OKF-native)

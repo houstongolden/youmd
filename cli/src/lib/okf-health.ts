@@ -114,10 +114,17 @@ export function auditOkfBundle(
 
     if (isReservedFile(rel)) continue;
     const { data, content } = matter(file.content);
+    const fm = (data || {}) as Record<string, unknown>;
+    // `related` frontmatter edges count toward the graph too.
+    if (Array.isArray(fm.related)) {
+      for (const target of fm.related) {
+        if (typeof target === "string") referenced.add(targetToConceptId(target));
+      }
+    }
     concepts.push({
       file: rel,
       id: conceptId(rel),
-      data: (data || {}) as Record<string, unknown>,
+      data: fm,
       body: content,
     });
   }

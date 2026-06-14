@@ -77,6 +77,18 @@ describe("auditOkfBundle", () => {
     expect(orphanFiles).not.toContain("a.md");
   });
 
+  it("treats `related` frontmatter as graph edges (no false orphans)", () => {
+    const files = [
+      concept("a.md", { type: "Note", description: "d", linked_sources: ["s"], related: ["b"] }),
+      concept("b.md", { type: "Note", description: "d", linked_sources: ["s"] }),
+    ];
+    const report = auditOkfBundle(files, { now: NOW });
+    const orphans = report.issues.filter((i) => i.category === "orphan").map((i) => i.file);
+    // b is linked from a's `related`; a is the only true orphan.
+    expect(orphans).toContain("a.md");
+    expect(orphans).not.toContain("b.md");
+  });
+
   it("computes a score that drops with issues", () => {
     const clean = auditOkfBundle(
       [concept("a.md", { type: "Note", description: "d", linked_sources: ["s"], timestamp: NOW.toISOString() }, "[A](/a.md)")],

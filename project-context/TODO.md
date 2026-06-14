@@ -7,6 +7,11 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-14 — OKF graph + view + immutable sources
+- [x] Concept graph cross-linking: `related` edges derived from real structural relationships, round-trip-preserved, stack-manifest hub, orphan detection respects the graph
+- [x] Brain view: framework-agnostic `buildBrainView` model + dependency-free terminal-native HTML (`youmd okf view`) — desktop-client seed + web-consistent model
+- [ ] Immutable-source enforcement in the Convex ingestion pipeline (in progress this session)
+
 ### 2026-06-13 — OKF integration
 - [x] Add `youmd okf health` brain-health audit (orphans, stale, un-sourced, low-confidence/needs-review, `[CONFLICT]`/`[STALE]`, missing type; 0-100 score) — Familiar graph-health pattern, OKF-native, no cron/inbox machinery
 - [x] Add provenance frontmatter (`last_updated_by`/`confidence`/`linked_sources`) to OKF concepts — Familiar pattern #1, stampable on export (`--author`/`--confidence`), preserved through round-trips; skipped the Familiar cron/inbox stack as redundant complexity

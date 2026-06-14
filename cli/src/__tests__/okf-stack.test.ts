@@ -109,6 +109,14 @@ describe("stack provenance", () => {
     expect(skill.frontmatter.confidence).toBe("medium");
     expect(manifest.frontmatter.last_updated_by).toBe("houston");
   });
+
+  it("links every stack concept to the manifest hub", () => {
+    const { files } = buildStackOkfFiles(MANIFEST, SOURCE_FILES);
+    const wf = parseOkfFile(files.find((f) => f.path === "workflows/startup.md")!.content);
+    const skill = parseOkfFile(files.find((f) => f.path === "skills/demo/SKILL.md")!.content);
+    expect(wf.frontmatter.related).toEqual(["youstack"]);
+    expect(skill.frontmatter.related).toEqual(["youstack"]);
+  });
 });
 
 describe("real example stack export", () => {

@@ -475,7 +475,7 @@ program
 
 program
   .command("okf [subcommand] [arg]")
-  .description("Open Knowledge Format — export/import/validate/health for portable OKF bundles (identity, skills, stacks)")
+  .description("Open Knowledge Format — export/import/validate/health/view for portable OKF bundles (identity, skills, stacks)")
   .option("-o, --out <dir>", "Output directory")
   .option("--stack [path]", "Export a YouStack (optionally at <path>) instead of your identity bundle")
   .option("--no-skills", "Exclude installed skills from an identity export")
