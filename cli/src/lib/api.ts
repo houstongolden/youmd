@@ -906,3 +906,67 @@ export async function reportSkillOutcome(opts: {
     body: opts,
   });
 }
+
+// ── L26 — Maintainer proposals ───────────────────────────────────────────────
+
+export interface MaintainerProposal {
+  proposalId: string;
+  stackSlug: string;
+  skillName: string;
+  evidenceCount: number;
+  proposedForRegistry: boolean;
+  humanApprovalState: "pending" | "approved" | "rejected";
+  createdAt: number;
+}
+
+/** Fetch all open maintainer proposals for the authenticated user. */
+export async function listMaintainerProposals(): Promise<
+  ApiResponse<{ proposals: MaintainerProposal[] }>
+> {
+  return apiRequest<{ proposals: MaintainerProposal[] }>(
+    "/api/v1/me/maintainer/proposals",
+    { token: getToken() }
+  );
+}
+
+/** Approve or reject a maintainer proposal. */
+export async function setProposalDecision(
+  proposalId: string,
+  decision: "approved" | "rejected"
+): Promise<
+  ApiResponse<{ proposalId: string; humanApprovalState: string; status: string }>
+> {
+  return apiRequest<{ proposalId: string; humanApprovalState: string; status: string }>(
+    "/api/v1/me/maintainer/proposals/decision",
+    { method: "POST", token: getToken(), body: { proposalId, decision } }
+  );
+}
+
+// ── L26 — Brain consent ──────────────────────────────────────────────────────
+
+export interface BrainConsentEntry {
+  scope: string;
+  granted: boolean;
+  explicit: boolean;
+}
+
+/** Fetch brainScope consent rows for the authenticated user. */
+export async function listBrainConsent(): Promise<
+  ApiResponse<{ consents: BrainConsentEntry[] }>
+> {
+  return apiRequest<{ consents: BrainConsentEntry[] }>(
+    "/api/v1/me/brain-consent",
+    { token: getToken() }
+  );
+}
+
+/** Grant or revoke a brainScope for the authenticated user. */
+export async function setBrainConsent(
+  scope: string,
+  granted: boolean
+): Promise<ApiResponse<{ scope: string; granted: boolean }>> {
+  return apiRequest<{ scope: string; granted: boolean }>(
+    "/api/v1/me/brain-consent",
+    { method: "POST", token: getToken(), body: { scope, granted } }
+  );
+}

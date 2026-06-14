@@ -1,4 +1,11 @@
 import chalk from "chalk";
+import {
+  listMaintainerProposals,
+  setProposalDecision,
+  listBrainConsent,
+  setBrainConsent,
+  apiErrorMessage,
+} from "../lib/api";
 import { detectShadowing } from "../lib/projectContext";
 import { SkillDiscoveryCheck, verifySkillDiscovery } from "../lib/host-link";
 import {
@@ -61,6 +68,12 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("improve") + DIM("              Gather signals + write proposals to journal/ (--mode propose|auto_pr)"));
   console.log("    " + chalk.cyan("update") + DIM("               Check for a newer upstream version (--apply to write it)"));
   console.log("    " + chalk.cyan("install <user>/<slug>") + DIM(" Install a public stack from the registry"));
+  console.log("    " + chalk.cyan("proposals") + DIM("            List open maintainer proposals for your stacks"));
+  console.log("    " + chalk.cyan("proposals approve <id>") + DIM(" Approve a maintainer proposal"));
+  console.log("    " + chalk.cyan("proposals reject <id>") + DIM("  Reject a maintainer proposal"));
+  console.log("    " + chalk.cyan("consent") + DIM("              Show your brainScope consent settings"));
+  console.log("    " + chalk.cyan("consent grant <scope>") + DIM("  Grant a brainScope (consolidate|fleet_aggregate|journal_mine)"));
+  console.log("    " + chalk.cyan("consent revoke <scope>") + DIM(" Revoke a brainScope"));
   console.log("");
   console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--verify") + DIM(", ") + chalk.cyan("--json") + DIM(", ") + chalk.cyan("--init") + DIM(", ") + chalk.cyan("--mode propose|auto_pr") + DIM(", ") + chalk.cyan("--apply") + DIM(", ") + chalk.cyan("--force") + DIM(", ") + chalk.cyan("--dir <path>"));
   console.log("");
@@ -166,6 +179,204 @@ export async function stackCommand(
       } else {
         console.log(chalk.red("  error: ") + e.message);
       }
+      console.log("");
+      process.exitCode = 1;
+    }
+    return;
+  }
+
+  // ── L26: stack proposals ─────────────────────────────────────────────────────
+  if (cmd === "proposals") {
+    const sub = args[0]; // "approve" | "reject" | undefined
+    const { BrailleSpinner } = await import("../lib/render");
+
+    if (sub === "approve" || sub === "reject") {
+      const id = args[1];
+      if (!id) {
+        console.log("");
+        console.log(chalk.yellow(`  usage: youmd stack proposals ${sub} <id>`));
+        console.log("");
+        process.exitCode = 1;
+        return;
+      }
+      const decision: "approved" | "rejected" = sub === "approve" ? "approved" : "rejected";
+      const spinner = new BrailleSpinner(`submitting ${sub} decision`);
+      spinner.start();
+      try {
+        const res = await setProposalDecision(id, decision);
+        spinner.stop();
+        if (!res.ok) {
+          const msg = apiErrorMessage(res.data) ?? `request failed (${res.status})`;
+          console.log("");
+          console.log(chalk.red(`  proposals ${sub}: `) + msg);
+          console.log("");
+          process.exitCode = 1;
+          return;
+        }
+        console.log("");
+        console.log("  " + chalk.green(sub === "approve" ? "approved" : "rejected") + " proposal " + ACCENT(id));
+        console.log("");
+      } catch (err) {
+        spinner.fail(`proposals ${sub} failed`);
+        console.log("");
+        console.log(chalk.red("  error: ") + (err instanceof Error ? err.message : String(err)));
+        console.log("");
+        process.exitCode = 1;
+      }
+      return;
+    }
+
+    // list
+    const spinner = new BrailleSpinner("fetching maintainer proposals");
+    spinner.start();
+    try {
+      const res = await listMaintainerProposals();
+      spinner.stop();
+      if (!res.ok) {
+        const msg = apiErrorMessage(res.data) ?? `request failed (${res.status})`;
+        console.log("");
+        console.log(chalk.red("  proposals: ") + msg);
+        console.log("");
+        process.exitCode = 1;
+        return;
+      }
+      const { proposals } = res.data as { proposals: Array<{ proposalId: string; stackSlug: string; skillName: string; evidenceCount: number; humanApprovalState: string }> };
+      console.log("");
+      if (!proposals || proposals.length === 0) {
+        console.log("  " + chalk.dim("no proposals — your stacks are clean"));
+        console.log("");
+        return;
+      }
+      console.log("  " + ACCENT("maintainer proposals") + DIM(` (${proposals.length})`));
+      console.log("");
+      const idW = 20, stackW = 16, skillW = 24, evW = 5, stateW = 10;
+      console.log(
+        "  " +
+        chalk.bold("id".padEnd(idW)) +
+        chalk.bold("stack".padEnd(stackW)) +
+        chalk.bold("skill".padEnd(skillW)) +
+        chalk.bold("ev".padEnd(evW)) +
+        chalk.bold("state".padEnd(stateW))
+      );
+      console.log("  " + DIM("-".repeat(idW + stackW + skillW + evW + stateW)));
+      for (const p of proposals) {
+        const shortId = String(p.proposalId).slice(-12);
+        const stateColor =
+          p.humanApprovalState === "approved" ? chalk.green :
+          p.humanApprovalState === "rejected" ? chalk.red :
+          chalk.dim;
+        console.log(
+          "  " +
+          chalk.cyan(shortId.padEnd(idW)) +
+          String(p.stackSlug).slice(0, stackW - 1).padEnd(stackW) +
+          String(p.skillName).slice(0, skillW - 1).padEnd(skillW) +
+          String(p.evidenceCount).padEnd(evW) +
+          stateColor(String(p.humanApprovalState).padEnd(stateW))
+        );
+      }
+      console.log("");
+      console.log("  " + DIM("use `youmd stack proposals approve <id>` or `youmd stack proposals reject <id>`"));
+      console.log("");
+    } catch (err) {
+      spinner.fail("proposals fetch failed");
+      console.log("");
+      console.log(chalk.red("  error: ") + (err instanceof Error ? err.message : String(err)));
+      console.log("");
+      process.exitCode = 1;
+    }
+    return;
+  }
+
+  // ── L26: stack consent ───────────────────────────────────────────────────────
+  if (cmd === "consent") {
+    const sub = args[0]; // "grant" | "revoke" | undefined
+    const { BrailleSpinner } = await import("../lib/render");
+
+    if (sub === "grant" || sub === "revoke") {
+      const scope = args[1];
+      if (!scope) {
+        console.log("");
+        console.log(chalk.yellow(`  usage: youmd stack consent ${sub} <scope>`));
+        console.log("  " + DIM("scopes: consolidate, fleet_aggregate, journal_mine"));
+        console.log("");
+        process.exitCode = 1;
+        return;
+      }
+      const granted = sub === "grant";
+      const spinner = new BrailleSpinner(`${granted ? "granting" : "revoking"} ${scope}`);
+      spinner.start();
+      try {
+        const res = await setBrainConsent(scope, granted);
+        spinner.stop();
+        if (!res.ok) {
+          const msg = apiErrorMessage(res.data) ?? `request failed (${res.status})`;
+          console.log("");
+          console.log(chalk.red(`  consent ${sub}: `) + msg);
+          console.log("");
+          process.exitCode = 1;
+          return;
+        }
+        console.log("");
+        console.log(
+          "  " +
+          (granted ? chalk.green("granted") : chalk.red("revoked")) +
+          " " + ACCENT(scope)
+        );
+        console.log("");
+      } catch (err) {
+        spinner.fail(`consent ${sub} failed`);
+        console.log("");
+        console.log(chalk.red("  error: ") + (err instanceof Error ? err.message : String(err)));
+        console.log("");
+        process.exitCode = 1;
+      }
+      return;
+    }
+
+    // list
+    const spinner = new BrailleSpinner("fetching brain consent settings");
+    spinner.start();
+    try {
+      const res = await listBrainConsent();
+      spinner.stop();
+      if (!res.ok) {
+        const msg = apiErrorMessage(res.data) ?? `request failed (${res.status})`;
+        console.log("");
+        console.log(chalk.red("  consent: ") + msg);
+        console.log("");
+        process.exitCode = 1;
+        return;
+      }
+      const { consents } = res.data as { consents: Array<{ scope: string; granted: boolean; explicit: boolean }> };
+      console.log("");
+      console.log("  " + ACCENT("brain consent settings"));
+      console.log("");
+      const scopeW = 22, grantedW = 10, explicitW = 12;
+      console.log(
+        "  " +
+        chalk.bold("scope".padEnd(scopeW)) +
+        chalk.bold("granted".padEnd(grantedW)) +
+        chalk.bold("explicit".padEnd(explicitW))
+      );
+      console.log("  " + DIM("-".repeat(scopeW + grantedW + explicitW)));
+      for (const c of consents) {
+        const grantedStr = c.granted ? chalk.green("yes") : chalk.red("no");
+        const explicitStr = c.explicit ? chalk.cyan("yes") : chalk.dim("no (default)");
+        console.log(
+          "  " +
+          String(c.scope).padEnd(scopeW) +
+          (c.granted ? chalk.green("yes".padEnd(grantedW)) : chalk.red("no".padEnd(grantedW))) +
+          (c.explicit ? chalk.cyan("yes") : chalk.dim("no (default)"))
+        );
+        void grantedStr; void explicitStr;
+      }
+      console.log("");
+      console.log("  " + DIM("use `youmd stack consent revoke <scope>` or `youmd stack consent grant <scope>`"));
+      console.log("");
+    } catch (err) {
+      spinner.fail("consent fetch failed");
+      console.log("");
+      console.log(chalk.red("  error: ") + (err instanceof Error ? err.message : String(err)));
       console.log("");
       process.exitCode = 1;
     }
