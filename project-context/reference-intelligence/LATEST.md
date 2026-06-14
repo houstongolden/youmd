@@ -1,6 +1,6 @@
 # You.md Reference Intelligence
 
-Last updated: 2026-06-12T08:31:29.816Z
+Last updated: 2026-06-14T20:59:38.098Z
 
 You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under `.reference-repos/` and are ignored by git.
 
@@ -22,41 +22,35 @@ npm run references:sync
 - URL: https://github.com/garrytan/gstack
 - Local path: `.reference-repos/garrytan/gstack`
 - Branch: `main`
-- Latest commit: `a5833c413f98`
-- Mode: No new commits since a5833c4
+- Latest commit: `c7ae63201ab1`
+- Mode: Changes since 14fc086
 
-- No commits found.
+- `c7ae632` 2026-06-14 — v1.58.1.0 feat: hermetic local E2E + Conductor prose AskUserQuestion (#2004)
+  Files: `CHANGELOG.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `SKILL.md`, `VERSION`, `autoplan/SKILL.md`, `benchmark-models/SKILL.md`, `benchmark/SKILL.md`, +81 more
 
 ## GBrain
 
 - URL: https://github.com/garrytan/gbrain
 - Local path: `.reference-repos/garrytan/gbrain`
 - Branch: `master`
-- Latest commit: `ecd6ae87722a`
-- Mode: No new commits since ecd6ae8
+- Latest commit: `090bb5320355`
+- Mode: Changes since 4ee530f
 
-- No commits found.
+- `090bb53` 2026-06-14 — v0.42.44.0 docs(tutorial): point AlphaClaw deploy link at the official site (#2165) (#2171)
+  Files: `CHANGELOG.md`, `VERSION`, `docs/tutorials/personal-brain.md`, `package.json`
+- `a81f7e0` 2026-06-14 — v0.42.43.0 feat(context): push-based context (#2095) + teardown-exit hardening (#2084) (#2175)
+  Files: `AGENTS.md`, `CHANGELOG.md`, `CLAUDE.md`, `TODOS.md`, `VERSION`, `docker-compose.ci.yml`, `docs/RELEASING.md`, `docs/TESTING.md`, +41 more
 
 ## Agent Scripts
 
 - URL: https://github.com/steipete/agent-scripts
 - Local path: `.reference-repos/steipete/agent-scripts`
 - Branch: `main`
-- Latest commit: `a3026aea93b9`
-- Mode: Changes since 831d5c3
+- Latest commit: `448cfa972336`
+- Mode: Changes since a3026ae
 
-- `a3026ae` 2026-06-12 — docs: suppress archived repositories in orchestration
-  Files: `skills/maintainer-orchestrator/SKILL.md`
-- `378b62b` 2026-06-11 — docs: add confidentiality guardrail
-  Files: `AGENTS.MD`, `CHANGELOG.md`
-- `ec018f4` 2026-06-11 — docs: generalize dependency freshness policy
-  Files: `skills/maintainer-orchestrator/SKILL.md`
-- `2df552b` 2026-06-11 — docs: add idle dependency freshness policy
-  Files: `skills/maintainer-orchestrator/SKILL.md`
-- `d70b69a` 2026-06-11 — docs: require public model identifier audit
-  Files: `skills/maintainer-orchestrator/SKILL.md`
-- `ccb28e0` 2026-06-11 — docs: improve maintainer decision briefs
-  Files: `CHANGELOG.md`, `skills/maintainer-orchestrator/SKILL.md`, `skills/maintainer-orchestrator/agents/openai.yaml`
+- `448cfa9` 2026-06-14 — fix(skill-cleaner): audit live Codex inventory
+  Files: `CHANGELOG.md`, `skills/agent-transcript/SKILL.md`, `skills/github-project-triage/SKILL.md`, `skills/maintainer-orchestrator/SKILL.md`, `skills/skill-cleaner/SKILL.md`, `skills/skill-cleaner/scripts/skill-cleaner.test.ts`, `skills/skill-cleaner/scripts/skill-cleaner.ts`
 
 ## The Library
 
@@ -70,15 +64,11 @@ npm run references:sync
 
 ## Candidate Tasks
 
-- [ ] YouStacks skill ergonomics: Compare this skill packaging or validation pattern against bundled skills, stack manifests, and `youmd stack doctor` warnings.
-  Source: Agent Scripts a3026ae: docs: suppress archived repositories in orchestration
+- [ ] YouStacks skill packaging: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
+  Source: GStack c7ae632: v1.58.1.0 feat: hermetic local E2E + Conductor prose AskUserQuestion (#2004)
+- [ ] You.md brain schema/context: Review whether this upstream brain/context change should improve You.md memory categories, private context, profile files, or agent startup briefs.
+  Source: GBrain 090bb53: v0.42.44.0 docs(tutorial): point AlphaClaw deploy link at the official site (#2165) (#2171)
+- [ ] You.md brain schema/context: Review whether this upstream brain/context change should improve You.md memory categories, private context, profile files, or agent startup briefs.
+  Source: GBrain a81f7e0: v0.42.43.0 feat(context): push-based context (#2095) + teardown-exit hardening (#2084) (#2175)
 - [ ] Cross-agent instruction portability: Review whether this upstream shared-instruction pattern should improve `youmd skill init-project`, host adapters, or repo-local pointer rules.
-  Source: Agent Scripts 378b62b: docs: add confidentiality guardrail
-- [ ] YouStacks skill ergonomics: Compare this skill packaging or validation pattern against bundled skills, stack manifests, and `youmd stack doctor` warnings.
-  Source: Agent Scripts ec018f4: docs: generalize dependency freshness policy
-- [ ] YouStacks skill ergonomics: Compare this skill packaging or validation pattern against bundled skills, stack manifests, and `youmd stack doctor` warnings.
-  Source: Agent Scripts 2df552b: docs: add idle dependency freshness policy
-- [ ] YouStacks skill ergonomics: Compare this skill packaging or validation pattern against bundled skills, stack manifests, and `youmd stack doctor` warnings.
-  Source: Agent Scripts d70b69a: docs: require public model identifier audit
-- [ ] YouStacks skill ergonomics: Compare this skill packaging or validation pattern against bundled skills, stack manifests, and `youmd stack doctor` warnings.
-  Source: Agent Scripts ccb28e0: docs: improve maintainer decision briefs
+  Source: Agent Scripts 448cfa9: fix(skill-cleaner): audit live Codex inventory
