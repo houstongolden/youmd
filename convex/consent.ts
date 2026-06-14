@@ -74,6 +74,35 @@ export const setConsent = internalMutation({
   },
 });
 
+// ── internalQuery: listMyConsents ────────────────────────────────────────────
+
+/**
+ * Return the effective consent for every brainScope for the given user.
+ * When no userConsents row exists for a scope, falls back to DEFAULT_CONSENT
+ * (all true) and marks explicit=false so callers can distinguish defaults
+ * from deliberate choices.
+ */
+export const listMyConsents = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    return Promise.all(
+      BRAIN_SCOPES.map(async (scope) => {
+        const row = await ctx.db
+          .query("userConsents")
+          .withIndex("by_userId_scope", (q) =>
+            q.eq("userId", userId).eq("scope", scope)
+          )
+          .first();
+        return {
+          scope,
+          granted: row !== null ? row.granted : DEFAULT_CONSENT[scope],
+          explicit: row !== null,
+        };
+      })
+    );
+  },
+});
+
 // ── hasConsent helper (call-site convenience) ─────────────────────────────────
 
 /**

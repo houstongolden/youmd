@@ -82,6 +82,39 @@ describe("consent — fleet aggregate excludes revoked users", () => {
   });
 });
 
+describe("consent — listMyConsents defaults", () => {
+  it("returns all scopes with granted=true and explicit=false when no rows exist", async () => {
+    const t = convexTest(schema);
+    const userId = await seedUser(t, "listdefault");
+    const consents = await t.query(internal.consent.listMyConsents, { userId });
+    expect(consents).toHaveLength(BRAIN_SCOPES.length);
+    for (const c of consents) {
+      expect(c.granted).toBe(true);
+      expect(c.explicit).toBe(false);
+    }
+    expect(consents.map((c) => c.scope).sort()).toEqual([...BRAIN_SCOPES].sort());
+  });
+});
+
+describe("consent — listMyConsents reflects explicit revoke", () => {
+  it("revoked scope shows granted=false and explicit=true; others unchanged", async () => {
+    const t = convexTest(schema);
+    const userId = await seedUser(t, "listrevoke");
+    await t.mutation(internal.consent.setConsent, { userId, scope: "journal_mine", granted: false });
+    const consents = await t.query(internal.consent.listMyConsents, { userId });
+    const jm = consents.find((c) => c.scope === "journal_mine");
+    expect(jm?.granted).toBe(false);
+    expect(jm?.explicit).toBe(true);
+    // Other scopes must still be default-true / not-explicit
+    for (const c of consents) {
+      if (c.scope !== "journal_mine") {
+        expect(c.granted).toBe(true);
+        expect(c.explicit).toBe(false);
+      }
+    }
+  });
+});
+
 describe("consent — mineStackJournals skips on revoked journal_mine", () => {
   it("returns consent_skipped=1 and writes no proposals", async () => {
     const t = convexTest(schema);

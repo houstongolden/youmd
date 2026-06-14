@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "7b12765b9fb266d2861eb7e94572c8e81a5f91aec99b44bc874bb4316206adc0",
+  "sourceHash": "7a6f4540e422cab9fd823bfbe09bc4101f4c9ecfa3280319810841450bd863a8",
   "cli": {
-    "version": "0.6.23"
+    "version": "0.6.27"
   },
   "counts": {
-    "endpoints": 79,
+    "endpoints": 83,
     "internalRoutes": 7,
-    "mcpTools": 14,
+    "mcpTools": 6,
     "hostedMcpTools": 0,
-    "cliCommands": 27,
-    "convexRoutes": 62,
+    "cliCommands": 28,
+    "convexRoutes": 66,
     "nextRoutes": 24
   },
   "endpoints": [
@@ -106,6 +106,28 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Create an API key",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/brain-consent",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "list all brainScope consent rows",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/brain-consent",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "grant or revoke a brainScope",
       "sources": [
         "convex"
       ]
@@ -172,6 +194,28 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Get bundle version history (authenticated; supports ?cursor= + ?limit= pagination in version-desc order — paginated calls add nextCursor + hasMore)",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/maintainer/proposals",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "list caller's open proposals",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/maintainer/proposals/decision",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "approve or reject a proposal",
       "sources": [
         "convex"
       ]
@@ -971,19 +1015,6 @@ export const docsReference = {
   ],
   "mcpTools": [
     {
-      "name": "add_memory",
-      "description": "Save a memory about the user — facts, preferences, decisions, or context learned during this conversation. Memories persist across sessions and inform ALL future agent interactions. Use proactively when you learn something important about the user (a preference, a decision, a project detail). Requires authentication.",
-      "inputFields": [
-        "category",
-        "content",
-        "tags"
-      ],
-      "required": [
-        "category",
-        "content"
-      ]
-    },
-    {
       "name": "add_project_memory",
       "description": "Save a memory scoped to a specific project. Unlike add_memory (which is global), project memories are stored locally in the project-context/ directory and only surface when working on that project. Use for architecture decisions, bug context, and feature-specific learnings.",
       "inputFields": [
@@ -994,18 +1025,6 @@ export const docsReference = {
       "required": [
         "category",
         "content"
-      ]
-    },
-    {
-      "name": "add_source",
-      "description": "Register an identity data source (LinkedIn, GitHub, X, website, blog, YouTube). Links an external profile to the user's identity so it can be scraped and indexed. Requires authentication. Use when the user wants to connect a new social profile or website to their identity.",
-      "inputFields": [
-        "sourceType",
-        "sourceUrl"
-      ],
-      "required": [
-        "sourceType",
-        "sourceUrl"
       ]
     },
     {
@@ -1021,25 +1040,6 @@ export const docsReference = {
       "required": []
     },
     {
-      "name": "create_context_link",
-      "description": "Generate a shareable context link for agents. The link gives any agent temporary or permanent read access to the user's identity context. Use when the user wants to share their identity with a third-party agent or service. Returns a URL that can be passed to any agent.",
-      "inputFields": [
-        "scope",
-        "ttl"
-      ],
-      "required": []
-    },
-    {
-      "name": "get_activity_log",
-      "description": "Get the user's recent agent activity log. Use this to see which agents have connected to their you.md identity and what they did. Returns an array of activity events with agent name, action, resource, timestamp. Useful for: showing the user proof their identity context is being used by other agents, debugging integration issues, auditing access.",
-      "inputFields": [
-        "limit",
-        "agentName",
-        "action"
-      ],
-      "required": []
-    },
-    {
       "name": "get_agent_brief",
       "description": "Return a YouStack startup brief for local agents. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines compact identity, the user's recent durable memories (rendered inline by default), current repo instructions, project-context active requests, open TODOs, installed skills, and recommended next m…",
       "inputFields": [
@@ -1050,31 +1050,10 @@ export const docsReference = {
       "required": []
     },
     {
-      "name": "get_private_context",
-      "description": "Read protected private context — notes, internal links, and private projects. Returns a readiness envelope so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states before asking the user to restate private context.",
-      "inputFields": [],
-      "required": []
-    },
-    {
-      "name": "get_remote_status",
-      "description": "Check sync status between local identity bundle and the remote you.md server. Returns whether the user is authenticated, whether the local bundle exists, and the current version info. Use to diagnose sync issues or confirm a push was successful.",
-      "inputFields": [],
-      "required": []
-    },
-    {
       "name": "push_bundle",
       "description": "Push the local identity bundle to you.md servers and publish the profile. Requires authentication. Call after compile_bundle when the user wants their changes live. Returns the published version number.",
       "inputFields": [
         "publish"
-      ],
-      "required": []
-    },
-    {
-      "name": "search_memories",
-      "description": "Search the user's memories by category or list all active memories. Returns a readiness envelope plus memory objects so agents can distinguish auth-required, unavailable, and ready-but-empty retrieval states.",
-      "inputFields": [
-        "category",
-        "limit"
       ],
       "required": []
     },
@@ -1088,16 +1067,6 @@ export const docsReference = {
       "required": [
         "section",
         "content"
-      ]
-    },
-    {
-      "name": "use_skill",
-      "description": "Render an identity-aware skill — returns the skill content with the user's identity interpolated into {{var}} placeholders. Returns rendered markdown with instructions the agent should follow. Use when the user asks to generate a CLAUDE.md, sync voice, scaffold a project, or run a self-improvement review.",
-      "inputFields": [
-        "name"
-      ],
-      "required": [
-        "name"
       ]
     }
   ],
@@ -1186,6 +1155,13 @@ export const docsReference = {
       "group": "BUNDLE",
       "summary": "export you.json and/or you.md",
       "description": "Export profile to you.json and/or you.md"
+    },
+    {
+      "name": "okf",
+      "usage": "okf [subcommand] [arg]",
+      "group": "BUNDLE",
+      "summary": "export/import/validate portable OKF bundles (identity, skills, stacks)",
+      "description": "Open Knowledge Format — export/import/validate/health/view for portable OKF bundles (identity, skills, stacks)"
     },
     {
       "name": "publish",

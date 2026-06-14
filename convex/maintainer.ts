@@ -248,6 +248,74 @@ export const weeklyMaintainerMine = internalAction({
   },
 });
 
+// ── L26 — listMyProposals ────────────────────────────────────────────────────
+
+/**
+ * Return all open maintainerProposals for the given user.
+ * The HTTP route projects this into { proposals } for the API surface.
+ */
+export const listMyProposals = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    const rows = await ctx.db
+      .query("maintainerProposals")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("status"), "open"))
+      .collect();
+
+    return rows.map((r) => ({
+      proposalId: r._id,
+      stackSlug: r.stackSlug,
+      skillName: r.skillName,
+      evidenceCount: r.evidenceCount,
+      proposedForRegistry: r.proposedForRegistry,
+      humanApprovalState: r.humanApprovalState,
+      createdAt: r.createdAt,
+    }));
+  },
+});
+
+// ── L26 — setProposalApproval ─────────────────────────────────────────────────
+
+/**
+ * Owner-isolated approve/reject for a maintainerProposal.
+ * Throws "not_found" when the proposalId doesn't exist or belongs to a
+ * different user (owner isolation — never let user B touch user A's proposal).
+ *
+ * On "approved": patch humanApprovalState to "approved"; leave status "open"
+ * so the local improve path can still act on it.
+ * On "rejected": patch humanApprovalState to "rejected" AND status to "rejected".
+ */
+export const setProposalApproval = internalMutation({
+  args: {
+    userId: v.id("users"),
+    proposalId: v.id("maintainerProposals"),
+    decision: v.union(v.literal("approved"), v.literal("rejected")),
+  },
+  handler: async (ctx, { userId, proposalId, decision }) => {
+    const proposal = await ctx.db.get(proposalId);
+    if (!proposal || proposal.userId !== userId) {
+      throw new Error("not_found");
+    }
+
+    if (decision === "approved") {
+      await ctx.db.patch(proposalId, { humanApprovalState: "approved" });
+    } else {
+      await ctx.db.patch(proposalId, {
+        humanApprovalState: "rejected",
+        status: "rejected",
+      });
+    }
+
+    const updated = await ctx.db.get(proposalId);
+    return {
+      proposalId,
+      humanApprovalState: updated!.humanApprovalState,
+      status: updated!.status,
+    };
+  },
+});
+
 // ── L25 — listPendingRegistryCandidates ─────────────────────────────────────
 
 /**

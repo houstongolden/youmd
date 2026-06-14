@@ -74,6 +74,102 @@ describe("maintainer.mineStackJournals", () => {
   });
 });
 
+describe("maintainer.listMyProposals", () => {
+  it("returns only the caller's open proposals — never the other user's", async () => {
+    const t = convexTest(schema);
+    const userA = await t.run((ctx) =>
+      ctx.db.insert("users", { clerkId: "ck_a", username: "propA", email: "a@x.com", plan: "free", createdAt: Date.now() })
+    );
+    const userB = await t.run((ctx) =>
+      ctx.db.insert("users", { clerkId: "ck_b", username: "propB", email: "b@x.com", plan: "free", createdAt: Date.now() })
+    );
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("maintainerProposals", { userId: userA, stackSlug: "sa", skillName: "skill-a", patternType: "failure_pattern", evidenceCount: 3, status: "open", proposedForRegistry: false, humanApprovalState: "pending", createdAt: Date.now() });
+      await ctx.db.insert("maintainerProposals", { userId: userB, stackSlug: "sb", skillName: "skill-b", patternType: "failure_pattern", evidenceCount: 4, status: "open", proposedForRegistry: false, humanApprovalState: "pending", createdAt: Date.now() });
+      // A rejected proposal for userA — must NOT appear
+      await ctx.db.insert("maintainerProposals", { userId: userA, stackSlug: "sa", skillName: "old-skill", patternType: "failure_pattern", evidenceCount: 3, status: "rejected", proposedForRegistry: false, humanApprovalState: "rejected", createdAt: Date.now() });
+    });
+
+    const aProposals = await t.query(internal.maintainer.listMyProposals, { userId: userA });
+    expect(aProposals).toHaveLength(1);
+    expect(aProposals[0].skillName).toBe("skill-a");
+
+    const bProposals = await t.query(internal.maintainer.listMyProposals, { userId: userB });
+    expect(bProposals).toHaveLength(1);
+    expect(bProposals[0].skillName).toBe("skill-b");
+  });
+});
+
+describe("maintainer.setProposalApproval", () => {
+  it("approve sets humanApprovalState=approved and leaves status open", async () => {
+    const t = convexTest(schema);
+    const userId = await t.run((ctx) =>
+      ctx.db.insert("users", { clerkId: "ck_ap", username: "approver", email: "ap@x.com", plan: "free", createdAt: Date.now() })
+    );
+    const proposalId = await t.run((ctx) =>
+      ctx.db.insert("maintainerProposals", { userId, stackSlug: "s", skillName: "skill-x", patternType: "failure_pattern", evidenceCount: 3, status: "open", proposedForRegistry: false, humanApprovalState: "pending", createdAt: Date.now() })
+    );
+
+    const result = await t.mutation(internal.maintainer.setProposalApproval, {
+      userId,
+      proposalId,
+      decision: "approved",
+    });
+
+    expect(result.humanApprovalState).toBe("approved");
+    expect(result.status).toBe("open");
+
+    const row = await t.run((ctx) => ctx.db.get(proposalId));
+    expect(row?.humanApprovalState).toBe("approved");
+    expect(row?.status).toBe("open");
+  });
+
+  it("reject sets humanApprovalState=rejected and status=rejected", async () => {
+    const t = convexTest(schema);
+    const userId = await t.run((ctx) =>
+      ctx.db.insert("users", { clerkId: "ck_rj", username: "rejecter", email: "rj@x.com", plan: "free", createdAt: Date.now() })
+    );
+    const proposalId = await t.run((ctx) =>
+      ctx.db.insert("maintainerProposals", { userId, stackSlug: "s", skillName: "skill-y", patternType: "failure_pattern", evidenceCount: 4, status: "open", proposedForRegistry: false, humanApprovalState: "pending", createdAt: Date.now() })
+    );
+
+    const result = await t.mutation(internal.maintainer.setProposalApproval, {
+      userId,
+      proposalId,
+      decision: "rejected",
+    });
+
+    expect(result.humanApprovalState).toBe("rejected");
+    expect(result.status).toBe("rejected");
+
+    const row = await t.run((ctx) => ctx.db.get(proposalId));
+    expect(row?.humanApprovalState).toBe("rejected");
+    expect(row?.status).toBe("rejected");
+  });
+
+  it("owner isolation: touching another user's proposal throws not_found", async () => {
+    const t = convexTest(schema);
+    const userA = await t.run((ctx) =>
+      ctx.db.insert("users", { clerkId: "ck_oa", username: "ownerA", email: "oa@x.com", plan: "free", createdAt: Date.now() })
+    );
+    const userB = await t.run((ctx) =>
+      ctx.db.insert("users", { clerkId: "ck_ob", username: "ownerB", email: "ob@x.com", plan: "free", createdAt: Date.now() })
+    );
+    const proposalId = await t.run((ctx) =>
+      ctx.db.insert("maintainerProposals", { userId: userA, stackSlug: "s", skillName: "owned-by-a", patternType: "failure_pattern", evidenceCount: 3, status: "open", proposedForRegistry: false, humanApprovalState: "pending", createdAt: Date.now() })
+    );
+
+    await expect(
+      t.mutation(internal.maintainer.setProposalApproval, {
+        userId: userB,
+        proposalId,
+        decision: "approved",
+      })
+    ).rejects.toThrow("not_found");
+  });
+});
+
 describe("maintainer.listPendingRegistryCandidates", () => {
   it("returns only open+proposedForRegistry=true+humanApprovalState=pending rows", async () => {
     const t = convexTest(schema);

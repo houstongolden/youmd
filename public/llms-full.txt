@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: 7b12765b9fb266d2861eb7e94572c8e81a5f91aec99b44bc874bb4316206adc0. CLI version: 0.6.23. Endpoints: 79 documented (7 internal/retired routes excluded). Local MCP tools: 14. Hosted MCP tools: 0. CLI commands: 27. Reference intelligence: 2026-06-12T08:31:29.816Z.
+> Generated full agent context. Source hash: 7a6f4540e422cab9fd823bfbe09bc4101f4c9ecfa3280319810841450bd863a8. CLI version: 0.6.27. Endpoints: 83 documented (7 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 0. CLI commands: 28. Reference intelligence: 2026-06-14T20:59:38.098Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -115,7 +115,7 @@ Use `you` for the live U conversation. Use `youmd` for non-interactive commands 
 
 ## CLI Commands
 
-All 27 registered runtime commands, generated from the commander registrations in `cli/src/index.ts` (run `youmd <command> --help` for per-command options; namespaces like `skill`, `stack`, `memories`, and `private` take subcommands):
+All 28 registered runtime commands, generated from the commander registrations in `cli/src/index.ts` (run `youmd <command> --help` for per-command options; namespaces like `skill`, `stack`, `memories`, and `private` take subcommands):
 
 ### AUTH
 
@@ -134,6 +134,7 @@ All 27 registered runtime commands, generated from the commander registrations i
 - `youmd sync`: Sync ~/.youmd/ files with you.md (pull + push)
 - `youmd diff [v1] [v2]`: Compare bundle versions: `youmd diff` (local vs remote) or `youmd diff <v1> <v2>`
 - `youmd export`: Export profile to you.json and/or you.md
+- `youmd okf [subcommand] [arg]`: Open Knowledge Format - export/import/validate/health/view for portable OKF bundles (identity, skills, stacks)
 - `youmd publish`: Push compiled bundle to the platform API
 
 ### CHAT
@@ -172,7 +173,7 @@ All 27 registered runtime commands, generated from the commander registrations i
 
 You.md has two MCP surfaces with distinct tool sets:
 
-- Local stdio MCP through the runtime: 14 tools. This is the preferred surface for Claude Code, Codex, Cursor, and other local coding agents.
+- Local stdio MCP through the runtime: 6 tools. This is the preferred surface for Claude Code, Codex, Cursor, and other local coding agents.
 - Hosted same-origin JSON-RPC MCP at `POST /api/v1/mcp`: 0 tools, for web-capable clients.
 
 Discovery:
@@ -211,10 +212,9 @@ Hosted MCP tools (`POST /api/v1/mcp`):
 
 - No generated hosted MCP tools found.
 
-Key local stdio MCP tools (of 14 total):
+Key local stdio MCP tools (of 6 total):
 
 - `get_agent_brief`: Return a YouStack startup brief for local agents. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines compact identity, the user's recent durable memories (rendered inline by default), current repo instructions, project-context active requests, open TODOs, installed skills, and recommended next...
-- `add_memory`: Save a memory about the user - facts, preferences, decisions, or context learned during this conversation. Memories persist across sessions and inform ALL future agent interactions. Use proactively when you learn something important about the user (a preference, a decision, a project detail). Requires authentication.
 - `add_project_memory`: Save a memory scoped to a specific project. Unlike add_memory (which is global), project memories are stored locally in the project-context/ directory and only surface when working on that project. Use for architecture decisions, bug context, and feature-specific learnings.
 
 ## API
@@ -361,9 +361,9 @@ Agents should prefer read-before-write and route-before-action:
 
 You.md keeps these as first-class inspiration and monitoring sources:
 
-- GStack: https://github.com/garrytan/gstack (main @ a5833c413f98; No new commits since a5833c4)
-- GBrain: https://github.com/garrytan/gbrain (master @ ecd6ae87722a; No new commits since ecd6ae8)
-- Agent Scripts: https://github.com/steipete/agent-scripts (main @ a3026aea93b9; Changes since 831d5c3)
+- GStack: https://github.com/garrytan/gstack (main @ c7ae63201ab1; Changes since 14fc086)
+- GBrain: https://github.com/garrytan/gbrain (master @ 090bb5320355; Changes since 4ee530f)
+- Agent Scripts: https://github.com/steipete/agent-scripts (main @ 448cfa972336; Changes since a3026ae)
 - The Library: https://github.com/disler/the-library (main @ 47f455cd139b; No new commits since 47f455c)
 
 The monitor writes:

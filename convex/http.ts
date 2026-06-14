@@ -22,6 +22,7 @@ import {
   type WriteRateLimit,
 } from "./lib/writeLimits";
 import { filterClientMessages, YOU_AGENT_SYSTEM_PROMPT } from "./chat";
+import { isKnownBrainScope } from "./lib/brainScopes";
 
 const http = httpRouter();
 
@@ -2323,6 +2324,121 @@ http.route({
 });
 
 // ============================================================
+// MAINTAINER PROPOSALS + BRAIN CONSENT (L26)
+// ============================================================
+
+// GET /api/v1/me/maintainer/proposals — list caller's open proposals
+http.route({
+  path: "/api/v1/me/maintainer/proposals",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
+
+    try {
+      const proposals = await ctx.runQuery(internal.maintainer.listMyProposals, {
+        userId: auth.userDbId,
+      });
+      return json({ proposals });
+    } catch (err) {
+      return serverErrorResponse("me/maintainer/proposals/list", err, "Failed to list proposals");
+    }
+  }),
+});
+
+// POST /api/v1/me/maintainer/proposals/decision — approve or reject a proposal
+http.route({
+  path: "/api/v1/me/maintainer/proposals/decision",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    try {
+      const body = await request.json() as { proposalId?: unknown; decision?: unknown };
+      const { proposalId, decision } = body;
+      if (decision !== "approved" && decision !== "rejected") {
+        return errorResponse("invalid_request", 'decision must be "approved" or "rejected"', 400);
+      }
+
+      const result = await ctx.runMutation(internal.maintainer.setProposalApproval, {
+        userId: auth.userDbId,
+        proposalId: proposalId as Id<"maintainerProposals">,
+        decision,
+      });
+      return guard.finish(json(result));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("not_found")) {
+        return errorResponse("not_found", "Proposal not found", 404);
+      }
+      return serverErrorResponse("me/maintainer/proposals/decision", err, "Failed to set proposal decision");
+    }
+  }),
+});
+
+// GET /api/v1/me/brain-consent — list all brainScope consent rows
+http.route({
+  path: "/api/v1/me/brain-consent",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
+
+    try {
+      const consents = await ctx.runQuery(internal.consent.listMyConsents, {
+        userId: auth.userDbId,
+      });
+      return json({ consents });
+    } catch (err) {
+      return serverErrorResponse("me/brain-consent/list", err, "Failed to list brain consent");
+    }
+  }),
+});
+
+// POST /api/v1/me/brain-consent — grant or revoke a brainScope
+http.route({
+  path: "/api/v1/me/brain-consent",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    try {
+      const body = await request.json() as { scope?: unknown; granted?: unknown };
+      const { scope, granted } = body;
+      if (typeof scope !== "string" || !isKnownBrainScope(scope)) {
+        return errorResponse("invalid_request", `scope must be one of: ${["consolidate","fleet_aggregate","journal_mine"].join(", ")}`, 400);
+      }
+      if (typeof granted !== "boolean") {
+        return errorResponse("invalid_request", "granted must be a boolean", 400);
+      }
+
+      await ctx.runMutation(internal.consent.setConsent, {
+        userId: auth.userDbId,
+        scope,
+        granted,
+      });
+      return guard.finish(json({ scope, granted }));
+    } catch (err) {
+      return serverErrorResponse("me/brain-consent/set", err, "Failed to update brain consent");
+    }
+  }),
+});
+
+// ============================================================
 // OUTBOUND WEBHOOKS (P24)
 // ============================================================
 
@@ -2664,6 +2780,9 @@ http.route({ path: "/api/v1/me/memories", method: "OPTIONS", handler: corsPrefli
 http.route({ path: "/api/v1/me/context-links", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/api-keys", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/webhooks", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/maintainer/proposals", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/maintainer/proposals/decision", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/brain-consent", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat/stream", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/scrape", method: "OPTIONS", handler: corsPreflight });
