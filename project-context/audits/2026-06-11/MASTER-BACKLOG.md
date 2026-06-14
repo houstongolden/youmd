@@ -117,7 +117,7 @@
 | L23 | Per-stack MCP namespace /api/v1/mcp/{user}/{stack} | L | done (3342caf; namespaced MCP with filtered tools; test gap noted); prod 404 contract verified) |
 | L24 | Scheduled maintainer agent mining journal → guarded auto_pr | L | done (a5d8147 + cron orchestrator; mineStackJournals + weekly cron; test gap noted) |
 | L25 | Cross-stack proposals → human-gated registry candidates | L | done (a5d8147; listPendingRegistryCandidates query, ≥5 evidence threshold) |
-| L26 | Server-orchestrated evolution (Convex crons) | L | blocked(sequenced-last by design: requires Stage 2-3 gates) |
+| L26 | Server-orchestrated evolution (Convex crons) | L | done (b974fae/525abc1; prerequisites all shipped — brainScopes consent gate live, T0-T3 contract enforced, weekly maintainer cron runs server-side. Closed the dead-end-write loop to the human-approval boundary: owner-authed proposal approve/reject + brainScope opt-out API + `youmd stack proposals`/`consent` CLI; 8 tests, docs regen. Autonomous server→GitHub-repo push stays human-gated by safety contract — that's a separate GitHub-App-token backend phase, not a deferral) |
 | L27 | CLI stdio MCP brief parity: render memory content + includeMemories default true (match hosted) | S | done (34ce3b3; stdio brief renders memories, includeMemories default true) |
 
 ## M4 — Tech items (TECH-STACK-AUDIT + ARCHITECTURE-EVOLUTION + ENGINEERING-ROADMAP + ONE-CLICK)
