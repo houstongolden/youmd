@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-14 — Immutable-source enforcement in the ingestion pipeline (#2)
+
+### Anti-drift: content-addressed, versioned sources + real provenance
+- Added `convex/lib/sourceHashing.ts` (pure): `computeRawSourceHash` (SHA-256 content-addressing), `isContentChanged`/`shouldRecordVersion` (re-fetch versions on change only), `buildProvenanceMap`/`buildSourcesUsed` (per-source provenance), and `assertNoInPlaceOverwrite` (the guard).
+- Added an append-only `rawSourceVersions` table + `recordRawSourceVersion` internal mutation: a new version is written only when fetched content is new or changed; the source pointer advances but prior version rows are never modified or deleted. Wired into all three fetch paths (website, Apify, LinkedIn) best-effort/additive — LinkedIn hashes substantive content only so the volatile fetchedAt doesn't cause spurious versions.
+- Fixed source provenance in compiled bundles: `meta.sources_used` (previously hardcoded `[]`) and the manifest `sources[].url` (previously `""`) now carry the real source URLs + content hashes; added `meta.linked_sources` (URL list) so compiled concepts trace to their origin and OKF export carries true `linked_sources`.
+- Verified: full Convex suite green (34 files / 389 tests) including 11 new tests (pure hashing helpers + the immutable version ledger). **Needs `npx convex codegen` + Convex deploy** (new table/mutation) in an environment with a deployment configured — `_generated` and the live pipeline behavior are owner/CI verification steps.
+
 ## 2026-06-14 — OKF concept graph + brain view
 
 ### Concept graph cross-linking (#1)

@@ -67,6 +67,16 @@ export interface ProfileData {
     content: string;
     isPublic?: boolean;
   }>;
+  // Source provenance: which sources this bundle was compiled from, with the
+  // immutable content hash + version of each. Powers meta.sources_used /
+  // linked_sources so compiled concepts trace back to their origin.
+  sources?: Array<{
+    type: string;
+    url: string;
+    content_hash?: string;
+    version_id?: string;
+    last_fetched?: number;
+  }>;
 }
 
 export function compileYouJson(data: ProfileData): Record<string, unknown> {
@@ -174,7 +184,16 @@ export function compileYouJson(data: ProfileData): Record<string, unknown> {
     })),
 
     meta: {
-      sources_used: [],
+      // Full provenance objects (type + url + immutable content hash/version).
+      sources_used: (data.sources ?? []).map((s) => ({
+        type: s.type,
+        url: s.url,
+        content_hash: s.content_hash,
+        version_id: s.version_id,
+        last_fetched: s.last_fetched,
+      })),
+      // Flat URL list for OKF linked_sources mapping.
+      linked_sources: (data.sources ?? []).map((s) => s.url).filter(Boolean),
       last_updated: now,
       compiler_version: "0.3.0",
     },
@@ -355,14 +374,21 @@ export function compileManifest(
     },
 
     sources: Object.fromEntries(
-      sourcesUsed.map((s) => [
-        s,
-        {
-          url: "",
-          last_fetched: now,
-          status: "active",
-        },
-      ])
+      sourcesUsed.map((s) => {
+        const prov = (data.sources ?? []).find((p) => p.type === s);
+        return [
+          s,
+          {
+            url: prov?.url ?? "",
+            content_hash: prov?.content_hash,
+            version_id: prov?.version_id,
+            last_fetched: prov?.last_fetched
+              ? new Date(prov.last_fetched).toISOString()
+              : now,
+            status: "active",
+          },
+        ];
+      })
     ),
 
     update_policy: {

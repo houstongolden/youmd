@@ -4,6 +4,24 @@ Last Updated: 2026-06-13
 
 ---
 
+## 2026-06-14 — Familiar follow-ups: graph, brain view, immutable sources
+
+### 114. Implement the next three Familiar follow-ups (graph cross-linking, immutable-source enforcement, desktop/web brain view)
+**Status:** IN PROGRESS (#1 + #3 code complete + verified; #2 code complete + runtime-verified, needs Convex codegen/deploy)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-14 — Houston: "Continue to implement those next three" (the three I flagged after the OKF + provenance + health work: concept graph cross-linking, immutable-source enforcement in the crawler pipeline, Obsidian-style desktop client + web consistency).
+**Actionable Scope:**
+1. **Concept graph cross-linking.** DONE + verified. `related` first-class OKF graph edges, derived from real structural relationships only (about anchor, voice platform→overall, skills→directives, prefs→directives), author edges preserved, stack→manifest hub; `okf health` counts `related` as edges. 5 tests.
+2. **Immutable-source enforcement (Convex pipeline).** DONE + runtime-verified (needs codegen/deploy). `convex/lib/sourceHashing.ts` (pure), append-only `rawSourceVersions` table + `recordRawSourceVersion` (version-on-change, never overwrite), wired into all 3 fetch paths; fixed compiled-bundle provenance (real URLs in `meta.sources_used`/`linked_sources` + manifest). 389 convex tests green (11 new).
+3. **Desktop/web brain view.** DONE + verified. `cli/src/lib/okf-view.ts` framework-agnostic `buildBrainView` model + dependency-free terminal-native HTML; `youmd okf view`. The shared view model is what the web app + future desktop client both render for consistency. 4 tests.
+**Remaining:**
+- Owner/CI: `npx convex codegen` + `tsc -p convex/tsconfig.json` + Convex deploy for the new `rawSourceVersions` table; verify the live pipeline versions sources and bundles carry URLs.
+- A real Electron/Tauri desktop shell and a Next.js `/brain` route that imports the shared view model are their own initiatives (not built); OKF + `buildBrainView` are now the substrate that makes them cheap.
+- Future Familiar items still not built: immutable-source rule extended to the public-profile crawler, `[CONFLICT]`/`[STALE]` authoring UX.
+
+---
+
 ## 2026-06-13 — OKF (Open Knowledge Format) Integration
 
 ### 113. Provenance frontmatter on OKF concepts (Familiar-second-brain pattern)

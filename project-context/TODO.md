@@ -10,7 +10,8 @@ PRD Version: 2.3
 ### 2026-06-14 — OKF graph + view + immutable sources
 - [x] Concept graph cross-linking: `related` edges derived from real structural relationships, round-trip-preserved, stack-manifest hub, orphan detection respects the graph
 - [x] Brain view: framework-agnostic `buildBrainView` model + dependency-free terminal-native HTML (`youmd okf view`) — desktop-client seed + web-consistent model
-- [ ] Immutable-source enforcement in the Convex ingestion pipeline (in progress this session)
+- [x] Immutable-source enforcement in the Convex ingestion pipeline: content-addressed `rawSourceVersions` append-only ledger + `recordRawSourceVersion` (version-on-change, never overwrite), wired into all fetch paths; fixed compiled-bundle provenance (real source URLs in `meta.sources_used`/`linked_sources` + manifest). 389 convex tests green.
+- [ ] Owner/CI: run `npx convex codegen` + `tsc -p convex/tsconfig.json` + Convex deploy for the new `rawSourceVersions` table, then verify the live pipeline records versions and bundles carry source URLs
 
 ### 2026-06-13 — OKF integration
 - [x] Add `youmd okf health` brain-health audit (orphans, stale, un-sourced, low-confidence/needs-review, `[CONFLICT]`/`[STALE]`, missing type; 0-100 score) — Familiar graph-health pattern, OKF-native, no cron/inbox machinery

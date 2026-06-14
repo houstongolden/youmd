@@ -9,6 +9,7 @@ import {
   compileManifest,
   type ProfileData,
 } from "../lib/compile";
+import { buildSourcesUsed } from "../lib/sourceHashing";
 
 // ---------------------------------------------------------------------------
 // compileBundleFromPipeline — Compile extracted + analyzed data into a bundle
@@ -126,6 +127,9 @@ interface SourceDoc {
   extracted: Record<string, unknown> | null;
   sourceUrl: string;
   status: string;
+  lastRawContentHash?: string;
+  latestVersionId?: string;
+  lastFetched?: number;
 }
 
 function mergeToProfileData(
@@ -273,6 +277,9 @@ function mergeToProfileData(
       voice_summary: (voice?.voice_summary as string) ?? "",
       credibility_signals: credibilitySignals,
     },
+    // Provenance: trace the compiled bundle back to the immutable sources it
+    // was built from (real URLs + content hashes), powering meta.sources_used.
+    sources: buildSourcesUsed(sources),
   };
 }
 

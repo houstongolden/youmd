@@ -419,9 +419,28 @@ export default defineSchema({
     ),
     lastFetched: v.optional(v.number()),
     errorMessage: v.optional(v.string()),
+    // Immutable-source tracking (additive): content-address the latest fetch and
+    // point at its append-only version row. Raw content is versioned, not
+    // overwritten in place.
+    lastRawContentHash: v.optional(v.string()),
+    latestVersionId: v.optional(v.id("rawSourceVersions")),
   })
     .index("by_userId", ["userId"])
     .index("by_userId_type", ["userId", "sourceType"]),
+
+  // Append-only ledger of raw source fetches. A new row is written only when a
+  // fetch produces content that differs from the latest stored hash, so prior
+  // versions are never lost and every extraction can cite its exact origin.
+  rawSourceVersions: defineTable({
+    sourceId: v.id("sources"),
+    userId: v.id("users"),
+    sourceUrl: v.string(),
+    rawStorageId: v.optional(v.id("_storage")),
+    contentHash: v.string(),
+    fetchedAt: v.number(),
+  })
+    .index("by_sourceId", ["sourceId"])
+    .index("by_contentHash", ["contentHash"]),
 
   // artifactType: "author_voice" | "topic_map" | "bio_variants" | "faq"
   //             | "voice_linkedin" | "voice_linkedin_doc"

@@ -3,6 +3,7 @@
 import { v } from "convex/values";
 import { internalAction } from "../_generated/server";
 import { internal } from "../_generated/api";
+import { computeRawSourceHash } from "../lib/sourceHashing";
 
 // ---------------------------------------------------------------------------
 // Helper: strip HTML to plain text / rough markdown
@@ -116,6 +117,20 @@ export const fetchWebsite = internalAction({
         extractedText: trimmedText,
       });
 
+      // Immutable-source ledger: content-address the raw HTML and append a new
+      // version only when it changed (best-effort — never blocks the fetch).
+      try {
+        const contentHash = await computeRawSourceHash(html);
+        await ctx.runMutation(internal.pipeline.mutations.recordRawSourceVersion, {
+          sourceId: args.sourceId,
+          rawStorageId,
+          contentHash,
+          fetchedAt: Date.now(),
+        });
+      } catch {
+        // Versioning is additive provenance; ignore failures here.
+      }
+
       return { success: true, textLength: trimmedText.length };
     } catch (error) {
       const message =
@@ -221,6 +236,19 @@ export const fetchWithApify = internalAction({
         rawStorageId,
         extractedText: trimmedText,
       });
+
+      // Immutable-source ledger (best-effort, additive).
+      try {
+        const contentHash = await computeRawSourceHash(JSON.stringify(results, null, 2));
+        await ctx.runMutation(internal.pipeline.mutations.recordRawSourceVersion, {
+          sourceId: args.sourceId,
+          rawStorageId,
+          contentHash,
+          fetchedAt: Date.now(),
+        });
+      } catch {
+        // ignore — versioning is additive provenance
+      }
 
       return { success: true, resultCount: Array.isArray(results) ? results.length : 1 };
     } catch (error) {
@@ -365,6 +393,23 @@ export const fetchLinkedInFull = internalAction({
         rawStorageId,
         extractedText: trimmedText,
       });
+
+      // Immutable-source ledger (best-effort). Hash the substantive content
+      // only — exclude the volatile fetchedAt so re-fetching identical
+      // profile/posts does not spuriously create a new version.
+      try {
+        const contentHash = await computeRawSourceHash(
+          JSON.stringify({ profile: combined.profile, posts: combined.posts })
+        );
+        await ctx.runMutation(internal.pipeline.mutations.recordRawSourceVersion, {
+          sourceId: args.sourceId,
+          rawStorageId,
+          contentHash,
+          fetchedAt: Date.now(),
+        });
+      } catch {
+        // ignore — versioning is additive provenance
+      }
 
       return {
         success: true,
