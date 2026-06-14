@@ -1,5 +1,53 @@
 # You.md — Changelog
 
+## 2026-06-14 — Immutable-source enforcement in the ingestion pipeline (#2)
+
+### Anti-drift: content-addressed, versioned sources + real provenance
+- Added `convex/lib/sourceHashing.ts` (pure): `computeRawSourceHash` (SHA-256 content-addressing), `isContentChanged`/`shouldRecordVersion` (re-fetch versions on change only), `buildProvenanceMap`/`buildSourcesUsed` (per-source provenance), and `assertNoInPlaceOverwrite` (the guard).
+- Added an append-only `rawSourceVersions` table + `recordRawSourceVersion` internal mutation: a new version is written only when fetched content is new or changed; the source pointer advances but prior version rows are never modified or deleted. Wired into all three fetch paths (website, Apify, LinkedIn) best-effort/additive — LinkedIn hashes substantive content only so the volatile fetchedAt doesn't cause spurious versions.
+- Fixed source provenance in compiled bundles: `meta.sources_used` (previously hardcoded `[]`) and the manifest `sources[].url` (previously `""`) now carry the real source URLs + content hashes; added `meta.linked_sources` (URL list) so compiled concepts trace to their origin and OKF export carries true `linked_sources`.
+- Verified: full Convex suite green (34 files / 389 tests) including 11 new tests (pure hashing helpers + the immutable version ledger). **Needs `npx convex codegen` + Convex deploy** (new table/mutation) in an environment with a deployment configured — `_generated` and the live pipeline behavior are owner/CI verification steps.
+
+## 2026-06-14 — OKF concept graph + brain view
+
+### Concept graph cross-linking (#1)
+- Added `related` as a first-class OKF graph-edge field (stable ordering after `linked_sources`, round-trip-preserved through export/import).
+- `deriveRelated()` builds edges from real structural relationships only (no fabricated semantic links): every concept anchors to `profile/about`, platform voices link to the overall voice, skills link to the agent directives they run under, and agent preferences link to those directives. Author-declared `related` edges are preserved and unioned with derived ones.
+- Stack concepts link to their manifest concept (`youstack`) hub.
+- `youmd okf health` now counts `related` frontmatter as graph edges, so orphan detection respects the real graph.
+
+### Brain view — desktop-client seed + web consistency (#3)
+- Added `cli/src/lib/okf-view.ts`: a framework-agnostic view model (`buildBrainView`) over an OKF bundle (concepts grouped by type, graph edges, health) plus a dependency-free HTML renderer (`renderBrainHtml`) — terminal-native (monochrome + burnt orange, JetBrains Mono, 2px radius, no emoji, no JS/network).
+- Added `youmd okf view [dir]`: renders a self-contained local "brain page" (the Obsidian-style desktop-client seed) from a directory or the live bundle; `--out <file>` and `--json` (emits the view model the web app can render for a consistent surface).
+- +9 tests (53 OKF tests total); CLI build clean; verified end-to-end (graph edges present in export; `okf view` renders a 90/100 brain page from the example bundle).
+
+## 2026-06-13 — OKF brain-health audit
+
+### `youmd okf health` (Familiar graph-health pattern, OKF-native)
+- Added `cli/src/lib/okf-health.ts`: a pure audit of an OKF bundle for the failure modes that rot agent knowledge bases — concepts missing `type` (error), thin/no-description concepts, un-sourced concepts ("no synthesis without a source"), agent-authored or low-confidence concepts that need a human pass, stale concepts (timestamp age or `[STALE]` markers), unresolved `[CONFLICT]` markers, and orphans nothing links to. Produces a 0-100 health score.
+- Added the `youmd okf health [dir]` subcommand (alias `doctor`): audits a directory on disk, or the live identity bundle built in memory when no dir is given; `--stale-days <n>` (default 30) and `--json`.
+- Bundles three of the four flagged Familiar follow-ups (graph/orphan check, `[CONFLICT]`/`[STALE]` markers, the un-sourced rule) into one self-auditing command — deliberately without the cron/inbox machinery.
+- +7 tests (44 OKF tests total); CLI build clean. Smoke: live example bundle scores 90/100 with honest advisory flags; a malformed bundle surfaces the error plus conflict/stale/orphan/un-sourced.
+
+## 2026-06-13 — OKF (Open Knowledge Format) integration
+
+### Portable OKF export/import for identity, skills, and stacks
+- Added a pure OKF core library (`cli/src/lib/okf.ts`): serialize/parse concept files (YAML frontmatter + body, required `type`), conformance validation, and `index.md`/`log.md` reserved-file builders for `okf/v0.1`.
+- Added identity bundle ↔ OKF (`cli/src/lib/okf-bundle.ts`): lossless, round-trippable export of `profile/`, `preferences/`, `voice/`, `directives/`, and installed `skills/` as conformant OKF concepts, each tagged with a `youmd_kind` field so import routes it home; carries `you.json` + `manifest.sha256.json` alongside as integrity value-adds.
+- Added YouStack → OKF (`cli/src/lib/okf-stack.ts`): renders a stack (manifest summary concept + skills/workflows/docs/tests/prompts) as a conformant OKF bundle, carrying `youstack.json` alongside so it stays installable — the shareable "Gstack" story.
+- Added the `youmd okf export | import | validate` command plus a `youmd export --okf` shortcut, all with `--json` output; `--stack [path]`, `--out <dir>`, and `--no-skills` flags.
+- OKF is a portable interchange/exchange format that rides the existing `youmd sync`/`pull`/`push` engine (3-way merge in `merge.ts`); no sync behavior changed.
+- Added `project-context/OKF_INTEGRATION.md` with the design rationale and a cross-machine (MacBook Air + Mac mini) end-to-end test runbook.
+
+### Provenance frontmatter (Familiar-second-brain convention)
+- Added optional `last_updated_by` / `confidence` / `linked_sources` provenance fields to OKF concepts (first-class in `okf.ts`, stable frontmatter ordering, light validation — bad `confidence` warns, never errors), so agents can audit who wrote a concept, how sure they were, and what it derives from.
+- Export stamps `last_updated_by` from `--author` (defaults to the logged-in username); installed skills are stamped `agent`; the `about` concept is auto-linked to the real `you.json` `meta.sources_used` (never fabricated). `--confidence` stamps `confidence` only when given.
+- Provenance is preserved through export → import → re-export round-trips, and existing per-section provenance is never overwritten. Added `--author`/`--confidence` flags to `youmd okf export`. +7 tests (37 OKF tests total).
+
+### Verification
+- `npm --prefix cli run build` passes. New OKF suite green (30 tests) across serialize/parse round-trips, the `type` requirement, validation rules, reserved-file formats, an identity round-trip against the real `examples/houston` bundle, and a stack export against `examples/youstack-personal`. Full CLI suite green except pre-existing live-network `integration.test.ts` cases that require reaching production from the sandbox.
+- CLI smoke verified end-to-end: identity export → conformant; import round-trip rebuilds section files; stack export → conformant; `okf validate` passes on the written bundles.
+
 ## 2026-06-13 — Remote main sync continuation and verification fixes
 
 ### Sync + audit

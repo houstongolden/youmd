@@ -7,6 +7,24 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-14 — OKF graph + view + immutable sources
+- [x] Concept graph cross-linking: `related` edges derived from real structural relationships, round-trip-preserved, stack-manifest hub, orphan detection respects the graph
+- [x] Brain view: framework-agnostic `buildBrainView` model + dependency-free terminal-native HTML (`youmd okf view`) — desktop-client seed + web-consistent model
+- [x] Immutable-source enforcement in the Convex ingestion pipeline: content-addressed `rawSourceVersions` append-only ledger + `recordRawSourceVersion` (version-on-change, never overwrite), wired into all fetch paths; fixed compiled-bundle provenance (real source URLs in `meta.sources_used`/`linked_sources` + manifest). 389 convex tests green.
+- [ ] Owner/CI: run `npx convex codegen` + `tsc -p convex/tsconfig.json` + Convex deploy for the new `rawSourceVersions` table, then verify the live pipeline records versions and bundles carry source URLs
+
+### 2026-06-13 — OKF integration
+- [x] Add `youmd okf health` brain-health audit (orphans, stale, un-sourced, low-confidence/needs-review, `[CONFLICT]`/`[STALE]`, missing type; 0-100 score) — Familiar graph-health pattern, OKF-native, no cron/inbox machinery
+- [x] Add provenance frontmatter (`last_updated_by`/`confidence`/`linked_sources`) to OKF concepts — Familiar pattern #1, stampable on export (`--author`/`--confidence`), preserved through round-trips; skipped the Familiar cron/inbox stack as redundant complexity
+- [x] Add a pure OKF core library (serialize/parse concept files, conformance validation, `index.md`/`log.md` builders) for `okf/v0.1`
+- [x] Add identity bundle ↔ OKF export/import with lossless round-trip (`youmd_kind` routing), including installed skills
+- [x] Add YouStack → OKF export (manifest concept + typed files), carrying `youstack.json` alongside for installability
+- [x] Add `youmd okf export|import|validate` command + `youmd export --okf` shortcut with `--json`/`--stack`/`--out`/`--no-skills`
+- [x] 30 OKF tests green; CLI build clean; end-to-end CLI smoke (identity + stack export → conformant; import round-trip)
+- [x] Write `project-context/OKF_INTEGRATION.md` (design + cross-machine MacBook Air/Mac mini test runbook)
+- [ ] Houston: run the cross-machine end-to-end test on the two new Macs (steps in `OKF_INTEGRATION.md`)
+- [ ] Owner-only: bump CLI version + update root AGENTS.md/CLAUDE.md version markers + `npm publish` when ready to release
+
 ### 2026-06-13
 - [x] Pull remote `main` to `376f967`, reapply local artifacts cleanly, and confirm there were no merge conflicts
 - [x] Audit the newly landed public stack registry/install, hosted MCP registry + subscribe support, outbound webhooks, generated docs, and backlog/reference-intelligence updates

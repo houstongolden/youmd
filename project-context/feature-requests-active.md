@@ -4,6 +4,61 @@ Last Updated: 2026-06-13
 
 ---
 
+## 2026-06-14 — Familiar follow-ups: graph, brain view, immutable sources
+
+### 114. Implement the next three Familiar follow-ups (graph cross-linking, immutable-source enforcement, desktop/web brain view)
+**Status:** IN PROGRESS (#1 + #3 code complete + verified; #2 code complete + runtime-verified, needs Convex codegen/deploy)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-14 — Houston: "Continue to implement those next three" (the three I flagged after the OKF + provenance + health work: concept graph cross-linking, immutable-source enforcement in the crawler pipeline, Obsidian-style desktop client + web consistency).
+**Actionable Scope:**
+1. **Concept graph cross-linking.** DONE + verified. `related` first-class OKF graph edges, derived from real structural relationships only (about anchor, voice platform→overall, skills→directives, prefs→directives), author edges preserved, stack→manifest hub; `okf health` counts `related` as edges. 5 tests.
+2. **Immutable-source enforcement (Convex pipeline).** DONE + runtime-verified (needs codegen/deploy). `convex/lib/sourceHashing.ts` (pure), append-only `rawSourceVersions` table + `recordRawSourceVersion` (version-on-change, never overwrite), wired into all 3 fetch paths; fixed compiled-bundle provenance (real URLs in `meta.sources_used`/`linked_sources` + manifest). 389 convex tests green (11 new).
+3. **Desktop/web brain view.** DONE + verified. `cli/src/lib/okf-view.ts` framework-agnostic `buildBrainView` model + dependency-free terminal-native HTML; `youmd okf view`. The shared view model is what the web app + future desktop client both render for consistency. 4 tests.
+**Remaining:**
+- Owner/CI: `npx convex codegen` + `tsc -p convex/tsconfig.json` + Convex deploy for the new `rawSourceVersions` table; verify the live pipeline versions sources and bundles carry URLs.
+- A real Electron/Tauri desktop shell and a Next.js `/brain` route that imports the shared view model are their own initiatives (not built); OKF + `buildBrainView` are now the substrate that makes them cheap.
+- Future Familiar items still not built: immutable-source rule extended to the public-profile crawler, `[CONFLICT]`/`[STALE]` authoring UX.
+
+---
+
+## 2026-06-13 — OKF (Open Knowledge Format) Integration
+
+### 113. Provenance frontmatter on OKF concepts (Familiar-second-brain pattern)
+**Status:** IN PROGRESS (code complete on branch; Houston verification pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-13 — Houston shared the "Familiar second-brain / KIMI Work" article ("do with it only what you think is appropriate... don't create unnecessary complexity"), then after the assessment: "Just build it" (= build recommendation #1: provenance frontmatter).
+**Request:** Adopt the one genuinely-additive, low-complexity pattern from Familiar — `last_updated_by` / `confidence` / `linked_sources` provenance on each concept — so agents can audit who wrote a concept, how sure they were, and what it derives from. Explicitly NOT the cron/inbox/Whisper machinery (already covered by workflows/self-improving stacks).
+**Actionable Scope:**
+1. First-class provenance fields in the OKF core with stable ordering + light validation (bad `confidence` warns, never errors). **DONE** (`okf.ts`).
+2. Thread through identity + stack export/import; preserve through round-trips; never overwrite existing. **DONE** (`okf-bundle.ts`, `okf-stack.ts`).
+3. Stamp on export: `--author` (default logged-in username), skills stamped `agent`, `about` auto-linked to real `you.json` `meta.sources_used` (never fabricated); `--confidence` opt-in. **DONE** (`commands/okf.ts`, `--author`/`--confidence` flags).
+4. Tests + smoke. **DONE:** +7 tests (37 OKF total); CLI build clean; smoke confirms provenance frontmatter on export and survives import round-trip.
+5. **Houston (user-only):** confirm the provenance fields are useful in practice during the cross-machine test.
+**Progress (2026-06-13):** Built on the same branch in the same session. Did NOT build the Familiar cron/inbox/Whisper stack (redundant with existing workflows/self-improving stacks + would add the "second filing cabinet" complexity Houston warned against). **Follow-on (same session, "Continue"):** built `youmd okf health` (`cli/src/lib/okf-health.ts` + `health`/`doctor` subcommand), which bundles three more flagged Familiar follow-ups — the graph/orphan check, `[CONFLICT]`/`[STALE]` markers, and the un-sourced "no synthesis without a source" rule — into one OKF-native self-audit with a 0-100 score (44 OKF tests total). Remaining future tracks, not built: the immutable-source enforcement in the crawler pipeline, and the Obsidian-style desktop client + web consistency (OKF is the substrate; treat as its own initiative).
+
+### 112. Implement OKF and prove cross-machine sync of skills/stacks/context
+**Status:** IN PROGRESS (code complete on branch; Houston e2e + publish pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-13 — Houston: first asked "How can this help my youmd project?" about Google's OKF, then: "you must implement the OKF as suggested and planned and ensure all of this works... share local agentic skills/stack across machines... update a skill on my MacBook and my Mac mini also auto-updates... publishable youStacks ie like your own Gstack... I have purchased two brand new machines a new MacBook Air and a new Mac mini... once you're 100% confident I'll run it locally and test the goal end to end."
+**Request:** Adopt OKF as the portable, lock-in-free wire format for You.md so identity, skills, and YouStacks travel between machines and agents; make publishable youStacks expressible as OKF; get to 100% local confidence so Houston can run the end-to-end cross-machine test on the two new Macs.
+**Actionable Scope:**
+1. Implement OKF as proposed (conformant export/import). **DONE:** pure core `cli/src/lib/okf.ts` (serialize/parse, validation, `index.md`/`log.md` builders for `okf/v0.1`).
+2. Identity bundle ↔ OKF, lossless round-trip incl. installed skills. **DONE:** `cli/src/lib/okf-bundle.ts` (`youmd_kind` routes concepts home on import).
+3. YouStacks as publishable OKF ("Gstack" story). **DONE:** `cli/src/lib/okf-stack.ts` (manifest concept + typed files; `youstack.json` carried for installability).
+4. CLI surface. **DONE:** `youmd okf export|import|validate` + `youmd export --okf`, `--json`/`--stack`/`--out`/`--no-skills`.
+5. Skills/project-status/preferences sync across machines + background auto-update. **RIDES EXISTING ENGINE:** `youmd sync`/`sync --watch` + skills registry sync already move context server-side; OKF adds the portable, lock-in-free snapshot/exchange. No sync behavior changed. Cross-machine proof is steps A–C in `OKF_INTEGRATION.md`.
+6. Tests + verification. **DONE:** 30 OKF tests green; CLI build clean; end-to-end CLI smoke for identity + stack export (conformant) and import round-trip.
+7. Runbook for the two Macs. **DONE:** `project-context/OKF_INTEGRATION.md`.
+8. **Houston (user-only):** run the cross-machine end-to-end test on MacBook Air + Mac mini.
+9. **Owner-only:** bump CLI version, align root AGENTS.md/CLAUDE.md version markers, `npm publish` when ready (intentionally not bumped on this branch to keep the agent-docs version guardrail green).
+**Design/Runbook:** `project-context/OKF_INTEGRATION.md`. Spec: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md
+**Progress (2026-06-13):** Built the full OKF layer on `claude/okf-youmd-integration-7bxxt1`. `npm --prefix cli run build` passes; new OKF suite green (30 tests); CLI smoke confirmed identity export (7 concepts, conformant), import round-trip rebuilds section files, and stack export (`youstack-personal`, conformant) with `youstack.json` carried. Pre-existing live-network `integration.test.ts` cases still fail in the sandbox (no production reachability) — unrelated to this change. Remaining: Houston's cross-machine e2e, then owner-only version bump + publish.
+
+---
+
 ## 2026-06-04 — Free GitHub OAuth Signup + Repo-Native You.md
 
 ### 106. Free GitHub OAuth signup

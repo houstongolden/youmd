@@ -54,6 +54,49 @@ export const updateSourceFetched = internalMutation({
   },
 });
 
+/**
+ * Append an immutable raw-source version. A new version row is written only
+ * when the fetched content hash is new or differs from the latest stored hash;
+ * the source row's pointer (lastRawContentHash + latestVersionId) is updated,
+ * but prior version rows are never modified or deleted. This is the
+ * immutable-source enforcement point.
+ */
+export const recordRawSourceVersion = internalMutation({
+  args: {
+    sourceId: v.id("sources"),
+    rawStorageId: v.optional(v.id("_storage")),
+    contentHash: v.string(),
+    fetchedAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) return { recorded: false as const, reason: "source not found" };
+
+    if (source.lastRawContentHash === args.contentHash) {
+      // Identical content — do not version, do not overwrite.
+      return {
+        recorded: false as const,
+        reason: "unchanged",
+        versionId: source.latestVersionId ?? null,
+      };
+    }
+
+    const versionId = await ctx.db.insert("rawSourceVersions", {
+      sourceId: args.sourceId,
+      userId: source.userId,
+      sourceUrl: source.sourceUrl,
+      rawStorageId: args.rawStorageId,
+      contentHash: args.contentHash,
+      fetchedAt: args.fetchedAt,
+    });
+    await ctx.db.patch(args.sourceId, {
+      lastRawContentHash: args.contentHash,
+      latestVersionId: versionId,
+    });
+    return { recorded: true as const, versionId };
+  },
+});
+
 export const updateSourceExtracted = internalMutation({
   args: {
     sourceId: v.id("sources"),

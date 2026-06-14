@@ -50,6 +50,7 @@ import { mcpCommand } from "./commands/mcp";
 import { logsCommand } from "./commands/logs";
 import { agentsCommand } from "./commands/agents";
 import { stackCommand } from "./commands/stack";
+import { okfCommand } from "./commands/okf";
 
 const program = new Command();
 
@@ -101,6 +102,7 @@ const HELP_GROUPS: Array<{
       { name: "sync", summary: "pull + push in one command" },
       { name: "diff", summary: "show changes vs published version" },
       { name: "export", summary: "export you.json and/or you.md" },
+      { name: "okf", summary: "export/import/validate portable OKF bundles (identity, skills, stacks)" },
       { name: "publish", summary: "publish compiled bundle to the platform" },
     ],
   },
@@ -467,8 +469,21 @@ program
   .description("Export profile to you.json and/or you.md")
   .option("--json", "Export only you.json")
   .option("--md", "Export only you.md")
+  .option("--okf", "Export as a portable OKF bundle (directory of markdown concepts)")
   .option("-o, --output <path>", "Output directory")
   .action((options) => exportCommand(options));
+
+program
+  .command("okf [subcommand] [arg]")
+  .description("Open Knowledge Format — export/import/validate/health/view for portable OKF bundles (identity, skills, stacks)")
+  .option("-o, --out <dir>", "Output directory")
+  .option("--stack [path]", "Export a YouStack (optionally at <path>) instead of your identity bundle")
+  .option("--no-skills", "Exclude installed skills from an identity export")
+  .option("--author <name>", "Stamp last_updated_by provenance on exported concepts")
+  .option("--confidence <level>", "Stamp confidence provenance (low|medium|high) on exported concepts")
+  .option("--stale-days <n>", "Days before a concept is flagged stale by `okf health` (default 30)")
+  .option("--json", "Print JSON output")
+  .action((subcommand, arg, options) => okfCommand(subcommand, arg, options));
 
 program
   .command("preview")

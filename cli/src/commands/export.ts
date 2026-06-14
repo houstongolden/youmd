@@ -3,14 +3,21 @@ import * as path from "path";
 import chalk from "chalk";
 import { resolveActiveBundleDir } from "../lib/config";
 import { compileBundle, writeBundle } from "../lib/compiler";
+import { okfCommand } from "./okf";
 
 interface ExportOptions {
   json?: boolean;
   md?: boolean;
+  okf?: boolean;
   output?: string;
 }
 
 export async function exportCommand(options: ExportOptions): Promise<void> {
+  // `youmd export --okf` is a shortcut for `youmd okf export`.
+  if (options.okf) {
+    return okfCommand("export", undefined, { out: options.output });
+  }
+
   console.log("");
 
   const bundleDir = resolveActiveBundleDir();
