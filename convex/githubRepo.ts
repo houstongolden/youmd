@@ -6,6 +6,7 @@ import type { Id } from "./_generated/dataModel";
 import { requireOwner } from "./lib/auth";
 import { decryptSecret, encryptSecret } from "./lib/secretCrypto";
 import { isGithubAppConfigured, mintInstallationToken } from "./githubApp";
+import { agentPushViaPR } from "./githubAgentSync";
 
 /**
  * GitHub repo actions (Phase 2): create or connect the user's own You.md repo
@@ -17,7 +18,7 @@ import { isGithubAppConfigured, mintInstallationToken } from "./githubApp";
  * later phases pull/compile it and mirror it server-side for API/MCP.
  */
 
-const DEFAULT_REPO_NAME = "you-md";
+const DEFAULT_REPO_NAME = "you-md"; // used only as a final fallback
 const GITHUB_API = "https://api.github.com";
 
 type ConnectionContext = {
@@ -46,6 +47,10 @@ function githubHeaders(token: string): Record<string, string> {
   };
 }
 
+/**
+ * Sanitize a candidate repo name to a GitHub-safe slug.
+ * Falls back to DEFAULT_REPO_NAME only as a last resort.
+ */
 function sanitizeRepoName(name: string | undefined): string {
   const cleaned = (name || DEFAULT_REPO_NAME)
     .trim()
@@ -55,6 +60,21 @@ function sanitizeRepoName(name: string | undefined): string {
     .replace(/^[-.]+|[-.]+$/g, "")
     .slice(0, 100);
   return cleaned || DEFAULT_REPO_NAME;
+}
+
+/**
+ * Build the default repo name from the GitHub login: "{login}-you-md".
+ * Falls back to DEFAULT_REPO_NAME if login is empty after sanitization.
+ */
+function defaultRepoNameForLogin(githubLogin: string): string {
+  const slug = githubLogin
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-.]+|[-.]+$/g, "")
+    .slice(0, 90); // leave room for "-you-md" suffix
+  return slug ? `${slug}-you-md` : DEFAULT_REPO_NAME;
 }
 
 function base64Utf8(input: string): string {
@@ -110,6 +130,9 @@ function isMirrorablePath(path: string): boolean {
   if (path.startsWith("private/")) return false;
   if (path === "you.md" || path === "you.json" || path === "README.md") return true;
   if (path.startsWith("stacks/")) return true;
+  if (path.startsWith("identity/")) return true;   // per-section markdown
+  if (path.startsWith("projects/")) return true;   // per-project context files
+  if (path.startsWith("context/")) return true;    // runtime context drop zone
   if (/^[^/]+\.md$/.test(path)) return true; // top-level markdown
   return false;
 }
@@ -221,7 +244,18 @@ async function loadConnectionToken(
   return { context, token };
 }
 
-/** Build the starter files for a freshly created repo. */
+/**
+ * Build the canonical seed file set for a freshly created repo.
+ *
+ * Canonical layout:
+ *   README.md             — agent-managed You.md repo explainer
+ *   you.md                — compiled identity context (human + agent readable)
+ *   you.json              — structured identity bundle
+ *   identity/             — per-section markdown from the compiled bundle
+ *   projects/README.md    — placeholder; per-project files populated by agents
+ *   stacks/.gitkeep       — YouStacks home; one subfolder per named stack
+ *   context/.gitkeep      — runtime context drop zone for agents
+ */
 function buildSeedFiles(seed: {
   youMd: string | null;
   youJson: unknown;
@@ -234,9 +268,13 @@ function buildSeedFiles(seed: {
 
   const readme = `# ${displayName} — You.md
 
-This repository is **${handle}**'s [You.md](https://you.md) — a portable agent
-brain. The Markdown here is the source of truth for ${handle}'s identity context
-and expertise stacks. AI agents read it so they don't start from scratch.
+This repository is **agent-managed** by [You.md](https://you.md). It is the
+portable identity brain for **${handle}** — AI agents read it to understand who
+${handle} is, what they're working on, and how to work with them without starting
+from scratch every session.
+
+Edits made here sync back to the You.md account automatically. Edits made on
+the You.md web shell or CLI push back here.
 
 - Public profile: https://you.md/${handle}
 - Edit on the web: https://you.md/shell
@@ -244,13 +282,17 @@ and expertise stacks. AI agents read it so they don't start from scratch.
 
 ## Layout
 
-| Path | What it is |
+| Path | Contents |
 |---|---|
-| \`you.md\` | The compiled identity context (human + agent readable) |
-| \`you.json\` | The structured identity bundle |
-| \`stacks/\` | Named YouStacks (one folder per stack) |
+| \`you.md\` | Compiled identity context — the main agent-readable document |
+| \`you.json\` | Structured identity bundle (schema: you-md/v1) |
+| \`identity/\` | Per-section markdown (bio, skills, values, projects, etc.) |
+| \`projects/\` | Per-project context files (one file per tracked project) |
+| \`stacks/\` | Named YouStacks — one sub-folder per stack |
+| \`context/\` | Drop zone for runtime context files used by agents |
 
-> Managed by You.md. Edits here sync back to your You.md account.
+> **Do not delete or rename \`you.md\` or \`you.json\`** — they are the source
+> of truth consumed by every agent that reads this repo.
 `;
 
   const youMd =
@@ -268,13 +310,41 @@ and expertise stacks. AI agents read it so they don't start from scratch.
     2
   );
 
+  const identityReadme = `# identity/
+
+Per-section identity markdown, auto-generated from the compiled You.md bundle.
+Each file mirrors a section of \`you.md\` so agents can load just the slice
+they need without parsing the full document.
+
+Files here are managed automatically — do not edit them directly.
+Edit your identity at https://you.md/shell and the sections will regenerate.
+`;
+
+  const projectsReadme = `# projects/
+
+One Markdown file per tracked project. Files here are populated by the You.md
+agent as you work and are updated when you mention or update a project in the
+web shell or CLI.
+
+Format: \`{project-slug}.md\`
+
+To add a project: use \`youmd project add\` or mention it to the You Agent.
+`;
+
   return [
     { path: "README.md", content: readme },
     { path: "you.md", content: youMd },
     { path: "you.json", content: youJson },
+    { path: "identity/README.md", content: identityReadme },
+    { path: "projects/README.md", content: projectsReadme },
     {
       path: "stacks/.gitkeep",
       content: "# YouStacks live here. One folder per named stack.\n",
+    },
+    {
+      path: "context/.gitkeep",
+      content:
+        "# Drop runtime context files here. Agents read from this directory.\n",
     },
   ];
 }
@@ -327,7 +397,11 @@ export const createRepo = action({
       requireRepoScope: true,
     });
 
-    const repoName = sanitizeRepoName(args.name);
+    // Task 1: default repo name is "{githubLogin}-you-md". A caller-supplied
+    // name overrides this; sanitizeRepoName normalizes the override to a safe slug.
+    const repoName = args.name
+      ? sanitizeRepoName(args.name)
+      : sanitizeRepoName(defaultRepoNameForLogin(context.githubLogin));
 
     // Create the repo (no auto_init — we seed our own files, which initializes
     // the default branch on first commit).
@@ -486,7 +560,16 @@ export const connectRepo = action({
 
 /**
  * Push the user's current compiled identity (you.md + you.json) to their linked
- * repo. Last-writer-wins: we read each file's current sha and update it.
+ * repo.
+ *
+ * Task 4 — routing:
+ *  - When the connection has a GitHub App installation (installationId is set),
+ *    the write is routed through agentPushViaPR with autoMerge: true. This
+ *    creates a branch → PR → auto-merges it so every identity sync leaves a
+ *    reviewable PR trail and the merge is atomic.
+ *  - When no App installation exists, we fall back to the existing direct-push
+ *    path (last-writer-wins PUT via the OAuth token). This keeps the existing
+ *    behavior intact for users who haven't installed the GitHub App.
  */
 export const pushToRepo = action({
   args: { clerkId: v.string() },
@@ -520,6 +603,30 @@ export const pushToRepo = action({
       { path: "you.json", content: JSON.stringify(seed.youJson ?? {}, null, 2) },
     ];
 
+    // Task 4: when a GitHub App installation is available, route through
+    // agentPushViaPR (branch → PR → auto-merge) for an auditable trail.
+    // Fall back to the direct-push path when no App install exists.
+    if (context.installationId && isGithubAppConfigured()) {
+      const prResult = await agentPushViaPR(ctx, {
+        connectionId: context.connectionId,
+        files,
+        message: "chore(you.md): sync identity from you.md",
+        autoMerge: true,
+      });
+      await ctx.runMutation(internal.github.internalMarkSynced, {
+        connectionId: context.connectionId,
+        repoSha: prResult.mergeCommitSha ?? undefined,
+      });
+      return {
+        ok: true,
+        pushed: files.map((f) => f.path),
+        commitSha: prResult.mergeCommitSha ?? null,
+        upToDate: false,
+        via: "pr" as const,
+      };
+    }
+
+    // Direct push (OAuth token, no App installation).
     let commitSha: string | undefined;
     const pushed: string[] = [];
     for (const file of files) {
@@ -544,7 +651,13 @@ export const pushToRepo = action({
       repoSha: commitSha,
     });
 
-    return { ok: true, pushed, commitSha: commitSha ?? null, upToDate: pushed.length === 0 };
+    return {
+      ok: true,
+      pushed,
+      commitSha: commitSha ?? null,
+      upToDate: pushed.length === 0,
+      via: "direct" as const,
+    };
   },
 });
 
