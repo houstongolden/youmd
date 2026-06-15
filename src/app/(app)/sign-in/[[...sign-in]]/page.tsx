@@ -154,8 +154,11 @@ export default function SignInPage() {
           </span>
         );
         setStep("done");
-        router.push(nextPath);
-        router.refresh();
+        // Hard navigation, not router.push: a full reload re-reads the new
+        // session cookie server-side and re-initializes the auth context as
+        // signed-in. SPA nav here stalls because /shell's guard still sees the
+        // stale (not-yet-refreshed) client auth state.
+        window.location.assign(nextPath);
       } catch (error) {
         addLine(
           <span className="text-[hsl(var(--accent))]">

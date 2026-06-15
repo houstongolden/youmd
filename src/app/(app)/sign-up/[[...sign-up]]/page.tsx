@@ -214,8 +214,10 @@ export default function SignUpPage() {
         </span>
       );
       setStep("done");
-      router.push("/initialize");
-      router.refresh();
+      // Hard navigation, not router.push: a full reload re-reads the new session
+      // cookie server-side so the destination guard sees signed-in (SPA nav
+      // stalls on stale client auth state).
+      window.location.assign("/initialize");
     } catch (error) {
       addLine(
         <span className="text-[hsl(var(--accent))]">
