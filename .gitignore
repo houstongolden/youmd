@@ -60,3 +60,6 @@ project-context/audits/auto/.lock
 # claude code
 .claude/
 .codex/
+
+# env-vault — encrypted secret backups (never commit)
+.env-vault/
