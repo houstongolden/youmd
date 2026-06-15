@@ -11,6 +11,7 @@ import {
   getProjectMemories,
   addProjectMemory,
 } from "../lib/project";
+import { projectLogWrite, projectLogRead } from "./project-log";
 import {
   getLocalBundleDir,
   localBundleExists,
@@ -442,6 +443,14 @@ export async function projectCommand(subcommand?: string, ...args: string[]): Pr
     case "edit":
       await editFile(args);
       break;
+    case "log":
+      // With message args: write mode. No args: read mode.
+      if (args.length > 0) {
+        projectLogWrite(args);
+      } else {
+        projectLogRead();
+      }
+      break;
     default: {
       // If no subcommand, try auto-detecting the current project
       const detected = detectProjectContext();
@@ -462,6 +471,8 @@ export async function projectCommand(subcommand?: string, ...args: string[]): Pr
       console.log(`    ${chalk.cyan("memories <name>".padEnd(28))} ${chalk.dim("list project memories")}`);
       console.log(`    ${chalk.cyan("remember <name> <cat> <msg>".padEnd(28))} ${chalk.dim("add a memory to a project")}`);
       console.log(`    ${chalk.cyan("edit <name> <file>".padEnd(28))} ${chalk.dim("show a project file path for editing")}`);
+      console.log(`    ${chalk.cyan("log <message...>".padEnd(28))} ${chalk.dim("append an agent activity entry to project-context/you.md/log.md")}`);
+      console.log(`    ${chalk.cyan("log".padEnd(28))} ${chalk.dim("read last 15 entries from the activity log")}`);
       console.log("");
       console.log(chalk.dim("  projects are stored in .youmd/projects/<name>/"));
       console.log(chalk.dim("  run from a project directory for auto-detection."));
