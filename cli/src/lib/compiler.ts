@@ -53,6 +53,10 @@ interface SkeletonYouJson {
   custom_sections?: Array<{ id: string; title: string; content: string }>;
   meta?: { sources_used?: unknown[] };
   verification?: unknown;
+  // Server-managed / unmodeled top-level fields (e.g. `_profile`) that the
+  // markdown layer never represents. Preserved verbatim on compile so a
+  // markdown→bundle round-trip is lossless.
+  [key: string]: unknown;
 }
 
 export interface CompileResult {
@@ -585,6 +589,17 @@ export function compileBundle(bundleDir: string): CompileResult {
 
     verification: skeleton?.verification || null,
   };
+
+  // Preserve server-managed / unmodeled top-level fields from the skeleton
+  // (e.g. `_profile`, which is ~250KB of JSON the markdown layer never models).
+  // Without this, compiling markdown→bundle silently drops them and `youmd push`
+  // would ship a lossy bundle — the >50% size guard exists precisely to catch
+  // that. Carrying them forward makes the round-trip lossless.
+  for (const [key, value] of Object.entries(skeleton)) {
+    if (!(key in youJson) && value !== undefined) {
+      youJson[key] = value;
+    }
+  }
 
   // ── Build you.md ───────────────────────────────────────────────
 
