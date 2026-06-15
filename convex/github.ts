@@ -271,13 +271,17 @@ export const linkGithubToUser = mutation({
     const now = Date.now();
     const email = args.githubEmail?.trim().toLowerCase() || undefined;
 
-    // Guard: this GitHub account must not already belong to a different user.
+    // OAuth proves the current session user controls this GitHub account, so
+    // RE-HOME the link to them if it was attached to a different (usually stale
+    // or duplicate) you.md account. Without this, the connect flow gets stuck
+    // showing "not connected" forever whenever an earlier sign-in created the
+    // github identity on a separate account record.
     const byGithub = await ctx.db
       .query("githubConnections")
       .withIndex("by_githubUserId", (q) => q.eq("githubUserId", args.githubUserId))
       .first();
     if (byGithub && byGithub.userId !== args.linkToUserId) {
-      return { ok: false as const, reason: "github_already_linked" };
+      await ctx.db.delete(byGithub._id);
     }
 
     let encrypted: { ciphertext: string; iv: string } | null = null;
