@@ -28,6 +28,7 @@ import {
   parseMemorySavesFromResponse,
   parsePortraitUpdateFromResponse,
   parseCustomSectionsFromResponse,
+  buildGithubConnectedProtocol,
   type ThinkingCategory,
   type ProgressStep,
   type ChatMessage,
@@ -42,7 +43,7 @@ import { JsonDirectiveStreamFilter, DIRECTIVE_SWALLOW_PLACEHOLDER } from "./stre
 
 // Re-export types and functions that other files import from this module
 export type { ThinkingCategory, ProgressStep, ChatMessage, DisplayMessage, SectionUpdate, PrivateUpdate, RightPane, MemorySave, PortraitUpdate, CustomSection } from "./agent-utils";
-export { BUNDLE_SECTIONS, isValidSection, buildProfileContext, buildProfileDataFromUpdates, parseUpdatesFromResponse, parsePrivateUpdatesFromResponse, parseMemorySavesFromResponse, parsePortraitUpdateFromResponse, parseCustomSectionsFromResponse } from "./agent-utils";
+export { BUNDLE_SECTIONS, isValidSection, buildProfileContext, buildProfileDataFromUpdates, parseUpdatesFromResponse, parsePrivateUpdatesFromResponse, parseMemorySavesFromResponse, parsePortraitUpdateFromResponse, parseCustomSectionsFromResponse, GITHUB_CONNECTED_PASTE_PROMPT, buildGithubConnectedProtocol } from "./agent-utils";
 
 function humanizeProjectSlug(slug: string) {
   return slug.replace(/[-_]+/g, " ").trim();
@@ -146,7 +147,7 @@ function buildCompletionFollowThrough(params: {
 // ---------------------------------------------------------------------------
 
 export function useYouAgent(options: UseYouAgentOptions = {}) {
-  const { onPaneSwitch, isOnboarding, onboardingGreeting, onDone } = options;
+  const { onPaneSwitch, isOnboarding, onboardingGreeting, onDone, githubRepoName } = options;
 
   const { user } = useUser();
   const { isAuthenticated } = useConvexAuth();
@@ -1101,11 +1102,22 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       }
     }
 
+    // --- GitHub-connected post-connect protocol ---
+    // When the user's {username}-you-md repo exists, run the congratulation +
+    // paste-prompt flow instead of the normal thin/rich profile greeting branch.
+    // Detection: caller passes githubRepoName (non-null/non-empty) from
+    // api.github.getConnection.repoFullName or api.github.getRepoMirror.repoFullName.
+    const githubConnectedNote = githubRepoName
+      ? "\n\n" + buildGithubConnectedProtocol(githubRepoName)
+      : "";
+
     const contextContent = isOnboarding && onboardingGreeting
       ? onboardingGreeting
-      : hasSubstantialProfile
-        ? `${profileContext}${portraitContext}${staleSourceNote}${emptySectionNote}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. write a short greeting (2-3 sentences MAX). do three things: (1) greet them by name, (2) reference ONE specific recent thing from their profile data above (a project, a value, a bio detail), (3) IF empty/thin sections were detected above, mention the most impactful one and offer to fill it. don't make this a wall of text. example: "hey houston. saw you pushed v49 yesterday. one thing — your projects/ dir is empty even though your profile lists 6 projects. want me to scaffold them out?"`
-        : `${profileContext}${portraitContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them${displayName ? ` by name (${displayName})` : ""}. their profile is sparse — proactively suggest building it out. ask for their x, github, or linkedin handle so you can pull real context. mention that the platform will auto-scrape their profiles.`;
+      : githubRepoName
+        ? `${profileContext}${portraitContext}${githubConnectedNote}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat.`
+        : hasSubstantialProfile
+          ? `${profileContext}${portraitContext}${staleSourceNote}${emptySectionNote}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. write a short greeting (2-3 sentences MAX). do three things: (1) greet them by name, (2) reference ONE specific recent thing from their profile data above (a project, a value, a bio detail), (3) IF empty/thin sections were detected above, mention the most impactful one and offer to fill it. don't make this a wall of text. example: "hey houston. saw you pushed v49 yesterday. one thing — your projects/ dir is empty even though your profile lists 6 projects. want me to scaffold them out?"`
+          : `${profileContext}${portraitContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them${displayName ? ` by name (${displayName})` : ""}. their profile is sparse — proactively suggest building it out. ask for their x, github, or linkedin handle so you can pull real context. mention that the platform will auto-scrape their profiles.`;
 
     const contextMessage: ChatMessage = {
       role: "user",

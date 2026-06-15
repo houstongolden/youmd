@@ -1852,6 +1852,94 @@ export function buildProjectShareBlock(
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// GitHub-connected post-connect protocol
+// ---------------------------------------------------------------------------
+
+/**
+ * Single source of truth for the exact paste-prompt the You Agent gives the
+ * user after their {username}-you-md repo is created. The UI may also surface
+ * this constant in a copy button in GithubPane — import from this module.
+ *
+ * The prompt instructs a local agent (Claude Code / Codex / Cursor) to:
+ *   1. connect to the MCP
+ *   2. confirm identity via `youmd whoami`
+ *   3. make a small additive update and push it upstream
+ * so the web You Agent can detect the first local→web round-trip.
+ *
+ * TODO(detection-signal): wire the web agent's "watching" confirmation to a
+ * real signal. The Convex `repoMirror` row's `syncedAt` timestamp advances
+ * every time `youmd push` / auto-push writes to the repo. Poll or subscribe
+ * to `api.github.getRepoMirror` in the dashboard and fire a proactive agent
+ * message when `syncedAt` updates after the user sees this paste-prompt.
+ * Hook-in point: convex/githubAutoPush.ts `schedulePushIfNeeded` runs after
+ * every save/publish mutation — a new `syncedAt` value is the detection
+ * signal. The dashboard already queries `api.github.getRepoMirror`; compare
+ * the value before and after the user is shown this prompt to confirm the
+ * local→web connection closed.
+ */
+export const GITHUB_CONNECTED_PASTE_PROMPT =
+  `connect to my You.md via MCP:
+
+  npx --yes youmd@latest mcp
+
+run \`youmd whoami\` to confirm the connection, then make a small additive
+update to my you.md (e.g. add a line to my current focus or a memory note)
+and run \`youmd push\` to sync it upstream — so my web You.md can detect that
+the local→web loop is live.`;
+
+/**
+ * Build the post-GitHub-connect proactive note injected into the greeting
+ * context prompt when the user's {username}-you-md repo has been created.
+ *
+ * @param repoFullName  e.g. "houstongolden/houstongolden-you-md"
+ * @param cliInstalled  pass true when the caller knows the CLI is installed
+ *                      (future: detect via `meta.cli_version` in youJson).
+ *                      When false/unknown the note includes the curl install.
+ */
+export function buildGithubConnectedProtocol(
+  repoFullName: string,
+  cliInstalled = false
+): string {
+  const repoUrl = `https://github.com/${repoFullName}`;
+  const lines: string[] = [
+    "[GITHUB REPO CONNECTED — follow this protocol in your greeting for this session]",
+    "",
+    `the user just connected their You.md GitHub repo: ${repoUrl}`,
+    "",
+    "in your greeting, do ALL of the following in order — keep the total reply under 10 sentences:",
+    "",
+    `1. congratulate them — their repo is live and their you.md brain is now version-controlled and portable.`,
+    `2. explain what this unlocks: the API, MCP, and YouStack skills, once installed locally on any machine `,
+    `   or shared via a context link, give any agent they work with their full identity context — `,
+    `   their projects, directives, voice, stack preferences — without repeating themselves.`,
+  ];
+
+  if (!cliInstalled) {
+    lines.push(
+      `3. nudge the curl install if they haven't done it yet:`,
+      `   \`curl -fsSL https://you.md/install.sh | bash\``,
+    );
+  }
+
+  lines.push(
+    `${cliInstalled ? "3" : "4"}. give them this exact paste-prompt to run in their local agent `,
+    `   (Claude Code / Codex / Cursor) — present it as a copyable block:`,
+    "",
+    "---",
+    GITHUB_CONNECTED_PASTE_PROMPT,
+    "---",
+    "",
+    `${cliInstalled ? "4" : "5"}. tell them you're watching — once that \`youmd push\` lands, `,
+    `   you'll confirm the local→web connection is live.`,
+    "",
+    "voice: terminal-native, sharp, dry, no emoji, no corporate fluff. you're excited but you don't show it with exclamation marks.",
+    "[END GITHUB PROTOCOL]",
+  );
+
+  return lines.join("\n");
+}
+
 // Hook Options
 // ---------------------------------------------------------------------------
 
@@ -1860,4 +1948,10 @@ export interface UseYouAgentOptions {
   isOnboarding?: boolean;
   onboardingGreeting?: string;
   onDone?: () => void;
+  /**
+   * Set to the connected repo's full name (e.g. "houstongolden/houstongolden-you-md")
+   * when the {username}-you-md repo exists. The agent will run the post-connect
+   * congratulation protocol in its opening greeting for this session.
+   */
+  githubRepoName?: string | null;
 }
