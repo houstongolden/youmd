@@ -603,10 +603,14 @@ export const pushToRepo = action({
       { path: "you.json", content: JSON.stringify(seed.youJson ?? {}, null, 2) },
     ];
 
-    // Task 4: when a GitHub App installation is available, route through
-    // agentPushViaPR (branch → PR → auto-merge) for an auditable trail.
-    // Fall back to the direct-push path when no App install exists.
-    if (context.installationId && isGithubAppConfigured()) {
+    // Autonomous management: route identity writes through agentPushViaPR
+    // (branch → PR → auto-merge → conflict-resolve) for an auditable, conflict-
+    // safe trail. Uses the GitHub App installation token when one exists, else
+    // the OAuth `repo` token (which can create + merge PRs on the user's own
+    // repo). This is the autonomous loop scoped to the {username}-you-md repo.
+    // If the PR path fails for any reason, fall back to the direct-push path so
+    // a sync is never lost.
+    try {
       const prResult = await agentPushViaPR(ctx, {
         connectionId: context.connectionId,
         files,
@@ -624,9 +628,14 @@ export const pushToRepo = action({
         upToDate: false,
         via: "pr" as const,
       };
+    } catch (prErr) {
+      console.warn(
+        "agentPushViaPR failed; falling back to direct push:",
+        prErr instanceof Error ? prErr.message : String(prErr)
+      );
     }
 
-    // Direct push (OAuth token, no App installation).
+    // Direct push fallback (e.g. PR path unavailable).
     let commitSha: string | undefined;
     const pushed: string[] = [];
     for (const file of files) {
