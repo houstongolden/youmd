@@ -14,6 +14,7 @@ import {
   isGithubOAuthConfigured,
 } from "@/lib/github-oauth";
 import { sanitizeNextPath } from "@/lib/redirects";
+import type { Id } from "../../../../../../convex/_generated/dataModel";
 
 function redirectWithError(reason: string) {
   return NextResponse.redirect(
@@ -46,12 +47,18 @@ export async function GET(request: Request) {
 
   let expectedState: string | null = null;
   let nextPath = "/shell";
+  let connectUserId: string | null = null;
   if (stateCookie) {
     try {
       const raw = decodeURIComponent(stateCookie.split("=").slice(1).join("="));
-      const parsed = JSON.parse(raw) as { state?: string; next?: string };
+      const parsed = JSON.parse(raw) as {
+        state?: string;
+        next?: string;
+        connectUserId?: string | null;
+      };
       expectedState = parsed.state ?? null;
       nextPath = sanitizeNextPath(parsed.next ?? null, "/shell");
+      connectUserId = parsed.connectUserId ?? null;
     } catch {
       expectedState = null;
     }
@@ -89,10 +96,13 @@ export async function GET(request: Request) {
         })
       : null;
 
-    if (currentSession) {
+    // Prefer the connectUserId carried in the OAuth state (reliable across the
+    // apex->www redirect hop); fall back to the session cookie if present.
+    const linkUserId = connectUserId ?? currentSession?.userId ?? null;
+    if (linkUserId) {
       const link = await client.mutation(api.github.linkGithubToUser, {
         _internalAuthToken: trustedToken,
-        linkToUserId: currentSession.userId,
+        linkToUserId: linkUserId as Id<"users">,
         githubUserId: identity.githubUserId,
         githubLogin: identity.githubLogin,
         githubName: identity.githubName,
