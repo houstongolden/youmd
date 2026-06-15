@@ -103,7 +103,7 @@ export async function GET(request: Request) {
         tokenType: token.tokenType,
       });
       const destination = link.ok
-        ? `${nextPath}?github=connected`
+        ? `/shell?integration=github`
         : `/shell?error=${encodeURIComponent("reason" in link ? link.reason : "github_link_failed")}`;
       const response = NextResponse.redirect(`${getAppUrl()}${destination}`);
       // Preserve the existing session; only clear the one-time state cookie.

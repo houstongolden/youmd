@@ -4,7 +4,7 @@ import { useUser } from "@/lib/you-auth";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useYouAgent, type RightPane } from "@/hooks/useYouAgent";
 import { TerminalShell } from "@/components/terminal/TerminalShell";
 import { TerminalHeader } from "@/components/terminal/TerminalHeader";
@@ -226,6 +226,7 @@ export function DashboardContent() {
   const { user } = useUser();
   const { isAuthenticated } = useConvexAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   // Gate on isAuthenticated so the query only fires AFTER Convex has
   // validated the custom JWT. Without this, there's a timing window
   // where user?.id is set from the session bootstrap but getUserIdentity()
@@ -266,6 +267,14 @@ export function DashboardContent() {
     }
   }, [panelOpen]);
 
+  // Auto-open github pane when ?integration=github is present (post-OAuth redirect).
+  useEffect(() => {
+    if (searchParams.get("integration") === "github") {
+      setRightPane("github");
+      setPanelOpen(true);
+    }
+  }, [searchParams]);
+
   const createUser = useMutation(api.users.createUser);
   const claimProfile = useMutation(api.profiles.claimProfile);
   const autoCreateAttempted = useRef(false);
@@ -276,6 +285,10 @@ export function DashboardContent() {
       setMobileView("preview");
       setPanelOpen(true); // auto-open the panel when agent switches to it
     },
+    // Pass the connected repo name so the agent runs the post-connect protocol.
+    // githubConnection is null when not connected, undefined while loading.
+    // repoFullName is null until the user creates/connects a repo.
+    githubRepoName: githubConnection?.repoFullName ?? null,
   });
 
   const isWritingFiles = agent.progressSteps.some(
