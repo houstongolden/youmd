@@ -1,14 +1,30 @@
 #!/usr/bin/env bash
-# env-vault/restore.sh — restores .env.local files from an encrypted vault
-# created by backup.sh. NEVER prints, echoes, or logs any secret VALUES.
-# Only prints which file paths were restored or skipped.
+# env-vault/restore.sh — restores .env.local files AND agent-auth secrets from
+# an encrypted vault created by backup.sh. NEVER prints, echoes, or logs any
+# secret VALUES. Only prints which file paths were restored or skipped.
 #
 # Usage: bash restore.sh [--force] [--root <target-root>] <vault-file>
 #   vault-file: path to env-vault-*.tar.age / .tar.gpg / .tar.enc
-#   --force:    overwrite existing .env.local files without backing them up
-#   --root:     destination root (default: /Users/houstongolden/Desktop/CODE_2025)
+#   --force:    overwrite existing files without backing them up
+#   --root:     destination root for .env.local files
+#               (default: /Users/houstongolden/Desktop/CODE_2025)
+#
+# agent-auth restore map (archive name → absolute home path):
+#   agent-auth/codex-auth.json  → ~/.codex/auth.json
+#   agent-auth/cursor-mcp.json  → ~/.cursor/mcp.json
+#   agent-auth/claude.json      → ~/.claude.json
 
 set -euo pipefail
+
+# ── agent-auth restore map ─────────────────────────────────────────────────────
+# Maps archive name (inside agent-auth/) to its absolute home destination.
+# Format: "archive-name:absolute-destination-path"
+# Must stay in sync with AGENT_SECRET_FILES in backup.sh.
+AGENT_AUTH_MAP=(
+  "codex-auth.json:${HOME}/.codex/auth.json"
+  "cursor-mcp.json:${HOME}/.cursor/mcp.json"
+  "claude.json:${HOME}/.claude.json"
+)
 
 # ── defaults ──────────────────────────────────────────────────────────────────
 TARGET_ROOT="${ENV_VAULT_RESTORE_ROOT:-/Users/houstongolden/Desktop/CODE_2025}"
@@ -139,11 +155,61 @@ while IFS= read -r -d '' ENV_FILE; do
   fi
 done < <(find "${EXTRACT_DIR}" -name ".env.local" -print0)
 
+# ── restore agent-auth files ───────────────────────────────────────────────────
+AGENT_RESTORED=0
+AGENT_SKIPPED=0
+AGENT_BACKED_UP=0
+
+AGENT_AUTH_SRC="${EXTRACT_DIR}/agent-auth"
+
+if [[ -d "${AGENT_AUTH_SRC}" ]]; then
+  echo "Restoring agent-auth files…"
+  for ENTRY in "${AGENT_AUTH_MAP[@]}"; do
+    ARCHIVE_NAME="${ENTRY%%:*}"
+    DEST_PATH="${ENTRY##*:}"
+    SRC_FILE="${AGENT_AUTH_SRC}/${ARCHIVE_NAME}"
+
+    if [[ ! -f "${SRC_FILE}" ]]; then
+      echo "  SKIPPED (not in vault): agent-auth/${ARCHIVE_NAME}"
+      (( AGENT_SKIPPED++ )) || true
+      continue
+    fi
+
+    DEST_DIR="$(dirname "${DEST_PATH}")"
+    mkdir -p "${DEST_DIR}"
+
+    if [[ -f "${DEST_PATH}" ]]; then
+      if [[ "${FORCE}" == "true" ]]; then
+        cp "${SRC_FILE}" "${DEST_PATH}"
+        echo "  RESTORED (overwrite): ${DEST_PATH}"
+        (( AGENT_RESTORED++ )) || true
+      else
+        TS="$(date -u +%Y%m%dT%H%M%SZ)"
+        BAK="${DEST_PATH}.bak.${TS}"
+        cp "${DEST_PATH}" "${BAK}"
+        cp "${SRC_FILE}" "${DEST_PATH}"
+        echo "  RESTORED (backed up old → $(basename "${BAK}")): ${DEST_PATH}"
+        (( AGENT_RESTORED++ )) || true
+        (( AGENT_BACKED_UP++ )) || true
+      fi
+    else
+      cp "${SRC_FILE}" "${DEST_PATH}"
+      echo "  RESTORED (new): ${DEST_PATH}"
+      (( AGENT_RESTORED++ )) || true
+    fi
+  done
+  echo ""
+else
+  echo "No agent-auth/ directory in vault — skipping agent-auth restore."
+  echo ""
+fi
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Restore summary"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Restored: ${RESTORED}  |  Skipped: ${SKIPPED}  |  Old files backed up: ${BACKED_UP}"
+echo "  .env.local  — Restored: ${RESTORED}  |  Skipped: ${SKIPPED}  |  Old files backed up: ${BACKED_UP}"
+echo "  agent-auth  — Restored: ${AGENT_RESTORED}  |  Skipped: ${AGENT_SKIPPED}  |  Old files backed up: ${AGENT_BACKED_UP}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "Secrets are now in place. Do not print or share .env.local files."
+echo "Secrets are now in place. Do not print or share secret files."

@@ -1,8 +1,22 @@
-# env-vault — Secure .env.local Backup & Restore
+# env-vault — Secure .env.local + Agent-Auth Backup & Restore
 
-Backs up all `.env.local` files across your CODE_2025 projects into a single
-encrypted archive, and restores them on a new Mac. No secret values ever appear
-in plaintext outside the encrypted blob.
+Backs up all `.env.local` files across your CODE_2025 projects **and** a fixed
+set of hard agent-auth secret files into a single encrypted archive, and
+restores them on a new Mac. No secret values ever appear in plaintext outside
+the encrypted blob.
+
+### What's in the vault
+
+| Source path | Archive path | Restore destination |
+|---|---|---|
+| `<CODE_2025>/<project>/.env.local` | `<project>/.env.local` | `<CODE_2025>/<project>/.env.local` |
+| `~/.codex/auth.json` | `agent-auth/codex-auth.json` | `~/.codex/auth.json` |
+| `~/.cursor/mcp.json` | `agent-auth/cursor-mcp.json` | `~/.cursor/mcp.json` |
+| `~/.claude.json` | `agent-auth/claude.json` | `~/.claude.json` |
+
+To add more agent-auth files, extend the `AGENT_SECRET_FILES` array near the
+top of `backup.sh` and add the matching entry to `AGENT_AUTH_MAP` in
+`restore.sh`.
 
 ---
 
@@ -21,7 +35,7 @@ bash cli/scripts/env-vault/backup.sh
 
 This writes two files to `.env-vault/`:
 - `env-vault-<date>.tar.<ext>` — encrypted archive (safe to transport)
-- `manifest-<date>.txt` — variable names + counts only (safe to read, no values)
+- `manifest-<date>.txt` — variable names + counts + agent-auth file paths/sizes only (safe to read, no values)
 
 You will be prompted for a passphrase. Store it in **1Password** immediately.
 
@@ -40,7 +54,7 @@ Do NOT transfer via unencrypted email or public Slack.
 # Install dependencies first (e.g. Node, pnpm, etc.), then:
 youmd env restore /path/to/env-vault-<date>.tar.<ext>
 
-# If project dirs already exist with .env.local files:
+# If files already exist on the new Mac:
 youmd env restore --force /path/to/env-vault-<date>.tar.<ext>
 
 # or directly via bash:
@@ -48,8 +62,11 @@ bash cli/scripts/env-vault/restore.sh /path/to/env-vault-<date>.tar.<ext>
 bash cli/scripts/env-vault/restore.sh --force /path/to/env-vault-<date>.tar.<ext>
 ```
 
-The script creates `<CODE_2025>/<project>/.env.local` for each project.
-Existing files are backed up to `.env.local.bak.<timestamp>` (or overwritten with `--force`).
+The script:
+1. Creates `<CODE_2025>/<project>/.env.local` for each project.
+2. Restores agent-auth files to their absolute home paths (`~/.codex/auth.json`, `~/.cursor/mcp.json`, `~/.claude.json`), creating parent directories as needed.
+
+Existing files are backed up to `<path>.bak.<timestamp>` before overwrite (or silently overwritten with `--force`).
 
 ---
 
@@ -70,8 +87,8 @@ The encrypted file itself is safe to store anywhere. The passphrase is the secre
 ## Security Model
 
 - **Encryption:** `age` (preferred) → `gpg AES-256` → `openssl AES-256-CBC PBKDF2`
-- **What's in the encrypted archive:** full `.env.local` file contents
-- **What's in plaintext:** only the project name + variable NAMES + count (the manifest)
+- **What's in the encrypted archive:** full `.env.local` file contents + agent-auth files (`~/.codex/auth.json`, `~/.cursor/mcp.json`, `~/.claude.json`)
+- **What's in plaintext:** only the project name + variable NAMES + count + agent-auth file paths/byte-sizes (the manifest)
 - **Values:** never printed, echoed, logged, or written anywhere outside the encrypted blob
 - **Passphrase:** stored nowhere by these scripts — you must store it in 1Password
 

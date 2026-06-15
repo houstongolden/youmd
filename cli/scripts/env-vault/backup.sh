@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# env-vault/backup.sh — backs up all .env.local files under CODE_2025 into an
-# encrypted vault. NEVER prints, echoes, logs, or writes any secret VALUE.
-# Only variable NAMES and counts appear in plaintext output.
+# env-vault/backup.sh — backs up all .env.local files under CODE_2025 AND a
+# fixed set of agent-auth secret files into an encrypted vault. NEVER prints,
+# echoes, logs, or writes any secret VALUE. Only variable NAMES, counts, and
+# file paths appear in plaintext output.
 #
 # Usage: bash backup.sh [--root <search-root>] [--out <output-dir>]
 # Defaults:
@@ -13,6 +14,16 @@ set -euo pipefail
 # ── configurable defaults ──────────────────────────────────────────────────────
 SEARCH_ROOT="${ENV_VAULT_ROOT:-/Users/houstongolden/Desktop/CODE_2025}"
 OUTPUT_DIR="${ENV_VAULT_OUT:-/Users/houstongolden/Desktop/CODE_2025/youmd/.env-vault}"
+
+# ── agent-auth secret files ────────────────────────────────────────────────────
+# Absolute paths to hard agent-auth secrets that must travel with the vault.
+# Each entry is archived as agent-auth/<stable-name> inside the tar.
+# To add more: append to this array. Format: "absolute-path:stable-archive-name"
+AGENT_SECRET_FILES=(
+  "${HOME}/.codex/auth.json:codex-auth.json"
+  "${HOME}/.cursor/mcp.json:cursor-mcp.json"
+  "${HOME}/.claude.json:claude.json"
+)
 
 # ── parse flags ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -93,6 +104,38 @@ for ENV_FILE in "${ENV_FILES[@]}"; do
   echo "${PROJECT_NAME}/.env.local: ${VAR_COUNT} variable(s) [${VAR_NAMES}]" \
     >> "${MANIFEST_PATH}"
 done
+
+# ── stage agent-auth secret files ─────────────────────────────────────────────
+# Each entry in AGENT_SECRET_FILES has format "absolute-path:stable-archive-name".
+# Files are stored under agent-auth/<stable-name> inside the archive.
+# Only the path and byte-size appear in the manifest — never the contents.
+AGENT_AUTH_STAGING="${STAGING_DIR}/agent-auth"
+mkdir -p "${AGENT_AUTH_STAGING}"
+AGENT_AUTH_COUNT=0
+
+echo "" >> "${MANIFEST_PATH}"
+echo "agent-auth files:" >> "${MANIFEST_PATH}"
+
+for ENTRY in "${AGENT_SECRET_FILES[@]}"; do
+  SRC_PATH="${ENTRY%%:*}"
+  ARCHIVE_NAME="${ENTRY##*:}"
+
+  if [[ -f "${SRC_PATH}" ]]; then
+    cp "${SRC_PATH}" "${AGENT_AUTH_STAGING}/${ARCHIVE_NAME}"
+    FILE_BYTES=$(wc -c < "${SRC_PATH}" | tr -d ' ')
+    echo "  agent-auth/${ARCHIVE_NAME} (${SRC_PATH}): ${FILE_BYTES} bytes" \
+      >> "${MANIFEST_PATH}"
+    echo "  Staged agent-auth: ${SRC_PATH} → agent-auth/${ARCHIVE_NAME}"
+    (( AGENT_AUTH_COUNT++ )) || true
+  else
+    echo "  agent-auth/${ARCHIVE_NAME} (${SRC_PATH}): NOT FOUND — skipped" \
+      >> "${MANIFEST_PATH}"
+    echo "  Skipped (not found): ${SRC_PATH}"
+  fi
+done
+
+echo ""
+echo "Staged ${AGENT_AUTH_COUNT} agent-auth file(s)."
 
 echo "" >> "${MANIFEST_PATH}"
 echo "SECURITY: The encrypted archive is safe to transport. Keep the passphrase private." \
