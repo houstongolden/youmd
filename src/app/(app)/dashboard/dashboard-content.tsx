@@ -47,13 +47,21 @@ const VaultPane = dynamic(
   () => import("@/components/panes/VaultPane").then((m) => ({ default: m.VaultPane })),
   { ssr: false, loading: PaneSkeleton }
 );
+const FilesPane = dynamic(
+  () => import("@/components/panes/FilesPane").then((m) => ({ default: m.FilesPane })),
+  { ssr: false, loading: PaneSkeleton }
+);
+const GithubPane = dynamic(
+  () => import("@/components/panes/GithubPane").then((m) => ({ default: m.GithubPane })),
+  { ssr: false, loading: PaneSkeleton }
+);
 // Eager panes (commonly accessed on first open — keep synchronous)
 import { HelpPane } from "@/components/panes/HelpPane";
 import { StacksPane } from "@/components/panes/StacksPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProfileContent } from "../[username]/profile-content";
 
-type PrimaryPaneGroup = "profile" | "content" | "share" | "agents" | "insights" | "portrait" | "account";
+type PrimaryPaneGroup = "profile" | "content" | "share" | "agents" | "insights" | "portrait" | "account" | "integrations";
 
 const PANE_GROUPS: Array<{
   key: PrimaryPaneGroup;
@@ -63,16 +71,16 @@ const PANE_GROUPS: Array<{
 }> = [
   {
     key: "profile",
-    label: "brain",
+    label: "profile",
     defaultPane: "profile",
     panes: [{ key: "profile", label: "profile" }],
   },
   {
     key: "content",
     label: "files",
-    defaultPane: "edit",
+    defaultPane: "files",
     panes: [
-      { key: "edit", label: "brain files" },
+      { key: "files", label: "files" },
       { key: "history", label: "history" },
     ],
   },
@@ -105,6 +113,12 @@ const PANE_GROUPS: Array<{
     label: "portrait",
     defaultPane: "portrait",
     panes: [{ key: "portrait", label: "portrait" }],
+  },
+  {
+    key: "integrations",
+    label: "github",
+    defaultPane: "github",
+    panes: [{ key: "github", label: "github" }],
   },
   {
     key: "account",
@@ -227,6 +241,10 @@ export function DashboardContent() {
   const userProfile = useQuery(
     api.profiles.getByOwnerId,
     convexUser?._id ? { ownerId: convexUser._id } : "skip"
+  );
+  const githubConnection = useQuery(
+    api.github.getConnection,
+    isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
   );
 
   const [rightPane, setRightPane] = useState<RightPane>("profile");
@@ -402,6 +420,35 @@ export function DashboardContent() {
               )}
             </div>
             <div className="flex items-center gap-3">
+              {/* GitHub icon + unconnected warning dot */}
+              <button
+                onClick={() => {
+                  setPanelOpen(true);
+                  setRightPane("github");
+                }}
+                className="relative flex items-center justify-center w-5 h-5 text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-70 transition-opacity"
+                title={githubConnection === null ? "github not connected" : "github"}
+                aria-label="open github pane"
+              >
+                {/* GitHub mark — inline SVG */}
+                <svg
+                  viewBox="0 0 16 16"
+                  width="14"
+                  height="14"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+                </svg>
+                {/* Warning dot — shown when not connected (null = not connected, undefined = loading) */}
+                {githubConnection === null && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[hsl(var(--accent))]"
+                    style={{ borderRadius: "9999px" }}
+                  />
+                )}
+              </button>
               <button
                 onClick={() => {
                   setPanelOpen(true);
@@ -594,6 +641,12 @@ export function DashboardContent() {
                   )}
                   {rightPane === "edit" && (
                     <EditPane userId={convexUser._id} username={username} isWritingFiles={isWritingFiles} />
+                  )}
+                  {rightPane === "files" && (
+                    <FilesPane userId={convexUser._id} isWritingFiles={isWritingFiles} />
+                  )}
+                  {rightPane === "github" && user?.id && (
+                    <GithubPane clerkId={user.id} />
                   )}
                   {rightPane === "share" && user?.id && (
                     <SharePane
