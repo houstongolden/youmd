@@ -11,7 +11,10 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import schema from "../schema";
 
-async function seed(t: ReturnType<typeof convexTest>): Promise<{ userId: Id<"users">; sourceId: Id<"sources"> }> {
+async function seed(
+  t: ReturnType<typeof convexTest>,
+  metadata?: Record<string, unknown>
+): Promise<{ userId: Id<"users">; sourceId: Id<"sources"> }> {
   const userId = await t.run((ctx) =>
     ctx.db.insert("users", { clerkId: "ck_x", username: "x", email: "x@x.com", plan: "pro", createdAt: Date.now() }),
   );
@@ -21,6 +24,7 @@ async function seed(t: ReturnType<typeof convexTest>): Promise<{ userId: Id<"use
       sourceType: "website",
       sourceUrl: "https://a.com",
       status: "fetched",
+      metadata,
     }),
   );
   return { userId, sourceId };
@@ -30,6 +34,15 @@ function versions(t: ReturnType<typeof convexTest>, sourceId: Id<"sources">) {
   return t.run((ctx) =>
     ctx.db
       .query("rawSourceVersions")
+      .withIndex("by_sourceId", (q) => q.eq("sourceId", sourceId))
+      .collect(),
+  );
+}
+
+function summaries(t: ReturnType<typeof convexTest>, sourceId: Id<"sources">) {
+  return t.run((ctx) =>
+    ctx.db
+      .query("sourceChangeSummaries")
       .withIndex("by_sourceId", (q) => q.eq("sourceId", sourceId))
       .collect(),
   );
@@ -55,6 +68,13 @@ describe("recordRawSourceVersion — immutable source ledger", () => {
     expect(source?.lastRawContentHash).toBe("hash-1");
     expect(source?.latestVersionId).toBe(rows[0]._id);
     expect(source?.lastChangedAt).toBe(1000);
+    const changeRows = await summaries(t, sourceId);
+    expect(changeRows).toHaveLength(1);
+    expect(changeRows[0]).toMatchObject({
+      changeType: "first_fetch",
+      status: "auto_accepted",
+      contentHash: "hash-1",
+    });
   });
 
   it("does not version identical content (no in-place churn)", async () => {
@@ -68,6 +88,7 @@ describe("recordRawSourceVersion — immutable source ledger", () => {
     expect(await versions(t, sourceId)).toHaveLength(1);
     const source = await t.run((ctx) => ctx.db.get(sourceId));
     expect(source?.lastChangedAt).toBe(1000);
+    expect(await summaries(t, sourceId)).toHaveLength(1);
   });
 
   it("appends a new version on change and never deletes the prior one", async () => {
@@ -85,5 +106,30 @@ describe("recordRawSourceVersion — immutable source ledger", () => {
     const source = await t.run((ctx) => ctx.db.get(sourceId));
     expect(source?.lastRawContentHash).toBe("hash-2"); // pointer advanced
     expect(source?.lastChangedAt).toBe(2000);
+    const changeRows = await summaries(t, sourceId);
+    expect(changeRows).toHaveLength(2);
+    expect(changeRows.some((row) => row.changeType === "content_changed")).toBe(true);
+  });
+
+  it("marks approval-gated source changes pending review", async () => {
+    const t = convexTest(schema);
+    const { sourceId } = await seed(t, {
+      monitoring: { approvalRequired: true },
+    });
+
+    const res = await t.mutation(internal.pipeline.mutations.recordRawSourceVersion, {
+      sourceId,
+      contentHash: "hash-review",
+      fetchedAt: 3000,
+    });
+
+    expect(res.status).toBe("pending_review");
+    const changeRows = await summaries(t, sourceId);
+    expect(changeRows[0]).toMatchObject({
+      status: "pending_review",
+      contentHash: "hash-review",
+    });
+    const source = await t.run((ctx) => ctx.db.get(sourceId));
+    expect((source?.metadata as { lastChangeSummary?: { status?: string } }).lastChangeSummary?.status).toBe("pending_review");
   });
 });

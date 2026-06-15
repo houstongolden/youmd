@@ -10,6 +10,13 @@ import { internal } from "../_generated/api";
 
 const APIFY_SOURCE_TYPES = new Set(["linkedin", "x"]);
 
+function pendingChangeReview(source: { metadata?: unknown }): boolean {
+  if (!source.metadata || typeof source.metadata !== "object") return false;
+  const summary = (source.metadata as Record<string, unknown>).lastChangeSummary;
+  if (!summary || typeof summary !== "object") return false;
+  return (summary as Record<string, unknown>).status === "pending_review";
+}
+
 // ---------------------------------------------------------------------------
 // runPipeline — Main orchestrator. Runs the full pipeline for a user.
 // ---------------------------------------------------------------------------
@@ -129,6 +136,10 @@ export const runPipeline = internalAction({
       );
 
       for (const source of fetchedSources) {
+        if (pendingChangeReview(source)) {
+          continue;
+        }
+
         // Get the raw text stored during fetch
         const rawText =
           (source.extracted as Record<string, string>)?._rawText ?? "";

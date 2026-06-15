@@ -213,6 +213,7 @@ export function SourcesPane({}: SourcesPaneProps) {
   const pauseSourceRefresh = useMutation(api.me.pauseSourceRefresh);
   const updateSourcePolicy = useMutation(api.me.updateSourcePolicy);
   const approveSourceRun = useMutation(api.me.approveSourceRun);
+  const approveSourceChange = useMutation(api.me.approveSourceChange);
 
   // Add-source form state
   const [newUrl, setNewUrl] = useState("");
@@ -229,6 +230,10 @@ export function SourcesPane({}: SourcesPaneProps) {
   const [sourceActionError, setSourceActionError] = useState<string | null>(null);
   const sourceVersions = useQuery(
     api.me.getSourceVersions,
+    clerkId && selectedSourceId ? { clerkId, sourceId: selectedSourceId } : "skip"
+  );
+  const sourceChanges = useQuery(
+    api.me.getSourceChangeSummaries,
     clerkId && selectedSourceId ? { clerkId, sourceId: selectedSourceId } : "skip"
   );
 
@@ -364,6 +369,7 @@ export function SourcesPane({}: SourcesPaneProps) {
               const provider = s.crawlerProvider ?? "native";
               const approvedUntil = sourceApprovedUntil(s.metadata);
               const needsApproval = provider === "firecrawl" || provider === "agent-browser";
+              const latestChange = isSelected ? sourceChanges?.[0] : undefined;
 
               return (
                 <div
@@ -522,6 +528,26 @@ export function SourcesPane({}: SourcesPaneProps) {
                       <div className="mt-3 grid gap-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">
                         <span>next refresh: {s.nextRefreshAt ? timeDistance(s.nextRefreshAt) : "manual"}</span>
                         <span>run approval: {needsApproval ? (approvedUntil && approvedUntil > Date.now() ? timeDistance(approvedUntil) : "required") : "not required"}</span>
+                        <span>latest change: {latestChange ? latestChange.summary : sourceChanges === undefined ? "loading" : "--"}</span>
+                        {latestChange?.status === "pending_review" && (
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() =>
+                              runSourceAction(s._id, () =>
+                                approveSourceChange({
+                                  clerkId: clerkId!,
+                                  sourceId: s._id,
+                                  changeSummaryId: latestChange._id,
+                                })
+                              )
+                            }
+                            className="w-fit border border-[hsl(var(--accent))] px-2 py-1 text-[hsl(var(--text-primary))] disabled:cursor-not-allowed disabled:opacity-35"
+                            style={{ borderRadius: "var(--radius)" }}
+                          >
+                            approve change
+                          </button>
+                        )}
                         <span>failures: {s.failureCount ?? 0}</span>
                         <span>latest hash: {s.lastRawContentHash ? s.lastRawContentHash.slice(0, 16) : "--"}</span>
                         <span>versions: {sourceVersions === undefined ? "loading" : sourceVersions.length}</span>

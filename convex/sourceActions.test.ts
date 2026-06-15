@@ -125,4 +125,50 @@ describe("source owner actions", () => {
     expect(runPolicy.maxEstimatedCostCents).toBe(5);
     expect(runPolicy.approvedFrom).toBe("sources-pane");
   });
+
+  it("lists and approves monitored source changes", async () => {
+    const t = convexTest(schema);
+    const { userId, sourceId } = await seed(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+
+    const versionId = await t.run((ctx) =>
+      ctx.db.insert("rawSourceVersions", {
+        userId,
+        sourceId,
+        sourceUrl: "https://example.com",
+        contentHash: "hash-review",
+        fetchedAt: 1000,
+      })
+    );
+    const changeSummaryId = await t.run((ctx) =>
+      ctx.db.insert("sourceChangeSummaries", {
+        userId,
+        sourceId,
+        sourceUrl: "https://example.com",
+        versionId,
+        contentHash: "hash-review",
+        changeType: "content_changed",
+        summary: "Source content changed: old -> hash-review.",
+        status: "pending_review",
+        createdAt: 1000,
+      })
+    );
+
+    const changes = await asOwner.query(api.me.getSourceChangeSummaries, {
+      clerkId: CLERK,
+      sourceId,
+    });
+    expect(changes).toHaveLength(1);
+    expect(changes[0].status).toBe("pending_review");
+
+    await asOwner.mutation(api.me.approveSourceChange, {
+      clerkId: CLERK,
+      sourceId,
+      changeSummaryId,
+    });
+
+    const approved = await t.run((ctx) => ctx.db.get(changeSummaryId));
+    expect(approved?.status).toBe("approved");
+    expect(approved?.approvedAt).toBeGreaterThan(0);
+  });
 });

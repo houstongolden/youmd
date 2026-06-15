@@ -14,6 +14,36 @@ import {
 // Source status updates
 // ---------------------------------------------------------------------------
 
+function sourceMetadata(metadata: unknown): Record<string, unknown> {
+  return metadata && typeof metadata === "object"
+    ? metadata as Record<string, unknown>
+    : {};
+}
+
+function monitoringRequiresReview(metadata: unknown): boolean {
+  const monitoring = sourceMetadata(metadata).monitoring;
+  if (!monitoring || typeof monitoring !== "object") return false;
+  return (monitoring as Record<string, unknown>).approvalRequired === true;
+}
+
+function changeSummaryText(args: {
+  sourceUrl: string;
+  previousContentHash?: string;
+  contentHash: string;
+}): { changeType: string; summary: string } {
+  const shortHash = args.contentHash.slice(0, 16);
+  if (!args.previousContentHash) {
+    return {
+      changeType: "first_fetch",
+      summary: `First monitored fetch for ${args.sourceUrl}; content hash ${shortHash}.`,
+    };
+  }
+  return {
+    changeType: "content_changed",
+    summary: `Source content changed: ${args.previousContentHash.slice(0, 16)} -> ${shortHash}. Review before extraction/writeback if this source is approval-gated.`,
+  };
+}
+
 export const updateSourceStatus = internalMutation({
   args: {
     sourceId: v.id("sources"),
@@ -85,6 +115,8 @@ export const recordRawSourceVersion = internalMutation({
       };
     }
 
+    const previousContentHash = source.lastRawContentHash;
+    const previousVersionId = source.latestVersionId;
     const versionId = await ctx.db.insert("rawSourceVersions", {
       sourceId: args.sourceId,
       userId: source.userId,
@@ -93,12 +125,82 @@ export const recordRawSourceVersion = internalMutation({
       contentHash: args.contentHash,
       fetchedAt: args.fetchedAt,
     });
+    const change = changeSummaryText({
+      sourceUrl: source.sourceUrl,
+      previousContentHash,
+      contentHash: args.contentHash,
+    });
+    const status = monitoringRequiresReview(source.metadata)
+      ? "pending_review"
+      : "auto_accepted";
+    const changeSummaryId = await ctx.db.insert("sourceChangeSummaries", {
+      sourceId: args.sourceId,
+      userId: source.userId,
+      sourceUrl: source.sourceUrl,
+      versionId,
+      previousVersionId,
+      previousContentHash,
+      contentHash: args.contentHash,
+      changeType: change.changeType,
+      summary: change.summary,
+      status,
+      createdAt: args.fetchedAt,
+    });
+    const metadata = sourceMetadata(source.metadata);
     await ctx.db.patch(args.sourceId, {
       lastRawContentHash: args.contentHash,
       latestVersionId: versionId,
       lastChangedAt: args.fetchedAt,
+      metadata: {
+        ...metadata,
+        lastChangeSummary: {
+          id: changeSummaryId,
+          summary: change.summary,
+          status,
+          changeType: change.changeType,
+          contentHash: args.contentHash,
+          previousContentHash: previousContentHash ?? null,
+          createdAt: args.fetchedAt,
+        },
+      },
     });
-    return { recorded: true as const, versionId };
+    return { recorded: true as const, versionId, changeSummaryId, status };
+  },
+});
+
+export const approveSourceChangeSummary = internalMutation({
+  args: {
+    changeSummaryId: v.id("sourceChangeSummaries"),
+    approvedAt: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const approvedAt = args.approvedAt ?? Date.now();
+    const change = await ctx.db.get(args.changeSummaryId);
+    if (!change) return { success: false as const, reason: "change summary not found" };
+
+    await ctx.db.patch(args.changeSummaryId, {
+      status: "approved",
+      approvedAt,
+    });
+
+    const source = await ctx.db.get(change.sourceId);
+    if (source) {
+      const metadata = sourceMetadata(source.metadata);
+      const lastChangeSummary = sourceMetadata(metadata.lastChangeSummary);
+      await ctx.db.patch(change.sourceId, {
+        metadata: {
+          ...metadata,
+          lastChangeSummary: {
+            ...lastChangeSummary,
+            id: args.changeSummaryId,
+            status: "approved",
+            approvedAt,
+          },
+        },
+      });
+    }
+
+    return { success: true as const };
   },
 });
 

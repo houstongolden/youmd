@@ -453,6 +453,23 @@ export default defineSchema({
     .index("by_sourceId", ["sourceId"])
     .index("by_contentHash", ["contentHash"]),
 
+  sourceChangeSummaries: defineTable({
+    sourceId: v.id("sources"),
+    userId: v.id("users"),
+    sourceUrl: v.string(),
+    versionId: v.id("rawSourceVersions"),
+    previousVersionId: v.optional(v.id("rawSourceVersions")),
+    previousContentHash: v.optional(v.string()),
+    contentHash: v.string(),
+    changeType: v.string(), // "first_fetch" | "content_changed"
+    summary: v.string(),
+    status: v.string(), // "auto_accepted" | "pending_review" | "approved"
+    createdAt: v.number(),
+    approvedAt: v.optional(v.number()),
+  })
+    .index("by_sourceId", ["sourceId"])
+    .index("by_status", ["status"]),
+
   // artifactType: "author_voice" | "topic_map" | "bio_variants" | "faq"
   //             | "voice_linkedin" | "voice_linkedin_doc"
   //             | "voice_x" | "voice_blog"

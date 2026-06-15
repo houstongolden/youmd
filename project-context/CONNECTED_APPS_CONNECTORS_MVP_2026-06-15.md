@@ -120,7 +120,9 @@ Important guardrail:
 - Agent-browser remains fail-closed until a sandbox runner boundary is implemented.
 - The hourly cron still does not execute expensive crawls, browser automation, or LLM extraction automatically.
 - The pipeline now checks per-user/provider rate limits, cost estimates, and owner approval windows before expensive provider execution.
-- Monitored update summaries and approval-aware extraction/writeback remain the next safety layer before autonomous expensive work.
+- Monitored update summaries now exist as deterministic source-change rows tied to immutable raw versions.
+- Approval-gated source changes are skipped by extraction until the owner approves them.
+- Rich semantic diffing and approval-aware writeback remain the next safety layer before autonomous expensive work.
 
 Code surface:
 
@@ -250,6 +252,8 @@ Add an approval-aware crawler worker:
 - Update `failureCount` and `errorMessage`. **DONE**
 - Require owner approval for expensive providers. **DONE**
 - Reserve per-user/provider hourly runs before execution. **DONE**
+- Write deterministic source-change summary rows. **DONE**
+- Hold extraction for pending-review source changes. **DONE**
 - Never auto-run LLM extraction from cron without a separate policy.
 
 ### P4: agent-browser Sandbox Runner

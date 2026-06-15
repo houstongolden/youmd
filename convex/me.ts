@@ -1287,6 +1287,88 @@ export const getSourceVersions = query({
   },
 });
 
+export const getSourceChangeSummaries = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    sourceId: v.id("sources"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return [];
+
+    const source = await ctx.db.get(args.sourceId);
+    if (!source || source.userId !== user._id) throw new Error("Source not found");
+
+    return await ctx.db
+      .query("sourceChangeSummaries")
+      .withIndex("by_sourceId", (q) => q.eq("sourceId", args.sourceId))
+      .order("desc")
+      .take(Math.min(Math.max(args.limit ?? 10, 1), 25));
+  },
+});
+
+export const approveSourceChange = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    sourceId: v.id("sources"),
+    changeSummaryId: v.id("sourceChangeSummaries"),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+
+    const source = await ctx.db.get(args.sourceId);
+    if (!source || source.userId !== user._id) throw new Error("Source not found");
+
+    const change = await ctx.db.get(args.changeSummaryId);
+    if (!change || change.sourceId !== args.sourceId || change.userId !== user._id) {
+      throw new Error("Change summary not found");
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(args.changeSummaryId, {
+      status: "approved",
+      approvedAt: now,
+    });
+
+    const metadata =
+      source.metadata && typeof source.metadata === "object"
+        ? source.metadata as Record<string, unknown>
+        : {};
+    const lastChangeSummary =
+      metadata.lastChangeSummary && typeof metadata.lastChangeSummary === "object"
+        ? metadata.lastChangeSummary as Record<string, unknown>
+        : {};
+
+    await ctx.db.patch(args.sourceId, {
+      metadata: {
+        ...metadata,
+        lastChangeSummary: {
+          ...lastChangeSummary,
+          id: args.changeSummaryId,
+          status: "approved",
+          approvedAt: now,
+        },
+      },
+    });
+
+    return { success: true };
+  },
+});
+
 /**
  * P13: cursor-paginated variant of getSources. Same auth contract and the
  * same index order (by_userId, _creationTime ascending) as the legacy

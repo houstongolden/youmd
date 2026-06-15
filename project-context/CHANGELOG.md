@@ -2,6 +2,13 @@
 
 ## 2026-06-15 — Connected-app grants and connector MVP
 
+### feat: add monitored source-change summaries
+- Added `sourceChangeSummaries`, an owner/source-scoped ledger for deterministic change summaries tied to immutable raw source versions.
+- `recordRawSourceVersion` now writes a first-fetch/content-changed summary and stores `metadata.lastChangeSummary` on the source row.
+- Sources can opt into approval-gated monitoring via metadata; pending-review changes are skipped by the extraction stage until approved.
+- Added owner APIs and Sources-pane UI to list source-change summaries and approve pending changes inline.
+- Focused tests now cover auto-accepted summaries, pending-review summaries, owner list/approve flow, and unchanged-content no-op behavior.
+
 ### feat: add source run-policy approval gate
 - Added `sourceRunPolicy.reserveSourceRun`, an internal provider gate that estimates source-run cost, requires owner approval for expensive providers, enforces per-user/provider hourly reservations, and records the last run decision in source metadata.
 - Added `approveSourceRun` so owners can approve a source's expensive crawler provider for a bounded window from the Sources pane.
