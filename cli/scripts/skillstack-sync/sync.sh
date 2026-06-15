@@ -294,6 +294,17 @@ main() {
   log "skillstack-sync START [${mode}] on $(hostname_short)"
   log "============================================================"
 
+  # Step 0: Capture non-secret agent config (claude/codex/warp settings, slash
+  # commands, plugin list, orphan skills, automations) into agent-shared so it
+  # travels with the sync. Secret-leak-guarded; never blocks the sync on failure.
+  if [ -x "${SCRIPT_DIR}/capture-agent-config.sh" ]; then
+    if is_dry; then
+      bash "${SCRIPT_DIR}/capture-agent-config.sh" --dry-run || log_warn "capture-agent-config dry-run failed (non-fatal)"
+    else
+      bash "${SCRIPT_DIR}/capture-agent-config.sh" || log_warn "capture-agent-config failed (non-fatal — continuing sync)"
+    fi
+  fi
+
   # Step 1: Mirror loose skills into agent-shared BEFORE syncing it
   mirror_loose_skills_to_repo
 

@@ -101,14 +101,29 @@ for skill in ${LOOSE_SKILLS}; do
 done
 
 # ---------------------------------------------------------------------------
-step "5. Reminder: restore secrets"
+step "5. Restore agent config from agent-shared"
+# ---------------------------------------------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+RESTORE_SCRIPT="${SCRIPT_DIR}/restore-agent-config.sh"
+
+if [ -f "${RESTORE_SCRIPT}" ]; then
+  info "Running restore-agent-config.sh (backs up existing files, safe to re-run)..."
+  bash "${RESTORE_SCRIPT}"
+  info "Agent config restored."
+else
+  warn "restore-agent-config.sh not found at ${RESTORE_SCRIPT} — skipping agent config restore."
+  warn "You can run it manually later once youmd is fully installed:"
+  warn "  bash ${RESTORE_SCRIPT}"
+fi
+
+# ---------------------------------------------------------------------------
+step "6. Reminder: restore secrets"
 # ---------------------------------------------------------------------------
 echo ""
 echo "  !! IMPORTANT: Secrets are NOT in git. Restore them separately:"
 echo ""
-echo "     If you use the env-vault (~/Desktop/CODE_2025/youmd/cli/scripts/env-vault/):"
+echo "     If you use the env-vault:"
 echo "       youmd env restore <vault-file>   # CLI wrapper (preferred)"
-echo "       bash ~/Desktop/CODE_2025/youmd/cli/scripts/env-vault/restore.sh <vault-file>"
 echo ""
 echo "     Secrets to restore (set in your shell profile or .env files):"
 echo "       OPENROUTER_API_KEY"
@@ -119,7 +134,7 @@ echo "       ANTHROPIC_API_KEY"
 echo ""
 
 # ---------------------------------------------------------------------------
-step "6. Next steps"
+step "7. Next steps"
 # ---------------------------------------------------------------------------
 echo ""
 echo "  Bootstrap complete. To activate the auto-sync daemons, run:"
@@ -127,7 +142,6 @@ echo ""
 echo "    youmd stack daemon install        # preferred (CLI-native)"
 echo ""
 echo "  Or run the raw script directly:"
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 echo "    bash ${SCRIPT_DIR}/install-daemons.sh"
 echo ""
 echo "  To do a manual sync now:"
