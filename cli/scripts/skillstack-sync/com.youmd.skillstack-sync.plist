@@ -7,9 +7,9 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>__HOME__/Desktop/CODE_2025/youmd/scripts/skillstack-sync/sync.sh</string>
-        <string>--once</string>
+        <string>/bin/zsh</string>
+        <string>-lc</string>
+        <string>youmd stack sync</string>
     </array>
 
     <key>StartInterval</key>

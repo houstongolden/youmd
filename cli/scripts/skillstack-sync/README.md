@@ -36,12 +36,12 @@ Cross-machine sync toolkit for Houston Golden's agent skill/stack setup.
 ## Files
 
 ```
-scripts/skillstack-sync/
+cli/scripts/skillstack-sync/
 ├── sync.sh                         Core syncer (bash 3.2 compatible)
 ├── install-daemons.sh              Installs both LaunchAgents
 ├── bootstrap-new-mac.sh            New machine setup script
-├── com.youmd.skillstack-sync.plist LaunchAgent: runs sync.sh every 5 min
-├── com.youmd.identity-sync.plist   LaunchAgent: runs youmd sync every 5 min
+├── com.youmd.skillstack-sync.plist LaunchAgent: runs `youmd stack sync` every 5 min
+├── com.youmd.identity-sync.plist   LaunchAgent: runs `youmd sync` every 5 min
 └── README.md                       This file
 ```
 
@@ -67,8 +67,12 @@ All actions logged to `~/.youmd/logs/skillstack-sync.log`.
 ### Flags
 
 ```bash
-./sync.sh              # live sync (all repos + loose skills)
-./sync.sh --dry-run    # log what WOULD happen, write nothing
+youmd stack sync              # live sync (all repos + loose skills)
+youmd stack sync --dry-run    # log what WOULD happen, write nothing
+
+# or run the script directly:
+./sync.sh
+./sync.sh --dry-run
 ```
 
 ### Env overrides
@@ -83,16 +87,28 @@ GIT_USER_EMAIL="houston@bamf.ai"                    # commit email (default)
 
 ## Daemon setup (existing machine)
 
+The preferred way is via the CLI:
+
 ```bash
-bash scripts/skillstack-sync/install-daemons.sh
+youmd stack daemon install    # installs both LaunchAgents
+youmd stack daemon status     # check loaded/not-loaded
+youmd stack daemon uninstall  # remove plists from ~/Library/LaunchAgents/
+```
+
+Or run the raw script directly:
+
+```bash
+bash cli/scripts/skillstack-sync/install-daemons.sh
 ```
 
 Installs two LaunchAgents that fire every 300 seconds (5 minutes):
-- `com.youmd.skillstack-sync` → runs `sync.sh`
+- `com.youmd.skillstack-sync` → runs `youmd stack sync`
 - `com.youmd.identity-sync` → runs `youmd sync`
 
 Check status:
 ```bash
+youmd stack daemon status
+# or directly:
 launchctl list com.youmd.skillstack-sync
 launchctl list com.youmd.identity-sync
 ```
@@ -107,6 +123,11 @@ tail -f ~/.youmd/logs/identity-sync.out.log
 ### Uninstall daemons
 
 ```bash
+youmd stack daemon uninstall
+```
+
+Or manually:
+```bash
 launchctl unload ~/Library/LaunchAgents/com.youmd.skillstack-sync.plist
 launchctl unload ~/Library/LaunchAgents/com.youmd.identity-sync.plist
 rm ~/Library/LaunchAgents/com.youmd.skillstack-sync.plist
@@ -118,16 +139,19 @@ rm ~/Library/LaunchAgents/com.youmd.identity-sync.plist
 ## New Mac setup
 
 ```bash
-# 1. Clone this repo (youmd) first
+# 1. Install youmd CLI
+curl -fsSL https://you.md/install.sh | bash
+
+# 2. Clone this repo (youmd)
 git clone https://github.com/houstongolden/youmd ~/Desktop/CODE_2025/youmd
 
-# 2. Run bootstrap (clones agent-shared + scistack, installs youmd CLI)
-bash ~/Desktop/CODE_2025/youmd/scripts/skillstack-sync/bootstrap-new-mac.sh
+# 3. Run bootstrap (clones agent-shared + scistack)
+bash ~/Desktop/CODE_2025/youmd/cli/scripts/skillstack-sync/bootstrap-new-mac.sh
 
-# 3. Restore secrets from env-vault (manual step — see env-vault/README)
+# 4. Restore secrets from env-vault (manual step — see env-vault/README)
 
-# 4. Activate daemons
-bash ~/Desktop/CODE_2025/youmd/scripts/skillstack-sync/install-daemons.sh
+# 5. Activate daemons
+youmd stack daemon install
 ```
 
 The bootstrap script is idempotent (safe to re-run).

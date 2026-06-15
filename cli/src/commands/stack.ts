@@ -1,4 +1,7 @@
 import chalk from "chalk";
+import * as fs from "fs";
+import * as path from "path";
+import * as child_process from "child_process";
 import {
   listMaintainerProposals,
   setProposalDecision,
@@ -74,6 +77,10 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("consent") + DIM("              Show your brainScope consent settings"));
   console.log("    " + chalk.cyan("consent grant <scope>") + DIM("  Grant a brainScope (consolidate|fleet_aggregate|journal_mine)"));
   console.log("    " + chalk.cyan("consent revoke <scope>") + DIM(" Revoke a brainScope"));
+  console.log("    " + chalk.cyan("sync") + DIM("                 Sync agent skills/stacks across machines (--dry-run to preview)"));
+  console.log("    " + chalk.cyan("daemon install") + DIM("       Install skillstack-sync + identity-sync launchd daemons"));
+  console.log("    " + chalk.cyan("daemon uninstall") + DIM("     Remove launchd daemon plists (does not stop running daemon)"));
+  console.log("    " + chalk.cyan("daemon status") + DIM("        Show loaded/not-loaded state for both daemons"));
   console.log("");
   console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--verify") + DIM(", ") + chalk.cyan("--json") + DIM(", ") + chalk.cyan("--init") + DIM(", ") + chalk.cyan("--mode propose|auto_pr") + DIM(", ") + chalk.cyan("--apply") + DIM(", ") + chalk.cyan("--force") + DIM(", ") + chalk.cyan("--dir <path>"));
   console.log("");
@@ -381,6 +388,108 @@ export async function stackCommand(
       process.exitCode = 1;
     }
     return;
+  }
+
+  // ── stack sync ───────────────────────────────────────────────────────────────
+  // Compiled file: dist/commands/stack.js — two levels up lands at package root,
+  // then into scripts/skillstack-sync/sync.sh.
+  if (cmd === "sync") {
+    const scriptPath = path.join(__dirname, "..", "..", "scripts", "skillstack-sync", "sync.sh");
+    if (!fs.existsSync(scriptPath)) {
+      console.error(
+        chalk.hex("#C46A3A")(`  error: sync script not found: ${scriptPath}`) +
+          "\n  " + chalk.dim("run `npm run build` from the cli/ directory.")
+      );
+      process.exitCode = 1;
+      return;
+    }
+    const syncArgs = options.dryRun ? ["--dry-run"] : [];
+    const result = child_process.spawnSync("bash", [scriptPath, ...syncArgs], {
+      stdio: "inherit",
+    });
+    if (result.error) {
+      console.error(chalk.hex("#C46A3A")(`  error spawning sync script: ${result.error.message}`));
+      process.exitCode = 1;
+      return;
+    }
+    process.exitCode = result.status ?? 0;
+    return;
+  }
+
+  // ── stack daemon ─────────────────────────────────────────────────────────────
+  if (cmd === "daemon") {
+    const action = args[0]; // install | uninstall | status
+    const DAEMON_LABELS = [
+      "com.youmd.skillstack-sync",
+      "com.youmd.identity-sync",
+    ];
+    const LAUNCH_AGENTS_DIR = path.join(
+      process.env.HOME ?? process.env.USERPROFILE ?? "/",
+      "Library", "LaunchAgents"
+    );
+
+    if (!action || !["install", "uninstall", "status"].includes(action)) {
+      console.log("");
+      console.log(chalk.yellow("  usage: youmd stack daemon <action>"));
+      console.log("  " + chalk.dim("actions: install | uninstall | status"));
+      console.log("");
+      process.exitCode = 1;
+      return;
+    }
+
+    if (action === "install") {
+      const scriptPath = path.join(__dirname, "..", "..", "scripts", "skillstack-sync", "install-daemons.sh");
+      if (!fs.existsSync(scriptPath)) {
+        console.error(
+          chalk.hex("#C46A3A")(`  error: install-daemons.sh not found: ${scriptPath}`) +
+            "\n  " + chalk.dim("run `npm run build` from the cli/ directory.")
+        );
+        process.exitCode = 1;
+        return;
+      }
+      const result = child_process.spawnSync("bash", [scriptPath], { stdio: "inherit" });
+      if (result.error) {
+        console.error(chalk.hex("#C46A3A")(`  error spawning install-daemons.sh: ${result.error.message}`));
+        process.exitCode = 1;
+        return;
+      }
+      process.exitCode = result.status ?? 0;
+      return;
+    }
+
+    if (action === "uninstall") {
+      console.log("");
+      for (const label of DAEMON_LABELS) {
+        const plistPath = path.join(LAUNCH_AGENTS_DIR, `${label}.plist`);
+        // unload (ignore errors — may not be loaded)
+        child_process.spawnSync("launchctl", ["unload", plistPath], { stdio: "inherit" });
+        // remove plist if present
+        if (fs.existsSync(plistPath)) {
+          fs.unlinkSync(plistPath);
+          console.log("  " + chalk.green("removed") + " " + plistPath);
+        } else {
+          console.log("  " + chalk.dim("not found: ") + plistPath);
+        }
+      }
+      console.log("");
+      return;
+    }
+
+    if (action === "status") {
+      console.log("");
+      for (const label of DAEMON_LABELS) {
+        const result = child_process.spawnSync("launchctl", ["list", label], {
+          encoding: "utf-8",
+        });
+        if (result.status === 0 && result.stdout && result.stdout.trim()) {
+          console.log("  " + chalk.green("loaded") + "   " + label);
+        } else {
+          console.log("  " + chalk.dim("not loaded") + " " + label);
+        }
+      }
+      console.log("");
+      return;
+    }
   }
 
   let loaded;
