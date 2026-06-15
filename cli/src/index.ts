@@ -52,7 +52,7 @@ import { agentsCommand } from "./commands/agents";
 import { stackCommand } from "./commands/stack";
 import { okfCommand } from "./commands/okf";
 import { envBackupCommand, envRestoreCommand } from "./commands/env";
-import { machineSetupCommand } from "./commands/machine";
+import { machineCommand } from "./commands/machine";
 
 const program = new Command();
 
@@ -659,17 +659,17 @@ program
     }
   });
 
-// ─── machine — one-command setup for a fresh Mac ───────────────────
+// ─── machine — cross-machine setup and agent config sync ───────────
 program
   .command("machine [subcommand]")
-  .description("set up a new machine with your synced skills, stacks, and context")
-  .action((subcommand) => {
-    if (subcommand === "setup") {
-      machineSetupCommand();
-    } else {
-      console.log("usage: youmd machine setup");
-      console.log("  setup   bootstrap a fresh Mac: clone synced repos, restore skills, guide secrets + daemons");
-    }
+  .description("set up a new machine with your synced skills, stacks, and agent config")
+  .option("--force", "restore: overwrite existing files without backing them up")
+  .option("--dry-run", "restore: preview what would be written, write nothing")
+  .action((subcommand, options) => {
+    machineCommand(subcommand || "help", {
+      force: options.force,
+      dryRun: options.dryRun,
+    });
   });
 
 // ─── Guided tutorial when invoked with no args ─────────────────────

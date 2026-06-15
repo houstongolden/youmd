@@ -78,6 +78,7 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("consent grant <scope>") + DIM("  Grant a brainScope (consolidate|fleet_aggregate|journal_mine)"));
   console.log("    " + chalk.cyan("consent revoke <scope>") + DIM(" Revoke a brainScope"));
   console.log("    " + chalk.cyan("sync") + DIM("                 Sync agent skills/stacks across machines (--dry-run to preview)"));
+  console.log("    " + chalk.cyan("context-sync") + DIM("         Sync per-project context files (conflict-safe, --dry-run to preview)"));
   console.log("    " + chalk.cyan("daemon install") + DIM("       Install skillstack-sync + identity-sync launchd daemons"));
   console.log("    " + chalk.cyan("daemon uninstall") + DIM("     Remove launchd daemon plists (does not stop running daemon)"));
   console.log("    " + chalk.cyan("daemon status") + DIM("        Show loaded/not-loaded state for both daemons"));
@@ -409,6 +410,31 @@ export async function stackCommand(
     });
     if (result.error) {
       console.error(chalk.hex("#C46A3A")(`  error spawning sync script: ${result.error.message}`));
+      process.exitCode = 1;
+      return;
+    }
+    process.exitCode = result.status ?? 0;
+    return;
+  }
+
+  // ── stack context-sync ────────────────────────────────────────────────────────
+  // Syncs per-project context files (conflict-safe). Delegates to context-sync.sh.
+  if (cmd === "context-sync") {
+    const scriptPath = path.join(__dirname, "..", "..", "scripts", "skillstack-sync", "context-sync.sh");
+    if (!fs.existsSync(scriptPath)) {
+      console.error(
+        chalk.hex("#C46A3A")(`  error: context-sync script not found: ${scriptPath}`) +
+          "\n  " + chalk.dim("run `npm run build` from the cli/ directory.")
+      );
+      process.exitCode = 1;
+      return;
+    }
+    const syncArgs = options.dryRun ? ["--dry-run"] : [];
+    const result = child_process.spawnSync("bash", [scriptPath, ...syncArgs], {
+      stdio: "inherit",
+    });
+    if (result.error) {
+      console.error(chalk.hex("#C46A3A")(`  error spawning context-sync script: ${result.error.message}`));
       process.exitCode = 1;
       return;
     }

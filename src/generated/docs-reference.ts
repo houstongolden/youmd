@@ -41,9 +41,9 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "55901fe5b6afc82293c86a78e06f36d831b5ba9e438f329d45e0dd90be3d1775",
+  "sourceHash": "623e906bfe8ff78a6a8c4694c7e81d9bf4efaa44ac1eb87e005b4c47aa3d1bad",
   "cli": {
-    "version": "0.7.1"
+    "version": "0.7.2"
   },
   "counts": {
     "endpoints": 83,
@@ -1280,7 +1280,7 @@ export const docsReference = {
       "usage": "machine [subcommand]",
       "group": "MACHINE & SYNC",
       "summary": "bootstrap a fresh Mac with your synced skills, stacks, and context",
-      "description": "set up a new machine with your synced skills, stacks, and context"
+      "description": "set up a new machine with your synced skills, stacks, and agent config"
     }
   ]
 } as const;
