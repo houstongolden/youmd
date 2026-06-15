@@ -24,12 +24,12 @@ Cross-machine sync toolkit for Houston Golden's agent skill/stack setup.
 |---|---|
 | `~/.claude/skills/gstack/` | Tracks upstream `garrytan/gstack` — updated via `/gstack-upgrade`, read-only to us |
 | Project files / code | Synced via their own project repos (youmd, bamfaiapp, etc.) |
-| Secrets / env vars | Use the env-vault (`scripts/env-vault/`) |
+| Secrets / env vars | Use the env-vault (`cli/scripts/env-vault/`) |
 
 ### Complementary sync planes
 
 - **Identity plane:** `youmd sync` (Convex ↔ local profile, memories, preferences). Automated via `com.youmd.identity-sync` daemon.
-- **Env-vault plane:** `scripts/env-vault/restore.sh` for secrets (manual, invoked on new machine).
+- **Env-vault plane:** `cli/scripts/env-vault/restore.sh` for secrets (manual, invoked on new machine); also available as `youmd env restore <vault>`.
 
 ---
 

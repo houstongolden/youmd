@@ -1,6 +1,6 @@
 {
   "name": "youmd",
-  "version": "0.6.27",
+  "version": "0.7.0",
   "description": "Identity context protocol for the agent internet — an MCP where the context is you. CLI for the You.md platform.",
   "bin": {
     "you": "dist/you.js",
@@ -11,7 +11,8 @@
   "files": [
     "dist/**/*",
     "skills/**/*",
-    "examples/**/*"
+    "examples/**/*",
+    "scripts/**/*"
   ],
   "scripts": {
     "build": "tsc",

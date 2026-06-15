@@ -51,6 +51,7 @@ import { logsCommand } from "./commands/logs";
 import { agentsCommand } from "./commands/agents";
 import { stackCommand } from "./commands/stack";
 import { okfCommand } from "./commands/okf";
+import { envBackupCommand, envRestoreCommand } from "./commands/env";
 
 const program = new Command();
 
@@ -148,6 +149,13 @@ const HELP_GROUPS: Array<{
     title: "PREVIEW",
     commands: [
       { name: "preview", summary: "start a local preview server" },
+    ],
+  },
+  {
+    title: "SECURITY",
+    commands: [
+      { name: "env backup", summary: "encrypt all .env.local files into a portable vault" },
+      { name: "env restore", summary: "decrypt and restore .env.local files from a vault" },
     ],
   },
 ];
@@ -619,6 +627,25 @@ program
   .command("agents")
   .description("List connected agents and their activity summary")
   .action(agentsCommand);
+
+// ─── env — encrypted .env.local vault backup/restore ───────────────
+const envCmd = program
+  .command("env")
+  .description("encrypted .env.local vault — back up and restore secrets across machines");
+
+envCmd
+  .command("backup")
+  .description("encrypt all .env.local files into a portable vault")
+  .option("--root <dir>", "directory to search for .env.local files")
+  .option("--out <dir>", "output directory for the vault and manifest")
+  .action((opts) => envBackupCommand(opts));
+
+envCmd
+  .command("restore <vault>")
+  .description("decrypt and restore .env.local files from a vault")
+  .option("--root <dir>", "target root directory for restored files")
+  .option("-f, --force", "overwrite existing .env.local without backing them up")
+  .action((vault, opts) => envRestoreCommand(vault, opts));
 
 // ─── Guided tutorial when invoked with no args ─────────────────────
 // `youmd` (bare) shows a short contextual welcome / next-step guide.
