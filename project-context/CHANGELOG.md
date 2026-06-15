@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-15 — Lossless push, late github greeting, per-project activity log
+
+### fix(cli): compile preserves `_profile` and unmodeled fields (lossless push)
+- The markdown→bundle compile only mapped modeled fields, silently dropping server-managed top-level keys like `_profile` (~250KB). That made `youmd push` lossy and tripped the >50% size guard, blocking legitimate pushes. The compiler now carries every unmodeled skeleton key forward — verified against Houston's real `~/.youmd` bundle: compiled output is byte-for-byte the same size as `base.json` (265,211 bytes), `_profile` intact. The local→web push is now safe (no force-push needed).
+
+### fix(web): github-connected greeting fires when repo resolves late (SG3)
+- The init effect ran once on session restore, but the GitHub connection query resolves async afterward — so `githubRepoName` was null at fire time and the greeting fell through to the generic one. Added a ref-guarded single re-run that flushes the prior greeting and sends the github-connected protocol once `githubRepoName` arrives. Deployed to prod (HEAD 44ce332).
+
+### feat(cli): `youmd project log` — per-project agent activity log (#4)
+- `youmd project log <message>` appends a timestamped, agent-named entry to `project-context/you.md/log.md` (created with a `CONVENTION.md` on first use); `youmd project log` with no args prints the last 15 entries. Travels with the project's own git repo so any agent in the repo sees recent work. Agent name from `YOUMD_AGENT_NAME`. CLI bumped to 0.8.0 — **needs `npm publish` (Houston's OTP)**.
+
 ## 2026-06-14 — Immutable-source enforcement in the ingestion pipeline (#2)
 
 ### Anti-drift: content-addressed, versioned sources + real provenance
