@@ -26,21 +26,50 @@ function monitoringRequiresReview(metadata: unknown): boolean {
   return (monitoring as Record<string, unknown>).approvalRequired === true;
 }
 
+function normalizePreview(text?: string): string | undefined {
+  if (!text) return undefined;
+  const cleaned = text
+    .replace(/\s+/g, " ")
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .trim();
+  return cleaned ? cleaned.slice(0, 280) : undefined;
+}
+
+function normalizeHeadings(headings?: string[]): string[] | undefined {
+  if (!headings) return undefined;
+  const cleaned = headings
+    .map((heading) => heading.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .slice(0, 5)
+    .map((heading) => heading.slice(0, 120));
+  return cleaned.length > 0 ? cleaned : undefined;
+}
+
 function changeSummaryText(args: {
   sourceUrl: string;
   previousContentHash?: string;
   contentHash: string;
+  contentLength?: number;
+  contentHeadings?: string[];
 }): { changeType: string; summary: string } {
   const shortHash = args.contentHash.slice(0, 16);
+  const sizePart =
+    typeof args.contentLength === "number"
+      ? ` (${args.contentLength.toLocaleString()} chars)`
+      : "";
+  const headingPart =
+    args.contentHeadings && args.contentHeadings.length > 0
+      ? ` Top headings: ${args.contentHeadings.slice(0, 3).join(" | ")}.`
+      : "";
   if (!args.previousContentHash) {
     return {
       changeType: "first_fetch",
-      summary: `First monitored fetch for ${args.sourceUrl}; content hash ${shortHash}.`,
+      summary: `First monitored fetch for ${args.sourceUrl}${sizePart}; content hash ${shortHash}.${headingPart}`,
     };
   }
   return {
     changeType: "content_changed",
-    summary: `Source content changed: ${args.previousContentHash.slice(0, 16)} -> ${shortHash}. Review before extraction/writeback if this source is approval-gated.`,
+    summary: `Source content changed${sizePart}: ${args.previousContentHash.slice(0, 16)} -> ${shortHash}.${headingPart} Review before extraction/writeback if this source is approval-gated.`,
   };
 }
 
@@ -101,6 +130,9 @@ export const recordRawSourceVersion = internalMutation({
     rawStorageId: v.optional(v.id("_storage")),
     contentHash: v.string(),
     fetchedAt: v.number(),
+    contentLength: v.optional(v.number()),
+    contentPreview: v.optional(v.string()),
+    contentHeadings: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
@@ -129,7 +161,11 @@ export const recordRawSourceVersion = internalMutation({
       sourceUrl: source.sourceUrl,
       previousContentHash,
       contentHash: args.contentHash,
+      contentLength: args.contentLength,
+      contentHeadings: normalizeHeadings(args.contentHeadings),
     });
+    const contentPreview = normalizePreview(args.contentPreview);
+    const contentHeadings = normalizeHeadings(args.contentHeadings);
     const status = monitoringRequiresReview(source.metadata)
       ? "pending_review"
       : "auto_accepted";
@@ -141,6 +177,9 @@ export const recordRawSourceVersion = internalMutation({
       previousVersionId,
       previousContentHash,
       contentHash: args.contentHash,
+      contentLength: args.contentLength,
+      contentPreview,
+      contentHeadings,
       changeType: change.changeType,
       summary: change.summary,
       status,
@@ -160,6 +199,9 @@ export const recordRawSourceVersion = internalMutation({
           changeType: change.changeType,
           contentHash: args.contentHash,
           previousContentHash: previousContentHash ?? null,
+          contentLength: args.contentLength ?? null,
+          contentPreview: contentPreview ?? null,
+          contentHeadings: contentHeadings ?? [],
           createdAt: args.fetchedAt,
         },
       },

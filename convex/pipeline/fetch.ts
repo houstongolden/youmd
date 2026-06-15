@@ -63,6 +63,27 @@ function htmlToText(html: string): string {
   return text;
 }
 
+function sourcePreview(text: string): string {
+  return text.replace(/\s+/g, " ").trim().slice(0, 500);
+}
+
+function extractHeadings(text: string): string[] {
+  const headings = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => /^#{1,4}\s+/.test(line))
+    .map((line) => line.replace(/^#{1,4}\s+/, "").trim())
+    .filter(Boolean)
+    .slice(0, 5);
+  if (headings.length > 0) return headings;
+
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length >= 12 && line.length <= 120)
+    .slice(0, 3);
+}
+
 // ---------------------------------------------------------------------------
 // fetchWebsite — Fetch a URL, strip HTML, store in Convex
 // ---------------------------------------------------------------------------
@@ -126,6 +147,9 @@ export const fetchWebsite = internalAction({
           rawStorageId,
           contentHash,
           fetchedAt: Date.now(),
+          contentLength: trimmedText.length,
+          contentPreview: sourcePreview(trimmedText),
+          contentHeadings: extractHeadings(trimmedText),
         });
       } catch {
         // Versioning is additive provenance; ignore failures here.
@@ -244,6 +268,9 @@ export const fetchWithFirecrawl = internalAction({
           rawStorageId,
           contentHash,
           fetchedAt: Date.now(),
+          contentLength: trimmedText.length,
+          contentPreview: sourcePreview(trimmedText),
+          contentHeadings: extractHeadings(trimmedText),
         });
       } catch {
         // Versioning is additive provenance; ignore failures here.
@@ -383,6 +410,9 @@ export const fetchWithApify = internalAction({
           rawStorageId,
           contentHash,
           fetchedAt: Date.now(),
+          contentLength: trimmedText.length,
+          contentPreview: sourcePreview(trimmedText),
+          contentHeadings: extractHeadings(trimmedText),
         });
       } catch {
         // ignore — versioning is additive provenance
@@ -544,6 +574,9 @@ export const fetchLinkedInFull = internalAction({
           rawStorageId,
           contentHash,
           fetchedAt: Date.now(),
+          contentLength: trimmedText.length,
+          contentPreview: sourcePreview(trimmedText),
+          contentHeadings: extractHeadings(trimmedText),
         });
       } catch {
         // ignore — versioning is additive provenance

@@ -529,6 +529,9 @@ export function SourcesPane({}: SourcesPaneProps) {
                         <span>next refresh: {s.nextRefreshAt ? timeDistance(s.nextRefreshAt) : "manual"}</span>
                         <span>run approval: {needsApproval ? (approvedUntil && approvedUntil > Date.now() ? timeDistance(approvedUntil) : "required") : "not required"}</span>
                         <span>latest change: {latestChange ? latestChange.summary : sourceChanges === undefined ? "loading" : "--"}</span>
+                        {latestChange?.contentPreview && (
+                          <span>preview: {latestChange.contentPreview}</span>
+                        )}
                         {latestChange?.status === "pending_review" && (
                           <button
                             type="button"

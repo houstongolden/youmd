@@ -57,6 +57,9 @@ describe("recordRawSourceVersion — immutable source ledger", () => {
       sourceId,
       contentHash: "hash-1",
       fetchedAt: 1000,
+      contentLength: 42,
+      contentPreview: "# About Houston\nShips agent products fast.",
+      contentHeadings: ["About Houston"],
     });
     expect(res.recorded).toBe(true);
 
@@ -74,7 +77,12 @@ describe("recordRawSourceVersion — immutable source ledger", () => {
       changeType: "first_fetch",
       status: "auto_accepted",
       contentHash: "hash-1",
+      contentLength: 42,
+      contentPreview: "# About Houston Ships agent products fast.",
+      contentHeadings: ["About Houston"],
     });
+    expect(changeRows[0].summary).toContain("42 chars");
+    expect(changeRows[0].summary).toContain("About Houston");
   });
 
   it("does not version identical content (no in-place churn)", async () => {
@@ -121,6 +129,9 @@ describe("recordRawSourceVersion — immutable source ledger", () => {
       sourceId,
       contentHash: "hash-review",
       fetchedAt: 3000,
+      contentLength: 1234,
+      contentPreview: "New project update with approvals.",
+      contentHeadings: ["Project Update", "Approval Notes"],
     });
 
     expect(res.status).toBe("pending_review");
@@ -128,6 +139,9 @@ describe("recordRawSourceVersion — immutable source ledger", () => {
     expect(changeRows[0]).toMatchObject({
       status: "pending_review",
       contentHash: "hash-review",
+      contentLength: 1234,
+      contentPreview: "New project update with approvals.",
+      contentHeadings: ["Project Update", "Approval Notes"],
     });
     const source = await t.run((ctx) => ctx.db.get(sourceId));
     expect((source?.metadata as { lastChangeSummary?: { status?: string } }).lastChangeSummary?.status).toBe("pending_review");

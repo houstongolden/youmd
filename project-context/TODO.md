@@ -20,7 +20,8 @@ PRD Version: 2.3
 - [x] Add the first per-user/provider rate limit, cost estimate, and owner approval gate before expensive provider execution
 - [x] Document the agent-browser sandbox runner boundary in `project-context/AGENT_BROWSER_SANDBOX_RUNNER_SPEC_2026-06-15.md`
 - [x] Add monitored change summaries with pending-review approval before extraction
-- [ ] Add richer semantic change summaries and approval-aware writeback before cron-triggered expensive work
+- [x] Add richer deterministic change summaries with content length, safe preview, and headings
+- [ ] Add approval-aware writeback before cron-triggered expensive work
 - [ ] Configure and verify `FIRECRAWL_API_KEY` in dev/prod, then smoke a real Firecrawl source refresh end-to-end
 - [ ] Implement the actual agent-browser sandbox worker with action transcripts, screenshot artifacts, and secret/permission boundaries
 

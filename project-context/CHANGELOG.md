@@ -2,6 +2,12 @@
 
 ## 2026-06-15 — Connected-app grants and connector MVP
 
+### feat: enrich monitored change summaries
+- `sourceChangeSummaries` now stores deterministic content length, safe text preview, and extracted heading hints in addition to hashes/status.
+- Website, Firecrawl, Apify, and LinkedIn fetch paths pass the fetched text context into `recordRawSourceVersion` when recording immutable source changes.
+- The Sources pane now surfaces the latest monitored-change preview below the change summary.
+- Focused tests assert preview/heading/length behavior so monitored summaries do not regress to hash-only records.
+
 ### feat: add monitored source-change summaries
 - Added `sourceChangeSummaries`, an owner/source-scoped ledger for deterministic change summaries tied to immutable raw source versions.
 - `recordRawSourceVersion` now writes a first-fetch/content-changed summary and stores `metadata.lastChangeSummary` on the source row.

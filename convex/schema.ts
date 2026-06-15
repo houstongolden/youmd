@@ -461,6 +461,9 @@ export default defineSchema({
     previousVersionId: v.optional(v.id("rawSourceVersions")),
     previousContentHash: v.optional(v.string()),
     contentHash: v.string(),
+    contentLength: v.optional(v.number()),
+    contentPreview: v.optional(v.string()),
+    contentHeadings: v.optional(v.array(v.string())),
     changeType: v.string(), // "first_fetch" | "content_changed"
     summary: v.string(),
     status: v.string(), // "auto_accepted" | "pending_review" | "approved"

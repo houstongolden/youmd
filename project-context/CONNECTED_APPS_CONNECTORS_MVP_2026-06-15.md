@@ -121,6 +121,7 @@ Important guardrail:
 - The hourly cron still does not execute expensive crawls, browser automation, or LLM extraction automatically.
 - The pipeline now checks per-user/provider rate limits, cost estimates, and owner approval windows before expensive provider execution.
 - Monitored update summaries now exist as deterministic source-change rows tied to immutable raw versions.
+- Summaries include content length, safe preview text, and heading hints when the fetcher has text/markdown available.
 - Approval-gated source changes are skipped by extraction until the owner approves them.
 - Rich semantic diffing and approval-aware writeback remain the next safety layer before autonomous expensive work.
 
@@ -253,6 +254,7 @@ Add an approval-aware crawler worker:
 - Require owner approval for expensive providers. **DONE**
 - Reserve per-user/provider hourly runs before execution. **DONE**
 - Write deterministic source-change summary rows. **DONE**
+- Add deterministic preview/heading/length context to summaries. **DONE**
 - Hold extraction for pending-review source changes. **DONE**
 - Never auto-run LLM extraction from cron without a separate policy.
 
