@@ -170,3 +170,39 @@ prod (for inbound push -> mirror).
 - **#4** per-project write-scope to each project's `project-context/` + a
   `you.md/` change log dir.
 - **#6** multi-agent concurrency.
+
+---
+
+## CLEAN UI DEMO VERIFIED (2026-06-15) + PRECISE REMAINING (for a focused follow-up)
+
+### Verified END-TO-END through the browser UI (watchable, not just API)
+- Clicked "push to repo" in the shell -> green "pushed you.md, you.json to your
+  repo." + "synced just now" -> backend opened **PR #2 "sync identity from
+  you.md" -> AUTO-MERGED**. New PR appeared from the UI click. Full loop
+  (UI action -> branch -> PR -> auto-merge -> repo -> UI confirm) verified.
+
+### Precise remaining (each with the SIMPLE fix)
+1. **local -> web -> repo push** — BLOCKED BY DATA-SAFETY GUARD (correct):
+   `~/.youmd` is an 8KB stub vs the 583KB published profile, so push refuses
+   (would wipe the profile). FIX: fully restore the local bundle first
+   (`youmd pull` currently restores files but not the full compiled bundle —
+   the local bundle state is incomplete). Do NOT `--force` push until restored.
+2. **SG3 post-connect chat protocol** — NOT FIRING. The agent greets with a
+   project-scaffolding message instead of the github-connected protocol
+   (congratulate + curl nudge + paste-prompt). `buildGithubConnectedProtocol`
+   exists in agent-utils.ts and is wired via `githubRepoName` in useYouAgent.ts,
+   but the greeting branch isn't selected. FIX: debug the greeting-branch
+   selection in useYouAgent.ts (the github branch must win over the proactive
+   project greeting when githubRepoName is set).
+3. **SG6 realtime repo->local** — webhook (GITHUB_WEBHOOK_SECRET set) +
+   `youmd pull` cover most of it; the local daemon `youmd sync` pulls. Needs a
+   live verification + surfacing a structured "remote updated" summary.
+4. **#4 per-project project-context write-scope** — NOT BUILT. Simplest version:
+   tracked-project files already at `projects/<name>.md`; the "agents write to
+   each project's project-context/ + a you.md/ change-log dir" is the new piece.
+5. **#6 multi-agent concurrency** — largely covered by the you-md-repo
+   PR/auto-merge (each agent's write is a PR); needs a concurrent-write test.
+
+### Standing env requirement (root cause, do not lose)
+`TRUSTED_INTERNAL_AUTH_TOKEN` MUST be set on **Vercel** (not just Convex) or
+GitHub connect breaks silently (`github_server_misconfigured`).
