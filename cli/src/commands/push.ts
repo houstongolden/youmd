@@ -67,7 +67,13 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean;
   const baseJsonPath = path.join(bundleDir, "base.json");
   if (fs.existsSync(baseJsonPath) && !options.force) {
     try {
-      const baseSize = fs.statSync(baseJsonPath).size;
+      // Compare like-for-like: base.json on disk is pretty-printed (~2.25x the
+      // minified size), while compiled.youJson is measured as a minified string.
+      // Re-serialize the parsed base minified so this guard measures real data
+      // loss, not the indentation difference.
+      const baseSize = JSON.stringify(
+        JSON.parse(fs.readFileSync(baseJsonPath, "utf-8"))
+      ).length;
       const compiledStr = JSON.stringify(compiled.youJson);
       const compiledSize = compiledStr.length;
       if (baseSize > 0 && compiledSize < baseSize * 0.5) {
