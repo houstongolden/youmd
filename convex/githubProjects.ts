@@ -31,6 +31,7 @@ import type { Id } from "./_generated/dataModel";
 import { requireOwner } from "./lib/auth";
 import { decryptSecret, encryptSecret } from "./lib/secretCrypto";
 import { isGithubAppConfigured, mintInstallationToken } from "./githubApp";
+import { agentPushViaPR } from "./githubAgentSync";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -92,6 +93,12 @@ type ProjectAnalysis = {
   isPrivate: boolean;
   insight: string | null;
   visibility: "private" | "public";
+};
+
+type AnalyzeActiveProjectsResult = {
+  projects: ProjectAnalysis[];
+  pushedToRepo: boolean;
+  prUrl?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -279,7 +286,7 @@ export const analyzeActiveProjects = action({
     clerkId: v.string(),
     _internalAuthToken: v.optional(v.string()),
   },
-  handler: async (ctx, args): Promise<ProjectAnalysis[]> => {
+  handler: async (ctx, args): Promise<AnalyzeActiveProjectsResult> => {
     await requireOwner(ctx, args.clerkId, args._internalAuthToken);
 
     const { context, token } = await resolveGithubToken(ctx, args.clerkId);
@@ -369,6 +376,109 @@ export const analyzeActiveProjects = action({
       });
     }
 
-    return results;
+    // -----------------------------------------------------------------------
+    // Push tracked projects to the user's {username}-you-md repo via PR.
+    // Only runs when the user has a linked repo (repoFullName is set).
+    // Wrapped in try/catch — analysis results are returned regardless.
+    // -----------------------------------------------------------------------
+
+    let pushedToRepo = false;
+    let prUrl: string | undefined;
+
+    if (context.repoFullName && results.length > 0) {
+      try {
+        const files: Array<{ path: string; content: string }> = [];
+
+        // Build one Markdown file per tracked project.
+        for (const project of results) {
+          const slug = project.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+
+          const pushedDate = new Date(project.pushedAt).toISOString().slice(0, 10);
+          const visibilityLabel = project.isPrivate ? "private" : "public";
+
+          const mdLines: string[] = [
+            `# ${project.name}`,
+            ``,
+            `**GitHub:** [${project.fullName}](https://github.com/${project.fullName})`,
+            ``,
+            `## Metadata`,
+            ``,
+            `| Field | Value |`,
+            `|-------|-------|`,
+            `| Primary Language | ${project.primaryLanguage ?? "—"} |`,
+            `| Last Pushed | ${pushedDate} |`,
+            `| Commits (last 90d) | ${project.commitsLast90d} |`,
+            `| Visibility | ${visibilityLabel} |`,
+            `| Stars | ${project.stars} |`,
+            ``,
+            `## AI Insight`,
+            ``,
+            project.insight ?? "_No insight available._",
+            ``,
+            `---`,
+            ``,
+            `_Tracked by [You.md](https://you.md). Auto-synced by the You Agent._`,
+          ];
+
+          files.push({
+            path: `projects/${slug}.md`,
+            content: mdLines.join("\n"),
+          });
+        }
+
+        // Build projects/README.md index table.
+        const tableRows = results.map((p) => {
+          const pushedDate = new Date(p.pushedAt).toISOString().slice(0, 10);
+          const insightSnippet = p.insight
+            ? p.insight.slice(0, 80) + (p.insight.length > 80 ? "…" : "")
+            : "—";
+          const slug = p.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+          return `| [${p.name}](${slug}.md) | ${p.primaryLanguage ?? "—"} | ${pushedDate} | ${insightSnippet} |`;
+        });
+
+        const readmeLines: string[] = [
+          `# Active Projects`,
+          ``,
+          `Auto-generated index of GitHub projects tracked by [You.md](https://you.md).`,
+          ``,
+          `| Project | Language | Last Pushed | Insight |`,
+          `|---------|----------|-------------|---------|`,
+          ...tableRows,
+          ``,
+          `---`,
+          ``,
+          `_Last synced: ${new Date().toISOString().slice(0, 10)}. Managed by the You Agent._`,
+        ];
+
+        files.push({
+          path: "projects/README.md",
+          content: readmeLines.join("\n"),
+        });
+
+        const pushResult = await agentPushViaPR(ctx, {
+          connectionId: context.connectionId,
+          files,
+          message: `chore(projects): sync ${results.length} active project${results.length === 1 ? "" : "s"}`,
+          autoMerge: true,
+        });
+
+        pushedToRepo = true;
+        prUrl = pushResult.prUrl;
+      } catch (err) {
+        console.warn(
+          `[githubProjects] agentPushViaPR failed — analysis still returned. Error: ${
+            err instanceof Error ? err.message : String(err)
+          }`
+        );
+      }
+    }
+
+    return { projects: results, pushedToRepo, ...(prUrl ? { prUrl } : {}) };
   },
 });
