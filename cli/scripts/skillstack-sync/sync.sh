@@ -30,12 +30,15 @@ SCISTACK="${HOME}/.claude/scistack"
 LOOSE_SKILLS="agent-runtime-guard agent-stack-sync continue skill-governor"
 
 # Repos to sync (space-separated absolute paths; override via env).
-# v1 default is agent-shared ONLY — it's purpose-built for sync and safe to
-# auto-commit. scistack is intentionally NOT auto-synced by default: it holds
-# protected learning-loop IP where auto-committing WIP on a timer is undesirable.
-# To opt scistack (or other repos) in, set:
-#   SKILLSTACK_REPOS="$HOME/.agent-shared $HOME/.claude/scistack"
-DEFAULT_REPOS="${AGENT_SHARED}"
+# Houston's agent skill/stack layer syncs by DEFAULT:
+#   - ~/.agent-shared  → shared agent config + loose skills (houstongolden/agent-shared)
+#   - ~/.claude/scistack → ALL science skills (Hubify-Projects/scistack): 68 skill
+#     symlink targets under hubstack/ + astrostack/ + extensions/, incl. the
+#     learning-loop IP. Conflict-safe (commit→merge-pull→push, abort on conflict),
+#     so auto-syncing his own repo is exactly the cross-machine behavior intended.
+# gstack is NOT here (upstream garrytan/gstack, reinstalled via gstack-upgrade).
+# Add more repos by setting SKILLSTACK_REPOS to a space-separated path list.
+DEFAULT_REPOS="${AGENT_SHARED} ${SCISTACK}"
 SKILLSTACK_REPOS="${SKILLSTACK_REPOS:-${DEFAULT_REPOS}}"
 
 DRY_RUN=0
