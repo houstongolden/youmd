@@ -25,6 +25,7 @@ const navigation: NavItem[] = [
     children: [
       { id: "docs-map", label: "Docs Map" },
       { id: "web-quickstart", label: "Web Quickstart" },
+      { id: "github-auth", label: "GitHub Sign-In" },
       { id: "cli-quickstart", label: "Runtime Quickstart" },
     ],
   },
@@ -67,6 +68,14 @@ const navigation: NavItem[] = [
       { id: "file-structure", label: "File Structure" },
     ],
   },
+  {
+    id: "sync-across-machines",
+    label: "Sync Across Machines",
+    children: [
+      { id: "sync-planes", label: "Four Sync Planes" },
+      { id: "sync-new-machine", label: "New Machine Setup" },
+    ],
+  },
   { id: "cli", label: "CLI Reference" },
   {
     id: "skills",
@@ -87,6 +96,7 @@ const navigation: NavItem[] = [
       { id: "youstacks-named", label: "Named Stacks" },
       { id: "youstacks-contents", label: "What Goes In" },
       { id: "youstacks-improvement", label: "Self-Improvement" },
+      { id: "youstacks-proposals-consent", label: "Proposals + Consent" },
       { id: "youstacks-reference-loop", label: "Reference Loop" },
       { id: "youstacks-use-cases", label: "Use Cases" },
       { id: "youstacks-runtime", label: "Runtime" },
@@ -983,13 +993,61 @@ export default function DocsContent() {
               </Step>
             </StepList>
 
+            <H3 id="github-auth">GitHub Sign-In</H3>
+            <P>
+              You.md supports GitHub OAuth as a zero-friction sign-up and
+              sign-in path alongside the default email-code flow. Both methods
+              are equally first-class; use whichever fits your workflow.
+            </P>
+            <StepList>
+              <Step n={1}>
+                Go to{" "}
+                <Link
+                  href="/sign-up"
+                  className="text-[hsl(var(--accent))] hover:opacity-80"
+                >
+                  you.md/sign-up
+                </Link>{" "}
+                (new user) or{" "}
+                <Link
+                  href="/sign-in"
+                  className="text-[hsl(var(--accent))] hover:opacity-80"
+                >
+                  you.md/sign-in
+                </Link>{" "}
+                (returning user) and click{" "}
+                <InlineCode>continue with github</InlineCode>
+              </Step>
+              <Step n={2}>
+                Authorize the You.md GitHub app. Requested scopes are{" "}
+                <InlineCode>read:user</InlineCode>,{" "}
+                <InlineCode>user:email</InlineCode>, and{" "}
+                <InlineCode>repo</InlineCode>. The{" "}
+                <InlineCode>repo</InlineCode> scope lets You.md create and read
+                your private identity repo for stack sync.
+              </Step>
+              <Step n={3}>
+                New accounts land on{" "}
+                <InlineCode>/initialize</InlineCode> to run the onboarding boot
+                sequence. Returning accounts land directly on{" "}
+                <InlineCode>/shell</InlineCode>.
+              </Step>
+            </StepList>
+            <Callout type="info">
+              Email-code auth is still available as an alternative. If you
+              already have an account via email, GitHub sign-in will link to
+              the same account as long as the email addresses match.
+            </Callout>
+
             <H3 id="cli-quickstart">Runtime Quickstart</H3>
             <CodeBlock title="terminal">{`$ curl -fsSL https://you.md/install.sh | bash`}</CodeBlock>
             <StepList>
               <Step n={1}>
-                Install the You.md runtime with the curl bootstrapper. The CLI
-                is just the helper under the hood for files, MCP, smoke checks,
-                host adapters, and sync.
+                Install the You.md runtime with the curl bootstrapper. The
+                installer delivers the CLI, all bundled native skills, and
+                auto-configures MCP for any detected agent host (Claude Code,
+                Codex, Cursor). The CLI is the helper under the hood for files,
+                MCP, smoke checks, host adapters, and sync.
               </Step>
               <Step n={2}>
                 Run <InlineCode>you</InlineCode>. U will guide login or setup
@@ -1475,13 +1533,129 @@ preferences: terminal-native, monochrome
   you.md
   manifest.json`}</CodeBlock>
 
+            {/* ── Sync Across Machines ─────────────────────── */}
+            <H2 id="sync-across-machines">Sync Across Machines</H2>
+            <P>
+              You.md is designed to follow you across every machine you work on.
+              Four distinct sync planes cover everything: your identity, your
+              secrets, your skills, and your named stacks. Each plane uses the
+              right transport for its sensitivity level.
+            </P>
+
+            <H3 id="sync-planes">Four Sync Planes</H3>
+            <div className="my-4 border border-[hsl(var(--border))] rounded-sm overflow-hidden">
+              <table className="w-full text-[14px]">
+                <thead>
+                  <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))]">
+                    <th className="text-left px-4 py-2.5 font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-60 font-normal">Plane</th>
+                    <th className="text-left px-4 py-2.5 font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-60 font-normal">What it covers</th>
+                    <th className="text-left px-4 py-2.5 font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-60 font-normal">How</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-[hsl(var(--border))]">
+                    <td className="px-4 py-3 font-mono text-[13px] text-[hsl(var(--accent))] whitespace-nowrap align-top">Identity</td>
+                    <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">Profile, preferences, project-context, memory, directives</td>
+                    <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">
+                      <InlineCode>youmd sync</InlineCode> (Convex-backed).
+                      Supports <InlineCode>--watch</InlineCode> for continuous
+                      auto-push on file saves.
+                    </td>
+                  </tr>
+                  <tr className="border-b border-[hsl(var(--border))]">
+                    <td className="px-4 py-3 font-mono text-[13px] text-[hsl(var(--accent))] whitespace-nowrap align-top">Secrets</td>
+                    <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">All <InlineCode>.env.local</InlineCode> files across your projects</td>
+                    <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">
+                      Encrypted vault.{" "}
+                      <InlineCode>youmd env backup</InlineCode> walks a root
+                      directory, encrypts every <InlineCode>.env.local</InlineCode>{" "}
+                      into one openssl-encrypted portable file plus a
+                      values-free manifest. Secrets never auto-sync over the
+                      network — you carry the vault (AirDrop, USB, secure
+                      cloud file) and restore on the new machine with{" "}
+                      <InlineCode>youmd env restore &lt;vault&gt;</InlineCode>,
+                      which decrypts and writes each file back (backing up any
+                      existing file first).
+                    </td>
+                  </tr>
+                  <tr className="border-b border-[hsl(var(--border))]">
+                    <td className="px-4 py-3 font-mono text-[13px] text-[hsl(var(--accent))] whitespace-nowrap align-top">Skills</td>
+                    <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">Authored agent skills and the shared agent layer (<InlineCode>~/.agent-shared</InlineCode>)</td>
+                    <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">
+                      Private git repo, synced by{" "}
+                      <InlineCode>youmd stack sync</InlineCode>. A background
+                      daemon (<InlineCode>youmd stack daemon install</InlineCode>)
+                      runs via launchd every ~5 minutes — it auto-commits local
+                      changes and pulls remote changes so editing a skill on
+                      one machine updates the others.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3 font-mono text-[13px] text-[hsl(var(--accent))] whitespace-nowrap align-top">Stacks</td>
+                    <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">Named YouStacks and skill stacks</td>
+                    <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">
+                      Each stack syncs via its own git remote. The daemon
+                      covers stacks that are part of the shared agent layer;
+                      standalone stacks use their configured remote.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <H3 id="sync-new-machine">Set Up a New Machine</H3>
+            <P>
+              On a fresh machine, run these five commands in order. Each one
+              depends on the previous step being complete.
+            </P>
+            <CodeBlock title="new machine setup">{`# 1. Install the CLI, bundled skills, and auto-configure MCP for detected agents
+curl -fsSL https://you.md/install.sh | bash
+
+# 2. Clone synced repos, restore skills and shared agent layer, guided setup
+youmd machine setup
+
+# 3. Restore secrets from your encrypted vault (carry this file between machines)
+youmd env restore <vault>
+
+# 4. Start the background daemon so skills and stacks stay in sync automatically
+youmd stack daemon install
+
+# 5. Authenticate the CLI
+youmd login`}</CodeBlock>
+            <P>
+              <InlineCode>youmd machine setup</InlineCode> clones the skill
+              sync repo and shared agent layer, restores installed skills, and
+              walks through any remaining configuration that cannot be automated.
+              Run it first, before restoring secrets or starting the daemon.
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "youmd stack daemon install", desc: "Register the background skill-sync daemon (launchd, ~5 min interval)" },
+                { cmd: "youmd stack daemon status", desc: "Check whether the daemon is running and when it last synced" },
+                { cmd: "youmd stack daemon uninstall", desc: "Remove the daemon from launchd without deleting synced files" },
+              ]}
+            />
+            <Callout type="tip">
+              The encrypted env vault is the only sync plane that requires
+              manual transport. Everything else (identity, skills, stacks)
+              reaches the new machine automatically once the daemon is running
+              and you have logged in.
+            </Callout>
+
             {/* ── CLI ──────────────────────────────────────── */}
             <H2 id="cli">CLI Reference</H2>
             <P>
-              Install with <InlineCode>curl -fsSL https://you.md/install.sh | bash</InlineCode>{" "}
-              as the default path, or use <InlineCode>npm i -g youmd@latest</InlineCode>{" "}
-              directly if you prefer. The CLI covers the full identity lifecycle
-              -- identity, auth, sync, sharing, memory, projects, and skills.
+              Install with{" "}
+              <InlineCode>curl -fsSL https://you.md/install.sh | bash</InlineCode>{" "}
+              as the recommended path. The curl installer delivers the full
+              package in one step: the <InlineCode>youmd</InlineCode> CLI,
+              all bundled native skills, and automatic MCP configuration for
+              any detected agent host (Claude Code, Codex, Cursor). Use{" "}
+              <InlineCode>npm i -g youmd@latest</InlineCode> only if you
+              prefer to manage the binary yourself; you will need to run{" "}
+              <InlineCode>youmd mcp --install &lt;host&gt; --auto</InlineCode>{" "}
+              separately. The CLI covers the full identity lifecycle --
+              identity, auth, sync, sharing, memory, projects, and skills.
             </P>
 
             <P>
@@ -1793,6 +1967,46 @@ preferences: terminal-native, monochrome
                 },
               ]}
             />
+
+            <H3 id="youstacks-proposals-consent">Proposals + Consent</H3>
+            <P>
+              Server-generated maintainer proposals and background analysis
+              consent are the two human-approval gates that keep the improvement
+              loop auditable.
+            </P>
+            <P>
+              Use <InlineCode>youmd stack proposals</InlineCode> to see
+              proposals the server has generated about your stacks — skill
+              quality improvements, doc drift, stale adapter files, or
+              capability gaps. Review each proposal before anything changes:
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "youmd stack proposals", desc: "List pending maintainer proposals for your stacks" },
+                { cmd: "youmd stack proposals approve <id>", desc: "Accept a proposal and apply the suggested change locally" },
+                { cmd: "youmd stack proposals reject <id>", desc: "Dismiss a proposal without applying it" },
+              ]}
+            />
+            <P>
+              Use <InlineCode>youmd stack consent</InlineCode> to control
+              which background analyses are allowed to run on your data. Scopes
+              are narrow and opt-in; none run automatically without your
+              explicit grant:
+            </P>
+            <CommandTable
+              commands={[
+                { cmd: "youmd stack consent", desc: "Show current consent grants and available scopes" },
+                { cmd: "youmd stack consent grant journal_mine", desc: "Allow the server to mine your session journal for improvement signals" },
+                { cmd: "youmd stack consent grant consolidate", desc: "Allow background memory consolidation and deduplication" },
+                { cmd: "youmd stack consent grant fleet_aggregate", desc: "Allow anonymized, k-anon-gated contribution to fleet-level aggregate reports" },
+                { cmd: "youmd stack consent revoke <scope>", desc: "Revoke a previously granted consent scope" },
+              ]}
+            />
+            <Callout type="info">
+              All three consent scopes are off by default. Revoking a scope
+              stops future analysis immediately; it does not delete data
+              already aggregated under that scope.
+            </Callout>
 
             <H3 id="youstacks-safety-readiness">Safety and Readiness Contract</H3>
             <P>
