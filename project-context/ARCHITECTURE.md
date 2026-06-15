@@ -1,6 +1,6 @@
 # You.md — Architecture Reference
 
-Last Updated: 2026-06-11
+Last Updated: 2026-06-15
 
 ## System Overview
 
@@ -60,6 +60,55 @@ Last Updated: 2026-06-11
 ```
 
 ---
+
+## Product Boundary: Personal API/MCP
+
+You.md is the canonical personal API/MCP and context protocol layer. h.computer is Houston's personal site and reference implementation that should consume this layer, not own it. Creator.new and other products can connect to You.md for identity, voice, preferences, source provenance, project context, memories, trust rules, and selected YouStacks.
+
+The intended boundary is:
+
+```text
+External product or agent
+  -> scoped grant / context link / owner API key
+  -> You.md protected API/MCP
+  -> identity, now, projects, sources, memories, preferences, trust rules, stacks, activity
+  -> explicit provenance-rich writeback when allowed
+```
+
+### Canonical Resource Families
+
+| Resource | Purpose | Current surface | Gap |
+|---|---|---|---|
+| `identity` | Public profile, links, bio, voice, public bundle | `/api/v1/profiles`, `/ctx`, MCP `get_identity` | Needs tighter versioned resource contract |
+| `now` | Current status, focus, active work | Profile `now`, bundle fields | Needs first-class API/MCP route |
+| `projects` | User/project context, repo status, next actions | CLI project context, MCP project resources, repo mirror | Needs hosted resource contract and grants |
+| `sources` | Source catalog, provenance, freshness, trust | `sources`, pipeline, immutable raw-source work | Needs user-facing connector grid and refresh policy |
+| `memories` | Private/scoped durable facts | `memories`, MCP `search_memories` | Needs richer writeback approvals and source confidence UX |
+| `preferences` | Communication, writing, model, workflow preferences | Bundle preferences/directives | Needs API/MCP-normalized resource contract |
+| `trust_rules` | What agents may read, write, infer, share, mutate | Context links, API keys, visibility flags | Needs explicit object model |
+| `stacks` | YouStack manifests, capabilities, host adapters | CLI stack tools, repo mirror, stack endpoints | Needs grant-specific install/share flow |
+| `activity` | Agent runs, source refreshes, writes, security events | security logs, agent interactions, project log | Needs unified product/agent activity feed |
+
+### Access Modes
+
+- Public read: safe public identity, public-open stacks, and public source summaries.
+- Scoped context link: selected brain scopes, projects, stacks, expiry, revocation, and preview.
+- Owner API key: private reads and approved writes for the owner.
+- Host/stack agent token: host-specific and stack-specific access with explicit scopes.
+- Connected-app grant: durable app-level access for h.computer, Creator.new, BAMF.ai, folder.md, and future consumers.
+
+### Writeback Rules
+
+Any write from an agent or connected product should record actor, host, app, stack, source, confidence, timestamp, reason, and approval state. Low-trust agent writes should land as proposed updates or lower-confidence memories, not overwrite higher-trust human-authored context.
+
+### Near-Term Architecture Gaps
+
+- Versioned personal API/MCP resource contract for `identity`, `now`, `projects`, `sources`, `memories`, `preferences`, `trust_rules`, `stacks`, and `activity`.
+- App-level grants for h.computer and Creator.new style consumers.
+- Lovable-simple connector UX that maps sources into structured context with preview, visibility, trust rules, and refresh policy.
+- Source refresh policies and monitored updates that reuse the immutable raw-source ledger.
+- Skill-learning ingestion for screen recordings, transcripts, SOPs, tool/API lists, agent-run logs, and summaries.
+- Stack-level model routing policy in YouStack manifests and generated host adapters.
 
 ## Data Model (21 Tables)
 
@@ -461,6 +510,7 @@ Validated by `validateYouStackManifest` in `cli/src/lib/youstack.ts`.
 | sharing, repoSync, docs, tests, provenance | no | Freeform objects |
 | improvement | no | `{mode: observe\|propose\|auto_pr\|auto_apply_local, cadence, signals, evals, appliesTo, approvalRequiredFor}` |
 | update | no | `{channel, check, source, autoApply, pin}` |
+| modelRouting | planned | Stack-level policy for orchestrator, lead, worker, fallback, BYOK/provider preferences, cost posture, risk thresholds, and approval gates |
 
 Canonical example: `cli/examples/youstack-personal/` (`youstack.json` + `skills/youstack-start/SKILL.md`, `workflows/startup.md`, `docs/quickstart.md`, `tests/smoke.md`).
 
@@ -519,6 +569,7 @@ GitHub connection state lives in the `githubConnections` table; the mirrored sna
 4. **No install/distribution flow.** `youmd stack` is local-manifest tooling only (inspect/doctor/smoke/capabilities/route/link); "installable YouStack" is manual file copying; stack HTTP endpoints are self-only (PRODUCT-AUDIT #11).
 5. **Example/CLI version contradiction.** `cli/examples/youstack-personal/youstack.json` declares `minYoumdCli: "0.7.0"` while the published CLI is `0.6.23` (`cli/package.json`).
 6. **brainScopes are unvalidated free text** and generated adapters contain no identity content (PRODUCT-AUDIT #21).
+7. **No stack-level model routing contract yet.** Global agent instructions describe orchestrator/lead/worker model tiers, but YouStack manifests and generated adapters do not yet carry a machine-readable routing policy for external hosts.
 
 ---
 

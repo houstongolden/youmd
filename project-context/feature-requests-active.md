@@ -1,8 +1,30 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-13
+Last Updated: 2026-06-15
 
 ---
+
+## 2026-06-15 — Route h.computer product ideas into native You.md
+
+### 115. Make You.md the native personal API/MCP, agent brain, and YouStacks layer
+**Status:** IN PROGRESS (product-context routing documented; implementation slices pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-15 — Houston: "Move these ideas from the h.computer/creator-new cloud into You.md" and clarified that h.computer should remain his personal site/agent/reference implementation while You.md owns the productizable personal agentic computer, structured personal API/MCP, stack layer, connector UX, crawlers/crons, host adapters, skill-learning loop, model routing, and gated identity access.
+**Actionable Scope:**
+1. Read the new You.md project-context docs plus the late-night routing/context from `creator-new` and `h-computer`, including h.computer platform/docs/gallery. **DONE:** reviewed `creator-new/project-context/idea-routing-2026-06-15.md`, local h.computer protocol/vision docs, live h.computer platform/docs/gallery pages, and active You.md PRD/Architecture/YouStacks/OKF/backlog context.
+2. Preserve the clarified product routing inside You.md. **DONE:** added `project-context/PERSONAL_API_MCP_AND_YOUSTACKS_MEMO_2026-06-15.md`.
+3. Clarify that You.md is not only a profile page; it is the durable brain plus portable expertise-stack layer consumed by h.computer, Creator.new, BAMF.ai, folder.md, MCP clients, and local/cloud agents. **DONE in docs:** PRD + Architecture + Features + TODO updated.
+4. Define the personal API/MCP boundary for `identity`, `now`, `projects`, `sources`, `memories`, `preferences`, `trust_rules`, `stacks`, and `activity`. **PENDING implementation/design spec.**
+5. Add Lovable-simple connector UX for adding sources/tools, previewing mapped context, choosing trust/visibility, and scheduling refresh. **PENDING.**
+6. Add custom crawlers, crons, source refresh, monitored updates, source health, and provenance-rich writeback. **PENDING; backend immutable-source/provenance work is a partial substrate.**
+7. Add context links, scoped grants, connected-app grants, and gated public/private identity modes for agents and products. **PENDING.**
+8. Expand YouStacks as named packages of skills, workflows, prompts, tools, docs, tests, host adapters, examples, update policy, improvement policy, and model routing. **PARTIAL existing YouStacks foundation; model routing and grants pending.**
+9. Add host adapters for Claude Code, Codex, Cursor, ChatGPT, MCP clients, local agents, and future runtimes. **PARTIAL for Claude Code/Codex/Cursor; ChatGPT/MCP-client/future runtime work pending.**
+10. Add skill learning/documentation loop from screen recordings, transcripts, SOP extraction, tool/API lists and fallbacks, agent-run logs/summaries, and saved reusable skills. **PENDING.**
+11. Add stack-level multi-agent model routing policy: orchestrator for judgment, lead for planning/execution, workers for cheap/repeated/specialized tasks, plus BYOK and open/cheaper model support. **PENDING.**
+12. Keep h.computer as Houston's personal site/agent/reference implementation that reads from You.md and writes back useful memories; Creator.new can optionally attach creator identity/context from You.md. **DONE in docs; implementation integration pending.**
+**Progress (2026-06-15):** Product-context routing pass completed. Added the dedicated memo, updated PRD/Architecture/FEATURES/TODO, and kept implementation slices explicitly pending rather than marking product behavior shipped.
 
 ## 2026-06-14 — Familiar follow-ups: graph, brain view, immutable sources
 

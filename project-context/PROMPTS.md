@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 61
-**Total messages:** 460
-**Last updated:** 2026-06-13
+**Total sessions:** 62
+**Total messages:** 461
+**Last updated:** 2026-06-15
 
 ## Table of Contents
 
+1. [2026-06-15 (h-computer-ideas-into-youmd)](#session-2026-06-15-h-computer-ideas-into-youmd) --- 1 message
 1. [2026-06-13 (okf-youmd-integration)](#session-2026-06-13-okf-youmd-integration) --- 3 messages
 1. [2026-06-09 (public-profile-indexing-import-foundation)](#session-2026-06-09-public-profile-indexing-import-foundation) --- 1 message
 1. [2026-06-13 (remote-main-sync-continuation)](#session-2026-06-13-remote-main-sync-continuation) --- 1 message
@@ -15485,3 +15486,66 @@ Auto-maintained — new messages appended each session.
 
 **2026-06-13 19:59:43 UTC**
 > This is interesting X article I just came across that seems like a relevant share not sure if it's already redundant with what we have via GBrain and OKF and our existing systems but might be worth looking into for any good architectural ideas or designs or patterns or code etc … don't like the Kimi stuff not for me but anyways just sharing for additional insight again… do with it only what you think is appropriate and worthwhile and aligned with the You.md vision and mission and goals generally too etc…. But don't create unnecessary complexity or problems just seemed relevant to share and I do think an Obsidian style desktop app client for You.md will make sense eventually and has already been partly covered in previous plans but if so we also need our web app to feel 100% consistent with that vision as well better combining our ability to have the terminal/chat and full shared shell context/content etc etc etc… I dunno Brain dump. [shared the "I Built My Own Obsidian / Familiar second-brain + KIMI Work" article — github.com/codejunkie99/familiar-second-brain]
+
+---
+
+## Session: 2026-06-15 (h-computer-ideas-into-youmd)
+
+**2026-06-15 22:13:44 UTC**
+> You.md
+> Primary repo: /Users/houstongolden/Desktop/CODE_2025/youmd
+> Product: the identity context protocol, agent brain, stack layer, and protected API/MCP for the agent internet.
+> Move these ideas from the h.computer/creator-new cloud into You.md:
+> "Your personal API/MCP" as a structured identity/context boundary.
+> Portable human context using markdown, YAML frontmatter, JSON, sources, memories, provenance, preferences, project context, and trust rules.
+> Lovable-simple connector UX for adding sources and tools.
+> Context links and scoped access for agents.
+> YouStacks as named packages of skills, workflows, prompts, tools, docs, tests, host adapters, examples, and update policies.
+> Custom crawlers, crons, source refresh, and monitored updates for a user's identity.
+> Host adapters for Claude Code, Codex, Cursor, ChatGPT, MCP clients, local agents, and future runtimes.
+> Skill learning and skill documentation loop:human screen recordings
+> transcripts
+> SOP extraction
+> tool/API list and fallbacks
+> agent-run logs and summaries
+> saved reusable skills
+>
+> Multi-agent model routing policy at the stack level:orchestrator model for judgment
+> lead model for planning/execution
+> worker models for cheap/repeated/specialized tasks
+> BYOK and open/cheaper model support
+>
+> Public/private identity modes and gated agent access.
+> You.md product clarification:
+> You.md is not only a profile page.
+> It should become the durable brain plus portable expertise-stack layer that other products consume.
+> h.computer can read from You.md and write back useful memories; Creator.new can optionally attach creator identity/context from You.md.
+>
+> ---
+> ok and I want you to look through all the new project-context docs in youmd as well as another project I was working on late last night in which I realized most of the concepts I was trying to build on h-computer (h.computer) should really be build into you.md fully natively in terms of the personal agentic computer and personal extendible structured personal api/mcp/stack etc anything related to that kinda stuff and the Lovable style vibe coding agent session and simple connector screen and crawlers/crons external source adding for your you.md agent to pull and a replicate a ton of the awesome features i have developed in my h.computer project for personal testing etc and documented on these pages https://h.computer/platform and https://h.computer/docs and also here etc https://h.computer/gallery ... all of this stuff on h.computer that is related to making it a product etc I think i gotta trust my gut on and actually build natively into you.md and keep h.computer my personal site/agent project not a product surface.  and you can also look at this whole response and the linked docs/files mentioned etc for much more detail on the more focussed / clarified vision since I started to make things a bit messy last night and have more clarity now today:
+>
+> Done. I pulled context from `creator-new`, `h-computer`, `bamf-mcp-test`, `youmd`, and `bamfsite`, then created the routing memo here:
+>
+> [idea-routing-2026-06-15.md](/Users/houstongolden/Desktop/CODE_2025/creator-new/project-context/idea-routing-2026-06-15.md)
+>
+> The clean split I saved is:
+>
+> - You.md owns the broad personal API/MCP, identity, connector memory, YouStacks, and skill-learning protocol.
+> - h.computer stays your personal brand site / personal agent / living reference implementation.
+> - Creator.new is Lovable for BAMF-powered creators, not h.computer and not Interview Studio.
+> - BAMF.ai owns the creator engine: API/MCP/Stack, content, media, brand kits, approvals, scheduling.
+> - BAMF site owns BAMF OS, company brain, CRM, client portals, and private admin tooling.
+> - bamf-mcp-test is proof/template material for BAMF-powered Creator.new demos.
+>
+> I also linked the memo from [README.md](/Users/houstongolden/Desktop/CODE_2025/creator-new/project-context/README.md), updated [tasks.json](/Users/houstongolden/Desktop/CODE_2025/creator-new/project-context/tasks.json), validated the JSON, ran `git diff --check`, and committed it:
+>
+> `af84fab docs: route late-night product ideas`
+>
+> **Best Next Steps**
+> 1. Add You.md feature requests for connector UX, custom crawlers/crons, personal API/MCP, and screen-recording-to-skill-learning.
+> 2. Add Creator.new BAMF connector detail states and BAMF Stack showcase panel.
+> 3. Tighten h.computer docs so it clearly stays Houston’s personal site/reference implementation.
+> Say `continue` and I will take the next best scoped step.
+>
+> ::git-stage{cwd="/Users/houstongolden/Desktop/CODE_2025/creator-new"}
+> ::git-commit{cwd="/Users/houstongolden/Desktop/CODE_2025/creator-new"}

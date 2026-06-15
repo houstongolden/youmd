@@ -41,9 +41,9 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "623e906bfe8ff78a6a8c4694c7e81d9bf4efaa44ac1eb87e005b4c47aa3d1bad",
+  "sourceHash": "cd02f25dba47b8f7c2a8e61e9a6fdb7c7bbc8420de9d4cd20812e04cee5af6a7",
   "cli": {
-    "version": "0.7.2"
+    "version": "0.8.0"
   },
   "counts": {
     "endpoints": 83,

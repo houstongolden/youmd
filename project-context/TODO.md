@@ -1,11 +1,22 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-13
+Last Updated: 2026-06-15
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-06-15 — h.computer idea routing into You.md
+- [x] Read the creator-new routing memo, local h.computer protocol/vision docs, live h.computer platform/docs/gallery pages, and active You.md context docs
+- [x] Add `project-context/PERSONAL_API_MCP_AND_YOUSTACKS_MEMO_2026-06-15.md` to route personal API/MCP, connector UX, source refresh, skill learning, host adapters, model routing, and gated identity access into You.md
+- [x] Update PRD, Architecture, Features, and active request tracking so You.md is documented as the canonical personal API/MCP + portable expertise-stack layer and h.computer is the consumer/reference implementation
+- [ ] Define the versioned personal API/MCP resource contract for `identity`, `now`, `projects`, `sources`, `memories`, `preferences`, `trust_rules`, `stacks`, and `activity`
+- [ ] Design connected-app grants for h.computer and Creator.new with scoped reads, provenance-rich writeback, expiry/revocation, and access preview
+- [ ] Build the Lovable-simple connector UX MVP for GitHub, URL/RSS, raw markdown/OKF, h.computer, folder.md, BAMF.ai, custom webhook, and custom JSON endpoint
+- [ ] Extend source refresh into monitored updates: per-source policy, source health, change summaries, approval/writeback, and freshness states
+- [ ] Design the skill-learning loop from screen recordings/transcripts/SOPs/agent logs into draft YouStack skills, workflows, prompts, docs, tests, and adapter updates
+- [ ] Extend YouStack manifests/adapters with stack-level model routing policy: orchestrator, lead, workers, fallbacks, BYOK/provider preferences, cost posture, risk thresholds, and approval gates
 
 ### 2026-06-14 — OKF graph + view + immutable sources
 - [x] Concept graph cross-linking: `related` edges derived from real structural relationships, round-trip-preserved, stack-manifest hub, orphan detection respects the graph

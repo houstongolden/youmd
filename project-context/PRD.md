@@ -1,7 +1,7 @@
 # You.md — Product Requirements Document
 
 Version: 2.3
-Last Updated: 2026-06-11
+Last Updated: 2026-06-15
 Founder: Houston Golden
 
 ---
@@ -20,6 +20,8 @@ You.md is your agent brain and named expertise stack layer for the agent interne
 - **Protected API/MCP:** the authenticated boundary for private memory retrieval, tokens, repo sync, connected tools, visibility changes, and sensitive actions.
 
 **Positioning:** Not just a social profile, resume, settings page, CLI, or API. You.md is the durable brain plus portable expertise-stack layer agents use before they start improvising.
+
+**h.computer routing clarification (2026-06-15):** h.computer is Houston's personal site, personal agent, and living reference implementation. The broad productizable primitive belongs here in You.md: personal API/MCP, structured identity/context, connector-backed source memory, YouStacks, host adapters, source refresh, skill learning, stack-level model routing, and gated agent access. h.computer should read from You.md and write back useful memories or activity. Creator.new can optionally attach creator identity/context from You.md. Neither should become the canonical identity/context protocol.
 
 ---
 
@@ -59,7 +61,16 @@ Anyone who wants a living, structured agent brain that evolves through conversat
 - Context links for agent-accessible identity bundles
 - SSE streaming for real-time chat
 
-### 3.4 Identity Bundle (you.json / you.md)
+### 3.4 Protected API/MCP
+The protected API/MCP is the user's structured context boundary for agents and products.
+
+- Personal API resources: `identity`, `now`, `projects`, `sources`, `memories`, `preferences`, `trust_rules`, `stacks`, and `activity`
+- MCP resources/tools for safe agent access to the same surfaces, with honest readiness states when auth, source freshness, or hosted retrieval is unavailable
+- Access modes: public read, scoped context links, owner API keys, host/stack-specific agent tokens, and connected-app grants
+- Writeback with provenance: actor, host, stack, source, confidence, timestamp, reason, and approval state
+- Product consumers: h.computer, Creator.new, BAMF.ai, folder.md, MCP clients, Claude Code, Codex, Cursor, ChatGPT, and future runtimes
+
+### 3.5 Identity Bundle (you.json / you.md)
 The compiled output — a portable identity file containing:
 - Profile data (name, bio, tagline, location, links)
 - Projects, values, "what I'm doing now"
@@ -68,6 +79,23 @@ The compiled output — a portable identity file containing:
 - Credibility signals (cross-referenced from multiple sources)
 - FAQ (predicted questions about you)
 - Connected sources metadata
+
+### 3.6 Connectors, Crawlers, and Source Refresh
+- Lovable-simple connector UX for adding sources and tools: pick source, authenticate/paste URL, preview mapped context, choose visibility/trust rules, save, and schedule refresh
+- Source ledger with immutable raw versions, content hashes, provenance, freshness, and conflict/stale/low-confidence states
+- Refresh modes: manual, webhook, hourly, daily, weekly, and monitored update summaries
+- First connector targets: GitHub, public URLs/RSS, raw markdown/OKF directories, h.computer, folder.md, BAMF.ai, social sources, custom webhooks, and custom JSON endpoints
+
+### 3.7 Skill Learning and YouStack Improvement
+- Convert human screen recordings, transcripts, SOPs, tool/API lists, agent-run logs, summaries, corrections, and repeated workflows into reusable skills
+- Draft `SKILL.md`, workflows, prompts, tests, docs, and host adapter updates into a selected YouStack
+- Require approval and smoke tests before installing, sharing, or publishing learned skills
+- Preserve provenance so every learned workflow explains what source material, run log, or human correction created it
+
+### 3.8 Stack-Level Model Routing
+- YouStacks should carry model routing policy, not just human-written instructions
+- Policy fields should cover orchestrator model, lead model, worker models, fallback models, BYOK/provider preferences, cost posture, risk thresholds, and approval gates
+- Host adapters should translate that policy into Claude Code, Codex, Cursor, ChatGPT, MCP-client, and local-agent guidance
 
 ---
 

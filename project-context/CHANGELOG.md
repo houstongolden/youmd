@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-15 — h.computer ideas routed into native You.md
+
+### docs(product): You.md owns the personal API/MCP + YouStacks primitive
+- Added `project-context/PERSONAL_API_MCP_AND_YOUSTACKS_MEMO_2026-06-15.md` after reviewing the creator-new routing memo, local h.computer protocol/vision docs, active You.md project context, and live h.computer platform/docs/gallery pages.
+- Updated PRD and Architecture to clarify that You.md is the durable brain plus portable expertise-stack layer, while h.computer remains Houston's personal site/agent/reference implementation and Creator.new can optionally attach creator identity/context.
+- Added planned feature inventory and roadmap items for personal API/MCP resources, connected-app grants, Lovable-simple connector UX, crawlers/crons/source refresh, monitored updates, skill learning from transcripts/SOPs/agent logs, host adapters, public/private identity modes, and stack-level model routing.
+- Added active request #115 so these implementation slices remain tracked until they are built and verified.
+
 ## 2026-06-15 — Lossless push, late github greeting, per-project activity log
 
 ### fix(cli): compile preserves `_profile` and unmodeled fields (lossless push)
