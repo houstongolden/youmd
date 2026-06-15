@@ -138,3 +138,35 @@ needed).
 2. **Files storage**: DB+GitHub mirror vs **GitHub-only** going forward (R8.4).
 3. **Auto-merge scope guardrail**: confirm auto-merge/conflict-resolve is ONLY
    ever the `{username}-you-md` repo; everything else stays PR-gated (R7.4-7.5).
+
+---
+
+## VERIFIED LIVE (2026-06-15, in @houstongolden's account)
+
+- **SG0** sign-in redirect — fixed (hard-nav).
+- **SG1** GitHub icon + not-connected warning dot — works (dot clears on connect).
+- **SG2** connect GitHub → `/shell?integration=github` → guided onboarding renders.
+- **SG7** `houstongolden-you-md` created (canonical layout: README, identity/,
+  projects/, stacks/, context/, you.md, you.json). Autonomous PR/auto-merge
+  VERIFIED: `agentPushViaPR` opened branch -> PR #1 "chore(projects): sync 10
+  active projects" -> AUTO-MERGED.
+- **SG4** active-project analysis + AI insights for 10 repos; written into
+  `projects/<name>.md` in the repo via the merged PR.
+- **SG5** public/private selection step renders (private default).
+- **Sync directions verified**: web->repo (auto-push/PR merge), web->local (`youmd pull`).
+
+### CRITICAL ROOT-CAUSE FIX (do not lose)
+GitHub connect was fully broken because **`TRUSTED_INTERNAL_AUTH_TOKEN` was set
+on Convex but NOT on Vercel**. The OAuth callback runs on Vercel and bailed with
+`github_server_misconfigured` before linking. FIX: set
+`TRUSTED_INTERNAL_AUTH_TOKEN` on Vercel (same value as Convex) — any new
+Vercel project/env MUST have it. Also `GITHUB_WEBHOOK_SECRET` set on Convex
+prod (for inbound push -> mirror).
+
+### REMAINING (machinery exists, not yet fully verified live)
+- **#3 full round-trip**: local push -> web -> repo (local CLI push currently
+  guarded by a stale-local-bundle check; needs pull+edit+--force) and the
+  realtime repo->webhook->Convex->local pull.
+- **#4** per-project write-scope to each project's `project-context/` + a
+  `you.md/` change log dir.
+- **#6** multi-agent concurrency.
