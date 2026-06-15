@@ -9,6 +9,7 @@
 - Improved the bottom chat composer into a single terminal command surface with a cleaner send affordance and metadata strip.
 - Added an editor subtab entry path so sidebar Crawlers/Crons navigation can open the sources pane directly.
 - Verified locally with TypeScript, targeted ESLint, radius guard, whitespace check, and in-app browser QA at desktop and mobile widths.
+- Pushed to `main`; Vercel deployment `dpl_4nb5fiWgDSHwV6gdRvVzFhYkAnP5` reached Ready and is aliased to `https://www.you.md` / `https://you.md`. Unauthenticated production `/shell` correctly redirects to `/sign-in?next=/shell`; authenticated production visual approval remains Houston-side.
 
 ## 2026-06-15 — Connected-app grants and connector MVP
 

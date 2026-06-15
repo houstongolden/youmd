@@ -7,7 +7,7 @@ Last Updated: 2026-06-15
 ## 2026-06-15 — Rebuild `/shell` as Codex/Lovable-style workspace
 
 ### 116. Remove terminal-window chrome and add full-height sidebar + resizable split shell
-**Status:** IN PROGRESS (code complete locally; Houston/prod verification pending)
+**Status:** IN PROGRESS (code complete and deployed; Houston authenticated verification pending)
 **Verified:** NO
 **Production Verified:** NO
 **Source:** 2026-06-15 — Houston: "the you.md/shell page i think it is time to remove the top part with the red/yellow/green docs and the padding and border around it etc and make it a proper resizable lovable/codex style split screen full height two column layout with a far left side menu..."
@@ -18,7 +18,7 @@ Last Updated: 2026-06-15
 4. Make the chat/detail split resizable on desktop.
 5. Improve the bottom chat composer visual treatment.
 6. Seed sidebar groups for Projects/GitHub repos, Skillstacks, connectors, crawlers, crons, API/MCP/YouStack docs, private sharing/API tokens, and connected agents while mapping to current shipped panes where backend surfaces already exist.
-**Progress (2026-06-15):** Rebuilt `/shell` as a full-height app workspace: old desktop terminal-window chrome/outer frame removed, persistent left sidebar added with New Chat/Search plus Workspace/Projects/Skillstacks/Automation/Access groups, synced GitHub repo status surfaced, desktop chat/detail split made resizable with persisted width, bottom composer restyled, and sidebar Crawlers/Crons now open the sources editor subtab. Local verification passed TypeScript, targeted ESLint, radius guard, `git diff --check`, and in-app browser QA for desktop, mobile width, and crawler navigation. Remaining: Houston visual approval and production deployment/verification.
+**Progress (2026-06-15):** Rebuilt `/shell` as a full-height app workspace: old desktop terminal-window chrome/outer frame removed, persistent left sidebar added with New Chat/Search plus Workspace/Projects/Skillstacks/Automation/Access groups, synced GitHub repo status surfaced, desktop chat/detail split made resizable with persisted width, bottom composer restyled, and sidebar Crawlers/Crons now open the sources editor subtab. Local verification passed TypeScript, targeted ESLint, radius guard, `git diff --check`, production build, and in-app browser QA for desktop, mobile width, and crawler navigation. Pushed commit `0ce1963`; Vercel deployment `dpl_4nb5fiWgDSHwV6gdRvVzFhYkAnP5` reached Ready and is aliased to `https://www.you.md` / `https://you.md`; unauthenticated live `/shell` correctly redirects to `/sign-in?next=/shell`. Remaining: Houston authenticated production visual approval.
 
 ## 2026-06-15 — Route h.computer product ideas into native You.md
 
