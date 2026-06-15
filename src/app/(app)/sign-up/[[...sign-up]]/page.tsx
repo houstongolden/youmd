@@ -312,19 +312,17 @@ export default function SignUpPage() {
           )}
         </div>
 
-        {!isInputStep && (
-          <div className="mt-3 text-center shrink-0 flex flex-col gap-1">
-            <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
-              already initialized?{" "}
-              <Link
-                href="/sign-in"
-                className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
-              >
-                sign in
-              </Link>
-            </span>
-          </div>
-        )}
+        <div className="mt-3 text-center shrink-0 flex flex-col gap-1">
+          <span className="font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-40">
+            already initialized?{" "}
+            <Link
+              href="/sign-in"
+              className="text-[hsl(var(--accent))] opacity-70 hover:opacity-100 transition-opacity"
+            >
+              sign in
+            </Link>
+          </span>
+        </div>
       </div>
     </main>
   );
