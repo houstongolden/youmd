@@ -52,6 +52,7 @@ import { agentsCommand } from "./commands/agents";
 import { stackCommand } from "./commands/stack";
 import { okfCommand } from "./commands/okf";
 import { envBackupCommand, envRestoreCommand } from "./commands/env";
+import { machineSetupCommand } from "./commands/machine";
 
 const program = new Command();
 
@@ -156,6 +157,14 @@ const HELP_GROUPS: Array<{
     commands: [
       { name: "env backup", summary: "encrypt all .env.local files into a portable vault" },
       { name: "env restore", summary: "decrypt and restore .env.local files from a vault" },
+    ],
+  },
+  {
+    title: "MACHINE",
+    commands: [
+      { name: "machine setup", summary: "bootstrap a fresh Mac with your synced skills, stacks, and context" },
+      { name: "stack sync", summary: "sync agent skills/stacks across machines" },
+      { name: "stack daemon install", summary: "run skill + identity sync in the background" },
     ],
   },
 ];
@@ -646,6 +655,16 @@ envCmd
   .option("--root <dir>", "target root directory for restored files")
   .option("-f, --force", "overwrite existing .env.local without backing them up")
   .action((vault, opts) => envRestoreCommand(vault, opts));
+
+// ─── machine — one-command setup for a fresh Mac ───────────────────
+const machineCmd = program
+  .command("machine")
+  .description("set up a new machine with your synced skills, stacks, and context");
+
+machineCmd
+  .command("setup")
+  .description("bootstrap a fresh Mac: clone synced repos, restore skills, guide secrets + daemons")
+  .action(() => machineSetupCommand());
 
 // ─── Guided tutorial when invoked with no args ─────────────────────
 // `youmd` (bare) shows a short contextual welcome / next-step guide.
