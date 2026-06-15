@@ -195,6 +195,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const [progressSteps, setProgressSteps] = useState<ProgressStep[]>([]);
   const [sessionRestored, setSessionRestored] = useState(false);
 
+  // Track whether the github-connected greeting has already fired so that
+  // when githubRepoName resolves after the first init we can re-run the
+  // greeting without triggering an infinite loop.
+  const githubGreetingFiredRef = useRef(false);
+
   // Progress step helpers
   const addStep = useCallback((label: string, detail?: string): string => {
     const id = crypto.randomUUID();
@@ -950,7 +955,16 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
   // Initialize conversation with context + auto-scrape existing links
   useEffect(() => {
-    if (initialized || !convexUser) return;
+    // Allow a re-run if githubRepoName just arrived and the github greeting
+    // hasn't been sent yet (it was null/undefined when the first init fired).
+    const needsGithubReGreet =
+      initialized &&
+      !githubGreetingFiredRef.current &&
+      typeof githubRepoName === "string" &&
+      githubRepoName.length > 0;
+
+    if (!needsGithubReGreet && initialized) return;
+    if (!convexUser) return;
     // Wait for session restore to complete before initializing a new conversation
     if (!isOnboarding && !sessionRestored) return;
     // For onboarding, we use a custom greeting prompt
@@ -1111,6 +1125,13 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       ? "\n\n" + buildGithubConnectedProtocol(githubRepoName)
       : "";
 
+    // When githubRepoName is set, the github-connected protocol ALWAYS wins —
+    // mark the ref before building contextContent so the guard above won't
+    // re-trigger after this run.
+    if (githubRepoName) {
+      githubGreetingFiredRef.current = true;
+    }
+
     const contextContent = isOnboarding && onboardingGreeting
       ? onboardingGreeting
       : githubRepoName
@@ -1123,6 +1144,13 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       role: "user",
       content: contextContent,
     };
+
+    // If re-greeing for github (late-resolved githubRepoName), clear previous
+    // greeting messages so the github greeting replaces, not appends.
+    if (needsGithubReGreet) {
+      setMessages([]);
+      setDisplayMessages([]);
+    }
 
     setInitialized(true);
     setIsThinking(true);
@@ -1345,7 +1373,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }
 
     initConversation();
-  }, [initialized, sessionRestored, convexUser, latestBundle, isOnboarding, onboardingGreeting, callLLM, callLLMStreaming, saveUpdates, saveMemories, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps, buildTurnScaffold]);
+  }, [initialized, sessionRestored, convexUser, latestBundle, isOnboarding, onboardingGreeting, githubRepoName, callLLM, callLLMStreaming, saveUpdates, saveMemories, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps, buildTurnScaffold]);
 
   // Slash commands
   const handleSlashCommand = useCallback(
