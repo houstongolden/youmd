@@ -6,6 +6,7 @@ import HeroPortrait from "./HeroPortrait";
 import { ButtonLink } from "@/components/ui/Button";
 import { Container, Section } from "@/components/ui/Layout";
 import { TerminalCard } from "@/components/ui/Card";
+import { CliInstallTabs } from "@/components/install/CliInstallTabs";
 
 const proofItems = ["Claude Code", "Cursor", "Codex", "ChatGPT"];
 
@@ -70,17 +71,19 @@ const Hero = () => {
               ))}
             </div>
 
-            <div className="mt-7 max-w-[520px] rounded-sm border border-border bg-[hsl(var(--bg-raised))] px-4 py-3">
-              <code className="break-all font-mono text-[11px] leading-relaxed text-accent">
-                $ curl -fsSL https://you.md/install.sh | bash
-              </code>
+            <div className="mt-7 max-w-[520px]">
+              <CliInstallTabs helperText="then run you" />
+              <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted-foreground/55">
+                one command installs the cli, native skills, and mcp — so every
+                local agent knows how to use you.md.
+              </p>
             </div>
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/create" variant="primary" size="lg">
+              <ButtonLink href="/create" variant="secondary" size="lg">
                 create your you.md
               </ButtonLink>
-              <ButtonLink href="/docs" variant="secondary" size="lg">
+              <ButtonLink href="/docs" variant="link" size="lg">
                 read docs
               </ButtonLink>
             </div>
