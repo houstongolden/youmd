@@ -15,6 +15,90 @@ interface SourcesPaneProps {
 }
 
 type SourceStatus = "pending" | "fetching" | "fetched" | "extracting" | "extracted" | "failed";
+type ConnectorKind = "website" | "github" | "rss" | "okf" | "webhook" | "json";
+type CrawlerProvider = "native" | "firecrawl" | "agent-browser" | "manual";
+type RefreshPolicy = "manual" | "hourly" | "daily" | "weekly" | "monthly";
+type SourceVisibility = "private" | "scoped" | "public";
+type TrustLevel = "low" | "medium" | "high" | "verified";
+
+const connectorOptions: Array<{
+  kind: ConnectorKind;
+  label: string;
+  hint: string;
+  placeholder: string;
+  defaultProvider: CrawlerProvider;
+}> = [
+  {
+    kind: "website",
+    label: "Website",
+    hint: "page, blog, docs, profile",
+    placeholder: "https://example.com/about",
+    defaultProvider: "native",
+  },
+  {
+    kind: "github",
+    label: "GitHub",
+    hint: "repo or profile context",
+    placeholder: "https://github.com/owner/repo",
+    defaultProvider: "native",
+  },
+  {
+    kind: "rss",
+    label: "RSS",
+    hint: "blog/news feed",
+    placeholder: "https://example.com/feed.xml",
+    defaultProvider: "native",
+  },
+  {
+    kind: "okf",
+    label: "OKF",
+    hint: "markdown brain directory",
+    placeholder: "https://github.com/owner/brain",
+    defaultProvider: "manual",
+  },
+  {
+    kind: "webhook",
+    label: "Webhook",
+    hint: "push updates into You.md",
+    placeholder: "https://api.example.com/youmd-hook",
+    defaultProvider: "manual",
+  },
+  {
+    kind: "json",
+    label: "JSON",
+    hint: "structured endpoint",
+    placeholder: "https://api.example.com/context.json",
+    defaultProvider: "native",
+  },
+];
+
+const crawlerOptions: Array<{ value: CrawlerProvider; label: string; hint: string }> = [
+  { value: "native", label: "native", hint: "cheap fetch first" },
+  { value: "firecrawl", label: "firecrawl", hint: "render + extract" },
+  { value: "agent-browser", label: "agent-browser", hint: "browser task/sandbox" },
+  { value: "manual", label: "manual", hint: "owner supplied" },
+];
+
+const refreshOptions: Array<{ value: RefreshPolicy; label: string }> = [
+  { value: "manual", label: "manual" },
+  { value: "daily", label: "daily" },
+  { value: "weekly", label: "weekly" },
+  { value: "monthly", label: "monthly" },
+  { value: "hourly", label: "hourly" },
+];
+
+const visibilityOptions: Array<{ value: SourceVisibility; label: string }> = [
+  { value: "private", label: "private" },
+  { value: "scoped", label: "scoped" },
+  { value: "public", label: "public" },
+];
+
+const trustOptions: Array<{ value: TrustLevel; label: string }> = [
+  { value: "medium", label: "medium" },
+  { value: "high", label: "high" },
+  { value: "verified", label: "verified" },
+  { value: "low", label: "low" },
+];
 
 const statusConfig: Record<SourceStatus, { icon: string; colorClass: string }> = {
   extracted: { icon: "\u2713", colorClass: "text-[hsl(var(--success))]" },
@@ -85,6 +169,18 @@ function inferSourceType(url: string): string {
   return "website";
 }
 
+function inferConnectorKind(url: string): ConnectorKind {
+  const lower = url.toLowerCase();
+  if (lower.includes("github.com")) return "github";
+  if (lower.endsWith(".json") || lower.includes("format=json")) return "json";
+  if (lower.includes("feed") || lower.includes("rss") || lower.endsWith(".xml")) return "rss";
+  return "website";
+}
+
+function connectorFor(kind: ConnectorKind) {
+  return connectorOptions.find((option) => option.kind === kind) ?? connectorOptions[0];
+}
+
 export function SourcesPane({}: SourcesPaneProps) {
   const { user } = useUser();
   const clerkId = user?.id;
@@ -95,6 +191,12 @@ export function SourcesPane({}: SourcesPaneProps) {
 
   // Add-source form state
   const [newUrl, setNewUrl] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [connectorKind, setConnectorKind] = useState<ConnectorKind>("website");
+  const [crawlerProvider, setCrawlerProvider] = useState<CrawlerProvider>("native");
+  const [refreshPolicy, setRefreshPolicy] = useState<RefreshPolicy>("manual");
+  const [visibility, setVisibility] = useState<SourceVisibility>("private");
+  const [trustLevel, setTrustLevel] = useState<TrustLevel>("medium");
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
@@ -106,9 +208,25 @@ export function SourcesPane({}: SourcesPaneProps) {
 
     try {
       const url = newUrl.trim();
-      const sourceType = inferSourceType(url);
-      await addSource({ clerkId, sourceType, sourceUrl: url });
+      const inferredKind = connectorKind || inferConnectorKind(url);
+      const sourceType = inferredKind === "website" ? inferSourceType(url) : inferredKind;
+      await addSource({
+        clerkId,
+        sourceType,
+        sourceUrl: url,
+        displayName: displayName.trim() || connectorFor(inferredKind).label,
+        connectorKind: inferredKind,
+        crawlerProvider,
+        refreshPolicy,
+        visibility,
+        trustLevel,
+        metadata: {
+          ux: "lovable-simple-connectors",
+          addedFrom: "sources-pane",
+        },
+      });
       setNewUrl("");
+      setDisplayName("");
     } catch (err) {
       setAddError(err instanceof Error ? err.message : "Failed to add source");
     } finally {
@@ -217,6 +335,12 @@ export function SourcesPane({}: SourcesPaneProps) {
                     <span>last sync: {s.lastFetched ? timeAgo(s.lastFetched) : "--"}</span>
                     <span>fields: {extractedCount > 0 ? extractedCount : "--"}</span>
                   </div>
+                  <div className="flex flex-wrap items-center gap-2 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40 mt-1">
+                    <span>provider: {s.crawlerProvider ?? "native"}</span>
+                    <span>refresh: {s.refreshPolicy ?? "manual"}</span>
+                    <span>visibility: {s.visibility ?? "private"}</span>
+                    <span>trust: {s.trustLevel ?? "medium"}</span>
+                  </div>
                   <div className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 mt-1 truncate">
                     {s.sourceUrl}
                   </div>
@@ -236,17 +360,53 @@ export function SourcesPane({}: SourcesPaneProps) {
         <SectionLabel>add source</SectionLabel>
         <div className="border border-border bg-card p-4">
           <FieldHelp className="mb-3 text-[11px]">
-            paste a URL to connect a new source:
+            choose a connector, preview the contract, then save it into your brain:
           </FieldHelp>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {connectorOptions.map((option) => {
+              const active = connectorKind === option.kind;
+              return (
+                <button
+                  key={option.kind}
+                  type="button"
+                  onClick={() => {
+                    setConnectorKind(option.kind);
+                    setCrawlerProvider(option.defaultProvider);
+                    setNewUrl((current) => current || "");
+                  }}
+                  className={`border p-3 text-left transition-colors ${
+                    active
+                      ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
+                      : "border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]"
+                  }`}
+                  style={{ borderRadius: "var(--radius)" }}
+                >
+                  <span className="block font-mono text-[11px] text-[hsl(var(--text-primary))]">
+                    {option.label}
+                  </span>
+                  <span className="block font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-50 mt-1">
+                    {option.hint}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
           <div className="flex gap-2">
             <Input
               type="text"
               value={newUrl}
-              onChange={(e) => setNewUrl(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setNewUrl(value);
+                if (value.trim()) {
+                  const inferred = inferConnectorKind(value.trim());
+                  setConnectorKind((current) => (current === "website" ? inferred : current));
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleAddSource();
               }}
-              placeholder="https://linkedin.com/in/username"
+              placeholder={connectorFor(connectorKind).placeholder}
               disabled={isAdding || !clerkId}
               className="min-w-0 flex-1 text-[12px]"
             />
@@ -260,14 +420,65 @@ export function SourcesPane({}: SourcesPaneProps) {
               {isAdding ? "..." : "add"}
             </Button>
           </div>
+          <div className="mt-2">
+            <Input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="optional label"
+              disabled={isAdding || !clerkId}
+              className="text-[12px]"
+            />
+          </div>
           {addError && (
             <FieldError className="mt-2 text-[11px]">
               {addError}
             </FieldError>
           )}
+          <div className="mt-4 space-y-3">
+            <div>
+              <FieldHelp className="mb-2 text-[10px]">crawler provider</FieldHelp>
+              <div className="grid grid-cols-2 gap-2">
+                {crawlerOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setCrawlerProvider(option.value)}
+                    className={`border px-2 py-2 text-left font-mono text-[10px] ${
+                      crawlerProvider === option.value
+                        ? "border-[hsl(var(--accent))] text-[hsl(var(--text-primary))]"
+                        : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-70"
+                    }`}
+                    style={{ borderRadius: "var(--radius)" }}
+                  >
+                    <span className="block">{option.label}</span>
+                    <span className="block opacity-50 mt-1">{option.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <OptionRow
+              label="refresh"
+              value={refreshPolicy}
+              options={refreshOptions}
+              onChange={(value) => setRefreshPolicy(value as RefreshPolicy)}
+            />
+            <OptionRow
+              label="visibility"
+              value={visibility}
+              options={visibilityOptions}
+              onChange={(value) => setVisibility(value as SourceVisibility)}
+            />
+            <OptionRow
+              label="trust"
+              value={trustLevel}
+              options={trustOptions}
+              onChange={(value) => setTrustLevel(value as TrustLevel)}
+            />
+          </div>
           <div className="mt-3 space-y-1">
             <FieldHelp className="text-[10px]">
-              supported: linkedin, github, x/twitter, substack, blogs, websites
+              firecrawl and agent-browser are saved as provider intent; the runner must still be configured server-side before expensive crawls run.
             </FieldHelp>
           </div>
         </div>
@@ -302,6 +513,41 @@ export function SourcesPane({}: SourcesPaneProps) {
             </span>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function OptionRow({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <FieldHelp className="mb-2 text-[10px]">{label}</FieldHelp>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={`border px-2 py-1 font-mono text-[10px] ${
+              value === option.value
+                ? "border-[hsl(var(--accent))] text-[hsl(var(--text-primary))]"
+                : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-70"
+            }`}
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
     </div>
   );

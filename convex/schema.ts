@@ -407,6 +407,12 @@ export default defineSchema({
     userId: v.id("users"),
     sourceType: v.string(),
     sourceUrl: v.string(),
+    displayName: v.optional(v.string()),
+    connectorKind: v.optional(v.string()), // "url" | "github" | "rss" | "okf" | "webhook" | "json" | ...
+    crawlerProvider: v.optional(v.string()), // "native" | "firecrawl" | "agent-browser" | "manual"
+    refreshPolicy: v.optional(v.string()), // "manual" | "hourly" | "daily" | "weekly" | "monthly"
+    visibility: v.optional(v.string()), // "private" | "scoped" | "public"
+    trustLevel: v.optional(v.string()), // "low" | "medium" | "high" | "verified"
     rawStorageId: v.optional(v.id("_storage")),
     extracted: v.optional(v.any()),
     status: v.union(
@@ -418,7 +424,11 @@ export default defineSchema({
       v.literal("failed")
     ),
     lastFetched: v.optional(v.number()),
+    lastChangedAt: v.optional(v.number()),
+    nextRefreshAt: v.optional(v.number()),
+    failureCount: v.optional(v.number()),
     errorMessage: v.optional(v.string()),
+    metadata: v.optional(v.any()),
     // Immutable-source tracking (additive): content-address the latest fetch and
     // point at its append-only version row. Raw content is versioned, not
     // overwritten in place.
@@ -426,7 +436,8 @@ export default defineSchema({
     latestVersionId: v.optional(v.id("rawSourceVersions")),
   })
     .index("by_userId", ["userId"])
-    .index("by_userId_type", ["userId", "sourceType"]),
+    .index("by_userId_type", ["userId", "sourceType"])
+    .index("by_nextRefreshAt", ["nextRefreshAt"]),
 
   // Append-only ledger of raw source fetches. A new row is written only when a
   // fetch produces content that differs from the latest stored hash, so prior
@@ -469,6 +480,31 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_keyHash", ["keyHash"]),
+
+  // ── Connected-app grants ───────────────────────────────────
+  // Product/app-level grants are distinct from owner API keys. They let the
+  // owner authorize a named app, host, or integration to read/write specific
+  // personal API/MCP resources with expiry, revocation, and audit metadata.
+  connectedAppGrants: defineTable({
+    userId: v.id("users"),
+    appSlug: v.string(),
+    appName: v.string(),
+    appType: v.string(), // "first_party" | "third_party" | "local_agent" | "mcp_client" | "custom"
+    tokenHash: v.string(),
+    scopes: v.array(v.string()), // "identity:read", "sources:write", ...
+    resourceScopes: v.array(v.string()), // "identity", "now", "projects", "sources", ...
+    writePolicy: v.string(), // "read_only" | "propose" | "approved_write"
+    trustLevel: v.string(), // "low" | "medium" | "high" | "verified"
+    expiresAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+    lastUsedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+    metadata: v.optional(v.any()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_userId_appSlug", ["userId", "appSlug"]),
 
   privateVault: defineTable({
     userId: v.id("users"),

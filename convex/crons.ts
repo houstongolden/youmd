@@ -5,6 +5,7 @@
  *   - hourly: rateLimits table cleanup (delete rows older than 1 hour)
  *   - monthly: unclaimed public profile portrait/avatar QA
  *   - daily: due public-profile source metadata refresh
+ *   - hourly: due owner-connected source refresh marking
  *
  * Add new crons here as needed. Each entry runs in the Convex scheduler
  * — there's no separate cron daemon to manage.
@@ -51,6 +52,19 @@ crons.daily(
   { hourUTC: 10, minuteUTC: 55 },
   internal.profileIndexing.fetchDueProfileSources,
   { dryRun: false, limit: 50 }
+);
+
+// Personal connector refresh marker.
+//
+// Cheap by design: this does not run browser automation, Firecrawl, Apify, or
+// LLM extraction by itself. It only marks due owner-connected sources as
+// `pending` and advances their nextRefreshAt. The existing pipeline runner or
+// a future approval-aware crawler worker performs the expensive work.
+crons.hourly(
+  "mark due personal sources pending",
+  { minuteUTC: 47 },
+  internal.sourceRefresh.markDueSourcesPending,
+  { limit: 100 }
 );
 
 // L19 — Nightly dreaming loop (deterministic v1, no LLM).

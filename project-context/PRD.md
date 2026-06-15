@@ -84,7 +84,7 @@ The compiled output — a portable identity file containing:
 - Lovable-simple connector UX for adding sources and tools: pick source, authenticate/paste URL, preview mapped context, choose visibility/trust rules, save, and schedule refresh
 - Source ledger with immutable raw versions, content hashes, provenance, freshness, and conflict/stale/low-confidence states
 - Refresh modes: manual, webhook, hourly, daily, weekly, and monitored update summaries
-- First connector targets: GitHub, public URLs/RSS, raw markdown/OKF directories, h.computer, folder.md, BAMF.ai, social sources, custom webhooks, and custom JSON endpoints
+- First connector targets: GitHub, public URLs/RSS, raw markdown/OKF directories, custom webhooks, custom JSON endpoints, and generic connected-app grants for future product integrations
 
 ### 3.7 Skill Learning and YouStack Improvement
 - Convert human screen recordings, transcripts, SOPs, tool/API lists, agent-run logs, summaries, corrections, and repeated workflows into reusable skills

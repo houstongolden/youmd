@@ -192,6 +192,19 @@ function buildProjectTodo(project: ProjectSeed): string {
   ].join("\n");
 }
 
+const SOURCE_REFRESH_INTERVAL_MS: Record<string, number> = {
+  hourly: 60 * 60 * 1000,
+  daily: 24 * 60 * 60 * 1000,
+  weekly: 7 * 24 * 60 * 60 * 1000,
+  monthly: 30 * 24 * 60 * 60 * 1000,
+};
+
+function computeNextSourceRefresh(refreshPolicy?: string): number | undefined {
+  if (!refreshPolicy || refreshPolicy === "manual") return undefined;
+  const interval = SOURCE_REFRESH_INTERVAL_MS[refreshPolicy];
+  return interval ? Date.now() + interval : undefined;
+}
+
 function extractProjects(
   yj: Record<string, unknown>,
   fallbackProjects: Array<Record<string, unknown>> = []
@@ -989,6 +1002,13 @@ export const addSource = mutation({
     _internalAuthToken: v.optional(v.string()),
     sourceType: v.string(),
     sourceUrl: v.string(),
+    displayName: v.optional(v.string()),
+    connectorKind: v.optional(v.string()),
+    crawlerProvider: v.optional(v.string()),
+    refreshPolicy: v.optional(v.string()),
+    visibility: v.optional(v.string()),
+    trustLevel: v.optional(v.string()),
+    metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     // Verify the caller IS the user they claim to be (cycle 38 P0 fix)
@@ -1001,18 +1021,33 @@ export const addSource = mutation({
 
     if (!user) throw new Error("User not found");
 
-    // Check for existing source of same type
-    const existing = await ctx.db
+    const normalizedUrl = args.sourceUrl.trim();
+    if (!normalizedUrl) throw new Error("sourceUrl is required");
+
+    // Check for an exact existing source URL. Broad source types like
+    // "website" or "rss" can appear many times; replacing by sourceType alone
+    // silently loses connected sources.
+    const existing = (await ctx.db
       .query("sources")
-      .withIndex("by_userId_type", (q) =>
-        q.eq("userId", user._id).eq("sourceType", args.sourceType)
-      )
-      .first();
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect()).find((source) => source.sourceUrl === normalizedUrl);
+
+    const refreshPolicy = args.refreshPolicy ?? "manual";
+    const nextRefreshAt = computeNextSourceRefresh(refreshPolicy);
 
     if (existing) {
       // Update existing source
       await ctx.db.patch(existing._id, {
-        sourceUrl: args.sourceUrl,
+        sourceType: args.sourceType,
+        sourceUrl: normalizedUrl,
+        displayName: args.displayName,
+        connectorKind: args.connectorKind ?? args.sourceType,
+        crawlerProvider: args.crawlerProvider ?? existing.crawlerProvider ?? "native",
+        refreshPolicy,
+        visibility: args.visibility ?? existing.visibility ?? "private",
+        trustLevel: args.trustLevel ?? existing.trustLevel ?? "medium",
+        metadata: args.metadata ?? existing.metadata,
+        nextRefreshAt,
         status: "pending",
       });
       return existing._id;
@@ -1022,7 +1057,16 @@ export const addSource = mutation({
     const sourceId = await ctx.db.insert("sources", {
       userId: user._id,
       sourceType: args.sourceType,
-      sourceUrl: args.sourceUrl,
+      sourceUrl: normalizedUrl,
+      displayName: args.displayName,
+      connectorKind: args.connectorKind ?? args.sourceType,
+      crawlerProvider: args.crawlerProvider ?? "native",
+      refreshPolicy,
+      visibility: args.visibility ?? "private",
+      trustLevel: args.trustLevel ?? "medium",
+      nextRefreshAt,
+      failureCount: 0,
+      metadata: args.metadata,
       status: "pending",
     });
 

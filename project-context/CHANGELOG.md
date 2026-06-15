@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-15 — Connected-app grants and connector MVP
+
+### feat: You.md-native grants, connector metadata, and refresh marker
+- Added `connectedAppGrants` with hashed `yg_` tokens, resource scopes, action scopes, write policy, trust level, expiry, revocation, owner CRUD/list/page/resolve helpers, and focused tests.
+- Extended `sources` with connector kind, crawler provider intent, refresh policy, visibility, trust level, next refresh, failure count, display name, and metadata. `addSource` now dedupes by exact URL instead of clobbering all sources with the same broad type.
+- Upgraded the Sources pane into the first Lovable-simple connector MVP: Website/GitHub/RSS/OKF/Webhook/JSON, provider intent (`native`, `firecrawl`, `agent-browser`, `manual`), refresh cadence, visibility, trust, and labels.
+- Added a cheap hourly source-refresh marker cron that marks due personal sources pending without automatically running Firecrawl, browser automation, Apify, or LLM extraction.
+- Added `project-context/CONNECTED_APPS_CONNECTORS_MVP_2026-06-15.md` documenting the You.md-only MVP, Firecrawl/agent-browser runner boundaries, and next implementation slices.
+
 ## 2026-06-15 — h.computer ideas routed into native You.md
 
 ### docs(product): You.md owns the personal API/MCP + YouStacks primitive

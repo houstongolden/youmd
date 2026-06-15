@@ -7,13 +7,24 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-15 — You.md connected apps + connector/crawler MVP
+- [x] Add first-class connected-app grants with hashed `yg_` tokens, resource scopes, action scopes, write policy, trust level, expiry, revocation, and owner CRUD queries/mutations
+- [x] Extend source records with connector kind, crawler provider intent, refresh policy, visibility, trust level, next refresh, failure count, display name, and metadata
+- [x] Upgrade the Sources pane into a Lovable-simple connector MVP with Website/GitHub/RSS/OKF/Webhook/JSON connector choices, native/firecrawl/agent-browser/manual provider intent, refresh cadence, visibility, and trust controls
+- [x] Add an hourly cheap source-refresh marker cron that only marks due personal sources pending and does not auto-run expensive crawls/LLM work
+- [x] Document the You.md-only MVP and runner plan in `project-context/CONNECTED_APPS_CONNECTORS_MVP_2026-06-15.md`
+- [ ] Wire `yg_` connected-app grants into HTTP/MCP auth and agent activity logging
+- [ ] Add source detail actions: refresh now, pause, set policy, provenance/version/failure view
+- [ ] Implement native + Firecrawl crawler runner with server-side env keys, rate limits, cost checks, immutable raw versions, and approval-aware extraction
+- [ ] Design the agent-browser sandbox runner boundary before executing browser tasks server-side
+
 ### 2026-06-15 — h.computer idea routing into You.md
 - [x] Read the creator-new routing memo, local h.computer protocol/vision docs, live h.computer platform/docs/gallery pages, and active You.md context docs
 - [x] Add `project-context/PERSONAL_API_MCP_AND_YOUSTACKS_MEMO_2026-06-15.md` to route personal API/MCP, connector UX, source refresh, skill learning, host adapters, model routing, and gated identity access into You.md
 - [x] Update PRD, Architecture, Features, and active request tracking so You.md is documented as the canonical personal API/MCP + portable expertise-stack layer and h.computer is the consumer/reference implementation
 - [ ] Define the versioned personal API/MCP resource contract for `identity`, `now`, `projects`, `sources`, `memories`, `preferences`, `trust_rules`, `stacks`, and `activity`
-- [ ] Design connected-app grants for h.computer and Creator.new with scoped reads, provenance-rich writeback, expiry/revocation, and access preview
-- [ ] Build the Lovable-simple connector UX MVP for GitHub, URL/RSS, raw markdown/OKF, h.computer, folder.md, BAMF.ai, custom webhook, and custom JSON endpoint
+- [x] Design and implement the first connected-app grant substrate for You.md-native scoped reads/writes, expiry/revocation, trust level, and access preview metadata
+- [x] Build the first Lovable-simple connector UX MVP for Website, GitHub, RSS, OKF, Webhook, and JSON source setup
 - [ ] Extend source refresh into monitored updates: per-source policy, source health, change summaries, approval/writeback, and freshness states
 - [ ] Design the skill-learning loop from screen recordings/transcripts/SOPs/agent logs into draft YouStack skills, workflows, prompts, docs, tests, and adapter updates
 - [ ] Extend YouStack manifests/adapters with stack-level model routing policy: orchestrator, lead, workers, fallbacks, BYOK/provider preferences, cost posture, risk thresholds, and approval gates
