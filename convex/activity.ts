@@ -16,6 +16,7 @@ export const logActivity = internalMutation({
     scope: v.optional(v.string()),
     tokenId: v.optional(v.id("contextLinks")),
     apiKeyId: v.optional(v.id("apiKeys")),
+    connectedAppGrantId: v.optional(v.id("connectedAppGrants")),
     status: v.string(),
     details: v.optional(v.any()),
     bundleVersionBefore: v.optional(v.number()),
@@ -42,7 +43,7 @@ export const logActivity = internalMutation({
 function computeTrust(source: string, hasToken: boolean, hasApiKey: boolean): string {
   if (source === "context-link" || hasToken) return "verified-third-party";
   if (source === "web-fetch") return "verified-third-party";
-  if (source === "api-key" || source === "mcp" || hasApiKey) return "self-attributed";
+  if (source === "api-key" || source === "mcp" || source === "connected-app" || hasApiKey) return "self-attributed";
   if (source === "cli") return "self-attributed";
   return "unknown";
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { convexTest } from "convex-test";
 
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import schema from "./schema";
 import { hashKey } from "./apiKeys";
 
@@ -45,6 +45,9 @@ describe("connected app grants", () => {
     });
 
     expect(resolved).toMatchObject({
+      userId: CLERK,
+      username: "grant-owner",
+      plan: "pro",
       appSlug: "personal-browser",
       appName: "Personal Browser",
       appType: "local_agent",
@@ -53,6 +56,14 @@ describe("connected app grants", () => {
       writePolicy: "propose",
       trustLevel: "high",
     });
+
+    await t.mutation(internal.connectedApps.updateLastUsed, {
+      grantId: resolved!.id,
+    });
+    const touched = await t.query(api.connectedApps.getByTokenHash, {
+      tokenHash: await hashKey(created.token),
+    });
+    expect(touched?.id).toBe(resolved?.id);
   });
 
   it("revokes older active grants for the same app slug", async () => {

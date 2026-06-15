@@ -13,10 +13,13 @@ PRD Version: 2.3
 - [x] Upgrade the Sources pane into a Lovable-simple connector MVP with Website/GitHub/RSS/OKF/Webhook/JSON connector choices, native/firecrawl/agent-browser/manual provider intent, refresh cadence, visibility, and trust controls
 - [x] Add an hourly cheap source-refresh marker cron that only marks due personal sources pending and does not auto-run expensive crawls/LLM work
 - [x] Document the You.md-only MVP and runner plan in `project-context/CONNECTED_APPS_CONNECTORS_MVP_2026-06-15.md`
-- [ ] Wire `yg_` connected-app grants into HTTP/MCP auth and agent activity logging
-- [ ] Add source detail actions: refresh now, pause, set policy, provenance/version/failure view
-- [ ] Implement native + Firecrawl crawler runner with server-side env keys, rate limits, cost checks, immutable raw versions, and approval-aware extraction
-- [ ] Design the agent-browser sandbox runner boundary before executing browser tasks server-side
+- [x] Wire `yg_` connected-app grants into HTTP/MCP auth and agent activity logging with resource/action scope checks and write-policy enforcement
+- [x] Add source detail actions: refresh now, pause, set policy, provenance/version/failure view
+- [x] Implement the native + Firecrawl crawler runner foundation through the existing pipeline with immutable raw versions and env-key fail-closed behavior
+- [x] Add the agent-browser provider boundary as a fail-closed sandbox-required runner stub before executing browser tasks server-side
+- [ ] Add per-user/provider rate limits, cost checks, monitored change summaries, and approval-aware extraction/writeback before cron-triggered expensive work
+- [ ] Configure and verify `FIRECRAWL_API_KEY` in dev/prod, then smoke a real Firecrawl source refresh end-to-end
+- [ ] Design and implement the actual agent-browser sandbox worker with action transcripts, screenshot artifacts, and secret/permission boundaries
 
 ### 2026-06-15 — h.computer idea routing into You.md
 - [x] Read the creator-new routing memo, local h.computer protocol/vision docs, live h.computer platform/docs/gallery pages, and active You.md context docs

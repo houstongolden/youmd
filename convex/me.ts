@@ -1094,6 +1094,142 @@ export const getSources = query({
   },
 });
 
+export const refreshSourceNow = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    sourceId: v.id("sources"),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+
+    const source = await ctx.db.get(args.sourceId);
+    if (!source || source.userId !== user._id) throw new Error("Source not found");
+
+    await ctx.db.patch(args.sourceId, {
+      status: "pending",
+      errorMessage: undefined,
+      nextRefreshAt: source.refreshPolicy && source.refreshPolicy !== "manual"
+        ? computeNextSourceRefresh(source.refreshPolicy)
+        : source.nextRefreshAt,
+      metadata: {
+        ...(source.metadata ?? {}),
+        refreshRequestedAt: Date.now(),
+        refreshRequestedFrom: "sources-pane",
+      },
+    });
+
+    return { success: true };
+  },
+});
+
+export const pauseSourceRefresh = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    sourceId: v.id("sources"),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+
+    const source = await ctx.db.get(args.sourceId);
+    if (!source || source.userId !== user._id) throw new Error("Source not found");
+
+    await ctx.db.patch(args.sourceId, {
+      refreshPolicy: "manual",
+      nextRefreshAt: undefined,
+      metadata: {
+        ...(source.metadata ?? {}),
+        pausedAt: Date.now(),
+        pausedFrom: "sources-pane",
+      },
+    });
+
+    return { success: true };
+  },
+});
+
+export const updateSourcePolicy = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    sourceId: v.id("sources"),
+    crawlerProvider: v.optional(v.string()),
+    refreshPolicy: v.optional(v.string()),
+    visibility: v.optional(v.string()),
+    trustLevel: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+
+    const source = await ctx.db.get(args.sourceId);
+    if (!source || source.userId !== user._id) throw new Error("Source not found");
+
+    const refreshPolicy = args.refreshPolicy ?? source.refreshPolicy ?? "manual";
+    await ctx.db.patch(args.sourceId, {
+      crawlerProvider: args.crawlerProvider ?? source.crawlerProvider ?? "native",
+      refreshPolicy,
+      visibility: args.visibility ?? source.visibility ?? "private",
+      trustLevel: args.trustLevel ?? source.trustLevel ?? "medium",
+      nextRefreshAt: computeNextSourceRefresh(refreshPolicy),
+      metadata: {
+        ...(source.metadata ?? {}),
+        policyUpdatedAt: Date.now(),
+        policyUpdatedFrom: "sources-pane",
+      },
+    });
+
+    return { success: true };
+  },
+});
+
+export const getSourceVersions = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    sourceId: v.id("sources"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return [];
+
+    const source = await ctx.db.get(args.sourceId);
+    if (!source || source.userId !== user._id) throw new Error("Source not found");
+
+    const versions = await ctx.db
+      .query("rawSourceVersions")
+      .withIndex("by_sourceId", (q) => q.eq("sourceId", args.sourceId))
+      .order("desc")
+      .take(Math.min(Math.max(args.limit ?? 10, 1), 25));
+
+    return versions;
+  },
+});
+
 /**
  * P13: cursor-paginated variant of getSources. Same auth contract and the
  * same index order (by_userId, _creationTime ascending) as the legacy

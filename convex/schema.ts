@@ -689,7 +689,7 @@ export default defineSchema({
     profileId: v.optional(v.id("profiles")),
     // Who/what
     agentName: v.string(),
-    agentSource: v.string(), // "mcp" | "context-link" | "api-key" | "web-fetch" | "cli"
+    agentSource: v.string(), // "mcp" | "context-link" | "api-key" | "connected-app" | "web-fetch" | "cli"
     agentVersion: v.optional(v.string()),
     // What action
     action: v.string(), // "read" | "read_section" | "write" | "memory_add" | "skill_use" | "compile" | "push" | "publish" | "vault_read" | "vault_write" | "scope_change"
@@ -698,6 +698,7 @@ export default defineSchema({
     scope: v.optional(v.string()),
     tokenId: v.optional(v.id("contextLinks")),
     apiKeyId: v.optional(v.id("apiKeys")),
+    connectedAppGrantId: v.optional(v.id("connectedAppGrants")),
     // Result
     status: v.string(), // "success" | "denied" | "error"
     details: v.optional(v.any()),

@@ -39,16 +39,22 @@ Grant resource scopes:
 Grant action scopes:
 
 - `identity:read`
+- `identity:write`
 - `now:read`
 - `projects:read`
+- `projects:write`
 - `sources:read`
 - `sources:write`
 - `memories:read`
 - `memories:write`
 - `preferences:read`
+- `preferences:write`
 - `trust_rules:read`
+- `trust_rules:write`
 - `stacks:read`
+- `stacks:write`
 - `activity:read`
+- `activity:write`
 
 Write policies:
 
@@ -66,7 +72,9 @@ Trust levels:
 Code surfaces:
 
 - `convex/schema.ts` — `connectedAppGrants`
-- `convex/connectedApps.ts` — create/list/page/revoke/resolve-by-token-hash
+- `convex/connectedApps.ts` — create/list/page/revoke/resolve-by-token-hash/last-used
+- `convex/http.ts` — `yg_` HTTP/MCP auth, grant scope mapping, write-policy denial
+- `convex/activity.ts` — grant-linked activity records
 - `convex/connectedApps.test.ts`
 
 ### Connector Source Metadata
@@ -108,13 +116,16 @@ The Sources pane now lets the owner choose:
 
 Important guardrail:
 
-- Firecrawl and agent-browser are currently saved as provider intent only.
-- This slice does not execute expensive crawls, browser automation, or LLM extraction automatically.
-- The runner needs server-side env keys, rate limits, sandbox policy, failure telemetry, and approval behavior before it performs real work.
+- Firecrawl now executes only through the explicit pipeline provider path and fails closed if `FIRECRAWL_API_KEY` is not configured.
+- Agent-browser remains fail-closed until a sandbox runner boundary is implemented.
+- The hourly cron still does not execute expensive crawls, browser automation, or LLM extraction automatically.
+- Rate limits, cost checks, monitored update summaries, and approval behavior remain the next safety layer before autonomous expensive work.
 
 Code surface:
 
 - `src/components/panes/SourcesPane.tsx`
+- `convex/me.ts` — refresh now, pause, policy update, raw-version history
+- `convex/sourceActions.test.ts`
 
 ### Source Refresh Cron Marker
 
@@ -211,28 +222,29 @@ Use for:
 
 Wire `yg_` connected-app grants into HTTP/MCP auth alongside `ym_` API keys:
 
-- Detect `yg_` bearer tokens.
-- Resolve via `connectedApps.getByTokenHash`.
-- Enforce grant scopes and resource scopes.
-- Record `agentActivity` with `agentSource: "connected-app"`.
-- Return explicit denied envelopes for missing/expired/revoked/scope-mismatched grants.
+- Detect `yg_` bearer tokens. **DONE**
+- Resolve via `connectedApps.getByTokenHash`. **DONE**
+- Enforce grant scopes and resource scopes. **DONE**
+- Enforce write policy before mutations. **DONE**
+- Record `agentActivity` with `agentSource: "connected-app"`. **DONE**
+- Return explicit denied envelopes for missing/expired/revoked/scope-mismatched grants. **DONE**
 
 ### P2: Connector Details + Manual Refresh
 
 Add owner actions:
 
-- `refreshSourceNow(sourceId)` — marks one source pending.
-- `pauseSource(sourceId)` — clears `nextRefreshAt`.
-- `setSourcePolicy(sourceId, refreshPolicy, crawlerProvider, visibility, trustLevel)`.
-- Source detail pane with last version hash, next refresh, failure count, and provenance.
+- `refreshSourceNow(sourceId)` — marks one source pending. **DONE**
+- `pauseSource(sourceId)` — clears `nextRefreshAt`. **DONE**
+- `setSourcePolicy(sourceId, refreshPolicy, crawlerProvider, visibility, trustLevel)`. **DONE**
+- Source detail pane with last version hash, next refresh, failure count, and provenance. **DONE**
 
 ### P3: Native + Firecrawl Runner
 
 Add an approval-aware crawler worker:
 
-- Native fetch first.
-- Firecrawl provider for selected sources when configured.
-- Save raw output through `recordRawSourceVersion`.
+- Native fetch first. **DONE**
+- Firecrawl provider for selected sources when configured. **DONE**
+- Save raw output through `recordRawSourceVersion`. **DONE**
 - Set `lastChangedAt` only when content hash changes.
 - Update `failureCount` and `errorMessage`.
 - Never auto-run LLM extraction from cron without a separate policy.
@@ -251,7 +263,11 @@ Add browser task support only after the runner boundary is designed:
 This slice was verified with:
 
 ```bash
-npx convex codegen
-npx vitest run convex/connectedApps.test.ts convex/sourceRefresh.test.ts
-npx tsc --noEmit --pretty false
+npx convex codegen --typecheck enable
+npx vitest run convex/connectedApps.test.ts convex/sourceRefresh.test.ts convex/sourceActions.test.ts convex/pipeline/mutations.test.ts
+npx tsc --noEmit
+npm run lint
+npm run docs:check
+npm run agent-docs:handoff
+git diff --check
 ```

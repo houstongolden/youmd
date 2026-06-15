@@ -146,6 +146,144 @@ export const fetchWebsite = internalAction({
 });
 
 // ---------------------------------------------------------------------------
+// fetchWithFirecrawl — Use Firecrawl for markdown-first source refreshes
+// ---------------------------------------------------------------------------
+
+export const fetchWithFirecrawl = internalAction({
+  args: {
+    sourceId: v.id("sources"),
+    url: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = process.env.FIRECRAWL_API_KEY;
+    if (!apiKey) {
+      await ctx.runMutation(internal.pipeline.mutations.updateSourceStatus, {
+        sourceId: args.sourceId,
+        status: "failed",
+        errorMessage: "FIRECRAWL_API_KEY not configured",
+      });
+      return { success: false, error: "FIRECRAWL_API_KEY not configured" };
+    }
+
+    await ctx.runMutation(internal.pipeline.mutations.updateSourceStatus, {
+      sourceId: args.sourceId,
+      status: "fetching",
+    });
+
+    try {
+      const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url: args.url,
+          formats: ["markdown", "html"],
+          onlyMainContent: true,
+        }),
+        signal: AbortSignal.timeout(90_000),
+      });
+
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`Firecrawl API error ${response.status}: ${body.slice(0, 500)}`);
+      }
+
+      const result = await response.json() as {
+        success?: boolean;
+        data?: {
+          markdown?: string;
+          html?: string;
+          metadata?: Record<string, unknown>;
+        };
+      };
+      if (result.success === false) {
+        throw new Error("Firecrawl scrape returned success=false");
+      }
+
+      const markdown = result.data?.markdown ?? "";
+      const html = result.data?.html ?? "";
+      const sourceText = markdown || htmlToText(html);
+      if (!sourceText.trim()) {
+        throw new Error("Firecrawl returned no markdown or HTML content");
+      }
+
+      const rawPayload = JSON.stringify(
+        {
+          provider: "firecrawl",
+          url: args.url,
+          markdown,
+          html,
+          metadata: result.data?.metadata ?? null,
+        },
+        null,
+        2
+      );
+      const rawStorageId = await ctx.storage.store(
+        new Blob([rawPayload], { type: "application/json" })
+      );
+
+      const maxChars = 100_000;
+      const trimmedText =
+        sourceText.length > maxChars
+          ? sourceText.slice(0, maxChars) + "\n\n[Content truncated]"
+          : sourceText;
+
+      await ctx.runMutation(internal.pipeline.mutations.updateSourceFetched, {
+        sourceId: args.sourceId,
+        rawStorageId,
+        extractedText: trimmedText,
+      });
+
+      try {
+        const contentHash = await computeRawSourceHash(markdown || html || rawPayload);
+        await ctx.runMutation(internal.pipeline.mutations.recordRawSourceVersion, {
+          sourceId: args.sourceId,
+          rawStorageId,
+          contentHash,
+          fetchedAt: Date.now(),
+        });
+      } catch {
+        // Versioning is additive provenance; ignore failures here.
+      }
+
+      return { success: true, textLength: trimmedText.length };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown Firecrawl error";
+      await ctx.runMutation(internal.pipeline.mutations.updateSourceStatus, {
+        sourceId: args.sourceId,
+        status: "failed",
+        errorMessage: `Firecrawl fetch failed: ${message}`,
+      });
+      return { success: false, error: message };
+    }
+  },
+});
+
+export const fetchWithAgentBrowser = internalAction({
+  args: {
+    sourceId: v.id("sources"),
+    url: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.runMutation(internal.pipeline.mutations.updateSourceStatus, {
+      sourceId: args.sourceId,
+      status: "failed",
+      errorMessage:
+        "Agent-browser crawler requires a configured sandbox runner before execution",
+    });
+    return {
+      success: false,
+      error: `Agent-browser sandbox runner not configured for ${args.url}`,
+    };
+  },
+});
+
+// ---------------------------------------------------------------------------
 // fetchWithApify — Use Apify actors for LinkedIn and X scraping
 // ---------------------------------------------------------------------------
 

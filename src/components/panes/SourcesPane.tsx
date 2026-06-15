@@ -138,6 +138,19 @@ function timeAgo(timestamp: number): string {
   return `${days}d ago`;
 }
 
+function timeDistance(timestamp: number): string {
+  const diff = timestamp - Date.now();
+  if (diff <= 0) return timeAgo(timestamp);
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return `in ${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `in ${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `in ${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `in ${days}d`;
+}
+
 /** Count extracted data fields (rough heuristic). */
 function countExtracted(extracted: unknown): number {
   if (!extracted || typeof extracted !== "object") return 0;
@@ -188,6 +201,9 @@ export function SourcesPane({}: SourcesPaneProps) {
   // Real data from Convex
   const sources = useQuery(api.me.getSources, clerkId ? { clerkId } : "skip");
   const addSource = useMutation(api.me.addSource);
+  const refreshSourceNow = useMutation(api.me.refreshSourceNow);
+  const pauseSourceRefresh = useMutation(api.me.pauseSourceRefresh);
+  const updateSourcePolicy = useMutation(api.me.updateSourcePolicy);
 
   // Add-source form state
   const [newUrl, setNewUrl] = useState("");
@@ -199,6 +215,29 @@ export function SourcesPane({}: SourcesPaneProps) {
   const [trustLevel, setTrustLevel] = useState<TrustLevel>("medium");
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [selectedSourceId, setSelectedSourceId] = useState<Id<"sources"> | null>(null);
+  const [actionSourceId, setActionSourceId] = useState<Id<"sources"> | null>(null);
+  const [sourceActionError, setSourceActionError] = useState<string | null>(null);
+  const sourceVersions = useQuery(
+    api.me.getSourceVersions,
+    clerkId && selectedSourceId ? { clerkId, sourceId: selectedSourceId } : "skip"
+  );
+
+  const runSourceAction = async (
+    sourceId: Id<"sources">,
+    action: () => Promise<unknown>
+  ) => {
+    if (!clerkId) return;
+    setActionSourceId(sourceId);
+    setSourceActionError(null);
+    try {
+      await action();
+    } catch (err) {
+      setSourceActionError(err instanceof Error ? err.message : "Source action failed");
+    } finally {
+      setActionSourceId(null);
+    }
+  };
 
   const handleAddSource = async () => {
     if (!clerkId || !newUrl.trim()) return;
@@ -311,6 +350,8 @@ export function SourcesPane({}: SourcesPaneProps) {
               const status = s.status as SourceStatus;
               const cfg = statusConfig[status] || defaultStatusConfig;
               const extractedCount = countExtracted(s.extracted);
+              const isSelected = selectedSourceId === s._id;
+              const isBusy = actionSourceId === s._id;
 
               return (
                 <div
@@ -344,9 +385,129 @@ export function SourcesPane({}: SourcesPaneProps) {
                   <div className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 mt-1 truncate">
                     {s.sourceUrl}
                   </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-[10px]"
+                      disabled={isBusy || status === "fetching" || status === "extracting"}
+                      onClick={() =>
+                        runSourceAction(s._id, () =>
+                          refreshSourceNow({ clerkId: clerkId!, sourceId: s._id })
+                        )
+                      }
+                    >
+                      {isBusy ? "working" : "refresh"}
+                    </Button>
+                    {(s.refreshPolicy ?? "manual") !== "manual" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-[10px]"
+                        disabled={isBusy}
+                        onClick={() =>
+                          runSourceAction(s._id, () =>
+                            pauseSourceRefresh({ clerkId: clerkId!, sourceId: s._id })
+                          )
+                        }
+                      >
+                        pause cron
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="terminal-link"
+                      className="h-7 px-0 text-[10px]"
+                      onClick={() => setSelectedSourceId(isSelected ? null : s._id)}
+                    >
+                      {isSelected ? "hide details" : "details"}
+                    </Button>
+                  </div>
+                  {isSelected && (
+                    <div className="mt-3 border-t border-[hsl(var(--border))] pt-3">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <SourcePolicyRow
+                          label="crawler"
+                          value={s.crawlerProvider ?? "native"}
+                          options={crawlerOptions}
+                          disabled={isBusy}
+                          onChange={(value) =>
+                            runSourceAction(s._id, () =>
+                              updateSourcePolicy({
+                                clerkId: clerkId!,
+                                sourceId: s._id,
+                                crawlerProvider: value,
+                              })
+                            )
+                          }
+                        />
+                        <SourcePolicyRow
+                          label="cron"
+                          value={s.refreshPolicy ?? "manual"}
+                          options={refreshOptions}
+                          disabled={isBusy}
+                          onChange={(value) =>
+                            runSourceAction(s._id, () =>
+                              updateSourcePolicy({
+                                clerkId: clerkId!,
+                                sourceId: s._id,
+                                refreshPolicy: value,
+                              })
+                            )
+                          }
+                        />
+                        <SourcePolicyRow
+                          label="access"
+                          value={s.visibility ?? "private"}
+                          options={visibilityOptions}
+                          disabled={isBusy}
+                          onChange={(value) =>
+                            runSourceAction(s._id, () =>
+                              updateSourcePolicy({
+                                clerkId: clerkId!,
+                                sourceId: s._id,
+                                visibility: value,
+                              })
+                            )
+                          }
+                        />
+                        <SourcePolicyRow
+                          label="trust"
+                          value={s.trustLevel ?? "medium"}
+                          options={trustOptions}
+                          disabled={isBusy}
+                          onChange={(value) =>
+                            runSourceAction(s._id, () =>
+                              updateSourcePolicy({
+                                clerkId: clerkId!,
+                                sourceId: s._id,
+                                trustLevel: value,
+                              })
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="mt-3 grid gap-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">
+                        <span>next refresh: {s.nextRefreshAt ? timeDistance(s.nextRefreshAt) : "manual"}</span>
+                        <span>failures: {s.failureCount ?? 0}</span>
+                        <span>latest hash: {s.lastRawContentHash ? s.lastRawContentHash.slice(0, 16) : "--"}</span>
+                        <span>versions: {sourceVersions === undefined ? "loading" : sourceVersions.length}</span>
+                        {sourceVersions?.slice(0, 3).map((version) => (
+                          <span key={version._id}>
+                            {timeAgo(version.fetchedAt)} / {version.contentHash.slice(0, 16)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {status === "failed" && s.errorMessage && (
                     <div className="font-mono text-[9px] text-red-500 opacity-70 mt-1 truncate">
                       error: {s.errorMessage}
+                    </div>
+                  )}
+                  {isSelected && sourceActionError && (
+                    <div className="font-mono text-[9px] text-red-500 opacity-70 mt-2">
+                      {sourceActionError}
                     </div>
                   )}
                 </div>
@@ -539,6 +700,44 @@ function OptionRow({
             type="button"
             onClick={() => onChange(option.value)}
             className={`border px-2 py-1 font-mono text-[10px] ${
+              value === option.value
+                ? "border-[hsl(var(--accent))] text-[hsl(var(--text-primary))]"
+                : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-70"
+            }`}
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SourcePolicyRow({
+  label,
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <FieldHelp className="mb-2 text-[10px]">{label}</FieldHelp>
+      <div className="flex flex-wrap gap-1">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(option.value)}
+            className={`border px-2 py-1 font-mono text-[9px] disabled:cursor-not-allowed disabled:opacity-35 ${
               value === option.value
                 ? "border-[hsl(var(--accent))] text-[hsl(var(--text-primary))]"
                 : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-70"

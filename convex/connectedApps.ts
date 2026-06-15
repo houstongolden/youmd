@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 import { secureRandomString } from "./lib/secureToken";
 import { hashKey } from "./apiKeys";
@@ -20,16 +20,22 @@ const RESOURCE_SCOPES = [
 
 const GRANT_SCOPES = [
   "identity:read",
+  "identity:write",
   "now:read",
   "projects:read",
+  "projects:write",
   "sources:read",
   "sources:write",
   "memories:read",
   "memories:write",
   "preferences:read",
+  "preferences:write",
   "trust_rules:read",
+  "trust_rules:write",
   "stacks:read",
+  "stacks:write",
   "activity:read",
+  "activity:write",
 ] as const;
 
 const WRITE_POLICIES = ["read_only", "propose", "approved_write"] as const;
@@ -250,9 +256,15 @@ export const getByTokenHash = query({
       return null;
     }
 
+    const user = await ctx.db.get(grant.userId);
+    if (!user) return null;
+
     return {
       id: grant._id,
-      userId: grant.userId,
+      userId: user.clerkId,
+      userDbId: user._id,
+      username: user.username,
+      plan: user.plan,
       appSlug: grant.appSlug,
       appName: grant.appName,
       appType: grant.appType,
@@ -262,5 +274,15 @@ export const getByTokenHash = query({
       trustLevel: grant.trustLevel,
       expiresAt: grant.expiresAt ?? null,
     };
+  },
+});
+
+export const updateLastUsed = internalMutation({
+  args: { grantId: v.id("connectedAppGrants") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.grantId, {
+      lastUsedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
   },
 });

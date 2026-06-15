@@ -2,6 +2,13 @@
 
 ## 2026-06-15 — Connected-app grants and connector MVP
 
+### feat: enforce connected-app grants and run source providers
+- Wired `yg_` connected-app grants into HTTP/MCP bearer auth alongside `ym_` API keys. Grants now resolve to the owning user, update `lastUsedAt`, enforce mapped resource/action scopes, deny writes unless `writePolicy` is `approved_write`, and log scope denials/writes as `agentSource: connected-app` with the grant id.
+- Added owner source actions: refresh now, pause cron refresh, update crawler/refresh/visibility/trust policy, and read raw-source version history.
+- Expanded the Sources pane with inline refresh/pause/details controls, policy chips, next-refresh/failure/hash metadata, and recent source-version provenance.
+- Added a Firecrawl provider path to the existing ingestion pipeline (`FIRECRAWL_API_KEY`, `/v1/scrape`, markdown/html normalization, immutable raw-source versions). The agent-browser provider now fails closed with a sandbox-required error until a safe runner is implemented.
+- Added `convex/sourceActions.test.ts` and extended grant tests; focused backend tests, Convex codegen/typecheck, TypeScript, lint, docs check, and agent-doc handoff passed locally.
+
 ### feat: You.md-native grants, connector metadata, and refresh marker
 - Added `connectedAppGrants` with hashed `yg_` tokens, resource scopes, action scopes, write policy, trust level, expiry, revocation, owner CRUD/list/page/resolve helpers, and focused tests.
 - Extended `sources` with connector kind, crawler provider intent, refresh policy, visibility, trust level, next refresh, failure count, display name, and metadata. `addSource` now dedupes by exact URL instead of clobbering all sources with the same broad type.

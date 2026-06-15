@@ -63,13 +63,21 @@ export interface McpHandlerResult {
  * Null for unauthenticated tools (scopes: []).
  */
 export interface McpAuthContext {
+  credentialType: "api-key" | "connected-app";
   userId: string;        // clerkId
   username: string;
   plan: string;
   scopes: string[] | null;
   declaredScopes: string[];
   userDbId: Id<"users">;
-  apiKeyId: Id<"apiKeys">;
+  apiKeyId?: Id<"apiKeys">;
+  connectedAppGrantId?: Id<"connectedAppGrants">;
+  appSlug?: string;
+  appName?: string;
+  appType?: string;
+  resourceScopes?: string[];
+  writePolicy?: string;
+  trustLevel?: string;
 }
 
 type CtxForHandlers = Pick<ActionCtx, "runQuery" | "runMutation">;

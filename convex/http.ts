@@ -524,14 +524,60 @@ http.route({
 // `scopes: null` = legacy grandfathered key (full access, scope_missing
 // telemetry); `declaredScopes` = raw scopes stored on the key (for logging).
 type AuthContext = {
+  credentialType: "api-key" | "connected-app";
   userId: string; // clerkId (compat with /me convex functions)
   username: string;
   plan: string;
   scopes: string[] | null;
   declaredScopes: string[];
   userDbId: Id<"users">;
-  apiKeyId: Id<"apiKeys">;
+  apiKeyId?: Id<"apiKeys">;
+  connectedAppGrantId?: Id<"connectedAppGrants">;
+  appSlug?: string;
+  appName?: string;
+  appType?: string;
+  resourceScopes?: string[];
+  writePolicy?: string;
+  trustLevel?: string;
 };
+
+function authAgentSource(auth: AuthContext, request: Request): "mcp" | "api-key" | "connected-app" {
+  if (auth.credentialType === "connected-app") return "connected-app";
+  const agent = detectAgent(request.headers.get("user-agent"));
+  return agent.source === "mcp" ? "mcp" : "api-key";
+}
+
+function connectedAppResourceForPath(pathname: string): string {
+  if (pathname.includes("/sources")) return "sources";
+  if (pathname.includes("/memories")) return "memories";
+  if (pathname.includes("/stacks") || pathname.includes("/stack") || pathname.includes("/repo")) return "stacks";
+  if (pathname.includes("/activity") || pathname.includes("/history")) return "activity";
+  if (pathname.includes("/private")) return "memories";
+  if (pathname.includes("/projects")) return "projects";
+  if (pathname.includes("/preferences")) return "preferences";
+  return "identity";
+}
+
+function connectedAppScopeCandidates(scope: ApiScope, resource: string): string[] {
+  if (scope === "read:private") return [`${resource}:read`];
+  if (scope === "write:memories") return ["memories:write"];
+  if (scope === "write:bundle") {
+    if (resource === "sources") return ["sources:write"];
+    if (resource === "projects") return ["projects:write"];
+    if (resource === "preferences") return ["preferences:write"];
+    if (resource === "stacks") return ["stacks:write"];
+    if (resource === "activity") return ["activity:write"];
+    if (resource === "memories") return ["memories:write"];
+    return ["identity:write"];
+  }
+  return [];
+}
+
+function connectedAppResourceForMcpTool(toolName: string): string {
+  if (toolName === "get_my_stacks" || toolName === "get_repo_file") return "stacks";
+  if (toolName === "search_memories" || toolName === "report_skill_outcome") return "memories";
+  return "identity";
+}
 
 // Helper: validate API key and return user
 async function authenticateRequest(
@@ -555,6 +601,35 @@ async function authenticateRequest(
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const keyHash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 
+  if (key.startsWith("yg_")) {
+    const grant = await ctx.runQuery(api.connectedApps.getByTokenHash, { tokenHash: keyHash });
+
+    if (!grant) {
+      return errorResponse("unauthorized", "Invalid, expired, or revoked connected-app grant", 401);
+    }
+
+    await ctx.runMutation(internal.connectedApps.updateLastUsed, {
+      grantId: grant.id,
+    });
+
+    return {
+      credentialType: "connected-app",
+      userId: grant.userId,
+      username: grant.username,
+      plan: grant.plan,
+      scopes: grant.scopes,
+      declaredScopes: grant.scopes,
+      userDbId: grant.userDbId,
+      connectedAppGrantId: grant.id,
+      appSlug: grant.appSlug,
+      appName: grant.appName,
+      appType: grant.appType,
+      resourceScopes: grant.resourceScopes,
+      writePolicy: grant.writePolicy,
+      trustLevel: grant.trustLevel,
+    };
+  }
+
   const apiKey = await ctx.runQuery(api.apiKeys.getByHash, { keyHash });
 
   if (!apiKey || apiKey.revokedAt) {
@@ -574,6 +649,7 @@ async function authenticateRequest(
   });
 
   return {
+    credentialType: "api-key",
     userId: apiKey.userId,
     username: apiKey.username,
     plan: apiKey.plan,
@@ -603,8 +679,53 @@ async function requireScope(
   ctx: Pick<ActionCtx, "runMutation">,
   request: Request,
   auth: AuthContext,
-  scope: ApiScope
+  scope: ApiScope,
+  connectedAppResourceHint?: string
 ): Promise<Response | null> {
+  const pathname = new URL(request.url).pathname;
+
+  if (auth.credentialType === "connected-app") {
+    const resource = connectedAppResourceHint ?? connectedAppResourceForPath(pathname);
+    const acceptedScopes = connectedAppScopeCandidates(scope, resource);
+    const hasResource = auth.resourceScopes?.includes(resource) ?? false;
+    const hasScope = acceptedScopes.some((candidate) => auth.scopes?.includes(candidate));
+    const isWrite = acceptedScopes.some((candidate) => candidate.endsWith(":write"));
+    const writeAllowed = !isWrite || auth.writePolicy === "approved_write";
+
+    if (!hasResource || !hasScope || !writeAllowed) {
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: auth.appName || agent.name,
+          agentSource: "connected-app",
+          agentVersion: agent.version,
+          action: "scope_missing",
+          resource: pathname,
+          scope,
+          connectedAppGrantId: auth.connectedAppGrantId,
+          status: "denied",
+          details: {
+            appSlug: auth.appSlug,
+            acceptedScopes,
+            declaredScopes: auth.declaredScopes,
+            resourceScopes: auth.resourceScopes,
+            writePolicy: auth.writePolicy,
+            requiredResource: resource,
+          },
+        });
+      } catch {
+        // best-effort
+      }
+      const reason = !writeAllowed
+        ? "Connected-app grant write policy requires approved_write"
+        : `Connected-app grant lacks required scope: ${acceptedScopes.join(" or ") || scope}`;
+      return errorResponse("scope_missing", reason, 403);
+    }
+
+    return null;
+  }
+
   const hasScope =
     auth.scopes === null
       ? auth.declaredScopes.includes(scope)
@@ -789,9 +910,7 @@ http.route({
 
     const startedAt = Date.now();
     const agent = detectAgent(request.headers.get("user-agent"));
-    // Auth reached here means a valid API key was used. Prefer "api-key" as
-    // the source unless the UA tells us it's an MCP client.
-    const agentSource = agent.source === "mcp" ? "mcp" : "api-key";
+    const agentSource = authAgentSource(auth, request);
 
     try {
       const body = await request.json();
@@ -824,7 +943,7 @@ http.route({
         if (ownerUser) {
           await ctx.runMutation(internal.activity.logActivity, {
             userId: ownerUser._id,
-            agentName: agent.name,
+            agentName: auth.appName || agent.name,
             agentSource,
             agentVersion: agent.version,
             action: "write",
@@ -835,6 +954,7 @@ http.route({
             contentHashBefore,
             contentHashAfter: result.contentHash ?? undefined,
             durationMs: Date.now() - startedAt,
+            connectedAppGrantId: auth.connectedAppGrantId,
           });
         }
       } catch {
@@ -853,7 +973,7 @@ http.route({
         if (ownerUser) {
           await ctx.runMutation(internal.activity.logActivity, {
             userId: ownerUser._id,
-            agentName: agent.name,
+            agentName: auth.appName || agent.name,
             agentSource,
             agentVersion: agent.version,
             action: "write",
@@ -861,6 +981,7 @@ http.route({
             status: message.includes("ANCESTOR_MISMATCH") ? "denied" : "error",
             details: { message },
             durationMs: Date.now() - startedAt,
+            connectedAppGrantId: auth.connectedAppGrantId,
           });
         }
       } catch {
@@ -892,7 +1013,7 @@ http.route({
 
     const startedAt = Date.now();
     const agent = detectAgent(request.headers.get("user-agent"));
-    const agentSource = agent.source === "mcp" ? "mcp" : "api-key";
+    const agentSource = authAgentSource(auth, request);
 
     try {
       const result = await ctx.runMutation(api.me.publishLatest, {
@@ -906,7 +1027,7 @@ http.route({
         if (ownerUser) {
           await ctx.runMutation(internal.activity.logActivity, {
             userId: ownerUser._id,
-            agentName: agent.name,
+            agentName: auth.appName || agent.name,
             agentSource,
             agentVersion: agent.version,
             action: "publish",
@@ -914,6 +1035,7 @@ http.route({
             status: "success",
             bundleVersionAfter: result.version,
             durationMs: Date.now() - startedAt,
+            connectedAppGrantId: auth.connectedAppGrantId,
           });
           // P24 — dispatch outbound webhooks for bundle_published
           try {
@@ -997,16 +1119,17 @@ http.route({
       // Log activity
       try {
         const agent = detectAgent(request.headers.get("user-agent"));
-        const agentSource = agent.source === "mcp" ? "mcp" : "api-key";
+        const agentSource = authAgentSource(auth, request);
         await ctx.runMutation(internal.activity.logActivity, {
           userId: user._id,
           profileId: profile._id,
-          agentName: agent.name,
+          agentName: auth.appName || agent.name,
           agentSource,
           agentVersion: agent.version,
           action: "write",
           resource: "portrait",
           status: "success",
+          connectedAppGrantId: auth.connectedAppGrantId,
           details: {
             format: portrait.format || "block",
             cols: portrait.cols,
@@ -2851,16 +2974,17 @@ http.route({
     // Log activity
     try {
       const agent = detectAgent(request.headers.get("user-agent"));
-      const agentSource = agent.source === "mcp" ? "mcp" : "api-key";
+      const agentSource = authAgentSource(auth, request);
       await ctx.runMutation(internal.activity.logActivity, {
         userId: user._id,
         profileId: profile._id,
-        agentName: agent.name,
+        agentName: auth.appName || agent.name,
         agentSource,
         agentVersion: agent.version,
         action: "write",
         resource: "private",
         scope: "full",
+        connectedAppGrantId: auth.connectedAppGrantId,
         status: "success",
       });
     } catch {
@@ -3020,15 +3144,16 @@ http.route({
     // Log activity
     try {
       const agent = detectAgent(request.headers.get("user-agent"));
-      const agentSource = agent.source === "mcp" ? "mcp" : "api-key";
+      const agentSource = authAgentSource(auth, request);
       await ctx.runMutation(internal.activity.logActivity, {
         userId: user._id,
-        agentName: body.agentName || agent.name,
+        agentName: body.agentName || auth.appName || agent.name,
         agentSource,
         agentVersion: agent.version,
         action: "memory_add",
         resource: "memories",
         status: "success",
+        connectedAppGrantId: auth.connectedAppGrantId,
         details: {
           count: Array.isArray(body.memories) ? body.memories.length : 0,
         },
@@ -4140,9 +4265,19 @@ http.route({
             if (authResult instanceof Response) {
               return mcpToolError(id, "authentication required — pass your you.md API key as Bearer token");
             }
-            const denied = await requireScope(ctx, request, authResult, spec.scopes[0]);
+            const denied = await requireScope(
+              ctx,
+              request,
+              authResult,
+              spec.scopes[0],
+              connectedAppResourceForMcpTool(toolName)
+            );
             if (denied) {
-              return mcpToolError(id, `API key lacks required scope: ${spec.scopes[0]}`);
+              const credentialLabel =
+                authResult.credentialType === "connected-app"
+                  ? "Connected-app grant"
+                  : "API key";
+              return mcpToolError(id, `${credentialLabel} lacks required scope: ${spec.scopes[0]}`);
             }
             toolAuth = authResult;
           }
