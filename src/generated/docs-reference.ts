@@ -41,16 +41,16 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "7a6f4540e422cab9fd823bfbe09bc4101f4c9ecfa3280319810841450bd863a8",
+  "sourceHash": "55901fe5b6afc82293c86a78e06f36d831b5ba9e438f329d45e0dd90be3d1775",
   "cli": {
-    "version": "0.6.27"
+    "version": "0.7.1"
   },
   "counts": {
     "endpoints": 83,
     "internalRoutes": 7,
     "mcpTools": 6,
     "hostedMcpTools": 0,
-    "cliCommands": 28,
+    "cliCommands": 30,
     "convexRoutes": 66,
     "nextRoutes": 24
   },
@@ -1267,6 +1267,20 @@ export const docsReference = {
       "group": "PREVIEW",
       "summary": "start a local preview server",
       "description": "Start a local preview server"
+    },
+    {
+      "name": "env",
+      "usage": "env [subcommand] [args...]",
+      "group": "SECURITY",
+      "summary": "encrypted .env.local vault — back up and restore secrets across machines",
+      "description": "encrypted .env.local vault — back up and restore secrets across machines"
+    },
+    {
+      "name": "machine",
+      "usage": "machine [subcommand]",
+      "group": "MACHINE & SYNC",
+      "summary": "bootstrap a fresh Mac with your synced skills, stacks, and context",
+      "description": "set up a new machine with your synced skills, stacks, and context"
     }
   ]
 } as const;

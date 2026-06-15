@@ -155,16 +155,13 @@ const HELP_GROUPS: Array<{
   {
     title: "SECURITY",
     commands: [
-      { name: "env backup", summary: "encrypt all .env.local files into a portable vault" },
-      { name: "env restore", summary: "decrypt and restore .env.local files from a vault" },
+      { name: "env", summary: "encrypted .env.local vault — back up and restore secrets across machines" },
     ],
   },
   {
-    title: "MACHINE",
+    title: "MACHINE & SYNC",
     commands: [
-      { name: "machine setup", summary: "bootstrap a fresh Mac with your synced skills, stacks, and context" },
-      { name: "stack sync", summary: "sync agent skills/stacks across machines" },
-      { name: "stack daemon install", summary: "run skill + identity sync in the background" },
+      { name: "machine", summary: "bootstrap a fresh Mac with your synced skills, stacks, and context" },
     ],
   },
 ];
@@ -638,33 +635,42 @@ program
   .action(agentsCommand);
 
 // ─── env — encrypted .env.local vault backup/restore ───────────────
-const envCmd = program
-  .command("env")
-  .description("encrypted .env.local vault — back up and restore secrets across machines");
-
-envCmd
-  .command("backup")
-  .description("encrypt all .env.local files into a portable vault")
-  .option("--root <dir>", "directory to search for .env.local files")
+program
+  .command("env [subcommand] [args...]")
+  .description("encrypted .env.local vault — back up and restore secrets across machines")
+  .allowUnknownOption(true)
+  .option("--root <dir>", "directory to search for / restore .env.local files")
   .option("--out <dir>", "output directory for the vault and manifest")
-  .action((opts) => envBackupCommand(opts));
-
-envCmd
-  .command("restore <vault>")
-  .description("decrypt and restore .env.local files from a vault")
-  .option("--root <dir>", "target root directory for restored files")
   .option("-f, --force", "overwrite existing .env.local without backing them up")
-  .action((vault, opts) => envRestoreCommand(vault, opts));
+  .action((subcommand, args, options) => {
+    const a = args || [];
+    if (subcommand === "backup") {
+      envBackupCommand({ root: options.root, out: options.out });
+    } else if (subcommand === "restore") {
+      if (!a[0]) {
+        console.log("usage: youmd env restore <vault> [--root <dir>] [--force]");
+        return;
+      }
+      envRestoreCommand(a[0], { root: options.root, force: options.force });
+    } else {
+      console.log("usage: youmd env <backup|restore> [options]");
+      console.log("  backup            encrypt all .env.local files into a portable vault");
+      console.log("  restore <vault>   decrypt and restore .env.local files from a vault");
+    }
+  });
 
 // ─── machine — one-command setup for a fresh Mac ───────────────────
-const machineCmd = program
-  .command("machine")
-  .description("set up a new machine with your synced skills, stacks, and context");
-
-machineCmd
-  .command("setup")
-  .description("bootstrap a fresh Mac: clone synced repos, restore skills, guide secrets + daemons")
-  .action(() => machineSetupCommand());
+program
+  .command("machine [subcommand]")
+  .description("set up a new machine with your synced skills, stacks, and context")
+  .action((subcommand) => {
+    if (subcommand === "setup") {
+      machineSetupCommand();
+    } else {
+      console.log("usage: youmd machine setup");
+      console.log("  setup   bootstrap a fresh Mac: clone synced repos, restore skills, guide secrets + daemons");
+    }
+  });
 
 // ─── Guided tutorial when invoked with no args ─────────────────────
 // `youmd` (bare) shows a short contextual welcome / next-step guide.
