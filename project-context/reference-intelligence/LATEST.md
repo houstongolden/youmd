@@ -1,6 +1,6 @@
 # You.md Reference Intelligence
 
-Last updated: 2026-06-14T20:59:38.098Z
+Last updated: 2026-06-15T15:31:00.696Z
 
 You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under `.reference-repos/` and are ignored by git.
 
@@ -23,10 +23,9 @@ npm run references:sync
 - Local path: `.reference-repos/garrytan/gstack`
 - Branch: `main`
 - Latest commit: `c7ae63201ab1`
-- Mode: Changes since 14fc086
+- Mode: No new commits since c7ae632
 
-- `c7ae632` 2026-06-14 — v1.58.1.0 feat: hermetic local E2E + Conductor prose AskUserQuestion (#2004)
-  Files: `CHANGELOG.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `SKILL.md`, `VERSION`, `autoplan/SKILL.md`, `benchmark-models/SKILL.md`, `benchmark/SKILL.md`, +81 more
+- No commits found.
 
 ## GBrain
 
@@ -34,23 +33,24 @@ npm run references:sync
 - Local path: `.reference-repos/garrytan/gbrain`
 - Branch: `master`
 - Latest commit: `090bb5320355`
-- Mode: Changes since 4ee530f
+- Mode: No new commits since 090bb53
 
-- `090bb53` 2026-06-14 — v0.42.44.0 docs(tutorial): point AlphaClaw deploy link at the official site (#2165) (#2171)
-  Files: `CHANGELOG.md`, `VERSION`, `docs/tutorials/personal-brain.md`, `package.json`
-- `a81f7e0` 2026-06-14 — v0.42.43.0 feat(context): push-based context (#2095) + teardown-exit hardening (#2084) (#2175)
-  Files: `AGENTS.md`, `CHANGELOG.md`, `CLAUDE.md`, `TODOS.md`, `VERSION`, `docker-compose.ci.yml`, `docs/RELEASING.md`, `docs/TESTING.md`, +41 more
+- No commits found.
 
 ## Agent Scripts
 
 - URL: https://github.com/steipete/agent-scripts
 - Local path: `.reference-repos/steipete/agent-scripts`
 - Branch: `main`
-- Latest commit: `448cfa972336`
-- Mode: Changes since a3026ae
+- Latest commit: `cb78a4ad65fc`
+- Mode: Changes since 448cfa9
 
-- `448cfa9` 2026-06-14 — fix(skill-cleaner): audit live Codex inventory
-  Files: `CHANGELOG.md`, `skills/agent-transcript/SKILL.md`, `skills/github-project-triage/SKILL.md`, `skills/maintainer-orchestrator/SKILL.md`, `skills/skill-cleaner/SKILL.md`, `skills/skill-cleaner/scripts/skill-cleaner.test.ts`, `skills/skill-cleaner/scripts/skill-cleaner.ts`
+- `cb78a4a` 2026-06-15 — docs: group skills for skills.sh (#12)
+  Files: `skills.sh.json`
+- `7cdf065` 2026-06-15 — docs: add locked-mac Git fallback
+  Files: `AGENTS.MD`, `CHANGELOG.md`
+- `29c0423` 2026-06-15 — docs: require improving generated PR code
+  Files: `AGENTS.MD`, `CHANGELOG.md`
 
 ## The Library
 
@@ -64,11 +64,9 @@ npm run references:sync
 
 ## Candidate Tasks
 
-- [ ] YouStacks skill packaging: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
-  Source: GStack c7ae632: v1.58.1.0 feat: hermetic local E2E + Conductor prose AskUserQuestion (#2004)
-- [ ] You.md brain schema/context: Review whether this upstream brain/context change should improve You.md memory categories, private context, profile files, or agent startup briefs.
-  Source: GBrain 090bb53: v0.42.44.0 docs(tutorial): point AlphaClaw deploy link at the official site (#2165) (#2171)
-- [ ] You.md brain schema/context: Review whether this upstream brain/context change should improve You.md memory categories, private context, profile files, or agent startup briefs.
-  Source: GBrain a81f7e0: v0.42.43.0 feat(context): push-based context (#2095) + teardown-exit hardening (#2084) (#2175)
+- [ ] YouStacks skill ergonomics: Compare this skill packaging or validation pattern against bundled skills, stack manifests, and `youmd stack doctor` warnings.
+  Source: Agent Scripts cb78a4a: docs: group skills for skills.sh (#12)
 - [ ] Cross-agent instruction portability: Review whether this upstream shared-instruction pattern should improve `youmd skill init-project`, host adapters, or repo-local pointer rules.
-  Source: Agent Scripts 448cfa9: fix(skill-cleaner): audit live Codex inventory
+  Source: Agent Scripts 7cdf065: docs: add locked-mac Git fallback
+- [ ] Cross-agent instruction portability: Review whether this upstream shared-instruction pattern should improve `youmd skill init-project`, host adapters, or repo-local pointer rules.
+  Source: Agent Scripts 29c0423: docs: require improving generated PR code
