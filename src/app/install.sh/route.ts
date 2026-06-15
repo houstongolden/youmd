@@ -154,12 +154,30 @@ RUNTIME
 echo "Installing native You.md skills..."
 youmd skill install all >/dev/null 2>&1 || true
 
+# Auto-configure MCP for whichever local agents are present, so they know how
+# to use you.md out of the box. Each host write is non-fatal and backs up the
+# existing config. Skipped hosts can still be wired later with
+# \`youmd mcp --install <host> --auto\`.
+echo "Configuring MCP for detected agents..."
+MCP_CONFIGURED=0
+if command -v claude >/dev/null 2>&1 || [ -f "$HOME/.claude.json" ]; then
+  if youmd mcp --install claude --auto >/dev/null 2>&1; then echo "  - Claude Code"; MCP_CONFIGURED=1; fi
+fi
+if [ -d "$HOME/.codex" ] || command -v codex >/dev/null 2>&1; then
+  if youmd mcp --install codex --auto >/dev/null 2>&1; then echo "  - Codex"; MCP_CONFIGURED=1; fi
+fi
+if [ -d "$HOME/.cursor" ]; then
+  if youmd mcp --install cursor --auto >/dev/null 2>&1; then echo "  - Cursor"; MCP_CONFIGURED=1; fi
+fi
+if [ "$MCP_CONFIGURED" = "0" ]; then
+  echo "  (no Claude Code / Codex / Cursor detected — run \\\`youmd mcp --install <host> --auto\\\` after installing one)"
+fi
+
 echo ""
 echo "Installed You.md runtime: $(youmd --version)"
 echo ""
 echo "Next:"
 echo "  you                  # meet U; it will guide login, pull, stacks, or setup"
-echo "  youmd mcp --install codex --auto"
 echo "  youmd stack smoke --path <stack-folder>"
 echo ""
 echo "Auto-update helper:"
