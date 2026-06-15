@@ -50,7 +50,16 @@ export const runPipeline = internalAction({
 
       // Fetch each source (sequentially to avoid rate limits)
       for (const source of pendingSources) {
-        const provider = source.crawlerProvider ?? "native";
+        const provider = APIFY_SOURCE_TYPES.has(source.sourceType)
+          ? "apify"
+          : source.crawlerProvider ?? "native";
+        const runDecision = await ctx.runMutation(internal.sourceRunPolicy.reserveSourceRun, {
+          sourceId: source._id,
+          provider,
+        });
+        if (!runDecision.allowed) {
+          continue;
+        }
 
         if (provider === "firecrawl") {
           await ctx.runAction(internal.pipeline.fetch.fetchWithFirecrawl, {
@@ -64,13 +73,7 @@ export const runPipeline = internalAction({
             url: source.sourceUrl,
             userId,
           });
-        } else if (provider === "manual") {
-          await ctx.runMutation(internal.pipeline.mutations.updateSourceStatus, {
-            sourceId: source._id,
-            status: "failed",
-            errorMessage: "Manual source has no crawler provider",
-          });
-        } else if (APIFY_SOURCE_TYPES.has(source.sourceType)) {
+        } else if (provider === "apify") {
           await ctx.runAction(internal.pipeline.fetch.fetchWithApify, {
             sourceId: source._id,
             sourceType: source.sourceType,

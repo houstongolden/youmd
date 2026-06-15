@@ -54,6 +54,7 @@ describe("recordRawSourceVersion — immutable source ledger", () => {
     const source = await t.run((ctx) => ctx.db.get(sourceId));
     expect(source?.lastRawContentHash).toBe("hash-1");
     expect(source?.latestVersionId).toBe(rows[0]._id);
+    expect(source?.lastChangedAt).toBe(1000);
   });
 
   it("does not version identical content (no in-place churn)", async () => {
@@ -65,6 +66,8 @@ describe("recordRawSourceVersion — immutable source ledger", () => {
 
     expect(res.recorded).toBe(false);
     expect(await versions(t, sourceId)).toHaveLength(1);
+    const source = await t.run((ctx) => ctx.db.get(sourceId));
+    expect(source?.lastChangedAt).toBe(1000);
   });
 
   it("appends a new version on change and never deletes the prior one", async () => {
@@ -81,5 +84,6 @@ describe("recordRawSourceVersion — immutable source ledger", () => {
 
     const source = await t.run((ctx) => ctx.db.get(sourceId));
     expect(source?.lastRawContentHash).toBe("hash-2"); // pointer advanced
+    expect(source?.lastChangedAt).toBe(2000);
   });
 });

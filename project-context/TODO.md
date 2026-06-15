@@ -17,9 +17,11 @@ PRD Version: 2.3
 - [x] Add source detail actions: refresh now, pause, set policy, provenance/version/failure view
 - [x] Implement the native + Firecrawl crawler runner foundation through the existing pipeline with immutable raw versions and env-key fail-closed behavior
 - [x] Add the agent-browser provider boundary as a fail-closed sandbox-required runner stub before executing browser tasks server-side
-- [ ] Add per-user/provider rate limits, cost checks, monitored change summaries, and approval-aware extraction/writeback before cron-triggered expensive work
+- [x] Add the first per-user/provider rate limit, cost estimate, and owner approval gate before expensive provider execution
+- [x] Document the agent-browser sandbox runner boundary in `project-context/AGENT_BROWSER_SANDBOX_RUNNER_SPEC_2026-06-15.md`
+- [ ] Add monitored change summaries and approval-aware extraction/writeback before cron-triggered expensive work
 - [ ] Configure and verify `FIRECRAWL_API_KEY` in dev/prod, then smoke a real Firecrawl source refresh end-to-end
-- [ ] Design and implement the actual agent-browser sandbox worker with action transcripts, screenshot artifacts, and secret/permission boundaries
+- [ ] Implement the actual agent-browser sandbox worker with action transcripts, screenshot artifacts, and secret/permission boundaries
 
 ### 2026-06-15 — h.computer idea routing into You.md
 - [x] Read the creator-new routing memo, local h.computer protocol/vision docs, live h.computer platform/docs/gallery pages, and active You.md context docs

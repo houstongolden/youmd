@@ -78,6 +78,7 @@ import type * as scrape from "../scrape.js";
 import type * as seed from "../seed.js";
 import type * as skills from "../skills.js";
 import type * as sourceRefresh from "../sourceRefresh.js";
+import type * as sourceRunPolicy from "../sourceRunPolicy.js";
 import type * as users from "../users.js";
 import type * as vault from "../vault.js";
 import type * as webhooks from "../webhooks.js";
@@ -160,6 +161,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   skills: typeof skills;
   sourceRefresh: typeof sourceRefresh;
+  sourceRunPolicy: typeof sourceRunPolicy;
   users: typeof users;
   vault: typeof vault;
   webhooks: typeof webhooks;

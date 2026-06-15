@@ -119,7 +119,8 @@ Important guardrail:
 - Firecrawl now executes only through the explicit pipeline provider path and fails closed if `FIRECRAWL_API_KEY` is not configured.
 - Agent-browser remains fail-closed until a sandbox runner boundary is implemented.
 - The hourly cron still does not execute expensive crawls, browser automation, or LLM extraction automatically.
-- Rate limits, cost checks, monitored update summaries, and approval behavior remain the next safety layer before autonomous expensive work.
+- The pipeline now checks per-user/provider rate limits, cost estimates, and owner approval windows before expensive provider execution.
+- Monitored update summaries and approval-aware extraction/writeback remain the next safety layer before autonomous expensive work.
 
 Code surface:
 
@@ -245,18 +246,24 @@ Add an approval-aware crawler worker:
 - Native fetch first. **DONE**
 - Firecrawl provider for selected sources when configured. **DONE**
 - Save raw output through `recordRawSourceVersion`. **DONE**
-- Set `lastChangedAt` only when content hash changes.
-- Update `failureCount` and `errorMessage`.
+- Set `lastChangedAt` only when content hash changes. **DONE**
+- Update `failureCount` and `errorMessage`. **DONE**
+- Require owner approval for expensive providers. **DONE**
+- Reserve per-user/provider hourly runs before execution. **DONE**
 - Never auto-run LLM extraction from cron without a separate policy.
 
 ### P4: agent-browser Sandbox Runner
 
 Add browser task support only after the runner boundary is designed:
 
-- Use an isolated sandbox/provider.
-- Save compact action transcript.
-- Optional screenshot artifact support.
-- Convert successful repeated browser tasks into skill-learning inputs.
+- Use an isolated sandbox/provider. **SPEC DONE**
+- Save compact action transcript. **SPEC DONE**
+- Optional screenshot artifact support. **SPEC DONE**
+- Convert successful repeated browser tasks into skill-learning inputs. **SPEC DONE**
+
+Boundary spec:
+
+- `project-context/AGENT_BROWSER_SANDBOX_RUNNER_SPEC_2026-06-15.md`
 
 ## Verification
 
@@ -264,7 +271,7 @@ This slice was verified with:
 
 ```bash
 npx convex codegen --typecheck enable
-npx vitest run convex/connectedApps.test.ts convex/sourceRefresh.test.ts convex/sourceActions.test.ts convex/pipeline/mutations.test.ts
+npx vitest run convex/connectedApps.test.ts convex/sourceRefresh.test.ts convex/sourceActions.test.ts convex/sourceRunPolicy.test.ts convex/pipeline/mutations.test.ts
 npx tsc --noEmit
 npm run lint
 npm run docs:check

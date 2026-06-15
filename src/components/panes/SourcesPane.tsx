@@ -171,6 +171,14 @@ function countExtracted(extracted: unknown): number {
   return count;
 }
 
+function sourceApprovedUntil(metadata: unknown): number | null {
+  if (!metadata || typeof metadata !== "object") return null;
+  const runPolicy = (metadata as Record<string, unknown>).runPolicy;
+  if (!runPolicy || typeof runPolicy !== "object") return null;
+  const approvedUntil = (runPolicy as Record<string, unknown>).approvedUntil;
+  return typeof approvedUntil === "number" ? approvedUntil : null;
+}
+
 /** Try to infer sourceType from a URL. */
 function inferSourceType(url: string): string {
   const lower = url.toLowerCase();
@@ -204,6 +212,7 @@ export function SourcesPane({}: SourcesPaneProps) {
   const refreshSourceNow = useMutation(api.me.refreshSourceNow);
   const pauseSourceRefresh = useMutation(api.me.pauseSourceRefresh);
   const updateSourcePolicy = useMutation(api.me.updateSourcePolicy);
+  const approveSourceRun = useMutation(api.me.approveSourceRun);
 
   // Add-source form state
   const [newUrl, setNewUrl] = useState("");
@@ -352,6 +361,9 @@ export function SourcesPane({}: SourcesPaneProps) {
               const extractedCount = countExtracted(s.extracted);
               const isSelected = selectedSourceId === s._id;
               const isBusy = actionSourceId === s._id;
+              const provider = s.crawlerProvider ?? "native";
+              const approvedUntil = sourceApprovedUntil(s.metadata);
+              const needsApproval = provider === "firecrawl" || provider === "agent-browser";
 
               return (
                 <div
@@ -412,6 +424,26 @@ export function SourcesPane({}: SourcesPaneProps) {
                         }
                       >
                         pause cron
+                      </Button>
+                    )}
+                    {needsApproval && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-[10px]"
+                        disabled={isBusy}
+                        onClick={() =>
+                          runSourceAction(s._id, () =>
+                            approveSourceRun({
+                              clerkId: clerkId!,
+                              sourceId: s._id,
+                              durationHours: 24,
+                              maxEstimatedCostCents: provider === "agent-browser" ? 25 : 5,
+                            })
+                          )
+                        }
+                      >
+                        approve 24h
                       </Button>
                     )}
                     <Button
@@ -489,6 +521,7 @@ export function SourcesPane({}: SourcesPaneProps) {
                       </div>
                       <div className="mt-3 grid gap-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">
                         <span>next refresh: {s.nextRefreshAt ? timeDistance(s.nextRefreshAt) : "manual"}</span>
+                        <span>run approval: {needsApproval ? (approvedUntil && approvedUntil > Date.now() ? timeDistance(approvedUntil) : "required") : "not required"}</span>
                         <span>failures: {s.failureCount ?? 0}</span>
                         <span>latest hash: {s.lastRawContentHash ? s.lastRawContentHash.slice(0, 16) : "--"}</span>
                         <span>versions: {sourceVersions === undefined ? "loading" : sourceVersions.length}</span>

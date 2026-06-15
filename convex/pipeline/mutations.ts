@@ -29,6 +29,10 @@ export const updateSourceStatus = internalMutation({
   },
   handler: async (ctx, args) => {
     const patch: Record<string, unknown> = { status: args.status };
+    if (args.status === "failed") {
+      const source = await ctx.db.get(args.sourceId);
+      patch.failureCount = (source?.failureCount ?? 0) + 1;
+    }
     if (args.errorMessage !== undefined) {
       patch.errorMessage = args.errorMessage;
     }
@@ -92,6 +96,7 @@ export const recordRawSourceVersion = internalMutation({
     await ctx.db.patch(args.sourceId, {
       lastRawContentHash: args.contentHash,
       latestVersionId: versionId,
+      lastChangedAt: args.fetchedAt,
     });
     return { recorded: true as const, versionId };
   },

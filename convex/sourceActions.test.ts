@@ -104,4 +104,25 @@ describe("source owner actions", () => {
     expect(versions).toHaveLength(1);
     expect(versions[0].contentHash).toBe("hash-1");
   });
+
+  it("approves a cost-bounded crawler run window", async () => {
+    const t = convexTest(schema);
+    const { sourceId } = await seed(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+
+    const result = await asOwner.mutation(api.me.approveSourceRun, {
+      clerkId: CLERK,
+      sourceId,
+      durationHours: 12,
+      maxEstimatedCostCents: 5,
+    });
+
+    const source = await t.run((ctx) => ctx.db.get(sourceId));
+    const metadata = source?.metadata as Record<string, unknown>;
+    const runPolicy = metadata.runPolicy as Record<string, unknown>;
+
+    expect(result.approvedUntil).toBeGreaterThan(Date.now());
+    expect(runPolicy.maxEstimatedCostCents).toBe(5);
+    expect(runPolicy.approvedFrom).toBe("sources-pane");
+  });
 });

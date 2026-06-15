@@ -2,6 +2,13 @@
 
 ## 2026-06-15 — Connected-app grants and connector MVP
 
+### feat: add source run-policy approval gate
+- Added `sourceRunPolicy.reserveSourceRun`, an internal provider gate that estimates source-run cost, requires owner approval for expensive providers, enforces per-user/provider hourly reservations, and records the last run decision in source metadata.
+- Added `approveSourceRun` so owners can approve a source's expensive crawler provider for a bounded window from the Sources pane.
+- Pipeline fetch dispatch now reserves a source run before native, Firecrawl, Apify, or agent-browser provider execution; blocked runs fail closed with source failure metadata instead of spending silently.
+- `recordRawSourceVersion` now sets `lastChangedAt` only when the content hash changes; failed source status updates increment `failureCount`.
+- Added `project-context/AGENT_BROWSER_SANDBOX_RUNNER_SPEC_2026-06-15.md` defining the sandbox job contract, forbidden runtime patterns, transcript/output contract, and skill-learning hook for future browser-worker execution.
+
 ### feat: enforce connected-app grants and run source providers
 - Wired `yg_` connected-app grants into HTTP/MCP bearer auth alongside `ym_` API keys. Grants now resolve to the owning user, update `lastUsedAt`, enforce mapped resource/action scopes, deny writes unless `writePolicy` is `approved_write`, and log scope denials/writes as `agentSource: connected-app` with the grant id.
 - Added owner source actions: refresh now, pause cron refresh, update crawler/refresh/visibility/trust policy, and read raw-source version history.

@@ -1201,6 +1201,63 @@ export const updateSourcePolicy = mutation({
   },
 });
 
+export const approveSourceRun = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    sourceId: v.id("sources"),
+    durationHours: v.optional(v.number()),
+    maxEstimatedCostCents: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+
+    const source = await ctx.db.get(args.sourceId);
+    if (!source || source.userId !== user._id) throw new Error("Source not found");
+
+    const now = Date.now();
+    const durationHours = Math.min(Math.max(args.durationHours ?? 24, 1), 168);
+    const metadata =
+      source.metadata && typeof source.metadata === "object"
+        ? source.metadata as Record<string, unknown>
+        : {};
+    const existingRunPolicy =
+      metadata.runPolicy && typeof metadata.runPolicy === "object"
+        ? metadata.runPolicy as Record<string, unknown>
+        : {};
+    const maxEstimatedCostCents = Math.min(
+      Math.max(args.maxEstimatedCostCents ?? 25, 0),
+      500
+    );
+
+    await ctx.db.patch(args.sourceId, {
+      errorMessage: undefined,
+      metadata: {
+        ...metadata,
+        runPolicy: {
+          ...existingRunPolicy,
+          approvedAt: now,
+          approvedUntil: now + durationHours * 60 * 60 * 1000,
+          approvedFrom: "sources-pane",
+          maxEstimatedCostCents,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      approvedUntil: now + durationHours * 60 * 60 * 1000,
+      maxEstimatedCostCents,
+    };
+  },
+});
+
 export const getSourceVersions = query({
   args: {
     clerkId: v.string(),
