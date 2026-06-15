@@ -862,4 +862,29 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_userId_scope", ["userId", "scope"]),
+
+  // ── Tracked GitHub projects (active-project analysis) ─────────────────────
+  // One row per (userId, githubRepoId). Populated by analyzeActiveProjects
+  // (convex/githubProjects.ts) which scans the user's most-pushed repos over
+  // the last 90 days, calls an LLM to produce a 1-2 sentence insight, and
+  // upserts here. Visibility defaults to "private" until the user explicitly
+  // promotes a project to "public" (setProjectVisibility).
+  trackedProjects: defineTable({
+    userId: v.id("users"),
+    githubRepoId: v.number(),         // GitHub numeric repo id (stable across renames)
+    fullName: v.string(),             // "owner/repo"
+    name: v.string(),                 // repo short name
+    description: v.optional(v.string()),
+    primaryLanguage: v.optional(v.string()),
+    pushedAt: v.number(),             // ms epoch of last push
+    commitsLast90d: v.number(),       // count of commits in last 90 days
+    stars: v.optional(v.number()),
+    isPrivate: v.boolean(),
+    insight: v.optional(v.string()),  // LLM-generated 1-2 sentence project summary
+    visibility: v.union(v.literal("private"), v.literal("public")), // default "private"
+    trackedAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_fullName", ["userId", "fullName"]),
 });
