@@ -3,15 +3,49 @@
 import { useUser } from "@/lib/you-auth";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { useState, useEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useYouAgent, type RightPane } from "@/hooks/useYouAgent";
 import { TerminalShell } from "@/components/terminal/TerminalShell";
-import { TerminalHeader } from "@/components/terminal/TerminalHeader";
-import { EditPane } from "@/components/panes/EditPane";
+import { EditPane, type EditSubTab } from "@/components/panes/EditPane";
 import { SharePane } from "@/components/panes/SharePane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
 import dynamic from "next/dynamic";
+import {
+  Activity,
+  BarChart3,
+  BookOpen,
+  Bot,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Code2,
+  FileText,
+  FolderGit2,
+  Github,
+  History,
+  Image,
+  KeyRound,
+  Layers3,
+  PanelRightClose,
+  PanelRightOpen,
+  Plug,
+  Plus,
+  Radar,
+  Search,
+  Settings,
+  Share2,
+  Shield,
+  UserRound,
+  Wrench,
+} from "lucide-react";
 
 // Heavy panes — lazy-loaded so their JS only ships when the right-pane is opened.
 // A brief pulse skeleton fills the slot while the chunk loads.
@@ -81,6 +115,7 @@ const PANE_GROUPS: Array<{
     defaultPane: "files",
     panes: [
       { key: "files", label: "files" },
+      { key: "edit", label: "context" },
       { key: "history", label: "history" },
     ],
   },
@@ -92,7 +127,7 @@ const PANE_GROUPS: Array<{
   },
   {
     key: "agents",
-    label: "stacks",
+    label: "skillstacks",
     defaultPane: "stacks",
     panes: [
       { key: "stacks", label: "stacks" },
@@ -116,7 +151,7 @@ const PANE_GROUPS: Array<{
   },
   {
     key: "integrations",
-    label: "github",
+    label: "connectors",
     defaultPane: "github",
     panes: [{ key: "github", label: "github" }],
   },
@@ -138,9 +173,14 @@ const MOBILE_PRIMARY_PANES: Array<{ key: PrimaryPaneGroup | "terminal"; label: s
 ];
 
 const PANEL_OPEN_STORAGE_KEY = "youmd.dashboard.panelOpen";
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "youmd.shell.sidebarCollapsed";
+const CHAT_WIDTH_STORAGE_KEY = "youmd.shell.chatWidth";
 const STALE_NUDGE_SESSION_KEY = "youmd.dashboard.staleNudgeShown";
 const STALE_NUDGE_DAYS = 7;
 const FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_CHAT_WIDTH = 36;
+const MIN_CHAT_WIDTH = 28;
+const MAX_CHAT_WIDTH = 54;
 
 function formatRelativeTime(ts: number): string {
   const diffMin = Math.floor((Date.now() - ts) / 60000);
@@ -189,29 +229,6 @@ function getStaleNotice(syncedAt: number | null): string | null {
   return staleNoticeCache;
 }
 
-/** Status-bar freshness segment: dim relative time + green dot (<24h) / orange dot (older). */
-function FreshnessSegment({ timestamp }: { timestamp: number }) {
-  // Re-render once a minute so the relative label stays honest
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 60000);
-    return () => clearInterval(id);
-  }, []);
-  const isFresh = isFreshTimestamp(timestamp);
-  return (
-    <span className="flex items-center gap-1.5" title={new Date(timestamp).toLocaleString()}>
-      <span
-        role="img"
-        aria-label={isFresh ? "fresh" : "stale"}
-        className={`w-1.5 h-1.5 rounded-full ${
-          isFresh ? "bg-[hsl(var(--success))]" : "bg-[hsl(var(--accent))]"
-        }`}
-      />
-      <span className="opacity-40">synced {formatRelativeTime(timestamp)}</span>
-    </span>
-  );
-}
-
 /** Open by default; persisted user choice wins. Read lazily so SSR never touches localStorage. */
 function readStoredPanelOpen(): boolean {
   if (typeof window === "undefined") return true;
@@ -220,6 +237,319 @@ function readStoredPanelOpen(): boolean {
   } catch {
     return true;
   }
+}
+
+function readStoredSidebarCollapsed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function readStoredChatWidth(): number {
+  if (typeof window === "undefined") return DEFAULT_CHAT_WIDTH;
+  try {
+    const raw = Number(window.localStorage.getItem(CHAT_WIDTH_STORAGE_KEY));
+    if (!Number.isFinite(raw)) return DEFAULT_CHAT_WIDTH;
+    return Math.min(MAX_CHAT_WIDTH, Math.max(MIN_CHAT_WIDTH, raw));
+  } catch {
+    return DEFAULT_CHAT_WIDTH;
+  }
+}
+
+type ShellIcon = typeof UserRound;
+
+type ShellSidebarItem = {
+  label: string;
+  detail?: string;
+  icon: ShellIcon;
+  pane: RightPane;
+  subTab?: EditSubTab;
+  status?: string;
+};
+
+type ShellSidebarGroup = {
+  label: string;
+  items: ShellSidebarItem[];
+};
+
+function ShellSidebarButton({
+  item,
+  active,
+  collapsed,
+  onClick,
+}: {
+  item: ShellSidebarItem;
+  active: boolean;
+  collapsed: boolean;
+  onClick: () => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={collapsed ? item.label : undefined}
+      aria-label={item.label}
+      className={[
+        "group flex min-h-9 w-full items-center gap-2 border px-2.5 py-2 text-left font-mono transition-colors duration-150",
+        collapsed ? "justify-center px-0" : "",
+        active
+          ? "border-[hsl(var(--border))] bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]"
+          : "border-transparent text-[hsl(var(--text-secondary))] opacity-65 hover:border-[hsl(var(--border))] hover:bg-[hsl(var(--bg))] hover:opacity-95",
+      ].join(" ")}
+      style={{ borderRadius: "var(--radius)" }}
+    >
+      <Icon
+        aria-hidden="true"
+        size={15}
+        strokeWidth={1.75}
+        className={active ? "text-[hsl(var(--accent))]" : "text-current"}
+      />
+      {!collapsed && (
+        <>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[11px] leading-4">{item.label}</span>
+            {item.detail && (
+              <span className="block truncate text-[9px] leading-3 opacity-35">{item.detail}</span>
+            )}
+          </span>
+          {item.status && (
+            <span className="shrink-0 text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--accent))] opacity-70">
+              {item.status}
+            </span>
+          )}
+        </>
+      )}
+    </button>
+  );
+}
+
+function ShellSidebar({
+  username,
+  plan,
+  version,
+  isPublished,
+  syncedAt,
+  githubRepoName,
+  rightPane,
+  collapsed,
+  panelOpen,
+  onToggleCollapsed,
+  onTogglePanel,
+  onOpenPane,
+  onNewChat,
+  onSearch,
+}: {
+  username: string;
+  plan: string;
+  version: number | string | null;
+  isPublished: boolean;
+  syncedAt: number | null;
+  githubRepoName?: string | null;
+  rightPane: RightPane;
+  collapsed: boolean;
+  panelOpen: boolean;
+  onToggleCollapsed: () => void;
+  onTogglePanel: () => void;
+  onOpenPane: (pane: RightPane, subTab?: EditSubTab) => void;
+  onNewChat: () => void;
+  onSearch: () => void;
+}) {
+  const repoDetail = githubRepoName ?? "connect github";
+  const groups: ShellSidebarGroup[] = [
+    {
+      label: "workspace",
+      items: [
+        { label: "Profile", detail: `you.md/${username}`, icon: UserRound, pane: "profile" },
+        { label: "Files", detail: "markdown brain", icon: FileText, pane: "files" },
+        { label: "Share", detail: "links + publish", icon: Share2, pane: "share" },
+        { label: "Analytics", detail: "reads + views", icon: BarChart3, pane: "analytics" },
+        { label: "Portrait", detail: "ascii identity", icon: Image, pane: "portrait" },
+      ],
+    },
+    {
+      label: "projects",
+      items: [
+        {
+          label: githubRepoName ? "Synced Repo" : "GitHub Repo",
+          detail: repoDetail,
+          icon: FolderGit2,
+          pane: githubRepoName ? "files" : "github",
+          status: githubRepoName ? "live" : "setup",
+        },
+        { label: "Repo Link", detail: "create/connect", icon: Github, pane: "github" },
+        { label: "History", detail: "versions + sync", icon: History, pane: "history" },
+      ],
+    },
+    {
+      label: "skillstacks",
+      items: [
+        { label: "YouStacks", detail: "private/scoped/public", icon: Layers3, pane: "stacks" },
+        { label: "Skills", detail: "templates + tools", icon: Wrench, pane: "skills" },
+        { label: "Agents", detail: "activity + MCP", icon: Bot, pane: "agents" },
+      ],
+    },
+    {
+      label: "automation",
+      items: [
+        { label: "Connectors", detail: "github + sources", icon: Plug, pane: "github" },
+        { label: "Crawlers", detail: "source refresh", icon: Radar, pane: "edit", subTab: "sources" },
+        { label: "Crons", detail: "monitors + cadence", icon: Clock3, pane: "edit", subTab: "sources" },
+        { label: "Activity", detail: "agent run log", icon: Activity, pane: "agents" },
+      ],
+    },
+    {
+      label: "access",
+      items: [
+        { label: "API Tokens", detail: "private access", icon: KeyRound, pane: "settings" },
+        { label: "MCP Docs", detail: "agent handoff", icon: Code2, pane: "help" },
+        { label: "Shared Links", detail: "scoped context", icon: Shield, pane: "share" },
+        { label: "Vault", detail: "secrets", icon: BookOpen, pane: "vault" },
+        { label: "Account", detail: "settings", icon: Settings, pane: "settings" },
+      ],
+    },
+  ];
+
+  return (
+    <aside
+      className={[
+        "hidden h-full shrink-0 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] transition-[width] duration-200 md:flex",
+        collapsed ? "w-16" : "w-[272px]",
+      ].join(" ")}
+      aria-label="Shell navigation"
+    >
+      <div className={collapsed ? "flex flex-col items-center gap-2 px-2 py-3" : "px-3 py-3"}>
+        <div className={collapsed ? "flex flex-col items-center gap-2" : "flex items-center gap-2"}>
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            className="flex h-9 w-9 shrink-0 items-center justify-center border border-[hsl(var(--border))] bg-[hsl(var(--bg))] font-mono text-[13px] text-[hsl(var(--accent))] transition-colors hover:text-[hsl(var(--text-primary))]"
+            style={{ borderRadius: "var(--radius)" }}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
+          </button>
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <div className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+                <span className="text-[hsl(var(--accent))]">you</span>.md
+              </div>
+              <div className="truncate font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-45">
+                @{username}
+              </div>
+            </div>
+          )}
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={onTogglePanel}
+              className="flex h-9 w-9 shrink-0 items-center justify-center text-[hsl(var(--text-secondary))] opacity-45 transition-opacity hover:opacity-90"
+              aria-label={panelOpen ? "Hide detail pane" : "Show detail pane"}
+              title={panelOpen ? "Hide detail pane" : "Show detail pane"}
+            >
+              {panelOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+            </button>
+          )}
+        </div>
+
+        <div className={collapsed ? "mt-2 flex flex-col gap-1" : "mt-3 space-y-1"}>
+          <button
+            type="button"
+            onClick={onNewChat}
+            className={[
+              "flex min-h-10 w-full items-center gap-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-2.5 font-mono text-[11px] text-[hsl(var(--text-primary))] transition-colors hover:border-[hsl(var(--accent))]/60",
+              collapsed ? "w-10 justify-center px-0" : "",
+            ].join(" ")}
+            style={{ borderRadius: "var(--radius)" }}
+            aria-label="New chat"
+            title="New chat"
+          >
+            <Plus size={15} className="text-[hsl(var(--accent))]" />
+            {!collapsed && <span>new chat</span>}
+          </button>
+          <button
+            type="button"
+            onClick={onSearch}
+            className={[
+              "flex min-h-10 w-full items-center gap-2 px-2.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-65 transition-colors hover:bg-[hsl(var(--bg))] hover:opacity-95",
+              collapsed ? "w-10 justify-center px-0" : "",
+            ].join(" ")}
+            style={{ borderRadius: "var(--radius)" }}
+            aria-label="Search commands"
+            title="Search commands"
+          >
+            <Search size={15} />
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left">search</span>
+                <span className="text-[9px] opacity-35">cmd k</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <nav className={collapsed ? "flex-1 overflow-y-auto px-2 pb-3" : "flex-1 overflow-y-auto px-3 pb-3"}>
+        <div className="space-y-4">
+          {groups.map((group) => (
+            <section key={group.label} aria-label={group.label}>
+              {!collapsed && (
+                <div className="mb-1.5 px-2 font-mono text-[9px] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))] opacity-35">
+                  {group.label}
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <ShellSidebarButton
+                    key={`${group.label}-${item.label}`}
+                    item={item}
+                    collapsed={collapsed}
+                    active={rightPane === item.pane}
+                    onClick={() => onOpenPane(item.pane, item.subTab)}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </nav>
+
+      <div className={collapsed ? "border-t border-[hsl(var(--border))] p-2" : "border-t border-[hsl(var(--border))] p-3"}>
+        <div
+          className={[
+            "border border-[hsl(var(--border))] bg-[hsl(var(--bg))] font-mono",
+            collapsed ? "flex h-10 items-center justify-center" : "px-2.5 py-2",
+          ].join(" ")}
+          style={{ borderRadius: "var(--radius)" }}
+          title={syncedAt ? `synced ${formatRelativeTime(syncedAt)}` : undefined}
+        >
+          {collapsed ? (
+            <span
+              className={`h-2 w-2 rounded-full ${isPublished ? "bg-[hsl(var(--success))]" : "bg-[hsl(var(--accent))]"}`}
+              aria-label={isPublished ? "published" : "draft"}
+            />
+          ) : (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-[10px] text-[hsl(var(--text-secondary))]">
+                <span className="truncate text-[hsl(var(--text-primary))] opacity-75">{plan}</span>
+                <span className="opacity-20">/</span>
+                <span className="opacity-45">v{version ?? "0"}</span>
+                <span className={`ml-auto h-1.5 w-1.5 rounded-full ${isPublished ? "bg-[hsl(var(--success))]" : "bg-[hsl(var(--accent))]"}`} />
+              </div>
+              <div className="truncate text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                {isPublished ? "published" : "draft"}
+                {syncedAt != null ? ` / synced ${formatRelativeTime(syncedAt)}` : ""}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </aside>
+  );
 }
 
 export function DashboardContent() {
@@ -257,6 +587,10 @@ export function DashboardContent() {
   const [panelOpen, setPanelOpen] = useState<boolean>(() =>
     wantsGithub ? true : readStoredPanelOpen()
   );
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => readStoredSidebarCollapsed());
+  const [chatWidth, setChatWidth] = useState<number>(() => readStoredChatWidth());
+  const [editInitialSubTab, setEditInitialSubTab] = useState<EditSubTab>("files");
+  const splitContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Staleness nudge — derived once bundle data loads; guarded once per session
   const staleNotice =
@@ -272,6 +606,22 @@ export function DashboardContent() {
       // localStorage unavailable (private mode etc.) — non-fatal
     }
   }, [panelOpen]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(sidebarCollapsed));
+    } catch {
+      // localStorage unavailable (private mode etc.) — non-fatal
+    }
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CHAT_WIDTH_STORAGE_KEY, String(chatWidth));
+    } catch {
+      // localStorage unavailable (private mode etc.) — non-fatal
+    }
+  }, [chatWidth]);
 
   const createUser = useMutation(api.users.createUser);
   const claimProfile = useMutation(api.profiles.claimProfile);
@@ -292,6 +642,55 @@ export function DashboardContent() {
   const isWritingFiles = agent.progressSteps.some(
     (s) => s.status === "running" && s.label === "writing profile files"
   );
+
+  const openPane = useCallback((pane: RightPane, subTab?: EditSubTab) => {
+    if (subTab) setEditInitialSubTab(subTab);
+    setPanelOpen(true);
+    setMobileView("preview");
+    setRightPane(pane);
+  }, []);
+
+  const focusShellInput = useCallback(() => {
+    requestAnimationFrame(() => agent.textareaRef.current?.focus());
+  }, [agent.textareaRef]);
+
+  const startNewChat = useCallback(() => {
+    agent.setInput("");
+    setMobileView("terminal");
+    agent.addSystemMessage("[new chat]\n\nfresh prompt ready.");
+    focusShellInput();
+  }, [agent, focusShellInput]);
+
+  const openSearch = useCallback(() => {
+    setMobileView("terminal");
+    agent.setInput("/");
+    focusShellInput();
+  }, [agent, focusShellInput]);
+
+  const startColumnResize = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    const container = splitContainerRef.current;
+    if (!container) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    const handleMove = (moveEvent: PointerEvent) => {
+      const rect = container.getBoundingClientRect();
+      const next = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+      setChatWidth(Math.min(MAX_CHAT_WIDTH, Math.max(MIN_CHAT_WIDTH, Math.round(next))));
+    };
+
+    const handleUp = () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp, { once: true });
+  }, []);
 
   // Auto-create Convex user for /create flow (session cookie present),
   // or redirect to /initialize for /sign-up flow users
@@ -331,50 +730,47 @@ export function DashboardContent() {
 
   if (!convexUser) {
     return (
-      <main aria-busy="true" className="h-[calc(100dvh-2.25rem)] bg-[hsl(var(--bg))] flex flex-col">
-        <div className="flex-1 flex flex-col max-w-[1400px] mx-auto w-full p-0 md:p-4 min-h-0">
-          <div
-            className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] md:border md:border-[hsl(var(--border))] overflow-hidden min-h-0"
-            style={{ borderRadius: "0px" }}
-          >
-            {/* Skeleton header */}
-            <div className="hidden md:block px-4 py-2 border-b border-[hsl(var(--border))]">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--text-secondary))] opacity-10" />
-                <div className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--text-secondary))] opacity-10" />
-                <div className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--text-secondary))] opacity-10" />
-                <div className="w-24 h-3 bg-[hsl(var(--text-secondary))] opacity-10 ml-2 rounded-sm" />
-              </div>
+      <main aria-busy="true" className="h-[calc(100dvh-2.25rem)] overflow-hidden bg-[hsl(var(--bg))]">
+        <div className="flex h-full min-h-0">
+          <aside className="hidden h-full w-[272px] shrink-0 border-r border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 md:flex md:flex-col">
+            <div className="h-9 w-28 animate-pulse bg-[hsl(var(--text-secondary))] opacity-10" />
+            <div className="mt-4 h-10 w-full animate-pulse bg-[hsl(var(--text-secondary))] opacity-[0.08]" />
+            <div className="mt-2 h-10 w-full animate-pulse bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
+            <div className="mt-6 space-y-2">
+              {Array.from({ length: 12 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="h-9 w-full animate-pulse bg-[hsl(var(--text-secondary))] opacity-[0.05]"
+                />
+              ))}
             </div>
-            {/* Skeleton status bar */}
-            <div className="hidden md:flex items-center px-4 py-1.5 border-b border-[hsl(var(--border))]">
-              <div className="w-48 h-3 bg-[hsl(var(--text-secondary))] opacity-10 rounded-sm animate-pulse" />
+          </aside>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex h-11 items-center border-b border-[hsl(var(--border))] px-3 md:hidden">
+              <div className="h-3 w-32 animate-pulse bg-[hsl(var(--text-secondary))] opacity-10" />
             </div>
-            {/* Skeleton split layout */}
-            <div className="flex-1 flex min-h-0">
-              {/* Left: terminal skeleton — mirrors the panelOpen split so there is no layout flash */}
+            <div className="flex min-h-0 flex-1">
               <div
-                className={`w-full ${
-                  panelOpen ? "md:w-[35%] md:border-r md:border-[hsl(var(--border))]" : "md:w-full"
-                } flex flex-col p-4 gap-3 animate-pulse`}
+                className={`flex w-full flex-col gap-3 p-4 animate-pulse ${
+                  panelOpen ? "md:w-[36%] md:border-r md:border-[hsl(var(--border))]" : "md:w-full"
+                }`}
               >
-                <div className="w-32 h-3 bg-[hsl(var(--text-secondary))] opacity-10 rounded-sm" />
-                <div className="w-full h-3 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
-                <div className="w-3/4 h-3 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
+                <div className="h-3 w-32 bg-[hsl(var(--text-secondary))] opacity-10" />
+                <div className="h-3 w-full bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
+                <div className="h-3 w-3/4 bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
                 <div className="flex-1" />
-                <div className="w-full h-8 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
+                <div className="h-14 w-full bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
               </div>
-              {/* Right: pane skeleton */}
-              <div className={`hidden ${panelOpen ? "md:flex" : "md:hidden"} md:w-[65%] flex-col`}>
-                <div className="flex items-center px-4 py-1.5 border-b border-[hsl(var(--border))] gap-2 animate-pulse">
-                  <div className="w-14 h-5 bg-[hsl(var(--text-secondary))] opacity-10 rounded-sm" />
-                  <div className="w-14 h-5 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
-                  <div className="w-14 h-5 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
+              <div className={`hidden ${panelOpen ? "md:flex" : "md:hidden"} flex-1 flex-col`}>
+                <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] px-4 py-2 animate-pulse">
+                  <div className="h-5 w-14 bg-[hsl(var(--text-secondary))] opacity-10" />
+                  <div className="h-5 w-14 bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
+                  <div className="h-5 w-14 bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
                 </div>
-                <div className="flex-1 p-4 space-y-4 animate-pulse">
-                  <div className="w-40 h-4 bg-[hsl(var(--text-secondary))] opacity-10 rounded-sm" />
-                  <div className="w-full h-24 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
-                  <div className="w-2/3 h-4 bg-[hsl(var(--text-secondary))] opacity-[0.06] rounded-sm" />
+                <div className="flex-1 space-y-4 p-4 animate-pulse">
+                  <div className="h-4 w-40 bg-[hsl(var(--text-secondary))] opacity-10" />
+                  <div className="h-24 w-full bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
+                  <div className="h-4 w-2/3 bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
                 </div>
               </div>
             </div>
@@ -398,88 +794,27 @@ export function DashboardContent() {
   const activeMobileTab = mobileView === "terminal" ? "terminal" : activePreviewTab;
 
   return (
-    <main className="h-[calc(100dvh-2.25rem)] bg-[hsl(var(--bg))] flex flex-col">
-      <div className="flex-1 flex flex-col max-w-[1400px] mx-auto w-full p-0 md:p-4 min-h-0">
-        <div
-          className="flex-1 flex flex-col bg-[hsl(var(--bg-raised))] md:border md:border-[hsl(var(--border))] overflow-hidden min-h-0"
-          style={{ borderRadius: "0px" }}
-        >
-          {/* Terminal header — desktop only */}
-          <div className="hidden md:block">
-            <TerminalHeader title="you.md — shell" />
-          </div>
-
-          {/* Status bar — desktop only (mobile gets it in the nav row) */}
-          <div className="hidden md:flex items-center justify-between px-4 py-1.5 border-b border-[hsl(var(--border))] shrink-0">
-            <div className="flex items-center gap-2 text-[11px] font-mono text-[hsl(var(--text-secondary))]">
-              <span className="text-[hsl(var(--text-primary))] opacity-70">
-                @{username}
-              </span>
-              <span className="opacity-20">|</span>
-              <span className="opacity-40">{plan}</span>
-              <span className="opacity-20">|</span>
-              <span className="opacity-40">v{version ?? "0"}</span>
-              <span className="opacity-20">|</span>
-              <span className={isPublished ? "text-[hsl(var(--success))]" : "opacity-40"}>
-                {isPublished ? "published" : "draft"}
-              </span>
-              {syncedAt != null && (
-                <>
-                  <span className="opacity-20">|</span>
-                  <FreshnessSegment timestamp={syncedAt} />
-                </>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {/* GitHub icon + unconnected warning dot */}
-              <button
-                onClick={() => {
-                  setPanelOpen(true);
-                  setRightPane("github");
-                }}
-                className="relative flex items-center justify-center w-5 h-5 text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-70 transition-opacity"
-                title={githubConnection === null ? "github not connected" : "github"}
-                aria-label="open github pane"
-              >
-                {/* GitHub mark — inline SVG */}
-                <svg
-                  viewBox="0 0 16 16"
-                  width="14"
-                  height="14"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-                </svg>
-                {/* Warning dot — shown when not connected (null = not connected, undefined = loading) */}
-                {githubConnection === null && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[hsl(var(--accent))]"
-                    style={{ borderRadius: "50%" }}
-                  />
-                )}
-              </button>
-              <button
-                onClick={() => {
-                  setPanelOpen(true);
-                  setRightPane("profile");
-                }}
-                className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60 transition-opacity"
-              >
-                profile
-              </button>
-              <button
-                onClick={() => setPanelOpen(!panelOpen)}
-                className="text-[10px] font-mono text-[hsl(var(--accent))] opacity-50 hover:opacity-90 transition-opacity"
-              >
-                {panelOpen ? "close panel" : "open panel"}
-              </button>
-            </div>
-          </div>
-
+    <main className="h-[calc(100dvh-2.25rem)] overflow-hidden bg-[hsl(var(--bg))]">
+      <div className="flex h-full min-h-0">
+        <ShellSidebar
+          username={username}
+          plan={plan}
+          version={version}
+          isPublished={isPublished}
+          syncedAt={syncedAt}
+          githubRepoName={githubConnection?.repoFullName ?? null}
+          rightPane={rightPane}
+          collapsed={sidebarCollapsed}
+          panelOpen={panelOpen}
+          onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
+          onTogglePanel={() => setPanelOpen((value) => !value)}
+          onOpenPane={openPane}
+          onNewChat={startNewChat}
+          onSearch={openSearch}
+        />
+        <div className="flex min-w-0 flex-1 flex-col bg-[hsl(var(--bg))]">
           {/* Mobile nav — single row: scrollable pane tabs + compact status */}
-          <div className="md:hidden shrink-0 border-b border-[hsl(var(--border))]">
+          <div className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] md:hidden">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center overflow-x-auto scrollbar-none">
                 {MOBILE_PRIMARY_PANES.map(({ key, label }) => (
@@ -546,15 +881,12 @@ export function DashboardContent() {
           </div>
 
           {/* Content — split on desktop, toggled on mobile */}
-          <div className="flex-1 flex min-h-0 relative">
+          <div ref={splitContainerRef} className="relative flex min-h-0 flex-1 bg-[hsl(var(--bg))]">
             {/* Terminal — always rendered on desktop; on mobile only when active */}
             <div
               className={[
-                "flex flex-col min-h-0",
-                // Desktop: full width when panel closed, 35% when open
-                panelOpen
-                  ? "md:w-[35%] md:border-r md:border-[hsl(var(--border))]"
-                  : "md:w-full",
+                "min-h-0 flex flex-col bg-[hsl(var(--bg-raised))]",
+                panelOpen ? "md:w-[var(--shell-chat-width)] md:flex-none" : "md:flex-1",
                 "md:relative md:opacity-100 md:translate-x-0",
                 // Mobile: full width, absolute positioned for transitions
                 "w-full",
@@ -562,7 +894,10 @@ export function DashboardContent() {
                   ? "relative opacity-100 translate-x-0"
                   : "absolute inset-0 opacity-0 -translate-x-4 pointer-events-none md:pointer-events-auto md:relative md:inset-auto",
               ].join(" ")}
-              style={{ transition: "width 200ms ease, opacity 200ms ease, transform 200ms ease" }}
+              style={{
+                "--shell-chat-width": `${chatWidth}%`,
+                transition: "width 140ms ease, opacity 200ms ease, transform 200ms ease",
+              } as CSSProperties}
             >
               <TerminalShell
                 displayMessages={agent.displayMessages}
@@ -579,13 +914,25 @@ export function DashboardContent() {
               />
             </div>
 
+            {panelOpen && (
+              <button
+                type="button"
+                onPointerDown={startColumnResize}
+                className="group hidden w-2 shrink-0 cursor-col-resize items-stretch justify-center border-x border-[hsl(var(--border))] bg-[hsl(var(--bg))] transition-colors hover:bg-[hsl(var(--bg-raised))] md:flex"
+                aria-label="Resize shell split"
+                title="Resize shell split"
+              >
+                <span className="my-auto h-10 w-px bg-[hsl(var(--text-secondary))] opacity-20 transition-opacity group-hover:opacity-60" />
+              </button>
+            )}
+
             {/* Panes — always rendered on desktop; on mobile only when active */}
             <div
               className={[
-                "flex flex-col min-h-0",
+                "min-h-0 flex flex-col bg-[hsl(var(--bg-raised))]",
                 // Desktop: hidden when panel is closed
                 panelOpen
-                  ? "md:w-[65%] md:relative md:opacity-100 md:translate-x-0"
+                  ? "md:relative md:flex-1 md:opacity-100 md:translate-x-0"
                   : "md:hidden",
                 // Mobile: full width, absolute positioned for transitions
                 "w-full",
@@ -602,7 +949,7 @@ export function DashboardContent() {
                     {PANE_GROUPS.map((group) => (
                       <button
                         key={group.key}
-                        onClick={() => setRightPane(group.defaultPane)}
+                        onClick={() => openPane(group.defaultPane)}
                         className={`h-8 px-2.5 text-[10px] font-mono transition-colors whitespace-nowrap border ${
                           activePaneGroup.key === group.key
                             ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border border-[hsl(var(--border))]"
@@ -620,7 +967,7 @@ export function DashboardContent() {
                     {activePaneGroup.panes.map((pane) => (
                       <button
                         key={pane.key}
-                        onClick={() => setRightPane(pane.key)}
+                        onClick={() => openPane(pane.key)}
                         className={`h-8 px-2 text-[10px] font-mono whitespace-nowrap transition-colors border ${
                           rightPane === pane.key
                             ? "text-[hsl(var(--text-primary))] bg-[hsl(var(--bg))] border-[hsl(var(--border))]"
@@ -651,7 +998,12 @@ export function DashboardContent() {
                     <PortraitPane username={username} ownerId={convexUser._id} />
                   )}
                   {rightPane === "edit" && (
-                    <EditPane userId={convexUser._id} username={username} isWritingFiles={isWritingFiles} />
+                    <EditPane
+                      userId={convexUser._id}
+                      username={username}
+                      isWritingFiles={isWritingFiles}
+                      initialSubTab={editInitialSubTab}
+                    />
                   )}
                   {rightPane === "files" && (
                     <FilesPane userId={convexUser._id} isWritingFiles={isWritingFiles} />

@@ -4,6 +4,22 @@ Last Updated: 2026-06-15
 
 ---
 
+## 2026-06-15 — Rebuild `/shell` as Codex/Lovable-style workspace
+
+### 116. Remove terminal-window chrome and add full-height sidebar + resizable split shell
+**Status:** IN PROGRESS (code complete locally; Houston/prod verification pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-15 — Houston: "the you.md/shell page i think it is time to remove the top part with the red/yellow/green docs and the padding and border around it etc and make it a proper resizable lovable/codex style split screen full height two column layout with a far left side menu..."
+**Actionable Scope:**
+1. Remove the old red/yellow/green terminal-window header, outer padding, and framed border around `/shell`.
+2. Make `/shell` a full-height app workspace with a persistent far-left sidebar.
+3. Use the familiar app-sidebar pattern from Houston's BAMF/Bad/Myo projects: new chat, search, grouped navigation, account/status footer.
+4. Make the chat/detail split resizable on desktop.
+5. Improve the bottom chat composer visual treatment.
+6. Seed sidebar groups for Projects/GitHub repos, Skillstacks, connectors, crawlers, crons, API/MCP/YouStack docs, private sharing/API tokens, and connected agents while mapping to current shipped panes where backend surfaces already exist.
+**Progress (2026-06-15):** Rebuilt `/shell` as a full-height app workspace: old desktop terminal-window chrome/outer frame removed, persistent left sidebar added with New Chat/Search plus Workspace/Projects/Skillstacks/Automation/Access groups, synced GitHub repo status surfaced, desktop chat/detail split made resizable with persisted width, bottom composer restyled, and sidebar Crawlers/Crons now open the sources editor subtab. Local verification passed TypeScript, targeted ESLint, radius guard, `git diff --check`, and in-app browser QA for desktop, mobile width, and crawler navigation. Remaining: Houston visual approval and production deployment/verification.
+
 ## 2026-06-15 — Route h.computer product ideas into native You.md
 
 ### 115. Make You.md the native personal API/MCP, agent brain, and YouStacks layer

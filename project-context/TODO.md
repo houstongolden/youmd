@@ -568,6 +568,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 
 ### Design Polish
 - [x] Normalize the `/profiles` app-nav create CTA and responsive filter/sort controls after live in-app browser QA
+- [x] Rebuild `/shell` as a full-height Codex/Lovable-style workspace with a persistent left sidebar, resizable chat/detail split, and cleaner bottom composer
 - [ ] Homepage minimalization: reduce section sprawl, keep it intentional (Hero → YouStacks → Open Standard → CTA)
 - [ ] Profile page custom sections (user-defined via conversation)
 - [ ] Count-up animations on all metrics

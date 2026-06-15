@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { FilesPane } from "./FilesPane";
 import { JsonPane } from "./JsonPane";
 import { SourcesPane } from "./SourcesPane";
 
-type EditSubTab = "files" | "json" | "sources";
+export type EditSubTab = "files" | "json" | "sources";
 
 interface EditPaneProps {
   userId: Id<"users">;
   username: string;
   isWritingFiles?: boolean;
+  initialSubTab?: EditSubTab;
 }
 
 const SUB_TABS: { key: EditSubTab; label: string }[] = [
@@ -20,8 +21,12 @@ const SUB_TABS: { key: EditSubTab; label: string }[] = [
   { key: "sources", label: "sources" },
 ];
 
-export function EditPane({ userId, username, isWritingFiles }: EditPaneProps) {
-  const [subTab, setSubTab] = useState<EditSubTab>("files");
+export function EditPane({ userId, username, isWritingFiles, initialSubTab = "files" }: EditPaneProps) {
+  const [subTab, setSubTab] = useState<EditSubTab>(initialSubTab);
+
+  useEffect(() => {
+    setSubTab(initialSubTab);
+  }, [initialSubTab]);
 
   return (
     <div className="h-full flex flex-col min-h-0">

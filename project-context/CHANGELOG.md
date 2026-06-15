@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-15 — Full-height shell workspace
+
+### feat(web): rebuild `/shell` as a Codex/Lovable-style workspace
+- Removed the old desktop terminal-window chrome, red/yellow/green header strip, centered max-width wrapper, outer padding, and framed border from the authenticated shell surface.
+- Added a persistent far-left shell sidebar with New Chat/Search, workspace navigation, synced GitHub repo/project status, Skillstacks, Automation, and Access groups.
+- Made the desktop chat/detail split resizable with a persisted width and a desktop-only drag handle.
+- Improved the bottom chat composer into a single terminal command surface with a cleaner send affordance and metadata strip.
+- Added an editor subtab entry path so sidebar Crawlers/Crons navigation can open the sources pane directly.
+- Verified locally with TypeScript, targeted ESLint, radius guard, whitespace check, and in-app browser QA at desktop and mobile widths.
+
 ## 2026-06-15 — Connected-app grants and connector MVP
 
 ### feat: enrich monitored change summaries
