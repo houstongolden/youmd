@@ -3,6 +3,7 @@ import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import HandlePreview from "@/components/landing/HandlePreview";
 import PositioningStory from "@/components/landing/PositioningStory";
+import SyncAcrossMachines from "@/components/landing/SyncAcrossMachines";
 import CTAFooter from "@/components/landing/CTAFooter";
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default function Home() {
         <Hero />
         <HandlePreview />
         <PositioningStory />
+        <SyncAcrossMachines />
         <CTAFooter />
       </main>
     </div>
