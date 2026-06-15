@@ -248,9 +248,15 @@ export function DashboardContent() {
     isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
   );
 
-  const [rightPane, setRightPane] = useState<RightPane>("profile");
+  // Post-OAuth redirect lands at /shell?integration=github — open the github
+  // pane from the initial state (deriving here avoids a setState-in-effect that
+  // can trigger cascading renders).
+  const wantsGithub = searchParams.get("integration") === "github";
+  const [rightPane, setRightPane] = useState<RightPane>(wantsGithub ? "github" : "profile");
   const [mobileView, setMobileView] = useState<"terminal" | "preview">("terminal");
-  const [panelOpen, setPanelOpen] = useState<boolean>(readStoredPanelOpen);
+  const [panelOpen, setPanelOpen] = useState<boolean>(() =>
+    wantsGithub ? true : readStoredPanelOpen()
+  );
 
   // Staleness nudge — derived once bundle data loads; guarded once per session
   const staleNotice =
@@ -266,14 +272,6 @@ export function DashboardContent() {
       // localStorage unavailable (private mode etc.) — non-fatal
     }
   }, [panelOpen]);
-
-  // Auto-open github pane when ?integration=github is present (post-OAuth redirect).
-  useEffect(() => {
-    if (searchParams.get("integration") === "github") {
-      setRightPane("github");
-      setPanelOpen(true);
-    }
-  }, [searchParams]);
 
   const createUser = useMutation(api.users.createUser);
   const claimProfile = useMutation(api.profiles.claimProfile);
@@ -457,8 +455,8 @@ export function DashboardContent() {
                 {githubConnection === null && (
                   <span
                     aria-hidden="true"
-                    className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[hsl(var(--accent))]"
-                    style={{ borderRadius: "9999px" }}
+                    className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[hsl(var(--accent))]"
+                    style={{ borderRadius: "50%" }}
                   />
                 )}
               </button>

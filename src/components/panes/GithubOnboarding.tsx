@@ -71,14 +71,14 @@ function StepDot({
 }) {
   return (
     <span
-      className={`inline-block w-1.5 h-1.5 rounded-full ${
+      className={`inline-block w-1.5 h-1.5 ${
         done
           ? "bg-[hsl(var(--success))]"
           : active
           ? "bg-[hsl(var(--accent))]"
           : "bg-[hsl(var(--border))]"
       }`}
-      style={{ borderRadius: "9999px" }}
+      style={{ borderRadius: "50%" }}
     />
   );
 }
