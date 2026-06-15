@@ -241,6 +241,101 @@ export const findOrCreateGithubUser = mutation({
   },
 });
 
+/**
+ * Link a GitHub account to a SPECIFIC already-authenticated user (connect flow).
+ *
+ * Unlike findOrCreateGithubUser (which resolves a user by GitHub identity/email
+ * and is used for sign-up/sign-in), this links to the caller's CURRENT session
+ * user — so a user who signed up via email can connect GitHub even when their
+ * GitHub email differs from their account email, without creating a duplicate.
+ *
+ * Rejects if the GitHub account is already connected to a different user.
+ * If the user already has a (different) GitHub connection, it is replaced.
+ */
+export const linkGithubToUser = mutation({
+  args: {
+    _internalAuthToken: v.optional(v.string()),
+    linkToUserId: v.id("users"),
+    githubUserId: v.number(),
+    githubLogin: v.string(),
+    githubName: v.optional(v.string()),
+    githubEmail: v.optional(v.string()),
+    githubAvatarUrl: v.optional(v.string()),
+    accessToken: v.optional(v.string()),
+    scopes: v.array(v.string()),
+    tokenType: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertTrustedInternal(args._internalAuthToken);
+
+    const now = Date.now();
+    const email = args.githubEmail?.trim().toLowerCase() || undefined;
+
+    // Guard: this GitHub account must not already belong to a different user.
+    const byGithub = await ctx.db
+      .query("githubConnections")
+      .withIndex("by_githubUserId", (q) => q.eq("githubUserId", args.githubUserId))
+      .first();
+    if (byGithub && byGithub.userId !== args.linkToUserId) {
+      return { ok: false as const, reason: "github_already_linked" };
+    }
+
+    let encrypted: { ciphertext: string; iv: string } | null = null;
+    if (args.accessToken) {
+      encrypted = await encryptSecret(args.accessToken);
+    }
+    const tokenPatch = encrypted
+      ? { accessTokenEncrypted: encrypted.ciphertext, accessTokenIv: encrypted.iv }
+      : {};
+
+    const identityPatch = {
+      githubUserId: args.githubUserId,
+      githubLogin: args.githubLogin,
+      githubName: args.githubName,
+      githubEmail: email,
+      githubAvatarUrl: args.githubAvatarUrl,
+      scopes: args.scopes,
+      tokenType: args.tokenType,
+      updatedAt: now,
+      ...tokenPatch,
+    };
+
+    // Reuse the user's existing connection row if present (one per user),
+    // otherwise insert a fresh one.
+    const existingForUser =
+      byGithub && byGithub.userId === args.linkToUserId
+        ? byGithub
+        : await ctx.db
+            .query("githubConnections")
+            .withIndex("by_userId", (q) => q.eq("userId", args.linkToUserId))
+            .first();
+
+    if (existingForUser) {
+      await ctx.db.patch(existingForUser._id, identityPatch);
+    } else {
+      await ctx.db.insert("githubConnections", {
+        userId: args.linkToUserId,
+        connectedAt: now,
+        ...identityPatch,
+      });
+    }
+
+    await ctx.db.insert("securityLogs", {
+      eventType: "github_linked",
+      userId: args.linkToUserId,
+      details: {
+        provider: "github",
+        githubLogin: args.githubLogin,
+        githubUserId: args.githubUserId,
+        linkedToExisting: true,
+      },
+      createdAt: now,
+    });
+
+    return { ok: true as const, userId: args.linkToUserId };
+  },
+});
+
 /** Owner-only: read the GitHub connection state (no token plaintext). */
 export const getConnection = query({
   args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },

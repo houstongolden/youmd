@@ -71,6 +71,46 @@ export async function GET(request: Request) {
     const identity = await fetchGithubIdentity(token.accessToken);
 
     const client = getConvexHttpClient();
+
+    // Connect mode: if the request already carries a valid session, link the
+    // GitHub account to THAT user (e.g. someone who signed up via email and is
+    // now connecting GitHub) instead of resolving/creating a user by identity.
+    const cookieHeader = request.headers.get("cookie") ?? "";
+    const sessionCookieRaw = cookieHeader
+      .split(";")
+      .map((c) => c.trim())
+      .find((c) => c.startsWith(`${SESSION_COOKIE_NAME}=`));
+    const existingSessionToken = sessionCookieRaw
+      ? decodeURIComponent(sessionCookieRaw.split("=").slice(1).join("="))
+      : "";
+    const currentSession = existingSessionToken
+      ? await client.query(api.auth.validateSession, {
+          tokenHash: hashOpaqueToken(existingSessionToken),
+        })
+      : null;
+
+    if (currentSession) {
+      const link = await client.mutation(api.github.linkGithubToUser, {
+        _internalAuthToken: trustedToken,
+        linkToUserId: currentSession.userId,
+        githubUserId: identity.githubUserId,
+        githubLogin: identity.githubLogin,
+        githubName: identity.githubName,
+        githubEmail: identity.githubEmail,
+        githubAvatarUrl: identity.githubAvatarUrl,
+        accessToken: token.accessToken,
+        scopes: token.scopes,
+        tokenType: token.tokenType,
+      });
+      const destination = link.ok
+        ? `${nextPath}?github=connected`
+        : `/shell?error=${encodeURIComponent("reason" in link ? link.reason : "github_link_failed")}`;
+      const response = NextResponse.redirect(`${getAppUrl()}${destination}`);
+      // Preserve the existing session; only clear the one-time state cookie.
+      response.cookies.set(GITHUB_OAUTH_STATE_COOKIE, "", { path: "/", maxAge: 0 });
+      return response;
+    }
+
     const result = await client.mutation(api.github.findOrCreateGithubUser, {
       _internalAuthToken: trustedToken,
       githubUserId: identity.githubUserId,
