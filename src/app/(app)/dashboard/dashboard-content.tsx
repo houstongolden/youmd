@@ -1409,7 +1409,7 @@ export function DashboardContent() {
                 panelOpen ? "md:w-[var(--shell-chat-width)] md:flex-none" : "md:flex-1",
                 "md:relative md:opacity-100 md:translate-x-0",
                 // Mobile: full width, absolute positioned for transitions
-                "w-full md:w-auto",
+                "w-full",
                 mobileView === "terminal"
                   ? "relative opacity-100 translate-x-0"
                   : "absolute inset-0 opacity-0 -translate-x-4 pointer-events-none md:pointer-events-auto md:relative md:inset-auto",
