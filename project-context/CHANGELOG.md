@@ -5,6 +5,7 @@
 ### feat(web): refine `/shell` ratios, sidebar chrome, and account controls
 - Removed the logged-in global top nav from the shell/dashboard workspace so the app uses the full viewport height.
 - Protected the chat column with a wider default split, pixel minimums, and resize clamping so it cannot collapse into an unusable sliver on desktop.
+- Migrated previously saved narrow split widths up to the new default so existing logged-in users do not keep loading the old cramped ratio.
 - Auto-compacted the left sidebar below the wide-desktop breakpoint when the detail split needs room.
 - Reworked the sidebar from bulky bordered rows into quieter icon/label actions with hover/title detail context and a slimmer active signal.
 - Moved the portrait/username/account affordance into the sidebar footer and added a popout for usage, settings, sign out, and persisted `light`/`dark`/`system` theme preference.

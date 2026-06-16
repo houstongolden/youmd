@@ -262,6 +262,7 @@ function readStoredChatWidth(): number {
   try {
     const raw = Number(window.localStorage.getItem(CHAT_WIDTH_STORAGE_KEY));
     if (!Number.isFinite(raw)) return DEFAULT_CHAT_WIDTH;
+    if (raw < DEFAULT_CHAT_WIDTH) return DEFAULT_CHAT_WIDTH;
     return Math.min(MAX_CHAT_WIDTH, Math.max(MIN_CHAT_WIDTH, raw));
   } catch {
     return DEFAULT_CHAT_WIDTH;
