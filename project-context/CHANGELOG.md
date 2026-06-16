@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-15 — Shell logo and panel-toggle polish
+
+### fix(web): make shell panel controls match their geography
+- Removed the separate Lucide left-panel icon from the top-left sidebar header.
+- Made the PixelYOU mark a touch smaller so it fits without right-side cropping.
+- Turned the YOU mark into the sidebar toggle itself; hovering the mark subtly transitions to a two-line menu glyph.
+- Moved the detail/right-pane toggle out of the left side of the chat top bar and into the far-right top chrome, beside the GitHub/update/publish/deploy actions.
+- Replaced the right-pane toggle icon with a cleaner custom line glyph instead of the heavier Lucide side-panel icon.
+- Verified locally with `npm run lint` (existing warnings only; radius guard passed) and `npm run build`.
+
 ## 2026-06-15 — Shell composer control polish
 
 ### fix(web): remove inner composer chrome and add attach/voice affordances

@@ -40,10 +40,6 @@ import {
   MessageSquareText,
   Monitor,
   Moon,
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelRightClose,
-  PanelRightOpen,
   Plug,
   Plus,
   Radar,
@@ -391,23 +387,71 @@ function ShellSidebarButton({
   );
 }
 
-function ShellYouMark({ collapsed }: { collapsed: boolean }) {
+function MenuGlyph({ className = "" }: { className?: string }) {
   return (
-    <div
-      role="img"
-      aria-label="YOU"
+    <span aria-hidden="true" className={["flex h-5 w-7 flex-col justify-center gap-1.5", className].join(" ")}>
+      <span className="block h-px w-6 bg-current" />
+      <span className="block h-px w-4 bg-current" />
+    </span>
+  );
+}
+
+function DetailPanelGlyph({ open }: { open: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="relative block h-4 w-5 text-current"
+    >
+      <span className="absolute inset-y-0 right-0 w-px bg-current opacity-65" />
+      <span className="absolute inset-y-0 left-0 w-px bg-current opacity-20" />
+      <span className="absolute left-0 right-0 top-0 h-px bg-current opacity-20" />
+      <span className="absolute bottom-0 left-0 right-0 h-px bg-current opacity-20" />
+      <span
+        className={[
+          "absolute right-1 top-1/2 h-2.5 -translate-y-1/2 bg-current transition-[width,opacity]",
+          open ? "w-1.5 opacity-45" : "w-px opacity-70",
+        ].join(" ")}
+      />
+    </span>
+  );
+}
+
+function ShellYouMark({ collapsed, onToggleCollapsed }: { collapsed: boolean; onToggleCollapsed: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggleCollapsed}
+      aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       className={[
-        "shrink-0 overflow-hidden",
-        collapsed ? "h-6 w-10" : "h-8 w-[76px]",
+        "group relative flex shrink-0 cursor-pointer items-center overflow-hidden text-[hsl(var(--text-secondary))] transition-[background,color,opacity]",
+        collapsed ? "h-8 w-10 justify-center" : "h-8 w-[68px] justify-start",
+        "hover:bg-[hsl(var(--bg))] hover:text-[hsl(var(--text-primary))]",
       ].join(" ")}
+      style={{ borderRadius: "var(--radius)" }}
     >
       <div
-        className={collapsed ? "origin-top-left scale-[0.125]" : "origin-top-left scale-[0.22]"}
-        aria-hidden="true"
+        role="img"
+        aria-label="YOU"
+        className={[
+          "absolute left-1 top-1/2 -translate-y-1/2 overflow-hidden text-[hsl(var(--text-primary))] transition-[opacity,transform] duration-150 group-hover:-translate-y-3 group-hover:opacity-0",
+          collapsed ? "h-5 w-8" : "h-7 w-[62px]",
+        ].join(" ")}
       >
-        <PixelYOU />
+        <div
+          className={collapsed ? "origin-top-left scale-[0.102]" : "origin-top-left scale-[0.18]"}
+          aria-hidden="true"
+        >
+          <PixelYOU />
+        </div>
       </div>
-    </div>
+      <MenuGlyph
+        className={[
+          "absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-2 text-[hsl(var(--accent))] opacity-0 transition-[opacity,transform] duration-150 group-hover:-translate-y-1/2 group-hover:opacity-90",
+          collapsed ? "" : "sm:left-6",
+        ].join(" ")}
+      />
+    </button>
   );
 }
 
@@ -600,7 +644,7 @@ function ShellSidebar({
     >
       <div className={collapsed ? "flex flex-col items-center gap-2 px-2 py-3" : "px-3 py-3"}>
         <div className={collapsed ? "flex flex-col items-center gap-2" : "flex items-center gap-2"}>
-          <ShellYouMark collapsed={collapsed} />
+          <ShellYouMark collapsed={collapsed} onToggleCollapsed={onToggleCollapsed} />
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <div className="truncate font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-45">
@@ -608,16 +652,6 @@ function ShellSidebar({
               </div>
             </div>
           )}
-          <button
-            type="button"
-            onClick={onToggleCollapsed}
-            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center font-mono text-[hsl(var(--text-secondary))] opacity-55 transition-[background,color,opacity] hover:bg-[hsl(var(--bg))] hover:text-[hsl(var(--text-primary))] hover:opacity-95"
-            style={{ borderRadius: "var(--radius)" }}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-          </button>
         </div>
 
         <div className={collapsed ? "mt-2 flex flex-col gap-1" : "mt-3 space-y-1"}>
@@ -1278,16 +1312,6 @@ export function DashboardContent() {
         <div className="flex min-w-0 flex-1 flex-col bg-[hsl(var(--bg))]">
           <div className="hidden h-10 shrink-0 items-center justify-between border-b border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] px-3 md:flex">
             <div className="flex min-w-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPanelOpen((value) => !value)}
-                className="flex h-8 w-8 cursor-pointer items-center justify-center text-[hsl(var(--text-secondary))] opacity-55 transition-[background,color,opacity] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))] hover:opacity-95"
-                style={{ borderRadius: "var(--radius)" }}
-                aria-label={panelOpen ? "Hide detail pane" : "Show detail pane"}
-                title={panelOpen ? "Hide detail pane" : "Show detail pane"}
-              >
-                {panelOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
-              </button>
               <span className="hidden truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35 lg:block">
                 {githubConnection?.repoFullName ?? `you.md/${username}`}
               </span>
@@ -1297,6 +1321,16 @@ export function DashboardContent() {
               <ShellTopActionButton label="update" icon={RefreshCw} onClick={openSourceUpdate} />
               <ShellTopActionButton label="publish" icon={UploadCloud} onClick={runPublish} emphasis />
               <ShellTopActionButton label="deploy" icon={Rocket} onClick={openDeploySurface} />
+              <button
+                type="button"
+                onClick={() => setPanelOpen((value) => !value)}
+                className="ml-1 flex h-8 w-8 cursor-pointer items-center justify-center text-[hsl(var(--text-secondary))] opacity-55 transition-[background,color,opacity] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))] hover:opacity-95"
+                style={{ borderRadius: "var(--radius)" }}
+                aria-label={panelOpen ? "Hide detail pane" : "Show detail pane"}
+                title={panelOpen ? "Hide detail pane" : "Show detail pane"}
+              >
+                <DetailPanelGlyph open={panelOpen} />
+              </button>
             </div>
           </div>
           {/* Mobile nav — single row: scrollable pane tabs + compact status */}
