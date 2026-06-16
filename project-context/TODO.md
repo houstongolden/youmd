@@ -7,6 +7,18 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-16 — Shell GitHub update chrome and usage surface
+- [x] Preserve Houston's raw prompt for right-aligned GitHub repo chrome, one `[ update ]` action, update stream artifacts, Files/artifact library, folder.md storage, and Usage accounting
+- [x] Replace the top shell refresh/publish/deploy icon cluster with one GitHub sync-status control plus one small `[ update ]` button
+- [x] Hide the repo name behind the GitHub hover state and show a compact last-sync/status label next to the solid GitHub mark
+- [x] Add Convex repo-mirror-derived status colors for synced, ahead/pending, behind/stale, disconnected/error, and loading states
+- [x] Stream an update preflight notice into the shell chat before running the existing publish/sync action
+- [x] Add a private Usage surface to the API/MCP connector page
+- [x] Add folder.md 10GB storage and artifact-library positioning to the connector catalog
+- [ ] Build the real update artifact with expandable steps, commit/PR message capture, history persistence, and conflict/merge resolution
+- [ ] Add Settings -> Usage as a first-class account surface
+- [ ] Add first-class artifact/rich-file tables and library persistence beyond `custom_files`
+
 ### 2026-06-16 — Connector catalog and private API/MCP control center
 - [x] Turn the Connectors pane into a clear owner control center with `api/mcp`, `apps`, `crawlers/loops`, and `repo` tabs
 - [x] Surface the current user's private REST/MCP/stack endpoint docs, auth header contract, resource map, and API route table inside `/shell`

@@ -215,12 +215,12 @@ const CONNECTORS: ConnectorSpec[] = [
   {
     slug: "foldermd",
     name: "folder.md",
-    detail: "folder-native docs, API, MCP, and stack context as a connected project brain",
+    detail: "artifact library, markdown vault, docs, API/MCP, and stack context with optional 10GB free storage",
     category: "owned",
     type: "mcp",
     pinned: true,
-    scopes: ["projects:read", "stacks:read", "activity:read"],
-    resources: ["projects", "stacks", "activity"],
+    scopes: ["projects:read", "stacks:read", "activity:read", "artifacts:read", "artifacts:write"],
+    resources: ["projects", "stacks", "activity", "artifacts"],
     trustLevel: "high",
   },
   { slug: "github", name: "GitHub", detail: "repos, issues, pull requests, code context, and stack manifests", category: "dev", type: "oauth", enabled: true, scopes: ["projects:read", "projects:write", "stacks:read"], resources: ["projects", "stacks"], writePolicy: "propose", trustLevel: "verified" },
@@ -298,6 +298,16 @@ const RESOURCE_ROWS = [
   ["activity", "agent/API/MCP reads, writes, denials, and grant usage"],
 ] as const;
 
+const USAGE_ROWS = [
+  ["you agent tokens", "direct web, CLI, app, and profile-chat conversations"],
+  ["api/mcp calls", "base You.md API plus personal endpoints, custom grants, and stack-scoped tools"],
+  ["loops / crons", "scheduled reports, monitors, refresh jobs, and agent follow-up cadence"],
+  ["crawlers", "source fetch, extract, version, provenance, and trust refresh"],
+  ["connectors", "OAuth apps, MCP clients, webhooks, custom APIs, and owned product grants"],
+  ["byok / env", "optional model routing, app keys, provider keys, and private runtime config"],
+  ["artifact storage", "markdown, reports, context bundles, rich files, and folder.md expansion"],
+] as const;
+
 function connectorIcon(spec: ConnectorSpec) {
   if (spec.slug.includes("gmail") || spec.slug.includes("outlook") || spec.slug === "resend") return Mail;
   if (spec.slug.includes("calendar")) return CalendarDays;
@@ -309,6 +319,22 @@ function connectorIcon(spec: ConnectorSpec) {
   if (spec.category === "marketing") return MessageSquare;
   if (spec.category === "owned") return Sparkles;
   return Plug;
+}
+
+function FolderMdConnectorNote() {
+  return (
+    <div className="mt-3 border-t border-[hsl(var(--border))]/35 pt-3">
+      <p className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-55">
+        Connect a free folder.md account or API key to expand the You.md file/artifact
+        library up to 10GB, then expose scoped read/write tools through your private
+        API/MCP boundary.
+      </p>
+      <code className="mt-2 block bg-[hsl(var(--bg))]/55 px-2 py-2 font-mono text-[9px] leading-4 text-[hsl(var(--text-primary))] opacity-75">
+        Connect folder.md to You.md, map my artifact library, and give my agents
+        scoped tools for markdown reports, source snapshots, and reusable context files.
+      </code>
+    </div>
+  );
 }
 
 function shortDate(value: string | null) {
@@ -492,6 +518,34 @@ export function GithubPane({ clerkId, username, userId }: GithubPaneProps) {
               </section>
 
               <section>
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <PaneSectionLabel>usage surface</PaneSectionLabel>
+                    <p className="max-w-2xl font-mono text-[10px] leading-5 text-[hsl(var(--text-secondary))] opacity-52">
+                      Usage should feel like an owner dashboard for a living agent brain:
+                      generous by default, transparent when tools, loops, crawlers, and
+                      custom endpoints start doing real work.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("apps")}
+                    className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-75 hover:opacity-100"
+                  >
+                    connect storage
+                  </button>
+                </div>
+                <div className="mt-4 divide-y divide-[hsl(var(--border))]/35 border-y border-[hsl(var(--border))]/45">
+                  {USAGE_ROWS.map(([label, detail]) => (
+                    <div key={label} className="grid gap-2 py-2.5 md:grid-cols-[160px_1fr]">
+                      <p className="font-mono text-[10px] text-[hsl(var(--text-primary))]">{label}</p>
+                      <p className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-48">{detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
                 <PaneSectionLabel>private endpoint docs</PaneSectionLabel>
                 <div className="overflow-hidden border border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35">
                   {API_ENDPOINTS.map(([method, path, detail]) => (
@@ -649,6 +703,7 @@ export function GithubPane({ clerkId, username, userId }: GithubPaneProps) {
                             <span>{connector.writePolicy ?? "read_only"}</span>
                             <span>{connector.trustLevel ?? "medium"}</span>
                           </div>
+                          {connector.slug === "foldermd" && <FolderMdConnectorNote />}
                         </div>
                         <button
                           type="button"

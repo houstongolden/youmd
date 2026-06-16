@@ -43,14 +43,11 @@ import {
   Plug,
   Plus,
   Radar,
-  RefreshCw,
-  Rocket,
   Search,
   Settings,
   Share2,
   Shield,
   Sun,
-  UploadCloud,
   UserRound,
   Wrench,
 } from "lucide-react";
@@ -216,11 +213,99 @@ type ShellChatSession = {
   createdAt: number;
 };
 
+type ShellGitHubConnection = {
+  repoFullName?: string | null;
+  lastSyncedAt?: number | null;
+  hasToken?: boolean | null;
+  appInstalled?: boolean | null;
+} | null | undefined;
+
+type ShellRepoMirror = {
+  repoFullName?: string | null;
+  syncedAt?: number | null;
+  stale?: boolean | null;
+  pendingPushAt?: number | null;
+  lastPushError?: string | null;
+} | null | undefined;
+
+type ShellGitHubChromeStatus = {
+  label: string;
+  detail: string;
+  color: string;
+  toneClass: string;
+};
+
 function chatSessionTitle(session: ShellChatSession): string {
   const summary = session.summary?.trim();
   if (summary) return summary;
   const shortId = session.sessionId.slice(0, 8);
   return `chat ${shortId}`;
+}
+
+function getShellGitHubStatus(
+  connection: ShellGitHubConnection,
+  mirror: ShellRepoMirror
+): ShellGitHubChromeStatus {
+  if (connection === undefined || mirror === undefined) {
+    return {
+      label: "checking",
+      detail: "loading repository sync state",
+      color: "#8b949e",
+      toneClass: "text-[hsl(var(--text-secondary))]",
+    };
+  }
+
+  if (!connection?.repoFullName) {
+    return {
+      label: "reconnect",
+      detail: "connect a repo",
+      color: "#f85149",
+      toneClass: "text-[#f85149]",
+    };
+  }
+
+  if (mirror?.lastPushError) {
+    return {
+      label: "blocked",
+      detail: "push needs attention",
+      color: "#f85149",
+      toneClass: "text-[#f85149]",
+    };
+  }
+
+  if (mirror?.pendingPushAt) {
+    return {
+      label: "ahead",
+      detail: "local context queued",
+      color: "#d29922",
+      toneClass: "text-[#d29922]",
+    };
+  }
+
+  if (mirror?.stale) {
+    return {
+      label: "behind",
+      detail: "remote changed",
+      color: "#a371f7",
+      toneClass: "text-[#a371f7]",
+    };
+  }
+
+  if (mirror?.repoFullName || connection.repoFullName) {
+    return {
+      label: "synced",
+      detail: "repo mirror current",
+      color: "#3fb950",
+      toneClass: "text-[#3fb950]",
+    };
+  }
+
+  return {
+    label: "setup",
+    detail: "repo mirror pending",
+    color: "#d29922",
+    toneClass: "text-[#d29922]",
+  };
 }
 
 /**
@@ -455,33 +540,80 @@ function ShellYouMark({ collapsed, onToggleCollapsed }: { collapsed: boolean; on
   );
 }
 
-function ShellTopActionButton({
-  label,
-  icon: Icon,
+function GitHubMark({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      fill="currentColor"
+      className={className}
+    >
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.62 7.62 0 0 1 8 3.87c.68 0 1.36.09 2 .26 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+    </svg>
+  );
+}
+
+function ShellGitHubChrome({
+  repoFullName,
+  status,
+  lastSyncedAt,
   onClick,
-  emphasis = false,
 }: {
-  label: string;
-  icon: ShellIcon;
+  repoFullName?: string | null;
+  status: ShellGitHubChromeStatus;
+  lastSyncedAt?: number | null;
   onClick: () => void;
-  emphasis?: boolean;
 }) {
+  const repoLabel = repoFullName ?? "connect github";
+  const syncLabel = lastSyncedAt ? formatRelativeTime(lastSyncedAt) : status.label;
+
+  return (
+    <div className="group relative flex h-8 items-center justify-end">
+      <button
+        type="button"
+        onClick={onClick}
+        title={`${repoLabel} - ${status.detail}`}
+        aria-label={`GitHub repository: ${repoLabel}. ${status.detail}.`}
+        className="flex h-8 cursor-pointer items-center gap-2 px-1.5 font-mono text-[9.5px] text-[hsl(var(--text-secondary))] transition-[background,color,opacity] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))]"
+        style={{ borderRadius: "var(--radius)" }}
+      >
+        <span className="relative flex h-6 w-6 items-center justify-center bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-primary))] shadow-[inset_0_0_0_1px_hsl(var(--border)/0.62)]">
+          <GitHubMark className="h-4 w-4" />
+          <span
+            aria-hidden="true"
+            className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full shadow-[0_0_0_2px_hsl(var(--bg))]"
+            style={{ backgroundColor: status.color }}
+          />
+        </span>
+        <span className={["hidden text-[8.5px] uppercase tracking-[0.12em] sm:inline", status.toneClass].join(" ")}>
+          {syncLabel}
+        </span>
+      </button>
+      <div
+        className="pointer-events-none absolute right-0 top-[calc(100%+6px)] z-40 w-max max-w-[320px] translate-y-1 bg-[hsl(var(--bg-raised))] px-3 py-2 opacity-0 shadow-[0_12px_32px_rgba(0,0,0,0.3)] ring-1 ring-[hsl(var(--border))]/70 transition-[opacity,transform] group-hover:translate-y-0 group-hover:opacity-100"
+        style={{ borderRadius: "var(--radius)" }}
+      >
+        <p className="font-mono text-[10px] text-[hsl(var(--text-primary))]">{repoLabel}</p>
+        <p className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">
+          {status.label} / {status.detail}
+          {lastSyncedAt ? ` / ${formatRelativeTime(lastSyncedAt)}` : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ShellUpdateButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      title={label}
-      aria-label={label}
-      className={[
-        "group flex h-8 cursor-pointer items-center gap-1.5 px-2 font-mono text-[9.5px] transition-[background,color,opacity]",
-        emphasis
-          ? "bg-[hsl(var(--accent))]/[0.11] text-[hsl(var(--accent))] hover:bg-[hsl(var(--accent))]/[0.16]"
-          : "text-[hsl(var(--text-secondary))] opacity-55 hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))] hover:opacity-95",
-      ].join(" ")}
+      className="h-7 cursor-pointer px-2.5 font-mono text-[10px] text-[hsl(var(--accent))] opacity-82 transition-[background,opacity] hover:bg-[hsl(var(--accent))]/[0.11] hover:opacity-100"
       style={{ borderRadius: "var(--radius)" }}
+      aria-label="Update You.md context and repository"
+      title="Update You.md context and repository"
     >
-      <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
-      <span className="hidden lg:inline">{label}</span>
+      update
     </button>
   );
 }
@@ -997,12 +1129,21 @@ export function DashboardContent() {
     api.github.getConnection,
     isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
   );
+  const repoMirror = useQuery(
+    api.github.getRepoMirror,
+    isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
+  );
   const recentSessions = useQuery(
     api.memories.listSessions,
     isAuthenticated && user?.id && convexUser?._id
       ? { clerkId: user.id, userId: convexUser._id, limit: 8 }
       : "skip"
   );
+  const shellUsername =
+    convexUser?.username ||
+    user?.username ||
+    user?.firstName?.toLowerCase().replace(/[^a-z0-9-]/g, "") ||
+    "user";
 
   // Post-OAuth redirect lands at /shell?integration=github — open the github
   // pane from the initial state (deriving here avoids a setState-in-effect that
@@ -1102,19 +1243,23 @@ export function DashboardContent() {
     focusShellInput();
   }, [agent, focusShellInput]);
 
-  const runPublish = useCallback(() => {
+  const runRepoUpdate = useCallback(() => {
     setMobileView("terminal");
+    const repoName = githubConnection?.repoFullName ?? repoMirror?.repoFullName ?? `you.md/${shellUsername}`;
+    agent.addSystemMessage(
+      [
+        "[update queued]",
+        "",
+        `> repo: ${repoName}`,
+        "> step 1: checking latest You.md bundle + private context",
+        "> step 2: publishing current public context",
+        "> step 3: letting Convex/GitHub mirror sync any repo-backed files",
+        "> artifact: update transcript will stay in this chat; PR/conflict artifact is next",
+      ].join("\n")
+    );
     agent.handleSlashCommand("/publish");
     focusShellInput();
-  }, [agent, focusShellInput]);
-
-  const openSourceUpdate = useCallback(() => {
-    openPane("edit", "sources");
-  }, [openPane]);
-
-  const openDeploySurface = useCallback(() => {
-    openPane("github");
-  }, [openPane]);
+  }, [agent, focusShellInput, githubConnection?.repoFullName, repoMirror?.repoFullName, shellUsername]);
 
   const openChatSession = useCallback(async (sessionId: string) => {
     if (sessionId === agent.currentSessionId) {
@@ -1281,6 +1426,12 @@ export function DashboardContent() {
     PANE_GROUPS.find((group) => group.panes.some((pane) => pane.key === rightPane)) ??
     PANE_GROUPS[0];
   const activePreviewTab = activePaneGroup.key;
+  const shellGitHubStatus = getShellGitHubStatus(
+    githubConnection as ShellGitHubConnection,
+    repoMirror as ShellRepoMirror
+  );
+  const shellGitHubRepoName = githubConnection?.repoFullName ?? repoMirror?.repoFullName ?? null;
+  const shellGitHubSyncedAt = repoMirror?.syncedAt ?? githubConnection?.lastSyncedAt ?? null;
 
   // Which mobile tab is active?
   const activeMobileTab = mobileView === "terminal" ? "terminal" : activePreviewTab;
@@ -1310,17 +1461,15 @@ export function DashboardContent() {
           onOpenChatSession={openChatSession}
         />
         <div className="flex min-w-0 flex-1 flex-col bg-[hsl(var(--bg))]">
-          <div className="hidden h-10 shrink-0 items-center justify-between border-b border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] px-3 md:flex">
-            <div className="flex min-w-0 items-center gap-2">
-              <span className="hidden truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35 md:block">
-                {githubConnection?.repoFullName ?? `you.md/${username}`}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <ShellTopActionButton label="github" icon={Github} onClick={() => openPane("github")} />
-              <ShellTopActionButton label="update" icon={RefreshCw} onClick={openSourceUpdate} />
-              <ShellTopActionButton label="publish" icon={UploadCloud} onClick={runPublish} emphasis />
-              <ShellTopActionButton label="deploy" icon={Rocket} onClick={openDeploySurface} />
+          <div className="hidden h-10 shrink-0 items-center justify-end border-b border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] px-3 md:flex">
+            <div className="flex items-center gap-2">
+              <ShellGitHubChrome
+                repoFullName={shellGitHubRepoName}
+                status={shellGitHubStatus}
+                lastSyncedAt={shellGitHubSyncedAt}
+                onClick={() => openPane("github")}
+              />
+              <ShellUpdateButton onClick={runRepoUpdate} />
               <button
                 type="button"
                 onClick={() => setPanelOpen((value) => !value)}

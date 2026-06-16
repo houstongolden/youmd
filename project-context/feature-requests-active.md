@@ -6,6 +6,27 @@ Last Updated: 2026-06-16
 
 ## 2026-06-16 — Preserve h.computer platform ideas in You.md
 
+### 126. Clarify shell GitHub update chrome, Folder.md storage, and Usage surface
+**Status:** IN PROGRESS (MVP UI/code complete locally; real update orchestration pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-16 — Houston: "houstongolden/houstongolden-you-md ... should be right aligned so it is next to the github icon ... github icon should show a little yellow/green/red/purple ... [ update ] ... detailed steps should just stream into the shell chat session ... Files ... library ... folder.md ... increased free storage up to 10GB ... Usage: You Agent Tokens, API/MCP calls..."
+**Actionable Scope:**
+1. Preserve the raw prompt in project-context. **DONE:** `project-context/prompts/2026-06-16-shell-github-update-usage-foldermd.md`.
+2. Move the shell repo label out of the left side of the top chat chrome and into the right GitHub control area. **DONE locally.**
+3. Hide the repo name until the GitHub control is hovered. **DONE locally.**
+4. Replace the GitHub/refresh/publish/deploy icon cluster with a clearer solid GitHub control plus one small `[ update ]` button. **DONE locally.**
+5. Use Convex repo mirror state to show GitHub-style status colors for synced, ahead/pending, behind/stale, disconnected/error, and loading. **DONE locally.**
+6. Show compact last-sync/status text next to the GitHub mark. **DONE locally.**
+7. Stream update steps into shell chat when `[ update ]` runs. **MVP DONE locally:** preflight transcript + existing publish path. **PENDING:** true PR/conflict/merge/update orchestration.
+8. Add expandable update artifacts with full commit/PR message and history persistence. **PENDING.**
+9. Add a Files/artifact/markdown/rich-file library backed by first-class persistence. **PARTIAL:** artifact workspace MVP exists via Files pane/custom files. **PENDING:** dedicated artifact tables/history.
+10. Add folder.md connector copy for optional 10GB free storage via folder.md account/API key. **DONE locally.**
+11. Add a custom Folder.md connector prompt for agents. **DONE locally.**
+12. Add a Usage surface covering You Agent tokens, API/MCP calls, custom stacks/endpoints, crons/loops, crawlers, integrations, skills/workflows, BYOK/custom env, and connector apps. **MVP DONE locally in Connectors API/MCP tab.**
+13. Link Settings -> Usage and add live counters/quotas. **PENDING.**
+**Progress (2026-06-16):** Reworked the shell desktop top chrome around one hover-aware GitHub repo status control and one `[ update ]` action, using existing Convex GitHub connection/repo mirror signals. Added update preflight streaming into the chat. Expanded the Connectors API/MCP page with a Usage surface and upgraded folder.md to a storage/artifact connector with 10GB positioning and an agent prompt. Remaining: live Settings Usage page, real repo PR/conflict/merge orchestration, expandable update artifacts, and first-class artifact storage tables.
+
 ### 124. Make blank `/shell` chats open with a personal activity-aware briefing
 **Status:** DONE (deployed; Houston visual approval still welcome)
 **Verified:** NO

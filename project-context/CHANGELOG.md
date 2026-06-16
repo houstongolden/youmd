@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-16 — Shell GitHub update chrome and usage surface
+
+### fix(web): clarify repo sync and update controls in shell
+- Replaced the confusing top-right GitHub/refresh/publish/deploy icon cluster with one GitHub repo status control and one small `[ update ]` action.
+- Right-aligned the repo chrome, hid the repo name until GitHub hover, added a solid Octocat mark, GitHub-style sync state dot colors, and a compact last-sync label from the Convex repo mirror.
+- Made `[ update ]` stream a structured update preflight into the shell chat before invoking the existing publish/sync flow, so the shell starts becoming the audit trail for repo updates.
+- Expanded the Connectors API/MCP tab with a usage-surface map covering You Agent tokens, API/MCP calls, loops/crons, crawlers, connectors, BYOK/custom env, and artifact storage.
+- Upgraded the folder.md connector copy with optional 10GB free artifact/markdown storage language and a prompt owners can hand to agents.
+- Captured the raw prompt and follow-up product work in `project-context/prompts/2026-06-16-shell-github-update-usage-foldermd.md`.
+
 ## 2026-06-16 — Connector catalog and private API/MCP control center
 
 ### feat(web): make connected app grants and personal API docs visible in shell
