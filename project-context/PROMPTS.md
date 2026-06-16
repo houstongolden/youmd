@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 79
-**Total messages:** 484
+**Total sessions:** 80
+**Total messages:** 485
 **Last updated:** 2026-06-16
 
 ## Table of Contents
 
+1. [2026-06-16 (machine-bootstrap-skill-project-sync)](#session-2026-06-16-machine-bootstrap-skill-project-sync) --- 1 message
 1. [2026-06-16 (shell-github-update-usage-foldermd)](#session-2026-06-16-shell-github-update-usage-foldermd) --- 1 message
 1. [2026-06-16 (local-agent-bootstrap-auth-confirmation)](#session-2026-06-16-local-agent-bootstrap-auth-confirmation) --- 1 message
 1. [2026-06-16 (artifacts-daily-loops-dsi-public-chat)](#session-2026-06-16-artifacts-daily-loops-dsi-public-chat) --- 1 message
@@ -87,6 +88,17 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-16 (machine-bootstrap-skill-project-sync)
+
+**2026-06-16 10:13:42 UTC**
+> Yeah I really want my you.MD to also have a skill. This can be for me personally but it would be very useful right now. You could look at H - computer if you want but the way that we have the details on the projects is so everyone that uses in you.MD will have their own projects and tasks associated with projects or open-ended tasks. Basically to do with setting up a new computer, laptop, whatever it is, whether it's going to be a virtual computer or whether it's a new MacBook or a Mac mini that your agent is going to run. The idea is to have, since you.MD knows all my projects and it knows the GitHub links associated with those projects, my agent is also already logged into my GitHub account. I'm not totally sure how that does or doesn't work via the CLI. If we have the node package, the API connected to you.MD, and the udmd agent is connected to GitHub, it could work but we still might need to log in to GitHub on the new machine, which is totally fine. It makes sense.
+>
+> I want to run a command or a prompt on my new computer like this: "Is what I want to do right now or tonight, tomorrow morning, or whatever. I want to run this. I want to launch Claude Code or Codex. I want to paste a prompt that I will just run a command to install my udmd on the new machine and then do some sort of slash command. The agent should just ask me, 'Hey it looks like this is a new machine. It should know that. Do you want me to go ahead and create a code project directory on this computer on your desktop?' I'll say, 'Yes, name it uppercase CODE 2026 or whatever.' It will basically, using the terminal, make dirt on the desktop with the new code folder and then it will create subdirectories with matching names to the actual GitHub repo directory names so that they're consistent, which is definitely best practice.
+>
+> Once it's made all these local directories that match the repos, the agent should do all of your main projects that should have just known that you probably no, sync any other projects that have been active in the last maybe six months. I think it should just start with the projects that have been active within the last like 30 to 90 days. If there are older projects, if you just ask, 'How these were pretty active more than three months ago, do you want me to set these up or not?' This one yes, this one no, etc. That'd be really cool so that I can just run a command to install udmd on a brand new machine. Not only will it be installing all of my skills, my meta skills, all the global and local skills that I have on this machine, it will totally install so that I'll have the same agent behaviors and preferences and skills and tools and everything on all my machines. I basically have all my projects synced locally to GitHub and all of them and all of my skills and everything synced on you.MD. That alone will be a huge time saver to set up a brand new computer or Mac Mini or whatever with all my active projects and everything. That'd be great.
 
 ---
 

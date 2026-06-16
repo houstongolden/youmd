@@ -695,12 +695,20 @@ program
 program
   .command("machine [subcommand]")
   .description("set up a new machine with your synced skills, stacks, and agent config")
+  .option("--root <dir>", "projects: workspace root, default ~/Desktop/CODE_2026")
+  .option("--days <n>", "projects: recent activity window in days", "90")
+  .option("--yes", "projects: include older projects without prompting")
+  .option("--no-clone", "projects: create directories only")
   .option("--force", "restore: overwrite existing files without backing them up")
-  .option("--dry-run", "restore: preview what would be written, write nothing")
-  .action((subcommand, options) => {
-    machineCommand(subcommand || "help", {
+  .option("--dry-run", "preview what would be written, write nothing")
+  .action(async (subcommand, options) => {
+    await machineCommand(subcommand || "help", {
       force: options.force,
       dryRun: options.dryRun,
+      root: options.root,
+      days: options.days,
+      yes: options.yes,
+      clone: options.clone,
     });
   });
 

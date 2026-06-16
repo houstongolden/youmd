@@ -54,6 +54,16 @@ function defaultSkills(): SkillEntry[] {
       installed: false,
     },
     {
+      name: "machine-bootstrap",
+      description: "Set up a fresh computer with You.md identity, skills, stacks, agent config, and active project repos",
+      version: "1.0.0",
+      source: "bundled:machine-bootstrap.md",
+      scope: "shared",
+      identity_fields: ["profile.about", "profile.projects", "preferences.agent", "directives.agent"],
+      requires: ["youstack-start"],
+      installed: false,
+    },
+    {
       name: "claude-md-generator",
       description: "Generate CLAUDE.md from identity + project detection",
       version: "1.0.0",

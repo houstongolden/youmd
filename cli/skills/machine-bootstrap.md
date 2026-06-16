@@ -1,0 +1,108 @@
+---
+name: machine-bootstrap
+description: Set up a fresh computer with You.md identity, agent skills, stack sync, and active project repositories.
+version: 1.0.0
+scope: shared
+identity_fields:
+  - profile.about
+  - profile.projects
+  - preferences.agent
+  - directives.agent
+---
+
+# machine-bootstrap
+
+Use this skill when the user is on a new Mac, Mac mini, laptop, virtual computer, cloud workstation, or agent host and wants their You.md identity, projects, skills, stacks, and local code workspace restored.
+
+You.md is the brain. The new machine should become a runnable local agent workstation, not just a copied folder.
+
+## Identity Context
+
+- **About:** {{profile.about}}
+- **Projects:** {{profile.projects}}
+- **Agent preferences:** {{preferences.agent}}
+- **Directives:** {{directives.agent}}
+
+## Default Flow
+
+1. Confirm whether this looks like a fresh machine:
+   - `youmd status`
+   - `test -d ~/Desktop/CODE_2026 && find ~/Desktop/CODE_2026 -maxdepth 1 -type d | wc -l`
+   - `git config user.name && git config user.email`
+   - `gh auth status`
+2. If You.md is not installed, install it:
+
+   ```bash
+   curl -fsSL https://you.md/install.sh | bash
+   ```
+
+3. Authenticate and hydrate the local brain:
+
+   ```bash
+   youmd login
+   youmd pull
+   youmd sync
+   ```
+
+4. Restore shared agent skills, stack config, and host adapters:
+
+   ```bash
+   youmd machine setup
+   youmd skill install-all
+   youmd skill link codex
+   youmd skill link claude
+   ```
+
+5. Create the desktop code workspace and sync active projects:
+
+   ```bash
+   youmd machine projects --root ~/Desktop/CODE_2026 --days 90
+   ```
+
+6. If GitHub auth is missing, help the user log in and rerun only the project clone step:
+
+   ```bash
+   gh auth login
+   youmd machine projects --root ~/Desktop/CODE_2026 --days 90
+   ```
+
+## Project Bootstrap Rules
+
+- Use repo directory names from GitHub URLs. `https://github.com/houstongolden/foldermd` becomes `foldermd`.
+- Default to projects active in the last 90 days plus projects marked active/current in You.md.
+- Ask before including older, archived, paused, or dormant projects.
+- Create the workspace root on the Desktop if it is missing. Houston can rename it, but `CODE_2026` is the default.
+- Clone with `gh repo clone owner/repo <target>` when `gh` is authenticated; otherwise fall back to `git clone`.
+- Skip non-empty directories instead of overwriting them.
+- Never print secrets. If `.env.local` files are needed, use You.md env-vault or a password manager.
+- After cloning, initialize missing per-repo agent context with `youmd skill init-project` from inside that repo.
+
+## Useful Variants
+
+Dry-run the project layout:
+
+```bash
+youmd machine projects --root ~/Desktop/CODE_2026 --days 90 --dry-run
+```
+
+Create directories only, without cloning:
+
+```bash
+youmd machine projects --root ~/Desktop/CODE_2026 --no-clone
+```
+
+Include older projects without prompts:
+
+```bash
+youmd machine projects --root ~/Desktop/CODE_2026 --yes
+```
+
+## Done Means
+
+- You.md CLI is installed and authenticated.
+- The local bundle is pulled/synced.
+- Shared skills/stacks/agent config are restored.
+- A Desktop code root exists.
+- Active GitHub-backed project repos are cloned into matching repo-name directories.
+- Older projects are either explicitly included or intentionally skipped.
+- The user can launch Claude Code or Codex inside the workspace and run `you`.

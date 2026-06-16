@@ -7,6 +7,17 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-16 — Machine bootstrap skill and project repo setup
+- [x] Preserve Houston's fresh-machine skill request in active feature tracking
+- [x] Add bundled `machine-bootstrap` skill for setting up new Macs/laptops/virtual agent hosts with You.md identity, skills, stacks, GitHub auth, and project repos
+- [x] Add `youmd machine projects` for creating a Desktop code root and creating/cloning You.md project directories
+- [x] Use GitHub repo names as target directory names when project records include GitHub URLs
+- [x] Split recent/active projects from older projects with a configurable `--days` window and interactive older-project prompts
+- [x] Add safe `--dry-run`, `--no-clone`, `--yes`, and `--root` options for agent-run setup
+- [x] Verify the planner with focused CLI tests, build the CLI, and smoke the dry-run command
+- [ ] Hydrate GitHub repo URLs and activity dates into local You.md project records so brand-new machines can clone exact repos from the brain alone
+- [ ] Reseed/deploy the hosted bundled-skill registry so production `/api/v1/skills` includes `machine-bootstrap`
+
 ### 2026-06-16 — Local agent auth handoff
 - [x] Preserve Houston's raw prompt for fresh-machine curl install, browser auth handoff, branded success confirmation, and local agent sync/onboarding path
 - [x] Add `/auth` as the clean approval URL for device login while keeping `/device` compatible
@@ -506,7 +517,7 @@ PRD Version: 2.3
 - [x] Canonical `project-context/` scaffolding now fills missing files individually, including `PROMPTS.md`
 - [x] `youmd init` now offers repo bootstrap even when mature repos already have `CLAUDE.md` / `project-context/`
 - [x] Bundled skill truth pass completed across CLI catalog, backend seed data, dashboard UI, docs, and README
-- [x] Bundled skill set expanded and reconciled to 7 shipped skills: `youstack-start`, `claude-md-generator`, `project-context-init`, `voice-sync`, `meta-improve`, `proactive-context-fill`, `you-logs`
+- [x] Bundled skill set expanded and reconciled to 9 shipped skills: `youstack-start`, `youstack-maintainer`, `machine-bootstrap`, `claude-md-generator`, `project-context-init`, `voice-sync`, `meta-improve`, `proactive-context-fill`, `you-logs`
 - [x] Existing local skill catalogs now auto-merge new bundled defaults on upgrade instead of staying stuck on the old 4-skill set
 - [x] Smoke-tested `youmd skill init-project` in fresh and existing repos to verify scaffold vs additive behavior
 

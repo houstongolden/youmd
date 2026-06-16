@@ -229,6 +229,7 @@ When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your
 |---|---|
 | `youstack-start` | Start local agents with brain context, project state, active requests, skills, and next moves |
 | `youstack-maintainer` | Organize, update, safely improve, and publish private-by-default YouStacks |
+| `machine-bootstrap` | Set up a fresh computer with You.md auth, skills, stacks, GitHub, and active project repos |
 | `voice-sync` | Propagate your voice profile to Claude, Codex, Cursor, and custom agents |
 | `claude-md-generator` | Bootstrap repo-visible agent instructions with your brain context |
 | `project-context-init` | Scaffold project-context/ with your preferences baked in |

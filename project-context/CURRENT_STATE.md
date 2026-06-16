@@ -44,6 +44,8 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - 21 commands (added `skill` with 19 subcommands)
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - Bundled skills now include `youstack-maintainer`, which lets host agents organize, update, improve, smoke, and prepare named YouStacks for private/scoped/public sharing with owner approval
+- Bundled skills now include `machine-bootstrap`, which teaches host agents to set up a fresh Mac/laptop/virtual agent host with You.md auth, local bundle sync, shared skills/stacks, GitHub auth, and active project repo checkout
+- `youmd machine projects` now creates a Desktop code workspace such as `~/Desktop/CODE_2026`, plans active projects from the local You.md bundle, uses GitHub repo names as target directories when URLs are present, asks before older projects, supports dry-run/directory-only modes, and clones with `gh repo clone` or `git clone`
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
 - Conversational AI onboarding with BrailleSpinners, ASCII logo, portrait rendering
 - Passwordless email-code auth (no API token required for your own account)
@@ -59,7 +61,7 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Claude and Codex MCP configs on this machine now use the safe published-package launcher (`npx --yes youmd@latest mcp`) with backups written during migration
 - MCP tools have been smoke-tested through stdio from the installed local CLI: `whoami` returns Houston's real home-bundle identity from inside this repo, and `use_skill project-context-init` returns identity-interpolated skill content
 - Local MCP now exposes `get_agent_brief` plus `youmd://agent/brief`, giving Claude/Codex/Cursor-style agents one startup call for identity, repo instructions, project-context files, active requests, open TODOs, known issues, installed skills, and next moves
-- Bundled skills now include `youstack-start` and `youstack-maintainer` locally, making the default stack 8 skills and giving local agents both a first-session operating loop and a stack maintenance loop before they touch code
+- Bundled skills now include `youstack-start`, `youstack-maintainer`, and `machine-bootstrap` locally, making the default catalog 9 skills and giving local agents first-session, stack-maintenance, and fresh-machine bootstrap loops before they touch code
 - npm Trusted Publishing is wired through `.github/workflows/publish-cli.yml`; after configuring the package on npm, local agents can run `npm run publish:cli` to trigger the GitHub OIDC publish without a long-lived npm token or OTP
 - The published package is cleaner now: compiled test artifacts are excluded from `dist`, and the dry-run tarball dropped from 248 files to 212 files
 - Bare `youmd` now enters like U instead of dropping straight into a dry command list: it shows the YOU logo, optionally shows the saved portrait preview, greets the user, surfaces project-context opportunities, and proposes the next best moves contextually
@@ -161,7 +163,7 @@ MVP now requires account creation before profile building. The "no signup requir
 - Remaining cleanup is mostly product/documentation follow-through: broader web-agent behavior/personality QA and removing stale Clerk-era references from lower-priority internal comments
 - The CLI still does not feel proactive enough at install/startup compared with Claude Code/OpenClaw. The new startup entrance is a meaningful step, but U still needs a richer first-run / post-install “friendly wingman” flow that helps without requiring the user to already know the commands
 - The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.23`, but npm still serves `0.6.21`. The May 24 and May 25 trusted publish workflow runs passed install, tests, and build, then failed at `npm publish` with `E404 Not Found / no permission`, which points back to npm package Trusted Publishing/package permission configuration rather than local package code. This shell is not logged into npm (`npm whoami` returns `E401`), and the real `npm trust github ...` setup attempt also returns `E401`. The required external step is either npm package settings or an authenticated `npx npm@11.15.0 trust github youmd --repo houstongolden/youmd --file publish-cli.yml --allow-publish --yes`, then rerun `npm run publish:cli`.
-- Production `/api/v1/skills` still needs a Convex seed/deploy pass before the new bundled `youstack-start` skill appears in the hosted registry; local CLI catalog/build already shows 7 bundled skills
+- Production `/api/v1/skills` still needs a Convex seed/deploy pass before the newer bundled `youstack-start`, `youstack-maintainer`, and `machine-bootstrap` skills are fully reflected in the hosted registry; local CLI catalog/build already includes 9 bundled skills
 - Stack-specific GitHub repo sync and stack grants are not live yet. Existing authenticated You.md MCP/API surfaces cover protected memory access for local agents, but scoped per-stack grant tokens remain the next backend slice.
 
 ### Portrait Sync

@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-16 — Machine bootstrap skill
+
+### feat(cli): add fresh-machine project bootstrap
+- Added bundled `machine-bootstrap`, a You.md skill for setting up new Macs/laptops/virtual agent hosts with local identity sync, shared skills/stacks, GitHub auth, and active project repo checkout.
+- Added `youmd machine projects`, which reads the active local bundle, defaults to `~/Desktop/CODE_2026`, separates recent/active projects from older projects, prompts before including older projects, and supports `--root`, `--days`, `--yes`, `--dry-run`, and `--no-clone`.
+- Project setup now uses GitHub repo names as local directory names when URLs are present, dedupes duplicate repo targets, skips non-empty directories, and clones with `gh repo clone` or `git clone`.
+- Added focused planner tests for GitHub URL parsing, repo-name targets, recency classification, active undated projects, and dedupe.
+- Verified locally with `npm test -- src/__tests__/machine-projects.test.ts`, `npm run build` in `cli/`, and a dry-run `node dist/index.js machine projects --dry-run --no-clone --root /tmp/youmd-code-2026-smoke --days 90`.
+
 ## 2026-06-16 — DSI weather and surf components
 
 ### fix(web): make the private API/MCP control center easier to find

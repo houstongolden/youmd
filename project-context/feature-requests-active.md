@@ -6,6 +6,22 @@ Last Updated: 2026-06-16
 
 ## 2026-06-16 — Preserve h.computer platform ideas in You.md
 
+### 128. Add a You.md machine-bootstrap skill for new computer project sync
+**Status:** IN PROGRESS (first CLI/skill slice complete locally; GitHub URL hydration + production registry pending)
+**Verified:** PARTIAL (focused CLI tests/build/dry-run passed)
+**Production Verified:** NO
+**Source:** 2026-06-16 — Houston: "I really want my you.MD to also have a skill... setting up a new computer, laptop... create a code project directory on this computer on your desktop... create subdirectories with matching names to the actual GitHub repo directory names... sync any other projects that have been active in the last maybe six months... start with the projects active within the last like 30 to 90 days... install all of my skills... same agent behaviors and preferences and skills and tools..."
+**Actionable Scope:**
+1. Add a bundled You.md skill for fresh-machine bootstrap across identity, agent skills, stacks, GitHub auth, and project repo setup. **DONE locally:** `machine-bootstrap`.
+2. Add a CLI command agents can run on a new machine to create a Desktop code root and create/clone project directories from You.md project data. **DONE locally:** `youmd machine projects`.
+3. Use GitHub repo names as local directory names when GitHub URLs are present. **DONE locally.**
+4. Default to recent/active projects within a configurable 30-90 day window and ask before older projects. **DONE locally:** default 90 days, per-project prompt for older items in interactive mode.
+5. Clone via `gh repo clone` when available/authenticated and fall back to `git clone`; skip non-empty directories. **DONE locally.**
+6. Support dry-run and directory-only modes for safe agent execution. **DONE locally:** `--dry-run`, `--no-clone`.
+7. Hydrate richer GitHub repo URLs/activity into the local You.md bundle/DSI project data so the command can clone exact repos from a brand-new machine without relying on local old-machine state. **PENDING.**
+8. Reseed/deploy the hosted skill registry so `machine-bootstrap` appears from `/api/v1/skills`, not only the local CLI catalog. **PENDING.**
+**Progress (2026-06-16):** Added `cli/skills/machine-bootstrap.md`, catalog/recommended-skill wiring, a pure `machine-projects` planner with GitHub URL parsing, recency classification, dedupe, repo-name target directories, and the `youmd machine projects` CLI wrapper. The command reads the active local bundle, defaults to `~/Desktop/CODE_2026`, prompts for older projects when interactive, supports `--root`, `--days`, `--yes`, `--dry-run`, and `--no-clone`, and clones with `gh repo clone` or `git clone` when repo URLs exist. Verification passed `cli npm test -- src/__tests__/machine-projects.test.ts`, `cli npm run build`, and `node dist/index.js machine projects --dry-run --no-clone --root /tmp/youmd-code-2026-smoke --days 90`. Current local bundle only has project names/statuses, so the smoke produced directory scaffolding; next slice should persist GitHub URLs/activity into the project records.
+
 ### 127. Make fresh-machine curl install + browser auth + local agent sync feel seamless
 **Status:** IN PROGRESS (curl/web/CLI handoff deployed; npm publish pending)
 **Verified:** NO
