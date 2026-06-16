@@ -4098,6 +4098,126 @@ http.route({
 http.route({ path: "/api/v1/me/vault", method: "OPTIONS", handler: corsPreflight });
 
 // ============================================================
+// ENV HANDOFF (ephemeral, zero-knowledge .env.local exchange)
+// ============================================================
+//
+// Moves a project's `.env.local` between the owner's machines without ever
+// committing it to git. Ciphertext is encrypted CLIENT-SIDE (AES-256-GCM):
+// the server stores only ciphertext + a hash of the access code's lookup id.
+// The decryption key rides inside the one-time access code and never reaches
+// the server. Retrieval requires BOTH the owner's `vault`-scoped API key AND
+// the expiring code. Rows burn after maxReads or expiry.
+
+// POST /api/v1/me/env/handoff — create a handoff (store ciphertext)
+http.route({
+  path: "/api/v1/me/env/handoff",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    try {
+      const body = await request.json();
+      if (!body.projectName || !body.codeHash || !body.ciphertext || !body.iv || !body.authTag) {
+        return errorResponse("invalid_request", "Missing projectName, codeHash, ciphertext, iv, or authTag", 400);
+      }
+      const result = await ctx.runMutation(api.envHandoffs.createEnvHandoff, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        projectName: String(body.projectName),
+        codeHash: String(body.codeHash),
+        ciphertext: String(body.ciphertext),
+        iv: String(body.iv),
+        authTag: String(body.authTag),
+        varNames: Array.isArray(body.varNames) ? body.varNames.map(String) : [],
+        byteSize: Number(body.byteSize) || 0,
+        maxReads: Number(body.maxReads) || 1,
+        ttlMinutes: Number(body.ttlMinutes) || 60,
+        clientName: body.clientName ? String(body.clientName) : detectAgent(request.headers.get("user-agent")).name,
+      });
+      return guard.finish(json(result));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create env handoff";
+      if (message.includes("too large") || message.includes("invalid codeHash") || message.includes("too many active")) {
+        return errorResponse("invalid_request", message, 400);
+      }
+      return serverErrorResponse("me/env/handoff", err, "Failed to create env handoff");
+    }
+  }),
+});
+
+http.route({ path: "/api/v1/me/env/handoff", method: "OPTIONS", handler: corsPreflight });
+
+// POST /api/v1/me/env/handoff/claim — claim a handoff by code (burn-after-read)
+http.route({
+  path: "/api/v1/me/env/handoff/claim",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    try {
+      const body = await request.json();
+      if (!body.codeHash) {
+        return errorResponse("invalid_request", "Missing codeHash", 400);
+      }
+      const result = await ctx.runMutation(api.envHandoffs.claimEnvHandoff, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        codeHash: String(body.codeHash),
+      });
+      return guard.finish(json(result));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to claim env handoff";
+      if (message.includes("HANDOFF_NOT_FOUND")) {
+        return errorResponse("not_found", "No matching handoff for that access code", 404);
+      }
+      if (message.includes("HANDOFF_EXPIRED")) {
+        return errorResponse("expired", "This access code has expired", 410);
+      }
+      if (message.includes("HANDOFF_CONSUMED")) {
+        return errorResponse("consumed", "This access code has already been used", 410);
+      }
+      return serverErrorResponse("me/env/handoff/claim", err, "Failed to claim env handoff");
+    }
+  }),
+});
+
+http.route({ path: "/api/v1/me/env/handoff/claim", method: "OPTIONS", handler: corsPreflight });
+
+// GET /api/v1/me/env/handoffs — list active handoffs (metadata only)
+http.route({
+  path: "/api/v1/me/env/handoffs",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
+
+    try {
+      const handoffs = await ctx.runQuery(api.envHandoffs.listEnvHandoffs, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+      });
+      return json({ handoffs });
+    } catch (err) {
+      return serverErrorResponse("me/env/handoffs", err, "Failed to list env handoffs");
+    }
+  }),
+});
+
+http.route({ path: "/api/v1/me/env/handoffs", method: "OPTIONS", handler: corsPreflight });
+
+// ============================================================
 // MCP SERVER (Model Context Protocol — JSON-RPC 2.0)
 // ============================================================
 //

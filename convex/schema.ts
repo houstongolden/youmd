@@ -646,6 +646,37 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),
   }).index("by_userId", ["userId"]),
 
+  // Ephemeral, zero-knowledge env handoffs. Used to move a project's
+  // .env.local from one of the owner's machines to another without ever
+  // committing it to git. The ciphertext is encrypted CLIENT-SIDE
+  // (AES-256-GCM); the server never sees the plaintext or the decryption
+  // key. Retrieval requires BOTH the owner's vault-scoped API key AND the
+  // one-time expiring access code, whose lookup half is stored only as a
+  // SHA-256 hash (codeHash). Rows are burned after maxReads or expiry.
+  envHandoffs: defineTable({
+    userId: v.id("users"),
+    projectName: v.string(),
+    // SHA-256 hex of the access code's lookup id half. The key half never
+    // reaches the server, so codeHash alone cannot decrypt anything.
+    codeHash: v.string(),
+    // base64 AES-256-GCM ciphertext + IV + auth tag (client-side encryption).
+    ciphertext: v.string(),
+    iv: v.string(),
+    authTag: v.string(),
+    // Variable NAMES only (never values) for a safe manifest/preview.
+    varNames: v.array(v.string()),
+    byteSize: v.number(),
+    maxReads: v.number(),
+    readCount: v.number(),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+    consumedAt: v.optional(v.number()),
+    clientName: v.optional(v.string()),
+  })
+    .index("by_codeHash", ["codeHash"])
+    .index("by_userId", ["userId"])
+    .index("by_userId_createdAt", ["userId", "createdAt"]),
+
   pipelineJobs: defineTable({
     userId: v.id("users"),
     sourceId: v.optional(v.id("sources")),

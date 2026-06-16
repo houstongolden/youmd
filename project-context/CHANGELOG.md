@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-06-16 — Secure machine setup: zero-knowledge env handoff + skill/stack
+
+### feat(cli/api): zero-knowledge expiring-access-code .env.local exchange
+- Added the `secure-machine-setup` flow so the You.md agent can bring up a brand-new computer with active projects cloned, per-project secrets delivered, dependencies installed, and skills/stacks synced — without ever committing secrets to git.
+- Added new CLI commands: `youmd env share` (source machine — find each project `.env.local`, encrypt client-side with AES-256-GCM zero-knowledge, upload ciphertext, print ONE expiring access code per project; default ttl 60 min, reads 1 burn-after-read), `youmd env pull <access-code>` (new machine — claim by code, decrypt client-side, write `.env.local` at chmod 0600 into the matching project dir, never print values, burn after allowed reads), and `youmd env list` (active handoffs — project name and variable NAMES only, never values, plus expiry and reads remaining). `youmd env backup` / `youmd env restore <vault>` remain the offline passphrase-vault alternative.
+- Access code format `ymenv1_<handoffId>.<key>`: the key half never leaves the source machine; the server stores only ciphertext plus a hash of the handoffId, gated additionally by the owner's `vault`-scoped API key, so retrieval requires BOTH the one-time expiring code AND the owner's authenticated API key.
+- Added three owner-only, `vault`-scoped HTTP endpoints: `POST /api/v1/me/env/handoff` (create/store ciphertext), `POST /api/v1/me/env/handoff/claim` (claim by code, burn-after-read, TTL-enforced), and `GET /api/v1/me/env/handoffs` (list metadata, names only).
+- Added the `secure-machine-setup` You.md skill (`you-agent/skills/secure-machine-setup.md`) and a `secure-machine-setup` YouStack (`stacks/secure-machine-setup/`) with a host-facing `SKILL.md` and a `youstack/v1` manifest (hosts claude-code/codex/cursor, minYoumdCli 0.8.0, requiresYoumdApi, scopes `read:private` + `vault`, T2 safety with fs_write/network/shell, human gate on vault reads).
+- Flow encoded by the skill: install + `youmd login` device-flow, `youmd pull`, tier projects by recency (`--days 30`, then `90`, then prompt for `365`), clone into `CODE_YOU/{project-name}`, `youmd env pull` per project, `npm install`, agent updates only README / project-connect / project-context / root skill-stack-tool markdown (never app source), result synced via `youmd stack sync`.
+- Security contract stated plainly across both docs: secrets never committed, printed, or logged; values live only on disk at 0600 and as ciphertext in transit/at rest; access codes are single-use and expiring (default 60 min), treated like passwords, delivered out-of-band; everything requires the owner's `vault`-scoped key, and agents get scoped revocable keys.
+- Status: skill/stack/docs authored; Convex env-handoff endpoints and CLI `env share`/`pull`/`list` pending deploy + npm publish + two-machine end-to-end test.
+
 ## 2026-06-16 — Connector catalog icons and local-agent verification
 
 ### feat(web): use real connector favicons and prioritize local-agent setup

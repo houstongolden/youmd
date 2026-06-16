@@ -51,7 +51,7 @@ import { logsCommand } from "./commands/logs";
 import { agentsCommand } from "./commands/agents";
 import { stackCommand } from "./commands/stack";
 import { okfCommand } from "./commands/okf";
-import { envBackupCommand, envRestoreCommand } from "./commands/env";
+import { envBackupCommand, envRestoreCommand, envShareCommand, envPullCommand, envListCommand } from "./commands/env";
 import { machineCommand } from "./commands/machine";
 import { readCliVersion } from "./lib/version";
 
@@ -142,7 +142,7 @@ const HELP_GROUPS: Array<{
   {
     title: "SECURITY",
     commands: [
-      { name: "env", summary: "encrypted .env.local vault — back up and restore secrets across machines" },
+      { name: "env", summary: "encrypted .env.local secrets — local vault + zero-knowledge cross-machine handoff (share/pull)" },
     ],
   },
   {
@@ -670,12 +670,16 @@ program
 // ─── env — encrypted .env.local vault backup/restore ───────────────
 program
   .command("env [subcommand] [args...]")
-  .description("encrypted .env.local vault — back up and restore secrets across machines")
+  .description("encrypted .env.local secrets — local vault backup/restore + zero-knowledge cross-machine handoff")
   .allowUnknownOption(true)
-  .option("--root <dir>", "directory to search for / restore .env.local files")
+  .option("--root <dir>", "code workspace root (share/pull) or search/restore dir (backup/restore)")
   .option("--out <dir>", "output directory for the vault and manifest")
+  .option("--dir <path>", "explicit target directory for `pull` (overrides --root/<project>)")
+  .option("--ttl <minutes>", "(share) minutes until access codes expire, default 60")
+  .option("--reads <n>", "(share) times each code may be claimed, default 1 (burn-after-read)")
+  .option("--project <name>", "(share) limit to a single project directory")
   .option("-f, --force", "overwrite existing .env.local without backing them up")
-  .action((subcommand, args, options) => {
+  .action(async (subcommand, args, options) => {
     const a = args || [];
     if (subcommand === "backup") {
       envBackupCommand({ root: options.root, out: options.out });
@@ -685,10 +689,19 @@ program
         return;
       }
       envRestoreCommand(a[0], { root: options.root, force: options.force });
+    } else if (subcommand === "share") {
+      await envShareCommand({ root: options.root, ttl: options.ttl, reads: options.reads, project: options.project });
+    } else if (subcommand === "pull") {
+      await envPullCommand(a[0], { root: options.root, dir: options.dir, force: options.force });
+    } else if (subcommand === "list" || subcommand === "ls") {
+      await envListCommand();
     } else {
-      console.log("usage: youmd env <backup|restore> [options]");
-      console.log("  backup            encrypt all .env.local files into a portable vault");
-      console.log("  restore <vault>   decrypt and restore .env.local files from a vault");
+      console.log("usage: youmd env <backup|restore|share|pull|list> [options]");
+      console.log("  backup              encrypt all .env.local files into a portable local vault");
+      console.log("  restore <vault>     decrypt and restore .env.local files from a local vault");
+      console.log("  share               push client-side-encrypted .env.local handoffs, print expiring access codes");
+      console.log("  pull <access-code>  claim + decrypt a handoff onto this machine (writes .env.local, mode 0600)");
+      console.log("  list                show active handoffs (variable names only, never values)");
     }
   });
 

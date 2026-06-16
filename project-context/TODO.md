@@ -7,6 +7,18 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-16 — Secure machine setup and zero-knowledge env handoff
+- [x] Author the `secure-machine-setup` You.md skill with the ordered new-machine flow and exact commands (`you-agent/skills/secure-machine-setup.md`)
+- [x] Author the `secure-machine-setup` YouStack manifest + host-facing SKILL.md (`stacks/secure-machine-setup/`)
+- [x] State the zero-knowledge security contract in both docs: never commit/print/log secrets, 0600 + ciphertext only, single-use expiring access codes, owner `vault`-scoped key, scoped revocable agent keys
+- [x] Encode the `ymenv1_<handoffId>.<key>` access-code model where the key half never leaves the source machine
+- [x] Encode 30/90/365-day project tiering through `youmd machine projects` with a prompt before the 6-12 month long tail and the `CODE_YOU/{project-name}` clone convention
+- [x] Prepend the changelog entry and track the request in `feature-requests-active.md`
+- [ ] Deploy the Convex env-handoff endpoints: `POST /api/v1/me/env/handoff`, `POST /api/v1/me/env/handoff/claim`, `GET /api/v1/me/env/handoffs` (all `vault`-scoped, owner-only)
+- [ ] Publish the CLI with `youmd env share`, `youmd env pull <access-code>`, and `youmd env list` (bump version, build, `npm publish` after OTP)
+- [ ] End-to-end test the encrypted handoff between two machines: share on source, pull on new, confirm `.env.local` lands at 0600 and the code burns after reads + expires at TTL
+- [ ] Document the env-handoff surface and secure-machine-setup flow in `llms.txt` / `llms-full.txt` / agent docs reference
+
 ### 2026-06-16 — Mobile capture, voice, Slack, and project routing
 - [x] Preserve the 2026-06-16 Part 2 mobile brain-dump intent safely without private phone numbers or secrets
 - [x] Add the durable mobile capture/product-routing memo to project context
