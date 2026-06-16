@@ -1,5 +1,22 @@
 # You.md — Changelog
 
+## 2026-06-16 — Connector catalog and private API/MCP control center
+
+### feat(web): make connected app grants and personal API docs visible in shell
+- Reworked the authenticated Connectors pane into four clear owner tabs: `api/mcp`, `apps`, `crawlers/loops`, and `repo`.
+- Added an owner-facing private API/MCP documentation surface for the current user, including the personal REST base, hosted MCP endpoint, stack-scoped MCP endpoint, auth header contract, resource map, and private endpoint table.
+- Added live connected-app grant management backed by the existing `connectedAppGrants` Convex mutations: owners can create one-time `yg_` grants from catalog entries and revoke active grants from the API/MCP tab or app cards.
+- Added a Lovable-style app connector catalog with search, categories, pinned first-party/owned project connectors, Custom API, Custom MCP, Custom Webhook, and common services including Firecrawl, Gmail, Google Calendar, Notion, Slack, Linear, Stripe, Shopify, Supabase, Vercel, OpenAI, Perplexity, Airtable, Google Drive/Sheets/Docs, Microsoft, HubSpot, Salesforce, PostHog, Sentry, n8n, LinkedIn, X, RSS, ElevenLabs, Replicate, Strava, and Spotify.
+- Split GitHub repo sync into the `repo` tab so GitHub is one connector/source input instead of swallowing the entire personal API/MCP product surface.
+- Embedded the existing Sources pane under `crawlers/loops`, with a top summary for crawler providers, cron refresh policies, immutable versions, monitored changes, and approvals.
+- Verified locally with `npx tsc --noEmit`, `npm run lint` (existing warnings only; radius guard passed), `npm run build`, and authenticated in-app browser QA at `http://localhost:3100/shell`.
+
+## 2026-06-16 — Shell collapsed logo fit
+
+### fix(web): stop the collapsed YOU mark from clipping
+- Reduced the collapsed PixelYOU mark scale from `0.102` to `0.094` and widened its clipped viewport from `32px` to `36px`.
+- Shifted the collapsed logo viewport slightly left so the final `U` has enough room inside the skinny sidebar rail.
+
 ## 2026-06-16 — Shell opening intelligence brief
 
 ### fix(web): make new shell sessions greet from real activity context

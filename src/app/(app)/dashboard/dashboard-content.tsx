@@ -434,12 +434,12 @@ function ShellYouMark({ collapsed, onToggleCollapsed }: { collapsed: boolean; on
         role="img"
         aria-label="YOU"
         className={[
-          "absolute left-1 top-1/2 -translate-y-1/2 overflow-hidden text-[hsl(var(--text-primary))] transition-[opacity,transform] duration-150 group-hover:-translate-y-3 group-hover:opacity-0",
-          collapsed ? "h-5 w-8" : "h-7 w-[62px]",
+          "absolute top-1/2 -translate-y-1/2 overflow-hidden text-[hsl(var(--text-primary))] transition-[opacity,transform] duration-150 group-hover:-translate-y-3 group-hover:opacity-0",
+          collapsed ? "left-0.5 h-5 w-9" : "left-1 h-7 w-[62px]",
         ].join(" ")}
       >
         <div
-          className={collapsed ? "origin-top-left scale-[0.102]" : "origin-top-left scale-[0.18]"}
+          className={collapsed ? "origin-top-left scale-[0.094]" : "origin-top-left scale-[0.18]"}
           aria-hidden="true"
         >
           <PixelYOU />

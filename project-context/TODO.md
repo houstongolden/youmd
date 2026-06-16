@@ -7,6 +7,18 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-16 — Connector catalog and private API/MCP control center
+- [x] Turn the Connectors pane into a clear owner control center with `api/mcp`, `apps`, `crawlers/loops`, and `repo` tabs
+- [x] Surface the current user's private REST/MCP/stack endpoint docs, auth header contract, resource map, and API route table inside `/shell`
+- [x] Make connected-app grants visible and manageable from the dashboard using the existing `yg_` grant backend
+- [x] Add a Lovable-style app connector catalog with search, categories, pinned You.md/owned-project connectors, Custom API, Custom MCP, Custom Webhook, and popular third-party services
+- [x] Move GitHub repo sync into its own connector tab so it is no longer the whole Connectors page
+- [x] Embed crawlers/loops beside the connector catalog, keeping native/Firecrawl/agent-browser, cron refresh, immutable versions, and approval controls visible
+
+### 2026-06-16 — Shell collapsed logo fit
+- [x] Shrink the collapsed PixelYOU mark a few pixels so the `YOU` logo fits cleanly in the skinny rail
+- [x] Give the collapsed logo viewport a few more pixels of horizontal room without widening the sidebar
+
 ### 2026-06-16 — Shell opening intelligence brief
 - [x] Build an opening brief from real shell context: display name, bundle version, tracked projects, private project folders, memories, recent sessions, and repo mirror status
 - [x] Require the opening agent greeting to acknowledge the user by name, reference concrete recent work/activity/milestones, and suggest specific next steps
@@ -41,6 +53,7 @@ PRD Version: 2.3
 - [x] Document the agent-browser sandbox runner boundary in `project-context/AGENT_BROWSER_SANDBOX_RUNNER_SPEC_2026-06-15.md`
 - [x] Add monitored change summaries with pending-review approval before extraction
 - [x] Add richer deterministic change summaries with content length, safe preview, and headings
+- [x] Add the owner-facing connected-app grant/catalog UI so `yg_` grants, private API/MCP docs, custom API/MCP/webhook entries, popular connectors, crawlers, and crons are actually visible/manageable in `/shell`
 - [ ] Add approval-aware writeback before cron-triggered expensive work
 - [ ] Configure and verify `FIRECRAWL_API_KEY` in dev/prod, then smoke a real Firecrawl source refresh end-to-end
 - [ ] Implement the actual agent-browser sandbox worker with action transcripts, screenshot artifacts, and secret/permission boundaries
