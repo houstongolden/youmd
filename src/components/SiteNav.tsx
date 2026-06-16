@@ -24,7 +24,7 @@ export function SiteNav() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Compute hidden-path check early so we can skip queries on auth pages
-  const hiddenPaths = ["/", "/create", "/sign-in", "/sign-up", "/initialize", "/reset-password", "/docs"];
+  const hiddenPaths = ["/", "/auth", "/device", "/create", "/sign-in", "/sign-up", "/initialize", "/reset-password", "/docs"];
   const isAppShellRoute = pathname === "/shell" || pathname === "/dashboard";
   const isHidden =
     hiddenPaths.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p))) ||

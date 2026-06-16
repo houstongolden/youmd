@@ -62,6 +62,19 @@ function formatUserCode(code: string): string {
   return code.length === 8 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
 }
 
+export function buildDeviceApprovalUrl(
+  verificationUrl: string | undefined,
+  userCode: string
+): string {
+  const base = verificationUrl || `${getAppUrl()}/device`;
+  const url = new URL(base);
+  if (url.pathname === "/device" || url.pathname === "/device/") {
+    url.pathname = "/auth";
+  }
+  url.searchParams.set("code", userCode);
+  return url.toString();
+}
+
 export type DevicePollOutcome =
   | { outcome: "approved"; data: DeviceApprovedData }
   | { outcome: "denied" }
@@ -147,7 +160,6 @@ export async function pollDeviceApproval(opts: {
 
 async function deviceLogin(): Promise<void> {
   // Retry loop: an expired code offers a fresh one.
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const spinner = new BrailleSpinner("requesting a device code");
     spinner.start();
@@ -180,17 +192,19 @@ async function deviceLogin(): Promise<void> {
     spinner.stop();
     const { deviceCode, userCode, verificationUrl, expiresIn, interval } = start.data;
     const displayCode = formatUserCode(userCode);
-    const approveUrl = `${verificationUrl || `${getAppUrl()}/device`}?code=${encodeURIComponent(userCode)}`;
+    const approveUrl = buildDeviceApprovalUrl(verificationUrl, userCode);
 
     console.log("");
     console.log("  your code:");
     console.log("");
     console.log("    " + chalk.bold(ACCENT(displayCode.split("").join(" "))));
     console.log("");
-    console.log("  approve at " + ACCENT(approveUrl));
+    console.log("  " + chalk.dim("press Enter to open you.md/auth in your browser"));
+    console.log("  " + chalk.dim("or approve manually at ") + ACCENT(approveUrl));
     console.log("  " + chalk.dim(`code expires in ${Math.floor(expiresIn / 60)} minutes`));
     console.log("");
 
+    await promptInput(ACCENT("  open browser: "));
     openInBrowser(approveUrl);
 
     const waitSpinner = new BrailleSpinner("waiting for browser approval...");
@@ -376,7 +390,12 @@ function printLoginSuccess(
     console.log("  key:   " + apiKey.slice(0, 8) + "..." + apiKey.slice(-4));
   }
   console.log("");
-  console.log("  run " + chalk.cyan("you") + " to meet U.");
+  console.log("  " + chalk.green("nice work.") + " this machine is authenticated via you.md.");
+  console.log("");
+  console.log("  next:");
+  console.log("    " + chalk.cyan("youmd pull") + chalk.dim("   sync your live brain into ~/.youmd"));
+  console.log("    " + chalk.cyan("youmd sync") + chalk.dim("   refresh skills, stacks, prompts, and project context"));
+  console.log("    " + chalk.cyan("you") + chalk.dim("           meet U and keep moving"));
   console.log("");
 }
 

@@ -6,7 +6,7 @@
  * deadline) is pinned without a server or real timers.
  */
 import { describe, expect, it, vi } from "vitest";
-import { pollDeviceApproval } from "../commands/login";
+import { buildDeviceApprovalUrl, pollDeviceApproval } from "../commands/login";
 import type { ApiResponse, DevicePollData } from "../lib/api";
 
 const DEVICE_CODE = "a".repeat(64);
@@ -25,6 +25,20 @@ const approvedBody = {
   username: "houston",
   user: { id: "clerk_1", username: "houston", email: "h@example.com" },
 };
+
+describe("buildDeviceApprovalUrl", () => {
+  it("normalizes the browser approval surface to /auth", () => {
+    expect(buildDeviceApprovalUrl("https://you.md/device", "ABCD1234")).toBe(
+      "https://you.md/auth?code=ABCD1234"
+    );
+  });
+
+  it("preserves existing verification query params while adding the user code", () => {
+    expect(buildDeviceApprovalUrl("https://you.md/device?source=cli", "ABCD1234")).toBe(
+      "https://you.md/auth?source=cli&code=ABCD1234"
+    );
+  });
+});
 
 /** Fake clock: starts at 0; sleep advances it. */
 function fakeClock() {
