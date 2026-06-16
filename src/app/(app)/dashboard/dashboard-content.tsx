@@ -187,11 +187,11 @@ const CHAT_WIDTH_STORAGE_KEY = "youmd.shell.chatWidth";
 const STALE_NUDGE_SESSION_KEY = "youmd.dashboard.staleNudgeShown";
 const STALE_NUDGE_DAYS = 7;
 const FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
-const DEFAULT_CHAT_WIDTH = 42;
+const DEFAULT_CHAT_WIDTH = 46;
 const MIN_CHAT_WIDTH = 34;
-const MAX_CHAT_WIDTH = 56;
-const MIN_CHAT_WIDTH_PX = 560;
-const MIN_DETAIL_WIDTH_PX = 560;
+const MAX_CHAT_WIDTH = 58;
+const MIN_CHAT_WIDTH_PX = 460;
+const MIN_DETAIL_WIDTH_PX = 360;
 const SIDEBAR_AUTO_COLLAPSE_PX = 1520;
 
 function formatRelativeTime(ts: number): string {
@@ -637,7 +637,7 @@ function ShellSidebar({
   return (
     <aside
       className={[
-        "hidden h-full shrink-0 flex-col border-r border-[hsl(var(--border))]/70 bg-[hsl(var(--bg-raised))] transition-[width] duration-200 lg:flex",
+        "hidden h-full shrink-0 flex-col border-r border-[hsl(var(--border))]/70 bg-[hsl(var(--bg-raised))] transition-[width] duration-200 md:flex",
         collapsed ? "w-14" : "w-[244px]",
       ].join(" ")}
       aria-label="Shell navigation"
@@ -1217,7 +1217,7 @@ export function DashboardContent() {
     return (
       <main aria-busy="true" className="h-dvh overflow-hidden bg-[hsl(var(--bg))]">
         <div className="flex h-full min-h-0">
-          <aside className="hidden h-full w-[244px] shrink-0 border-r border-[hsl(var(--border))]/70 bg-[hsl(var(--bg-raised))] p-3 lg:flex lg:flex-col">
+          <aside className="hidden h-full w-[244px] shrink-0 border-r border-[hsl(var(--border))]/70 bg-[hsl(var(--bg-raised))] p-3 md:flex md:flex-col">
             <div className="h-9 w-28 animate-pulse bg-[hsl(var(--text-secondary))] opacity-10" />
             <div className="mt-4 h-10 w-full animate-pulse bg-[hsl(var(--text-secondary))] opacity-[0.08]" />
             <div className="mt-2 h-10 w-full animate-pulse bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
@@ -1231,13 +1231,13 @@ export function DashboardContent() {
             </div>
           </aside>
           <div className="flex min-w-0 flex-1 flex-col">
-            <div className="flex h-11 items-center border-b border-[hsl(var(--border))] px-3 lg:hidden">
+            <div className="flex h-11 items-center border-b border-[hsl(var(--border))] px-3 md:hidden">
               <div className="h-3 w-32 animate-pulse bg-[hsl(var(--text-secondary))] opacity-10" />
             </div>
             <div className="flex min-h-0 flex-1">
               <div
                 className={`flex w-full flex-col gap-3 p-4 animate-pulse ${
-                  panelOpen ? "lg:w-[42%] lg:border-r lg:border-[hsl(var(--border))]/70" : "w-full"
+                  panelOpen ? "md:w-[42%] md:border-r md:border-[hsl(var(--border))]/70" : "w-full"
                 }`}
               >
                 <div className="h-3 w-32 bg-[hsl(var(--text-secondary))] opacity-10" />
@@ -1246,7 +1246,7 @@ export function DashboardContent() {
                 <div className="flex-1" />
                 <div className="h-14 w-full bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
               </div>
-              <div className={`hidden ${panelOpen ? "lg:flex" : "lg:hidden"} flex-1 flex-col`}>
+              <div className={`hidden ${panelOpen ? "md:flex" : "md:hidden"} flex-1 flex-col`}>
                 <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] px-4 py-2 animate-pulse">
                   <div className="h-5 w-14 bg-[hsl(var(--text-secondary))] opacity-10" />
                   <div className="h-5 w-14 bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
@@ -1310,9 +1310,9 @@ export function DashboardContent() {
           onOpenChatSession={openChatSession}
         />
         <div className="flex min-w-0 flex-1 flex-col bg-[hsl(var(--bg))]">
-          <div className="hidden h-10 shrink-0 items-center justify-between border-b border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] px-3 lg:flex">
+          <div className="hidden h-10 shrink-0 items-center justify-between border-b border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] px-3 md:flex">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="hidden truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35 lg:block">
+              <span className="hidden truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35 md:block">
                 {githubConnection?.repoFullName ?? `you.md/${username}`}
               </span>
             </div>
@@ -1334,7 +1334,7 @@ export function DashboardContent() {
             </div>
           </div>
           {/* Mobile nav — single row: scrollable pane tabs + compact status */}
-          <div className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] lg:hidden">
+          <div className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] md:hidden">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center overflow-x-auto scrollbar-none">
                 {MOBILE_PRIMARY_PANES.map(({ key, label }) => (
@@ -1406,13 +1406,13 @@ export function DashboardContent() {
             <div
               className={[
                 "min-h-0 flex flex-col bg-[hsl(var(--bg-raised))]",
-                panelOpen ? "lg:w-[var(--shell-chat-width)] lg:flex-none" : "lg:flex-1",
-                "lg:relative lg:opacity-100 lg:translate-x-0",
+                panelOpen ? "md:w-[var(--shell-chat-width)] md:flex-none" : "md:flex-1",
+                "md:relative md:opacity-100 md:translate-x-0",
                 // Mobile: full width, absolute positioned for transitions
                 "w-full",
                 mobileView === "terminal"
                   ? "relative opacity-100 translate-x-0"
-                  : "absolute inset-0 opacity-0 -translate-x-4 pointer-events-none lg:pointer-events-auto lg:relative lg:inset-auto",
+                  : "absolute inset-0 opacity-0 -translate-x-4 pointer-events-none md:pointer-events-auto md:relative md:inset-auto",
               ].join(" ")}
               style={{
                 "--shell-chat-width": `clamp(${MIN_CHAT_WIDTH_PX}px, ${chatWidth}%, calc(100% - ${MIN_DETAIL_WIDTH_PX}px))`,
@@ -1438,7 +1438,7 @@ export function DashboardContent() {
               <button
                 type="button"
                 onPointerDown={startColumnResize}
-                className="group hidden w-2 shrink-0 cursor-col-resize items-stretch justify-center border-x border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] transition-colors hover:bg-[hsl(var(--bg-raised))] lg:flex"
+                className="group hidden w-2 shrink-0 cursor-col-resize items-stretch justify-center border-x border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] transition-colors hover:bg-[hsl(var(--bg-raised))] md:flex"
                 aria-label="Resize shell split"
                 title="Resize shell split"
               >
@@ -1452,18 +1452,18 @@ export function DashboardContent() {
                 "min-h-0 flex flex-col bg-[hsl(var(--bg-raised))]",
                 // Desktop: hidden when panel is closed
                 panelOpen
-                  ? "lg:relative lg:flex-1 lg:opacity-100 lg:translate-x-0"
-                  : "lg:hidden",
+                  ? "md:relative md:flex-1 md:opacity-100 md:translate-x-0"
+                  : "md:hidden",
                 // Mobile: full width, absolute positioned for transitions
                 "w-full",
                 mobileView === "preview"
                   ? "relative opacity-100 translate-x-0"
-                  : "absolute inset-0 opacity-0 translate-x-4 pointer-events-none lg:pointer-events-auto lg:relative lg:inset-auto",
+                  : "absolute inset-0 opacity-0 translate-x-4 pointer-events-none md:pointer-events-auto md:relative md:inset-auto",
               ].join(" ")}
               style={{ transition: "opacity 200ms ease, transform 200ms ease" }}
             >
               {/* Desktop pane header — compact, wraps instead of clipping. */}
-              <div className="hidden lg:block relative shrink-0 border-b border-[hsl(var(--border))]/60">
+              <div className="hidden md:block relative shrink-0 border-b border-[hsl(var(--border))]/60">
                 <div className="flex min-h-11 items-center justify-between gap-4 px-4 py-2">
                   <div className="min-w-0">
                     <div className="truncate font-mono text-[11px] text-[hsl(var(--text-primary))]">
