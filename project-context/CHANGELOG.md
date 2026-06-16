@@ -2,6 +2,12 @@
 
 ## 2026-06-16 — DSI weather and surf components
 
+### feat(convex/web): port school logistics crawler into private DSI
+- Added a You.md-native school logistics DSI action that fetches the h.computer Google Doc `mobilebasic` source, strips the document, deterministically extracts upcoming active-grade/school-wide dated items, and persists the result as a private source-backed DSI component.
+- The school component carries Mar Vista countdowns, active grade defaults, upcoming event totals, next-event metadata, source lines, citations, and parser provenance; LLM extraction and Google Calendar writeback remain explicit follow-up adapters.
+- Added a `refresh school` control to the Files/Reports DSI Catalog panel and focused Convex coverage for private component + source snapshot persistence.
+- Verified locally with live Google Doc fetch smoke, Convex codegen, focused Convex tests, root TypeScript, Convex TypeScript, lint, and build; authenticated click-through could not be repeated in the fresh Playwright context because it redirected to sign-in.
+
 ### feat(convex/web): enrich GitHub Project Catalog DSI with language metrics
 - Added an owner-gated GitHub Project Catalog DSI action that calls GitHub `/languages` for tracked repositories, computes h.computer-style LOC/LOMB/LOMB ratio from language byte totals, and persists the enriched component through the existing private DSI/source-snapshot path.
 - The Files/Reports `refresh projects` control now prefers the GitHub-language action and falls back to the DB-only tracked-project/repo-mirror refresh when GitHub auth or rate limits are unavailable.

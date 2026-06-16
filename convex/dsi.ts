@@ -47,6 +47,46 @@ type SurfSignal = {
   sourceUrls: string[];
 };
 
+type SchoolEventSignal = {
+  eventDate: string;
+  eventTime: string | null;
+  title: string;
+  description: string | null;
+  grade: string;
+  sourceLine: string;
+};
+
+type SchoolLogisticsSignal = {
+  provider: string;
+  school: {
+    name: string;
+    sourceUrl: string;
+    timezone: string;
+  };
+  capturedAt: string;
+  activeGrades: string[];
+  countdown: {
+    today: string;
+    lastDay: string;
+    daysUntilLastDay: number | null;
+    firstDay: string;
+    daysUntilFirstDay: number | null;
+    outForSummer: boolean;
+    kids: Array<{ name: string; currentGrade: string; nextGrade: string }>;
+  };
+  totals: {
+    fetchedEvents: number;
+    upcomingEvents: number;
+    holidayOrClosureCount: number;
+  };
+  nextEvent: SchoolEventSignal | null;
+  events: SchoolEventSignal[];
+  parser: {
+    mode: "deterministic_google_doc";
+    note: string;
+  };
+};
+
 type ProjectCatalogSignal = {
   provider: string;
   capturedAt: string;
@@ -176,6 +216,217 @@ function currentHoustonLocation(now = new Date()): LocationSignal {
         timezone: "America/Los_Angeles",
         reason: "home default from h.computer",
       };
+}
+
+const DEFAULT_SCHOOL_DOC_URL =
+  "https://docs.google.com/document/d/12e-X5WOsKPalpYth2juWhJUVRRaCcKeDP6GE9pSM8JY/mobilebasic";
+const SCHOOL_NAME = "Mar Vista Elementary";
+const SCHOOL_LAST_DAY = "2026-06-12";
+const SCHOOL_FIRST_DAY = "2026-08-13";
+const SCHOOL_KIDS = [
+  { name: "West", currentGrade: "1st", nextGrade: "2nd" },
+  { name: "Willa", currentGrade: "tk-prep", nextGrade: "TK" },
+];
+const HOLIDAY_OR_CLOSURE_RE = /\b(no school|holiday|break|recess|day off|closed|memorial|labor|thanksgiving|veterans|presidents|mlk|cesar chavez|winter|spring|summer)\b/i;
+const SCHOOL_KEEP_RE = /\b(no school|holiday|break|recess|day off|closed|conference|picture|back.to.school|pta|fundraiser|gala|auction|book fair|jog.?a.?thon|movie|game night|spirit|dress|field trip|performance|assembly|award|volunteer|first day|last day|orientation|meeting|open house|minimum day|early dismissal)\b/i;
+const MONTHS: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
+function daysBetweenIso(fromIso: string, toIso: string): number {
+  const from = Date.parse(`${fromIso}T00:00:00Z`);
+  const to = Date.parse(`${toIso}T00:00:00Z`);
+  return Math.round((to - from) / 86_400_000);
+}
+
+function activeSchoolGrades(now = new Date()): string[] {
+  const switchDate = new Date("2026-08-01T00:00:00Z");
+  return now < switchDate ? ["1st", "all"] : ["TK", "2nd", "all"];
+}
+
+function stripSchoolDocHtml(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+async function fetchSchoolDoc(): Promise<{ sourceUrl: string; text: string }> {
+  const sourceUrl = process.env.YOUMD_SCHOOL_DOC_URL || DEFAULT_SCHOOL_DOC_URL;
+  const res = await fetch(sourceUrl, {
+    headers: { "User-Agent": "You.md school-logistics DSI crawler" },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) throw new Error(`school doc fetch failed: ${res.status}`);
+  const html = await res.text();
+  return { sourceUrl, text: stripSchoolDocHtml(html).slice(0, 80_000) };
+}
+
+function inferSchoolEventDate(line: string, now = new Date()): string | null {
+  const todayIso = now.toISOString().slice(0, 10);
+  const iso = line.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+
+  const slash = line.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+  if (slash) {
+    const month = Number(slash[1]);
+    const day = Number(slash[2]);
+    let year = slash[3] ? Number(slash[3]) : now.getUTCFullYear();
+    if (year < 100) year += 2000;
+    if (!slash[3]) {
+      const tentative = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      if (daysBetweenIso(todayIso, tentative) < -45) year += 1;
+    }
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
+  const monthName = line.match(/\b(January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(20\d{2}))?\b/i);
+  if (!monthName) return null;
+  const month = MONTHS[monthName[1].toLowerCase().replace(/\.$/, "")];
+  const day = Number(monthName[2]);
+  let year = monthName[3] ? Number(monthName[3]) : now.getUTCFullYear();
+  if (!monthName[3]) {
+    const tentative = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    if (daysBetweenIso(todayIso, tentative) < -45) year += 1;
+  }
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function inferSchoolEventTime(line: string): string | null {
+  const match = line.match(/\b(\d{1,2})(?::(\d{2}))?\s*(AM|PM|am|pm)\b/);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = match[2] ?? "00";
+  const suffix = match[3].toUpperCase();
+  return `${hour}:${minute} ${suffix}`;
+}
+
+function inferSchoolGrade(line: string, activeGrades: string[]): string | null {
+  const lower = line.toLowerCase();
+  if (/\btk\b|transitional kindergarten/.test(lower)) return activeGrades.includes("TK") ? "TK" : null;
+  if (/\b2nd\b|second grade/.test(lower)) return activeGrades.includes("2nd") ? "2nd" : null;
+  if (/\b1st\b|first grade/.test(lower)) return activeGrades.includes("1st") ? "1st" : null;
+  if (/\bkinder|kindergarten|3rd|third grade|4th|fourth grade|5th|fifth grade\b/.test(lower)) return null;
+  return "all";
+}
+
+function cleanSchoolTitle(line: string): string {
+  return line
+    .replace(/\b20\d{2}-\d{2}-\d{2}\b/g, "")
+    .replace(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g, "")
+    .replace(/\b(January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:,\s*20\d{2})?\b/gi, "")
+    .replace(/\b\d{1,2}(?::\d{2})?\s*(AM|PM|am|pm)\b/g, "")
+    .replace(/^[\s:;,\-–—|]+|[\s:;,\-–—|]+$/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .slice(0, 120);
+}
+
+function parseSchoolEvents(docText: string, activeGrades: string[], now = new Date()): SchoolEventSignal[] {
+  const todayIso = now.toISOString().slice(0, 10);
+  const seen = new Set<string>();
+  const events: SchoolEventSignal[] = [];
+  for (const rawLine of docText.split(/\r\n|\r|\n/)) {
+    const line = rawLine.replace(/\s+/g, " ").trim();
+    if (line.length < 8 || line.length > 350) continue;
+    const eventDate = inferSchoolEventDate(line, now);
+    if (!eventDate) continue;
+    if (daysBetweenIso(todayIso, eventDate) < -7) continue;
+    const grade = inferSchoolGrade(line, activeGrades);
+    if (!grade) continue;
+    if (grade === "all" && !SCHOOL_KEEP_RE.test(line)) continue;
+    const title = cleanSchoolTitle(line) || "School event";
+    const key = `${eventDate}:${grade}:${title.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    events.push({
+      eventDate,
+      eventTime: inferSchoolEventTime(line),
+      title,
+      description: line.length > title.length ? line : null,
+      grade,
+      sourceLine: line,
+    });
+  }
+  return events.sort((a, b) => a.eventDate.localeCompare(b.eventDate) || a.title.localeCompare(b.title)).slice(0, 80);
+}
+
+function buildSchoolLogisticsSignal(args: {
+  sourceUrl: string;
+  docText: string;
+  now?: Date;
+}): SchoolLogisticsSignal {
+  const now = args.now ?? new Date();
+  const today = now.toISOString().slice(0, 10);
+  const activeGrades = activeSchoolGrades(now);
+  const events = parseSchoolEvents(args.docText, activeGrades, now);
+  const upcomingEvents = events.filter((event) => daysBetweenIso(today, event.eventDate) >= 0);
+  const daysUntilLastDay = daysBetweenIso(today, SCHOOL_LAST_DAY);
+  const daysUntilFirstDay = daysBetweenIso(today, SCHOOL_FIRST_DAY);
+  return {
+    provider: "google-doc-mobilebasic",
+    school: {
+      name: SCHOOL_NAME,
+      sourceUrl: args.sourceUrl,
+      timezone: "America/Los_Angeles",
+    },
+    capturedAt: now.toISOString(),
+    activeGrades,
+    countdown: {
+      today,
+      lastDay: SCHOOL_LAST_DAY,
+      daysUntilLastDay: daysUntilLastDay >= 0 ? daysUntilLastDay : null,
+      firstDay: SCHOOL_FIRST_DAY,
+      daysUntilFirstDay: daysUntilFirstDay >= 0 ? daysUntilFirstDay : null,
+      outForSummer: daysUntilLastDay < 0 && daysUntilFirstDay > 0,
+      kids: SCHOOL_KIDS,
+    },
+    totals: {
+      fetchedEvents: events.length,
+      upcomingEvents: upcomingEvents.length,
+      holidayOrClosureCount: events.filter((event) => HOLIDAY_OR_CLOSURE_RE.test(event.title) || HOLIDAY_OR_CLOSURE_RE.test(event.description ?? "")).length,
+    },
+    nextEvent: upcomingEvents[0] ?? null,
+    events,
+    parser: {
+      mode: "deterministic_google_doc",
+      note: "First You.md-native school DSI crawler ported from h.computer; LLM extraction and Google Calendar writeback remain adapter follow-ups.",
+    },
+  };
 }
 
 function weatherLabel(code: number | null): string {
@@ -637,6 +888,27 @@ export const refreshWeatherSurf = action({
   },
 });
 
+export const refreshSchoolLogistics = action({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots">; eventCount: number }> => {
+    await requireOwner(ctx, args.clerkId);
+    const doc = await fetchSchoolDoc();
+    const school = buildSchoolLogisticsSignal({
+      sourceUrl: doc.sourceUrl,
+      docText: doc.text,
+    });
+    const result = await ctx.runMutation(internal.dsi.persistSchoolLogisticsComponent, {
+      clerkId: args.clerkId,
+      userId: args.userId,
+      school,
+    });
+    return { ...result, eventCount: school.totals.upcomingEvents };
+  },
+});
+
 async function persistProjectCatalog(
   ctx: MutationCtx,
   args: {
@@ -728,6 +1000,53 @@ export const persistProjectCatalogWithLanguageMetrics = internalMutation({
       userId: args.userId,
       languageMetrics: args.languageMetrics as ProjectLanguageMetric[] | undefined,
     });
+  },
+});
+
+export const persistSchoolLogisticsComponent = internalMutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+    school: v.any(),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> => {
+    await ownerForUserId(ctx, args.clerkId, args.userId);
+    const school = args.school as SchoolLogisticsSignal;
+    const snapshotId = await insertSnapshot(ctx, {
+      userId: args.userId,
+      connectorKind: "school",
+      sourceKey: "school-logistics",
+      sourceType: "dsi_component",
+      normalized: school,
+      citations: [{ provider: school.provider, url: school.school.sourceUrl }],
+      visibility: "private",
+      trustLevel: "computed",
+      metadata: {
+        origin: "h.computer",
+        adapter: "google-doc-school-logistics",
+        parser: school.parser.mode,
+      },
+    });
+    const next = school.nextEvent
+      ? `${school.nextEvent.title} ${school.nextEvent.eventDate}`
+      : "no upcoming school events parsed";
+    const countdown = school.countdown.outForSummer && school.countdown.daysUntilFirstDay !== null
+      ? `${school.countdown.daysUntilFirstDay}d until fall`
+      : school.countdown.daysUntilLastDay !== null
+        ? `${school.countdown.daysUntilLastDay}d until summer`
+        : "school countdown ready";
+    const componentId = await upsertComponent(ctx, {
+      userId: args.userId,
+      slug: "school-logistics",
+      componentType: "school",
+      title: `School - ${school.school.name}`,
+      summary: `${school.totals.upcomingEvents} upcoming / ${countdown} / ${next}`,
+      data: school,
+      sourceSnapshotIds: [snapshotId],
+      trustLevel: "computed",
+      metadata: { provider: school.provider, configurable: true, origin: "h.computer" },
+    });
+    return { componentId, snapshotId };
   },
 });
 

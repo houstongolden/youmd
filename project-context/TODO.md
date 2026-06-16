@@ -44,8 +44,9 @@ PRD Version: 2.3
 - [x] Port the first h.computer weather + Venice Breakwater surf report adapters into private You.md DSI components
 - [x] Port the first GitHub project catalog DSI component with tracked projects, GitHub URLs, recent commits, AI insight, and exact repo-mirror LOC/LOMB where available
 - [x] Enrich the GitHub project catalog DSI with GitHub `/languages` LOC/LOMB estimates for the top tracked repos, with repo-mirror fallback when language data is unavailable
-- [ ] Add external report adapters for Perplexity industry pulse, Google Calendar agenda, BAMF/BAMF OS analytics, Bad.app fitness/body, and school crawler data
-- [ ] Port h.computer school crawler, historical daily log, daily journal, research/blog crawler, calendar/task, BAMF/BAMF OS, and Bad.app source adapters into You.md-native connectors
+- [x] Port the first h.computer school Google Doc crawler into a private school logistics DSI component with source snapshots and Reports refresh controls
+- [ ] Add external report adapters for Perplexity industry pulse, Google Calendar agenda, BAMF/BAMF OS analytics, Bad.app fitness/body, and richer school calendar writeback
+- [ ] Port h.computer historical daily log, daily journal, research/blog crawler, calendar/task, BAMF/BAMF OS, and Bad.app source adapters into You.md-native connectors
 - [ ] Add owner-approved public profile rendering for selected DSI catalog components
 - [x] Add secure public profile chat widget and `/api/v1/profiles/:username/conversation` first slice with public-context-only answers and provenance
 - [x] Add hosted MCP parity for public profile conversation through `ask_public_profile`

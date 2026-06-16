@@ -492,6 +492,7 @@ function ArtifactHome({
   onRunDailyBriefing,
   onRefreshWeatherSurf,
   onRefreshProjectCatalog,
+  onRefreshSchoolLogistics,
   onToggleLoopDefinition,
   selectedRunId,
   loopSnapshots,
@@ -513,6 +514,7 @@ function ArtifactHome({
   onRunDailyBriefing: () => void;
   onRefreshWeatherSurf: () => void;
   onRefreshProjectCatalog: () => void;
+  onRefreshSchoolLogistics: () => void;
   onToggleLoopDefinition: (definition: LoopReportDefinition) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
   loopSnapshots: SourceSnapshot[] | undefined;
@@ -551,6 +553,7 @@ function ArtifactHome({
             onRunDailyBriefing={onRunDailyBriefing}
             onRefreshWeatherSurf={onRefreshWeatherSurf}
             onRefreshProjectCatalog={onRefreshProjectCatalog}
+            onRefreshSchoolLogistics={onRefreshSchoolLogistics}
             onToggleDefinition={onToggleLoopDefinition}
             onSelectArtifact={onSelect}
             selectedRunId={selectedRunId}
@@ -641,6 +644,7 @@ function LoopReportsControlPanel({
   onRunDailyBriefing,
   onRefreshWeatherSurf,
   onRefreshProjectCatalog,
+  onRefreshSchoolLogistics,
   onToggleDefinition,
   onSelectArtifact,
   selectedRunId,
@@ -659,6 +663,7 @@ function LoopReportsControlPanel({
   onRunDailyBriefing: () => void;
   onRefreshWeatherSurf: () => void;
   onRefreshProjectCatalog: () => void;
+  onRefreshSchoolLogistics: () => void;
   onToggleDefinition: (definition: LoopReportDefinition) => void;
   onSelectArtifact: (path: string) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
@@ -754,6 +759,15 @@ function LoopReportsControlPanel({
               className="h-8 self-start text-[10px]"
             >
               {dsiBusy ? "refreshing..." : "refresh projects"}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onRefreshSchoolLogistics}
+              disabled={dsiBusy}
+              className="h-8 self-start text-[10px]"
+            >
+              {dsiBusy ? "refreshing..." : "refresh school"}
             </Button>
             <Button
               size="sm"
@@ -1324,6 +1338,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const refreshProjectCatalogFallback = useMutation(api.dsi.refreshProjectCatalog);
   const refreshProjectCatalog = useAction(api.githubProjects.refreshProjectCatalogDsi);
   const refreshWeatherSurf = useAction(api.dsi.refreshWeatherSurf);
+  const refreshSchoolLogistics = useAction(api.dsi.refreshSchoolLogistics);
   const memories = useQuery(api.memories.listMemories, clerkId && userId ? { clerkId, userId } : "skip");
   const sessions = useQuery(api.memories.listSessions, clerkId && userId ? { clerkId, userId, limit: 20 } : "skip");
   const loopReportDefinitions = useQuery(
@@ -1695,6 +1710,22 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     }
   }, [user, userId, refreshProjectCatalog, refreshProjectCatalogFallback]);
 
+  const handleRefreshSchoolLogistics = useCallback(async () => {
+    if (!user?.id || !userId) return;
+    setDsiBusy(true);
+    setDsiStatus(null);
+    try {
+      const result = await refreshSchoolLogistics({ clerkId: user.id, userId });
+      setWorkspaceMode("artifacts");
+      setDsiStatus(`refreshed school logistics: ${result.eventCount} upcoming events`);
+      setTimeout(() => setDsiStatus(null), 3000);
+    } catch (err) {
+      setDsiStatus(`error: ${err instanceof Error ? err.message : "failed to refresh school logistics"}`);
+    } finally {
+      setDsiBusy(false);
+    }
+  }, [user, userId, refreshSchoolLogistics]);
+
   const handleToggleLoopDefinition = useCallback(async (definition: LoopReportDefinition) => {
     if (!user?.id) return;
     setLoopBusy(true);
@@ -1981,6 +2012,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
               onRunDailyBriefing={handleRunDailyBriefing}
               onRefreshWeatherSurf={handleRefreshWeatherSurf}
               onRefreshProjectCatalog={handleRefreshProjectCatalog}
+              onRefreshSchoolLogistics={handleRefreshSchoolLogistics}
               onToggleLoopDefinition={handleToggleLoopDefinition}
               selectedRunId={selectedLoopRunId}
               loopSnapshots={loopSnapshots}

@@ -108,6 +108,95 @@ describe("dsi components", () => {
     ]);
   });
 
+  it("persists school logistics as a private source-backed DSI component", async () => {
+    const t = convexTest(schema);
+    const userId = await seedUser(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+
+    await asOwner.mutation(internal.dsi.persistSchoolLogisticsComponent, {
+      clerkId: CLERK,
+      userId,
+      school: {
+        provider: "google-doc-mobilebasic",
+        school: {
+          name: "Mar Vista Elementary",
+          sourceUrl: "https://docs.google.com/document/d/example/mobilebasic",
+          timezone: "America/Los_Angeles",
+        },
+        capturedAt: "2026-06-16T12:00:00.000Z",
+        activeGrades: ["1st", "all"],
+        countdown: {
+          today: "2026-06-16",
+          lastDay: "2026-06-12",
+          daysUntilLastDay: null,
+          firstDay: "2026-08-13",
+          daysUntilFirstDay: 58,
+          outForSummer: true,
+          kids: [
+            { name: "West", currentGrade: "1st", nextGrade: "2nd" },
+            { name: "Willa", currentGrade: "tk-prep", nextGrade: "TK" },
+          ],
+        },
+        totals: {
+          fetchedEvents: 2,
+          upcomingEvents: 2,
+          holidayOrClosureCount: 1,
+        },
+        nextEvent: {
+          eventDate: "2026-08-13",
+          eventTime: null,
+          title: "First day of school",
+          description: "August 13 First day of school",
+          grade: "all",
+          sourceLine: "August 13 First day of school",
+        },
+        events: [
+          {
+            eventDate: "2026-08-13",
+            eventTime: null,
+            title: "First day of school",
+            description: "August 13 First day of school",
+            grade: "all",
+            sourceLine: "August 13 First day of school",
+          },
+          {
+            eventDate: "2026-09-07",
+            eventTime: null,
+            title: "No school - Labor Day",
+            description: "September 7 No school - Labor Day",
+            grade: "all",
+            sourceLine: "September 7 No school - Labor Day",
+          },
+        ],
+        parser: {
+          mode: "deterministic_google_doc",
+          note: "test",
+        },
+      },
+    });
+
+    const components = await asOwner.query(api.dsi.listComponents, {
+      clerkId: CLERK,
+      userId,
+    });
+    const school = components.find((component) => component.slug === "school-logistics");
+    expect(school?.visibility).toBe("private");
+    expect(school?.componentType).toBe("school");
+    expect(school?.summary).toContain("2 upcoming");
+    expect(school?.summary).toContain("58d until fall");
+    expect(school?.data.nextEvent.title).toBe("First day of school");
+
+    const snapshots = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("sourceSnapshots")
+        .withIndex("by_userId", (q) => q.eq("userId", userId))
+        .collect();
+    });
+    expect(snapshots.map((snapshot) => snapshot.sourceKey)).toEqual(["school-logistics"]);
+    expect(snapshots[0].connectorKind).toBe("school");
+    expect(snapshots[0].visibility).toBe("private");
+  });
+
   it("builds a GitHub project catalog component from tracked projects and repo mirror stats", async () => {
     const t = convexTest(schema);
     const userId = await seedUser(t);
