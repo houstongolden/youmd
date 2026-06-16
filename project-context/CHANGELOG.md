@@ -10,7 +10,7 @@
 - Reworked the sidebar from bulky bordered rows into quieter icon/label actions with hover/title detail context and a slimmer active signal.
 - Moved the portrait/username/account affordance into the sidebar footer and added a popout for usage, settings, sign out, and persisted `light`/`dark`/`system` theme preference.
 - Flattened the chat composer and pane tabs to reduce nested-border/boxes-inside-boxes visual noise while preserving the terminal-native shell feel.
-- Verified locally with TypeScript, targeted ESLint, radius guard, whitespace check, and production build. Authenticated production visual verification is pending deployment.
+- Verified locally with TypeScript, targeted ESLint, radius guard, whitespace check, and production build. Pushed to `main`; Vercel deployment `dpl_HzLoG5YvgiQ2Li7kFS1VmPNHnkJR` reached Ready and is aliased to `https://www.you.md` / `https://you.md`. Authenticated production browser QA confirmed full-height shell, no logged-in top nav, 244px sidebar, 794px chat column at 2048px viewport after stored-width migration, account popout controls, and no duplicate shell/body overflow.
 
 ## 2026-06-15 — Full-height shell workspace
 
