@@ -2,13 +2,14 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 80
-**Total messages:** 485
+**Total sessions:** 81
+**Total messages:** 488
 **Last updated:** 2026-06-16
 
 ## Table of Contents
 
 1. [2026-06-16 (machine-bootstrap-skill-project-sync)](#session-2026-06-16-machine-bootstrap-skill-project-sync) --- 1 message
+1. [2026-06-16 (mobile-capture-voice-slack-project-routing)](#session-2026-06-16-mobile-capture-voice-slack-project-routing) --- 3 messages
 1. [2026-06-16 (shell-github-update-usage-foldermd)](#session-2026-06-16-shell-github-update-usage-foldermd) --- 1 message
 1. [2026-06-16 (local-agent-bootstrap-auth-confirmation)](#session-2026-06-16-local-agent-bootstrap-auth-confirmation) --- 1 message
 1. [2026-06-16 (artifacts-daily-loops-dsi-public-chat)](#session-2026-06-16-artifacts-daily-loops-dsi-public-chat) --- 1 message
@@ -88,6 +89,37 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-16 (mobile-capture-voice-slack-project-routing)
+
+**2026-06-16 10:26:20 UTC**
+> Execute the You.md mobile capture / voice / Slack / project-routing work end-to-end from Houston's 2026-06-16 brain dump Part 2. Do not merely summarize or plan. Update the You.md project context, roadmap/task docs, and prompt history as appropriate; run focused validation; commit a coherent docs/product-context checkpoint.
+>
+> You are in the You.md repo. Read and execute this handoff prompt first:
+>
+> `/Users/houstongolden/Desktop/CODE_2025/creator-new/project-context/prompts/2026-06-16-youmd-mobile-capture-agent-prompt.md`
+>
+> Hard requirements:
+> - Preserve raw intent safely, with no secrets or private phone numbers.
+> - Add the mobile brain-dump inbox / SMS-iMessage / Sendblue-or-provider-agnostic capture direction into You.md's durable project context.
+> - Add voice clone / ElevenLabs and Slack host adapter concepts with clear consent, disclosure, audit, and action-scope boundaries.
+> - Update the repo's expected task/changelog/feature-request docs if they exist and are current.
+> - Run the smallest relevant docs/check validation available. If a check is broken for existing reasons, record the exact blocker.
+> - Commit the completed work as a single coherent docs/product-context commit.
+>
+> Important: You may receive queued `continue` messages. Treat each one as an instruction to keep working on this same goal until it is actually complete, verified, and committed. Do not broaden into unrelated implementation unless the docs/task update explicitly requires it.
+
+**2026-06-16 10:26:20 UTC**
+> continue
+>
+> Stay on the same /goal. If you have not yet updated project-context/task docs, validated, and committed, keep working. Do not stop at a plan.
+
+**2026-06-16 10:26:20 UTC**
+> continue
+>
+> Finish the same /goal end-to-end. Before final response, verify git status and report the commit hash or exact blocker.
 
 ---
 

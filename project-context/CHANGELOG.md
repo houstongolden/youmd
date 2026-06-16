@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-16 — Mobile capture and project routing
+
+### docs(product): add brain-dump inbox, voice, and Slack direction
+- Added `MOBILE_CAPTURE_AND_PROJECT_ROUTING_2026-06-16.md` to preserve the Part 2 brain-dump direction: mobile brain-dump inbox, provider-agnostic SMS/iMessage capture, raw transcript artifacts, dedupe/segment/classify routing, task/memory proposals, BAD workout handoff, Slack host adapter, voice clone/likeness boundaries, and `y.computer` naming exploration.
+- Added a sanitized prompt capture under `project-context/prompts/2026-06-16-mobile-capture-voice-slack-project-routing.md` with no private phone numbers, credentials, or provider secrets.
+- Updated PRD, architecture, personal API/MCP, connector, YouStacks, current-state, feature inventory, TODO, active feature requests, and prompt history so the memo is rooted in durable product context.
+- Ran a quick Sendblue documentation scan: current docs expose inbound receive webhooks and API v2 messaging surfaces, but the docs now keep Sendblue as an adapter candidate rather than hardcoded architecture.
+- Verified with `npm run docs:check`, `npm run agent-docs:lint`, `git diff --check`, and a focused phone/secret scan against the new mobile-capture memo and sanitized prompt capture.
+
 ## 2026-06-16 — Machine bootstrap skill
 
 ### feat(cli): add fresh-machine project bootstrap

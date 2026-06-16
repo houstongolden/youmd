@@ -29,6 +29,7 @@ Grant resource scopes:
 - `identity`
 - `now`
 - `projects`
+- `captures`
 - `sources`
 - `memories`
 - `preferences`
@@ -43,6 +44,9 @@ Grant action scopes:
 - `now:read`
 - `projects:read`
 - `projects:write`
+- `captures:read`
+- `captures:write`
+- `captures:route`
 - `sources:read`
 - `sources:write`
 - `memories:read`
@@ -150,6 +154,42 @@ Code surfaces:
 - `convex/sourceRefresh.ts`
 - `convex/sourceRefresh.test.ts`
 - `convex/crons.ts`
+
+## Messaging And Mobile Capture Adapter Plan
+
+Mobile capture should use the connected-app grant model, but should normalize
+through a dedicated capture inbox rather than treating every provider as a
+separate product.
+
+Adapter candidates:
+
+- Sendblue for iMessage-first SMS/RCS capture, pending provider/API/risk review.
+- Generic SMS/RCS providers where official channels are safer or cheaper.
+- Slack as a workspace host adapter with draft/send modes and channel allowlists.
+- Manual paste and future audio transcript upload as zero-provider capture paths.
+- CLI/web shell/MCP host messages as first-party capture paths.
+
+Provider rules:
+
+- Store raw transcript artifacts privately first.
+- Redact phone numbers, channel ids, provider account identifiers, and webhook
+  secrets from docs, non-private logs, and task proposals.
+- Verify webhook signatures/secrets and dedupe by provider event id plus content
+  hash.
+- Normalize inbound events into `captures` before routing to BAD, Myo,
+  h.computer, Hubify/BigBounce, Creator.new, BAMF.ai, Fantasy.is, BAMF site, or
+  external task tools.
+- Require owner approval or an explicit scoped automation rule before external
+  writes.
+- Log every route, proposal, approval, send, and skipped action.
+
+Sendblue quick scan:
+
+- Current docs expose inbound `receive` webhooks plus API v2 messaging, media,
+  read receipts, typing indicators, contacts, and line provisioning.
+- Treat Sendblue as an adapter candidate, not a permanent architecture choice,
+  because iMessage bridge/provider risk and rate/cost limits must be evaluated
+  before load-bearing product promises.
 
 ## Crawler Provider Plan
 

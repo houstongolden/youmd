@@ -57,6 +57,7 @@ Core resources:
 - `identity`: public profile, roles, location, links, bio, current positioning.
 - `now`: current work, focus, status, active projects, recent updates.
 - `projects`: structured project context, repo links, status, next actions, ownership.
+- `captures`: raw mobile/host brain dumps, pasted transcripts, inbound SMS/iMessage/Slack events, voice transcript artifacts, deduped idea clusters, routing outcomes, and clarification queues.
 - `sources`: source catalog, sync status, provenance, freshness, trust level.
 - `memories`: private and scoped memories with source attribution and confidence.
 - `preferences`: communication, writing, model, workflow, and agent behavior preferences.
@@ -217,6 +218,16 @@ Every mode needs:
 - Start with GitHub, custom URL/RSS, raw markdown/OKF, h.computer, folder.md, and BAMF.ai.
 - Reuse the immutable source ledger and source health model.
 - Add refresh policy controls and monitored update summaries.
+
+### P2.5: Mobile capture and project routing MVP
+
+- Add a private brain-dump inbox for Apple Watch/iPhone voice-to-text, SMS/iMessage, pasted transcripts, future audio transcripts, Slack messages, and host-adapter inputs.
+- Save raw transcript artifacts first with redacted provider/channel metadata, timestamps, hashes, inferred sessions, and provenance.
+- Evaluate Sendblue as an iMessage/SMS/RCS adapter candidate, but keep the gateway provider-agnostic.
+- Add a conservative dedupe, segmentation, project classification, memory extraction, task extraction, and clarification queue pipeline.
+- Route domain-specific outputs to BAD, Myo, h.computer, Hubify/BigBounce, Creator.new, BAMF.ai, Fantasy.is, and BAMF site without making those apps own the universal capture substrate.
+- Require explicit approval or scoped automation rules before any external write to Notion, GitHub issues, project boards, CRM, Slack, or product apps.
+- Add voice clone/likeness and Slack host-adapter specs with consent, disclosure, scopes, audit, and revocation before implementation.
 
 ### P3: Skill learning MVP
 

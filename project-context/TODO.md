@@ -7,6 +7,22 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-16 — Mobile capture, voice, Slack, and project routing
+- [x] Preserve the 2026-06-16 Part 2 mobile brain-dump intent safely without private phone numbers or secrets
+- [x] Add the durable mobile capture/product-routing memo to project context
+- [x] Add a sanitized prompt capture under `project-context/prompts/`
+- [x] Update PRD, architecture, personal API/MCP, connector, YouStacks, feature, request, changelog, current-state, and prompt-history docs
+- [x] Record Sendblue as a provider candidate, not hardcoded architecture
+- [x] Validate with `npm run docs:check`, `npm run agent-docs:lint`, `git diff --check`, and a focused phone/secret scan on the new capture files
+- [ ] Research and choose the first inbound capture pilot: Sendblue iMessage/SMS, generic SMS/RCS, Slack DM, manual paste, or audio transcript upload
+- [ ] Design the inbound transcript/capture event data model with raw artifacts, redacted metadata, source hashes, sessions, routing state, and audit log links
+- [ ] Build deterministic dedupe/segment/classify foundations before LLM interpretation
+- [ ] Add project-routing and task/memory proposal UI with approval controls
+- [ ] Define the approval model for external writes to Notion, GitHub issues, project boards, CRM, Slack, and product apps
+- [ ] Write the BAD workout transcript consumer handoff contract
+- [ ] Write the Slack host adapter spec with channel allowlists, identity labels, draft/send modes, action scopes, and audit logs
+- [ ] Write the voice clone/likeness safety spec for ElevenLabs or equivalent with consent, disclosure, revocation, and audit boundaries
+
 ### 2026-06-16 — Machine bootstrap skill and project repo setup
 - [x] Preserve Houston's fresh-machine skill request in active feature tracking
 - [x] Add bundled `machine-bootstrap` skill for setting up new Macs/laptops/virtual agent hosts with You.md identity, skills, stacks, GitHub auth, and project repos

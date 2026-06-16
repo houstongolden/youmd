@@ -110,6 +110,7 @@ BYOK/model routing belongs as an advanced stack capability, not headline positio
 ## What Goes Into A YouStack
 
 - Identity and directives: the user's voice, preferences, constraints, values, current work, and desired agent behavior.
+- Capture and routing rules: how mobile brain dumps, pasted transcripts, SMS/iMessage/Slack events, and audio transcripts should be deduped, segmented, classified, routed, and converted into proposals for the right project or consumer app.
 - Skills and workflows: repeatable modes of work such as planning, research, writing, code review, launches, sales, outreach, creative critique, or expert processes.
 - Tools and APIs: MCP servers, CLI commands, hosted endpoints, API clients, browser tools, converters, schedulers, and connected accounts.
 - Templates and artifacts: docs, briefs, decks, issue templates, prompts, rubrics, launch checklists, content formats, and examples.
@@ -195,6 +196,7 @@ V1 should include:
 - Optional protected calls when static files would leak sensitive IP or cannot perform the action.
 - Declarative personal tool wrappers that can call shared You.md actions, existing APIs, repo files, context links, or connected accounts.
 - A permissions model that answers: who can install this stack, what brain scopes can it retrieve, what shared tools can it call, what mutations require approval, and how can access be revoked?
+- Host-adapter rules for Slack and future voice/mobile inputs: identity labels, draft/send boundaries, channel allowlists, voice/likeness consent, disclosure, audit logs, and revocation.
 
 Later:
 
@@ -213,6 +215,7 @@ Later:
 7. Feedback loop: capture usage, failures, edits, saved memories, repo diffs, and corrections so You.md brain and YouStack versions improve.
 8. Stack portfolio: let one user own many named stacks with separate slugs, domains, skills, sub-agents, workflows, examples, improvement loops, sharing policies, and update channels.
 9. Reference intelligence: daily fetch GStack, GBrain, Agent Scripts, and The Library, summarize upstream commits, and create reviewable You.md tasks for relevant stack/brain/catalog/runtime improvements.
+10. Capture routing: let stacks declare which projects, apps, task destinations, and approval policies apply when a messy mobile/voice/Slack capture belongs to that stack.
 
 ## GitHub Sync Plan
 
@@ -271,11 +274,12 @@ Legacy CLI-only manifest locations (`<dir>/youstack.json`, `<dir>/.you/youstack.
 
 1. Phase 0: Save this PRD, inventory existing features, classify keep/repurpose/expand/modify/defer, and create `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md`.
 2. Phase 1: Harden the You.md brain boundary while preserving existing product value: scopes, provenance, memory quality, deletion, access logs, retrieval contracts, and stack-safe context grants.
-3. Phase 2: Add the YouStack manifest and compiler with basic Claude Code/Codex/Cursor outputs.
-4. Phase 3: Ship GitHub-owned repo sync with DB mirror and webhooks.
-5. Phase 4: Ship private/public sharing via scoped links and stack tokens.
-6. Phase 5: Add OpenClaw, Hermes Agent, and Pi agent adapters only after the first three host targets are reliable.
-7. Phase 6: Expose optional shared API/MCP tools and use the existing You.md web shell/CLI/TUI as a thin runner. A full You.md-branded personalized harness is later, not launch scope.
+3. Phase 1.5: Add capture-aware brain scopes for mobile brain dumps, voice transcripts, SMS/iMessage/Slack events, project-routing proposals, Slack host adapters, and voice/likeness consent boundaries.
+4. Phase 2: Add the YouStack manifest and compiler with basic Claude Code/Codex/Cursor outputs.
+5. Phase 3: Ship GitHub-owned repo sync with DB mirror and webhooks.
+6. Phase 4: Ship private/public sharing via scoped links and stack tokens.
+7. Phase 5: Add OpenClaw, Hermes Agent, Pi agent, Slack, and voice/mobile host adapters only after the first three host targets and safety boundaries are reliable.
+8. Phase 6: Expose optional shared API/MCP tools and use the existing You.md web shell/CLI/TUI as a thin runner. A full You.md-branded personalized harness is later, not launch scope.
 
 ## Planning Questions
 

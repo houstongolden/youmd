@@ -63,7 +63,7 @@ Last Updated: 2026-06-16
 
 ## Product Boundary: Personal API/MCP
 
-You.md is the canonical personal API/MCP and context protocol layer. It is the structured, extensible context API for a person: identity, now, projects, sources, memories, preferences, trust rules, stacks, activity, provenance, and public/private access rules.
+You.md is the canonical personal API/MCP and context protocol layer. It is the structured, extensible context API for a person: identity, now, projects, capture events, sources, memories, preferences, trust rules, stacks, activity, provenance, and public/private access rules.
 
 h.computer is Houston's personal site and reference implementation that should consume this layer, not own it. Creator.new, BAMF.ai, folder.md, MCP clients, local agents, and future products can connect to You.md for identity, voice, preferences, source provenance, project context, memories, trust rules, and selected YouStacks.
 
@@ -84,6 +84,7 @@ External product or agent
 | `identity` | Public profile, links, bio, voice, public bundle | `/api/v1/profiles`, `/ctx`, MCP `get_identity` | Needs tighter versioned resource contract |
 | `now` | Current status, focus, active work | Profile `now`, bundle fields | Needs first-class API/MCP route |
 | `projects` | User/project context, repo status, next actions | CLI project context, MCP project resources, repo mirror | Needs hosted resource contract and grants |
+| `captures` | Mobile/host brain dumps, raw transcripts, inbound messages, routed ideas | Planned in `MOBILE_CAPTURE_AND_PROJECT_ROUTING_2026-06-16.md` | Needs inbox/event/session data model, provider adapters, dedupe/segment/classify pipeline, and review UI |
 | `sources` | Source catalog, provenance, freshness, trust | `sources`, pipeline, immutable raw-source work | Needs user-facing connector grid and refresh policy |
 | `memories` | Private/scoped durable facts | `memories`, MCP `search_memories` | Needs richer writeback approvals and source confidence UX |
 | `preferences` | Communication, writing, model, workflow preferences | Bundle preferences/directives | Needs API/MCP-normalized resource contract |
@@ -120,6 +121,7 @@ Any write from an agent or connected product should record actor, host, app, sta
 - App-level grants for h.computer and Creator.new style consumers.
 - Lovable-simple connector UX that maps sources into structured context with preview, visibility, trust rules, and refresh policy.
 - Source refresh policies, crawlers, crons, monitors, and approval-aware writeback that reuse the immutable raw-source ledger.
+- Provider-agnostic mobile capture gateway for SMS/iMessage, voice transcripts, Slack, CLI/web shell, and future host inputs, with raw artifact preservation, source redaction, project routing, task proposals, and approval-aware external writes.
 - Skill-learning ingestion for screen recordings, transcripts, SOPs, tool/API lists, agent-run logs, and summaries.
 - YouStacks distribution: private/scoped/public repo-backed stacks, host adapters for Claude Code, Codex, Cursor, ChatGPT, MCP clients, and local agents.
 - Stack-level model routing/BYOK policy in YouStack manifests and generated host adapters as an advanced capability, not the headline contract.

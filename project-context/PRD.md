@@ -38,12 +38,13 @@ You.md is the canonical protocol and brain. Other Houston projects can consume i
 
 | Surface | Relationship to You.md |
 |---|---|
-| You.md | Canonical identity/context protocol, durable agent brain, personal API/MCP, YouStacks, trust/provenance, public/private context links |
+| You.md | Canonical identity/context protocol, durable agent brain, personal API/MCP, YouStacks, trust/provenance, public/private context links, universal mobile brain-dump capture and project routing |
 | h.computer | Houston's personal site, personal agent, and reference implementation powered by You.md; reads You.md context and may write useful memories/activity back |
 | Creator.new | BAMF-powered creator builder that can optionally attach You.md identity, voice, preferences, and creator/project context |
 | folder.md | Agent-readable storage and folder conventions that inform YouStack/repo layout and readable project context |
 | BAMF.ai | Creator/social/media engine with its own API/MCP/BAMFStack, content generation, approvals, analytics, and scheduling |
 | BAMF OS | Private/internal BAMF company brain, CRM, client portals, and admin tools; separate from public You.md and BAMF.ai creator flows |
+| BAD/Myo/Hubify/BigBounce and other product apps | Domain consumers of routed capture output; they own their vertical experiences, while You.md owns the shared inbox, memory, routing, permissions, and audit substrate |
 
 ---
 
@@ -110,13 +111,22 @@ The compiled output — a portable identity file containing:
 - Refresh modes: manual, webhook, hourly, daily, weekly, and monitored update summaries
 - First connector targets: GitHub, public URLs/RSS, raw markdown/OKF directories, custom webhooks, custom JSON endpoints, and generic connected-app grants for future product integrations
 
-### 3.7 Skill Learning and YouStack Improvement
+### 3.7 Mobile Capture and Project Routing
+- Brain-dump inbox for Apple Watch/iPhone voice-to-text, SMS/iMessage, pasted transcripts, future audio transcripts, Slack messages, CLI/web shell messages, and other host-adapter inputs
+- Raw artifact first: store the original transcript privately with redacted source metadata, timestamp, provider/channel, source hash, inferred session, project hints, and provenance
+- Processing pipeline: dedupe repeated dictation chunks, segment into ideas, classify by project/consumer/confidence, extract memory candidates, extract tasks/next actions, and keep unclear fragments in a clarification queue
+- Provider-agnostic messaging gateway: evaluate Sendblue for iMessage/SMS/RCS capture, but normalize all inbound messages into You.md before any app-specific handling
+- Project-specific consumers: BAD owns workout/run transcript sessions; Myo owns health/body/productivity capture; h.computer displays Houston's personal stream; Hubify/BigBounce, Creator.new, BAMF.ai, Fantasy.is, and BAMF site receive routed project work when relevant
+- External writes require approval unless a user explicitly configures a scoped automation rule. Notion, GitHub issues, project boards, CRM, Slack sends, and product-app writes should land as proposals by default
+- Voice clone and Slack host adapters belong behind explicit consent, disclosure, action scopes, revocation, and audit logs
+
+### 3.8 Skill Learning and YouStack Improvement
 - Convert human screen recordings, transcripts, SOPs, tool/API lists, agent-run logs, summaries, corrections, and repeated workflows into reusable skills
 - Draft `SKILL.md`, workflows, prompts, tests, docs, and host adapter updates into a selected YouStack
 - Require approval and smoke tests before installing, sharing, or publishing learned skills
 - Preserve provenance so every learned workflow explains what source material, run log, or human correction created it
 
-### 3.8 Stack-Level Model Routing
+### 3.9 Stack-Level Model Routing
 - YouStacks should carry model routing policy, not just human-written instructions
 - Policy fields should cover orchestrator model, lead model, worker models, fallback models, BYOK/provider preferences, cost posture, risk thresholds, and approval gates
 - Host adapters should translate that policy into Claude Code, Codex, Cursor, ChatGPT, MCP-client, and local-agent guidance
@@ -357,6 +367,7 @@ Platform-specific prompts for Claude, ChatGPT, Cursor, Copilot, and universal fo
 3. Monitored updates: immutable raw versions, source health, change summaries, owner approval, provenance-rich writeback, and freshness states.
 4. Context-link and MCP polish: scope preview, revocation, readiness states, resource-specific grants, and clearer hosted/local fallback behavior.
 5. Public/private context modes: public identity, scoped links, private memories, private project context, stack-specific reads, and token-gated connected products.
+6. Mobile brain-dump capture: provider-agnostic SMS/iMessage/voice/Slack inbound adapter research, raw transcript inbox, dedupe/segment/classify pipeline, project-routing/task proposal UI, BAD workout handoff, and approval model for external writes.
 
 ### Next (v1.2) — YouStacks distribution and skill learning
 1. YouStacks distribution: private, scoped, public-open, repo-backed, installable, smoke-tested, and host-adapted.

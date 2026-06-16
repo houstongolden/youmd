@@ -6,6 +6,22 @@ Last Updated: 2026-06-16
 
 ## 2026-06-16 — Preserve h.computer platform ideas in You.md
 
+### 129. Add You.md mobile brain-dump inbox, voice clone, Slack, and project routing direction
+**Status:** IN PROGRESS (product context captured; implementation pending)
+**Verified:** PARTIAL (docs/product-context validation passed; implementation pending)
+**Production Verified:** NO
+**Source:** 2026-06-16 Part 2 brain dump delegation: mobile Apple Watch/iPhone voice-to-text, SMS/iMessage, pasted transcripts, Sendblue-or-provider-agnostic capture, voice clone/ElevenLabs, Slack host adapter, project routing, and safe action boundaries.
+**Actionable Scope:**
+1. Preserve raw intent safely without private phone numbers, secrets, API keys, or provider credentials. **DONE:** `project-context/prompts/2026-06-16-mobile-capture-voice-slack-project-routing.md`.
+2. Add a dated product memo for the mobile capture and routing direction. **DONE:** `project-context/MOBILE_CAPTURE_AND_PROJECT_ROUTING_2026-06-16.md`.
+3. Keep You.md as the universal capture/memory/project-routing/personal API/MCP/YouStacks owner; BAD, Myo, h.computer, Hubify/BigBounce, Creator.new, BAMF.ai, Fantasy.is, and BAMF site are consumers. **DONE in docs.**
+4. Capture Sendblue as an iMessage/SMS/RCS adapter candidate while keeping the gateway provider-agnostic. **DONE in docs; provider research pending.**
+5. Define the raw-first processing pipeline: raw artifact, dedupe, segment, classify, memory extraction, task extraction, external-write proposals, and clarification queue. **DONE in docs.**
+6. Add voice clone/ElevenLabs direction with consent, disclosure, labeling/watermarking decisions, action scopes, audit logs, and revocation. **DONE in docs; full safety spec pending.**
+7. Add Slack host adapter direction with workspace/channel allowlists, identity labels, draft/send modes, action scopes, client/team safety controls, audit logs, and revocation. **DONE in docs; full adapter spec pending.**
+8. Add a concise task list for provider research, data model, pipeline, routing UI, approval model, BAD handoff, Slack spec, and voice safety spec. **DONE in TODO/memo.**
+**Progress (2026-06-16):** Added the mobile capture memo and sanitized prompt capture, updated PRD/Architecture/Personal API/Connector/YouStacks product docs, added `captures`/mobile capture direction to scope planning, and tracked follow-up tasks for provider-agnostic gateway research, inbound transcript model, dedupe/segment/classify pipeline, project-routing UI, external-write approvals, BAD workout handoff, Slack host adapter, and voice clone/likeness safety spec. Validation passed `npm run docs:check`, `npm run agent-docs:lint`, `git diff --check`, and a focused phone/secret scan on the new capture files.
+
 ### 128. Add a You.md machine-bootstrap skill for new computer project sync
 **Status:** IN PROGRESS (first CLI/skill slice complete locally; GitHub URL hydration + production registry pending)
 **Verified:** PARTIAL (focused CLI tests/build/dry-run passed)

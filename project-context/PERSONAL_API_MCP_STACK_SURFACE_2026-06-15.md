@@ -92,6 +92,14 @@ For You.md, that means:
 5. Agent runs should eventually emit plan steps and evidence into Convex so the
    shell, sidebar, and MCP clients see the same live state.
 
+The 2026-06-16 mobile-capture direction extends this gateway model to a
+brain-dump inbox. Apple Watch/iPhone voice-to-text, SMS/iMessage providers such
+as Sendblue, Slack, manual paste, audio transcripts, CLI, and web shell messages
+should normalize into one private capture/session queue. You.md saves raw
+artifacts first, dedupes repeated dictation chunks, segments ideas, routes them
+to projects and consumer apps, proposes tasks/memories/doc updates, and requires
+approval before external writes unless a scoped automation rule exists.
+
 ## UI IA
 
 Left sidebar order should favor value/frequency:
@@ -117,9 +125,12 @@ surface.
 2. Add token scopes for personal API/MCP extensions: `sessions:read`,
    `sessions:write`, `stacks:read`, `stacks:write`, `tools:call`,
    `functions:call`, `sources:read`, `sources:write`.
-3. Add manifest-backed custom endpoint/function/tool definitions with
+3. Add capture resources and scopes: `captures:read`, `captures:write`,
+   `captures:route`, `tasks:propose`, and `external_actions:approve`, with raw
+   phone/channel identifiers redacted from non-private logs.
+4. Add manifest-backed custom endpoint/function/tool definitions with
    validation, generated docs, smoke checks, and redaction review.
-4. Add Convex `agent_runs`, `agent_plan_steps`, and `queued_agent_messages` so
+5. Add Convex `agent_runs`, `agent_plan_steps`, and `queued_agent_messages` so
    sessions become a true realtime communication gateway.
-5. Expose session search and replay through owner auth, scoped API tokens, and
+6. Expose session/capture search and replay through owner auth, scoped API tokens, and
    MCP resources with honest readiness states.
