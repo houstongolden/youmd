@@ -218,7 +218,7 @@ export function TerminalInput({
             spellCheck={false}
             enterKeyHint="send"
             className="min-h-11 flex-1 resize-none border-0 bg-transparent px-0 py-3 font-mono text-[13px] leading-5 text-foreground outline-none ring-0 caret-accent placeholder:text-muted-foreground/30 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
-            style={{ maxHeight: "160px" }}
+            style={{ maxHeight: "160px", outline: "none", boxShadow: "none" }}
           />
           <button
             type="button"
