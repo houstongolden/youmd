@@ -8,6 +8,8 @@
 - Added a bottom-row `+` control for attaching images and readable text/code files, reusing the existing image-paste path and inserting text attachments into the prompt as fenced context.
 - Added a `cmd/ctrl shift m` voice affordance that starts browser speech recognition where supported and falls back to a `/voice` command hint for the future Whisper-backed transcription slice.
 - Verified locally with `npm run lint` (existing warnings only; radius guard passed) and `npm run build`.
+- Pushed to `main`; Vercel deployment `dpl_7D9YbyHQDKBWehQ2VxnGPiSL8MTm` reached Ready and is aliased to `https://www.you.md` / `https://you.md`.
+- Authenticated production browser QA confirmed the composer has zero `>` prompt glyphs, the attach and voice controls render, the focused textarea has `outline: none` and `box-shadow: none`, and only the outer composer shell carries the orange outline.
 
 ## 2026-06-15 — Shell rail and top chrome polish
 
