@@ -16,6 +16,15 @@ type PublicContextSection = {
   value: string;
 };
 
+type PublicChatSettings = {
+  enabled: boolean;
+  style: "concise" | "voice" | "consultive";
+  allowedFields: string[];
+  capabilities: string[];
+  customPrompt: string;
+  showSources: boolean;
+};
+
 const privateContextOmissions = [
   "private memories",
   "private loop reports",
@@ -24,6 +33,24 @@ const privateContextOmissions = [
   "owner-only agent logs",
   "scoped API/MCP grants",
 ];
+
+const PUBLIC_CHAT_FIELD_LABELS = [
+  "identity.name",
+  "identity.tagline",
+  "identity.location",
+  "identity.bio",
+  "analysis.voice_summary",
+  "preferences.agent.tone",
+  "now.focus",
+  "projects",
+  "values",
+  "topics",
+  "skills",
+  "links",
+] as const;
+
+const DEFAULT_PUBLIC_CHAT_FIELDS = [...PUBLIC_CHAT_FIELD_LABELS];
+const DEFAULT_PUBLIC_CHAT_CAPABILITIES = ["current_work", "expertise", "voice", "links", "api"];
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -49,6 +76,24 @@ function firstString(...values: unknown[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function publicChatSettings(data: Record<string, unknown>): PublicChatSettings {
+  const preferences = asRecord(data.preferences);
+  const raw = asRecord(preferences.public_chat ?? preferences.publicChat);
+  const style = asString(raw.style);
+  const allowedFields = asStringList(raw.allowedFields, 24)
+    .filter((field) => PUBLIC_CHAT_FIELD_LABELS.includes(field as (typeof PUBLIC_CHAT_FIELD_LABELS)[number]));
+  const capabilities = asStringList(raw.capabilities, 12);
+
+  return {
+    enabled: raw.enabled !== false,
+    style: style === "voice" || style === "consultive" ? style : "concise",
+    allowedFields: allowedFields.length > 0 ? allowedFields : DEFAULT_PUBLIC_CHAT_FIELDS,
+    capabilities: capabilities.length > 0 ? capabilities : DEFAULT_PUBLIC_CHAT_CAPABILITIES,
+    customPrompt: truncate(asString(raw.customPrompt), 360),
+    showSources: raw.showSources !== false,
+  };
 }
 
 function truncate(text: string, max = 220): string {
@@ -88,6 +133,7 @@ function wants(message: string, keywords: string[]): boolean {
 function buildSections(profile: PublicProfilePayload): {
   name: string;
   data: Record<string, unknown>;
+  settings: PublicChatSettings;
   sections: PublicContextSection[];
   followups: string[];
 } {
@@ -107,6 +153,8 @@ function buildSections(profile: PublicProfilePayload): {
   const topics = asStringList(analysis.topics, 8);
   const skills = asStringList(identity.skills, 8);
   const links = linkSummaries(data.links ?? identity.links);
+  const settings = publicChatSettings(data);
+  const allowed = new Set(settings.allowedFields);
 
   const sections: PublicContextSection[] = [
     { label: "identity.name", value: name },
@@ -121,11 +169,12 @@ function buildSections(profile: PublicProfilePayload): {
     { label: "topics", value: topics.join(", ") },
     { label: "skills", value: skills.join(", ") },
     { label: "links", value: links.join("; ") },
-  ].filter((section) => section.value);
+  ].filter((section) => section.value && (section.label === "identity.name" || allowed.has(section.label)));
 
   return {
     name,
     data,
+    settings,
     sections,
     followups: [
       `What is ${name} building right now?`,
@@ -142,7 +191,7 @@ function buildPublicProfileConversationResponse(
   message: string
 ) {
   const normalizedMessage = message.toLowerCase();
-  const { name, data, sections, followups } = buildSections(profile);
+  const { name, data, settings, sections, followups } = buildSections(profile);
   const identity = asRecord(data.identity);
   const analysis = asRecord(data.analysis);
 
@@ -186,8 +235,19 @@ function buildPublicProfileConversationResponse(
   const endpointHint = `Agents can read https://you.md/${username}/you.json or https://you.md/${username}/you.txt for the same public brain surface.`;
   const voiceSummary = asString(analysis.voice_summary);
   const publicName = firstString(asString(identity.name), name, `@${username}`);
+  const styleLine =
+    settings.style === "voice"
+      ? `Owner style: answer in ${publicName}'s public voice and personality signals, without pretending to be them.`
+      : settings.style === "consultive"
+      ? `Owner style: be useful and consultive, grounded only in public context.`
+      : "Owner style: concise public-context summary.";
+  const customLine = settings.customPrompt
+    ? `Owner note: ${settings.customPrompt}`
+    : "";
   const answer = [
     `From ${publicName}'s public You.md context:`,
+    styleLine,
+    customLine,
     summary || "- No detailed public context has been published yet.",
     voiceSummary && wants(normalizedMessage, ["voice", "style", "advice", "consult"])
       ? `Public voice note: ${truncate(voiceSummary, 260)}`
@@ -200,8 +260,8 @@ function buildPublicProfileConversationResponse(
     answer,
     username,
     subject: publicName,
-    voice_mode: "public-context-summary",
-    sources: [
+    voice_mode: `public-context-${settings.style}`,
+    sources: settings.showSources ? [
       {
         label: "public you.json",
         href: `https://you.md/${username}/you.json`,
@@ -212,8 +272,14 @@ function buildPublicProfileConversationResponse(
         href: `https://you.md/${username}/you.txt`,
         scope: "public",
       },
-    ],
+    ] : [],
     public_context_used: compact.map((section) => section.label),
+    capabilities: settings.capabilities,
+    owner_public_chat_settings: {
+      style: settings.style,
+      showSources: settings.showSources,
+      allowedFields: settings.allowedFields,
+    },
     omitted_private_context: privateContextOmissions,
     suggested_followups: followups,
   };
@@ -302,6 +368,14 @@ export async function POST(
     const profile = await fetchPublicProfile(trimmedUsername);
     if (!profile) {
       return NextResponse.json({ error: "profile_not_found" }, { status: 404, headers: corsHeaders() });
+    }
+    const data = asRecord(profile.youJson ?? profile);
+    const settings = publicChatSettings(data);
+    if (!settings.enabled) {
+      return NextResponse.json(
+        { error: "public_chat_disabled", message: "This profile owner has disabled public profile chat." },
+        { status: 403, headers: corsHeaders() }
+      );
     }
 
     return NextResponse.json(

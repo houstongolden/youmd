@@ -47,8 +47,15 @@ type PublicConversationResponse = {
   voice_mode: string;
   sources: Array<{ label: string; href: string; scope: string }>;
   public_context_used: string[];
+  capabilities?: string[];
   omitted_private_context: string[];
   suggested_followups: string[];
+};
+
+type PublicChatSettings = {
+  enabled: boolean;
+  style: "concise" | "voice" | "consultive";
+  capabilities: string[];
 };
 
 /* ── Helpers ──────────────────────────────────────────────── */
@@ -122,22 +129,47 @@ function normalizeProfileYouStacks(value: unknown): ProfileYouStack[] {
   });
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function normalizePublicChatSettings(value: unknown): PublicChatSettings {
+  const raw = asRecord(value);
+  const style = raw.style === "concise" || raw.style === "consultive" || raw.style === "voice"
+    ? raw.style
+    : "voice";
+  const capabilities = Array.isArray(raw.capabilities)
+    ? raw.capabilities.filter((item): item is string => typeof item === "string" && item.trim().length > 0).slice(0, 8)
+    : ["current_work", "expertise", "voice", "links", "api"];
+
+  return {
+    enabled: raw.enabled !== false,
+    style,
+    capabilities,
+  };
+}
+
 function PublicProfileChatBox({
   username,
   name,
+  settings,
 }: {
   username: string;
   name: string;
+  settings: PublicChatSettings;
 }) {
   const [message, setMessage] = useState("");
   const [response, setResponse] = useState<PublicConversationResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const suggestions = [
-    `What is ${name} building right now?`,
-    `What should I ask ${name} about?`,
-    `Summarize ${name}'s public expertise.`,
-  ];
+    settings.capabilities.includes("current_work") ? `What is ${name} building right now?` : "",
+    settings.capabilities.includes("expertise") ? `What should I ask ${name} about?` : "",
+    settings.capabilities.includes("voice") ? `How does ${name} usually think and communicate?` : "",
+    settings.capabilities.includes("api") ? `Which public endpoints can agents read for @${username}?` : "",
+  ].filter(Boolean).slice(0, 3);
 
   const ask = useCallback(async (prompt?: string) => {
     const question = (prompt ?? message).trim();
@@ -174,7 +206,9 @@ function PublicProfileChatBox({
           <p className="text-[hsl(var(--accent))] uppercase tracking-[0.16em] text-[9px]">public conversation api</p>
           <p className="mt-1 text-[hsl(var(--text-primary))] text-[13px]">ask @{username}&apos;s public You.md</p>
         </div>
-        <span className="text-[hsl(var(--text-secondary))] opacity-45 text-[10px]">public context only</span>
+        <span className="text-[hsl(var(--text-secondary))] opacity-45 text-[10px]">
+          {settings.style} / public context only
+        </span>
       </div>
 
       <div className="mt-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "var(--radius)" }}>
@@ -527,6 +561,9 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
   const topics: string[] = data.analysis?.topics || [];
   const voice = data.analysis?.voice_summary || "";
   const preferences = data.preferences || {};
+  const publicChatSettings = normalizePublicChatSettings(
+    preferences.public_chat ?? preferences.publicChat
+  );
   const roles: string[] = data.identity?.roles || [];
   const sourceCount = data.sources?.length || Object.keys(data.identity?.links || {}).length || 0;
   const projectCount = data.now?.projects?.length || 0;
@@ -737,9 +774,13 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
             )}
           </div>
 
-          {!showRawJson && (
+          {!showRawJson && publicChatSettings.enabled && (
             <div className="mt-3">
-              <PublicProfileChatBox username={username} name={name as string} />
+              <PublicProfileChatBox
+                username={username}
+                name={name as string}
+                settings={publicChatSettings}
+              />
             </div>
           )}
         </motion.section>

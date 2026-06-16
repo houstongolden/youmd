@@ -244,4 +244,68 @@ describe("HOSTED_MCP_TOOLS dispatch equivalence — ask_public_profile", () => {
     expect(typeof spec.handler).toBe("function");
     expect(spec.description).toContain("public-context-only");
   });
+
+  it("honors public chat owner field controls", async () => {
+    const t = convexTest(schema);
+    await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", {
+        clerkId: "clerk_public_chat_owner",
+        username: "public-chat-owner",
+        email: "public-chat@example.com",
+        plan: "free",
+        createdAt: Date.now(),
+      });
+      await ctx.db.insert("profiles", {
+        username: "public-chat-owner",
+        ownerId: userId,
+        isClaimed: true,
+        name: "Public Chat Owner",
+        tagline: "should be hidden by field controls",
+        youJson: {
+          identity: {
+            name: "Public Chat Owner",
+            tagline: "should be hidden by field controls",
+            bio: { short: "public bio only" },
+          },
+          projects: [
+            {
+              name: "Visible Project",
+              status: "active",
+              description: "this should appear",
+            },
+          ],
+          preferences: {
+            public_chat: {
+              enabled: true,
+              style: "consultive",
+              allowedFields: ["projects"],
+              capabilities: ["current_work"],
+              showSources: false,
+            },
+          },
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
+    const spec = HOSTED_MCP_TOOLS.find((tool) => tool.name === "ask_public_profile")!;
+    const result = await spec.handler(
+      {
+        runQuery: (fn, args) => t.query(fn, args),
+        runMutation: (fn, args) => t.mutation(fn, args),
+      } as never,
+      { username: "public-chat-owner", message: "What is this person building?" },
+      null
+    );
+
+    expect(result.isError).toBe(false);
+    const payload = JSON.parse(result.content[0].text);
+    expect(payload.voice_mode).toBe("public-context-consultive");
+    expect(payload.public_context_used).toContain("projects");
+    expect(payload.public_context_used).not.toContain("identity.tagline");
+    expect(payload.sources).toEqual([]);
+    expect(payload.answer).toContain("Visible Project");
+    expect(payload.answer).not.toContain("should be hidden by field controls");
+  });
 });

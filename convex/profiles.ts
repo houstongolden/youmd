@@ -23,6 +23,28 @@ const RESERVED_USERNAMES = [
   "shell", "sign-in", "sign-up", "spec", "status", "support", "terms", "www",
 ];
 
+const PUBLIC_CHAT_FIELDS = [
+  "identity.tagline",
+  "identity.location",
+  "identity.bio",
+  "analysis.voice_summary",
+  "preferences.agent.tone",
+  "now.focus",
+  "projects",
+  "values",
+  "topics",
+  "skills",
+  "links",
+] as const;
+
+const PUBLIC_CHAT_CAPABILITIES = [
+  "current_work",
+  "expertise",
+  "voice",
+  "links",
+  "api",
+] as const;
+
 function generateSessionToken(): string {
   // 32 lowercase base36 chars (CSPRNG) — keep lowercase shape for URL/display
   return secureRandomString(32, LOWERCASE_BASE36_ALPHABET);
@@ -539,6 +561,97 @@ export const updateProfile = mutation({
     await ctx.db.patch(args.profileId, updates);
 
     return { success: true };
+  },
+});
+
+/** Owner controls for the public profile chat/API/MCP surface. */
+export const updatePublicChatSettings = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    profileId: v.id("profiles"),
+    enabled: v.boolean(),
+    style: v.union(v.literal("concise"), v.literal("voice"), v.literal("consultive")),
+    allowedFields: v.array(v.string()),
+    capabilities: v.array(v.string()),
+    customPrompt: v.optional(v.string()),
+    showSources: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("user not found");
+
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile || profile.ownerId !== user._id) {
+      throw new Error("not the profile owner");
+    }
+
+    const allowedFields = args.allowedFields
+      .filter((field) => (PUBLIC_CHAT_FIELDS as readonly string[]).includes(field))
+      .slice(0, PUBLIC_CHAT_FIELDS.length);
+    const capabilities = args.capabilities
+      .filter((capability) => (PUBLIC_CHAT_CAPABILITIES as readonly string[]).includes(capability))
+      .slice(0, PUBLIC_CHAT_CAPABILITIES.length);
+
+    const latestPublished = await ctx.db
+      .query("bundles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect()
+      .then((bundles) =>
+        bundles
+          .filter((bundle) => bundle.isPublished)
+          .sort((a, b) => b.version - a.version)[0] ?? null
+      );
+
+    const currentYouJson =
+      profile.youJson && typeof profile.youJson === "object" && !Array.isArray(profile.youJson)
+        ? profile.youJson as Record<string, unknown>
+        : latestPublished?.youJson && typeof latestPublished.youJson === "object" && !Array.isArray(latestPublished.youJson)
+        ? latestPublished.youJson as Record<string, unknown>
+        : {};
+    const currentPreferences =
+      currentYouJson.preferences && typeof currentYouJson.preferences === "object" && !Array.isArray(currentYouJson.preferences)
+        ? currentYouJson.preferences as Record<string, unknown>
+        : {};
+
+    const publicChat = {
+      enabled: args.enabled,
+      style: args.style,
+      allowedFields: allowedFields.length > 0 ? allowedFields : [...PUBLIC_CHAT_FIELDS],
+      capabilities: capabilities.length > 0 ? capabilities : [...PUBLIC_CHAT_CAPABILITIES],
+      customPrompt: (args.customPrompt ?? "").trim().slice(0, 360),
+      showSources: args.showSources,
+      updatedAt: Date.now(),
+    };
+
+    const nextYouJson = {
+      ...currentYouJson,
+      preferences: {
+        ...currentPreferences,
+        public_chat: publicChat,
+      },
+    };
+
+    const profilePreferences =
+      profile.preferences && typeof profile.preferences === "object" && !Array.isArray(profile.preferences)
+        ? profile.preferences as Record<string, unknown>
+        : {};
+
+    await ctx.db.patch(args.profileId, {
+      youJson: nextYouJson,
+      preferences: {
+        ...profilePreferences,
+        public_chat: publicChat,
+      },
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, public_chat: publicChat };
   },
 });
 

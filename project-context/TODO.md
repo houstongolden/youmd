@@ -54,7 +54,8 @@ PRD Version: 2.3
 - [ ] Add owner-approved public profile rendering for selected DSI catalog components
 - [x] Add secure public profile chat widget and `/api/v1/profiles/:username/conversation` first slice with public-context-only answers and provenance
 - [x] Add hosted MCP parity for public profile conversation through `ask_public_profile`
-- [ ] Add LLM voice tuning, owner controls, and optional local MCP parity for public profile conversation endpoints
+- [x] Add owner controls for public profile chat style, public field allow-list, advertised capabilities, source-link return, and enable/disable state
+- [ ] Add LLM voice tuning and optional local MCP parity for public profile conversation endpoints
 
 ### 2026-06-16 — Connector catalog and private API/MCP control center
 - [x] Turn the Connectors pane into a clear owner control center with `api/mcp`, `apps`, `crawlers/loops`, and `repo` tabs

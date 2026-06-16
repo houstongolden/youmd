@@ -17,11 +17,20 @@ const COLORS = {
   border: "#2E2E2E",
 };
 
-// JetBrains Mono is required for the ASCII portrait to align — bundled
-// locally so the edge function makes zero extra network calls per render.
-const jetbrainsMono = fetch(
-  new URL("../../../assets/fonts/JetBrainsMono-Regular.ttf", import.meta.url)
-).then((res) => res.arrayBuffer());
+// JetBrains Mono keeps the ASCII portrait aligned. In Next dev, the font asset
+// can be rewritten to a relative static URL before the OG edge renderer runs, so
+// load it lazily and fall back to the renderer default instead of crashing.
+async function loadJetBrainsMono(): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(
+      new URL("../../../assets/fonts/JetBrainsMono-Regular.ttf", import.meta.url)
+    );
+    if (!res.ok) return null;
+    return await res.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
 
 interface AsciiPortrait {
   lines: string[];
@@ -106,7 +115,7 @@ export default async function OgImage({
   const { username } = await params;
   const [profile, fontData] = await Promise.all([
     fetchProfile(username),
-    jetbrainsMono,
+    loadJetBrainsMono(),
   ]);
 
   const displayName =
@@ -259,14 +268,16 @@ export default async function OgImage({
     ),
     {
       ...size,
-      fonts: [
-        {
-          name: "JetBrains Mono",
-          data: fontData,
-          style: "normal",
-          weight: 400,
-        },
-      ],
+      fonts: fontData
+        ? [
+            {
+              name: "JetBrains Mono",
+              data: fontData,
+              style: "normal",
+              weight: 400,
+            },
+          ]
+        : [],
       headers: {
         // OG images don't change unless the profile changes. Social media
         // crawlers (Facebook, Twitter, LinkedIn, Slack, etc.) hammer this

@@ -25,6 +25,7 @@ type Scope = "public" | "full";
 type Ttl = "1h" | "24h" | "7d" | "30d" | "90d" | "never";
 type MaxUses = "unlimited" | "1" | "5" | "10" | "25";
 type OutputFormat = "url" | "prompt";
+type PublicChatStyle = "concise" | "voice" | "consultive";
 
 interface PreviewLink {
   token: string;
@@ -32,6 +33,15 @@ interface PreviewLink {
   useCount: number;
   expiresAt: string;
   isExpired: boolean;
+}
+
+interface PublicChatSettings {
+  enabled: boolean;
+  style: PublicChatStyle;
+  allowedFields: string[];
+  capabilities: string[];
+  customPrompt: string;
+  showSources: boolean;
 }
 
 interface ProjectOption {
@@ -106,6 +116,71 @@ const MAX_USES_OPTIONS: { value: MaxUses; label: string }[] = [
 ];
 
 const CONTEXT_LINK_ORIGIN = "https://www.you.md";
+
+const PUBLIC_CHAT_FIELD_OPTIONS = [
+  { value: "identity.tagline", label: "tagline" },
+  { value: "identity.location", label: "location" },
+  { value: "identity.bio", label: "bio" },
+  { value: "analysis.voice_summary", label: "voice" },
+  { value: "preferences.agent.tone", label: "tone" },
+  { value: "now.focus", label: "now" },
+  { value: "projects", label: "projects" },
+  { value: "values", label: "values" },
+  { value: "topics", label: "topics" },
+  { value: "skills", label: "skills" },
+  { value: "links", label: "links" },
+] as const;
+
+const PUBLIC_CHAT_CAPABILITY_OPTIONS = [
+  { value: "current_work", label: "current work" },
+  { value: "expertise", label: "expertise" },
+  { value: "voice", label: "voice" },
+  { value: "links", label: "links" },
+  { value: "api", label: "api/mcp" },
+] as const;
+
+const DEFAULT_PUBLIC_CHAT_SETTINGS: PublicChatSettings = {
+  enabled: true,
+  style: "voice",
+  allowedFields: PUBLIC_CHAT_FIELD_OPTIONS.map((field) => field.value),
+  capabilities: PUBLIC_CHAT_CAPABILITY_OPTIONS.map((capability) => capability.value),
+  customPrompt: "",
+  showSources: true,
+};
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function normalizePublicChatSettings(value: unknown): PublicChatSettings {
+  const raw = asRecord(value);
+  const allowedFields = Array.isArray(raw.allowedFields)
+    ? raw.allowedFields.filter((field): field is string =>
+        typeof field === "string" &&
+        PUBLIC_CHAT_FIELD_OPTIONS.some((option) => option.value === field)
+      )
+    : [];
+  const capabilities = Array.isArray(raw.capabilities)
+    ? raw.capabilities.filter((capability): capability is string =>
+        typeof capability === "string" &&
+        PUBLIC_CHAT_CAPABILITY_OPTIONS.some((option) => option.value === capability)
+      )
+    : [];
+  const style = raw.style === "concise" || raw.style === "consultive" || raw.style === "voice"
+    ? raw.style
+    : DEFAULT_PUBLIC_CHAT_SETTINGS.style;
+
+  return {
+    enabled: raw.enabled !== false,
+    style,
+    allowedFields: allowedFields.length > 0 ? allowedFields : DEFAULT_PUBLIC_CHAT_SETTINGS.allowedFields,
+    capabilities: capabilities.length > 0 ? capabilities : DEFAULT_PUBLIC_CHAT_SETTINGS.capabilities,
+    customPrompt: typeof raw.customPrompt === "string" ? raw.customPrompt : "",
+    showSources: raw.showSources !== false,
+  };
+}
 
 // ── Link preview modal (kept from previous version) ─────────────────────
 
@@ -272,9 +347,11 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
     clerkId && userId ? { clerkId, userId, limit: 3 } : "skip"
   );
   const latestBundle = useQuery(api.bundles.getLatestBundle, clerkId && userId ? { clerkId, userId } : "skip");
+  const publicProfile = useQuery(api.profiles.getPublicProfile, { username });
   const links = useQuery(api.contextLinks.listLinks, clerkId ? { clerkId } : "skip");
   const createLink = useMutation(api.contextLinks.createLink);
   const revokeLink = useMutation(api.contextLinks.revokeLink);
+  const updatePublicChatSettings = useMutation(api.profiles.updatePublicChatSettings);
   const agentStats = useQuery(
     api.private.getAgentStats,
     profileId ? { profileId } : "skip"
@@ -305,6 +382,10 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
   const [showAllLinks, setShowAllLinks] = useState(false);
   const [previewLink, setPreviewLink] = useState<PreviewLink | null>(null);
   const [confirmRevokeLink, setConfirmRevokeLink] = useState<string | null>(null);
+  const [publicChatSettings, setPublicChatSettings] = useState<PublicChatSettings>(DEFAULT_PUBLIC_CHAT_SETTINGS);
+  const [savingPublicChat, setSavingPublicChat] = useState(false);
+  const [publicChatStatus, setPublicChatStatus] = useState<string | null>(null);
+  const [publicChatError, setPublicChatError] = useState<string | null>(null);
 
   // ── Preview-as-agent state ────────────────────────────────────────────
   const [agentPreviewOpen, setAgentPreviewOpen] = useState(false);
@@ -314,6 +395,12 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
 
   const liveBundle = recentBundles?.find((b) => b.isPublished);
   const publicProfileUrl = `https://you.md/${username}`;
+
+  useEffect(() => {
+    const youJson = asRecord(publicProfile?.youJson);
+    const preferences = asRecord(youJson.preferences);
+    setPublicChatSettings(normalizePublicChatSettings(preferences.public_chat ?? preferences.publicChat));
+  }, [publicProfile?.youJson]);
 
   // Extract projects from the latest bundle's youJson for the scope dropdown
   const projectOptions: ProjectOption[] = useMemo(() => {
@@ -410,6 +497,58 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
     navigator.clipboard.writeText(outputText);
     setCopiedPrimary(true);
     setTimeout(() => setCopiedPrimary(false), 2000);
+  };
+
+  const togglePublicChatField = (field: string) => {
+    setPublicChatSettings((current) => {
+      const nextFields = current.allowedFields.includes(field)
+        ? current.allowedFields.filter((item) => item !== field)
+        : [...current.allowedFields, field];
+      return {
+        ...current,
+        allowedFields: nextFields.length > 0 ? nextFields : current.allowedFields,
+      };
+    });
+  };
+
+  const togglePublicChatCapability = (capability: string) => {
+    setPublicChatSettings((current) => {
+      const nextCapabilities = current.capabilities.includes(capability)
+        ? current.capabilities.filter((item) => item !== capability)
+        : [...current.capabilities, capability];
+      return {
+        ...current,
+        capabilities: nextCapabilities.length > 0 ? nextCapabilities : current.capabilities,
+      };
+    });
+  };
+
+  const handleSavePublicChat = async () => {
+    if (!profileId) {
+      setPublicChatError("publish or claim a profile before saving public chat controls.");
+      return;
+    }
+    setSavingPublicChat(true);
+    setPublicChatStatus(null);
+    setPublicChatError(null);
+    try {
+      await updatePublicChatSettings({
+        clerkId,
+        profileId,
+        enabled: publicChatSettings.enabled,
+        style: publicChatSettings.style,
+        allowedFields: publicChatSettings.allowedFields,
+        capabilities: publicChatSettings.capabilities,
+        customPrompt: publicChatSettings.customPrompt,
+        showSources: publicChatSettings.showSources,
+      });
+      setPublicChatStatus("public profile chat settings saved");
+      setTimeout(() => setPublicChatStatus(null), 2400);
+    } catch (err) {
+      setPublicChatError(err instanceof Error ? err.message : "failed to save public chat settings");
+    } finally {
+      setSavingPublicChat(false);
+    }
   };
 
   // ── Preview as agent (for the just-created link) ──────────────────────
@@ -509,6 +648,179 @@ export function SharePane({ username, userId, clerkId, profileId, plan }: ShareP
             </div>
           </div>
         </div>
+
+        <SectionLabel>public profile chat</SectionLabel>
+        <div
+          className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4 mb-4"
+          style={{ borderRadius: "var(--radius)" }}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-mono text-[12px] text-[hsl(var(--text-primary))]">
+                talk-to-me widget + public conversation API
+              </p>
+              <p className="mt-1 max-w-xl font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
+                controls what visitors and unauthenticated MCP clients can ask from your public You.md only. private memories, reports, connected apps, source snapshots, and grants stay omitted.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setPublicChatSettings((current) => ({
+                  ...current,
+                  enabled: !current.enabled,
+                }))
+              }
+              className={`border px-2.5 py-1.5 font-mono text-[10px] transition-colors ${
+                publicChatSettings.enabled
+                  ? "border-[hsl(var(--success))]/55 text-[hsl(var(--success))] bg-[hsl(var(--success))]/5"
+                  : "border-[hsl(var(--accent))]/55 text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/5"
+              }`}
+              style={{ borderRadius: "var(--radius)" }}
+            >
+              {publicChatSettings.enabled ? "enabled" : "disabled"}
+            </button>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {([
+              ["concise", "concise", "short public answers"],
+              ["voice", "voice", "use public voice signals"],
+              ["consultive", "consult", "helpful public advice"],
+            ] as const).map(([value, label, detail]) => {
+              const active = publicChatSettings.style === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setPublicChatSettings((current) => ({ ...current, style: value }))}
+                  className={`border px-3 py-2 text-left transition-colors ${
+                    active
+                      ? "border-[hsl(var(--accent))]/55 bg-[hsl(var(--accent))]/5"
+                      : "border-[hsl(var(--border))] bg-[hsl(var(--bg))]/45 opacity-70 hover:opacity-100"
+                  }`}
+                  style={{ borderRadius: "var(--radius)" }}
+                >
+                  <p className="font-mono text-[10px] text-[hsl(var(--text-primary))]">{label}</p>
+                  <p className="mt-1 font-mono text-[9px] leading-4 text-[hsl(var(--text-secondary))] opacity-45">
+                    {detail}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4">
+            <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-40">
+              public fields allowed
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {PUBLIC_CHAT_FIELD_OPTIONS.map((field) => {
+                const selected = publicChatSettings.allowedFields.includes(field.value);
+                return (
+                  <button
+                    key={field.value}
+                    type="button"
+                    onClick={() => togglePublicChatField(field.value)}
+                    className={`border px-2 py-1 font-mono text-[9.5px] transition-colors ${
+                      selected
+                        ? "border-[hsl(var(--accent))]/45 text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/5"
+                        : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-45 hover:opacity-80"
+                    }`}
+                    style={{ borderRadius: "var(--radius)" }}
+                  >
+                    [{selected ? "x" : " "}] {field.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-40">
+              advertised capabilities
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {PUBLIC_CHAT_CAPABILITY_OPTIONS.map((capability) => {
+                const selected = publicChatSettings.capabilities.includes(capability.value);
+                return (
+                  <button
+                    key={capability.value}
+                    type="button"
+                    onClick={() => togglePublicChatCapability(capability.value)}
+                    className={`border px-2 py-1 font-mono text-[9.5px] transition-colors ${
+                      selected
+                        ? "border-[hsl(var(--success))]/45 text-[hsl(var(--success))] bg-[hsl(var(--success))]/5"
+                        : "border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] opacity-45 hover:opacity-80"
+                    }`}
+                    style={{ borderRadius: "var(--radius)" }}
+                  >
+                    [{selected ? "x" : " "}] {capability.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-4 border border-[hsl(var(--border))] bg-[hsl(var(--bg))]/45" style={{ borderRadius: "var(--radius)" }}>
+            <textarea
+              value={publicChatSettings.customPrompt}
+              onChange={(event) =>
+                setPublicChatSettings((current) => ({
+                  ...current,
+                  customPrompt: event.target.value.slice(0, 360),
+                }))
+              }
+              rows={3}
+              maxLength={360}
+              placeholder="optional owner note: how this public chat should answer, what to emphasize, or what to avoid..."
+              className="block w-full resize-none bg-transparent px-3 py-2 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-primary))] outline-none placeholder:text-[hsl(var(--text-secondary))]/35"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[hsl(var(--border))]/50 px-3 py-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setPublicChatSettings((current) => ({
+                    ...current,
+                    showSources: !current.showSources,
+                  }))
+                }
+                className="font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-60 hover:opacity-100"
+              >
+                [{publicChatSettings.showSources ? "x" : " "}] return source links
+              </button>
+              <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30">
+                {publicChatSettings.customPrompt.length}/360
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="min-h-4">
+              {publicChatStatus && (
+                <p className="font-mono text-[10px] text-[hsl(var(--success))] opacity-70">
+                  {publicChatStatus}
+                </p>
+              )}
+              {publicChatError && (
+                <p className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-80">
+                  {publicChatError}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleSavePublicChat}
+              disabled={savingPublicChat}
+              className="border border-[hsl(var(--accent))]/55 px-3 py-1.5 font-mono text-[10px] text-[hsl(var(--accent))] transition-colors hover:bg-[hsl(var(--accent))]/10 disabled:cursor-not-allowed disabled:opacity-35"
+              style={{ borderRadius: "var(--radius)" }}
+            >
+              {savingPublicChat ? "saving..." : "save public chat controls"}
+            </button>
+          </div>
+        </div>
+
+        <Divider />
 
         {/* ── SECTION 1: Share your brain — scope toggle ──────────────── */}
         <SectionLabel>share your brain</SectionLabel>

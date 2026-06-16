@@ -56,6 +56,14 @@
 
 ## 2026-06-16 — Public profile conversation API
 
+### feat(web/convex): add owner controls for public profile chat
+- Added owner-editable public profile chat controls in the Share pane: enable/disable, concise/voice/consultive mode, allowed public fields, advertised capabilities, source-link toggle, and a short owner note.
+- Persisted those controls into `preferences.public_chat` inside the public `youJson`, so the settings travel with the portable public brain instead of living in a disconnected UI-only store.
+- Updated the public profile chat widget to hide when disabled and tailor suggestion chips from the owner's advertised capabilities.
+- Updated `POST /api/v1/profiles/[username]/conversation` and hosted MCP `ask_public_profile` to honor the same controls: disabled state, field allow-list, source suppression, style metadata, capabilities, and explicit private-context omissions.
+- Added focused Convex tests for owner settings persistence and MCP field filtering.
+- Hardened the profile Open Graph image font loader so local dev public-profile renders do not crash when Next rewrites the bundled JetBrains Mono font to a relative static URL.
+
 ### feat(web): make public profiles conversational from public context
 - Added `POST /api/v1/profiles/[username]/conversation`, a public-context-only conversation endpoint that answers from the user's public `you.json`/`you.txt` surface and returns sources, fields used, suggested follow-ups, and explicitly omitted private context.
 - Added a compact above-the-fold public profile chat box so visitors can ask what a person is building, what to ask them about, and what public expertise their You.md exposes.
