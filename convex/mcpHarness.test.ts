@@ -1,5 +1,5 @@
 /**
- * T25 — MCP tool-call test harness (table-driven over all 9 hosted MCP tools).
+ * T25 — MCP tool-call test harness (table-driven over all 10 hosted MCP tools).
  *
  * Tests exercise the underlying queries/mutations that the MCP http dispatch
  * routes to — NOT the httpAction routes themselves, which convex-test cannot
@@ -10,6 +10,7 @@
  *   whoami            — requires_auth: true  — underlying: assembleAgentContext
  *   get_agent_brief   — requires_auth: true  — underlying: memories.listMemories + skills.listInstalls
  *   get_identity      — requires_auth: false — underlying: profiles.getPublicProfile
+ *   ask_public_profile — requires_auth: false — underlying: profiles.getPublicProfile
  *   search_profiles   — requires_auth: false — underlying: profiles.searchPublicProfiles / profiles.listAll
  *   get_my_identity   — requires_auth: true  — underlying: users.getByClerkId + bundles.getLatestBundle
  *   get_my_stacks     — requires_auth: true  — underlying: github.internalGetMirrorByClerkId (internal)
@@ -180,6 +181,26 @@ describe("MCP tool: get_identity", () => {
       username: "definitely-does-not-exist-xyz",
     });
     expect(profile).toBeNull();
+  });
+});
+
+// ─── Tool: ask_public_profile ────────────────────────────────────────────────
+// Dispatch: profiles.getPublicProfile (no auth required) + public-only answer.
+
+describe("MCP tool: ask_public_profile", () => {
+  it("happy-path dependency — getPublicProfile returns public fields for conversation", async () => {
+    const t = convexTest(schema);
+    await seedPublicProfile(t, "conversation-target");
+
+    const profile = await t.query(api.profiles.getPublicProfile, {
+      username: "conversation-target",
+    });
+
+    expect(profile).not.toBeNull();
+    expect(profile!.username).toBe("conversation-target");
+    expect(profile!.youJson).toMatchObject({
+      identity: { name: "conversation-target" },
+    });
   });
 });
 

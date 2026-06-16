@@ -11,6 +11,7 @@ const OUT_OPENAPI_FILE = path.join(ROOT, "src", "generated", "openapi.ts");
 const CHECK_ONLY = process.argv.includes("--check");
 
 const HTTP_SOURCE = path.join(ROOT, "convex", "http.ts");
+const HOSTED_MCP_REGISTRY_SOURCE = path.join(ROOT, "convex", "lib", "mcpRegistry.ts");
 const MCP_SOURCE = path.join(ROOT, "cli", "src", "mcp", "server.ts");
 const CLI_PACKAGE = path.join(ROOT, "cli", "package.json");
 const CLI_INDEX_SOURCE = path.join(ROOT, "cli", "src", "index.ts");
@@ -448,17 +449,16 @@ function topLevelKeys(objectSource) {
   return [...new Set(keys)];
 }
 
-// U8: hosted MCP tools are registered inline in convex/http.ts under the
-// JSON-RPC `tools/list` handler. Parse them read-only (same approach as
-// routes) so the docs can state hosted vs local tool counts distinctly.
+// U8/T14: hosted MCP tools are registered in convex/lib/mcpRegistry.ts and
+// convex/http.ts tools/list maps directly from that registry. Parse the
+// registry read-only so docs can state hosted vs local tool counts distinctly.
 function parseHostedMcpTools() {
-  const source = read(HTTP_SOURCE);
-  const listToolsIndex = source.indexOf('case "tools/list"');
-  if (listToolsIndex === -1) return [];
-  const toolsIndex = source.indexOf("tools: [", listToolsIndex);
+  const source = read(HOSTED_MCP_REGISTRY_SOURCE);
+  const toolsIndex = source.indexOf("export const HOSTED_MCP_TOOLS");
   if (toolsIndex === -1) return [];
 
-  const arrayStart = source.indexOf("[", toolsIndex);
+  const assignmentIndex = source.indexOf("=", toolsIndex);
+  const arrayStart = source.indexOf("[", assignmentIndex);
   const arraySource = extractBalanced(source, arrayStart, "[", "]");
 
   return splitTopLevelObjects(arraySource)
@@ -478,16 +478,17 @@ function parseHostedMcpTools() {
           ? ""
           : extractBalanced(objectSource, objectSource.indexOf("{", propertiesIndex), "{", "}");
       const inputFields = propertiesSource ? topLevelKeys(propertiesSource) : [];
+      const scopesMatch = objectSource.match(/scopes:\s*\[([^\]]*)\]/s);
+      const scopes = scopesMatch
+        ? [...scopesMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1])
+        : [];
 
       return {
         name,
         description: trimDescription(description, 360),
         inputFields,
         required,
-        // Auth-gated hosted tools state the API-key requirement in their own
-        // registered description; public tools (get_identity, search_profiles)
-        // do not. Used by the docs and the smoke replay's public-example filter.
-        requiresAuth: /requires a you\.md api key/i.test(description),
+        requiresAuth: scopes.length > 0 || /requires a you\.md api key/i.test(description),
       };
     })
     .filter(Boolean);

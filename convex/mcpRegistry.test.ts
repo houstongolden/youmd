@@ -7,9 +7,8 @@
  *   2. Dispatch: the http dispatch (registry lookup + handler call) produces
  *      the same result as direct handler invocation for two representative tools.
  *
- * get_identity and search_profiles are chosen for dispatch tests because they
- * are unauthenticated (scopes: []) — their handlers can be exercised directly
- * in convex-test without an API key round-trip.
+ * get_identity, ask_public_profile, and search_profiles are chosen for
+ * dispatch tests because they are unauthenticated (scopes: []).
  */
 
 import { describe, expect, it } from "vitest";
@@ -60,12 +59,13 @@ describe("HOSTED_MCP_TOOLS registry — structural completeness", () => {
     }
   });
 
-  it("all 9 expected tool names are present", () => {
+  it("all 10 expected tool names are present", () => {
     const names = HOSTED_MCP_TOOLS.map((t) => t.name);
     const expected = [
       "whoami",
       "get_agent_brief",
       "get_identity",
+      "ask_public_profile",
       "search_profiles",
       "get_my_identity",
       "get_my_stacks",
@@ -101,7 +101,7 @@ describe("HOSTED_MCP_TOOLS registry — structural completeness", () => {
   });
 
   it("unauthenticated tools declare empty scopes", () => {
-    const publicToolNames = ["get_identity", "search_profiles"];
+    const publicToolNames = ["get_identity", "ask_public_profile", "search_profiles"];
     for (const name of publicToolNames) {
       const spec = HOSTED_MCP_TOOLS.find((t) => t.name === name);
       expect(spec?.scopes).toEqual([]);
@@ -232,5 +232,16 @@ describe("HOSTED_MCP_TOOLS dispatch equivalence — search_profiles", () => {
     expect(typeof spec.handler).toBe("function");
     // inputSchema has no required fields (query and limit are both optional)
     expect(spec.inputSchema.required).toBeUndefined();
+  });
+});
+
+describe("HOSTED_MCP_TOOLS dispatch equivalence — ask_public_profile", () => {
+  it("spec is wired as a public profile conversation tool", () => {
+    const spec = HOSTED_MCP_TOOLS.find((t) => t.name === "ask_public_profile")!;
+    expect(spec).toBeDefined();
+    expect(spec.scopes).toEqual([]);
+    expect(spec.inputSchema.required).toEqual(["username", "message"]);
+    expect(typeof spec.handler).toBe("function");
+    expect(spec.description).toContain("public-context-only");
   });
 });

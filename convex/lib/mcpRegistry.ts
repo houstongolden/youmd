@@ -239,6 +239,178 @@ function errorResult(message: string): McpHandlerResult {
   return { content: [{ type: "text", text: message }], isError: true };
 }
 
+const PRIVATE_CONTEXT_OMISSIONS = [
+  "private memories",
+  "private loop reports",
+  "private connected-app data",
+  "private source snapshots",
+  "owner-only agent logs",
+  "scoped API/MCP grants",
+];
+
+type PublicContextSection = {
+  label: string;
+  value: string;
+};
+
+function asString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function asStringList(value: unknown, limit = 6): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => asString(item))
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+function firstString(...values: unknown[]): string {
+  for (const value of values) {
+    const text = asString(value);
+    if (text) return text;
+  }
+  return "";
+}
+
+function truncate(text: string, max = 220): string {
+  if (text.length <= max) return text;
+  return `${text.slice(0, max - 1).trim()}...`;
+}
+
+function projectSummaries(projects: unknown): string[] {
+  if (!Array.isArray(projects)) return [];
+  return projects
+    .map((project) => {
+      const record = asRecord(project);
+      const name = asString(record.name);
+      if (!name || name.startsWith("#")) return "";
+      const status = asString(record.status);
+      const description = asString(record.description);
+      const role = asString(record.role);
+      const details = [status, role, description].filter(Boolean).join(" / ");
+      return details ? `${name}: ${truncate(details, 180)}` : name;
+    })
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
+function linkSummaries(links: unknown): string[] {
+  const record = asRecord(links);
+  return Object.entries(record)
+    .filter(([, url]) => typeof url === "string" && url.trim())
+    .map(([label, url]) => `${label}: ${url}`)
+    .slice(0, 8);
+}
+
+function wants(message: string, keywords: string[]): boolean {
+  return keywords.some((keyword) => message.includes(keyword));
+}
+
+function buildPublicProfileConversation(
+  username: string,
+  profile: {
+    username?: string;
+    displayName?: string | null;
+    youJson?: unknown;
+  },
+  message: string
+) {
+  const data = asRecord(profile.youJson ?? profile);
+  const identity = asRecord(data.identity);
+  const bio = asRecord(identity.bio);
+  const analysis = asRecord(data.analysis);
+  const preferences = asRecord(data.preferences);
+  const agentPreferences = asRecord(preferences.agent);
+  const now = asRecord(data.now);
+
+  const name = firstString(identity.name, profile.displayName, profile.username, username);
+  const projects = projectSummaries(data.projects);
+  const focus = asStringList(now.focus, 6);
+  const values = asStringList(data.values, 6);
+  const topics = asStringList(analysis.topics, 8);
+  const skills = asStringList(identity.skills, 8);
+  const links = linkSummaries(data.links ?? identity.links);
+
+  const sections: PublicContextSection[] = [
+    { label: "identity.name", value: name },
+    { label: "identity.tagline", value: asString(identity.tagline) },
+    { label: "identity.location", value: asString(identity.location) },
+    { label: "identity.bio", value: firstString(bio.long, bio.medium, bio.short) },
+    { label: "analysis.voice_summary", value: asString(analysis.voice_summary) },
+    { label: "preferences.agent.tone", value: asString(agentPreferences.tone) },
+    { label: "now.focus", value: focus.join("; ") },
+    { label: "projects", value: projects.join("; ") },
+    { label: "values", value: values.join("; ") },
+    { label: "topics", value: topics.join(", ") },
+    { label: "skills", value: skills.join(", ") },
+    { label: "links", value: links.join("; ") },
+  ].filter((section) => section.value);
+
+  const normalizedMessage = message.toLowerCase();
+  const selected: PublicContextSection[] = [];
+  const push = (labels: string[]) => {
+    for (const section of sections) {
+      if (labels.includes(section.label) && !selected.some((item) => item.label === section.label)) {
+        selected.push(section);
+      }
+    }
+  };
+
+  if (wants(normalizedMessage, ["project", "building", "work", "startup", "company", "build"])) {
+    push(["projects", "now.focus", "identity.tagline"]);
+  }
+  if (wants(normalizedMessage, ["today", "now", "current", "focus", "agenda"])) {
+    push(["now.focus", "identity.location", "projects"]);
+  }
+  if (wants(normalizedMessage, ["about", "bio", "background", "who", "story"])) {
+    push(["identity.name", "identity.tagline", "identity.bio", "topics", "skills"]);
+  }
+  if (wants(normalizedMessage, ["voice", "style", "personality", "advice", "perspective", "consult"])) {
+    push(["analysis.voice_summary", "preferences.agent.tone", "values", "topics"]);
+  }
+  if (wants(normalizedMessage, ["link", "contact", "social", "github", "linkedin", "website"])) {
+    push(["links"]);
+  }
+  if (wants(normalizedMessage, ["api", "mcp", "endpoint", "json", "agent"])) {
+    push(["analysis.voice_summary", "preferences.agent.tone"]);
+  }
+  if (selected.length === 0) {
+    push(["identity.name", "identity.tagline", "identity.bio", "now.focus", "projects", "analysis.voice_summary"]);
+  }
+
+  const compact = selected.slice(0, 5);
+  const summary = compact
+    .map((section) => `- ${section.label}: ${truncate(section.value, 260)}`)
+    .join("\n");
+  const publicName = firstString(asString(identity.name), name, `@${username}`);
+  const answer = [
+    `From ${publicName}'s public You.md context:`,
+    summary || "- No detailed public context has been published yet.",
+    `Agents can read https://you.md/${username}/you.json or https://you.md/${username}/you.txt for the same public brain surface.`,
+    "I did not use private memories, private reports, connected-app data, source snapshots, logs, or scoped grants for this answer.",
+  ].join("\n\n");
+
+  return {
+    answer,
+    username,
+    subject: publicName,
+    voice_mode: "public-context-summary",
+    sources: [
+      { label: "public you.json", href: `https://you.md/${username}/you.json`, scope: "public" },
+      { label: "public you.txt", href: `https://you.md/${username}/you.txt`, scope: "public" },
+    ],
+    public_context_used: compact.map((section) => section.label),
+    omitted_private_context: PRIVATE_CONTEXT_OMISSIONS,
+    suggested_followups: [
+      `What is ${publicName} building right now?`,
+      `What should I ask ${publicName} about?`,
+      `Summarize ${publicName}'s public expertise.`,
+      `Which public endpoints exist for @${username}?`,
+    ],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Tool Registry
 // ---------------------------------------------------------------------------
@@ -395,6 +567,63 @@ export const HOSTED_MCP_TOOLS: McpToolSpec[] = [
       } catch { /* non-fatal */ }
 
       return textResult(JSON.stringify(result, null, 2), "application/json");
+    },
+  },
+
+  // ── ask_public_profile ──────────────────────────────────────────────────────
+  {
+    name: "ask_public_profile",
+    description:
+      "Ask a public-context-only question about a You.md profile. This is the MCP companion to POST /api/v1/profiles/{username}/conversation: it answers from the user's public you.json/you.txt surface, returns public field provenance, and explicitly omits private memories, loop reports, connected-app data, source snapshots, logs, and scoped grants.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        username: {
+          type: "string",
+          description: "The You.md username to ask about, without @.",
+        },
+        message: {
+          type: "string",
+          description: "The public-context question to answer.",
+        },
+      },
+      required: ["username", "message"],
+    },
+    scopes: [],
+    async handler(ctx, args) {
+      const rawUsername = args.username;
+      const rawMessage = args.message;
+      if (typeof rawUsername !== "string" || !rawUsername.trim()) {
+        return errorResult("username is required");
+      }
+      if (typeof rawMessage !== "string" || !rawMessage.trim()) {
+        return errorResult("message is required");
+      }
+
+      const username = rawUsername.trim().toLowerCase().replace(/^@/, "");
+      if (!/^[a-z0-9_-]{2,64}$/.test(username)) {
+        return errorResult("invalid username");
+      }
+      const message = rawMessage.trim();
+      if (message.length > 1200) {
+        return errorResult("message must be 1200 characters or fewer");
+      }
+
+      const profile = await ctx.runQuery(api.profiles.getPublicProfile, { username });
+      if (!profile) return errorResult(`no profile found for @${username}`);
+
+      try {
+        await ctx.runMutation(api.profiles.recordView, {
+          username,
+          referrer: "mcp:ask_public_profile",
+          isAgentRead: true,
+        });
+      } catch { /* non-fatal */ }
+
+      return textResult(
+        JSON.stringify(buildPublicProfileConversation(username, profile, message), null, 2),
+        "application/json"
+      );
     },
   },
 

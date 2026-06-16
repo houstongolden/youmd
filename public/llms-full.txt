@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: cf02d28bb7239a55d6b13da0d7b617545d6b3b9cbcfcb1921a9a4c5f49c11f29. CLI version: 0.8.2. Endpoints: 85 documented (7 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 0. CLI commands: 30. Reference intelligence: 2026-06-15T15:31:00.696Z.
+> Generated full agent context. Source hash: 3f2f802f397df5384adc6a5bd237f340fccead3af7b8b5de0f32e6840daae45e. CLI version: 0.8.2. Endpoints: 85 documented (7 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 10. CLI commands: 30. Reference intelligence: 2026-06-15T15:31:00.696Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -184,7 +184,7 @@ All 30 registered runtime commands, generated from the commander registrations i
 You.md has two MCP surfaces with distinct tool sets:
 
 - Local stdio MCP through the runtime: 6 tools. This is the preferred surface for Claude Code, Codex, Cursor, and other local coding agents.
-- Hosted same-origin JSON-RPC MCP at `POST /api/v1/mcp`: 0 tools, for web-capable clients.
+- Hosted same-origin JSON-RPC MCP at `POST /api/v1/mcp`: 10 tools, for web-capable clients.
 
 Discovery:
 
@@ -220,7 +220,16 @@ Call a public hosted tool (`get_identity` requires `username`):
 
 Hosted MCP tools (`POST /api/v1/mcp`):
 
-- No generated hosted MCP tools found.
+- `whoami` (Bearer API key required): Return a compact ~500-char identity summary of the authenticated user: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation - it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not...
+- `get_agent_brief` (Bearer API key required): Return a startup brief for the authenticated user. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines a compact identity summary, the user's recent durable memories (rendered inline by default), installed skills, and recommended next moves so the agent can act without asking the user to re-expla...
+- `get_identity` (public): Get a user's public identity bundle from you.md. Returns their structured identity: bio, projects, values, agent directives, communication preferences, and more. Use this at the start of a session to understand who you're working with.
+- `ask_public_profile` (public): Ask a public-context-only question about a You.md profile. This is the MCP companion to POST /api/v1/profiles/{username}/conversation: it answers from the user's public you.json/you.txt surface, returns public field provenance, and explicitly omits private memories, loop reports, connected-app data, source snapshots, logs, and scoped grants.
+- `search_profiles` (public): Search or list public profiles on you.md.
+- `get_my_identity` (Bearer API key required): Get the authenticated user's full identity bundle, including private context. Requires a you.md API key passed as Bearer token in the Authorization header.
+- `get_my_stacks` (Bearer API key required): List the YouStacks the authenticated user hosts in their own GitHub repo (from the You.md server-side mirror). Requires a you.md API key as Bearer token.
+- `get_repo_file` (Bearer API key required): Read one file (e.g. you.md, you.json, or a stacks/<slug>/... file) from the authenticated user's repo via the You.md server-side mirror. Requires a you.md API key as Bearer token.
+- `search_memories` (Bearer API key required): Full-text search the authenticated user's durable memories on you.md. Use this to recall specific facts, preferences, decisions, or context the user has stored - e.g. before answering a question about their past work or stated preferences. Returns one memory per line as plain text, relevance-ordered. Requires a you.md API key with the read:private scope...
+- `report_skill_outcome` (Bearer API key required): Report the outcome of a skill execution for the authenticated user. Call this after running a you.md skill to feed the self-improvement telemetry loop - your success/failure data powers the `youmd skill improve` surface. Requires a you.md API key with the write:memories scope passed as Bearer token in the Authorization header.
 
 Key local stdio MCP tools (of 6 total):
 

@@ -41,7 +41,7 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "cf02d28bb7239a55d6b13da0d7b617545d6b3b9cbcfcb1921a9a4c5f49c11f29",
+  "sourceHash": "3f2f802f397df5384adc6a5bd237f340fccead3af7b8b5de0f32e6840daae45e",
   "cli": {
     "version": "0.8.2"
   },
@@ -49,7 +49,7 @@ export const docsReference = {
     "endpoints": 85,
     "internalRoutes": 7,
     "mcpTools": 6,
-    "hostedMcpTools": 0,
+    "hostedMcpTools": 10,
     "cliCommands": 30,
     "convexRoutes": 66,
     "nextRoutes": 26
@@ -1092,7 +1092,112 @@ export const docsReference = {
       ]
     }
   ],
-  "hostedMcpTools": [],
+  "hostedMcpTools": [
+    {
+      "name": "whoami",
+      "description": "Return a compact ~500-char identity summary of the authenticated user: name, role, stack, tone, things to avoid, top projects, and current goal. This is the FIRST tool you should call when starting a new conversation — it gives you just enough context to orient on the user before deciding whether to pull the full identity bundle. Returns plain text, not JSO…",
+      "inputFields": [],
+      "required": [],
+      "requiresAuth": true
+    },
+    {
+      "name": "get_agent_brief",
+      "description": "Return a startup brief for the authenticated user. Use immediately after whoami when starting Claude Code, Codex, Cursor, or another MCP-backed session. It combines a compact identity summary, the user's recent durable memories (rendered inline by default), installed skills, and recommended next moves so the agent can act without asking the user to re-expla…",
+      "inputFields": [
+        "format",
+        "includeMemories",
+        "maxChars"
+      ],
+      "required": [],
+      "requiresAuth": true
+    },
+    {
+      "name": "get_identity",
+      "description": "Get a user's public identity bundle from you.md. Returns their structured identity: bio, projects, values, agent directives, communication preferences, and more. Use this at the start of a session to understand who you're working with.",
+      "inputFields": [
+        "username"
+      ],
+      "required": [
+        "username"
+      ],
+      "requiresAuth": false
+    },
+    {
+      "name": "ask_public_profile",
+      "description": "Ask a public-context-only question about a You.md profile. This is the MCP companion to POST /api/v1/profiles/{username}/conversation: it answers from the user's public you.json/you.txt surface, returns public field provenance, and explicitly omits private memories, loop reports, connected-app data, source snapshots, logs, and scoped grants.",
+      "inputFields": [
+        "username",
+        "message"
+      ],
+      "required": [
+        "username",
+        "message"
+      ],
+      "requiresAuth": false
+    },
+    {
+      "name": "search_profiles",
+      "description": "Search or list public profiles on you.md.",
+      "inputFields": [
+        "query",
+        "limit"
+      ],
+      "required": [],
+      "requiresAuth": false
+    },
+    {
+      "name": "get_my_identity",
+      "description": "Get the authenticated user's full identity bundle, including private context. Requires a you.md API key passed as Bearer token in the Authorization header.",
+      "inputFields": [],
+      "required": [],
+      "requiresAuth": true
+    },
+    {
+      "name": "get_my_stacks",
+      "description": "List the YouStacks the authenticated user hosts in their own GitHub repo (from the You.md server-side mirror). Requires a you.md API key as Bearer token.",
+      "inputFields": [],
+      "required": [],
+      "requiresAuth": true
+    },
+    {
+      "name": "get_repo_file",
+      "description": "Read one file (e.g. you.md, you.json, or a stacks/<slug>/... file) from the authenticated user's repo via the You.md server-side mirror. Requires a you.md API key as Bearer token.",
+      "inputFields": [
+        "path"
+      ],
+      "required": [
+        "path"
+      ],
+      "requiresAuth": true
+    },
+    {
+      "name": "search_memories",
+      "description": "Full-text search the authenticated user's durable memories on you.md. Use this to recall specific facts, preferences, decisions, or context the user has stored — e.g. before answering a question about their past work or stated preferences. Returns one memory per line as plain text, relevance-ordered. Requires a you.md API key with the read:private scope pas…",
+      "inputFields": [
+        "query",
+        "limit"
+      ],
+      "required": [
+        "query"
+      ],
+      "requiresAuth": true
+    },
+    {
+      "name": "report_skill_outcome",
+      "description": "Report the outcome of a skill execution for the authenticated user. Call this after running a you.md skill to feed the self-improvement telemetry loop — your success/failure data powers the `youmd skill improve` surface. Requires a you.md API key with the write:memories scope passed as Bearer token in the Authorization header.",
+      "inputFields": [
+        "skill",
+        "outcome",
+        "note",
+        "durationMs"
+      ],
+      "required": [
+        "skill",
+        "outcome"
+      ],
+      "requiresAuth": true
+    }
+  ],
   "cliCommands": [
     {
       "name": "login",

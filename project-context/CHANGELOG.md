@@ -6,6 +6,7 @@
 - Added `POST /api/v1/profiles/[username]/conversation`, a public-context-only conversation endpoint that answers from the user's public `you.json`/`you.txt` surface and returns sources, fields used, suggested follow-ups, and explicitly omitted private context.
 - Added a compact above-the-fold public profile chat box so visitors can ask what a person is building, what to ask them about, and what public expertise their You.md exposes.
 - Regenerated the agent docs reference, OpenAPI spec, `llms.txt`, and `llms-full.txt`; the generated docs reference now lists 85 documented endpoints.
+- Added hosted MCP parity via `ask_public_profile`, so MCP clients can ask the same public-context-only question without a private grant; fixed generated docs to count hosted MCP tools from the registry.
 
 ## 2026-06-16 — Local agent auth handoff
 
