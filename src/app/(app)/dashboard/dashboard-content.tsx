@@ -24,6 +24,8 @@ import {
   BarChart3,
   BookOpen,
   Bot,
+  ChevronDown,
+  ChevronRight,
   Clock3,
   Code2,
   CreditCard,
@@ -329,6 +331,7 @@ type ShellSidebarItem = {
 
 type ShellSidebarGroup = {
   label: string;
+  icon: ShellIcon;
   items: ShellSidebarItem[];
 };
 
@@ -482,6 +485,7 @@ function ShellSidebar({
 }) {
   const [accountOpen, setAccountOpen] = useState(false);
   const [theme, setTheme] = useState<ThemePreference>(() => readThemePreference());
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const accountRef = useRef<HTMLDivElement | null>(null);
   const repoDetail = githubRepoName ?? "connect github";
   const displayLabel = displayName || username;
@@ -515,6 +519,7 @@ function ShellSidebar({
   const groups: ShellSidebarGroup[] = [
     {
       label: "projects",
+      icon: FolderGit2,
       items: [
         {
           label: githubRepoName ? "Synced Repo" : "GitHub Repo",
@@ -529,6 +534,7 @@ function ShellSidebar({
     },
     {
       label: "personal api",
+      icon: Code2,
       items: [
         { label: "API / MCP", detail: "scoped agent access", icon: Code2, pane: "github" },
         { label: "API Tokens", detail: "private grants", icon: KeyRound, pane: "settings" },
@@ -538,6 +544,7 @@ function ShellSidebar({
     },
     {
       label: "skillstacks",
+      icon: Layers3,
       items: [
         { label: "YouStack", detail: "your default stack", icon: Layers3, pane: "stacks" },
         { label: "Skills", detail: "templates + tools", icon: Wrench, pane: "skills" },
@@ -546,6 +553,7 @@ function ShellSidebar({
     },
     {
       label: "connect",
+      icon: Plug,
       items: [
         { label: "Connectors", detail: "github + apps", icon: Plug, pane: "github" },
         { label: "Sources", detail: "web + repo context", icon: Radar, pane: "edit", subTab: "sources" },
@@ -555,6 +563,7 @@ function ShellSidebar({
     },
     {
       label: "identity",
+      icon: UserRound,
       items: [
         { label: "Profile", detail: `you.md/${username}`, icon: UserRound, pane: "profile" },
         { label: "Files", detail: "markdown brain", icon: FileText, pane: "files" },
@@ -577,6 +586,9 @@ function ShellSidebar({
     { label: "YouStack", detail: "your default stack", icon: Layers3, pane: "stacks" },
     { label: "Connectors", detail: "github + apps", icon: Plug, pane: "github" },
   ];
+  const toggleGroup = (label: string) => {
+    setOpenGroups((current) => ({ ...current, [label]: !current[label] }));
+  };
 
   return (
     <aside
@@ -662,31 +674,77 @@ function ShellSidebar({
               </div>
             </section>
           ) : (
-            groups.map((group) => (
-              <section key={group.label} aria-label={group.label}>
-                <div className="mb-1 px-2 font-mono text-[8px] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))] opacity-[0.32]">
-                  {group.label}
-                </div>
-                <div className="space-y-0.5">
-                  {group.items.map((item) => (
-                    <ShellSidebarButton
-                      key={`${group.label}-${item.label}`}
-                      item={item}
-                      collapsed={collapsed}
-                      active={rightPane === item.pane}
-                      onClick={() => onOpenPane(item.pane, item.subTab)}
+            groups.map((group) => {
+              const isOpen = Boolean(openGroups[group.label]);
+              const isActiveGroup = group.items.some((item) => rightPane === item.pane);
+              const GroupIcon = group.icon;
+              return (
+                <section key={group.label} aria-label={group.label}>
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.label)}
+                    aria-expanded={isOpen}
+                    className={[
+                      "group flex h-8 w-full cursor-pointer items-center gap-2 px-2 text-left font-mono transition-[background,color,opacity]",
+                      isActiveGroup
+                        ? "text-[hsl(var(--text-primary))]"
+                        : "text-[hsl(var(--text-secondary))] opacity-55 hover:opacity-95",
+                      "hover:bg-[hsl(var(--bg))]/70",
+                    ].join(" ")}
+                    style={{ borderRadius: "var(--radius)" }}
+                  >
+                    <GroupIcon
+                      size={13}
+                      strokeWidth={1.75}
+                      className={isActiveGroup ? "text-[hsl(var(--accent))]" : "text-current"}
+                      aria-hidden="true"
                     />
-                  ))}
-                </div>
-              </section>
-            ))
+                    <span className="min-w-0 flex-1 truncate text-[9px] uppercase tracking-[0.16em]">
+                      {group.label}
+                    </span>
+                    {isActiveGroup && (
+                      <span
+                        aria-hidden="true"
+                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--accent))] opacity-75"
+                      />
+                    )}
+                    {isOpen ? <ChevronDown size={13} aria-hidden="true" /> : <ChevronRight size={13} aria-hidden="true" />}
+                  </button>
+                  {isOpen && (
+                    <div className="mt-0.5 space-y-0.5 pl-3">
+                      {group.items.map((item) => (
+                        <ShellSidebarButton
+                          key={`${group.label}-${item.label}`}
+                          item={item}
+                          collapsed={collapsed}
+                          active={rightPane === item.pane}
+                          onClick={() => onOpenPane(item.pane, item.subTab)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              );
+            })
           )}
           {!collapsed && (
             <section aria-label="saved chats" className="pt-1">
-              <div className="mb-1 px-2 font-mono text-[8px] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))] opacity-[0.32]">
-                chats
-              </div>
-              <div className="space-y-0.5">
+              <button
+                type="button"
+                onClick={() => toggleGroup("chats")}
+                aria-expanded={Boolean(openGroups.chats)}
+                className="group flex h-8 w-full cursor-pointer items-center gap-2 px-2 text-left font-mono text-[hsl(var(--text-secondary))] opacity-55 transition-[background,opacity,color] hover:bg-[hsl(var(--bg))]/70 hover:text-[hsl(var(--text-primary))] hover:opacity-95"
+                style={{ borderRadius: "var(--radius)" }}
+              >
+                <MessageSquareText size={13} strokeWidth={1.75} aria-hidden="true" />
+                <span className="min-w-0 flex-1 truncate text-[9px] uppercase tracking-[0.16em]">chats</span>
+                {recentSessions && recentSessions.length > 0 && (
+                  <span className="text-[8px] opacity-45">{Math.min(recentSessions.length, 5)}</span>
+                )}
+                {openGroups.chats ? <ChevronDown size={13} aria-hidden="true" /> : <ChevronRight size={13} aria-hidden="true" />}
+              </button>
+              {openGroups.chats && (
+                <div className="mt-0.5 space-y-0.5 pl-3">
                 {recentSessions === undefined ? (
                 <div className="px-2 py-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
                   syncing sessions...
@@ -736,7 +794,8 @@ function ShellSidebar({
                   );
                 })
               )}
-              </div>
+                </div>
+              )}
             </section>
           )}
         </div>

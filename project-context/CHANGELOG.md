@@ -3,6 +3,8 @@
 ## 2026-06-15 — Shell rail and top chrome polish
 
 ### feat(web): tighten collapsed shell navigation and action chrome
+- Expanded sidebar groups now render as compact closed disclosure rows by default instead of showing every item in Projects, Personal API, Skillstacks, Connect, Identity, and Chats at once.
+- Group headers carry the group icon, a subtle active dot when the current pane belongs to that group, and only reveal their items when clicked; saved chat sessions are also behind a closed `chats` disclosure by default.
 - Replaced the sidebar `you.md` text mark with a scaled PixelYOU canvas mark so the shell uses the same identity mark as the homepage.
 - Changed the sidebar collapse affordance to true left-panel open/close icons and removed the right-pane toggle from the left sidebar header.
 - Reduced the skinny collapsed rail to exactly 8 clickable controls total: expand, new chat, search, Repo, API/MCP, YouStack, Connectors, and account.
