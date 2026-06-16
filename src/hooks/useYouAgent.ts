@@ -65,6 +65,209 @@ function humanizeProjectSlug(slug: string) {
   return slug.replace(/[-_]+/g, " ").trim();
 }
 
+function formatOpeningRelativeTime(ts?: number | null): string | null {
+  if (!ts) return null;
+  const diffMin = Math.floor((Date.now() - ts) / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${Math.floor(diffHr / 24)}d ago`;
+}
+
+function countTextLines(text: string): number {
+  if (!text.trim()) return 0;
+  return text.split(/\r?\n/).length;
+}
+
+function buildOpeningActivityBrief(params: {
+  username: string;
+  displayName: string;
+  latestBundle: Record<string, unknown> | null;
+  recentMemories: Array<{ category: string; content: string; tags?: string[] }> | undefined;
+  recentSessions: Array<{ summary?: string; messageCount: number; lastMessageAt: number }> | undefined;
+  repoMirror: {
+    repoFullName?: string | null;
+    fileCount?: number;
+    totalBytes?: number;
+    syncedAt?: number;
+    stale?: boolean;
+    files?: Array<{ path: string; size?: number; content?: string }>;
+    stacks?: Array<{ slug?: string; name?: string }>;
+  } | null | undefined;
+}) {
+  const { username, displayName, latestBundle, recentMemories, recentSessions, repoMirror } = params;
+  const youJson = (latestBundle?.youJson as Record<string, unknown> | undefined) ?? null;
+  const projects = (youJson?.projects as Array<Record<string, string>> | undefined) ?? [];
+  const projectSubdirs = (youJson?.project_subdirs as Record<string, unknown> | undefined) ?? {};
+  const activeProjects = projects.filter((project) => {
+    const status = `${project.status ?? ""}`.toLowerCase();
+    return !status || /active|live|building|current|in progress|draft/.test(status);
+  });
+  const projectNames = (activeProjects.length > 0 ? activeProjects : projects)
+    .map((project) => project.name)
+    .filter(Boolean)
+    .slice(0, 6);
+  const latestSync = formatOpeningRelativeTime(
+    (latestBundle?.publishedAt as number | undefined) ?? (latestBundle?.createdAt as number | undefined)
+  );
+  const mirrorSync = formatOpeningRelativeTime(repoMirror?.syncedAt);
+  const recentMemoryLines = (recentMemories ?? [])
+    .slice(0, 5)
+    .map((memory) => `${memory.category}: ${memory.content}`);
+  const recentSessionLines = (recentSessions ?? [])
+    .filter((session) => session.messageCount > 0)
+    .slice(0, 4)
+    .map((session) => {
+      const when = formatOpeningRelativeTime(session.lastMessageAt);
+      const summary = session.summary?.trim() || `${session.messageCount} message${session.messageCount === 1 ? "" : "s"}`;
+      return `${summary}${when ? ` (${when})` : ""}`;
+    });
+  const mirroredFiles = repoMirror?.files ?? [];
+  const mirroredLineCount = mirroredFiles.reduce((total, file) => {
+    if (typeof file.content === "string") return total + countTextLines(file.content);
+    return total;
+  }, 0);
+
+  const milestoneLines: string[] = [];
+  if (typeof latestBundle?.version === "number") {
+    milestoneLines.push(`latest saved identity bundle: v${latestBundle.version}${latestBundle?.isPublished ? " published" : " draft"}${latestSync ? `, updated ${latestSync}` : ""}`);
+  }
+  if (projects.length > 0) {
+    milestoneLines.push(`tracked projects: ${projects.length}${activeProjects.length > 0 ? ` active-ish` : ""}${projectNames.length > 0 ? ` (${projectNames.join(", ")})` : ""}`);
+  }
+  if (Object.keys(projectSubdirs).length > 0) {
+    milestoneLines.push(`private project folders: ${Object.keys(projectSubdirs).length}`);
+  }
+  if (repoMirror?.repoFullName) {
+    const bits = [
+      `${repoMirror.repoFullName} connected`,
+      typeof repoMirror.fileCount === "number" ? `${repoMirror.fileCount} mirrored context files` : null,
+      mirroredLineCount > 0 ? `${mirroredLineCount.toLocaleString()} mirrored context lines` : null,
+      typeof repoMirror.totalBytes === "number" ? `${Math.round(repoMirror.totalBytes / 1024).toLocaleString()}kb` : null,
+      mirrorSync ? `synced ${mirrorSync}` : null,
+      repoMirror.stale ? "mirror needs refresh" : null,
+    ].filter(Boolean);
+    milestoneLines.push(`repo mirror: ${bits.join(" | ")}`);
+  }
+  if (recentMemories && recentMemories.length > 0) {
+    milestoneLines.push(`active memories available: ${recentMemories.length}`);
+  }
+  if (recentSessions && recentSessions.length > 0) {
+    milestoneLines.push(`recent saved chat sessions: ${recentSessions.length}`);
+  }
+
+  const nextStepLines = [
+    "pick the highest-leverage next action from the current profile/project gaps",
+    "offer to tighten a public project page or private project context from recent work",
+    "offer to refresh sources/connectors if the profile or repo mirror looks stale",
+    "offer to package repeated workflows into a YouStack skill/tool",
+  ];
+
+  return [
+    "[OPENING SESSION BRIEF — use this to greet the user; do not expose bracket labels]",
+    `user: @${username}${displayName ? ` (${displayName})` : ""}`,
+    milestoneLines.length > 0 ? `milestones:\n- ${milestoneLines.join("\n- ")}` : "milestones: none yet; help them create the first one",
+    recentMemoryLines.length > 0 ? `recent memories:\n- ${recentMemoryLines.join("\n- ")}` : "recent memories: none loaded",
+    recentSessionLines.length > 0 ? `recent sessions:\n- ${recentSessionLines.join("\n- ")}` : "recent sessions: none loaded",
+    `next-step candidates:\n- ${nextStepLines.join("\n- ")}`,
+    [
+      "opening response rules:",
+      "- greet them by their real/display name, not only the handle",
+      "- acknowledge one or two concrete milestones from above",
+      "- if project/repo/memory/session signals exist, lightly congratulate the progress without sounding corporate",
+      "- if LOC/line counts are not present above, do not claim LOC; say mirrored context files/lines only when provided",
+      "- suggest 2-4 specific next moves you can help with",
+      "- keep it sharp, warm, terminal-native, and under 8 short lines",
+    ].join("\n"),
+    "[END OPENING SESSION BRIEF]",
+  ].join("\n\n");
+}
+
+function buildOpeningFallbackText(params: {
+  username: string;
+  displayName: string;
+  latestBundle: Record<string, unknown> | null;
+  recentMemories: Array<{ category: string; content: string; tags?: string[] }> | undefined;
+  recentSessions: Array<{ summary?: string; messageCount: number; lastMessageAt: number }> | undefined;
+  repoMirror: {
+    repoFullName?: string | null;
+    fileCount?: number;
+    totalBytes?: number;
+    syncedAt?: number;
+    stale?: boolean;
+  } | null | undefined;
+}) {
+  const { username, displayName, latestBundle, recentMemories, recentSessions, repoMirror } = params;
+  const name = (displayName || username || "there").split(/\s+/)[0];
+  const youJson = (latestBundle?.youJson as Record<string, unknown> | undefined) ?? null;
+  const projects = (youJson?.projects as Array<Record<string, string>> | undefined) ?? [];
+  const activeProjects = projects.filter((project) => {
+    const status = `${project.status ?? ""}`.toLowerCase();
+    return !status || /active|live|building|current|in progress|draft|launch/.test(status);
+  });
+  const projectNames = (activeProjects.length > 0 ? activeProjects : projects)
+    .map((project) => project.name)
+    .filter(Boolean)
+    .slice(0, 4);
+  const latestSync = formatOpeningRelativeTime(
+    (latestBundle?.publishedAt as number | undefined) ?? (latestBundle?.createdAt as number | undefined)
+  );
+  const mirrorSync = formatOpeningRelativeTime(repoMirror?.syncedAt);
+  const lines = [`welcome back, ${name}.`];
+  const signals: string[] = [];
+
+  if (typeof latestBundle?.version === "number") {
+    signals.push(`identity bundle v${latestBundle.version}${latestBundle?.isPublished ? " is live" : " is in draft"}${latestSync ? `, updated ${latestSync}` : ""}`);
+  }
+  if (projects.length > 0) {
+    signals.push(`${projects.length} tracked project${projects.length === 1 ? "" : "s"}${projectNames.length > 0 ? `: ${projectNames.join(", ")}` : ""}`);
+  }
+  if (repoMirror?.repoFullName) {
+    const repoBits = [
+      repoMirror.repoFullName,
+      typeof repoMirror.fileCount === "number" ? `${repoMirror.fileCount} mirrored context files` : null,
+      typeof repoMirror.totalBytes === "number" ? `${Math.round(repoMirror.totalBytes / 1024).toLocaleString()}kb` : null,
+      mirrorSync ? `synced ${mirrorSync}` : null,
+      repoMirror.stale ? "needs refresh" : null,
+    ].filter(Boolean);
+    signals.push(`repo mirror: ${repoBits.join(" | ")}`);
+  }
+  if (recentMemories && recentMemories.length > 0) {
+    signals.push(`${recentMemories.length} active memor${recentMemories.length === 1 ? "y" : "ies"} loaded`);
+  }
+  if (recentSessions && recentSessions.length > 0) {
+    signals.push(`${recentSessions.length} recent saved chat session${recentSessions.length === 1 ? "" : "s"}`);
+  }
+
+  if (signals.length > 0) {
+    lines.push(`i see ${signals.slice(0, 3).join("; ")}.`);
+  } else {
+    lines.push("i have enough identity context to start, but not much recent activity loaded yet.");
+  }
+
+  lines.push("");
+  lines.push("best next moves:");
+  if (projectNames.length > 0) {
+    lines.push(`- tighten ${projectNames[0]}'s public profile + private project context from recent work`);
+  } else {
+    lines.push("- turn your current work into a sharper project/context entry");
+  }
+  lines.push("- refresh connected sources so agents stop working from stale context");
+  lines.push("- package repeated workflows into a YouStack skill/tool");
+  lines.push("- create a scoped context link/API token for the next agent you hand this to");
+
+  return lines.join("\n");
+}
+
+function isUsefulOpeningGreeting(text: string) {
+  const normalized = text.trim();
+  if (normalized.length < 120) return false;
+  if (!/project|memory|repo|bundle|context|source|youstack|skill/i.test(normalized)) return false;
+  if (!/next|move|tighten|refresh|package|context link|api token|youstack/i.test(normalized)) return false;
+  return true;
+}
+
 function buildCompletionFollowThrough(params: {
   rawSections: string[];
   customSectionTitles: string[];
@@ -199,6 +402,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const recentMemories = useQuery(
     api.memories.listMemories,
     user?.id && convexUser?._id ? { clerkId: user.id, userId: convexUser._id, limit: 30 } : "skip"
+  );
+  const recentSessions = useQuery(
+    api.memories.listSessions,
+    user?.id && convexUser?._id ? { clerkId: user.id, userId: convexUser._id, limit: 6 } : "skip"
+  );
+  const repoMirror = useQuery(
+    api.github.getRepoMirror,
+    isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
   );
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -409,10 +620,6 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       return;
     }
 
-    // Restore the session
-    sessionIdRef.current = latestChatMessages.sessionId;
-    setCurrentSessionId(latestChatMessages.sessionId);
-    messageCountRef.current = latestChatMessages.messageCount || 0;
     // Restore only the last 30/40 messages — prevents stale bloated sessions
     // from causing slow loads (large payload over Convex WebSocket).
     const restoredDisplay = latestChatMessages.displayMessages.slice(-30).map(m => ({
@@ -425,7 +632,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       content: m.content,
     }));
 
-    if (restoredDisplay.length > 0) {
+    const hasAssistantReply = restoredDisplay.some(
+      (message) => message.role === "assistant" && message.content.trim().length > 0
+    );
+
+    if (restoredDisplay.length > 0 && hasAssistantReply) {
+      sessionIdRef.current = latestChatMessages.sessionId;
+      setCurrentSessionId(latestChatMessages.sessionId);
+      messageCountRef.current = latestChatMessages.messageCount || 0;
       setDisplayMessages(restoredDisplay);
       setMessages(restoredLLM);
       setInitialized(true); // skip the init conversation — we have history
@@ -527,14 +741,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     hasInitialScrolledRef.current = false;
     userScrolledUpRef.current = false;
     setMessages([]);
-    setDisplayMessages([
-      {
-        id: crypto.randomUUID(),
-        role: "system-notice",
-        content: "[new chat]\n\nfresh session opened. this one will sync as its own Convex conversation.",
-      },
-    ]);
-    setInitialized(true);
+    setDisplayMessages([]);
+    setInitialized(false);
     setSessionRestored(true);
     clearSteps();
     setIsThinking(false);
@@ -1042,6 +1250,42 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
     const username = convexUser?.username || "";
     const displayName = userProfile?.name || convexUser?.displayName || "";
+    const openingActivityBrief = buildOpeningActivityBrief({
+      username,
+      displayName,
+      latestBundle: (latestBundle as Record<string, unknown> | null) ?? null,
+      recentMemories: recentMemories as Array<{ category: string; content: string; tags?: string[] }> | undefined,
+      recentSessions: recentSessions as Array<{ summary?: string; messageCount: number; lastMessageAt: number }> | undefined,
+      repoMirror: repoMirror as
+        | {
+            repoFullName?: string | null;
+            fileCount?: number;
+            totalBytes?: number;
+            syncedAt?: number;
+            stale?: boolean;
+            files?: Array<{ path: string; size?: number; content?: string }>;
+            stacks?: Array<{ slug?: string; name?: string }>;
+          }
+        | null
+        | undefined,
+    });
+    const openingFallbackText = buildOpeningFallbackText({
+      username,
+      displayName,
+      latestBundle: (latestBundle as Record<string, unknown> | null) ?? null,
+      recentMemories: recentMemories as Array<{ category: string; content: string; tags?: string[] }> | undefined,
+      recentSessions: recentSessions as Array<{ summary?: string; messageCount: number; lastMessageAt: number }> | undefined,
+      repoMirror: repoMirror as
+        | {
+            repoFullName?: string | null;
+            fileCount?: number;
+            totalBytes?: number;
+            syncedAt?: number;
+            stale?: boolean;
+          }
+        | null
+        | undefined,
+    });
 
     const hasSubstantialProfile = profileContext !== "the user has no existing profile data yet." &&
       profileContext.split("\n").length > 3;
@@ -1202,10 +1446,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     const contextContent = isOnboarding && onboardingGreeting
       ? onboardingGreeting
       : githubRepoName
-        ? `${profileContext}${portraitContext}${githubConnectedNote}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat.`
+        ? `${profileContext}${portraitContext}${githubConnectedNote}\n\n${openingActivityBrief}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. open with the session brief first, then include the github repo connected protocol.`
         : hasSubstantialProfile
-          ? `${profileContext}${portraitContext}${staleSourceNote}${emptySectionNote}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. write a short greeting (2-3 sentences MAX). do three things: (1) greet them by name, (2) reference ONE specific recent thing from their profile data above (a project, a value, a bio detail), (3) IF empty/thin sections were detected above, mention the most impactful one and offer to fill it. don't make this a wall of text. example: "hey houston. saw you pushed v49 yesterday. one thing — your projects/ dir is empty even though your profile lists 6 projects. want me to scaffold them out?"`
-          : `${profileContext}${portraitContext}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them${displayName ? ` by name (${displayName})` : ""}. their profile is sparse — proactively suggest building it out. ask for their x, github, or linkedin handle so you can pull real context. mention that the platform will auto-scrape their profiles.`;
+          ? `${profileContext}${portraitContext}${staleSourceNote}${emptySectionNote}\n\n${openingActivityBrief}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. write the opening as a useful session brief, not a generic greeting. do four things: (1) greet them by name, (2) acknowledge recent work/activity/milestones from the opening brief, (3) IF empty/thin sections were detected above, mention the most impactful one, (4) suggest concrete next moves you can do right now. do not fake LOC or metrics not present in the brief.`
+          : `${profileContext}${portraitContext}\n\n${openingActivityBrief}\n\nthe user @${username}${displayName ? ` (${displayName})` : ""} just opened the web chat. greet them${displayName ? ` by name (${displayName})` : ""}. their profile is sparse — proactively suggest building it out. ask for their x, github, or linkedin handle so you can pull real context. mention that you can turn those sources into their personal API/MCP context.`;
 
     const contextMessage: ChatMessage = {
       role: "user",
@@ -1355,7 +1599,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             content: `[scraped ${existingLinks.length} source${existingLinks.length > 1 ? "s" : ""} from your profile]`,
           });
         }
-        preDisplay.push({ id: initStreamMsgId, role: "assistant", content: "" });
+        preDisplay.push({
+          id: initStreamMsgId,
+          role: "assistant",
+          content: isOnboarding ? "" : openingFallbackText,
+        });
         setDisplayMessages((prev) => [...prev, ...preDisplay]);
 
         const onInitFirstToken = () => {
@@ -1383,13 +1631,19 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           .replace(/^\n+/, "")
           .replace(/\n+$/, "")
           .trim();
+        const finalDisplay = !isOnboarding && !isUsefulOpeningGreeting(cleanDisplay)
+          ? openingFallbackText
+          : cleanDisplay;
 
         // Update the streaming message to the cleaned display text
         setDisplayMessages((prev) => prev.map(m =>
-          m.id === initStreamMsgId ? { ...m, content: cleanDisplay } : m
+          m.id === initStreamMsgId ? { ...m, content: finalDisplay } : m
         ));
 
-        const assistantMsg: ChatMessage = { role: "assistant", content: response };
+        const assistantMsg: ChatMessage = {
+          role: "assistant",
+          content: response || finalDisplay,
+        };
         setMessages((prev) => [...prev, assistantMsg]);
 
         // Use tool_use calls if available (Anthropic streaming), else fall back to JSON blocks (OpenRouter)
@@ -1440,7 +1694,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     }
 
     initConversation();
-  }, [initialized, sessionRestored, convexUser, latestBundle, isOnboarding, onboardingGreeting, githubRepoName, callLLM, callLLMStreaming, saveUpdates, saveMemories, userProfile, user?.id, updateProfile, recentMemories, addStep, completeStep, failStep, clearSteps, buildTurnScaffold]);
+  }, [initialized, sessionRestored, convexUser, latestBundle, isOnboarding, onboardingGreeting, githubRepoName, callLLM, callLLMStreaming, saveUpdates, saveMemories, userProfile, user?.id, updateProfile, recentMemories, recentSessions, repoMirror, addStep, completeStep, failStep, clearSteps, buildTurnScaffold]);
 
   // Slash commands
   const handleSlashCommand = useCallback(

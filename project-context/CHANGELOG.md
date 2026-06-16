@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-16 — Shell opening intelligence brief
+
+### fix(web): make new shell sessions greet from real activity context
+- Added a session-opening activity brief for the web You Agent that includes the user's display name, latest bundle version/status, tracked/active projects, private project folder count, recent memories, recent saved chat sessions, and GitHub repo mirror file/size/sync status when available.
+- Updated the opening prompt so the agent acknowledges the user by name, references concrete recent activity/milestones, and suggests useful next moves instead of showing a blank session or only a one-word restored command like `repo`.
+- Added a deterministic local fallback opening brief so the transcript still has a useful personal summary and next moves if the streamed model returns an overly short stub.
+- Changed New Chat to start a fresh uninitialized session so the richer opening greeting runs, and ignored half-empty recent chat restores that have no assistant reply.
+- Verified locally with `npm run lint`, `npm run build`, and `git diff --check`.
+
 ## 2026-06-16 — Shell right-panel responsiveness
 
 ### fix(web): make the shell detail pane cleaner and harder to break

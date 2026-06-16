@@ -6,6 +6,20 @@ Last Updated: 2026-06-16
 
 ## 2026-06-16 — Preserve h.computer platform ideas in You.md
 
+### 124. Make blank `/shell` chats open with a personal activity-aware briefing
+**Status:** IN PROGRESS (code complete locally; deploy and authenticated production QA pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-16 — Houston: "additinally the agent just shows \"repo\" at the top of the blank chat session in the shell ... but it should at least acknowledge you by your name and analyze any recent work/activity/updates tracked recently and maybe congratulate you on how many active projects and LOC you've shipped and any other milestones or content or context it has from you ... and also then suggest possible best next steps or things you can do or that they can help you with etc"
+**Actionable Scope:**
+1. Stop a one-word restored command like `repo` from becoming the only thing visible in a blank shell session. **DONE locally.**
+2. Make New Chat start an uninitialized session so the opening greeting runs. **DONE locally.**
+3. Build the opening greeting from real data only: display name, latest bundle version/status, tracked projects, private project folders, recent memories, recent saved sessions, and repo mirror status/files/bytes/sync timestamp. **DONE locally.**
+4. Instruct the agent to greet by name, acknowledge concrete recent activity/milestones, avoid fake LOC claims, and suggest useful next moves. **DONE locally.**
+5. Add a deterministic fallback brief so the shell transcript is still useful if the streamed model returns an overly short stub. **DONE locally.**
+6. Deploy and verify in authenticated production `/shell`. **PENDING.**
+**Progress (2026-06-16):** Updated `src/hooks/useYouAgent.ts` with a deterministic opening session brief, recent sessions/repo mirror queries, New Chat reinitialization, and half-empty session restore skipping. Local `npm run lint`, `npm run build`, and `git diff --check` passed. Remaining: deploy, CI, Vercel Ready, and authenticated production QA.
+
 ### 123. Clean up `/shell` right detail pane responsiveness and usefulness
 **Status:** IN PROGRESS (code complete and deployed; Houston visual approval pending)
 **Verified:** NO

@@ -7,6 +7,12 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-16 — Shell opening intelligence brief
+- [x] Build an opening brief from real shell context: display name, bundle version, tracked projects, private project folders, memories, recent sessions, and repo mirror status
+- [x] Require the opening agent greeting to acknowledge the user by name, reference concrete recent work/activity/milestones, and suggest specific next steps
+- [x] Make New Chat run the opening greeting instead of leaving only a generic system notice
+- [x] Skip restoring half-empty recent sessions that have no assistant reply, preventing a stray one-word command from becoming the blank shell state
+
 ### 2026-06-16 — Shell right-panel responsiveness
 - [x] Rebalance the shell split so the right detail pane has a real minimum width and stored over-wide chat ratios clamp down safely
 - [x] Move split-screen behavior to large desktop only, letting tablet/narrow desktop use the full-width shell/preview toggle instead of cramped columns
