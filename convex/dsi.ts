@@ -167,6 +167,88 @@ type TaskQueueSignal = {
   };
 };
 
+type BadFitnessMetric = {
+  date: string | null;
+  source: string | null;
+  steps: number | null;
+  activeEnergy: number | null;
+  exerciseMinutes: number | null;
+  sleepMinutes: number | null;
+  restingHeartRate: number | null;
+  hrv: number | null;
+  vo2Max: number | null;
+  bodyWeight: number | null;
+  bodyFatPercentage: number | null;
+  readiness: number | null;
+};
+
+type BadBodyScanMetric = {
+  id: string | null;
+  date: string | null;
+  status: string | null;
+  weightLbs: number | null;
+  bodyFatPct: number | null;
+  leanMassLbs: number | null;
+  fatMassLbs: number | null;
+  ffmi: number | null;
+  bmi: number | null;
+  method: string | null;
+};
+
+type BadFitnessTestMetric = {
+  id: string | null;
+  date: string | null;
+  test: string;
+  value: number | null;
+  unit: string | null;
+  source: string | null;
+  note: string | null;
+};
+
+type BadHealthScore = {
+  score: number | null;
+  band: string | null;
+  label: string | null;
+  summary: string | null;
+};
+
+type BadFitnessSignal = {
+  provider: "badapp-rest" | "youmd-custom-data" | "badapp-unconfigured";
+  capturedAt: string;
+  configured: boolean;
+  connectionMode: "badapp_api_key" | "private_custom_data" | "missing";
+  restBase: string | null;
+  headline: string | null;
+  focus: string[];
+  scores: {
+    recovery: BadHealthScore;
+    readiness: BadHealthScore;
+    trainingLoad: BadHealthScore & { ratio: number | null; acute: number | null; chronic: number | null };
+    sleep: { band: string | null; lastNightHours: number | null; avg7Hours: number | null; debtHours: number | null; summary: string | null };
+    bioAge: { available: boolean; fitnessAge: number | null; vo2Max: number | null; band: string | null; summary: string | null };
+    dataQuality: { score: number | null; missing: string[] };
+  };
+  totals: {
+    healthSummaries: number;
+    bodyScans: number;
+    fitnessTests: number;
+    sourceCount: number;
+  };
+  latest: {
+    healthSummary: BadFitnessMetric | null;
+    bodyScan: BadBodyScanMetric | null;
+    fitnessTest: BadFitnessTestMetric | null;
+  };
+  healthSummaries: BadFitnessMetric[];
+  bodyScans: BadBodyScanMetric[];
+  fitnessTests: BadFitnessTestMetric[];
+  sources: Array<{ name: string; metrics: string[] }>;
+  parser: {
+    mode: "badapp_state_of_you";
+    note: string;
+  };
+};
+
 type ProjectCatalogSignal = {
   provider: string;
   capturedAt: string;
@@ -834,6 +916,319 @@ function buildTaskQueueSignal(customData: unknown, now = new Date()): TaskQueueS
   };
 }
 
+type BadFitnessPayload = {
+  healthIntelligence?: unknown;
+  healthSummaries?: unknown[];
+  bodyScans?: unknown[];
+  fitnessTests?: unknown[];
+};
+
+type BadappAuthConfig = {
+  restBase: string;
+  headers: Record<string, string>;
+};
+
+function badappAuthConfig(): BadappAuthConfig | null {
+  const key = process.env.YOUMD_BADAPP_API_KEY || process.env.BADAPP_API_KEY || process.env.BAD_API_KEY;
+  if (!key) return null;
+  const base = (process.env.YOUMD_BADAPP_BASE_URL || process.env.BADAPP_BASE_URL || "https://bad.app")
+    .replace(/\/+$/, "");
+  return {
+    restBase: `${base}/api/v1`,
+    headers: {
+      Authorization: `Bearer ${key}`,
+      Accept: "application/json",
+    },
+  };
+}
+
+async function badappGet<T>(config: BadappAuthConfig, path: string): Promise<T> {
+  const res = await fetch(`${config.restBase}${path}`, {
+    headers: config.headers,
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`bad.app ${path} ${res.status}: ${body.slice(0, 240)}`);
+  }
+  return (await res.json()) as T;
+}
+
+async function fetchBadFitnessPayload(config: BadappAuthConfig): Promise<BadFitnessPayload> {
+  const [healthIntelligence, healthSummaries, bodyScans, fitnessTests] = await Promise.all([
+    badappGet<unknown>(config, "/health-intelligence").catch((error) => ({ error: error instanceof Error ? error.message : "health intelligence fetch failed" })),
+    badappGet<{ summaries?: unknown[] }>(config, "/health-summaries?limit=14").catch(() => ({ summaries: [] })),
+    badappGet<{ scans?: unknown[] }>(config, "/body-scans").catch(() => ({ scans: [] })),
+    badappGet<{ tests?: unknown[] }>(config, "/fitness-tests?limit=30").catch(() => ({ tests: [] })),
+  ]);
+  return {
+    healthIntelligence,
+    healthSummaries: Array.isArray(healthSummaries.summaries) ? healthSummaries.summaries : [],
+    bodyScans: Array.isArray(bodyScans.scans) ? bodyScans.scans : [],
+    fitnessTests: Array.isArray(fitnessTests.tests) ? fitnessTests.tests : [],
+  };
+}
+
+function arrayFromRecord(record: Record<string, unknown> | null, keys: string[]): unknown[] {
+  if (!record) return [];
+  for (const key of keys) {
+    const value = record[key];
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+}
+
+function pickRecord(record: Record<string, unknown> | null, keys: string[]): Record<string, unknown> | null {
+  if (!record) return null;
+  for (const key of keys) {
+    const value = asRecord(record[key]);
+    if (value) return value;
+  }
+  return null;
+}
+
+function findBadFitnessPayload(customData: unknown): { sourceKey: string; payload: BadFitnessPayload } | null {
+  const data = asRecord(customData);
+  if (!data) return null;
+  const candidates: Array<[string, Record<string, unknown> | null]> = [
+    ["badapp", asRecord(data.badapp)],
+    ["badApp", asRecord(data.badApp)],
+    ["badfit", asRecord(data.badfit)],
+    ["fitness", asRecord(data.fitness)],
+    ["health", asRecord(data.health)],
+  ];
+  for (const [sourceKey, record] of candidates) {
+    if (!record) continue;
+    const healthIntelligence = pickRecord(record, ["healthIntelligence", "intelligence", "stateOfYou"]);
+    const healthSummaries = arrayFromRecord(record, ["healthSummaries", "summaries", "dailyHealthSummaries", "daily_health_summaries"]);
+    const bodyScans = arrayFromRecord(record, ["bodyScans", "scans", "body_scans"]);
+    const fitnessTests = arrayFromRecord(record, ["fitnessTests", "tests", "fieldTests", "fitness_tests"]);
+    if (healthIntelligence || healthSummaries.length || bodyScans.length || fitnessTests.length) {
+      return {
+        sourceKey,
+        payload: {
+          healthIntelligence: healthIntelligence ?? undefined,
+          healthSummaries,
+          bodyScans,
+          fitnessTests,
+        },
+      };
+    }
+  }
+  return null;
+}
+
+function scoreFromRecord(value: unknown): BadHealthScore {
+  const record = asRecord(value);
+  return {
+    score: numberOrNull(record?.score),
+    band: stringOrNull(record?.band),
+    label: stringOrNull(record?.label),
+    summary: stringOrNull(record?.summary),
+  };
+}
+
+function normalizeBadHealthSummary(value: unknown): BadFitnessMetric | null {
+  const record = asRecord(value);
+  if (!record) return null;
+  const date = stringOrNull(record.date);
+  return {
+    date,
+    source: stringOrNull(record.source),
+    steps: numberOrNull(record.steps),
+    activeEnergy: numberOrNull(record.activeEnergy ?? record.active_energy),
+    exerciseMinutes: numberOrNull(record.exerciseMinutes ?? record.exercise_minutes),
+    sleepMinutes: numberOrNull(record.sleepMinutes ?? record.sleep_minutes),
+    restingHeartRate: numberOrNull(record.restingHeartRate ?? record.resting_heart_rate),
+    hrv: numberOrNull(record.hrv),
+    vo2Max: numberOrNull(record.vo2Max ?? record.vo2_max),
+    bodyWeight: numberOrNull(record.bodyWeight ?? record.body_weight ?? record.weight),
+    bodyFatPercentage: numberOrNull(record.bodyFatPercentage ?? record.body_fat_percentage ?? record.bodyFatPct),
+    readiness: numberOrNull(record.readiness),
+  };
+}
+
+function normalizeBadBodyScan(value: unknown): BadBodyScanMetric | null {
+  const record = asRecord(value);
+  if (!record) return null;
+  return {
+    id: stringOrNull(record._id ?? record.id),
+    date: stringOrNull(record.date),
+    status: stringOrNull(record.status),
+    weightLbs: numberOrNull(record.weightLbs ?? record.weightLb ?? record.weight),
+    bodyFatPct: numberOrNull(record.bodyFatPct ?? record.bodyFatPercentage),
+    leanMassLbs: numberOrNull(record.leanMassLbs ?? record.leanMass),
+    fatMassLbs: numberOrNull(record.fatMassLbs ?? record.fatMass),
+    ffmi: numberOrNull(record.ffmi),
+    bmi: numberOrNull(record.bmi),
+    method: stringOrNull(record.method),
+  };
+}
+
+function normalizeBadFitnessTest(value: unknown): BadFitnessTestMetric | null {
+  const record = asRecord(value);
+  if (!record) return null;
+  const test = stringOrNull(record.test ?? record.name);
+  if (!test) return null;
+  return {
+    id: stringOrNull(record._id ?? record.id),
+    date: stringOrNull(record.date),
+    test,
+    value: numberOrNull(record.value ?? record.count),
+    unit: stringOrNull(record.unit),
+    source: stringOrNull(record.source),
+    note: stringOrNull(record.note),
+  };
+}
+
+function normalizeBadSources(value: unknown): Array<{ name: string; metrics: string[] }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      const record = asRecord(item);
+      const name = stringOrNull(record?.name);
+      if (!name) return null;
+      const metrics = Array.isArray(record?.metrics)
+        ? record.metrics.map((metric) => stringOrNull(metric)).filter((metric): metric is string => metric !== null)
+        : [];
+      return { name, metrics };
+    })
+    .filter((source): source is { name: string; metrics: string[] } => source !== null)
+    .slice(0, 12);
+}
+
+function buildBadFitnessSignal(args: {
+  payload: BadFitnessPayload;
+  provider: BadFitnessSignal["provider"];
+  connectionMode: BadFitnessSignal["connectionMode"];
+  restBase?: string | null;
+  now?: Date;
+}): BadFitnessSignal {
+  const now = args.now ?? new Date();
+  const intelligence = asRecord(args.payload.healthIntelligence);
+  const healthSummaries = (args.payload.healthSummaries ?? [])
+    .map(normalizeBadHealthSummary)
+    .filter((summary): summary is BadFitnessMetric => summary !== null)
+    .slice(0, 14);
+  const bodyScans = (args.payload.bodyScans ?? [])
+    .map(normalizeBadBodyScan)
+    .filter((scan): scan is BadBodyScanMetric => scan !== null)
+    .slice(0, 12);
+  const fitnessTests = (args.payload.fitnessTests ?? [])
+    .map(normalizeBadFitnessTest)
+    .filter((test): test is BadFitnessTestMetric => test !== null)
+    .slice(0, 30);
+  const sleep = asRecord(intelligence?.sleep);
+  const bioAge = asRecord(intelligence?.bioAge);
+  const trainingLoad = asRecord(intelligence?.trainingLoad);
+  const dataQuality = asRecord(intelligence?.dataQuality);
+  const focus = Array.isArray(intelligence?.focus)
+    ? intelligence.focus.map((item) => stringOrNull(item)).filter((item): item is string => item !== null).slice(0, 5)
+    : [];
+  const sources = normalizeBadSources(intelligence?.sources);
+  return {
+    provider: args.provider,
+    capturedAt: now.toISOString(),
+    configured: true,
+    connectionMode: args.connectionMode,
+    restBase: args.restBase ?? null,
+    headline: stringOrNull(intelligence?.headline),
+    focus,
+    scores: {
+      recovery: scoreFromRecord(intelligence?.recovery),
+      readiness: scoreFromRecord(intelligence?.readiness),
+      trainingLoad: {
+        ...scoreFromRecord(trainingLoad),
+        ratio: numberOrNull(trainingLoad?.ratio),
+        acute: numberOrNull(trainingLoad?.acute),
+        chronic: numberOrNull(trainingLoad?.chronic),
+      },
+      sleep: {
+        band: stringOrNull(sleep?.band),
+        lastNightHours: numberOrNull(sleep?.lastNightHours),
+        avg7Hours: numberOrNull(sleep?.avg7Hours),
+        debtHours: numberOrNull(sleep?.debtHours),
+        summary: stringOrNull(sleep?.summary),
+      },
+      bioAge: {
+        available: bioAge?.available === true,
+        fitnessAge: numberOrNull(bioAge?.fitnessAge),
+        vo2Max: numberOrNull(bioAge?.vo2Max),
+        band: stringOrNull(bioAge?.band),
+        summary: stringOrNull(bioAge?.summary),
+      },
+      dataQuality: {
+        score: numberOrNull(dataQuality?.score),
+        missing: Array.isArray(dataQuality?.missing)
+          ? dataQuality.missing.map((item) => stringOrNull(item)).filter((item): item is string => item !== null).slice(0, 12)
+          : [],
+      },
+    },
+    totals: {
+      healthSummaries: healthSummaries.length,
+      bodyScans: bodyScans.length,
+      fitnessTests: fitnessTests.length,
+      sourceCount: sources.length,
+    },
+    latest: {
+      healthSummary: healthSummaries[0] ?? null,
+      bodyScan: bodyScans[0] ?? null,
+      fitnessTest: fitnessTests[0] ?? null,
+    },
+    healthSummaries,
+    bodyScans,
+    fitnessTests,
+    sources,
+    parser: {
+      mode: "badapp_state_of_you",
+      note: args.connectionMode === "badapp_api_key"
+        ? "Fetched from Bad.app REST using the badstack bearer-key contract and normalized for You.md DSI."
+        : "Hydrated from private You.md customData using Bad.app's State of You / health summary / body scan / fitness test shapes.",
+    },
+  };
+}
+
+function buildBadFitnessUnconfigured(now = new Date()): BadFitnessSignal {
+  return {
+    provider: "badapp-unconfigured",
+    capturedAt: now.toISOString(),
+    configured: false,
+    connectionMode: "missing",
+    restBase: null,
+    headline: null,
+    focus: [],
+    scores: {
+      recovery: { score: null, band: null, label: null, summary: null },
+      readiness: { score: null, band: null, label: null, summary: null },
+      trainingLoad: { score: null, band: null, label: null, summary: null, ratio: null, acute: null, chronic: null },
+      sleep: { band: null, lastNightHours: null, avg7Hours: null, debtHours: null, summary: null },
+      bioAge: { available: false, fitnessAge: null, vo2Max: null, band: null, summary: null },
+      dataQuality: { score: null, missing: [] },
+    },
+    totals: { healthSummaries: 0, bodyScans: 0, fitnessTests: 0, sourceCount: 0 },
+    latest: { healthSummary: null, bodyScan: null, fitnessTest: null },
+    healthSummaries: [],
+    bodyScans: [],
+    fitnessTests: [],
+    sources: [],
+    parser: {
+      mode: "badapp_state_of_you",
+      note: "Bad.app connector is not configured. Set YOUMD_BADAPP_API_KEY/BADAPP_API_KEY/BAD_API_KEY or add private customData.badapp to hydrate this component.",
+    },
+  };
+}
+
+function buildBadFitnessSignalFromCustomData(customData: unknown): BadFitnessSignal {
+  const found = findBadFitnessPayload(customData);
+  if (!found) return buildBadFitnessUnconfigured();
+  return buildBadFitnessSignal({
+    payload: found.payload,
+    provider: "youmd-custom-data",
+    connectionMode: "private_custom_data",
+    restBase: `privateContext.customData.${found.sourceKey}`,
+  });
+}
+
 async function fetchCalendarEvents(config: CalendarAuthConfig, windowStart: string, windowEnd: string): Promise<{ events: AgendaEventSignal[]; dropped: number; totalSeen: number }> {
   const calendarIds = await listCalendarIds(config);
   const results = await Promise.all(
@@ -1455,6 +1850,47 @@ export const refreshTaskQueue = mutation({
   },
 });
 
+export const refreshBadFitness = action({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots">; configured: boolean; summary: string }> => {
+    await requireOwner(ctx, args.clerkId);
+    const config = badappAuthConfig();
+    if (!config) {
+      const result = await ctx.runMutation(internal.dsi.persistBadFitnessFromPrivateContext, {
+        clerkId: args.clerkId,
+        userId: args.userId,
+      });
+      return { ...result, summary: result.summary };
+    }
+    const payload = await fetchBadFitnessPayload(config);
+    const fitness = buildBadFitnessSignal({
+      payload,
+      provider: "badapp-rest",
+      connectionMode: "badapp_api_key",
+      restBase: config.restBase,
+    });
+    const result = await ctx.runMutation(internal.dsi.persistBadFitnessComponent, {
+      clerkId: args.clerkId,
+      userId: args.userId,
+      fitness,
+    });
+    return { ...result, configured: fitness.configured, summary: badFitnessSummary(fitness) };
+  },
+});
+
+export const refreshBadFitnessFromContext = mutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots">; configured: boolean; summary: string }> => {
+    return await persistBadFitnessFromPrivateContextImpl(ctx, args);
+  },
+});
+
 async function persistProjectCatalog(
   ctx: MutationCtx,
   args: {
@@ -1659,6 +2095,114 @@ export const persistTaskQueueComponent = internalMutation({
       clerkId: args.clerkId,
       userId: args.userId,
       taskQueue: args.taskQueue as TaskQueueSignal,
+    });
+  },
+});
+
+function badFitnessSummary(fitness: BadFitnessSignal): string {
+  if (!fitness.configured) return "Bad.app connector missing / add bad_sk key or private customData.badapp";
+  const recovery = fitness.scores.recovery.score === null ? "--" : `${fitness.scores.recovery.score} recovery`;
+  const readiness = fitness.scores.readiness.score === null ? "--" : `${fitness.scores.readiness.score} readiness`;
+  const bodyFat = fitness.latest.bodyScan?.bodyFatPct === null || fitness.latest.bodyScan?.bodyFatPct === undefined
+    ? "body scan pending"
+    : `${fitness.latest.bodyScan.bodyFatPct}% body fat`;
+  const sleep = fitness.scores.sleep.lastNightHours === null
+    ? "sleep pending"
+    : `${fitness.scores.sleep.lastNightHours}h sleep`;
+  return [recovery, readiness, bodyFat, sleep].join(" / ");
+}
+
+async function privateContextForUser(ctx: MutationCtx, userId: Id<"users">): Promise<Doc<"privateContext"> | null> {
+  const profile = await ctx.db
+    .query("profiles")
+    .withIndex("by_ownerId", (q) => q.eq("ownerId", userId))
+    .first();
+  return profile
+    ? await ctx.db
+        .query("privateContext")
+        .withIndex("by_profileId", (q) => q.eq("profileId", profile._id))
+        .first()
+    : null;
+}
+
+async function persistBadFitness(
+  ctx: MutationCtx,
+  args: {
+    clerkId: string;
+    userId: Id<"users">;
+    fitness: BadFitnessSignal;
+  }
+): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> {
+  await ownerForUserId(ctx, args.clerkId, args.userId);
+  const fitness = args.fitness;
+  const snapshotId = await insertSnapshot(ctx, {
+    userId: args.userId,
+    connectorKind: "badapp",
+    sourceKey: "badapp-fitness",
+    sourceType: "dsi_component",
+    normalized: fitness,
+    citations: fitness.restBase ? [{ provider: fitness.provider, url: fitness.restBase }] : [{ provider: fitness.provider }],
+    visibility: "private",
+    trustLevel: fitness.configured ? "computed" : "low",
+    metadata: {
+      origin: fitness.provider === "badapp-rest" ? "bad.app" : "youmd",
+      adapter: "badapp-fitness-state-of-you",
+      connectionMode: fitness.connectionMode,
+    },
+  });
+  const componentId = await upsertComponent(ctx, {
+    userId: args.userId,
+    slug: "badapp-fitness",
+    componentType: "fitness",
+    title: "Fitness - Bad.app",
+    summary: badFitnessSummary(fitness),
+    data: fitness,
+    sourceSnapshotIds: [snapshotId],
+    trustLevel: fitness.configured ? "computed" : "low",
+    metadata: { provider: fitness.provider, configurable: true, origin: fitness.provider === "badapp-rest" ? "bad.app" : "youmd" },
+  });
+  return { componentId, snapshotId };
+}
+
+async function persistBadFitnessFromPrivateContextImpl(
+  ctx: MutationCtx,
+  args: {
+    clerkId: string;
+    userId: Id<"users">;
+  }
+): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots">; configured: boolean; summary: string }> {
+  await ownerForUserId(ctx, args.clerkId, args.userId);
+  const privateContext = await privateContextForUser(ctx, args.userId);
+  const fitness = buildBadFitnessSignalFromCustomData(privateContext?.customData);
+  const result = await persistBadFitness(ctx, {
+    clerkId: args.clerkId,
+    userId: args.userId,
+    fitness,
+  });
+  return { ...result, configured: fitness.configured, summary: badFitnessSummary(fitness) };
+}
+
+export const persistBadFitnessFromPrivateContext = internalMutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots">; configured: boolean; summary: string }> => {
+    return await persistBadFitnessFromPrivateContextImpl(ctx, args);
+  },
+});
+
+export const persistBadFitnessComponent = internalMutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+    fitness: v.any(),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> => {
+    return await persistBadFitness(ctx, {
+      clerkId: args.clerkId,
+      userId: args.userId,
+      fitness: args.fitness as BadFitnessSignal,
     });
   },
 });

@@ -334,18 +334,18 @@ function buildDailyBriefingMarkdown(args: {
   const dsiLines = args.dsiComponents.slice(0, 12).map((component) => (
     `- ${component.title}: ${component.summary} (${component.visibility} / ${component.trustLevel} / updated ${new Date(component.updatedAt).toISOString()})`
   ));
-  const weatherSurfLines = args.dsiComponents
-    .filter((component) => component.componentType === "weather" || component.componentType === "surf")
+  const bodySignalLines = args.dsiComponents
+    .filter((component) => component.componentType === "weather" || component.componentType === "surf" || component.componentType === "fitness")
     .slice(0, 6)
     .map((component) => `- ${component.title}: ${component.summary}`);
+  const hasFitnessDsi = args.dsiComponents.some((component) => component.componentType === "fitness");
 
-  const externalPlaceholders = [
-    "- Perplexity industry pulse: not wired in this deterministic foundation run.",
-    "- Google Calendar/tasks: connector adapter pending.",
-    "- BAMF.ai/BAMF OS analytics: connector adapter pending.",
-    "- Bad.app fitness/body signal: connector adapter pending.",
-    "- School crawler: connector adapter pending.",
-  ];
+  const industryPlaceholder = "- Perplexity industry pulse: not wired in this deterministic foundation run.";
+  const agendaPlaceholder = "- Google Calendar/tasks: connector adapter pending.";
+  const bamfPlaceholder = "- BAMF.ai/BAMF OS analytics: connector adapter pending.";
+  const badappPlaceholder = "- Bad.app fitness/body signal: connector adapter pending.";
+  const schoolPlaceholder = "- School crawler: connector adapter pending.";
+  const connectedAppPlaceholders = [bamfPlaceholder, ...(hasFitnessDsi ? [] : [badappPlaceholder])];
 
   const summary = [
     `${args.projects.length} project${args.projects.length === 1 ? "" : "s"}`,
@@ -358,10 +358,10 @@ function buildDailyBriefingMarkdown(args: {
     `# Daily Briefing — ${args.date}`,
     "",
     "## industry pulse",
-    ...externalPlaceholders.slice(0, 1),
+    industryPlaceholder,
     "",
     "## agenda",
-    ...externalPlaceholders.slice(1, 2),
+    agendaPlaceholder,
     "",
     "## code carryover",
     activityLines.length ? activityLines.join("\n") : "- no agent/code activity recorded in this window yet.",
@@ -370,7 +370,7 @@ function buildDailyBriefingMarkdown(args: {
     projectLines.length ? projectLines.join("\n") : "- no projects found in the latest identity bundle.",
     "",
     "## connected app pulse",
-    ...externalPlaceholders.slice(2, 4),
+    ...connectedAppPlaceholders,
     dsiLines.length ? dsiLines.join("\n") : "- no DSI components captured yet.",
     "",
     "## source and crawler state",
@@ -388,8 +388,8 @@ function buildDailyBriefingMarkdown(args: {
       : "- no repo mirror connected.",
     "",
     "## body / weather / surf",
-    weatherSurfLines.length ? weatherSurfLines.join("\n") : "- weather/surf DSI components have not been refreshed yet.",
-    ...externalPlaceholders.slice(4),
+    bodySignalLines.length ? bodySignalLines.join("\n") : "- body/weather/surf DSI components have not been refreshed yet.",
+    schoolPlaceholder,
   ].join("\n");
 
   return {
@@ -421,7 +421,7 @@ function buildDailyBriefingMarkdown(args: {
             syncedAt: args.repoMirror.syncedAt,
           }
         : null,
-      externalAdaptersPending: ["perplexity", "google-calendar", "bamf", "badapp", "school"],
+      externalAdaptersPending: ["perplexity", "google-calendar", "bamf", ...(hasFitnessDsi ? [] : ["badapp"]), "school"],
     },
   };
 }

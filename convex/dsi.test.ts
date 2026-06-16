@@ -385,6 +385,130 @@ describe("dsi components", () => {
     expect(snapshots[0].trustLevel).toBe("computed");
   });
 
+  it("builds a private Bad.app fitness component from customData", async () => {
+    const t = convexTest(schema);
+    const userId = await seedUser(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    await t.run(async (ctx) => {
+      const profileId = await ctx.db.insert("profiles", {
+        username: "bad-owner",
+        name: "Bad Owner",
+        ownerId: userId,
+        isClaimed: true,
+        claimedAt: Date.now(),
+        createdAt: Date.now(),
+      });
+      await ctx.db.insert("privateContext", {
+        profileId,
+        customData: {
+          badapp: {
+            healthIntelligence: {
+              headline: "Houston, recovery 82, training load optimal, fitness age ~31. Hold the line.",
+              focus: ["Hold the line — recovery, load, and sleep are all in range."],
+              recovery: { score: 82, band: "green", label: "Primed", summary: "Recovery is primed versus baseline." },
+              readiness: { score: 78, band: "green", label: "Go hard", summary: "Today is a go hard day." },
+              trainingLoad: { score: 85, band: "green", label: "Optimal", ratio: 1.08, acute: 240, chronic: 222 },
+              sleep: { band: "green", lastNightHours: 7.8, avg7Hours: 7.3, debtHours: 0.5, summary: "7.8h last night." },
+              bioAge: { available: true, fitnessAge: 31, vo2Max: 48.2, band: "green", summary: "VO2 reads young." },
+              dataQuality: { score: 86, missing: ["Blood panel"] },
+              sources: [
+                { name: "Apple Health", metrics: ["HRV", "Sleep", "Workouts"] },
+                { name: "Strava", metrics: ["Workouts"] },
+              ],
+            },
+            healthSummaries: [
+              {
+                date: "2026-06-16",
+                source: "apple_health",
+                steps: 12880,
+                activeEnergy: 840,
+                exerciseMinutes: 72,
+                sleepMinutes: 468,
+                restingHeartRate: 49,
+                hrv: 72,
+                vo2Max: 48.2,
+                bodyWeight: 181.4,
+                bodyFatPercentage: 14.8,
+                readiness: 78,
+              },
+            ],
+            bodyScans: [
+              {
+                _id: "scan_1",
+                date: "2026-06-15",
+                status: "done",
+                weightLbs: 181.4,
+                bodyFatPct: 14.8,
+                leanMassLbs: 154.6,
+                fatMassLbs: 26.8,
+                ffmi: 22.1,
+                bmi: 24.6,
+                method: "ai-scan",
+              },
+            ],
+            fitnessTests: [
+              {
+                _id: "fit_1",
+                date: "2026-06-14",
+                test: "pushups",
+                value: 62,
+                unit: "reps",
+                source: "manual",
+                note: "strict form",
+              },
+            ],
+          },
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
+    const result = await asOwner.mutation(api.dsi.refreshBadFitnessFromContext, {
+      clerkId: CLERK,
+      userId,
+    });
+    expect(result.configured).toBe(true);
+    expect(result.summary).toContain("82 recovery");
+
+    const components = await asOwner.query(api.dsi.listComponents, {
+      clerkId: CLERK,
+      userId,
+    });
+    const fitness = components.find((component) => component.slug === "badapp-fitness");
+    expect(fitness?.visibility).toBe("private");
+    expect(fitness?.componentType).toBe("fitness");
+    expect(fitness?.summary).toContain("78 readiness");
+    expect(fitness?.summary).toContain("14.8% body fat");
+    expect(fitness?.data.provider).toBe("youmd-custom-data");
+    expect(fitness?.data.connectionMode).toBe("private_custom_data");
+    expect(fitness?.data.headline).toContain("fitness age");
+    expect(fitness?.data.scores.bioAge).toMatchObject({ available: true, fitnessAge: 31, vo2Max: 48.2 });
+    expect(fitness?.data.latest.healthSummary).toMatchObject({
+      date: "2026-06-16",
+      steps: 12880,
+      bodyWeight: 181.4,
+    });
+    expect(fitness?.data.latest.bodyScan).toMatchObject({
+      id: "scan_1",
+      bodyFatPct: 14.8,
+    });
+    expect(fitness?.data.latest.fitnessTest).toMatchObject({
+      test: "pushups",
+      value: 62,
+    });
+
+    const snapshots = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("sourceSnapshots")
+        .withIndex("by_userId", (q) => q.eq("userId", userId))
+        .collect();
+    });
+    expect(snapshots.map((snapshot) => snapshot.sourceKey)).toEqual(["badapp-fitness"]);
+    expect(snapshots[0].connectorKind).toBe("badapp");
+    expect(snapshots[0].trustLevel).toBe("computed");
+  });
+
   it("builds a GitHub project catalog component from tracked projects and repo mirror stats", async () => {
     const t = convexTest(schema);
     const userId = await seedUser(t);

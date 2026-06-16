@@ -495,6 +495,7 @@ function ArtifactHome({
   onRefreshSchoolLogistics,
   onRefreshAgenda,
   onRefreshTaskQueue,
+  onRefreshBadFitness,
   onToggleLoopDefinition,
   selectedRunId,
   loopSnapshots,
@@ -519,6 +520,7 @@ function ArtifactHome({
   onRefreshSchoolLogistics: () => void;
   onRefreshAgenda: () => void;
   onRefreshTaskQueue: () => void;
+  onRefreshBadFitness: () => void;
   onToggleLoopDefinition: (definition: LoopReportDefinition) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
   loopSnapshots: SourceSnapshot[] | undefined;
@@ -560,6 +562,7 @@ function ArtifactHome({
             onRefreshSchoolLogistics={onRefreshSchoolLogistics}
             onRefreshAgenda={onRefreshAgenda}
             onRefreshTaskQueue={onRefreshTaskQueue}
+            onRefreshBadFitness={onRefreshBadFitness}
             onToggleDefinition={onToggleLoopDefinition}
             onSelectArtifact={onSelect}
             selectedRunId={selectedRunId}
@@ -653,6 +656,7 @@ function LoopReportsControlPanel({
   onRefreshSchoolLogistics,
   onRefreshAgenda,
   onRefreshTaskQueue,
+  onRefreshBadFitness,
   onToggleDefinition,
   onSelectArtifact,
   selectedRunId,
@@ -674,6 +678,7 @@ function LoopReportsControlPanel({
   onRefreshSchoolLogistics: () => void;
   onRefreshAgenda: () => void;
   onRefreshTaskQueue: () => void;
+  onRefreshBadFitness: () => void;
   onToggleDefinition: (definition: LoopReportDefinition) => void;
   onSelectArtifact: (path: string) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
@@ -796,6 +801,15 @@ function LoopReportsControlPanel({
               className="h-8 self-start text-[10px]"
             >
               {dsiBusy ? "refreshing..." : "refresh tasks"}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onRefreshBadFitness}
+              disabled={dsiBusy}
+              className="h-8 self-start text-[10px]"
+            >
+              {dsiBusy ? "refreshing..." : "refresh bad.app"}
             </Button>
             <Button
               size="sm"
@@ -1365,10 +1379,12 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const updateLoopDefinitionStatus = useMutation(api.loopReports.updateDefinitionStatus);
   const refreshProjectCatalogFallback = useMutation(api.dsi.refreshProjectCatalog);
   const refreshTaskQueue = useMutation(api.dsi.refreshTaskQueue);
+  const refreshBadFitnessFromContext = useMutation(api.dsi.refreshBadFitnessFromContext);
   const refreshProjectCatalog = useAction(api.githubProjects.refreshProjectCatalogDsi);
   const refreshWeatherSurf = useAction(api.dsi.refreshWeatherSurf);
   const refreshSchoolLogistics = useAction(api.dsi.refreshSchoolLogistics);
   const refreshAgenda = useAction(api.dsi.refreshAgenda);
+  const refreshBadFitness = useAction(api.dsi.refreshBadFitness);
   const memories = useQuery(api.memories.listMemories, clerkId && userId ? { clerkId, userId } : "skip");
   const sessions = useQuery(api.memories.listSessions, clerkId && userId ? { clerkId, userId, limit: 20 } : "skip");
   const loopReportDefinitions = useQuery(
@@ -1794,6 +1810,29 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     }
   }, [user, userId, refreshTaskQueue]);
 
+  const handleRefreshBadFitness = useCallback(async () => {
+    if (!user?.id || !userId) return;
+    setDsiBusy(true);
+    setDsiStatus(null);
+    try {
+      const result = await refreshBadFitness({ clerkId: user.id, userId });
+      setWorkspaceMode("artifacts");
+      setDsiStatus(result.configured ? `refreshed bad.app: ${result.summary}` : "bad.app saved: connector missing");
+      setTimeout(() => setDsiStatus(null), 3000);
+    } catch (err) {
+      try {
+        const fallback = await refreshBadFitnessFromContext({ clerkId: user.id, userId });
+        setWorkspaceMode("artifacts");
+        setDsiStatus(fallback.configured ? `refreshed bad.app from private context: ${fallback.summary}` : "bad.app saved: connector missing");
+        setTimeout(() => setDsiStatus(null), 3000);
+      } catch {
+        setDsiStatus(`error: ${err instanceof Error ? err.message : "failed to refresh bad.app"}`);
+      }
+    } finally {
+      setDsiBusy(false);
+    }
+  }, [user, userId, refreshBadFitness, refreshBadFitnessFromContext]);
+
   const handleToggleLoopDefinition = useCallback(async (definition: LoopReportDefinition) => {
     if (!user?.id) return;
     setLoopBusy(true);
@@ -2083,6 +2122,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
               onRefreshSchoolLogistics={handleRefreshSchoolLogistics}
               onRefreshAgenda={handleRefreshAgenda}
               onRefreshTaskQueue={handleRefreshTaskQueue}
+              onRefreshBadFitness={handleRefreshBadFitness}
               onToggleLoopDefinition={handleToggleLoopDefinition}
               selectedRunId={selectedLoopRunId}
               loopSnapshots={loopSnapshots}

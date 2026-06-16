@@ -47,8 +47,9 @@ PRD Version: 2.3
 - [x] Port the first h.computer school Google Doc crawler into a private school logistics DSI component with source snapshots and Reports refresh controls
 - [x] Port the first h.computer Google Calendar agenda filter into a private agenda DSI component with native bearer-token / legacy connector-gateway auth and an honest unconfigured state
 - [x] Add the first private task queue DSI component from h.computer-compatible `privateContext.customData` task arrays, with Reports refresh controls and source snapshots
-- [ ] Add external report adapters for Perplexity industry pulse, BAMF/BAMF OS analytics, Bad.app fitness/body, richer school calendar writeback, and external task apps
-- [ ] Port h.computer historical daily log, daily journal, research/blog crawler, richer task creation/editing, BAMF/BAMF OS, and Bad.app source adapters into You.md-native connectors
+- [x] Add the first Bad.app fitness/body DSI component with REST/customData hydration, Reports refresh controls, source snapshots, and daily briefing body signal inclusion
+- [ ] Add external report adapters for Perplexity industry pulse, BAMF/BAMF OS analytics, richer school calendar writeback, and external task apps
+- [ ] Port h.computer historical daily log, daily journal, research/blog crawler, richer task creation/editing, BAMF/BAMF OS, and richer Bad.app historical/range source adapters into You.md-native connectors
 - [ ] Add owner-approved public profile rendering for selected DSI catalog components
 - [x] Add secure public profile chat widget and `/api/v1/profiles/:username/conversation` first slice with public-context-only answers and provenance
 - [x] Add hosted MCP parity for public profile conversation through `ask_public_profile`

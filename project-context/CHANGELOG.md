@@ -2,6 +2,13 @@
 
 ## 2026-06-16 — DSI weather and surf components
 
+### feat(convex/web): add Bad.app fitness DSI adapter
+- Added a private `badapp-fitness` DSI component that normalizes Bad.app/BAD Stack State of You intelligence, health summaries, body scans, and fitness tests into the You.md personal API/MCP catalog.
+- The adapter supports live Bad.app REST hydration through `YOUMD_BADAPP_API_KEY`, `BADAPP_API_KEY`, or `BAD_API_KEY`, plus a private `customData.badapp`/`badApp`/`badfit`/`fitness`/`health` fallback so the same component can be tested without external secrets.
+- The Files/Reports DSI Catalog now includes `refresh bad.app`, persists source snapshots with Bad.app provenance, and surfaces an honest unconfigured state when no key or private custom data exists.
+- Daily Loop Reports now include fitness DSI components in the body/weather/surf section and stop listing Bad.app as an external adapter pending once `badapp-fitness` has been refreshed.
+- Verified locally with Convex codegen and focused DSI/Loop Report tests.
+
 ### feat(convex/web): add private task queue DSI adapter
 - Added a You.md-native `task-queue` DSI component that reads h.computer-compatible task arrays from `privateContext.customData` (`tasks`, `taskQueue`, `h_tasks`, or `todos`) and normalizes title, details, status, priority, due dates, source text, tags, proposed state, and completion timestamps.
 - Task Queue snapshots preserve an honest unconfigured state when no private task source exists, and otherwise compute open, overdue, due-today, proposed, urgent/high, snoozed, and recent-done counts plus reusable agent prompts.
