@@ -496,6 +496,7 @@ function ArtifactHome({
   onRefreshAgenda,
   onRefreshTaskQueue,
   onRefreshBadFitness,
+  onRefreshBamfPulse,
   onToggleLoopDefinition,
   selectedRunId,
   loopSnapshots,
@@ -521,6 +522,7 @@ function ArtifactHome({
   onRefreshAgenda: () => void;
   onRefreshTaskQueue: () => void;
   onRefreshBadFitness: () => void;
+  onRefreshBamfPulse: () => void;
   onToggleLoopDefinition: (definition: LoopReportDefinition) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
   loopSnapshots: SourceSnapshot[] | undefined;
@@ -563,6 +565,7 @@ function ArtifactHome({
             onRefreshAgenda={onRefreshAgenda}
             onRefreshTaskQueue={onRefreshTaskQueue}
             onRefreshBadFitness={onRefreshBadFitness}
+            onRefreshBamfPulse={onRefreshBamfPulse}
             onToggleDefinition={onToggleLoopDefinition}
             onSelectArtifact={onSelect}
             selectedRunId={selectedRunId}
@@ -657,6 +660,7 @@ function LoopReportsControlPanel({
   onRefreshAgenda,
   onRefreshTaskQueue,
   onRefreshBadFitness,
+  onRefreshBamfPulse,
   onToggleDefinition,
   onSelectArtifact,
   selectedRunId,
@@ -679,6 +683,7 @@ function LoopReportsControlPanel({
   onRefreshAgenda: () => void;
   onRefreshTaskQueue: () => void;
   onRefreshBadFitness: () => void;
+  onRefreshBamfPulse: () => void;
   onToggleDefinition: (definition: LoopReportDefinition) => void;
   onSelectArtifact: (path: string) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
@@ -810,6 +815,15 @@ function LoopReportsControlPanel({
               className="h-8 self-start text-[10px]"
             >
               {dsiBusy ? "refreshing..." : "refresh bad.app"}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onRefreshBamfPulse}
+              disabled={dsiBusy}
+              className="h-8 self-start text-[10px]"
+            >
+              {dsiBusy ? "refreshing..." : "refresh bamf"}
             </Button>
             <Button
               size="sm"
@@ -1380,11 +1394,13 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const refreshProjectCatalogFallback = useMutation(api.dsi.refreshProjectCatalog);
   const refreshTaskQueue = useMutation(api.dsi.refreshTaskQueue);
   const refreshBadFitnessFromContext = useMutation(api.dsi.refreshBadFitnessFromContext);
+  const refreshBamfPulseFromContext = useMutation(api.dsi.refreshBamfPulseFromContext);
   const refreshProjectCatalog = useAction(api.githubProjects.refreshProjectCatalogDsi);
   const refreshWeatherSurf = useAction(api.dsi.refreshWeatherSurf);
   const refreshSchoolLogistics = useAction(api.dsi.refreshSchoolLogistics);
   const refreshAgenda = useAction(api.dsi.refreshAgenda);
   const refreshBadFitness = useAction(api.dsi.refreshBadFitness);
+  const refreshBamfPulse = useAction(api.dsi.refreshBamfPulse);
   const memories = useQuery(api.memories.listMemories, clerkId && userId ? { clerkId, userId } : "skip");
   const sessions = useQuery(api.memories.listSessions, clerkId && userId ? { clerkId, userId, limit: 20 } : "skip");
   const loopReportDefinitions = useQuery(
@@ -1833,6 +1849,29 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     }
   }, [user, userId, refreshBadFitness, refreshBadFitnessFromContext]);
 
+  const handleRefreshBamfPulse = useCallback(async () => {
+    if (!user?.id || !userId) return;
+    setDsiBusy(true);
+    setDsiStatus(null);
+    try {
+      const result = await refreshBamfPulse({ clerkId: user.id, userId });
+      setWorkspaceMode("artifacts");
+      setDsiStatus(result.configured ? `refreshed bamf: ${result.summary}` : "bamf saved: connector missing");
+      setTimeout(() => setDsiStatus(null), 3000);
+    } catch (err) {
+      try {
+        const fallback = await refreshBamfPulseFromContext({ clerkId: user.id, userId });
+        setWorkspaceMode("artifacts");
+        setDsiStatus(fallback.configured ? `refreshed bamf from private context: ${fallback.summary}` : "bamf saved: connector missing");
+        setTimeout(() => setDsiStatus(null), 3000);
+      } catch {
+        setDsiStatus(`error: ${err instanceof Error ? err.message : "failed to refresh bamf"}`);
+      }
+    } finally {
+      setDsiBusy(false);
+    }
+  }, [user, userId, refreshBamfPulse, refreshBamfPulseFromContext]);
+
   const handleToggleLoopDefinition = useCallback(async (definition: LoopReportDefinition) => {
     if (!user?.id) return;
     setLoopBusy(true);
@@ -2123,6 +2162,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
               onRefreshAgenda={handleRefreshAgenda}
               onRefreshTaskQueue={handleRefreshTaskQueue}
               onRefreshBadFitness={handleRefreshBadFitness}
+              onRefreshBamfPulse={handleRefreshBamfPulse}
               onToggleLoopDefinition={handleToggleLoopDefinition}
               selectedRunId={selectedLoopRunId}
               loopSnapshots={loopSnapshots}

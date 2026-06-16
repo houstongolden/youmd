@@ -509,6 +509,144 @@ describe("dsi components", () => {
     expect(snapshots[0].trustLevel).toBe("computed");
   });
 
+  it("builds a private BAMF pulse component from customData", async () => {
+    const t = convexTest(schema);
+    const userId = await seedUser(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    await t.run(async (ctx) => {
+      const profileId = await ctx.db.insert("profiles", {
+        username: "bamf-owner",
+        name: "BAMF Owner",
+        ownerId: userId,
+        isClaimed: true,
+        claimedAt: Date.now(),
+        createdAt: Date.now(),
+      });
+      await ctx.db.insert("privateContext", {
+        profileId,
+        customData: {
+          bamf: {
+            analyticsSnapshot: {
+              generated_at: "2026-06-16T17:00:00.000Z",
+              counts: [
+                { table: "clients", count: 42 },
+                { table: "linkedin_authors", count: 37 },
+                { table: "linkedin_posts", count: 1280 },
+                { table: "case_studies", count: 18 },
+                { table: "newsletter_subscribers", count: 22000 },
+                { table: "chat_leads", count: 84 },
+              ],
+              recent_stack_sync_runs: [
+                {
+                  id: "sync_1",
+                  source_stack: "bamfstack",
+                  target_stack: "bamfos",
+                  status: "completed",
+                  summary: "Synced creator skills and client portal contracts.",
+                  created_at: "2026-06-16T15:00:00.000Z",
+                  completed_at: "2026-06-16T15:01:00.000Z",
+                },
+              ],
+            },
+            creatorSpaces: [
+              {
+                creator_id: "houston",
+                name: "Houston Golden",
+                headline: "Founder, BAMF and You.md",
+                linkedin_url: "https://www.linkedin.com/in/houstongolden/",
+                follower_count: 123456,
+                profile_views: 8900,
+                status: "active",
+              },
+            ],
+            linkedinPosts: [
+              {
+                id: "post_1",
+                content: "The agent internet needs a personal API.",
+                linkedin_url: "https://www.linkedin.com/feed/update/post_1",
+                impressions: 250000,
+                reactions: 4200,
+                comments: 310,
+                reposts: 90,
+                data_source: "bamf_ai",
+                posted_at_iso: "2026-06-15T18:00:00.000Z",
+              },
+            ],
+            clients: [
+              {
+                id: "client_1",
+                name: "Acme Founder",
+                status: "active",
+                health_status: "green",
+                onboarding_status: "complete",
+                plan_package: "founder brand",
+                website: "https://example.com",
+              },
+            ],
+            notes: ["LinkedIn pulse is strong; review new client wins before daily journal."],
+          },
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
+    const result = await asOwner.mutation(api.dsi.refreshBamfPulseFromContext, {
+      clerkId: CLERK,
+      userId,
+    });
+    expect(result.configured).toBe(true);
+    expect(result.summary).toContain("42 clients");
+    expect(result.summary).toContain("1 creator");
+    expect(result.summary).toContain("1,280 posts");
+
+    const components = await asOwner.query(api.dsi.listComponents, {
+      clerkId: CLERK,
+      userId,
+    });
+    const pulse = components.find((component) => component.slug === "bamf-pulse");
+    expect(pulse?.visibility).toBe("private");
+    expect(pulse?.componentType).toBe("bamf_analytics");
+    expect(pulse?.summary).toContain("250,000 top-post impressions");
+    expect(pulse?.data.provider).toBe("youmd-custom-data");
+    expect(pulse?.data.connectionMode).toBe("private_custom_data");
+    expect(pulse?.data.counts).toMatchObject({
+      clients: 42,
+      linkedinAuthors: 37,
+      linkedinPosts: 1280,
+      newsletterSubscribers: 22000,
+      chatLeads: 84,
+    });
+    expect(pulse?.data.creators[0]).toMatchObject({
+      id: "houston",
+      name: "Houston Golden",
+      followerCount: 123456,
+    });
+    expect(pulse?.data.topPosts[0]).toMatchObject({
+      id: "post_1",
+      impressions: 250000,
+      reactions: 4200,
+    });
+    expect(pulse?.data.clients[0]).toMatchObject({
+      id: "client_1",
+      healthStatus: "green",
+    });
+    expect(pulse?.data.recentStackRuns[0]).toMatchObject({
+      id: "sync_1",
+      status: "completed",
+    });
+
+    const snapshots = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("sourceSnapshots")
+        .withIndex("by_userId", (q) => q.eq("userId", userId))
+        .collect();
+    });
+    expect(snapshots.map((snapshot) => snapshot.sourceKey)).toEqual(["bamf-pulse"]);
+    expect(snapshots[0].connectorKind).toBe("bamf");
+    expect(snapshots[0].trustLevel).toBe("computed");
+  });
+
   it("builds a GitHub project catalog component from tracked projects and repo mirror stats", async () => {
     const t = convexTest(schema);
     const userId = await seedUser(t);

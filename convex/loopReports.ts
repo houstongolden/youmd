@@ -339,13 +339,17 @@ function buildDailyBriefingMarkdown(args: {
     .slice(0, 6)
     .map((component) => `- ${component.title}: ${component.summary}`);
   const hasFitnessDsi = args.dsiComponents.some((component) => component.componentType === "fitness");
+  const hasBamfDsi = args.dsiComponents.some((component) => component.componentType === "bamf_analytics");
 
   const industryPlaceholder = "- Perplexity industry pulse: not wired in this deterministic foundation run.";
   const agendaPlaceholder = "- Google Calendar/tasks: connector adapter pending.";
   const bamfPlaceholder = "- BAMF.ai/BAMF OS analytics: connector adapter pending.";
   const badappPlaceholder = "- Bad.app fitness/body signal: connector adapter pending.";
   const schoolPlaceholder = "- School crawler: connector adapter pending.";
-  const connectedAppPlaceholders = [bamfPlaceholder, ...(hasFitnessDsi ? [] : [badappPlaceholder])];
+  const connectedAppPlaceholders = [
+    ...(hasBamfDsi ? [] : [bamfPlaceholder]),
+    ...(hasFitnessDsi ? [] : [badappPlaceholder]),
+  ];
 
   const summary = [
     `${args.projects.length} project${args.projects.length === 1 ? "" : "s"}`,
@@ -421,7 +425,7 @@ function buildDailyBriefingMarkdown(args: {
             syncedAt: args.repoMirror.syncedAt,
           }
         : null,
-      externalAdaptersPending: ["perplexity", "google-calendar", "bamf", ...(hasFitnessDsi ? [] : ["badapp"]), "school"],
+      externalAdaptersPending: ["perplexity", "google-calendar", ...(hasBamfDsi ? [] : ["bamf"]), ...(hasFitnessDsi ? [] : ["badapp"]), "school"],
     },
   };
 }

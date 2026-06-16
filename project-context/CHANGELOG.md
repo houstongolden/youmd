@@ -2,6 +2,13 @@
 
 ## 2026-06-16 — DSI weather and surf components
 
+### feat(convex/web): add BAMF pulse DSI adapter
+- Added a private `bamf-pulse` DSI component for BAMF.ai/BAMF OS connected-app pulse data: clients, creators, LinkedIn post metrics, agency counts, case studies, newsletter/chat lead counts, and recent stack sync runs.
+- The adapter supports BAMF OS REST through `YOUMD_BAMF_OS_API_KEY`/`BAMF_OS_API_KEY`, BAMF.ai REST through `YOUMD_BAMF_AI_API_KEY`/`BAMF_AI_API_KEY`, and private `customData.bamf`/`bamfai`/`bamfOS`/`agency` fallback for source-compatible testing.
+- The Files/Reports DSI Catalog now includes `refresh bamf`, persists BAMF source snapshots with provenance, and surfaces an honest unconfigured state when no key or private custom data exists.
+- Daily Loop Reports now treat `bamf-pulse` as the connected-app pulse and stop listing BAMF as pending once the component has been refreshed.
+- Verified locally with Convex codegen and focused DSI/Loop Report tests.
+
 ### feat(convex/web): add Bad.app fitness DSI adapter
 - Added a private `badapp-fitness` DSI component that normalizes Bad.app/BAD Stack State of You intelligence, health summaries, body scans, and fitness tests into the You.md personal API/MCP catalog.
 - The adapter supports live Bad.app REST hydration through `YOUMD_BADAPP_API_KEY`, `BADAPP_API_KEY`, or `BAD_API_KEY`, plus a private `customData.badapp`/`badApp`/`badfit`/`fitness`/`health` fallback so the same component can be tested without external secrets.

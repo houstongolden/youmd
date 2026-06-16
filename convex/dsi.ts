@@ -249,6 +249,82 @@ type BadFitnessSignal = {
   };
 };
 
+type BamfMetricCounts = {
+  clients: number | null;
+  creators: number | null;
+  linkedinAuthors: number | null;
+  linkedinPosts: number | null;
+  caseStudies: number | null;
+  blogPosts: number | null;
+  newsletterSubscribers: number | null;
+  chatLeads: number | null;
+  pendingApprovals: number | null;
+  activeLoops: number | null;
+  recentLoopRuns: number | null;
+};
+
+type BamfCreatorSignal = {
+  id: string;
+  name: string;
+  headline: string | null;
+  linkedinUrl: string | null;
+  followerCount: number | null;
+  profileViews: number | null;
+  status: string | null;
+};
+
+type BamfPostSignal = {
+  id: string;
+  title: string;
+  url: string | null;
+  publishedAt: string | null;
+  impressions: number | null;
+  reactions: number | null;
+  comments: number | null;
+  reposts: number | null;
+  source: string | null;
+};
+
+type BamfClientSignal = {
+  id: string;
+  name: string;
+  status: string | null;
+  healthStatus: string | null;
+  onboardingStatus: string | null;
+  plan: string | null;
+  website: string | null;
+};
+
+type BamfStackRunSignal = {
+  id: string;
+  sourceStack: string | null;
+  targetStack: string | null;
+  status: string | null;
+  summary: string | null;
+  createdAt: string | null;
+  completedAt: string | null;
+};
+
+type BamfPulseSignal = {
+  provider: "bamf-os-rest" | "bamf-ai-rest" | "youmd-custom-data" | "bamf-unconfigured";
+  capturedAt: string;
+  configured: boolean;
+  connectionMode: "bamf_os_api_key" | "bamf_ai_api_key" | "private_custom_data" | "missing";
+  restBase: string | null;
+  sourceKey: string | null;
+  summary: string | null;
+  counts: BamfMetricCounts;
+  creators: BamfCreatorSignal[];
+  topPosts: BamfPostSignal[];
+  clients: BamfClientSignal[];
+  recentStackRuns: BamfStackRunSignal[];
+  notes: string[];
+  parser: {
+    mode: "bamf_pulse";
+    note: string;
+  };
+};
+
 type ProjectCatalogSignal = {
   provider: string;
   capturedAt: string;
@@ -1229,6 +1305,360 @@ function buildBadFitnessSignalFromCustomData(customData: unknown): BadFitnessSig
   });
 }
 
+type BamfPulsePayload = {
+  analyticsSnapshot?: unknown;
+  creatorSpaces?: unknown[];
+  linkedinPosts?: unknown[];
+  clients?: unknown[];
+  companyBrain?: unknown;
+  notes?: unknown[];
+};
+
+type BamfAuthConfig = {
+  provider: "bamf-os-rest" | "bamf-ai-rest";
+  connectionMode: "bamf_os_api_key" | "bamf_ai_api_key";
+  restBase: string;
+  headers: Record<string, string>;
+};
+
+function bamfAuthConfig(): BamfAuthConfig | null {
+  const osKey = process.env.YOUMD_BAMF_OS_API_KEY || process.env.BAMF_OS_API_KEY || process.env.BAMF_OS_KEY;
+  if (osKey) {
+    const base = (process.env.YOUMD_BAMF_OS_API_BASE || process.env.BAMF_OS_API_BASE || "https://bamf.com/api/os/v1")
+      .replace(/\/+$/, "");
+    return {
+      provider: "bamf-os-rest",
+      connectionMode: "bamf_os_api_key",
+      restBase: base,
+      headers: { Authorization: `Bearer ${osKey}`, Accept: "application/json" },
+    };
+  }
+  const aiKey = process.env.YOUMD_BAMF_AI_API_KEY || process.env.BAMF_AI_API_KEY || process.env.BAMF_API_KEY;
+  if (aiKey) {
+    const base = (process.env.YOUMD_BAMF_AI_API_BASE || process.env.BAMF_AI_API_URL || process.env.BAMF_API_BASE || "https://api.bamf.ai/v1")
+      .replace(/\/+$/, "");
+    return {
+      provider: "bamf-ai-rest",
+      connectionMode: "bamf_ai_api_key",
+      restBase: base,
+      headers: { Authorization: `Bearer ${aiKey}`, Accept: "application/json" },
+    };
+  }
+  return null;
+}
+
+async function bamfGet<T>(config: BamfAuthConfig, path: string): Promise<T> {
+  const res = await fetch(`${config.restBase}${path}`, {
+    headers: config.headers,
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`bamf ${path} ${res.status}: ${body.slice(0, 240)}`);
+  }
+  return (await res.json()) as T;
+}
+
+function extractPayloadArray(payload: unknown, keys: string[]): unknown[] {
+  if (Array.isArray(payload)) return payload;
+  const root = asRecord(payload);
+  const data = asRecord(root?.data);
+  for (const key of keys) {
+    const rootValue = root?.[key];
+    if (Array.isArray(rootValue)) return rootValue;
+    const dataValue = data?.[key];
+    if (Array.isArray(dataValue)) return dataValue;
+  }
+  return [];
+}
+
+async function fetchBamfPulsePayload(config: BamfAuthConfig): Promise<BamfPulsePayload> {
+  if (config.provider === "bamf-os-rest") {
+    const [analyticsSnapshot, clients, creators, linkedinPosts] = await Promise.all([
+      bamfGet<unknown>(config, "/analytics/snapshot").catch((error) => ({ error: error instanceof Error ? error.message : "analytics snapshot fetch failed" })),
+      bamfGet<unknown>(config, "/clients?limit=25").catch(() => ({ data: [] })),
+      bamfGet<unknown>(config, "/bamf-ai/creator-spaces?limit=25").catch(() => ({ data: [] })),
+      bamfGet<unknown>(config, "/linkedin-posts?limit=25").catch(() => ({ data: [] })),
+    ]);
+    return {
+      analyticsSnapshot,
+      clients: extractPayloadArray(clients, ["clients"]),
+      creatorSpaces: extractPayloadArray(creators, ["creator_spaces", "spaces", "creators"]),
+      linkedinPosts: extractPayloadArray(linkedinPosts, ["posts", "linkedin_posts"]),
+    };
+  }
+  const [creators, linkedinPosts] = await Promise.all([
+    bamfGet<unknown>(config, "/creator-spaces?limit=25").catch(() => ({ data: [] })),
+    bamfGet<unknown>(config, "/linkedin/posts?limit=25").catch(() => ({ data: [] })),
+  ]);
+  return {
+    creatorSpaces: extractPayloadArray(creators, ["creator_spaces", "spaces", "creators"]),
+    linkedinPosts: extractPayloadArray(linkedinPosts, ["posts", "linkedin_posts"]),
+  };
+}
+
+function findBamfPulsePayload(customData: unknown): { sourceKey: string; payload: BamfPulsePayload } | null {
+  const data = asRecord(customData);
+  if (!data) return null;
+  const candidates: Array<[string, Record<string, unknown> | null]> = [
+    ["bamf", asRecord(data.bamf)],
+    ["bamfai", asRecord(data.bamfai)],
+    ["bamfAi", asRecord(data.bamfAi)],
+    ["bamfOS", asRecord(data.bamfOS)],
+    ["bamfos", asRecord(data.bamfos)],
+    ["agency", asRecord(data.agency)],
+    ["socialAnalytics", asRecord(data.socialAnalytics)],
+  ];
+  for (const [sourceKey, record] of candidates) {
+    if (!record) continue;
+    const analyticsSnapshot = record.analyticsSnapshot ?? record.analytics ?? record.snapshot;
+    const companyBrain = record.companyBrain ?? record.company_brain ?? record.brain;
+    const creatorSpaces = arrayFromRecord(record, ["creatorSpaces", "creator_spaces", "creators", "authors", "linkedinAuthors", "linkedin_authors"]);
+    const linkedinPosts = arrayFromRecord(record, ["linkedinPosts", "linkedin_posts", "posts", "topPosts", "top_posts"]);
+    const clients = arrayFromRecord(record, ["clients", "accounts"]);
+    const notes = arrayFromRecord(record, ["notes", "updates", "alerts"]);
+    if (analyticsSnapshot || companyBrain || creatorSpaces.length || linkedinPosts.length || clients.length || notes.length) {
+      return {
+        sourceKey,
+        payload: { analyticsSnapshot, companyBrain, creatorSpaces, linkedinPosts, clients, notes },
+      };
+    }
+  }
+  return null;
+}
+
+function countFromAnalyticsSnapshot(snapshot: unknown, table: string): number | null {
+  const root = asRecord(snapshot);
+  const data = asRecord(root?.data) ?? root;
+  const counts = Array.isArray(data?.counts) ? data.counts : [];
+  const row = counts
+    .map((item) => asRecord(item))
+    .find((item) => item?.table === table);
+  return numberOrNull(row?.count);
+}
+
+function countFromRecord(record: Record<string, unknown> | null, keys: string[]): number | null {
+  if (!record) return null;
+  for (const key of keys) {
+    const value = numberOrNull(record[key]);
+    if (value !== null) return value;
+  }
+  return null;
+}
+
+function normalizeBamfCreator(value: unknown): BamfCreatorSignal | null {
+  const record = asRecord(value);
+  if (!record) return null;
+  const profile = asRecord(record.linkedin_profile) ?? asRecord(record.profile);
+  const id = stringOrNull(record.creator_id ?? record.id ?? record.author_id);
+  const name = stringOrNull(record.name ?? record.display_name ?? profile?.name);
+  if (!id && !name) return null;
+  return {
+    id: id ?? name ?? "creator",
+    name: name ?? id ?? "Creator",
+    headline: stringOrNull(record.headline ?? profile?.headline ?? record.role),
+    linkedinUrl: stringOrNull(record.linkedin_url ?? profile?.linkedin_url ?? record.profile_url ?? record.url),
+    followerCount: numberOrNull(record.follower_count ?? record.followers ?? profile?.follower_count),
+    profileViews: numberOrNull(record.profile_views ?? profile?.profile_views),
+    status: stringOrNull(record.status ?? profile?.status ?? record.linkedin_status),
+  };
+}
+
+function normalizeBamfPost(value: unknown): BamfPostSignal | null {
+  const record = asRecord(value);
+  if (!record) return null;
+  const metrics = asRecord(record.metrics) ?? asRecord(record.analytics) ?? asRecord(record.performance);
+  const id = stringOrNull(record.id ?? record.linkedin_post_id ?? record.post_id ?? record.urn);
+  const content = stringOrNull(record.title ?? record.topic ?? record.content ?? record.text ?? record.body);
+  if (!id && !content) return null;
+  return {
+    id: id ?? content?.slice(0, 48) ?? "post",
+    title: content?.slice(0, 120) ?? id ?? "LinkedIn post",
+    url: stringOrNull(record.linkedin_url ?? record.post_url ?? record.url),
+    publishedAt: stringOrNull(record.posted_at_iso ?? record.posted_at ?? record.published_at ?? record.created_at),
+    impressions: numberOrNull(metrics?.impressions ?? metrics?.views ?? record.impressions ?? record.view_count ?? record.views),
+    reactions: numberOrNull(metrics?.reactions ?? metrics?.likes ?? record.reactions ?? record.like_count ?? record.likes),
+    comments: numberOrNull(metrics?.comments ?? record.comments ?? record.comment_count),
+    reposts: numberOrNull(metrics?.reposts ?? metrics?.shares ?? record.reposts ?? record.share_count),
+    source: stringOrNull(record.data_source ?? record.source ?? record.post_source),
+  };
+}
+
+function normalizeBamfClient(value: unknown): BamfClientSignal | null {
+  const record = asRecord(value);
+  if (!record) return null;
+  const id = stringOrNull(record.id ?? record.client_id);
+  const name = stringOrNull(record.name ?? record.company ?? record.company_name);
+  if (!id && !name) return null;
+  return {
+    id: id ?? name ?? "client",
+    name: name ?? id ?? "Client",
+    status: stringOrNull(record.status),
+    healthStatus: stringOrNull(record.health_status ?? record.healthStatus),
+    onboardingStatus: stringOrNull(record.onboarding_status ?? record.onboardingStatus),
+    plan: stringOrNull(record.plan_package ?? record.planPackage ?? record.plan),
+    website: stringOrNull(record.website ?? record.website_url ?? record.url),
+  };
+}
+
+function normalizeBamfStackRun(value: unknown): BamfStackRunSignal | null {
+  const record = asRecord(value);
+  if (!record) return null;
+  const id = stringOrNull(record.id);
+  if (!id && !record.summary) return null;
+  return {
+    id: id ?? String(record.summary).slice(0, 48),
+    sourceStack: stringOrNull(record.source_stack ?? record.sourceStack),
+    targetStack: stringOrNull(record.target_stack ?? record.targetStack),
+    status: stringOrNull(record.status),
+    summary: stringOrNull(record.summary),
+    createdAt: stringOrNull(record.created_at ?? record.createdAt),
+    completedAt: stringOrNull(record.completed_at ?? record.completedAt),
+  };
+}
+
+function buildBamfCounts(args: {
+  payload: BamfPulsePayload;
+  creators: BamfCreatorSignal[];
+  posts: BamfPostSignal[];
+  clients: BamfClientSignal[];
+  runs: BamfStackRunSignal[];
+}): BamfMetricCounts {
+  const snapshot = asRecord(args.payload.analyticsSnapshot);
+  const snapshotData = asRecord(snapshot?.data) ?? snapshot;
+  const brain = asRecord(args.payload.companyBrain);
+  const clientCount = countFromAnalyticsSnapshot(snapshot, "clients") ?? countFromRecord(snapshotData, ["clients"]);
+  const creatorCount = countFromRecord(snapshotData, ["creators", "creatorSpaces", "creator_spaces"]);
+  const authorCount = countFromAnalyticsSnapshot(snapshot, "linkedin_authors") ?? countFromRecord(snapshotData, ["linkedinAuthors", "linkedin_authors"]);
+  const postCount = countFromAnalyticsSnapshot(snapshot, "linkedin_posts") ?? countFromRecord(snapshotData, ["linkedinPosts", "linkedin_posts", "posts"]);
+  return {
+    clients: clientCount ?? (args.clients.length ? args.clients.length : null),
+    creators: creatorCount ?? (args.creators.length ? args.creators.length : null),
+    linkedinAuthors: authorCount ?? (args.creators.length ? args.creators.length : null),
+    linkedinPosts: postCount ?? (args.posts.length ? args.posts.length : null),
+    caseStudies: countFromAnalyticsSnapshot(snapshot, "case_studies") ?? countFromRecord(snapshotData, ["caseStudies", "case_studies"]),
+    blogPosts: countFromAnalyticsSnapshot(snapshot, "blog_posts") ?? countFromRecord(snapshotData, ["blogPosts", "blog_posts"]),
+    newsletterSubscribers: countFromAnalyticsSnapshot(snapshot, "newsletter_subscribers") ?? countFromRecord(snapshotData, ["newsletterSubscribers", "newsletter_subscribers"]),
+    chatLeads: countFromAnalyticsSnapshot(snapshot, "chat_leads") ?? countFromRecord(snapshotData, ["chatLeads", "chat_leads", "leads"]),
+    pendingApprovals: countFromRecord(snapshotData, ["pendingApprovals", "pending_approvals"]) ?? countFromRecord(brain, ["pendingApprovals", "pending_approvals", "writeRequestsPending"]),
+    activeLoops: countFromRecord(snapshotData, ["activeLoops", "active_loops"]) ?? (Array.isArray(brain?.loops) ? brain.loops.filter((loop) => asRecord(loop)?.status === "active").length : null),
+    recentLoopRuns: countFromRecord(snapshotData, ["recentLoopRuns", "recent_loop_runs"]) ?? (Array.isArray(brain?.loopRuns) ? brain.loopRuns.length : null),
+  };
+}
+
+function buildBamfPulseSignal(args: {
+  payload: BamfPulsePayload;
+  provider: BamfPulseSignal["provider"];
+  connectionMode: BamfPulseSignal["connectionMode"];
+  restBase?: string | null;
+  sourceKey?: string | null;
+  now?: Date;
+}): BamfPulseSignal {
+  const now = args.now ?? new Date();
+  const creators = (args.payload.creatorSpaces ?? [])
+    .map(normalizeBamfCreator)
+    .filter((creator): creator is BamfCreatorSignal => creator !== null)
+    .slice(0, 25);
+  const topPosts = (args.payload.linkedinPosts ?? [])
+    .map(normalizeBamfPost)
+    .filter((post): post is BamfPostSignal => post !== null)
+    .sort((a, b) => (b.impressions ?? 0) - (a.impressions ?? 0))
+    .slice(0, 25);
+  const clients = (args.payload.clients ?? [])
+    .map(normalizeBamfClient)
+    .filter((client): client is BamfClientSignal => client !== null)
+    .slice(0, 25);
+  const snapshot = asRecord(args.payload.analyticsSnapshot);
+  const snapshotData = asRecord(snapshot?.data) ?? snapshot;
+  const recentStackRuns = [
+    ...extractPayloadArray(snapshotData?.recent_stack_sync_runs ?? [], ["recent_stack_sync_runs", "stackRuns"]),
+    ...extractPayloadArray(asRecord(args.payload.companyBrain)?.syncRuns ?? [], ["syncRuns", "sync_runs"]),
+  ]
+    .map(normalizeBamfStackRun)
+    .filter((run): run is BamfStackRunSignal => run !== null)
+    .slice(0, 10);
+  const notes = (args.payload.notes ?? [])
+    .map((note) => stringOrNull(note) ?? stringOrNull(asRecord(note)?.summary) ?? stringOrNull(asRecord(note)?.title))
+    .filter((note): note is string => note !== null)
+    .slice(0, 12);
+  const counts = buildBamfCounts({ payload: args.payload, creators, posts: topPosts, clients, runs: recentStackRuns });
+  const configured = Boolean(
+    creators.length ||
+      topPosts.length ||
+      clients.length ||
+      recentStackRuns.length ||
+      Object.values(counts).some((value) => typeof value === "number" && value > 0) ||
+      notes.length
+  );
+  return {
+    provider: args.provider,
+    capturedAt: now.toISOString(),
+    configured,
+    connectionMode: args.connectionMode,
+    restBase: args.restBase ?? null,
+    sourceKey: args.sourceKey ?? null,
+    summary: null,
+    counts,
+    creators,
+    topPosts,
+    clients,
+    recentStackRuns,
+    notes,
+    parser: {
+      mode: "bamf_pulse",
+      note: args.connectionMode === "private_custom_data"
+        ? "Hydrated from private You.md customData using BAMF.ai/BAMF OS analytics, creator, client, post, and stack-run shapes."
+        : "Fetched from BAMF REST using read-only API key scope and normalized for You.md DSI.",
+    },
+  };
+}
+
+function buildBamfPulseUnconfigured(now = new Date()): BamfPulseSignal {
+  return {
+    provider: "bamf-unconfigured",
+    capturedAt: now.toISOString(),
+    configured: false,
+    connectionMode: "missing",
+    restBase: null,
+    sourceKey: null,
+    summary: null,
+    counts: {
+      clients: null,
+      creators: null,
+      linkedinAuthors: null,
+      linkedinPosts: null,
+      caseStudies: null,
+      blogPosts: null,
+      newsletterSubscribers: null,
+      chatLeads: null,
+      pendingApprovals: null,
+      activeLoops: null,
+      recentLoopRuns: null,
+    },
+    creators: [],
+    topPosts: [],
+    clients: [],
+    recentStackRuns: [],
+    notes: [],
+    parser: {
+      mode: "bamf_pulse",
+      note: "BAMF connector is not configured. Set YOUMD_BAMF_OS_API_KEY/BAMF_OS_API_KEY or YOUMD_BAMF_AI_API_KEY/BAMF_AI_API_KEY, or add private customData.bamf.",
+    },
+  };
+}
+
+function buildBamfPulseSignalFromCustomData(customData: unknown): BamfPulseSignal {
+  const found = findBamfPulsePayload(customData);
+  if (!found) return buildBamfPulseUnconfigured();
+  return buildBamfPulseSignal({
+    payload: found.payload,
+    provider: "youmd-custom-data",
+    connectionMode: "private_custom_data",
+    restBase: `privateContext.customData.${found.sourceKey}`,
+    sourceKey: found.sourceKey,
+  });
+}
+
 async function fetchCalendarEvents(config: CalendarAuthConfig, windowStart: string, windowEnd: string): Promise<{ events: AgendaEventSignal[]; dropped: number; totalSeen: number }> {
   const calendarIds = await listCalendarIds(config);
   const results = await Promise.all(
@@ -1891,6 +2321,47 @@ export const refreshBadFitnessFromContext = mutation({
   },
 });
 
+export const refreshBamfPulse = action({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots">; configured: boolean; summary: string }> => {
+    await requireOwner(ctx, args.clerkId);
+    const config = bamfAuthConfig();
+    if (!config) {
+      const result = await ctx.runMutation(internal.dsi.persistBamfPulseFromPrivateContext, {
+        clerkId: args.clerkId,
+        userId: args.userId,
+      });
+      return { ...result, summary: result.summary };
+    }
+    const payload = await fetchBamfPulsePayload(config);
+    const pulse = buildBamfPulseSignal({
+      payload,
+      provider: config.provider,
+      connectionMode: config.connectionMode,
+      restBase: config.restBase,
+    });
+    const result = await ctx.runMutation(internal.dsi.persistBamfPulseComponent, {
+      clerkId: args.clerkId,
+      userId: args.userId,
+      pulse,
+    });
+    return { ...result, configured: pulse.configured, summary: bamfPulseSummary(pulse) };
+  },
+});
+
+export const refreshBamfPulseFromContext = mutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots">; configured: boolean; summary: string }> => {
+    return await persistBamfPulseFromPrivateContextImpl(ctx, args);
+  },
+});
+
 async function persistProjectCatalog(
   ctx: MutationCtx,
   args: {
@@ -2203,6 +2674,102 @@ export const persistBadFitnessComponent = internalMutation({
       clerkId: args.clerkId,
       userId: args.userId,
       fitness: args.fitness as BadFitnessSignal,
+    });
+  },
+});
+
+function bamfPulseSummary(pulse: BamfPulseSignal): string {
+  if (!pulse.configured) return "BAMF connector missing / add API key or private customData.bamf";
+  const clients = pulse.counts.clients === null ? "-- clients" : `${pulse.counts.clients.toLocaleString()} client${pulse.counts.clients === 1 ? "" : "s"}`;
+  const posts = pulse.counts.linkedinPosts === null ? "-- posts" : `${pulse.counts.linkedinPosts.toLocaleString()} post${pulse.counts.linkedinPosts === 1 ? "" : "s"}`;
+  const creators = pulse.counts.creators ?? pulse.counts.linkedinAuthors;
+  const creatorsText = creators === null ? "-- creators" : `${creators.toLocaleString()} creator${creators === 1 ? "" : "s"}`;
+  const topImpressions = pulse.topPosts.reduce((sum, post) => sum + (post.impressions ?? 0), 0);
+  const reach = topImpressions ? `${topImpressions.toLocaleString()} top-post impressions` : "impressions pending";
+  return [clients, creatorsText, posts, reach].join(" / ");
+}
+
+async function persistBamfPulse(
+  ctx: MutationCtx,
+  args: {
+    clerkId: string;
+    userId: Id<"users">;
+    pulse: BamfPulseSignal;
+  }
+): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> {
+  await ownerForUserId(ctx, args.clerkId, args.userId);
+  const pulse: BamfPulseSignal = {
+    ...args.pulse,
+    summary: bamfPulseSummary(args.pulse),
+  };
+  const snapshotId = await insertSnapshot(ctx, {
+    userId: args.userId,
+    connectorKind: "bamf",
+    sourceKey: "bamf-pulse",
+    sourceType: "dsi_component",
+    normalized: pulse,
+    citations: pulse.restBase ? [{ provider: pulse.provider, url: pulse.restBase }] : [{ provider: pulse.provider, sourceKey: pulse.sourceKey }],
+    visibility: "private",
+    trustLevel: pulse.configured ? "computed" : "low",
+    metadata: {
+      origin: pulse.provider === "youmd-custom-data" ? "youmd" : "bamf",
+      adapter: "bamf-pulse-analytics",
+      connectionMode: pulse.connectionMode,
+    },
+  });
+  const componentId = await upsertComponent(ctx, {
+    userId: args.userId,
+    slug: "bamf-pulse",
+    componentType: "bamf_analytics",
+    title: "BAMF Pulse",
+    summary: pulse.summary ?? bamfPulseSummary(pulse),
+    data: pulse,
+    sourceSnapshotIds: [snapshotId],
+    trustLevel: pulse.configured ? "computed" : "low",
+    metadata: { provider: pulse.provider, configurable: true, origin: pulse.provider === "youmd-custom-data" ? "youmd" : "bamf" },
+  });
+  return { componentId, snapshotId };
+}
+
+async function persistBamfPulseFromPrivateContextImpl(
+  ctx: MutationCtx,
+  args: {
+    clerkId: string;
+    userId: Id<"users">;
+  }
+): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots">; configured: boolean; summary: string }> {
+  await ownerForUserId(ctx, args.clerkId, args.userId);
+  const privateContext = await privateContextForUser(ctx, args.userId);
+  const pulse = buildBamfPulseSignalFromCustomData(privateContext?.customData);
+  const result = await persistBamfPulse(ctx, {
+    clerkId: args.clerkId,
+    userId: args.userId,
+    pulse,
+  });
+  return { ...result, configured: pulse.configured, summary: bamfPulseSummary(pulse) };
+}
+
+export const persistBamfPulseFromPrivateContext = internalMutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots">; configured: boolean; summary: string }> => {
+    return await persistBamfPulseFromPrivateContextImpl(ctx, args);
+  },
+});
+
+export const persistBamfPulseComponent = internalMutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+    pulse: v.any(),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> => {
+    return await persistBamfPulse(ctx, {
+      clerkId: args.clerkId,
+      userId: args.userId,
+      pulse: args.pulse as BamfPulseSignal,
     });
   },
 });
