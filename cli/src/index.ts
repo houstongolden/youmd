@@ -53,22 +53,9 @@ import { stackCommand } from "./commands/stack";
 import { okfCommand } from "./commands/okf";
 import { envBackupCommand, envRestoreCommand } from "./commands/env";
 import { machineCommand } from "./commands/machine";
+import { readCliVersion } from "./lib/version";
 
 const program = new Command();
-
-// Read the version from package.json so the CLI never drifts from the
-// published package. Works from both src/ (ts-node) and dist/ (tsc build):
-// in each case package.json sits one directory above this file.
-function readCliVersion(): string {
-  try {
-    const pkgPath = path.join(__dirname, "..", "package.json");
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
-    if (pkg && typeof pkg.version === "string") return pkg.version;
-  } catch {
-    // fall through to placeholder
-  }
-  return "0.0.0";
-}
 
 const CURRENT_VERSION = readCliVersion();
 const CLI_NAME = process.env.YOUMD_LAUNCH_SURFACE === "you" ? "you" : "youmd";

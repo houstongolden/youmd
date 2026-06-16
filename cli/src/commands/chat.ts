@@ -51,6 +51,7 @@ import {
 import type { ChatMessage } from "../lib/onboarding";
 import { printPortraitEncounter, printSavedPortrait, printYouLogo, resolvePortraitLines } from "../lib/ascii";
 import { checkForCliUpdate } from "../lib/update";
+import { readCliVersion } from "../lib/version";
 
 // ─── URL Detection + Scraping (mirrors web useYouAgent) ──────────────
 
@@ -58,7 +59,7 @@ import { getConvexSiteUrl } from "../lib/config";
 
 const CONVEX_SITE_URL = getConvexSiteUrl();
 const STREAM_URL = `${CONVEX_SITE_URL}/api/v1/chat/stream`;
-const CURRENT_VERSION = "0.6.23";
+const CURRENT_VERSION = readCliVersion();
 
 // ─── Streaming LLM client ─────────────────────────────────────────────
 
@@ -2176,7 +2177,7 @@ export async function chatCommand(): Promise<void> {
     const lower = userInput.toLowerCase().trim();
 
     // Handle slash commands
-    if (lower === "/done" || lower === "/quit") {
+    if (lower === "/done" || lower === "/quit" || lower === "quit" || lower === "exit") {
       console.log("");
       console.log(chalk.dim("  later."));
       console.log("");
