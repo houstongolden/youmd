@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-16 — Shell right-panel responsiveness
+
+### fix(web): make the shell detail pane cleaner and harder to break
+- Rebalanced the desktop shell split so the chat column stays usable while the right detail pane no longer collapses into an awkward clipped sliver.
+- Moved split-mode behavior up to the large-screen breakpoint; tablet/narrow desktop now uses the full-width shell/preview toggle instead of forcing two cramped columns.
+- Replaced the right pane's full public-profile render with the compact actionable profile inspector, removing the clipped giant profile/ASCII layout from the shell detail pane.
+- Shortened and wrapped right-pane navigation labels so tabs remain visible and usable instead of scrolling into clipped labels.
+- Flattened the compact profile inspector by removing unnecessary inner card borders around actions, projects, preferences, values, and portrait sources.
+
 ## 2026-06-16 — Personal API context routing preservation
 
 ### docs(product): preserve h.computer platform ideas in You.md-native context

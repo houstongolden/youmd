@@ -7,6 +7,13 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-16 — Shell right-panel responsiveness
+- [x] Rebalance the shell split so the right detail pane has a real minimum width and stored over-wide chat ratios clamp down safely
+- [x] Move split-screen behavior to large desktop only, letting tablet/narrow desktop use the full-width shell/preview toggle instead of cramped columns
+- [x] Replace the shell profile detail pane's full public-profile render with the compact actionable profile inspector
+- [x] Shorten and wrap right-pane navigation labels so they remain visible at narrower pane widths
+- [x] Flatten the compact profile inspector to reduce nested boxes and make actions/project/preference rows feel more seamless
+
 ### 2026-06-15 — You.md connected apps + connector/crawler MVP
 - [x] Add first-class connected-app grants with hashed `yg_` tokens, resource scopes, action scopes, write policy, trust level, expiry, revocation, and owner CRUD queries/mutations
 - [x] Extend source records with connector kind, crawler provider intent, refresh policy, visibility, trust level, next refresh, failure count, display name, and metadata

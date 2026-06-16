@@ -100,9 +100,9 @@ const GithubPane = dynamic(
 );
 // Eager panes (commonly accessed on first open — keep synchronous)
 import { HelpPane } from "@/components/panes/HelpPane";
+import { ProfilePane } from "@/components/panes/ProfilePane";
 import { StacksPane } from "@/components/panes/StacksPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { ProfileContent } from "../[username]/profile-content";
 
 type PrimaryPaneGroup = "profile" | "content" | "share" | "agents" | "insights" | "portrait" | "account" | "integrations";
 
@@ -136,7 +136,7 @@ const PANE_GROUPS: Array<{
   },
   {
     key: "agents",
-    label: "skillstacks",
+    label: "stacks",
     defaultPane: "stacks",
     panes: [
       { key: "stacks", label: "stacks" },
@@ -148,19 +148,19 @@ const PANE_GROUPS: Array<{
     // analytics = aggregate stats (views, reads, referrers);
     // "activity" (the agent event log) lives under stacks → AgentsPane
     key: "insights",
-    label: "analytics",
+    label: "stats",
     defaultPane: "analytics",
     panes: [{ key: "analytics", label: "analytics" }],
   },
   {
     key: "portrait",
-    label: "portrait",
+    label: "face",
     defaultPane: "portrait",
     panes: [{ key: "portrait", label: "portrait" }],
   },
   {
     key: "integrations",
-    label: "connectors",
+    label: "api",
     defaultPane: "github",
     panes: [{ key: "github", label: "github" }],
   },
@@ -187,11 +187,11 @@ const CHAT_WIDTH_STORAGE_KEY = "youmd.shell.chatWidth";
 const STALE_NUDGE_SESSION_KEY = "youmd.dashboard.staleNudgeShown";
 const STALE_NUDGE_DAYS = 7;
 const FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
-const DEFAULT_CHAT_WIDTH = 44;
+const DEFAULT_CHAT_WIDTH = 42;
 const MIN_CHAT_WIDTH = 34;
-const MAX_CHAT_WIDTH = 62;
+const MAX_CHAT_WIDTH = 56;
 const MIN_CHAT_WIDTH_PX = 560;
-const MIN_DETAIL_WIDTH_PX = 420;
+const MIN_DETAIL_WIDTH_PX = 560;
 const SIDEBAR_AUTO_COLLAPSE_PX = 1520;
 
 function formatRelativeTime(ts: number): string {
@@ -637,7 +637,7 @@ function ShellSidebar({
   return (
     <aside
       className={[
-        "hidden h-full shrink-0 flex-col border-r border-[hsl(var(--border))]/70 bg-[hsl(var(--bg-raised))] transition-[width] duration-200 md:flex",
+        "hidden h-full shrink-0 flex-col border-r border-[hsl(var(--border))]/70 bg-[hsl(var(--bg-raised))] transition-[width] duration-200 lg:flex",
         collapsed ? "w-14" : "w-[244px]",
       ].join(" ")}
       aria-label="Shell navigation"
@@ -1217,7 +1217,7 @@ export function DashboardContent() {
     return (
       <main aria-busy="true" className="h-dvh overflow-hidden bg-[hsl(var(--bg))]">
         <div className="flex h-full min-h-0">
-          <aside className="hidden h-full w-[244px] shrink-0 border-r border-[hsl(var(--border))]/70 bg-[hsl(var(--bg-raised))] p-3 md:flex md:flex-col">
+          <aside className="hidden h-full w-[244px] shrink-0 border-r border-[hsl(var(--border))]/70 bg-[hsl(var(--bg-raised))] p-3 lg:flex lg:flex-col">
             <div className="h-9 w-28 animate-pulse bg-[hsl(var(--text-secondary))] opacity-10" />
             <div className="mt-4 h-10 w-full animate-pulse bg-[hsl(var(--text-secondary))] opacity-[0.08]" />
             <div className="mt-2 h-10 w-full animate-pulse bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
@@ -1231,13 +1231,13 @@ export function DashboardContent() {
             </div>
           </aside>
           <div className="flex min-w-0 flex-1 flex-col">
-            <div className="flex h-11 items-center border-b border-[hsl(var(--border))] px-3 md:hidden">
+            <div className="flex h-11 items-center border-b border-[hsl(var(--border))] px-3 lg:hidden">
               <div className="h-3 w-32 animate-pulse bg-[hsl(var(--text-secondary))] opacity-10" />
             </div>
             <div className="flex min-h-0 flex-1">
               <div
                 className={`flex w-full flex-col gap-3 p-4 animate-pulse ${
-                  panelOpen ? "md:w-[44%] md:border-r md:border-[hsl(var(--border))]/70" : "md:w-full"
+                  panelOpen ? "lg:w-[42%] lg:border-r lg:border-[hsl(var(--border))]/70" : "w-full"
                 }`}
               >
                 <div className="h-3 w-32 bg-[hsl(var(--text-secondary))] opacity-10" />
@@ -1246,7 +1246,7 @@ export function DashboardContent() {
                 <div className="flex-1" />
                 <div className="h-14 w-full bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
               </div>
-              <div className={`hidden ${panelOpen ? "md:flex" : "md:hidden"} flex-1 flex-col`}>
+              <div className={`hidden ${panelOpen ? "lg:flex" : "lg:hidden"} flex-1 flex-col`}>
                 <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] px-4 py-2 animate-pulse">
                   <div className="h-5 w-14 bg-[hsl(var(--text-secondary))] opacity-10" />
                   <div className="h-5 w-14 bg-[hsl(var(--text-secondary))] opacity-[0.06]" />
@@ -1310,7 +1310,7 @@ export function DashboardContent() {
           onOpenChatSession={openChatSession}
         />
         <div className="flex min-w-0 flex-1 flex-col bg-[hsl(var(--bg))]">
-          <div className="hidden h-10 shrink-0 items-center justify-between border-b border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] px-3 md:flex">
+          <div className="hidden h-10 shrink-0 items-center justify-between border-b border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] px-3 lg:flex">
             <div className="flex min-w-0 items-center gap-2">
               <span className="hidden truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35 lg:block">
                 {githubConnection?.repoFullName ?? `you.md/${username}`}
@@ -1334,7 +1334,7 @@ export function DashboardContent() {
             </div>
           </div>
           {/* Mobile nav — single row: scrollable pane tabs + compact status */}
-          <div className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] md:hidden">
+          <div className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] lg:hidden">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center overflow-x-auto scrollbar-none">
                 {MOBILE_PRIMARY_PANES.map(({ key, label }) => (
@@ -1406,13 +1406,13 @@ export function DashboardContent() {
             <div
               className={[
                 "min-h-0 flex flex-col bg-[hsl(var(--bg-raised))]",
-                panelOpen ? "md:w-[var(--shell-chat-width)] md:flex-none" : "md:flex-1",
-                "md:relative md:opacity-100 md:translate-x-0",
+                panelOpen ? "lg:w-[var(--shell-chat-width)] lg:flex-none" : "lg:flex-1",
+                "lg:relative lg:opacity-100 lg:translate-x-0",
                 // Mobile: full width, absolute positioned for transitions
                 "w-full",
                 mobileView === "terminal"
                   ? "relative opacity-100 translate-x-0"
-                  : "absolute inset-0 opacity-0 -translate-x-4 pointer-events-none md:pointer-events-auto md:relative md:inset-auto",
+                  : "absolute inset-0 opacity-0 -translate-x-4 pointer-events-none lg:pointer-events-auto lg:relative lg:inset-auto",
               ].join(" ")}
               style={{
                 "--shell-chat-width": `clamp(${MIN_CHAT_WIDTH_PX}px, ${chatWidth}%, calc(100% - ${MIN_DETAIL_WIDTH_PX}px))`,
@@ -1438,7 +1438,7 @@ export function DashboardContent() {
               <button
                 type="button"
                 onPointerDown={startColumnResize}
-                className="group hidden w-2 shrink-0 cursor-col-resize items-stretch justify-center border-x border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] transition-colors hover:bg-[hsl(var(--bg-raised))] md:flex"
+                className="group hidden w-2 shrink-0 cursor-col-resize items-stretch justify-center border-x border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] transition-colors hover:bg-[hsl(var(--bg-raised))] lg:flex"
                 aria-label="Resize shell split"
                 title="Resize shell split"
               >
@@ -1452,25 +1452,35 @@ export function DashboardContent() {
                 "min-h-0 flex flex-col bg-[hsl(var(--bg-raised))]",
                 // Desktop: hidden when panel is closed
                 panelOpen
-                  ? "md:relative md:flex-1 md:opacity-100 md:translate-x-0"
-                  : "md:hidden",
+                  ? "lg:relative lg:flex-1 lg:opacity-100 lg:translate-x-0"
+                  : "lg:hidden",
                 // Mobile: full width, absolute positioned for transitions
                 "w-full",
                 mobileView === "preview"
                   ? "relative opacity-100 translate-x-0"
-                  : "absolute inset-0 opacity-0 translate-x-4 pointer-events-none md:pointer-events-auto md:relative md:inset-auto",
+                  : "absolute inset-0 opacity-0 translate-x-4 pointer-events-none lg:pointer-events-auto lg:relative lg:inset-auto",
               ].join(" ")}
               style={{ transition: "opacity 200ms ease, transform 200ms ease" }}
             >
-              {/* Desktop pane tabs — hidden on mobile (mobile nav handles it) */}
-              <div className="hidden md:block relative shrink-0 border-b border-[hsl(var(--border))]/70">
-                <div className="flex items-center overflow-x-auto px-5 scrollbar-none">
-                  <div className="flex items-center gap-4">
+              {/* Desktop pane header — compact, wraps instead of clipping. */}
+              <div className="hidden lg:block relative shrink-0 border-b border-[hsl(var(--border))]/60">
+                <div className="flex min-h-11 items-center justify-between gap-4 px-4 py-2">
+                  <div className="min-w-0">
+                    <div className="truncate font-mono text-[11px] text-[hsl(var(--text-primary))]">
+                      {activePaneGroup.label}
+                    </div>
+                    <div className="mt-0.5 truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
+                      {rightPane === activePaneGroup.defaultPane ? "overview" : rightPane}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1" role="tablist" aria-label="Detail pane sections">
                     {PANE_GROUPS.map((group) => (
                       <button
                         key={group.key}
                         onClick={() => openPane(group.defaultPane)}
-                        className={`relative h-10 text-[10px] font-mono transition-colors whitespace-nowrap ${
+                        role="tab"
+                        aria-selected={activePaneGroup.key === group.key}
+                        className={`relative h-6 text-[9.5px] font-mono transition-colors whitespace-nowrap ${
                           activePaneGroup.key === group.key
                             ? "text-[hsl(var(--text-primary))]"
                             : "text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"
@@ -1485,12 +1495,12 @@ export function DashboardContent() {
                   </div>
                 </div>
                 {activePaneGroup.panes.length > 1 && (
-                  <div className="flex items-center gap-3 overflow-x-auto px-5 pb-2 scrollbar-none">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2">
                     {activePaneGroup.panes.map((pane) => (
                       <button
                         key={pane.key}
                         onClick={() => openPane(pane.key)}
-                        className={`relative h-7 text-[10px] font-mono whitespace-nowrap transition-colors ${
+                        className={`relative h-6 text-[9.5px] font-mono whitespace-nowrap transition-colors ${
                           rightPane === pane.key
                             ? "text-[hsl(var(--text-primary))]"
                             : "text-[hsl(var(--text-secondary))] opacity-[0.38] hover:opacity-75"
@@ -1510,13 +1520,7 @@ export function DashboardContent() {
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <ErrorBoundary>
                   {rightPane === "profile" && (
-                    /* Direct inline render of the public profile (no iframe —
-                       no double app load, no style clashes). Same Convex query
-                       the public page subscribes to; preview mode disables
-                       view counting, owner affordances, and the claim banner. */
-                    <div className="min-h-full w-full">
-                      <ProfileContent preview previewUsername={username} />
-                    </div>
+                    <ProfilePane userId={convexUser._id} username={username} ownerId={convexUser._id} />
                   )}
                   {rightPane === "portrait" && (
                     <PortraitPane username={username} ownerId={convexUser._id} />

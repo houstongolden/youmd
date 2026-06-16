@@ -6,6 +6,20 @@ Last Updated: 2026-06-16
 
 ## 2026-06-16 — Preserve h.computer platform ideas in You.md
 
+### 123. Clean up `/shell` right detail pane responsiveness and usefulness
+**Status:** IN PROGRESS (code complete locally; authenticated production visual approval pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-16 — Houston: "yo look at the design please ensure it is properly responsive the right side panel should be really re-thought and cleaned up and ensure it is always fully responsive and actually intuitive, minimal, clean actionable and USEFUL please..."
+**Actionable Scope:**
+1. Rebalance desktop shell split so the right detail pane cannot collapse into an unusable clipped column while preserving a usable chat width. **DONE locally.**
+2. Make narrow desktop/tablet use a full-width shell/preview toggle rather than cramped two-column split. **DONE locally.**
+3. Replace the profile detail pane's full public-profile render with a compact actionable inspector. **DONE locally.**
+4. Clean up right-pane navigation so labels are shorter, wrap cleanly, and do not clip horizontally. **DONE locally.**
+5. Reduce nested boxes in the profile inspector so the pane feels more seamless and useful. **DONE locally.**
+6. Verify responsive layout visually in an authenticated browser session after deploy. **PENDING.**
+**Progress (2026-06-16):** Updated shell split constants, moved split mode to `lg`, shortened/wrapped right-pane header navigation, swapped `ProfileContent` for `ProfilePane`, and flattened the compact profile pane. Local `npm run lint` and `npm run build` passed; localhost browser was unauthenticated, so authenticated visual QA remains pending after deploy.
+
 ### 122. Save and route personal API / human context protocol / YouStacks ideas into You.md
 **Status:** IN PROGRESS (docs/context captured; future product implementation pending)
 **Verified:** NO

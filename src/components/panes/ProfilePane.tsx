@@ -65,8 +65,8 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
   return (
     <div className="h-full overflow-y-auto">
       {/* Status bar */}
-      <div className="px-6 py-3 border-b border-[hsl(var(--border))] flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-3 border-b border-[hsl(var(--border))]/60 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2">
           <span
             className="w-2 h-2 rounded-full status-dot-pulse"
             style={{ background: "hsl(var(--success))" }}
@@ -79,16 +79,16 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
             public view
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-3">
           <CopyButton
             text={`https://you.md/${username}`}
-            className="text-[10px] font-mono px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
+            className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-55 transition-colors hover:text-[hsl(var(--text-primary))] hover:opacity-95"
           />
           <a
             href={`/${username}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] font-mono px-2 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))]/40 transition-colors"
+            className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-75 transition-colors hover:text-[hsl(var(--text-primary))] hover:opacity-100"
           >
             open
           </a>
@@ -96,16 +96,16 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
       </div>
 
       {/* Profile content */}
-      <div className="px-6 py-6 space-y-6 max-w-xl">
+      <div className="max-w-2xl space-y-6 px-4 py-5 sm:px-5">
         {/* Identity + Portrait */}
         <section>
           <div className="flex items-start gap-4">
             {avatarUrl && (
-              <div className="shrink-0 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] overflow-hidden" style={{ borderRadius: "var(--radius)" }}>
+              <div className="shrink-0 overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "var(--radius)" }}>
                 <AsciiAvatar
                   src={avatarUrl}
-                  cols={50}
-                  canvasWidth={100}
+                  cols={38}
+                  canvasWidth={84}
                   className="block"
                   preRendered={storedPortrait && storedPortrait.sourceUrl === avatarUrl ? storedPortrait : undefined}
                 />
@@ -177,19 +177,18 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
           <>
             <section>
               <SectionLabel>projects</SectionLabel>
-              <div className="grid gap-2 mt-3">
+              <div className="mt-3 divide-y divide-[hsl(var(--border))]/45">
                 {data.projects.map((project: Project, i: number) => (
                   <div
                     key={i}
-                    className="border border-[hsl(var(--border))] p-3 bg-[hsl(var(--bg-raised))]"
-                    style={{ borderRadius: "var(--radius)" }}
+                    className="py-3 first:pt-0 last:pb-0"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono text-sm text-[hsl(var(--text-primary))]">
                         {project.name}
                       </span>
                       {project.status && (
-                        <span className="text-[9px] px-2 py-0.5 bg-[hsl(var(--accent-wash))] text-[hsl(var(--accent-mid))] font-mono border border-[hsl(var(--accent))]/15">
+                        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--accent))] opacity-70">
                           {project.status}
                         </span>
                       )}
@@ -216,8 +215,7 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
                 {data.values.map((value: string, i: number) => (
                   <span
                     key={i}
-                    className="text-xs px-2.5 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))] bg-[hsl(var(--bg-raised))]"
-                    style={{ borderRadius: "var(--radius)" }}
+                    className="text-xs text-[hsl(var(--text-secondary))] opacity-65"
                   >
                     {value}
                   </span>
@@ -265,10 +263,7 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
           <>
             <section>
               <SectionLabel>agent preferences</SectionLabel>
-              <div
-                className="mt-3 border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-raised))] font-mono text-xs space-y-1.5"
-                style={{ borderRadius: "var(--radius)" }}
-              >
+              <div className="mt-3 space-y-2 font-mono text-xs">
                 {data.preferences.agent.tone && (
                   <div className="flex gap-2">
                     <span className="text-[hsl(var(--text-secondary))] opacity-40">
@@ -309,14 +304,13 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
         {sources.length > 1 && (
           <section>
             <SectionLabel>portrait sources</SectionLabel>
-            <div className="grid grid-cols-2 gap-2 mt-3">
+            <div className="mt-3 grid grid-cols-2 gap-3">
               {sources.map((src) => (
                 <div
                   key={src.platform}
-                  className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 overflow-hidden"
-                  style={{ borderRadius: "var(--radius)" }}
+                  className="overflow-hidden"
                 >
-                  <AsciiAvatar src={src.url} cols={40} canvasWidth={180} className="w-full" />
+                  <AsciiAvatar src={src.url} cols={28} canvasWidth={130} className="w-full opacity-80" />
                   <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60 mt-1 block">
                     {src.platform}
                   </span>
