@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-15 — Shell composer control polish
+
+### fix(web): remove inner composer chrome and add attach/voice affordances
+- Removed the orange `>` prompt glyph from the main shell composer so the input feels like one seamless command surface instead of a nested terminal prompt inside a terminal.
+- Removed inner focus outlines/rings from the textarea; focus now highlights only the outer composer parent boundary.
+- Added a bottom-row `+` control for attaching images and readable text/code files, reusing the existing image-paste path and inserting text attachments into the prompt as fenced context.
+- Added a `cmd/ctrl shift m` voice affordance that starts browser speech recognition where supported and falls back to a `/voice` command hint for the future Whisper-backed transcription slice.
+- Verified locally with `npm run lint` (existing warnings only; radius guard passed) and `npm run build`.
+
 ## 2026-06-15 — Shell rail and top chrome polish
 
 ### feat(web): tighten collapsed shell navigation and action chrome

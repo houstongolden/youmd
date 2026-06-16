@@ -6,6 +6,19 @@ Last Updated: 2026-06-15
 
 ## 2026-06-15 — Rebuild `/shell` as Codex/Lovable-style workspace
 
+### 120. Shell composer prompt/outline cleanup, attach, and voice affordance
+**Status:** IN PROGRESS (code complete locally; deploy and authenticated visual verification pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-15 — Houston: "remove the orange right > in the main chat ui and remove the inner orange outline that should NEVER happen - only the entire chatui parent component should have the whole outline highlighted and probably need to just add a standard + icon on the bottom row to attach images/files and maybe a little keyboard short command on bottom row too to activate voice mode..."
+**Actionable Scope:**
+1. Remove the orange `>` prompt glyph from the shell composer.
+2. Remove the inner orange focus outline/ring from the textarea/input row.
+3. Highlight only the outer composer parent on focus.
+4. Add a standard bottom-row `+` attachment control for images/files.
+5. Add a keyboard-visible voice-mode affordance for fast speech-to-text, with Whisper-backed transcription as the next backend slice.
+**Progress (2026-06-15):** Implemented in `src/components/terminal/TerminalInput.tsx`: removed the prompt glyph, removed textarea outlines/rings, moved focus styling to the outer composer shell, added a hidden file picker plus bottom-row `+` control for image and readable text/code attachments, and added a `cmd/ctrl shift m` voice affordance using browser speech recognition when supported with a `/voice` fallback. Verification passed `npm run lint` (existing warnings only, radius OK) and `npm run build`. Remaining: push/deploy and authenticated production visual verification.
+
 ### 119. Collapsed shell rail cap, PixelYOU sidebar mark, and top action chrome
 **Status:** IN PROGRESS (code complete and deployed; Houston visual approval pending)
 **Verified:** NO
