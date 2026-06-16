@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-16 — Connector catalog icons and local-agent verification
+
+### feat(web): use real connector favicons and prioritize local-agent setup
+- Updated the `/shell` Connectors `apps` catalog to use Google favicon API URLs from each connector's real domain instead of generic placeholder icons.
+- Added `Local Agent Runtime` as the first recommended connector path for Claude Code, Codex, Cursor, ChatGPT, and local MCP clients, with copyable install/smoke-check commands and explicit grant `lastUsedAt` verification copy.
+- Reordered the catalog so You.md/owned/custom connectors stay pinned first, then popular services appear immediately after: Slack, Notion, Gmail, Google Calendar, Linear, GitHub, HubSpot, Salesforce, Firecrawl, Stripe, and Google Drive.
+- Added stable `data-connector-*` attributes so browser QA and future tests can verify connector order, domains, and recommended local-agent placement without scraping incidental marketing copy.
+- Verified locally with focused connected-app grant tests, TypeScript, lint, build, `git diff --check`, and authenticated in-app browser QA at `http://localhost:3100/shell`.
+
 ## 2026-06-16 — Mobile capture and project routing
 
 ### docs(product): add brain-dump inbox, voice, and Slack direction

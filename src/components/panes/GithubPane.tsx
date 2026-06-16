@@ -23,8 +23,6 @@ import {
   Layers3,
   Link2,
   LockKeyhole,
-  Mail,
-  MessageSquare,
   Plug,
   Radar,
   RefreshCcw,
@@ -65,6 +63,8 @@ type ConnectorSpec = {
   type: "api" | "mcp" | "oauth" | "source" | "webhook";
   pinned?: boolean;
   enabled?: boolean;
+  rank?: number;
+  iconDomain?: string;
   scopes: string[];
   resources: string[];
   writePolicy?: "read_only" | "propose" | "approved_write";
@@ -116,6 +116,21 @@ const CATEGORIES: Array<{ key: ConnectorCategory; label: string }> = [
 
 const CONNECTORS: ConnectorSpec[] = [
   {
+    slug: "local-agent-runtime",
+    name: "Local Agent Runtime",
+    detail: "first-class Claude Code, Codex, Cursor, ChatGPT, and local MCP setup with a verifiable yg_* grant",
+    category: "owned",
+    type: "mcp",
+    pinned: true,
+    enabled: true,
+    rank: 0,
+    iconDomain: "you.md",
+    scopes: ["identity:read", "projects:read", "sources:read", "memories:read", "stacks:read", "activity:read"],
+    resources: ["identity", "projects", "sources", "memories", "stacks", "activity"],
+    writePolicy: "read_only",
+    trustLevel: "verified",
+  },
+  {
     slug: "youmd-api",
     name: "You.md API",
     detail: "private brain, memories, projects, sources, activity, and bundle endpoints",
@@ -123,6 +138,8 @@ const CONNECTORS: ConnectorSpec[] = [
     type: "api",
     pinned: true,
     enabled: true,
+    rank: 1,
+    iconDomain: "you.md",
     scopes: ["identity:read", "projects:read", "sources:read", "memories:read", "stacks:read", "activity:read"],
     resources: ["identity", "projects", "sources", "memories", "stacks", "activity"],
     writePolicy: "read_only",
@@ -136,6 +153,8 @@ const CONNECTORS: ConnectorSpec[] = [
     type: "mcp",
     pinned: true,
     enabled: true,
+    rank: 2,
+    iconDomain: "you.md",
     scopes: ["identity:read", "projects:read", "preferences:read", "stacks:read", "activity:read"],
     resources: ["identity", "projects", "preferences", "stacks", "activity"],
     writePolicy: "read_only",
@@ -149,6 +168,8 @@ const CONNECTORS: ConnectorSpec[] = [
     type: "mcp",
     pinned: true,
     enabled: true,
+    rank: 3,
+    iconDomain: "you.md",
     scopes: ["stacks:read", "activity:read"],
     resources: ["stacks", "activity"],
     writePolicy: "propose",
@@ -161,6 +182,8 @@ const CONNECTORS: ConnectorSpec[] = [
     category: "custom",
     type: "mcp",
     pinned: true,
+    rank: 4,
+    iconDomain: "modelcontextprotocol.io",
     scopes: ["identity:read", "projects:read", "sources:read", "memories:read"],
     resources: ["identity", "projects", "sources", "memories"],
   },
@@ -171,6 +194,8 @@ const CONNECTORS: ConnectorSpec[] = [
     category: "custom",
     type: "api",
     pinned: true,
+    rank: 5,
+    iconDomain: "you.md",
     scopes: ["identity:read", "projects:read", "sources:read", "activity:read"],
     resources: ["identity", "projects", "sources", "activity"],
   },
@@ -181,6 +206,8 @@ const CONNECTORS: ConnectorSpec[] = [
     category: "custom",
     type: "webhook",
     pinned: true,
+    rank: 6,
+    iconDomain: "webhooks.fyi",
     scopes: ["sources:write", "activity:write"],
     resources: ["sources", "activity"],
     writePolicy: "propose",
@@ -192,6 +219,8 @@ const CONNECTORS: ConnectorSpec[] = [
     category: "owned",
     type: "api",
     pinned: true,
+    rank: 7,
+    iconDomain: "h.computer",
     scopes: ["identity:read", "projects:read", "sources:read", "memories:write", "activity:write"],
     resources: ["identity", "projects", "sources", "memories", "activity"],
     writePolicy: "propose",
@@ -204,6 +233,8 @@ const CONNECTORS: ConnectorSpec[] = [
     category: "owned",
     type: "api",
     pinned: true,
+    rank: 8,
+    iconDomain: "bamf.ai",
     scopes: ["identity:read", "projects:read", "preferences:read", "stacks:read"],
     resources: ["identity", "projects", "preferences", "stacks"],
     trustLevel: "verified",
@@ -215,6 +246,8 @@ const CONNECTORS: ConnectorSpec[] = [
     category: "owned",
     type: "api",
     pinned: true,
+    rank: 9,
+    iconDomain: "bad.app",
     scopes: ["identity:read", "projects:read", "sources:read", "activity:write"],
     resources: ["identity", "projects", "sources", "activity"],
     writePolicy: "propose",
@@ -227,49 +260,53 @@ const CONNECTORS: ConnectorSpec[] = [
     category: "owned",
     type: "mcp",
     pinned: true,
+    rank: 10,
+    iconDomain: "folder.md",
     scopes: ["projects:read", "stacks:read", "activity:read", "artifacts:read", "artifacts:write"],
     resources: ["projects", "stacks", "activity", "artifacts"],
     trustLevel: "high",
   },
-  { slug: "github", name: "GitHub", detail: "repos, issues, pull requests, code context, and stack manifests", category: "dev", type: "oauth", enabled: true, scopes: ["projects:read", "projects:write", "stacks:read"], resources: ["projects", "stacks"], writePolicy: "propose", trustLevel: "verified" },
-  { slug: "firecrawl", name: "Firecrawl", detail: "AI-powered scraper, search, retrieval, and rendered page extraction", category: "data", type: "source", enabled: true, scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose", trustLevel: "high" },
-  { slug: "gmail", name: "Gmail", detail: "read, send, and manage emails as scoped context", category: "google", type: "oauth", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
-  { slug: "google-calendar", name: "Google Calendar", detail: "calendar context, availability, and meeting prep", category: "google", type: "oauth", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
-  { slug: "notion", name: "Notion", detail: "pages, databases, notes, SOPs, and docs", category: "productivity", type: "oauth", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
-  { slug: "slack", name: "Slack", detail: "workspace messages, team context, and notifications", category: "productivity", type: "oauth", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
-  { slug: "linear", name: "Linear", detail: "issues, projects, roadmaps, and execution state", category: "productivity", type: "mcp", scopes: ["projects:read", "activity:write"], resources: ["projects", "activity"] },
-  { slug: "stripe", name: "Stripe", detail: "customers, billing, subscriptions, and payments context", category: "sales", type: "oauth", scopes: ["sources:read", "activity:read"], resources: ["sources", "activity"] },
-  { slug: "shopify", name: "Shopify", detail: "commerce store, orders, products, and customer context", category: "sales", type: "oauth", scopes: ["sources:read"], resources: ["sources"] },
-  { slug: "supabase", name: "Supabase", detail: "connect app data and project tables into your context graph", category: "dev", type: "api", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
-  { slug: "vercel", name: "Vercel", detail: "deployments, projects, env state, and preview links", category: "dev", type: "api", scopes: ["projects:read", "activity:read"], resources: ["projects", "activity"] },
-  { slug: "cloudflare", name: "Cloudflare", detail: "domains, workers, DNS, and edge runtime context", category: "dev", type: "api", scopes: ["projects:read", "activity:read"], resources: ["projects", "activity"] },
-  { slug: "openai", name: "OpenAI", detail: "model, agent, and ChatGPT app context with BYOK-ready boundaries", category: "dev", type: "api", scopes: ["stacks:read", "activity:read"], resources: ["stacks", "activity"] },
-  { slug: "perplexity", name: "Perplexity", detail: "research answers, citations, and web intelligence", category: "data", type: "api", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
-  { slug: "figma", name: "Figma", detail: "design files, local MCP, and product context", category: "productivity", type: "mcp", scopes: ["projects:read", "sources:read"], resources: ["projects", "sources"] },
-  { slug: "airtable", name: "Airtable", detail: "bases, records, and spreadsheet-database context", category: "data", type: "oauth", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
-  { slug: "google-drive", name: "Google Drive", detail: "files, folders, PDFs, docs, and shared assets", category: "google", type: "oauth", scopes: ["sources:read"], resources: ["sources"] },
-  { slug: "google-sheets", name: "Google Sheets", detail: "spreadsheets as structured source tables", category: "google", type: "oauth", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
-  { slug: "google-docs", name: "Google Docs", detail: "docs, SOPs, briefs, and writing references", category: "google", type: "oauth", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
-  { slug: "microsoft-outlook", name: "Microsoft Outlook", detail: "email and calendar context for Microsoft accounts", category: "microsoft", type: "oauth", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
-  { slug: "microsoft-onedrive", name: "Microsoft OneDrive", detail: "files and folders from Microsoft 365", category: "microsoft", type: "oauth", scopes: ["sources:read"], resources: ["sources"] },
-  { slug: "hubspot", name: "HubSpot", detail: "CRM, deals, contacts, marketing, and sales context", category: "sales", type: "oauth", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
-  { slug: "salesforce", name: "Salesforce", detail: "CRM objects, accounts, opportunities, and notes", category: "sales", type: "oauth", scopes: ["sources:read"], resources: ["sources"] },
-  { slug: "resend", name: "Resend", detail: "email API events, audiences, and delivery context", category: "marketing", type: "api", scopes: ["activity:read", "activity:write"], resources: ["activity"], writePolicy: "propose" },
-  { slug: "twilio", name: "Twilio", detail: "SMS, voice, messaging, and notifications", category: "marketing", type: "api", scopes: ["activity:read", "activity:write"], resources: ["activity"], writePolicy: "propose" },
-  { slug: "posthog", name: "PostHog", detail: "analytics, flags, experiments, and product usage", category: "data", type: "api", scopes: ["sources:read", "activity:read"], resources: ["sources", "activity"] },
-  { slug: "sentry", name: "Sentry", detail: "issues, errors, releases, and debugging context", category: "dev", type: "api", scopes: ["projects:read", "activity:read"], resources: ["projects", "activity"] },
-  { slug: "n8n", name: "n8n", detail: "workflows and automations as callable tools", category: "dev", type: "mcp", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"], writePolicy: "propose" },
-  { slug: "linkedin", name: "LinkedIn", detail: "profile, posts, comments, and professional graph context", category: "marketing", type: "source", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
-  { slug: "x", name: "X / Twitter", detail: "posts, interests, social graph, and public context", category: "marketing", type: "source", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
-  { slug: "wordpress", name: "WordPress", detail: "posts, pages, media, and site content", category: "marketing", type: "oauth", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
-  { slug: "substack", name: "Substack", detail: "newsletter posts, audience content, and RSS", category: "marketing", type: "source", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
-  { slug: "rss", name: "RSS", detail: "any feed as monitored source context", category: "custom", type: "source", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
-  { slug: "elevenlabs", name: "ElevenLabs", detail: "voice generation, transcription, and speech workflows", category: "media", type: "api", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
-  { slug: "replicate", name: "Replicate", detail: "open model runs for image, video, and audio workflows", category: "media", type: "api", scopes: ["activity:read", "activity:write"], resources: ["activity"] },
-  { slug: "telegram", name: "Telegram", detail: "bot messages, channels, and lightweight notifications", category: "marketing", type: "api", scopes: ["activity:read", "activity:write"], resources: ["activity"], writePolicy: "propose" },
-  { slug: "strava", name: "Strava", detail: "fitness activity source for public or private life context", category: "data", type: "oauth", scopes: ["sources:read"], resources: ["sources"] },
-  { slug: "spotify", name: "Spotify", detail: "music, listening state, and taste context", category: "media", type: "oauth", scopes: ["sources:read"], resources: ["sources"] },
+  { slug: "slack", name: "Slack", detail: "workspace messages, team context, and notifications", category: "productivity", type: "oauth", rank: 20, iconDomain: "slack.com", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
+  { slug: "notion", name: "Notion", detail: "pages, databases, notes, SOPs, and docs", category: "productivity", type: "oauth", rank: 21, iconDomain: "notion.so", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
+  { slug: "gmail", name: "Gmail", detail: "read, send, and manage emails as scoped context", category: "google", type: "oauth", rank: 22, iconDomain: "gmail.com", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
+  { slug: "google-calendar", name: "Google Calendar", detail: "calendar context, availability, and meeting prep", category: "google", type: "oauth", rank: 23, iconDomain: "calendar.google.com", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
+  { slug: "linear", name: "Linear", detail: "issues, projects, roadmaps, and execution state", category: "productivity", type: "mcp", rank: 24, iconDomain: "linear.app", scopes: ["projects:read", "activity:write"], resources: ["projects", "activity"] },
+  { slug: "github", name: "GitHub", detail: "repos, issues, pull requests, code context, and stack manifests", category: "dev", type: "oauth", enabled: true, rank: 25, iconDomain: "github.com", scopes: ["projects:read", "projects:write", "stacks:read"], resources: ["projects", "stacks"], writePolicy: "propose", trustLevel: "verified" },
+  { slug: "hubspot", name: "HubSpot", detail: "CRM, deals, contacts, marketing, and sales context", category: "sales", type: "oauth", rank: 26, iconDomain: "hubspot.com", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
+  { slug: "salesforce", name: "Salesforce", detail: "CRM objects, accounts, opportunities, and notes", category: "sales", type: "oauth", rank: 27, iconDomain: "salesforce.com", scopes: ["sources:read"], resources: ["sources"] },
+  { slug: "firecrawl", name: "Firecrawl", detail: "AI-powered scraper, search, retrieval, and rendered page extraction", category: "data", type: "source", enabled: true, rank: 28, iconDomain: "firecrawl.dev", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose", trustLevel: "high" },
+  { slug: "stripe", name: "Stripe", detail: "customers, billing, subscriptions, and payments context", category: "sales", type: "oauth", rank: 29, iconDomain: "stripe.com", scopes: ["sources:read", "activity:read"], resources: ["sources", "activity"] },
+  { slug: "google-drive", name: "Google Drive", detail: "files, folders, PDFs, docs, and shared assets", category: "google", type: "oauth", rank: 30, iconDomain: "drive.google.com", scopes: ["sources:read"], resources: ["sources"] },
+  { slug: "supabase", name: "Supabase", detail: "connect app data and project tables into your context graph", category: "dev", type: "api", rank: 31, iconDomain: "supabase.com", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
+  { slug: "vercel", name: "Vercel", detail: "deployments, projects, env state, and preview links", category: "dev", type: "api", rank: 32, iconDomain: "vercel.com", scopes: ["projects:read", "activity:read"], resources: ["projects", "activity"] },
+  { slug: "figma", name: "Figma", detail: "design files, local MCP, and product context", category: "productivity", type: "mcp", rank: 33, iconDomain: "figma.com", scopes: ["projects:read", "sources:read"], resources: ["projects", "sources"] },
+  { slug: "openai", name: "OpenAI", detail: "model, agent, and ChatGPT app context with BYOK-ready boundaries", category: "dev", type: "api", rank: 34, iconDomain: "openai.com", scopes: ["stacks:read", "activity:read"], resources: ["stacks", "activity"] },
+  { slug: "perplexity", name: "Perplexity", detail: "research answers, citations, and web intelligence", category: "data", type: "api", rank: 35, iconDomain: "perplexity.ai", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
+  { slug: "airtable", name: "Airtable", detail: "bases, records, and spreadsheet-database context", category: "data", type: "oauth", rank: 36, iconDomain: "airtable.com", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
+  { slug: "google-sheets", name: "Google Sheets", detail: "spreadsheets as structured source tables", category: "google", type: "oauth", rank: 37, iconDomain: "sheets.google.com", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
+  { slug: "google-docs", name: "Google Docs", detail: "docs, SOPs, briefs, and writing references", category: "google", type: "oauth", rank: 38, iconDomain: "docs.google.com", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
+  { slug: "shopify", name: "Shopify", detail: "commerce store, orders, products, and customer context", category: "sales", type: "oauth", rank: 39, iconDomain: "shopify.com", scopes: ["sources:read"], resources: ["sources"] },
+  { slug: "microsoft-outlook", name: "Microsoft Outlook", detail: "email and calendar context for Microsoft accounts", category: "microsoft", type: "oauth", rank: 40, iconDomain: "outlook.com", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
+  { slug: "microsoft-onedrive", name: "Microsoft OneDrive", detail: "files and folders from Microsoft 365", category: "microsoft", type: "oauth", rank: 41, iconDomain: "onedrive.live.com", scopes: ["sources:read"], resources: ["sources"] },
+  { slug: "cloudflare", name: "Cloudflare", detail: "domains, workers, DNS, and edge runtime context", category: "dev", type: "api", rank: 42, iconDomain: "cloudflare.com", scopes: ["projects:read", "activity:read"], resources: ["projects", "activity"] },
+  { slug: "resend", name: "Resend", detail: "email API events, audiences, and delivery context", category: "marketing", type: "api", rank: 43, iconDomain: "resend.com", scopes: ["activity:read", "activity:write"], resources: ["activity"], writePolicy: "propose" },
+  { slug: "twilio", name: "Twilio", detail: "SMS, voice, messaging, and notifications", category: "marketing", type: "api", rank: 44, iconDomain: "twilio.com", scopes: ["activity:read", "activity:write"], resources: ["activity"], writePolicy: "propose" },
+  { slug: "posthog", name: "PostHog", detail: "analytics, flags, experiments, and product usage", category: "data", type: "api", rank: 45, iconDomain: "posthog.com", scopes: ["sources:read", "activity:read"], resources: ["sources", "activity"] },
+  { slug: "sentry", name: "Sentry", detail: "issues, errors, releases, and debugging context", category: "dev", type: "api", rank: 46, iconDomain: "sentry.io", scopes: ["projects:read", "activity:read"], resources: ["projects", "activity"] },
+  { slug: "n8n", name: "n8n", detail: "workflows and automations as callable tools", category: "dev", type: "mcp", rank: 47, iconDomain: "n8n.io", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"], writePolicy: "propose" },
+  { slug: "linkedin", name: "LinkedIn", detail: "profile, posts, comments, and professional graph context", category: "marketing", type: "source", rank: 48, iconDomain: "linkedin.com", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
+  { slug: "x", name: "X / Twitter", detail: "posts, interests, social graph, and public context", category: "marketing", type: "source", rank: 49, iconDomain: "x.com", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
+  { slug: "wordpress", name: "WordPress", detail: "posts, pages, media, and site content", category: "marketing", type: "oauth", rank: 50, iconDomain: "wordpress.com", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
+  { slug: "substack", name: "Substack", detail: "newsletter posts, audience content, and RSS", category: "marketing", type: "source", rank: 51, iconDomain: "substack.com", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
+  { slug: "rss", name: "RSS", detail: "any feed as monitored source context", category: "custom", type: "source", rank: 52, iconDomain: "rss.com", scopes: ["sources:read", "sources:write"], resources: ["sources"], writePolicy: "propose" },
+  { slug: "elevenlabs", name: "ElevenLabs", detail: "voice generation, transcription, and speech workflows", category: "media", type: "api", rank: 53, iconDomain: "elevenlabs.io", scopes: ["sources:read", "activity:write"], resources: ["sources", "activity"] },
+  { slug: "replicate", name: "Replicate", detail: "open model runs for image, video, and audio workflows", category: "media", type: "api", rank: 54, iconDomain: "replicate.com", scopes: ["activity:read", "activity:write"], resources: ["activity"] },
+  { slug: "telegram", name: "Telegram", detail: "bot messages, channels, and lightweight notifications", category: "marketing", type: "api", rank: 55, iconDomain: "telegram.org", scopes: ["activity:read", "activity:write"], resources: ["activity"], writePolicy: "propose" },
+  { slug: "strava", name: "Strava", detail: "fitness activity source for public or private life context", category: "data", type: "oauth", rank: 56, iconDomain: "strava.com", scopes: ["sources:read"], resources: ["sources"] },
+  { slug: "spotify", name: "Spotify", detail: "music, listening state, and taste context", category: "media", type: "oauth", rank: 57, iconDomain: "spotify.com", scopes: ["sources:read"], resources: ["sources"] },
 ];
+
+const LOCAL_AGENT_CONNECTOR = CONNECTORS[0];
 
 const API_ENDPOINTS = [
   ["GET", "/api/v1/me", "owner profile, account, and current bundle pointer"],
@@ -316,17 +353,48 @@ const USAGE_ROWS = [
   ["artifact storage", "markdown, reports, context bundles, rich files, and folder.md expansion"],
 ] as const;
 
-function connectorIcon(spec: ConnectorSpec) {
-  if (spec.slug.includes("gmail") || spec.slug.includes("outlook") || spec.slug === "resend") return Mail;
-  if (spec.slug.includes("calendar")) return CalendarDays;
-  if (spec.slug.includes("github") || spec.slug === "foldermd") return FolderGit2;
-  if (spec.slug === "firecrawl") return Flame;
-  if (spec.type === "mcp") return ServerCog;
-  if (spec.type === "webhook") return Link2;
-  if (spec.category === "data") return Database;
-  if (spec.category === "marketing") return MessageSquare;
-  if (spec.category === "owned") return Sparkles;
-  return Plug;
+function googleFaviconUrl(domain: string) {
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+}
+
+function renderConnectorFallbackIcon(spec: ConnectorSpec) {
+  if (spec.slug.includes("calendar")) return <CalendarDays size={18} />;
+  if (spec.slug.includes("github") || spec.slug === "foldermd") return <FolderGit2 size={18} />;
+  if (spec.slug === "firecrawl") return <Flame size={18} />;
+  if (spec.type === "mcp") return <ServerCog size={18} />;
+  if (spec.type === "webhook") return <Link2 size={18} />;
+  if (spec.category === "data") return <Database size={18} />;
+  if (spec.category === "owned") return <Sparkles size={18} />;
+  return <Plug size={18} />;
+}
+
+function ConnectorIcon({ spec }: { spec: ConnectorSpec }) {
+  return (
+    <div
+      className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden bg-[hsl(var(--bg-raised))] text-[hsl(var(--accent))]"
+      data-connector-icon={spec.slug}
+      data-icon-domain={spec.iconDomain ?? ""}
+    >
+      {spec.iconDomain ? (
+        <span
+          aria-hidden
+          className="h-6 w-6 bg-contain bg-center bg-no-repeat"
+          style={{ backgroundImage: `url("${googleFaviconUrl(spec.iconDomain)}")` }}
+        />
+      ) : (
+        renderConnectorFallbackIcon(spec)
+      )}
+      {spec.enabled && (
+        <span className="absolute right-1 top-1 h-1.5 w-1.5 bg-[hsl(var(--success))]" />
+      )}
+    </div>
+  );
+}
+
+function grantVerificationLabel(grant: GrantView | undefined) {
+  if (!grant) return "not connected";
+  if (grant.lastUsedAt && grant.lastUsedAt !== "never") return `verified ${shortDate(grant.lastUsedAt)}`;
+  return "grant issued / awaiting first agent call";
 }
 
 function FolderMdConnectorNote() {
@@ -397,12 +465,13 @@ export function GithubPane({ clerkId, username, userId }: GithubPaneProps) {
     },
     {
       key: "local-mcp",
-      label: "Local host adapter",
-      detail: "Best for Claude Code, Codex, Cursor, and local agents.",
+      label: "Local host adapter + verification",
+      detail: "First-order path for Claude Code, Codex, Cursor, and local agents.",
       body: `npx --yes youmd@latest mcp --install claude --auto
 npx --yes youmd@latest mcp --install codex --auto
 npx --yes youmd@latest mcp --install cursor --auto
-youmd mcp --json`,
+youmd logs --agent "Claude Code" --limit 5
+youmd logs --agent "Codex" --limit 5`,
     },
     {
       key: "rest-smoke",
@@ -432,7 +501,11 @@ over guessing from a profile page.`,
         connector.detail.toLowerCase().includes(q) ||
         connector.slug.includes(q);
       return matchesCategory && matchesSearch;
-    }).sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || a.name.localeCompare(b.name));
+    }).sort((a, b) =>
+      (a.rank ?? 999) - (b.rank ?? 999) ||
+      Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) ||
+      a.name.localeCompare(b.name)
+    );
   }, [category, search]);
 
   const grantFor = (slug: string) => activeGrants.find((grant) => grant.appSlug === slug);
@@ -455,6 +528,11 @@ over guessing from a profile page.`,
         metadata: {
           connectorType: spec.type,
           category: spec.category,
+          iconDomain: spec.iconDomain,
+          localVerification:
+            spec.slug === "local-agent-runtime"
+              ? "Install with youmd mcp --install <claude|codex|cursor> --auto, then confirm first tool use from the grant's lastUsedAt/activity log."
+              : undefined,
           createdFrom: "dashboard-connectors-pane",
         },
       });
@@ -481,6 +559,10 @@ over guessing from a profile page.`,
     setCopiedSnippet(snippet.key);
     setTimeout(() => setCopiedSnippet(null), 1600);
   }
+
+  const localAgentGrant = grantFor("local-agent-runtime");
+  const connectedGrantCount = activeGrants.length;
+  const suggestedConnectors = CONNECTORS.filter((connector) => (connector.rank ?? 999) < 30).length;
 
   return (
     <div className="flex h-full flex-col">
@@ -722,9 +804,73 @@ over guessing from a profile page.`,
                   build your personal API from what you already use.
                 </h2>
                 <p className="mt-2 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-60">
-                  First-party You.md surfaces stay pinned. Third-party services can start as
-                  scoped grants today, then graduate into full OAuth/source adapters.
+                  First connect a local agent runtime so Claude Code, Codex, Cursor,
+                  and your own scripts can prove they can read the Human API/MCP.
+                  Then add Slack, Notion, Gmail, Calendar, Linear, GitHub, CRMs, and crawlers.
                 </p>
+              </div>
+
+              <div className="mb-4 grid gap-3 xl:grid-cols-[1.2fr_0.8fr]">
+                <div
+                  className="border border-[hsl(var(--accent))]/45 bg-[hsl(var(--accent))]/[0.045] p-4"
+                  data-connector-recommended="local-agent-runtime"
+                >
+                  <div className="flex items-start gap-3">
+                    <ConnectorIcon spec={LOCAL_AGENT_CONNECTOR} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+                          recommended first: local agent runtime
+                        </p>
+                        <span className="border border-[hsl(var(--accent))]/35 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--accent))] opacity-75">
+                          first-order
+                        </span>
+                        <span className="font-mono text-[9px] text-[hsl(var(--success))] opacity-75">
+                          {grantVerificationLabel(localAgentGrant)}
+                        </span>
+                      </div>
+                      <p className="mt-2 font-mono text-[10px] leading-5 text-[hsl(var(--text-secondary))] opacity-58">
+                        Install the You.md MCP into Claude Code, Codex, or Cursor,
+                        then verify local setup from the CLI and API/MCP grant usage
+                        from the grant&apos;s first `lastUsedAt` timestamp.
+                      </p>
+                      <code className="mt-3 block bg-[hsl(var(--bg))]/65 px-3 py-2 font-mono text-[9.5px] leading-5 text-[hsl(var(--text-primary))] opacity-75">
+                        npx --yes youmd@latest mcp --install claude --auto &amp;&amp; curl -fsSL https://you.md/api/v1/me -H &quot;Authorization: Bearer yg_...&quot;
+                      </code>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={grantBusySlug === "local-agent-runtime"}
+                      onClick={() => localAgentGrant ? revoke(localAgentGrant.id) : issueGrant(LOCAL_AGENT_CONNECTOR)}
+                      className="mt-1 flex h-7 shrink-0 items-center gap-1 bg-[hsl(var(--bg-raised))] px-2 font-mono text-[9.5px] text-[hsl(var(--text-primary))] transition-colors hover:text-[hsl(var(--accent))] disabled:cursor-not-allowed disabled:opacity-35"
+                    >
+                      {grantBusySlug === "local-agent-runtime" ? "..." : localAgentGrant ? "revoke" : "create grant"}
+                      {!localAgentGrant && <ChevronRight size={12} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))]/35 p-4">
+                  <PaneSectionLabel>connector status</PaneSectionLabel>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <p className="font-mono text-[18px] text-[hsl(var(--text-primary))]">{connectedGrantCount}</p>
+                      <p className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">active grants</p>
+                    </div>
+                    <div>
+                      <p className="font-mono text-[18px] text-[hsl(var(--text-primary))]">{suggestedConnectors}</p>
+                      <p className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">top suggested</p>
+                    </div>
+                    <div>
+                      <p className="font-mono text-[18px] text-[hsl(var(--text-primary))]">{CONNECTORS.length}</p>
+                      <p className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">catalog apps</p>
+                    </div>
+                  </div>
+                  <p className="mt-3 border-t border-[hsl(var(--border))]/35 pt-3 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-48">
+                    Icons resolve through Google&apos;s favicon API from each connector&apos;s
+                    real domain, with the You.md owned APIs pinned above the common app catalog.
+                  </p>
+                </div>
               </div>
 
               {issuedToken && (
@@ -737,6 +883,9 @@ over guessing from a profile page.`,
                       </p>
                       <code className="mt-2 block break-all bg-[hsl(var(--bg))]/60 px-2 py-2 font-mono text-[10px] text-[hsl(var(--text-primary))]">
                         {issuedToken.token}
+                      </code>
+                      <code className="mt-2 block bg-[hsl(var(--bg))]/60 px-2 py-2 font-mono text-[9.5px] leading-5 text-[hsl(var(--text-primary))] opacity-75">
+                        YOUMD_API_KEY_OR_GRANT=&quot;{issuedToken.token}&quot; npx --yes youmd@latest mcp --install claude --auto
                       </code>
                     </div>
                     <button type="button" onClick={() => setIssuedToken(null)} className="ml-auto text-[hsl(var(--text-secondary))] opacity-55 hover:opacity-90">
@@ -753,12 +902,13 @@ over guessing from a profile page.`,
 
               <div className="grid gap-2 xl:grid-cols-2">
                 {filteredConnectors.map((connector) => {
-                  const Icon = connectorIcon(connector);
                   const grant = grantFor(connector.slug);
                   const isBusy = grantBusySlug === connector.slug;
                   return (
                     <div
                       key={connector.slug}
+                      data-connector-card={connector.slug}
+                      data-connector-rank={connector.rank ?? 999}
                       className={`group border bg-[hsl(var(--bg))]/35 p-3 transition-colors ${
                         connector.pinned
                           ? "border-[hsl(var(--accent))]/35"
@@ -766,9 +916,7 @@ over guessing from a profile page.`,
                       }`}
                     >
                       <div className="flex min-w-0 items-start gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[hsl(var(--bg-raised))] text-[hsl(var(--accent))]">
-                          <Icon size={18} />
-                        </div>
+                        <ConnectorIcon spec={connector} />
                         <div className="min-w-0 flex-1">
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
                             <p className="truncate font-mono text-[13px] text-[hsl(var(--text-primary))]">{connector.name}</p>
@@ -782,7 +930,7 @@ over guessing from a profile page.`,
                             )}
                             {grant && (
                               <span className="ml-auto font-mono text-[9px] text-[hsl(var(--success))] opacity-75">
-                                grant active
+                                {grantVerificationLabel(grant)}
                               </span>
                             )}
                           </div>

@@ -89,6 +89,8 @@ PRD Version: 2.3
 - [x] Surface the current user's private REST/MCP/stack endpoint docs, auth header contract, resource map, and API route table inside `/shell`
 - [x] Make connected-app grants visible and manageable from the dashboard using the existing `yg_` grant backend
 - [x] Add a Lovable-style app connector catalog with search, categories, pinned You.md/owned-project connectors, Custom API, Custom MCP, Custom Webhook, and popular third-party services
+- [x] Replace generic connector icons with Google favicon API icons from real app domains and rank the catalog around Local Agent Runtime first, then You.md/owned/custom connectors, then popular apps like Slack, Notion, Gmail, Google Calendar, Linear, GitHub, HubSpot, Salesforce, Firecrawl, Stripe, and Google Drive
+- [x] Show local-agent connection as a first-order connector path with CLI install/smoke-check copy and grant `lastUsedAt` verification language for Claude Code/Codex/local MCP sessions
 - [x] Move GitHub repo sync into its own connector tab so it is no longer the whole Connectors page
 - [x] Embed crawlers/loops beside the connector catalog, keeping native/Firecrawl/agent-browser, cron refresh, immutable versions, and approval controls visible
 - [x] Make the private API/MCP control center directly discoverable from shell navigation, slash commands, command palette, and copyable agent-ready snippets
