@@ -8,7 +8,8 @@
 - Reordered the shell sidebar IA around Projects, Personal API, Skillstacks, Connect, and Identity so the navigation reads by user value instead of implementation category.
 - Added recent saved chat sessions to the shell sidebar and wired owner-gated Convex session hydration; New Chat now starts a fresh persisted session id instead of only adding a display note.
 - Added `project-context/PERSONAL_API_MCP_STACK_SURFACE_2026-06-15.md` covering the extensible personal API/MCP/stack architecture and Convex-as-internal-realtime-gateway model, including BadApp/Myo prior-art lessons.
-- Verified locally with Convex codegen, TypeScript, targeted ESLint (existing hook dependency warnings only), radius guard, `git diff --check`, production build, and in-app browser QA at 2048x1400 for sidebar chat-session rendering, reordered IA, Connectors gateway content, and no horizontal overflow. Production/authenticated session-click verification remains pending after deployment.
+- Verified locally with Convex codegen, TypeScript, targeted ESLint (existing hook dependency warnings only), radius guard, `git diff --check`, production build, and in-app browser QA at 2048x1400 for sidebar chat-session rendering, reordered IA, Connectors gateway content, and no horizontal overflow.
+- Deployed Convex functions to `https://kindly-cassowary-600.convex.cloud`; pushed to `main`; Vercel deployment `dpl_751zUxnaeqsb2aJn1FdSkWd2yoG6` reached Ready and is aliased to `https://www.you.md` / `https://you.md`. Authenticated production browser QA confirmed saved chat rows load, Connectors renders the gateway/ystack/youstack/extension-source graph surface, there is no horizontal overflow, and clicking saved chat `e415e271` hydrates the prior conversation without getting stuck on `opening...`.
 
 ## 2026-06-15 — Shell polish pass
 
