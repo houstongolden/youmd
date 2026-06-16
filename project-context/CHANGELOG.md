@@ -1,5 +1,12 @@
 # You.md — Changelog
 
+## 2026-06-16 — You.md voice-memo lane handoff
+
+### docs(product): consolidate the You.md Part 2 brain-dump lane
+- Added `project-context/voice-memo-part-2-youmd-handoff-2026-06-16.md` as the single You.md handoff for Houston's Part 2 voice-memo/mobile-capture lane, with a status table covering universal capture inbox ownership, Sendblue/provider-agnostic gateway direction, raw transcript artifacts, dedupe/segmentation/routing, project task proposals, approval gates, custom-voice safety, voice/likeness grants, Slack host adapter policy, `y.computer` naming, and You.md API/MCP/YouStack ownership.
+- Tightened `TODO.md`, `FEATURES.md`, `CURRENT_STATE.md`, and active request `#129` so the next slice and blocked product decisions are explicit: first capture pilot, inbox home, first downstream task destination, Slack v1 mode, and voice disclosure/grant shape.
+- Preserved the identity-native framing that the agent is an amplified version of the user with explicit consent, scopes, disclosure, revocation, and audit rather than a deceptive ambient assistant.
+
 ## 2026-06-16 — Connector catalog icons and local-agent verification
 
 ### feat(web): use real connector favicons and prioritize local-agent setup

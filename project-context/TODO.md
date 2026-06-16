@@ -14,14 +14,20 @@ PRD Version: 2.3
 - [x] Update PRD, architecture, personal API/MCP, connector, YouStacks, feature, request, changelog, current-state, and prompt-history docs
 - [x] Record Sendblue as a provider candidate, not hardcoded architecture
 - [x] Validate with `npm run docs:check`, `npm run agent-docs:lint`, `git diff --check`, and a focused phone/secret scan on the new capture files
+- [x] Add a single You.md handoff file with done/next-slice/blocked-decision status for this lane (`project-context/voice-memo-part-2-youmd-handoff-2026-06-16.md`)
 - [ ] Research and choose the first inbound capture pilot: Sendblue iMessage/SMS, generic SMS/RCS, Slack DM, manual paste, or audio transcript upload
+- [ ] Decide the first Brain Dump Inbox home: `/shell` `connect -> api/mcp`, a dedicated inbox pane, or Files/Reports
 - [ ] Design the inbound transcript/capture event data model with raw artifacts, redacted metadata, source hashes, sessions, routing state, and audit log links
+- [ ] Define the personal API/MCP `captures` resource contract for artifacts, routing proposals, approvals, and clarification queues
 - [ ] Build deterministic dedupe/segment/classify foundations before LLM interpretation
 - [ ] Add project-routing and task/memory proposal UI with approval controls
+- [ ] Choose the first downstream task destination after You.md-native proposals: project-context docs, GitHub issues, Notion, or product-specific boards
 - [ ] Define the approval model for external writes to Notion, GitHub issues, project boards, CRM, Slack, and product apps
 - [ ] Write the BAD workout transcript consumer handoff contract
 - [ ] Write the Slack host adapter spec with channel allowlists, identity labels, draft/send modes, action scopes, and audit logs
 - [ ] Write the voice clone/likeness safety spec for ElevenLabs or equivalent with consent, disclosure, revocation, and audit boundaries
+- [ ] Define revocable voice/likeness grant objects and decide whether they extend `yg_` grants or use a dedicated grant family
+- [ ] Preserve the "agent is you" / amplified-user framing in future capture, Slack, and voice UX/copy so the product stays identity-native
 
 ### 2026-06-16 — Machine bootstrap skill and project repo setup
 - [x] Preserve Houston's fresh-machine skill request in active feature tracking
