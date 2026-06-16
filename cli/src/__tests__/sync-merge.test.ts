@@ -149,6 +149,40 @@ describe("sync 3-way merge (both local and remote changed)", () => {
     });
   }
 
+  it("does not push after pull when a newer unpublished draft is ahead", async () => {
+    const published = setupBundleWithBase();
+    const draft = JSON.parse(JSON.stringify(published)) as Record<string, unknown>;
+    draft.values = ["private draft value"];
+
+    vi.mocked(api.getPublicProfile).mockResolvedValue({
+      username: "tester",
+      youJson: published,
+      youMd: "# published\n",
+    } as Awaited<ReturnType<typeof api.getPublicProfile>>);
+    vi.mocked(api.getMe).mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: {
+        latestBundle: {
+          version: 4,
+          isPublished: false,
+          createdAt: 0,
+          contentHash: NEW_REMOTE_HASH,
+          youJson: draft,
+          youMd: "# draft\n",
+        },
+        publishedBundle: { version: 3, contentHash: OLD_REMOTE_HASH },
+        bundleCount: 4,
+      },
+    });
+
+    await sync.syncCommand({});
+
+    expect(api.uploadBundle).not.toHaveBeenCalled();
+    expect(api.publishLatest).not.toHaveBeenCalled();
+    expect(process.exitCode).not.toBe(1);
+  });
+
   it("merges non-overlapping local + remote edits and pushes the result", async () => {
     const base = setupBundleWithBase();
 

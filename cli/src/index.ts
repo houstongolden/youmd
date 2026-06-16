@@ -345,7 +345,7 @@ async function runYouGuidedSetup(): Promise<void> {
   async function handOffToHydratedChat(): Promise<void> {
     console.log("  " + ACCENT("bundle is live.") + " " + DIM("this machine has something real to work with now."));
     console.log("");
-    console.log("  " + DIM("Enter = sync + open U. say ") + chalk.cyan("chat") + DIM(" to skip sync, ") + chalk.cyan("status") + DIM(" to inspect, ") + chalk.cyan("quit") + DIM(" to stop."));
+    console.log("  " + DIM("Enter = safe sync + open U. say ") + chalk.cyan("chat") + DIM(" to skip sync, ") + chalk.cyan("status") + DIM(" to inspect, ") + chalk.cyan("quit") + DIM(" to stop."));
     console.log("");
 
     const answer = await promptInput(ACCENT("  > "));
@@ -370,7 +370,7 @@ async function runYouGuidedSetup(): Promise<void> {
     }
 
     if (action === "sync" && isAuthenticated()) {
-      console.log("  " + ACCENT("hydrating local runtime...") + " " + DIM("pulling/pushing identity state, refreshing installed skills."));
+      console.log("  " + ACCENT("hydrating local runtime...") + " " + DIM("pulling first, pushing only when it is safe."));
       console.log("");
       const previousExitCode = process.exitCode;
       process.exitCode = undefined;

@@ -183,6 +183,18 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean; l
       }
       // "no-remote" falls through — first sync still pushes the local bundle
 
+      if (pullResult === "ok" && !options.force) {
+        const remoteAhead = await detectRemoteAheadOfPulledBundle(bundleDir);
+        if (remoteAhead) {
+          console.log("");
+          console.log(chalk.green("  sync complete."));
+          console.log(chalk.dim("  hydrated local files and skills from you.md."));
+          console.log(chalk.dim("  remote has a newer unpublished draft, so no push was attempted."));
+          console.log(chalk.dim("  next: run ") + chalk.cyan("youmd status") + chalk.dim(" or ") + chalk.cyan("you") + chalk.dim(" to keep working."));
+          return;
+        }
+      }
+
       console.log("");
       console.log(chalk.dim("  ── push ──"));
       await pushCommand({ publish: true, force: options.force, local: options.local });
@@ -191,6 +203,21 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean; l
     console.log("");
     console.log(chalk.green("  sync complete."));
     console.log(chalk.dim("  tip: use --watch for auto-sync on file changes"));
+  }
+}
+
+async function detectRemoteAheadOfPulledBundle(bundleDir: string): Promise<boolean> {
+  const localConfig = readBundleConfig(bundleDir);
+  const pulledHash = localConfig?.lastPulledHash;
+  if (!pulledHash) return false;
+
+  try {
+    const meRes = await getMe();
+    if (!meRes.ok) return false;
+    const latestHash = meRes.data.latestBundle?.contentHash;
+    return !!latestHash && latestHash !== pulledHash;
+  } catch {
+    return false;
   }
 }
 
