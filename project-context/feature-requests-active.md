@@ -7,9 +7,9 @@ Last Updated: 2026-06-15
 ## 2026-06-15 — Rebuild `/shell` as Codex/Lovable-style workspace
 
 ### 121. Shell logo hover sidebar toggle and right-pane toggle placement
-**Status:** IN PROGRESS (code complete locally; deploy and visual verification pending)
+**Status:** IN PROGRESS (code complete and deployed; Houston visual approval pending)
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES (deployment Ready; authenticated visual QA pending)
 **Source:** 2026-06-15 — Houston: "these sidebar icons on the top left are not following instructions... hover on the YOU logo should subtly animate and switch to a 2-line side menu icon... the YOU needs to be a touch smaller... the other side panel icon... should be on the top right of the whole screen since it controls the top right pannel... use a cleaner more minimal side panel icon"
 **Actionable Scope:**
 1. Remove the separate top-left sidebar toggle icon beside the YOU logo.
@@ -18,7 +18,7 @@ Last Updated: 2026-06-15
 4. On hover, subtly animate the YOU mark into a two-line side-menu glyph.
 5. Move the right-pane toggle from the left of the chat-column top chrome to the top-right of the whole workspace chrome.
 6. Replace the right-pane Lucide panel icon with a cleaner minimal side-panel glyph.
-**Progress (2026-06-15):** Implemented locally in `src/app/(app)/dashboard/dashboard-content.tsx`: removed the separate left-panel button, added a smaller hover-animated PixelYOU/sidebar menu toggle, moved the detail-pane toggle to the far-right top chrome after deploy, and replaced Lucide panel icons with small custom line glyphs. Verification passed `npm run lint` (existing warnings only, radius OK) and `npm run build`. Browser automation lost its local tab during reload, so visual verification remains pending after deploy.
+**Progress (2026-06-15):** Implemented locally in `src/app/(app)/dashboard/dashboard-content.tsx`: removed the separate left-panel button, added a smaller hover-animated PixelYOU/sidebar menu toggle, moved the detail-pane toggle to the far-right top chrome after deploy, and replaced Lucide panel icons with small custom line glyphs. Verification passed `npm run lint` (existing warnings only, radius OK), `npm run build`, and `git diff --check`. Pushed commit `60484b8`; Vercel deployment `dpl_DdW1qSmFWKKc8iks3bJxbnaeYjTM` reached Ready and is aliased to `https://www.you.md` / `https://you.md`. Browser automation could only open an unauthenticated protected-shell view, so authenticated visual approval remains pending.
 
 ### 120. Shell composer prompt/outline cleanup, attach, and voice affordance
 **Status:** IN PROGRESS (code complete and deployed; Houston visual approval pending)

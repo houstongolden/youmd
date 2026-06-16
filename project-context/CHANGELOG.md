@@ -9,6 +9,7 @@
 - Moved the detail/right-pane toggle out of the left side of the chat top bar and into the far-right top chrome, beside the GitHub/update/publish/deploy actions.
 - Replaced the right-pane toggle icon with a cleaner custom line glyph instead of the heavier Lucide side-panel icon.
 - Verified locally with `npm run lint` (existing warnings only; radius guard passed) and `npm run build`.
+- Pushed to `main`; Vercel deployment `dpl_DdW1qSmFWKKc8iks3bJxbnaeYjTM` reached Ready and is aliased to `https://www.you.md` / `https://you.md`. Browser automation could only open an unauthenticated protected-shell view, so authenticated visual approval remains pending.
 
 ## 2026-06-15 — Shell composer control polish
 
