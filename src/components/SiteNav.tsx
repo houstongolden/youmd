@@ -25,7 +25,10 @@ export function SiteNav() {
 
   // Compute hidden-path check early so we can skip queries on auth pages
   const hiddenPaths = ["/", "/create", "/sign-in", "/sign-up", "/initialize", "/reset-password", "/docs"];
-  const isHidden = hiddenPaths.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p)));
+  const isAppShellRoute = pathname === "/shell" || pathname === "/dashboard";
+  const isHidden =
+    hiddenPaths.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p))) ||
+    (isSignedIn && isAppShellRoute);
 
   // Gate on isAuthenticated so the query only fires AFTER Convex JWT is synced
   const convexUser = useQuery(

@@ -6,6 +6,22 @@ Last Updated: 2026-06-15
 
 ## 2026-06-15 — Rebuild `/shell` as Codex/Lovable-style workspace
 
+### 117. Polish `/shell` ratios, sidebar/account chrome, and no-nested-box chat UI
+**Status:** IN PROGRESS (implementation in progress; verification pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-15 — Houston: "I really want you to go through our app and polish it as it was your own baby... NEVER allow the chat column to be that narrow... remove the entire top row nav for logged in users... move the top right thing with portrait/image username etc to the bottom of the left hand sidebar... chatui... full width/height... too many borders/outlines... boxes inside boxes... side menu box/pills... bulky/clunky..."
+**Actionable Scope:**
+1. Prevent the chat column from loading or resizing below a usable desktop width.
+2. Auto-collapse the left sidebar when the split needs room, instead of letting the chat column become too narrow.
+3. Remove the logged-in top nav from `/shell`/dashboard workspace surfaces.
+4. Move portrait/username/account controls to the bottom of the left sidebar.
+5. Add a sidebar account popout with usage, settings, sign out, and saved theme preference (`light`, `dark`, `system`).
+6. Remove bulky sidebar pills/borders and show item details as hover/title context instead of permanent subtext.
+7. Make the chat composer fill its component width/height with one clean outer boundary and no nested borders.
+8. Reduce right-pane tab chrome and overall nested-border visual noise while keeping the terminal-native aesthetic.
+**Progress (2026-06-15):** Implemented locally: shell/dashboard logged-in surfaces now hide the global top nav, workspace height uses the full viewport, chat split defaults wider and is guarded by pixel + percentage clamps, desktop resize respects minimum chat/detail widths, sidebar auto-compacts below wide desktop when the detail split needs room, sidebar rows are borderless icon/label actions with hover/title detail context, account/usage/settings/signout/theme controls moved into a sidebar-footer popout, composer inner border removed, and desktop pane tabs changed from boxed pills to underline-style tabs. Verification passed TypeScript, targeted ESLint (existing unrelated warning only), radius guard, `git diff --check`, and production build. Remaining: deploy and authenticated production visual approval.
+
 ### 116. Remove terminal-window chrome and add full-height sidebar + resizable split shell
 **Status:** IN PROGRESS (code complete and deployed; Houston authenticated verification pending)
 **Verified:** NO

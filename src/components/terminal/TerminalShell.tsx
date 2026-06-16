@@ -246,7 +246,7 @@ export function TerminalShell({
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="h-full overflow-y-auto px-4 py-4"
+          className="h-full overflow-y-auto px-5 py-5"
           role="group"
           aria-label="conversation"
           aria-busy={isThinking || !streamSettled}

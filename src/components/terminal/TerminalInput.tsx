@@ -62,11 +62,11 @@ export function TerminalInput({
   }, []);
 
   return (
-    <div className="shrink-0 border-t border-[hsl(var(--border))] px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] terminal-input-sticky bg-[hsl(var(--bg-raised))]">
+    <div className="shrink-0 border-t border-[hsl(var(--border))]/70 terminal-input-sticky bg-[hsl(var(--bg-raised))] pb-[env(safe-area-inset-bottom)]">
       {/* Pasted image preview */}
       {pastedImage && (
-        <div className="mb-2 flex items-start gap-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg))] p-2" style={{ borderRadius: "var(--radius)" }}>
-          <div className="border border-[hsl(var(--border))] overflow-hidden shrink-0" style={{ borderRadius: "var(--radius)" }}>
+        <div className="mx-4 mt-3 flex items-start gap-2 bg-[hsl(var(--bg))] p-2" style={{ borderRadius: "var(--radius)" }}>
+          <div className="overflow-hidden shrink-0" style={{ borderRadius: "var(--radius)" }}>
             {/* eslint-disable-next-line @next/next/no-img-element -- pasted data URLs are local previews, not optimizable assets */}
             <img
               src={pastedImage}
@@ -88,12 +88,9 @@ export function TerminalInput({
         </div>
       )}
 
-      <div
-        className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))] transition-colors focus-within:border-[hsl(var(--accent))]/55"
-        style={{ borderRadius: "var(--radius)" }}
-      >
-        <div className="flex items-end gap-2 px-3 py-2">
-          <span aria-hidden="true" className="text-[hsl(var(--accent))] font-mono text-[13px] pb-2 select-none shrink-0">
+      <div className="bg-[hsl(var(--bg-raised))] transition-colors focus-within:bg-[hsl(var(--bg))]">
+        <div className="flex items-end gap-2 px-5 py-3">
+          <span aria-hidden="true" className="pb-3 shrink-0 select-none font-mono text-[13px] text-[hsl(var(--accent))]">
             &gt;
           </span>
           <textarea
@@ -119,14 +116,14 @@ export function TerminalInput({
               setPastedImage(null);
             }}
             disabled={!input.trim() && !pastedImage}
-            className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center border border-[hsl(var(--accent))]/45 bg-[hsl(var(--accent))] text-white transition-colors hover:bg-[hsl(var(--accent-dark))] disabled:cursor-not-allowed disabled:border-[hsl(var(--border))] disabled:bg-[hsl(var(--bg-raised))] disabled:text-[hsl(var(--text-secondary))] disabled:opacity-35"
+            className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center bg-[hsl(var(--accent))] text-white transition-[background,color,opacity] hover:bg-[hsl(var(--accent-dark))] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[hsl(var(--text-secondary))] disabled:opacity-35"
             style={{ borderRadius: "var(--radius)" }}
             aria-label="Send"
           >
             <CornerDownLeft size={15} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
-        <div className="flex items-center gap-3 border-t border-[hsl(var(--border))] px-8 py-2">
+        <div className="flex items-center gap-3 px-10 pb-3">
           <span className="hidden sm:inline text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-25">
             enter to send
           </span>

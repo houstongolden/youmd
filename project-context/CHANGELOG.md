@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-15 — Shell polish pass
+
+### feat(web): refine `/shell` ratios, sidebar chrome, and account controls
+- Removed the logged-in global top nav from the shell/dashboard workspace so the app uses the full viewport height.
+- Protected the chat column with a wider default split, pixel minimums, and resize clamping so it cannot collapse into an unusable sliver on desktop.
+- Auto-compacted the left sidebar below the wide-desktop breakpoint when the detail split needs room.
+- Reworked the sidebar from bulky bordered rows into quieter icon/label actions with hover/title detail context and a slimmer active signal.
+- Moved the portrait/username/account affordance into the sidebar footer and added a popout for usage, settings, sign out, and persisted `light`/`dark`/`system` theme preference.
+- Flattened the chat composer and pane tabs to reduce nested-border/boxes-inside-boxes visual noise while preserving the terminal-native shell feel.
+- Verified locally with TypeScript, targeted ESLint, radius guard, whitespace check, and production build. Authenticated production visual verification is pending deployment.
+
 ## 2026-06-15 — Full-height shell workspace
 
 ### feat(web): rebuild `/shell` as a Codex/Lovable-style workspace
