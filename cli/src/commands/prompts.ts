@@ -7,12 +7,14 @@
  *   youmd prompts tail [n]     — show last N messages
  *   youmd prompts today        — messages from today
  *   youmd prompts export       — dump all messages to stdout (pipe-friendly)
+ *   youmd prompts catalog      — index project-local prompt history files
  */
 
 import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
 import chalk from "chalk";
+import { getHomeBundleDir } from "../lib/config";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -21,6 +23,323 @@ interface PromptEntry {
   timestamp: string;
   content: string;
   session: string;
+}
+
+interface PromptCatalogEntry {
+  time: string;
+  context: string;
+  section: string;
+}
+
+interface PromptCatalogFile {
+  projectName: string;
+  projectRoot: string;
+  promptPath: string;
+  legacy: boolean;
+  entryCount: number;
+  lastEntry: PromptCatalogEntry | null;
+}
+
+interface PromptCatalogOptions {
+  roots: string[];
+  outPath?: string;
+  write: boolean;
+  json: boolean;
+  limit: number;
+}
+
+const DEFAULT_CATALOG_EXCLUDES = new Set([
+  ".git",
+  ".hg",
+  ".svn",
+  "node_modules",
+  ".next",
+  "dist",
+  "build",
+  "coverage",
+  ".turbo",
+  ".vercel",
+  ".cache",
+  ".gradle",
+  ".pytest_cache",
+  ".mypy_cache",
+  ".ruff_cache",
+  ".venv",
+  "venv",
+  "vendor",
+  "target",
+  "tmp",
+  "__pycache__",
+]);
+
+function defaultPromptCatalogRoots(): string[] {
+  const home = process.env.HOME || process.env.USERPROFILE || "";
+  return [
+    process.cwd(),
+    path.join(home, "Desktop", "CODE_2025"),
+    path.join(home, "Documents"),
+  ];
+}
+
+function dedupeResolvedPaths(paths: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of paths) {
+    const expanded = raw.replace(/^~(?=$|\/|\\)/, process.env.HOME || "");
+    const resolved = path.resolve(expanded);
+    let key = resolved;
+    try {
+      key = fs.realpathSync(resolved);
+    } catch {
+      // Keep the resolved path for non-existent roots; caller filters later.
+    }
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(resolved);
+  }
+  return out;
+}
+
+function shouldSkipDir(name: string): boolean {
+  return DEFAULT_CATALOG_EXCLUDES.has(name);
+}
+
+export function findPromptHistoryFiles(roots = defaultPromptCatalogRoots(), limit = 500): string[] {
+  const found: string[] = [];
+  const seen = new Set<string>();
+  const queue = dedupeResolvedPaths(roots).filter((root) => fs.existsSync(root));
+
+  while (queue.length && found.length < limit) {
+    const dir = queue.shift()!;
+    let stat: fs.Stats;
+    try {
+      stat = fs.lstatSync(dir);
+    } catch {
+      continue;
+    }
+    if (!stat.isDirectory() || stat.isSymbolicLink()) continue;
+
+    let real = dir;
+    try {
+      real = fs.realpathSync(dir);
+    } catch {
+      // Best effort.
+    }
+    if (seen.has(real)) continue;
+    seen.add(real);
+
+    const contextDir = path.join(dir, "project-context");
+    const promptsPath = path.join(contextDir, "prompts.md");
+    const legacyPath = path.join(contextDir, "prompt-history.md");
+    if (fs.existsSync(promptsPath)) {
+      found.push(promptsPath);
+    } else if (fs.existsSync(legacyPath)) {
+      found.push(legacyPath);
+    }
+    if (found.length >= limit) break;
+
+    let children: fs.Dirent[];
+    try {
+      children = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const child of children) {
+      if (shouldSkipDir(child.name)) continue;
+      if (child.isDirectory() && !child.isSymbolicLink()) {
+        queue.push(path.join(dir, child.name));
+      }
+    }
+  }
+
+  return found.sort();
+}
+
+function inferProjectName(projectRoot: string): string {
+  const markerPath = path.join(projectRoot, ".youmd-project");
+  if (fs.existsSync(markerPath)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(markerPath, "utf-8")) as { name?: string };
+      if (parsed.name) return parsed.name;
+    } catch {
+      // Fall through to package/basename.
+    }
+  }
+
+  const packagePath = path.join(projectRoot, "package.json");
+  if (fs.existsSync(packagePath)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(packagePath, "utf-8")) as { name?: string };
+      if (parsed.name) return parsed.name;
+    } catch {
+      // Fall through.
+    }
+  }
+
+  return path.basename(projectRoot);
+}
+
+function promptCatalogSortKey(item: PromptCatalogFile): string {
+  if (!item.lastEntry) return "";
+  return `${item.lastEntry.section} ${item.lastEntry.time}`;
+}
+
+export function parseProjectPromptFile(promptPath: string): PromptCatalogFile {
+  const text = fs.readFileSync(promptPath, "utf-8");
+  const projectRoot = path.dirname(path.dirname(promptPath));
+  let currentSection = "unsectioned";
+  const entries: PromptCatalogEntry[] = [];
+
+  for (const line of text.split(/\r?\n/)) {
+    const sectionMatch = line.match(/^##\s+(.+?)\s*$/);
+    if (sectionMatch) {
+      currentSection = sectionMatch[1].trim();
+      continue;
+    }
+    const entryMatch = line.match(/^\*\*(.+?)\s+-\s+(.+?)\*\*\s*$/);
+    if (!entryMatch) continue;
+    entries.push({
+      time: entryMatch[1].trim(),
+      context: entryMatch[2].trim(),
+      section: currentSection,
+    });
+  }
+
+  return {
+    projectName: inferProjectName(projectRoot),
+    projectRoot,
+    promptPath,
+    legacy: path.basename(promptPath) === "prompt-history.md",
+    entryCount: entries.length,
+    lastEntry: entries.length ? entries[entries.length - 1] : null,
+  };
+}
+
+export function buildPromptCatalog(files: string[]): PromptCatalogFile[] {
+  return files.map(parseProjectPromptFile).sort((a, b) => {
+    const aKey = promptCatalogSortKey(a);
+    const bKey = promptCatalogSortKey(b);
+    return bKey.localeCompare(aKey) || a.projectName.localeCompare(b.projectName);
+  });
+}
+
+export function renderPromptCatalogMarkdown(catalog: PromptCatalogFile[]): string {
+  const generatedAt = new Date().toISOString();
+  const totalEntries = catalog.reduce((sum, item) => sum + item.entryCount, 0);
+  const lines: string[] = [
+    "# Prompt History Catalog",
+    "",
+    `Generated: ${generatedAt}`,
+    "",
+    `Projects indexed: ${catalog.length}`,
+    `Prompt entries indexed: ${totalEntries}`,
+    "",
+    "This is an index of project-local prompt logs. Raw prompt history stays in each project's `project-context/prompts.md` file.",
+    "",
+    "## Projects",
+    "",
+  ];
+
+  if (!catalog.length) {
+    lines.push("No project prompt logs found.");
+    lines.push("");
+    return lines.join("\n");
+  }
+
+  for (const item of catalog) {
+    lines.push(`### ${item.projectName}`);
+    lines.push("");
+    lines.push(`- Root: \`${item.projectRoot}\``);
+    lines.push(`- Prompt log: \`${item.promptPath}\`${item.legacy ? " (legacy name)" : ""}`);
+    lines.push(`- Entries: ${item.entryCount}`);
+    if (item.lastEntry) {
+      lines.push(`- Last entry: ${item.lastEntry.time} - ${item.lastEntry.context}`);
+      lines.push(`- Last section: ${item.lastEntry.section}`);
+    } else {
+      lines.push("- Last entry: none detected");
+    }
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
+function parseCatalogOptions(args: string[]): PromptCatalogOptions {
+  const roots: string[] = [];
+  let outPath: string | undefined;
+  let write = true;
+  let json = false;
+  let limit = 500;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--no-write") {
+      write = false;
+    } else if (arg === "--write") {
+      write = true;
+    } else if (arg === "--json") {
+      json = true;
+    } else if (arg === "--out") {
+      outPath = args[++i];
+    } else if (arg === "--limit") {
+      const parsed = Number.parseInt(args[++i] || "", 10);
+      if (Number.isFinite(parsed) && parsed > 0) limit = parsed;
+    } else if (arg === "--root") {
+      roots.push(args[++i]);
+    } else if (arg.startsWith("-")) {
+      throw new Error(`unknown catalog option: ${arg}`);
+    } else {
+      roots.push(arg);
+    }
+  }
+
+  return { roots: roots.length ? roots : defaultPromptCatalogRoots(), outPath, write, json, limit };
+}
+
+async function promptsCatalogCommand(args: string[]): Promise<void> {
+  let options: PromptCatalogOptions;
+  try {
+    options = parseCatalogOptions(args);
+  } catch (err) {
+    console.log(`  ${ACCENT("ERR")} ${err instanceof Error ? err.message : "invalid catalog options"}`);
+    console.log(`  ${DIM("usage:")} ${ACCENT("youmd prompts catalog [--root <dir>] [--out <file>] [--no-write] [--json]")}`);
+    console.log("");
+    return;
+  }
+
+  const files = findPromptHistoryFiles(options.roots, options.limit);
+  const catalog = buildPromptCatalog(files);
+  const markdown = renderPromptCatalogMarkdown(catalog);
+  const outPath = path.resolve(options.outPath || path.join(getHomeBundleDir(), "private", "prompt-catalog.md"));
+
+  if (options.json) {
+    console.log(JSON.stringify({ generatedAt: new Date().toISOString(), outPath, catalog }, null, 2));
+  } else {
+    console.log("");
+    console.log("  " + chalk.bold("you.md") + DIM(" -- prompt catalog"));
+    console.log(`  ${DIM(`found ${catalog.length} project prompt logs (${catalog.reduce((sum, item) => sum + item.entryCount, 0)} entries)`)}`);
+    console.log("");
+    for (const item of catalog.slice(0, 20)) {
+      const last = item.lastEntry ? `${item.lastEntry.time} - ${item.lastEntry.context}` : "no entries";
+      console.log(`  ${ACCENT(item.projectName)} ${DIM(`(${item.entryCount})`)} ${DIM(last)}`);
+      console.log(`  ${DIM(item.promptPath)}`);
+    }
+    if (catalog.length > 20) {
+      console.log(`  ${DIM(`... +${catalog.length - 20} more`)}`);
+    }
+    console.log("");
+  }
+
+  if (options.write) {
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
+    fs.writeFileSync(outPath, markdown, "utf-8");
+    if (!options.json) {
+      console.log(`  ${DIM("wrote")} ${ACCENT(outPath)}`);
+      console.log("");
+    }
+  } else if (!options.json) {
+    console.log(markdown);
+  }
 }
 
 /**
@@ -131,6 +450,11 @@ export async function promptsCommand(
   subcommand?: string,
   ...args: string[]
 ): Promise<void> {
+  if (subcommand === "catalog") {
+    await promptsCatalogCommand(args);
+    return;
+  }
+
   const sessionDir = findSessionDir();
   if (!sessionDir) {
     console.log("");
@@ -237,6 +561,6 @@ export async function promptsCommand(
   }
 
   console.log(`  ${ACCENT("ERR")} unknown subcommand "${subcommand}"`);
-  console.log(`  ${DIM("available:")} recent, search <q>, tail [n], today, export`);
+  console.log(`  ${DIM("available:")} recent, search <q>, tail [n], today, export, catalog`);
   console.log("");
 }

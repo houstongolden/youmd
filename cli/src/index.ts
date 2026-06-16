@@ -614,7 +614,8 @@ program
 
 program
   .command("prompts [subcommand] [args...]")
-  .description("Search and browse your past messages across agent sessions")
+  .description("Search, browse, and catalog your past messages across agent sessions")
+  .allowUnknownOption(true)
   .action((subcommand, args) => {
     return promptsCommand(subcommand, ...(args || []));
   });
