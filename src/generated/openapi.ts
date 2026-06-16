@@ -2661,6 +2661,72 @@ export const openApiSpec = {
         }
       }
     },
+    "/api/v1/profiles/{username}/conversation": {
+      "get": {
+        "operationId": "get_api_v1_profiles_username_conversation",
+        "summary": "Next.js route",
+        "tags": [
+          "Public Identity"
+        ],
+        "x-youmd-auth": "Public or rate-limited",
+        "x-youmd-source": "next",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_api_v1_profiles_username_conversation",
+        "summary": "Next.js route",
+        "tags": [
+          "Public Identity"
+        ],
+        "x-youmd-auth": "Public or rate-limited",
+        "x-youmd-source": "next",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/schema/you-md/v1.json": {
       "get": {
         "operationId": "get_schema_you_md_v1_json",

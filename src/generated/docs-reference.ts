@@ -41,18 +41,18 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "23688f0ec7baa4e6578cdc49eb712634dec67dbc13d09d4a698683106e4975a2",
+  "sourceHash": "cf02d28bb7239a55d6b13da0d7b617545d6b3b9cbcfcb1921a9a4c5f49c11f29",
   "cli": {
     "version": "0.8.2"
   },
   "counts": {
-    "endpoints": 83,
+    "endpoints": 85,
     "internalRoutes": 7,
     "mcpTools": 6,
     "hostedMcpTools": 0,
     "cliCommands": 30,
     "convexRoutes": 66,
-    "nextRoutes": 24
+    "nextRoutes": 26
   },
   "endpoints": [
     {
@@ -851,6 +851,28 @@ export const docsReference = {
       "summary": "List all profiles (no params) or get single profile (?username=xxx)",
       "sources": [
         "convex",
+        "next"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/profiles/{username}/conversation",
+      "category": "Public Identity",
+      "auth": "Public or rate-limited",
+      "source": "next",
+      "summary": "Next.js route",
+      "sources": [
+        "next"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/profiles/{username}/conversation",
+      "category": "Public Identity",
+      "auth": "Public or rate-limited",
+      "source": "next",
+      "summary": "Next.js route",
+      "sources": [
         "next"
       ]
     },

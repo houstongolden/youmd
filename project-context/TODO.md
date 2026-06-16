@@ -44,7 +44,8 @@ PRD Version: 2.3
 - [ ] Add external report adapters for Perplexity industry pulse, Google Calendar agenda, BAMF/BAMF OS analytics, Bad.app fitness/body, weather, surf, and school crawler data
 - [ ] Port h.computer weather, surf, school crawler, GitHub LOC/LOMB project catalog, and daily journal source adapters into You.md-native connectors
 - [ ] Add DSI catalog components and owner-approved public profile rendering
-- [ ] Add secure public profile chat widget and `/api/v1/profiles/:username/conversation`
+- [x] Add secure public profile chat widget and `/api/v1/profiles/:username/conversation` first slice with public-context-only answers and provenance
+- [ ] Add LLM voice tuning, owner controls, and MCP parity for public profile conversation endpoints
 
 ### 2026-06-16 — Connector catalog and private API/MCP control center
 - [x] Turn the Connectors pane into a clear owner control center with `api/mcp`, `apps`, `crawlers/loops`, and `repo` tabs

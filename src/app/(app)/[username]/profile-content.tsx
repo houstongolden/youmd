@@ -42,6 +42,15 @@ interface ProfileYouStack {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ProfileJson = Record<string, any>;
 
+type PublicConversationResponse = {
+  answer: string;
+  voice_mode: string;
+  sources: Array<{ label: string; href: string; scope: string }>;
+  public_context_used: string[];
+  omitted_private_context: string[];
+  suggested_followups: string[];
+};
+
 /* ── Helpers ──────────────────────────────────────────────── */
 
 function formatRelativeTime(timestamp: number): string {
@@ -111,6 +120,136 @@ function normalizeProfileYouStacks(value: unknown): ProfileYouStack[] {
         : undefined,
     }];
   });
+}
+
+function PublicProfileChatBox({
+  username,
+  name,
+}: {
+  username: string;
+  name: string;
+}) {
+  const [message, setMessage] = useState("");
+  const [response, setResponse] = useState<PublicConversationResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const suggestions = [
+    `What is ${name} building right now?`,
+    `What should I ask ${name} about?`,
+    `Summarize ${name}'s public expertise.`,
+  ];
+
+  const ask = useCallback(async (prompt?: string) => {
+    const question = (prompt ?? message).trim();
+    if (!question || loading) return;
+    setLoading(true);
+    setError(null);
+    if (prompt) setMessage(prompt);
+
+    try {
+      const result = await fetch(`/api/v1/profiles/${encodeURIComponent(username)}/conversation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: question }),
+      });
+      const json = await result.json();
+      if (!result.ok) {
+        throw new Error(typeof json?.error === "string" ? json.error : "conversation_failed");
+      }
+      setResponse(json as PublicConversationResponse);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "conversation_failed");
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, message, username]);
+
+  return (
+    <div
+      className="border border-[hsl(var(--accent))]/35 bg-[hsl(var(--accent))]/[0.025] p-4 font-mono text-[11px]"
+      style={{ borderRadius: "var(--radius)" }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-[hsl(var(--accent))] uppercase tracking-[0.16em] text-[9px]">public conversation api</p>
+          <p className="mt-1 text-[hsl(var(--text-primary))] text-[13px]">ask @{username}&apos;s public You.md</p>
+        </div>
+        <span className="text-[hsl(var(--text-secondary))] opacity-45 text-[10px]">public context only</span>
+      </div>
+
+      <div className="mt-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]" style={{ borderRadius: "var(--radius)" }}>
+        <textarea
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          onKeyDown={(event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+              void ask();
+            }
+          }}
+          rows={3}
+          maxLength={1200}
+          placeholder={`ask what ${name} is building, how they think, or which public endpoints agents can read...`}
+          className="block w-full resize-none bg-transparent px-3 py-2 text-[12px] leading-relaxed text-[hsl(var(--text-primary))] outline-none placeholder:text-[hsl(var(--text-secondary))]/35"
+        />
+        <div className="flex items-center justify-between border-t border-[hsl(var(--border))]/50 px-3 py-2">
+          <span className="text-[10px] text-[hsl(var(--text-secondary))] opacity-35">
+            POST /api/v1/profiles/{username}/conversation
+          </span>
+          <button
+            type="button"
+            onClick={() => void ask()}
+            disabled={loading || !message.trim()}
+            className="border border-[hsl(var(--accent))]/45 px-2.5 py-1 text-[10px] text-[hsl(var(--accent))] transition-colors hover:bg-[hsl(var(--accent))]/10 disabled:cursor-not-allowed disabled:opacity-30"
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            {loading ? "thinking" : "ask"}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {suggestions.map((suggestion) => (
+          <button
+            key={suggestion}
+            type="button"
+            onClick={() => void ask(suggestion)}
+            className="border border-[hsl(var(--border))] px-2 py-1 text-[10px] text-[hsl(var(--text-secondary))] opacity-60 transition-colors hover:border-[hsl(var(--accent))]/35 hover:text-[hsl(var(--accent))] hover:opacity-90"
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            {suggestion}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <p className="mt-3 text-[10px] text-[hsl(var(--accent))] opacity-80">
+          ERR: {error}
+        </p>
+      )}
+
+      {response && (
+        <div className="mt-4 border-t border-[hsl(var(--border))]/50 pt-3">
+          <pre className="whitespace-pre-wrap break-words text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-80">
+            {response.answer}
+          </pre>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {response.public_context_used.map((field) => (
+              <span
+                key={field}
+                className="border border-[hsl(var(--border))] px-1.5 py-0.5 text-[9px] text-[hsl(var(--text-secondary))] opacity-45"
+                style={{ borderRadius: "var(--radius)" }}
+              >
+                {field}
+              </span>
+            ))}
+          </div>
+          <p className="mt-2 text-[9px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-35">
+            omitted: {response.omitted_private_context.join(", ")}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ── Owner edit context ───────────────────────────────────────
@@ -597,6 +736,12 @@ export function ProfileContent({ ssrData, preview = false, previewUsername }: Pr
               </div>
             )}
           </div>
+
+          {!showRawJson && (
+            <div className="mt-3">
+              <PublicProfileChatBox username={username} name={name as string} />
+            </div>
+          )}
         </motion.section>
 
         {/* ═══ FOR AGENTS (prominent, above the fold) ═══ */}
