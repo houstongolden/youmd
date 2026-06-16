@@ -204,6 +204,7 @@ describe("dsi components", () => {
       loc: 8,
       lomb: 5,
       exactMirrorProjectCount: 1,
+      languageMetricProjectCount: 0,
       pendingMetricProjectCount: 1,
     });
     expect(catalog?.data.projects[0]).toMatchObject({
@@ -221,12 +222,52 @@ describe("dsi components", () => {
       lomb: null,
     });
 
+    await asOwner.mutation(internal.dsi.persistProjectCatalogWithLanguageMetrics, {
+      clerkId: CLERK,
+      userId,
+      languageMetrics: [
+        {
+          fullName: "houstongolden/youmd",
+          languages: { TypeScript: 3200, Markdown: 600, MDX: 120 },
+          loc: 112,
+          lomb: 12,
+          lombToCodeRatio: 0.12,
+        },
+        {
+          fullName: "houstongolden/bamfai",
+          languages: { TypeScript: 6400, Markdown: 1200 },
+          loc: 220,
+          lomb: 20,
+          lombToCodeRatio: 0.1,
+        },
+      ],
+    });
+
+    const enriched = await asOwner.query(api.dsi.listComponents, {
+      clerkId: CLERK,
+      userId,
+    });
+    const enrichedCatalog = enriched.find((component) => component.slug === "github-project-catalog");
+    expect(enrichedCatalog?.summary).toContain("332 LOC");
+    expect(enrichedCatalog?.summary).toContain("32 LOMB");
+    expect(enrichedCatalog?.data.totals).toMatchObject({
+      loc: 332,
+      lomb: 32,
+      languageMetricProjectCount: 2,
+      exactMirrorProjectCount: 0,
+      pendingMetricProjectCount: 0,
+    });
+    expect(enrichedCatalog?.data.projects.map((project: { metricStatus: string }) => project.metricStatus)).toEqual([
+      "estimated_github_languages",
+      "estimated_github_languages",
+    ]);
+
     const snapshots = await t.run(async (ctx) => {
       return await ctx.db
         .query("sourceSnapshots")
         .withIndex("by_userId", (q) => q.eq("userId", userId))
         .collect();
     });
-    expect(snapshots.map((snapshot) => snapshot.sourceKey)).toContain("github-project-catalog");
+    expect(snapshots.filter((snapshot) => snapshot.sourceKey === "github-project-catalog")).toHaveLength(2);
   });
 });

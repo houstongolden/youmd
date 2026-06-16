@@ -25,7 +25,7 @@
 
 import { v } from "convex/values";
 import { action } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { requireOwner } from "./lib/auth";
@@ -40,6 +40,37 @@ import { agentPushViaPR } from "./githubAgentSync";
 const GITHUB_API = "https://api.github.com";
 const DAYS_90_MS = 90 * 24 * 60 * 60 * 1000;
 const MAX_REPOS = 10; // analyze at most 10 repos to stay within rate limits
+const BYTES_PER_LINE: Record<string, number> = {
+  TypeScript: 32,
+  JavaScript: 28,
+  TSX: 32,
+  JSX: 30,
+  Python: 28,
+  Go: 30,
+  Rust: 32,
+  Ruby: 26,
+  Java: 34,
+  Kotlin: 32,
+  Swift: 30,
+  "C++": 30,
+  C: 28,
+  "C#": 34,
+  PHP: 30,
+  HTML: 40,
+  CSS: 28,
+  SCSS: 28,
+  Shell: 24,
+  JSON: 40,
+  YAML: 30,
+  Markdown: 60,
+  MDX: 60,
+  SQL: 30,
+  Vue: 32,
+  Svelte: 32,
+  Astro: 32,
+};
+const DEFAULT_BYTES_PER_LINE = 32;
+const MARKDOWN_LANGS = new Set(["Markdown", "MDX"]);
 
 // ---------------------------------------------------------------------------
 // Types (private, not exported)
@@ -99,6 +130,18 @@ type AnalyzeActiveProjectsResult = {
   projects: ProjectAnalysis[];
   pushedToRepo: boolean;
   prUrl?: string;
+};
+
+type TrackedProjectForDsi = {
+  fullName: string;
+};
+
+type LanguageMetric = {
+  fullName: string;
+  languages: Record<string, number>;
+  loc: number;
+  lomb: number;
+  lombToCodeRatio: number | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -180,6 +223,31 @@ async function githubGet<T>(token: string, url: string): Promise<T> {
     throw new Error(`GitHub ${res.status} ${url}: ${text.slice(0, 200)}`);
   }
   return res.json() as Promise<T>;
+}
+
+function languageLines(languages: Record<string, number>): { loc: number; lomb: number; lombToCodeRatio: number | null } {
+  let loc = 0;
+  let lomb = 0;
+  for (const [language, bytes] of Object.entries(languages)) {
+    const lines = Math.round(bytes / (BYTES_PER_LINE[language] ?? DEFAULT_BYTES_PER_LINE));
+    loc += lines;
+    if (MARKDOWN_LANGS.has(language)) lomb += lines;
+  }
+  const code = loc - lomb;
+  return {
+    loc,
+    lomb,
+    lombToCodeRatio: code > 0 ? Math.round((lomb / code) * 1000) / 1000 : null,
+  };
+}
+
+async function fetchLanguageMetric(token: string, fullName: string): Promise<LanguageMetric> {
+  const languages = await githubGet<Record<string, number>>(token, `${GITHUB_API}/repos/${fullName}/languages`);
+  return {
+    fullName,
+    languages,
+    ...languageLines(languages),
+  };
 }
 
 /**
@@ -280,6 +348,45 @@ async function callLlmForInsight(
 // ---------------------------------------------------------------------------
 // analyzeActiveProjects — public action (owner-gated)
 // ---------------------------------------------------------------------------
+
+export const refreshProjectCatalogDsi = action({
+  args: {
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args): Promise<{
+    componentId: Id<"dsiComponents">;
+    snapshotId: Id<"sourceSnapshots">;
+    languageMetricCount: number;
+    skippedCount: number;
+  }> => {
+    await requireOwner(ctx, args.clerkId);
+    const { context, token } = await resolveGithubToken(ctx, args.clerkId);
+    const trackedProjects = (await ctx.runQuery(api.githubProjectsPublic.listTrackedProjects, {
+      clerkId: args.clerkId,
+    })) as TrackedProjectForDsi[];
+
+    const languageMetrics: LanguageMetric[] = [];
+    let skippedCount = 0;
+    for (const project of trackedProjects.slice(0, MAX_REPOS)) {
+      try {
+        languageMetrics.push(await fetchLanguageMetric(token, project.fullName));
+      } catch {
+        skippedCount += 1;
+      }
+    }
+
+    const result = await ctx.runMutation(internal.dsi.persistProjectCatalogWithLanguageMetrics, {
+      clerkId: args.clerkId,
+      userId: context.userId,
+      languageMetrics,
+    });
+    return {
+      ...result,
+      languageMetricCount: languageMetrics.length,
+      skippedCount,
+    };
+  },
+});
 
 export const analyzeActiveProjects = action({
   args: {

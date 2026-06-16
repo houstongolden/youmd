@@ -1321,7 +1321,8 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const seedLoopDefaults = useMutation(api.loopReports.seedDefaultDefinitions);
   const runDailyBriefingNow = useMutation(api.loopReports.runDailyBriefingNow);
   const updateLoopDefinitionStatus = useMutation(api.loopReports.updateDefinitionStatus);
-  const refreshProjectCatalog = useMutation(api.dsi.refreshProjectCatalog);
+  const refreshProjectCatalogFallback = useMutation(api.dsi.refreshProjectCatalog);
+  const refreshProjectCatalog = useAction(api.githubProjects.refreshProjectCatalogDsi);
   const refreshWeatherSurf = useAction(api.dsi.refreshWeatherSurf);
   const memories = useQuery(api.memories.listMemories, clerkId && userId ? { clerkId, userId } : "skip");
   const sessions = useQuery(api.memories.listSessions, clerkId && userId ? { clerkId, userId, limit: 20 } : "skip");
@@ -1676,16 +1677,23 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     setDsiBusy(true);
     setDsiStatus(null);
     try {
-      const result = await refreshProjectCatalog({ clerkId: user.id, userId });
+      const result = await refreshProjectCatalog({ clerkId: user.id });
       setWorkspaceMode("artifacts");
-      setDsiStatus(`refreshed project catalog snapshot ${String(result.snapshotId).slice(-6)}`);
+      setDsiStatus(`refreshed projects: ${result.languageMetricCount} language metrics`);
       setTimeout(() => setDsiStatus(null), 3000);
     } catch (err) {
-      setDsiStatus(`error: ${err instanceof Error ? err.message : "failed to refresh project catalog"}`);
+      try {
+        const fallback = await refreshProjectCatalogFallback({ clerkId: user.id, userId });
+        setWorkspaceMode("artifacts");
+        setDsiStatus(`refreshed project catalog snapshot ${String(fallback.snapshotId).slice(-6)} without GitHub languages`);
+        setTimeout(() => setDsiStatus(null), 3000);
+      } catch {
+        setDsiStatus(`error: ${err instanceof Error ? err.message : "failed to refresh project catalog"}`);
+      }
     } finally {
       setDsiBusy(false);
     }
-  }, [user, userId, refreshProjectCatalog]);
+  }, [user, userId, refreshProjectCatalog, refreshProjectCatalogFallback]);
 
   const handleToggleLoopDefinition = useCallback(async (definition: LoopReportDefinition) => {
     if (!user?.id) return;

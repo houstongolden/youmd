@@ -60,6 +60,7 @@ type ProjectCatalogSignal = {
     lomb: number | null;
     lombToCodeRatio: number | null;
     exactMirrorProjectCount: number;
+    languageMetricProjectCount: number;
     pendingMetricProjectCount: number;
   };
   definitions: {
@@ -94,8 +95,17 @@ type ProjectCatalogSignal = {
     loc: number | null;
     lomb: number | null;
     lombToCodeRatio: number | null;
-    metricStatus: "exact_repo_mirror" | "pending_github_languages_adapter";
+    languages: Record<string, number> | null;
+    metricStatus: "estimated_github_languages" | "exact_repo_mirror" | "pending_github_languages_adapter";
   }>;
+};
+
+type ProjectLanguageMetric = {
+  fullName: string;
+  languages: Record<string, number>;
+  loc: number;
+  lomb: number;
+  lombToCodeRatio: number | null;
 };
 
 function canonicalJsonString(obj: unknown): string {
@@ -416,17 +426,20 @@ function buildProjectCatalogSignal(args: {
   trackedProjects: Doc<"trackedProjects">[];
   latestBundle: Doc<"bundles"> | null;
   repoMirror: Doc<"repoMirror"> | null;
+  languageMetrics?: ProjectLanguageMetric[];
 }): ProjectCatalogSignal {
   const youJson = (args.latestBundle?.youJson ?? {}) as Record<string, unknown>;
   const bundleProjects = Array.isArray(youJson.projects) ? (youJson.projects as Array<Record<string, unknown>>) : [];
   const mirrorStats = mirrorLineStats(args.repoMirror);
+  const languageMetricsByRepo = new Map((args.languageMetrics ?? []).map((metric) => [metric.fullName, metric]));
   const projects = args.trackedProjects
     .slice()
     .sort((a, b) => b.pushedAt - a.pushedAt)
     .map((project) => {
+      const languageMetric = languageMetricsByRepo.get(project.fullName);
       const isMirror = args.repoMirror?.repoFullName === project.fullName && mirrorStats !== null;
-      const loc = isMirror ? mirrorStats.loc : null;
-      const lomb = isMirror ? mirrorStats.lomb : null;
+      const loc = languageMetric?.loc ?? (isMirror ? mirrorStats.loc : null);
+      const lomb = languageMetric?.lomb ?? (isMirror ? mirrorStats.lomb : null);
       return {
         fullName: project.fullName,
         name: project.name,
@@ -443,7 +456,8 @@ function buildProjectCatalogSignal(args: {
         loc,
         lomb,
         lombToCodeRatio: lombRatio(loc, lomb),
-        metricStatus: isMirror ? "exact_repo_mirror" as const : "pending_github_languages_adapter" as const,
+        languages: languageMetric?.languages ?? null,
+        metricStatus: languageMetric ? "estimated_github_languages" as const : isMirror ? "exact_repo_mirror" as const : "pending_github_languages_adapter" as const,
       };
     });
   const totals = projects.reduce(
@@ -455,7 +469,8 @@ function buildProjectCatalogSignal(args: {
       if (project.loc !== null) {
         acc.loc += project.loc;
         acc.lomb += project.lomb ?? 0;
-        acc.exactMirrorProjectCount += 1;
+        if (project.metricStatus === "estimated_github_languages") acc.languageMetricProjectCount += 1;
+        if (project.metricStatus === "exact_repo_mirror") acc.exactMirrorProjectCount += 1;
       } else {
         acc.pendingMetricProjectCount += 1;
       }
@@ -469,10 +484,11 @@ function buildProjectCatalogSignal(args: {
       loc: 0,
       lomb: 0,
       exactMirrorProjectCount: 0,
+      languageMetricProjectCount: 0,
       pendingMetricProjectCount: 0,
     }
   );
-  const hasLoc = totals.exactMirrorProjectCount > 0;
+  const hasLoc = totals.exactMirrorProjectCount + totals.languageMetricProjectCount > 0;
   return {
     provider: "youmd-github-tracked-projects",
     capturedAt: new Date().toISOString(),
@@ -486,11 +502,12 @@ function buildProjectCatalogSignal(args: {
       lomb: hasLoc ? totals.lomb : null,
       lombToCodeRatio: hasLoc ? lombRatio(totals.loc, totals.lomb) : null,
       exactMirrorProjectCount: totals.exactMirrorProjectCount,
+      languageMetricProjectCount: totals.languageMetricProjectCount,
       pendingMetricProjectCount: totals.pendingMetricProjectCount,
     },
     definitions: {
-      loc: "LOC is the all-in line count. For exact You.md repo mirror stats, markdown is included.",
-      lomb: "LOMB is Lines Of Markdown / Bytes: markdown-only lines as Houston's english-as-code metric.",
+      loc: "LOC is the all-in line estimate from GitHub language byte totals, with exact repo-mirror line counts when language metrics are unavailable.",
+      lomb: "LOMB is Lines Of Markdown / Bytes: markdown-only lines as Houston's english-as-code metric. GitHub language metrics estimate Markdown/MDX lines from byte totals.",
       lombToCodeRatio: "LOMB / (LOC - LOMB), comparing markdown directly to non-markdown code.",
     },
     repoMirror: args.repoMirror && mirrorStats
@@ -620,64 +637,97 @@ export const refreshWeatherSurf = action({
   },
 });
 
+async function persistProjectCatalog(
+  ctx: MutationCtx,
+  args: {
+    clerkId: string;
+    userId: Id<"users">;
+    languageMetrics?: ProjectLanguageMetric[];
+  }
+): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> {
+  await ownerForUserId(ctx, args.clerkId, args.userId);
+  const [trackedProjects, latestBundle, repoMirror] = await Promise.all([
+    ctx.db
+      .query("trackedProjects")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect(),
+    ctx.db
+      .query("bundles")
+      .withIndex("by_userId_version", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .first(),
+    ctx.db
+      .query("repoMirror")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first(),
+  ]);
+  const catalog = buildProjectCatalogSignal({
+    trackedProjects,
+    latestBundle,
+    repoMirror,
+    languageMetrics: args.languageMetrics,
+  });
+  const snapshotId = await insertSnapshot(ctx, {
+    userId: args.userId,
+    connectorKind: "github",
+    sourceKey: "github-project-catalog",
+    sourceType: "dsi_component",
+    normalized: catalog,
+    citations: catalog.projects.map((project) => ({
+      provider: "github",
+      url: project.githubUrl,
+    })),
+    visibility: "private",
+    trustLevel: catalog.projects.length ? "verified" : "low",
+    metadata: {
+      adapter: args.languageMetrics?.length ? "github-languages-plus-tracked-projects" : "tracked-projects-plus-repo-mirror",
+      locMetricStatus: args.languageMetrics?.length
+        ? "GitHub languages estimate all fetched tracked repos; repoMirror exact stats retained"
+        : "repoMirror exact, non-mirror repos pending GitHub languages adapter",
+    },
+  });
+  const summary = [
+    `${catalog.totals.projectCount} projects`,
+    `${catalog.totals.commitsLast90d} commits/90d`,
+    catalog.totals.loc === null ? "LOC pending" : `${catalog.totals.loc.toLocaleString()} LOC`,
+    catalog.totals.lomb === null ? "LOMB pending" : `${catalog.totals.lomb.toLocaleString()} LOMB`,
+  ].join(" / ");
+  const componentId = await upsertComponent(ctx, {
+    userId: args.userId,
+    slug: "github-project-catalog",
+    componentType: "github_projects",
+    title: "GitHub Project Catalog",
+    summary,
+    data: catalog,
+    sourceSnapshotIds: [snapshotId],
+    trustLevel: catalog.projects.length ? "verified" : "low",
+    metadata: { provider: catalog.provider, configurable: true, origin: "youmd" },
+  });
+  return { componentId, snapshotId };
+}
+
 export const refreshProjectCatalog = mutation({
   args: {
     clerkId: v.string(),
     userId: v.id("users"),
   },
   handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> => {
-    await ownerForUserId(ctx, args.clerkId, args.userId);
-    const [trackedProjects, latestBundle, repoMirror] = await Promise.all([
-      ctx.db
-        .query("trackedProjects")
-        .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-        .collect(),
-      ctx.db
-        .query("bundles")
-        .withIndex("by_userId_version", (q) => q.eq("userId", args.userId))
-        .order("desc")
-        .first(),
-      ctx.db
-        .query("repoMirror")
-        .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-        .first(),
-    ]);
-    const catalog = buildProjectCatalogSignal({ trackedProjects, latestBundle, repoMirror });
-    const snapshotId = await insertSnapshot(ctx, {
+    return await persistProjectCatalog(ctx, args);
+  },
+});
+
+export const persistProjectCatalogWithLanguageMetrics = internalMutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+    languageMetrics: v.optional(v.array(v.any())),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> => {
+    return await persistProjectCatalog(ctx, {
+      clerkId: args.clerkId,
       userId: args.userId,
-      connectorKind: "github",
-      sourceKey: "github-project-catalog",
-      sourceType: "dsi_component",
-      normalized: catalog,
-      citations: catalog.projects.map((project) => ({
-        provider: "github",
-        url: project.githubUrl,
-      })),
-      visibility: "private",
-      trustLevel: catalog.projects.length ? "verified" : "low",
-      metadata: {
-        adapter: "tracked-projects-plus-repo-mirror",
-        locMetricStatus: "repoMirror exact, non-mirror repos pending GitHub languages adapter",
-      },
+      languageMetrics: args.languageMetrics as ProjectLanguageMetric[] | undefined,
     });
-    const summary = [
-      `${catalog.totals.projectCount} projects`,
-      `${catalog.totals.commitsLast90d} commits/90d`,
-      catalog.totals.loc === null ? "LOC pending" : `${catalog.totals.loc.toLocaleString()} LOC`,
-      catalog.totals.lomb === null ? "LOMB pending" : `${catalog.totals.lomb.toLocaleString()} LOMB`,
-    ].join(" / ");
-    const componentId = await upsertComponent(ctx, {
-      userId: args.userId,
-      slug: "github-project-catalog",
-      componentType: "github_projects",
-      title: "GitHub Project Catalog",
-      summary,
-      data: catalog,
-      sourceSnapshotIds: [snapshotId],
-      trustLevel: catalog.projects.length ? "verified" : "low",
-      metadata: { provider: catalog.provider, configurable: true, origin: "youmd" },
-    });
-    return { componentId, snapshotId };
   },
 });
 

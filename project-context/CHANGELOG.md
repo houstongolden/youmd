@@ -2,6 +2,12 @@
 
 ## 2026-06-16 — DSI weather and surf components
 
+### feat(convex/web): enrich GitHub Project Catalog DSI with language metrics
+- Added an owner-gated GitHub Project Catalog DSI action that calls GitHub `/languages` for tracked repositories, computes h.computer-style LOC/LOMB/LOMB ratio from language byte totals, and persists the enriched component through the existing private DSI/source-snapshot path.
+- The Files/Reports `refresh projects` control now prefers the GitHub-language action and falls back to the DB-only tracked-project/repo-mirror refresh when GitHub auth or rate limits are unavailable.
+- Focused Convex tests now cover both the fallback repo-mirror path and the enriched `/languages` path, including project metric statuses and aggregate LOC/LOMB totals.
+- Verified locally with Convex codegen, focused Convex tests, root TypeScript, Convex TypeScript, lint, build, and authenticated browser QA at `http://localhost:3100/shell`; browser refresh showed `10 projects / 226 commits/90d / 1,272,721 LOC / 0 LOMB`.
+
 ### feat(convex/web): port the first h.computer live signals into You.md DSI
 - Added `dsiComponents`, a private/scoped/public-ready structured component table for extensible personal API/MCP facts.
 - Added an owner-gated DSI action that refreshes Open-Meteo weather and Venice Breakwater surf data, ports the h.computer Surfline-style face-foot/wind-quality calibration, and writes source snapshots for provenance.
