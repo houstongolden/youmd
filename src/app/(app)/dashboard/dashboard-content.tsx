@@ -143,9 +143,9 @@ const PANE_GROUPS: Array<{
   },
   {
     key: "integrations",
-    label: "api",
+    label: "connect",
     defaultPane: "github",
-    panes: [{ key: "github", label: "github" }],
+    panes: [{ key: "github", label: "api/mcp" }],
   },
   {
     // analytics = aggregate stats (views, reads, referrers);
@@ -713,7 +713,7 @@ function ShellSidebar({
       icon: Code2,
       items: [
         { label: "API / MCP", detail: "scoped agent access", icon: Code2, pane: "github" },
-        { label: "API Tokens", detail: "private grants", icon: KeyRound, pane: "settings" },
+        { label: "API Tokens", detail: "owner keys", icon: KeyRound, pane: "settings" },
         { label: "Shared Links", detail: "scoped context", icon: Shield, pane: "share" },
         { label: "Vault", detail: "secrets", icon: BookOpen, pane: "vault" },
       ],
@@ -731,9 +731,9 @@ function ShellSidebar({
       label: "connect",
       icon: Plug,
       items: [
-        { label: "Connectors", detail: "github + apps", icon: Plug, pane: "github" },
+        { label: "Connectors", detail: "apps + crawlers", icon: Plug, pane: "github" },
         { label: "Sources", detail: "web + repo context", icon: Radar, pane: "edit", subTab: "sources" },
-        { label: "Crons", detail: "monitors + cadence", icon: Clock3, pane: "edit", subTab: "sources" },
+        { label: "Loops", detail: "crons + reports", icon: Clock3, pane: "github" },
         { label: "Activity", detail: "agent run log", icon: Activity, pane: "agents" },
       ],
     },

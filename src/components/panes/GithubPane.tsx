@@ -14,6 +14,7 @@ import {
   Check,
   ChevronRight,
   Code2,
+  Copy,
   Database,
   FileJson,
   Flame,
@@ -83,6 +84,13 @@ type GrantView = {
   revokedAt: string | null;
   lastUsedAt: string | null;
   isActive: boolean;
+};
+
+type Snippet = {
+  key: string;
+  label: string;
+  detail: string;
+  body: string;
 };
 
 const TABS: Array<{ key: ConnectorTab; label: string }> = [
@@ -354,6 +362,7 @@ export function GithubPane({ clerkId, username, userId }: GithubPaneProps) {
   const [issuedToken, setIssuedToken] = useState<{ appName: string; token: string } | null>(null);
   const [grantError, setGrantError] = useState<string | null>(null);
   const [grantBusySlug, setGrantBusySlug] = useState<string | null>(null);
+  const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
 
   const connection = useQuery(
     api.github.getConnection,
@@ -370,6 +379,48 @@ export function GithubPane({ clerkId, username, userId }: GithubPaneProps) {
   const hasRepo = isConnected && !!connection?.repoFullName;
   const showOnboarding = isConnected && (wantsGithub || !hasRepo);
   const activeGrants = (grants ?? []).filter((grant) => grant.isActive);
+  const snippets = useMemo<Snippet[]>(() => [
+    {
+      key: "mcp-config",
+      label: "MCP client config",
+      detail: "Use this shape for hosted MCP clients that support URL transports.",
+      body: `{
+  "mcpServers": {
+    "youmd-${username}": {
+      "url": "https://you.md/api/v1/mcp",
+      "headers": {
+        "Authorization": "Bearer $YOUMD_API_KEY_OR_GRANT"
+      }
+    }
+  }
+}`,
+    },
+    {
+      key: "local-mcp",
+      label: "Local host adapter",
+      detail: "Best for Claude Code, Codex, Cursor, and local agents.",
+      body: `npx --yes youmd@latest mcp --install claude --auto
+npx --yes youmd@latest mcp --install codex --auto
+npx --yes youmd@latest mcp --install cursor --auto
+youmd mcp --json`,
+    },
+    {
+      key: "rest-smoke",
+      label: "REST smoke check",
+      detail: "Use an owner API key or scoped yg_* app grant.",
+      body: `curl -fsSL https://you.md/api/v1/me \\
+  -H "Authorization: Bearer $YOUMD_API_KEY_OR_GRANT"`,
+    },
+    {
+      key: "agent-prompt",
+      label: "Agent startup prompt",
+      detail: "Paste into a new agent session after adding the grant/key.",
+      body: `You have scoped access to @${username}'s You.md Human API/MCP.
+First call whoami, then get_agent_brief. Respect resource scopes, write policy,
+trust rules, provenance, and public/private boundaries. Prefer You.md context
+over guessing from a profile page.`,
+    },
+  ], [username]);
 
   const filteredConnectors = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -425,9 +476,15 @@ export function GithubPane({ clerkId, username, userId }: GithubPaneProps) {
     }
   }
 
+  async function copySnippet(snippet: Snippet) {
+    await navigator.clipboard.writeText(snippet.body);
+    setCopiedSnippet(snippet.key);
+    setTimeout(() => setCopiedSnippet(null), 1600);
+  }
+
   return (
     <div className="flex h-full flex-col">
-      <PaneHeader>connectors</PaneHeader>
+      <PaneHeader>api/mcp + connectors</PaneHeader>
 
       <div className="flex shrink-0 items-center gap-3 overflow-x-auto border-b border-[hsl(var(--border))]/60 px-4 scrollbar-none">
         {TABS.map((tab) => (
@@ -553,6 +610,40 @@ export function GithubPane({ clerkId, username, userId }: GithubPaneProps) {
                       <span className="font-mono text-[9px] text-[hsl(var(--accent))]">{method}</span>
                       <code className="min-w-0 break-all font-mono text-[10px] text-[hsl(var(--text-primary))]">{path}</code>
                       <span className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">{detail}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <PaneSectionLabel>agent-ready snippets</PaneSectionLabel>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {snippets.map((snippet) => (
+                    <div
+                      key={snippet.key}
+                      className="border border-[hsl(var(--border))]/65 bg-[hsl(var(--bg))]/35 p-3"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-mono text-[11px] text-[hsl(var(--text-primary))]">
+                            {snippet.label}
+                          </p>
+                          <p className="mt-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-45">
+                            {snippet.detail}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void copySnippet(snippet)}
+                          className="flex h-7 shrink-0 items-center gap-1 bg-[hsl(var(--bg-raised))] px-2 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-70 hover:text-[hsl(var(--accent))] hover:opacity-100"
+                        >
+                          <Copy size={12} />
+                          {copiedSnippet === snippet.key ? "copied" : "copy"}
+                        </button>
+                      </div>
+                      <pre className="mt-3 max-h-44 overflow-auto whitespace-pre-wrap break-words bg-[hsl(var(--bg))]/60 px-3 py-2 font-mono text-[9.5px] leading-5 text-[hsl(var(--text-secondary))] opacity-68">
+                        {snippet.body}
+                      </pre>
                     </div>
                   ))}
                 </div>

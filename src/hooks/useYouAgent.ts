@@ -1710,6 +1710,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         "/settings": "settings",
         "/billing": "settings",
         "/tokens": "settings",
+        "/api": "github",
+        "/mcp": "github",
+        "/connect": "github",
+        "/connectors": "github",
+        "/apps": "github",
+        "/crawlers": "github",
+        "/crons": "github",
+        "/loops": "github",
         "/activity": "agents", // agent activity event log (AgentsPane), not account settings
         "/json": "edit",
         "/sources": "edit",
@@ -1953,8 +1961,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("help");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n\nIDENTITY\n/profile -- live profile preview\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait variants inline\n/portrait --regenerate -- re-scrape sources and update portrait\n/edit -- edit identity context (files, json, sources)\n/json -- raw identity json\n/files -- file browser\n/sources -- manage connected sources\n\nSHARING\n/share -- create shareable identity link (copies to clipboard)\n/share --private -- include private context in link\n/share --project {name} -- project-scoped context link\n/publish -- publish latest bundle publicly\n\nSKILLS + STACKS\n/skills -- browse + install skills\n/stacks -- manage named private/public YouStacks\n/skill use {name} -- activate skill in this conversation\n\nACCOUNT\n/vault -- api keys + secrets manager\n/agents -- connected agent integrations (MCP)\n/settings -- account, billing, session log\n/activity -- agent activity log\n\nDATA\n/analytics -- profile views + agent reads\n/history -- bundle version history\n\nMEMORY\n/memory -- memory stats by category\n/recall -- recent memories\n/recall {query} -- search memories by keyword\n\nSYSTEM\n/status -- @username | plan | version | published/draft\n/help -- show this reference"
-          : "available commands:\n/profile, /portrait, /edit, /json, /files, /sources\n/share, /share --private, /share --project {name}, /publish\n/skills, /stacks, /skill use {name}\n/vault, /agents, /settings, /activity\n/analytics, /history\n/memory, /recall, /recall {query}\n/status, /help";
+          ? "available commands:\n\nIDENTITY\n/profile -- live profile preview\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait variants inline\n/portrait --regenerate -- re-scrape sources and update portrait\n/edit -- edit identity context (files, json, sources)\n/json -- raw identity json\n/files -- file browser\n/sources -- manage connected sources\n\nSHARING\n/share -- create shareable identity link (copies to clipboard)\n/share --private -- include private context in link\n/share --project {name} -- project-scoped context link\n/publish -- publish latest bundle publicly\n\nSKILLS + STACKS\n/skills -- browse + install skills\n/stacks -- manage named private/public YouStacks\n/skill use {name} -- activate skill in this conversation\n\nAPI + CONNECTORS\n/api -- private Human API/MCP docs, grants, and endpoint map\n/mcp -- hosted MCP endpoint and stack namespace\n/connectors -- app grants, custom API/MCP, webhooks\n/crawlers -- sources, Firecrawl/native crawlers, crons, loops\n/loops -- daily reports, monitored refresh cadence, source versions\n\nACCOUNT\n/vault -- api keys + secrets manager\n/agents -- connected agent integrations (MCP)\n/settings -- account, billing, session log\n/activity -- agent activity log\n\nDATA\n/analytics -- profile views + agent reads\n/history -- bundle version history\n\nMEMORY\n/memory -- memory stats by category\n/recall -- recent memories\n/recall {query} -- search memories by keyword\n\nSYSTEM\n/status -- @username | plan | version | published/draft\n/help -- show this reference"
+          : "available commands:\n/profile, /portrait, /edit, /json, /files, /sources\n/share, /share --private, /share --project {name}, /publish\n/skills, /stacks, /skill use {name}\n/api, /mcp, /connectors, /crawlers, /loops\n/vault, /agents, /settings, /activity\n/analytics, /history\n/memory, /recall, /recall {query}\n/status, /help";
 
         setDisplayMessages((prev) => [
           ...prev,

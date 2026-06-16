@@ -2,6 +2,12 @@
 
 ## 2026-06-16 — DSI weather and surf components
 
+### fix(web): make the private API/MCP control center easier to find
+- Renamed the shell primary `api` group to `connect` and changed its subtab from `github` to `api/mcp`, so the personal API/MCP + connector surface no longer reads like a GitHub-only page.
+- Added `/api`, `/mcp`, `/connect`, `/connectors`, `/apps`, `/crawlers`, `/crons`, and `/loops` slash-command routing to the Connectors control center.
+- Added the new API/MCP connector commands to the command palette and `/help` output.
+- Added copyable owner/agent snippets for hosted MCP config, local MCP host adapter install, REST smoke checks, and a scoped agent startup prompt.
+
 ### feat(convex/web): add BAMF pulse DSI adapter
 - Added a private `bamf-pulse` DSI component for BAMF.ai/BAMF OS connected-app pulse data: clients, creators, LinkedIn post metrics, agency counts, case studies, newsletter/chat lead counts, and recent stack sync runs.
 - The adapter supports BAMF OS REST through `YOUMD_BAMF_OS_API_KEY`/`BAMF_OS_API_KEY`, BAMF.ai REST through `YOUMD_BAMF_AI_API_KEY`/`BAMF_AI_API_KEY`, and private `customData.bamf`/`bamfai`/`bamfOS`/`agency` fallback for source-compatible testing.

@@ -63,6 +63,7 @@ PRD Version: 2.3
 - [x] Add a Lovable-style app connector catalog with search, categories, pinned You.md/owned-project connectors, Custom API, Custom MCP, Custom Webhook, and popular third-party services
 - [x] Move GitHub repo sync into its own connector tab so it is no longer the whole Connectors page
 - [x] Embed crawlers/loops beside the connector catalog, keeping native/Firecrawl/agent-browser, cron refresh, immutable versions, and approval controls visible
+- [x] Make the private API/MCP control center directly discoverable from shell navigation, slash commands, command palette, and copyable agent-ready snippets
 
 ### 2026-06-16 — Shell collapsed logo fit
 - [x] Shrink the collapsed PixelYOU mark a few pixels so the `YOU` logo fits cleanly in the skinny rail
