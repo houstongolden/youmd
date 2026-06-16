@@ -355,6 +355,53 @@ async function runYouGuidedSetup(): Promise<void> {
   const ACCENT = chalk.hex("#C46A3A");
   const DIM = chalk.dim;
 
+  async function handOffToHydratedChat(): Promise<void> {
+    console.log("  " + ACCENT("bundle is live.") + " " + DIM("this machine has something real to work with now."));
+    console.log("");
+    console.log("  " + DIM("Enter = sync + open U. say ") + chalk.cyan("chat") + DIM(" to skip sync, ") + chalk.cyan("status") + DIM(" to inspect, ") + chalk.cyan("quit") + DIM(" to stop."));
+    console.log("");
+
+    const answer = await promptInput(ACCENT("  > "));
+    const action = parseFirstRunAction(answer, {
+      authed: isAuthenticated(),
+      hasBundle: !!resolveBundleDirForWelcome(),
+    }) || "sync";
+    console.log("");
+
+    if (action === "quit") {
+      console.log("  " + DIM("all set. come back with ") + chalk.cyan("you") + DIM(" when you're ready."));
+      console.log("");
+      return;
+    }
+
+    if (action === "status") {
+      await statusCommand();
+      console.log("");
+      console.log("  " + DIM("when you're ready, run ") + chalk.cyan("you") + DIM(" to open U."));
+      console.log("");
+      return;
+    }
+
+    if (action === "sync" && isAuthenticated()) {
+      console.log("  " + ACCENT("hydrating local runtime...") + " " + DIM("pulling/pushing identity state, refreshing installed skills."));
+      console.log("");
+      const previousExitCode = process.exitCode;
+      process.exitCode = undefined;
+      await syncCommand({ watch: false, force: false });
+      if (process.exitCode) {
+        console.log("");
+        console.log("  " + DIM("sync needs attention before chat. run ") + chalk.cyan("youmd status") + DIM(" for details."));
+        return;
+      }
+      process.exitCode = previousExitCode;
+      console.log("");
+    }
+
+    console.log("  " + ACCENT("handing you to U.") + " " + DIM("same brain, local terminal."));
+    console.log("");
+    await chatCommand();
+  }
+
   while (true) {
     await renderNoArgWelcome();
 
@@ -414,9 +461,7 @@ async function runYouGuidedSetup(): Promise<void> {
     }
 
     if (resolveBundleDirForWelcome()) {
-      console.log("  " + ACCENT("bundle is live.") + " " + DIM("handing you to U."));
-      console.log("");
-      await chatCommand();
+      await handOffToHydratedChat();
       return;
     }
   }

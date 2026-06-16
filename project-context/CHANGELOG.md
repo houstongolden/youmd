@@ -9,6 +9,7 @@
 - Updated the curl installer next-step copy to guide fresh machines through `youmd login`, `youmd pull`, `youmd sync`, then `you`.
 - Bumped the CLI package to `youmd@0.8.2` and rebuilt `cli/dist` for publish.
 - Captured the raw bootstrap/auth vision in `project-context/prompts/2026-06-16-local-agent-bootstrap-auth-confirmation.md`.
+- Added a guided first-run `you` handoff after login/pull/init so fresh machines can sync/hydrate, inspect status, or open U without guessing the next command.
 
 ## 2026-06-16 — Loop Report substrate
 

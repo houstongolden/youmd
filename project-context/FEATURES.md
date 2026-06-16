@@ -352,7 +352,7 @@ Last Updated: 2026-06-16
 | Codex MCP local-vs-global split | Done | Codex uses the local `cli/dist` build inside the youmd repo and the published npm CLI everywhere else |
 | Curl-first landing/docs/help install path | Done | Hero, footer, docs, and in-app help now teach `curl -fsSL https://you.md/install.sh | bash` first while keeping npm as the fallback |
 | Profile directory responsive controls | Done | `/profiles` create CTA, filters, sort, and list/grid toggles now use compact responsive app-control styling |
-| Local agent browser auth handoff | Done deployed / npm publish pending | `youmd login` now uses an Enter-to-open `/auth` browser approval flow, `/auth` shows a branded portrait-aware success confirmation for web + local agent auth, and the curl installer source-installs GitHub `main` by default before falling back to npm, then points fresh machines through login/pull/sync/`you`; CLI bumped/built as `0.8.2` pending npm OTP publish |
+| Local agent browser auth handoff | Done local / deploy pending | `youmd login` now uses an Enter-to-open `/auth` browser approval flow, `/auth` shows a branded portrait-aware success confirmation for web + local agent auth, the curl installer source-installs GitHub `main` by default before falling back to npm, and fresh `you` sessions now guide login/pull/init into sync/status/chat without guessing. CLI remains bumped/built as `0.8.2` pending npm OTP publish |
 
 ## Feature Requests (Backlog)
 

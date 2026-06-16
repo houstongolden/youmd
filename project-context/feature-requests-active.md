@@ -7,7 +7,7 @@ Last Updated: 2026-06-16
 ## 2026-06-16 — Preserve h.computer platform ideas in You.md
 
 ### 127. Make fresh-machine curl install + browser auth + local agent sync feel seamless
-**Status:** IN PROGRESS (curl/web/CLI handoff deployed; npm publish and richer first-run onboarding pending)
+**Status:** IN PROGRESS (curl/web/CLI handoff deployed; npm publish pending)
 **Verified:** NO
 **Production Verified:** NO
 **Source:** 2026-06-16 — Houston: "login on my new mac mini in a new terminal session run the youmd curl command inside of a Codex or claude code session - login via the terminal fully syncing seamlessly ... says \"press ENTER\" to open you.md/auth in your browser ... confirmation page ... \"Nice work. You're now authenticated via you.md on web and your local agent. You may close this window/tab now.\" ... ASCII portrait animation ... click this link to open the web you.md/shell ... new user ... onboarding via the local agent / cli..."
@@ -19,8 +19,9 @@ Last Updated: 2026-06-16
 5. Update the curl installer next-step copy for fresh-machine login/pull/sync/`you`. **DONE locally.**
 6. Make the curl installer source-install GitHub `main` by default, with npm fallback, so fresh machines get the current runtime before npm publish catches up. **DONE locally/deployed.**
 7. Publish `youmd@0.8.2` to npm so direct `npm install -g youmd` matches the curl/source runtime. **PENDING OTP publish.**
-8. Add a first-run `you` onboarding branch that detects fresh auth/no local bundle and walks through pull, sync, skills, stacks, and profile onboarding. **PENDING.**
+8. Add a first-run `you` onboarding branch that detects fresh auth/no local bundle and walks through pull, sync, skills, stacks, and profile onboarding. **DONE locally.**
 **Progress (2026-06-16):** Added `/auth` as an alias for the device approval page, hid global site nav on `/auth` and `/device`, built a portrait-aware success page, updated `youmd login` to use an Enter-to-open browser handoff, bumped/built CLI `0.8.2`, made the curl installer source-install GitHub `main` by default with npm fallback, updated installer next steps, and added focused CLI tests for approval URL normalization. Local verification: `cli npm run build`, `cli npm test -- src/__tests__/device-login.test.ts` (10 passing), root `npm run lint` (warnings only; radius OK), and root `npm run build` passed.
+**Progress (2026-06-16 continue):** Added the first-run `you` post-bundle handoff. After login/pull/init creates a bundle, the CLI now prompts for Enter = sync + open U, `chat` = skip sync, `status` = inspect, or `quit` = stop. The sync path runs the normal `youmd sync` flow before handing into chat, so fresh machines hydrate identity state and installed skills before the user starts talking to U.
 
 ### 126. Clarify shell GitHub update chrome, Folder.md storage, and Usage surface
 **Status:** IN PROGRESS (MVP UI/code complete locally; real update orchestration pending)

@@ -8,6 +8,8 @@ export type FirstRunAction =
   | "register"
   | "pull"
   | "init"
+  | "sync"
+  | "chat"
   | "status"
   | "help"
   | "quit";
@@ -77,6 +79,20 @@ export function parseFirstRunAction(
 
   if (value === "status" || value === "check status" || value === "check") {
     return "status";
+  }
+
+  if (
+    state.hasBundle &&
+    includesAny(value, ["sync", "hydrate", "refresh", "finish setup"])
+  ) {
+    return "sync";
+  }
+
+  if (
+    state.hasBundle &&
+    includesAny(value, ["chat", "open u", "meet u", "talk", "continue"])
+  ) {
+    return "chat";
   }
 
   if (!state.authed) {

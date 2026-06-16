@@ -34,4 +34,9 @@ describe("first-run guidance", () => {
     expect(parseFirstRunAction("check status", { authed: true, hasBundle: false })).toBe("status");
     expect(parseFirstRunAction("later", { authed: true, hasBundle: false })).toBe("quit");
   });
+
+  it("maps post-bundle handoff phrases to sync or chat", () => {
+    expect(parseFirstRunAction("hydrate this machine", { authed: true, hasBundle: true })).toBe("sync");
+    expect(parseFirstRunAction("meet U", { authed: true, hasBundle: true })).toBe("chat");
+  });
 });
