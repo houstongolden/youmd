@@ -66,7 +66,7 @@ export function TerminalShell({
   );
 
   // --- Input History (Up/Down arrow) ---
-  const [inputHistory, setInputHistory] = useState<string[]>([]);
+  const [, setInputHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   // Stash the current in-progress input when navigating history
   const draftRef = useRef<string>("");
