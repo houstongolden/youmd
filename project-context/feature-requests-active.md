@@ -1,8 +1,28 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-15
+Last Updated: 2026-06-16
 
 ---
+
+## 2026-06-16 — Preserve h.computer platform ideas in You.md
+
+### 122. Save and route personal API / human context protocol / YouStacks ideas into You.md
+**Status:** IN PROGRESS (docs/context captured; future product implementation pending)
+**Verified:** NO
+**Production Verified:** N/A (project-context/docs-only)
+**Source:** 2026-06-16 — Houston: "sharing this for context again... before i remove all these other features/pages from h.computer... the best language from h.computer's newest platform/vision/human-computer-protocol/hstack-vision docs actually belongs in You.md first"
+**Actionable Scope:**
+1. Read You.md PRD, Architecture, YouStacks Product Layer PRD, OKF Integration, Current State, local h.computer vision/protocol docs, and Creator.new routing memo. **DONE.**
+2. Preserve the raw prompt/context in `project-context/prompts/` with a 2026-06-16 dated note. **DONE.**
+3. Update You.md docs so You.md owns the durable agent brain: identity, memory, preferences, private context, project context, sources, provenance, trust rules, public/private links, and protected API/MCP. **DONE in PRD/Architecture/Current State.**
+4. Update docs so You.md is the intuitive personal API/MCP layer with scoped links, API keys, MCP, host adapters, connectors, crawlers, crons, monitors, and public/private modes. **DONE as product direction; implementation remains tracked under #115.**
+5. Update YouStacks docs so stacks carry reusable skills, workflows, prompts, examples, tools, tests, docs, host adapters, update policies, improvement policies, and folder.md-style readable structure. **DONE in YouStacks Product Layer PRD.**
+6. Preserve and adapt the strongest h.computer language as You.md-native messaging without copying raw docs verbatim. **DONE in PRD/Current State.**
+7. Add a relationship section mapping You.md, h.computer, Creator.new, folder.md, BAMF.ai, and BAMF OS. **DONE in PRD/Architecture.**
+8. Add or update roadmap for connector UX, crawlers/refresh jobs, context-link/MCP polish, YouStacks distribution, screen-recording/transcript/SOP-to-skill learning, host adapters, and BYOK/model routing as advanced capability. **DONE in PRD/TODO/Features.**
+9. Update TODO, FEATURES, CHANGELOG, active requests, and PROMPTS. **DONE.**
+10. Commit the docs/context changes as one coherent docs commit. **DONE in this docs commit.**
+**Progress (2026-06-16):** Added `prompts/2026-06-16-youmd-personal-api-context-routing.md`; updated PRD, Architecture, YouStacks Product Layer PRD, Current State, TODO, Features, Changelog, active request tracking, and prompt archive. Local docs checks and whitespace guard passed. Remaining: Houston/user verification and implementation slices tracked under #115.
 
 ## 2026-06-15 — Rebuild `/shell` as Codex/Lovable-style workspace
 

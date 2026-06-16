@@ -1,27 +1,49 @@
 # You.md — Product Requirements Document
 
 Version: 2.3
-Last Updated: 2026-06-15
+Last Updated: 2026-06-16
 Founder: Houston Golden
 
 ---
 
 ## 1. Vision
 
-You.md is your agent brain and named expertise stack layer for the agent internet. It gives Claude Code, Codex, Cursor, ChatGPT, and any agent the context it should already have: who you are, what you remember, how you work, what you are building, and which workflows/skills it should use.
+You.md is your agent brain, personal API/MCP, and named expertise stack layer for the agent internet. It gives Claude Code, Codex, Cursor, ChatGPT, and any agent the context it should already have: who you are, what you remember, how you work, what you are building, which sources it can trust, and which workflows/skills it should use.
 
 **One-liner:** Your brain and best workflows for every AI agent.
 
+**Expanded promise:** A personal API where the context is you.
+
 **Simple product model:** Brain → Stacks → Runtime → Protected API/MCP.
 
-- **Brain:** identity, memory, preferences, private context, project context, sources, provenance, and trust rules.
+- **Brain:** identity, memory, preferences, private context, project context, source catalog, provenance, trust rules, public/private context links, and protected context surfaces.
 - **Stacks:** named packages of expertise, skills, workflows, prompts, examples, docs, tests, host adapters, improvement policy, and update policy. A stack is a `youstack.json` (`youstack/v1`) manifest plus its files; in a connected GitHub repo, stacks live under `stacks/<slug>/` — the layout the server seeds and parses (`deriveStacks` in `convex/github.ts`). Known drift: CLI discovery and the example stack still use `youstack.json` / `.you/` / `youstacks/` paths instead of `stacks/`; reconciliation tracked as backlog P8.
 - **Runtime:** the one curl-installed helper layer that gets You.md into Claude Code, Codex, Cursor, and other agent hosts.
 - **Protected API/MCP:** the authenticated boundary for private memory retrieval, tokens, repo sync, connected tools, visibility changes, and sensitive actions.
 
-**Positioning:** Not just a social profile, resume, settings page, CLI, or API. You.md is the durable brain plus portable expertise-stack layer agents use before they start improvising.
+**Positioning:** Not just a social profile, resume, settings page, CLI, API, or chatbot. You.md is the durable brain plus portable expertise-stack layer agents use before they start improvising.
 
-**h.computer routing clarification (2026-06-15):** h.computer is Houston's personal site, personal agent, and living reference implementation. The broad productizable primitive belongs here in You.md: personal API/MCP, structured identity/context, connector-backed source memory, YouStacks, host adapters, source refresh, skill learning, stack-level model routing, and gated agent access. h.computer should read from You.md and write back useful memories or activity. Creator.new can optionally attach creator identity/context from You.md. Neither should become the canonical identity/context protocol.
+**Messaging anchors to preserve:**
+- The context every agent should already have.
+- Your portable identity and expertise stack for the agent internet.
+- Not another chatbot; the substrate your agents use before they improvise.
+- Your agent brain and best workflows for every AI agent.
+- Brain → Stacks → Runtime → Protected API/MCP.
+
+**h.computer routing clarification (2026-06-15/16):** h.computer is Houston's personal site, personal agent, and living reference implementation. The broad productizable primitive belongs here in You.md: personal API/MCP, structured identity/context, connector-backed source memory, YouStacks, host adapters, source refresh, skill learning, stack-level model routing, and gated agent access. h.computer should read from You.md and write back useful memories or activity. Creator.new can optionally attach creator identity/context from You.md. Neither should become the canonical identity/context protocol.
+
+### Product Relationship Map
+
+You.md is the canonical protocol and brain. Other Houston projects can consume it, demonstrate it, or build domain-specific experiences on top of it, but they should not become the source of truth for the general personal API primitive.
+
+| Surface | Relationship to You.md |
+|---|---|
+| You.md | Canonical identity/context protocol, durable agent brain, personal API/MCP, YouStacks, trust/provenance, public/private context links |
+| h.computer | Houston's personal site, personal agent, and reference implementation powered by You.md; reads You.md context and may write useful memories/activity back |
+| Creator.new | BAMF-powered creator builder that can optionally attach You.md identity, voice, preferences, and creator/project context |
+| folder.md | Agent-readable storage and folder conventions that inform YouStack/repo layout and readable project context |
+| BAMF.ai | Creator/social/media engine with its own API/MCP/BAMFStack, content generation, approvals, analytics, and scheduling |
+| BAMF OS | Private/internal BAMF company brain, CRM, client portals, and admin tools; separate from public You.md and BAMF.ai creator flows |
 
 ---
 
@@ -69,6 +91,8 @@ The protected API/MCP is the user's structured context boundary for agents and p
 - Access modes: public read, scoped context links, owner API keys, host/stack-specific agent tokens, and connected-app grants
 - Writeback with provenance: actor, host, stack, source, confidence, timestamp, reason, and approval state
 - Product consumers: h.computer, Creator.new, BAMF.ai, folder.md, MCP clients, Claude Code, Codex, Cursor, ChatGPT, and future runtimes
+
+This is the intuitive personal API layer: agents should not need to scrape the user's life from scratch, and connected products should not need to invent their own identity brain. They request scoped context from You.md, mutate only through trusted writeback paths, and leave an audit trail.
 
 ### 3.5 Identity Bundle (you.json / you.md)
 The compiled output — a portable identity file containing:
@@ -322,27 +346,28 @@ Platform-specific prompts for Claude, ChatGPT, Cursor, Copilot, and universal fo
 ## 12. Roadmap Priorities
 
 ### Now (v1 MVP polish)
-1. End-to-end flows working perfectly (CLI ↔ web sync)
-2. CLI feels alive (spinners, portraits, personality)
-3. SEO/AEO fully optimized (SSR, JSON-LD, OG, sitemap)
-4. Agent integration proven (context links work, agents respond intelligently)
+1. End-to-end flows working perfectly: CLI ↔ web sync, context links, MCP startup brief, protected reads, and shell chat persistence.
+2. CLI and shell feel alive: spinners, portraits, personality, full-height workspace, clean composer, and trustworthy mutation follow-through.
+3. Agent integration proven: context links, owner API keys, connected-app grants, and MCP resources work with Claude Code, Codex, Cursor, ChatGPT, MCP clients, and local agents.
+4. Personal API/MCP contract documented: versioned resources for `identity`, `now`, `projects`, `sources`, `memories`, `preferences`, `trust_rules`, `stacks`, and `activity`.
 
-### Next (v1.1) — Identity Version Control
-The identity bundle is a collaborative document. Multiple agents, devices, and surfaces edit it concurrently. Needs git-like semantics:
-1. Content-hash-based version tracking (not just incrementing numbers)
-2. Pull-before-push enforcement (implemented in v1.0 as safety guard)
-3. Merge strategies for concurrent edits from web, CLI, and external APIs
-4. Commit history / changelog per identity bundle
-5. "PR" model — external agents propose changes, owner approves/rejects
-6. `youmd skill` — installable agent skill (via skills.sh / npx) for automated identity management
-7. MCP endpoint for real-time sync between agents (mcp.you.md/{username})
-8. Verified badges, profile analytics, custom domains
-9. Stripe Pro plan
+### Next (v1.1) — Personal API, connectors, and source refresh
+1. Lovable-simple connector UX: add source/tool, preview mapped context, choose visibility/trust, save, and schedule refresh.
+2. Custom source crawlers and refresh jobs: native fetch, Firecrawl, agent-browser sandbox, webhook, RSS, GitHub, JSON, OKF/folder sources.
+3. Monitored updates: immutable raw versions, source health, change summaries, owner approval, provenance-rich writeback, and freshness states.
+4. Context-link and MCP polish: scope preview, revocation, readiness states, resource-specific grants, and clearer hosted/local fallback behavior.
+5. Public/private context modes: public identity, scoped links, private memories, private project context, stack-specific reads, and token-gated connected products.
 
-### Future (v2.0)
-1. Anonymous profile creation / SEO knowledge panels — deferred growth feature
-2. Agent-to-agent communication protocol
-3. Team/org bundles
-4. Plugin marketplace
-5. Autonomous refresh (youmd refresh)
-6. Interview mode (youmd interview)
+### Next (v1.2) — YouStacks distribution and skill learning
+1. YouStacks distribution: private, scoped, public-open, repo-backed, installable, smoke-tested, and host-adapted.
+2. Host adapters for Claude Code, Codex, Cursor, ChatGPT, MCP clients, and local agents; OpenClaw/Hermes/Pi remain secondary after primary hosts are reliable.
+3. Screen-recording/transcript/SOP-to-skill loop: convert repeated human or agent workflows into draft skills, workflows, prompts, docs, examples, tests, and adapter updates.
+4. Folder.md-style readable structure: repo paths and OKF concepts remain useful to humans and agents without requiring a hosted SDK.
+5. Stack-level model routing/BYOK as an advanced capability: orchestrator, lead, worker, fallback, cost posture, approval gates, and provider preferences travel with the stack but do not lead marketing copy.
+
+### Later
+1. Identity version control: content hashes, pull-before-push, merge strategies, bundle history, and "PR" style external-agent proposals.
+2. Team/org bundles, custom domains, verified badges, profile analytics, Stripe Pro, marketplace/plugin distribution.
+3. Anonymous profile creation / SEO knowledge panels — deferred growth feature.
+4. Agent-to-agent communication protocol and richer connected-agent activity feed.
+5. Interview mode and autonomous source refresh beyond the owner-approved MVP.

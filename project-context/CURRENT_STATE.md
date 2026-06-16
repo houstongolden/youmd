@@ -1,6 +1,6 @@
 # You.md — Current State
 
-Last Updated: 2026-06-02
+Last Updated: 2026-06-16
 Latest Verified Production Web Commit: ee60713 ci: add handoff checker json output
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
@@ -102,6 +102,8 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 
 ### YouStacks Product Layer
 - Planning/audit is preserved in `project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md` and `project-context/YOUSTACKS_IMPLEMENTATION_PLAN.md`
+- 2026-06-16 context routing is now preserved in `project-context/prompts/2026-06-16-youmd-personal-api-context-routing.md`: You.md is the canonical agent brain, personal API/MCP, and YouStacks protocol layer; h.computer is Houston's personal site/reference implementation powered by You.md; Creator.new, BAMF.ai, folder.md, BAMF OS, MCP clients, and local agents are consumers or adjacent product shells
+- Current product language to keep consistent: "A personal API where the context is you," "The context every agent should already have," "Your portable identity and expertise stack for the agent internet," and "Brain -> Stacks -> Runtime -> Protected API/MCP"
 - Upstream reference intelligence is implemented: `npm run references:sync` clones/fetches `garrytan/gstack`, `garrytan/gbrain`, `steipete/agent-scripts`, and `disler/the-library` into ignored `.reference-repos/<owner>/<repo>/`, then writes `project-context/reference-intelligence/LATEST.md` and `TASKS.md` for daily review
 - The daily local reference automation is active, and the latest reference sync captured GStack `3bef43b`, GBrain `eefe8b5`, Agent Scripts `5dc3c24`, and The Library `47f455c`
 - Local-first YouStack manifests work as portable execution packages on top of You.md rather than as a replacement brain

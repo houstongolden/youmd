@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-16 — Personal API context routing preservation
+
+### docs(product): preserve h.computer platform ideas in You.md-native context
+- Added `project-context/prompts/2026-06-16-youmd-personal-api-context-routing.md` to preserve Houston's latest h.computer/Creator.new/You.md boundary prompt before h.computer pages are removed.
+- Updated PRD messaging so You.md clearly owns the durable agent brain, personal API/MCP, public/private context links, source catalog, provenance, trust rules, and protected agent access.
+- Updated Architecture with a consumer-role map: h.computer is Houston's personal site/reference implementation, Creator.new can attach You.md identity/context, folder.md supplies readable storage conventions, BAMF.ai owns creator/media engine, and BAMF OS remains the internal BAMF brain/client tooling layer.
+- Added a YouStacks Product Layer addendum covering `ystack` vs `youstack`, custom `{anything}stack` naming, reusable capability packages, host adapters, and BYOK/model routing as advanced stack capability.
+- Updated Current State, TODO, Features, active request tracking, and the prompt archive so the preserved direction is visible to future agents.
+
 ## 2026-06-15 — Shell logo and panel-toggle polish
 
 ### fix(web): make shell panel controls match their geography

@@ -1,6 +1,6 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-15
+Last Updated: 2026-06-16
 PRD Version: 2.3
 
 ---
@@ -29,6 +29,8 @@ PRD Version: 2.3
 - [x] Read the creator-new routing memo, local h.computer protocol/vision docs, live h.computer platform/docs/gallery pages, and active You.md context docs
 - [x] Add `project-context/PERSONAL_API_MCP_AND_YOUSTACKS_MEMO_2026-06-15.md` to route personal API/MCP, connector UX, source refresh, skill learning, host adapters, model routing, and gated identity access into You.md
 - [x] Update PRD, Architecture, Features, and active request tracking so You.md is documented as the canonical personal API/MCP + portable expertise-stack layer and h.computer is the consumer/reference implementation
+- [x] Add 2026-06-16 prompt/context capture after Houston re-shared the h.computer/Creator.new boundary before removing h.computer pages
+- [x] Update PRD, Architecture, YouStacks Product Layer PRD, Current State, Features, Changelog, active requests, and prompt archive so the "durable agent brain + personal API/MCP + YouStacks" language is preserved in the right home
 - [ ] Define the versioned personal API/MCP resource contract for `identity`, `now`, `projects`, `sources`, `memories`, `preferences`, `trust_rules`, `stacks`, and `activity`
 - [x] Design and implement the first connected-app grant substrate for You.md-native scoped reads/writes, expiry/revocation, trust level, and access preview metadata
 - [x] Build the first Lovable-simple connector UX MVP for Website, GitHub, RSS, OKF, Webhook, and JSON source setup

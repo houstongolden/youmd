@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 69
-**Total messages:** 474
+**Total sessions:** 70
+**Total messages:** 475
 **Last updated:** 2026-06-16
 
 ## Table of Contents
 
+1. [2026-06-16 (youmd-personal-api-context-routing)](#session-2026-06-16-youmd-personal-api-context-routing) --- 1 message
 1. [2026-06-15 (shell-logo-hover-panel-toggle-polish)](#session-2026-06-15-shell-logo-hover-panel-toggle-polish) --- 1 message
 1. [2026-06-15 (shell-composer-attach-voice-polish)](#session-2026-06-15-shell-composer-attach-voice-polish) --- 1 message
 1. [2026-06-15 (personal-api-mcp-stack-connectors-chat-sessions)](#session-2026-06-15-personal-api-mcp-stack-connectors-chat-sessions) --- 1 message
@@ -15642,3 +15643,107 @@ Auto-maintained — new messages appended each session.
 > these sidebar icons on the top left are not following instructions i requested previously and i dont like those icon styles anyways either and frankly just hover on the YOU logo should subtly animate and switch to a 2-line side menu icon - also the YOU needs to be a touch smaller to properly fit on the top without being cropped on the right side it is too wide
 >
 > and the other side panel icon which you weirdly have on the top left above the chat session column it should be on the top right of the whole screen since it controls the top right pannel which is exactly where Codex has it and use a cleaner more minimal side panel icon please
+
+---
+
+## Session: 2026-06-16 (youmd-personal-api-context-routing)
+
+**2026-06-16 00:00:00 UTC**
+> sharing this for context again as you may partially but not fully know or have context i wanna share this with you before i remove all these other features/pages from h.computer so you can save them and reference them etc as i realized after workin on these ideas for h.computer last night that they should be saved for you.md and h.computer should moreso just remain my personal agent personal brand site where I experiement and test integrating all my other various API/MCPs etc :)
+>
+> ---
+> You are working in the You.md project.
+>
+> Context: I had a late-night brain dump across h.computer, Creator.new, BAMF.ai, and You.md, and we have now clarified the product boundaries. A lot of the best language from h.computer’s newest platform/vision/human-computer-protocol/hstack-vision docs actually belongs in You.md first.
+>
+> Your job is to update You.md project context and messaging so the strongest “personal API / human context protocol / connector-backed agent brain / YouStacks” ideas are preserved in the right home.
+>
+> Before editing, read:
+> - AGENTS.md
+> - project-context/PRD.md
+> - project-context/ARCHITECTURE.md
+> - project-context/YOUSTACKS_PRODUCT_LAYER_PRD.md
+> - project-context/OKF_INTEGRATION.md
+> - project-context/CURRENT_STATE.md
+> - h-computer docs if accessible locally:
+>   - ../h-computer/docs/project-context/vision.md
+>   - ../h-computer/docs/project-context/hstack-vision.md
+>   - ../h-computer/docs/project-context/human-computer-protocol.md
+>   - ../h-computer/docs/project-context/2026-06-15T06-55-42Z-human-computer-protocol-braindump.md
+> - Creator.new routing memo if accessible:
+>   - ../creator-new/project-context/idea-routing-2026-06-15.md
+>
+> Core clarification:
+> You.md owns the broad personal identity/context/API/MCP primitive. h.computer should be Houston’s personal site and reference implementation, not the canonical home for the general “human API” product.
+>
+> Please update You.md docs so they clearly absorb these ideas:
+>
+> 1. You.md is the user’s durable agent brain:
+>    - identity
+>    - memory
+>    - preferences
+>    - private context
+>    - project context
+>    - source catalog
+>    - provenance
+>    - trust rules
+>    - public/private context links
+>    - protected API/MCP
+>
+> 2. You.md should become the intuitive “personal API/MCP” layer:
+>    - a structured, extensible context API for the person
+>    - safe agent access through scoped links, API keys, MCP, and host adapters
+>    - connector-backed data ingestion and refresh
+>    - crawlers/crons/monitors for user-approved sources
+>    - public and private context modes
+>
+> 3. YouStacks should carry the reusable capability layer:
+>    - skills
+>    - workflows
+>    - prompts
+>    - examples
+>    - tools
+>    - tests
+>    - docs
+>    - host adapters
+>    - update/improvement policies
+>    - folder.md-style readable structure
+>
+> 4. Preserve and adapt the best h.computer language, but route it to You.md:
+>    - “Your agent brain and best workflows for every AI agent”
+>    - “Brain → Stacks → Runtime → Protected API/MCP”
+>    - “The context every agent should already have”
+>    - “A personal API where the context is you”
+>    - “Your portable identity and expertise stack for the agent internet”
+>    - “Not another chatbot; the substrate your agents use before they improvise”
+>
+> 5. Add a clear relationship section:
+>    - You.md = canonical protocol and brain
+>    - h.computer = Houston’s personal site/agent/reference implementation powered by You.md
+>    - Creator.new = BAMF-powered creator builder that can optionally attach You.md identity/context
+>    - folder.md = agent-readable storage/file conventions
+>    - BAMF.ai = creator/social/media engine
+>    - BAMF OS = private/internal BAMF company brain and client portal tools
+>
+> 6. Add or update a roadmap section for:
+>    - Lovable-simple connector UX
+>    - custom source crawlers and refresh jobs
+>    - context-link and MCP polish
+>    - YouStacks distribution
+>    - screen-recording/transcript/SOP-to-skill learning loop
+>    - host adapters for Claude Code, Codex, Cursor, ChatGPT, MCP clients, local agents
+>    - BYOK/model-routing support as advanced capability, not headline copy
+>
+> Important boundaries:
+> - Do not make You.md sound like h.computer.
+> - Do not make h.computer the product primitive.
+> - Do not copy raw h.computer docs verbatim into final PRD copy; extract the strongest concepts and rewrite them as You.md-native.
+> - Preserve raw prompts/context in project-context/prompts/ with a 2026-06-16 dated note.
+> - Update project-context/TODO.md, FEATURES.md, CHANGELOG.md, and feature-requests-active.md if this repo expects that.
+> - Do not store secrets.
+> - Commit the docs/context changes as one coherent docs commit.
+>
+> Deliverables:
+> - A new project-context prompt/context capture for this request.
+> - Updated You.md PRD/vision/messaging docs.
+> - A concise summary of exactly what changed and what remains open.

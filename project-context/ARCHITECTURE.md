@@ -1,6 +1,6 @@
 # You.md — Architecture Reference
 
-Last Updated: 2026-06-15
+Last Updated: 2026-06-16
 
 ## System Overview
 
@@ -63,7 +63,9 @@ Last Updated: 2026-06-15
 
 ## Product Boundary: Personal API/MCP
 
-You.md is the canonical personal API/MCP and context protocol layer. h.computer is Houston's personal site and reference implementation that should consume this layer, not own it. Creator.new and other products can connect to You.md for identity, voice, preferences, source provenance, project context, memories, trust rules, and selected YouStacks.
+You.md is the canonical personal API/MCP and context protocol layer. It is the structured, extensible context API for a person: identity, now, projects, sources, memories, preferences, trust rules, stacks, activity, provenance, and public/private access rules.
+
+h.computer is Houston's personal site and reference implementation that should consume this layer, not own it. Creator.new, BAMF.ai, folder.md, MCP clients, local agents, and future products can connect to You.md for identity, voice, preferences, source provenance, project context, memories, trust rules, and selected YouStacks.
 
 The intended boundary is:
 
@@ -97,6 +99,17 @@ External product or agent
 - Host/stack agent token: host-specific and stack-specific access with explicit scopes.
 - Connected-app grant: durable app-level access for h.computer, Creator.new, BAMF.ai, folder.md, and future consumers.
 
+### Consumer Roles
+
+| Consumer | Role | Boundary |
+|---|---|---|
+| h.computer | Houston's personal site/agent/reference implementation | Reads You.md context, may write back useful memories/activity, does not own the protocol |
+| Creator.new | BAMF-powered creator builder | Optionally attaches creator identity/context from You.md; creator workflows stay in BAMF.ai |
+| folder.md | Agent-readable storage/file convention layer | Informs readable repo/stack layout; does not replace the hosted You.md brain |
+| BAMF.ai | Creator/social/media engine | Owns content/media generation, approvals, analytics, scheduling, and BAMFStack |
+| BAMF OS | Private/internal BAMF company brain and client/admin tools | Separate private product surface; can consume You.md for Houston identity when scoped |
+| Agent hosts | Claude Code, Codex, Cursor, ChatGPT, MCP clients, local agents | Consume scoped context via links, API keys, MCP, host adapters, and YouStack installs |
+
 ### Writeback Rules
 
 Any write from an agent or connected product should record actor, host, app, stack, source, confidence, timestamp, reason, and approval state. Low-trust agent writes should land as proposed updates or lower-confidence memories, not overwrite higher-trust human-authored context.
@@ -106,9 +119,10 @@ Any write from an agent or connected product should record actor, host, app, sta
 - Versioned personal API/MCP resource contract for `identity`, `now`, `projects`, `sources`, `memories`, `preferences`, `trust_rules`, `stacks`, and `activity`.
 - App-level grants for h.computer and Creator.new style consumers.
 - Lovable-simple connector UX that maps sources into structured context with preview, visibility, trust rules, and refresh policy.
-- Source refresh policies and monitored updates that reuse the immutable raw-source ledger.
+- Source refresh policies, crawlers, crons, monitors, and approval-aware writeback that reuse the immutable raw-source ledger.
 - Skill-learning ingestion for screen recordings, transcripts, SOPs, tool/API lists, agent-run logs, and summaries.
-- Stack-level model routing policy in YouStack manifests and generated host adapters.
+- YouStacks distribution: private/scoped/public repo-backed stacks, host adapters for Claude Code, Codex, Cursor, ChatGPT, MCP clients, and local agents.
+- Stack-level model routing/BYOK policy in YouStack manifests and generated host adapters as an advanced capability, not the headline contract.
 
 ## Data Model (21 Tables)
 

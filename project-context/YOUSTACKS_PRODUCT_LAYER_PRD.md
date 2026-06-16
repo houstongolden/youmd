@@ -1,6 +1,6 @@
 # YouStacks Product Layer PRD
 
-Last updated: 2026-05-23
+Last updated: 2026-06-16
 
 ## Agent Kickoff Prompt
 
@@ -54,12 +54,40 @@ The cleaner vision is a personal agent operating system:
 
 - You.md owns the brain: identity, memories, private context, project context, sources, preferences, directives, and access rules.
 - YouStacks package execution: skills, workflows, tools, prompts, templates, evals, install scripts, host adapters, and protected service calls.
+- You.md is also the user's personal API/MCP: a structured, extensible, scoped context surface where the context is the person.
 - YouStacks also need a source-of-truth catalog: skills, agents, prompts, scripts, examples, docs, and protected capabilities can be referenced from canonical local paths or GitHub repos instead of copied into every project.
 - GitHub becomes the user's owned repo-backed source of truth.
 - You.md keeps the hosted DB-backed mirror for availability, indexing, links, tokens, web, CLI, API, and MCP.
 - Claude Code, Codex, and Cursor are the first GTM wedge because those users already understand the value of one command making an agent smarter.
 - OpenClaw, Hermes Agent, and Pi agents are secondary adapters after the first three work.
 - A You.md-branded personalized agent harness is later, not launch scope.
+
+## 2026-06-16 Product Boundary Addendum
+
+The h.computer docs and Creator.new routing memo sharpened an important boundary: You.md is the canonical product primitive, while h.computer is Houston's personal site and reference implementation powered by You.md.
+
+The You.md-native model is:
+
+- Brain: identity, memory, preferences, project context, source catalog, provenance, trust rules, public/private context links, and protected API/MCP access.
+- Stacks: reusable capability packages containing skills, workflows, prompts, examples, tools, tests, docs, host adapters, update policies, and improvement loops.
+- Runtime: the installable local/host integration for Claude Code, Codex, Cursor, ChatGPT, MCP clients, local agents, and future hosts.
+- Protected API/MCP: scoped links, API keys, connected-app grants, MCP tools/resources, and host adapters that let agents read or act through You.md safely.
+
+Language to keep close to the product:
+
+- "Your agent brain and best workflows for every AI agent."
+- "The context every agent should already have."
+- "A personal API where the context is you."
+- "Your portable identity and expertise stack for the agent internet."
+- "Not another chatbot; the substrate your agents use before they improvise."
+
+Naming:
+
+- `ystack` can name the built-in/base You.md stack and platform capability layer.
+- `youstack` is the default personal stack associated with the user.
+- Custom named stacks should support `{anything}stack` when a user wants domain-specific packages such as `researchstack`, `creatorstack`, or `opsstack`.
+
+BYOK/model routing belongs as an advanced stack capability, not headline positioning. It is valuable once a stack is doing real work, but the first story is identity, context, skills, host adapters, and safe access.
 
 ## Product Objects
 
