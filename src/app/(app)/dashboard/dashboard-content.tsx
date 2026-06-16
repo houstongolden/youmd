@@ -145,6 +145,12 @@ const PANE_GROUPS: Array<{
     ],
   },
   {
+    key: "integrations",
+    label: "api",
+    defaultPane: "github",
+    panes: [{ key: "github", label: "github" }],
+  },
+  {
     // analytics = aggregate stats (views, reads, referrers);
     // "activity" (the agent event log) lives under stacks → AgentsPane
     key: "insights",
@@ -154,15 +160,9 @@ const PANE_GROUPS: Array<{
   },
   {
     key: "portrait",
-    label: "face",
+    label: "portrait",
     defaultPane: "portrait",
     panes: [{ key: "portrait", label: "portrait" }],
-  },
-  {
-    key: "integrations",
-    label: "api",
-    defaultPane: "github",
-    panes: [{ key: "github", label: "github" }],
   },
   {
     key: "account",
@@ -189,9 +189,9 @@ const STALE_NUDGE_DAYS = 7;
 const FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_CHAT_WIDTH = 46;
 const MIN_CHAT_WIDTH = 34;
-const MAX_CHAT_WIDTH = 58;
+const MAX_CHAT_WIDTH = 54;
 const MIN_CHAT_WIDTH_PX = 460;
-const MIN_DETAIL_WIDTH_PX = 360;
+const MIN_DETAIL_WIDTH_PX = 440;
 const SIDEBAR_AUTO_COLLAPSE_PX = 1520;
 
 function formatRelativeTime(ts: number): string {
@@ -1324,7 +1324,7 @@ export function DashboardContent() {
               <button
                 type="button"
                 onClick={() => setPanelOpen((value) => !value)}
-                className="ml-1 flex h-8 w-8 cursor-pointer items-center justify-center text-[hsl(var(--text-secondary))] opacity-55 transition-[background,color,opacity] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))] hover:opacity-95"
+                className="ml-1 hidden h-8 w-8 cursor-pointer items-center justify-center text-[hsl(var(--text-secondary))] opacity-55 transition-[background,color,opacity] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))] hover:opacity-95 lg:flex"
                 style={{ borderRadius: "var(--radius)" }}
                 aria-label={panelOpen ? "Hide detail pane" : "Show detail pane"}
                 title={panelOpen ? "Hide detail pane" : "Show detail pane"}
@@ -1334,7 +1334,7 @@ export function DashboardContent() {
             </div>
           </div>
           {/* Mobile nav — single row: scrollable pane tabs + compact status */}
-          <div className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] md:hidden">
+          <div className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] lg:hidden">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center overflow-x-auto scrollbar-none">
                 {MOBILE_PRIMARY_PANES.map(({ key, label }) => (
@@ -1406,13 +1406,13 @@ export function DashboardContent() {
             <div
               className={[
                 "min-h-0 min-w-0 flex flex-col bg-[hsl(var(--bg-raised))]",
-                panelOpen ? "md:w-[var(--shell-chat-width)] md:flex-none" : "md:flex-1",
-                "md:relative md:opacity-100 md:translate-x-0",
+                panelOpen ? "lg:w-[var(--shell-chat-width)] lg:flex-none" : "lg:flex-1",
+                "lg:relative lg:opacity-100 lg:translate-x-0",
                 // Mobile: full width, absolute positioned for transitions
                 "w-full",
                 mobileView === "terminal"
                   ? "relative opacity-100 translate-x-0"
-                  : "absolute inset-0 opacity-0 -translate-x-4 pointer-events-none md:pointer-events-auto md:relative md:inset-auto",
+                  : "absolute inset-0 opacity-0 -translate-x-4 pointer-events-none lg:pointer-events-auto lg:relative lg:inset-auto",
               ].join(" ")}
               style={{
                 "--shell-chat-width": `clamp(${MIN_CHAT_WIDTH_PX}px, ${chatWidth}%, calc(100% - ${MIN_DETAIL_WIDTH_PX}px))`,
@@ -1438,7 +1438,7 @@ export function DashboardContent() {
               <button
                 type="button"
                 onPointerDown={startColumnResize}
-                className="group hidden w-2 shrink-0 cursor-col-resize items-stretch justify-center border-x border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] transition-colors hover:bg-[hsl(var(--bg-raised))] md:flex"
+                className="group hidden w-2 shrink-0 cursor-col-resize items-stretch justify-center border-x border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] transition-colors hover:bg-[hsl(var(--bg-raised))] lg:flex"
                 aria-label="Resize shell split"
                 title="Resize shell split"
               >
@@ -1452,35 +1452,27 @@ export function DashboardContent() {
                 "min-h-0 min-w-0 flex flex-col overflow-hidden bg-[hsl(var(--bg-raised))]",
                 // Desktop: hidden when panel is closed
                 panelOpen
-                  ? "md:relative md:flex-1 md:opacity-100 md:translate-x-0"
-                  : "md:hidden",
+                  ? "lg:relative lg:flex-1 lg:opacity-100 lg:translate-x-0"
+                  : "lg:hidden",
                 // Mobile: full width, absolute positioned for transitions
-                "w-full md:w-auto",
+                "w-full lg:w-auto",
                 mobileView === "preview"
                   ? "relative opacity-100 translate-x-0"
-                  : "absolute inset-0 opacity-0 translate-x-4 pointer-events-none md:pointer-events-auto md:relative md:inset-auto",
+                  : "absolute inset-0 opacity-0 translate-x-4 pointer-events-none lg:pointer-events-auto lg:relative lg:inset-auto",
               ].join(" ")}
               style={{ transition: "opacity 200ms ease, transform 200ms ease" }}
             >
-              {/* Desktop pane header — compact, wraps instead of clipping. */}
-              <div className="hidden md:block relative shrink-0 border-b border-[hsl(var(--border))]/60">
-                <div className="flex min-h-11 items-center justify-between gap-4 px-4 py-2">
-                  <div className="min-w-0">
-                    <div className="truncate font-mono text-[11px] text-[hsl(var(--text-primary))]">
-                      {activePaneGroup.label}
-                    </div>
-                    <div className="mt-0.5 truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
-                      {rightPane === activePaneGroup.defaultPane ? "overview" : rightPane}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1" role="tablist" aria-label="Detail pane sections">
+              {/* Desktop pane header — one clean navigation surface, scroll-safe on narrow panes. */}
+              <div className="hidden lg:block relative shrink-0 border-b border-[hsl(var(--border))]/60">
+                <div className="flex min-h-11 items-center overflow-x-auto px-4 scrollbar-none">
+                  <div className="flex min-w-max items-center gap-3" role="tablist" aria-label="Detail pane sections">
                     {PANE_GROUPS.map((group) => (
                       <button
                         key={group.key}
                         onClick={() => openPane(group.defaultPane)}
                         role="tab"
                         aria-selected={activePaneGroup.key === group.key}
-                        className={`relative h-6 text-[9.5px] font-mono transition-colors whitespace-nowrap ${
+                        className={`relative h-11 cursor-pointer px-0.5 text-[10px] font-mono transition-colors whitespace-nowrap ${
                           activePaneGroup.key === group.key
                             ? "text-[hsl(var(--text-primary))]"
                             : "text-[hsl(var(--text-secondary))] opacity-30 hover:opacity-60"
@@ -1495,12 +1487,12 @@ export function DashboardContent() {
                   </div>
                 </div>
                 {activePaneGroup.panes.length > 1 && (
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2">
+                  <div className="flex items-center gap-3 overflow-x-auto border-t border-[hsl(var(--border))]/35 px-4 scrollbar-none">
                     {activePaneGroup.panes.map((pane) => (
                       <button
                         key={pane.key}
                         onClick={() => openPane(pane.key)}
-                        className={`relative h-6 text-[9.5px] font-mono whitespace-nowrap transition-colors ${
+                        className={`relative h-9 cursor-pointer text-[9.5px] font-mono whitespace-nowrap transition-colors ${
                           rightPane === pane.key
                             ? "text-[hsl(var(--text-primary))]"
                             : "text-[hsl(var(--text-secondary))] opacity-[0.38] hover:opacity-75"

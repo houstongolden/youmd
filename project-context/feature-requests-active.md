@@ -7,9 +7,9 @@ Last Updated: 2026-06-16
 ## 2026-06-16 — Preserve h.computer platform ideas in You.md
 
 ### 124. Make blank `/shell` chats open with a personal activity-aware briefing
-**Status:** IN PROGRESS (code complete locally; deploy and authenticated production QA pending)
+**Status:** DONE (deployed; Houston visual approval still welcome)
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES
 **Source:** 2026-06-16 — Houston: "additinally the agent just shows \"repo\" at the top of the blank chat session in the shell ... but it should at least acknowledge you by your name and analyze any recent work/activity/updates tracked recently and maybe congratulate you on how many active projects and LOC you've shipped and any other milestones or content or context it has from you ... and also then suggest possible best next steps or things you can do or that they can help you with etc"
 **Actionable Scope:**
 1. Stop a one-word restored command like `repo` from becoming the only thing visible in a blank shell session. **DONE locally.**
@@ -17,11 +17,11 @@ Last Updated: 2026-06-16
 3. Build the opening greeting from real data only: display name, latest bundle version/status, tracked projects, private project folders, recent memories, recent saved sessions, and repo mirror status/files/bytes/sync timestamp. **DONE locally.**
 4. Instruct the agent to greet by name, acknowledge concrete recent activity/milestones, avoid fake LOC claims, and suggest useful next moves. **DONE locally.**
 5. Add a deterministic fallback brief so the shell transcript is still useful if the streamed model returns an overly short stub. **DONE locally.**
-6. Deploy and verify in authenticated production `/shell`. **PENDING.**
-**Progress (2026-06-16):** Updated `src/hooks/useYouAgent.ts` with a deterministic opening session brief, recent sessions/repo mirror queries, New Chat reinitialization, and half-empty session restore skipping. Local `npm run lint`, `npm run build`, and `git diff --check` passed. Remaining: deploy, CI, Vercel Ready, and authenticated production QA.
+6. Deploy and verify in authenticated production `/shell`. **DONE.**
+**Progress (2026-06-16):** Updated `src/hooks/useYouAgent.ts` with a deterministic opening session brief, recent sessions/repo mirror queries, New Chat reinitialization, and half-empty session restore skipping. Local `npm run lint`, `npm run build`, and `git diff --check` passed. Commit `38030f3` deployed to production; Vercel deployment `dpl_7ymFW6ToUkHZXMuTQRxnzfEhNpHU` reached Ready, GitHub CI `27595231656` passed, and authenticated production browser QA confirmed New Chat greets Houston by name, includes real bundle/project/repo-mirror context, suggests next moves, and is not empty/just `repo`.
 
 ### 123. Clean up `/shell` right detail pane responsiveness and usefulness
-**Status:** IN PROGRESS (code complete and deployed; Houston visual approval pending)
+**Status:** IN PROGRESS (follow-up deployed; Houston visual approval pending)
 **Verified:** NO
 **Production Verified:** YES (agent-authenticated browser QA)
 **Source:** 2026-06-16 — Houston: "yo look at the design please ensure it is properly responsive the right side panel should be really re-thought and cleaned up and ensure it is always fully responsive and actually intuitive, minimal, clean actionable and USEFUL please..."
@@ -32,8 +32,13 @@ Last Updated: 2026-06-16
 4. Clean up right-pane navigation so labels are shorter, wrap cleanly, and do not clip horizontally. **DONE locally.**
 5. Reduce nested boxes in the profile inspector so the pane feels more seamless and useful. **DONE locally.**
 6. Verify responsive layout visually in an authenticated browser session after deploy. **DONE via agent QA; Houston visual approval pending.**
+7. Remove the redundant right-pane local title/subtitle (`profile` / `overview`) because the active tab already communicates that state. **DONE locally.**
+8. Reorder and rename tabs so the artifact rail is more intuitive: `profile`, `files`, `share`, `stacks`, `api`, `stats`, `portrait`, `account`. **DONE locally.**
+9. Make medium-width shell layouts keep the app sidebar/top action chrome but use full-width shell/preview tabs instead of a cramped split. **DONE locally.**
+10. Tighten profile inspector wrapping so long identity text, bios, projects, and links cannot clip horizontally. **DONE locally.**
 **Progress (2026-06-16):** Updated shell split constants, shortened/wrapped right-pane header navigation, swapped `ProfileContent` for `ProfilePane`, and flattened the compact profile pane. Local `npm run lint`, `npm run build`, `npm run docs:check`, and `git diff --check` passed. Pushed commit `380c1ce`; Vercel deployment `dpl_Cwjg25ybGryr6ZYmCEjrtvEfLxGM` reached Ready and is aliased to `https://www.you.md` / `https://you.md`. Authenticated production browser QA confirmed no horizontal overflow, the compact profile inspector is mounted, and the 1600px split renders about 597px chat / 751px detail.
 **Progress (2026-06-16 hotfix):** Houston flagged that the first responsive pass hid the whole desktop app shell at narrow desktop widths. Restored the shell sidebar/top action chrome/right detail split at `md` widths, kept the chat column width explicit, and added `min-w-0`/overflow containment so the right detail pane can shrink instead of pushing past the viewport. Pushed commits `4f1da05`, `3fe9511`, `fab0cad`, and `ffd8d17`; Vercel deployment `dpl_8ygDyGiGWCyz97F1ZQuG2WtJQQzH` reached Ready and is aliased to `https://www.you.md` / `https://you.md`. Authenticated production browser QA at 900px confirmed the sidebar, top actions, resize handle, and right pane render together with 56px rail / 460px chat / 8px handle / 376px detail, `rightEdge: 900`, and no horizontal overflow. Remaining: Houston visual approval.
+**Progress (2026-06-16 follow-up):** Removed the redundant desktop pane label/subtitle block, converted the right artifact chrome into one scroll-safe primary tab rail plus a sub-tab rail only when needed, promoted `api` earlier in the tab order, renamed `face` to `portrait`, hid the right-pane toggle below `lg`, and moved split behavior to `lg`+ while retaining sidebar/top actions at `md`. Local authenticated in-app browser QA at ~890px confirmed the shell now uses a single full-width surface with top tabs instead of the cramped split. `npm run lint`, `npm run build`, `npm run docs:check`, and `git diff --check` passed. Vercel deployment `dpl_n4ZMQ6dv3vHwj2RimFBBwaTfkd4x` reached Ready and is aliased to `https://www.you.md` / `https://you.md`; GitHub CI `27595879145` passed. Authenticated production visual QA confirmed the duplicate pane title is gone and the medium-width shell has one clean tab rail plus a full-width shell surface. Remaining: Houston visual approval.
 
 ### 122. Save and route personal API / human context protocol / YouStacks ideas into You.md
 **Status:** IN PROGRESS (docs/context captured; future product implementation pending)

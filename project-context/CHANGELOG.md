@@ -12,6 +12,12 @@
 ## 2026-06-16 — Shell right-panel responsiveness
 
 ### fix(web): make the shell detail pane cleaner and harder to break
+- Removed the redundant right-pane title/subtitle block (`profile` / `overview`) so the artifact area has one clear tab surface instead of repeating the selected tab twice.
+- Reordered the right-pane top tabs so API sits with the primary product surfaces, renamed `face` to the clearer `portrait`, and made the tab rail horizontally scroll-safe without wrapping into awkward stacked chrome.
+- Moved the cramped split behavior to `lg` and up while keeping the sidebar and top action chrome visible at `md` widths; medium screens now use the full-width shell/preview toggle instead of squeezing chat and artifacts into unusable columns.
+- Raised the protected detail-pane width and clamped over-wide saved chat ratios harder so the right artifact pane stays readable on large desktop.
+- Tightened the compact profile inspector with overflow containment, safer text wrapping, and no horizontal escape for long names, bios, projects, or links.
+- Follow-up deployment `dpl_n4ZMQ6dv3vHwj2RimFBBwaTfkd4x` reached Ready and is aliased to `https://www.you.md` / `https://you.md`; GitHub CI run `27595879145` passed, and authenticated production visual QA confirmed the duplicate pane title is gone at medium width with a single full-width shell surface and top tab rail.
 - Rebalanced the desktop shell split so the chat column stays usable while the right detail pane no longer collapses into an awkward clipped sliver.
 - Moved split-mode behavior up to the large-screen breakpoint; tablet/narrow desktop now uses the full-width shell/preview toggle instead of forcing two cramped columns.
 - Replaced the right pane's full public-profile render with the compact actionable profile inspector, removing the clipped giant profile/ASCII layout from the shell detail pane.

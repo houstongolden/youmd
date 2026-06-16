@@ -14,6 +14,11 @@ PRD Version: 2.3
 - [x] Skip restoring half-empty recent sessions that have no assistant reply, preventing a stray one-word command from becoming the blank shell state
 
 ### 2026-06-16 — Shell right-panel responsiveness
+- [x] Remove the redundant right-pane title/subtitle block so the top artifact chrome has one obvious tab surface
+- [x] Reorder/rename right-pane tabs so `api` is promoted and `portrait` is clearer than `face`
+- [x] Keep sidebar/top action chrome visible at medium widths while switching the actual chat/detail split to large screens and up
+- [x] Raise the readable detail-pane minimum width and clamp saved over-wide chat ratios harder
+- [x] Add profile inspector overflow/text wrapping so bios, projects, and links cannot clip horizontally
 - [x] Rebalance the shell split so the right detail pane has a real minimum width and stored over-wide chat ratios clamp down safely
 - [x] Move split-screen behavior to large desktop only, letting tablet/narrow desktop use the full-width shell/preview toggle instead of cramped columns
 - [x] Replace the shell profile detail pane's full public-profile render with the compact actionable profile inspector

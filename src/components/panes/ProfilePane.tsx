@@ -63,9 +63,9 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
     "";
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto overflow-x-hidden">
       {/* Status bar */}
-      <div className="flex items-center justify-between gap-3 border-b border-[hsl(var(--border))]/60 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[hsl(var(--border))]/60 px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <span
             className="w-2 h-2 rounded-full status-dot-pulse"
@@ -96,10 +96,10 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
       </div>
 
       {/* Profile content */}
-      <div className="max-w-2xl space-y-6 px-4 py-5 sm:px-5">
+      <div className="w-full max-w-[760px] space-y-6 px-4 py-5 sm:px-5">
         {/* Identity + Portrait */}
         <section>
-          <div className="flex items-start gap-4">
+          <div className="grid grid-cols-[84px_minmax(0,1fr)] items-start gap-4">
             {avatarUrl && (
               <div className="shrink-0 overflow-hidden bg-[hsl(var(--bg))]" style={{ borderRadius: "var(--radius)" }}>
                 <AsciiAvatar
@@ -111,22 +111,22 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
                 />
               </div>
             )}
-            <div className="min-w-0">
-              <h1 className="text-lg font-mono tracking-tight text-[hsl(var(--text-primary))]">
+            <div className="min-w-0 break-words">
+              <h1 className="break-all text-lg font-mono tracking-tight text-[hsl(var(--text-primary))]">
                 @{username}
               </h1>
               {name && name !== username && (
-                <p className="text-[hsl(var(--accent))] text-sm mt-1 font-mono">
+                <p className="text-[hsl(var(--accent))] text-sm mt-1 font-mono break-words">
                   {name}
                 </p>
               )}
               {tagline && (
-                <p className="text-[hsl(var(--text-secondary))] text-sm mt-1 leading-relaxed">
+                <p className="text-[hsl(var(--text-secondary))] text-sm mt-1 leading-relaxed break-words">
                   {tagline}
                 </p>
               )}
               {location && (
-                <p className="text-[hsl(var(--text-secondary))] opacity-40 text-xs mt-1 font-mono">
+                <p className="text-[hsl(var(--text-secondary))] opacity-40 text-xs mt-1 font-mono break-words">
                   {location}
                 </p>
               )}
@@ -141,7 +141,7 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
           <>
             <section>
               <SectionLabel>bio</SectionLabel>
-              <p className="text-[hsl(var(--text-secondary))] leading-relaxed text-sm mt-3">
+              <p className="text-[hsl(var(--text-secondary))] leading-relaxed text-sm mt-3 break-words">
                 {bio}
               </p>
             </section>
@@ -158,12 +158,12 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
                 {data.now.focus.map((item: string, i: number) => (
                   <li
                     key={i}
-                    className="text-[hsl(var(--text-secondary))] text-sm flex items-start gap-2"
+                    className="text-[hsl(var(--text-secondary))] text-sm flex min-w-0 items-start gap-2"
                   >
                     <span className="text-[hsl(var(--accent))] mt-0.5 shrink-0 text-xs">
                       {"\u203A"}
                     </span>
-                    <span>{item}</span>
+                    <span className="min-w-0 break-words">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -183,18 +183,18 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
                     key={i}
                     className="py-3 first:pt-0 last:pb-0"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-sm text-[hsl(var(--text-primary))]">
+                    <div className="flex min-w-0 items-center justify-between gap-2">
+                      <span className="min-w-0 truncate font-mono text-sm text-[hsl(var(--text-primary))]">
                         {project.name}
                       </span>
                       {project.status && (
-                        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--accent))] opacity-70">
+                        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--accent))] opacity-70">
                           {project.status}
                         </span>
                       )}
                     </div>
                     {project.description && (
-                      <p className="text-[hsl(var(--text-secondary))] opacity-60 text-xs mt-1.5">
+                      <p className="text-[hsl(var(--text-secondary))] opacity-60 text-xs mt-1.5 break-words">
                         {project.description}
                       </p>
                     )}
@@ -241,13 +241,13 @@ export function ProfilePane({ userId, username, ownerId }: ProfilePaneProps) {
                         href={url as string}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-xs font-mono py-1.5 hover:text-[hsl(var(--accent))] transition-colors"
+                        className="flex min-w-0 items-center gap-2 text-xs font-mono py-1.5 hover:text-[hsl(var(--accent))] transition-colors"
                       >
                         <LinkFavicon url={url as string} />
                         <span className="text-[hsl(var(--text-secondary))] opacity-40 w-16">
                           {platform}
                         </span>
-                        <span className="text-[hsl(var(--accent-mid))] truncate">
+                        <span className="min-w-0 truncate text-[hsl(var(--accent-mid))]">
                           {url as string}
                         </span>
                       </a>
