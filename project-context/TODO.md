@@ -572,6 +572,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Polish `/shell` layout ratios, remove logged-in top nav, move account/theme controls into the sidebar footer, and reduce nested borders/boxed sidebar chrome
 - [x] Reframe the shell Connectors page around the personal API/MCP/stack gateway, including `ystack` / `youstack` / custom `{name}stack` naming
 - [x] Add saved chat sessions to the left shell sidebar and wire session-specific Convex hydration
+- [x] Trim the collapsed shell rail to the core 8 controls, replace the sidebar wordmark with the PixelYOU mark, and move GitHub/update/publish/deploy/right-pane controls into top shell chrome
 - [ ] Add editable persisted YouStack records for default `youstack` and custom `{name}stack` metadata, visibility, capabilities, and owner policy
 - [ ] Add token scopes and generated docs for personal API/MCP extensions (`sessions`, `stacks`, `tools`, `functions`, `sources`)
 - [ ] Add Convex `agent_runs`, `agent_plan_steps`, and queued gateway messages so shell/MCP/external-channel conversations share live run state

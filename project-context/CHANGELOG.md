@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-15 — Shell rail and top chrome polish
+
+### feat(web): tighten collapsed shell navigation and action chrome
+- Replaced the sidebar `you.md` text mark with a scaled PixelYOU canvas mark so the shell uses the same identity mark as the homepage.
+- Changed the sidebar collapse affordance to true left-panel open/close icons and removed the right-pane toggle from the left sidebar header.
+- Reduced the skinny collapsed rail to exactly 8 clickable controls total: expand, new chat, search, Repo, API/MCP, YouStack, Connectors, and account.
+- Added a desktop top shell chrome row with the right-pane toggle plus GitHub, update, publish, and deploy controls; publish calls the real `/publish` command, update opens source refresh context, and deploy opens the GitHub/repo surface.
+- Verified locally with in-app browser DOM/screenshot QA: collapsed sidebar width 56px, 4 collapsed nav icons, 8 total clickable rail controls, top controls present, and protected chat width around 679px at a 1600px viewport.
+- Verified with `npm run lint` (existing warnings only, radius guard passed) and `npm run build`.
+
 ## 2026-06-15 — Personal API gateway and saved shell sessions
 
 ### feat(web): reframe connectors around personal API/MCP/youstack

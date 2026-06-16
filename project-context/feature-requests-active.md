@@ -6,6 +6,19 @@ Last Updated: 2026-06-15
 
 ## 2026-06-15 — Rebuild `/shell` as Codex/Lovable-style workspace
 
+### 119. Collapsed shell rail cap, PixelYOU sidebar mark, and top action chrome
+**Status:** IN PROGRESS (code complete locally; production deploy and Houston visual approval pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-15 — Houston: "reduce the total icons in the collapsed left sidebar view to only be like the top 6-8 icons max... top right of the shell above the existing tabs... true vibe coding style github icon and publish/update/deploy button... replace [you.md logo] with a small version of the YOU ascii art logo on the hero of homepage... sidebar collapse icon... should be exact same icons the minimal versions exactly like Codex..."
+**Actionable Scope:**
+1. Limit the skinny collapsed sidebar to 6-8 total controls instead of rendering the full sitemap as an icon tower.
+2. Replace the text `you.md` sidebar mark with the homepage PixelYOU visual mark.
+3. Make the sidebar collapse icon control only the left sidebar, using left-panel open/close iconography.
+4. Move the right-pane toggle out of the left sidebar and into top-right shell chrome.
+5. Add a compact coding-style top action row with GitHub, update, publish, and deploy controls above the desktop pane tabs.
+**Progress (2026-06-15):** Implemented locally in `src/app/(app)/dashboard/dashboard-content.tsx`: collapsed rail now shows the PixelYOU mark, expand, New Chat, Search, Repo, API/MCP, YouStack, Connectors, and account only; the full sidebar remains available when expanded. The right-pane toggle moved into a new desktop top shell chrome row beside GitHub/update/publish/deploy controls. Publish calls the real `/publish` slash command, update opens source refresh context, and deploy opens the GitHub/repo surface. Local in-app browser QA confirmed collapsed sidebar width 56px, 4 collapsed nav icons, 8 total clickable rail controls, top controls present, and chat width around 679px at a 1600px viewport. `npm run lint` passed with existing warnings only and radius guard OK; `npm run build` passed. Remaining: commit, push, Vercel production deployment, and Houston visual approval.
+
 ### 118. Connectors, personal API/MCP/stack surface, sidebar IA, and saved chats
 **Status:** IN PROGRESS (code complete and deployed; Houston visual approval pending)
 **Verified:** NO
@@ -1339,10 +1352,10 @@ Last Updated: 2026-06-15
 | DONE (not verified) | 37 |
 | DECIDED | 1 |
 | PARTIALLY DONE | 2 |
-| IN PROGRESS | 1 |
+| IN PROGRESS | 2 |
 | TODO | 9 |
 | BLOCKED | 1 |
-| **Total tracked** | **54** |
+| **Total tracked** | **55** |
 
 ## March 27 Session Additions
 

@@ -24,8 +24,6 @@ import {
   BarChart3,
   BookOpen,
   Bot,
-  ChevronLeft,
-  ChevronRight,
   Clock3,
   Code2,
   CreditCard,
@@ -40,19 +38,25 @@ import {
   MessageSquareText,
   Monitor,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
   Plug,
   Plus,
   Radar,
+  RefreshCw,
+  Rocket,
   Search,
   Settings,
   Share2,
   Shield,
   Sun,
+  UploadCloud,
   UserRound,
   Wrench,
 } from "lucide-react";
+import PixelYOU from "@/components/landing/PixelYOU";
 
 // Heavy panes — lazy-loaded so their JS only ships when the right-pane is opened.
 // A brief pulse skeleton fills the slot while the chunk loads.
@@ -384,6 +388,57 @@ function ShellSidebarButton({
   );
 }
 
+function ShellYouMark({ collapsed }: { collapsed: boolean }) {
+  return (
+    <div
+      role="img"
+      aria-label="YOU"
+      className={[
+        "shrink-0 overflow-hidden",
+        collapsed ? "h-6 w-10" : "h-8 w-[76px]",
+      ].join(" ")}
+    >
+      <div
+        className={collapsed ? "origin-top-left scale-[0.125]" : "origin-top-left scale-[0.22]"}
+        aria-hidden="true"
+      >
+        <PixelYOU />
+      </div>
+    </div>
+  );
+}
+
+function ShellTopActionButton({
+  label,
+  icon: Icon,
+  onClick,
+  emphasis = false,
+}: {
+  label: string;
+  icon: ShellIcon;
+  onClick: () => void;
+  emphasis?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className={[
+        "group flex h-8 cursor-pointer items-center gap-1.5 px-2 font-mono text-[9.5px] transition-[background,color,opacity]",
+        emphasis
+          ? "bg-[hsl(var(--accent))]/[0.11] text-[hsl(var(--accent))] hover:bg-[hsl(var(--accent))]/[0.16]"
+          : "text-[hsl(var(--text-secondary))] opacity-55 hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))] hover:opacity-95",
+      ].join(" ")}
+      style={{ borderRadius: "var(--radius)" }}
+    >
+      <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
+      <span className="hidden lg:inline">{label}</span>
+    </button>
+  );
+}
+
 function ShellSidebar({
   username,
   displayName,
@@ -399,9 +454,7 @@ function ShellSidebar({
   loadingSessionId,
   rightPane,
   collapsed,
-  panelOpen,
   onToggleCollapsed,
-  onTogglePanel,
   onOpenPane,
   onNewChat,
   onSearch,
@@ -421,9 +474,7 @@ function ShellSidebar({
   loadingSessionId?: string | null;
   rightPane: RightPane;
   collapsed: boolean;
-  panelOpen: boolean;
   onToggleCollapsed: () => void;
-  onTogglePanel: () => void;
   onOpenPane: (pane: RightPane, subTab?: EditSubTab) => void;
   onNewChat: () => void;
   onSearch: () => void;
@@ -514,6 +565,18 @@ function ShellSidebar({
       ],
     },
   ];
+  const collapsedItems: ShellSidebarItem[] = [
+    {
+      label: githubRepoName ? "Repo" : "Projects",
+      detail: repoDetail,
+      icon: FolderGit2,
+      pane: githubRepoName ? "files" : "github",
+      status: githubRepoName ? "live" : "setup",
+    },
+    { label: "API / MCP", detail: "scoped agent access", icon: Code2, pane: "github" },
+    { label: "YouStack", detail: "your default stack", icon: Layers3, pane: "stacks" },
+    { label: "Connectors", detail: "github + apps", icon: Plug, pane: "github" },
+  ];
 
   return (
     <aside
@@ -524,39 +587,25 @@ function ShellSidebar({
       aria-label="Shell navigation"
     >
       <div className={collapsed ? "flex flex-col items-center gap-2 px-2 py-3" : "px-3 py-3"}>
-        <div className={collapsed ? "flex flex-col items-center gap-1.5" : "flex items-center gap-2"}>
-          <button
-            type="button"
-            onClick={onToggleCollapsed}
-            className="flex h-8 w-8 shrink-0 items-center justify-center font-mono text-[13px] text-[hsl(var(--accent))] transition-colors hover:bg-[hsl(var(--bg))] hover:text-[hsl(var(--text-primary))]"
-            style={{ borderRadius: "var(--radius)" }}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
-          </button>
+        <div className={collapsed ? "flex flex-col items-center gap-2" : "flex items-center gap-2"}>
+          <ShellYouMark collapsed={collapsed} />
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
-                <span className="text-[hsl(var(--accent))]">you</span>.md
-              </div>
-              <div className="truncate font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-45">
+              <div className="truncate font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-45">
                 @{username}
               </div>
             </div>
           )}
-          {!collapsed && (
-            <button
-              type="button"
-              onClick={onTogglePanel}
-              className="flex h-8 w-8 shrink-0 items-center justify-center text-[hsl(var(--text-secondary))] opacity-45 transition-[opacity,background] hover:bg-[hsl(var(--bg))] hover:opacity-90"
-              style={{ borderRadius: "var(--radius)" }}
-              aria-label={panelOpen ? "Hide detail pane" : "Show detail pane"}
-              title={panelOpen ? "Hide detail pane" : "Show detail pane"}
-            >
-              {panelOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center font-mono text-[hsl(var(--text-secondary))] opacity-55 transition-[background,color,opacity] hover:bg-[hsl(var(--bg))] hover:text-[hsl(var(--text-primary))] hover:opacity-95"
+            style={{ borderRadius: "var(--radius)" }}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+          </button>
         </div>
 
         <div className={collapsed ? "mt-2 flex flex-col gap-1" : "mt-3 space-y-1"}>
@@ -598,45 +647,47 @@ function ShellSidebar({
 
       <nav className={collapsed ? "flex-1 overflow-y-auto px-2 pb-3" : "flex-1 overflow-y-auto px-3 pb-3"}>
         <div className="space-y-3.5">
-          {groups.map((group) => (
-            <section key={group.label} aria-label={group.label}>
-              {!collapsed && (
-                <div className="mb-1 px-2 font-mono text-[8px] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))] opacity-[0.32]">
-                  {group.label}
-                </div>
-              )}
+          {collapsed ? (
+            <section aria-label="primary shell navigation">
               <div className="space-y-0.5">
-                {group.items.map((item) => (
+                {collapsedItems.map((item) => (
                   <ShellSidebarButton
-                    key={`${group.label}-${item.label}`}
+                    key={item.label}
                     item={item}
-                    collapsed={collapsed}
+                    collapsed
                     active={rightPane === item.pane}
                     onClick={() => onOpenPane(item.pane, item.subTab)}
                   />
                 ))}
               </div>
             </section>
-          ))}
-          <section aria-label="saved chats" className="pt-1">
-            {!collapsed && (
+          ) : (
+            groups.map((group) => (
+              <section key={group.label} aria-label={group.label}>
+                <div className="mb-1 px-2 font-mono text-[8px] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))] opacity-[0.32]">
+                  {group.label}
+                </div>
+                <div className="space-y-0.5">
+                  {group.items.map((item) => (
+                    <ShellSidebarButton
+                      key={`${group.label}-${item.label}`}
+                      item={item}
+                      collapsed={collapsed}
+                      active={rightPane === item.pane}
+                      onClick={() => onOpenPane(item.pane, item.subTab)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
+          {!collapsed && (
+            <section aria-label="saved chats" className="pt-1">
               <div className="mb-1 px-2 font-mono text-[8px] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))] opacity-[0.32]">
                 chats
               </div>
-            )}
-            <div className="space-y-0.5">
-              {collapsed ? (
-                <button
-                  type="button"
-                  onClick={() => activeSessionId && onOpenChatSession(activeSessionId)}
-                  className="flex h-8 w-full items-center justify-center text-[hsl(var(--text-secondary))] opacity-55 transition-[opacity,background] hover:bg-[hsl(var(--bg))] hover:opacity-95"
-                  style={{ borderRadius: "var(--radius)" }}
-                  title="Saved chats"
-                  aria-label="Saved chats"
-                >
-                  <MessageSquareText size={14} />
-                </button>
-              ) : recentSessions === undefined ? (
+              <div className="space-y-0.5">
+                {recentSessions === undefined ? (
                 <div className="px-2 py-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
                   syncing sessions...
                 </div>
@@ -685,8 +736,9 @@ function ShellSidebar({
                   );
                 })
               )}
-            </div>
-          </section>
+              </div>
+            </section>
+          )}
         </div>
       </nav>
 
@@ -957,6 +1009,20 @@ export function DashboardContent() {
     focusShellInput();
   }, [agent, focusShellInput]);
 
+  const runPublish = useCallback(() => {
+    setMobileView("terminal");
+    agent.handleSlashCommand("/publish");
+    focusShellInput();
+  }, [agent, focusShellInput]);
+
+  const openSourceUpdate = useCallback(() => {
+    openPane("edit", "sources");
+  }, [openPane]);
+
+  const openDeploySurface = useCallback(() => {
+    openPane("github");
+  }, [openPane]);
+
   const openChatSession = useCallback(async (sessionId: string) => {
     if (sessionId === agent.currentSessionId) {
       setMobileView("terminal");
@@ -1144,15 +1210,36 @@ export function DashboardContent() {
           loadingSessionId={loadingSessionId}
           rightPane={rightPane}
           collapsed={effectiveSidebarCollapsed}
-          panelOpen={panelOpen}
           onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
-          onTogglePanel={() => setPanelOpen((value) => !value)}
           onOpenPane={openPane}
           onNewChat={startNewChat}
           onSearch={openSearch}
           onOpenChatSession={openChatSession}
         />
         <div className="flex min-w-0 flex-1 flex-col bg-[hsl(var(--bg))]">
+          <div className="hidden h-10 shrink-0 items-center justify-between border-b border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] px-3 md:flex">
+            <div className="flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPanelOpen((value) => !value)}
+                className="flex h-8 w-8 cursor-pointer items-center justify-center text-[hsl(var(--text-secondary))] opacity-55 transition-[background,color,opacity] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))] hover:opacity-95"
+                style={{ borderRadius: "var(--radius)" }}
+                aria-label={panelOpen ? "Hide detail pane" : "Show detail pane"}
+                title={panelOpen ? "Hide detail pane" : "Show detail pane"}
+              >
+                {panelOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
+              </button>
+              <span className="hidden truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35 lg:block">
+                {githubConnection?.repoFullName ?? `you.md/${username}`}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <ShellTopActionButton label="github" icon={Github} onClick={() => openPane("github")} />
+              <ShellTopActionButton label="update" icon={RefreshCw} onClick={openSourceUpdate} />
+              <ShellTopActionButton label="publish" icon={UploadCloud} onClick={runPublish} emphasis />
+              <ShellTopActionButton label="deploy" icon={Rocket} onClick={openDeploySurface} />
+            </div>
+          </div>
           {/* Mobile nav — single row: scrollable pane tabs + compact status */}
           <div className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] md:hidden">
             <div className="flex items-center justify-between px-1">
