@@ -8,6 +8,7 @@
 - Replaced the right pane's full public-profile render with the compact actionable profile inspector, removing the clipped giant profile/ASCII layout from the shell detail pane.
 - Shortened and wrapped right-pane navigation labels so tabs remain visible and usable instead of scrolling into clipped labels.
 - Flattened the compact profile inspector by removing unnecessary inner card borders around actions, projects, preferences, values, and portrait sources.
+- Verified with `npm run lint`, `npm run build`, `npm run docs:check`, and authenticated production browser QA. Vercel deployment `dpl_Cwjg25ybGryr6ZYmCEjrtvEfLxGM` reached Ready and is aliased to `https://www.you.md` / `https://you.md`; production QA confirmed no horizontal overflow, ~597px chat / ~751px detail pane at 1600px, and full-width shell/preview toggle behavior at 900px.
 
 ## 2026-06-16 — Personal API context routing preservation
 

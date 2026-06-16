@@ -7,9 +7,9 @@ Last Updated: 2026-06-16
 ## 2026-06-16 — Preserve h.computer platform ideas in You.md
 
 ### 123. Clean up `/shell` right detail pane responsiveness and usefulness
-**Status:** IN PROGRESS (code complete locally; authenticated production visual approval pending)
+**Status:** IN PROGRESS (code complete and deployed; Houston visual approval pending)
 **Verified:** NO
-**Production Verified:** NO
+**Production Verified:** YES (agent-authenticated browser QA)
 **Source:** 2026-06-16 — Houston: "yo look at the design please ensure it is properly responsive the right side panel should be really re-thought and cleaned up and ensure it is always fully responsive and actually intuitive, minimal, clean actionable and USEFUL please..."
 **Actionable Scope:**
 1. Rebalance desktop shell split so the right detail pane cannot collapse into an unusable clipped column while preserving a usable chat width. **DONE locally.**
@@ -17,8 +17,8 @@ Last Updated: 2026-06-16
 3. Replace the profile detail pane's full public-profile render with a compact actionable inspector. **DONE locally.**
 4. Clean up right-pane navigation so labels are shorter, wrap cleanly, and do not clip horizontally. **DONE locally.**
 5. Reduce nested boxes in the profile inspector so the pane feels more seamless and useful. **DONE locally.**
-6. Verify responsive layout visually in an authenticated browser session after deploy. **PENDING.**
-**Progress (2026-06-16):** Updated shell split constants, moved split mode to `lg`, shortened/wrapped right-pane header navigation, swapped `ProfileContent` for `ProfilePane`, and flattened the compact profile pane. Local `npm run lint` and `npm run build` passed; localhost browser was unauthenticated, so authenticated visual QA remains pending after deploy.
+6. Verify responsive layout visually in an authenticated browser session after deploy. **DONE via agent QA; Houston visual approval pending.**
+**Progress (2026-06-16):** Updated shell split constants, moved split mode to `lg`, shortened/wrapped right-pane header navigation, swapped `ProfileContent` for `ProfilePane`, and flattened the compact profile pane. Local `npm run lint`, `npm run build`, `npm run docs:check`, and `git diff --check` passed. Pushed commit `380c1ce`; Vercel deployment `dpl_Cwjg25ybGryr6ZYmCEjrtvEfLxGM` reached Ready and is aliased to `https://www.you.md` / `https://you.md`. Authenticated production browser QA confirmed no horizontal overflow, the compact profile inspector is mounted, the 1600px split renders about 597px chat / 751px detail, and the 900px shell uses a full-width shell/preview toggle. Remaining: Houston visual approval.
 
 ### 122. Save and route personal API / human context protocol / YouStacks ideas into You.md
 **Status:** IN PROGRESS (docs/context captured; future product implementation pending)
