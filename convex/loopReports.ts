@@ -659,6 +659,25 @@ export const listArtifacts = query({
   },
 });
 
+export const listSnapshotsForRun = query({
+  args: {
+    clerkId: v.string(),
+    runId: v.id("loopReportRuns"),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId);
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    const run = await ctx.db.get(args.runId);
+    if (!owner || !run || run.userId !== owner._id) throw new Error("Loop report run not found");
+
+    const snapshots = await Promise.all(run.sourceSnapshotIds.map((id) => ctx.db.get(id)));
+    return snapshots.filter((snapshot): snapshot is Doc<"sourceSnapshots"> => snapshot !== null);
+  },
+});
+
 export const runDailyBriefingNow = mutation({
   args: {
     clerkId: v.string(),

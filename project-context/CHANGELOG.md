@@ -23,6 +23,7 @@
 ### feat(web): make loop reports visible and manageable in shell
 - Added a Reports workspace control panel that shows loop definitions, active counts, recent runs, and generated artifacts.
 - Owners can seed the default daily loops, manually run the daily briefing, pause/resume loop definitions, and open generated markdown artifacts from the same Files/Reports surface.
+- Added owner-only source snapshot drilldown for report runs, including normalized facts, raw hashes, trust levels, connector/source kind, and capture windows.
 
 ## 2026-06-16 — Shell GitHub update chrome and usage surface
 

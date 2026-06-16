@@ -118,6 +118,25 @@ describe("loop reports", () => {
       "repo-mirror",
       "sources",
     ]);
+
+    const runSnapshots = await asOwner.query(api.loopReports.listSnapshotsForRun, {
+      clerkId: CLERK,
+      runId: result.runId,
+    });
+    expect(runSnapshots.map((s) => s.sourceKey).sort()).toEqual([
+      "agent-activity",
+      "projects",
+      "repo-mirror",
+      "sources",
+    ]);
+    expect(runSnapshots.find((s) => s.sourceKey === "projects")?.normalized).toEqual([
+      {
+        name: "You.md",
+        status: "building",
+        url: "https://you.md",
+        description: "Identity context protocol for the agent internet.",
+      },
+    ]);
   });
 
   it("cron runner processes due daily report definitions", async () => {

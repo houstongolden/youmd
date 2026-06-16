@@ -21,6 +21,7 @@ type WorkspaceMode = "files" | "artifacts" | "reports";
 type LoopReportDefinition = Doc<"loopReportDefinitions">;
 type LoopReportRun = Doc<"loopReportRuns">;
 type LoopReportArtifact = Doc<"loopReportArtifacts">;
+type SourceSnapshot = Doc<"sourceSnapshots">;
 
 type ArtifactTemplate = {
   id: string;
@@ -208,6 +209,11 @@ function timeAgo(timestamp?: number): string {
 
 function reportArtifactPath(artifact: LoopReportArtifact): string {
   return `reports/generated/${artifact.definitionSlug}/${new Date(artifact.createdAt).toISOString().slice(0, 10)}-${artifact._id}.md`;
+}
+
+function jsonPreview(value: unknown, maxLength = 900): string {
+  const rendered = JSON.stringify(value, null, 2) ?? "null";
+  return rendered.length > maxLength ? `${rendered.slice(0, maxLength - 3)}...` : rendered;
 }
 
 // ── Visibility helpers ──────────────────────────────────────────────────
@@ -446,6 +452,9 @@ function ArtifactHome({
   onSeedLoopDefaults,
   onRunDailyBriefing,
   onToggleLoopDefinition,
+  selectedRunId,
+  loopSnapshots,
+  onSelectRun,
 }: {
   mode: WorkspaceMode;
   files: VirtualFile[];
@@ -459,6 +468,9 @@ function ArtifactHome({
   onSeedLoopDefaults: () => void;
   onRunDailyBriefing: () => void;
   onToggleLoopDefinition: (definition: LoopReportDefinition) => void;
+  selectedRunId: Id<"loopReportRuns"> | null;
+  loopSnapshots: SourceSnapshot[] | undefined;
+  onSelectRun: (runId: Id<"loopReportRuns">) => void;
 }) {
   const recent = files.slice(0, 8);
   const showTemplates = mode === "reports" || mode === "artifacts";
@@ -490,6 +502,9 @@ function ArtifactHome({
             onRunDailyBriefing={onRunDailyBriefing}
             onToggleDefinition={onToggleLoopDefinition}
             onSelectArtifact={onSelect}
+            selectedRunId={selectedRunId}
+            snapshots={loopSnapshots}
+            onSelectRun={onSelectRun}
           />
         )}
 
@@ -572,6 +587,9 @@ function LoopReportsControlPanel({
   onRunDailyBriefing,
   onToggleDefinition,
   onSelectArtifact,
+  selectedRunId,
+  snapshots,
+  onSelectRun,
 }: {
   definitions: LoopReportDefinition[];
   runs: LoopReportRun[];
@@ -582,9 +600,14 @@ function LoopReportsControlPanel({
   onRunDailyBriefing: () => void;
   onToggleDefinition: (definition: LoopReportDefinition) => void;
   onSelectArtifact: (path: string) => void;
+  selectedRunId: Id<"loopReportRuns"> | null;
+  snapshots: SourceSnapshot[] | undefined;
+  onSelectRun: (runId: Id<"loopReportRuns">) => void;
 }) {
   const activeCount = definitions.filter((definition) => definition.status === "active").length;
   const latestRun = runs[0];
+  const selectedRun = runs.find((run) => run._id === selectedRunId) ?? latestRun ?? null;
+  const shownSnapshots = selectedRunId ? snapshots : undefined;
 
   return (
     <div className="space-y-4">
@@ -700,7 +723,14 @@ function LoopReportsControlPanel({
           {runs.length ? (
             <div className="divide-y divide-[hsl(var(--border))] border-y border-[hsl(var(--border))]">
               {runs.slice(0, 5).map((run) => (
-                <div key={run._id} className="px-1 py-2">
+                <button
+                  key={run._id}
+                  type="button"
+                  onClick={() => onSelectRun(run._id)}
+                  className={`w-full px-1 py-2 text-left hover:bg-[hsl(var(--bg-raised))] ${
+                    selectedRunId === run._id ? "bg-[hsl(var(--bg-raised))]" : ""
+                  }`}
+                >
                   <div className="flex items-center justify-between gap-3">
                     <span className="min-w-0 truncate font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-75">
                       {run.definitionSlug}
@@ -712,7 +742,7 @@ function LoopReportsControlPanel({
                   <p className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
                     {run.windowStart.slice(0, 10)} / {run.sourceSnapshotIds.length} snapshots / started {timeAgo(run.startedAt)}
                   </p>
-                </div>
+                </button>
               ))}
             </div>
           ) : (
@@ -756,6 +786,73 @@ function LoopReportsControlPanel({
           )}
         </div>
       </div>
+
+      {selectedRun && (
+        <div className="space-y-2">
+          <p className="font-mono text-[10px] uppercase text-[hsl(var(--text-secondary))] opacity-40">
+            source snapshots
+          </p>
+          <div className="border-y border-[hsl(var(--border))]">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-2">
+              <div className="min-w-0">
+                <p className="truncate font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-75">
+                  {selectedRun.definitionSlug} / {selectedRun.windowStart.slice(0, 10)}
+                </p>
+                <p className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                  {selectedRun.sourceSnapshotIds.length} expected snapshots / status {selectedRun.status}
+                </p>
+              </div>
+              {!selectedRunId && (
+                <button
+                  type="button"
+                  onClick={() => onSelectRun(selectedRun._id)}
+                  className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100"
+                >
+                  inspect
+                </button>
+              )}
+            </div>
+
+            {selectedRunId && shownSnapshots === undefined ? (
+              <p className="px-1 py-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40">
+                loading source snapshots...
+              </p>
+            ) : selectedRunId && shownSnapshots && shownSnapshots.length > 0 ? (
+              <div className="divide-y divide-[hsl(var(--border))]">
+                {shownSnapshots.map((snapshot) => (
+                  <div key={snapshot._id} className="px-1 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80">
+                        {snapshot.sourceKey}
+                      </span>
+                      <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">
+                        {snapshot.connectorKind} / {snapshot.sourceType}
+                      </span>
+                      <span className="font-mono text-[9px] text-[hsl(var(--success))] opacity-70">
+                        {snapshot.trustLevel}
+                      </span>
+                    </div>
+                    <p className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                      {snapshot.windowStart.slice(0, 10)} / {snapshot.windowEnd.slice(0, 10)} / hash {snapshot.rawHash.slice(0, 16)} / captured {timeAgo(snapshot.capturedAt)}
+                    </p>
+                    <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap break-words bg-[hsl(var(--bg))] px-2 py-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-70">
+                      {jsonPreview(snapshot.normalized)}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            ) : selectedRunId ? (
+              <p className="px-1 py-3 text-[12px] text-[hsl(var(--text-secondary))] opacity-50">
+                no source snapshots found for this run.
+              </p>
+            ) : (
+              <p className="px-1 pb-3 text-[12px] text-[hsl(var(--text-secondary))] opacity-50">
+                select a run to inspect the source facts behind the report.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1109,6 +1206,11 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const [customFiles, setCustomFiles] = useState<VirtualFile[]>([]);
   const [loopBusy, setLoopBusy] = useState(false);
   const [loopStatus, setLoopStatus] = useState<string | null>(null);
+  const [selectedLoopRunId, setSelectedLoopRunId] = useState<Id<"loopReportRuns"> | null>(null);
+  const loopSnapshots = useQuery(
+    api.loopReports.listSnapshotsForRun,
+    clerkId && selectedLoopRunId ? { clerkId, runId: selectedLoopRunId } : "skip"
+  );
 
   // Convert privateContext table data into virtual files under private/
   const privateContextFiles = useMemo<VirtualFile[]>(() => {
@@ -1405,6 +1507,10 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     }
   }, [user, updateLoopDefinitionStatus]);
 
+  const handleSelectLoopRun = useCallback((runId: Id<"loopReportRuns">) => {
+    setSelectedLoopRunId((current) => current === runId ? null : runId);
+  }, []);
+
   // ── Create new custom directory ───────────────────────────────────────
 
   const handleCreateDirectory = useCallback(async (dirName: string) => {
@@ -1663,6 +1769,9 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
               onSeedLoopDefaults={handleSeedLoopDefaults}
               onRunDailyBriefing={handleRunDailyBriefing}
               onToggleLoopDefinition={handleToggleLoopDefinition}
+              selectedRunId={selectedLoopRunId}
+              loopSnapshots={loopSnapshots}
+              onSelectRun={handleSelectLoopRun}
             />
           )}
         </div>
