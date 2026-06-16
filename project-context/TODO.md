@@ -13,8 +13,9 @@ PRD Version: 2.3
 - [x] Make `youmd login` wait for Enter before opening the browser and use `you.md/auth`
 - [x] Replace the plain browser completion copy with a branded success page that confirms web + local agent auth and links to `/shell`
 - [x] Update the curl installer next steps around login, pull, sync, and `you`
+- [x] Make the curl installer source-install from GitHub `main` by default, with npm fallback, so fresh machines receive the current local-agent runtime before npm publish catches up
 - [x] Bump/build the CLI package to `0.8.2` for publish
-- [ ] Publish `youmd@0.8.2` to npm after OTP so the public curl installer gets the new CLI behavior
+- [ ] Publish `youmd@0.8.2` to npm after OTP so npm installs match the curl/source runtime
 - [ ] Add a true first-run `you` onboarding branch that detects fresh auth/no local bundle and walks the user through pull/sync/skills/stacks
 
 ### 2026-06-16 — Shell GitHub update chrome and usage surface
