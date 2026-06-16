@@ -9,6 +9,8 @@
 - Shortened and wrapped right-pane navigation labels so tabs remain visible and usable instead of scrolling into clipped labels.
 - Flattened the compact profile inspector by removing unnecessary inner card borders around actions, projects, preferences, values, and portrait sources.
 - Verified with `npm run lint`, `npm run build`, `npm run docs:check`, and authenticated production browser QA. Vercel deployment `dpl_Cwjg25ybGryr6ZYmCEjrtvEfLxGM` reached Ready and is aliased to `https://www.you.md` / `https://you.md`; production QA confirmed no horizontal overflow, ~597px chat / ~751px detail pane at 1600px, and full-width shell/preview toggle behavior at 900px.
+- Follow-up hotfix restored the desktop shell chrome at `md` widths after the `lg` split behavior accidentally hid the app sidebar/top actions/right preview for narrow desktop users.
+- Added explicit flex shrink/overflow containment to the shell split so long right-pane tabs/content cannot push the detail pane past the viewport. Vercel deployment `dpl_8ygDyGiGWCyz97F1ZQuG2WtJQQzH` reached Ready and is aliased to `https://www.you.md` / `https://you.md`; authenticated production QA at 900px confirmed the sidebar, top actions, resize handle, and right pane render together with 56px rail / 460px chat / 8px handle / 376px detail and no horizontal overflow.
 
 ## 2026-06-16 — Personal API context routing preservation
 

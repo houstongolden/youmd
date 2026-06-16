@@ -13,6 +13,8 @@ PRD Version: 2.3
 - [x] Replace the shell profile detail pane's full public-profile render with the compact actionable profile inspector
 - [x] Shorten and wrap right-pane navigation labels so they remain visible at narrower pane widths
 - [x] Flatten the compact profile inspector to reduce nested boxes and make actions/project/preference rows feel more seamless
+- [x] Restore the left sidebar, top action chrome, and right detail split at narrow desktop widths after the responsive breakpoint regression
+- [x] Add flex shrink/overflow containment so the right detail pane cannot push the shell wider than the viewport
 
 ### 2026-06-15 — You.md connected apps + connector/crawler MVP
 - [x] Add first-class connected-app grants with hashed `yg_` tokens, resource scopes, action scopes, write policy, trust level, expiry, revocation, and owner CRUD queries/mutations
