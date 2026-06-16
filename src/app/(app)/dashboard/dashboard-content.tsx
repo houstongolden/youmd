@@ -1,7 +1,7 @@
 "use client";
 
 import { SignOutButton, useUser } from "@/lib/you-auth";
-import { useQuery, useMutation, useConvexAuth } from "convex/react";
+import { useQuery, useMutation, useConvex, useConvexAuth } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import {
   useCallback,
@@ -13,7 +13,7 @@ import {
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AsciiAvatar from "@/components/AsciiAvatar";
-import { useYouAgent, type RightPane } from "@/hooks/useYouAgent";
+import { useYouAgent, type RestorableChatSession, type RightPane } from "@/hooks/useYouAgent";
 import { TerminalShell } from "@/components/terminal/TerminalShell";
 import { EditPane, type EditSubTab } from "@/components/panes/EditPane";
 import { SharePane } from "@/components/panes/SharePane";
@@ -37,6 +37,7 @@ import {
   KeyRound,
   Layers3,
   LogOut,
+  MessageSquareText,
   Monitor,
   Moon,
   PanelRightClose,
@@ -202,6 +203,22 @@ function formatRelativeTime(ts: number): string {
 
 function isFreshTimestamp(ts: number): boolean {
   return Date.now() - ts < FRESH_WINDOW_MS;
+}
+
+type ShellChatSession = {
+  sessionId: string;
+  surface: string;
+  summary?: string;
+  messageCount: number;
+  lastMessageAt: number;
+  createdAt: number;
+};
+
+function chatSessionTitle(session: ShellChatSession): string {
+  const summary = session.summary?.trim();
+  if (summary) return summary;
+  const shortId = session.sessionId.slice(0, 8);
+  return `chat ${shortId}`;
 }
 
 /**
@@ -377,6 +394,9 @@ function ShellSidebar({
   isPublished,
   syncedAt,
   githubRepoName,
+  recentSessions,
+  activeSessionId,
+  loadingSessionId,
   rightPane,
   collapsed,
   panelOpen,
@@ -385,6 +405,7 @@ function ShellSidebar({
   onOpenPane,
   onNewChat,
   onSearch,
+  onOpenChatSession,
 }: {
   username: string;
   displayName?: string | null;
@@ -395,6 +416,9 @@ function ShellSidebar({
   isPublished: boolean;
   syncedAt: number | null;
   githubRepoName?: string | null;
+  recentSessions?: ShellChatSession[];
+  activeSessionId?: string | null;
+  loadingSessionId?: string | null;
   rightPane: RightPane;
   collapsed: boolean;
   panelOpen: boolean;
@@ -403,6 +427,7 @@ function ShellSidebar({
   onOpenPane: (pane: RightPane, subTab?: EditSubTab) => void;
   onNewChat: () => void;
   onSearch: () => void;
+  onOpenChatSession: (sessionId: string) => void;
 }) {
   const [accountOpen, setAccountOpen] = useState(false);
   const [theme, setTheme] = useState<ThemePreference>(() => readThemePreference());
@@ -438,16 +463,6 @@ function ShellSidebar({
 
   const groups: ShellSidebarGroup[] = [
     {
-      label: "workspace",
-      items: [
-        { label: "Profile", detail: `you.md/${username}`, icon: UserRound, pane: "profile" },
-        { label: "Files", detail: "markdown brain", icon: FileText, pane: "files" },
-        { label: "Share", detail: "links + publish", icon: Share2, pane: "share" },
-        { label: "Analytics", detail: "reads + views", icon: BarChart3, pane: "analytics" },
-        { label: "Portrait", detail: "ascii identity", icon: Image, pane: "portrait" },
-      ],
-    },
-    {
       label: "projects",
       items: [
         {
@@ -462,29 +477,39 @@ function ShellSidebar({
       ],
     },
     {
+      label: "personal api",
+      items: [
+        { label: "API / MCP", detail: "scoped agent access", icon: Code2, pane: "github" },
+        { label: "API Tokens", detail: "private grants", icon: KeyRound, pane: "settings" },
+        { label: "Shared Links", detail: "scoped context", icon: Shield, pane: "share" },
+        { label: "Vault", detail: "secrets", icon: BookOpen, pane: "vault" },
+      ],
+    },
+    {
       label: "skillstacks",
       items: [
-        { label: "YouStacks", detail: "private/scoped/public", icon: Layers3, pane: "stacks" },
+        { label: "YouStack", detail: "your default stack", icon: Layers3, pane: "stacks" },
         { label: "Skills", detail: "templates + tools", icon: Wrench, pane: "skills" },
         { label: "Agents", detail: "activity + MCP", icon: Bot, pane: "agents" },
       ],
     },
     {
-      label: "automation",
+      label: "connect",
       items: [
-        { label: "Connectors", detail: "github + sources", icon: Plug, pane: "github" },
-        { label: "Crawlers", detail: "source refresh", icon: Radar, pane: "edit", subTab: "sources" },
+        { label: "Connectors", detail: "github + apps", icon: Plug, pane: "github" },
+        { label: "Sources", detail: "web + repo context", icon: Radar, pane: "edit", subTab: "sources" },
         { label: "Crons", detail: "monitors + cadence", icon: Clock3, pane: "edit", subTab: "sources" },
         { label: "Activity", detail: "agent run log", icon: Activity, pane: "agents" },
       ],
     },
     {
-      label: "access",
+      label: "identity",
       items: [
-        { label: "API Tokens", detail: "private access", icon: KeyRound, pane: "settings" },
-        { label: "MCP Docs", detail: "agent handoff", icon: Code2, pane: "help" },
-        { label: "Shared Links", detail: "scoped context", icon: Shield, pane: "share" },
-        { label: "Vault", detail: "secrets", icon: BookOpen, pane: "vault" },
+        { label: "Profile", detail: `you.md/${username}`, icon: UserRound, pane: "profile" },
+        { label: "Files", detail: "markdown brain", icon: FileText, pane: "files" },
+        { label: "Share", detail: "links + publish", icon: Share2, pane: "share" },
+        { label: "Portrait", detail: "ascii identity", icon: Image, pane: "portrait" },
+        { label: "Analytics", detail: "reads + views", icon: BarChart3, pane: "analytics" },
         { label: "Account", detail: "settings", icon: Settings, pane: "settings" },
       ],
     },
@@ -593,6 +618,75 @@ function ShellSidebar({
               </div>
             </section>
           ))}
+          <section aria-label="saved chats" className="pt-1">
+            {!collapsed && (
+              <div className="mb-1 px-2 font-mono text-[8px] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))] opacity-[0.32]">
+                chats
+              </div>
+            )}
+            <div className="space-y-0.5">
+              {collapsed ? (
+                <button
+                  type="button"
+                  onClick={() => activeSessionId && onOpenChatSession(activeSessionId)}
+                  className="flex h-8 w-full items-center justify-center text-[hsl(var(--text-secondary))] opacity-55 transition-[opacity,background] hover:bg-[hsl(var(--bg))] hover:opacity-95"
+                  style={{ borderRadius: "var(--radius)" }}
+                  title="Saved chats"
+                  aria-label="Saved chats"
+                >
+                  <MessageSquareText size={14} />
+                </button>
+              ) : recentSessions === undefined ? (
+                <div className="px-2 py-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                  syncing sessions...
+                </div>
+              ) : recentSessions.length === 0 ? (
+                <div className="px-2 py-1 font-mono text-[9px] leading-4 text-[hsl(var(--text-secondary))] opacity-35">
+                  conversations save here after your first turn
+                </div>
+              ) : (
+                recentSessions.slice(0, 5).map((session) => {
+                  const isActive = session.sessionId === activeSessionId;
+                  const isLoading = session.sessionId === loadingSessionId;
+                  return (
+                    <button
+                      key={session.sessionId}
+                      type="button"
+                      onClick={() => onOpenChatSession(session.sessionId)}
+                      className={[
+                        "group relative flex min-h-8 w-full items-center gap-2 px-2 py-1 text-left font-mono transition-[background,color,opacity]",
+                        isActive
+                          ? "bg-[hsl(var(--accent))]/[0.055] text-[hsl(var(--text-primary))]"
+                          : "text-[hsl(var(--text-secondary))] opacity-55 hover:bg-[hsl(var(--bg))]/70 hover:opacity-95",
+                      ].join(" ")}
+                      style={{ borderRadius: "var(--radius)" }}
+                      title={`${chatSessionTitle(session)} - ${formatRelativeTime(session.lastMessageAt)}`}
+                    >
+                      {isActive && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute left-0 top-1/2 h-3.5 w-px -translate-y-1/2 bg-[hsl(var(--accent))]"
+                        />
+                      )}
+                      <MessageSquareText
+                        size={14}
+                        strokeWidth={1.75}
+                        className={isActive ? "shrink-0 text-[hsl(var(--accent))]" : "shrink-0 text-current"}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[10px] leading-4">
+                          {isLoading ? "opening..." : chatSessionTitle(session)}
+                        </span>
+                        <span className="block truncate text-[8.5px] opacity-40">
+                          {session.messageCount} msgs / {formatRelativeTime(session.lastMessageAt)}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </section>
         </div>
       </nav>
 
@@ -735,6 +829,7 @@ function ShellSidebar({
 export function DashboardContent() {
   const { user } = useUser();
   const { isAuthenticated } = useConvexAuth();
+  const convex = useConvex();
   const router = useRouter();
   const searchParams = useSearchParams();
   // Gate on isAuthenticated so the query only fires AFTER Convex has
@@ -757,6 +852,12 @@ export function DashboardContent() {
     api.github.getConnection,
     isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
   );
+  const recentSessions = useQuery(
+    api.memories.listSessions,
+    isAuthenticated && user?.id && convexUser?._id
+      ? { clerkId: user.id, userId: convexUser._id, limit: 8 }
+      : "skip"
+  );
 
   // Post-OAuth redirect lands at /shell?integration=github — open the github
   // pane from the initial state (deriving here avoids a setState-in-effect that
@@ -771,6 +872,7 @@ export function DashboardContent() {
   const [chatWidth, setChatWidth] = useState<number>(() => readStoredChatWidth());
   const [editInitialSubTab, setEditInitialSubTab] = useState<EditSubTab>("files");
   const [viewportWidth, setViewportWidth] = useState(0);
+  const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Staleness nudge — derived once bundle data loads; guarded once per session
@@ -843,9 +945,9 @@ export function DashboardContent() {
   }, [agent.textareaRef]);
 
   const startNewChat = useCallback(() => {
+    agent.startNewSession();
     agent.setInput("");
     setMobileView("terminal");
-    agent.addSystemMessage("[new chat]\n\nfresh prompt ready.");
     focusShellInput();
   }, [agent, focusShellInput]);
 
@@ -854,6 +956,37 @@ export function DashboardContent() {
     agent.setInput("/");
     focusShellInput();
   }, [agent, focusShellInput]);
+
+  const openChatSession = useCallback(async (sessionId: string) => {
+    if (sessionId === agent.currentSessionId) {
+      setMobileView("terminal");
+      focusShellInput();
+      return;
+    }
+    setMobileView("terminal");
+    if (!user?.id || !convexUser?._id) {
+      agent.addSystemMessage("[session unavailable]\n\nthat saved chat could not be loaded.");
+      return;
+    }
+    setLoadingSessionId(sessionId);
+    try {
+      const session = await convex.query(api.memories.loadChatMessagesBySession, {
+        clerkId: user.id,
+        userId: convexUser._id,
+        sessionId,
+      });
+      if (!session) {
+        agent.addSystemMessage("[session unavailable]\n\nthat saved chat could not be loaded.");
+        return;
+      }
+      agent.restoreSession(session as RestorableChatSession);
+      focusShellInput();
+    } catch {
+      agent.addSystemMessage("[session unavailable]\n\nthat saved chat could not be loaded.");
+    } finally {
+      setLoadingSessionId(null);
+    }
+  }, [agent, convex, convexUser?._id, focusShellInput, user?.id]);
 
   const startColumnResize = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
     const container = splitContainerRef.current;
@@ -1006,6 +1139,9 @@ export function DashboardContent() {
           isPublished={isPublished}
           syncedAt={syncedAt}
           githubRepoName={githubConnection?.repoFullName ?? null}
+          recentSessions={recentSessions as ShellChatSession[] | undefined}
+          activeSessionId={agent.currentSessionId}
+          loadingSessionId={loadingSessionId}
           rightPane={rightPane}
           collapsed={effectiveSidebarCollapsed}
           panelOpen={panelOpen}
@@ -1014,6 +1150,7 @@ export function DashboardContent() {
           onOpenPane={openPane}
           onNewChat={startNewChat}
           onSearch={openSearch}
+          onOpenChatSession={openChatSession}
         />
         <div className="flex min-w-0 flex-1 flex-col bg-[hsl(var(--bg))]">
           {/* Mobile nav — single row: scrollable pane tabs + compact status */}

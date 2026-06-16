@@ -328,7 +328,7 @@ Last Updated: 2026-06-15
 | SSR profiles directory | Done | SEO: no more empty loading state |
 | Profile breadcrumbs + rel=me | Done | SEO enhancement |
 | Dynamic custom sections | Done | Agent can add/modify sections via chat |
-| Persistent chat sessions | Done | Messages survive page refresh |
+| Persistent chat sessions | Done local | Messages survive page refresh; shell sidebar now lists recent saved Convex sessions, New Chat starts a fresh persisted session id, and clicking a saved session owner-gates then hydrates that chat history back into the terminal |
 | Streaming responses via SSE | Done | Real-time token output |
 | Portrait pane wired to real data | Done | Multi-source, format picker, detail picker |
 | CLI rich terminal renderer | Done | Tables, stats, code blocks, callouts |
@@ -336,6 +336,7 @@ Last Updated: 2026-06-15
 | Image paste in chat | Done | Web chat accepts pasted images |
 | Full-height shell workspace | Done local | `/shell` now drops the old terminal-window chrome and centered frame in favor of a full-height Codex/Lovable-style app workspace with a persistent far-left sidebar, New Chat/Search actions, Projects/Skillstacks/Automation/Access groups, synced GitHub repo status, desktop resizable chat/detail split, and a cleaner bottom command composer. Local browser QA covered desktop, mobile, sidebar crawler navigation, and no mobile horizontal overflow |
 | Shell polish pass | Done local / prod visual pending | Logged-in shell/dashboard surfaces hide the global top nav, the left sidebar auto-compacts when the split needs room, chat width is protected by pixel and percentage clamps, saved narrow split widths migrate up to the new default, sidebar rows no longer use bulky bordered pills or permanent subtext, and account/usage/settings/signout/theme controls now live in a bottom sidebar popout. Production visual approval remains pending |
+| Personal API/MCP stack gateway | Done local | Connectors pane now explains the secure personal API/MCP/stack surface, distinguishes `ystack` as the built-in base from the user's private `youstack` and custom `{name}stack`s, shows public/auth/token/share access levels, and frames GitHub/crawlers/grants as source-graph inputs. Architecture note captured in `project-context/PERSONAL_API_MCP_STACK_SURFACE_2026-06-15.md` |
 | Codex MCP local-vs-global split | Done | Codex uses the local `cli/dist` build inside the youmd repo and the published npm CLI everywhere else |
 | Curl-first landing/docs/help install path | Done | Hero, footer, docs, and in-app help now teach `curl -fsSL https://you.md/install.sh | bash` first while keeping npm as the fallback |
 | Profile directory responsive controls | Done | `/profiles` create CTA, filters, sort, and list/grid toggles now use compact responsive app-control styling |

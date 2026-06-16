@@ -19,12 +19,12 @@ interface StackCard {
 
 const STACKS: StackCard[] = [
   {
-    name: "Personal Agent Start",
-    slug: "personal-agent-start",
+    name: "Default YouStack",
+    slug: "youstack",
     domain: "personal-agent-ops",
     visibility: "private",
     status: "default",
-    description: "Your private starter stack for Claude Code, Codex, and Cursor: identity, project context, startup workflow, protected memory boundary, and host adapters.",
+    description: "Your private default stack for Claude Code, Codex, Cursor, and any agent you authorize: identity, project context, personal API routes, MCP tools, protected memory boundary, and host adapters.",
     install: "curl -fsSL https://you.md/install.sh | bash",
     skills: ["youstack-start", "youstack-maintainer", "project-context-init"],
     update: "auto-upgrade helper + stack doctor + smoke",
@@ -130,12 +130,33 @@ export function StacksPane() {
     <div className="h-full overflow-y-auto">
       <PaneHeader>youstacks</PaneHeader>
       <div className="px-6 py-6 max-w-3xl">
+        <PaneSectionLabel>stack names</PaneSectionLabel>
+        <div className="mb-6 grid gap-3 md:grid-cols-3">
+          {[
+            ["ystack", "built-in base", "You.md runtime, docs, API/MCP defaults, install path, and protected platform behavior."],
+            ["youstack", "your default", "The owner-controlled personal stack every authorized agent can learn how to use."],
+            ["{name}stack", "custom", "Optional named stacks for a project, domain, client, lab, or workflow."],
+          ].map(([name, status, detail]) => (
+            <div key={name} className="border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/45 px-3 py-3">
+              <div className="flex items-center gap-2 font-mono text-[11px] text-[hsl(var(--text-primary))]">
+                <span>{name}</span>
+                <span className="ml-auto text-[8px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-55">
+                  {status}
+                </span>
+              </div>
+              <p className="mt-2 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">
+                {detail}
+              </p>
+            </div>
+          ))}
+        </div>
+
         <PaneSectionLabel>stack portfolio</PaneSectionLabel>
         <p className="mb-4 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-60">
-          You.md has four layers: brain, stacks, runtime, and protected API/MCP.
-          Stacks are the named expertise layer. Keep coding, research, content,
-          and BAMFStack-style workflows separate, private by default, and safe
-          to install into any agent.
+          You.md has four layers: brain, ystack runtime, user-owned youstacks,
+          and protected API/MCP. Keep coding, research, content, and
+          BAMFStack-style workflows separate, private by default, and safe to
+          install into any agent.
         </p>
 
         <div className="space-y-3">
@@ -151,6 +172,7 @@ export function StacksPane() {
           <CopyableCommand command="/stacks" />
           <CopyableCommand command="/skill use youstack-maintainer" dimmed />
           <CopyableCommand command="youmd stack doctor --path cli/examples/youstack-bamfstack-public" dimmed />
+          <CopyableCommand command="propose the personal API endpoints my youstack should expose for other agents" dimmed />
           <CopyableCommand command="make my BAMFStack public after redacting secrets and running smoke checks" dimmed />
           <CopyableCommand command="create a private scientific research stack from my research workflow" dimmed />
         </div>
@@ -160,10 +182,11 @@ export function StacksPane() {
         <PaneSectionLabel>rules</PaneSectionLabel>
         <div className="space-y-2 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
           <p>1. Brain stores identity, memory, preferences, project context, and trust rules.</p>
-          <p>2. Stacks hold skills, workflows, docs, examples, prompts, evals, and host adapters.</p>
-          <p>3. Runtime is the one curl install plus auto-upgrade, doctor, smoke, and host linking.</p>
-          <p>4. Protected API/MCP gates private memories, tokens, connected tools, sync, and sensitive actions.</p>
-          <p>5. Self-improvement is policy-bound: doctor first, smoke before use, and remote writes only with approval.</p>
+          <p>2. ystack is the base runtime; youstack is the user&apos;s default personal stack.</p>
+          <p>3. Custom stacks hold skills, workflows, docs, examples, prompts, evals, host adapters, and API/MCP extensions.</p>
+          <p>4. Runtime is the one curl install plus auto-upgrade, doctor, smoke, and host linking.</p>
+          <p>5. Protected API/MCP gates private memories, tokens, connected tools, sync, and sensitive actions.</p>
+          <p>6. Self-improvement is policy-bound: doctor first, smoke before use, and remote writes only with approval.</p>
         </div>
       </div>
     </div>

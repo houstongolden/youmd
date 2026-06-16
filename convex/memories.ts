@@ -575,7 +575,7 @@ export const listSessions = query({
       .collect();
 
     return sessions
-      .sort((a, b) => b.createdAt - a.createdAt)
+      .sort((a, b) => b.lastMessageAt - a.lastMessageAt)
       .slice(0, args.limit ?? 20);
   },
 });
@@ -942,6 +942,50 @@ export const loadLatestChatMessages = query({
       llmMessages: messages.llmMessages,
       messageCount: latestSession.messageCount,
       summary: latestSession.summary,
+      updatedAt: messages.updatedAt,
+    };
+  },
+});
+
+/** Load chat messages for a specific session owned by the authenticated user */
+export const loadChatMessagesBySession = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    userId: v.id("users"),
+    sessionId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx, args.clerkId, args._internalAuthToken);
+
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!owner || owner._id !== args.userId) {
+      throw new Error("not authorized: userId does not match authenticated user");
+    }
+
+    const session = await ctx.db
+      .query("chatSessions")
+      .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
+      .first();
+
+    if (!session || session.userId !== args.userId) return null;
+
+    const messages = await ctx.db
+      .query("chatMessages")
+      .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
+      .first();
+
+    if (!messages || messages.userId !== args.userId) return null;
+
+    return {
+      sessionId: session.sessionId,
+      displayMessages: messages.displayMessages,
+      llmMessages: messages.llmMessages,
+      messageCount: session.messageCount,
+      summary: session.summary,
       updatedAt: messages.updatedAt,
     };
   },

@@ -45,6 +45,22 @@ import { JsonDirectiveStreamFilter, DIRECTIVE_SWALLOW_PLACEHOLDER } from "./stre
 export type { ThinkingCategory, ProgressStep, ChatMessage, DisplayMessage, SectionUpdate, PrivateUpdate, RightPane, MemorySave, PortraitUpdate, CustomSection } from "./agent-utils";
 export { BUNDLE_SECTIONS, isValidSection, buildProfileContext, buildProfileDataFromUpdates, parseUpdatesFromResponse, parsePrivateUpdatesFromResponse, parseMemorySavesFromResponse, parsePortraitUpdateFromResponse, parseCustomSectionsFromResponse, GITHUB_CONNECTED_PASTE_PROMPT, buildGithubConnectedProtocol } from "./agent-utils";
 
+export interface RestorableChatSession {
+  sessionId: string;
+  displayMessages: Array<{
+    id: string;
+    role: string;
+    content: string;
+  }>;
+  llmMessages: Array<{
+    role: string;
+    content: string;
+  }>;
+  messageCount?: number;
+  summary?: string;
+  updatedAt?: number;
+}
+
 function humanizeProjectSlug(slug: string) {
   return slug.replace(/[-_]+/g, " ").trim();
 }
@@ -238,7 +254,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   );
 
   // Session tracking
-  const sessionIdRef = useRef<string>(crypto.randomUUID());
+  const generatedSessionIdRef = useRef<string>(crypto.randomUUID());
+  const sessionIdRef = useRef<string>(generatedSessionIdRef.current);
+  const [currentSessionId, setCurrentSessionId] = useState(generatedSessionIdRef.current);
   const messageCountRef = useRef<number>(0);
   const lastSummarizedAtRef = useRef<number>(0);
 
@@ -393,6 +411,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
     // Restore the session
     sessionIdRef.current = latestChatMessages.sessionId;
+    setCurrentSessionId(latestChatMessages.sessionId);
     messageCountRef.current = latestChatMessages.messageCount || 0;
     // Restore only the last 30/40 messages — prevents stale bloated sessions
     // from causing slow loads (large payload over Convex WebSocket).
@@ -472,6 +491,54 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const hasInitialScrolledRef = useRef(false);
   const userScrolledUpRef = useRef(false);
   const lastScrollTopRef = useRef(0);
+
+  const restoreSession = useCallback((session: RestorableChatSession) => {
+    sessionIdRef.current = session.sessionId;
+    setCurrentSessionId(session.sessionId);
+    messageCountRef.current = session.messageCount ?? session.displayMessages.length;
+    lastSummarizedAtRef.current = 0;
+    hasInitialScrolledRef.current = false;
+    userScrolledUpRef.current = false;
+
+    const restoredDisplay = session.displayMessages.slice(-30).map((message) => ({
+      id: message.id,
+      role: message.role as DisplayMessage["role"],
+      content: message.content,
+    }));
+    const restoredLLM = session.llmMessages.slice(-40).map((message) => ({
+      role: message.role as ChatMessage["role"],
+      content: message.content,
+    }));
+
+    setDisplayMessages(restoredDisplay);
+    setMessages(restoredLLM);
+    setInitialized(true);
+    setSessionRestored(true);
+    clearSteps();
+    setIsThinking(false);
+  }, [clearSteps]);
+
+  const startNewSession = useCallback(() => {
+    const nextSessionId = crypto.randomUUID();
+    sessionIdRef.current = nextSessionId;
+    setCurrentSessionId(nextSessionId);
+    messageCountRef.current = 0;
+    lastSummarizedAtRef.current = 0;
+    hasInitialScrolledRef.current = false;
+    userScrolledUpRef.current = false;
+    setMessages([]);
+    setDisplayMessages([
+      {
+        id: crypto.randomUUID(),
+        role: "system-notice",
+        content: "[new chat]\n\nfresh session opened. this one will sync as its own Convex conversation.",
+      },
+    ]);
+    setInitialized(true);
+    setSessionRestored(true);
+    clearSteps();
+    setIsThinking(false);
+  }, [clearSteps]);
 
   // Track manual user scroll-up to detach from auto-follow
   useEffect(() => {
@@ -2700,12 +2767,15 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     thinkingCategory,
     progressSteps,
     initialized,
+    currentSessionId,
     // Refs
     messagesEndRef,
     textareaRef,
     // Actions
     sendMessage,
     handleSlashCommand,
+    restoreSession,
+    startNewSession,
     // Data
     convexUser,
     latestBundle,

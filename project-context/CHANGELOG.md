@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-15 — Personal API gateway and saved shell sessions
+
+### feat(web): reframe connectors around personal API/MCP/youstack
+- Reworked the Connectors pane into a personal API gateway surface with public/auth/token/share access levels, `ystack` vs user-owned `youstack` naming, custom `{name}stack` language, and extension rows for endpoints, functions, tools, objects, and properties.
+- Updated the YouStacks pane so the default personal stack is `youstack`, the built-in platform base is `ystack`, and custom stacks can be named for domains/projects.
+- Reordered the shell sidebar IA around Projects, Personal API, Skillstacks, Connect, and Identity so the navigation reads by user value instead of implementation category.
+- Added recent saved chat sessions to the shell sidebar and wired owner-gated Convex session hydration; New Chat now starts a fresh persisted session id instead of only adding a display note.
+- Added `project-context/PERSONAL_API_MCP_STACK_SURFACE_2026-06-15.md` covering the extensible personal API/MCP/stack architecture and Convex-as-internal-realtime-gateway model, including BadApp/Myo prior-art lessons.
+- Verified locally with Convex codegen, TypeScript, targeted ESLint (existing hook dependency warnings only), radius guard, `git diff --check`, production build, and in-app browser QA at 2048x1400 for sidebar chat-session rendering, reordered IA, Connectors gateway content, and no horizontal overflow. Production/authenticated session-click verification remains pending after deployment.
+
 ## 2026-06-15 — Shell polish pass
 
 ### feat(web): refine `/shell` ratios, sidebar chrome, and account controls

@@ -6,6 +6,22 @@ Last Updated: 2026-06-15
 
 ## 2026-06-15 — Rebuild `/shell` as Codex/Lovable-style workspace
 
+### 118. Connectors, personal API/MCP/stack surface, sidebar IA, and saved chats
+**Status:** IN PROGRESS (code complete; production verification pending)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-15 — Houston: "also the Connectors page... invest more of that unicorn creative officer attention to the users personal Api/mcp/stack... fully extendible personal api/mcp/stack with custom endpoints and functions and skills/tools/objects/properties... maybe called it ystack... user is their youstack... actual order of the left side menu... add the more standard way of saving chat sessions in the bottom half of the left side menu... Convex DB itself as a real-time chat/conversation/communication gateway... look into the badapp... sendblue..."
+**Actionable Scope:**
+1. Rework the Connectors page so it presents the secure personal API/MCP/stack gateway, with GitHub/repo sync as one source input rather than the entire page.
+2. Clarify naming: `ystack` is the built-in base stack, `youstack` is the user's default private stack, and custom stacks can be named `{anything}stack`.
+3. Surface API/MCP/YouStack security scopes in the UI: public, auth, token, and shared-link access.
+4. Show the extensibility model for custom endpoints, functions, tools, objects, properties, skills, sources, and sessions.
+5. Reorder the left sidebar by anticipated value/frequency instead of implementation buckets.
+6. Add a saved chat sessions section in the lower left sidebar backed by Convex `chatSessions`.
+7. Make New Chat create a fresh persisted session id and make saved session clicks hydrate the selected session.
+8. Capture the Convex-as-realtime-internal-gateway architecture, including BadApp/Myo prior-art lessons and Sendblue/external-provider boundaries.
+**Progress (2026-06-15):** Code complete locally: added owner-gated session-specific chat loading, wired New Chat to start a fresh persisted Convex session, added recent saved chats to the shell sidebar, reordered sidebar IA around Projects / Personal API / Skillstacks / Connect / Identity, reframed Connectors as the personal API gateway with `ystack`/`youstack`/`{name}stack` naming and public/auth/token/share access rows, updated the YouStacks pane naming model, and added `project-context/PERSONAL_API_MCP_STACK_SURFACE_2026-06-15.md` with the personal API/MCP/stack and Convex gateway architecture. Local verification passed Convex codegen, TypeScript, targeted ESLint (existing hook dependency warnings only), radius guard, `git diff --check`, and `npm run build`. In-app browser QA at 2048x1400 confirmed the sidebar renders recent saved Convex chat sessions, the reordered IA, and the Connectors gateway page with no horizontal overflow. Saved-session click initially exposed a reactive-query loading-state issue; implementation was switched to one-shot `useConvex().query` hydration. Production/authenticated click verification remains pending after deployment.
+
 ### 117. Polish `/shell` ratios, sidebar/account chrome, and no-nested-box chat UI
 **Status:** IN PROGRESS (implementation in progress; verification pending)
 **Verified:** NO
