@@ -2,6 +2,12 @@
 
 ## 2026-06-16 — DSI weather and surf components
 
+### feat(convex/web): add private task queue DSI adapter
+- Added a You.md-native `task-queue` DSI component that reads h.computer-compatible task arrays from `privateContext.customData` (`tasks`, `taskQueue`, `h_tasks`, or `todos`) and normalizes title, details, status, priority, due dates, source text, tags, proposed state, and completion timestamps.
+- Task Queue snapshots preserve an honest unconfigured state when no private task source exists, and otherwise compute open, overdue, due-today, proposed, urgent/high, snoozed, and recent-done counts plus reusable agent prompts.
+- Added a `refresh tasks` control to the Files/Reports DSI Catalog so owners can materialize the private task object as a read-only markdown artifact under `dsi/private/task-queue.md`.
+- Verified locally with Convex codegen and focused DSI/Loop Report tests.
+
 ### feat(convex/web): add Google Calendar agenda DSI adapter
 - Added an owner-gated agenda DSI action that ports h.computer's important-upcoming Google Calendar filter into You.md: it keeps family, sports, school, health, travel, and meetings with attendees while dropping common focus/hold/fluff blocks.
 - The adapter supports native Google Calendar bearer-token env first and the legacy h.computer/Lovable connector gateway as a compatibility fallback; when no calendar connector is configured it persists an honest private unconfigured component instead of inventing agenda data.

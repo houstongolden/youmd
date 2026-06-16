@@ -494,6 +494,7 @@ function ArtifactHome({
   onRefreshProjectCatalog,
   onRefreshSchoolLogistics,
   onRefreshAgenda,
+  onRefreshTaskQueue,
   onToggleLoopDefinition,
   selectedRunId,
   loopSnapshots,
@@ -517,6 +518,7 @@ function ArtifactHome({
   onRefreshProjectCatalog: () => void;
   onRefreshSchoolLogistics: () => void;
   onRefreshAgenda: () => void;
+  onRefreshTaskQueue: () => void;
   onToggleLoopDefinition: (definition: LoopReportDefinition) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
   loopSnapshots: SourceSnapshot[] | undefined;
@@ -557,6 +559,7 @@ function ArtifactHome({
             onRefreshProjectCatalog={onRefreshProjectCatalog}
             onRefreshSchoolLogistics={onRefreshSchoolLogistics}
             onRefreshAgenda={onRefreshAgenda}
+            onRefreshTaskQueue={onRefreshTaskQueue}
             onToggleDefinition={onToggleLoopDefinition}
             onSelectArtifact={onSelect}
             selectedRunId={selectedRunId}
@@ -649,6 +652,7 @@ function LoopReportsControlPanel({
   onRefreshProjectCatalog,
   onRefreshSchoolLogistics,
   onRefreshAgenda,
+  onRefreshTaskQueue,
   onToggleDefinition,
   onSelectArtifact,
   selectedRunId,
@@ -669,6 +673,7 @@ function LoopReportsControlPanel({
   onRefreshProjectCatalog: () => void;
   onRefreshSchoolLogistics: () => void;
   onRefreshAgenda: () => void;
+  onRefreshTaskQueue: () => void;
   onToggleDefinition: (definition: LoopReportDefinition) => void;
   onSelectArtifact: (path: string) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
@@ -782,6 +787,15 @@ function LoopReportsControlPanel({
               className="h-8 self-start text-[10px]"
             >
               {dsiBusy ? "refreshing..." : "refresh agenda"}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onRefreshTaskQueue}
+              disabled={dsiBusy}
+              className="h-8 self-start text-[10px]"
+            >
+              {dsiBusy ? "refreshing..." : "refresh tasks"}
             </Button>
             <Button
               size="sm"
@@ -1350,6 +1364,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const runDailyBriefingNow = useMutation(api.loopReports.runDailyBriefingNow);
   const updateLoopDefinitionStatus = useMutation(api.loopReports.updateDefinitionStatus);
   const refreshProjectCatalogFallback = useMutation(api.dsi.refreshProjectCatalog);
+  const refreshTaskQueue = useMutation(api.dsi.refreshTaskQueue);
   const refreshProjectCatalog = useAction(api.githubProjects.refreshProjectCatalogDsi);
   const refreshWeatherSurf = useAction(api.dsi.refreshWeatherSurf);
   const refreshSchoolLogistics = useAction(api.dsi.refreshSchoolLogistics);
@@ -1760,6 +1775,25 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     }
   }, [user, userId, refreshAgenda]);
 
+  const handleRefreshTaskQueue = useCallback(async () => {
+    if (!user?.id || !userId) return;
+    setDsiBusy(true);
+    setDsiStatus(null);
+    try {
+      const result = await refreshTaskQueue({ clerkId: user.id, userId });
+      setWorkspaceMode("artifacts");
+      setDsiStatus(result.configured
+        ? `refreshed tasks: ${result.openCount} open`
+        : "tasks saved: private task source missing"
+      );
+      setTimeout(() => setDsiStatus(null), 3000);
+    } catch (err) {
+      setDsiStatus(`error: ${err instanceof Error ? err.message : "failed to refresh tasks"}`);
+    } finally {
+      setDsiBusy(false);
+    }
+  }, [user, userId, refreshTaskQueue]);
+
   const handleToggleLoopDefinition = useCallback(async (definition: LoopReportDefinition) => {
     if (!user?.id) return;
     setLoopBusy(true);
@@ -2048,6 +2082,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
               onRefreshProjectCatalog={handleRefreshProjectCatalog}
               onRefreshSchoolLogistics={handleRefreshSchoolLogistics}
               onRefreshAgenda={handleRefreshAgenda}
+              onRefreshTaskQueue={handleRefreshTaskQueue}
               onToggleLoopDefinition={handleToggleLoopDefinition}
               selectedRunId={selectedLoopRunId}
               loopSnapshots={loopSnapshots}

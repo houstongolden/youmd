@@ -123,6 +123,50 @@ type AgendaSignal = {
   };
 };
 
+type TaskStatus = "open" | "done" | "snoozed" | "cancelled";
+type TaskPriority = "low" | "normal" | "high" | "urgent";
+
+type TaskSignal = {
+  id: string;
+  title: string;
+  details: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueAt: string | null;
+  source: string | null;
+  sourceText: string | null;
+  proposed: boolean;
+  tags: string[];
+  completedAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  overdue: boolean;
+};
+
+type TaskQueueSignal = {
+  provider: "youmd-custom-data" | "youmd-tasks-unconfigured";
+  capturedAt: string;
+  configured: boolean;
+  sourceKey: string | null;
+  totals: {
+    tasks: number;
+    open: number;
+    overdue: number;
+    dueToday: number;
+    proposed: number;
+    urgent: number;
+    high: number;
+    snoozed: number;
+    doneLast30d: number;
+  };
+  tasks: TaskSignal[];
+  suggestedPrompts: string[];
+  parser: {
+    mode: "hcomputer_task_model";
+    note: string;
+  };
+};
+
 type ProjectCatalogSignal = {
   provider: string;
   capturedAt: string;
@@ -590,6 +634,203 @@ function agendaEventFromRaw(event: RawCalendarEvent, category: ReturnType<typeof
     category: category.category,
     whyKept: category.why,
     calendarId,
+  };
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function stringOrNull(value: unknown): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return null;
+}
+
+function isoOrNull(value: unknown): string | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const ms = Date.parse(trimmed);
+  return Number.isNaN(ms) ? trimmed : new Date(ms).toISOString();
+}
+
+function normalizeTaskStatus(value: unknown, proposed: boolean): TaskStatus {
+  const status = stringOrNull(value)?.toLowerCase();
+  if (status === "done" || status === "completed" || status === "complete") return "done";
+  if (status === "snoozed" || status === "deferred") return "snoozed";
+  if (status === "cancelled" || status === "canceled" || status === "archived") return "cancelled";
+  if (proposed) return "open";
+  return "open";
+}
+
+function normalizeTaskPriority(value: unknown): TaskPriority {
+  const priority = stringOrNull(value)?.toLowerCase();
+  if (priority === "urgent" || priority === "p0") return "urgent";
+  if (priority === "high" || priority === "p1") return "high";
+  if (priority === "low" || priority === "p3") return "low";
+  return "normal";
+}
+
+function normalizeTaskTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((tag) => stringOrNull(tag))
+    .filter((tag): tag is string => tag !== null)
+    .slice(0, 12);
+}
+
+function findTaskArray(customData: unknown): { sourceKey: string; rows: unknown[] } | null {
+  const data = asRecord(customData);
+  if (!data) return null;
+  const keys = ["tasks", "taskQueue", "task_queue", "h_tasks", "todos", "todo"];
+  for (const key of keys) {
+    const value = data[key];
+    if (Array.isArray(value)) return { sourceKey: key, rows: value };
+  }
+  const nested = asRecord(data.tasks);
+  if (nested) {
+    for (const key of ["items", "rows", "open"]) {
+      const value = nested[key];
+      if (Array.isArray(value)) return { sourceKey: `tasks.${key}`, rows: value };
+    }
+  }
+  return null;
+}
+
+function taskTitle(row: Record<string, unknown>): string | null {
+  return stringOrNull(row.title)
+    ?? stringOrNull(row.name)
+    ?? stringOrNull(row.summary)
+    ?? stringOrNull(row.text)
+    ?? stringOrNull(row.task);
+}
+
+function isPastDay(iso: string | null, now: Date): boolean {
+  if (!iso) return false;
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return false;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return ms < today;
+}
+
+function isSameDay(iso: string | null, now: Date): boolean {
+  if (!iso) return false;
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return false;
+  const date = new Date(ms);
+  return date.getFullYear() === now.getFullYear()
+    && date.getMonth() === now.getMonth()
+    && date.getDate() === now.getDate();
+}
+
+function isWithinLastDays(iso: string | null, days: number, now: Date): boolean {
+  if (!iso) return false;
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return false;
+  const delta = now.getTime() - ms;
+  return delta >= 0 && delta <= days * 86_400_000;
+}
+
+function normalizeTask(row: unknown, index: number, now: Date): TaskSignal | null {
+  const record = asRecord(row);
+  if (!record) return null;
+  const title = taskTitle(record);
+  if (!title) return null;
+  const proposed = record.proposed === true || stringOrNull(record.status)?.toLowerCase() === "proposed";
+  const status = normalizeTaskStatus(record.status, proposed);
+  const dueAt = isoOrNull(record.due_at ?? record.dueAt ?? record.due ?? record.deadline);
+  return {
+    id: stringOrNull(record.id) ?? stringOrNull(record._id) ?? `task-${index + 1}`,
+    title: title.slice(0, 160),
+    details: stringOrNull(record.details ?? record.description ?? record.notes),
+    status,
+    priority: normalizeTaskPriority(record.priority),
+    dueAt,
+    source: stringOrNull(record.source),
+    sourceText: stringOrNull(record.source_text ?? record.sourceText),
+    proposed,
+    tags: normalizeTaskTags(record.tags),
+    completedAt: isoOrNull(record.completed_at ?? record.completedAt),
+    createdAt: isoOrNull(record.created_at ?? record.createdAt),
+    updatedAt: isoOrNull(record.updated_at ?? record.updatedAt),
+    overdue: status === "open" && isPastDay(dueAt, now),
+  };
+}
+
+function taskSortWeight(task: TaskSignal): number {
+  if (task.status === "open" && task.overdue) return 0;
+  if (task.status === "open" && task.priority === "urgent") return 1;
+  if (task.status === "open" && task.priority === "high") return 2;
+  if (task.status === "open") return 3;
+  if (task.proposed) return 4;
+  if (task.status === "snoozed") return 5;
+  if (task.status === "done") return 6;
+  return 7;
+}
+
+function taskSuggestedPrompts(signal: Pick<TaskQueueSignal, "totals">): string[] {
+  const prompts: string[] = [];
+  if (signal.totals.overdue > 0) prompts.push(`Help me knock out ${signal.totals.overdue} overdue tasks`);
+  if (signal.totals.open > 0) prompts.push(`What should I tackle first from my ${signal.totals.open} open tasks?`);
+  if (signal.totals.proposed > 0) prompts.push(`Review ${signal.totals.proposed} tasks you proposed for me`);
+  if (!prompts.length) prompts.push("Help me create a realistic task queue for today");
+  return prompts;
+}
+
+function buildTaskQueueSignal(customData: unknown, now = new Date()): TaskQueueSignal {
+  const found = findTaskArray(customData);
+  if (!found) {
+    const totals = { tasks: 0, open: 0, overdue: 0, dueToday: 0, proposed: 0, urgent: 0, high: 0, snoozed: 0, doneLast30d: 0 };
+    return {
+      provider: "youmd-tasks-unconfigured",
+      capturedAt: now.toISOString(),
+      configured: false,
+      sourceKey: null,
+      totals,
+      tasks: [],
+      suggestedPrompts: taskSuggestedPrompts({ totals }),
+      parser: {
+        mode: "hcomputer_task_model",
+        note: "No private customData task array is configured yet. Add customData.tasks, taskQueue, h_tasks, or todos to make this a live You.md task component.",
+      },
+    };
+  }
+  const tasks = found.rows
+    .map((row, index) => normalizeTask(row, index, now))
+    .filter((task): task is TaskSignal => task !== null)
+    .sort((a, b) => taskSortWeight(a) - taskSortWeight(b) || (a.dueAt ?? "9999").localeCompare(b.dueAt ?? "9999"))
+    .slice(0, 80);
+  const totals = {
+    tasks: tasks.length,
+    open: tasks.filter((task) => task.status === "open").length,
+    overdue: tasks.filter((task) => task.overdue).length,
+    dueToday: tasks.filter((task) => task.status === "open" && isSameDay(task.dueAt, now)).length,
+    proposed: tasks.filter((task) => task.proposed).length,
+    urgent: tasks.filter((task) => task.status === "open" && task.priority === "urgent").length,
+    high: tasks.filter((task) => task.status === "open" && task.priority === "high").length,
+    snoozed: tasks.filter((task) => task.status === "snoozed").length,
+    doneLast30d: tasks.filter((task) => task.status === "done" && isWithinLastDays(task.completedAt ?? task.updatedAt, 30, now)).length,
+  };
+  return {
+    provider: "youmd-custom-data",
+    capturedAt: now.toISOString(),
+    configured: true,
+    sourceKey: found.sourceKey,
+    totals,
+    tasks,
+    suggestedPrompts: taskSuggestedPrompts({ totals }),
+    parser: {
+      mode: "hcomputer_task_model",
+      note: "Compatible with h.computer task fields while staying native to You.md private customData. A dedicated tasks table and app connector can hydrate the same component later.",
+    },
   };
 }
 
@@ -1183,6 +1424,37 @@ export const refreshAgenda = action({
   },
 });
 
+export const refreshTaskQueue = mutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots">; openCount: number; configured: boolean }> => {
+    await ownerForUserId(ctx, args.clerkId, args.userId);
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", args.userId))
+      .first();
+    const privateContext = profile
+      ? await ctx.db
+          .query("privateContext")
+          .withIndex("by_profileId", (q) => q.eq("profileId", profile._id))
+          .first()
+      : null;
+    const taskQueue = buildTaskQueueSignal(privateContext?.customData);
+    const result = await persistTaskQueue(ctx, {
+      clerkId: args.clerkId,
+      userId: args.userId,
+      taskQueue,
+    });
+    return {
+      ...result,
+      openCount: taskQueue.totals.open,
+      configured: taskQueue.configured,
+    };
+  },
+});
+
 async function persistProjectCatalog(
   ctx: MutationCtx,
   args: {
@@ -1331,6 +1603,63 @@ export const persistAgendaComponent = internalMutation({
       metadata: { provider: withManualContext.provider, configurable: true, origin: "h.computer" },
     });
     return { componentId, snapshotId };
+  },
+});
+
+async function persistTaskQueue(
+  ctx: MutationCtx,
+  args: {
+    clerkId: string;
+    userId: Id<"users">;
+    taskQueue: TaskQueueSignal;
+  }
+): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> {
+  await ownerForUserId(ctx, args.clerkId, args.userId);
+  const taskQueue = args.taskQueue;
+  const snapshotId = await insertSnapshot(ctx, {
+    userId: args.userId,
+    connectorKind: "youmd-tasks",
+    sourceKey: "task-queue",
+    sourceType: "dsi_component",
+    normalized: taskQueue,
+    citations: [{ provider: taskQueue.provider, sourceKey: taskQueue.sourceKey }],
+    visibility: "private",
+    trustLevel: taskQueue.configured ? "computed" : "low",
+    metadata: {
+      origin: "youmd",
+      adapter: "private-custom-data-task-queue",
+      sourceKey: taskQueue.sourceKey,
+    },
+  });
+  const summary = taskQueue.configured
+    ? `${taskQueue.totals.open} open / ${taskQueue.totals.overdue} overdue / ${taskQueue.totals.proposed} proposed / ${taskQueue.totals.urgent} urgent`
+    : "task connector missing / add private customData.tasks";
+  const componentId = await upsertComponent(ctx, {
+    userId: args.userId,
+    slug: "task-queue",
+    componentType: "tasks",
+    title: "Tasks - You.md Queue",
+    summary,
+    data: taskQueue,
+    sourceSnapshotIds: [snapshotId],
+    trustLevel: taskQueue.configured ? "computed" : "low",
+    metadata: { provider: taskQueue.provider, configurable: true, origin: "youmd" },
+  });
+  return { componentId, snapshotId };
+}
+
+export const persistTaskQueueComponent = internalMutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+    taskQueue: v.any(),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> => {
+    return await persistTaskQueue(ctx, {
+      clerkId: args.clerkId,
+      userId: args.userId,
+      taskQueue: args.taskQueue as TaskQueueSignal,
+    });
   },
 });
 

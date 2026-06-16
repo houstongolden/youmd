@@ -294,6 +294,97 @@ describe("dsi components", () => {
     expect(snapshots[0].trustLevel).toBe("verified");
   });
 
+  it("builds a private task queue component from customData tasks", async () => {
+    const t = convexTest(schema);
+    const userId = await seedUser(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    await t.run(async (ctx) => {
+      const profileId = await ctx.db.insert("profiles", {
+        username: "task-owner",
+        name: "Task Owner",
+        ownerId: userId,
+        isClaimed: true,
+        claimedAt: Date.now(),
+        createdAt: Date.now(),
+      });
+      await ctx.db.insert("privateContext", {
+        profileId,
+        customData: {
+          tasks: [
+            {
+              id: "task_1",
+              title: "Renew agent connector grants",
+              details: "Audit connected app scopes and rotate stale tokens.",
+              status: "open",
+              priority: "urgent",
+              due_at: "2020-01-01",
+              source: "youmd",
+              source_text: "Need proper connected-app grants.",
+              tags: ["youmd", "security"],
+              created_at: "2026-06-15T12:00:00.000Z",
+            },
+            {
+              id: "task_2",
+              title: "Review proposed daily report prompts",
+              status: "proposed",
+              priority: "high",
+              due_at: "2999-01-01",
+              proposed: true,
+              tags: ["loops"],
+            },
+            {
+              id: "task_3",
+              title: "Ship weather DSI",
+              status: "done",
+              priority: "normal",
+              completed_at: "2026-06-16T12:00:00.000Z",
+            },
+          ],
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
+    const result = await asOwner.mutation(api.dsi.refreshTaskQueue, {
+      clerkId: CLERK,
+      userId,
+    });
+    expect(result.configured).toBe(true);
+    expect(result.openCount).toBe(2);
+
+    const components = await asOwner.query(api.dsi.listComponents, {
+      clerkId: CLERK,
+      userId,
+    });
+    const tasks = components.find((component) => component.slug === "task-queue");
+    expect(tasks?.visibility).toBe("private");
+    expect(tasks?.componentType).toBe("tasks");
+    expect(tasks?.summary).toContain("2 open");
+    expect(tasks?.summary).toContain("1 overdue");
+    expect(tasks?.summary).toContain("1 proposed");
+    expect(tasks?.summary).toContain("1 urgent");
+    expect(tasks?.data.provider).toBe("youmd-custom-data");
+    expect(tasks?.data.sourceKey).toBe("tasks");
+    expect(tasks?.data.tasks[0]).toMatchObject({
+      id: "task_1",
+      title: "Renew agent connector grants",
+      priority: "urgent",
+      overdue: true,
+    });
+    expect(tasks?.data.suggestedPrompts[0]).toContain("overdue");
+
+    const snapshots = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("sourceSnapshots")
+        .withIndex("by_userId", (q) => q.eq("userId", userId))
+        .collect();
+    });
+    expect(snapshots.map((snapshot) => snapshot.sourceKey)).toEqual(["task-queue"]);
+    expect(snapshots[0].connectorKind).toBe("youmd-tasks");
+    expect(snapshots[0].trustLevel).toBe("computed");
+  });
+
   it("builds a GitHub project catalog component from tracked projects and repo mirror stats", async () => {
     const t = convexTest(schema);
     const userId = await seedUser(t);
