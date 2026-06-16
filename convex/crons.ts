@@ -67,6 +67,19 @@ crons.hourly(
   { limit: 100 }
 );
 
+// Loop Reports foundation.
+//
+// Runs due owner-approved report definitions. The first implementation is a
+// deterministic daily briefing from You.md-owned data; expensive external
+// providers (Perplexity, Google, BAMF, Bad.app, weather/surf/school crawlers)
+// remain adapter-gated follow-ups.
+crons.hourly(
+  "run due loop reports",
+  { minuteUTC: 53 },
+  internal.loopReports.runDueLoopReports,
+  { limit: 25 }
+);
+
 // L19 — Nightly dreaming loop (deterministic v1, no LLM).
 //
 // Pages through all users in batches and runs a deterministic consolidation

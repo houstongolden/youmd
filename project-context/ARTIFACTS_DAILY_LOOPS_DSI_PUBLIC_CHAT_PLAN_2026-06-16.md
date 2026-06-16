@@ -202,12 +202,26 @@ Response envelope:
 - Add polling cron and manual run action.
 - Add deterministic report compiler first; LLM report compiler second.
 
+MVP shipped in this slice:
+
+- Added `loopReportDefinitions`, `sourceSnapshots`, `loopReportRuns`, and `loopReportArtifacts`.
+- Added owner-only seed/list/create/pause/list-runs/list-artifacts/manual-run functions.
+- Added an hourly due-loop cron.
+- Added deterministic daily briefing compilation from You.md-owned data: agent activity, active projects, source/crawler state, pending source changes, repo mirror, and durable memories.
+- Added focused Convex tests for manual and scheduled report generation.
+- Surfaced generated private report artifacts in the Files pane as read-only markdown.
+
 ### Phase 3 — First Daily Brief
 
 - Implement industry pulse, agenda, code carryover, and daily journal report.
 - Reuse existing GitHub tracked-project and agent-activity tables.
 - Add Perplexity/news adapter behind env/config guard.
 - Save generated markdown into report artifacts and `custom_files` export if needed.
+
+Current status:
+
+- You.md-owned code carryover/project/source/memory/repo signals are implemented in the deterministic foundation runner.
+- External adapters remain pending for Perplexity/news, Google Calendar/tasks, BAMF/BAMF OS, Bad.app, weather, surf, school, and richer journal generation.
 
 ### Phase 4 — h.computer Source Parity
 

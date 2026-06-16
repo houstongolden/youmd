@@ -473,6 +473,94 @@ export default defineSchema({
     .index("by_sourceId", ["sourceId"])
     .index("by_status", ["status"]),
 
+  // ── Loop Reports ───────────────────────────────────────────
+  //
+  // Scheduled personal briefings generated from connected apps, crawlers,
+  // MCP/API grants, source snapshots, skills, and You.md-native activity. These
+  // are the durable report/journal layer behind `/shell` report artifacts and
+  // future DSI components. Reports default private; explicit owner approval is
+  // required before any artifact becomes a public profile component.
+  loopReportDefinitions: defineTable({
+    userId: v.id("users"),
+    slug: v.string(),
+    title: v.string(),
+    description: v.optional(v.string()),
+    reportType: v.string(), // "daily_briefing" | "project_carryover" | "journal" | custom
+    cadence: v.string(), // "manual" | "daily" | "weekly" | cron expression
+    timezone: v.optional(v.string()),
+    status: v.string(), // "active" | "paused"
+    visibility: v.string(), // "private" | "scoped" | "public"
+    sourceSelectors: v.array(v.string()), // e.g. "github:activity", "badapp:fitness"
+    promptTemplate: v.optional(v.string()),
+    nextRunAt: v.optional(v.number()),
+    lastRunAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    metadata: v.optional(v.any()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_slug", ["userId", "slug"])
+    .index("by_nextRunAt", ["nextRunAt"]),
+
+  sourceSnapshots: defineTable({
+    userId: v.id("users"),
+    connectorKind: v.string(), // "youmd" | "github" | "weather" | "bamf" | ...
+    sourceKey: v.string(), // stable key inside connector, e.g. "agent-activity"
+    sourceType: v.string(), // "activity" | "projects" | "sources" | "external"
+    windowStart: v.string(),
+    windowEnd: v.string(),
+    rawHash: v.string(),
+    normalized: v.any(),
+    citations: v.optional(v.array(v.any())),
+    visibility: v.string(),
+    trustLevel: v.string(),
+    capturedAt: v.number(),
+    metadata: v.optional(v.any()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_sourceKey", ["userId", "sourceKey"])
+    .index("by_userId_capturedAt", ["userId", "capturedAt"]),
+
+  loopReportRuns: defineTable({
+    userId: v.id("users"),
+    definitionId: v.id("loopReportDefinitions"),
+    definitionSlug: v.string(),
+    reportType: v.string(),
+    windowStart: v.string(),
+    windowEnd: v.string(),
+    status: v.string(), // "running" | "completed" | "failed"
+    sourceSnapshotIds: v.array(v.id("sourceSnapshots")),
+    startedAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    costEstimateCents: v.optional(v.number()),
+    metadata: v.optional(v.any()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_startedAt", ["userId", "startedAt"])
+    .index("by_userId_definition_window", ["userId", "definitionId", "windowStart"]),
+
+  loopReportArtifacts: defineTable({
+    userId: v.id("users"),
+    runId: v.id("loopReportRuns"),
+    definitionId: v.id("loopReportDefinitions"),
+    definitionSlug: v.string(),
+    title: v.string(),
+    summary: v.string(),
+    bodyMarkdown: v.string(),
+    facts: v.any(),
+    citations: v.optional(v.array(v.any())),
+    visibility: v.string(),
+    status: v.string(), // "draft" | "published" | "archived"
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    metadata: v.optional(v.any()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_createdAt", ["userId", "createdAt"])
+    .index("by_runId", ["runId"])
+    .index("by_userId_definition", ["userId", "definitionId"]),
+
   // artifactType: "author_voice" | "topic_map" | "bio_variants" | "faq"
   //             | "voice_linkedin" | "voice_linkedin_doc"
   //             | "voice_x" | "voice_blog"

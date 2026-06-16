@@ -821,6 +821,10 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const createCustomDirectory = useMutation(api.me.createCustomDirectory);
   const memories = useQuery(api.memories.listMemories, clerkId && userId ? { clerkId, userId } : "skip");
   const sessions = useQuery(api.memories.listSessions, clerkId && userId ? { clerkId, userId, limit: 20 } : "skip");
+  const loopReportArtifacts = useQuery(
+    api.loopReports.listArtifacts,
+    clerkId && userId ? { clerkId, userId, limit: 40 } : "skip"
+  );
   const userProfile = useQuery(
     api.profiles.getByOwnerId,
     userId ? { ownerId: userId } : "skip"
@@ -920,15 +924,32 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
       ? decompileBundle(latestBundle.youJson, latestBundle.youMd ?? "")
       : [];
     const memoryFiles = generateMemoryFiles(memories ?? [], sessions ?? []);
+    const reportFiles: VirtualFile[] = (loopReportArtifacts ?? []).map((artifact) => ({
+      path: `reports/generated/${artifact.definitionSlug}/${new Date(artifact.createdAt).toISOString().slice(0, 10)}-${artifact._id}.md`,
+      content: [
+        "---",
+        `title: ${JSON.stringify(artifact.title)}`,
+        `kind: ${JSON.stringify(artifact.definitionSlug)}`,
+        `visibility: ${JSON.stringify(artifact.visibility)}`,
+        `status: ${JSON.stringify(artifact.status)}`,
+        `created_at: ${JSON.stringify(new Date(artifact.createdAt).toISOString())}`,
+        "---",
+        "",
+        artifact.bodyMarkdown,
+      ].join("\n"),
+      section: `loop_report_artifacts.${artifact._id}`,
+      editable: false,
+    }));
 
     // Dedupe by path: real content beats scaffold placeholders, customFiles win all.
     const seen = new Map<string, VirtualFile>();
     for (const f of bundleFiles) seen.set(f.path, f);
     for (const f of memoryFiles) seen.set(f.path, f);
     for (const f of privateContextFiles) seen.set(f.path, f); // real private data
+    for (const f of reportFiles) seen.set(f.path, f);
     for (const f of customFiles) seen.set(f.path, f);
     return Array.from(seen.values());
-  }, [latestBundle, memories, sessions, privateContextFiles, customFiles]);
+  }, [latestBundle, memories, sessions, loopReportArtifacts, privateContextFiles, customFiles]);
 
   // ── Custom directories ──
   // A "custom directory" is any directory backed by a youJson.custom_files entry,

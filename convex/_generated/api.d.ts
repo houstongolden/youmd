@@ -54,6 +54,7 @@ import type * as lib_sentry from "../lib/sentry.js";
 import type * as lib_sourceHashing from "../lib/sourceHashing.js";
 import type * as lib_spendCap from "../lib/spendCap.js";
 import type * as lib_writeLimits from "../lib/writeLimits.js";
+import type * as loopReports from "../loopReports.js";
 import type * as maintainer from "../maintainer.js";
 import type * as me from "../me.js";
 import type * as memories from "../memories.js";
@@ -137,6 +138,7 @@ declare const fullApi: ApiFromModules<{
   "lib/sourceHashing": typeof lib_sourceHashing;
   "lib/spendCap": typeof lib_spendCap;
   "lib/writeLimits": typeof lib_writeLimits;
+  loopReports: typeof loopReports;
   maintainer: typeof maintainer;
   me: typeof me;
   memories: typeof memories;

@@ -1,5 +1,25 @@
 # You.md — Changelog
 
+## 2026-06-16 — Local agent auth handoff
+
+### feat(cli/web): make curl-installed login feel like a real local runtime
+- Added `/auth` as the clean browser approval alias for the existing `/device` flow while preserving `/device` for older clients.
+- Updated the CLI device-login flow to show the short code, wait for Enter, open `you.md/auth`, and then poll for browser approval.
+- Added a branded post-approval success page that says the web session and local agent are authenticated, shows the user's ASCII portrait when available, and links to `/shell`.
+- Updated the curl installer next-step copy to guide fresh machines through `youmd login`, `youmd pull`, `youmd sync`, then `you`.
+- Bumped the CLI package to `youmd@0.8.2` and rebuilt `cli/dist` for publish.
+- Captured the raw bootstrap/auth vision in `project-context/prompts/2026-06-16-local-agent-bootstrap-auth-confirmation.md`.
+
+## 2026-06-16 — Loop Report substrate
+
+### feat(convex): add scheduled report artifacts and source snapshots
+- Added first-class Loop Report tables for owner report definitions, immutable source snapshots, report runs, and markdown/JSON report artifacts.
+- Added owner functions to seed/list/create/pause report definitions, list runs/artifacts, and manually run the first deterministic daily briefing.
+- Added an hourly due-loop cron that runs active due daily briefings and advances unsupported report types safely.
+- The first daily briefing compiler now snapshots You.md-owned agent activity, projects, source/crawler state, pending source changes, repo mirror data, and durable memories, then writes a private markdown artifact with structured facts and explicit external-adapter placeholders.
+- The Files pane now surfaces generated private Loop Report artifacts as read-only markdown under `reports/generated/*`.
+- Added focused Convex tests for default seeding, manual report generation, duplicate-run reuse, source snapshot creation, and cron execution.
+
 ## 2026-06-16 — Shell GitHub update chrome and usage surface
 
 ### fix(web): clarify repo sync and update controls in shell

@@ -7,6 +7,16 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-16 — Local agent auth handoff
+- [x] Preserve Houston's raw prompt for fresh-machine curl install, browser auth handoff, branded success confirmation, and local agent sync/onboarding path
+- [x] Add `/auth` as the clean approval URL for device login while keeping `/device` compatible
+- [x] Make `youmd login` wait for Enter before opening the browser and use `you.md/auth`
+- [x] Replace the plain browser completion copy with a branded success page that confirms web + local agent auth and links to `/shell`
+- [x] Update the curl installer next steps around login, pull, sync, and `you`
+- [x] Bump/build the CLI package to `0.8.2` for publish
+- [ ] Publish `youmd@0.8.2` to npm after OTP so the public curl installer gets the new CLI behavior
+- [ ] Add a true first-run `you` onboarding branch that detects fresh auth/no local bundle and walks the user through pull/sync/skills/stacks
+
 ### 2026-06-16 — Shell GitHub update chrome and usage surface
 - [x] Preserve Houston's raw prompt for right-aligned GitHub repo chrome, one `[ update ]` action, update stream artifacts, Files/artifact library, folder.md storage, and Usage accounting
 - [x] Replace the top shell refresh/publish/deploy icon cluster with one GitHub sync-status control plus one small `[ update ]` button
@@ -24,8 +34,11 @@ PRD Version: 2.3
 - [x] Add the detailed implementation plan for artifact workspace, Loop Reports, source snapshots, DSI catalog components, and profile conversation API
 - [x] Add `files`, `artifacts`, and `reports` modes to the shell Files pane
 - [x] Add staged markdown templates for daily briefing, project carryover, daily journal article, and public profile chat contract
-- [ ] Add first-class loop report tables and owner CRUD for scheduled reports
-- [ ] Add source snapshot table and first report runner for industry pulse / agenda / code carryover
+- [x] Add first-class loop report tables and owner CRUD for scheduled reports
+- [x] Add source snapshot table and a deterministic first daily briefing runner for You.md-owned activity, projects, sources, repo mirror, pending source changes, and memories
+- [x] Add hourly due-loop cron processing and focused Convex tests for manual + scheduled report generation
+- [x] Surface generated private Loop Report artifacts in the Files pane as read-only markdown under `reports/generated/*`
+- [ ] Add external report adapters for Perplexity industry pulse, Google Calendar agenda, BAMF/BAMF OS analytics, Bad.app fitness/body, weather, surf, and school crawler data
 - [ ] Port h.computer weather, surf, school crawler, GitHub LOC/LOMB project catalog, and daily journal source adapters into You.md-native connectors
 - [ ] Add DSI catalog components and owner-approved public profile rendering
 - [ ] Add secure public profile chat widget and `/api/v1/profiles/:username/conversation`
