@@ -9,6 +9,7 @@
 - Added a desktop top shell chrome row with the right-pane toggle plus GitHub, update, publish, and deploy controls; publish calls the real `/publish` command, update opens source refresh context, and deploy opens the GitHub/repo surface.
 - Verified locally with in-app browser DOM/screenshot QA: collapsed sidebar width 56px, 4 collapsed nav icons, 8 total clickable rail controls, top controls present, and protected chat width around 679px at a 1600px viewport.
 - Verified with `npm run lint` (existing warnings only, radius guard passed) and `npm run build`.
+- Pushed to `main`; Vercel deployment `dpl_Ba6tggxyGQ4k62gntwu5zbGJSoEo` reached Ready and is aliased to `https://www.you.md` / `https://you.md`. Unauthenticated production `/shell` correctly redirects to `/sign-in?next=/shell`; authenticated visual approval remains Houston-side.
 
 ## 2026-06-15 — Personal API gateway and saved shell sessions
 
