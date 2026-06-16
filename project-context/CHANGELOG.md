@@ -10,6 +10,14 @@
 - Upgraded the folder.md connector copy with optional 10GB free artifact/markdown storage language and a prompt owners can hand to agents.
 - Captured the raw prompt and follow-up product work in `project-context/prompts/2026-06-16-shell-github-update-usage-foldermd.md`.
 
+## 2026-06-16 — Artifact workspace and daily loop plan
+
+### feat(web): start the artifact/report workspace inside shell
+- Added `project-context/prompts/2026-06-16-artifacts-daily-loops-dsi-public-chat.md` to preserve Houston's raw request for Obsidian-style artifact viewing, daily Cron Loop reports, h.computer source migration, DSI profile components, and public profile chat.
+- Added `project-context/ARTIFACTS_DAILY_LOOPS_DSI_PUBLIC_CHAT_PLAN_2026-06-16.md` with the implementation plan for artifact workspace, Loop Reports, source snapshots, DSI catalog components, and secure public profile conversation endpoints.
+- Upgraded the Files pane into an artifact workspace with `files`, `artifacts`, and `reports` modes.
+- Added one-click markdown templates for daily briefing, project carryover, daily journal article, and public profile chat contract; templates save through existing `custom_files` so they remain part of the portable You.md bundle/API/MCP surface.
+
 ## 2026-06-16 — Connector catalog and private API/MCP control center
 
 ### feat(web): make connected app grants and personal API docs visible in shell

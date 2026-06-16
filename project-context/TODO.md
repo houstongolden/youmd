@@ -19,6 +19,17 @@ PRD Version: 2.3
 - [ ] Add Settings -> Usage as a first-class account surface
 - [ ] Add first-class artifact/rich-file tables and library persistence beyond `custom_files`
 
+### 2026-06-16 — Artifact workspace and daily loop plan
+- [x] Preserve Houston's raw prompt for markdown/artifact viewing, daily reports, h.computer source migration, DSI components, and public profile chat
+- [x] Add the detailed implementation plan for artifact workspace, Loop Reports, source snapshots, DSI catalog components, and profile conversation API
+- [x] Add `files`, `artifacts`, and `reports` modes to the shell Files pane
+- [x] Add staged markdown templates for daily briefing, project carryover, daily journal article, and public profile chat contract
+- [ ] Add first-class loop report tables and owner CRUD for scheduled reports
+- [ ] Add source snapshot table and first report runner for industry pulse / agenda / code carryover
+- [ ] Port h.computer weather, surf, school crawler, GitHub LOC/LOMB project catalog, and daily journal source adapters into You.md-native connectors
+- [ ] Add DSI catalog components and owner-approved public profile rendering
+- [ ] Add secure public profile chat widget and `/api/v1/profiles/:username/conversation`
+
 ### 2026-06-16 — Connector catalog and private API/MCP control center
 - [x] Turn the Connectors pane into a clear owner control center with `api/mcp`, `apps`, `crawlers/loops`, and `repo` tabs
 - [x] Surface the current user's private REST/MCP/stack endpoint docs, auth header contract, resource map, and API route table inside `/shell`

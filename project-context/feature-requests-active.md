@@ -27,6 +27,25 @@ Last Updated: 2026-06-16
 13. Link Settings -> Usage and add live counters/quotas. **PENDING.**
 **Progress (2026-06-16):** Reworked the shell desktop top chrome around one hover-aware GitHub repo status control and one `[ update ]` action, using existing Convex GitHub connection/repo mirror signals. Added update preflight streaming into the chat. Expanded the Connectors API/MCP page with a Usage surface and upgraded folder.md to a storage/artifact connector with 10GB positioning and an agent prompt. Remaining: live Settings Usage page, real repo PR/conflict/merge orchestration, expandable update artifacts, and first-class artifact storage tables.
 
+### 125. Add artifact workspace, daily Loop Reports, DSI components, and public profile chat
+**Status:** IN PROGRESS (raw prompt/plan captured; artifact workspace MVP code complete locally)
+**Verified:** NO
+**Production Verified:** NO
+**Source:** 2026-06-16 — Houston: "we really do need a proper nice markdown/artifact viewer + editor basically an obsidian style way... daily tasks for me via a Cron Loop + skills+connect apps/mcps and crawlers... bring over all relevant features and work from [h.computer]... DSI catalog components... public you.md profiles... chat with that person..."
+**Actionable Scope:**
+1. Preserve Houston's full raw prompt in project-context. **DONE:** `project-context/prompts/2026-06-16-artifacts-daily-loops-dsi-public-chat.md`.
+2. Break the request into a detailed plan with nothing missing. **DONE:** `project-context/ARTIFACTS_DAILY_LOOPS_DSI_PUBLIC_CHAT_PLAN_2026-06-16.md`.
+3. Add a nicer in-app markdown/artifact viewer/editor, with Obsidian-style artifact/report organization. **MVP CODE COMPLETE:** Files pane now has `files`, `artifacts`, and `reports` modes plus report templates saved through `custom_files`.
+4. Add daily Cron Loop reports for industry pulse, agenda, code carryover, connected-app pulse, fitness/body, and daily journal article. **PENDING backend/report runner.**
+5. Port relevant h.computer source adapters into You.md-native connectors: school Google Doc crawler, tasks/calendar, historical daily log, weather, surf report, GitHub project/LOC/LOMB/recent updates, research/blog crawlers. **PENDING.**
+6. Add connected-app report adapters for BAMF.ai/BAMF OS/BAMF site analytics/client updates, Bad.app/BAD Stack fitness and health, LinkedIn/X/social analytics, and other connected apps. **PENDING.**
+7. Add persistent historical reports across day/week/month/quarter/6-month/year horizons, including agent accomplishments. **PENDING.**
+8. Add DSI catalog components that can render privately in `/shell` and optionally on public profiles with owner approval. **PENDING.**
+9. Add secure public profile chat widget above the fold on all public profiles. **PENDING.**
+10. Add public conversation API/MCP endpoint so apps can connect to a user's public You.md brain and create custom "talk to this person" experiences. **PENDING.**
+11. Add owner controls for personality/style/capabilities/public data used by profile chat. **PENDING.**
+**Progress (2026-06-16):** Reviewed the relevant local h.computer journal/school/surf/weather/GitHub-project patterns and badapp API/MCP/widget patterns. Added the raw prompt capture and detailed plan. Upgraded the shell Files pane into an artifact workspace with `files`, `artifacts`, and `reports` tabs and staged markdown templates for daily briefing, project carryover, daily journal article, and public profile chat contract. Remaining: backend loop report tables/runners, source snapshots, h.computer adapter parity, DSI component renderer, public profile chat endpoint/widget, and production verification.
+
 ### 124. Make blank `/shell` chats open with a personal activity-aware briefing
 **Status:** DONE (deployed; Houston visual approval still welcome)
 **Verified:** NO

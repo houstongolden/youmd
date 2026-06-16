@@ -16,6 +16,173 @@ interface FilesPaneProps {
   isWritingFiles?: boolean;
 }
 
+type WorkspaceMode = "files" | "artifacts" | "reports";
+
+type ArtifactTemplate = {
+  id: string;
+  title: string;
+  path: string;
+  description: string;
+  content: string;
+};
+
+const WORKSPACE_MODES: Array<{ key: WorkspaceMode; label: string; detail: string }> = [
+  { key: "files", label: "files", detail: "identity bundle" },
+  { key: "artifacts", label: "artifacts", detail: "saved docs + source outputs" },
+  { key: "reports", label: "reports", detail: "loop-generated briefings" },
+];
+
+const ARTIFACT_TEMPLATES: ArtifactTemplate[] = [
+  {
+    id: "daily-brief",
+    title: "daily briefing",
+    path: "reports/daily/briefing.md",
+    description: "industry pulse, agenda, code carryover, connected apps, and body signal",
+    content: `---
+title: Daily Briefing
+kind: loop_report
+visibility: private
+cadence: daily
+sources:
+  - perplexity:ai-industry-trends
+  - google-calendar:today
+  - github:active-projects
+  - youmd:agent-activity
+  - badapp:fitness
+  - bamf:analytics
+---
+
+# Daily Briefing
+
+## industry pulse
+- biggest AI / agents / developer-tool updates:
+- why it matters to my work:
+- links / citations:
+
+## agenda
+- meetings:
+- personal:
+- follow-ups:
+
+## code carryover
+- shipped yesterday:
+- active project focus:
+- Codex / Claude Code kickstart prompts:
+
+## connected app pulse
+- BAMF / LinkedIn / X / agency:
+- Bad.app health / fitness:
+- school / family logistics:
+
+## journal seed
+- what mattered yesterday:
+- what to write in my voice:
+`,
+  },
+  {
+    id: "project-carryover",
+    title: "project carryover",
+    path: "reports/daily/project-carryover.md",
+    description: "per-project last state, repo activity, next action, and agent-start prompt",
+    content: `---
+title: Project Carryover
+kind: loop_report
+visibility: private
+cadence: daily
+sources:
+  - github:repos
+  - youmd:project_context
+  - youmd:agent_activity
+---
+
+# Project Carryover
+
+## active projects
+
+### project name
+- repo:
+- url:
+- recent updates:
+- current objective:
+- next focus:
+
+\`\`\`text
+Codex/Claude Code kickoff prompt:
+Read AGENTS.md and project-context, summarize current state, then continue the next best scoped step for this project.
+\`\`\`
+`,
+  },
+  {
+    id: "daily-journal",
+    title: "daily journal article",
+    path: "reports/journal/daily.md",
+    description: "Houston-voice narrative article from work, body, social, research, and agent logs",
+    content: `---
+title: Daily Journal Article
+kind: generated_article
+visibility: private
+cadence: daily
+voice: bamfai-author
+sources:
+  - youmd:loop_reports
+  - youmd:agent_activity
+  - github:commits
+  - bamf:creator_analytics
+  - badapp:fitness
+  - weather:home
+  - surf:home_break
+---
+
+# Daily Journal Article
+
+## build
+
+## body
+
+## social
+
+## research
+
+## tomorrow
+`,
+  },
+  {
+    id: "public-profile-chat",
+    title: "public profile chat contract",
+    path: "artifacts/public-profile-chat.md",
+    description: "secure chat widget/API contract for talking to a person through public context",
+    content: `---
+title: Public Profile Chat Contract
+kind: product_spec
+visibility: private
+surface:
+  - public_profile_widget
+  - api:/api/v1/profiles/:username/conversation
+  - mcp:youmd.converse
+---
+
+# Public Profile Chat Contract
+
+## goal
+Let a visitor or connected app chat with a user's public You.md context in that person's voice, without leaking private context.
+
+## response contract
+- public profile facts
+- public projects and links
+- public voice/tone summary
+- public YouStacks and source provenance
+- optional live DSI facts the owner made public, such as weather, surf, GitHub project stats, social analytics, or fitness summaries
+
+## owner controls
+- adjust personality
+- disable topics
+- approve public DSI components
+- review visitor questions
+- connect app-specific chat experiences through scoped grants
+`,
+  },
+];
+
 function getExtLabel(path: string): string {
   if (path.endsWith(".json")) return "json";
   if (path.endsWith(".md")) return "markdown";
@@ -45,6 +212,28 @@ function isPublicPath(path: string): boolean {
   // Directory-rooted files
   const top = p.split("/")[0];
   return PUBLIC_DIRS.has(top);
+}
+
+function classifyWorkspace(path: string): WorkspaceMode {
+  if (
+    path.startsWith("reports/") ||
+    path.startsWith("journal/") ||
+    path.includes("/reports/") ||
+    path.includes("/journal/")
+  ) {
+    return "reports";
+  }
+  if (
+    path.startsWith("artifacts/") ||
+    path.startsWith("sources/") ||
+    path.startsWith("sessions/") ||
+    path.startsWith("memory/") ||
+    path.startsWith("private/") ||
+    path.startsWith("custom/")
+  ) {
+    return "artifacts";
+  }
+  return "files";
 }
 
 const PUBLIC_TOOLTIP = "Public — accessible by any agent with your you.md profile URL";
@@ -189,6 +378,136 @@ function MarkdownStyles() {
         opacity: 0.8;
       }
     `}</style>
+  );
+}
+
+function WorkspaceTabs({
+  mode,
+  onChange,
+  counts,
+}: {
+  mode: WorkspaceMode;
+  onChange: (mode: WorkspaceMode) => void;
+  counts: Record<WorkspaceMode, number>;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
+      {WORKSPACE_MODES.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          onClick={() => onChange(item.key)}
+          className={`shrink-0 border-b px-2 py-1 text-left font-mono text-[10px] transition-colors ${
+            mode === item.key
+              ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"
+              : "border-transparent text-[hsl(var(--text-secondary))] opacity-50 hover:opacity-80"
+          }`}
+          title={item.detail}
+        >
+          {item.label}
+          <span className="ml-1 opacity-40">{counts[item.key]}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ArtifactHome({
+  mode,
+  files,
+  onSelect,
+  onCreateTemplate,
+}: {
+  mode: WorkspaceMode;
+  files: VirtualFile[];
+  onSelect: (path: string) => void;
+  onCreateTemplate: (template: ArtifactTemplate) => void;
+}) {
+  const recent = files.slice(0, 8);
+  const showTemplates = mode === "reports" || mode === "artifacts";
+
+  return (
+    <div className="flex-1 overflow-auto px-5 py-5">
+      <div className="max-w-3xl space-y-6">
+        <div>
+          <p className="font-mono text-[10px] uppercase text-[hsl(var(--text-secondary))] opacity-40">
+            {mode === "reports" ? "loop reports" : mode === "artifacts" ? "saved artifacts" : "identity files"}
+          </p>
+          <h2 className="mt-1 font-mono text-base text-[hsl(var(--text-primary))] opacity-90">
+            {mode === "reports"
+              ? "daily brain outputs live here"
+              : mode === "artifacts"
+                ? "markdown, sources, journals, and generated docs"
+                : "your portable identity bundle"}
+          </h2>
+        </div>
+
+        {showTemplates && (
+          <div className="space-y-2">
+            <p className="font-mono text-[10px] uppercase text-[hsl(var(--text-secondary))] opacity-40">
+              quick starts
+            </p>
+            <div className="grid gap-2 md:grid-cols-2">
+              {ARTIFACT_TEMPLATES.map((template) => (
+                <button
+                  key={template.id}
+                  type="button"
+                  onClick={() => onCreateTemplate(template)}
+                  className="group min-h-[92px] border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3 py-3 text-left transition-colors hover:border-[hsl(var(--accent))]/50"
+                  style={{ borderRadius: "var(--radius)" }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-85">
+                        {template.title}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+                        {template.description}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-mono text-[12px] text-[hsl(var(--accent))] opacity-50 group-hover:opacity-90">
+                      +
+                    </span>
+                  </div>
+                  <p className="mt-2 truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                    {template.path}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <p className="font-mono text-[10px] uppercase text-[hsl(var(--text-secondary))] opacity-40">
+            {recent.length ? "available docs" : "empty"}
+          </p>
+          {recent.length ? (
+            <div className="divide-y divide-[hsl(var(--border))] border-y border-[hsl(var(--border))]">
+              {recent.map((file) => (
+                <button
+                  key={file.path}
+                  type="button"
+                  onClick={() => onSelect(file.path)}
+                  className="flex w-full items-center justify-between gap-3 px-1 py-2 text-left hover:bg-[hsl(var(--bg-raised))]"
+                >
+                  <span className="min-w-0 truncate font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-75">
+                    {file.path}
+                  </span>
+                  <span className="shrink-0 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                    {getExtLabel(file.path)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[12px] text-[hsl(var(--text-secondary))] opacity-50">
+              no files in this workspace yet.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -518,6 +837,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("files");
   const [creatingFile, setCreatingFile] = useState(false);
   const [creatingDirectory, setCreatingDirectory] = useState(false);
   const [creatingDirError, setCreatingDirError] = useState<string | null>(null);
@@ -637,14 +957,30 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     return set;
   }, [latestBundle, customFiles]);
 
+  const workspaceCounts = useMemo<Record<WorkspaceMode, number>>(() => {
+    const counts: Record<WorkspaceMode, number> = { files: 0, artifacts: 0, reports: 0 };
+    for (const file of files) counts[classifyWorkspace(file.path)] += 1;
+    return counts;
+  }, [files]);
+
+  const modeFiles = useMemo(() => {
+    return files.filter((file) => classifyWorkspace(file.path) === workspaceMode);
+  }, [files, workspaceMode]);
+
   const filteredFiles = useMemo(() => {
-    if (!searchQuery.trim()) return files;
+    if (!searchQuery.trim()) return modeFiles;
     const q = searchQuery.toLowerCase();
-    return files.filter((f) => f.path.toLowerCase().includes(q) || f.content.toLowerCase().includes(q));
-  }, [files, searchQuery]);
+    return modeFiles.filter((f) => f.path.toLowerCase().includes(q) || f.content.toLowerCase().includes(q));
+  }, [modeFiles, searchQuery]);
 
   const tree = useMemo(() => buildFileTree(filteredFiles), [filteredFiles]);
   const selectedFile = useMemo(() => files.find((f) => f.path === selectedPath) ?? null, [files, selectedPath]);
+
+  useEffect(() => {
+    if (selectedPath && classifyWorkspace(selectedPath) !== workspaceMode) {
+      setSelectedPath(null);
+    }
+  }, [selectedPath, workspaceMode]);
 
   const handleContentChange = useCallback((path: string, content: string) => {
     setEditedFiles((prev) => ({ ...prev, [path]: content }));
@@ -711,6 +1047,28 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     setEditedFiles((prev) => ({ ...prev, [path]: newFile.content }));
     setSelectedPath(path);
     setCreatingFile(false);
+  }, [files]);
+
+  const handleCreateTemplate = useCallback((template: ArtifactTemplate) => {
+    const exists = files.some((f) => f.path === template.path);
+    if (exists) {
+      setSelectedPath(template.path);
+      setWorkspaceMode(classifyWorkspace(template.path));
+      return;
+    }
+
+    const newFile: VirtualFile = {
+      path: template.path,
+      content: template.content,
+      section: `custom_files.${template.path}`,
+      editable: true,
+    };
+    setCustomFiles((prev) => [...prev, newFile]);
+    setEditedFiles((prev) => ({ ...prev, [template.path]: template.content }));
+    setSelectedPath(template.path);
+    setWorkspaceMode(classifyWorkspace(template.path));
+    setSaveStatus("template staged — cmd+s to save");
+    setTimeout(() => setSaveStatus(null), 3000);
   }, [files]);
 
   // ── Create new custom directory ───────────────────────────────────────
@@ -808,47 +1166,54 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
       <MarkdownStyles />
 
       {/* Header */}
-      <div className="px-4 md:px-6 py-3 border-b border-[hsl(var(--border))] flex items-center justify-between">
-        <span className="text-xs font-mono text-[hsl(var(--text-secondary))] flex items-center gap-2">
-          files
-          {modifiedCount > 0 && (
-            <span className="text-[hsl(var(--accent))]">({modifiedCount} modified)</span>
-          )}
-          {saveStatus && (
-            <span className={`text-[9px] ${saveStatus.startsWith("error") ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}`}>
-              {saveStatus}
+      <div className="border-b border-[hsl(var(--border))] px-4 py-3 md:px-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <span className="flex items-center gap-2 font-mono text-xs text-[hsl(var(--text-secondary))]">
+              artifact workspace
+              {modifiedCount > 0 && (
+                <span className="text-[hsl(var(--accent))]">({modifiedCount} modified)</span>
+              )}
+              {saveStatus && (
+                <span className={`text-[9px] ${saveStatus.startsWith("error") ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}`}>
+                  {saveStatus}
+                </span>
+              )}
             </span>
-          )}
-        </span>
-        <div className="flex items-center gap-2">
-          {modifiedCount > 0 && (
-            <>
-              <Button
-                onClick={handleDiscard}
-                disabled={saving}
-                variant="secondary"
-                size="sm"
-                className="text-[10px]"
-              >
-                discard
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                variant="primary"
-                size="sm"
-                className="text-[10px]"
-              >
-                {saving ? "saving..." : "save"}
-              </Button>
-            </>
-          )}
-          {/* Keyboard shortcut hint */}
-          {modifiedCount > 0 && (
-            <span className="font-mono text-[8px] text-[hsl(var(--text-secondary))] opacity-30 hidden md:inline">
-              {typeof navigator !== "undefined" && /Mac/.test(navigator.userAgent) ? "cmd" : "ctrl"}+s
-            </span>
-          )}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {modifiedCount > 0 && (
+              <>
+                <Button
+                  onClick={handleDiscard}
+                  disabled={saving}
+                  variant="secondary"
+                  size="sm"
+                  className="text-[10px]"
+                >
+                  discard
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  variant="primary"
+                  size="sm"
+                  className="text-[10px]"
+                >
+                  {saving ? "saving..." : "save"}
+                </Button>
+              </>
+            )}
+            {/* Keyboard shortcut hint */}
+            {modifiedCount > 0 && (
+              <span className="hidden font-mono text-[8px] text-[hsl(var(--text-secondary))] opacity-30 md:inline">
+                {typeof navigator !== "undefined" && /Mac/.test(navigator.userAgent) ? "cmd" : "ctrl"}+s
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="mt-3">
+          <WorkspaceTabs mode={workspaceMode} onChange={setWorkspaceMode} counts={workspaceCounts} />
         </div>
       </div>
 
@@ -889,14 +1254,20 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
           </div>
           <div className="px-3 py-1.5 border-b border-[hsl(var(--border))]">
             <div className="flex items-center justify-between font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
-              <span>{searchQuery ? `${filteredFiles.length}/${files.length}` : files.length} files</span>
+              <span>{searchQuery ? `${filteredFiles.length}/${modeFiles.length}` : modeFiles.length} files</span>
               <span>{latestBundle ? `v${latestBundle.version}` : ""}{memories?.length ? ` / ${memories.length} mem` : ""}</span>
             </div>
           </div>
           <div className="py-1 flex-1 overflow-y-auto">
-            {tree.map((node) => (
-              <FileTreeItem key={node.path} node={node} selectedPath={selectedPath} onSelect={setSelectedPath} />
-            ))}
+            {tree.length > 0 ? (
+              tree.map((node) => (
+                <FileTreeItem key={node.path} node={node} selectedPath={selectedPath} onSelect={setSelectedPath} />
+              ))
+            ) : (
+              <p className="px-3 py-4 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-35">
+                no {workspaceMode} matched.
+              </p>
+            )}
           </div>
           {/* New file button / input */}
           {creatingFile ? (
@@ -945,11 +1316,12 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
               />
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-30">
-                select a file to view
-              </p>
-            </div>
+            <ArtifactHome
+              mode={workspaceMode}
+              files={filteredFiles}
+              onSelect={setSelectedPath}
+              onCreateTemplate={handleCreateTemplate}
+            />
           )}
         </div>
       </div>
