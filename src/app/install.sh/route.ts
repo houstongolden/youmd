@@ -58,7 +58,8 @@ install_from_source() {
   cd "$TMP_DIR/youmd/cli" || return 1
   npm ci >/dev/null
   npm run build >/dev/null
-  npm install -g . >/dev/null
+  TARBALL="$(npm pack --silent)"
+  npm install -g "$TARBALL" >/dev/null
 }
 
 install_from_npm() {
