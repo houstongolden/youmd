@@ -7,7 +7,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { PaneHeader, PaneEmptyState } from "./shared";
 import { decompileBundle, buildFileTree, generateMemoryFiles, type VirtualFile, type FileTreeNode } from "@/lib/decompile";
 import { recompileYouJson } from "@/lib/recompile";
-import type { Id } from "../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Form";
 
@@ -17,6 +17,10 @@ interface FilesPaneProps {
 }
 
 type WorkspaceMode = "files" | "artifacts" | "reports";
+
+type LoopReportDefinition = Doc<"loopReportDefinitions">;
+type LoopReportRun = Doc<"loopReportRuns">;
+type LoopReportArtifact = Doc<"loopReportArtifacts">;
 
 type ArtifactTemplate = {
   id: string;
@@ -187,6 +191,23 @@ function getExtLabel(path: string): string {
   if (path.endsWith(".json")) return "json";
   if (path.endsWith(".md")) return "markdown";
   return "text";
+}
+
+function timeAgo(timestamp?: number): string {
+  if (!timestamp) return "--";
+  const diff = Date.now() - timestamp;
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (diff < minute) return "now";
+  if (diff < hour) return `${Math.floor(diff / minute)}m ago`;
+  if (diff < day) return `${Math.floor(diff / hour)}h ago`;
+  if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function reportArtifactPath(artifact: LoopReportArtifact): string {
+  return `reports/generated/${artifact.definitionSlug}/${new Date(artifact.createdAt).toISOString().slice(0, 10)}-${artifact._id}.md`;
 }
 
 // ── Visibility helpers ──────────────────────────────────────────────────
@@ -417,11 +438,27 @@ function ArtifactHome({
   files,
   onSelect,
   onCreateTemplate,
+  loopDefinitions,
+  loopRuns,
+  loopArtifacts,
+  loopBusy,
+  loopStatus,
+  onSeedLoopDefaults,
+  onRunDailyBriefing,
+  onToggleLoopDefinition,
 }: {
   mode: WorkspaceMode;
   files: VirtualFile[];
   onSelect: (path: string) => void;
   onCreateTemplate: (template: ArtifactTemplate) => void;
+  loopDefinitions: LoopReportDefinition[];
+  loopRuns: LoopReportRun[];
+  loopArtifacts: LoopReportArtifact[];
+  loopBusy: boolean;
+  loopStatus: string | null;
+  onSeedLoopDefaults: () => void;
+  onRunDailyBriefing: () => void;
+  onToggleLoopDefinition: (definition: LoopReportDefinition) => void;
 }) {
   const recent = files.slice(0, 8);
   const showTemplates = mode === "reports" || mode === "artifacts";
@@ -441,6 +478,20 @@ function ArtifactHome({
                 : "your portable identity bundle"}
           </h2>
         </div>
+
+        {mode === "reports" && (
+          <LoopReportsControlPanel
+            definitions={loopDefinitions}
+            runs={loopRuns}
+            artifacts={loopArtifacts}
+            busy={loopBusy}
+            status={loopStatus}
+            onSeedDefaults={onSeedLoopDefaults}
+            onRunDailyBriefing={onRunDailyBriefing}
+            onToggleDefinition={onToggleLoopDefinition}
+            onSelectArtifact={onSelect}
+          />
+        )}
 
         {showTemplates && (
           <div className="space-y-2">
@@ -503,6 +554,204 @@ function ArtifactHome({
           ) : (
             <p className="text-[12px] text-[hsl(var(--text-secondary))] opacity-50">
               no files in this workspace yet.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoopReportsControlPanel({
+  definitions,
+  runs,
+  artifacts,
+  busy,
+  status,
+  onSeedDefaults,
+  onRunDailyBriefing,
+  onToggleDefinition,
+  onSelectArtifact,
+}: {
+  definitions: LoopReportDefinition[];
+  runs: LoopReportRun[];
+  artifacts: LoopReportArtifact[];
+  busy: boolean;
+  status: string | null;
+  onSeedDefaults: () => void;
+  onRunDailyBriefing: () => void;
+  onToggleDefinition: (definition: LoopReportDefinition) => void;
+  onSelectArtifact: (path: string) => void;
+}) {
+  const activeCount = definitions.filter((definition) => definition.status === "active").length;
+  const latestRun = runs[0];
+
+  return (
+    <div className="space-y-4">
+      <div className="border-y border-[hsl(var(--border))] py-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] uppercase text-[hsl(var(--text-secondary))] opacity-40">
+              loop engine
+            </p>
+            <h3 className="mt-1 font-mono text-sm text-[hsl(var(--text-primary))] opacity-90">
+              private cron reports and source snapshots
+            </h3>
+            <p className="mt-1 max-w-xl text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+              Definitions decide what runs, runs capture the time window, snapshots preserve the source facts, and artifacts become markdown files in this workspace.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onSeedDefaults}
+              disabled={busy}
+              className="h-8 text-[10px]"
+            >
+              seed defaults
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={onRunDailyBriefing}
+              disabled={busy}
+              className="h-8 text-[10px]"
+            >
+              {busy ? "running..." : "run daily now"}
+            </Button>
+          </div>
+        </div>
+        <div className="mt-3 grid gap-2 font-mono text-[10px] text-[hsl(var(--text-secondary))] md:grid-cols-4">
+          <div>
+            <span className="opacity-35">definitions</span>
+            <span className="ml-2 text-[hsl(var(--text-primary))] opacity-80">{definitions.length}</span>
+          </div>
+          <div>
+            <span className="opacity-35">active</span>
+            <span className="ml-2 text-[hsl(var(--success))] opacity-80">{activeCount}</span>
+          </div>
+          <div>
+            <span className="opacity-35">runs</span>
+            <span className="ml-2 text-[hsl(var(--text-primary))] opacity-80">{runs.length}</span>
+          </div>
+          <div>
+            <span className="opacity-35">latest</span>
+            <span className="ml-2 text-[hsl(var(--text-primary))] opacity-80">{latestRun ? timeAgo(latestRun.startedAt) : "--"}</span>
+          </div>
+        </div>
+        {status && (
+          <p className={`mt-2 font-mono text-[10px] ${status.startsWith("error") ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"} opacity-80`}>
+            {status}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <p className="font-mono text-[10px] uppercase text-[hsl(var(--text-secondary))] opacity-40">
+          definitions
+        </p>
+        {definitions.length ? (
+          <div className="divide-y divide-[hsl(var(--border))] border-y border-[hsl(var(--border))]">
+            {definitions.map((definition) => (
+              <div key={definition._id} className="flex flex-col gap-2 px-1 py-2 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80">
+                      {definition.title}
+                    </span>
+                    <span className={`font-mono text-[9px] ${definition.status === "active" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))]"} opacity-70`}>
+                      {definition.status}
+                    </span>
+                    <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                      {definition.cadence} / {definition.sourceSelectors.length} sources
+                    </span>
+                  </div>
+                  <p className="mt-1 truncate text-[11px] text-[hsl(var(--text-secondary))] opacity-45">
+                    {definition.description ?? definition.slug}
+                  </p>
+                  <p className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                    last {timeAgo(definition.lastRunAt)} / next {timeAgo(definition.nextRunAt)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onToggleDefinition(definition)}
+                  disabled={busy}
+                  className="self-start font-mono text-[9px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100 disabled:opacity-25 md:self-center"
+                >
+                  {definition.status === "active" ? "pause" : "resume"}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[12px] text-[hsl(var(--text-secondary))] opacity-50">
+            no loop definitions yet. seed defaults to install the daily briefing, project carryover, and journal loops.
+          </p>
+        )}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="space-y-2">
+          <p className="font-mono text-[10px] uppercase text-[hsl(var(--text-secondary))] opacity-40">
+            recent runs
+          </p>
+          {runs.length ? (
+            <div className="divide-y divide-[hsl(var(--border))] border-y border-[hsl(var(--border))]">
+              {runs.slice(0, 5).map((run) => (
+                <div key={run._id} className="px-1 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-75">
+                      {run.definitionSlug}
+                    </span>
+                    <span className={`shrink-0 font-mono text-[9px] ${run.status === "completed" ? "text-[hsl(var(--success))]" : run.status === "failed" ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-secondary))]"} opacity-75`}>
+                      {run.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                    {run.windowStart.slice(0, 10)} / {run.sourceSnapshotIds.length} snapshots / started {timeAgo(run.startedAt)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[12px] text-[hsl(var(--text-secondary))] opacity-50">
+              no report runs yet.
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <p className="font-mono text-[10px] uppercase text-[hsl(var(--text-secondary))] opacity-40">
+            generated artifacts
+          </p>
+          {artifacts.length ? (
+            <div className="divide-y divide-[hsl(var(--border))] border-y border-[hsl(var(--border))]">
+              {artifacts.slice(0, 5).map((artifact) => (
+                <button
+                  key={artifact._id}
+                  type="button"
+                  onClick={() => onSelectArtifact(reportArtifactPath(artifact))}
+                  className="w-full px-1 py-2 text-left hover:bg-[hsl(var(--bg-raised))]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-75">
+                      {artifact.title}
+                    </span>
+                    <span className="shrink-0 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                      {artifact.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-[11px] text-[hsl(var(--text-secondary))] opacity-45">
+                    {artifact.summary}
+                  </p>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[12px] text-[hsl(var(--text-secondary))] opacity-50">
+              no generated markdown artifacts yet.
             </p>
           )}
         </div>
@@ -819,8 +1068,19 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const latestBundle = useQuery(api.bundles.getLatestBundle, clerkId && userId ? { clerkId, userId } : "skip");
   const saveYouJson = useMutation(api.me.saveYouJsonDirect);
   const createCustomDirectory = useMutation(api.me.createCustomDirectory);
+  const seedLoopDefaults = useMutation(api.loopReports.seedDefaultDefinitions);
+  const runDailyBriefingNow = useMutation(api.loopReports.runDailyBriefingNow);
+  const updateLoopDefinitionStatus = useMutation(api.loopReports.updateDefinitionStatus);
   const memories = useQuery(api.memories.listMemories, clerkId && userId ? { clerkId, userId } : "skip");
   const sessions = useQuery(api.memories.listSessions, clerkId && userId ? { clerkId, userId, limit: 20 } : "skip");
+  const loopReportDefinitions = useQuery(
+    api.loopReports.listDefinitions,
+    clerkId && userId ? { clerkId, userId } : "skip"
+  );
+  const loopReportRuns = useQuery(
+    api.loopReports.listRuns,
+    clerkId && userId ? { clerkId, userId, limit: 20 } : "skip"
+  );
   const loopReportArtifacts = useQuery(
     api.loopReports.listArtifacts,
     clerkId && userId ? { clerkId, userId, limit: 40 } : "skip"
@@ -847,6 +1107,8 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const [creatingDirError, setCreatingDirError] = useState<string | null>(null);
   const [creatingDirBusy, setCreatingDirBusy] = useState(false);
   const [customFiles, setCustomFiles] = useState<VirtualFile[]>([]);
+  const [loopBusy, setLoopBusy] = useState(false);
+  const [loopStatus, setLoopStatus] = useState<string | null>(null);
 
   // Convert privateContext table data into virtual files under private/
   const privateContextFiles = useMemo<VirtualFile[]>(() => {
@@ -925,7 +1187,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
       : [];
     const memoryFiles = generateMemoryFiles(memories ?? [], sessions ?? []);
     const reportFiles: VirtualFile[] = (loopReportArtifacts ?? []).map((artifact) => ({
-      path: `reports/generated/${artifact.definitionSlug}/${new Date(artifact.createdAt).toISOString().slice(0, 10)}-${artifact._id}.md`,
+      path: reportArtifactPath(artifact),
       content: [
         "---",
         `title: ${JSON.stringify(artifact.title)}`,
@@ -1091,6 +1353,57 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     setSaveStatus("template staged — cmd+s to save");
     setTimeout(() => setSaveStatus(null), 3000);
   }, [files]);
+
+  const handleSeedLoopDefaults = useCallback(async () => {
+    if (!user?.id || !userId) return;
+    setLoopBusy(true);
+    setLoopStatus(null);
+    try {
+      const rows = await seedLoopDefaults({ clerkId: user.id, userId });
+      setLoopStatus(`seeded ${rows.length} loop definitions`);
+      setTimeout(() => setLoopStatus(null), 3000);
+    } catch (err) {
+      setLoopStatus(`error: ${err instanceof Error ? err.message : "failed to seed loops"}`);
+    } finally {
+      setLoopBusy(false);
+    }
+  }, [user, userId, seedLoopDefaults]);
+
+  const handleRunDailyBriefing = useCallback(async () => {
+    if (!user?.id || !userId) return;
+    setLoopBusy(true);
+    setLoopStatus(null);
+    try {
+      const result = await runDailyBriefingNow({ clerkId: user.id, userId, force: true });
+      setWorkspaceMode("reports");
+      setLoopStatus(result.reused ? "daily briefing already exists" : "daily briefing generated");
+      setTimeout(() => setLoopStatus(null), 3000);
+    } catch (err) {
+      setLoopStatus(`error: ${err instanceof Error ? err.message : "failed to run briefing"}`);
+    } finally {
+      setLoopBusy(false);
+    }
+  }, [user, userId, runDailyBriefingNow]);
+
+  const handleToggleLoopDefinition = useCallback(async (definition: LoopReportDefinition) => {
+    if (!user?.id) return;
+    setLoopBusy(true);
+    setLoopStatus(null);
+    try {
+      const nextStatus = definition.status === "active" ? "paused" : "active";
+      await updateLoopDefinitionStatus({
+        clerkId: user.id,
+        definitionId: definition._id,
+        status: nextStatus,
+      });
+      setLoopStatus(`${definition.title} ${nextStatus}`);
+      setTimeout(() => setLoopStatus(null), 3000);
+    } catch (err) {
+      setLoopStatus(`error: ${err instanceof Error ? err.message : "failed to update loop"}`);
+    } finally {
+      setLoopBusy(false);
+    }
+  }, [user, updateLoopDefinitionStatus]);
 
   // ── Create new custom directory ───────────────────────────────────────
 
@@ -1342,6 +1655,14 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
               files={filteredFiles}
               onSelect={setSelectedPath}
               onCreateTemplate={handleCreateTemplate}
+              loopDefinitions={loopReportDefinitions ?? []}
+              loopRuns={loopReportRuns ?? []}
+              loopArtifacts={loopReportArtifacts ?? []}
+              loopBusy={loopBusy}
+              loopStatus={loopStatus}
+              onSeedLoopDefaults={handleSeedLoopDefaults}
+              onRunDailyBriefing={handleRunDailyBriefing}
+              onToggleLoopDefinition={handleToggleLoopDefinition}
             />
           )}
         </div>

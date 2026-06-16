@@ -38,6 +38,7 @@ PRD Version: 2.3
 - [x] Add source snapshot table and a deterministic first daily briefing runner for You.md-owned activity, projects, sources, repo mirror, pending source changes, and memories
 - [x] Add hourly due-loop cron processing and focused Convex tests for manual + scheduled report generation
 - [x] Surface generated private Loop Report artifacts in the Files pane as read-only markdown under `reports/generated/*`
+- [x] Add owner-visible Loop Report controls in the Files/Reports workspace for definitions, recent runs, generated artifacts, default seeding, manual daily runs, and pause/resume
 - [ ] Add external report adapters for Perplexity industry pulse, Google Calendar agenda, BAMF/BAMF OS analytics, Bad.app fitness/body, weather, surf, and school crawler data
 - [ ] Port h.computer weather, surf, school crawler, GitHub LOC/LOMB project catalog, and daily journal source adapters into You.md-native connectors
 - [ ] Add DSI catalog components and owner-approved public profile rendering
