@@ -1529,7 +1529,7 @@ export function DashboardContent() {
                     <FilesPane userId={convexUser._id} isWritingFiles={isWritingFiles} />
                   )}
                   {rightPane === "github" && user?.id && (
-                    <GithubPane clerkId={user.id} />
+                    <GithubPane clerkId={user.id} username={username} userId={convexUser._id} />
                   )}
                   {rightPane === "share" && user?.id && (
                     <SharePane

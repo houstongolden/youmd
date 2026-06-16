@@ -16,6 +16,7 @@
 ### fix(web): stop the collapsed YOU mark from clipping
 - Reduced the collapsed PixelYOU mark scale from `0.102` to `0.094` and widened its clipped viewport from `32px` to `36px`.
 - Shifted the collapsed logo viewport slightly left so the final `U` has enough room inside the skinny sidebar rail.
+- Vercel deployment `dpl_3K5S5n446oTqL2qDvZbUXraubqdc` reached Ready and is aliased to `https://www.you.md` / `https://you.md`; authenticated production visual QA confirmed the collapsed `YOU` mark now fits cleanly in the rail.
 
 ## 2026-06-16 — Shell opening intelligence brief
 

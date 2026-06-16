@@ -61,9 +61,9 @@ Last Updated: 2026-06-16
 ## 2026-06-15 — Rebuild `/shell` as Codex/Lovable-style workspace
 
 ### 121. Shell logo hover sidebar toggle and right-pane toggle placement
-**Status:** IN PROGRESS (code complete and deployed; Houston visual approval pending)
+**Status:** IN PROGRESS (follow-up deployed; Houston visual approval pending)
 **Verified:** NO
-**Production Verified:** YES (deployment Ready; authenticated visual QA pending)
+**Production Verified:** YES (authenticated production visual QA)
 **Source:** 2026-06-15 — Houston: "these sidebar icons on the top left are not following instructions... hover on the YOU logo should subtly animate and switch to a 2-line side menu icon... the YOU needs to be a touch smaller... the other side panel icon... should be on the top right of the whole screen since it controls the top right pannel... use a cleaner more minimal side panel icon"
 **Actionable Scope:**
 1. Remove the separate top-left sidebar toggle icon beside the YOU logo.
@@ -74,7 +74,7 @@ Last Updated: 2026-06-16
 6. Replace the right-pane Lucide panel icon with a cleaner minimal side-panel glyph.
 7. Shrink and reposition the collapsed rail's PixelYOU viewport so the `YOU` mark fits cleanly without clipping the final letter. **DONE locally.**
 **Progress (2026-06-15):** Implemented locally in `src/app/(app)/dashboard/dashboard-content.tsx`: removed the separate left-panel button, added a smaller hover-animated PixelYOU/sidebar menu toggle, moved the detail-pane toggle to the far-right top chrome after deploy, and replaced Lucide panel icons with small custom line glyphs. Verification passed `npm run lint` (existing warnings only, radius OK), `npm run build`, and `git diff --check`. Pushed commit `60484b8`; Vercel deployment `dpl_DdW1qSmFWKKc8iks3bJxbnaeYjTM` reached Ready and is aliased to `https://www.you.md` / `https://you.md`. Browser automation could only open an unauthenticated protected-shell view, so authenticated visual approval remains pending.
-**Progress (2026-06-16 follow-up):** Houston flagged that the collapsed rail's `YOU` mark still clipped on the right edge. Locally reduced the collapsed PixelYOU scale to `0.094`, expanded the clipped viewport to `36px`, and shifted it left by a couple pixels while keeping the 56px sidebar rail unchanged. Remaining: build/deploy/production visual QA.
+**Progress (2026-06-16 follow-up):** Houston flagged that the collapsed rail's `YOU` mark still clipped on the right edge. Reduced the collapsed PixelYOU scale to `0.094`, expanded the clipped viewport to `36px`, and shifted it left by a couple pixels while keeping the 56px sidebar rail unchanged. `npm run lint`, `npm run build`, `npm run docs:check`, and `git diff --check` passed. Vercel deployment `dpl_3K5S5n446oTqL2qDvZbUXraubqdc` reached Ready and is aliased to `https://www.you.md` / `https://you.md`; authenticated production visual QA confirmed the loaded collapsed `YOU` mark now fits cleanly inside the skinny rail. Remaining: GitHub CI final result and Houston visual approval.
 
 ### 120. Shell composer prompt/outline cleanup, attach, and voice affordance
 **Status:** IN PROGRESS (code complete and deployed; Houston visual approval pending)

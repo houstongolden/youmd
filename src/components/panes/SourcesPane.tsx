@@ -12,6 +12,7 @@ import { FieldError, FieldHelp, Input } from "@/components/ui/Form";
 interface SourcesPaneProps {
   userId: Id<"users">;
   username: string;
+  embedded?: boolean;
 }
 
 type SourceStatus = "pending" | "fetching" | "fetched" | "extracting" | "extracted" | "failed";
@@ -202,7 +203,7 @@ function connectorFor(kind: ConnectorKind) {
   return connectorOptions.find((option) => option.kind === kind) ?? connectorOptions[0];
 }
 
-export function SourcesPane({}: SourcesPaneProps) {
+export function SourcesPane({ embedded = false }: SourcesPaneProps) {
   const { user } = useUser();
   const clerkId = user?.id;
 
@@ -291,7 +292,7 @@ export function SourcesPane({}: SourcesPaneProps) {
   if (sources === undefined) {
     return (
       <div className="h-full overflow-y-auto">
-        <PaneHeader>sources</PaneHeader>
+        {!embedded && <PaneHeader>sources</PaneHeader>}
         <div className="px-6 py-12">
           <p className="text-sm font-mono text-[hsl(var(--text-secondary))] opacity-40 animate-pulse">
             loading sources...
@@ -319,9 +320,9 @@ export function SourcesPane({}: SourcesPaneProps) {
 
   return (
     <div className="h-full overflow-y-auto">
-      <PaneHeader>sources</PaneHeader>
+      {!embedded && <PaneHeader>sources</PaneHeader>}
 
-      <div className="px-6 py-6 space-y-0 max-w-xl">
+      <div className="px-6 py-6 space-y-0 max-w-3xl">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 mb-6">
           {[
