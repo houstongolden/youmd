@@ -1401,11 +1401,11 @@ export function DashboardContent() {
           </div>
 
           {/* Content — split on desktop, toggled on mobile */}
-          <div ref={splitContainerRef} className="relative flex min-h-0 flex-1 bg-[hsl(var(--bg))]">
+          <div ref={splitContainerRef} className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
             {/* Terminal — always rendered on desktop; on mobile only when active */}
             <div
               className={[
-                "min-h-0 flex flex-col bg-[hsl(var(--bg-raised))]",
+                "min-h-0 min-w-0 flex flex-col bg-[hsl(var(--bg-raised))]",
                 panelOpen ? "md:w-[var(--shell-chat-width)] md:flex-none" : "md:flex-1",
                 "md:relative md:opacity-100 md:translate-x-0",
                 // Mobile: full width, absolute positioned for transitions
@@ -1449,7 +1449,7 @@ export function DashboardContent() {
             {/* Panes — always rendered on desktop; on mobile only when active */}
             <div
               className={[
-                "min-h-0 flex flex-col bg-[hsl(var(--bg-raised))]",
+                "min-h-0 min-w-0 flex flex-col overflow-hidden bg-[hsl(var(--bg-raised))]",
                 // Desktop: hidden when panel is closed
                 panelOpen
                   ? "md:relative md:flex-1 md:opacity-100 md:translate-x-0"
@@ -1517,7 +1517,7 @@ export function DashboardContent() {
               </div>
 
               {/* Active pane */}
-              <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
                 <ErrorBoundary>
                   {rightPane === "profile" && (
                     <ProfilePane userId={convexUser._id} username={username} ownerId={convexUser._id} />
