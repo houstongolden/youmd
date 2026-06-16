@@ -42,8 +42,9 @@ PRD Version: 2.3
 - [x] Add owner-visible Loop Report controls in the Files/Reports workspace for definitions, recent runs, generated artifacts, default seeding, manual daily runs, and pause/resume
 - [x] Add owner-only source snapshot drilldown for report runs so generated reports show their normalized facts, hashes, trust level, and capture window
 - [x] Port the first h.computer weather + Venice Breakwater surf report adapters into private You.md DSI components
+- [x] Port the first GitHub project catalog DSI component with tracked projects, GitHub URLs, recent commits, AI insight, and exact repo-mirror LOC/LOMB where available
 - [ ] Add external report adapters for Perplexity industry pulse, Google Calendar agenda, BAMF/BAMF OS analytics, Bad.app fitness/body, and school crawler data
-- [ ] Port h.computer school crawler, GitHub LOC/LOMB project catalog, historical daily log, and daily journal source adapters into You.md-native connectors
+- [ ] Port h.computer school crawler, full GitHub `/languages` LOC/LOMB enrichment for every repo, historical daily log, and daily journal source adapters into You.md-native connectors
 - [ ] Add owner-approved public profile rendering for selected DSI catalog components
 - [x] Add secure public profile chat widget and `/api/v1/profiles/:username/conversation` first slice with public-context-only answers and provenance
 - [x] Add hosted MCP parity for public profile conversation through `ask_public_profile`

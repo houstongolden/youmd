@@ -491,6 +491,7 @@ function ArtifactHome({
   onSeedLoopDefaults,
   onRunDailyBriefing,
   onRefreshWeatherSurf,
+  onRefreshProjectCatalog,
   onToggleLoopDefinition,
   selectedRunId,
   loopSnapshots,
@@ -511,6 +512,7 @@ function ArtifactHome({
   onSeedLoopDefaults: () => void;
   onRunDailyBriefing: () => void;
   onRefreshWeatherSurf: () => void;
+  onRefreshProjectCatalog: () => void;
   onToggleLoopDefinition: (definition: LoopReportDefinition) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
   loopSnapshots: SourceSnapshot[] | undefined;
@@ -548,6 +550,7 @@ function ArtifactHome({
             onSeedDefaults={onSeedLoopDefaults}
             onRunDailyBriefing={onRunDailyBriefing}
             onRefreshWeatherSurf={onRefreshWeatherSurf}
+            onRefreshProjectCatalog={onRefreshProjectCatalog}
             onToggleDefinition={onToggleLoopDefinition}
             onSelectArtifact={onSelect}
             selectedRunId={selectedRunId}
@@ -637,6 +640,7 @@ function LoopReportsControlPanel({
   onSeedDefaults,
   onRunDailyBriefing,
   onRefreshWeatherSurf,
+  onRefreshProjectCatalog,
   onToggleDefinition,
   onSelectArtifact,
   selectedRunId,
@@ -654,6 +658,7 @@ function LoopReportsControlPanel({
   onSeedDefaults: () => void;
   onRunDailyBriefing: () => void;
   onRefreshWeatherSurf: () => void;
+  onRefreshProjectCatalog: () => void;
   onToggleDefinition: (definition: LoopReportDefinition) => void;
   onSelectArtifact: (path: string) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
@@ -737,18 +742,29 @@ function LoopReportsControlPanel({
               private live components for your personal API/MCP
             </h3>
             <p className="mt-1 max-w-xl text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
-              Components are normalized source-backed objects agents can read. Weather and surf are the first h.computer adapters ported into You.md.
+              Components are normalized source-backed objects agents can read. Weather, surf, and project catalog adapters are the first h.computer patterns ported into You.md.
             </p>
           </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={onRefreshWeatherSurf}
-            disabled={dsiBusy}
-            className="h-8 self-start text-[10px]"
-          >
-            {dsiBusy ? "refreshing..." : "refresh weather/surf"}
-          </Button>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onRefreshProjectCatalog}
+              disabled={dsiBusy}
+              className="h-8 self-start text-[10px]"
+            >
+              {dsiBusy ? "refreshing..." : "refresh projects"}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onRefreshWeatherSurf}
+              disabled={dsiBusy}
+              className="h-8 self-start text-[10px]"
+            >
+              {dsiBusy ? "refreshing..." : "refresh weather/surf"}
+            </Button>
+          </div>
         </div>
         <div className="mt-3 grid gap-2 font-mono text-[10px] text-[hsl(var(--text-secondary))] md:grid-cols-4">
           <div>
@@ -1305,6 +1321,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const seedLoopDefaults = useMutation(api.loopReports.seedDefaultDefinitions);
   const runDailyBriefingNow = useMutation(api.loopReports.runDailyBriefingNow);
   const updateLoopDefinitionStatus = useMutation(api.loopReports.updateDefinitionStatus);
+  const refreshProjectCatalog = useMutation(api.dsi.refreshProjectCatalog);
   const refreshWeatherSurf = useAction(api.dsi.refreshWeatherSurf);
   const memories = useQuery(api.memories.listMemories, clerkId && userId ? { clerkId, userId } : "skip");
   const sessions = useQuery(api.memories.listSessions, clerkId && userId ? { clerkId, userId, limit: 20 } : "skip");
@@ -1654,6 +1671,22 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     }
   }, [user, userId, refreshWeatherSurf]);
 
+  const handleRefreshProjectCatalog = useCallback(async () => {
+    if (!user?.id || !userId) return;
+    setDsiBusy(true);
+    setDsiStatus(null);
+    try {
+      const result = await refreshProjectCatalog({ clerkId: user.id, userId });
+      setWorkspaceMode("artifacts");
+      setDsiStatus(`refreshed project catalog snapshot ${String(result.snapshotId).slice(-6)}`);
+      setTimeout(() => setDsiStatus(null), 3000);
+    } catch (err) {
+      setDsiStatus(`error: ${err instanceof Error ? err.message : "failed to refresh project catalog"}`);
+    } finally {
+      setDsiBusy(false);
+    }
+  }, [user, userId, refreshProjectCatalog]);
+
   const handleToggleLoopDefinition = useCallback(async (definition: LoopReportDefinition) => {
     if (!user?.id) return;
     setLoopBusy(true);
@@ -1939,6 +1972,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
               onSeedLoopDefaults={handleSeedLoopDefaults}
               onRunDailyBriefing={handleRunDailyBriefing}
               onRefreshWeatherSurf={handleRefreshWeatherSurf}
+              onRefreshProjectCatalog={handleRefreshProjectCatalog}
               onToggleLoopDefinition={handleToggleLoopDefinition}
               selectedRunId={selectedLoopRunId}
               loopSnapshots={loopSnapshots}

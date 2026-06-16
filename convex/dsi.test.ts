@@ -107,4 +107,126 @@ describe("dsi components", () => {
       "venice-breakwater-surf",
     ]);
   });
+
+  it("builds a GitHub project catalog component from tracked projects and repo mirror stats", async () => {
+    const t = convexTest(schema);
+    const userId = await seedUser(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    await t.run(async (ctx) => {
+      await ctx.db.insert("bundles", {
+        userId,
+        version: 1,
+        schemaVersion: "you-md/v1",
+        manifest: {},
+        youJson: {
+          projects: [
+            {
+              name: "youmd",
+              url: "https://you.md",
+              githubUrl: "https://github.com/houstongolden/youmd",
+            },
+          ],
+        },
+        youMd: "# dsi owner",
+        isPublished: false,
+        createdAt: Date.now(),
+      });
+      await ctx.db.insert("repoMirror", {
+        userId,
+        repoFullName: "houstongolden/youmd",
+        commitSha: "abc123",
+        files: [
+          { path: "src/app.ts", content: "one\ntwo\nthree", size: 13 },
+          { path: "README.md", content: "# Readme\n\nnotes", size: 14 },
+          { path: "docs/plan.mdx", content: "a\nb", size: 3 },
+        ],
+        fileCount: 3,
+        totalBytes: 30,
+        truncated: false,
+        syncedAt: Date.parse("2026-06-16T12:00:00.000Z"),
+      });
+      await ctx.db.insert("trackedProjects", {
+        userId,
+        githubRepoId: 1,
+        fullName: "houstongolden/youmd",
+        name: "youmd",
+        description: "Identity context protocol.",
+        primaryLanguage: "TypeScript",
+        pushedAt: Date.parse("2026-06-16T13:00:00.000Z"),
+        commitsLast90d: 42,
+        stars: 7,
+        isPrivate: false,
+        insight: "Portable context for agents.",
+        visibility: "public",
+        trackedAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      await ctx.db.insert("trackedProjects", {
+        userId,
+        githubRepoId: 2,
+        fullName: "houstongolden/bamfai",
+        name: "bamfai",
+        description: "Creator engine.",
+        primaryLanguage: "TypeScript",
+        pushedAt: Date.parse("2026-06-15T13:00:00.000Z"),
+        commitsLast90d: 10,
+        stars: 3,
+        isPrivate: true,
+        insight: "BAMF creator workflows.",
+        visibility: "private",
+        trackedAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
+    const result = await asOwner.mutation(api.dsi.refreshProjectCatalog, {
+      clerkId: CLERK,
+      userId,
+    });
+    expect(result.snapshotId).toBeTruthy();
+
+    const components = await asOwner.query(api.dsi.listComponents, {
+      clerkId: CLERK,
+      userId,
+    });
+    const catalog = components.find((component) => component.slug === "github-project-catalog");
+    expect(catalog?.visibility).toBe("private");
+    expect(catalog?.summary).toContain("2 projects");
+    expect(catalog?.summary).toContain("52 commits/90d");
+    expect(catalog?.summary).toContain("8 LOC");
+    expect(catalog?.summary).toContain("5 LOMB");
+    expect(catalog?.data.totals).toMatchObject({
+      projectCount: 2,
+      publicCount: 1,
+      privateCount: 1,
+      commitsLast90d: 52,
+      stars: 10,
+      loc: 8,
+      lomb: 5,
+      exactMirrorProjectCount: 1,
+      pendingMetricProjectCount: 1,
+    });
+    expect(catalog?.data.projects[0]).toMatchObject({
+      fullName: "houstongolden/youmd",
+      githubUrl: "https://github.com/houstongolden/youmd",
+      projectUrl: "https://you.md",
+      metricStatus: "exact_repo_mirror",
+      loc: 8,
+      lomb: 5,
+    });
+    expect(catalog?.data.projects[1]).toMatchObject({
+      fullName: "houstongolden/bamfai",
+      metricStatus: "pending_github_languages_adapter",
+      loc: null,
+      lomb: null,
+    });
+
+    const snapshots = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("sourceSnapshots")
+        .withIndex("by_userId", (q) => q.eq("userId", userId))
+        .collect();
+    });
+    expect(snapshots.map((snapshot) => snapshot.sourceKey)).toContain("github-project-catalog");
+  });
 });

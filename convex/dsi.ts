@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { action, internalMutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { action, internalMutation, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { requireOwner } from "./lib/auth";
@@ -45,6 +45,57 @@ type SurfSignal = {
     sourceUrl: string;
   };
   sourceUrls: string[];
+};
+
+type ProjectCatalogSignal = {
+  provider: string;
+  capturedAt: string;
+  totals: {
+    projectCount: number;
+    publicCount: number;
+    privateCount: number;
+    commitsLast90d: number;
+    stars: number;
+    loc: number | null;
+    lomb: number | null;
+    lombToCodeRatio: number | null;
+    exactMirrorProjectCount: number;
+    pendingMetricProjectCount: number;
+  };
+  definitions: {
+    loc: string;
+    lomb: string;
+    lombToCodeRatio: string;
+  };
+  repoMirror: {
+    repoFullName: string;
+    commitSha?: string;
+    fileCount: number;
+    totalBytes: number;
+    truncated: boolean;
+    syncedAt: number;
+    loc: number;
+    lomb: number;
+    lombToCodeRatio: number | null;
+  } | null;
+  projects: Array<{
+    fullName: string;
+    name: string;
+    description: string | null;
+    primaryLanguage: string | null;
+    githubUrl: string;
+    projectUrl: string | null;
+    pushedAt: number;
+    commitsLast90d: number;
+    stars: number;
+    isPrivate: boolean;
+    visibility: "private" | "public";
+    insight: string | null;
+    loc: number | null;
+    lomb: number | null;
+    lombToCodeRatio: number | null;
+    metricStatus: "exact_repo_mirror" | "pending_github_languages_adapter";
+  }>;
 };
 
 function canonicalJsonString(obj: unknown): string {
@@ -132,6 +183,22 @@ function weatherLabel(code: number | null): string {
 
 function numberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function lineCount(content: string): number {
+  if (!content) return 0;
+  return content.split(/\r\n|\r|\n/).length;
+}
+
+function isMarkdownPath(path: string): boolean {
+  return /\.(md|mdx)$/i.test(path);
+}
+
+function lombRatio(loc: number | null, lomb: number | null): number | null {
+  if (loc === null || lomb === null) return null;
+  const code = loc - lomb;
+  if (code <= 0) return null;
+  return Math.round((lomb / code) * 1000) / 1000;
 }
 
 async function fetchWeather(): Promise<WeatherSignal> {
@@ -308,6 +375,141 @@ async function fetchSurf(): Promise<SurfSignal> {
   };
 }
 
+function projectUrlFromBundle(projects: Array<Record<string, unknown>>, tracked: Doc<"trackedProjects">): string | null {
+  const normalizedName = tracked.name.toLowerCase();
+  const normalizedFullName = tracked.fullName.toLowerCase();
+  const match = projects.find((project) => {
+    const name = typeof project.name === "string" ? project.name.toLowerCase() : "";
+    const title = typeof project.title === "string" ? project.title.toLowerCase() : "";
+    const url = typeof project.url === "string" ? project.url.toLowerCase() : "";
+    const github = typeof project.github === "string" ? project.github.toLowerCase() : "";
+    const githubUrl = typeof project.githubUrl === "string" ? project.githubUrl.toLowerCase() : "";
+    return (
+      name === normalizedName ||
+      title === normalizedName ||
+      url.includes(normalizedName) ||
+      github.includes(normalizedFullName) ||
+      githubUrl.includes(normalizedFullName)
+    );
+  });
+  if (!match) return null;
+  for (const key of ["url", "website", "href", "demoUrl", "demo"]) {
+    const value = match[key];
+    if (typeof value === "string" && /^https?:\/\//.test(value)) return value;
+  }
+  return null;
+}
+
+function mirrorLineStats(repoMirror: Doc<"repoMirror"> | null): { loc: number; lomb: number; ratio: number | null } | null {
+  if (!repoMirror) return null;
+  let loc = 0;
+  let lomb = 0;
+  for (const file of repoMirror.files) {
+    const lines = lineCount(file.content);
+    loc += lines;
+    if (isMarkdownPath(file.path)) lomb += lines;
+  }
+  return { loc, lomb, ratio: lombRatio(loc, lomb) };
+}
+
+function buildProjectCatalogSignal(args: {
+  trackedProjects: Doc<"trackedProjects">[];
+  latestBundle: Doc<"bundles"> | null;
+  repoMirror: Doc<"repoMirror"> | null;
+}): ProjectCatalogSignal {
+  const youJson = (args.latestBundle?.youJson ?? {}) as Record<string, unknown>;
+  const bundleProjects = Array.isArray(youJson.projects) ? (youJson.projects as Array<Record<string, unknown>>) : [];
+  const mirrorStats = mirrorLineStats(args.repoMirror);
+  const projects = args.trackedProjects
+    .slice()
+    .sort((a, b) => b.pushedAt - a.pushedAt)
+    .map((project) => {
+      const isMirror = args.repoMirror?.repoFullName === project.fullName && mirrorStats !== null;
+      const loc = isMirror ? mirrorStats.loc : null;
+      const lomb = isMirror ? mirrorStats.lomb : null;
+      return {
+        fullName: project.fullName,
+        name: project.name,
+        description: project.description ?? null,
+        primaryLanguage: project.primaryLanguage ?? null,
+        githubUrl: `https://github.com/${project.fullName}`,
+        projectUrl: projectUrlFromBundle(bundleProjects, project),
+        pushedAt: project.pushedAt,
+        commitsLast90d: project.commitsLast90d,
+        stars: project.stars ?? 0,
+        isPrivate: project.isPrivate,
+        visibility: project.visibility,
+        insight: project.insight ?? null,
+        loc,
+        lomb,
+        lombToCodeRatio: lombRatio(loc, lomb),
+        metricStatus: isMirror ? "exact_repo_mirror" as const : "pending_github_languages_adapter" as const,
+      };
+    });
+  const totals = projects.reduce(
+    (acc, project) => {
+      acc.commitsLast90d += project.commitsLast90d;
+      acc.stars += project.stars;
+      if (project.visibility === "public") acc.publicCount += 1;
+      else acc.privateCount += 1;
+      if (project.loc !== null) {
+        acc.loc += project.loc;
+        acc.lomb += project.lomb ?? 0;
+        acc.exactMirrorProjectCount += 1;
+      } else {
+        acc.pendingMetricProjectCount += 1;
+      }
+      return acc;
+    },
+    {
+      publicCount: 0,
+      privateCount: 0,
+      commitsLast90d: 0,
+      stars: 0,
+      loc: 0,
+      lomb: 0,
+      exactMirrorProjectCount: 0,
+      pendingMetricProjectCount: 0,
+    }
+  );
+  const hasLoc = totals.exactMirrorProjectCount > 0;
+  return {
+    provider: "youmd-github-tracked-projects",
+    capturedAt: new Date().toISOString(),
+    totals: {
+      projectCount: projects.length,
+      publicCount: totals.publicCount,
+      privateCount: totals.privateCount,
+      commitsLast90d: totals.commitsLast90d,
+      stars: totals.stars,
+      loc: hasLoc ? totals.loc : null,
+      lomb: hasLoc ? totals.lomb : null,
+      lombToCodeRatio: hasLoc ? lombRatio(totals.loc, totals.lomb) : null,
+      exactMirrorProjectCount: totals.exactMirrorProjectCount,
+      pendingMetricProjectCount: totals.pendingMetricProjectCount,
+    },
+    definitions: {
+      loc: "LOC is the all-in line count. For exact You.md repo mirror stats, markdown is included.",
+      lomb: "LOMB is Lines Of Markdown / Bytes: markdown-only lines as Houston's english-as-code metric.",
+      lombToCodeRatio: "LOMB / (LOC - LOMB), comparing markdown directly to non-markdown code.",
+    },
+    repoMirror: args.repoMirror && mirrorStats
+      ? {
+          repoFullName: args.repoMirror.repoFullName,
+          commitSha: args.repoMirror.commitSha,
+          fileCount: args.repoMirror.fileCount,
+          totalBytes: args.repoMirror.totalBytes,
+          truncated: args.repoMirror.truncated,
+          syncedAt: args.repoMirror.syncedAt,
+          loc: mirrorStats.loc,
+          lomb: mirrorStats.lomb,
+          lombToCodeRatio: mirrorStats.ratio,
+        }
+      : null,
+    projects,
+  };
+}
+
 async function insertSnapshot(
   ctx: MutationCtx,
   args: {
@@ -415,6 +617,67 @@ export const refreshWeatherSurf = action({
       weather,
       surf,
     });
+  },
+});
+
+export const refreshProjectCatalog = mutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> => {
+    await ownerForUserId(ctx, args.clerkId, args.userId);
+    const [trackedProjects, latestBundle, repoMirror] = await Promise.all([
+      ctx.db
+        .query("trackedProjects")
+        .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+        .collect(),
+      ctx.db
+        .query("bundles")
+        .withIndex("by_userId_version", (q) => q.eq("userId", args.userId))
+        .order("desc")
+        .first(),
+      ctx.db
+        .query("repoMirror")
+        .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+        .first(),
+    ]);
+    const catalog = buildProjectCatalogSignal({ trackedProjects, latestBundle, repoMirror });
+    const snapshotId = await insertSnapshot(ctx, {
+      userId: args.userId,
+      connectorKind: "github",
+      sourceKey: "github-project-catalog",
+      sourceType: "dsi_component",
+      normalized: catalog,
+      citations: catalog.projects.map((project) => ({
+        provider: "github",
+        url: project.githubUrl,
+      })),
+      visibility: "private",
+      trustLevel: catalog.projects.length ? "verified" : "low",
+      metadata: {
+        adapter: "tracked-projects-plus-repo-mirror",
+        locMetricStatus: "repoMirror exact, non-mirror repos pending GitHub languages adapter",
+      },
+    });
+    const summary = [
+      `${catalog.totals.projectCount} projects`,
+      `${catalog.totals.commitsLast90d} commits/90d`,
+      catalog.totals.loc === null ? "LOC pending" : `${catalog.totals.loc.toLocaleString()} LOC`,
+      catalog.totals.lomb === null ? "LOMB pending" : `${catalog.totals.lomb.toLocaleString()} LOMB`,
+    ].join(" / ");
+    const componentId = await upsertComponent(ctx, {
+      userId: args.userId,
+      slug: "github-project-catalog",
+      componentType: "github_projects",
+      title: "GitHub Project Catalog",
+      summary,
+      data: catalog,
+      sourceSnapshotIds: [snapshotId],
+      trustLevel: catalog.projects.length ? "verified" : "low",
+      metadata: { provider: catalog.provider, configurable: true, origin: "youmd" },
+    });
+    return { componentId, snapshotId };
   },
 });
 
