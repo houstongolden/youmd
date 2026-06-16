@@ -561,6 +561,25 @@ export default defineSchema({
     .index("by_runId", ["runId"])
     .index("by_userId_definition", ["userId", "definitionId"]),
 
+  dsiComponents: defineTable({
+    userId: v.id("users"),
+    slug: v.string(),
+    componentType: v.string(),
+    title: v.string(),
+    summary: v.string(),
+    data: v.any(),
+    sourceSnapshotIds: v.array(v.id("sourceSnapshots")),
+    visibility: v.string(), // "private" | "scoped" | "public"
+    status: v.string(), // "active" | "paused" | "archived"
+    trustLevel: v.string(),
+    capturedAt: v.number(),
+    updatedAt: v.number(),
+    metadata: v.optional(v.any()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_slug", ["userId", "slug"])
+    .index("by_userId_updatedAt", ["userId", "updatedAt"]),
+
   // artifactType: "author_voice" | "topic_map" | "bio_variants" | "faq"
   //             | "voice_linkedin" | "voice_linkedin_doc"
   //             | "voice_x" | "voice_blog"

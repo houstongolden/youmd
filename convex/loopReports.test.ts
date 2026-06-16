@@ -98,6 +98,7 @@ describe("loop reports", () => {
     expect(artifacts[0].bodyMarkdown).toContain("Codex");
     expect(artifacts[0].facts.projectCount).toBe(1);
     expect(artifacts[0].facts.externalAdaptersPending).toContain("badapp");
+    expect(artifacts[0].facts.dsiComponentCount).toBe(0);
 
     const reused = await asOwner.mutation(api.loopReports.runDailyBriefingNow, {
       clerkId: CLERK,
@@ -114,6 +115,7 @@ describe("loop reports", () => {
     });
     expect(snapshots.map((s) => s.sourceKey).sort()).toEqual([
       "agent-activity",
+      "dsi-components",
       "projects",
       "repo-mirror",
       "sources",
@@ -125,6 +127,7 @@ describe("loop reports", () => {
     });
     expect(runSnapshots.map((s) => s.sourceKey).sort()).toEqual([
       "agent-activity",
+      "dsi-components",
       "projects",
       "repo-mirror",
       "sources",

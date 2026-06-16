@@ -19,6 +19,7 @@ import type * as consent from "../consent.js";
 import type * as consolidation from "../consolidation.js";
 import type * as contextLinks from "../contextLinks.js";
 import type * as crons from "../crons.js";
+import type * as dsi from "../dsi.js";
 import type * as fleet from "../fleet.js";
 import type * as github from "../github.js";
 import type * as githubAgentSync from "../githubAgentSync.js";
@@ -103,6 +104,7 @@ declare const fullApi: ApiFromModules<{
   consolidation: typeof consolidation;
   contextLinks: typeof contextLinks;
   crons: typeof crons;
+  dsi: typeof dsi;
   fleet: typeof fleet;
   github: typeof github;
   githubAgentSync: typeof githubAgentSync;

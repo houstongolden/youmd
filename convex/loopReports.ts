@@ -208,7 +208,7 @@ async function gatherDailyYouMdSignals(
   const startMs = new Date(windowStart).getTime();
   const endMs = new Date(windowEnd).getTime();
 
-  const [latestBundle, repoMirror, activities, sources, changes, memories] = await Promise.all([
+  const [latestBundle, repoMirror, activities, sources, changes, memories, dsiComponents] = await Promise.all([
     ctx.db
       .query("bundles")
       .withIndex("by_userId_version", (q) => q.eq("userId", userId))
@@ -234,6 +234,11 @@ async function gatherDailyYouMdSignals(
     ctx.db
       .query("memories")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .order("desc")
+      .take(20),
+    ctx.db
+      .query("dsiComponents")
+      .withIndex("by_userId_updatedAt", (q) => q.eq("userId", userId))
       .order("desc")
       .take(20),
   ]);
@@ -293,6 +298,7 @@ async function gatherDailyYouMdSignals(
     sourceSummary,
     pendingChanges,
     durableMemories,
+    dsiComponents,
   };
 }
 
@@ -303,6 +309,7 @@ function buildDailyBriefingMarkdown(args: {
   sourceSummary: Array<Record<string, unknown>>;
   pendingChanges: Array<Record<string, unknown>>;
   durableMemories: Array<Record<string, unknown>>;
+  dsiComponents: Doc<"dsiComponents">[];
   repoMirror: Doc<"repoMirror"> | null;
 }): { title: string; summary: string; bodyMarkdown: string; facts: Record<string, unknown> } {
   const projectLines = args.projects.slice(0, 12).map((project) => {
@@ -324,13 +331,20 @@ function buildDailyBriefingMarkdown(args: {
   const memoryLines = args.durableMemories.slice(0, 8).map((memory) => (
     `- ${memory.category}: ${truncate(String(memory.content), 180)}`
   ));
+  const dsiLines = args.dsiComponents.slice(0, 12).map((component) => (
+    `- ${component.title}: ${component.summary} (${component.visibility} / ${component.trustLevel} / updated ${new Date(component.updatedAt).toISOString()})`
+  ));
+  const weatherSurfLines = args.dsiComponents
+    .filter((component) => component.componentType === "weather" || component.componentType === "surf")
+    .slice(0, 6)
+    .map((component) => `- ${component.title}: ${component.summary}`);
 
   const externalPlaceholders = [
     "- Perplexity industry pulse: not wired in this deterministic foundation run.",
     "- Google Calendar/tasks: connector adapter pending.",
     "- BAMF.ai/BAMF OS analytics: connector adapter pending.",
     "- Bad.app fitness/body signal: connector adapter pending.",
-    "- Weather/surf/school crawler: connector adapters pending.",
+    "- School crawler: connector adapter pending.",
   ];
 
   const summary = [
@@ -357,6 +371,7 @@ function buildDailyBriefingMarkdown(args: {
     "",
     "## connected app pulse",
     ...externalPlaceholders.slice(2, 4),
+    dsiLines.length ? dsiLines.join("\n") : "- no DSI components captured yet.",
     "",
     "## source and crawler state",
     sourceLines.length ? sourceLines.join("\n") : "- no connected sources yet.",
@@ -373,6 +388,7 @@ function buildDailyBriefingMarkdown(args: {
       : "- no repo mirror connected.",
     "",
     "## body / weather / surf",
+    weatherSurfLines.length ? weatherSurfLines.join("\n") : "- weather/surf DSI components have not been refreshed yet.",
     ...externalPlaceholders.slice(4),
   ].join("\n");
 
@@ -386,6 +402,17 @@ function buildDailyBriefingMarkdown(args: {
       sourceCount: args.sourceSummary.length,
       pendingChangeCount: args.pendingChanges.length,
       memoryCount: args.durableMemories.length,
+      dsiComponentCount: args.dsiComponents.length,
+      dsiComponents: args.dsiComponents.map((component) => ({
+        slug: component.slug,
+        componentType: component.componentType,
+        title: component.title,
+        summary: component.summary,
+        visibility: component.visibility,
+        status: component.status,
+        trustLevel: component.trustLevel,
+        updatedAt: component.updatedAt,
+      })),
       repoMirror: args.repoMirror
         ? {
             repoFullName: args.repoMirror.repoFullName,
@@ -394,7 +421,7 @@ function buildDailyBriefingMarkdown(args: {
             syncedAt: args.repoMirror.syncedAt,
           }
         : null,
-      externalAdaptersPending: ["perplexity", "google-calendar", "bamf", "badapp", "weather", "surf", "school"],
+      externalAdaptersPending: ["perplexity", "google-calendar", "bamf", "badapp", "school"],
     },
   };
 }
@@ -473,6 +500,28 @@ async function createDailyBriefingRun(
         : null,
       trustLevel: signals.repoMirror ? "verified" : "low",
     }),
+    insertSnapshot(ctx, {
+      userId,
+      connectorKind: "youmd",
+      sourceKey: "dsi-components",
+      sourceType: "dsi",
+      windowStart: window.start,
+      windowEnd: window.end,
+      normalized: signals.dsiComponents.map((component) => ({
+        slug: component.slug,
+        componentType: component.componentType,
+        title: component.title,
+        summary: component.summary,
+        data: component.data,
+        sourceSnapshotIds: component.sourceSnapshotIds,
+        visibility: component.visibility,
+        status: component.status,
+        trustLevel: component.trustLevel,
+        capturedAt: component.capturedAt,
+        updatedAt: component.updatedAt,
+      })),
+      trustLevel: signals.dsiComponents.length ? "verified" : "low",
+    }),
   ]);
 
   const startedAt = Date.now();
@@ -496,6 +545,7 @@ async function createDailyBriefingRun(
     sourceSummary: signals.sourceSummary,
     pendingChanges: signals.pendingChanges,
     durableMemories: signals.durableMemories,
+    dsiComponents: signals.dsiComponents,
     repoMirror: signals.repoMirror,
   });
   const now = Date.now();

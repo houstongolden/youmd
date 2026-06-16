@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useAction, useQuery, useMutation } from "convex/react";
 import { useUser } from "@/lib/you-auth";
 import { api } from "../../../convex/_generated/api";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
@@ -22,6 +22,7 @@ type LoopReportDefinition = Doc<"loopReportDefinitions">;
 type LoopReportRun = Doc<"loopReportRuns">;
 type LoopReportArtifact = Doc<"loopReportArtifacts">;
 type SourceSnapshot = Doc<"sourceSnapshots">;
+type DsiComponent = Doc<"dsiComponents">;
 
 type ArtifactTemplate = {
   id: string;
@@ -211,6 +212,40 @@ function reportArtifactPath(artifact: LoopReportArtifact): string {
   return `reports/generated/${artifact.definitionSlug}/${new Date(artifact.createdAt).toISOString().slice(0, 10)}-${artifact._id}.md`;
 }
 
+function dsiComponentPath(component: DsiComponent): string {
+  return `dsi/${component.visibility}/${component.slug}.md`;
+}
+
+function dsiComponentMarkdown(component: DsiComponent): string {
+  return [
+    "---",
+    `title: ${JSON.stringify(component.title)}`,
+    `kind: "dsi_component"`,
+    `component_type: ${JSON.stringify(component.componentType)}`,
+    `visibility: ${JSON.stringify(component.visibility)}`,
+    `status: ${JSON.stringify(component.status)}`,
+    `trust_level: ${JSON.stringify(component.trustLevel)}`,
+    `captured_at: ${JSON.stringify(new Date(component.capturedAt).toISOString())}`,
+    `updated_at: ${JSON.stringify(new Date(component.updatedAt).toISOString())}`,
+    "---",
+    "",
+    `# ${component.title}`,
+    "",
+    component.summary,
+    "",
+    "## access boundary",
+    `- visibility: ${component.visibility}`,
+    `- trust: ${component.trustLevel}`,
+    `- source snapshots: ${component.sourceSnapshotIds.length}`,
+    "",
+    "## normalized data",
+    "",
+    "```json",
+    JSON.stringify(component.data, null, 2),
+    "```",
+  ].join("\n");
+}
+
 function jsonPreview(value: unknown, maxLength = 900): string {
   const rendered = JSON.stringify(value, null, 2) ?? "null";
   return rendered.length > maxLength ? `${rendered.slice(0, maxLength - 3)}...` : rendered;
@@ -256,6 +291,7 @@ function classifyWorkspace(path: string): WorkspaceMode {
     path.startsWith("sessions/") ||
     path.startsWith("memory/") ||
     path.startsWith("private/") ||
+    path.startsWith("dsi/") ||
     path.startsWith("custom/")
   ) {
     return "artifacts";
@@ -447,10 +483,14 @@ function ArtifactHome({
   loopDefinitions,
   loopRuns,
   loopArtifacts,
+  dsiComponents,
   loopBusy,
   loopStatus,
+  dsiBusy,
+  dsiStatus,
   onSeedLoopDefaults,
   onRunDailyBriefing,
+  onRefreshWeatherSurf,
   onToggleLoopDefinition,
   selectedRunId,
   loopSnapshots,
@@ -463,10 +503,14 @@ function ArtifactHome({
   loopDefinitions: LoopReportDefinition[];
   loopRuns: LoopReportRun[];
   loopArtifacts: LoopReportArtifact[];
+  dsiComponents: DsiComponent[];
   loopBusy: boolean;
   loopStatus: string | null;
+  dsiBusy: boolean;
+  dsiStatus: string | null;
   onSeedLoopDefaults: () => void;
   onRunDailyBriefing: () => void;
+  onRefreshWeatherSurf: () => void;
   onToggleLoopDefinition: (definition: LoopReportDefinition) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
   loopSnapshots: SourceSnapshot[] | undefined;
@@ -496,10 +540,14 @@ function ArtifactHome({
             definitions={loopDefinitions}
             runs={loopRuns}
             artifacts={loopArtifacts}
+            dsiComponents={dsiComponents}
             busy={loopBusy}
             status={loopStatus}
+            dsiBusy={dsiBusy}
+            dsiStatus={dsiStatus}
             onSeedDefaults={onSeedLoopDefaults}
             onRunDailyBriefing={onRunDailyBriefing}
+            onRefreshWeatherSurf={onRefreshWeatherSurf}
             onToggleDefinition={onToggleLoopDefinition}
             onSelectArtifact={onSelect}
             selectedRunId={selectedRunId}
@@ -581,10 +629,14 @@ function LoopReportsControlPanel({
   definitions,
   runs,
   artifacts,
+  dsiComponents,
   busy,
   status,
+  dsiBusy,
+  dsiStatus,
   onSeedDefaults,
   onRunDailyBriefing,
+  onRefreshWeatherSurf,
   onToggleDefinition,
   onSelectArtifact,
   selectedRunId,
@@ -594,10 +646,14 @@ function LoopReportsControlPanel({
   definitions: LoopReportDefinition[];
   runs: LoopReportRun[];
   artifacts: LoopReportArtifact[];
+  dsiComponents: DsiComponent[];
   busy: boolean;
   status: string | null;
+  dsiBusy: boolean;
+  dsiStatus: string | null;
   onSeedDefaults: () => void;
   onRunDailyBriefing: () => void;
+  onRefreshWeatherSurf: () => void;
   onToggleDefinition: (definition: LoopReportDefinition) => void;
   onSelectArtifact: (path: string) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
@@ -608,6 +664,7 @@ function LoopReportsControlPanel({
   const latestRun = runs[0];
   const selectedRun = runs.find((run) => run._id === selectedRunId) ?? latestRun ?? null;
   const shownSnapshots = selectedRunId ? snapshots : undefined;
+  const latestDsiAt = dsiComponents.length ? Math.max(...dsiComponents.map((component) => component.updatedAt)) : undefined;
 
   return (
     <div className="space-y-4">
@@ -666,6 +723,86 @@ function LoopReportsControlPanel({
         {status && (
           <p className={`mt-2 font-mono text-[10px] ${status.startsWith("error") ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"} opacity-80`}>
             {status}
+          </p>
+        )}
+      </div>
+
+      <div className="border-y border-[hsl(var(--border))] py-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] uppercase text-[hsl(var(--text-secondary))] opacity-40">
+              DSI catalog
+            </p>
+            <h3 className="mt-1 font-mono text-sm text-[hsl(var(--text-primary))] opacity-90">
+              private live components for your personal API/MCP
+            </h3>
+            <p className="mt-1 max-w-xl text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+              Components are normalized source-backed objects agents can read. Weather and surf are the first h.computer adapters ported into You.md.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onRefreshWeatherSurf}
+            disabled={dsiBusy}
+            className="h-8 self-start text-[10px]"
+          >
+            {dsiBusy ? "refreshing..." : "refresh weather/surf"}
+          </Button>
+        </div>
+        <div className="mt-3 grid gap-2 font-mono text-[10px] text-[hsl(var(--text-secondary))] md:grid-cols-4">
+          <div>
+            <span className="opacity-35">components</span>
+            <span className="ml-2 text-[hsl(var(--text-primary))] opacity-80">{dsiComponents.length}</span>
+          </div>
+          <div>
+            <span className="opacity-35">private</span>
+            <span className="ml-2 text-[hsl(var(--text-primary))] opacity-80">
+              {dsiComponents.filter((component) => component.visibility === "private").length}
+            </span>
+          </div>
+          <div>
+            <span className="opacity-35">active</span>
+            <span className="ml-2 text-[hsl(var(--success))] opacity-80">
+              {dsiComponents.filter((component) => component.status === "active").length}
+            </span>
+          </div>
+          <div>
+            <span className="opacity-35">latest</span>
+            <span className="ml-2 text-[hsl(var(--text-primary))] opacity-80">{timeAgo(latestDsiAt)}</span>
+          </div>
+        </div>
+        {dsiStatus && (
+          <p className={`mt-2 font-mono text-[10px] ${dsiStatus.startsWith("error") ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"} opacity-80`}>
+            {dsiStatus}
+          </p>
+        )}
+        {dsiComponents.length ? (
+          <div className="mt-3 divide-y divide-[hsl(var(--border))] border-y border-[hsl(var(--border))]">
+            {dsiComponents.slice(0, 6).map((component) => (
+              <button
+                key={component._id}
+                type="button"
+                onClick={() => onSelectArtifact(dsiComponentPath(component))}
+                className="flex w-full flex-col gap-1 px-1 py-2 text-left hover:bg-[hsl(var(--bg-raised))]"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="min-w-0 truncate font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80">
+                    {component.title}
+                  </span>
+                  <span className="shrink-0 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">
+                    {component.componentType} / {component.visibility} / {component.trustLevel}
+                  </span>
+                </div>
+                <p className="truncate text-[11px] text-[hsl(var(--text-secondary))] opacity-55">
+                  {component.summary}
+                </p>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-3 text-[12px] text-[hsl(var(--text-secondary))] opacity-50">
+            no DSI components yet. refresh weather/surf to create the first source-backed private components.
           </p>
         )}
       </div>
@@ -1168,6 +1305,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const seedLoopDefaults = useMutation(api.loopReports.seedDefaultDefinitions);
   const runDailyBriefingNow = useMutation(api.loopReports.runDailyBriefingNow);
   const updateLoopDefinitionStatus = useMutation(api.loopReports.updateDefinitionStatus);
+  const refreshWeatherSurf = useAction(api.dsi.refreshWeatherSurf);
   const memories = useQuery(api.memories.listMemories, clerkId && userId ? { clerkId, userId } : "skip");
   const sessions = useQuery(api.memories.listSessions, clerkId && userId ? { clerkId, userId, limit: 20 } : "skip");
   const loopReportDefinitions = useQuery(
@@ -1180,6 +1318,10 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   );
   const loopReportArtifacts = useQuery(
     api.loopReports.listArtifacts,
+    clerkId && userId ? { clerkId, userId, limit: 40 } : "skip"
+  );
+  const dsiComponents = useQuery(
+    api.dsi.listComponents,
     clerkId && userId ? { clerkId, userId, limit: 40 } : "skip"
   );
   const userProfile = useQuery(
@@ -1206,6 +1348,8 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const [customFiles, setCustomFiles] = useState<VirtualFile[]>([]);
   const [loopBusy, setLoopBusy] = useState(false);
   const [loopStatus, setLoopStatus] = useState<string | null>(null);
+  const [dsiBusy, setDsiBusy] = useState(false);
+  const [dsiStatus, setDsiStatus] = useState<string | null>(null);
   const [selectedLoopRunId, setSelectedLoopRunId] = useState<Id<"loopReportRuns"> | null>(null);
   const loopSnapshots = useQuery(
     api.loopReports.listSnapshotsForRun,
@@ -1304,6 +1448,12 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
       section: `loop_report_artifacts.${artifact._id}`,
       editable: false,
     }));
+    const dsiFiles: VirtualFile[] = (dsiComponents ?? []).map((component) => ({
+      path: dsiComponentPath(component),
+      content: dsiComponentMarkdown(component),
+      section: `dsi_components.${component._id}`,
+      editable: false,
+    }));
 
     // Dedupe by path: real content beats scaffold placeholders, customFiles win all.
     const seen = new Map<string, VirtualFile>();
@@ -1311,9 +1461,10 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     for (const f of memoryFiles) seen.set(f.path, f);
     for (const f of privateContextFiles) seen.set(f.path, f); // real private data
     for (const f of reportFiles) seen.set(f.path, f);
+    for (const f of dsiFiles) seen.set(f.path, f);
     for (const f of customFiles) seen.set(f.path, f);
     return Array.from(seen.values());
-  }, [latestBundle, memories, sessions, loopReportArtifacts, privateContextFiles, customFiles]);
+  }, [latestBundle, memories, sessions, loopReportArtifacts, dsiComponents, privateContextFiles, customFiles]);
 
   // ── Custom directories ──
   // A "custom directory" is any directory backed by a youJson.custom_files entry,
@@ -1486,6 +1637,22 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
       setLoopBusy(false);
     }
   }, [user, userId, runDailyBriefingNow]);
+
+  const handleRefreshWeatherSurf = useCallback(async () => {
+    if (!user?.id || !userId) return;
+    setDsiBusy(true);
+    setDsiStatus(null);
+    try {
+      const result = await refreshWeatherSurf({ clerkId: user.id, userId });
+      setWorkspaceMode("artifacts");
+      setDsiStatus(`refreshed ${result.snapshotIds.length} source snapshots`);
+      setTimeout(() => setDsiStatus(null), 3000);
+    } catch (err) {
+      setDsiStatus(`error: ${err instanceof Error ? err.message : "failed to refresh DSI"}`);
+    } finally {
+      setDsiBusy(false);
+    }
+  }, [user, userId, refreshWeatherSurf]);
 
   const handleToggleLoopDefinition = useCallback(async (definition: LoopReportDefinition) => {
     if (!user?.id) return;
@@ -1764,10 +1931,14 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
               loopDefinitions={loopReportDefinitions ?? []}
               loopRuns={loopReportRuns ?? []}
               loopArtifacts={loopReportArtifacts ?? []}
+              dsiComponents={dsiComponents ?? []}
               loopBusy={loopBusy}
               loopStatus={loopStatus}
+              dsiBusy={dsiBusy}
+              dsiStatus={dsiStatus}
               onSeedLoopDefaults={handleSeedLoopDefaults}
               onRunDailyBriefing={handleRunDailyBriefing}
+              onRefreshWeatherSurf={handleRefreshWeatherSurf}
               onToggleLoopDefinition={handleToggleLoopDefinition}
               selectedRunId={selectedLoopRunId}
               loopSnapshots={loopSnapshots}

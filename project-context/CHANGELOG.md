@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-16 — DSI weather and surf components
+
+### feat(convex/web): port the first h.computer live signals into You.md DSI
+- Added `dsiComponents`, a private/scoped/public-ready structured component table for extensible personal API/MCP facts.
+- Added an owner-gated DSI action that refreshes Open-Meteo weather and Venice Breakwater surf data, ports the h.computer Surfline-style face-foot/wind-quality calibration, and writes source snapshots for provenance.
+- Daily Loop Reports now snapshot current DSI components and include weather/surf summaries when present.
+- The Files/Reports workspace now includes a DSI Catalog panel with refresh controls, component counts, status, visibility, trust level, summaries, and read-only markdown artifacts under `dsi/private/*`.
+- Verified locally with focused Convex tests, full TypeScript, lint, build, and authenticated browser QA at `http://localhost:3100/shell`; the browser refresh created `weather-home` and `surf-venice-breakwater`, then a fresh daily run showed 5 source snapshots.
+
 ## 2026-06-16 — Public profile conversation API
 
 ### feat(web): make public profiles conversational from public context
