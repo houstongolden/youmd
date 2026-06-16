@@ -1038,6 +1038,16 @@ export default defineSchema({
     githubRepoId: v.number(),         // GitHub numeric repo id (stable across renames)
     fullName: v.string(),             // "owner/repo"
     name: v.string(),                 // repo short name
+    url: v.optional(v.string()),       // GitHub URL
+    projectUrl: v.optional(v.string()), // product/docs/site URL when known
+    repoName: v.optional(v.string()),  // repo short name kept explicit for machine bootstrap
+    directoryName: v.optional(v.string()), // local checkout directory name
+    apiDocsUrl: v.optional(v.string()),
+    mcpDocsUrl: v.optional(v.string()),
+    stackName: v.optional(v.string()),
+    stackSlug: v.optional(v.string()),
+    highLevelGoal: v.optional(v.string()),
+    recentProgress: v.optional(v.string()),
     description: v.optional(v.string()),
     primaryLanguage: v.optional(v.string()),
     pushedAt: v.number(),             // ms epoch of last push

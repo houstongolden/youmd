@@ -27,7 +27,7 @@ You.md is the brain. The new machine should become a runnable local agent workst
 
 1. Confirm whether this looks like a fresh machine:
    - `youmd status`
-   - `test -d ~/Desktop/CODE_2026 && find ~/Desktop/CODE_2026 -maxdepth 1 -type d | wc -l`
+   - `test -d ~/Desktop/CODE_YOU && find ~/Desktop/CODE_YOU -maxdepth 1 -type d | wc -l`
    - `git config user.name && git config user.email`
    - `gh auth status`
 2. If You.md is not installed, install it:
@@ -56,14 +56,14 @@ You.md is the brain. The new machine should become a runnable local agent workst
 5. Create the desktop code workspace and sync active projects:
 
    ```bash
-   youmd machine projects --root ~/Desktop/CODE_2026 --days 90
+   youmd machine projects --root ~/Desktop/CODE_YOU --days 90
    ```
 
 6. If GitHub auth is missing, help the user log in and rerun only the project clone step:
 
    ```bash
    gh auth login
-   youmd machine projects --root ~/Desktop/CODE_2026 --days 90
+   youmd machine projects --root ~/Desktop/CODE_YOU --days 90
    ```
 
 ## Project Bootstrap Rules
@@ -71,30 +71,52 @@ You.md is the brain. The new machine should become a runnable local agent workst
 - Use repo directory names from GitHub URLs. `https://github.com/houstongolden/foldermd` becomes `foldermd`.
 - Default to projects active in the last 90 days plus projects marked active/current in You.md.
 - Ask before including older, archived, paused, or dormant projects.
-- Create the workspace root on the Desktop if it is missing. Houston can rename it, but `CODE_2026` is the default.
+- Create the workspace root on the Desktop if it is missing. `CODE_YOU` is the default fresh-machine root.
+- Use authenticated GitHub recent-repo data when available, then merge it with You.md project records so repo names and URLs stay cloneable.
 - Clone with `gh repo clone owner/repo <target>` when `gh` is authenticated; otherwise fall back to `git clone`.
 - Skip non-empty directories instead of overwriting them.
-- Never print secrets. If `.env.local` files are needed, use You.md env-vault or a password manager.
+- Never print secrets. If `.env.local` files are needed, use the shared encrypted env backup/restore path or a password manager.
 - After cloning, initialize missing per-repo agent context with `youmd skill init-project` from inside that repo.
+
+## Secret-Safe Env Transfer
+
+Audit local project env coverage before backup:
+
+```bash
+~/.agent-shared/bin/env-key-audit.py --root ~/Desktop/CODE_2025
+~/.agent-shared/bin/env-secure-backup.sh --preflight
+```
+
+Create an encrypted archive from the old machine in an interactive macOS terminal:
+
+```bash
+open ~/.agent-shared/bin/env-backup-interactive.command
+```
+
+On the new machine, list the encrypted archive by path only before restore:
+
+```bash
+~/.agent-shared/bin/env-secure-restore.sh --archive ~/Desktop/env-local-backup.tar.gz.gpg --list
+```
 
 ## Useful Variants
 
 Dry-run the project layout:
 
 ```bash
-youmd machine projects --root ~/Desktop/CODE_2026 --days 90 --dry-run
+youmd machine projects --root ~/Desktop/CODE_YOU --days 90 --dry-run
 ```
 
 Create directories only, without cloning:
 
 ```bash
-youmd machine projects --root ~/Desktop/CODE_2026 --no-clone
+youmd machine projects --root ~/Desktop/CODE_YOU --no-clone
 ```
 
 Include older projects without prompts:
 
 ```bash
-youmd machine projects --root ~/Desktop/CODE_2026 --yes
+youmd machine projects --root ~/Desktop/CODE_YOU --yes
 ```
 
 ## Done Means

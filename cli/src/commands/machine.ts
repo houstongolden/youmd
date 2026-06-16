@@ -8,6 +8,7 @@ import { BrailleSpinner } from "../lib/render";
 import { resolveActiveBundleDir } from "../lib/config";
 import {
   buildMachineProjectPlan,
+  GithubProjectSource,
   MachineProjectCandidate,
 } from "../lib/machine-projects";
 
@@ -46,8 +47,9 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("restore") + chalk.dim("   apply ~/.agent-shared/agent-config/ back onto this machine"));
   console.log("");
   console.log("  " + chalk.dim("Options:"));
-  console.log("    " + chalk.cyan("--root <dir>") + chalk.dim("   (projects) workspace root, default ~/Desktop/CODE_2026"));
+  console.log("    " + chalk.cyan("--root <dir>") + chalk.dim("   (projects) workspace root, default ~/Desktop/CODE_YOU"));
   console.log("    " + chalk.cyan("--days <n>") + chalk.dim("     (projects) recent activity window, default 90"));
+  console.log("    " + chalk.cyan("--no-github") + chalk.dim("  (projects) skip authenticated GitHub recent-repo scan"));
   console.log("    " + chalk.cyan("--yes") + chalk.dim("        (projects) include older projects without prompting"));
   console.log("    " + chalk.cyan("--no-clone") + chalk.dim("   (projects) create directories only"));
   console.log("    " + chalk.cyan("--force") + chalk.dim("      (restore) overwrite existing files without backing them up"));
@@ -109,12 +111,54 @@ function cloneProject(candidate: MachineProjectCandidate, targetDir: string): "c
   return result.status === 0 ? "cloned" : "failed";
 }
 
+function readRecentGithubProjectsFromGh(days: number): GithubProjectSource[] {
+  if (!commandExists("gh")) return [];
+  const result = child_process.spawnSync(
+    "gh",
+    [
+      "api",
+      "-X",
+      "GET",
+      "/user/repos",
+      "-F",
+      "sort=pushed",
+      "-F",
+      "direction=desc",
+      "-F",
+      "per_page=100",
+      "-F",
+      "affiliation=owner,collaborator,organization_member",
+      "--paginate",
+      "--jq",
+      ".[] | {name, fullName: .full_name, url: .html_url, pushedAt: .pushed_at, updatedAt: .updated_at, description, homepage, isPrivate: .private}",
+    ],
+    { encoding: "utf-8" },
+  );
+  if (result.status !== 0 || !result.stdout.trim()) return [];
+
+  const cutoff = Date.now() - days * 86_400_000;
+  return result.stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .flatMap((line) => {
+      try {
+        const parsed = JSON.parse(line) as GithubProjectSource;
+        if (!parsed.pushedAt || Date.parse(parsed.pushedAt) < cutoff) return [];
+        return [parsed];
+      } catch {
+        return [];
+      }
+    });
+}
+
 async function machineProjectsCommand(opts: {
   root?: string;
   days?: string | number;
   dryRun?: boolean;
   yes?: boolean;
   clone?: boolean;
+  github?: boolean;
 } = {}): Promise<void> {
   const youJson = readActiveYouJson();
   if (!youJson) {
@@ -123,7 +167,7 @@ async function machineProjectsCommand(opts: {
     return;
   }
 
-  const defaultRoot = path.join(os.homedir(), "Desktop", "CODE_2026");
+  const defaultRoot = path.join(os.homedir(), "Desktop", "CODE_YOU");
   let rootDir = expandHome(opts.root || defaultRoot);
 
   let rl: readline.Interface | null = null;
@@ -138,9 +182,17 @@ async function machineProjectsCommand(opts: {
   }
 
   const activeDays = Number(opts.days || 90);
+  const githubProjects = opts.github === false ? [] : readRecentGithubProjectsFromGh(activeDays);
+  if (githubProjects.length > 0) {
+    console.log(chalk.dim(`  github: found ${githubProjects.length} repo${githubProjects.length === 1 ? "" : "s"} pushed within ${activeDays || 90}d`));
+  } else if (opts.github !== false) {
+    console.log(chalk.dim("  github: no authenticated recent repos found; using local You.md project records"));
+  }
+
   const plan = buildMachineProjectPlan(youJson, {
     rootDir,
     activeDays: Number.isFinite(activeDays) && activeDays > 0 ? activeDays : 90,
+    githubProjects,
   });
 
   let selected = [...plan.recent];
@@ -186,7 +238,11 @@ async function machineProjectsCommand(opts: {
     for (const candidate of selected) {
       const target = path.join(plan.rootDir, candidate.targetDirName);
       const action = opts.clone === false || !candidate.githubUrl ? "mkdir" : "clone";
-      console.log(`  ${chalk.cyan(action.padEnd(5))} ${target}${candidate.githubUrl ? chalk.dim(` <- ${candidate.githubUrl}`) : ""}`);
+      const meta = [
+        candidate.githubUrl ? `<- ${candidate.githubUrl}` : "",
+        candidate.stackName ? `[${candidate.stackName}]` : "",
+      ].filter(Boolean).join(" ");
+      console.log(`  ${chalk.cyan(action.padEnd(5))} ${target}${meta ? chalk.dim(` ${meta}`) : ""}`);
     }
     return;
   }
@@ -223,7 +279,7 @@ async function machineProjectsCommand(opts: {
   console.log(chalk.dim("  next: open Claude Code or Codex from that CODE folder and run ") + chalk.cyan("you"));
 }
 
-export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; yes?: boolean; clone?: boolean } = {}): Promise<void> {
+export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
   if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
     printHelp();
     return;

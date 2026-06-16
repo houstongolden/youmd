@@ -45,6 +45,8 @@ describe("machine project bootstrap planner", () => {
     expect(plan.recent).toHaveLength(1);
     expect(plan.recent[0].targetDirName).toBe("youmd");
     expect(plan.recent[0].cloneSpec).toBe("houstongolden/youmd");
+    expect(plan.recent[0].apiDocsUrl).toBe("https://you.md/api/v1/docs/reference");
+    expect(plan.recent[0].stackName).toBe("YouStack");
     expect(plan.older).toHaveLength(1);
     expect(plan.older[0].targetDirName).toBe("old-thing");
   });
@@ -85,5 +87,39 @@ describe("machine project bootstrap planner", () => {
 
     expect(plan.recent).toHaveLength(1);
     expect(plan.skipped).toEqual([{ name: "U", reason: "duplicate repo/project target" }]);
+  });
+
+  it("hydrates cloneable recent projects from authenticated GitHub repo data", () => {
+    const plan = buildMachineProjectPlan(
+      {
+        projects: [
+          { name: "BAMF.ai", status: "active", description: "LinkedIn product" },
+        ],
+      },
+      {
+        rootDir: "/tmp/CODE_YOU",
+        activeDays: 90,
+        now: new Date("2026-06-16T00:00:00.000Z"),
+        githubProjects: [
+          {
+            name: "bamfaiapp",
+            fullName: "houstongolden/bamfaiapp",
+            url: "https://github.com/houstongolden/bamfaiapp",
+            pushedAt: "2026-06-15T00:00:00.000Z",
+            homepage: "https://bamf.ai",
+            description: "BAMF app",
+            isPrivate: true,
+          },
+        ],
+      },
+    );
+
+    expect(plan.recent).toHaveLength(1);
+    const bamfRepo = plan.recent.find((project) => project.fullName === "houstongolden/bamfaiapp");
+    expect(bamfRepo?.targetDirName).toBe("bamfaiapp");
+    expect(bamfRepo?.projectUrl).toBe("https://bamf.ai");
+    expect(bamfRepo?.source).toBe("github");
+    expect(bamfRepo?.stackName).toBe("BAMFStack");
+    expect(plan.skipped).toEqual([{ name: "BAMF.ai", reason: "covered by recent BAMFStack repo" }]);
   });
 });

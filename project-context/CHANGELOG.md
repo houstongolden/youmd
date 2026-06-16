@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-16 — Fresh-machine project catalog sync
+
+### feat(cli/convex/web): hydrate 90-day GitHub projects for CODE_YOU setup
+- Updated `youmd machine projects` to default to `~/Desktop/CODE_YOU`, read authenticated GitHub repos pushed in the last 90 days via `gh`, merge them with You.md bundle project records, and skip broad duplicate bundle entries covered by recent repo data.
+- Added stack inference, API docs links, MCP docs links, repo names, directory names, homepage/project URLs, and richer dry-run output to the machine-project planner.
+- Extended tracked GitHub project records with repo URL, project URL, repo/directory name, API/MCP docs URLs, stack name/slug, high-level goal, and recent progress so the DSI project catalog and dashboard can confirm what a new machine should clone.
+- Updated the dashboard GitHub project refresh cards to show repo, directory, stack, API/MCP docs, GitHub URL, project URL, goal, and recent progress.
+- Linked the fresh-machine skill to the canonical `.agent-shared` encrypted env audit/backup/restore tooling instead of creating a second secret-sync path.
+- Verified locally with `cli npm test -- src/__tests__/machine-projects.test.ts`, `cli npm run build`, root `npx tsc --noEmit`, `npx convex codegen`, Playwright route smoke for `/` and `/dashboard` redirect, and `node dist/index.js machine projects --dry-run --no-clone --root /tmp/CODE_YOU --days 90` finding 41 recent repos and skipping 5 duplicate broad records.
+
 ## 2026-06-16 — You.md voice-memo lane handoff
 
 ### docs(product): consolidate the You.md Part 2 brain-dump lane
@@ -29,7 +39,7 @@
 
 ### feat(cli): add fresh-machine project bootstrap
 - Added bundled `machine-bootstrap`, a You.md skill for setting up new Macs/laptops/virtual agent hosts with local identity sync, shared skills/stacks, GitHub auth, and active project repo checkout.
-- Added `youmd machine projects`, which reads the active local bundle, defaults to `~/Desktop/CODE_2026`, separates recent/active projects from older projects, prompts before including older projects, and supports `--root`, `--days`, `--yes`, `--dry-run`, and `--no-clone`.
+- Added `youmd machine projects`, which reads the active local bundle, defaults to `~/Desktop/CODE_YOU`, separates recent/active projects from older projects, prompts before including older projects, and supports `--root`, `--days`, `--yes`, `--dry-run`, and `--no-clone`.
 - Project setup now uses GitHub repo names as local directory names when URLs are present, dedupes duplicate repo targets, skips non-empty directories, and clones with `gh repo clone` or `git clone`.
 - Added focused planner tests for GitHub URL parsing, repo-name targets, recency classification, active undated projects, and dedupe.
 - Verified locally with `npm test -- src/__tests__/machine-projects.test.ts`, `npm run build` in `cli/`, and a dry-run `node dist/index.js machine projects --dry-run --no-clone --root /tmp/youmd-code-2026-smoke --days 90`.

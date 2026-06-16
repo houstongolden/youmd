@@ -28,6 +28,16 @@ type TrackedProject = {
   _id: string;
   fullName: string;
   name: string;
+  url?: string;
+  projectUrl?: string;
+  repoName?: string;
+  directoryName?: string;
+  apiDocsUrl?: string;
+  mcpDocsUrl?: string;
+  stackName?: string;
+  stackSlug?: string;
+  highLevelGoal?: string;
+  recentProgress?: string;
   description?: string;
   primaryLanguage?: string;
   pushedAt: number;
@@ -228,11 +238,11 @@ function AnalyzeProjectsStep({
 
   return (
     <div className="space-y-4">
-      {!hasProjects && !analyzing && !analyzed && (
+      {!analyzing && (
         <>
           <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-70 leading-relaxed">
-            we&apos;ll scan your most active repos from the last 90 days and generate
-            a concise insight for each one.
+            we&apos;ll scan your GitHub repos active in the last 90 days and refresh
+            the project catalog used by your dashboard, API/MCP, and machine bootstrap.
           </p>
           <button
             onClick={handle}
@@ -241,7 +251,7 @@ function AnalyzeProjectsStep({
             style={{ borderRadius: "var(--radius)" }}
           >
             <span className="text-[hsl(var(--accent))]">{"⟳"}</span>
-            analyze my active repos
+            {hasProjects ? "refresh active projects" : "analyze my active repos"}
           </button>
         </>
       )}
@@ -263,9 +273,9 @@ function AnalyzeProjectsStep({
               style={{ borderRadius: "var(--radius)" }}
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[hsl(var(--text-primary))] opacity-80 truncate">
-                  {p.name}
-                </span>
+                  <span className="text-[hsl(var(--text-primary))] opacity-80 truncate">
+                    {p.name}
+                  </span>
                 <div className="flex items-center gap-2 shrink-0">
                   {p.primaryLanguage && (
                     <span className="text-[hsl(var(--text-secondary))] opacity-40">
@@ -280,6 +290,39 @@ function AnalyzeProjectsStep({
                   </span>
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[9px] text-[hsl(var(--text-secondary))] opacity-55">
+                <span>repo: {p.fullName}</span>
+                <span>dir: {p.directoryName ?? p.repoName ?? p.name}</span>
+                <span>stack: {p.stackName ?? "Project YouStack"}</span>
+                <span>
+                  docs:{" "}
+                  <a href={p.apiDocsUrl ?? "https://you.md/api/v1/docs/reference"} target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--accent))] opacity-80 hover:opacity-100">
+                    api
+                  </a>
+                  {" / "}
+                  <a href={p.mcpDocsUrl ?? "https://you.md/.well-known/mcp.json"} target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--accent))] opacity-80 hover:opacity-100">
+                    mcp
+                  </a>
+                </span>
+                <a href={p.url ?? `https://github.com/${p.fullName}`} target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--accent))] opacity-80 hover:opacity-100 truncate">
+                  {p.url ?? `https://github.com/${p.fullName}`}
+                </a>
+                {p.projectUrl && (
+                  <a href={p.projectUrl} target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--accent))] opacity-80 hover:opacity-100 truncate">
+                    {p.projectUrl}
+                  </a>
+                )}
+              </div>
+              {p.highLevelGoal && (
+                <p className="text-[hsl(var(--text-secondary))] opacity-55 leading-relaxed">
+                  goal: {p.highLevelGoal}
+                </p>
+              )}
+              {p.recentProgress && (
+                <p className="text-[hsl(var(--text-secondary))] opacity-45 leading-relaxed">
+                  progress: {p.recentProgress}
+                </p>
+              )}
               {p.insight && (
                 <p className="text-[hsl(var(--text-secondary))] opacity-60 leading-relaxed">
                   {p.insight}

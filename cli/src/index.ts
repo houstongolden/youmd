@@ -696,8 +696,9 @@ program
 program
   .command("machine [subcommand]")
   .description("set up a new machine with your synced skills, stacks, and agent config")
-  .option("--root <dir>", "projects: workspace root, default ~/Desktop/CODE_2026")
+  .option("--root <dir>", "projects: workspace root, default ~/Desktop/CODE_YOU")
   .option("--days <n>", "projects: recent activity window in days", "90")
+  .option("--no-github", "projects: skip authenticated GitHub recent-repo scan")
   .option("--yes", "projects: include older projects without prompting")
   .option("--no-clone", "projects: create directories only")
   .option("--force", "restore: overwrite existing files without backing them up")
@@ -710,6 +711,7 @@ program
       days: options.days,
       yes: options.yes,
       clone: options.clone,
+      github: options.github,
     });
   });
 

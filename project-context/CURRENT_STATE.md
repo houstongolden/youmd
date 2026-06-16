@@ -45,7 +45,7 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - Bundled skills now include `youstack-maintainer`, which lets host agents organize, update, improve, smoke, and prepare named YouStacks for private/scoped/public sharing with owner approval
 - Bundled skills now include `machine-bootstrap`, which teaches host agents to set up a fresh Mac/laptop/virtual agent host with You.md auth, local bundle sync, shared skills/stacks, GitHub auth, and active project repo checkout
-- `youmd machine projects` now creates a Desktop code workspace such as `~/Desktop/CODE_2026`, plans active projects from the local You.md bundle, uses GitHub repo names as target directories when URLs are present, asks before older projects, supports dry-run/directory-only modes, and clones with `gh repo clone` or `git clone`
+- `youmd machine projects` now creates a Desktop code workspace such as `~/Desktop/CODE_YOU`, merges authenticated GitHub repos pushed in the last 90 days with local You.md project records, uses GitHub repo names as target directories, tags associated stacks, attaches API/MCP docs links, skips broad duplicate bundle entries, asks before older projects, supports dry-run/directory-only modes, and clones with `gh repo clone` or `git clone`
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
 - Conversational AI onboarding with BrailleSpinners, ASCII logo, portrait rendering
 - Passwordless email-code auth (no API token required for your own account)

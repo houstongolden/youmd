@@ -39,7 +39,9 @@ import { agentPushViaPR } from "./githubAgentSync";
 
 const GITHUB_API = "https://api.github.com";
 const DAYS_90_MS = 90 * 24 * 60 * 60 * 1000;
-const MAX_REPOS = 10; // analyze at most 10 repos to stay within rate limits
+const MAX_REPOS = 40; // enough for a real 90-day machine bootstrap catalog
+const API_DOCS_URL = "https://you.md/api/v1/docs/reference";
+const MCP_DOCS_URL = "https://you.md/.well-known/mcp.json";
 const BYTES_PER_LINE: Record<string, number> = {
   TypeScript: 32,
   JavaScript: 28,
@@ -98,6 +100,8 @@ type GithubRepo = {
   full_name: string;
   name: string;
   description: string | null;
+  html_url: string;
+  homepage: string | null;
   language: string | null;
   pushed_at: string | null;
   stargazers_count: number;
@@ -116,6 +120,16 @@ type ProjectAnalysis = {
   id: string;
   fullName: string;
   name: string;
+  url: string;
+  projectUrl: string | null;
+  repoName: string;
+  directoryName: string;
+  apiDocsUrl: string;
+  mcpDocsUrl: string;
+  stackName: string;
+  stackSlug: string;
+  highLevelGoal: string | null;
+  recentProgress: string | null;
   description: string | null;
   primaryLanguage: string | null;
   pushedAt: number;
@@ -239,6 +253,41 @@ function languageLines(languages: Record<string, number>): { loc: number; lomb: 
     lomb,
     lombToCodeRatio: code > 0 ? Math.round((lomb / code) * 1000) / 1000 : null,
   };
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "project";
+}
+
+function inferStackName(fullName: string): string {
+  const value = fullName.toLowerCase();
+  if (value.includes("youmd") || value.includes("you-md") || value.includes("you.md")) return "YouStack";
+  if (value.includes("agent-shared")) return "Shared Agent Stack";
+  if (value.includes("bamfsite") || value.includes("bamfos") || value.includes("bamf agency")) return "BAMFOSStack";
+  if (value.includes("bamfaiapp") || value.includes("bamf-ai") || value.includes("bamf.ai")) return "BAMFStack";
+  if (value.includes("badapp") || value.includes("badfit")) return "BadStack";
+  if (value.includes("folder")) return "FolderMDStack";
+  if (value.includes("myo")) return "MyoStack";
+  if (value.includes("scistack")) return "SciStack";
+  if (value.includes("bigbounce")) return "AstroStack";
+  if (value.includes("hubify")) return "HubStack";
+  if (value.includes("hcomputer") || value.includes("h-computer")) return "HComputerStack";
+  if (value.includes("fantasy")) return "FantasyStack";
+  if (value.includes("newsletter")) return "ContentStack";
+  if (value.includes("claws")) return "ClawsStack";
+  return "Project YouStack";
+}
+
+function firstSentence(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.replace(/\s+/g, " ").trim();
+  if (!trimmed) return null;
+  const sentence = trimmed.split(/(?<=[.!?])\s+/)[0] || trimmed;
+  return sentence.slice(0, 220);
 }
 
 async function fetchLanguageMetric(token: string, fullName: string): Promise<LanguageMetric> {
@@ -403,7 +452,7 @@ export const analyzeActiveProjects = action({
     //    We cap at 100 per page; the 90-day filter will reduce this further.
     const allRepos = await githubGet<GithubRepo[]>(
       token,
-      `${GITHUB_API}/user/repos?sort=pushed&direction=desc&per_page=100&affiliation=owner`
+      `${GITHUB_API}/user/repos?sort=pushed&direction=desc&per_page=100&affiliation=owner,collaborator,organization_member`
     );
 
     const cutoff90d = Date.now() - DAYS_90_MS;
@@ -435,6 +484,9 @@ export const analyzeActiveProjects = action({
       );
       const commitCount = commits.length;
       const pushedAt = repo.pushed_at ? Date.parse(repo.pushed_at) : Date.now();
+      const stackName = inferStackName(repo.full_name);
+      const stackSlug = slugify(stackName);
+      const recentProgress = recentMessages.slice(0, 3).join(" | ") || null;
 
       // 3. Generate LLM insight.
       let insight: string | null = null;
@@ -449,6 +501,7 @@ export const analyzeActiveProjects = action({
         // Non-fatal: store without insight rather than failing the whole batch.
         insight = null;
       }
+      const highLevelGoal = firstSentence(insight) ?? firstSentence(repo.description);
 
       // 4. Upsert into trackedProjects via the non-Node.js internal mutation.
       await ctx.runMutation(
@@ -458,6 +511,16 @@ export const analyzeActiveProjects = action({
           githubRepoId: repo.id,
           fullName: repo.full_name,
           name: repo.name,
+          url: repo.html_url,
+          projectUrl: repo.homepage || undefined,
+          repoName: repo.name,
+          directoryName: repo.name,
+          apiDocsUrl: API_DOCS_URL,
+          mcpDocsUrl: MCP_DOCS_URL,
+          stackName,
+          stackSlug,
+          highLevelGoal: highLevelGoal ?? undefined,
+          recentProgress: recentProgress ?? undefined,
           description: repo.description ?? undefined,
           primaryLanguage: repo.language ?? undefined,
           pushedAt,
@@ -472,6 +535,16 @@ export const analyzeActiveProjects = action({
         id: `${repo.id}`,
         fullName: repo.full_name,
         name: repo.name,
+        url: repo.html_url,
+        projectUrl: repo.homepage || null,
+        repoName: repo.name,
+        directoryName: repo.name,
+        apiDocsUrl: API_DOCS_URL,
+        mcpDocsUrl: MCP_DOCS_URL,
+        stackName,
+        stackSlug,
+        highLevelGoal,
+        recentProgress,
         description: repo.description,
         primaryLanguage: repo.language,
         pushedAt,

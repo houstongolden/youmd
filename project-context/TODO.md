@@ -37,7 +37,12 @@ PRD Version: 2.3
 - [x] Split recent/active projects from older projects with a configurable `--days` window and interactive older-project prompts
 - [x] Add safe `--dry-run`, `--no-clone`, `--yes`, and `--root` options for agent-run setup
 - [x] Verify the planner with focused CLI tests, build the CLI, and smoke the dry-run command
-- [ ] Hydrate GitHub repo URLs and activity dates into local You.md project records so brand-new machines can clone exact repos from the brain alone
+- [x] Hydrate recent GitHub repo URLs/activity into the fresh-machine planner so brand-new machines can clone exact repos from authenticated GitHub plus You.md brain records
+- [x] Default fresh-machine project setup to `~/Desktop/CODE_YOU`
+- [x] Add project stack names, API docs links, MCP docs links, repo/directory names, high-level goals, and recent progress to tracked project records and DSI/dashboard project catalog output
+- [x] Link fresh-machine env handling to the canonical encrypted `.env.local` audit/backup/restore flow in `.agent-shared`
+- [ ] Add a dedicated signed-in machine/computer readiness card that shows this machine, synced computers, skill-stack sync, project clone readiness, and encrypted env-backup readiness in one dashboard/shell confirmation
+- [ ] Run the production authenticated GitHub project refresh and verify the dashboard lists the 90-day active project catalog with repo, dir, stack, API/MCP docs, goal, and recent progress
 - [ ] Reseed/deploy the hosted bundled-skill registry so production `/api/v1/skills` includes `machine-bootstrap`
 
 ### 2026-06-16 — Local agent auth handoff
