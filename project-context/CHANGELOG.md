@@ -2,6 +2,12 @@
 
 ## 2026-06-16 — DSI weather and surf components
 
+### feat(convex/web): add Google Calendar agenda DSI adapter
+- Added an owner-gated agenda DSI action that ports h.computer's important-upcoming Google Calendar filter into You.md: it keeps family, sports, school, health, travel, and meetings with attendees while dropping common focus/hold/fluff blocks.
+- The adapter supports native Google Calendar bearer-token env first and the legacy h.computer/Lovable connector gateway as a compatibility fallback; when no calendar connector is configured it persists an honest private unconfigured component instead of inventing agenda data.
+- Agenda snapshots now fold in the owner's existing private `calendarContext`, persist as `agenda-today`, and are visible from the Files/Reports DSI Catalog through a new `refresh agenda` control.
+- Verified locally with Convex codegen, focused Convex tests, root TypeScript, Convex TypeScript, lint, and build.
+
 ### feat(convex/web): port school logistics crawler into private DSI
 - Added a You.md-native school logistics DSI action that fetches the h.computer Google Doc `mobilebasic` source, strips the document, deterministically extracts upcoming active-grade/school-wide dated items, and persists the result as a private source-backed DSI component.
 - The school component carries Mar Vista countdowns, active grade defaults, upcoming event totals, next-event metadata, source lines, citations, and parser provenance; LLM extraction and Google Calendar writeback remain explicit follow-up adapters.

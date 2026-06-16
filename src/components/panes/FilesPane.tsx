@@ -493,6 +493,7 @@ function ArtifactHome({
   onRefreshWeatherSurf,
   onRefreshProjectCatalog,
   onRefreshSchoolLogistics,
+  onRefreshAgenda,
   onToggleLoopDefinition,
   selectedRunId,
   loopSnapshots,
@@ -515,6 +516,7 @@ function ArtifactHome({
   onRefreshWeatherSurf: () => void;
   onRefreshProjectCatalog: () => void;
   onRefreshSchoolLogistics: () => void;
+  onRefreshAgenda: () => void;
   onToggleLoopDefinition: (definition: LoopReportDefinition) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
   loopSnapshots: SourceSnapshot[] | undefined;
@@ -554,6 +556,7 @@ function ArtifactHome({
             onRefreshWeatherSurf={onRefreshWeatherSurf}
             onRefreshProjectCatalog={onRefreshProjectCatalog}
             onRefreshSchoolLogistics={onRefreshSchoolLogistics}
+            onRefreshAgenda={onRefreshAgenda}
             onToggleDefinition={onToggleLoopDefinition}
             onSelectArtifact={onSelect}
             selectedRunId={selectedRunId}
@@ -645,6 +648,7 @@ function LoopReportsControlPanel({
   onRefreshWeatherSurf,
   onRefreshProjectCatalog,
   onRefreshSchoolLogistics,
+  onRefreshAgenda,
   onToggleDefinition,
   onSelectArtifact,
   selectedRunId,
@@ -664,6 +668,7 @@ function LoopReportsControlPanel({
   onRefreshWeatherSurf: () => void;
   onRefreshProjectCatalog: () => void;
   onRefreshSchoolLogistics: () => void;
+  onRefreshAgenda: () => void;
   onToggleDefinition: (definition: LoopReportDefinition) => void;
   onSelectArtifact: (path: string) => void;
   selectedRunId: Id<"loopReportRuns"> | null;
@@ -768,6 +773,15 @@ function LoopReportsControlPanel({
               className="h-8 self-start text-[10px]"
             >
               {dsiBusy ? "refreshing..." : "refresh school"}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onRefreshAgenda}
+              disabled={dsiBusy}
+              className="h-8 self-start text-[10px]"
+            >
+              {dsiBusy ? "refreshing..." : "refresh agenda"}
             </Button>
             <Button
               size="sm"
@@ -1339,6 +1353,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
   const refreshProjectCatalog = useAction(api.githubProjects.refreshProjectCatalogDsi);
   const refreshWeatherSurf = useAction(api.dsi.refreshWeatherSurf);
   const refreshSchoolLogistics = useAction(api.dsi.refreshSchoolLogistics);
+  const refreshAgenda = useAction(api.dsi.refreshAgenda);
   const memories = useQuery(api.memories.listMemories, clerkId && userId ? { clerkId, userId } : "skip");
   const sessions = useQuery(api.memories.listSessions, clerkId && userId ? { clerkId, userId, limit: 20 } : "skip");
   const loopReportDefinitions = useQuery(
@@ -1726,6 +1741,25 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
     }
   }, [user, userId, refreshSchoolLogistics]);
 
+  const handleRefreshAgenda = useCallback(async () => {
+    if (!user?.id || !userId) return;
+    setDsiBusy(true);
+    setDsiStatus(null);
+    try {
+      const result = await refreshAgenda({ clerkId: user.id, userId, daysAhead: 7 });
+      setWorkspaceMode("artifacts");
+      setDsiStatus(result.configured
+        ? `refreshed agenda: ${result.eventCount} kept events`
+        : "agenda saved: calendar connector missing"
+      );
+      setTimeout(() => setDsiStatus(null), 3000);
+    } catch (err) {
+      setDsiStatus(`error: ${err instanceof Error ? err.message : "failed to refresh agenda"}`);
+    } finally {
+      setDsiBusy(false);
+    }
+  }, [user, userId, refreshAgenda]);
+
   const handleToggleLoopDefinition = useCallback(async (definition: LoopReportDefinition) => {
     if (!user?.id) return;
     setLoopBusy(true);
@@ -2013,6 +2047,7 @@ export function FilesPane({ userId, isWritingFiles }: FilesPaneProps) {
               onRefreshWeatherSurf={handleRefreshWeatherSurf}
               onRefreshProjectCatalog={handleRefreshProjectCatalog}
               onRefreshSchoolLogistics={handleRefreshSchoolLogistics}
+              onRefreshAgenda={handleRefreshAgenda}
               onToggleLoopDefinition={handleToggleLoopDefinition}
               selectedRunId={selectedLoopRunId}
               loopSnapshots={loopSnapshots}

@@ -197,6 +197,103 @@ describe("dsi components", () => {
     expect(snapshots[0].visibility).toBe("private");
   });
 
+  it("persists agenda as a private DSI component with manual calendar context", async () => {
+    const t = convexTest(schema);
+    const userId = await seedUser(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    await t.run(async (ctx) => {
+      const profileId = await ctx.db.insert("profiles", {
+        username: "agenda-owner",
+        name: "Agenda Owner",
+        ownerId: userId,
+        isClaimed: true,
+        claimedAt: Date.now(),
+        createdAt: Date.now(),
+      });
+      await ctx.db.insert("privateContext", {
+        profileId,
+        calendarContext: "Protect mornings for deep work. Family pickups win over calls.",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
+    await asOwner.mutation(internal.dsi.persistAgendaComponent, {
+      clerkId: CLERK,
+      userId,
+      agenda: {
+        provider: "google-calendar",
+        capturedAt: "2026-06-16T12:00:00.000Z",
+        windowStart: "2026-06-16T00:00:00.000Z",
+        windowEnd: "2026-06-23T12:00:00.000Z",
+        configured: true,
+        connectionMode: "google_oauth_bearer",
+        totals: {
+          events: 2,
+          totalSeen: 5,
+          dropped: 3,
+          today: 1,
+          next7d: 2,
+        },
+        events: [
+          {
+            id: "evt_1",
+            title: "Client strategy call",
+            start: "2026-06-16T18:00:00.000Z",
+            end: "2026-06-16T19:00:00.000Z",
+            allDay: false,
+            location: null,
+            url: "https://calendar.google.com/calendar/event?eid=evt_1",
+            attendeesCount: 2,
+            category: "meeting",
+            whyKept: "meeting w/ attendees",
+            calendarId: "primary",
+          },
+          {
+            id: "evt_2",
+            title: "School pickup",
+            start: "2026-06-17",
+            end: "2026-06-18",
+            allDay: true,
+            location: "Mar Vista",
+            url: null,
+            attendeesCount: 0,
+            category: "school",
+            whyKept: "school",
+            calendarId: "primary",
+          },
+        ],
+        manualContext: null,
+        parser: {
+          mode: "hcomputer_importance_filter",
+          note: "test",
+        },
+      },
+    });
+
+    const components = await asOwner.query(api.dsi.listComponents, {
+      clerkId: CLERK,
+      userId,
+    });
+    const agenda = components.find((component) => component.slug === "agenda-today");
+    expect(agenda?.visibility).toBe("private");
+    expect(agenda?.componentType).toBe("agenda");
+    expect(agenda?.summary).toContain("2 kept");
+    expect(agenda?.summary).toContain("1 today");
+    expect(agenda?.data.manualContext).toContain("Family pickups win");
+    expect(agenda?.data.events.map((event: { category: string }) => event.category)).toEqual(["meeting", "school"]);
+
+    const snapshots = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("sourceSnapshots")
+        .withIndex("by_userId", (q) => q.eq("userId", userId))
+        .collect();
+    });
+    expect(snapshots.map((snapshot) => snapshot.sourceKey)).toEqual(["agenda-today"]);
+    expect(snapshots[0].connectorKind).toBe("google-calendar");
+    expect(snapshots[0].trustLevel).toBe("verified");
+  });
+
   it("builds a GitHub project catalog component from tracked projects and repo mirror stats", async () => {
     const t = convexTest(schema);
     const userId = await seedUser(t);

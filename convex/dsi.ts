@@ -87,6 +87,42 @@ type SchoolLogisticsSignal = {
   };
 };
 
+type AgendaEventSignal = {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+  location: string | null;
+  url: string | null;
+  attendeesCount: number;
+  category: "family" | "sports" | "school" | "health" | "travel" | "meeting" | "personal";
+  whyKept: string;
+  calendarId: string | null;
+};
+
+type AgendaSignal = {
+  provider: "google-calendar" | "google-calendar-unconfigured";
+  capturedAt: string;
+  windowStart: string;
+  windowEnd: string;
+  configured: boolean;
+  connectionMode: "google_oauth_bearer" | "legacy_connector_gateway" | "missing";
+  totals: {
+    events: number;
+    totalSeen: number;
+    dropped: number;
+    today: number;
+    next7d: number;
+  };
+  events: AgendaEventSignal[];
+  manualContext: string | null;
+  parser: {
+    mode: "hcomputer_importance_filter";
+    note: string;
+  };
+};
+
 type ProjectCatalogSignal = {
   provider: string;
   capturedAt: string;
@@ -425,6 +461,222 @@ function buildSchoolLogisticsSignal(args: {
     parser: {
       mode: "deterministic_google_doc",
       note: "First You.md-native school DSI crawler ported from h.computer; LLM extraction and Google Calendar writeback remain adapter follow-ups.",
+    },
+  };
+}
+
+type RawCalendarAttendee = { email?: string; displayName?: string; self?: boolean; responseStatus?: string };
+type RawCalendarEvent = {
+  id?: string;
+  status?: string;
+  summary?: string;
+  description?: string;
+  location?: string;
+  htmlLink?: string;
+  start?: { dateTime?: string; date?: string; timeZone?: string };
+  end?: { dateTime?: string; date?: string; timeZone?: string };
+  attendees?: RawCalendarAttendee[];
+  transparency?: string;
+  recurringEventId?: string;
+};
+
+type CalendarAuthConfig = {
+  baseUrl: string;
+  headers: Record<string, string>;
+  mode: AgendaSignal["connectionMode"];
+};
+
+const CAL_FAMILY_RE = /\b(family|wife|husband|kid|kids|son|daughter|mom|dad|parent|babysitter|nanny|birthday|anniversary|dinner w\/|dinner with)\b/i;
+const CAL_SPORTS_RE = /\b(practice|game|match|tournament|coach|soccer|baseball|basketball|football|surf lesson|jiu jitsu|bjj|tennis|swim|gym class|yoga class|pilates)\b/i;
+const CAL_SCHOOL_RE = /\b(school|teacher|conference|pickup|drop[- ]off|recital|play|concert|field trip|orientation|pta)\b/i;
+const CAL_HEALTH_RE = /\b(doctor|dr\.|dentist|orthodontist|therapy|physical|checkup|appointment|pediatrician|vet)\b/i;
+const CAL_TRAVEL_RE = /\b(flight|airport|hotel|trip|vacation|departure|arrival|train|uber to|drive to)\b/i;
+const CAL_FLUFF_TITLE_RE = /^\s*(\[?fluff\]?|focus|deep work|no meetings?|hold|tentative|busy|block|buffer|prep|lunch|commute|drive|out of office|ooo|wfh|workout)\b/i;
+const CAL_FLUFF_TAG_RE = /\[fluff\]/i;
+
+function calendarAuthConfig(): CalendarAuthConfig | null {
+  const bearer = process.env.YOUMD_GOOGLE_CALENDAR_ACCESS_TOKEN;
+  if (bearer) {
+    return {
+      baseUrl: "https://www.googleapis.com/calendar/v3",
+      headers: {
+        Authorization: `Bearer ${bearer}`,
+        Accept: "application/json",
+      },
+      mode: "google_oauth_bearer",
+    };
+  }
+  const lovable = process.env.LOVABLE_API_KEY;
+  const connection = process.env.YOUMD_GOOGLE_CALENDAR_API_KEY || process.env.GOOGLE_CALENDAR_API_KEY;
+  if (lovable && connection) {
+    return {
+      baseUrl: "https://connector-gateway.lovable.dev/google_calendar/calendar/v3",
+      headers: {
+        Authorization: `Bearer ${lovable}`,
+        "X-Connection-Api-Key": connection,
+        Accept: "application/json",
+      },
+      mode: "legacy_connector_gateway",
+    };
+  }
+  return null;
+}
+
+async function calendarGet<T>(config: CalendarAuthConfig, path: string, params: Record<string, string> = {}): Promise<T> {
+  const url = new URL(`${config.baseUrl}${path}`);
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  const res = await fetch(url.toString(), {
+    headers: config.headers,
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`calendar ${path} ${res.status}: ${body.slice(0, 240)}`);
+  }
+  return (await res.json()) as T;
+}
+
+async function listCalendarIds(config: CalendarAuthConfig): Promise<string[]> {
+  try {
+    const data = await calendarGet<{ items?: Array<{ id?: string; hidden?: boolean }> }>(
+      config,
+      "/users/me/calendarList",
+      { minAccessRole: "reader", showHidden: "false" }
+    );
+    const ids = (data.items ?? [])
+      .filter((calendar) => calendar.id && calendar.hidden !== true)
+      .map((calendar) => calendar.id as string);
+    return ids.length ? ids : ["primary"];
+  } catch {
+    return ["primary"];
+  }
+}
+
+function categorizeCalendarEvent(event: RawCalendarEvent): { keep: boolean; category: AgendaEventSignal["category"]; why: string } {
+  const title = event.summary ?? "";
+  const description = event.description ?? "";
+  const haystack = `${title}\n${description}`;
+  if (CAL_FAMILY_RE.test(haystack)) return { keep: true, category: "family", why: "family" };
+  if (CAL_SPORTS_RE.test(haystack)) return { keep: true, category: "sports", why: "sports/practice" };
+  if (CAL_SCHOOL_RE.test(haystack)) return { keep: true, category: "school", why: "school" };
+  if (CAL_HEALTH_RE.test(haystack)) return { keep: true, category: "health", why: "appointment" };
+  if (CAL_TRAVEL_RE.test(haystack)) return { keep: true, category: "travel", why: "travel" };
+  if (CAL_FLUFF_TAG_RE.test(haystack)) return { keep: false, category: "personal", why: "tagged fluff" };
+  if ((event.attendees ?? []).find((attendee) => attendee.self)?.responseStatus === "declined") {
+    return { keep: false, category: "meeting", why: "declined" };
+  }
+  if (event.status === "cancelled") return { keep: false, category: "meeting", why: "cancelled" };
+  if (event.transparency === "transparent") return { keep: false, category: "personal", why: "free/hold" };
+  if (CAL_FLUFF_TITLE_RE.test(title)) return { keep: false, category: "personal", why: "fluff title" };
+  const allDay = !!event.start?.date;
+  const attendees = (event.attendees ?? []).filter((attendee) => !attendee.self);
+  if (allDay && attendees.length === 0) return { keep: false, category: "personal", why: "all-day hold" };
+  if (attendees.length >= 25 && event.recurringEventId) return { keep: false, category: "meeting", why: "mega all-hands" };
+  if (attendees.length > 0) return { keep: true, category: "meeting", why: "meeting w/ attendees" };
+  return { keep: false, category: "personal", why: "solo block" };
+}
+
+function agendaEventFromRaw(event: RawCalendarEvent, category: ReturnType<typeof categorizeCalendarEvent>, calendarId: string | null): AgendaEventSignal {
+  const attendees = (event.attendees ?? []).filter((attendee) => !attendee.self);
+  return {
+    id: event.id ?? `${event.start?.dateTime ?? event.start?.date ?? "event"}:${event.summary ?? "untitled"}`,
+    title: (event.summary ?? "(no title)").trim(),
+    start: event.start?.dateTime ?? event.start?.date ?? "",
+    end: event.end?.dateTime ?? event.end?.date ?? "",
+    allDay: !!event.start?.date,
+    location: event.location ?? null,
+    url: event.htmlLink ?? null,
+    attendeesCount: attendees.length,
+    category: category.category,
+    whyKept: category.why,
+    calendarId,
+  };
+}
+
+async function fetchCalendarEvents(config: CalendarAuthConfig, windowStart: string, windowEnd: string): Promise<{ events: AgendaEventSignal[]; dropped: number; totalSeen: number }> {
+  const calendarIds = await listCalendarIds(config);
+  const results = await Promise.all(
+    calendarIds.map((calendarId) =>
+      calendarGet<{ items?: RawCalendarEvent[] }>(
+        config,
+        `/calendars/${encodeURIComponent(calendarId)}/events`,
+        {
+          timeMin: windowStart,
+          timeMax: windowEnd,
+          singleEvents: "true",
+          orderBy: "startTime",
+          maxResults: "100",
+        }
+      )
+        .then((data) => ({ calendarId, items: data.items ?? [] }))
+        .catch(() => ({ calendarId, items: [] as RawCalendarEvent[] }))
+    )
+  );
+  const seen = new Set<string>();
+  const events: AgendaEventSignal[] = [];
+  let dropped = 0;
+  let totalSeen = 0;
+  for (const result of results) {
+    for (const item of result.items) {
+      totalSeen += 1;
+      const key = item.id ?? `${item.start?.dateTime ?? item.start?.date}:${item.summary}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const category = categorizeCalendarEvent(item);
+      if (!category.keep) {
+        dropped += 1;
+        continue;
+      }
+      events.push(agendaEventFromRaw(item, category, result.calendarId));
+    }
+  }
+  events.sort((a, b) => a.start.localeCompare(b.start));
+  return { events, dropped, totalSeen };
+}
+
+async function fetchAgendaSignal(daysAhead = 7): Promise<AgendaSignal> {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const end = new Date(now.getTime() + daysAhead * 86_400_000);
+  const config = calendarAuthConfig();
+  if (!config) {
+    return {
+      provider: "google-calendar-unconfigured",
+      capturedAt: now.toISOString(),
+      windowStart: start.toISOString(),
+      windowEnd: end.toISOString(),
+      configured: false,
+      connectionMode: "missing",
+      totals: { events: 0, totalSeen: 0, dropped: 0, today: 0, next7d: 0 },
+      events: [],
+      manualContext: null,
+      parser: {
+        mode: "hcomputer_importance_filter",
+        note: "Google Calendar connector is not configured in this environment yet. The DSI component preserves the access boundary instead of inventing agenda data.",
+      },
+    };
+  }
+  const fetched = await fetchCalendarEvents(config, start.toISOString(), end.toISOString());
+  const todayKey = now.toISOString().slice(0, 10);
+  return {
+    provider: "google-calendar",
+    capturedAt: now.toISOString(),
+    windowStart: start.toISOString(),
+    windowEnd: end.toISOString(),
+    configured: true,
+    connectionMode: config.mode,
+    totals: {
+      events: fetched.events.length,
+      totalSeen: fetched.totalSeen,
+      dropped: fetched.dropped,
+      today: fetched.events.filter((event) => event.start.slice(0, 10) === todayKey).length,
+      next7d: fetched.events.length,
+    },
+    events: fetched.events,
+    manualContext: null,
+    parser: {
+      mode: "hcomputer_importance_filter",
+      note: "Ported from h.computer's important-upcoming Google Calendar filter: keep family, sports, school, health, travel, and meetings with attendees; drop common focus/hold/fluff blocks.",
     },
   };
 }
@@ -909,6 +1161,28 @@ export const refreshSchoolLogistics = action({
   },
 });
 
+export const refreshAgenda = action({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+    daysAhead: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots">; eventCount: number; configured: boolean }> => {
+    await requireOwner(ctx, args.clerkId);
+    const agenda = await fetchAgendaSignal(Math.min(Math.max(args.daysAhead ?? 7, 1), 30));
+    const result = await ctx.runMutation(internal.dsi.persistAgendaComponent, {
+      clerkId: args.clerkId,
+      userId: args.userId,
+      agenda,
+    });
+    return {
+      ...result,
+      eventCount: agenda.totals.events,
+      configured: agenda.configured,
+    };
+  },
+});
+
 async function persistProjectCatalog(
   ctx: MutationCtx,
   args: {
@@ -1000,6 +1274,63 @@ export const persistProjectCatalogWithLanguageMetrics = internalMutation({
       userId: args.userId,
       languageMetrics: args.languageMetrics as ProjectLanguageMetric[] | undefined,
     });
+  },
+});
+
+export const persistAgendaComponent = internalMutation({
+  args: {
+    clerkId: v.string(),
+    userId: v.id("users"),
+    agenda: v.any(),
+  },
+  handler: async (ctx, args): Promise<{ componentId: Id<"dsiComponents">; snapshotId: Id<"sourceSnapshots"> }> => {
+    await ownerForUserId(ctx, args.clerkId, args.userId);
+    const agenda = args.agenda as AgendaSignal;
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", args.userId))
+      .first();
+    const privateContext = profile
+      ? await ctx.db
+          .query("privateContext")
+          .withIndex("by_profileId", (q) => q.eq("profileId", profile._id))
+          .first()
+      : null;
+    const withManualContext: AgendaSignal = {
+      ...agenda,
+      manualContext: privateContext?.calendarContext ?? agenda.manualContext,
+    };
+    const snapshotId = await insertSnapshot(ctx, {
+      userId: args.userId,
+      connectorKind: "google-calendar",
+      sourceKey: "agenda-today",
+      sourceType: "dsi_component",
+      normalized: withManualContext,
+      citations: [{ provider: withManualContext.provider, url: "https://calendar.google.com/calendar" }],
+      visibility: "private",
+      trustLevel: withManualContext.configured ? "verified" : "low",
+      metadata: {
+        origin: "h.computer",
+        adapter: "google-calendar-important-agenda",
+        connectionMode: withManualContext.connectionMode,
+      },
+    });
+    const manual = withManualContext.manualContext ? "manual context" : "no manual context";
+    const summary = withManualContext.configured
+      ? `${withManualContext.totals.events} kept / ${withManualContext.totals.dropped} dropped / ${withManualContext.totals.today} today / ${manual}`
+      : `calendar connector missing / ${manual}`;
+    const componentId = await upsertComponent(ctx, {
+      userId: args.userId,
+      slug: "agenda-today",
+      componentType: "agenda",
+      title: "Agenda - Google Calendar",
+      summary,
+      data: withManualContext,
+      sourceSnapshotIds: [snapshotId],
+      trustLevel: withManualContext.configured ? "verified" : "low",
+      metadata: { provider: withManualContext.provider, configurable: true, origin: "h.computer" },
+    });
+    return { componentId, snapshotId };
   },
 });
 
