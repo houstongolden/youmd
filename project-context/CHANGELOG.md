@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Local portfolio interaction re-proof
+
+### test(shell): verify compact project portfolio controls after resume
+- Re-verified Houston's latest Portfolio Graph request in the visible authenticated Codex in-app Browser at `http://localhost:3100/shell?tab=portfolio`.
+- Confirmed the persisted graph renders `56` projects, shipped `today` / `7d` / `30d` / `90d`, top shippers, latest shipped rows, compact search/focus/sort controls, full ranked focus labels, clickable project rows, and `details` / `timeline` anchors.
+- Confirmed typed search narrows `bamfaiapp` to `2 / 56`, focus filtering narrows `Top Priority` to the You.md row, and `sort shipped 90d` orders the highest-shipping projects first.
+- Confirmed the You.md detail page contains exact graph/API/MCP docs URLs, owner-gated graph/docs curl commands, `curl -fsSL https://you.md/install.sh | bash`, `git clone https://github.com/houstongolden/youmd youmd`, and owned You.md API/MCP surface curl commands.
+- Confirmed the real You.md timeline link produces the clean URL `http://localhost:3100/shell?tab=portfolio&project=youmd#timeline` and scrolls to the shipping timeline.
+- Ran a reversible focus-status write proof through the dashboard UI: `agent-shared` changed from `unset` to `on-ice / 3`, then back to `unset / 4`.
+- Screenshots: `/tmp/youmd-portfolio-56-projects-controls-proof-2026-06-17.png`, `/tmp/youmd-portfolio-youmd-detail-graph-links-proof-2026-06-17.png`, and `/tmp/youmd-portfolio-youmd-timeline-proof-2026-06-17.png`.
+
 ## 2026-06-17 — Production portfolio exact-docs proof
 
 ### test(prod): verify BAMF project graph links on www.you.md
