@@ -52,6 +52,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('if [ ! -f "$YOUMD_ENV_VAULT" ]; then');
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --list');
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"');
+    expect(command).toContain("youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
+    expect(command).toContain("YOUMD_ENV_VAULT=/path/to/env-vault-YYYYMMDDTHHMMZ.tar.enc YOUMD_REQUIRE_ENV_VAULT=1 <same command>");
     expect(command).toContain('strict proof requires YOUMD_ENV_VAULT');
     expect(command).toContain('[ "${YOUMD_REQUIRE_ENV_VAULT:-}" = "1" ]');
     expect(command).toContain('youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report');
@@ -90,6 +92,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped");
     expect(prompt).toContain("First pass is 30 days");
     expect(prompt).toContain(".env.local values are never embedded here");
+    expect(prompt).toContain("youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
+    expect(prompt).toContain("YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc");
     expect(prompt).toContain("variable names/counts and target paths only");
     expect(prompt).toContain("fails instead of pretending setup is complete");
   });

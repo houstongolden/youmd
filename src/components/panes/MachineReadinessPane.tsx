@@ -18,6 +18,10 @@ type MachineReadinessPaneProps = {
   clerkId?: string;
 };
 
+const freshComputerPromptCommand = "youmd machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault";
+const freshComputerShellCommand = "/new computer";
+const sourceEnvVaultBackupCommand = "youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault";
+
 function statusClass(status: LocalReadinessStatus | LocalProjectReadiness["status"]) {
   if (status === "ready") return "text-[hsl(var(--success))]";
   if (status === "warn" || status === "needs-env" || status === "partial") return "text-[hsl(var(--accent))]";
@@ -413,7 +417,13 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
 
             <section>
               <PaneSectionLabel>copyable local checks</PaneSectionLabel>
+              <p className="mb-3 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
+                Fresh-machine handoff starts from the shell or CLI, uses the Portfolio Graph setup gate, and requires an encrypted env vault before strict proof can be marked complete.
+              </p>
               <div className="space-y-2">
+                <CopyableCommand command={freshComputerShellCommand} />
+                <CopyableCommand command={freshComputerPromptCommand} />
+                <CopyableCommand command={sourceEnvVaultBackupCommand} dimmed />
                 <CopyableCommand command={report.commands.verifyCurrent} />
                 <CopyableCommand command={report.commands.verifyFresh} dimmed />
                 <CopyableCommand command={report.commands.verifyFreshFull} dimmed />

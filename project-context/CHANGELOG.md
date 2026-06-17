@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-17 — Fresh-machine env-vault handoff clarity
+
+### fix(machine): make the new-computer handoff self-contained
+- The generated CLI and web-shell fresh-machine commands now print the exact old/source Mac vault creation command when `YOUMD_ENV_VAULT` is missing: `youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`.
+- The web-shell `/new computer` command now explicitly includes `YOUMD_CODE_ROOT='~/Desktop/CODE_YOU'` and `YOUMD_REQUIRE_ENV_VAULT='1'`, so the default web artifact fails instead of pretending setup is complete when the encrypted vault is missing.
+- The Machine pane copyable checks now surface `/new computer`, `youmd machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault`, and the source-machine env-vault backup command.
+- Verification: focused CLI prompt/parity tests, CLI build, root TypeScript, root lint/radius, root production build, compiled `youmd machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault` smoke, and authenticated Codex in-app Browser QA on local `/shell?tab=machine`. Screenshot: `/tmp/youmd-machine-fresh-handoff-commands-proof-2026-06-17.png`.
+- Remaining gap: the actual brand-new-computer run with the real env vault is still open and must not be marked complete until verified on the target machine.
+
 ## 2026-06-17 — Portfolio setup eligibility filter proof
 
 ### feat(portfolio): expose the exact new-computer setup gate in project rows

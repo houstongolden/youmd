@@ -210,7 +210,11 @@ function buildFreshMachineBootstrapCommand(apiKey?: string): string {
     '  youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"',
     "else",
     '  echo "[you.md] env vault not restored yet"',
-    '  echo "copy your encrypted env vault to this machine, then run:"',
+    '  echo "[you.md] On the old/source Mac, create the encrypted vault first:"',
+    '  echo "youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault"',
+    '  echo "[you.md] Move the generated env-vault-*.tar.enc file to this Mac, then rerun this command with:"',
+    '  echo "YOUMD_ENV_VAULT=/path/to/env-vault-YYYYMMDDTHHMMZ.tar.enc YOUMD_REQUIRE_ENV_VAULT=1 <same command>"',
+    '  echo "[you.md] Or restore manually after clone:"',
     '  echo "youmd env restore <vault> --root \\"$ROOT\\""',
     '  if [ "${YOUMD_REQUIRE_ENV_VAULT:-}" = "1" ]; then',
     '    echo "[you.md] strict proof requires YOUMD_ENV_VAULT; stopping before readiness is marked complete" >&2',
@@ -277,8 +281,10 @@ function buildFreshMachineBootstrapCommand(apiKey?: string): string {
 
   const assignments = [
     apiKey ? `YOUMD_API_KEY=${shellQuote(apiKey)}` : null,
+    `YOUMD_CODE_ROOT=${shellQuote(FRESH_MACHINE_BOOTSTRAP_ROOT)}`,
     `YOUMD_ACTIVE_DAYS=${shellQuote(String(FRESH_MACHINE_BOOTSTRAP_DAYS))}`,
     `YOUMD_PROJECT_LIMIT=${shellQuote(String(FRESH_MACHINE_BOOTSTRAP_LIMIT))}`,
+    `YOUMD_REQUIRE_ENV_VAULT=${shellQuote("1")}`,
   ].filter(Boolean);
 
   return `${assignments.join(" ")} bash -lc ${shellQuote(script)}`;
@@ -312,9 +318,9 @@ function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: string): 
     "- write and sync a secret-safe machine proof report, with optional bounded install/check/server proof flags",
     "- bound portfolio hydration with `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` so large restored roots do not wedge setup",
     "",
-    "Secret rule: raw `.env.local` values are not embedded in this prompt. Put your encrypted vault on the new machine and either set `YOUMD_ENV_VAULT=/path/to/vault` before running, or run the printed `youmd env restore <vault>` command after clone. Vault listing prints variable names/counts and target paths only, never values.",
+    "Secret rule: raw `.env.local` values are not embedded in this prompt. On the old/source Mac, create the vault with `youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file to the new machine, then rerun with `YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc`. Vault listing prints variable names/counts and target paths only, never values.",
     "Project gate: inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped by default. Manually mark a project Active and Top Priority/Focusing in Portfolio before expecting it to clone on the new computer.",
-    "Done-ness rule: for real fresh-computer proof, prefix the command with `YOUMD_REQUIRE_ENV_VAULT=1` so it fails instead of pretending setup is complete when the encrypted env vault is missing.",
+    "Done-ness rule: this web-shell command includes `YOUMD_REQUIRE_ENV_VAULT=1`, so it fails instead of pretending setup is complete when the encrypted env vault is missing.",
   ].join("\n");
 }
 

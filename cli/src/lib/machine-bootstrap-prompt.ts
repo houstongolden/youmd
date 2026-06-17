@@ -120,7 +120,11 @@ export function buildFreshMachineBootstrapScript(): string {
     '  youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"',
     "else",
     '  echo "[you.md] env vault not restored yet"',
-    '  echo "copy your encrypted env vault to this machine, then run:"',
+    '  echo "[you.md] On the old/source Mac, create the encrypted vault first:"',
+    '  echo "youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault"',
+    '  echo "[you.md] Move the generated env-vault-*.tar.enc file to this Mac, then rerun this command with:"',
+    '  echo "YOUMD_ENV_VAULT=/path/to/env-vault-YYYYMMDDTHHMMZ.tar.enc YOUMD_REQUIRE_ENV_VAULT=1 <same command>"',
+    '  echo "[you.md] Or restore manually after clone:"',
     '  echo "youmd env restore <vault> --root \\"$ROOT\\""',
     '  if [ "${YOUMD_REQUIRE_ENV_VAULT:-}" = "1" ]; then',
     '    echo "[you.md] strict proof requires YOUMD_ENV_VAULT; stopping before readiness is marked complete" >&2',
@@ -219,7 +223,7 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
     `What it does: installs You.md, authenticates, pulls/syncs identity, restores shared agent skills/stacks, fetches and hydrates the persisted portfolio graph, previews the graph-backed project setup plan, creates ${root}, clones projects that are both ACTIVE and Top Priority/Focusing from the last ${days} days first, asks before expanding the workspace to all active focused projects from the last ${expandDays} days, checks env-vault tooling, lists an encrypted env vault without writing files if supplied, restores that vault only after the list step passes, rehydrates local evidence, audits cloned project readiness without reading secret values, writes a secret-safe machine proof report, syncs the proof summary back to your You.md machine dashboard, bounds portfolio hydration with YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS, optionally requires env-vault restore before completion with YOUMD_REQUIRE_ENV_VAULT=1, optionally caps clone count for proof runs with YOUMD_MAX_CLONE_PROJECTS, optionally auto-expands to the ${expandDays}-day set with YOUMD_EXPAND_TO_90_DAYS=1, optionally runs bounded package checks with YOUMD_RUN_CHECKS=1, optionally runs clean-host dependency installs with YOUMD_INSTALL_DEPS=1, optionally smoke-probes local dev servers with YOUMD_PROBE_SERVERS=1, and starts resident sync daemons.`,
     "",
     `Project source: You.md portfolio graph + authenticated GitHub recent repos, capped at ${limit} tracked projects before local audit evidence is merged. When the graph exists, new-computer setup clones only projects with status ACTIVE and focus Top Priority/Focusing; inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped unless --include-inactive is explicitly used. First pass is ${days} days with out-of-window projects skipped; the ${expandDays}-day pass is explicit.`,
-    "Secret rule: .env.local values are never embedded here. Use YOUMD_ENV_VAULT or run the printed env restore command with your encrypted vault on the new machine. The restore path lists variable names/counts and target paths only, never values.",
+    "Secret rule: .env.local values are never embedded here. On the old/source Mac, create a vault with `youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file to the new machine, then rerun this command with `YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc`. The restore path lists variable names/counts and target paths only, never values.",
     "Done-ness rule: for real fresh-computer proof, set YOUMD_REQUIRE_ENV_VAULT=1 or pass --require-env-vault so the command fails instead of pretending setup is complete when the encrypted env vault is missing.",
   ].join("\n");
 }

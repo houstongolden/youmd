@@ -53,6 +53,7 @@ PRD Version: 2.3
 - [x] Add CLI/web parity coverage so future edits fail tests if the visible shell prompt drifts from env-vault strictness, 90-day expansion controls, active-focus setup gating, or required bootstrap scopes
 - [x] Keep `youmd machine prompt --root ~/Desktop/CODE_YOU` portable by converting shell-expanded `/Users/...` home paths back to `~/...` in the generated command and explanatory text
 - [x] Re-verify authenticated local `/new computer` after the active-focus and portability fixes: the shell minted a bootstrap key, rendered a secret-bearing copyable command with a `copy` button, showed `CODE_YOU`, `YOUMD_REQUIRE_ENV_VAULT=1`, `YOUMD_EXPAND_TO_90_DAYS`, and contained no `.env.local=` / `sk-...` secret patterns
+- [x] Make the fresh-machine handoff self-contained: generated commands now print the old-machine env vault backup command, the web-shell command includes `YOUMD_CODE_ROOT='~/Desktop/CODE_YOU'` and `YOUMD_REQUIRE_ENV_VAULT='1'`, and the Machine pane shows copyable `/new computer`, strict CLI prompt, and source vault backup commands
 - [ ] Run the generated command end-to-end on the actual brand-new computer / separate clean agent host with a real encrypted env vault and visually verify projects, skills, env vault restore, local servers, resident daemons, Machine pane proof row, and portfolio graph sync there
 
 ### 2026-06-17 — Shell sidebar expand/collapse regression

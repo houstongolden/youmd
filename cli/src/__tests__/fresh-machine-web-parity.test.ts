@@ -15,7 +15,10 @@ describe("web /new computer bootstrap prompt parity", () => {
     expect(source).toContain("ACTIVE + Top Priority/Focusing");
     expect(source).toContain("clone only projects marked ACTIVE plus Top Priority/Focusing");
     expect(source).toContain("inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped by default");
+    expect(source).toContain("YOUMD_CODE_ROOT");
     expect(source).toContain("YOUMD_REQUIRE_ENV_VAULT=1");
+    expect(source).toContain("youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
+    expect(source).toContain("YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc");
     expect(source).toContain("YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS");
     expect(source).toContain("YOUMD_EXPAND_TO_90_DAYS");
   });
