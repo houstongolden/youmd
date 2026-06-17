@@ -64,6 +64,7 @@ PRD Version: 2.3
 - [x] Persist exact API/MCP/stack surface docs URLs plus curl/install commands in the portfolio graph and repo-backed graph snapshots
 - [x] Enrich selected project detail pages with tracked-project graph links: stack/stack slug, GitHub repo evidence, exact API/MCP docs URLs, owner-gated portfolio graph curl command, docs curl commands, stack install command, and clone command
 - [x] Make `details` and `timeline` controls anchored clickable project detail links (`#project-detail` / `#timeline`) and visually verify a real `View timeline for youmd` click scrolls to the shipping timeline
+- [x] Make the Portfolio Graph shipped work more obvious: add latest shipped commit/PR/release rows to the main shipped pulse, add `latest shipped here` to selected project detail pages, label compact row shipped counters, expose full ranked focus dropdown labels, and visually verify timeline click plus reversible focus mutation
 - [x] Enrich `GET /api/v1/me/portfolio/graph` project rows with project-level API docs, MCP docs, stack slug, repo/directory names, and safe curl command fields so local agents can consume the graph without reverse-joining tracked-project rows
 - [x] After this commit is pushed and Convex deploys from the new `main`, rerun authenticated browser proof that changing a project focus status persists and the dropdown recovers from backend deploy gaps
 - [x] Build the `/shell` APIs + Env Intelligence view with provider usage stats, env key-name normalization, service-account notes, API/MCP risk tiers, and secret-safe audit commands

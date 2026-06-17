@@ -316,15 +316,17 @@ function fromPersistedPattern(pattern: {
 
 function shippedCounts(activities: ProjectActivity[]) {
   const now = Date.now();
-  const shippable = activities.filter((activity) =>
-    activity.kind === "commit" || activity.kind === "pull-request" || activity.kind === "release"
-  );
+  const shippable = activities.filter(isShippableActivity);
   return {
     today: shippable.filter((activity) => activity.occurredAt >= now - 86_400_000).length,
     seven: shippable.filter((activity) => activity.occurredAt >= now - 7 * 86_400_000).length,
     thirty: shippable.filter((activity) => activity.occurredAt >= now - 30 * 86_400_000).length,
     ninety: shippable.filter((activity) => activity.occurredAt >= now - 90 * 86_400_000).length,
   };
+}
+
+function isShippableActivity(activity: ProjectActivity) {
+  return activity.kind === "commit" || activity.kind === "pull-request" || activity.kind === "release";
 }
 
 function formatActivityDate(value: number) {
@@ -705,6 +707,13 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     () => new Map(activeProjects.map((project) => [project.slug, project])),
     [activeProjects]
   );
+  const recentShippingActivityRows = useMemo(() => (
+    projectActivities
+      .filter(isShippableActivity)
+      .sort((a, b) => b.occurredAt - a.occurredAt)
+      .slice(0, 6)
+      .map((activity) => ({ activity, project: projectBySlug.get(activity.projectSlug) }))
+  ), [projectActivities, projectBySlug]);
   const trackedBySlug = useMemo(() => {
     const map = new Map<string, DisplayTrackedProject>();
     for (const trackedProject of trackedProjects) {
@@ -723,6 +732,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const selectedActivities = effectiveSelectedProjectSlug
     ? activitiesByProject.get(effectiveSelectedProjectSlug) ?? []
     : [];
+  const selectedShippingActivities = selectedActivities.filter(isShippableActivity).slice(0, 5);
   const selectedCounts = shippedCounts(selectedActivities);
   const selectedOwnedSurfaces = selectedProject
     ? activeSurfaces.filter((surface) => surface.ownerProject === selectedProject.slug)
@@ -890,6 +900,9 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           <div className="grid gap-3 xl:grid-cols-[0.72fr_1.28fr]">
             <div>
               <PaneSectionLabel>shipped pulse</PaneSectionLabel>
+              <h3 className="mt-1 font-mono text-[13px] leading-tight text-[hsl(var(--text-primary))]">
+                Me + agents, shipped across the portfolio.
+              </h3>
               <p className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
                 Commits, pull requests, and releases across the portfolio graph.
               </p>
@@ -908,20 +921,52 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
               ))}
             </div>
           </div>
-          {shippingLeaders.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {shippingLeaders.map(({ project, counts }) => (
-                <button
-                  key={project.slug}
-                  type="button"
-                  onClick={() => selectProject(project.slug)}
-                  className="border border-[hsl(var(--border))]/60 px-2 py-1 text-left font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-65 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
-                  style={{ borderRadius: "var(--radius)" }}
-                  title={`Open ${project.name} details`}
-                >
-                  {project.slug} / {counts.today} today / {counts.seven} 7d / {counts.ninety} 90d
-                </button>
-              ))}
+          {(shippingLeaders.length > 0 || recentShippingActivityRows.length > 0) && (
+            <div className="mt-3 grid gap-3 border-t border-[hsl(var(--border))]/45 pt-3 lg:grid-cols-[0.55fr_1.45fr]">
+              {shippingLeaders.length > 0 && (
+                <div>
+                  <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">top shippers</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {shippingLeaders.map(({ project, counts }) => (
+                      <button
+                        key={project.slug}
+                        type="button"
+                        onClick={() => selectProject(project.slug)}
+                        className="border border-[hsl(var(--border))]/60 px-2 py-1 text-left font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-65 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                        style={{ borderRadius: "var(--radius)" }}
+                        title={`Open ${project.name} details`}
+                      >
+                        {project.slug} / {counts.today} today / {counts.seven} 7d / {counts.ninety} 90d
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {recentShippingActivityRows.length > 0 && (
+                <div>
+                  <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">latest shipped</div>
+                  <div className="mt-2 space-y-1.5">
+                    {recentShippingActivityRows.map(({ activity, project }) => (
+                      <button
+                        key={`${activity.projectSlug}-${activity.dedupeKey ?? activity.source}-${activity.occurredAt}-${activity.title}`}
+                        type="button"
+                        onClick={() => selectProject(activity.projectSlug, "timeline")}
+                        className="grid w-full gap-2 border-t border-[hsl(var(--border))]/35 pt-1.5 text-left transition-colors hover:border-[hsl(var(--accent))]/70 md:grid-cols-[0.22fr_0.58fr_1fr]"
+                      >
+                        <span className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-42">
+                          {formatActivityDate(activity.occurredAt)}
+                        </span>
+                        <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
+                          {(project?.slug ?? activity.projectSlug)} / {activity.kind}
+                        </span>
+                        <span className="line-clamp-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-primary))] opacity-78">
+                          {activity.title}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -1025,6 +1070,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
             <span>showing {filteredProjects.length} / {activeProjects.length}</span>
             <span>sort {PROJECT_SORT_OPTIONS.find((option) => option.value === projectSortMode)?.label ?? projectSortMode}</span>
             <span>focus {projectFocusFilter === "all" ? "all" : projectFocusOption(projectFocusFilter).label}</span>
+            <span>rank 1 top / 2 focus / 3 ice / 0 dead</span>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[minmax(290px,0.9fr)_minmax(360px,1.1fr)]">
@@ -1059,6 +1105,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${statusClass(project.status)}`}>{project.status}</span>
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-42">shipped</span>
                       <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--success))] opacity-75">today {counts.today}</span>
                       <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">7d {counts.seven}</span>
                       <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">30d {counts.thirty}</span>
@@ -1090,10 +1137,12 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                         timeline
                       </a>
                       <label
-                        className="border border-[hsl(var(--border))]/60 px-1.5 py-1"
+                        className="flex max-w-full items-center gap-1 border border-[hsl(var(--border))]/60 px-1.5 py-1"
                         style={{ borderRadius: "var(--radius)" }}
                         onClick={(event) => event.stopPropagation()}
+                        title={`${focus.label} / priority ${focus.rank}`}
                       >
+                        <ProjectFocusIcon status={focus.value} />
                         <span className="sr-only">Set focus status for {project.name}</span>
                         <select
                           aria-label={`Set focus status for ${project.name}`}
@@ -1105,7 +1154,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                           className="bg-transparent font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] outline-none disabled:opacity-35"
                         >
                           {PROJECT_FOCUS_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>{option.short}</option>
+                            <option key={option.value} value={option.value}>{option.rank} {option.label}</option>
                           ))}
                         </select>
                       </label>
@@ -1188,6 +1237,33 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       </div>
                     ))}
                   </div>
+
+                  {selectedShippingActivities.length > 0 && (
+                    <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
+                      <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">latest shipped here</div>
+                      <div className="mt-2 space-y-1.5">
+                        {selectedShippingActivities.map((activity) => (
+                          <div key={`${activity.projectSlug}-${activity.dedupeKey ?? activity.source}-${activity.occurredAt}-${activity.title}`} className="grid gap-2 border-t border-[hsl(var(--border))]/35 pt-1.5 md:grid-cols-[0.26fr_0.35fr_1fr]">
+                            <div className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-42">
+                              {formatActivityDate(activity.occurredAt)}
+                            </div>
+                            <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
+                              {activity.kind} / {activity.source}
+                            </div>
+                            {activity.url ? (
+                              <a href={activity.url} target="_blank" rel="noreferrer" className="line-clamp-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-primary))] opacity-78 underline-offset-4 hover:underline">
+                                {activity.title}
+                              </a>
+                            ) : (
+                              <div className="line-clamp-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-primary))] opacity-78">
+                                {activity.title}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="mt-4 grid gap-3 lg:grid-cols-2">
                     <div>

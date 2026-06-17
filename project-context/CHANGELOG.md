@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio shipped board polish
+
+### feat(web): make shipped work and project priority controls more obvious
+- Upgraded the Portfolio Graph shipped pulse from counters-only telemetry into a founder/agent shipping board: the main card now says `Me + agents, shipped across the portfolio`, keeps `today` / `7d` / `30d` / `90d` totals, shows top-shipping projects, and lists the latest shipped commit/PR/release titles inline.
+- Added `latest shipped here` to the selected project detail panel so project pages show concrete recent shipped items before the longer timeline section.
+- Made compact project rows read more directly with a `shipped` label before `today` / `7d` / `30d` / `90d` counters.
+- Made the row-level focus dropdown self-explanatory by showing the focus icon plus full ranked labels: `1 Top Priority`, `2 Focusing`, `3 Freeze / On Ice`, `0 Abandoned`, `0 Dead / Killed`, and `4 Unsorted`.
+- Added a compact rank legend beside the project search/filter/sort controls.
+- Verified locally with `npx tsc --noEmit --pretty false`, `npm run lint` (existing warnings only), `cd cli && npm run build`, and authenticated Codex in-app Browser QA.
+- Browser proof on `http://localhost:3100/shell?tab=portfolio&project=youmd` verified the shipped board, latest shipped rows, search/filter/sort controls present, focus dropdown options, You.md project detail page, project graph docs/curl/install/clone links, and a real `View timeline for youmd` click scrolling to `#timeline`. A reversible focus mutation changed `bamfsite` to `focusing / 2` and back to `unset / 4`. Screenshots: `/var/folders/4n/hqpz_03d477c1f_m2ks7x18c0000gn/T/youmd-portfolio-detail-shipped-graph-links-2026-06-17.png`, `/var/folders/4n/hqpz_03d477c1f_m2ks7x18c0000gn/T/youmd-portfolio-graph-links-curl-2026-06-17.png`, and `/var/folders/4n/hqpz_03d477c1f_m2ks7x18c0000gn/T/youmd-portfolio-timeline-shipped-focus-2026-06-17.png`.
+
 ## 2026-06-17 — Portfolio detail graph links follow-up
 
 ### feat(web/api): enrich project details with graph docs, stack, and curl commands
