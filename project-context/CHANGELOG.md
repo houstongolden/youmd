@@ -11,7 +11,7 @@
 - Surfaced project links, API/MCP/stack surfaces, exact docs URLs, curl commands, associated stack, and dependency snapshot inside the selected project detail panel.
 - Added a timeout/recovery guard so the focus dropdown cannot stay disabled if the frontend is ahead of the deployed Convex backend.
 - Verified locally with `npx tsc --noEmit --pretty false`, `npm run test:convex -- convex/portfolio.test.ts`, `git diff --check`, `npm run lint` (warnings only), and `npm run build`.
-- Authenticated in-app Browser proof verified `/shell` renders the Portfolio Graph with search, URL-backed `project=youmd` detail selection, shipped `today` / `7d` / `30d` / `90d` counters, docs URL, and curl command visibility. The first focus-mutation browser attempt correctly exposed that the remote deploy was still running from pre-push `main`; post-push Convex redeploy and focus-mutation proof remain the next required step.
+- Authenticated in-app Browser proof verified `/shell` renders the Portfolio Graph with search, URL-backed `project=youmd` detail selection, shipped `today` / `7d` / `30d` / `90d` counters, docs URL, and curl command visibility. The first focus-mutation browser attempt correctly exposed that the remote deploy was still running from pre-push `main`; after pushing `783e8d9` and rerunning Convex deploy, the browser changed `youmd` from `focusing` back to `top-priority`, showed the success message, stayed enabled, and read back the persisted value.
 
 ## 2026-06-17 — Live fresh-machine env-vault bootstrap proof
 
