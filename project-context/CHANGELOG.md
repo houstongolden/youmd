@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-17 — Fresh-machine direct clipboard handoff
+
+### chore(machine): refresh synced skills and copy the setup prompt directly
+- Refreshed machine-sync state for the source Mac: `.agent-shared` was already up to date, shared skill mirrors synced into local agent runtimes, and `youmd sync` pulled the latest remote draft into `~/.youmd` while re-rendering all `10` local skills.
+- Minted a fresh scoped bootstrap key through the authenticated API and generated the same graph-backed 30-day-first fresh-machine prompt without relying on the Browser plugin's virtual clipboard.
+- Wrote the full prompt to the macOS clipboard using `pbcopy`; redacted proof confirmed a `10,153` character prompt / `7,633` character command with `ym_...`, `~/Desktop/CODE_YOU`, `YOUMD_REQUIRE_ENV_VAULT=1`, hosted install curl, `--recent-only`, active + Top Priority/Focusing setup gate, and the interactive 90-day `[y/N]` expansion prompt.
+- Re-ran env readiness checks: You.md env preflight found `17` `.env.local` files and `3` agent-auth files, and portfolio audit scanned `270` projects / `23` env files / `97` providers without reading secret values.
+- Remaining blocker: no `~/Desktop/youmd-env-vault/env-vault-*.tar.enc` file exists. With no GPG recipient, 1Password CLI, or age recipient configured, the safe path is the interactive symmetric/passphrase backup; do not fake a secure env vault.
+
 ## 2026-06-17 — Fresh-machine command copy reliability
 
 ### fix(shell): make `/new computer` command copying real
