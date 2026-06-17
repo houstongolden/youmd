@@ -9,7 +9,7 @@
 - Tightened `youmd machine projects` and fresh-computer prompt copy: when Portfolio Graph records exist, setup selects only `active` projects whose focus is `Top Priority` or `Focusing`; inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped by default.
 - Added `--include-inactive` as an explicit CLI override for audit/legacy runs.
 - Verification: focused CLI planner/prompt tests, Convex status-hydration regression, `npx convex codegen`, `npm run test:convex -- convex/portfolio.test.ts`, `npm --prefix cli run build`, `npm run lint`, `npm run build`, live graph dry-run (`56` projects / `40` tracked repos -> `16` selected / `84` skipped), and authenticated local Browser UI proof of filters/last-updated/status buttons.
-- Blocker: authenticated status-click write proof against the deployed backend is pending because this shell does not have `CONVEX_PROD_DEPLOY_KEY`; the click reaches `saving` in the UI until the new Convex mutation is deployed.
+- Post-push proof: GitHub CI run `27721954290` and Convex Deploy run `27721954253` passed; authenticated local Browser QA then changed `bamfaiapp-next` from `active` to `inactive` through the deployed mutation and saw `project status updated: bamfaiapp-next / inactive`.
 
 ## 2026-06-17 — Portfolio deep-link reliability
 

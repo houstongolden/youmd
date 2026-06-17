@@ -15,7 +15,7 @@ PRD Version: 2.3
 - [x] Restrict graph-backed fresh-machine project setup to `active` + `Top Priority`/`Focusing` projects by default
 - [x] Add explicit `youmd machine projects --include-inactive` override for audit/legacy setup runs
 - [x] Verify the built CLI planner against the live graph: `56` projects / `40` tracked repos -> `16` selected / `84` skipped
-- [ ] Deploy the new Convex `portfolio.updateProjectStatus` mutation to the remote backend, then rerun authenticated browser click proof that a status pill persists from `active` to `inactive`
+- [x] Deploy the new Convex `portfolio.updateProjectStatus` mutation to the remote backend, then rerun authenticated browser click proof that a status pill persists from `active` to `inactive`
 
 ### 2026-06-17 — Graph-backed fresh-computer bootstrap prompt
 - [x] Change the generated new-computer bootstrap to a 30-day first pass into `~/Desktop/CODE_YOU`, with `--recent-only` preventing older projects from being prompted/included before the explicit 90-day expansion gate
