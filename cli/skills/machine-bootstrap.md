@@ -91,23 +91,24 @@ You.md is the brain. The new machine should become a runnable local agent workst
    youmd project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 90 --limit 80
    ```
 
-9. Run the secret-safe readiness audit:
+9. Run the secret-safe readiness audit and sync the proof summary:
 
    ```bash
-   youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --write-report
+   youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --write-report --sync-report
    ```
 
    This checks cloned directories, git remotes, package managers, standard
    scripts, `.env.local` presence, `.env.example` presence, root agent docs, and
    `project-context/` presence. It writes a secret-safe JSON proof artifact to
-   `~/.youmd/machine-reports/latest.json`. It does not read secret values or
-   launch every dev server.
+   `~/.youmd/machine-reports/latest.json` and syncs only the compact proof
+   summary to the You.md machine dashboard. It does not read secret values,
+   upload raw logs, or launch every dev server.
 
 10. Only when Houston explicitly wants deeper local proof or the clean host has
     enough time/CPU, run bounded package checks and dev-server probes:
 
    ```bash
-   youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --install-deps --run-checks --probe-servers --write-report
+   youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --install-deps --run-checks --probe-servers --write-report --sync-report
    ```
 
    The default check scripts are `typecheck`, `lint`, `test`, and `build`.
@@ -170,7 +171,7 @@ youmd machine projects --root ~/Desktop/CODE_YOU --no-clone
 Audit cloned readiness:
 
 ```bash
-youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --write-report
+youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --write-report --sync-report
 ```
 
 Run bounded package checks:
@@ -182,7 +183,7 @@ youmd machine verify --root ~/Desktop/CODE_YOU --run-checks --max-check-projects
 Run clean-host dependency installs and localhost dev-server probes:
 
 ```bash
-youmd machine verify --root ~/Desktop/CODE_YOU --install-deps --probe-servers --write-report
+youmd machine verify --root ~/Desktop/CODE_YOU --install-deps --probe-servers --write-report --sync-report
 ```
 
 Include older projects without prompts:
@@ -215,6 +216,8 @@ curl -H "Authorization: Bearer $YOUMD_API_KEY" https://you.md/api/v1/me/portfoli
 - `youmd machine verify` reports git/package/env/agent-doc/project-context
   readiness for the cloned workspace without reading `.env.local` values and
   writes `~/.youmd/machine-reports/latest.json`.
+- `--sync-report` creates or updates an owner-gated You.md machine proof row
+  that the dashboard can show across computers.
 - If `--run-checks` was requested, bounded package checks ran with project and
   timeout caps, and failures/timeouts were reported per project.
 - If `--install-deps` or `--probe-servers` was requested, dependency installs

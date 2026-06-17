@@ -746,6 +746,36 @@ export default defineSchema({
     .index("by_userId_owner", ["userId", "ownerType"])
     .index("by_userId_status", ["userId", "status"]),
 
+  machineProofReports: defineTable({
+    userId: v.id("users"),
+    machineKey: v.string(),
+    hostName: v.string(),
+    platform: v.optional(v.string()),
+    rootDir: v.string(),
+    proofSchemaVersion: v.optional(v.number()),
+    status: v.string(), // "ready" | "warn" | "failed"
+    scanned: v.number(),
+    ready: v.number(),
+    needsEnv: v.number(),
+    partial: v.number(),
+    installPassed: v.number(),
+    checksPassed: v.number(),
+    serversPassed: v.number(),
+    failures: v.number(),
+    warnings: v.array(v.string()),
+    secretValuesExposed: v.boolean(),
+    reportPath: v.optional(v.string()),
+    source: v.string(), // "cli" | "agent" | "api" | ...
+    agentName: v.optional(v.string()),
+    generatedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_machineKey", ["userId", "machineKey"])
+    .index("by_userId_generatedAt", ["userId", "generatedAt"])
+    .index("by_userId_status", ["userId", "status"]),
+
   repoUpdateRuns: defineTable({
     userId: v.id("users"),
     source: v.string(), // "shell" | "chat" | "cli" | "api" | "github-pane"

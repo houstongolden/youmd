@@ -716,6 +716,7 @@ program
   .option("--max-server-projects <n>", "verify: maximum package projects to server-probe", "3")
   .option("--server-start-port <n>", "verify: first localhost probe port", "4310")
   .option("--write-report", "verify: write secret-safe JSON proof to ~/.youmd/machine-reports/latest.json")
+  .option("--sync-report", "verify: sync proof summary to the You.md machine dashboard")
   .option("--report-path <path>", "verify: custom path for the machine proof report")
   .option("--key <apiKey>", "prompt: embed a You.md API key for non-interactive login")
   .option("--env-vault <path>", "prompt: encrypted .env.local vault path to restore")
@@ -744,6 +745,7 @@ program
       maxServerProjects: options.maxServerProjects,
       serverStartPort: options.serverStartPort,
       writeReport: options.writeReport,
+      syncReport: options.syncReport,
       reportPath: options.reportPath,
       key: options.key,
       envVault: options.envVault,

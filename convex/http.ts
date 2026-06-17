@@ -909,6 +909,11 @@ function cleanOptionalString(value: unknown, limit = 1200): string | undefined {
   return trimmed.slice(0, limit);
 }
 
+function cleanFiniteNumber(value: unknown, fallback = 0): number {
+  const next = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  return Number.isFinite(next) ? next : fallback;
+}
+
 function cleanCompetitors(value: unknown): Array<{ name: string; url?: string; note?: string }> {
   if (!Array.isArray(value)) return [];
   return value.slice(0, 12).flatMap((item) => {
@@ -1978,6 +1983,115 @@ http.route({
       return guard.finish(json({ success: true, tracked, local, patterns }));
     } catch (err) {
       return serverErrorResponse("me/portfolio/projects/hydrate", err, "Failed to hydrate portfolio projects");
+    }
+  }),
+});
+
+// POST /api/v1/me/machines/proof — Sync secret-safe fresh-machine verification proof metadata.
+http.route({
+  path: "/api/v1/me/machines/proof",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle", "projects");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    const startedAt = Date.now();
+    const body = await request.json();
+    const summary = body && typeof body.summary === "object" && body.summary !== null
+      ? body.summary as Record<string, unknown>
+      : body as Record<string, unknown>;
+    const hostName = cleanOptionalString(body.hostName ?? body.hostname, 180);
+    const rootDir = cleanOptionalString(body.rootDir ?? body.root, 700);
+    if (!hostName) return errorResponse("invalid_request", "hostName must be a non-empty string", 400);
+    if (!rootDir) return errorResponse("invalid_request", "rootDir must be a non-empty string", 400);
+
+    const generatedAtRaw = body.generatedAt;
+    const generatedAt = typeof generatedAtRaw === "string"
+      ? Date.parse(generatedAtRaw)
+      : cleanFiniteNumber(generatedAtRaw, Date.now());
+
+    try {
+      const proof = await ctx.runMutation(api.portfolio.upsertMachineProof, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        machineKey: cleanOptionalString(body.machineKey, 220),
+        hostName,
+        platform: cleanOptionalString(body.platform, 180),
+        rootDir,
+        proofSchemaVersion: cleanFiniteNumber(body.schemaVersion ?? body.proofSchemaVersion, 1),
+        status: cleanOptionalString(summary.status, 40) ?? "warn",
+        scanned: cleanFiniteNumber(summary.scanned),
+        ready: cleanFiniteNumber(summary.ready),
+        needsEnv: cleanFiniteNumber(summary.needsEnv),
+        partial: cleanFiniteNumber(summary.partial),
+        installPassed: cleanFiniteNumber(summary.installPassed),
+        checksPassed: cleanFiniteNumber(summary.checksPassed),
+        serversPassed: cleanFiniteNumber(summary.serversPassed),
+        failures: cleanFiniteNumber(summary.failures),
+        warnings: cleanStringArray(summary.warnings).slice(0, 12),
+        secretValuesExposed: body.secretValuesExposed === true,
+        reportPath: cleanOptionalString(body.reportPath, 700),
+        source: cleanOptionalString(body.source, 80) ?? "cli",
+        agentName: cleanOptionalString(body.agentName, 160),
+        generatedAt: Number.isFinite(generatedAt) ? generatedAt : Date.now(),
+      });
+
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: body.agentName || auth.appName || agent.name,
+          agentSource: authAgentSource(auth, request),
+          agentVersion: agent.version,
+          action: "write",
+          resource: "machines/proof",
+          status: "success",
+          connectedAppGrantId: auth.connectedAppGrantId,
+          durationMs: Date.now() - startedAt,
+          details: {
+            hostName,
+            rootDir,
+            machineStatus: cleanOptionalString(summary.status, 40) ?? "warn",
+            scanned: cleanFiniteNumber(summary.scanned),
+            failures: cleanFiniteNumber(summary.failures),
+          },
+        });
+      } catch {
+        // best-effort
+      }
+
+      return guard.finish(json({ success: true, ...proof }));
+    } catch (err) {
+      return serverErrorResponse("me/machines/proof", err, "Failed to sync machine proof");
+    }
+  }),
+});
+
+// GET /api/v1/me/machines/proofs — List synced machine proof summaries for API/CLI callers.
+http.route({
+  path: "/api/v1/me/machines/proofs",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private", "projects");
+    if (denied) return denied;
+
+    const url = new URL(request.url);
+    const limit = cleanFiniteNumber(url.searchParams.get("limit"), 12);
+    try {
+      const machines = await ctx.runQuery(api.portfolio.listMachineProofs, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        limit,
+      });
+      return json({ machines });
+    } catch (err) {
+      return serverErrorResponse("me/machines/proofs", err, "Failed to list machine proofs");
     }
   }),
 });

@@ -768,6 +768,61 @@ export interface PortfolioGraphSnapshot {
   tasks?: Array<Record<string, unknown>>;
 }
 
+export interface MachineProofSyncPayload {
+  schemaVersion?: number;
+  generatedAt: string;
+  hostName: string;
+  platform?: string;
+  rootDir: string;
+  secretValuesExposed: boolean;
+  reportPath?: string;
+  source?: string;
+  agentName?: string;
+  summary: {
+    status: "ready" | "warn" | "failed";
+    scanned: number;
+    ready: number;
+    needsEnv: number;
+    partial: number;
+    installPassed: number;
+    checksPassed: number;
+    serversPassed: number;
+    failures: number;
+    warnings: string[];
+  };
+}
+
+export interface MachineProofSyncResult {
+  success: boolean;
+  proofId?: string;
+  created?: boolean;
+  error?: unknown;
+  message?: string;
+}
+
+export interface SyncedMachineProof {
+  _id: string;
+  machineKey: string;
+  hostName: string;
+  platform?: string;
+  rootDir: string;
+  status: string;
+  scanned: number;
+  ready: number;
+  needsEnv: number;
+  partial: number;
+  installPassed: number;
+  checksPassed: number;
+  serversPassed: number;
+  failures: number;
+  warnings: string[];
+  secretValuesExposed: boolean;
+  source: string;
+  agentName?: string;
+  generatedAt: number;
+  updatedAt: number;
+}
+
 export async function savePortfolioTask(
   payload: PortfolioTaskPayload
 ): Promise<ApiResponse<PortfolioWriteResult>> {
@@ -821,6 +876,27 @@ export async function getPortfolioGraph(opts?: {
   if (opts?.includeTasks) params.set("includeTasks", "1");
   const qs = params.toString();
   return apiRequest<PortfolioGraphSnapshot>(`/api/v1/me/portfolio/graph${qs ? `?${qs}` : ""}`, {
+    token: getToken(),
+  });
+}
+
+export async function syncMachineProof(
+  payload: MachineProofSyncPayload
+): Promise<ApiResponse<MachineProofSyncResult>> {
+  return apiRequest<MachineProofSyncResult>("/api/v1/me/machines/proof", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
+export async function getMachineProofs(opts?: {
+  limit?: number;
+}): Promise<ApiResponse<{ machines: SyncedMachineProof[] }>> {
+  const params = new URLSearchParams();
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  return apiRequest<{ machines: SyncedMachineProof[] }>(`/api/v1/me/machines/proofs${qs ? `?${qs}` : ""}`, {
     token: getToken(),
   });
 }

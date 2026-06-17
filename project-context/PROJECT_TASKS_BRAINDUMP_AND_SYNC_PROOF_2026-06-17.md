@@ -163,6 +163,13 @@ GitHub status and task/graph paths behave in the actual product.
   restore, `8` partial, and zero proof failures. Authenticated browser visual
   proof for this new strip is pending because no attachable authenticated
   browser session was available in this turn.
+- `youmd machine verify --sync-report` now persists the compact proof summary
+  into owner-gated Convex `machineProofReports` through
+  `POST /api/v1/me/machines/proof`; `GET /api/v1/me/machines/proofs` and the
+  signed-in Machine pane show synced computer proof rows across hosts. The
+  generated fresh-machine command now uses `--write-report --sync-report` for
+  readiness, optional checks, and optional install/server probe phases without
+  uploading raw proof logs or `.env.local` values.
 - Authenticated Chrome QA opened `/shell?integration=github`, clicked
   `refresh active projects`, waited through the 90-day GitHub analyzer, and
   verified the dashboard catalog returned with 38 visible `repo:

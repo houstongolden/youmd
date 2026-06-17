@@ -51,6 +51,7 @@ const taskDraftValidator = v.object({
 
 const TASK_STATUSES = ["proposed", "open", "in_progress", "done", "snoozed", "cancelled"] as const;
 const TASK_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+const MACHINE_PROOF_STATUSES = ["ready", "warn", "failed"] as const;
 const UPDATE_RUN_STATUSES = ["running", "success", "failed"] as const;
 const UPDATE_STEP_STATUSES = ["running", "success", "failed", "skipped", "pending"] as const;
 
@@ -62,6 +63,11 @@ function normalizeTaskStatus(value: string | undefined, fallback: string): strin
 function normalizeTaskPriority(value: string | undefined, fallback: string): string {
   const next = value?.trim();
   return next && TASK_PRIORITIES.includes(next as typeof TASK_PRIORITIES[number]) ? next : fallback;
+}
+
+function normalizeMachineProofStatus(value: string | undefined, fallback: string): string {
+  const next = value?.trim();
+  return next && MACHINE_PROOF_STATUSES.includes(next as typeof MACHINE_PROOF_STATUSES[number]) ? next : fallback;
 }
 
 function normalizeUpdateRunStatus(value: string | undefined, fallback: string): string {
@@ -995,6 +1001,97 @@ export const recordBrainDump = mutation({
     }
 
     return { captureId, taskIds };
+  },
+});
+
+export const upsertMachineProof = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    machineKey: v.optional(v.string()),
+    hostName: v.string(),
+    platform: v.optional(v.string()),
+    rootDir: v.string(),
+    proofSchemaVersion: v.optional(v.number()),
+    status: v.string(),
+    scanned: v.number(),
+    ready: v.number(),
+    needsEnv: v.number(),
+    partial: v.number(),
+    installPassed: v.number(),
+    checksPassed: v.number(),
+    serversPassed: v.number(),
+    failures: v.number(),
+    warnings: v.optional(v.array(v.string())),
+    secretValuesExposed: v.boolean(),
+    reportPath: v.optional(v.string()),
+    source: v.optional(v.string()),
+    agentName: v.optional(v.string()),
+    generatedAt: v.number(),
+  },
+  handler: async (ctx, args): Promise<{ proofId: Id<"machineProofReports">; created: boolean }> => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const now = Date.now();
+    const hostName = args.hostName.trim().slice(0, 180) || "unknown-host";
+    const rootDir = args.rootDir.trim().slice(0, 700) || "unknown-root";
+    const machineKey = slugify(args.machineKey ?? `${hostName}-${rootDir}`);
+    const existing = await ctx.db
+      .query("machineProofReports")
+      .withIndex("by_userId_machineKey", (q) => q.eq("userId", user._id).eq("machineKey", machineKey))
+      .first();
+
+    const row = {
+      userId: user._id,
+      machineKey,
+      hostName,
+      platform: args.platform?.trim().slice(0, 180),
+      rootDir,
+      proofSchemaVersion: args.proofSchemaVersion,
+      status: normalizeMachineProofStatus(args.status, "warn"),
+      scanned: Math.max(0, Math.trunc(args.scanned)),
+      ready: Math.max(0, Math.trunc(args.ready)),
+      needsEnv: Math.max(0, Math.trunc(args.needsEnv)),
+      partial: Math.max(0, Math.trunc(args.partial)),
+      installPassed: Math.max(0, Math.trunc(args.installPassed)),
+      checksPassed: Math.max(0, Math.trunc(args.checksPassed)),
+      serversPassed: Math.max(0, Math.trunc(args.serversPassed)),
+      failures: Math.max(0, Math.trunc(args.failures)),
+      warnings: optionalStrings(args.warnings).slice(0, 12),
+      secretValuesExposed: args.secretValuesExposed,
+      reportPath: args.reportPath?.trim().slice(0, 700),
+      source: args.source?.trim().slice(0, 80) || "cli",
+      agentName: args.agentName?.trim().slice(0, 160),
+      generatedAt: Number.isFinite(args.generatedAt) ? args.generatedAt : now,
+      updatedAt: now,
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, row);
+      return { proofId: existing._id, created: false };
+    }
+
+    const proofId = await ctx.db.insert("machineProofReports", {
+      ...row,
+      createdAt: now,
+    });
+    return { proofId, created: true };
+  },
+});
+
+export const listMachineProofs = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const limit = Math.max(1, Math.min(Number(args.limit ?? 12), 50));
+    return await ctx.db
+      .query("machineProofReports")
+      .withIndex("by_userId_generatedAt", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(limit);
   },
 });
 

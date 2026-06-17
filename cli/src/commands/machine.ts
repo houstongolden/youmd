@@ -6,7 +6,8 @@ import * as child_process from "child_process";
 import chalk from "chalk";
 import { BrailleSpinner } from "../lib/render";
 import { isAuthenticated, resolveActiveBundleDir } from "../lib/config";
-import { apiErrorMessage, getPortfolioGraph } from "../lib/api";
+import { apiErrorMessage, getPortfolioGraph, syncMachineProof } from "../lib/api";
+import type { MachineProofSyncPayload } from "../lib/api";
 import {
   buildMachineProjectPlan,
   GithubProjectSource,
@@ -20,6 +21,7 @@ import {
   buildMachineServerProbeReport,
   writeMachineVerificationProof,
 } from "../lib/machine-verify";
+import type { MachineVerificationProof } from "../lib/machine-verify";
 import { buildFreshMachineBootstrapPrompt } from "../lib/machine-bootstrap-prompt";
 
 // The compiled file lives at dist/commands/machine.js.
@@ -43,6 +45,49 @@ function assertScriptExists(scriptPath: string): void {
         chalk.dim("reinstall youmd (curl -fsSL https://you.md/install.sh | bash) to restore bundled scripts.")
     );
     process.exit(1);
+  }
+}
+
+function machineProofSyncPayload(
+  proof: MachineVerificationProof,
+  reportPath?: string
+): MachineProofSyncPayload {
+  return {
+    schemaVersion: proof.schemaVersion,
+    generatedAt: proof.generatedAt,
+    hostName: proof.hostName,
+    platform: proof.platform,
+    rootDir: proof.rootDir,
+    secretValuesExposed: proof.secretValuesExposed,
+    reportPath,
+    source: "cli",
+    agentName: "youmd machine verify",
+    summary: proof.summary,
+  };
+}
+
+async function persistMachineProofReport(
+  proof: MachineVerificationProof,
+  opts: { writeReport?: boolean; syncReport?: boolean; reportPath?: string }
+): Promise<void> {
+  let latestPath: string | undefined;
+  if (opts.writeReport) {
+    const paths = writeMachineVerificationProof(proof, opts.reportPath ? expandHome(opts.reportPath) : undefined);
+    latestPath = paths.latestPath;
+    console.log("");
+    console.log(chalk.dim("  proof report: ") + chalk.cyan(paths.latestPath));
+    console.log(chalk.dim("  proof archive: ") + chalk.cyan(paths.archivedPath));
+  }
+
+  if (opts.syncReport) {
+    const res = await syncMachineProof(machineProofSyncPayload(proof, latestPath));
+    if (res.ok && res.data.success) {
+      const action = res.data.created ? "created" : "updated";
+      console.log(chalk.dim("  proof sync: ") + chalk.green(`${action} You.md machine record`));
+    } else {
+      console.log(chalk.hex("#C46A3A")("  proof sync failed") + chalk.dim(` — ${apiErrorMessage(res.data) || `HTTP ${res.status}`}`));
+      process.exitCode = 1;
+    }
   }
 }
 
@@ -77,6 +122,7 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("--max-server-projects <n>") + chalk.dim(" (verify) dev server probe cap, default 3"));
   console.log("    " + chalk.cyan("--server-start-port <n>") + chalk.dim(" (verify) first localhost probe port, default 4310"));
   console.log("    " + chalk.cyan("--write-report") + chalk.dim(" (verify) write secret-safe JSON proof to ~/.youmd/machine-reports/latest.json"));
+  console.log("    " + chalk.cyan("--sync-report") + chalk.dim("  (verify) sync proof summary to the You.md machine dashboard"));
   console.log("    " + chalk.cyan("--report-path <path>") + chalk.dim(" (verify) custom machine proof report path"));
   console.log("    " + chalk.cyan("--no-github") + chalk.dim("  (projects) skip authenticated GitHub recent-repo scan"));
   console.log("    " + chalk.cyan("--yes") + chalk.dim("        (projects) include older projects without prompting"));
@@ -344,6 +390,7 @@ async function machineVerifyCommand(opts: {
   maxServerProjects?: string | number;
   serverStartPort?: string | number;
   writeReport?: boolean;
+  syncReport?: boolean;
   reportPath?: string;
 } = {}): Promise<void> {
   const defaultRoot = path.join(os.homedir(), "Desktop", "CODE_YOU");
@@ -361,6 +408,14 @@ async function machineVerifyCommand(opts: {
 
   if (report.projects.length === 0) {
     console.log(chalk.dim("  no cloned projects found yet. run ") + chalk.cyan("youmd machine projects") + chalk.dim(" first."));
+    if (opts.writeReport || opts.syncReport) {
+      const proof = buildMachineVerificationProof({ readiness: report });
+      await persistMachineProofReport(proof, {
+        writeReport: opts.writeReport,
+        syncReport: opts.syncReport,
+        reportPath: opts.reportPath,
+      });
+    }
     console.log("");
     return;
   }
@@ -437,12 +492,13 @@ async function machineVerifyCommand(opts: {
   }
 
   if (!opts.runChecks && !opts.probeServers) {
-    if (opts.writeReport) {
+    if (opts.writeReport || opts.syncReport) {
       const proof = buildMachineVerificationProof({ readiness: report, installs: installReport });
-      const paths = writeMachineVerificationProof(proof, opts.reportPath ? expandHome(opts.reportPath) : undefined);
-      console.log(chalk.dim("  proof report: ") + chalk.cyan(paths.latestPath));
-      console.log(chalk.dim("  proof archive: ") + chalk.cyan(paths.archivedPath));
-      console.log("");
+      await persistMachineProofReport(proof, {
+        writeReport: opts.writeReport,
+        syncReport: opts.syncReport,
+        reportPath: opts.reportPath,
+      });
     }
     console.log(chalk.dim("  run ") + chalk.cyan("youmd machine verify --install-deps --run-checks --probe-servers") + chalk.dim(" to install deps, execute bounded checks, and smoke-probe dev servers."));
     console.log("");
@@ -537,22 +593,23 @@ async function machineVerifyCommand(opts: {
       process.exitCode = 1;
     }
   }
-  if (opts.writeReport) {
+  if (opts.writeReport || opts.syncReport) {
     const proof = buildMachineVerificationProof({
       readiness: report,
       installs: installReport,
       checks: runReport,
       servers: probeReport,
     });
-    const paths = writeMachineVerificationProof(proof, opts.reportPath ? expandHome(opts.reportPath) : undefined);
-    console.log("");
-    console.log(chalk.dim("  proof report: ") + chalk.cyan(paths.latestPath));
-    console.log(chalk.dim("  proof archive: ") + chalk.cyan(paths.archivedPath));
+    await persistMachineProofReport(proof, {
+      writeReport: opts.writeReport,
+      syncReport: opts.syncReport,
+      reportPath: opts.reportPath,
+    });
   }
   console.log("");
 }
 
-export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxProjects?: string | number; installDeps?: boolean; installTimeoutMs?: string | number; maxInstallProjects?: string | number; runChecks?: boolean; checkScripts?: string; checkTimeoutMs?: string | number; maxCheckProjects?: string | number; probeServers?: boolean; serverTimeoutMs?: string | number; maxServerProjects?: string | number; serverStartPort?: string | number; writeReport?: boolean; reportPath?: string; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
+export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxProjects?: string | number; installDeps?: boolean; installTimeoutMs?: string | number; maxInstallProjects?: string | number; runChecks?: boolean; checkScripts?: string; checkTimeoutMs?: string | number; maxCheckProjects?: string | number; probeServers?: boolean; serverTimeoutMs?: string | number; maxServerProjects?: string | number; serverStartPort?: string | number; writeReport?: boolean; syncReport?: boolean; reportPath?: string; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
   if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
     printHelp();
     return;

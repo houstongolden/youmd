@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Machine proof sync
+
+### feat(api/cli/web): sync fresh-machine proof summaries to You.md
+- Added owner-gated `machineProofReports` records with status, host/root, readiness totals, install/check/server pass counts, warnings, source, generated time, and `secretValuesExposed` tracking.
+- Added authenticated `POST /api/v1/me/machines/proof` and `GET /api/v1/me/machines/proofs` so local CLI agents can sync/list machine proof summaries without uploading raw logs or `.env.local` values.
+- Added `youmd machine verify --sync-report`; the one-command fresh-machine bootstrap now runs `--write-report --sync-report` for readiness, optional package checks, and optional install/server proof phases.
+- Extended the signed-in Machine pane with synced machine records from Convex alongside the localhost-only latest local proof strip.
+- Regenerated agent docs/OpenAPI references for the new machine proof endpoints.
+- Verified locally with `npx convex codegen`, focused Convex tests, full Convex suite (`44` files / `427` tests), focused CLI tests, full CLI suite (`53` files / `558` tests), CLI build, root typecheck, focused ESLint, docs check, production build, and compiled CLI prompt smoke showing all verify phases include `--sync-report`.
+- Production deploy/live proof-sync smoke is the next step after pushing this code; the actual brand-new-computer run remains open.
+
 ## 2026-06-17 — Machine proof report
 
 ### feat(cli/web): persist fresh-machine proof artifacts

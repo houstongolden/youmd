@@ -23,6 +23,7 @@ PRD Version: 2.3
 - [x] Extend `youmd machine verify` with an explicit opt-in bounded package-check mode for `typecheck`, `lint`, `test`, and `build`, including project caps, timeout caps, output tails, and generated prompt docs
 - [x] Extend `youmd machine verify` with clean-host dependency install and local server smoke/probe modes for selected key projects
 - [x] Add a secret-safe machine proof report written by `youmd machine verify --write-report` and surfaced in the signed-in Machine pane
+- [x] Add persisted owner-gated machine proof records and `youmd machine verify --sync-report` so synced computer proof summaries appear in the Machine pane across hosts
 - [ ] Run the generated command end-to-end on the actual brand-new computer / clean agent host and verify projects, skills, env vault restore, local servers, and portfolio graph sync there
 
 ### 2026-06-17 — Shell sidebar expand/collapse regression

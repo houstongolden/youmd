@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "fa16341a626d4bef307e51ff3b9250e0ea649edd8fa2d2625909c01e791bbc4f",
+  "sourceHash": "6ca85856402e78bdcc2cdb1b5e3396da2ecd8c602f2ae29e69bc3ad804560086",
   "cli": {
     "version": "0.8.2"
   },
   "counts": {
-    "endpoints": 90,
+    "endpoints": 92,
     "internalRoutes": 8,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 30,
-    "convexRoutes": 71,
+    "convexRoutes": 73,
     "nextRoutes": 26
   },
   "endpoints": [
@@ -194,6 +194,28 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Get bundle version history (authenticated; supports ?cursor= + ?limit= pagination in version-desc order — paginated calls add nextCursor + hasMore)",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/machines/proof",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Sync secret-safe fresh-machine verification proof metadata.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/machines/proofs",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "List synced machine proof summaries for API/CLI callers.",
       "sources": [
         "convex"
       ]

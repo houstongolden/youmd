@@ -1968,8 +1968,8 @@ export function DashboardContent() {
                   {rightPane === "stacks" && (
                     <StacksPane />
                   )}
-                  {rightPane === "machine" && (
-                    <MachineReadinessPane />
+                  {rightPane === "machine" && user?.id && (
+                    <MachineReadinessPane clerkId={user.id} />
                   )}
                   {rightPane === "history" && user?.id && (
                     <HistoryPane userId={convexUser._id} clerkId={user.id} />

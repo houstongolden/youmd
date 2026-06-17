@@ -28,6 +28,82 @@ async function seedUsers(t: ReturnType<typeof convexTest>) {
 }
 
 describe("portfolio repo update history", () => {
+  it("upserts and lists machine proof records per owner", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    const asOther = t.withIdentity({ subject: OTHER_CLERK });
+
+    const first = await asOwner.mutation(api.portfolio.upsertMachineProof, {
+      clerkId: CLERK,
+      hostName: "houston-mac-mini",
+      platform: "darwin 25.0.0",
+      rootDir: "/Users/houston/Desktop/CODE_YOU",
+      proofSchemaVersion: 1,
+      status: "warn",
+      scanned: 12,
+      ready: 9,
+      needsEnv: 2,
+      partial: 1,
+      installPassed: 0,
+      checksPassed: 0,
+      serversPassed: 0,
+      failures: 0,
+      warnings: ["2 projects need env restore"],
+      secretValuesExposed: false,
+      reportPath: "/Users/houston/.youmd/machine-reports/latest.json",
+      source: "cli",
+      agentName: "youmd machine verify",
+      generatedAt: 1_781_700_000_000,
+    });
+
+    const second = await asOwner.mutation(api.portfolio.upsertMachineProof, {
+      clerkId: CLERK,
+      hostName: "houston-mac-mini",
+      platform: "darwin 25.0.0",
+      rootDir: "/Users/houston/Desktop/CODE_YOU",
+      proofSchemaVersion: 1,
+      status: "ready",
+      scanned: 12,
+      ready: 12,
+      needsEnv: 0,
+      partial: 0,
+      installPassed: 4,
+      checksPassed: 8,
+      serversPassed: 3,
+      failures: 0,
+      warnings: [],
+      secretValuesExposed: false,
+      reportPath: "/Users/houston/.youmd/machine-reports/latest.json",
+      source: "cli",
+      agentName: "youmd machine verify",
+      generatedAt: 1_781_700_100_000,
+    });
+
+    expect(second.proofId).toBe(first.proofId);
+    expect(second.created).toBe(false);
+
+    const ownerProofs = await asOwner.query(api.portfolio.listMachineProofs, {
+      clerkId: CLERK,
+      limit: 10,
+    });
+    expect(ownerProofs).toHaveLength(1);
+    expect(ownerProofs[0]).toMatchObject({
+      hostName: "houston-mac-mini",
+      status: "ready",
+      scanned: 12,
+      ready: 12,
+      needsEnv: 0,
+      secretValuesExposed: false,
+    });
+
+    const otherProofs = await asOther.query(api.portfolio.listMachineProofs, {
+      clerkId: OTHER_CLERK,
+      limit: 10,
+    });
+    expect(otherProofs).toHaveLength(0);
+  });
+
   it("persists repo update runs with ordered steps", async () => {
     const t = convexTest(schema);
     await seedUsers(t);

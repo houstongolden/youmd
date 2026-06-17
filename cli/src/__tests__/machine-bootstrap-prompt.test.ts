@@ -26,7 +26,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('youmd machine projects --root "$ROOT" --days "$DAYS" --dry-run');
     expect(command).toContain('youmd machine projects --root "$ROOT" --days "$DAYS" --yes');
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"');
-    expect(command).toContain('youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report');
+    expect(command).toContain('youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report');
     expect(command).toContain('YOUMD_RUN_CHECKS');
     expect(command).toContain('--run-checks --max-check-projects "${YOUMD_MAX_CHECK_PROJECTS:-8}"');
     expect(command).toContain('YOUMD_INSTALL_DEPS');
@@ -34,6 +34,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('YOUMD_PROBE_SERVERS');
     expect(command).toContain('--probe-servers --max-server-projects "${YOUMD_MAX_SERVER_PROJECTS:-3}"');
     expect(command).toContain("--write-report");
+    expect(command).toContain("--sync-report");
     expect(command).not.toContain(".env.local=");
   });
 
@@ -45,6 +46,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("previews the graph-backed project setup plan");
     expect(prompt).toContain("audits cloned project readiness without reading secret values");
     expect(prompt).toContain("writes a secret-safe machine proof report");
+    expect(prompt).toContain("syncs the proof summary back to your You.md machine dashboard");
     expect(prompt).toContain("YOUMD_RUN_CHECKS=1");
     expect(prompt).toContain("YOUMD_INSTALL_DEPS=1");
     expect(prompt).toContain("YOUMD_PROBE_SERVERS=1");
