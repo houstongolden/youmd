@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio detail proof refresh
+
+### test(shell): re-verify compact project portfolio controls in the visible Codex Browser
+- Re-used the visible Codex in-app Browser session on `http://localhost:3100/shell?tab=portfolio&project=youmd#project-detail` instead of relying on older screenshots.
+- Verified the live persisted graph now renders `56` projects, the shipped pulse for `today` / `7d` / `30d` / `90d`, top shippers, latest shipped rows, compact project search/focus/sort controls, full ranked focus labels, and clickable project rows plus `details` / `timeline` anchors.
+- Verified the selected You.md project detail page includes `PROJECT GRAPH LINKS`, exact API/MCP docs URLs, the owner-gated portfolio graph curl command, docs curl commands, `curl -fsSL https://you.md/install.sh | bash`, `git clone https://github.com/houstongolden/youmd youmd`, and owned You.md API/MCP surface curl commands.
+- Ran a reversible status-write proof on the real dashboard control: `bamfsite` focus changed from `unset` to `focusing`, then back to `unset / 4`, and the pane reported `project focus updated: bamfsite / unset / 4`.
+- Clicked the real You.md timeline link and verified the URL stayed clean as `http://localhost:3100/shell?tab=portfolio&project=youmd#timeline`, with the shipping timeline in view.
+- Screenshot: `/tmp/youmd-portfolio-detail-shipped-focus-verified-2026-06-17.png`.
+- Verification: `npm --prefix cli test -- src/__tests__/project-strategy.test.ts src/__tests__/machine-projects.test.ts` and `npm run lint -- --file src/components/panes/PortfolioGraphPane.tsx` passed with existing repo warnings only.
+
 ## 2026-06-17 — Fresh-machine strict env-vault proof mode
 
 ### feat(cli/web): prevent fresh-computer proof from passing without env restore
