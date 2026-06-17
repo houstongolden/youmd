@@ -2,7 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowUpDown, ChevronDown, ExternalLink, ListFilter, Search, Target } from "lucide-react";
+import {
+  Archive,
+  ArrowUpDown,
+  ChevronDown,
+  CircleDot,
+  Crosshair,
+  ExternalLink,
+  GitBranch,
+  Link2,
+  ListFilter,
+  Package,
+  Pause,
+  Search,
+  Target,
+  Terminal,
+  XCircle,
+} from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -81,6 +97,26 @@ type ProjectActivity = {
   tags: string[];
   metadata?: Record<string, unknown>;
   occurredAt: number;
+};
+
+type DisplayTrackedProject = {
+  fullName: string;
+  name: string;
+  url?: string;
+  projectUrl?: string;
+  repoName?: string;
+  directoryName?: string;
+  apiDocsUrl?: string;
+  mcpDocsUrl?: string;
+  stackName?: string;
+  stackSlug?: string;
+  highLevelGoal?: string;
+  recentProgress?: string;
+  description?: string;
+  primaryLanguage?: string;
+  pushedAt: number;
+  commitsLast90d?: number;
+  visibility?: string;
 };
 
 type DisplayPattern = {
@@ -352,6 +388,37 @@ function projectFocusOption(status?: string) {
   return PROJECT_FOCUS_OPTIONS.find((option) => option.value === status) ?? PROJECT_FOCUS_OPTIONS[5];
 }
 
+function ProjectFocusIcon({ status }: { status?: string }) {
+  switch (projectFocusOption(status).value) {
+    case "top-priority":
+      return <Crosshair size={11} />;
+    case "focusing":
+      return <Target size={11} />;
+    case "on-ice":
+      return <Pause size={11} />;
+    case "abandoned":
+      return <Archive size={11} />;
+    case "killed":
+      return <XCircle size={11} />;
+    default:
+      return <CircleDot size={11} />;
+  }
+}
+
+function ProjectFocusBadge({ status }: { status?: string }) {
+  const focus = projectFocusOption(status);
+  return (
+    <span
+      title={`${focus.label} / priority ${focus.rank}`}
+      className="inline-flex h-6 shrink-0 items-center gap-1 border border-[hsl(var(--border))]/70 px-1.5 font-mono text-[9px] text-[hsl(var(--accent))]"
+      aria-label={`${focus.label} priority rank ${focus.rank}`}
+    >
+      <ProjectFocusIcon status={status} />
+      <span>{focus.rank}</span>
+    </span>
+  );
+}
+
 function projectFocusWeight(project: DisplayProject) {
   return projectFocusOption(project.focusStatus).weight;
 }
@@ -380,6 +447,10 @@ function detailHref(pathname: string, projectSlug: string) {
   return `${pathname}?${params.toString()}`;
 }
 
+function detailHrefWithAnchor(pathname: string, projectSlug: string, anchor: "project-detail" | "timeline") {
+  return `${detailHref(pathname, projectSlug)}#${anchor}`;
+}
+
 function stackInstallCommand(stackName: string) {
   const normalized = stackName.toLowerCase();
   if (normalized.includes("you")) return "curl -fsSL https://you.md/install.sh | bash";
@@ -393,6 +464,61 @@ function visibleSurfaceSummary(surface: DisplaySurface) {
     surface.ownerStack,
     surface.integrationTypes.slice(0, 2).join(" / "),
   ].filter(Boolean).join(" / ");
+}
+
+function slugifyProjectToken(value?: string | null) {
+  if (!value) return "";
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 90);
+}
+
+function trackedProjectSlugs(project: DisplayTrackedProject) {
+  return [
+    project.name,
+    project.repoName,
+    project.directoryName,
+    project.fullName,
+    project.stackSlug,
+  ]
+    .map(slugifyProjectToken)
+    .filter(Boolean);
+}
+
+function dedupeStrings(values: Array<string | undefined | null>) {
+  const seen = new Set<string>();
+  return values.flatMap((value) => {
+    const next = value?.trim();
+    if (!next || seen.has(next)) return [];
+    seen.add(next);
+    return [next];
+  });
+}
+
+function projectDocs(project: DisplayProject, trackedProject?: DisplayTrackedProject) {
+  return dedupeStrings([
+    trackedProject?.apiDocsUrl,
+    trackedProject?.mcpDocsUrl,
+    ...project.docs,
+  ]);
+}
+
+function portfolioGraphCurlCommand(projectSlug: string) {
+  return `curl -H "Authorization: Bearer $YOUMD_API_KEY" "https://you.md/api/v1/me/portfolio/graph?includeTasks=1" | jq '.projects[] | select(.slug == "${projectSlug}")'`;
+}
+
+function docsCurlCommand(url: string) {
+  return `curl -fsSL ${url}`;
+}
+
+function cloneCommand(project: DisplayProject, trackedProject?: DisplayTrackedProject) {
+  const repoUrl = project.repoUrl ?? trackedProject?.url;
+  if (!repoUrl) return null;
+  const target = trackedProject?.directoryName ?? project.repoPath ?? project.slug;
+  return `git clone ${repoUrl} ${target}`;
 }
 
 function projectActivityScore(project: DisplayProject, activities: ProjectActivity[]) {
@@ -486,6 +612,10 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     () => graph?.projectActivities ?? [],
     [graph?.projectActivities]
   );
+  const trackedProjects: DisplayTrackedProject[] = useMemo(
+    () => graph?.recentTrackedProjects ?? [],
+    [graph?.recentTrackedProjects]
+  );
   const allShippedCounts = useMemo(
     () => shippedCounts(projectActivities),
     [projectActivities]
@@ -575,6 +705,15 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     () => new Map(activeProjects.map((project) => [project.slug, project])),
     [activeProjects]
   );
+  const trackedBySlug = useMemo(() => {
+    const map = new Map<string, DisplayTrackedProject>();
+    for (const trackedProject of trackedProjects) {
+      for (const slug of trackedProjectSlugs(trackedProject)) {
+        if (!map.has(slug)) map.set(slug, trackedProject);
+      }
+    }
+    return map;
+  }, [trackedProjects]);
   const effectiveSelectedProjectSlug = selectedProjectSlug && activeProjects.some((project) => project.slug === selectedProjectSlug)
     ? selectedProjectSlug
     : activeProjects[0]?.slug;
@@ -591,21 +730,43 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const selectedDependencyEdges = selectedProject
     ? activeEdges.filter((edge) => edge.fromProject === selectedProject.slug)
     : [];
+  const selectedTrackedProject = effectiveSelectedProjectSlug
+    ? trackedBySlug.get(effectiveSelectedProjectSlug)
+    : undefined;
+  const selectedProjectDocs = selectedProject
+    ? projectDocs(selectedProject, selectedTrackedProject)
+    : [];
   const selectedDetailUrl = selectedProject ? detailHref(pathname, selectedProject.slug) : null;
-  const selectedStackInstallCommand = selectedProject ? stackInstallCommand(selectedProject.stack) : null;
+  const selectedStackName = selectedTrackedProject?.stackName ?? selectedProject?.stack;
+  const selectedStackInstallCommand = selectedStackName ? stackInstallCommand(selectedStackName) : null;
+  const selectedGraphCurlCommand = selectedProject ? portfolioGraphCurlCommand(selectedProject.slug) : null;
+  const selectedCloneCommand = selectedProject ? cloneCommand(selectedProject, selectedTrackedProject) : null;
 
-  const selectProject = (projectSlug: string) => {
+  const selectProject = (projectSlug: string, anchor?: "project-detail" | "timeline") => {
     setSelectedProjectSlug(projectSlug);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", "portfolio");
     params.set("project", projectSlug);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    router.replace(`${pathname}?${params.toString()}${anchor ? `#${anchor}` : ""}`, { scroll: false });
+    if (anchor) {
+      window.setTimeout(() => {
+        document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
   };
 
   useEffect(() => {
     const projectSlug = searchParams.get("project");
     if (projectSlug) setSelectedProjectSlug(projectSlug);
   }, [searchParams]);
+
+  useEffect(() => {
+    const anchor = window.location.hash.replace("#", "");
+    if (anchor !== "project-detail" && anchor !== "timeline") return;
+    window.setTimeout(() => {
+      document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+  }, [effectiveSelectedProjectSlug]);
 
   const handleSyncSeed = async () => {
     if (!clerkId || syncing || hydrating) return;
@@ -892,9 +1053,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                     }`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <span title={`${focus.label} priority rank ${focus.rank}`} className="inline-flex h-6 w-6 shrink-0 items-center justify-center border border-[hsl(var(--border))]/70 font-mono text-[10px] text-[hsl(var(--accent))]">
-                        {focus.rank}
-                      </span>
+                      <ProjectFocusBadge status={project.focusStatus} />
                       <h3 className="min-w-0 truncate font-mono text-[12px] text-[hsl(var(--text-primary))]">{project.name}</h3>
                       <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-65">{project.stack}</span>
                       <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${statusClass(project.status)}`}>{project.status}</span>
@@ -905,11 +1064,11 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">30d {counts.thirty}</span>
                       <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">90d {counts.ninety}</span>
                       <a
-                        href={detailHref(pathname, project.slug)}
+                        href={detailHrefWithAnchor(pathname, project.slug, "project-detail")}
                         onClick={(event) => {
                           event.stopPropagation();
                           event.preventDefault();
-                          selectProject(project.slug);
+                          selectProject(project.slug, "project-detail");
                         }}
                         aria-label={`View details for ${project.name}`}
                         className="ml-auto border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-60 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
@@ -918,11 +1077,11 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                         details
                       </a>
                       <a
-                        href={`${detailHref(pathname, project.slug)}#timeline`}
+                        href={detailHrefWithAnchor(pathname, project.slug, "timeline")}
                         onClick={(event) => {
                           event.stopPropagation();
                           event.preventDefault();
-                          selectProject(project.slug);
+                          selectProject(project.slug, "timeline");
                         }}
                         aria-label={`View timeline for ${project.name}`}
                         className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-60 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
@@ -976,7 +1135,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
               )}
             </div>
 
-            <div className="min-w-0 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
+            <div id="project-detail" className="scroll-mt-4 min-w-0 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
               {selectedProject ? (
                 <>
                   <div className="flex flex-wrap items-start gap-3">
@@ -989,11 +1148,11 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">{selectedProject.summary}</p>
                       {selectedDetailUrl && (
                         <a
-                          href={selectedDetailUrl}
+                          href={detailHrefWithAnchor(pathname, selectedProject.slug, "project-detail")}
                           className="mt-2 inline-flex items-center gap-1 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70 underline-offset-4 hover:underline"
                           onClick={(event) => {
                             event.preventDefault();
-                            selectProject(selectedProject.slug);
+                            selectProject(selectedProject.slug, "project-detail");
                           }}
                         >
                           project detail URL <ExternalLink size={10} />
@@ -1001,7 +1160,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       )}
                     </div>
                     <label className="flex items-center gap-2 border border-[hsl(var(--border))]/60 px-2 py-1">
-                      <span className="font-mono text-[10px] text-[hsl(var(--accent))]">{projectFocusOption(selectedProject.focusStatus).rank}</span>
+                      <ProjectFocusBadge status={selectedProject.focusStatus} />
                       <select
                         aria-label={`Set focus status for ${selectedProject.name}`}
                         value={projectFocusOption(selectedProject.focusStatus).value}
@@ -1044,7 +1203,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                             product <ExternalLink size={10} />
                           </a>
                         )}
-                        {selectedProject.docs.slice(0, 6).map((doc) => (
+                        {selectedProjectDocs.slice(0, 8).map((doc) => (
                           /^https?:\/\//.test(doc) ? (
                             <a key={doc} href={doc} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-65 underline-offset-4 hover:underline">
                               {doc.replace(/^https?:\/\//, "")} <ExternalLink size={10} />
@@ -1059,11 +1218,56 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">focus / goal</div>
                       <p className="mt-2 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-55">{selectedProject.focus}</p>
                       <p className="mt-2 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-45">{selectedProject.goal}</p>
-                      {selectedStackInstallCommand && (
-                        <div className="mt-2 overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1 font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-60">
-                          {selectedStackInstallCommand}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
+                    <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">project graph links</div>
+                    <div className="mt-2 grid gap-3 lg:grid-cols-2">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2 font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-62">
+                          <Package size={12} className="text-[hsl(var(--accent))]" />
+                          <span>stack</span>
+                          <span className="text-[hsl(var(--text-primary))] opacity-85">{selectedStackName ?? "Project Stack"}</span>
+                          {selectedTrackedProject?.stackSlug && <span className="opacity-45">/{selectedTrackedProject.stackSlug}</span>}
                         </div>
-                      )}
+                        {selectedTrackedProject?.fullName && (
+                          <div className="flex flex-wrap items-center gap-2 font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-55">
+                            <GitBranch size={12} className="text-[hsl(var(--accent))]" />
+                            <span>{selectedTrackedProject.fullName}</span>
+                            {selectedTrackedProject.commitsLast90d !== undefined && <span>{selectedTrackedProject.commitsLast90d} commits 90d</span>}
+                          </div>
+                        )}
+                        {selectedProjectDocs.filter((doc) => /^https?:\/\//.test(doc)).slice(0, 4).map((url) => (
+                          <a key={url} href={url} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-1 break-all font-mono text-[8.5px] text-[hsl(var(--accent))] opacity-70 underline-offset-4 hover:underline">
+                            <Link2 size={10} className="shrink-0" />
+                            {url.replace(/^https?:\/\//, "")}
+                          </a>
+                        ))}
+                      </div>
+                      <div className="space-y-2">
+                        {selectedGraphCurlCommand && (
+                          <div className="overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1 font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-64">
+                            <Terminal size={10} className="mr-1 inline text-[hsl(var(--accent))]" />
+                            {selectedGraphCurlCommand}
+                          </div>
+                        )}
+                        {selectedProjectDocs.filter((doc) => /^https?:\/\//.test(doc)).slice(0, 2).map((url) => (
+                          <div key={`curl-${url}`} className="overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1 font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-58">
+                            {docsCurlCommand(url)}
+                          </div>
+                        ))}
+                        {selectedStackInstallCommand && (
+                          <div className="overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1 font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-58">
+                            {selectedStackInstallCommand}
+                          </div>
+                        )}
+                        {selectedCloneCommand && (
+                          <div className="overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1 font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-58">
+                            {selectedCloneCommand}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1208,7 +1412,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
 
         <PaneDivider />
 
-        <section>
+        <section id="timeline" className="scroll-mt-4">
           <PaneSectionLabel>shipping timeline</PaneSectionLabel>
           <div className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
             <div className="flex flex-wrap items-center gap-2">

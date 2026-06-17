@@ -745,6 +745,7 @@ export interface PortfolioGraphSnapshot {
     slug: string;
     name: string;
     stackName?: string;
+    stackSlug?: string;
     status?: string;
     summary?: string;
     goal?: string;
@@ -752,7 +753,12 @@ export interface PortfolioGraphSnapshot {
     repoFullName?: string;
     repoUrl?: string;
     productUrl?: string;
+    repoName?: string;
+    directoryName?: string;
+    apiDocsUrl?: string;
+    mcpDocsUrl?: string;
     docs?: string[];
+    curlCommand?: string;
     environments?: string[];
     tags?: string[];
     source?: string;
@@ -770,10 +776,13 @@ export interface PortfolioGraphSnapshot {
     apiDocsUrl?: string;
     mcpDocsUrl?: string;
     stackName?: string;
+    stackSlug?: string;
     highLevelGoal?: string;
     recentProgress?: string;
     description?: string;
+    primaryLanguage?: string;
     pushedAt: number;
+    commitsLast90d?: number;
     updatedAt: number;
     isPrivate: boolean;
   }>;

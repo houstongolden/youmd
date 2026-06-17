@@ -1445,40 +1445,89 @@ http.route({
         _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         includeDoneTasks: false,
       });
+      const trackedBySlug = new Map<string, typeof graph.recentTrackedProjects[number]>();
+      for (const trackedProject of graph.recentTrackedProjects) {
+        const candidates = [
+          trackedProject.name,
+          trackedProject.repoName,
+          trackedProject.directoryName,
+          trackedProject.fullName,
+          trackedProject.stackSlug,
+        ].flatMap((value) => {
+          const slug = portfolioSlug(value);
+          return slug ? [slug] : [];
+        });
+        for (const slug of candidates) {
+          if (!trackedBySlug.has(slug)) trackedBySlug.set(slug, trackedProject);
+        }
+      }
+      const trackedForProject = (project: typeof graph.projects[number]) => {
+        const candidates = [
+          project.slug,
+          project.name,
+          project.repoFullName,
+          project.repoPath,
+          project.stackName,
+        ].flatMap((value) => {
+          const slug = portfolioSlug(value);
+          return slug ? [slug] : [];
+        });
+        for (const slug of candidates) {
+          const trackedProject = trackedBySlug.get(slug);
+          if (trackedProject) return trackedProject;
+        }
+        return null;
+      };
+      const graphCurlCommand = (projectSlug: string) =>
+        `curl -H "Authorization: Bearer $YOUMD_API_KEY" "https://you.md/api/v1/me/portfolio/graph?includeTasks=1" | jq '.projects[] | select(.slug == "${projectSlug}")'`;
 
       return json({
         schemaVersion: "you-md/portfolio-graph/v1",
-        projects: graph.projects.map((project) => ({
-          slug: project.slug,
-          name: project.name,
-          stackName: project.stackName,
-          status: project.status,
-          summary: project.summary,
-          detailedDescription: project.detailedDescription,
-          goal: project.goal,
-          vision: project.vision,
-          focus: project.focus,
-          positioning: project.positioning,
-          audience: project.audience,
-          painPoints: project.painPoints,
-          solution: project.solution,
-          whyThisSolution: project.whyThisSolution,
-          northStar: project.northStar,
-          metrics: project.metrics,
-          constraints: project.constraints,
-          notBuilding: project.notBuilding,
-          competitors: project.competitors,
-          repoFullName: project.repoFullName,
-          repoUrl: project.repoUrl,
-          productUrl: project.productUrl,
-          docs: project.docs,
-          environments: project.environments,
-          tags: project.tags,
-          source: project.source,
-          repoPath: project.repoPath,
-          lastActivityAt: project.lastActivityAt,
-          updatedAt: project.updatedAt,
-        })),
+        projects: graph.projects.map((project) => {
+          const trackedProject = trackedForProject(project);
+          const docs = [
+            trackedProject?.apiDocsUrl,
+            trackedProject?.mcpDocsUrl,
+            ...project.docs,
+          ].filter((value): value is string => Boolean(value));
+          return {
+            slug: project.slug,
+            name: project.name,
+            stackName: trackedProject?.stackName ?? project.stackName,
+            stackSlug: trackedProject?.stackSlug,
+            status: project.status,
+            summary: project.summary,
+            detailedDescription: project.detailedDescription,
+            goal: project.goal,
+            vision: project.vision,
+            focus: project.focus,
+            positioning: project.positioning,
+            audience: project.audience,
+            painPoints: project.painPoints,
+            solution: project.solution,
+            whyThisSolution: project.whyThisSolution,
+            northStar: project.northStar,
+            metrics: project.metrics,
+            constraints: project.constraints,
+            notBuilding: project.notBuilding,
+            competitors: project.competitors,
+            repoFullName: project.repoFullName,
+            repoUrl: project.repoUrl,
+            productUrl: project.productUrl,
+            repoName: trackedProject?.repoName,
+            directoryName: trackedProject?.directoryName,
+            apiDocsUrl: trackedProject?.apiDocsUrl,
+            mcpDocsUrl: trackedProject?.mcpDocsUrl,
+            docs,
+            curlCommand: graphCurlCommand(project.slug),
+            environments: project.environments,
+            tags: project.tags,
+            source: project.source,
+            repoPath: project.repoPath,
+            lastActivityAt: project.lastActivityAt,
+            updatedAt: project.updatedAt,
+          };
+        }),
         recentTrackedProjects: graph.recentTrackedProjects.map((project) => ({
           fullName: project.fullName,
           name: project.name,

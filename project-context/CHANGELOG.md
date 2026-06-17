@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio detail graph links follow-up
+
+### feat(web/api): enrich project details with graph docs, stack, and curl commands
+- Tightened the Portfolio Graph selected-project detail panel so it now joins each portfolio project with the matching recent GitHub-tracked project record when available.
+- Added a visible `PROJECT GRAPH LINKS` section for selected projects showing associated stack/stack slug, GitHub repo evidence, exact API/MCP docs URLs, the owner-gated portfolio graph curl command, docs curl commands, stack install command, and clone command.
+- Made row-level `details` and `timeline` controls true anchored deep links: `details` targets `#project-detail`, `timeline` targets `#timeline`, and the click handler scrolls the right section into view after updating `?tab=portfolio&project=<slug>`.
+- Replaced the plain numeric focus badge with a compact icon+rank badge for `Top Priority`, `Focusing`, `Freeze / On Ice`, `Abandoned`, `Dead / Killed`, and `Unsorted` while keeping the persisted dropdown behavior.
+- Enriched `GET /api/v1/me/portfolio/graph` project rows with tracked-project `apiDocsUrl`, `mcpDocsUrl`, `stackSlug`, `repoName`, `directoryName`, and a safe `curlCommand` so local agents do not have to reverse-join graph rows to find API/MCP docs or project graph fetch commands.
+- Verified locally with `npx tsc --noEmit --pretty false`, `cd cli && npm run build`, `npm run lint` (existing warnings only), `npm run build`, and `git diff --check`.
+- Authenticated Codex in-app Browser QA on `http://localhost:3100/shell?tab=portfolio&project=youmd` verified `PROJECT GRAPH LINKS`, YouStack `/youstack`, `you.md/api/v1/docs/reference`, `.well-known/mcp.json`, graph/docs curl commands, `curl -fsSL https://you.md/install.sh | bash`, `git clone https://github.com/houstongolden/youmd youmd`, and owned You.md API/MCP surfaces. Clicking the real `View timeline for youmd` link updated the URL to `#timeline` and scrolled the shipping timeline into view.
+
 ## 2026-06-17 — Shell-chat brain-dump sync proof
 
 ### fix(shell): let deterministic portfolio commands run while the opener is stuck

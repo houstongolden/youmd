@@ -62,6 +62,9 @@ PRD Version: 2.3
 - [x] Add compact portfolio project browser controls: search, focus filter, sort, density toggle, URL-backed clickable details, shipped `today` / `7d` / `30d` / `90d`, API docs URL/curl/stack surface details, and persisted project focus rank/status fields
 - [x] Make direct project detail URLs such as `/shell?project=youmd` reload-safe by opening the Portfolio pane directly, then visually verify the shipped pulse, compact project list, detail URL, API docs/curl, stack install command, and row-level focus mutation in the authenticated Codex in-app Browser
 - [x] Persist exact API/MCP/stack surface docs URLs plus curl/install commands in the portfolio graph and repo-backed graph snapshots
+- [x] Enrich selected project detail pages with tracked-project graph links: stack/stack slug, GitHub repo evidence, exact API/MCP docs URLs, owner-gated portfolio graph curl command, docs curl commands, stack install command, and clone command
+- [x] Make `details` and `timeline` controls anchored clickable project detail links (`#project-detail` / `#timeline`) and visually verify a real `View timeline for youmd` click scrolls to the shipping timeline
+- [x] Enrich `GET /api/v1/me/portfolio/graph` project rows with project-level API docs, MCP docs, stack slug, repo/directory names, and safe curl command fields so local agents can consume the graph without reverse-joining tracked-project rows
 - [x] After this commit is pushed and Convex deploys from the new `main`, rerun authenticated browser proof that changing a project focus status persists and the dropdown recovers from backend deploy gaps
 - [x] Build the `/shell` APIs + Env Intelligence view with provider usage stats, env key-name normalization, service-account notes, API/MCP risk tiers, and secret-safe audit commands
 - [x] Register `portfolio-graph-auditor` in the bundled local CLI skill catalog and align the Skills pane with `machine-bootstrap` + portfolio-audit catalog visibility
