@@ -1,3 +1,5 @@
+import * as os from "os";
+
 export const DEFAULT_FRESH_MACHINE_ROOT = "~/Desktop/CODE_YOU";
 export const DEFAULT_FRESH_MACHINE_DAYS = 30;
 export const DEFAULT_FRESH_MACHINE_EXPAND_DAYS = 90;
@@ -20,6 +22,16 @@ function shellQuote(value: string): string {
 function envAssignment(name: string, value: string | number | undefined): string | null {
   if (value === undefined || value === null || `${value}`.trim() === "") return null;
   return `${name}=${shellQuote(String(value))}`;
+}
+
+function portableHomePath(value: string | undefined): string | undefined {
+  if (!value) return value;
+  const home = os.homedir();
+  if (!home || !value.startsWith(home)) return value;
+  const suffix = value.slice(home.length);
+  if (!suffix) return "~";
+  if (suffix.startsWith("/")) return `~${suffix}`;
+  return value;
 }
 
 export function buildFreshMachineBootstrapScript(): string {
@@ -177,11 +189,11 @@ export function buildFreshMachineBootstrapScript(): string {
 export function buildFreshMachineBootstrapCommand(options: FreshMachineBootstrapOptions = {}): string {
   const assignments = [
     envAssignment("YOUMD_API_KEY", options.apiKey),
-    envAssignment("YOUMD_CODE_ROOT", options.root),
+    envAssignment("YOUMD_CODE_ROOT", portableHomePath(options.root)),
     envAssignment("YOUMD_ACTIVE_DAYS", options.days ?? DEFAULT_FRESH_MACHINE_DAYS),
     envAssignment("YOUMD_PROJECT_LIMIT", options.limit ?? DEFAULT_FRESH_MACHINE_LIMIT),
     envAssignment("YOUMD_MAX_CLONE_PROJECTS", options.maxCloneProjects),
-    envAssignment("YOUMD_ENV_VAULT", options.envVaultPath),
+    envAssignment("YOUMD_ENV_VAULT", portableHomePath(options.envVaultPath)),
     envAssignment("YOUMD_REQUIRE_ENV_VAULT", options.requireEnvVault ? "1" : undefined),
   ].filter((value): value is string => Boolean(value));
 
@@ -189,7 +201,7 @@ export function buildFreshMachineBootstrapCommand(options: FreshMachineBootstrap
 }
 
 export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapOptions = {}): string {
-  const root = options.root ?? DEFAULT_FRESH_MACHINE_ROOT;
+  const root = portableHomePath(options.root) ?? DEFAULT_FRESH_MACHINE_ROOT;
   const days = options.days ?? DEFAULT_FRESH_MACHINE_DAYS;
   const expandDays = DEFAULT_FRESH_MACHINE_EXPAND_DAYS;
   const limit = options.limit ?? DEFAULT_FRESH_MACHINE_LIMIT;

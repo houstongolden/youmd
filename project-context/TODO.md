@@ -47,6 +47,10 @@ PRD Version: 2.3
 - [x] Fix full-path fresh-machine proof blockers found by the real-vault run: force the `machine` CLI action to exit cleanly after `machine projects --yes`, and add `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` timeout guards around generated portfolio hydration calls
 - [x] Add a compatibility guard to generated fresh-machine commands so source/current installs use `--recent-only`, while fallback older npm installs force noninteractive project planning via stdin from `/dev/null` instead of blocking on older-project prompts
 - [x] Generate the real authenticated `/new computer` shell command with a fresh 7-day bootstrap key, verify the command structure in redacted form, and copy the full command to the in-app browser clipboard for Houston's immediate new-machine paste
+- [x] Align the actual web shell `/new computer` artifact copy with the strict setup policy: `ACTIVE` + `Top Priority`/`Focusing` only, with inactive/unsorted/on-ice/abandoned/killed/unreviewed GitHub-only repos skipped by default
+- [x] Add CLI/web parity coverage so future edits fail tests if the visible shell prompt drifts from env-vault strictness, 90-day expansion controls, active-focus setup gating, or required bootstrap scopes
+- [x] Keep `youmd machine prompt --root ~/Desktop/CODE_YOU` portable by converting shell-expanded `/Users/...` home paths back to `~/...` in the generated command and explanatory text
+- [x] Re-verify authenticated local `/new computer` after the active-focus and portability fixes: the shell minted a bootstrap key, rendered a secret-bearing copyable command with a `copy` button, showed `CODE_YOU`, `YOUMD_REQUIRE_ENV_VAULT=1`, `YOUMD_EXPAND_TO_90_DAYS`, and contained no `.env.local=` / `sk-...` secret patterns
 - [ ] Run the generated command end-to-end on the actual brand-new computer / separate clean agent host with a real encrypted env vault and visually verify projects, skills, env vault restore, local servers, resident daemons, Machine pane proof row, and portfolio graph sync there
 
 ### 2026-06-17 — Shell sidebar expand/collapse regression

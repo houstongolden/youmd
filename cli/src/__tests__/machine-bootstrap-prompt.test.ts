@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as os from "os";
 import {
   buildFreshMachineBootstrapCommand,
   buildFreshMachineBootstrapPrompt,
@@ -91,5 +92,23 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain(".env.local values are never embedded here");
     expect(prompt).toContain("variable names/counts and target paths only");
     expect(prompt).toContain("fails instead of pretending setup is complete");
+  });
+
+  it("keeps home-relative root and vault paths portable for a different Mac", () => {
+    const command = buildFreshMachineBootstrapCommand({
+      root: `${os.homedir()}/Desktop/CODE_YOU`,
+      envVaultPath: `${os.homedir()}/Desktop/env-local-backup.tar.gz.gpg`,
+    });
+    const prompt = buildFreshMachineBootstrapPrompt({
+      root: `${os.homedir()}/Desktop/CODE_YOU`,
+      envVaultPath: `${os.homedir()}/Desktop/env-local-backup.tar.gz.gpg`,
+    });
+
+    expect(command).toContain("YOUMD_CODE_ROOT='~/Desktop/CODE_YOU'");
+    expect(command).toContain("YOUMD_ENV_VAULT='~/Desktop/env-local-backup.tar.gz.gpg'");
+    expect(command).not.toContain(`YOUMD_CODE_ROOT='${os.homedir()}`);
+    expect(command).not.toContain(`YOUMD_ENV_VAULT='${os.homedir()}`);
+    expect(prompt).toContain("creates ~/Desktop/CODE_YOU");
+    expect(prompt).not.toContain(`creates ${os.homedir()}/Desktop/CODE_YOU`);
   });
 });

@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-17 — Fresh-machine prompt parity and portable root
+
+### fix(cli/shell): keep `/new computer` aligned with active focus setup gate
+- Tightened the web shell `/new computer` response so the visible artifact says the same thing the planner enforces: fresh-machine setup clones only projects marked `ACTIVE` plus `Top Priority`/`Focusing`, while inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped by default.
+- Added a CLI regression test that reads the web `useYouAgent` source and fails if the visible shell prompt drifts away from the strict machine setup gate, env-vault strictness, 90-day expansion control, or required bootstrap scopes.
+- Fixed `youmd machine prompt --root ~/Desktop/CODE_YOU` portability: when the source shell expands `~` to `/Users/...`, the generated paste command and explanatory text now convert the path back to `~/Desktop/CODE_YOU` before handing it to the new computer.
+- Verification: focused CLI tests (`machine-bootstrap-prompt`, `machine-projects`, `fresh-machine-web-parity`), CLI build, root lint/radius, root production build, compiled prompt smoke proving portable `YOUMD_CODE_ROOT='~/Desktop/CODE_YOU'`, live graph dry-run (`56` projects / `40` tracked repos -> `16` selected / `84` skipped), and authenticated local Browser QA of `/new computer` showing a secret-bearing copyable command with the active-focus project gate, env-vault guard, 90-day expansion flag, and no `.env.local=` or `sk-...` secret patterns.
+
 ## 2026-06-17 — Portfolio active setup gate
 
 ### feat(portfolio): add active/inactive controls and setup eligibility policy
