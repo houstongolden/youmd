@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio graph exact docs/curl refinement
+
+### fix(web/api): make stack-aware project graph commands exact
+- Re-verified the Portfolio pane in the visible authenticated Codex in-app Browser on `http://localhost:3100/shell?tab=portfolio&project=youmd#timeline`: detail/timeline links resolve cleanly, search narrowed to `2 / 56`, focus filtering narrowed to top priority, shipped-90 sorting stuck, and clicking the `bamfaiapp` project card selected `?project=bamfaiapp`.
+- Found and fixed a real precision issue in the project graph details: `bamfaiapp` was falling back to generic You.md docs/curl for some API/MCP rows instead of BAMF-specific docs.
+- Added stack-aware docs fallbacks for YouStack and BAMFStack/BAMFOSStack in the Portfolio pane, so project details now show exact BAMF docs such as `https://bamf.ai/docs/api/posts` and `https://bamf.ai/docs/mcp/overview`.
+- Enriched owner-gated `GET /api/v1/me/portfolio/graph` project rows with `focusStatus`, `focusRank`, `apiDocsCurlCommand`, `mcpDocsCurlCommand`, `stackInstallCommand`, `cloneCommand`, `shipped`, and bounded `latestShipped` rows so local agents can consume priority, shipped activity, docs, stack, and setup commands directly from the graph.
+- Added stack-aware surface curl fallbacks so BAMF API/MCP surfaces render `curl -H "Authorization: Bearer $BAMF_API_KEY" https://api.bamf.ai/v1/agent/capabilities` instead of the generic You.md MCP curl when persisted surface rows are missing a curl command.
+- Visual proof: `/tmp/youmd-portfolio-bamf-exact-docs-surface-curl-final-2026-06-17.png`.
+- Verification: `npx tsc --noEmit --pretty false`, `cd cli && npm run build`, `npx eslint convex/http.ts src/components/panes/PortfolioGraphPane.tsx cli/src/lib/api.ts`, `npm run test:convex -- convex/portfolio.test.ts`, and `npm run build`.
+
 ## 2026-06-17 — Portfolio detail proof refresh
 
 ### test(shell): re-verify compact project portfolio controls in the visible Codex Browser

@@ -747,6 +747,8 @@ export interface PortfolioGraphSnapshot {
     stackName?: string;
     stackSlug?: string;
     status?: string;
+    focusStatus?: string;
+    focusRank?: number;
     summary?: string;
     goal?: string;
     focus?: string;
@@ -757,8 +759,25 @@ export interface PortfolioGraphSnapshot {
     directoryName?: string;
     apiDocsUrl?: string;
     mcpDocsUrl?: string;
+    apiDocsCurlCommand?: string;
+    mcpDocsCurlCommand?: string;
     docs?: string[];
     curlCommand?: string;
+    stackInstallCommand?: string;
+    cloneCommand?: string;
+    shipped?: {
+      today: number;
+      seven: number;
+      thirty: number;
+      ninety: number;
+    };
+    latestShipped?: Array<{
+      kind: string;
+      title: string;
+      url?: string;
+      source: string;
+      occurredAt: number;
+    }>;
     environments?: string[];
     tags?: string[];
     source?: string;
@@ -775,8 +794,12 @@ export interface PortfolioGraphSnapshot {
     directoryName?: string;
     apiDocsUrl?: string;
     mcpDocsUrl?: string;
+    apiDocsCurlCommand?: string;
+    mcpDocsCurlCommand?: string;
     stackName?: string;
     stackSlug?: string;
+    stackInstallCommand?: string;
+    cloneCommand?: string;
     highLevelGoal?: string;
     recentProgress?: string;
     description?: string;

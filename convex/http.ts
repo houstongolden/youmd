@@ -1480,22 +1480,120 @@ http.route({
       };
       const graphCurlCommand = (projectSlug: string) =>
         `curl -H "Authorization: Bearer $YOUMD_API_KEY" "https://you.md/api/v1/me/portfolio/graph?includeTasks=1" | jq '.projects[] | select(.slug == "${projectSlug}")'`;
+      const docsCurlCommand = (docsUrl: string | undefined) =>
+        docsUrl ? `curl -fsSL ${docsUrl}` : undefined;
+      const docsForProjectStack = (stackName: string | undefined, projectSlug: string | undefined) => {
+        const normalized = `${stackName ?? ""} ${projectSlug ?? ""}`.toLowerCase();
+        if (normalized.includes("bamf")) {
+          return [
+            "https://bamf.ai/docs",
+            "https://bamf.ai/docs/api/posts",
+            "https://bamf.ai/docs/mcp/overview",
+            "https://bamf.ai/docs/mcp/tools",
+          ];
+        }
+        if (normalized.includes("you")) {
+          return [
+            "https://you.md/api/v1/docs/reference",
+            "https://you.md/.well-known/mcp.json",
+            "https://you.md/api/v1/stacks/capabilities",
+          ];
+        }
+        return [];
+      };
+      const isGenericYouMdDoc = (docsUrl: string | undefined) =>
+        Boolean(docsUrl && (
+          docsUrl.includes("you.md/api/v1/docs/reference") ||
+          docsUrl.includes("you.md/.well-known/mcp.json") ||
+          docsUrl.includes("you.md/api/v1/mcp")
+        ));
+      const preferredDocs = (
+        stackName: string | undefined,
+        projectSlug: string | undefined,
+        apiDocsUrl: string | undefined,
+        mcpDocsUrl: string | undefined,
+        docs: string[]
+      ) => {
+        const stackDocs = docsForProjectStack(stackName, projectSlug);
+        const apiDocs = apiDocsUrl && !(stackDocs.length > 0 && isGenericYouMdDoc(apiDocsUrl))
+          ? apiDocsUrl
+          : undefined;
+        const mcpDocs = mcpDocsUrl && !(stackDocs.length > 0 && isGenericYouMdDoc(mcpDocsUrl))
+          ? mcpDocsUrl
+          : undefined;
+        return cleanStringArray([apiDocs, mcpDocs, ...stackDocs, ...docs]);
+      };
+      const primaryApiDocsUrl = (docs: string[]) =>
+        docs.find((docsUrl) => !docsUrl.includes(".well-known/mcp") && !docsUrl.includes("/mcp")) ?? docs[0];
+      const primaryMcpDocsUrl = (docs: string[]) =>
+        docs.find((docsUrl) => docsUrl.includes(".well-known/mcp") || docsUrl.includes("/mcp"));
+      const stackInstallCommand = (stackName: string | undefined) => {
+        const normalized = stackName?.toLowerCase() ?? "";
+        if (normalized.includes("you")) return "curl -fsSL https://you.md/install.sh | bash";
+        if (normalized.includes("bamf")) return "curl -fsSL https://bamf.ai/bamfstack/install.sh | bash";
+        return undefined;
+      };
+      const surfaceCurlCommand = (
+        surfaceName: string | undefined,
+        ownerProjectSlug: string | undefined,
+        ownerStack: string | undefined,
+        suppliedCommand: string | undefined
+      ) => {
+        if (suppliedCommand) return suppliedCommand;
+        const normalized = `${surfaceName ?? ""} ${ownerProjectSlug ?? ""} ${ownerStack ?? ""}`.toLowerCase();
+        if (normalized.includes("bamfos") || normalized.includes("admin")) return "curl -fsSL https://bamf.ai/bamfstack/install.sh | bash";
+        if (normalized.includes("bamf")) return 'curl -H "Authorization: Bearer $BAMF_API_KEY" https://api.bamf.ai/v1/agent/capabilities';
+        return undefined;
+      };
+      const cloneCommand = (repoUrl: string | undefined, target: string | undefined) =>
+        repoUrl ? `git clone ${repoUrl} ${target ?? "project"}` : undefined;
+      const isShippableActivity = (activity: typeof graph.projectActivities[number]) =>
+        activity.kind === "commit" || activity.kind === "pull-request" || activity.kind === "release";
+      const activitiesByProject = new Map<string, typeof graph.projectActivities>();
+      for (const activity of graph.projectActivities) {
+        const existing = activitiesByProject.get(activity.projectSlug) ?? [];
+        existing.push(activity);
+        activitiesByProject.set(activity.projectSlug, existing);
+      }
+      const shippedCountsFor = (projectSlug: string) => {
+        const now = Date.now();
+        const shippable = (activitiesByProject.get(projectSlug) ?? []).filter(isShippableActivity);
+        return {
+          today: shippable.filter((activity) => activity.occurredAt >= now - 86_400_000).length,
+          seven: shippable.filter((activity) => activity.occurredAt >= now - 7 * 86_400_000).length,
+          thirty: shippable.filter((activity) => activity.occurredAt >= now - 30 * 86_400_000).length,
+          ninety: shippable.filter((activity) => activity.occurredAt >= now - 90 * 86_400_000).length,
+        };
+      };
+      const latestShippedFor = (projectSlug: string) =>
+        (activitiesByProject.get(projectSlug) ?? [])
+          .filter(isShippableActivity)
+          .sort((a, b) => b.occurredAt - a.occurredAt)
+          .slice(0, 5)
+          .map((activity) => ({
+            kind: activity.kind,
+            title: activity.title,
+            url: activity.url,
+            source: activity.source,
+            occurredAt: activity.occurredAt,
+          }));
 
       return json({
         schemaVersion: "you-md/portfolio-graph/v1",
         projects: graph.projects.map((project) => {
           const trackedProject = trackedForProject(project);
-          const docs = [
-            trackedProject?.apiDocsUrl,
-            trackedProject?.mcpDocsUrl,
-            ...project.docs,
-          ].filter((value): value is string => Boolean(value));
+          const stackName = trackedProject?.stackName ?? project.stackName;
+          const docs = preferredDocs(stackName, project.slug, trackedProject?.apiDocsUrl, trackedProject?.mcpDocsUrl, project.docs);
+          const apiDocsUrl = primaryApiDocsUrl(docs);
+          const mcpDocsUrl = primaryMcpDocsUrl(docs);
           return {
             slug: project.slug,
             name: project.name,
-            stackName: trackedProject?.stackName ?? project.stackName,
+            stackName,
             stackSlug: trackedProject?.stackSlug,
             status: project.status,
+            focusStatus: project.focusStatus,
+            focusRank: project.focusRank,
             summary: project.summary,
             detailedDescription: project.detailedDescription,
             goal: project.goal,
@@ -1516,10 +1614,19 @@ http.route({
             productUrl: project.productUrl,
             repoName: trackedProject?.repoName,
             directoryName: trackedProject?.directoryName,
-            apiDocsUrl: trackedProject?.apiDocsUrl,
-            mcpDocsUrl: trackedProject?.mcpDocsUrl,
+            apiDocsUrl,
+            mcpDocsUrl,
+            apiDocsCurlCommand: docsCurlCommand(apiDocsUrl),
+            mcpDocsCurlCommand: docsCurlCommand(mcpDocsUrl),
             docs,
             curlCommand: graphCurlCommand(project.slug),
+            stackInstallCommand: stackInstallCommand(stackName),
+            cloneCommand: cloneCommand(
+              project.repoUrl ?? trackedProject?.url,
+              trackedProject?.directoryName ?? project.repoPath ?? project.slug
+            ),
+            shipped: shippedCountsFor(project.slug),
+            latestShipped: latestShippedFor(project.slug),
             environments: project.environments,
             tags: project.tags,
             source: project.source,
@@ -1528,29 +1635,38 @@ http.route({
             updatedAt: project.updatedAt,
           };
         }),
-        recentTrackedProjects: graph.recentTrackedProjects.map((project) => ({
-          fullName: project.fullName,
-          name: project.name,
-          url: project.url,
-          projectUrl: project.projectUrl,
-          repoName: project.repoName,
-          directoryName: project.directoryName,
-          apiDocsUrl: project.apiDocsUrl,
-          mcpDocsUrl: project.mcpDocsUrl,
-          stackName: project.stackName,
-          stackSlug: project.stackSlug,
-          highLevelGoal: project.highLevelGoal,
-          recentProgress: project.recentProgress,
-          description: project.description,
-          primaryLanguage: project.primaryLanguage,
-          pushedAt: project.pushedAt,
-          commitsLast90d: project.commitsLast90d,
-          isPrivate: project.isPrivate,
-          insight: project.insight,
-          visibility: project.visibility,
-          trackedAt: project.trackedAt,
-          updatedAt: project.updatedAt,
-        })),
+        recentTrackedProjects: graph.recentTrackedProjects.map((project) => {
+          const docs = preferredDocs(project.stackName, project.repoName ?? project.name, project.apiDocsUrl, project.mcpDocsUrl, []);
+          const apiDocsUrl = primaryApiDocsUrl(docs);
+          const mcpDocsUrl = primaryMcpDocsUrl(docs);
+          return {
+            fullName: project.fullName,
+            name: project.name,
+            url: project.url,
+            projectUrl: project.projectUrl,
+            repoName: project.repoName,
+            directoryName: project.directoryName,
+            apiDocsUrl,
+            mcpDocsUrl,
+            apiDocsCurlCommand: docsCurlCommand(apiDocsUrl),
+            mcpDocsCurlCommand: docsCurlCommand(mcpDocsUrl),
+            stackName: project.stackName,
+            stackSlug: project.stackSlug,
+            stackInstallCommand: stackInstallCommand(project.stackName),
+            cloneCommand: cloneCommand(project.url, project.directoryName ?? project.repoName ?? project.name),
+            highLevelGoal: project.highLevelGoal,
+            recentProgress: project.recentProgress,
+            description: project.description,
+            primaryLanguage: project.primaryLanguage,
+            pushedAt: project.pushedAt,
+            commitsLast90d: project.commitsLast90d,
+            isPrivate: project.isPrivate,
+            insight: project.insight,
+            visibility: project.visibility,
+            trackedAt: project.trackedAt,
+            updatedAt: project.updatedAt,
+          };
+        }),
         apiSurfaces: graph.apiSurfaces.map((surface) => ({
           slug: surface.slug,
           name: surface.name,
@@ -1563,9 +1679,9 @@ http.route({
           features: surface.features,
           risk: surface.risk,
           notes: surface.notes,
-          docsUrls: surface.docsUrls,
+          docsUrls: preferredDocs(surface.ownerStack, surface.ownerProjectSlug, undefined, undefined, surface.docsUrls),
           integrationTypes: surface.integrationTypes,
-          curlCommand: surface.curlCommand,
+          curlCommand: surfaceCurlCommand(surface.name, surface.ownerProjectSlug, surface.ownerStack, surface.curlCommand),
           updatedAt: surface.updatedAt,
         })),
         dependencyEdges: graph.dependencyEdges.map((edge) => ({

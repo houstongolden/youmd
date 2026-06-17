@@ -425,17 +425,52 @@ function projectFocusWeight(project: DisplayProject) {
   return projectFocusOption(project.focusStatus).weight;
 }
 
+function docsForProjectStack(stackName?: string, projectSlug?: string) {
+  const normalized = `${stackName ?? ""} ${projectSlug ?? ""}`.toLowerCase();
+  if (normalized.includes("bamf")) {
+    return [
+      "https://bamf.ai/docs",
+      "https://bamf.ai/docs/api/posts",
+      "https://bamf.ai/docs/mcp/overview",
+      "https://bamf.ai/docs/mcp/tools",
+    ];
+  }
+  if (normalized.includes("you")) {
+    return [
+      "https://you.md/api/v1/docs/reference",
+      "https://you.md/.well-known/mcp.json",
+      "https://you.md/api/v1/stacks/capabilities",
+    ];
+  }
+  return [];
+}
+
+function isGenericYouMdDoc(url?: string) {
+  return Boolean(url && (
+    url.includes("you.md/api/v1/docs/reference") ||
+    url.includes("you.md/.well-known/mcp.json") ||
+    url.includes("you.md/api/v1/mcp")
+  ));
+}
+
 function docsForSurface(surface: DisplaySurface) {
-  const fallback = surface.kind === "mcp"
-    ? ["https://you.md/.well-known/mcp.json", "https://you.md/api/v1/mcp"]
-    : surface.kind === "skillstack"
-      ? ["https://you.md/api/v1/skills", "https://you.md/api/v1/stacks/capabilities"]
-      : ["https://you.md/api/v1/docs/reference", "https://you.md/api/v1/docs/openapi.json"];
+  const stackDocs = docsForProjectStack(surface.ownerStack, surface.ownerProject);
+  if (stackDocs.length > 0 && surface.docsUrls.every(isGenericYouMdDoc)) return stackDocs;
+  const fallback = stackDocs.length > 0
+    ? stackDocs
+    : surface.kind === "mcp"
+      ? ["https://you.md/.well-known/mcp.json", "https://you.md/api/v1/mcp"]
+      : surface.kind === "skillstack"
+        ? ["https://you.md/api/v1/skills", "https://you.md/api/v1/stacks/capabilities"]
+        : ["https://you.md/api/v1/docs/reference", "https://you.md/api/v1/docs/openapi.json"];
   return surface.docsUrls.length > 0 ? surface.docsUrls : fallback;
 }
 
 function curlForSurface(surface: DisplaySurface) {
   if (surface.curlCommand) return surface.curlCommand;
+  const normalized = `${surface.name} ${surface.ownerProject} ${surface.ownerStack}`.toLowerCase();
+  if (normalized.includes("bamfos") || normalized.includes("admin")) return "curl -fsSL https://bamf.ai/bamfstack/install.sh | bash";
+  if (normalized.includes("bamf")) return 'curl -H "Authorization: Bearer $BAMF_API_KEY" https://api.bamf.ai/v1/agent/capabilities';
   if (surface.kind === "mcp") return "curl -fsSL https://you.md/.well-known/mcp.json";
   if (surface.kind === "skillstack") return "curl -fsSL https://you.md/api/v1/skills";
   if (surface.ownerProject === "youmd") return 'curl -H "Authorization: Bearer $YOUMD_API_KEY" https://you.md/api/v1/me/portfolio/graph';
@@ -501,9 +536,17 @@ function dedupeStrings(values: Array<string | undefined | null>) {
 }
 
 function projectDocs(project: DisplayProject, trackedProject?: DisplayTrackedProject) {
+  const stackDocs = docsForProjectStack(trackedProject?.stackName ?? project.stack, project.slug);
+  const trackedApiDocs = trackedProject?.apiDocsUrl && !(stackDocs.length > 0 && isGenericYouMdDoc(trackedProject.apiDocsUrl))
+    ? trackedProject.apiDocsUrl
+    : undefined;
+  const trackedMcpDocs = trackedProject?.mcpDocsUrl && !(stackDocs.length > 0 && isGenericYouMdDoc(trackedProject.mcpDocsUrl))
+    ? trackedProject.mcpDocsUrl
+    : undefined;
   return dedupeStrings([
-    trackedProject?.apiDocsUrl,
-    trackedProject?.mcpDocsUrl,
+    trackedApiDocs,
+    trackedMcpDocs,
+    ...stackDocs,
     ...project.docs,
   ]);
 }
