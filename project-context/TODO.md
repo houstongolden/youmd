@@ -31,7 +31,7 @@ PRD Version: 2.3
 - [x] Fix the responsive auto-collapse state so a manual click expands the sidebar immediately instead of being overridden below `1520px`
 - [x] Preserve the narrow-width auto-collapse default until the user explicitly chooses expanded or collapsed
 - [x] Verify with focused dashboard lint, root lint/radius, `git diff --check`, and `npm run build`
-- [ ] Run authenticated visual QA in `/shell` once an attachable logged-in browser session is available
+- [x] Run authenticated visual QA in `/shell` with a real session cookie and verify `56px -> 244px -> 56px` expand/collapse behavior
 
 ### 2026-06-17 — Resident daemon and always-on sync
 - [x] Add a first-class daemon health model for identity/API sync, shared skillstack sync, and project-context sync
@@ -90,6 +90,7 @@ PRD Version: 2.3
 - [x] Add first-class dashboard task editing/triage controls on top of persisted `portfolioTasks` / `brainDumpCaptures`, plus API/MCP task status/priority updates for local agents
 - [x] Add richer persisted task updates for title, description, owner, owner label, project/personal scope, status, priority, due date, and tags through Convex, HTTP, CLI, MCP, and dashboard quick-routing controls
 - [x] Deploy the new task-update HTTP route and rerun authenticated `youmd project task update ...` against production; pre-deploy proof correctly returned `HTTP 404`, post-deploy proof published bundles v116/v119 and merged repo snapshot PR #16
+- [x] Run authenticated local dashboard proof for richer task quick-routing controls: create a no-sync CLI task, route it to human/personal/high/in-progress in `TASK TRIAGE`, then mark it done and verify the open count returns to 5
 - [x] Add CLI/local-agent task and brain-dump invocation proof through You.md MCP/CLI
 - [x] Add first-class persisted update run history for publish/push/PR/merge/mirror steps
 - [x] Extend persisted update history with explicit GitHub check-status and conflict/no-conflict timeline events

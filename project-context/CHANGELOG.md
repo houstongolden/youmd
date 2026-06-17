@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-17 — Authenticated dashboard QA follow-through
+
+### test(web): prove task routing controls and sidebar toggle in a real shell session
+- Minted a real local web session for `@houstongolden` and visually tested `http://localhost:3100/shell` with Playwright.
+- Created no-sync task `rx74n65a3t2e9ew1hqk76xxkn588vy84` through `youmd project task`, verified it appeared in the Portfolio Graph `TASK TRIAGE` list, routed it from `OPEN / LOW / AGENT / YOUMD` to `IN_PROGRESS / HIGH / HUMAN / HOUSTON / PERSONAL` through the dashboard buttons, then clicked `DONE` and verified the open task count returned to `5`.
+- Captured task-control proof screenshots: `/tmp/youmd-task-controls-pre-update-2026-06-17.png` and `/tmp/youmd-task-controls-post-update-2026-06-17.png`.
+- Verified the left shell sidebar no longer gets stuck collapsed: authenticated QA toggled `56px -> 244px -> 56px`, confirmed `Expand sidebar` / `Collapse sidebar` swap, and captured `/tmp/youmd-sidebar-expanded-auth-2026-06-17.png` plus `/tmp/youmd-sidebar-collapsed-auth-2026-06-17.png`.
+- No app-code patch was needed in this pass; this was proof completion and project-context tracking.
+
 ## 2026-06-17 — Richer Portfolio Task Updates
 
 ### feat(api/cli/mcp/web): update task details across project graph surfaces
