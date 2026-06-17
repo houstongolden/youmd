@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Live fresh-machine env-vault bootstrap proof
+
+### fix(web/installer): install You.md without sudo on locked-down npm prefixes
+- Fixed a real fresh-machine blocker found by running the generated bootstrap command against live production: `curl https://you.md/install.sh | bash` failed with `EACCES` when npm tried to write to `/usr/local/lib/node_modules/youmd`.
+- Updated the hosted installer to detect unwritable global npm roots and use a user-writable `~/.youmd/npm-global` prefix, prepend `~/.youmd/bin` to PATH, symlink `youmd`, `you`, and `create-youmd`, and persist the PATH shim without requiring sudo.
+- Verified the installer patch in an isolated fake HOME/source-install run, then deployed commit `052507c` and confirmed live `https://www.you.md/install.sh` contains the user-prefix fallback.
+- Re-ran the live generated bootstrap with `YOUMD_MAX_CLONE_PROJECTS=2` and a disposable encrypted fake env vault. The command installed through the sudo-free prefix, cloned `agent-shared` and `youmd` into `/tmp/youmd-fresh-env-vault-proof-20260617T153402Z/CODE_YOU`, listed/restored `youmd/.env.local` by target path plus variable names/counts only, rehydrated the portfolio graph, and completed with status `0`.
+- Verified the synced machine proof through Convex and authenticated local `/shell`: latest proof row is `READY`, root `/tmp/youmd-fresh-env-vault-proof-20260617T153402Z/CODE_YOU`, `scanned 2 / ready 1 / needs env 0 / partial 0`, and `secret values exposed: false`.
+- Confirmed neither the bootstrap log nor rendered Machine pane exposed the fake secret value. Visual proof: `/tmp/youmd-machine-proof-env-vault-visual-2026-06-17.png`.
+- Remaining gap: run the uncapped command on the actual new computer/clean agent host with the real encrypted env vault and verify full project clone count, skills/symlinks, local servers, resident daemons, and Portfolio Graph sync there.
+
 ## 2026-06-17 — Env-vault preflight for fresh-machine bootstrap
 
 ### feat(cli/web/docs): verify encrypted env vaults before restore
