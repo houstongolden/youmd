@@ -34,8 +34,8 @@ PRD Version: 2.3
 - [x] Teach local MCP `get_agent_brief` and `youmd://agent/brief` to include the portfolio graph, plus expose structured `youmd://portfolio/graph`
 - [x] Self-improve the canonical shared `portfolio-graph-auditor` skill so it requires local agents to verify `get_agent_brief` / `youmd://portfolio/graph`, then sync the shared layer into Claude/Codex/Cursor/Pi and refresh the local You.md skill cache
 - [x] Verify the local agent path end-to-end with real stdio MCP smoke, skill install refreshes, `youmd skill sync`, signed-in browser visual QA, focused CLI tests, lint/radius, and production build
-- [ ] Persist portfolio graph records in Convex and/or repo-backed markdown instead of only the local static data contract
-- [ ] Teach MCP `get_project_context` to include a project-scoped portfolio graph slice before agents create new APIs, MCP routes, stacks, or reusable components
+- [x] Persist portfolio graph records in Convex instead of only the local static data contract
+- [x] Teach MCP `get_project_context` to include a project-scoped portfolio graph slice before agents create new APIs, MCP routes, stacks, or reusable components
 - [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens (deferred per Houston's 2026-06-17 focus change)
 
 ### 2026-06-17 — GitHub sync proof, Projects -> Tasks, and brain-dump routing
@@ -52,9 +52,11 @@ PRD Version: 2.3
 - [x] Run a real local MCP `get_project_context` smoke that proves the portfolio slice is present
 - [x] Run authenticated Chrome web QA against local `/shell`, click `[ update ]`, and verify chat transcript + GitHub icon timestamp behavior
 - [ ] Run the authenticated recent GitHub project analysis refresh and verify 90-day project catalog visibility
-- [ ] Add dashboard hydration for persisted portfolio graph/tasks instead of static-only pane data
+- [x] Add dashboard hydration for persisted portfolio graph records instead of static-only pane data, with static data demoted to bootstrap seed/fallback
+- [ ] Add first-class dashboard task creation/editing and brain-dump invocation on top of persisted `portfolioTasks` / `brainDumpCaptures`
 - [ ] Add first-class persisted update artifacts/history for PR/check/conflict/merge steps
-- [ ] Seed portfolio project detail records with goals, vision, pain points, solution, constraints, not-building, metrics, and competitors for active projects
+- [x] Seed the first persisted portfolio graph records from the dashboard bootstrap model and visually verify the Convex-backed pane
+- [ ] Enrich active project strategy records with vision, pain points, solution, constraints, not-building, metrics, and competitors
 
 ### 2026-06-16 — Mobile capture, voice, Slack, and project routing
 - [x] Preserve the 2026-06-16 Part 2 mobile brain-dump intent safely without private phone numbers or secrets

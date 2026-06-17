@@ -1742,7 +1742,7 @@ export function DashboardContent() {
                     <ProfilePane userId={convexUser._id} username={username} ownerId={convexUser._id} />
                   )}
                   {rightPane === "portfolio" && (
-                    <PortfolioGraphPane />
+                    <PortfolioGraphPane clerkId={user?.id} />
                   )}
                   {rightPane === "portrait" && (
                     <PortraitPane username={username} ownerId={convexUser._id} />

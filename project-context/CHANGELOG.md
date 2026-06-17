@@ -2,6 +2,13 @@
 
 ## 2026-06-17 — GitHub sync proof, portfolio persistence, and project tasks
 
+### feat(web/convex): hydrate portfolio graph dashboard from persisted records
+- Added `portfolio.syncDashboardSeed`, an owner-gated mutation that upserts the dashboard bootstrap graph into `portfolioProjects`, `portfolioApiSurfaces`, `portfolioDependencyEdges`, and `portfolioReusablePatterns`.
+- Refactored the `/shell` Portfolio Graph pane to query `portfolio.listPortfolioGraph`, label whether it is rendering `bootstrap graph` or `convex persisted graph`, and demote the local static graph to a bootstrap/fallback seed.
+- Added a pane-level `persist graph` / `refresh persisted graph` control, task/capture count visibility, and status text for persisted project/surface/edge/pattern counts.
+- Deployed Convex functions to `kindly-cassowary-600` after the first browser proof exposed the new mutation was not yet available to the remote-backed local web session.
+- Verified with `npx convex codegen`, `npx tsc -p convex/tsconfig.json --noEmit`, `npm run test:convex` (421 tests), root `npm run build`, and authenticated Chrome QA at `http://localhost:3100/shell`. The final browser proof showed `CONVEX PERSISTED GRAPH`, 4 projects, 5 surfaces, 4 edges, 5 patterns, and `persisted 4 projects / 5 surfaces / 4 edges / 5 patterns`.
+
 ### feat(convex/cli/web/skills): persist portfolio graph foundations and prove repo update freshness
 - Added persisted Convex portfolio foundations for project strategy records, API/MCP surfaces, dependency edges, reusable patterns, raw brain-dump captures, and owner-aware portfolio tasks.
 - Added owner-gated portfolio queries/mutations for listing the graph, fetching a project slice, upserting projects/tasks, and recording brain dumps.

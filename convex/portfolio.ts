@@ -49,6 +49,63 @@ const taskDraftValidator = v.object({
   tags: v.optional(v.array(v.string())),
 });
 
+const dashboardProjectValidator = v.object({
+  slug: v.string(),
+  name: v.string(),
+  stack: v.string(),
+  status: v.string(),
+  summary: v.string(),
+  goal: v.string(),
+  focus: v.string(),
+  repo: v.optional(v.string()),
+  docs: v.array(v.string()),
+  environments: v.array(v.string()),
+});
+
+const dashboardSurfaceValidator = v.object({
+  slug: v.string(),
+  name: v.string(),
+  kind: v.string(),
+  ownerProject: v.string(),
+  ownerStack: v.string(),
+  trust: v.string(),
+  authMode: v.string(),
+  writePolicy: v.string(),
+  features: v.array(v.string()),
+  risk: v.string(),
+  notes: v.string(),
+});
+
+const dashboardDependencyValidator = v.object({
+  fromProject: v.string(),
+  toSurface: v.string(),
+  tier: v.string(),
+  integrationType: v.string(),
+  features: v.array(v.string()),
+  failureImpact: v.string(),
+});
+
+const dashboardPatternValidator = v.object({
+  slug: v.string(),
+  name: v.string(),
+  status: v.string(),
+  tags: v.array(v.string()),
+  canonicalOwner: v.string(),
+  summary: v.string(),
+});
+
+function githubRepoUrl(repo: string | undefined): string | undefined {
+  if (!repo) return undefined;
+  if (/^https?:\/\//.test(repo)) return repo;
+  if (repo.includes("/")) return `https://github.com/${repo}`;
+  return undefined;
+}
+
+function githubRepoFullName(repo: string | undefined): string | undefined {
+  if (!repo || !repo.includes("/")) return undefined;
+  return repo.replace(/^https:\/\/github\.com\//, "").replace(/\.git$/, "");
+}
+
 export const listPortfolioGraph = query({
   args: {
     clerkId: v.string(),
@@ -111,6 +168,158 @@ export const listPortfolioGraph = query({
       tasks: tasks.sort((a, b) => b.updatedAt - a.updatedAt),
       recentCaptures,
     };
+  },
+});
+
+export const syncDashboardSeed = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    projects: v.array(dashboardProjectValidator),
+    apiSurfaces: v.array(dashboardSurfaceValidator),
+    dependencyEdges: v.array(dashboardDependencyValidator),
+    reusablePatterns: v.array(dashboardPatternValidator),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const now = Date.now();
+    const counts = {
+      projects: 0,
+      apiSurfaces: 0,
+      dependencyEdges: 0,
+      reusablePatterns: 0,
+      created: 0,
+      updated: 0,
+    };
+
+    for (const project of args.projects) {
+      const slug = slugify(project.slug || project.name);
+      const existing = await ctx.db
+        .query("portfolioProjects")
+        .withIndex("by_userId_slug", (q) => q.eq("userId", user._id).eq("slug", slug))
+        .first();
+      const row = {
+        userId: user._id,
+        slug,
+        name: project.name,
+        stackName: project.stack,
+        status: project.status,
+        summary: project.summary,
+        goal: project.goal,
+        focus: project.focus,
+        repoFullName: githubRepoFullName(project.repo),
+        repoUrl: githubRepoUrl(project.repo),
+        docs: optionalStrings(project.docs),
+        environments: optionalStrings(project.environments),
+        painPoints: [],
+        metrics: [],
+        constraints: [],
+        notBuilding: [],
+        competitors: [],
+        tags: optionalStrings([project.stack, project.status]),
+        source: "dashboard-bootstrap",
+        updatedAt: now,
+      };
+      if (existing) {
+        await ctx.db.patch(existing._id, row);
+        counts.updated += 1;
+      } else {
+        await ctx.db.insert("portfolioProjects", { ...row, createdAt: now });
+        counts.created += 1;
+      }
+      counts.projects += 1;
+    }
+
+    for (const surface of args.apiSurfaces) {
+      const slug = slugify(surface.slug || surface.name);
+      const existing = await ctx.db
+        .query("portfolioApiSurfaces")
+        .withIndex("by_userId_slug", (q) => q.eq("userId", user._id).eq("slug", slug))
+        .first();
+      const row = {
+        userId: user._id,
+        slug,
+        name: surface.name,
+        kind: surface.kind,
+        ownerProjectSlug: slugify(surface.ownerProject),
+        ownerStack: surface.ownerStack,
+        trust: surface.trust,
+        authMode: surface.authMode,
+        writePolicy: surface.writePolicy,
+        features: optionalStrings(surface.features),
+        risk: surface.risk,
+        notes: surface.notes,
+        docsUrls: [],
+        integrationTypes: [],
+        updatedAt: now,
+      };
+      if (existing) {
+        await ctx.db.patch(existing._id, row);
+        counts.updated += 1;
+      } else {
+        await ctx.db.insert("portfolioApiSurfaces", { ...row, createdAt: now });
+        counts.created += 1;
+      }
+      counts.apiSurfaces += 1;
+    }
+
+    for (const edge of args.dependencyEdges) {
+      const fromProjectSlug = slugify(edge.fromProject);
+      const toSurfaceSlug = slugify(edge.toSurface);
+      const existing = (await ctx.db
+        .query("portfolioDependencyEdges")
+        .withIndex("by_userId_from", (q) => q.eq("userId", user._id).eq("fromProjectSlug", fromProjectSlug))
+        .collect()).find((row) => row.toSurfaceSlug === toSurfaceSlug);
+      const row = {
+        userId: user._id,
+        fromProjectSlug,
+        toSurfaceSlug,
+        tier: edge.tier,
+        integrationType: edge.integrationType,
+        features: optionalStrings(edge.features),
+        failureImpact: edge.failureImpact,
+        updatedAt: now,
+      };
+      if (existing) {
+        await ctx.db.patch(existing._id, row);
+        counts.updated += 1;
+      } else {
+        await ctx.db.insert("portfolioDependencyEdges", { ...row, createdAt: now });
+        counts.created += 1;
+      }
+      counts.dependencyEdges += 1;
+    }
+
+    for (const pattern of args.reusablePatterns) {
+      const slug = slugify(pattern.slug || pattern.name);
+      const existing = await ctx.db
+        .query("portfolioReusablePatterns")
+        .withIndex("by_userId_slug", (q) => q.eq("userId", user._id).eq("slug", slug))
+        .first();
+      const row = {
+        userId: user._id,
+        slug,
+        name: pattern.name,
+        status: pattern.status,
+        tags: optionalStrings(pattern.tags),
+        techStacks: optionalStrings(pattern.tags.filter((tag) => /next|vite|convex|react|api|mcp|auth|ui/i.test(tag))),
+        canonicalOwnerProject: slugify(pattern.canonicalOwner),
+        summary: pattern.summary,
+        sourcePaths: [],
+        usageProjects: optionalStrings([pattern.canonicalOwner]).map(slugify),
+        updatedAt: now,
+      };
+      if (existing) {
+        await ctx.db.patch(existing._id, row);
+        counts.updated += 1;
+      } else {
+        await ctx.db.insert("portfolioReusablePatterns", { ...row, createdAt: now });
+        counts.created += 1;
+      }
+      counts.reusablePatterns += 1;
+    }
+
+    return counts;
   },
 });
 

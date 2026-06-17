@@ -89,17 +89,23 @@ GitHub status and task/graph paths behave in the actual product.
   chrome moved through `SYNCING`, streamed publish/push/mirror steps, merged
   PR #5 for `houstongolden/houstongolden-you-md`, and returned to
   `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
+- Follow-up authenticated Chrome QA on local `/shell` opened the Portfolio Graph
+  pane, verified the initial bootstrap state, deployed the new Convex mutation,
+  refreshed the pane, and proved it now reads `CONVEX PERSISTED GRAPH` with
+  `4 projects / 5 surfaces / 4 edges / 5 patterns` plus the status line
+  `persisted 4 projects / 5 surfaces / 4 edges / 5 patterns`.
 
 ## Still Open
 
-- Hydrate the Portfolio Graph pane from persisted Convex/repo-backed records
-  instead of only static local data.
+- Export the persisted portfolio graph back into repo-backed markdown snapshots.
 - Run and visually verify the authenticated 90-day GitHub project analysis
   refresh in the dashboard, not only the CLI dry-run.
+- Add first-class dashboard task creation/editing and brain-dump invocation on
+  top of persisted `portfolioTasks` / `brainDumpCaptures`.
 - Add persisted update artifacts/history for PR, conflict, check, merge, and
   mirror-refresh steps.
 - Prove the You Agent can initiate a content/project/task update from shell chat,
   then trigger the repo update loop without relying only on the `[ update ]`
   button.
-- Seed active project strategy records with vision, goals, pain points, solution,
+- Enrich active project strategy records with vision, pain points, solution,
   constraints, not-building notes, metrics, and competitors.
