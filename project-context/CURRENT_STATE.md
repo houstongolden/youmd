@@ -1,7 +1,7 @@
 # You.md — Current State
 
 Last Updated: 2026-06-17
-Latest Verified Production Web Commit: ee60713 ci: add handoff checker json output
+Latest Verified Production Web Commit: 2128639 docs(portfolio): record authenticated dashboard qa proof
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---
@@ -50,7 +50,7 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - `youmd project portfolio-hydrate --root /Users/houstongolden/Desktop/CODE_2025 --days 90 --limit 80` now runs the real local auditor/hydration path: the auditor found 268 project/package candidates, 23 env files, and 97 providers without printing secrets; hydration scanned 129 recent local candidates, upserted 30 local projects, considered 40 GitHub tracked projects, created 36 portfolio rows / updated 4 on the initial corrective run, then final deployed reruns refreshed 40 tracked rows and 30 local-audit rows without duplicates.
 - `youmd project portfolio-hydrate` now also synthesizes active-project strategy fields from local docs and recent activity, including numbered PRD sections and broader `project-context/overview.md`, `tasks.md`/`tasks.json`, `design.md`, `research.md`, and `ideas.md` files where present. The synthesizer skips setup-only README fragments such as `.env.example`, local preview URLs, build commands, and PRD title blocks.
 - The shell `[ update ]` GitHub control now runs the real publish -> repo push -> mirror refresh loop, streams those steps into shell chat, and was authenticated-Chrome verified locally returning from `SYNCING` to `SYNCED / REPO MIRROR CURRENT / JUST NOW` after merging PR #5 in the linked `houstongolden/houstongolden-you-md` repo
-- Local signed-in visual QA passed for the Portfolio Graph pane, APIs + Env Intelligence pane, and `/skills` tracked-project propagation view at `http://localhost:3100/shell`; production dashboard verification is still pending
+- Production signed-in dashboard verification now passed on Vercel deployment `dpl_4DDQihfn488MFgJtMjUkomBFmyPZ`, aliased to `https://www.you.md` / `https://you.md`: authenticated `/api/auth/session` returned `@houstongolden`; production `/shell` rendered the Portfolio Graph with `55 PROJECTS`, `CONVEX PERSISTED GRAPH`, `40 recent GitHub-tracked projects nearby`, `TASK TRIAGE`, and `REUSABLE PATTERNS`; production task `rx795skqcg5xjenrra3qdw39fs88vcbf` was routed via dashboard controls from `OPEN / LOW / AGENT / YOUMD` to `IN_PROGRESS / HIGH / HUMAN / HOUSTON / PERSONAL`, then marked done and active task count returned to `5`; the production sidebar toggled `56px -> 244px -> 56px`; and production `[ update ]` published v124, merged identity sync PR #17, refreshed 53 mirror files, and returned the GitHub chrome to `SYNCED / REPO MIRROR CURRENT / JUST NOW`. Screenshots: `/tmp/youmd-production-task-controls-pre-update-2026-06-17.png`, `/tmp/youmd-production-task-controls-post-update-2026-06-17.png`, `/tmp/youmd-production-task-controls-done-2026-06-17.png`, `/tmp/youmd-production-update-final-2026-06-17.png`, `/tmp/youmd-production-sidebar-expanded-2026-06-17.png`, and `/tmp/youmd-production-sidebar-collapsed-2026-06-17.png`.
 - Local `/shell` now has a signed-in Machine readiness pane under `stacks -> machine` and `/machine`. It reads localhost-only, authenticated, secret-safe machine metadata for resident sync daemons, project clone/package/env-doc readiness, shared skill mirrors, Codex/Claude MCP config presence, and encrypted env-vault tooling. Authenticated Codex in-app Browser QA verified the current root view on `http://localhost:3100/shell`: `3/3` daemons loaded, `61` project directories scanned, `35` git repos, `32` package projects, `17` `.env.local` files, `19` env examples, `21` agent-doc roots, `21` project-context roots, `api key present READY`, env audit/backup/restore scripts ready, `secret values exposed: false`, and fresh-root `CODE_YOU` empty-target blockers. Screenshots: `/tmp/youmd-machine-readiness-pane-2026-06-17-v2.png` and `/tmp/youmd-machine-readiness-stack-env-proof-2026-06-17-v2.png`.
 - Local `/skills` now has a readable local-agent sync proof strip showing `7/10 skills synced`, `portfolio-graph-auditor`, `meta-improve`, `proactive-context-fill`, `get_agent_brief + portfolio graph`, and tracked propagation across `youmd`, `bamfaiapp`, and `bamfsite`; the prior bright orange explainer regression is fixed and screenshot-verified at `/tmp/youmd-skills-pane-sync-proof-2026-06-17-v2.png`
 - Homepage now has a first-class YouStacks section that explains stacks as "your own GStack" for packaging expertise, skills, sub-agents, prompts, workflows, taste, examples, tool rules, safe You.md memory access, and improvement loops; it now explicitly supports naming separate stacks for coding, scientific research, content creation, and other domains, teaches curl-first runtime install instead of a CLI-first mental model, and shows GStack/GBrain reference patterns guiding the architecture
@@ -199,14 +199,15 @@ MVP now requires account creation before profile building. The "no signup requir
 - The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.23`, but npm still serves `0.6.21`. The May 24 and May 25 trusted publish workflow runs passed install, tests, and build, then failed at `npm publish` with `E404 Not Found / no permission`, which points back to npm package Trusted Publishing/package permission configuration rather than local package code. This shell is not logged into npm (`npm whoami` returns `E401`), and the real `npm trust github ...` setup attempt also returns `E401`. The required external step is either npm package settings or an authenticated `npx npm@11.15.0 trust github youmd --repo houstongolden/youmd --file publish-cli.yml --allow-publish --yes`, then rerun `npm run publish:cli`.
 - Production `/api/v1/skills` still needs a Convex seed/deploy pass before the newer bundled `youstack-start`, `youstack-maintainer`, and `machine-bootstrap` skills are fully reflected in the hosted registry; local CLI catalog/build already includes 9 bundled skills
 - Stack-specific GitHub repo sync and stack grants are not live yet. Existing authenticated You.md MCP/API surfaces cover protected memory access for local agents, but scoped per-stack grant tokens remain the next backend slice.
-- Remaining portfolio graph work is mobile/watch capture adapters, production
-  signed-in dashboard verification, clean-host fresh-machine proof, and deeper
-  pattern-quality review/curation. The
+- Remaining portfolio graph work is mobile/watch capture adapters,
+  clean-host fresh-machine proof, and deeper pattern-quality review/curation.
+  The
   Convex-backed graph, dashboard view, auditor skill, project-scoped MCP slice,
   repo-backed graph snapshots, update history, active-project strategy enrichment,
   scanner-derived reusable patterns, richer task update contract, deployed
   production task-update CLI proof, authenticated local dashboard task-control
-  proof, and CLI/API/MCP task/brain-dump write path
+  proof, authenticated production dashboard task-control/GitHub-sync proof,
+  and CLI/API/MCP task/brain-dump write path
   are now implemented and verified.
 
 ### Portrait Sync

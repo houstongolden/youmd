@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Production dashboard and GitHub sync proof
+
+### test(web): verify production Portfolio Graph, task routing, sidebar, and repo update
+- Verified production deployment `dpl_4DDQihfn488MFgJtMjUkomBFmyPZ` was Ready and aliased to `https://www.you.md` / `https://you.md`, then loaded authenticated production `/shell` as `@houstongolden`.
+- Verified the production Portfolio Graph pane shows `55 PROJECTS`, `CONVEX PERSISTED GRAPH`, `40 recent GitHub-tracked projects nearby`, `TASK TRIAGE`, `REUSABLE PATTERNS`, and `hydrate active projects`.
+- Created production no-sync task `rx795skqcg5xjenrra3qdw39fs88vcbf`, routed it through dashboard controls from `OPEN / LOW / AGENT / YOUMD` to `IN_PROGRESS / HIGH / HUMAN / HOUSTON / PERSONAL`, then clicked `DONE` and verified the active task count returned to `5`.
+- Captured production task-control proof screenshots: `/tmp/youmd-production-task-controls-pre-update-2026-06-17.png`, `/tmp/youmd-production-task-controls-post-update-2026-06-17.png`, and `/tmp/youmd-production-task-controls-done-2026-06-17.png`.
+- Clicked production `[ update ]`, watched publish -> GitHub PR -> merge -> mirror refresh complete, and verified the GitHub chrome returned to `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
+- Production update merged identity repo PR #17 (`https://github.com/houstongolden/houstongolden-you-md/pull/17`) at `2026-06-17T13:59:29Z`, pushed `projects/_portfolio/README.md`, `projects/_portfolio/graph.json`, `projects/_portfolio/graph.md`, and `projects/youmd/tasks.md`, refreshed `53 files`, and screenshot proof is `/tmp/youmd-production-update-final-2026-06-17.png`.
+- Verified the production left sidebar toggles `56px -> 244px -> 56px` with expanded labels visible; screenshots: `/tmp/youmd-production-sidebar-expanded-2026-06-17.png` and `/tmp/youmd-production-sidebar-collapsed-2026-06-17.png`.
+
 ## 2026-06-17 — Authenticated dashboard QA follow-through
 
 ### test(web): prove task routing controls and sidebar toggle in a real shell session

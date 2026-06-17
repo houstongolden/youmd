@@ -91,6 +91,7 @@ PRD Version: 2.3
 - [x] Add richer persisted task updates for title, description, owner, owner label, project/personal scope, status, priority, due date, and tags through Convex, HTTP, CLI, MCP, and dashboard quick-routing controls
 - [x] Deploy the new task-update HTTP route and rerun authenticated `youmd project task update ...` against production; pre-deploy proof correctly returned `HTTP 404`, post-deploy proof published bundles v116/v119 and merged repo snapshot PR #16
 - [x] Run authenticated local dashboard proof for richer task quick-routing controls: create a no-sync CLI task, route it to human/personal/high/in-progress in `TASK TRIAGE`, then mark it done and verify the open count returns to 5
+- [x] Run authenticated production `/shell` verification for persisted Portfolio Graph, task controls, sidebar toggling, and production `[ update ]` GitHub sync; task `rx795skqcg5xjenrra3qdw39fs88vcbf` routed correctly, PR #17 merged into `houstongolden/houstongolden-you-md`, and the GitHub chrome returned to `JUST NOW`
 - [x] Add CLI/local-agent task and brain-dump invocation proof through You.md MCP/CLI
 - [x] Add first-class persisted update run history for publish/push/PR/merge/mirror steps
 - [x] Extend persisted update history with explicit GitHub check-status and conflict/no-conflict timeline events
