@@ -109,6 +109,7 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("--limit <n>") + chalk.dim("    (prompt) portfolio graph project cap, default 80"));
   console.log("    " + chalk.cyan("--key <key>") + chalk.dim("   (prompt) embed a You.md API key for non-interactive login"));
   console.log("    " + chalk.cyan("--env-vault <path>") + chalk.dim(" (prompt) encrypted .env.local vault path to restore"));
+  console.log("    " + chalk.cyan("--max-clone-projects <n>") + chalk.dim(" (projects/prompt) cap clones for clean-host proof runs"));
   console.log("    " + chalk.cyan("--max-projects <n>") + chalk.dim(" (verify) project scan cap, default 80"));
   console.log("    " + chalk.cyan("--install-deps") + chalk.dim(" (verify) run bounded dependency installs before checks/probes"));
   console.log("    " + chalk.cyan("--install-timeout-ms <n>") + chalk.dim(" (verify) timeout per dependency install, default 180000"));
@@ -230,6 +231,7 @@ function readRecentGithubProjectsFromGh(days: number): GithubProjectSource[] {
 async function machineProjectsCommand(opts: {
   root?: string;
   days?: string | number;
+  maxCloneProjects?: string | number;
   dryRun?: boolean;
   yes?: boolean;
   clone?: boolean;
@@ -313,10 +315,19 @@ async function machineProjectsCommand(opts: {
   }
   rl?.close();
 
+  const maxCloneProjects = Number(opts.maxCloneProjects || 0);
+  const hasCloneCap = Number.isFinite(maxCloneProjects) && maxCloneProjects > 0;
+  if (hasCloneCap && selected.length > maxCloneProjects) {
+    selected = selected.slice(0, maxCloneProjects);
+  }
+
   console.log("");
   console.log("  " + chalk.bold("machine project bootstrap"));
   console.log(chalk.dim(`  root: ${plan.rootDir}`));
   console.log(chalk.dim(`  selected: ${selected.length} project${selected.length === 1 ? "" : "s"}`));
+  if (hasCloneCap) {
+    console.log(chalk.dim(`  clone cap: ${maxCloneProjects} project${maxCloneProjects === 1 ? "" : "s"} (proof mode)`));
+  }
   console.log(chalk.dim(`  graph inputs: ${plan.sourceCounts.portfolioGraphProjects} portfolio project${plan.sourceCounts.portfolioGraphProjects === 1 ? "" : "s"} / ${plan.sourceCounts.portfolioGraphTrackedProjects} graph-tracked repo${plan.sourceCounts.portfolioGraphTrackedProjects === 1 ? "" : "s"} / ${plan.sourceCounts.githubProjects} gh repo${plan.sourceCounts.githubProjects === 1 ? "" : "s"} / ${plan.sourceCounts.bundleProjects} bundle project${plan.sourceCounts.bundleProjects === 1 ? "" : "s"}`));
   if (plan.skipped.length > 0) {
     console.log(chalk.dim(`  skipped duplicates/unusable: ${plan.skipped.length}`));
@@ -609,7 +620,7 @@ async function machineVerifyCommand(opts: {
   console.log("");
 }
 
-export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxProjects?: string | number; installDeps?: boolean; installTimeoutMs?: string | number; maxInstallProjects?: string | number; runChecks?: boolean; checkScripts?: string; checkTimeoutMs?: string | number; maxCheckProjects?: string | number; probeServers?: boolean; serverTimeoutMs?: string | number; maxServerProjects?: string | number; serverStartPort?: string | number; writeReport?: boolean; syncReport?: boolean; reportPath?: string; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
+export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxCloneProjects?: string | number; maxProjects?: string | number; installDeps?: boolean; installTimeoutMs?: string | number; maxInstallProjects?: string | number; runChecks?: boolean; checkScripts?: string; checkTimeoutMs?: string | number; maxCheckProjects?: string | number; probeServers?: boolean; serverTimeoutMs?: string | number; maxServerProjects?: string | number; serverStartPort?: string | number; writeReport?: boolean; syncReport?: boolean; reportPath?: string; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
   if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
     printHelp();
     return;
@@ -632,6 +643,7 @@ export async function machineCommand(subcommand: string, opts: { force?: boolean
       root: opts.root,
       days: opts.days,
       limit: opts.limit,
+      maxCloneProjects: opts.maxCloneProjects,
       envVaultPath: opts.envVault,
     }));
     console.log("");

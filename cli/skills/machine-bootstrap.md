@@ -40,6 +40,9 @@ You.md is the brain. The new machine should become a runnable local agent workst
    If the web dashboard minted a scoped bootstrap key, the generated prompt may
    include `YOUMD_API_KEY`. Treat that prompt as secret-bearing local setup
    material and do not paste it into public chats, tickets, or docs.
+   For bounded proof runs on a clean local root, add
+   `--max-clone-projects 2` or set `YOUMD_MAX_CLONE_PROJECTS=2`; omit that cap
+   on the real new machine.
 
 3. If You.md is not installed on the new machine, install it:
 
@@ -196,6 +199,12 @@ Generate the copy/paste prompt for a new Claude Code or Codex terminal:
 
 ```bash
 youmd machine prompt --root ~/Desktop/CODE_YOU --days 90 --limit 80
+```
+
+Generate the same prompt but cap clones for a clean-host proof run:
+
+```bash
+youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 90 --limit 80 --max-clone-projects 2
 ```
 
 Fetch the secret-safe project graph directly:

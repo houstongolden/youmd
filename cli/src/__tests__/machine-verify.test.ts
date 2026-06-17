@@ -141,6 +141,43 @@ describe("machine readiness verifier", () => {
     expect(report.results[0].url).toBe("http://127.0.0.1:4390");
   });
 
+  it("classifies non-interactive Convex setup blockers in server probe proof", async () => {
+    const root = makeTempRoot();
+    const projectDir = path.join(root, "youmd");
+    fs.mkdirSync(projectDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDir, "package.json"),
+      JSON.stringify({
+        scripts: {
+          dev: "node fail-convex.js",
+        },
+      }, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(projectDir, "fail-convex.js"),
+      [
+        "console.error('> youmd@0.1.0 predev');",
+        "console.error('> npx convex dev --until-success');",
+        "console.error('Cannot prompt for input in non-interactive terminals. (What would you like to configure?)');",
+        "process.exit(1);",
+      ].join("\n"),
+    );
+
+    const servers = await buildMachineServerProbeReport(root, {
+      timeoutMs: 10_000,
+      maxProjects: 1,
+      startPort: 4490,
+    });
+    const readiness = buildMachineReadinessReport(root);
+    const proof = buildMachineVerificationProof({ readiness, servers });
+
+    expect(servers.totals.failed).toBe(1);
+    expect(servers.results[0].reason).toContain("non-interactive Convex setup required");
+    expect(proof.summary.warnings).toContain(
+      "youmd: non-interactive Convex setup required before dev server start; restore Convex/env config or run convex dev interactively once",
+    );
+  });
+
   it("writes a secret-safe machine proof report", () => {
     const root = makeTempRoot();
     const projectDir = path.join(root, "proof");

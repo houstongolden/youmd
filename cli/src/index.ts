@@ -703,6 +703,7 @@ program
   .option("--root <dir>", "projects: workspace root, default ~/Desktop/CODE_YOU")
   .option("--days <n>", "projects: recent activity window in days", "90")
   .option("--limit <n>", "prompt: portfolio graph project cap", "80")
+  .option("--max-clone-projects <n>", "projects/prompt: cap clone count for clean-host proof runs")
   .option("--max-projects <n>", "verify: maximum project directories to scan", "80")
   .option("--install-deps", "verify: run bounded dependency installs before checks/probes")
   .option("--install-timeout-ms <n>", "verify: timeout per dependency install", "180000")
@@ -732,6 +733,7 @@ program
       root: options.root,
       days: options.days,
       limit: options.limit,
+      maxCloneProjects: options.maxCloneProjects,
       maxProjects: options.maxProjects,
       installDeps: options.installDeps,
       installTimeoutMs: options.installTimeoutMs,

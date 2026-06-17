@@ -99,6 +99,58 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
   }, [load]);
 
   const topProjects = useMemo(() => report?.projects.rows.slice(0, 14) ?? [], [report]);
+  const syncedProofsSection = (
+    <div className="mt-4 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/25 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-65">
+          synced machine records
+        </span>
+        <span className="ml-auto font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
+          {syncedProofs === undefined ? "loading" : `${syncedProofs.length} tracked`}
+        </span>
+      </div>
+      <div className="mt-3 space-y-2">
+        {syncedProofs === undefined && (
+          <div className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-48">
+            reading owner-gated machine proof history...
+          </div>
+        )}
+        {syncedProofs && syncedProofs.length === 0 && (
+          <div className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
+            no synced machine proofs yet. Run `youmd machine verify --write-report --sync-report` from an authenticated CLI.
+          </div>
+        )}
+        {syncedProofs?.map((proof) => (
+          <div key={proof._id} className="grid gap-3 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 py-2 lg:grid-cols-[0.7fr_0.8fr_1fr]">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="truncate font-mono text-[11px] text-[hsl(var(--text-primary))]">{proof.hostName}</span>
+                <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${proofStatusClass(proof.status)}`}>
+                  {proof.status}
+                </span>
+              </div>
+              <div className="mt-1 truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-42">
+                {formatTime(proof.generatedAt)} / {proof.source}
+              </div>
+            </div>
+            <div className="min-w-0 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
+              <div className="truncate">{proof.rootDir}</div>
+              <div className="mt-1 opacity-45">secret values exposed: {String(proof.secretValuesExposed)}</div>
+            </div>
+            <div className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
+              scanned {proof.scanned} / ready {proof.ready} / env {proof.needsEnv} / partial {proof.partial}
+              <div className="mt-1 opacity-45">
+                installs {proof.installPassed} / checks {proof.checksPassed} / servers {proof.serversPassed} / failures {proof.failures}
+              </div>
+              {proof.warnings.length > 0 && (
+                <div className="mt-1 text-[hsl(var(--accent))] opacity-70">{proof.warnings.slice(0, 2).join(" / ")}</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="h-full overflow-y-auto">
@@ -152,6 +204,8 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
             {error}
           </div>
         )}
+
+        {!report && syncedProofsSection}
 
         {report && (
           <>
@@ -245,56 +299,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
               )}
             </div>
 
-            <div className="mt-4 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/25 px-4 py-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-65">
-                  synced machine records
-                </span>
-                <span className="ml-auto font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
-                  {syncedProofs === undefined ? "loading" : `${syncedProofs.length} tracked`}
-                </span>
-              </div>
-              <div className="mt-3 space-y-2">
-                {syncedProofs === undefined && (
-                  <div className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-48">
-                    reading owner-gated machine proof history...
-                  </div>
-                )}
-                {syncedProofs && syncedProofs.length === 0 && (
-                  <div className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
-                    no synced machine proofs yet. Run `youmd machine verify --write-report --sync-report` from an authenticated CLI.
-                  </div>
-                )}
-                {syncedProofs?.map((proof) => (
-                  <div key={proof._id} className="grid gap-3 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 py-2 lg:grid-cols-[0.7fr_0.8fr_1fr]">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="truncate font-mono text-[11px] text-[hsl(var(--text-primary))]">{proof.hostName}</span>
-                        <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${proofStatusClass(proof.status)}`}>
-                          {proof.status}
-                        </span>
-                      </div>
-                      <div className="mt-1 truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-42">
-                        {formatTime(proof.generatedAt)} / {proof.source}
-                      </div>
-                    </div>
-                    <div className="min-w-0 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
-                      <div className="truncate">{proof.rootDir}</div>
-                      <div className="mt-1 opacity-45">secret values exposed: {String(proof.secretValuesExposed)}</div>
-                    </div>
-                    <div className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
-                      scanned {proof.scanned} / ready {proof.ready} / env {proof.needsEnv} / partial {proof.partial}
-                      <div className="mt-1 opacity-45">
-                        installs {proof.installPassed} / checks {proof.checksPassed} / servers {proof.serversPassed} / failures {proof.failures}
-                      </div>
-                      {proof.warnings.length > 0 && (
-                        <div className="mt-1 text-[hsl(var(--accent))] opacity-70">{proof.warnings.slice(0, 2).join(" / ")}</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {syncedProofsSection}
 
             <PaneDivider />
 

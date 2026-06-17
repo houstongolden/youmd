@@ -1617,7 +1617,10 @@ preferences: terminal-native, monochrome
 /new computer
 
 # CLI-only
-youmd machine prompt --root ~/Desktop/CODE_YOU --days 90 --limit 80`}</CodeBlock>
+youmd machine prompt --root ~/Desktop/CODE_YOU --days 90 --limit 80
+
+# Bounded proof run before cloning the full set
+youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 90 --limit 80 --max-clone-projects 2`}</CodeBlock>
             <P>
               The generated command installs You.md, authenticates, pulls and
               syncs your identity bundle, restores shared skills/stacks/agent
@@ -1625,6 +1628,10 @@ youmd machine prompt --root ~/Desktop/CODE_YOU --days 90 --limit 80`}</CodeBlock
               creates <InlineCode>~/Desktop/CODE_YOU</InlineCode>, clones active
               project repos, optionally restores an encrypted env vault, then
               rehydrates local README/project-context/env-key evidence.
+              For clean-host proof runs, add{" "}
+              <InlineCode>--max-clone-projects</InlineCode> or set{" "}
+              <InlineCode>YOUMD_MAX_CLONE_PROJECTS</InlineCode>; omit it on the
+              real new machine to clone the full selected graph-backed set.
             </P>
             <CommandTable
               commands={[

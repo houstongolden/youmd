@@ -135,8 +135,8 @@ GitHub status and task/graph paths behave in the actual product.
   files, `19` env examples, `21` agent-doc roots, `21` project-context roots,
   `api key present READY`, Codex/Claude MCP config readiness, env
   audit/backup/restore readiness, and `secret values exposed: false`. The
-  fresh-root toggle shows the `CODE_YOU` target blocker before a real clean-host
-  run. Screenshots:
+  fresh-root toggle showed the `CODE_YOU` target blocker before the later
+  bounded clean-root proof. Screenshots:
   `/tmp/youmd-machine-readiness-pane-2026-06-17-v2.png` and
   `/tmp/youmd-machine-readiness-stack-env-proof-2026-06-17-v2.png`.
 - The global `youmd` binary on this machine was refreshed from the local
@@ -146,13 +146,12 @@ GitHub status and task/graph paths behave in the actual product.
   restore, and `8` partial projects; `youmd stack daemon status` reports all
   three resident sync daemons loaded.
 - `youmd machine verify` now has the bounded local-run proof path needed before
-  the actual clean-host run: `--install-deps` for capped dependency installs,
+  the actual full new-host run: `--install-deps` for capped dependency installs,
   `--run-checks` for package scripts, and `--probe-servers` for local dev-server
   HTTP probes. The generated fresh-machine command exposes
   `YOUMD_INSTALL_DEPS=1`, `YOUMD_RUN_CHECKS=1`, and `YOUMD_PROBE_SERVERS=1`.
   Compiled CLI smoke verified a disposable project where `npm install` passed
-  and `npm run dev` returned HTTP 200 on localhost; the actual brand-new
-  computer run remains pending.
+  and `npm run dev` returned HTTP 200 on localhost.
 - `youmd machine verify --write-report` now persists a secret-safe proof artifact
   at `~/.youmd/machine-reports/latest.json` plus a timestamped archive. The
   proof includes host/root/status/project totals/install/check/server pass
@@ -180,6 +179,17 @@ GitHub status and task/graph paths behave in the actual product.
   `synced machine records`, `1 tracked`, the same root/totals, warnings, and
   `secret values exposed: false`. Screenshot:
   `/tmp/youmd-machine-proof-sync-records-2026-06-17.png`.
+- Bounded clean-root proof now passed through the real graph-backed setup lane:
+  `youmd machine projects --root
+  /tmp/youmd-clean-host-CODE_YOU-20260617T0714 --days 90
+  --max-clone-projects 2 --yes` read production graph data (`55` projects,
+  `40` graph-tracked repos, `41` recent GitHub repos), cloned `youmd` and
+  `agent-shared`, verified their remotes, wrote/synced a secret-safe proof row,
+  and rendered the synced row in authenticated local `/shell` without a local
+  readiness report. `npm ci` passed for `youmd`; server probing now classifies
+  the remaining blocker as non-interactive Convex first-run setup before dev
+  startup. Screenshot:
+  `/tmp/youmd-local-machine-clean-host-proof-2026-06-17.png`.
 - Authenticated Chrome QA opened `/shell?integration=github`, clicked
   `refresh active projects`, waited through the 90-day GitHub analyzer, and
   verified the dashboard catalog returned with 38 visible `repo:
@@ -339,7 +349,7 @@ GitHub status and task/graph paths behave in the actual product.
 ## Still Open
 
 - Add mobile/watch invocation proof for task and brain-dump capture paths.
-- Run the generated fresh-machine command on an actual clean/new host and
+- Run the uncapped generated fresh-machine command on an actual clean/new host and
   verify cloned projects, restored skills, env vault restore, local servers,
   and portfolio graph sync there.
 - Continue pattern-quality curation as agents find stronger canonical source

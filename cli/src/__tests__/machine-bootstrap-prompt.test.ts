@@ -11,6 +11,7 @@ describe("fresh machine bootstrap prompt", () => {
       root: "~/Desktop/CODE_2026",
       days: 120,
       limit: 44,
+      maxCloneProjects: 3,
       envVaultPath: "~/Desktop/env-local-backup.tar.gz.gpg",
     });
 
@@ -18,13 +19,16 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("YOUMD_CODE_ROOT='~/Desktop/CODE_2026'");
     expect(command).toContain("YOUMD_ACTIVE_DAYS='120'");
     expect(command).toContain("YOUMD_PROJECT_LIMIT='44'");
+    expect(command).toContain("YOUMD_MAX_CLONE_PROJECTS='3'");
     expect(command).toContain("YOUMD_ENV_VAULT='~/Desktop/env-local-backup.tar.gz.gpg'");
     expect(command).toContain("bash -lc");
     expect(command).toContain("curl -fsSL https://you.md/install.sh | bash");
     expect(command).toContain('youmd login --key "$YOUMD_API_KEY"');
     expect(command).toContain('youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT"');
-    expect(command).toContain('youmd machine projects --root "$ROOT" --days "$DAYS" --dry-run');
-    expect(command).toContain('youmd machine projects --root "$ROOT" --days "$DAYS" --yes');
+    expect(command).toContain('PROJECT_ARGS=(--root "$ROOT" --days "$DAYS")');
+    expect(command).toContain('PROJECT_ARGS+=(--max-clone-projects "$YOUMD_MAX_CLONE_PROJECTS")');
+    expect(command).toContain('youmd machine projects "${PROJECT_ARGS[@]}" --dry-run');
+    expect(command).toContain('youmd machine projects "${PROJECT_ARGS[@]}" --yes');
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"');
     expect(command).toContain('youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report');
     expect(command).toContain('YOUMD_RUN_CHECKS');
@@ -47,6 +51,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("audits cloned project readiness without reading secret values");
     expect(prompt).toContain("writes a secret-safe machine proof report");
     expect(prompt).toContain("syncs the proof summary back to your You.md machine dashboard");
+    expect(prompt).toContain("YOUMD_MAX_CLONE_PROJECTS");
     expect(prompt).toContain("YOUMD_RUN_CHECKS=1");
     expect(prompt).toContain("YOUMD_INSTALL_DEPS=1");
     expect(prompt).toContain("YOUMD_PROBE_SERVERS=1");

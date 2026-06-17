@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Bounded clean-host machine proof
+
+### feat(cli/web/docs): add capped clone proofs and show synced machine records on hosted shells
+- Added `--max-clone-projects <n>` to `youmd machine projects` and `youmd machine prompt`, plus generated-command support through `YOUMD_MAX_CLONE_PROJECTS`, so agents can run bounded clean-root proof passes without cloning the full active project set.
+- Updated the web docs and bundled `machine-bootstrap` skill with the proof cap while preserving the uncapped path as the real new-machine default.
+- Classified non-interactive Convex first-run setup failures in `youmd machine verify --probe-servers`, so machine proof warnings now say `non-interactive Convex setup required before dev server start; restore Convex/env config or run convex dev interactively once` instead of a generic server failure.
+- Moved synced machine proof records in the Machine pane outside the localhost-only readiness-report branch, so hosted/production shells can still show owner-gated synced proof history when `/api/local/machine-readiness` is unavailable.
+- Ran the compiled clean-root proof at `/tmp/youmd-clean-host-CODE_YOU-20260617T0714`: production graph input reported `55` portfolio projects, `40` graph-tracked repos, and `41` recent GitHub repos; the capped run cloned `youmd` and `agent-shared`, verified remotes, wrote secret-safe proof JSON, and synced the proof row to You.md with `secretValuesExposed: false`.
+- Ran bounded install/server proof: `npm ci` passed for `youmd`; the dev-server probe failed only because Convex tried to prompt in a non-interactive terminal before startup.
+- Verified the synced proof through the production API and authenticated local `/shell` visual QA: the Machine pane shows the clean root, `FAILED`, `secret values exposed: false`, `scanned 2 / ready 0 / env 1 / partial 0`, and the classified Convex blocker. Local screenshot: `/tmp/youmd-local-machine-clean-host-proof-2026-06-17.png`.
+
 ## 2026-06-17 — Production dashboard and GitHub sync proof
 
 ### test(web): verify production Portfolio Graph, task routing, sidebar, and repo update

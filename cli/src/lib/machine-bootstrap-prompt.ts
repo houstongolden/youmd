@@ -7,6 +7,7 @@ export interface FreshMachineBootstrapOptions {
   root?: string;
   days?: string | number;
   limit?: string | number;
+  maxCloneProjects?: string | number;
   envVaultPath?: string;
 }
 
@@ -50,10 +51,14 @@ export function buildFreshMachineBootstrapScript(): string {
     "fi",
     'echo "[you.md] hydrating portfolio graph from You.md/GitHub before local clone"',
     'youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true',
+    'PROJECT_ARGS=(--root "$ROOT" --days "$DAYS")',
+    'if [ -n "${YOUMD_MAX_CLONE_PROJECTS:-}" ]; then',
+    '  PROJECT_ARGS+=(--max-clone-projects "$YOUMD_MAX_CLONE_PROJECTS")',
+    "fi",
     'echo "[you.md] previewing graph-backed project setup plan"',
-    'youmd machine projects --root "$ROOT" --days "$DAYS" --dry-run || true',
+    'youmd machine projects "${PROJECT_ARGS[@]}" --dry-run || true',
     'echo "[you.md] creating code workspace and cloning active project repos"',
-    'youmd machine projects --root "$ROOT" --days "$DAYS" --yes',
+    'youmd machine projects "${PROJECT_ARGS[@]}" --yes',
     'if [ -n "${YOUMD_ENV_VAULT:-}" ]; then',
     '  echo "[you.md] restoring encrypted .env.local vault"',
     '  youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"',
@@ -99,6 +104,7 @@ export function buildFreshMachineBootstrapCommand(options: FreshMachineBootstrap
     envAssignment("YOUMD_CODE_ROOT", options.root),
     envAssignment("YOUMD_ACTIVE_DAYS", options.days ?? DEFAULT_FRESH_MACHINE_DAYS),
     envAssignment("YOUMD_PROJECT_LIMIT", options.limit ?? DEFAULT_FRESH_MACHINE_LIMIT),
+    envAssignment("YOUMD_MAX_CLONE_PROJECTS", options.maxCloneProjects),
     envAssignment("YOUMD_ENV_VAULT", options.envVaultPath),
   ].filter((value): value is string => Boolean(value));
 
@@ -120,7 +126,7 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
     command,
     "```",
     "",
-    `What it does: installs You.md, authenticates, pulls/syncs identity, restores shared agent skills/stacks, fetches and hydrates the persisted portfolio graph, previews the graph-backed project setup plan, creates ${root}, clones active projects from the last ${days} days, restores an encrypted env vault if supplied, rehydrates local evidence, audits cloned project readiness without reading secret values, writes a secret-safe machine proof report, syncs the proof summary back to your You.md machine dashboard, optionally runs bounded package checks with YOUMD_RUN_CHECKS=1, optionally runs clean-host dependency installs with YOUMD_INSTALL_DEPS=1, optionally smoke-probes local dev servers with YOUMD_PROBE_SERVERS=1, and starts resident sync daemons.`,
+    `What it does: installs You.md, authenticates, pulls/syncs identity, restores shared agent skills/stacks, fetches and hydrates the persisted portfolio graph, previews the graph-backed project setup plan, creates ${root}, clones active projects from the last ${days} days, restores an encrypted env vault if supplied, rehydrates local evidence, audits cloned project readiness without reading secret values, writes a secret-safe machine proof report, syncs the proof summary back to your You.md machine dashboard, optionally caps clone count for proof runs with YOUMD_MAX_CLONE_PROJECTS, optionally runs bounded package checks with YOUMD_RUN_CHECKS=1, optionally runs clean-host dependency installs with YOUMD_INSTALL_DEPS=1, optionally smoke-probes local dev servers with YOUMD_PROBE_SERVERS=1, and starts resident sync daemons.`,
     "",
     `Project source: You.md portfolio graph + authenticated GitHub recent repos, capped at ${limit} tracked projects before local audit evidence is merged.`,
     "Secret rule: .env.local values are never embedded here. Use YOUMD_ENV_VAULT or run the printed env restore command with your encrypted vault on the new machine.",

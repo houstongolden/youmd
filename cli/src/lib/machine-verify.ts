@@ -288,6 +288,17 @@ function outputTail(value: string, maxLength = 1200): string {
   return redactSensitive(tail);
 }
 
+function classifyMachineFailure(output: string, fallback?: string): string | undefined {
+  const normalized = output.toLowerCase();
+  if (normalized.includes("cannot prompt for input in non-interactive terminals") && normalized.includes("convex")) {
+    return "non-interactive Convex setup required before dev server start; restore Convex/env config or run convex dev interactively once";
+  }
+  if (normalized.includes("cannot prompt for input in non-interactive terminals")) {
+    return "non-interactive setup prompt blocked fresh-host run";
+  }
+  return fallback;
+}
+
 function sanitizeForProof<T>(value: T): T {
   return JSON.parse(redactSensitive(JSON.stringify(value))) as T;
 }
@@ -645,6 +656,7 @@ export async function runMachineServerProbes(
       earlyExit,
     ]);
     const durationMs = Date.now() - startedAt;
+    const tail = outputTail(output);
     stopChild(child);
 
     results.push({
@@ -655,8 +667,8 @@ export async function runMachineServerProbes(
       status: probe.status,
       statusCode: "statusCode" in probe ? probe.statusCode : undefined,
       durationMs,
-      outputTail: outputTail(output),
-      reason: probe.reason,
+      outputTail: tail,
+      reason: classifyMachineFailure(tail, probe.reason),
     });
   }
 
@@ -801,6 +813,10 @@ export function buildMachineVerificationProof(options: {
     options.installs && options.installs.results.length === 0 ? "no package projects were available for dependency install" : "",
     options.checks && options.checks.results.length === 0 ? "no package projects had requested check scripts" : "",
     options.servers && options.servers.results.length === 0 ? "no package projects had dev servers to probe" : "",
+    ...(options.servers?.results ?? [])
+      .filter((result) => result.status === "failed" || result.status === "timeout")
+      .map((result) => result.reason ? `${result.dirName}: ${result.reason}` : "")
+      .filter(Boolean),
   ].filter(Boolean);
 
   return {
