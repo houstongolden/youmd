@@ -58,6 +58,17 @@ describe("portfolio repo update history", () => {
       clerkId: CLERK,
       runId,
       order: 20,
+      stepKey: "github:github-checks-merge-gate",
+      label: "check GitHub merge gate",
+      status: "pending",
+      detail: "required checks are still pending",
+      metadata: { prNumber: 11, checkState: "pending" },
+      completedAt: Date.now(),
+    });
+    await asOwner.mutation(api.portfolio.appendRepoUpdateStep, {
+      clerkId: CLERK,
+      runId,
+      order: 30,
       stepKey: "push",
       label: "push identity files",
       status: "success",
@@ -101,8 +112,14 @@ describe("portfolio repo update history", () => {
       mirrorFileCount: 50,
     });
     expect(runs[0].pushedFiles).toEqual(["you.md", "you.json", "projects/youmd/tasks.md"]);
-    expect(runs[0].steps.map((step) => step.stepKey)).toEqual(["publish", "push"]);
-    expect(runs[0].steps[1].metadata).toEqual({ prNumber: 11 });
+    expect(runs[0].steps.map((step) => step.stepKey)).toEqual(["publish", "github:github-checks-merge-gate", "push"]);
+    expect(runs[0].steps[1]).toMatchObject({
+      label: "check GitHub merge gate",
+      status: "pending",
+      detail: "required checks are still pending",
+      metadata: { prNumber: 11, checkState: "pending" },
+    });
+    expect(runs[0].steps[2].metadata).toEqual({ prNumber: 11 });
   });
 
   it("does not let another owner append to someone else's update run", async () => {

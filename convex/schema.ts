@@ -782,7 +782,7 @@ export default defineSchema({
     order: v.number(),
     stepKey: v.string(),
     label: v.string(),
-    status: v.string(), // "running" | "success" | "failed" | "skipped"
+    status: v.string(), // "running" | "success" | "failed" | "skipped" | "pending"
     detail: v.optional(v.string()),
     metadata: v.optional(v.any()),
     startedAt: v.optional(v.number()),

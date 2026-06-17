@@ -52,7 +52,7 @@ const taskDraftValidator = v.object({
 const TASK_STATUSES = ["proposed", "open", "in_progress", "done", "snoozed", "cancelled"] as const;
 const TASK_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 const UPDATE_RUN_STATUSES = ["running", "success", "failed"] as const;
-const UPDATE_STEP_STATUSES = ["running", "success", "failed", "skipped"] as const;
+const UPDATE_STEP_STATUSES = ["running", "success", "failed", "skipped", "pending"] as const;
 
 function normalizeTaskStatus(value: string | undefined, fallback: string): string {
   const next = value?.trim();

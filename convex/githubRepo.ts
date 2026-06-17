@@ -7,6 +7,7 @@ import { requireOwner } from "./lib/auth";
 import { decryptSecret, encryptSecret } from "./lib/secretCrypto";
 import { isGithubAppConfigured, mintInstallationToken } from "./githubApp";
 import { agentPushViaPR } from "./githubAgentSync";
+import type { AgentPushTimelineEvent } from "./githubAgentSync";
 
 /**
  * GitHub repo actions (Phase 2): create or connect the user's own You.md repo
@@ -667,6 +668,7 @@ export const pushToRepo = action({
         prUrl: prResult.prUrl,
         merged: prResult.merged,
         branchRecreated: prResult.branchRecreated,
+        timeline: prResult.timeline,
       };
     } catch (prErr) {
       console.warn(
@@ -678,6 +680,13 @@ export const pushToRepo = action({
     // Direct push fallback (e.g. PR path unavailable).
     let commitSha: string | undefined;
     const pushed: string[] = [];
+    const directTimeline: AgentPushTimelineEvent[] = [{
+      key: "direct-push-fallback",
+      label: "use direct push fallback",
+      status: "success",
+      detail: "PR route unavailable; writing changed files with GitHub contents API",
+      metadata: { branch, fileCount: files.length },
+    }];
     for (const file of files) {
       const existing = await getRepoFile(token, fullName, file.path, branch);
       // Skip writing if content is byte-identical (avoids empty commits).
@@ -694,6 +703,13 @@ export const pushToRepo = action({
         )) ?? commitSha;
       pushed.push(file.path);
     }
+    directTimeline.push({
+      key: "direct-push-files",
+      label: "write changed files directly",
+      status: "success",
+      detail: pushed.length === 0 ? "repo already matched current identity files" : `wrote ${pushed.length} file${pushed.length === 1 ? "" : "s"}`,
+      metadata: { branch, pushed, commitSha: commitSha ?? null },
+    });
 
     await ctx.runMutation(internal.github.internalMarkSynced, {
       connectionId: context.connectionId,
@@ -706,6 +722,7 @@ export const pushToRepo = action({
       commitSha: commitSha ?? null,
       upToDate: pushed.length === 0,
       via: "direct" as const,
+      timeline: directTimeline,
     };
   },
 });

@@ -242,6 +242,13 @@ async function openPR(
 }
 
 type MergeResult = { sha: string | null };
+export type AgentPushTimelineEvent = {
+  key: string;
+  label: string;
+  status: "success" | "failed" | "skipped" | "pending";
+  detail?: string;
+  metadata?: Record<string, unknown>;
+};
 
 /**
  * Merge a PR. Falls back to enabling repository auto-merge when the
@@ -342,6 +349,7 @@ export type AgentPushViaPRResult = {
   mergeCommitSha: string | null;
   merged: boolean;
   branchRecreated: boolean;
+  timeline: AgentPushTimelineEvent[];
 };
 
 /**
@@ -401,6 +409,7 @@ export async function agentPushViaPR(
 
   const token = await resolveToken(ctx, conn);
   const defaultBranch = conn.repoDefaultBranch || "main";
+  const timeline: AgentPushTimelineEvent[] = [];
 
   // Get HEAD of default branch.
   const headSha = await getBranchSha(token, fullName, defaultBranch);
@@ -409,11 +418,18 @@ export async function agentPushViaPR(
       `Default branch "${defaultBranch}" has no commits yet. Push at least one commit first.`
     );
   }
+  timeline.push({
+    key: "default-branch-head",
+    label: "resolve default branch head",
+    status: "success",
+    detail: `${defaultBranch}@${headSha.slice(0, 12)}`,
+    metadata: { branch: defaultBranch, sha: headSha },
+  });
 
   // Generate a short-lived, unique branch name.
   const agentBranch = `you-md-agent-${Date.now()}`;
 
-  async function commitFilesToBranch(baseSha: string, branch: string): Promise<void> {
+  async function commitFilesToBranch(baseSha: string, branch: string): Promise<string> {
     // Create blobs for each file.
     const entries: Array<{ path: string; blobSha: string }> = [];
     for (const file of files) {
@@ -440,10 +456,23 @@ export async function agentPushViaPR(
     } else {
       await createRef(token, fullName, branch, commitSha);
     }
+    return commitSha;
   }
 
   // Step 1: create branch + commit files.
-  await commitFilesToBranch(headSha, agentBranch);
+  const branchCommitSha = await commitFilesToBranch(headSha, agentBranch);
+  timeline.push({
+    key: "agent-branch-commit",
+    label: "create sync branch commit",
+    status: "success",
+    detail: `${agentBranch}@${branchCommitSha.slice(0, 12)}`,
+    metadata: {
+      branch: agentBranch,
+      commitSha: branchCommitSha,
+      fileCount: files.length,
+      files: files.map((file) => file.path),
+    },
+  });
 
   // Step 2: open PR.
   const prBody = [
@@ -463,6 +492,13 @@ export async function agentPushViaPR(
     message,
     prBody
   );
+  timeline.push({
+    key: "pull-request-opened",
+    label: "open identity sync PR",
+    status: "success",
+    detail: `PR #${prNumber}`,
+    metadata: { prNumber, prUrl, branch: agentBranch, base: defaultBranch },
+  });
 
   if (!autoMerge) {
     return {
@@ -472,6 +508,7 @@ export async function agentPushViaPR(
       mergeCommitSha: null,
       merged: false,
       branchRecreated: false,
+      timeline,
     };
   }
 
@@ -480,9 +517,23 @@ export async function agentPushViaPR(
   // always correct) then force-merging the PR against the fresh base.
   let branchRecreated = false;
   let mergeResult: MergeResult;
+  timeline.push({
+    key: "merge-attempt",
+    label: "attempt squash merge",
+    status: "success",
+    detail: `PR #${prNumber}`,
+    metadata: { prNumber, mergeMethod: "squash" },
+  });
 
   try {
     mergeResult = await mergePR(token, fullName, prNumber);
+    timeline.push({
+      key: "conflict-check",
+      label: "check merge conflict state",
+      status: "skipped",
+      detail: "no merge conflict reported by GitHub",
+      metadata: { prNumber },
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     const isConflict = msg.includes("409");
@@ -498,6 +549,13 @@ export async function agentPushViaPR(
       `[githubAgentSync] PR #${prNumber} on ${fullName}: merge conflict (409). ` +
         `Re-creating branch from latest default HEAD and re-applying files.`
     );
+    timeline.push({
+      key: "merge-conflict-detected",
+      label: "detect merge conflict",
+      status: "success",
+      detail: "GitHub returned 409; recreating branch from latest default branch",
+      metadata: { prNumber, branch: agentBranch },
+    });
     await deleteBranch(token, fullName, agentBranch);
 
     const freshHeadSha = await getBranchSha(token, fullName, defaultBranch);
@@ -506,19 +564,49 @@ export async function agentPushViaPR(
         "Cannot resolve fresh HEAD for conflict resolution — default branch may be empty."
       );
     }
-    await commitFilesToBranch(freshHeadSha, agentBranch);
+    const retryCommitSha = await commitFilesToBranch(freshHeadSha, agentBranch);
     branchRecreated = true;
+    timeline.push({
+      key: "conflict-retry-branch-recreated",
+      label: "recreate branch from latest head",
+      status: "success",
+      detail: `${agentBranch}@${retryCommitSha.slice(0, 12)}`,
+      metadata: {
+        prNumber,
+        branch: agentBranch,
+        baseSha: freshHeadSha,
+        commitSha: retryCommitSha,
+      },
+    });
     // Retry merge once after rebase.
     mergeResult = await mergePR(token, fullName, prNumber);
   }
+  timeline.push(
+    mergeResult.sha
+      ? {
+          key: "github-checks-merge-gate",
+          label: "check GitHub merge gate",
+          status: "success",
+          detail: "GitHub accepted the merge immediately",
+          metadata: { prNumber, mergeCommitSha: mergeResult.sha },
+        }
+      : {
+          key: "github-checks-merge-gate",
+          label: "check GitHub merge gate",
+          status: "pending",
+          detail: "GitHub did not return a merge commit; required checks or manual merge may still be pending",
+          metadata: { prNumber },
+        }
+  );
 
   return {
     ok: true,
     prNumber,
     prUrl,
     mergeCommitSha: mergeResult.sha,
-    merged: true,
+    merged: Boolean(mergeResult.sha),
     branchRecreated,
+    timeline,
   };
 }
 

@@ -206,13 +206,27 @@ GitHub status and task/graph paths behave in the actual product.
   linked GitHub repo`, and `refresh server mirror` steps.
 - Visual proof screenshot:
   `/tmp/youmd-update-history-proof-2026-06-17-pr12.png`.
+- Follow-up update history timeline work now records GitHub-specific steps from
+  the PR helper. A real authenticated Codex in-app Browser run clicked local
+  `[ update ]`, streamed explicit `check merge conflict state` and
+  `check GitHub merge gate` transcript lines, merged PR #13, and refreshed the
+  mirror to 50 files.
+- The expanded persisted PR #13 history row showed `resolve default branch
+  head`, `create sync branch commit`, `open identity sync PR`,
+  `attempt squash merge`, `check merge conflict state`, `check GitHub merge
+  gate`, and `refresh server mirror` rows.
+- GitHub independently verified PR #13 as `MERGED` at
+  `2026-06-17T10:15:47Z` with merge commit
+  `ceaf1771eca3e9f58eb8fbe8d13bef4b152e9621`.
+- Visual proof screenshots:
+  `/tmp/youmd-update-history-timeline-proof-2026-06-17-pr13.png` and
+  `/tmp/youmd-update-history-timeline-detail-proof-2026-06-17-pr13.png`.
 
 ## Still Open
 
 - Export the persisted portfolio graph back into repo-backed markdown snapshots.
 - Add mobile/watch invocation proof for task and brain-dump capture paths.
-- Extend persisted update history with explicit GitHub check-status and
-  conflict-resolution retry timeline rows beyond the current PR/merge/commit/
-  mirror first slice.
+- Add a forced-conflict regression test or staging proof for the 409
+  branch-recreation retry path in GitHub update history.
 - Enrich active project strategy records with vision, pain points, solution,
   constraints, not-building notes, metrics, and competitors.

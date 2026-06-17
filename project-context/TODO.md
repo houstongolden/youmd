@@ -85,7 +85,8 @@ PRD Version: 2.3
 - [x] Add first-class dashboard task editing/triage controls on top of persisted `portfolioTasks` / `brainDumpCaptures`, plus API/MCP task status/priority updates for local agents
 - [x] Add CLI/local-agent task and brain-dump invocation proof through You.md MCP/CLI
 - [x] Add first-class persisted update run history for publish/push/PR/merge/mirror steps
-- [ ] Extend persisted update history with explicit GitHub check-status and conflict-resolution retry timeline events
+- [x] Extend persisted update history with explicit GitHub check-status and conflict/no-conflict timeline events
+- [ ] Add a forced-conflict regression test or staging proof for the 409 branch-recreation retry path
 - [x] Seed the first persisted portfolio graph records from the dashboard bootstrap model and visually verify the Convex-backed pane
 - [x] Run the real `portfolio-graph-auditor` hydration path against recent GitHub/local activity and verify the Portfolio Graph shows 55 persisted projects instead of only the 4-project bootstrap seed
 - [ ] Enrich active project strategy records with vision, pain points, solution, constraints, not-building, metrics, and competitors

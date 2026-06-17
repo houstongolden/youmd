@@ -1294,11 +1294,25 @@ export function DashboardContent() {
     const repoName = githubConnection?.repoFullName ?? repoMirror?.repoFullName ?? `you.md/${shellUsername}`;
     setRepoUpdateBusy(true);
     let updateRunId: Id<"repoUpdateRuns"> | null = null;
+    type RepoUpdateStepStatus = "running" | "success" | "failed" | "skipped" | "pending";
+    type PushTimelineEvent = {
+      key: string;
+      label: string;
+      status?: string;
+      detail?: string;
+      metadata?: unknown;
+    };
+    const normalizeStepStatus = (status: string | undefined): RepoUpdateStepStatus => {
+      if (status === "running" || status === "success" || status === "failed" || status === "skipped" || status === "pending") {
+        return status;
+      }
+      return "success";
+    };
     const recordStep = async (step: {
       order: number;
       stepKey: string;
       label: string;
-      status: "running" | "success" | "failed" | "skipped";
+      status: RepoUpdateStepStatus;
       detail?: string;
       metadata?: unknown;
       completedAt?: number;
@@ -1377,7 +1391,11 @@ export function DashboardContent() {
         prNumber?: number | null;
         merged?: boolean;
         branchRecreated?: boolean;
+        timeline?: PushTimelineEvent[];
       };
+      const timelineLines = (pushResult.timeline ?? []).map((event) =>
+        `> ${event.label}: ${event.detail ?? event.status ?? "recorded"}`
+      );
       const pushLines = [
         "[update step 2 complete]",
         "",
@@ -1388,6 +1406,7 @@ export function DashboardContent() {
         pushResult.prUrl ? `> pr: ${pushResult.prUrl}` : null,
         pushResult.merged === true ? "> merge: complete" : pushResult.merged === false ? "> merge: pending or manual" : null,
         pushResult.branchRecreated ? "> conflict: branch recreated from latest default branch and retried" : null,
+        ...timelineLines,
       ].filter(Boolean);
       await recordStep({
         order: 20,
@@ -1400,6 +1419,17 @@ export function DashboardContent() {
         metadata: pushResult,
         completedAt: Date.now(),
       });
+      for (const [index, event] of (pushResult.timeline ?? []).entries()) {
+        await recordStep({
+          order: 21 + index,
+          stepKey: `github:${event.key}`,
+          label: event.label,
+          status: normalizeStepStatus(event.status),
+          detail: event.detail,
+          metadata: event.metadata,
+          completedAt: Date.now(),
+        });
+      }
       agent.addSystemMessage(pushLines.join("\n"));
 
       const mirrorResult = await syncMirror({ clerkId: user.id }) as {
