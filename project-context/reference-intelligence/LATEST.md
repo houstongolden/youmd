@@ -1,6 +1,6 @@
 # You.md Reference Intelligence
 
-Last updated: 2026-06-15T15:31:00.696Z
+Last updated: 2026-06-16T15:32:27.178Z
 
 You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under `.reference-repos/` and are ignored by git.
 
@@ -42,15 +42,13 @@ npm run references:sync
 - URL: https://github.com/steipete/agent-scripts
 - Local path: `.reference-repos/steipete/agent-scripts`
 - Branch: `main`
-- Latest commit: `cb78a4ad65fc`
-- Mode: Changes since 448cfa9
+- Latest commit: `6e512e6fe054`
+- Mode: Changes since cb78a4a
 
-- `cb78a4a` 2026-06-15 — docs: group skills for skills.sh (#12)
-  Files: `skills.sh.json`
-- `7cdf065` 2026-06-15 — docs: add locked-mac Git fallback
+- `6e512e6` 2026-06-16 — docs: guard image uploads by device context
   Files: `AGENTS.MD`, `CHANGELOG.md`
-- `29c0423` 2026-06-15 — docs: require improving generated PR code
-  Files: `AGENTS.MD`, `CHANGELOG.md`
+- `a6f1c52` 2026-06-16 — fix: support macOS Bash release paths
+  Files: `skills/release-mac-app/scripts/lib/mac_release.sh`
 
 ## The Library
 
@@ -64,9 +62,7 @@ npm run references:sync
 
 ## Candidate Tasks
 
+- [ ] Cross-agent instruction portability: Review whether this upstream shared-instruction pattern should improve `youmd skill init-project`, host adapters, or repo-local pointer rules.
+  Source: Agent Scripts 6e512e6: docs: guard image uploads by device context
 - [ ] YouStacks skill ergonomics: Compare this skill packaging or validation pattern against bundled skills, stack manifests, and `youmd stack doctor` warnings.
-  Source: Agent Scripts cb78a4a: docs: group skills for skills.sh (#12)
-- [ ] Cross-agent instruction portability: Review whether this upstream shared-instruction pattern should improve `youmd skill init-project`, host adapters, or repo-local pointer rules.
-  Source: Agent Scripts 7cdf065: docs: add locked-mac Git fallback
-- [ ] Cross-agent instruction portability: Review whether this upstream shared-instruction pattern should improve `youmd skill init-project`, host adapters, or repo-local pointer rules.
-  Source: Agent Scripts 29c0423: docs: require improving generated PR code
+  Source: Agent Scripts a6f1c52: fix: support macOS Bash release paths
