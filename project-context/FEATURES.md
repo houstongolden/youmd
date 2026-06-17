@@ -18,7 +18,7 @@ Last Updated: 2026-06-17
 - Production signed-in shell proof now passed for the portfolio/task/sidebar/GitHub-sync loop: deployment `dpl_4DDQihfn488MFgJtMjUkomBFmyPZ` was Ready, `/shell` authenticated as `@houstongolden`, Portfolio Graph rendered `55 PROJECTS`, task `rx795skqcg5xjenrra3qdw39fs88vcbf` routed from `OPEN / LOW / AGENT / YOUMD` to `IN_PROGRESS / HIGH / HUMAN / HOUSTON / PERSONAL` and then `DONE`, the sidebar toggled `56px -> 244px -> 56px`, and production `[ update ]` merged identity repo PR #17 with portfolio/task snapshot files before returning the GitHub chrome to `JUST NOW`.
 - Artifact workspace now has a richer markdown viewer in the Files pane with edit/preview/split modes, document metadata, heading outline, and copy controls.
 - Hosted skill registry parity is now production-verified: Convex `skills.seedBundledSkills` seeds all 10 bundled/local-agent skills (`youstack-start`, `youstack-maintainer`, `machine-bootstrap`, `portfolio-graph-auditor`, `claude-md-generator`, `project-context-init`, `voice-sync`, `meta-improve`, `proactive-context-fill`, and `you-logs`), the live Convex Site `/api/v1/skills` registry returns `count: 10`, and full-content lookups verify `machine-bootstrap` exposes graph-backed machine setup while `portfolio-graph-auditor` exposes `get_agent_brief` and env-audit instructions.
-- Canonical web-domain skill registry parity is implemented locally: `src/app/api/v1/skills/route.ts` proxies the Convex skill registry through `https://www.you.md/api/v1/skills`, docs now mark the route as `convex + next`, and local proof returns `count: 10` plus full `portfolio-graph-auditor` content. Production `www` proof is pending the Vercel deploy for this commit.
+- Canonical web-domain skill registry parity is production-verified: `src/app/api/v1/skills/route.ts` proxies the Convex skill registry through `https://www.you.md/api/v1/skills`, docs now mark the route as `convex + next`, local proof returned `count: 10`, and production proof returned `count: 10` on `www`, followed apex `https://you.md/api/v1/skills` successfully, verified full `machine-bootstrap` content, and confirmed public CORS `OPTIONS`.
 
 ## Core Platform
 
@@ -288,7 +288,7 @@ Last Updated: 2026-06-17
 |---|---|---|
 | Skill catalog (YAML) | Done | youmd-skills.yaml with entries, scope, identity_fields |
 | Template engine | Done | {{var}} interpolation against live brain data |
-| Bundled skills (10) | Done deployed | youstack-start, youstack-maintainer, machine-bootstrap, portfolio-graph-auditor, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs; local catalog/build verified, production Convex registry reseeded/deployed, and the web-domain `/api/v1/skills` proxy is implemented locally pending Vercel production proof |
+| Bundled skills (10) | Done deployed | youstack-start, youstack-maintainer, machine-bootstrap, portfolio-graph-auditor, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs; local catalog/build verified, production Convex registry reseeded/deployed, and the web-domain `/api/v1/skills` proxy is production-verified |
 | Install / Remove | Done | Global ~/.youmd/skills/ + batch all |
 | Use (render) | Done | Interpolate + readiness check + display |
 | Sync (re-interpolate) | Done | Manual + auto on push/pull/sync |

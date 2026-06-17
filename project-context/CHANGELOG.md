@@ -5,7 +5,7 @@
 ### feat(web): expose hosted skill registry through the web domain
 - Added same-origin `GET /api/v1/skills` and `OPTIONS /api/v1/skills` Next routes that proxy the Convex skill registry, preserving query strings, upstream status, JSON bodies, cache headers, and public CORS headers.
 - Regenerated the agent docs/OpenAPI references so `/api/v1/skills` is documented as `convex + next`, matching the README/docs examples that use `https://you.md/api/v1/skills`.
-- Verified local `http://localhost:3100/api/v1/skills` returns `count: 10`, verified `?name=portfolio-graph-auditor` returns full content with `get_agent_brief` and `env-key-audit.py`, and confirmed production `https://www.you.md/api/v1/skills` currently 404s before this web deployment lands.
+- Verified local `http://localhost:3100/api/v1/skills` returns `count: 10`, verified `?name=portfolio-graph-auditor` returns full content with `get_agent_brief` and `env-key-audit.py`, then verified production `https://www.you.md/api/v1/skills` returns `count: 10`, apex `https://you.md/api/v1/skills` follows to the same registry, `?name=machine-bootstrap` returns full graph-backed setup content, and `OPTIONS` returns public CORS headers.
 
 ## 2026-06-17 — Hosted skill registry parity
 
