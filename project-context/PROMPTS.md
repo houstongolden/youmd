@@ -122,6 +122,17 @@ Auto-maintained — new messages appended each session.
 
 ---
 
+## Session: 2026-06-17 (new-computer-30-day-first-bootstrap)
+
+**2026-06-17 20:53:37 UTC**
+> continue rememebr the goal is that i can run this you.md curl command with the prompt and my api key included from the you shell or wherever on my new computer to have my you agent inside claude code/codex on my brand new computer use the skill to creat the CODE_YOU directory on my Desktop and mkdir each truly active project lets say in the last 30 days to start and then if I want the agent will absolutely ask me if I want them to finish all active projects from last 90 days before calling the job/goal completed.
+>
+> continue at this point - I have to run whatever you've got i need to get my new computer setup NOW.
+>
+> Continue the You.md portfolio graph, project/task intelligence, brain-dump/task extraction, and GitHub sync proof work without prematurely marking completion: persist portfolio/project graph data, expose project-scoped MCP context, add Projects→Tasks/task-owner foundations, document and plan the brain-dump-to-tasks skill/workflow, and visually verify authenticated web/CLI agent update behavior including GitHub sync status where implemented or clearly identify the exact blocker.
+
+---
+
 ## Session: 2026-06-17 (machine-proof-sync-continuation)
 
 **2026-06-17 13:08:29 UTC**

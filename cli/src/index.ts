@@ -706,9 +706,10 @@ program
   .command("machine [subcommand]")
   .description("set up a new machine with your synced skills, stacks, and agent config")
   .option("--root <dir>", "projects: workspace root, default ~/Desktop/CODE_YOU")
-  .option("--days <n>", "projects: recent activity window in days", "90")
+  .option("--days <n>", "projects: recent activity window in days", "30")
   .option("--limit <n>", "prompt: portfolio graph project cap", "80")
   .option("--max-clone-projects <n>", "projects/prompt: cap clone count for clean-host proof runs")
+  .option("--recent-only", "projects: skip projects outside the activity window without prompting")
   .option("--max-projects <n>", "verify: maximum project directories to scan", "80")
   .option("--install-deps", "verify: run bounded dependency installs before checks/probes")
   .option("--install-timeout-ms <n>", "verify: timeout per dependency install", "180000")
@@ -740,6 +741,7 @@ program
       days: options.days,
       limit: options.limit,
       maxCloneProjects: options.maxCloneProjects,
+      recentOnly: options.recentOnly,
       maxProjects: options.maxProjects,
       installDeps: options.installDeps,
       installTimeoutMs: options.installTimeoutMs,

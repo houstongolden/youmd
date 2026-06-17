@@ -8,6 +8,9 @@ PRD Version: 2.3
 ## COMPLETED
 
 ### 2026-06-17 — Graph-backed fresh-computer bootstrap prompt
+- [x] Change the generated new-computer bootstrap to a 30-day first pass into `~/Desktop/CODE_YOU`, with `--recent-only` preventing older projects from being prompted/included before the explicit 90-day expansion gate
+- [x] Make `/new computer` / `youmd machine prompt` ask before expanding to the 90-day active project set, and only report full 90-day project setup complete after that expansion runs
+- [x] Verify the compiled 30-day recent-only planner against the persisted portfolio graph: `56` projects / `40` tracked repos / `30` selected / `12` skipped outside the 30-day window
 - [x] Add `youmd machine prompt` to generate a one-command Claude Code/Codex fresh-computer setup artifact
 - [x] Make the generated command install You.md, authenticate, pull/sync identity, restore shared skills/stacks, hydrate the portfolio graph before cloning, clone active projects into `~/Desktop/CODE_YOU`, restore encrypted env vaults when provided, rehydrate local evidence, and start resident sync daemons
 - [x] Update the bundled `machine-bootstrap` skill so local agents use the portfolio graph + GitHub/local audit hydration path instead of a static checklist
@@ -32,6 +35,7 @@ PRD Version: 2.3
 - [x] Deploy/reseed/verify strict env-vault skill registry parity: GitHub CI and Convex Deploy passed on `bf4f5e4`, Vercel production is ready, `skills:seedBundledSkills` refreshed all 10 hosted skills, and public `machine-bootstrap` content exposes `--require-env-vault` / `YOUMD_REQUIRE_ENV_VAULT`
 - [x] Run the strict generated command with a real encrypted env vault in a disposable temp-home/root proof: uncapped graph plan selected 43 active projects, cloned 41 repos, restored 17 `.env.local` files + 3 agent-auth files without printing values, synced a proof row with 48 scanned / 25 ready / 8 needs-env / 4 partial / `secretValuesExposed: false`, and completed status 0
 - [x] Fix full-path fresh-machine proof blockers found by the real-vault run: force the `machine` CLI action to exit cleanly after `machine projects --yes`, and add `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` timeout guards around generated portfolio hydration calls
+- [x] Add a compatibility guard to generated fresh-machine commands so source/current installs use `--recent-only`, while fallback older npm installs force noninteractive project planning via stdin from `/dev/null` instead of blocking on older-project prompts
 - [ ] Run the generated command end-to-end on the actual brand-new computer / separate clean agent host with a real encrypted env vault and visually verify projects, skills, env vault restore, local servers, resident daemons, Machine pane proof row, and portfolio graph sync there
 
 ### 2026-06-17 — Shell sidebar expand/collapse regression
@@ -93,7 +97,7 @@ PRD Version: 2.3
 - [x] Verify the exact-doc/curl fallback fix on production `www.you.md` with an authenticated Browser session and owner API read-back for `bamfaiapp`
 - [x] Add a true dense Portfolio Graph scan mode plus clearer selected-project actions (`open detail`, `timeline`, `api docs`, `mcp`) and labeled graph/API/MCP/stack/clone command snippets that are readable without bright orange blocks
 - [x] Restore local-agent CLI help discoverability for `youmd project task --help`, `youmd project braindump --help`, and `youmd project --help`
-- [ ] Run authenticated Codex in-app Browser visual QA for the latest dense/detail polish and confirm dense rows, project click-through, labeled command snippets, API/MCP action chips, and no unreadable bright-orange blocks render correctly
+- [x] Run authenticated Codex in-app Browser visual QA for the latest dense/detail polish and confirm dense rows, project click-through, labeled command snippets, API/MCP action chips, and no unreadable bright-orange blocks render correctly. Screenshots: `/tmp/youmd-portfolio-latest-details-shipped-focus-proof-2026-06-17.png`, `/tmp/youmd-portfolio-project-detail-links-proof-2026-06-17.png`, `/tmp/youmd-portfolio-project-graph-command-block-proof-2026-06-17.png`
 - [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens (deferred per Houston's 2026-06-17 focus change)
 
 ### 2026-06-17 — GitHub sync proof, Projects -> Tasks, and brain-dump routing

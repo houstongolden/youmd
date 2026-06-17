@@ -509,7 +509,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
         <div className="space-y-2">
           <CommandRow command="youmd skill install all" description="install all bundled skills" />
           <CommandRow command="/new computer" description="mint a scoped key and generate a one-command fresh-machine setup prompt" />
-          <CommandRow command="youmd machine prompt --root ~/Desktop/CODE_YOU --days 90" description="terminal-generated Claude/Codex bootstrap command" />
+          <CommandRow command="youmd machine prompt --root ~/Desktop/CODE_YOU --days 30" description="terminal-generated Claude/Codex bootstrap command" />
           <CommandRow command="/skill use portfolio-graph-auditor" description="audit projects, APIs, env keys, and reuse candidates" />
           <CommandRow command="youmd project portfolio-audit --root ~/Desktop/CODE_2025" description="local project/API/env portfolio scan" />
           <CommandRow command="youmd skill use youstack-maintainer" description="organize or improve a named stack" />

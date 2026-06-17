@@ -1,5 +1,26 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio visual proof and bootstrap fallback
+
+### fix(cli/web): make fresh-machine project planning tolerate older installed runtimes
+- Added a compatibility guard to both generated fresh-machine scripts: detect `youmd machine --help` for `--recent-only`, use it when present, and otherwise run `youmd machine projects` with stdin from `/dev/null` so older fallback npm installs cannot hang on older-project prompts.
+- Re-verified the generated command shape after the fallback patch: the script still starts with the 30-day project set, still asks before 90-day expansion, and still refuses to call the full project set complete unless the expansion runs.
+- Authenticated Codex in-app Browser QA covered the latest dense Portfolio Graph UI at `http://localhost:3100/shell?tab=portfolio&project=youmd#project-detail`: `56 / 56`, shipped `today` / `7d` / `30d` / `90d`, search/focus/sort interactions, clickable You.md detail/timeline links, full ranked focus options, exact API/MCP docs URLs, portfolio graph curl, docs curl, stack install, repo clone command, and no unreadable orange blocks.
+- Screenshots: `/tmp/youmd-portfolio-latest-details-shipped-focus-proof-2026-06-17.png`, `/tmp/youmd-portfolio-project-detail-links-proof-2026-06-17.png`, and `/tmp/youmd-portfolio-project-graph-command-block-proof-2026-06-17.png`.
+- Verification: `npm --prefix cli run test -- machine-bootstrap-prompt.test.ts`, `npm --prefix cli run build`, compiled `node cli/dist/index.js machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80` smoke, `npm run build`, and `git diff --check`.
+
+## 2026-06-17 — Fresh-machine 30-day-first bootstrap
+
+### feat(cli/web): make new-computer setup start with truly active 30-day projects
+- Changed the generated fresh-machine bootstrap contract from 90-day-first to a 30-day first pass targeting `~/Desktop/CODE_YOU`.
+- Added `youmd machine projects --recent-only` so the initial clone/directory pass skips projects outside the selected activity window without prompting or silently including them.
+- Updated the CLI `youmd machine prompt` and web shell `/new computer` generators to hydrate the portfolio graph, preview/clone the 30-day set with `--recent-only`, write/sync a machine proof, then ask before expanding to all active 90-day projects.
+- Added honest completion language: the generated script only reports full 90-day project setup complete after the expansion runs; otherwise it reports a 30-day setup pass with 90-day expansion still open.
+- Updated bundled `machine-bootstrap` skill text, docs, Help pane, and Skills pane examples to teach `--days 30` as the default new-computer flow.
+- Verification: `npm --prefix cli run test -- machine-bootstrap-prompt.test.ts`, `npm --prefix cli run build`, compiled `node cli/dist/index.js machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80` smoke, compiled `node cli/dist/index.js machine projects --root /tmp/youmd-recent-only-smoke-CODE_YOU --days 30 --recent-only --dry-run --no-github` proof (`56` persisted projects / `40` tracked repos / `30` selected / `12` skipped outside 30d), `npm run lint` (existing warnings only), and `npm run build`.
+- Immediate rescue command was provided in-chat for the new computer; it uses the current runtime and prompts before the 90-day expansion.
+- Remaining gap: run the generated command on the actual brand-new computer with the real bootstrap key/env vault and verify synced skills, project clones, daemons, Machine pane proof, and Portfolio Graph sync there.
+
 ## 2026-06-17 — Portfolio dense detail polish and CLI help recovery
 
 ### feat(shell/cli): make portfolio project rows denser and graph commands more legible

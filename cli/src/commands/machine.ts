@@ -105,12 +105,13 @@ function printHelp(): void {
   console.log("");
   console.log("  " + chalk.dim("Options:"));
   console.log("    " + chalk.cyan("--root <dir>") + chalk.dim("   (projects) workspace root, default ~/Desktop/CODE_YOU"));
-  console.log("    " + chalk.cyan("--days <n>") + chalk.dim("     (projects) recent activity window, default 90"));
+  console.log("    " + chalk.cyan("--days <n>") + chalk.dim("     (projects) recent activity window, default 30"));
   console.log("    " + chalk.cyan("--limit <n>") + chalk.dim("    (prompt) portfolio graph project cap, default 80"));
   console.log("    " + chalk.cyan("--key <key>") + chalk.dim("   (prompt) embed a You.md API key for non-interactive login"));
   console.log("    " + chalk.cyan("--env-vault <path>") + chalk.dim(" (prompt) encrypted .env.local vault path to restore"));
   console.log("    " + chalk.cyan("--require-env-vault") + chalk.dim(" (prompt) fail setup proof unless YOUMD_ENV_VAULT is restored"));
   console.log("    " + chalk.cyan("--max-clone-projects <n>") + chalk.dim(" (projects/prompt) cap clones for clean-host proof runs"));
+  console.log("    " + chalk.cyan("--recent-only") + chalk.dim(" (projects) skip projects outside the activity window without prompting"));
   console.log("    " + chalk.cyan("--max-projects <n>") + chalk.dim(" (verify) project scan cap, default 80"));
   console.log("    " + chalk.cyan("--install-deps") + chalk.dim(" (verify) run bounded dependency installs before checks/probes"));
   console.log("    " + chalk.cyan("--install-timeout-ms <n>") + chalk.dim(" (verify) timeout per dependency install, default 180000"));
@@ -233,6 +234,7 @@ async function machineProjectsCommand(opts: {
   root?: string;
   days?: string | number;
   maxCloneProjects?: string | number;
+  recentOnly?: boolean;
   dryRun?: boolean;
   yes?: boolean;
   clone?: boolean;
@@ -259,7 +261,7 @@ async function machineProjectsCommand(opts: {
     if (answer) rootDir = expandHome(answer);
   }
 
-  const activeDays = Number(opts.days || 90);
+  const activeDays = Number(opts.days || 30);
   let portfolioGraph: Record<string, unknown> | null = null;
   if (isAuthenticated()) {
     const graphRes = await getPortfolioGraph({ includeTasks: true });
@@ -279,22 +281,25 @@ async function machineProjectsCommand(opts: {
 
   const githubProjects = opts.github === false ? [] : readRecentGithubProjectsFromGh(activeDays);
   if (githubProjects.length > 0) {
-    console.log(chalk.dim(`  github: found ${githubProjects.length} repo${githubProjects.length === 1 ? "" : "s"} pushed within ${activeDays || 90}d`));
+    console.log(chalk.dim(`  github: found ${githubProjects.length} repo${githubProjects.length === 1 ? "" : "s"} pushed within ${activeDays || 30}d`));
   } else if (opts.github !== false) {
     console.log(chalk.dim("  github: no authenticated recent repos found; using local You.md project records"));
   }
 
   const plan = buildMachineProjectPlan(youJson, {
     rootDir,
-    activeDays: Number.isFinite(activeDays) && activeDays > 0 ? activeDays : 90,
+    activeDays: Number.isFinite(activeDays) && activeDays > 0 ? activeDays : 30,
     githubProjects,
     portfolioGraph,
   });
 
   let selected = [...plan.recent];
-  if (plan.older.length > 0) {
+  if (plan.older.length > 0 && opts.recentOnly) {
     console.log("");
-    console.log(chalk.dim(`  older projects outside the ${activeDays || 90}d window:`));
+    console.log(chalk.dim(`  skipped ${plan.older.length} project${plan.older.length === 1 ? "" : "s"} outside the ${activeDays || 30}d activity window (--recent-only)`));
+  } else if (plan.older.length > 0) {
+    console.log("");
+    console.log(chalk.dim(`  older projects outside the ${activeDays || 30}d window:`));
     for (const candidate of plan.older) {
       console.log(chalk.dim(`    - ${candidate.name} (${candidate.reason})`));
     }
@@ -621,7 +626,7 @@ async function machineVerifyCommand(opts: {
   console.log("");
 }
 
-export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxCloneProjects?: string | number; maxProjects?: string | number; installDeps?: boolean; installTimeoutMs?: string | number; maxInstallProjects?: string | number; runChecks?: boolean; checkScripts?: string; checkTimeoutMs?: string | number; maxCheckProjects?: string | number; probeServers?: boolean; serverTimeoutMs?: string | number; maxServerProjects?: string | number; serverStartPort?: string | number; writeReport?: boolean; syncReport?: boolean; reportPath?: string; key?: string; envVault?: string; requireEnvVault?: boolean; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
+export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxCloneProjects?: string | number; recentOnly?: boolean; maxProjects?: string | number; installDeps?: boolean; installTimeoutMs?: string | number; maxInstallProjects?: string | number; runChecks?: boolean; checkScripts?: string; checkTimeoutMs?: string | number; maxCheckProjects?: string | number; probeServers?: boolean; serverTimeoutMs?: string | number; maxServerProjects?: string | number; serverStartPort?: string | number; writeReport?: boolean; syncReport?: boolean; reportPath?: string; key?: string; envVault?: string; requireEnvVault?: boolean; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
   if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
     printHelp();
     return;
