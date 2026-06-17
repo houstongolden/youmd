@@ -226,36 +226,94 @@ function TextBlock({ lines }: { lines: string[] }) {
 }
 
 function CodeBlock({ lang, content }: { lang?: string; content: string }) {
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const copyLabel = content.includes("YOUMD_CODE_ROOT") && content.includes("https://you.md/install.sh")
+    ? "copy command"
+    : "copy";
+  const isFreshMachineCommand = copyLabel === "copy command";
+  const copyButtonClass = isFreshMachineCommand
+    ? "relative z-30 text-[10px] font-mono text-[hsl(var(--text-secondary))] bg-[hsl(var(--bg))] px-1 opacity-70 hover:!opacity-90 transition-opacity cursor-pointer pointer-events-auto"
+    : "relative z-30 text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-0 group-hover:opacity-50 hover:!opacity-80 transition-opacity cursor-pointer pointer-events-auto";
+  const preClass = isFreshMachineCommand
+    ? "bg-[hsl(var(--bg))] px-3 py-2 text-[11px] font-mono text-[hsl(var(--accent-mid))] leading-relaxed whitespace-pre-wrap break-words max-h-[320px] overflow-auto"
+    : "bg-[hsl(var(--bg))] px-3 py-2 text-[11px] font-mono text-[hsl(var(--accent-mid))] leading-relaxed whitespace-pre-wrap break-words overflow-hidden";
 
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  const handleCopy = useCallback(async () => {
+    let didCopy = false;
+
+    try {
+      if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(content);
+        didCopy = true;
+      }
+    } catch {
+      didCopy = false;
+    }
+
+    if (!didCopy) {
+      const textarea = document.createElement("textarea");
+      const selection = document.getSelection();
+      const selectedRange = selection?.rangeCount ? selection.getRangeAt(0) : null;
+      let copyEventHandled = false;
+      const handleCopyEvent = (event: ClipboardEvent) => {
+        event.clipboardData?.setData("text/plain", content);
+        event.preventDefault();
+        copyEventHandled = true;
+      };
+
+      textarea.value = content;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.top = "-9999px";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      document.addEventListener("copy", handleCopyEvent);
+      textarea.focus();
+      textarea.select();
+      try {
+        didCopy = document.execCommand("copy") || copyEventHandled;
+      } finally {
+        document.removeEventListener("copy", handleCopyEvent);
+        document.body.removeChild(textarea);
+        if (selectedRange && selection) {
+          selection.removeAllRanges();
+          selection.addRange(selectedRange);
+        }
+      }
+    }
+
+    setCopyStatus(didCopy ? "copied" : "failed");
+    setTimeout(() => setCopyStatus("idle"), 1500);
   }, [content]);
 
+  const copyText = copyStatus === "copied" ? "copied" : copyStatus === "failed" ? "copy failed" : copyLabel;
+
   return (
-    <div className="my-2 border border-[hsl(var(--border))] overflow-hidden relative group" style={{ borderRadius: "var(--radius)" }}>
+    <div className="my-2 border border-[hsl(var(--border))] overflow-hidden relative isolate group" style={{ borderRadius: "var(--radius)" }}>
       {lang && (
-        <div className="bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-3 py-1 flex items-center justify-between">
+        <div className="relative z-20 bg-[hsl(var(--bg))] border-b border-[hsl(var(--border))] px-3 py-1 flex items-center justify-between">
           <span className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-40">{lang}</span>
           <button
             onClick={handleCopy}
-            className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-0 group-hover:opacity-50 hover:!opacity-80 transition-opacity cursor-pointer"
+            aria-label={copyLabel}
+            title={copyLabel}
+            className={copyButtonClass}
           >
-            {copied ? "copied" : "copy"}
+            {copyText}
           </button>
         </div>
       )}
       {!lang && (
         <button
           onClick={handleCopy}
-          className="absolute top-1.5 right-2 text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-0 group-hover:opacity-50 hover:!opacity-80 transition-opacity cursor-pointer"
+          aria-label={copyLabel}
+          title={copyLabel}
+          className={`absolute top-1.5 right-2 ${copyButtonClass}`}
         >
-          {copied ? "copied" : "copy"}
+          {copyText}
         </button>
       )}
-      <pre className="bg-[hsl(var(--bg))] px-3 py-2 text-[11px] font-mono text-[hsl(var(--accent-mid))] leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
+      <pre className={preClass}>
         {content}
       </pre>
     </div>

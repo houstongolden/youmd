@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Fresh-machine command copy reliability
+
+### fix(shell): make `/new computer` command copying real
+- Fresh-machine code blocks now use a visible `copy command` button instead of the generic hover-only copy affordance.
+- The 7k+ generated setup command is bounded to an internal scroll area so the copy control stays reachable instead of being pushed far above the visible shell.
+- Clipboard writes now use the secure Clipboard API when available, fall back through an explicit `copy` event + `execCommand`, and show `copy failed` if neither path succeeds.
+- Authenticated Codex in-app Browser proof clicked the real `/shell` `copy command` button and verified, in redacted form, that the clipboard contains the full generated command with `ym_...` bootstrap key, `~/Desktop/CODE_YOU`, `YOUMD_REQUIRE_ENV_VAULT=1`, hosted install curl, `--recent-only`, active/focus setup gate, and the interactive 90-day expansion prompt, with no `.env.local=` or `sk-...` secret patterns.
+- Verification: `npx tsc --noEmit`, focused `npx eslint src/components/terminal/TerminalBlocks.tsx` (existing `<img>` warning only), CLI/web fresh-machine parity specs through Vitest, `npm run lint` (existing warnings only), `npm run build`, and authenticated browser clipboard proof.
+- Remaining gap: the long-running fresh-machine goal is still open until the copied command runs on the actual new computer with the real encrypted env vault and synced proof row.
+
 ## 2026-06-17 — Portfolio dedicated project detail pages
 
 ### fix(portfolio): turn project detail into a drill-in page
