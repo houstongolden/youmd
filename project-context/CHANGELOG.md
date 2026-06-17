@@ -2,6 +2,12 @@
 
 ## 2026-06-17 — Persisted shell update history
 
+### test(convex): prove GitHub 409 branch-recreation retry timeline
+- Added `convex/githubAgentSync.test.ts` covering the forced 409 merge-conflict path without touching a real repository.
+- The test mocks the GitHub HTTP boundary, forces the first PR merge attempt to return `409`, verifies the agent deletes the stale sync branch, resolves a fresh default-branch HEAD, recreates the branch, retries merge, and returns `branchRecreated: true`.
+- Pinned the emitted timeline keys for the conflict path: `merge-conflict-detected`, `conflict-retry-branch-recreated`, and final `github-checks-merge-gate`.
+- Verified with `npm run test:convex -- convex/githubAgentSync.test.ts`.
+
 ### feat(web/convex): add GitHub check and conflict timeline rows
 - Threaded structured timeline events out of `agentPushViaPR`, including default-branch head resolution, sync branch commit, PR open, squash merge attempt, conflict/no-conflict state, conflict branch recreation when needed, and GitHub merge-gate result.
 - Returned that timeline from `githubRepo.pushToRepo` for PR and direct-push paths.
@@ -10,7 +16,7 @@
 - Deployed Convex to `kindly-cassowary-600`.
 - Verified with focused Convex tests, `npx convex codegen`, `npx tsc --noEmit --pretty false`, `npm run lint`, authenticated Codex in-app Browser QA, and GitHub PR #13 cross-check.
 - Visual proof: clicked local `[ update ]`, observed PR #13 merge, expanded the latest account-pane history row, and confirmed persisted rows for `resolve default branch head`, `create sync branch commit`, `open identity sync PR`, `attempt squash merge`, `check merge conflict state`, `check GitHub merge gate`, and `refresh server mirror`. Screenshots: `/tmp/youmd-update-history-timeline-proof-2026-06-17-pr13.png` and `/tmp/youmd-update-history-timeline-detail-proof-2026-06-17-pr13.png`.
-- Remaining: add a forced-conflict regression test or staging proof for the 409 branch-recreation retry path.
+- Follow-up added a forced 409 regression test for the branch-recreation retry path.
 
 ### feat(web/convex): store and render repo update run artifacts
 - Added owner-scoped `repoUpdateRuns` and `repoUpdateSteps` Convex tables for shell/GitHub update history.
@@ -20,7 +26,7 @@
 - Deployed Convex to `kindly-cassowary-600`.
 - Verified with focused Convex tests, `npx convex codegen`, `npx tsc --noEmit --pretty false`, `npm run docs:check`, `npm run lint`, `npm run build`, and authenticated Codex in-app Browser QA.
 - Visual proof: clicked local `[ update ]`, observed GitHub chrome return to `synced / repo mirror current / just now`, merged PR #12, refreshed 50 mirrored files, expanded the account-pane history row, and confirmed `published v109`, pushed five files, `open PR #12`, commit `021870e5a1f0`, plus start/publish/push/mirror steps. Screenshot: `/tmp/youmd-update-history-proof-2026-06-17-pr12.png`.
-- Follow-up added explicit GitHub check-status and conflict/no-conflict timeline rows; the remaining gap is a forced 409 conflict-path proof.
+- Follow-up added explicit GitHub check-status and conflict/no-conflict timeline rows, then a forced 409 conflict-path regression proof.
 
 ## 2026-06-17 — Authenticated shell update proof
 

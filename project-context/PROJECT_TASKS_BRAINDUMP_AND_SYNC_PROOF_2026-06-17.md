@@ -221,12 +221,15 @@ GitHub status and task/graph paths behave in the actual product.
 - Visual proof screenshots:
   `/tmp/youmd-update-history-timeline-proof-2026-06-17-pr13.png` and
   `/tmp/youmd-update-history-timeline-detail-proof-2026-06-17-pr13.png`.
+- Forced 409 conflict-path proof is now covered by
+  `convex/githubAgentSync.test.ts`: the test mocks GitHub, makes the first
+  PR merge return `409`, and verifies stale branch deletion, fresh default-head
+  branch recreation, merge retry, `branchRecreated: true`, and conflict
+  timeline rows.
 
 ## Still Open
 
 - Export the persisted portfolio graph back into repo-backed markdown snapshots.
 - Add mobile/watch invocation proof for task and brain-dump capture paths.
-- Add a forced-conflict regression test or staging proof for the 409
-  branch-recreation retry path in GitHub update history.
 - Enrich active project strategy records with vision, pain points, solution,
   constraints, not-building notes, metrics, and competitors.
