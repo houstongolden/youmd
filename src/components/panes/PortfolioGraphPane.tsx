@@ -871,14 +871,13 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     }
     return map;
   }, [trackedProjects]);
-  const effectiveSelectedProjectSlug = selectedProjectSlug && activeProjects.some((project) => project.slug === selectedProjectSlug)
-    ? selectedProjectSlug
-    : activeProjects[0]?.slug;
-  const selectedProject = effectiveSelectedProjectSlug
-    ? projectBySlug.get(effectiveSelectedProjectSlug)
+  const selectedProject = selectedProjectSlug
+    ? projectBySlug.get(selectedProjectSlug)
     : undefined;
-  const selectedActivities = effectiveSelectedProjectSlug
-    ? activitiesByProject.get(effectiveSelectedProjectSlug) ?? []
+  const effectiveSelectedProjectSlug = selectedProject?.slug;
+  const isProjectDetailView = Boolean(selectedProjectSlug);
+  const selectedActivities = selectedProject
+    ? activitiesByProject.get(selectedProject.slug) ?? []
     : [];
   const selectedLastUpdatedAt = selectedProject
     ? projectLastUpdatedAt(selectedProject, selectedActivities)
@@ -891,8 +890,8 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const selectedDependencyEdges = selectedProject
     ? activeEdges.filter((edge) => edge.fromProject === selectedProject.slug)
     : [];
-  const selectedTrackedProject = effectiveSelectedProjectSlug
-    ? trackedBySlug.get(effectiveSelectedProjectSlug)
+  const selectedTrackedProject = selectedProject
+    ? trackedBySlug.get(selectedProject.slug)
     : undefined;
   const selectedGitHubUpdatedAt = projectGitHubUpdatedAt(selectedTrackedProject);
   const selectedProjectDocs = selectedProject
@@ -913,19 +912,30 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     params.set("project", projectSlug);
     const nextUrl = `${pathname}?${params.toString()}${anchor ? `#${anchor}` : ""}`;
     router.replace(nextUrl, { scroll: false });
-    if (anchor) {
-      window.setTimeout(() => {
-        if (window.location.hash !== `#${anchor}`) {
-          window.history.replaceState(null, "", nextUrl);
-        }
-        document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 80);
-    }
+    const targetId = anchor ?? "portfolio-projects";
+    window.setTimeout(() => {
+      if (anchor && window.location.hash !== `#${anchor}`) {
+        window.history.replaceState(null, "", nextUrl);
+      }
+      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
+
+  const returnToProjectList = () => {
+    setSelectedProjectSlug(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "portfolio");
+    params.delete("project");
+    const nextUrl = `${pathname}?${params.toString()}`;
+    router.replace(nextUrl, { scroll: false });
+    window.setTimeout(() => {
+      document.getElementById("portfolio-projects")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
   };
 
   useEffect(() => {
     const projectSlug = searchParams.get("project");
-    if (projectSlug) setSelectedProjectSlug(projectSlug);
+    setSelectedProjectSlug(projectSlug);
   }, [searchParams]);
 
   useEffect(() => {
@@ -934,7 +944,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     window.setTimeout(() => {
       document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
-  }, [effectiveSelectedProjectSlug]);
+  }, [selectedProjectSlug]);
 
   const handleSyncSeed = async () => {
     if (!clerkId || syncing || hydrating) return;
@@ -1057,149 +1067,191 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     <div className="h-full overflow-y-auto">
       <PaneHeader>project portfolio graph</PaneHeader>
       <div className="max-w-6xl px-6 py-6">
-        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <section>
-            <PaneSectionLabel>operating model</PaneSectionLabel>
-            <h2 className="font-mono text-[18px] leading-tight text-[hsl(var(--text-primary))]">
-              A map for Houston, agents, projects, APIs, MCPs, stacks, protected harnesses, and reusable patterns.
-            </h2>
-            <p className="mt-3 max-w-3xl font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-65">
-              You.md keeps the human-level project catalog separate from each project&apos;s canonical repo, then joins
-              them with dependency edges, API/MCP ownership, local machine readiness, and stack/skill propagation.
-            </p>
-          </section>
-          <StatStrip
-            projectCount={activeProjects.length}
-            surfaceCount={activeSurfaces.length}
-            edgeCount={activeEdges.length}
-            patternCount={activePatterns.length}
-          />
-        </div>
+        {!isProjectDetailView && (
+          <>
+            <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+              <section>
+                <PaneSectionLabel>operating model</PaneSectionLabel>
+                <h2 className="font-mono text-[18px] leading-tight text-[hsl(var(--text-primary))]">
+                  A map for Houston, agents, projects, APIs, MCPs, stacks, protected harnesses, and reusable patterns.
+                </h2>
+                <p className="mt-3 max-w-3xl font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-65">
+                  You.md keeps the human-level project catalog separate from each project&apos;s canonical repo, then joins
+                  them with dependency edges, API/MCP ownership, local machine readiness, and stack/skill propagation.
+                </p>
+              </section>
+              <StatStrip
+                projectCount={activeProjects.length}
+                surfaceCount={activeSurfaces.length}
+                edgeCount={activeEdges.length}
+                patternCount={activePatterns.length}
+              />
+            </div>
 
-        <section className="mt-5 border-y border-[hsl(var(--border))]/70 py-3">
-          <div className="grid gap-3 xl:grid-cols-[0.72fr_1.28fr]">
-            <div>
-              <PaneSectionLabel>shipped pulse</PaneSectionLabel>
-              <h3 className="mt-1 font-mono text-[13px] leading-tight text-[hsl(var(--text-primary))]">
-                Me + agents, shipped across the portfolio.
-              </h3>
-              <p className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
-                Commits, pull requests, and releases across the portfolio graph.
-              </p>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-4">
-              {[
-                ["today", allShippedCounts.today],
-                ["7d", allShippedCounts.seven],
-                ["30d", allShippedCounts.thirty],
-                ["90d", allShippedCounts.ninety],
-              ].map(([label, value]) => (
-                <div key={label as string} className="border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 py-2">
-                  <div className="font-mono text-[20px] leading-tight text-[hsl(var(--text-primary))]">{value as number}</div>
-                  <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-45">shipped {label as string}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {(shippingLeaders.length > 0 || recentShippingActivityRows.length > 0) && (
-            <div className="mt-3 grid gap-3 border-t border-[hsl(var(--border))]/45 pt-3 lg:grid-cols-[0.55fr_1.45fr]">
-              {shippingLeaders.length > 0 && (
+            <section className="mt-5 border-y border-[hsl(var(--border))]/70 py-3">
+              <div className="grid gap-3 xl:grid-cols-[0.72fr_1.28fr]">
                 <div>
-                  <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">top shippers</div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {shippingLeaders.map(({ project, counts }) => (
-                      <button
-                        key={project.slug}
-                        type="button"
-                        onClick={() => selectProject(project.slug)}
-                        className="border border-[hsl(var(--border))]/60 px-2 py-1 text-left font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-65 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
-                        style={{ borderRadius: "var(--radius)" }}
-                        title={`Open ${project.name} details`}
-                      >
-                        {project.slug} / {counts.today} today / {counts.seven} 7d / {counts.ninety} 90d
-                      </button>
-                    ))}
-                  </div>
+                  <PaneSectionLabel>shipped pulse</PaneSectionLabel>
+                  <h3 className="mt-1 font-mono text-[13px] leading-tight text-[hsl(var(--text-primary))]">
+                    Me + agents, shipped across the portfolio.
+                  </h3>
+                  <p className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+                    Commits, pull requests, and releases across the portfolio graph.
+                  </p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-4">
+                  {[
+                    ["today", allShippedCounts.today],
+                    ["7d", allShippedCounts.seven],
+                    ["30d", allShippedCounts.thirty],
+                    ["90d", allShippedCounts.ninety],
+                  ].map(([label, value]) => (
+                    <div key={label as string} className="border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 py-2">
+                      <div className="font-mono text-[20px] leading-tight text-[hsl(var(--text-primary))]">{value as number}</div>
+                      <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-45">shipped {label as string}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {(shippingLeaders.length > 0 || recentShippingActivityRows.length > 0) && (
+                <div className="mt-3 grid gap-3 border-t border-[hsl(var(--border))]/45 pt-3 lg:grid-cols-[0.55fr_1.45fr]">
+                  {shippingLeaders.length > 0 && (
+                    <div>
+                      <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">top shippers</div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {shippingLeaders.map(({ project, counts }) => (
+                          <button
+                            key={project.slug}
+                            type="button"
+                            onClick={() => selectProject(project.slug)}
+                            className="border border-[hsl(var(--border))]/60 px-2 py-1 text-left font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-65 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                            style={{ borderRadius: "var(--radius)" }}
+                            title={`Open ${project.name} details`}
+                          >
+                            {project.slug} / {counts.today} today / {counts.seven} 7d / {counts.ninety} 90d
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {recentShippingActivityRows.length > 0 && (
+                    <div>
+                      <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">latest shipped</div>
+                      <div className="mt-2 space-y-1.5">
+                        {recentShippingActivityRows.map(({ activity, project }) => (
+                          <button
+                            key={`${activity.projectSlug}-${activity.dedupeKey ?? activity.source}-${activity.occurredAt}-${activity.title}`}
+                            type="button"
+                            onClick={() => selectProject(activity.projectSlug, "timeline")}
+                            className="grid w-full gap-2 border-t border-[hsl(var(--border))]/35 pt-1.5 text-left transition-colors hover:border-[hsl(var(--accent))]/70 md:grid-cols-[0.22fr_0.58fr_1fr]"
+                          >
+                            <span className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-42">
+                              {formatActivityDate(activity.occurredAt)}
+                            </span>
+                            <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
+                              {(project?.slug ?? activity.projectSlug)} / {activity.kind}
+                            </span>
+                            <span className="line-clamp-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-primary))] opacity-78">
+                              {activity.title}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
-              {recentShippingActivityRows.length > 0 && (
-                <div>
-                  <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">latest shipped</div>
-                  <div className="mt-2 space-y-1.5">
-                    {recentShippingActivityRows.map(({ activity, project }) => (
-                      <button
-                        key={`${activity.projectSlug}-${activity.dedupeKey ?? activity.source}-${activity.occurredAt}-${activity.title}`}
-                        type="button"
-                        onClick={() => selectProject(activity.projectSlug, "timeline")}
-                        className="grid w-full gap-2 border-t border-[hsl(var(--border))]/35 pt-1.5 text-left transition-colors hover:border-[hsl(var(--accent))]/70 md:grid-cols-[0.22fr_0.58fr_1fr]"
-                      >
-                        <span className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-42">
-                          {formatActivityDate(activity.occurredAt)}
-                        </span>
-                        <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
-                          {(project?.slug ?? activity.projectSlug)} / {activity.kind}
-                        </span>
-                        <span className="line-clamp-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-primary))] opacity-78">
-                          {activity.title}
-                        </span>
-                      </button>
-                    ))}
+            </section>
+
+            <div className="mt-5 border-y border-[hsl(var(--border))]/70 py-3">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0">
+                  <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-70">
+                    {graph === undefined ? "loading" : hasPersistedGraph ? "convex persisted graph" : "bootstrap graph"}
                   </div>
+                  <p className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+                    {hasPersistedGraph
+                      ? `loaded from owner-gated portfolio tables${graph?.recentTrackedProjects.length ? ` with ${graph.recentTrackedProjects.length} recent GitHub-tracked projects nearby` : ""}`
+                      : "rendering the local bootstrap model until these records are synced into Convex"}
+                  </p>
+                  {graph && (graph.tasks.length > 0 || graph.recentCaptures.length > 0) && (
+                    <p className="mt-1 font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-45">
+                      task graph: {graph.tasks.length} open item{graph.tasks.length === 1 ? "" : "s"} / recent captures: {graph.recentCaptures.length}
+                    </p>
+                  )}
+                  {syncStatus && (
+                    <p className={`mt-2 font-mono text-[10px] ${syncStatus.startsWith("error") ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"} opacity-80`}>
+                      {syncStatus}
+                    </p>
+                  )}
                 </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleHydrateTrackedProjects}
+                    disabled={!clerkId || syncing || hydrating}
+                    className="h-8 border border-[hsl(var(--border))] px-3 font-mono text-[10px] text-[hsl(var(--text-primary))] transition-colors hover:border-[hsl(var(--accent))] disabled:opacity-35"
+                    style={{ borderRadius: "var(--radius)" }}
+                  >
+                    {hydrating ? "hydrating..." : "hydrate active projects"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSyncSeed}
+                    disabled={!clerkId || syncing || hydrating}
+                    className="h-8 border border-[hsl(var(--border))]/70 px-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-75 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))] disabled:opacity-35"
+                    style={{ borderRadius: "var(--radius)" }}
+                  >
+                    {syncing ? "syncing seed..." : hasPersistedGraph ? "refresh seed" : "persist seed"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <PaneDivider />
+          </>
+        )}
+
+        <section id="portfolio-projects">
+          <PaneSectionLabel>{isProjectDetailView ? "project detail" : "projects"}</PaneSectionLabel>
+          {isProjectDetailView && selectedProject && (
+            <div className="mb-3 flex flex-wrap items-center gap-2 border-y border-[hsl(var(--border))]/55 py-3 font-mono text-[9px] uppercase tracking-[0.14em]">
+              <button
+                type="button"
+                onClick={returnToProjectList}
+                className="text-[hsl(var(--accent))] opacity-80 transition-opacity hover:opacity-100"
+              >
+                {"<<"} back to projects
+              </button>
+              <span className="text-[hsl(var(--text-secondary))] opacity-35">/</span>
+              <span className="text-[hsl(var(--text-primary))] opacity-85">{selectedProject.name}</span>
+              <span className="text-[hsl(var(--text-secondary))] opacity-35">/</span>
+              <a href="#project-detail" className="text-[hsl(var(--text-secondary))] opacity-55 transition-opacity hover:opacity-90">overview</a>
+              <a href="#strategy" className="text-[hsl(var(--text-secondary))] opacity-55 transition-opacity hover:opacity-90">strategy</a>
+              <a href="#timeline" className="text-[hsl(var(--text-secondary))] opacity-55 transition-opacity hover:opacity-90">timeline</a>
+            </div>
+          )}
+          {isProjectDetailView && !selectedProject && (
+            <div className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+              <button
+                type="button"
+                onClick={returnToProjectList}
+                className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-80 transition-opacity hover:opacity-100"
+              >
+                {"<<"} back to projects
+              </button>
+              <h3 className="mt-3 font-mono text-[14px] text-[hsl(var(--text-primary))]">
+                {graph === undefined ? "loading project graph..." : "project not found"}
+              </h3>
+              {graph !== undefined && (
+                <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+                  No portfolio project is saved as <code className="text-[hsl(var(--text-primary))]">{selectedProjectSlug}</code>. Return to the compact list and open a current project record.
+                </p>
               )}
             </div>
           )}
-        </section>
-
-        <div className="mt-5 border-y border-[hsl(var(--border))]/70 py-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="min-w-0">
-              <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-70">
-                {graph === undefined ? "loading" : hasPersistedGraph ? "convex persisted graph" : "bootstrap graph"}
-              </div>
-              <p className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
-                {hasPersistedGraph
-                  ? `loaded from owner-gated portfolio tables${graph?.recentTrackedProjects.length ? ` with ${graph.recentTrackedProjects.length} recent GitHub-tracked projects nearby` : ""}`
-                  : "rendering the local bootstrap model until these records are synced into Convex"}
-              </p>
-              {graph && (graph.tasks.length > 0 || graph.recentCaptures.length > 0) && (
-                <p className="mt-1 font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-45">
-                  task graph: {graph.tasks.length} open item{graph.tasks.length === 1 ? "" : "s"} / recent captures: {graph.recentCaptures.length}
-                </p>
-              )}
-              {syncStatus && (
-                <p className={`mt-2 font-mono text-[10px] ${syncStatus.startsWith("error") ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"} opacity-80`}>
-                  {syncStatus}
-                </p>
-              )}
-            </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={handleHydrateTrackedProjects}
-                disabled={!clerkId || syncing || hydrating}
-                className="h-8 border border-[hsl(var(--border))] px-3 font-mono text-[10px] text-[hsl(var(--text-primary))] transition-colors hover:border-[hsl(var(--accent))] disabled:opacity-35"
-                style={{ borderRadius: "var(--radius)" }}
-              >
-                {hydrating ? "hydrating..." : "hydrate active projects"}
-              </button>
-              <button
-                type="button"
-                onClick={handleSyncSeed}
-                disabled={!clerkId || syncing || hydrating}
-                className="h-8 border border-[hsl(var(--border))]/70 px-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-75 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))] disabled:opacity-35"
-                style={{ borderRadius: "var(--radius)" }}
-              >
-                {syncing ? "syncing seed..." : hasPersistedGraph ? "refresh seed" : "persist seed"}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <PaneDivider />
-
-        <section>
-          <PaneSectionLabel>projects</PaneSectionLabel>
+          {!isProjectDetailView && (
+            <>
           <div className="mb-3 flex flex-col gap-2 border-y border-[hsl(var(--border))]/55 py-3 lg:flex-row lg:items-center">
             <label className="flex min-w-0 flex-1 items-center gap-2 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 py-2">
               <Search size={13} className="shrink-0 text-[hsl(var(--accent))] opacity-70" />
@@ -1271,8 +1323,11 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
             <span>setup active + top/focus only</span>
             <span>rank 1 top / 2 focus / 3 ice / 0 dead</span>
           </div>
+            </>
+          )}
 
-          <div className="grid gap-4 xl:grid-cols-[minmax(290px,0.9fr)_minmax(360px,1.1fr)]">
+          <div className={isProjectDetailView ? "space-y-3" : "space-y-2"}>
+            {!isProjectDetailView && (
             <div className="max-h-[760px] space-y-2 overflow-y-auto pr-1">
               {filteredProjects.map((project) => {
                 const projectActivitiesForCard = activitiesByProject.get(project.slug) ?? [];
@@ -1282,7 +1337,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                 const trackedProjectForCard = trackedBySlug.get(project.slug);
                 const githubUpdatedAt = projectGitHubUpdatedAt(trackedProjectForCard);
                 const setupEligible = isProjectSetupEligible(project);
-                const selected = effectiveSelectedProjectSlug === project.slug;
+                const selected = selectedProjectSlug === project.slug;
                 return (
                   <article
                     key={project.slug}
@@ -1435,7 +1490,9 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                 </div>
               )}
             </div>
+            )}
 
+            {isProjectDetailView && selectedProject && (
             <div id="project-detail" className="scroll-mt-4 min-w-0 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
               {selectedProject ? (
                 <>
@@ -1722,12 +1779,15 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                 <p className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">select a project to inspect details.</p>
               )}
             </div>
+            )}
           </div>
         </section>
 
+        {isProjectDetailView && selectedProject && (
+          <>
         <PaneDivider />
 
-        <section>
+        <section id="strategy" className="scroll-mt-4">
           <PaneSectionLabel>strategy intelligence</PaneSectionLabel>
           <div className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -1862,7 +1922,11 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
             )}
           </div>
         </section>
+          </>
+        )}
 
+        {!isProjectDetailView && (
+          <>
         <PaneDivider />
 
         <section>
@@ -1892,7 +1956,11 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
             })}
           </div>
         </section>
+          </>
+        )}
 
+        {!isProjectDetailView && (
+          <>
         <PaneDivider />
 
         <section>
@@ -1928,8 +1996,10 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
             ))}
           </div>
         </section>
+          </>
+        )}
 
-        {graph && graph.tasks.length > 0 && (
+        {!isProjectDetailView && graph && graph.tasks.length > 0 && (
           <>
             <PaneDivider />
             <section>
@@ -2051,7 +2121,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           </>
         )}
 
-        {graph && graph.recentCaptures.length > 0 && (
+        {!isProjectDetailView && graph && graph.recentCaptures.length > 0 && (
           <>
             <PaneDivider />
             <section>
@@ -2075,32 +2145,36 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           </>
         )}
 
-        <PaneDivider />
+        {!isProjectDetailView && (
+          <>
+            <PaneDivider />
 
-        <section>
-          <PaneSectionLabel>skill propagation</PaneSectionLabel>
-          <div className="space-y-3">
-            {skillPropagation.map((entry) => (
-              <div key={entry.skill} className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-[12px] text-[hsl(var(--text-primary))]">{entry.skill}</span>
-                  <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">{entry.owner}</span>
-                </div>
-                <div className="mt-3 grid gap-2 md:grid-cols-3">
-                  {entry.projects.map((project) => (
-                    <div key={`${entry.skill}-${project.project}`} className="border-t border-[hsl(var(--border))]/45 pt-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] text-[hsl(var(--text-primary))]">{project.project}</span>
-                        <span className={`ml-auto font-mono text-[8px] uppercase tracking-[0.14em] ${statusClass(project.status)}`}>{project.status}</span>
-                      </div>
-                      <p className="mt-1 font-mono text-[9px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">{project.note}</p>
+            <section>
+              <PaneSectionLabel>skill propagation</PaneSectionLabel>
+              <div className="space-y-3">
+                {skillPropagation.map((entry) => (
+                  <div key={entry.skill} className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-[12px] text-[hsl(var(--text-primary))]">{entry.skill}</span>
+                      <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">{entry.owner}</span>
                     </div>
-                  ))}
-                </div>
+                    <div className="mt-3 grid gap-2 md:grid-cols-3">
+                      {entry.projects.map((project) => (
+                        <div key={`${entry.skill}-${project.project}`} className="border-t border-[hsl(var(--border))]/45 pt-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[10px] text-[hsl(var(--text-primary))]">{project.project}</span>
+                            <span className={`ml-auto font-mono text-[8px] uppercase tracking-[0.14em] ${statusClass(project.status)}`}>{project.status}</span>
+                          </div>
+                          <p className="mt-1 font-mono text-[9px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">{project.note}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
+            </section>
+          </>
+        )}
       </div>
     </div>
   );

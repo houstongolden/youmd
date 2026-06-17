@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio dedicated project detail pages
+
+### fix(portfolio): turn project detail into a drill-in page
+- Portfolio project details now render as a URL-backed drill-in state instead of an inline detail panel below the compact project list.
+- `/shell?tab=portfolio` keeps the overview compact with operating model, shipped pulse, filters, and dense rows, and renders no `#project-detail` node until a project is opened.
+- `/shell?tab=portfolio&project=bamfaiapp#project-detail` hides global portfolio/task/brain/skill sections and shows the project detail page with `<< back to projects`, overview, strategy, and timeline anchors.
+- Breadcrumb back navigation clears `project=` and returns to the compact Portfolio list.
+- Follow-up remains open: apply the same list-to-detail drill-in pattern to Stacks, APIs/env, Skills propagation, task triage, and brain-dump records.
+- Verification: `npx tsc --noEmit`, `npm run lint` (existing warnings only), `npm run build`, and authenticated Codex in-app Browser QA for list, detail, and breadcrumb-back states.
+
 ## 2026-06-17 — Portfolio recency and active setup gate proof
 
 ### feat(portfolio): make manual active overrides obvious for fresh-machine setup
