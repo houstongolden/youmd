@@ -108,6 +108,13 @@ GitHub status and task/graph paths behave in the actual product.
   projects, created 36 portfolio rows, and updated 4 on the initial corrective
   run. Final deployed reruns refreshed 40 tracked rows and 30 local rows without
   creating duplicates.
+- Follow-up strategy enrichment ran the compiled hydrate path again, refreshed
+  40 GitHub-tracked rows and 30 local-audit rows, and verified the authenticated
+  API snapshot contained `55` persisted projects, `30` enriched strategy
+  records, `5` tasks, and zero known setup/build/PRD-title snippet matches.
+  Signed-in Codex in-app Browser QA screenshot-verified `STRATEGY INTELLIGENCE`
+  for `bamfsite` with private BAMF OS API/MCP context at
+  `/tmp/youmd-portfolio-strategy-section-2026-06-17-v4.png`.
 - `portfolioProjectActivities` now persists local commit/PR/summary evidence
   from that hydration path, and the Portfolio Graph pane renders shipped
   `today` / `7d` / `30d` chips plus a project shipping timeline.
@@ -171,6 +178,11 @@ GitHub status and task/graph paths behave in the actual product.
 - Local MCP registry proof also confirmed `hydrate_portfolio_graph` is present,
   so agents can trigger tracked-project portfolio hydration without relying on a
   manual dashboard click.
+- Local strategy enrichment now reads README plus `project-context` PRD,
+  overview, tasks, design, research, and ideas files, filters setup-only docs
+  such as `.env.example`, local preview URLs, build commands, tech-stack
+  snippets, and PRD title blocks, and persists project strategy fields through
+  the same owner-gated hydrate API.
 - Follow-up task triage work added `portfolio.updateTaskTriage`,
   `POST /api/v1/me/portfolio/tasks/triage`, and local MCP
   `update_portfolio_task` so existing tasks can move through status/priority

@@ -902,6 +902,28 @@ function cleanStringArray(value: unknown): string[] {
     : [];
 }
 
+function cleanOptionalString(value: unknown, limit = 1200): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.replace(/\s+/g, " ").trim();
+  if (!trimmed) return undefined;
+  return trimmed.slice(0, limit);
+}
+
+function cleanCompetitors(value: unknown): Array<{ name: string; url?: string; note?: string }> {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 12).flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    const name = cleanOptionalString(row.name, 120);
+    if (!name) return [];
+    return [{
+      name,
+      url: cleanOptionalString(row.url, 500),
+      note: cleanOptionalString(row.note, 500),
+    }];
+  });
+}
+
 function portfolioSlug(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const slug = value
@@ -1817,7 +1839,7 @@ http.route({
 
         const repoPath = typeof row.path === "string" && row.path.trim() ? row.path.trim() : undefined;
         const providers = cleanStringArray(row.providers);
-        const envFiles = cleanStringArray(row.envFiles);
+        const environments = cleanStringArray(row.environments ?? row.envFiles);
         const tags = cleanStringArray(row.tags ?? providers.map((provider) => provider.toLowerCase().replace(/[^a-z0-9]+/g, "-")));
         const summary = typeof row.summary === "string" && row.summary.trim()
           ? row.summary.trim()
@@ -1830,9 +1852,22 @@ http.route({
           stackName: typeof row.stackName === "string" ? row.stackName : undefined,
           status: typeof row.status === "string" ? row.status : "local-audited",
           summary,
+          detailedDescription: cleanOptionalString(row.detailedDescription, 1600),
+          goal: cleanOptionalString(row.goal, 800),
+          vision: cleanOptionalString(row.vision, 800),
           focus: typeof row.focus === "string" ? row.focus : "Audit project role, API/MCP ownership, reusable patterns, and env/service-account boundaries.",
+          positioning: cleanOptionalString(row.positioning, 800),
+          audience: cleanOptionalString(row.audience, 800),
+          painPoints: cleanStringArray(row.painPoints).slice(0, 12),
+          solution: cleanOptionalString(row.solution, 1000),
+          whyThisSolution: cleanOptionalString(row.whyThisSolution, 1000),
+          northStar: cleanOptionalString(row.northStar, 600),
+          metrics: cleanStringArray(row.metrics).slice(0, 12),
+          constraints: cleanStringArray(row.constraints).slice(0, 12),
+          notBuilding: cleanStringArray(row.notBuilding).slice(0, 12),
+          competitors: cleanCompetitors(row.competitors),
           docs: cleanStringArray(row.docs),
-          environments: envFiles,
+          environments,
           tags: ["local-audit", ...tags],
           source,
           repoPath,

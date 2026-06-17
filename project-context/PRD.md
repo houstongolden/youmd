@@ -207,6 +207,9 @@ Implementation slice shipped and verified on 2026-06-17:
   local CLI command `youmd project portfolio-hydrate`, and MCP tool
   `hydrate_portfolio_graph` hydrate the persisted portfolio graph for local and
   web agents.
+- The hydrate path synthesizes project strategy from README plus maintained
+  `project-context` PRD, overview, tasks, design, research, and ideas docs, then
+  renders those fields in the Portfolio Graph `STRATEGY INTELLIGENCE` section.
 - The local CLI exposes `youmd project task` and `youmd project braindump`.
   Local MCP exposes `upsert_portfolio_task` and `record_brain_dump`.
 - Portfolio task triage is now first-class in the dashboard and local-agent

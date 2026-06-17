@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio strategy enrichment
+
+### feat(cli/api/mcp/web): enrich active projects with strategy intelligence
+- Added deterministic project strategy synthesis for local portfolio hydration, covering detailed description, goal, vision, positioning, audience, pain points, solution, rationale, north star, metrics, constraints, not-building notes, and competitors.
+- Expanded local doc intake beyond README/PRD/current-state to include `project-context/overview.md`, `tasks.md`, `tasks.json`, `design.md`, `research.md`, and `ideas.md` where present.
+- Filtered setup/build/doc-title boilerplate so `.env.example` copy steps, local preview URLs, build commands, tech-stack snippets, and PRD title blocks do not become project vision or solution text.
+- Extended `POST /api/v1/me/portfolio/projects/hydrate` and the local MCP `upsert_portfolio_project` tool to accept the richer strategy fields.
+- Added a `STRATEGY INTELLIGENCE` section to the Portfolio Graph pane for the selected project.
+- Verified the real local-agent hydrate path: `youmd project portfolio-hydrate --root /Users/houstongolden/Desktop/CODE_2025 --days 90 --limit 80` refreshed `40` GitHub-tracked rows and `30` local-audit rows, persisted `55` projects, and produced `30` enriched strategy records with zero known setup/PRD-title snippet matches.
+- Authenticated Codex in-app Browser QA verified the local `/shell` Portfolio pane showing `STRATEGY INTELLIGENCE` for `bamfsite`, including private BAMF OS API/MCP context. Screenshot: `/tmp/youmd-portfolio-strategy-section-2026-06-17-v4.png`.
+
 ## 2026-06-17 — Repo-backed portfolio graph snapshots
 
 ### feat(convex/github): push portfolio graph snapshots into the linked repo

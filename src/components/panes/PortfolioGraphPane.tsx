@@ -23,8 +23,20 @@ type DisplayProject = {
   stack: string;
   status: string;
   summary: string;
+  detailedDescription?: string;
   goal: string;
+  vision?: string;
   focus: string;
+  positioning?: string;
+  audience?: string;
+  painPoints: string[];
+  solution?: string;
+  whyThisSolution?: string;
+  northStar?: string;
+  metrics: string[];
+  constraints: string[];
+  notBuilding: string[];
+  competitors: Array<{ name: string; url?: string; note?: string }>;
   docs: string[];
   environments: string[];
   tags?: string[];
@@ -92,8 +104,20 @@ function fromPersistedProject(project: {
   stackName?: string;
   status: string;
   summary?: string;
+  detailedDescription?: string;
   goal?: string;
+  vision?: string;
   focus?: string;
+  positioning?: string;
+  audience?: string;
+  painPoints?: string[];
+  solution?: string;
+  whyThisSolution?: string;
+  northStar?: string;
+  metrics?: string[];
+  constraints?: string[];
+  notBuilding?: string[];
+  competitors?: Array<{ name: string; url?: string; note?: string }>;
   docs: string[];
   environments?: string[];
   tags?: string[];
@@ -107,8 +131,20 @@ function fromPersistedProject(project: {
     stack: project.stackName ?? "Project YouStack",
     status: project.status,
     summary: project.summary ?? "No project summary saved yet.",
+    detailedDescription: project.detailedDescription,
     goal: project.goal ?? "No high-level goal saved yet.",
+    vision: project.vision,
     focus: project.focus ?? "No current focus saved yet.",
+    positioning: project.positioning,
+    audience: project.audience,
+    painPoints: project.painPoints ?? [],
+    solution: project.solution,
+    whyThisSolution: project.whyThisSolution,
+    northStar: project.northStar,
+    metrics: project.metrics ?? [],
+    constraints: project.constraints ?? [],
+    notBuilding: project.notBuilding ?? [],
+    competitors: project.competitors ?? [],
     docs: project.docs,
     environments: project.environments ?? [],
     tags: project.tags,
@@ -267,6 +303,11 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     if (hasPersistedGraph && graph) return graph.projects.map(fromPersistedProject);
     return portfolioProjects.map((project) => ({
       ...project,
+      painPoints: [],
+      metrics: [],
+      constraints: [],
+      notBuilding: [],
+      competitors: [],
       source: "bootstrap",
     }));
   }, [graph, hasPersistedGraph]);
@@ -509,6 +550,92 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                 })()}
               </article>
             ))}
+          </div>
+        </section>
+
+        <PaneDivider />
+
+        <section>
+          <PaneSectionLabel>strategy intelligence</PaneSectionLabel>
+          <div className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+                {selectedProject?.name ?? "No project selected"}
+              </h3>
+              {selectedProject?.northStar && (
+                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
+                  north star
+                </span>
+              )}
+            </div>
+            {selectedProject ? (
+              <>
+                <div className="mt-3 grid gap-4 lg:grid-cols-2">
+                  <div>
+                    <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">vision</div>
+                    <p className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+                      {selectedProject.vision ?? selectedProject.goal}
+                    </p>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">solution</div>
+                    <p className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+                      {selectedProject.solution ?? selectedProject.summary}
+                    </p>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">audience / positioning</div>
+                    <p className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+                      {[selectedProject.audience, selectedProject.positioning].filter(Boolean).join(" ") || "Audience and positioning are not enriched yet."}
+                    </p>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">north star</div>
+                    <p className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+                      {selectedProject.northStar ?? selectedProject.metrics[0] ?? "North-star metric is not enriched yet."}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    ["pain points", selectedProject.painPoints],
+                    ["metrics", selectedProject.metrics],
+                    ["constraints", selectedProject.constraints],
+                    ["not building", selectedProject.notBuilding],
+                  ].map(([label, values]) => (
+                    <div key={label as string} className="border-t border-[hsl(var(--border))]/45 pt-2">
+                      <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">{label as string}</div>
+                      <ul className="mt-1 space-y-1">
+                        {(values as string[]).slice(0, 4).map((value) => (
+                          <li key={value} className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-52">
+                            {value}
+                          </li>
+                        ))}
+                        {(values as string[]).length === 0 && (
+                          <li className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-35">not enriched yet</li>
+                        )}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+                {selectedProject.competitors.length > 0 && (
+                  <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-2">
+                    <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">alternatives / competitors</div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedProject.competitors.slice(0, 6).map((competitor) => (
+                        <span key={competitor.name} className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-55">
+                          {competitor.name}{competitor.note ? `: ${competitor.note}` : ""}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
+                Run `youmd project portfolio-hydrate --root ~/Desktop/CODE_2025` to enrich project strategy records from local docs and activity.
+              </p>
+            )}
           </div>
         </section>
 

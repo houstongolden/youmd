@@ -39,6 +39,7 @@ import {
   resolveProjectContext,
 } from "../lib/projectContext";
 import { runPortfolioAudit } from "../lib/portfolio-audit";
+import { synthesizeProjectStrategy } from "../lib/project-strategy";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -768,9 +769,24 @@ function cleanDocSnippet(text: string, limit = 420): string | undefined {
   const cleaned = text
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/<!--[\s\S]*?-->/g, " ")
-    .replace(/[#*_>`[\]]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    .split(/\n\s*\n/)
+    .map((block) => block.replace(/[#*_>`[\]]/g, " ").replace(/\s+/g, " ").trim())
+    .find((block) => {
+      const lower = block.toLowerCase();
+      const setupBoilerplate = (
+        /\b(requires?|install(?:ation)?|getting started|quick start|setup|setup script|dependencies|run|start)\b/.test(lower) &&
+        /\b(node\.?js|npm|pnpm|yarn|bun|nvm|localhost|\.env|docker|dev server|chmod|script|dependencies)\b/.test(lower)
+      ) || (
+        /\b(?:copy|create|configure|add|set|update)\b/.test(lower) &&
+        /\.env(?:\.example|\.local)?/.test(lower)
+      ) || /\b(?:localhost|preview\/web|dev server)\b/.test(lower) ||
+        /\bcursor will expose\b/.test(lower) ||
+        (/\b(?:compile|build)\b/.test(lower) && /\b(?:app|production|bundle|dist)\b/.test(lower)) ||
+        /^(?:.+\s+)?product requirements document(?:\s*\(prd\))?$/.test(lower) ||
+        /^(?:version|last updated|founder|status|date):\s/.test(lower) ||
+        /^\s*(npm|pnpm|yarn|bun|nvm|docker)\s+/i.test(block);
+      return block.length > 24 && !setupBoilerplate;
+    }) ?? "";
   return cleaned ? cleaned.slice(0, limit) : undefined;
 }
 
@@ -877,28 +893,72 @@ function readRecentPrEvents(absPath: string, relPath: string, days: number): Non
   }
 }
 
-function readProjectDocs(absPath: string): { summary?: string; focus?: string; docs: string[] } {
+function readProjectDocs(absPath: string): {
+  summary?: string;
+  focus?: string;
+  docs: string[];
+  contents: Parameters<typeof synthesizeProjectStrategy>[0]["docs"];
+} {
   const docs: string[] = [];
   const readmePath = ["README.md", "readme.md"].map((file) => path.join(absPath, file)).find((file) => fs.existsSync(file));
+  const overviewPath = path.join(absPath, "project-context", "overview.md");
   const currentStatePath = path.join(absPath, "project-context", "CURRENT_STATE.md");
   const todoPath = path.join(absPath, "project-context", "TODO.md");
+  const tasksMdPath = path.join(absPath, "project-context", "tasks.md");
+  const tasksJsonPath = path.join(absPath, "project-context", "tasks.json");
   const prdPath = path.join(absPath, "project-context", "PRD.md");
   const changelogPath = path.join(absPath, "project-context", "CHANGELOG.md");
+  const featuresPath = path.join(absPath, "project-context", "FEATURES.md");
+  const designPath = path.join(absPath, "project-context", "design.md");
+  const researchPath = path.join(absPath, "project-context", "research.md");
+  const ideasPath = path.join(absPath, "project-context", "ideas.md");
+  const architecturePath = path.join(absPath, "project-context", "ARCHITECTURE.md");
 
   const readme = readmePath ? readTextIfExists(readmePath) : "";
+  const overview = readTextIfExists(overviewPath);
   const currentState = readTextIfExists(currentStatePath);
   const todo = readTextIfExists(todoPath);
+  const tasks = readTextIfExists(tasksMdPath) || readTextIfExists(tasksJsonPath);
+  const prd = readTextIfExists(prdPath);
 
   if (readmePath) docs.push(path.relative(absPath, readmePath));
+  if (fs.existsSync(overviewPath)) docs.push("project-context/overview.md");
   if (fs.existsSync(currentStatePath)) docs.push("project-context/CURRENT_STATE.md");
   if (fs.existsSync(todoPath)) docs.push("project-context/TODO.md");
+  if (fs.existsSync(tasksMdPath)) docs.push("project-context/tasks.md");
+  if (fs.existsSync(tasksJsonPath)) docs.push("project-context/tasks.json");
   if (fs.existsSync(prdPath)) docs.push("project-context/PRD.md");
   if (fs.existsSync(changelogPath)) docs.push("project-context/CHANGELOG.md");
+  if (fs.existsSync(featuresPath)) docs.push("project-context/FEATURES.md");
+  if (fs.existsSync(designPath)) docs.push("project-context/design.md");
+  if (fs.existsSync(researchPath)) docs.push("project-context/research.md");
+  if (fs.existsSync(ideasPath)) docs.push("project-context/ideas.md");
+  if (fs.existsSync(architecturePath)) docs.push("project-context/ARCHITECTURE.md");
 
   return {
-    summary: cleanDocSnippet(readme || currentState),
-    focus: cleanDocSnippet(currentState || todo, 360),
+    summary:
+      cleanDocSnippet(overview) ??
+      cleanDocSnippet(readme) ??
+      cleanDocSnippet(prd) ??
+      cleanDocSnippet(currentState),
+    focus:
+      cleanDocSnippet(currentState, 360) ??
+      cleanDocSnippet(todo, 360) ??
+      cleanDocSnippet(tasks, 360),
     docs,
+    contents: {
+      readme,
+      overview,
+      currentState,
+      todo,
+      tasks,
+      prd,
+      features: readTextIfExists(featuresPath),
+      design: readTextIfExists(designPath),
+      research: readTextIfExists(researchPath),
+      ideas: readTextIfExists(ideasPath),
+      architecture: readTextIfExists(architecturePath),
+    },
   };
 }
 
@@ -911,7 +971,7 @@ function shippedCount(events: NonNullable<PortfolioHydrateProjectPayloadType["ac
 
 function hydrationProjectsFromAudit(
   result: ReturnType<typeof runPortfolioAudit>,
-  options: { includeNested: boolean; limit: number; days: number; includePrs: boolean }
+  options: { includeNested: boolean; limit: number; days: number; includePrs: boolean; strategy: boolean }
 ): PortfolioHydrateProjectPayloadType[] {
   return result.projects
     .filter((project) => shouldHydrateLocalProject(project, options.includeNested))
@@ -933,12 +993,27 @@ function hydrationProjectsFromAudit(
       const shipped7d = shippedCount(activityEvents, 7);
       const shipped30d = shippedCount(activityEvents, 30);
       const fallbackSummary = `Local portfolio auditor found ${project.name} at ${project.path}${project.providers.length ? ` using ${project.providers.slice(0, 6).join(", ")}` : ""}.`;
+      const stackName = inferStackName(project.name, project.path);
+      const strategy = options.strategy
+        ? synthesizeProjectStrategy({
+            projectName: project.name,
+            stackName,
+            docs: docs.contents,
+            providers: project.providers,
+            recentActivityTitles: activityEvents.slice(0, 8).map((event) => event.title),
+            shippedToday,
+            shipped7d,
+            shipped30d,
+            fallbackSummary,
+          })
+        : {};
       return {
         name: project.name,
         path: project.path,
-        stackName: inferStackName(project.name, project.path),
+        stackName,
         status: activityEvents.length ? "active" : "local-audited",
         summary: docs.summary || fallbackSummary,
+        ...strategy,
         focus: docs.focus || (latestSubjects ? `Recent shipping activity: ${latestSubjects}` : "Audit project role, API/MCP ownership, reusable patterns, and env/service-account boundaries."),
         docs: docs.docs,
         envFiles: project.envFiles,
@@ -980,6 +1055,7 @@ async function hydratePortfolioFromCli(args: string[]): Promise<void> {
   const includeNested = hasFlag(args, "--include-nested");
   const includeTracked = !hasFlag(args, "--no-github");
   const includePrs = !hasFlag(args, "--no-prs");
+  const strategy = !hasFlag(args, "--no-strategy");
   const dryRun = hasFlag(args, "--dry-run");
   const audit = runPortfolioAudit({ root, includeDotenv: hasFlag(args, "--include-dotenv"), fingerprints: false, activeDays: days });
   const projects = hydrationProjectsFromAudit(audit, {
@@ -987,6 +1063,7 @@ async function hydratePortfolioFromCli(args: string[]): Promise<void> {
     limit: Math.max(1, Math.min(limit, 200)),
     days: Number.isFinite(days) ? days : 90,
     includePrs,
+    strategy,
   });
 
   console.log("");
@@ -997,6 +1074,7 @@ async function hydratePortfolioFromCli(args: string[]): Promise<void> {
   console.log(chalk.dim(`  local hydration candidates: ${projects.length}`));
   console.log(chalk.dim(`  github tracked sync: ${includeTracked ? `${Number.isFinite(days) ? days : 90}d` : "skipped"}`));
   console.log(chalk.dim(`  local git/PR activity: commits${includePrs ? " + pull requests" : ""}`));
+  console.log(chalk.dim(`  strategy fields: ${strategy ? "docs + activity synthesis" : "skipped"}`));
   console.log("");
 
   for (const project of projects.slice(0, 12)) {

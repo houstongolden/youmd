@@ -64,6 +64,8 @@ PRD Version: 2.3
 - [x] Persist portfolio graph records in Convex instead of only the local static data contract
 - [x] Teach MCP `get_project_context` to include a project-scoped portfolio graph slice before agents create new APIs, MCP routes, stacks, or reusable components
 - [x] Export the persisted portfolio graph into repo-backed `projects/_portfolio/README.md`, `graph.md`, and mirror-safe `graph.json` snapshots during GitHub sync
+- [x] Enrich active project strategy records from local README/project-context docs plus recent activity, including vision, solution, positioning, audience, north star, metrics, constraints, not-building, competitors, docs, and fallback local-audit summaries
+- [ ] Mine reusable code/UI/auth/layout/streaming patterns from active repos into `portfolioReusablePatterns` instead of relying on hand-written seed records
 - [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens (deferred per Houston's 2026-06-17 focus change)
 
 ### 2026-06-17 — GitHub sync proof, Projects -> Tasks, and brain-dump routing
@@ -90,7 +92,8 @@ PRD Version: 2.3
 - [x] Add a forced-conflict regression test for the 409 branch-recreation retry path
 - [x] Seed the first persisted portfolio graph records from the dashboard bootstrap model and visually verify the Convex-backed pane
 - [x] Run the real `portfolio-graph-auditor` hydration path against recent GitHub/local activity and verify the Portfolio Graph shows 55 persisted projects instead of only the 4-project bootstrap seed
-- [ ] Enrich active project strategy records with vision, pain points, solution, constraints, not-building, metrics, and competitors
+- [x] Enrich active project strategy records with vision, pain points, solution, constraints, not-building, metrics, and competitors
+- [ ] Add scanner-derived reusable code/UI/auth/layout pattern records across active repos
 
 ### 2026-06-16 — Mobile capture, voice, Slack, and project routing
 - [x] Preserve the 2026-06-16 Part 2 mobile brain-dump intent safely without private phone numbers or secrets

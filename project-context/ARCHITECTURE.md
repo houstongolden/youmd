@@ -175,6 +175,10 @@ Local implementation slice:
 - `youmd project portfolio-hydrate` runs the local auditor against a workspace
   root, filters nested/reference noise, and upserts recent project candidates
   plus commit/PR activity into the persisted Convex graph.
+- `cli/src/lib/project-strategy.ts` synthesizes strategy fields during local
+  hydration from README plus `project-context` PRD, overview, tasks, design,
+  research, and ideas files. It redacts secret-like values and filters
+  setup/build/doc-title boilerplate before fields reach Convex.
 - Local MCP exposes `hydrate_portfolio_graph` for agents that need to hydrate
   from the tracked GitHub catalog without using the dashboard.
 - `portfolio.updateTaskTriage`, `POST /api/v1/me/portfolio/tasks/triage`, and
@@ -187,8 +191,9 @@ Local implementation slice:
   `youmd://agent/brief` and exposes structured `youmd://portfolio/graph` for
   local agents.
 - `cli/src/mcp/registry.ts` exposes local write tools
-  `upsert_portfolio_task` and `record_brain_dump`, which call authenticated
-  You.md API endpoints instead of mutating static local mock data.
+  `upsert_portfolio_task`, `upsert_portfolio_project`, and
+  `record_brain_dump`, which call authenticated You.md API endpoints instead
+  of mutating static local mock data.
 - `cli/src/commands/project.ts` exposes `youmd project task` and
   `youmd project braindump` for local agents and terminal sessions.
 - `convex/http.ts` exposes `POST /api/v1/me/portfolio/tasks` and

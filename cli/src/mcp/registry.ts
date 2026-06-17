@@ -891,6 +891,131 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     },
   },
 
+  // ── upsert_portfolio_project ───────────────────────────────────────────────
+  {
+    name: "upsert_portfolio_project",
+    description:
+      "Create or update a project strategy/intelligence record in You.md's persisted Portfolio Graph. Use before adding APIs/MCPs/stacks/tasks so agents share the same goal, vision, pain points, constraints, non-goals, metrics, repo, and docs context.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Project display name." },
+        slug: { type: "string", description: "Stable project slug." },
+        stack_name: { type: "string", description: "Associated stack name, such as YouStack or BAMFStack." },
+        status: { type: "string", description: "Project status, such as active, build, research, template, or audit." },
+        summary: { type: "string", description: "Short AI/human summary." },
+        detailed_description: { type: "string", description: "Longer project description." },
+        goal: { type: "string", description: "High-level goal." },
+        vision: { type: "string", description: "North-star vision." },
+        focus: { type: "string", description: "Current focus." },
+        positioning: { type: "string", description: "Positioning/category." },
+        audience: { type: "string", description: "Who this is for." },
+        pain_points: { type: "array", items: { type: "string" }, description: "Pain points solved." },
+        solution: { type: "string", description: "Solution summary." },
+        why_this_solution: { type: "string", description: "Why this solution is right." },
+        north_star: { type: "string", description: "North-star metric or guiding outcome." },
+        metrics: { type: "array", items: { type: "string" }, description: "Metrics to track." },
+        constraints: { type: "array", items: { type: "string" }, description: "Constraints/guardrails." },
+        not_building: { type: "array", items: { type: "string" }, description: "Explicit non-goals." },
+        competitors: {
+          type: "array",
+          description: "Alternatives or competitors to track.",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              url: { type: "string" },
+              note: { type: "string" },
+            },
+            required: ["name"],
+          },
+        },
+        repo_full_name: { type: "string", description: "GitHub repo full name, owner/repo." },
+        repo_url: { type: "string", description: "Repository URL." },
+        product_url: { type: "string", description: "Product/site URL." },
+        docs: { type: "array", items: { type: "string" }, description: "Important docs paths or URLs." },
+        environments: { type: "array", items: { type: "string" }, description: "Known environments." },
+        tags: { type: "array", items: { type: "string" }, description: "Search/routing tags." },
+        repo_path: { type: "string", description: "Local repo path or directory name." },
+      },
+      required: ["name"],
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.authenticated) {
+        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+      }
+      const name = typeof args.name === "string" ? args.name.trim() : "";
+      if (!name) {
+        return { content: [{ type: "text", text: "missing required argument: name" }], isError: true };
+      }
+      const stringArray = (value: unknown): string[] =>
+        Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+      const competitors = Array.isArray(args.competitors)
+        ? args.competitors.flatMap((item) => {
+            if (!item || typeof item !== "object") return [];
+            const row = item as Record<string, unknown>;
+            const competitorName = typeof row.name === "string" ? row.name.trim() : "";
+            if (!competitorName) return [];
+            return [{
+              name: competitorName,
+              url: typeof row.url === "string" ? row.url : undefined,
+              note: typeof row.note === "string" ? row.note : undefined,
+            }];
+          })
+        : [];
+      const project = {
+        name,
+        slug: typeof args.slug === "string" ? args.slug : undefined,
+        stackName: typeof args.stack_name === "string" ? args.stack_name : undefined,
+        status: typeof args.status === "string" ? args.status : "active",
+        summary: typeof args.summary === "string" ? args.summary : undefined,
+        detailedDescription: typeof args.detailed_description === "string" ? args.detailed_description : undefined,
+        goal: typeof args.goal === "string" ? args.goal : undefined,
+        vision: typeof args.vision === "string" ? args.vision : undefined,
+        focus: typeof args.focus === "string" ? args.focus : undefined,
+        positioning: typeof args.positioning === "string" ? args.positioning : undefined,
+        audience: typeof args.audience === "string" ? args.audience : undefined,
+        painPoints: stringArray(args.pain_points),
+        solution: typeof args.solution === "string" ? args.solution : undefined,
+        whyThisSolution: typeof args.why_this_solution === "string" ? args.why_this_solution : undefined,
+        northStar: typeof args.north_star === "string" ? args.north_star : undefined,
+        metrics: stringArray(args.metrics),
+        constraints: stringArray(args.constraints),
+        notBuilding: stringArray(args.not_building),
+        competitors,
+        repoFullName: typeof args.repo_full_name === "string" ? args.repo_full_name : undefined,
+        repoUrl: typeof args.repo_url === "string" ? args.repo_url : undefined,
+        productUrl: typeof args.product_url === "string" ? args.product_url : undefined,
+        docs: stringArray(args.docs),
+        environments: stringArray(args.environments),
+        tags: stringArray(args.tags),
+        path: typeof args.repo_path === "string" ? args.repo_path : undefined,
+      };
+      try {
+        const result = await ctx.apiRequest("/api/v1/me/portfolio/projects/hydrate", {
+          method: "POST",
+          body: {
+            includeTracked: false,
+            projects: [project],
+            source: "mcp-project-enrichment",
+            agentName: ctx.resolveAgentName(),
+          },
+        }) as Record<string, unknown>;
+        const ok = result.success === true;
+        ctx.logActivity("write", "portfolio/project", { name, slug: project.slug });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          isError: !ok,
+        };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `failed to upsert portfolio project: ${err instanceof Error ? err.message : "unknown error"}` }],
+          isError: true,
+        };
+      }
+    },
+  },
+
   // ── record_brain_dump ───────────────────────────────────────────────────────
   {
     name: "record_brain_dump",
