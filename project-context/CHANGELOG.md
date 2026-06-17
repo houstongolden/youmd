@@ -1,6 +1,22 @@
 # You.md — Changelog
 
+## 2026-06-17 — Shell sidebar expand/collapse
+
+### fix(web): let manual sidebar toggles override responsive auto-collapse
+- Fixed the left shell sidebar getting stuck collapsed when the right detail pane was open below the `1520px` auto-collapse threshold.
+- Replaced the raw persisted boolean with an explicit sidebar collapse mode: `auto`, `collapsed`, or `expanded`.
+- Kept responsive auto-collapse as the default for narrow desktop layouts, but made the YOU/menu toggle write a manual override based on the currently rendered state so the first click expands an auto-collapsed sidebar.
+- Preserved the legacy `youmd.shell.sidebarCollapsed` key for compatibility while adding `youmd.shell.sidebarCollapseMode`.
+- Verified with focused dashboard lint, root lint/radius, `git diff --check`, and `npm run build`.
+- Authenticated visual click QA is still pending because the available browser sessions were either unauthenticated or not attachable without writing a new local auth session.
+
 ## 2026-06-17 — GitHub sync proof, portfolio persistence, and project tasks
+
+### test(web): verify authenticated 90-day GitHub project catalog refresh
+- Opened authenticated local `/shell?integration=github` in Chrome, clicked `refresh active projects`, and waited through the `analyzing your most active repos` state.
+- Verified the dashboard returned 38 visible `repo: houstongolden/...` project rows, including repo name, local directory name, inferred stack, API/MCP docs links, goal, and recent progress fields.
+- Verified the shell GitHub status indicator refreshed to `JUST NOW` after the analysis completed.
+- Captured a visual proof screenshot showing the GitHub connector repo tab, `refresh active projects`, and the refreshed project catalog list.
 
 ### feat(web/convex): hydrate portfolio graph dashboard from persisted records
 - Added `portfolio.syncDashboardSeed`, an owner-gated mutation that upserts the dashboard bootstrap graph into `portfolioProjects`, `portfolioApiSurfaces`, `portfolioDependencyEdges`, and `portfolioReusablePatterns`.

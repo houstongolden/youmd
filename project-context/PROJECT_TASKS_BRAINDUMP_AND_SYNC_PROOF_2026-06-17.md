@@ -94,12 +94,16 @@ GitHub status and task/graph paths behave in the actual product.
   refreshed the pane, and proved it now reads `CONVEX PERSISTED GRAPH` with
   `4 projects / 5 surfaces / 4 edges / 5 patterns` plus the status line
   `persisted 4 projects / 5 surfaces / 4 edges / 5 patterns`.
+- Authenticated Chrome QA opened `/shell?integration=github`, clicked
+  `refresh active projects`, waited through the 90-day GitHub analyzer, and
+  verified the dashboard catalog returned with 38 visible `repo:
+  houstongolden/...` rows. The rows include repo, directory, stack, API/MCP
+  docs links, goal, and recent progress; the top GitHub status also refreshed
+  back to `JUST NOW`.
 
 ## Still Open
 
 - Export the persisted portfolio graph back into repo-backed markdown snapshots.
-- Run and visually verify the authenticated 90-day GitHub project analysis
-  refresh in the dashboard, not only the CLI dry-run.
 - Add first-class dashboard task creation/editing and brain-dump invocation on
   top of persisted `portfolioTasks` / `brainDumpCaptures`.
 - Add persisted update artifacts/history for PR, conflict, check, merge, and

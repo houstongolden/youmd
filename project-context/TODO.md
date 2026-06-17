@@ -7,6 +7,13 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-17 — Shell sidebar expand/collapse regression
+- [x] Investigate why the left shell sidebar can get stuck collapsed when the right detail pane is open
+- [x] Fix the responsive auto-collapse state so a manual click expands the sidebar immediately instead of being overridden below `1520px`
+- [x] Preserve the narrow-width auto-collapse default until the user explicitly chooses expanded or collapsed
+- [x] Verify with focused dashboard lint, root lint/radius, `git diff --check`, and `npm run build`
+- [ ] Run authenticated visual QA in `/shell` once an attachable logged-in browser session is available
+
 ### 2026-06-17 — Resident daemon and always-on sync
 - [x] Add a first-class daemon health model for identity/API sync, shared skillstack sync, and project-context sync
 - [x] Add `com.youmd.context-sync` as a third resident LaunchAgent running `youmd stack context-sync` every 15 minutes
@@ -51,7 +58,7 @@ PRD Version: 2.3
 - [x] Run Convex codegen/typecheck/tests and root/CLI builds for the new schema/API/MCP updates
 - [x] Run a real local MCP `get_project_context` smoke that proves the portfolio slice is present
 - [x] Run authenticated Chrome web QA against local `/shell`, click `[ update ]`, and verify chat transcript + GitHub icon timestamp behavior
-- [ ] Run the authenticated recent GitHub project analysis refresh and verify 90-day project catalog visibility
+- [x] Run the authenticated recent GitHub project analysis refresh and verify 90-day project catalog visibility
 - [x] Add dashboard hydration for persisted portfolio graph records instead of static-only pane data, with static data demoted to bootstrap seed/fallback
 - [ ] Add first-class dashboard task creation/editing and brain-dump invocation on top of persisted `portfolioTasks` / `brainDumpCaptures`
 - [ ] Add first-class persisted update artifacts/history for PR/check/conflict/merge steps
@@ -93,7 +100,7 @@ PRD Version: 2.3
 - [x] Add project stack names, API docs links, MCP docs links, repo/directory names, high-level goals, and recent progress to tracked project records and DSI/dashboard project catalog output
 - [x] Link fresh-machine env handling to the canonical encrypted `.env.local` audit/backup/restore flow in `.agent-shared`
 - [ ] Add a dedicated signed-in machine/computer readiness card that shows this machine, synced computers, skill-stack sync, project clone readiness, and encrypted env-backup readiness in one dashboard/shell confirmation
-- [ ] Run the production authenticated GitHub project refresh and verify the dashboard lists the 90-day active project catalog with repo, dir, stack, API/MCP docs, goal, and recent progress
+- [x] Run the authenticated GitHub project refresh and verify the dashboard lists the 90-day active project catalog with repo, dir, stack, API/MCP docs, goal, and recent progress
 - [ ] Reseed/deploy the hosted bundled-skill registry so production `/api/v1/skills` includes `machine-bootstrap`
 
 ### 2026-06-16 — Local agent auth handoff
