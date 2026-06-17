@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-17 — Web-shell portfolio task sync proof
+
+### test(shell): prove project-scoped agent task sync from the local composer
+- Authenticated Codex in-app Browser QA on `http://localhost:3100/shell?tab=portfolio&project=youmd#project-detail` verified the rendered Portfolio Graph state Houston requested: `55 PROJECTS`, shipped pulse with `today` / `7d` / `30d` / `90d`, compact project list, search/focus/sort controls, clickable `details` / `timeline` links, full ranked focus labels, and the selected You.md `PROJECT GRAPH LINKS` block.
+- The selected project detail block showed exact graph/API/MCP/stack context: `https://you.md/api/v1/docs/reference`, `https://you.md/api/v1/docs/openapi.json`, `https://you.md/.well-known/mcp.json`, the owner-gated portfolio graph curl command, docs curl commands, `curl -fsSL https://you.md/install.sh | bash`, and `git clone https://github.com/houstongolden/youmd youmd`.
+- Submitted `/task agent youmd: web shell portfolio sync proof 20260617T175421Z ... #shell-sync-proof #portfolio-task-proof` through the actual shell composer. The shell saved an agent-owned You.md task, wrote `projects/youmd/tasks.md`, published bundle `v129`, queued the repo update loop from chat, opened identity sync PR #20, merged it, refreshed 53 mirrored files, and returned the GitHub chrome to `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
+- GitHub read-back confirmed PR #20 (`https://github.com/houstongolden/houstongolden-you-md/pull/20`) merged at `2026-06-17T17:55:56Z` with merge commit `57a4417c30257a483b0a0e193aecc0ee44e5c998`, and `projects/youmd/tasks.md` on `main` contains the exact proof title, `owner: agent (You Agent)`, `project: youmd`, and `shell-sync-proof` / `portfolio-task-proof` tags.
+- Visual proof screenshots: `/tmp/youmd-portfolio-detail-shipped-links-proof-2026-06-17.png` and `/tmp/youmd-shell-task-github-sync-proof-2026-06-17.png`.
+
 ## 2026-06-17 — Production portfolio anchor QA
 
 ### fix(web): replace project detail hash when opening timeline anchors

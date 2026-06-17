@@ -215,6 +215,28 @@ GitHub status and task/graph paths behave in the actual product.
   `POST /api/v1/me/portfolio/brain-dumps`. They write Convex records, update
   repo-backed markdown snapshots, publish the bundle, push to the linked GitHub
   repo, and refresh the mirror through the same trusted owner path.
+- Authenticated Codex in-app Browser proof on local
+  `/shell?tab=portfolio&project=youmd#project-detail` verified the current
+  Portfolio Graph UI before the task write: `55` persisted projects, shipped
+  `today` / `7d` / `30d` / `90d`, compact project search/focus/sort controls,
+  clickable `details` / `timeline` links, full ranked focus labels, and the
+  selected You.md `PROJECT GRAPH LINKS` block with API docs, OpenAPI docs,
+  MCP docs, graph curl, docs curl, stack install curl, and clone command.
+- The same browser submitted
+  `/task agent youmd: web shell portfolio sync proof 20260617T175421Z ...`
+  through the real shell composer. The command saved an agent-owned You.md
+  task, wrote `projects/youmd/tasks.md`, published bundle `v129`, queued repo
+  sync from shell chat, opened/merged PR #20, refreshed 53 mirrored files,
+  moved the Portfolio task graph to `7` open items, and returned the GitHub
+  chrome to `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
+- GitHub independently verified PR #20 as `MERGED` at
+  `2026-06-17T17:55:56Z` with merge commit
+  `57a4417c30257a483b0a0e193aecc0ee44e5c998`; `projects/youmd/tasks.md` on
+  `main` contains the exact proof title, `owner: agent (You Agent)`,
+  `project: youmd`, and `shell-sync-proof` / `portfolio-task-proof` tags.
+- Visual proof screenshots:
+  `/tmp/youmd-portfolio-detail-shipped-links-proof-2026-06-17.png` and
+  `/tmp/youmd-shell-task-github-sync-proof-2026-06-17.png`.
 - `youmd project task agent youmd: verify local CLI portfolio task sync proof
   from Codex --priority high --tags cli-proof,local-agent,youmd` saved the task
   into `portfolioTasks`, wrote `projects/youmd/tasks.md`, published bundle
