@@ -21,7 +21,6 @@ import {
 import {
   installSkill,
   installSkillAsync,
-  isRemoteSkillSource,
   removeSkill,
   applySkill,
   syncAllSkills,
@@ -202,10 +201,7 @@ async function installSkillCmd(args: string[]): Promise<void> {
 
     let installed = 0;
     for (const entry of toInstall) {
-      let result = installSkill(entry.name);
-      if (!result.ok && isRemoteSkillSource(entry.source)) {
-        result = await installSkillAsync(entry.name);
-      }
+      const result = await installSkillAsync(entry.name);
       if (result.ok) installed++;
     }
 
@@ -305,7 +301,14 @@ async function installSkillCmd(args: string[]): Promise<void> {
 
   if (entry.installed) {
     console.log("");
-    console.log(DIM(`  "${entry.name}" is already installed.`));
+    const spinner = new BrailleSpinner("syncing installed skill");
+    spinner.start();
+    const result = await installSkillAsync(entry.name);
+    if (result.ok) {
+      spinner.stop(`"${entry.name}" already installed locally; remote state refreshed`);
+    } else {
+      spinner.fail(result.error);
+    }
     console.log("");
     return;
   }
@@ -314,11 +317,7 @@ async function installSkillCmd(args: string[]): Promise<void> {
   const spinner = new BrailleSpinner(randomSpinner("install"));
   spinner.start();
 
-  // Try sync install, fall back to async for remote sources
-  let result = installSkill(entry.name);
-  if (!result.ok && isRemoteSkillSource(entry.source)) {
-    result = await installSkillAsync(entry.name);
-  }
+  const result = await installSkillAsync(entry.name);
 
   if (result.ok) {
     spinner.stop(`v${entry.version}`);
@@ -711,10 +710,7 @@ async function initProjectCmd(args: string[] = []): Promise<void> {
 
     let installed = 0;
     for (const entry of toInstall) {
-      let result = installSkill(entry.name);
-      if (!result.ok && isRemoteSkillSource(entry.source)) {
-        result = await installSkillAsync(entry.name);
-      }
+      const result = await installSkillAsync(entry.name);
       if (result.ok) installed++;
     }
 

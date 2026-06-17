@@ -25,6 +25,7 @@ describe("skills lib", () => {
   let workDir: string;
   let originalHome: string | undefined;
   let originalCwd: string;
+  let originalSharedSkillsDir: string | undefined;
 
   beforeEach(() => {
     tmpHome = fs.realpathSync(
@@ -34,7 +35,9 @@ describe("skills lib", () => {
     fs.mkdirSync(workDir);
     originalHome = process.env.HOME;
     originalCwd = process.cwd();
+    originalSharedSkillsDir = process.env.YOUMD_SHARED_SKILLS_DIR;
     process.env.HOME = tmpHome;
+    delete process.env.YOUMD_SHARED_SKILLS_DIR;
     // chdir away from the repo so a local .youmd bundle can't leak in
     process.chdir(workDir);
     vi.resetModules();
@@ -43,6 +46,8 @@ describe("skills lib", () => {
   afterEach(() => {
     process.chdir(originalCwd);
     process.env.HOME = originalHome;
+    if (originalSharedSkillsDir === undefined) delete process.env.YOUMD_SHARED_SKILLS_DIR;
+    else process.env.YOUMD_SHARED_SKILLS_DIR = originalSharedSkillsDir;
     fs.rmSync(tmpHome, { recursive: true, force: true });
   });
 
@@ -108,6 +113,77 @@ describe("skills lib", () => {
       );
       expect(fs.existsSync(installedPath)).toBe(true);
       expect(fs.readFileSync(installedPath, "utf-8")).toContain("# growth-playbook");
+    });
+  });
+
+  describe("shared: source resolution", () => {
+    function seedSharedSkill(name: string): string {
+      const skillPath = path.join(
+        tmpHome,
+        ".agent-shared",
+        "claude-skills",
+        name,
+        "SKILL.md"
+      );
+      fs.mkdirSync(path.dirname(skillPath), { recursive: true });
+      fs.writeFileSync(
+        skillPath,
+        `---\nname: ${name}\n---\n\n# ${name}\n\nAudits projects without secrets.\n`
+      );
+      return skillPath;
+    }
+
+    it("resolves shared:<name> from the canonical agent-shared skill root", async () => {
+      seedSharedSkill("portfolio-graph-auditor");
+
+      const { resolveSkillSource } = await import("../lib/skills");
+      const content = resolveSkillSource("shared:portfolio-graph-auditor");
+
+      expect(content).toContain("# portfolio-graph-auditor");
+    });
+
+    it("rejects path-like shared skill names", async () => {
+      seedSharedSkill("portfolio-graph-auditor");
+
+      const { resolveSkillSource } = await import("../lib/skills");
+
+      expect(resolveSkillSource("shared:../portfolio-graph-auditor")).toBeNull();
+      expect(resolveSkillSource("shared:portfolio/graph")).toBeNull();
+    });
+
+    it("end-to-end: a catalog entry with a shared: source installs through the sync path", async () => {
+      seedSharedSkill("portfolio-graph-auditor");
+
+      const { writeSkillCatalog } = await import("../lib/skill-catalog");
+      writeSkillCatalog({
+        version: 1,
+        owner: "test",
+        skills: [
+          {
+            name: "portfolio-graph-auditor",
+            description: "test skill",
+            version: "1.0.0",
+            source: "shared:portfolio-graph-auditor",
+            scope: "shared",
+            identity_fields: [],
+            requires: [],
+            installed: false,
+          },
+        ],
+      });
+
+      const { installSkill } = await import("../lib/skills");
+      const result = installSkill("portfolio-graph-auditor");
+
+      expect(result.ok).toBe(true);
+      const installedPath = path.join(
+        tmpHome,
+        ".youmd",
+        "skills",
+        "portfolio-graph-auditor",
+        "SKILL.md"
+      );
+      expect(fs.readFileSync(installedPath, "utf-8")).toContain("# portfolio-graph-auditor");
     });
   });
 

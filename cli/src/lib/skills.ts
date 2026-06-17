@@ -38,6 +38,8 @@ import {
   getRegistrySkill as apiGetRegistrySkill,
 } from "./api";
 
+const SHARED_SKILL_NAME_RE = /^[a-z0-9][a-z0-9-]*$/;
+
 /** Source prefixes that require network access (handled by the async path). */
 export function isRemoteSkillSource(source: string): boolean {
   return (
@@ -86,6 +88,7 @@ export function readSkillFile(skillName: string): { content: string; metadata: R
  *
  * Supported sources:
  *   bundled:path/to/file.md — relative to repo root
+ *   shared:skill-name      — ~/.agent-shared/claude-skills/<name>/SKILL.md
  *   local:/absolute/path.md — local filesystem
  *   github:owner/repo/path  — (future) GitHub raw content
  */
@@ -113,6 +116,29 @@ export function resolveSkillSource(source: string): string | null {
     if (fs.existsSync(altPath)) {
       return fs.readFileSync(altPath, "utf-8");
     }
+    return null;
+  }
+
+  if (source.startsWith("shared:")) {
+    const skillName = source.slice("shared:".length).trim();
+    if (!SHARED_SKILL_NAME_RE.test(skillName)) return null;
+
+    const home = process.env.HOME || "";
+    const sharedRoot = process.env.YOUMD_SHARED_SKILLS_DIR || path.join(home, ".agent-shared", "claude-skills");
+    const candidates = [
+      path.join(sharedRoot, skillName, "SKILL.md"),
+      path.join(home, ".claude", "skills", skillName, "SKILL.md"),
+      path.join(home, ".codex", "skills", skillName, "SKILL.md"),
+      path.join(home, ".agents", "skills", skillName, "SKILL.md"),
+      path.join(home, ".cursor", "skills", skillName, "SKILL.md"),
+    ];
+
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return fs.readFileSync(candidate, "utf-8");
+      }
+    }
+
     return null;
   }
 
@@ -244,8 +270,9 @@ export function installSkill(skillName: string): { ok: boolean; error?: string }
   // Track metrics
   trackSkillEvent(entry.name, "install");
 
-  // Sync to Convex (non-blocking, warn on failure)
-  syncInstallToRemote(entry);
+  // Sync to Convex in the background for library callers. CLI install commands
+  // use installSkillAsync so they can await the dashboard receipt.
+  void syncInstallToRemote(entry);
 
   return { ok: true };
 }
@@ -283,7 +310,7 @@ export async function installSkillAsync(skillName: string): Promise<{ ok: boolea
 
   setSkillInstalled(catalog, entry.name, true);
   trackSkillEvent(entry.name, "install");
-  syncInstallToRemote(entry);
+  await syncInstallToRemote(entry);
 
   return { ok: true };
 }
@@ -909,20 +936,28 @@ function escapeRegex(input: string): string {
 // ─── Remote Sync (non-blocking) ───────────────────────────────────────
 
 /**
- * Sync a local skill install to Convex. Fire-and-forget.
+ * Sync a local skill install to Convex. Local installation stays successful if
+ * this fails; the caller decides whether to await it or fire-and-forget.
  */
-function syncInstallToRemote(entry: SkillEntry): void {
+async function syncInstallToRemote(entry: SkillEntry): Promise<void> {
   if (!isAuthenticated()) return;
-  apiRecordInstall({
-    skillName: entry.name,
-    source: entry.source,
-    scope: entry.scope,
-    identityFields: entry.identity_fields,
-  }).catch((err) => {
-    // Dim warning instead of silent swallow
+
+  try {
+    const result = await apiRecordInstall({
+      skillName: entry.name,
+      source: entry.source,
+      scope: entry.scope,
+      identityFields: entry.identity_fields,
+    });
+
+    if (!result.ok) {
+      throw new Error(`status ${result.status}`);
+    }
+  } catch (err) {
+    // Dim warning instead of silent swallow.
     console.log(chalk.dim(`  sync: ${entry.name} remote sync failed (non-fatal)`));
     if (process.env.DEBUG) console.error(`[skill sync] install sync failed: ${err}`);
-  });
+  }
 }
 
 // ─── Metrics Tracking ─────────────────────────────────────────────────
