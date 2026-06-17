@@ -181,6 +181,29 @@ Implementation slice shipped locally on 2026-06-17:
   `get_agent_brief + portfolio graph`, making shared/meta skill propagation
   visible to Houston in the web UI.
 
+Implementation slice shipped and verified on 2026-06-17:
+
+- Portfolio graph records now persist in Convex tables for projects, API/MCP
+  surfaces, dependency edges, reusable patterns, brain-dump captures, and
+  human/agent portfolio tasks.
+- Local MCP `get_project_context` now includes a project-scoped portfolio slice
+  so agents see owned surfaces, dependencies, reusable patterns, commands, and
+  guardrails before creating duplicate APIs, MCP routes, stacks, or UI/code.
+- `/shell` task and brain-dump commands can create `portfolioTasks` and
+  `brainDumpCaptures`, write repo-backed snapshots, and run the GitHub PR/mirror
+  sync loop.
+- Authenticated API endpoints now let local agents do the same work:
+  `POST /api/v1/me/portfolio/tasks` and
+  `POST /api/v1/me/portfolio/brain-dumps`.
+- The local CLI exposes `youmd project task` and `youmd project braindump`.
+  Local MCP exposes `upsert_portfolio_task` and `record_brain_dump`.
+- Repo-backed snapshots such as `projects/youmd/tasks.md` and
+  `projects/_braindumps/recent.md` are pushed as real files in the linked
+  GitHub brain repo, not hidden only inside `you.json.custom_files`.
+- Authenticated CLI and browser QA proved the path through merged PR #9 and PR
+  #10 in `houstongolden/houstongolden-you-md`, refreshed the repo mirror to 50
+  files, and rendered the CLI-created rows in the persisted Portfolio Graph pane.
+
 Important boundary: a product's protected in-app agent harness is not the same
 thing as an installable public skill stack. The public stack teaches host agents
 how to use the product API/MCP safely. The protected harness may include private

@@ -42,14 +42,15 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Local `/shell` left sidebar expand/collapse is fixed in code: manual clicks now override the responsive auto-collapse state below `1520px` while preserving the narrow-width auto default until the user explicitly chooses expanded or collapsed. Build/lint verification passed; authenticated visual click QA is still pending because the available browser profiles were not attachable without minting a new local web session.
 - The Portfolio Graph pane now hydrates from owner-gated Convex portfolio tables when records exist, labels the state as `CONVEX PERSISTED GRAPH`, and keeps the old static graph only as a bootstrap seed/fallback. Authenticated Chrome QA on local `/shell` verified the persisted state with 4 projects, 5 surfaces, 4 edges, and 5 patterns after deploying the new Convex mutation.
 - Shell chat now has first task/brain-dump write paths: `/task ...` creates owner-aware human/agent `portfolioTasks`, `/braindump ...` preserves raw captures and proposed tasks in `brainDumpCaptures`, both write repo-backed markdown snapshots into `you.json.custom_files`, and both can trigger the publish -> GitHub PR push -> mirror refresh loop from chat. Authenticated Chrome QA verified `/braindump project:youmd ...` through merged PR #7 and `/task me personal: ...` through merged PR #8; the Portfolio Graph pane showed `HUMAN / PERSONAL`, `RECENT BRAIN DUMPS`, and GitHub chrome returned to `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
+- Local-agent API/CLI/MCP writes now share that same portfolio task and brain-dump path. Authenticated CLI QA saved a project-scoped agent task through `youmd project task`, wrote `projects/youmd/tasks.md`, published bundle v100, pushed/merged PR #9, and refreshed the mirror. A follow-up `youmd project braindump` saved the raw capture plus proposed agent task, wrote `projects/_braindumps/recent.md`, published bundle v102, pushed/merged PR #10, and refreshed the mirror to 50 files. Authenticated local browser QA then verified both rows in the Portfolio Graph pane with green/current GitHub status.
 - Local `/shell` now has an APIs + Env Intelligence pane for provider usage, env key-name normalization, service-account notes, API/MCP risk tiers, and secret-safe local audit commands
 - The shell `[ update ]` GitHub control now runs the real publish -> repo push -> mirror refresh loop, streams those steps into shell chat, and was authenticated-Chrome verified locally returning from `SYNCING` to `SYNCED / REPO MIRROR CURRENT / JUST NOW` after merging PR #5 in the linked `houstongolden/houstongolden-you-md` repo
 - Local signed-in visual QA passed for the Portfolio Graph pane, APIs + Env Intelligence pane, and `/skills` tracked-project propagation view at `http://localhost:3100/shell`; production dashboard verification is still pending
 - Local `/skills` now has a readable local-agent sync proof strip showing `7/10 skills synced`, `portfolio-graph-auditor`, `meta-improve`, `proactive-context-fill`, `get_agent_brief + portfolio graph`, and tracked propagation across `youmd`, `bamfaiapp`, and `bamfsite`; the prior bright orange explainer regression is fixed and screenshot-verified at `/tmp/youmd-skills-pane-sync-proof-2026-06-17-v2.png`
 - Homepage now has a first-class YouStacks section that explains stacks as "your own GStack" for packaging expertise, skills, sub-agents, prompts, workflows, taste, examples, tool rules, safe You.md memory access, and improvement loops; it now explicitly supports naming separate stacks for coding, scientific research, content creation, and other domains, teaches curl-first runtime install instead of a CLI-first mental model, and shows GStack/GBrain reference patterns guiding the architecture
 
-### CLI (youmd v0.6.23 — ready to publish)
-- 21 commands (added `skill` with 19 subcommands)
+### CLI (youmd v0.8.2 — local build / npm publish pending)
+- 30 commands, including project portfolio, task, brain-dump, machine, stack, and skill flows
 - Skill system: install, remove, use, sync, create, publish, browse, link, init-project, improve, metrics, export, info, remote
 - Bundled skills now include `youstack-maintainer`, which lets host agents organize, update, improve, smoke, and prepare named YouStacks for private/scoped/public sharing with owner approval
 - Bundled skills now include `machine-bootstrap`, which teaches host agents to set up a fresh Mac/laptop/virtual agent host with You.md auth, local bundle sync, shared skills/stacks, GitHub auth, and active project repo checkout
@@ -77,6 +78,7 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Local MCP now exposes `get_agent_brief` plus `youmd://agent/brief`, giving Claude/Codex/Cursor-style agents one startup call for identity, repo instructions, project-context files, active requests, open TODOs, known issues, installed skills, and next moves
 - Local MCP `get_agent_brief` / `youmd://agent/brief` now includes the You.md portfolio graph slice, and `youmd://portfolio/graph` exposes structured project/API/MCP ownership, reusable pattern, env-audit command, and shared-skill propagation context for local agents before they add endpoints or duplicate cross-project work
 - Local MCP `get_project_context` now also includes a project-scoped portfolio graph slice for matched projects, so agents can see You.md-owned surfaces, dependency edges, reusable patterns, commands, and guardrails inside a project-specific context request
+- Local MCP now exposes write tools `upsert_portfolio_task` and `record_brain_dump`; built-registry proof confirmed both tools are present, and the underlying API-backed CLI path was verified through merged GitHub PRs #9/#10.
 - The canonical shared `portfolio-graph-auditor` skill now instructs agents to verify that MCP portfolio graph path, and the update is synced through `.agent-shared` into Claude, Codex, Cursor, Pi, and the local `~/.youmd/skills/portfolio-graph-auditor` cache
 - The canonical shared `braindump-task-router` skill now exists in `.agent-shared` and is synced through Claude, Codex, Cursor, and Pi; it preserves raw dumps, summarizes insights, routes them to projects, and separates Houston-owned tasks from agent-owned tasks for You.md `brainDumpCaptures` and `portfolioTasks`
 - Bundled skills now include `youstack-start`, `youstack-maintainer`, `machine-bootstrap`, and `portfolio-graph-auditor` locally, making the default catalog 10 skills and giving local agents first-session, stack-maintenance, fresh-machine bootstrap, and portfolio/API/env audit loops before they touch code
@@ -145,7 +147,7 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 
 ### Backend (Convex — kindly-cassowary-600)
 - 21-table schema fully deployed (added skills + skillInstalls)
-- 38+ HTTP API endpoints (added 9 skill endpoints)
+- 40+ HTTP API endpoints, including task and brain-dump write endpoints for local-agent portfolio updates
 - LLM chat proxy (OpenRouter → Claude Sonnet 4.6)
 - Ingestion pipeline (fetch, extract, analyze, compile)
 - LinkedIn scraping via Apify
@@ -187,10 +189,11 @@ MVP now requires account creation before profile building. The "no signup requir
 - The published npm package on npm is still behind the repo; the latest CLI fixes in this repo are now `0.6.23`, but npm still serves `0.6.21`. The May 24 and May 25 trusted publish workflow runs passed install, tests, and build, then failed at `npm publish` with `E404 Not Found / no permission`, which points back to npm package Trusted Publishing/package permission configuration rather than local package code. This shell is not logged into npm (`npm whoami` returns `E401`), and the real `npm trust github ...` setup attempt also returns `E401`. The required external step is either npm package settings or an authenticated `npx npm@11.15.0 trust github youmd --repo houstongolden/youmd --file publish-cli.yml --allow-publish --yes`, then rerun `npm run publish:cli`.
 - Production `/api/v1/skills` still needs a Convex seed/deploy pass before the newer bundled `youstack-start`, `youstack-maintainer`, and `machine-bootstrap` skills are fully reflected in the hosted registry; local CLI catalog/build already includes 9 bundled skills
 - Stack-specific GitHub repo sync and stack grants are not live yet. Existing authenticated You.md MCP/API surfaces cover protected memory access for local agents, but scoped per-stack grant tokens remain the next backend slice.
-- Project portfolio graph storage, auditor skill, and dashboard view are not live
-  yet. Current project state is split across identity bundle `projects`,
-  repo/project-context files, `trackedProjects`, repo mirror, DSI project
-  catalog components, and Loop Report snapshots.
+- Remaining portfolio graph work is richer strategy content, task editing,
+  persisted update artifacts/history, mobile/watch capture adapters, and
+  repo-backed graph snapshots. The Convex-backed graph, dashboard view,
+  auditor skill, project-scoped MCP slice, and CLI/API/MCP task/brain-dump
+  write path are now implemented and locally verified.
 
 ### Portrait Sync
 - CLI generates ASCII portraits locally but sync to web API is not verified end-to-end

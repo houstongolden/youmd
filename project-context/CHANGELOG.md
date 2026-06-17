@@ -12,6 +12,33 @@
 
 ## 2026-06-17 — GitHub sync proof, portfolio persistence, and project tasks
 
+### feat(api/cli/mcp): let local agents write portfolio tasks and brain dumps
+- Added authenticated API endpoints for local-agent writes:
+  `POST /api/v1/me/portfolio/tasks` and
+  `POST /api/v1/me/portfolio/brain-dumps`.
+- Added `youmd project task` and `youmd project braindump`, including compact
+  agent/human owner syntax, project scoping, tags, proposed tasks, and
+  repo-sync status output.
+- Added local MCP tools `upsert_portfolio_task` and `record_brain_dump` so
+  Claude/Codex/Cursor-style MCP clients can create the same Convex-backed
+  `portfolioTasks` and `brainDumpCaptures` records.
+- Updated GitHub repo sync so safe `you.json.custom_files` snapshots are pushed
+  as actual repo files, including `projects/<slug>/tasks.md` and
+  `projects/_braindumps/recent.md`, rather than staying hidden inside JSON only.
+- Deployed Convex to `kindly-cassowary-600`.
+- Verified with `npx convex codegen`, `npx tsc --noEmit --pretty false`,
+  `npm --prefix cli run build`, `npm run lint` (warnings only),
+  `git diff --check`, and `npm run build`.
+- Verified authenticated CLI task write: bundle v100, snapshot
+  `projects/youmd/tasks.md`, merged PR #9, and refreshed repo mirror.
+- Verified authenticated CLI brain-dump write: bundle v102, snapshot
+  `projects/_braindumps/recent.md`, merged PR #10, and refreshed repo mirror.
+- Verified GitHub contents and the repo mirror now include both snapshot files
+  with 50 mirrored files.
+- Verified authenticated local browser Portfolio Graph QA: `CONVEX PERSISTED
+  GRAPH`, the CLI-created task row, the CLI-created brain-dump summary, and
+  fresh/current GitHub status were visible in the actual shell.
+
 ### feat(web): let shell chat save tasks/brain dumps and trigger repo sync
 - Added deterministic shell chat commands for `/task ...` and `/braindump ...` so the You Agent surface can create owner-aware `portfolioTasks` and raw `brainDumpCaptures` without using a form.
 - Task commands write portable markdown snapshots into `projects/<project-or-_personal>/tasks.md`; brain-dump commands write `projects/_braindumps/recent.md`, preserving raw text, summaries, tags, linked projects, and proposed tasks in `you.json.custom_files`.

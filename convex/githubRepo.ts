@@ -349,6 +349,41 @@ To add a project: use \`youmd project add\` or mention it to the You Agent.
   ];
 }
 
+function isSafeRepoPath(filePath: string): boolean {
+  return (
+    filePath.length > 0 &&
+    filePath.length <= 220 &&
+    !filePath.startsWith("/") &&
+    !filePath.includes("\\") &&
+    !filePath.split("/").includes("..")
+  );
+}
+
+function customFilesFromYouJson(youJson: unknown): { path: string; content: string }[] {
+  const record = typeof youJson === "object" && youJson !== null
+    ? youJson as { custom_files?: unknown }
+    : {};
+  const files = Array.isArray(record.custom_files) ? record.custom_files : [];
+  const reserved = new Set(["README.md", "you.md", "you.json"]);
+  const seen = new Set<string>();
+  const result: { path: string; content: string }[] = [];
+
+  for (const item of files) {
+    if (!item || typeof item !== "object") continue;
+    const file = item as { path?: unknown; content?: unknown };
+    if (typeof file.path !== "string" || typeof file.content !== "string") continue;
+    const filePath = file.path.trim().replace(/^\.\/+/, "");
+    if (!isSafeRepoPath(filePath)) continue;
+    if (reserved.has(filePath)) continue;
+    if (!isMirrorablePath(filePath)) continue;
+    if (seen.has(filePath)) continue;
+    seen.add(filePath);
+    result.push({ path: filePath, content: file.content });
+  }
+
+  return result;
+}
+
 /** List the authenticated user's repos so they can connect an existing one. */
 export const listRepos = action({
   args: { clerkId: v.string() },
@@ -572,9 +607,9 @@ export const connectRepo = action({
  *    behavior intact for users who haven't installed the GitHub App.
  */
 export const pushToRepo = action({
-  args: { clerkId: v.string() },
-  handler: async (ctx, { clerkId }) => {
-    await requireOwner(ctx, clerkId);
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
+  handler: async (ctx, { clerkId, _internalAuthToken }) => {
+    await requireOwner(ctx, clerkId, _internalAuthToken);
     const { context, token } = await loadConnectionToken(ctx, clerkId, {
       requireRepoScope: true,
     });
@@ -601,6 +636,7 @@ export const pushToRepo = action({
     const files: { path: string; content: string }[] = [
       { path: "you.md", content: seed.youMd ?? "" },
       { path: "you.json", content: JSON.stringify(seed.youJson ?? {}, null, 2) },
+      ...customFilesFromYouJson(seed.youJson),
     ];
 
     // Autonomous management: route identity writes through agentPushViaPR
@@ -887,9 +923,9 @@ async function performMirror(
 
 /** Owner-facing: refresh the server-side mirror of the linked repo. */
 export const syncMirror = action({
-  args: { clerkId: v.string() },
-  handler: async (ctx, { clerkId }) => {
-    await requireOwner(ctx, clerkId);
+  args: { clerkId: v.string(), _internalAuthToken: v.optional(v.string()) },
+  handler: async (ctx, { clerkId, _internalAuthToken }) => {
+    await requireOwner(ctx, clerkId, _internalAuthToken);
     return await performMirror(ctx, clerkId);
   },
 });

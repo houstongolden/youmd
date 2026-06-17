@@ -11,7 +11,7 @@
  *
  * ─── MIGRATION STATUS ───────────────────────────────────────────────────────
  *
- * MIGRATED (17 tools):
+ * MIGRATED (19 tools):
  *   whoami              — local bundle read, no auth required
  *   get_identity        — local bundle read, compact/full/json/markdown
  *   list_skills         — pure local dir scan
@@ -30,6 +30,8 @@
  *   get_remote_status   — conditional auth branch + ctx.apiRequest
  *   use_skill           — ctx.getInstalledSkills()
  *   get_activity_log    — auth-gated fetch via ctx.fetchActivityLog
+ *   upsert_portfolio_task — authenticated write via ctx.apiRequest
+ *   record_brain_dump   — authenticated write via ctx.apiRequest
  *
  * DEFERRED (4 tools — write-ops and dynamic-import tools):
  *   get_agent_brief     — >50 lines; delegates to buildAgentBrief() in server.ts
@@ -719,6 +721,162 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
       } catch (err) {
         return {
           content: [{ type: "text", text: `failed to save memory: ${err instanceof Error ? err.message : "unknown error"}` }],
+          isError: true,
+        };
+      }
+    },
+  },
+
+  // ── upsert_portfolio_task ───────────────────────────────────────────────────
+  {
+    name: "upsert_portfolio_task",
+    description:
+      "Create a project-associated or personal portfolio task for the user. Use when a local agent needs to assign work to the human or to agents and sync the task into You.md's portfolio graph/repo snapshot. Requires authentication.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Task title." },
+        project: { type: "string", description: "Optional project slug/name. Omit or use personal for uncategorized personal tasks." },
+        description: { type: "string", description: "Optional task details." },
+        owner_type: { type: "string", enum: ["human", "agent"], description: "Who owns this task: human or agent." },
+        owner_label: { type: "string", description: "Optional owner label, such as Houston, Codex, Claude, or You Agent." },
+        status: { type: "string", description: "Task status: proposed, open, in_progress, done, snoozed, cancelled." },
+        priority: { type: "string", description: "Priority: low, normal, high, urgent." },
+        tags: { type: "array", items: { type: "string" }, description: "Optional searchable tags." },
+        sync_repo: { type: "boolean", description: "Whether to publish and sync the GitHub repo snapshot. Defaults true." },
+      },
+      required: ["title", "owner_type"],
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.authenticated) {
+        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+      }
+      const title = typeof args.title === "string" ? args.title.trim() : "";
+      if (!title) {
+        return { content: [{ type: "text", text: "missing required argument: title" }], isError: true };
+      }
+      const ownerType = args.owner_type === "human" ? "human" : "agent";
+      const body = {
+        title,
+        projectSlug: typeof args.project === "string" ? args.project : undefined,
+        description: typeof args.description === "string" ? args.description : undefined,
+        ownerType,
+        ownerLabel: typeof args.owner_label === "string" ? args.owner_label : ctx.resolveAgentName(),
+        status: typeof args.status === "string" ? args.status : "open",
+        priority: typeof args.priority === "string" ? args.priority : "normal",
+        tags: Array.isArray(args.tags) ? args.tags.filter((tag): tag is string => typeof tag === "string") : [],
+        syncRepo: args.sync_repo !== false,
+        sourceType: "mcp",
+        agentName: ctx.resolveAgentName(),
+      };
+      try {
+        const result = await ctx.apiRequest("/api/v1/me/portfolio/tasks", {
+          method: "POST",
+          body,
+        }) as Record<string, unknown>;
+        const ok = result.success === true;
+        ctx.logActivity("write", "portfolio/task", { title, project: body.projectSlug ?? "personal" });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          isError: !ok,
+        };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `failed to save portfolio task: ${err instanceof Error ? err.message : "unknown error"}` }],
+          isError: true,
+        };
+      }
+    },
+  },
+
+  // ── record_brain_dump ───────────────────────────────────────────────────────
+  {
+    name: "record_brain_dump",
+    description:
+      "Save a raw brain dump, route it to projects/tags, and optionally create proposed human/agent tasks. Use for pasted notes, terminal thoughts, SMS/watch transcripts, and local-agent research that should not die in one-off files. Requires authentication.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        raw_text: { type: "string", description: "Raw unedited brain dump or transcript text." },
+        summary: { type: "string", description: "Short summary. Omit to let the API derive one." },
+        projects: { type: "array", items: { type: "string" }, description: "Related project slugs/names." },
+        tags: { type: "array", items: { type: "string" }, description: "Topic tags." },
+        insights: { type: "array", items: { type: "string" }, description: "Interesting insights or through-lines." },
+        source: { type: "string", description: "Capture source: mcp, cli, sms, watch, badapp, shell, manual." },
+        tasks: {
+          type: "array",
+          description: "Optional proposed tasks extracted from the dump.",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              projectSlug: { type: "string" },
+              description: { type: "string" },
+              ownerType: { type: "string", enum: ["human", "agent"] },
+              ownerLabel: { type: "string" },
+              priority: { type: "string" },
+              tags: { type: "array", items: { type: "string" } },
+            },
+            required: ["title", "ownerType"],
+          },
+        },
+        sync_repo: { type: "boolean", description: "Whether to publish and sync the GitHub repo snapshot. Defaults true." },
+      },
+      required: ["raw_text"],
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.authenticated) {
+        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+      }
+      const rawText = typeof args.raw_text === "string" ? args.raw_text.trim() : "";
+      if (!rawText) {
+        return { content: [{ type: "text", text: "missing required argument: raw_text" }], isError: true };
+      }
+      const arrayOfStrings = (value: unknown) =>
+        Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+      const tasks = Array.isArray(args.tasks)
+        ? args.tasks
+            .map((task) => typeof task === "object" && task !== null ? task as Record<string, unknown> : null)
+            .filter((task): task is Record<string, unknown> => task !== null && typeof task.title === "string")
+            .map((task) => ({
+              title: String(task.title),
+              projectSlug: typeof task.projectSlug === "string" ? task.projectSlug : undefined,
+              description: typeof task.description === "string" ? task.description : undefined,
+              ownerType: task.ownerType === "human" ? "human" : "agent",
+              ownerLabel: typeof task.ownerLabel === "string" ? task.ownerLabel : ctx.resolveAgentName(),
+              priority: typeof task.priority === "string" ? task.priority : "normal",
+              tags: arrayOfStrings(task.tags),
+            }))
+        : [];
+      const body = {
+        rawText,
+        summary: typeof args.summary === "string" ? args.summary : undefined,
+        projectSlugs: arrayOfStrings(args.projects),
+        tags: arrayOfStrings(args.tags),
+        insights: arrayOfStrings(args.insights),
+        source: typeof args.source === "string" ? args.source : "mcp",
+        tasks,
+        syncRepo: args.sync_repo !== false,
+        agentName: ctx.resolveAgentName(),
+        metadata: {
+          command: "record_brain_dump",
+          savedFrom: "cli-mcp",
+        },
+      };
+      try {
+        const result = await ctx.apiRequest("/api/v1/me/portfolio/brain-dumps", {
+          method: "POST",
+          body,
+        }) as Record<string, unknown>;
+        const ok = result.success === true;
+        ctx.logActivity("write", "portfolio/brain-dump", { projects: body.projectSlugs, taskCount: tasks.length });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          isError: !ok,
+        };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `failed to save brain dump: ${err instanceof Error ? err.message : "unknown error"}` }],
           isError: true,
         };
       }

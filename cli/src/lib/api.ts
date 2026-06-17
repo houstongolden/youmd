@@ -572,6 +572,88 @@ export async function saveMemories(
   });
 }
 
+// ─── Portfolio tasks + brain dumps ─────────────────────────────────
+
+export interface PortfolioTaskPayload {
+  projectSlug?: string;
+  title: string;
+  description?: string;
+  ownerType: "human" | "agent";
+  ownerLabel?: string;
+  status?: string;
+  priority?: string;
+  tags?: string[];
+  sourceType?: string;
+  syncRepo?: boolean;
+  agentName?: string;
+}
+
+export interface PortfolioWriteResult {
+  success: boolean;
+  taskId?: string;
+  captureId?: string;
+  taskIds?: string[];
+  created?: boolean;
+  snapshot?: {
+    path: string;
+    bundleVersion: number | null;
+    publishVersion: number | null;
+    repoSync: {
+      attempted: boolean;
+      ok: boolean;
+      error?: string;
+      push?: unknown;
+      mirror?: unknown;
+    };
+  };
+  error?: unknown;
+  message?: string;
+}
+
+export interface BrainDumpTaskPayload {
+  projectSlug?: string;
+  title: string;
+  description?: string;
+  ownerType: "human" | "agent";
+  ownerLabel?: string;
+  status?: string;
+  priority?: string;
+  tags?: string[];
+}
+
+export interface BrainDumpPayload {
+  rawText: string;
+  summary?: string;
+  insights?: string[];
+  projectSlugs?: string[];
+  tags?: string[];
+  source?: string;
+  tasks?: BrainDumpTaskPayload[];
+  metadata?: Record<string, unknown>;
+  syncRepo?: boolean;
+  agentName?: string;
+}
+
+export async function savePortfolioTask(
+  payload: PortfolioTaskPayload
+): Promise<ApiResponse<PortfolioWriteResult>> {
+  return apiRequest<PortfolioWriteResult>("/api/v1/me/portfolio/tasks", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
+export async function saveBrainDump(
+  payload: BrainDumpPayload
+): Promise<ApiResponse<PortfolioWriteResult>> {
+  return apiRequest<PortfolioWriteResult>("/api/v1/me/portfolio/brain-dumps", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
 // ─── Analytics ───────────────────────────────────────────────────────
 
 export async function getAnalytics(): Promise<ApiResponse<Record<string, unknown>>> {

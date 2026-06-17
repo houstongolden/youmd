@@ -114,14 +114,40 @@ GitHub status and task/graph paths behave in the actual product.
   `projects/_personal/tasks.md` into `you.json.custom_files`, pushed through PR
   #8, merged the PR, refreshed 47 mirrored files, and kept the GitHub chrome at
   `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
+- CLI/local-agent proof added authenticated API endpoints for local agents:
+  `POST /api/v1/me/portfolio/tasks` and
+  `POST /api/v1/me/portfolio/brain-dumps`. They write Convex records, update
+  repo-backed markdown snapshots, publish the bundle, push to the linked GitHub
+  repo, and refresh the mirror through the same trusted owner path.
+- `youmd project task agent youmd: verify local CLI portfolio task sync proof
+  from Codex --priority high --tags cli-proof,local-agent,youmd` saved the task
+  into `portfolioTasks`, wrote `projects/youmd/tasks.md`, published bundle
+  v100, pushed and merged PR #9, and refreshed the repo mirror.
+- `youmd project braindump project:youmd ... --agent-task "Verify CLI-created
+  brain dump appears in Portfolio Graph and repo mirror"` saved the raw
+  `brainDumpCaptures` record, proposed an agent-owned task, wrote
+  `projects/_braindumps/recent.md`, published bundle v102, pushed and merged
+  PR #10, and refreshed the repo mirror.
+- GitHub verified PR #9 merged at `2026-06-17T06:39:33Z` and PR #10 merged at
+  `2026-06-17T06:39:59Z` in `houstongolden/houstongolden-you-md`. GitHub
+  contents now include `projects/youmd/tasks.md` and
+  `projects/_braindumps/recent.md`, and the repo mirror lists 50 files.
+- Authenticated local browser QA opened the Portfolio Graph pane and verified
+  `CONVEX PERSISTED GRAPH`, the CLI-created task row, the CLI-created
+  brain-dump summary, `RECENT BRAIN DUMPS`, and fresh GitHub status. The status
+  was green/current; by the screenshot pass it read minutes ago because the
+  CLI/GitHub verification had already elapsed.
+- Local MCP registry proof confirmed `upsert_portfolio_task` and
+  `record_brain_dump` are present in the built CLI tool registry, so Claude,
+  Codex, Cursor, and other local MCP clients can call the same API-backed write
+  path instead of relying on static dashboard data.
 
 ## Still Open
 
 - Export the persisted portfolio graph back into repo-backed markdown snapshots.
 - Add first-class dashboard task editing/triage controls on top of persisted
   `portfolioTasks` / `brainDumpCaptures`.
-- Add CLI/local-agent and mobile/watch invocation proof for task and brain-dump
-  capture paths.
+- Add mobile/watch invocation proof for task and brain-dump capture paths.
 - Add persisted update artifacts/history for PR, conflict, check, merge, and
   mirror-refresh steps.
 - Enrich active project strategy records with vision, pain points, solution,

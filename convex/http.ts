@@ -896,6 +896,196 @@ async function guardWrite(
   return { blocked: null, finish };
 }
 
+function cleanStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string").map((item) => item.trim()).filter(Boolean)
+    : [];
+}
+
+function portfolioSlug(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 90);
+  return slug || undefined;
+}
+
+function snapshotPathForProject(projectSlug: string | undefined): string {
+  return `projects/${projectSlug || "_personal"}/tasks.md`;
+}
+
+function appendMarkdownEntry(existing: string, title: string, entry: string): string {
+  const base = existing.trim()
+    ? existing.trim()
+    : `# ${title}\n\nRepo-backed snapshot maintained from You.md agent and CLI commands.`;
+  return `${base}\n\n${entry.trim()}\n`;
+}
+
+function readCustomFileFromYouJson(youJson: Record<string, unknown>, filePath: string): string {
+  const files = Array.isArray(youJson.custom_files)
+    ? youJson.custom_files as Array<{ path?: unknown; content?: unknown }>
+    : [];
+  const file = files.find((item) => item.path === filePath);
+  return typeof file?.content === "string" ? file.content : "";
+}
+
+function upsertCustomFile(
+  youJson: Record<string, unknown>,
+  filePath: string,
+  content: string
+): Record<string, unknown> {
+  const next = JSON.parse(JSON.stringify(youJson)) as Record<string, unknown>;
+  const files = Array.isArray(next.custom_files)
+    ? next.custom_files as Array<{ path?: unknown; content?: unknown; isPublic?: unknown }>
+    : [];
+  const nextFile = {
+    path: filePath,
+    content,
+    isPublic: filePath.startsWith("profile/"),
+  };
+  const index = files.findIndex((file) => file.path === filePath);
+  if (index >= 0) {
+    files[index] = nextFile;
+  } else {
+    files.push(nextFile);
+  }
+  next.custom_files = files;
+  return next;
+}
+
+function taskSnapshotMarkdown(task: {
+  title: string;
+  ownerType: "human" | "agent";
+  ownerLabel?: string;
+  projectSlug?: string;
+  status?: string;
+  priority?: string;
+  description?: string;
+  tags?: string[];
+}, savedAt: string): string {
+  return [
+    `## ${savedAt}`,
+    `- title: ${task.title}`,
+    `- owner: ${task.ownerType}${task.ownerLabel ? ` (${task.ownerLabel})` : ""}`,
+    `- project: ${task.projectSlug ?? "personal"}`,
+    `- status: ${task.status ?? "open"}`,
+    task.priority ? `- priority: ${task.priority}` : null,
+    task.description ? `- notes: ${task.description}` : null,
+    task.tags?.length ? `- tags: ${task.tags.join(", ")}` : null,
+  ].filter(Boolean).join("\n");
+}
+
+function brainDumpSnapshotMarkdown(capture: {
+  rawText: string;
+  summary: string;
+  projectSlugs: string[];
+  tags: string[];
+  tasks: Array<{ ownerType: "human" | "agent"; title: string }>;
+}, savedAt: string): string {
+  const lines = [
+    `## ${savedAt}`,
+    `summary: ${capture.summary}`,
+    capture.projectSlugs.length ? `projects: ${capture.projectSlugs.join(", ")}` : "projects: uncategorized",
+    capture.tags.length ? `tags: ${capture.tags.join(", ")}` : null,
+    "",
+    "raw:",
+    capture.rawText,
+  ].filter((line): line is string => line !== null);
+
+  if (capture.tasks.length > 0) {
+    lines.push("", "proposed tasks:");
+    for (const task of capture.tasks) {
+      lines.push(`- [${task.ownerType}] ${task.title}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+async function saveSnapshotPublishAndSync(
+  ctx: ActionCtx,
+  auth: AuthContext,
+  snapshotPath: string,
+  snapshotEntry: string,
+  source: string,
+  syncRepo: boolean
+): Promise<{
+  path: string;
+  bundleVersion: number | null;
+  publishVersion: number | null;
+  repoSync: { attempted: boolean; ok: boolean; error?: string; push?: unknown; mirror?: unknown };
+}> {
+  const profile = await ctx.runQuery(api.me.getMyProfile, {
+    clerkId: auth.userId,
+    _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+  });
+  const latestBundle = profile?.latestBundle;
+  if (!latestBundle) {
+    return {
+      path: snapshotPath,
+      bundleVersion: null,
+      publishVersion: null,
+      repoSync: { attempted: false, ok: false, error: "No bundle exists yet." },
+    };
+  }
+
+  const currentYouJson = JSON.parse(JSON.stringify(latestBundle.youJson ?? {})) as Record<string, unknown>;
+  const existing = readCustomFileFromYouJson(currentYouJson, snapshotPath);
+  const content = appendMarkdownEntry(existing, snapshotPath.endsWith("tasks.md") ? "Portfolio Tasks" : "Brain Dump Captures", snapshotEntry);
+  const youJson = upsertCustomFile(currentYouJson, snapshotPath, content);
+
+  const saved = await ctx.runMutation(api.me.saveBundleFromForm, {
+    clerkId: auth.userId,
+    _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+    source,
+    profileData: {
+      _rawBundle: true,
+      manifest: latestBundle.manifest ?? {},
+      youJson,
+      youMd: latestBundle.youMd ?? "",
+    },
+  });
+
+  const published = await ctx.runMutation(api.me.publishLatest, {
+    clerkId: auth.userId,
+    _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+  });
+
+  const repoSync: { attempted: boolean; ok: boolean; error?: string; push?: unknown; mirror?: unknown } = {
+    attempted: syncRepo,
+    ok: !syncRepo,
+  };
+
+  if (syncRepo) {
+    try {
+      const push = await ctx.runAction(api.githubRepo.pushToRepo, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+      });
+      const mirror = await ctx.runAction(api.githubRepo.syncMirror, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+      });
+      repoSync.ok = true;
+      repoSync.push = push;
+      repoSync.mirror = mirror;
+    } catch (err) {
+      repoSync.ok = false;
+      repoSync.error = err instanceof Error ? err.message : "unknown repo sync error";
+    }
+  }
+
+  return {
+    path: snapshotPath,
+    bundleVersion: saved.version,
+    publishVersion: published.version,
+    repoSync,
+  };
+}
+
 // POST /api/v1/me/bundle — Save a bundle
 http.route({
   path: "/api/v1/me/bundle",
@@ -1168,6 +1358,196 @@ http.route({
       return json({ schemaVersion: "you-md/v1", ...profile });
     }
     return json(profile);
+  }),
+});
+
+// POST /api/v1/me/portfolio/tasks — Create an owner-aware portfolio task from CLI/MCP/API.
+http.route({
+  path: "/api/v1/me/portfolio/tasks",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle", "projects");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    const startedAt = Date.now();
+    const body = await request.json();
+    const title = typeof body.title === "string" ? body.title.trim() : "";
+    if (!title) return errorResponse("invalid_request", "title must be a non-empty string", 400);
+
+    const ownerType: "human" | "agent" = body.ownerType === "human" ? "human" : "agent";
+    const projectSlug = portfolioSlug(body.projectSlug ?? body.project);
+    const tags = cleanStringArray(body.tags);
+    const status = typeof body.status === "string" && body.status.trim() ? body.status.trim() : "open";
+    const priority = typeof body.priority === "string" && body.priority.trim() ? body.priority.trim() : "normal";
+    const description = typeof body.description === "string" && body.description.trim()
+      ? body.description.trim()
+      : undefined;
+    const ownerLabel = typeof body.ownerLabel === "string" && body.ownerLabel.trim()
+      ? body.ownerLabel.trim()
+      : undefined;
+
+    try {
+      const task = await ctx.runMutation(api.portfolio.upsertTask, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        projectSlug,
+        title,
+        description,
+        ownerType,
+        ownerLabel,
+        status,
+        priority,
+        sourceType: typeof body.sourceType === "string" ? body.sourceType : "cli-agent",
+        tags,
+      });
+
+      const snapshot = await saveSnapshotPublishAndSync(
+        ctx,
+        auth,
+        snapshotPathForProject(projectSlug),
+        taskSnapshotMarkdown({ title, ownerType, ownerLabel, projectSlug, status, priority, description, tags }, new Date().toISOString()),
+        "api:portfolio-task",
+        body.syncRepo !== false
+      );
+
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: body.agentName || auth.appName || agent.name,
+          agentSource: authAgentSource(auth, request),
+          agentVersion: agent.version,
+          action: "write",
+          resource: "portfolio/task",
+          status: "success",
+          connectedAppGrantId: auth.connectedAppGrantId,
+          durationMs: Date.now() - startedAt,
+          details: { projectSlug: projectSlug ?? "personal", ownerType, snapshotPath: snapshot.path },
+        });
+      } catch {
+        // best-effort
+      }
+
+      return guard.finish(json({ success: true, ...task, snapshot }));
+    } catch (err) {
+      return serverErrorResponse("me/portfolio/tasks", err, "Failed to save portfolio task");
+    }
+  }),
+});
+
+// POST /api/v1/me/portfolio/brain-dumps — Preserve raw dumps and route proposed tasks.
+http.route({
+  path: "/api/v1/me/portfolio/brain-dumps",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle", "projects");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    const startedAt = Date.now();
+    const body = await request.json();
+    const rawText = typeof body.rawText === "string" ? body.rawText.trim() : "";
+    if (!rawText) return errorResponse("invalid_request", "rawText must be a non-empty string", 400);
+
+    const projectSlugs = cleanStringArray(body.projectSlugs ?? body.projects)
+      .map((value) => portfolioSlug(value))
+      .filter((value): value is string => Boolean(value));
+    const tags = cleanStringArray(body.tags);
+    const summary = typeof body.summary === "string" && body.summary.trim()
+      ? body.summary.trim()
+      : rawText.replace(/\s+/g, " ").slice(0, 180);
+    const insights = cleanStringArray(body.insights);
+    const tasks = Array.isArray(body.tasks)
+      ? body.tasks.map((task: unknown) => {
+          const row = typeof task === "object" && task !== null ? task as Record<string, unknown> : {};
+          const title = typeof row.title === "string" ? row.title.trim() : "";
+          if (!title) return null;
+          return {
+            projectSlug: portfolioSlug(row.projectSlug) ?? projectSlugs[0],
+            title,
+            description: typeof row.description === "string" && row.description.trim() ? row.description.trim() : undefined,
+            ownerType: row.ownerType === "human" ? "human" as const : "agent" as const,
+            ownerLabel: typeof row.ownerLabel === "string" && row.ownerLabel.trim() ? row.ownerLabel.trim() : undefined,
+            status: typeof row.status === "string" && row.status.trim() ? row.status.trim() : "proposed",
+            priority: typeof row.priority === "string" && row.priority.trim() ? row.priority.trim() : "normal",
+            tags: cleanStringArray(row.tags),
+          };
+        }).filter((task: {
+          projectSlug?: string;
+          title: string;
+          description?: string;
+          ownerType: "human" | "agent";
+          ownerLabel?: string;
+          status?: string;
+          priority?: string;
+          tags?: string[];
+        } | null): task is {
+          projectSlug?: string;
+          title: string;
+          description?: string;
+          ownerType: "human" | "agent";
+          ownerLabel?: string;
+          status?: string;
+          priority?: string;
+          tags?: string[];
+        } => task !== null)
+      : [];
+
+    try {
+      const capture = await ctx.runMutation(api.portfolio.recordBrainDump, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        source: typeof body.source === "string" ? body.source : "cli",
+        rawText,
+        summary,
+        insights,
+        projectSlugs,
+        tags,
+        metadata: {
+          ...(typeof body.metadata === "object" && body.metadata !== null ? body.metadata : {}),
+          savedFrom: "api/v1/me/portfolio/brain-dumps",
+        },
+        tasks,
+      });
+
+      const snapshot = await saveSnapshotPublishAndSync(
+        ctx,
+        auth,
+        "projects/_braindumps/recent.md",
+        brainDumpSnapshotMarkdown({ rawText, summary, projectSlugs, tags, tasks }, new Date().toISOString()),
+        "api:portfolio-brain-dump",
+        body.syncRepo !== false
+      );
+
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: body.agentName || auth.appName || agent.name,
+          agentSource: authAgentSource(auth, request),
+          agentVersion: agent.version,
+          action: "write",
+          resource: "portfolio/brain-dump",
+          status: "success",
+          connectedAppGrantId: auth.connectedAppGrantId,
+          durationMs: Date.now() - startedAt,
+          details: { projectSlugs, taskCount: tasks.length, snapshotPath: snapshot.path },
+        });
+      } catch {
+        // best-effort
+      }
+
+      return guard.finish(json({ success: true, ...capture, snapshot }));
+    } catch (err) {
+      return serverErrorResponse("me/portfolio/brain-dumps", err, "Failed to save brain dump");
+    }
   }),
 });
 
@@ -2895,6 +3275,8 @@ http.route({ path: "/ctx", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/bundle", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/publish", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/portfolio/tasks", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/portfolio/brain-dumps", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/sources", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/build", method: "OPTIONS", handler: corsPreflight });

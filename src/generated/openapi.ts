@@ -603,6 +603,84 @@ export const openApiSpec = {
         ]
       }
     },
+    "/api/v1/me/portfolio/brain-dumps": {
+      "post": {
+        "operationId": "post_api_v1_me_portfolio_brain_dumps",
+        "summary": "Preserve raw dumps and route proposed tasks.",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/portfolio/tasks": {
+      "post": {
+        "operationId": "post_api_v1_me_portfolio_tasks",
+        "summary": "Create an owner-aware portfolio task from CLI/MCP/API.",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/me/portrait": {
       "post": {
         "operationId": "post_api_v1_me_portrait",

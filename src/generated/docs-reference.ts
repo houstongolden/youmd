@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "e1c2fac442b723500818196f3374ed378346c251c49c5cf8165bc1630aa2594f",
+  "sourceHash": "7d225b3b7f3a3b29be6a65c9157415616e8dd24f11c93188a859f08d4b10360d",
   "cli": {
     "version": "0.8.2"
   },
   "counts": {
-    "endpoints": 85,
+    "endpoints": 87,
     "internalRoutes": 7,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 30,
-    "convexRoutes": 66,
+    "convexRoutes": 68,
     "nextRoutes": 26
   },
   "endpoints": [
@@ -216,6 +216,28 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "approve or reject a proposal",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/portfolio/brain-dumps",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Preserve raw dumps and route proposed tasks.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/portfolio/tasks",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Create an owner-aware portfolio task from CLI/MCP/API.",
       "sources": [
         "convex"
       ]
