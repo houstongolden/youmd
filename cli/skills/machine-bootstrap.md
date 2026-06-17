@@ -102,6 +102,17 @@ You.md is the brain. The new machine should become a runnable local agent workst
    `project-context/` presence. It does not read secret values or launch every
    dev server.
 
+10. Only when Houston explicitly wants deeper local proof or the clean host has
+    enough time/CPU, run bounded package checks:
+
+   ```bash
+   youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --run-checks --max-check-projects 8
+   ```
+
+   The default check scripts are `typecheck`, `lint`, `test`, and `build`.
+   Override with `--check-scripts lint,build` when needed. Do not run `dev`
+   servers across the whole workspace by default.
+
 ## Project Bootstrap Rules
 
 - Use repo directory names from GitHub URLs. `https://github.com/houstongolden/foldermd` becomes `foldermd`.
@@ -160,6 +171,12 @@ Audit cloned readiness:
 youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80
 ```
 
+Run bounded package checks:
+
+```bash
+youmd machine verify --root ~/Desktop/CODE_YOU --run-checks --max-check-projects 8 --check-timeout-ms 120000
+```
+
 Include older projects without prompts:
 
 ```bash
@@ -189,6 +206,8 @@ curl -H "Authorization: Bearer $YOUMD_API_KEY" https://you.md/api/v1/me/portfoli
   GitHub recent repos, and local bundle records with source counts.
 - `youmd machine verify` reports git/package/env/agent-doc/project-context
   readiness for the cloned workspace without reading `.env.local` values.
+- If `--run-checks` was requested, bounded package checks ran with project and
+  timeout caps, and failures/timeouts were reported per project.
 - The portfolio graph is hydrated from both remote project records and local
   code/project-context/env-key evidence.
 - `.env.local` files, if restored, came from encrypted vault tooling without

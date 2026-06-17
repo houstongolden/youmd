@@ -12,7 +12,10 @@ import {
   GithubProjectSource,
   MachineProjectCandidate,
 } from "../lib/machine-projects";
-import { buildMachineReadinessReport } from "../lib/machine-verify";
+import {
+  buildMachineReadinessReport,
+  buildMachineRunChecksReport,
+} from "../lib/machine-verify";
 import { buildFreshMachineBootstrapPrompt } from "../lib/machine-bootstrap-prompt";
 
 // The compiled file lives at dist/commands/machine.js.
@@ -58,6 +61,10 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("--key <key>") + chalk.dim("   (prompt) embed a You.md API key for non-interactive login"));
   console.log("    " + chalk.cyan("--env-vault <path>") + chalk.dim(" (prompt) encrypted .env.local vault path to restore"));
   console.log("    " + chalk.cyan("--max-projects <n>") + chalk.dim(" (verify) project scan cap, default 80"));
+  console.log("    " + chalk.cyan("--run-checks") + chalk.dim(" (verify) run bounded package checks after audit"));
+  console.log("    " + chalk.cyan("--check-scripts <names>") + chalk.dim(" (verify) comma list, default typecheck,lint,test,build"));
+  console.log("    " + chalk.cyan("--check-timeout-ms <n>") + chalk.dim(" (verify) timeout per script, default 120000"));
+  console.log("    " + chalk.cyan("--max-check-projects <n>") + chalk.dim(" (verify) package project run cap, default 8"));
   console.log("    " + chalk.cyan("--no-github") + chalk.dim("  (projects) skip authenticated GitHub recent-repo scan"));
   console.log("    " + chalk.cyan("--yes") + chalk.dim("        (projects) include older projects without prompting"));
   console.log("    " + chalk.cyan("--no-clone") + chalk.dim("   (projects) create directories only"));
@@ -312,6 +319,10 @@ async function machineProjectsCommand(opts: {
 function machineVerifyCommand(opts: {
   root?: string;
   maxProjects?: string | number;
+  runChecks?: boolean;
+  checkScripts?: string;
+  checkTimeoutMs?: string | number;
+  maxCheckProjects?: string | number;
 } = {}): void {
   const defaultRoot = path.join(os.homedir(), "Desktop", "CODE_YOU");
   const rootDir = expandHome(opts.root || defaultRoot);
@@ -357,10 +368,60 @@ function machineVerifyCommand(opts: {
   }
   console.log("");
   console.log(chalk.dim("  secret rule: readiness checks only inspect file names and package scripts; .env.local values are never read."));
+  if (!opts.runChecks) {
+    console.log(chalk.dim("  run ") + chalk.cyan("youmd machine verify --run-checks") + chalk.dim(" to execute bounded lint/typecheck/test/build scripts."));
+    console.log("");
+    return;
+  }
+
+  const checkScripts = opts.checkScripts
+    ? opts.checkScripts.split(",").map((script) => script.trim()).filter(Boolean)
+    : undefined;
+  const runReport = buildMachineRunChecksReport(rootDir, {
+    scripts: checkScripts,
+    timeoutMs: Number(opts.checkTimeoutMs || 120_000),
+    maxProjects: Number(opts.maxCheckProjects || 8),
+    scanLimit: Number.isFinite(maxProjects) && maxProjects > 0 ? maxProjects : 80,
+  });
+
+  console.log("");
+  console.log("  " + chalk.bold("bounded package checks"));
+  console.log(chalk.dim(`  scripts: ${runReport.requestedScripts.join(", ")}`));
+  console.log(chalk.dim(`  max projects: ${runReport.maxProjects} / timeout: ${runReport.timeoutMs}ms per script`));
+  console.log(chalk.dim(`  passed: ${runReport.totals.passed} / failed: ${runReport.totals.failed} / timeout: ${runReport.totals.timeout} / skipped: ${runReport.totals.skipped}`));
+  console.log("");
+
+  if (runReport.results.length === 0) {
+    console.log(chalk.dim("  no package projects had requested check scripts."));
+    console.log("");
+    return;
+  }
+
+  for (const result of runReport.results) {
+    const statusColor = result.status === "passed"
+      ? chalk.green
+      : result.status === "skipped"
+        ? chalk.dim
+        : result.status === "timeout"
+          ? chalk.yellow
+          : chalk.hex("#C46A3A");
+    console.log(`  ${statusColor(result.status.padEnd(7))} ${chalk.cyan(result.dirName)} ${chalk.dim(result.command)} ${chalk.dim(`${result.durationMs}ms`)}`);
+    if (result.reason) console.log(chalk.dim(`           reason: ${result.reason}`));
+    if (result.status !== "passed" && result.status !== "skipped" && result.outputTail) {
+      console.log(chalk.dim("           output tail:"));
+      for (const line of result.outputTail.split("\n").slice(-12)) {
+        console.log(chalk.dim(`             ${line}`));
+      }
+    }
+  }
+
+  if (runReport.totals.failed > 0 || runReport.totals.timeout > 0) {
+    process.exitCode = 1;
+  }
   console.log("");
 }
 
-export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxProjects?: string | number; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
+export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxProjects?: string | number; runChecks?: boolean; checkScripts?: string; checkTimeoutMs?: string | number; maxCheckProjects?: string | number; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
   if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
     printHelp();
     return;

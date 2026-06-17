@@ -27,6 +27,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('youmd machine projects --root "$ROOT" --days "$DAYS" --yes');
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"');
     expect(command).toContain('youmd machine verify --root "$ROOT" --max-projects "$LIMIT"');
+    expect(command).toContain('YOUMD_RUN_CHECKS');
+    expect(command).toContain('--run-checks --max-check-projects "${YOUMD_MAX_CHECK_PROJECTS:-8}"');
     expect(command).not.toContain(".env.local=");
   });
 
@@ -37,6 +39,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("```bash");
     expect(prompt).toContain("previews the graph-backed project setup plan");
     expect(prompt).toContain("audits cloned project readiness without reading secret values");
+    expect(prompt).toContain("YOUMD_RUN_CHECKS=1");
     expect(prompt).toContain("You.md portfolio graph + authenticated GitHub recent repos");
     expect(prompt).toContain(".env.local values are never embedded here");
   });

@@ -4,6 +4,7 @@ import * as path from "path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   buildMachineReadinessReport,
+  buildMachineRunChecksReport,
   inspectMachineProject,
 } from "../lib/machine-verify";
 
@@ -61,5 +62,33 @@ describe("machine readiness verifier", () => {
     expect(report.totals.needsEnv).toBe(1);
     expect(report.projects[0].status).toBe("needs-env");
     expect(report.projects[0].notes).toContain("env restore needed before full local run");
+  });
+
+  it("runs bounded opt-in package checks and reports pass/fail results", () => {
+    const root = makeTempRoot();
+    const projectDir = path.join(root, "checks");
+    fs.mkdirSync(projectDir, { recursive: true });
+    fs.writeFileSync(path.join(projectDir, "AGENTS.md"), "# agent docs\n");
+    fs.writeFileSync(path.join(projectDir, "package-lock.json"), "{}\n");
+    fs.writeFileSync(
+      path.join(projectDir, "package.json"),
+      JSON.stringify({
+        scripts: {
+          lint: "node -e \"console.log('lint ok')\"",
+          build: "node -e \"console.error('build nope'); process.exit(2)\"",
+        },
+      }),
+    );
+
+    const report = buildMachineRunChecksReport(root, {
+      scripts: ["lint", "build"],
+      timeoutMs: 30_000,
+      maxProjects: 1,
+    });
+
+    expect(report.totals.passed).toBe(1);
+    expect(report.totals.failed).toBe(1);
+    expect(report.results.map((result) => result.status)).toEqual(["passed", "failed"]);
+    expect(report.results.find((result) => result.status === "failed")?.outputTail).toContain("build nope");
   });
 });

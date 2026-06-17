@@ -1,5 +1,20 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as childProcess from "child_process";
+
+export const DEFAULT_MACHINE_CHECK_SCRIPTS = ["typecheck", "lint", "test", "build"];
+
+export interface MachineRunCheckResult {
+  dirName: string;
+  projectDir: string;
+  script: string;
+  command: string;
+  status: "passed" | "failed" | "timeout" | "skipped";
+  exitCode?: number | null;
+  durationMs: number;
+  outputTail?: string;
+  reason?: string;
+}
 
 export interface MachineProjectReadiness {
   dirName: string;
@@ -32,6 +47,20 @@ export interface MachineReadinessReport {
     ready: number;
     needsEnv: number;
     partial: number;
+  };
+}
+
+export interface MachineRunChecksReport {
+  rootDir: string;
+  requestedScripts: string[];
+  timeoutMs: number;
+  maxProjects: number;
+  results: MachineRunCheckResult[];
+  totals: {
+    passed: number;
+    failed: number;
+    timeout: number;
+    skipped: number;
   };
 }
 
@@ -74,6 +103,21 @@ function checkCommand(packageManager: NonNullable<MachineProjectReadiness["packa
   if (packageManager === "yarn") return `yarn ${script}`;
   if (packageManager === "bun") return `bun run ${script}`;
   return `${packageManager} run ${script}`;
+}
+
+function checkCommandParts(
+  packageManager: NonNullable<MachineProjectReadiness["packageManager"]>,
+  script: string
+): { command: string; args: string[]; display: string } {
+  if (packageManager === "yarn") return { command: "yarn", args: [script], display: `yarn ${script}` };
+  if (packageManager === "bun") return { command: "bun", args: ["run", script], display: `bun run ${script}` };
+  return { command: packageManager, args: ["run", script], display: `${packageManager} run ${script}` };
+}
+
+function outputTail(value: string, maxLength = 1200): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  return trimmed.slice(trimmed.length - maxLength);
 }
 
 function statusForProject(project: Omit<MachineProjectReadiness, "status">): MachineProjectReadiness["status"] {
@@ -169,6 +213,120 @@ export function buildMachineReadinessReport(rootDir: string, maxProjects = 80): 
       ready: projects.filter((project) => project.status === "ready").length,
       needsEnv: projects.filter((project) => project.status === "needs-env").length,
       partial: projects.filter((project) => project.status === "partial").length,
+    },
+  };
+}
+
+export function runMachineProjectChecks(
+  projects: MachineProjectReadiness[],
+  options: {
+    scripts?: string[];
+    timeoutMs?: number;
+    maxProjects?: number;
+  } = {}
+): MachineRunCheckResult[] {
+  const requestedScripts = (options.scripts?.length ? options.scripts : DEFAULT_MACHINE_CHECK_SCRIPTS)
+    .map((script) => script.trim())
+    .filter(Boolean);
+  const timeoutMs = Number.isFinite(options.timeoutMs) && Number(options.timeoutMs) > 0
+    ? Number(options.timeoutMs)
+    : 120_000;
+  const maxProjects = Number.isFinite(options.maxProjects) && Number(options.maxProjects) > 0
+    ? Number(options.maxProjects)
+    : 8;
+  const runnableProjects = projects
+    .filter((project) => Boolean(project.packageManager))
+    .slice(0, maxProjects);
+  const results: MachineRunCheckResult[] = [];
+
+  for (const project of runnableProjects) {
+    if (!project.packageManager) continue;
+    const scriptsToRun = requestedScripts.filter((script) => project.scripts.includes(script));
+    if (scriptsToRun.length === 0) {
+      results.push({
+        dirName: project.dirName,
+        projectDir: project.projectDir,
+        script: requestedScripts.join(","),
+        command: requestedScripts.map((script) => checkCommand(project.packageManager!, script)).join(" | "),
+        status: "skipped",
+        durationMs: 0,
+        reason: "no requested check scripts found",
+      });
+      continue;
+    }
+
+    for (const script of scriptsToRun) {
+      const { command, args, display } = checkCommandParts(project.packageManager, script);
+      const startedAt = Date.now();
+      const result = childProcess.spawnSync(command, args, {
+        cwd: project.projectDir,
+        encoding: "utf-8",
+        timeout: timeoutMs,
+        maxBuffer: 1024 * 1024,
+        env: {
+          ...process.env,
+          CI: process.env.CI || "1",
+          NO_COLOR: process.env.NO_COLOR || "1",
+        },
+      });
+      const durationMs = Date.now() - startedAt;
+      const combinedOutput = [result.stdout, result.stderr].filter(Boolean).join("\n");
+      const timedOut = result.error && result.error.message.includes("ETIMEDOUT");
+      results.push({
+        dirName: project.dirName,
+        projectDir: project.projectDir,
+        script,
+        command: display,
+        status: timedOut ? "timeout" : result.status === 0 ? "passed" : "failed",
+        exitCode: result.status,
+        durationMs,
+        outputTail: outputTail(combinedOutput),
+        reason: result.error && !timedOut ? result.error.message : undefined,
+      });
+    }
+  }
+
+  return results;
+}
+
+export function buildMachineRunChecksReport(
+  rootDir: string,
+  options: {
+    scripts?: string[];
+    timeoutMs?: number;
+    maxProjects?: number;
+    scanLimit?: number;
+  } = {}
+): MachineRunChecksReport {
+  const scanLimit = Number.isFinite(options.scanLimit) && Number(options.scanLimit) > 0
+    ? Number(options.scanLimit)
+    : 80;
+  const requestedScripts = (options.scripts?.length ? options.scripts : DEFAULT_MACHINE_CHECK_SCRIPTS)
+    .map((script) => script.trim())
+    .filter(Boolean);
+  const timeoutMs = Number.isFinite(options.timeoutMs) && Number(options.timeoutMs) > 0
+    ? Number(options.timeoutMs)
+    : 120_000;
+  const maxProjects = Number.isFinite(options.maxProjects) && Number(options.maxProjects) > 0
+    ? Number(options.maxProjects)
+    : 8;
+  const readiness = buildMachineReadinessReport(rootDir, scanLimit);
+  const results = runMachineProjectChecks(readiness.projects, {
+    scripts: requestedScripts,
+    timeoutMs,
+    maxProjects,
+  });
+  return {
+    rootDir,
+    requestedScripts,
+    timeoutMs,
+    maxProjects,
+    results,
+    totals: {
+      passed: results.filter((result) => result.status === "passed").length,
+      failed: results.filter((result) => result.status === "failed").length,
+      timeout: results.filter((result) => result.status === "timeout").length,
+      skipped: results.filter((result) => result.status === "skipped").length,
     },
   };
 }
