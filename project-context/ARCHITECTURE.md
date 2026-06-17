@@ -169,9 +169,12 @@ Local implementation slice:
 - `POST /api/v1/me/portfolio/projects/hydrate` combines tracked GitHub project
   hydration with filtered local auditor output so local agents can push real
   portfolio graph rows through the same owner-gated API surface.
+- `portfolioProjectActivities` stores local-git commits, GitHub PRs, doc/readme
+  summaries, and hydration summary events per project so the graph can answer
+  "what shipped today / 7d / 30d?" without re-scanning every repo on page load.
 - `youmd project portfolio-hydrate` runs the local auditor against a workspace
   root, filters nested/reference noise, and upserts recent project candidates
-  into the persisted Convex graph.
+  plus commit/PR activity into the persisted Convex graph.
 - Local MCP exposes `hydrate_portfolio_graph` for agents that need to hydrate
   from the tracked GitHub catalog without using the dashboard.
 - `cli/src/lib/portfolio-graph.ts` is the local-agent graph brief mirror used

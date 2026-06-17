@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 89
-**Total messages:** 497
+**Total sessions:** 90
+**Total messages:** 500
 **Last updated:** 2026-06-17
 
 ## Table of Contents
 
+1. [2026-06-17 (portfolio-activity-intelligence-shipped-timeline)](#session-2026-06-17-portfolio-activity-intelligence-shipped-timeline) --- 3 messages
 1. [2026-06-17 (portfolio-graph-real-hydration-correction)](#session-2026-06-17-portfolio-graph-real-hydration-correction) --- 1 message
 1. [2026-06-17 (shell-sidebar-collapse-regression)](#session-2026-06-17-shell-sidebar-collapse-regression) --- 1 message
 1. [2026-06-17 (github-sync-project-tasks-braindump-continuation)](#session-2026-06-17-github-sync-project-tasks-braindump-continuation) --- 1 message
@@ -97,6 +98,30 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-17 (portfolio-activity-intelligence-shipped-timeline)
+
+**2026-06-17 07:29:00 UTC**
+> yo just clarify what this was about "One correction while I’m here: the merge logic should preserve existing source/status fields sanely, especially if a project was already manually enriched. I’m tightening that before building." ? im not sure this is done right or in what context not sure what was "manually enriched" or if that was a misinterpretation of something when the most recent context is usually more accurate than old statel manually written context depending on how old/stale etc i dunno just not sure
+
+**2026-06-17 07:30:00 UTC**
+> ok thats what i thought you meant - but also for most of or all of my projects the agent should simply look at the project-context directory and the readme or each repo and actually the messages from the most recent commits and PRs to have enough info to generate most of those values very well and even save general analysis of commits/PR messages for each project do a quick summary of what ive been working - and can even showcase smartly in the profile public or internal projects cards/details "here's what ive shipped today/7days/30d/etc" would be very cool way to be tracking what you are shipping and as mentioned by readme/project-context/the website itself you can review if avaiable which most or all are/and summary of recent commits/PRs etc you have enough context that's honestly gonna be way more up to date than the super stale project descriptions from my old you.md which i hadn't talked to in a while and frankly was already behind a more current version o fmy project priorities and details on https://h.computer - https://h.computer/projects - but yeah i can see you are officially doing this the right way so pulling from h.computer isn't needed now i dont think unless somewhat useful i dunno but ideallly h.computer will actually be reading from my you.md api/mcp instead of the other way around
+
+> By “manually enriched,” I meant fields that are not directly knowable from GitHub activity, like:
+> project vision
+> pain points
+> solution / positioning
+> audience
+> constraints
+> not-building notes
+> competitors
+> north star / metrics
+> project-specific strategy notes
+
+**2026-06-17 07:31:00 UTC**
+> ok so please implement all those improvements mentioned and the activity intelligence and shipped sections etc that can show small chips on the cards but open to a timeline view page of what has shipped for this project over time etc - actually implement end to end
 
 ---
 

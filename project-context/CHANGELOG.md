@@ -18,8 +18,12 @@
 - Added `portfolio.syncTrackedProjects`, which hydrates `portfolioProjects`
   from authenticated 90-day GitHub `trackedProjects` records while preserving
   richer human/agent strategy fields.
+- Added `portfolioProjectActivities` so local commit/PR/doc evidence persists
+  as activity intelligence instead of disappearing after the CLI scan.
 - Added a `hydrate active projects` action in the Portfolio Graph pane beside
   the seed refresh button.
+- Added shipped chips on project cards (`today`, `7d`, `30d`) plus a
+  drill-in shipping timeline that shows commit/PR/summary activity over time.
 - Sorted hydrated project rows by recent shipping activity, local-audit signal,
   and core project priority so high-signal projects are visible first instead
   of being buried under arbitrary repo order.
@@ -34,13 +38,20 @@
   without printing secret values.
 - Ran `youmd project portfolio-hydrate --root /Users/houstongolden/Desktop/CODE_2025 --days 90 --limit 80`:
   129 recent local candidates scanned, 30 local projects upserted, 40 GitHub
-  tracked projects considered, 36 portfolio rows created, and 4 updated.
+  tracked projects considered, 36 portfolio rows created, and 4 updated on the
+  initial corrective run; final deployed reruns refreshed the same 40 tracked
+  rows and 30 local-audit rows without creating duplicates.
 - Deployed Convex to `kindly-cassowary-600`.
 - Authenticated local browser QA verified the actual shell now shows
   `55 PROJECTS`, `CONVEX PERSISTED GRAPH`, `40 recent GitHub-tracked projects
   nearby`, the `hydrate active projects` control, and hydrated rows including
   `badapp`, `bamfaiapp`, `bamfsite`, `bigbounce`, `foldermd`, `youmd`, `claws`,
   and `creator-new`.
+- Authenticated local browser QA also verified shipped chips and the timeline:
+  top projects ranked as `bamfsite`, `youmd`, `fantasyis`, and `bigbounce`, and
+  screenshots were captured at
+  `/tmp/youmd-portfolio-activity-proof-2026-06-17-v2.png` and
+  `/tmp/youmd-portfolio-timeline-proof-2026-06-17-v3.png`.
 
 ### feat(api/cli/mcp): let local agents write portfolio tasks and brain dumps
 - Added authenticated API endpoints for local-agent writes:

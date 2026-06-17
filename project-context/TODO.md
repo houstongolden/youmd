@@ -33,6 +33,9 @@ PRD Version: 2.3
 - [x] Define the first local `portfolio_graph` / `reuse_patterns` data contract in `src/data/portfolioGraph.ts`
 - [x] Add shared `portfolio-graph-auditor` skill plus local `youmd project portfolio-audit` / `env-audit` / `apis` command for secret-safe local project/API/env scans
 - [x] Build the `/shell` Portfolio/Projects graph view with API/MCP ownership, connected projects, dependency tiers, docs status, shared skill propagation, and reusable pattern catalog
+- [x] Persist project activity intelligence from local README/project-context files plus recent commits/PRs into `portfolioProjectActivities`
+- [x] Add shipped `today` / `7d` / `30d` chips to project cards and a per-project shipping timeline in the Portfolio Graph pane
+- [x] Visually verify authenticated local `/shell` shows 55 hydrated projects, high-signal project ordering, shipped chips, and the scrolled shipping timeline
 - [x] Build the `/shell` APIs + Env Intelligence view with provider usage stats, env key-name normalization, service-account notes, API/MCP risk tiers, and secret-safe audit commands
 - [x] Register `portfolio-graph-auditor` in the bundled local CLI skill catalog and align the Skills pane with `machine-bootstrap` + portfolio-audit catalog visibility
 - [x] Run signed-in local visual QA for Portfolio Graph, APIs + Env Intelligence, and `/skills` tracked-project propagation at `http://localhost:3100/shell`

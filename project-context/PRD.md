@@ -190,6 +190,10 @@ Implementation slice shipped and verified on 2026-06-17:
   authenticated 90-day GitHub `trackedProjects` plus filtered local
   `portfolio-graph-auditor` output. The 4-project bootstrap seed is only a
   fallback/proof seed, not the completion bar.
+- Project activity intelligence persists in `portfolioProjectActivities` from
+  recent local-git commits, GitHub PRs, and hydration summary events. Project
+  cards now show shipped `today` / `7d` / `30d` chips and open into a shipping
+  timeline for the selected project.
 - Local MCP `get_project_context` now includes a project-scoped portfolio slice
   so agents see owned surfaces, dependencies, reusable patterns, commands, and
   guardrails before creating duplicate APIs, MCP routes, stacks, or UI/code.
@@ -214,7 +218,8 @@ Implementation slice shipped and verified on 2026-06-17:
 - Authenticated local hydration QA proved the real graph path on 2026-06-17:
   the auditor found 268 project/package candidates and 97 providers, hydration
   scanned 129 recent local candidates, upserted 30 local projects, considered
-  40 GitHub tracked projects, and the shell rendered `55 PROJECTS` in the
+  40 GitHub tracked projects, and the shell rendered `55 PROJECTS`, shipped
+  chips, high-signal ordering, and a scrolled shipping timeline in the
   persisted Portfolio Graph pane.
 
 Important boundary: a product's protected in-app agent harness is not the same

@@ -105,12 +105,22 @@ GitHub status and task/graph paths behave in the actual product.
 - `youmd project portfolio-hydrate --root /Users/houstongolden/Desktop/CODE_2025 --days 90 --limit 80`
   ran the corrected hydration path. It scanned 129 recent local candidates,
   upserted 30 local projects, considered 40 authenticated GitHub tracked
-  projects, created 36 portfolio rows, and updated 4.
+  projects, created 36 portfolio rows, and updated 4 on the initial corrective
+  run. Final deployed reruns refreshed 40 tracked rows and 30 local rows without
+  creating duplicates.
+- `portfolioProjectActivities` now persists local commit/PR/summary evidence
+  from that hydration path, and the Portfolio Graph pane renders shipped
+  `today` / `7d` / `30d` chips plus a project shipping timeline.
 - Authenticated local browser QA then opened the Portfolio Graph pane and
   verified `55 PROJECTS`, `CONVEX PERSISTED GRAPH`, `40 recent GitHub-tracked
   projects nearby`, the `hydrate active projects` control, and hydrated rows
   including `badapp`, `bamfaiapp`, `bamfsite`, `bigbounce`, `foldermd`, `youmd`,
   `claws`, and `creator-new`.
+- Authenticated local browser QA after ranking/timeline work verified the first
+  visible projects are high-signal (`bamfsite`, `youmd`, `fantasyis`,
+  `bigbounce`) and captured visual proof:
+  `/tmp/youmd-portfolio-activity-proof-2026-06-17-v2.png` and
+  `/tmp/youmd-portfolio-timeline-proof-2026-06-17-v3.png`.
 - Authenticated Chrome QA opened `/shell?integration=github`, clicked
   `refresh active projects`, waited through the 90-day GitHub analyzer, and
   verified the dashboard catalog returned with 38 visible `repo:
