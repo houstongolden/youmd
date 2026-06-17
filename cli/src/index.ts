@@ -715,6 +715,8 @@ program
   .option("--server-timeout-ms <n>", "verify: timeout per dev server probe", "45000")
   .option("--max-server-projects <n>", "verify: maximum package projects to server-probe", "3")
   .option("--server-start-port <n>", "verify: first localhost probe port", "4310")
+  .option("--write-report", "verify: write secret-safe JSON proof to ~/.youmd/machine-reports/latest.json")
+  .option("--report-path <path>", "verify: custom path for the machine proof report")
   .option("--key <apiKey>", "prompt: embed a You.md API key for non-interactive login")
   .option("--env-vault <path>", "prompt: encrypted .env.local vault path to restore")
   .option("--no-github", "projects: skip authenticated GitHub recent-repo scan")
@@ -741,6 +743,8 @@ program
       serverTimeoutMs: options.serverTimeoutMs,
       maxServerProjects: options.maxServerProjects,
       serverStartPort: options.serverStartPort,
+      writeReport: options.writeReport,
+      reportPath: options.reportPath,
       key: options.key,
       envVault: options.envVault,
       yes: options.yes,

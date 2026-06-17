@@ -3,11 +3,13 @@ import * as os from "os";
 import * as path from "path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  buildMachineVerificationProof,
   buildMachineInstallReport,
   buildMachineReadinessReport,
   buildMachineRunChecksReport,
   buildMachineServerProbeReport,
   inspectMachineProject,
+  writeMachineVerificationProof,
 } from "../lib/machine-verify";
 
 const tempRoots: string[] = [];
@@ -137,5 +139,29 @@ describe("machine readiness verifier", () => {
 
     expect(report.totals.passed).toBe(1);
     expect(report.results[0].url).toBe("http://127.0.0.1:4390");
+  });
+
+  it("writes a secret-safe machine proof report", () => {
+    const root = makeTempRoot();
+    const projectDir = path.join(root, "proof");
+    fs.mkdirSync(projectDir, { recursive: true });
+    fs.writeFileSync(path.join(projectDir, "package.json"), JSON.stringify({ scripts: { lint: "node -e \"console.log('ok')\"" } }));
+    const readiness = buildMachineReadinessReport(root);
+    const checks = buildMachineRunChecksReport(root, {
+      scripts: ["lint"],
+      timeoutMs: 30_000,
+      maxProjects: 1,
+    });
+    checks.results[0].outputTail = "OPENAI_API_KEY=sk-secret-value";
+
+    const proof = buildMachineVerificationProof({ readiness, checks, generatedAt: "2026-06-17T12:00:00.000Z" });
+    const out = path.join(root, "proof.json");
+    const written = writeMachineVerificationProof(proof, out);
+    const raw = fs.readFileSync(written.latestPath, "utf-8");
+
+    expect(written.archivedPath).toContain("machine-proof-2026-06-17T12-00-00-000Z.json");
+    expect(raw).toContain("\"secretValuesExposed\": false");
+    expect(raw).not.toContain("sk-secret-value");
+    expect(raw).toContain("[redacted]");
   });
 });

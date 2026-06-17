@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as childProcess from "child_process";
 import * as http from "http";
+import * as os from "os";
 
 export const DEFAULT_MACHINE_CHECK_SCRIPTS = ["typecheck", "lint", "test", "build"];
 export const DEFAULT_MACHINE_SERVER_START_PORT = 4310;
@@ -114,6 +115,36 @@ export interface MachineServerProbeReport {
     timeout: number;
     skipped: number;
   };
+}
+
+export interface MachineVerificationProof {
+  schemaVersion: 1;
+  generatedAt: string;
+  hostName: string;
+  platform: string;
+  rootDir: string;
+  secretValuesExposed: false;
+  readiness: MachineReadinessReport;
+  installs?: MachineInstallReport;
+  checks?: MachineRunChecksReport;
+  servers?: MachineServerProbeReport;
+  summary: {
+    status: "ready" | "warn" | "failed";
+    scanned: number;
+    ready: number;
+    needsEnv: number;
+    partial: number;
+    installPassed: number;
+    checksPassed: number;
+    serversPassed: number;
+    failures: number;
+    warnings: string[];
+  };
+}
+
+export interface MachineVerificationProofWriteResult {
+  latestPath: string;
+  archivedPath: string;
 }
 
 function readText(filePath: string): string {
@@ -244,10 +275,21 @@ function devServerCommandParts(
   };
 }
 
+function redactSensitive(value: string): string {
+  return value
+    .replace(/((?:API|AUTH|ACCESS|REFRESH|SECRET|TOKEN|PASSWORD|PASS|KEY)[A-Z0-9_]*=)[^\s'"`]+/gi, "$1[redacted]")
+    .replace(/\b(?:sk|pk|ghp|gho|ghs|ghu|ghr|xox[baprs]|or)-[A-Za-z0-9_-]{12,}\b/g, "[redacted-token]")
+    .replace(/\b[A-Za-z0-9_./+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, "[redacted-email]");
+}
+
 function outputTail(value: string, maxLength = 1200): string {
   const trimmed = value.trim();
-  if (trimmed.length <= maxLength) return trimmed;
-  return trimmed.slice(trimmed.length - maxLength);
+  const tail = trimmed.length <= maxLength ? trimmed : trimmed.slice(trimmed.length - maxLength);
+  return redactSensitive(tail);
+}
+
+function sanitizeForProof<T>(value: T): T {
+  return JSON.parse(redactSensitive(JSON.stringify(value))) as T;
 }
 
 function appendBounded(buffer: string, chunk: Buffer | string, maxLength = 12_000): string {
@@ -739,4 +781,72 @@ export async function buildMachineServerProbeReport(
       skipped: results.filter((result) => result.status === "skipped").length,
     },
   };
+}
+
+export function buildMachineVerificationProof(options: {
+  readiness: MachineReadinessReport;
+  installs?: MachineInstallReport;
+  checks?: MachineRunChecksReport;
+  servers?: MachineServerProbeReport;
+  generatedAt?: string;
+}): MachineVerificationProof {
+  const generatedAt = options.generatedAt ?? new Date().toISOString();
+  const installFailures = (options.installs?.totals.failed ?? 0) + (options.installs?.totals.timeout ?? 0);
+  const checkFailures = (options.checks?.totals.failed ?? 0) + (options.checks?.totals.timeout ?? 0);
+  const serverFailures = (options.servers?.totals.failed ?? 0) + (options.servers?.totals.timeout ?? 0);
+  const failures = installFailures + checkFailures + serverFailures;
+  const warnings = [
+    options.readiness.totals.needsEnv > 0 ? `${options.readiness.totals.needsEnv} projects need env restore` : "",
+    options.readiness.totals.partial > 0 ? `${options.readiness.totals.partial} projects are partial` : "",
+    options.installs && options.installs.results.length === 0 ? "no package projects were available for dependency install" : "",
+    options.checks && options.checks.results.length === 0 ? "no package projects had requested check scripts" : "",
+    options.servers && options.servers.results.length === 0 ? "no package projects had dev servers to probe" : "",
+  ].filter(Boolean);
+
+  return {
+    schemaVersion: 1,
+    generatedAt,
+    hostName: os.hostname(),
+    platform: `${process.platform} ${os.release()}`,
+    rootDir: options.readiness.rootDir,
+    secretValuesExposed: false,
+    readiness: sanitizeForProof(options.readiness),
+    installs: options.installs ? sanitizeForProof(options.installs) : undefined,
+    checks: options.checks ? sanitizeForProof(options.checks) : undefined,
+    servers: options.servers ? sanitizeForProof(options.servers) : undefined,
+    summary: {
+      status: failures > 0 ? "failed" : warnings.length > 0 ? "warn" : "ready",
+      scanned: options.readiness.scanned,
+      ready: options.readiness.totals.ready,
+      needsEnv: options.readiness.totals.needsEnv,
+      partial: options.readiness.totals.partial,
+      installPassed: options.installs?.totals.passed ?? 0,
+      checksPassed: options.checks?.totals.passed ?? 0,
+      serversPassed: options.servers?.totals.passed ?? 0,
+      failures,
+      warnings: warnings.slice(0, 8),
+    },
+  };
+}
+
+export function defaultMachineReportPath(): string {
+  return path.join(os.homedir(), ".youmd", "machine-reports", "latest.json");
+}
+
+function timestampForPath(value: string): string {
+  return value.replace(/[:.]/g, "-");
+}
+
+export function writeMachineVerificationProof(
+  proof: MachineVerificationProof,
+  reportPath = defaultMachineReportPath()
+): MachineVerificationProofWriteResult {
+  const latestPath = path.resolve(reportPath);
+  const reportDir = path.dirname(latestPath);
+  fs.mkdirSync(reportDir, { recursive: true });
+  const archivedPath = path.join(reportDir, `machine-proof-${timestampForPath(proof.generatedAt)}.json`);
+  const body = `${JSON.stringify(proof, null, 2)}\n`;
+  fs.writeFileSync(latestPath, body, { mode: 0o600 });
+  fs.writeFileSync(archivedPath, body, { mode: 0o600 });
+  return { latestPath, archivedPath };
 }

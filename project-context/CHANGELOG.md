@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Machine proof report
+
+### feat(cli/web): persist fresh-machine proof artifacts
+- Added `youmd machine verify --write-report`, which writes a secret-safe JSON proof artifact to `~/.youmd/machine-reports/latest.json` plus a timestamped archive file.
+- Redacted token/email-like output tails before writing proof JSON and kept `secretValuesExposed: false` in the report contract.
+- Updated the generated fresh-computer bootstrap command and bundled `machine-bootstrap` skill so readiness, package checks, dependency installs, and server probes write proof reports automatically.
+- Extended the localhost-only Machine readiness API and `/machine` pane with a `latest machine proof` strip showing host, root, status, project totals, install/check/server pass counts, warnings, and a copyable full fresh-root proof command.
+- Verified with focused CLI tests, full CLI test suite (`53` files / `558` tests), CLI build, root typecheck, docs check, focused ESLint, production build, compiled proof-report smoke, global `youmd machine verify --write-report`, and direct server-builder proof that the pane sees `~/.youmd/machine-reports/latest.json`.
+- Authenticated browser visual proof is still pending for this exact strip because no attachable authenticated browser session was available in this turn.
+
 ## 2026-06-17 — Machine verify local-run proof
 
 ### feat(cli): add bounded install and dev-server probes to machine verify

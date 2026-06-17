@@ -44,6 +44,26 @@ export type LocalProjectReadiness = {
   lastTouchedAt?: string;
 };
 
+export type LocalMachineProofSummary = {
+  reportPath: string;
+  archivedAt?: string;
+  generatedAt: string;
+  hostName: string;
+  platform: string;
+  rootDir: string;
+  status: "ready" | "warn" | "failed" | "unknown";
+  secretValuesExposed: false;
+  scanned: number;
+  ready: number;
+  needsEnv: number;
+  partial: number;
+  installPassed: number;
+  checksPassed: number;
+  serversPassed: number;
+  failures: number;
+  warnings: string[];
+};
+
 export type LocalMachineReadiness = {
   generatedAt: string;
   hostName: string;
@@ -110,9 +130,11 @@ export type LocalMachineReadiness = {
     };
     rows: LocalProjectReadiness[];
   };
+  latestProof?: LocalMachineProofSummary;
   commands: {
     verifyCurrent: string;
     verifyFresh: string;
+    verifyFreshFull: string;
     daemonStatus: string;
     envBackup: string;
     envRestore: string;
@@ -447,6 +469,54 @@ function statusFrom(parts: boolean[], warnWhenPartial = true): LocalReadinessSta
   return "missing";
 }
 
+function numberField(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function stringField(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? sanitizeLine(value.trim()) : undefined;
+}
+
+function latestMachineProof(): LocalMachineProofSummary | undefined {
+  const reportPath = expandHome("~/.youmd/machine-reports/latest.json");
+  const proof = readJson(reportPath);
+  if (!proof) return undefined;
+  const summary =
+    typeof proof.summary === "object" && proof.summary !== null && !Array.isArray(proof.summary)
+      ? (proof.summary as Record<string, unknown>)
+      : {};
+  const status = summary.status === "ready" || summary.status === "warn" || summary.status === "failed"
+    ? summary.status
+    : "unknown";
+  const warnings = Array.isArray(summary.warnings)
+    ? summary.warnings
+        .map((warning) => stringField(warning))
+        .filter((warning): warning is string => Boolean(warning))
+        .slice(0, 8)
+    : [];
+  const generatedAt = stringField(proof.generatedAt) ?? new Date(mtimeMs(reportPath) || Date.now()).toISOString();
+
+  return {
+    reportPath,
+    archivedAt: newestMtimeIso([reportPath]),
+    generatedAt,
+    hostName: stringField(proof.hostName) ?? "unknown host",
+    platform: stringField(proof.platform) ?? "unknown platform",
+    rootDir: stringField(proof.rootDir) ?? "unknown root",
+    status,
+    secretValuesExposed: false,
+    scanned: numberField(summary.scanned),
+    ready: numberField(summary.ready),
+    needsEnv: numberField(summary.needsEnv),
+    partial: numberField(summary.partial),
+    installPassed: numberField(summary.installPassed),
+    checksPassed: numberField(summary.checksPassed),
+    serversPassed: numberField(summary.serversPassed),
+    failures: numberField(summary.failures),
+    warnings,
+  };
+}
+
 export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadiness {
   const generatedAt = new Date().toISOString();
   const home = os.homedir();
@@ -534,9 +604,11 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     mcp,
     envVault,
     projects,
+    latestProof: latestMachineProof(),
     commands: {
       verifyCurrent: `youmd machine verify --root "${rootDir}"`,
-      verifyFresh: `youmd machine verify --root "${freshMachineRoot}"`,
+      verifyFresh: `youmd machine verify --root "${freshMachineRoot}" --write-report`,
+      verifyFreshFull: `youmd machine verify --root "${freshMachineRoot}" --install-deps --run-checks --probe-servers --write-report`,
       daemonStatus: "youmd stack daemon status",
       envBackup: "~/.agent-shared/bin/env-secure-backup.sh --root ~/Desktop/CODE_2025",
       envRestore: `youmd env restore <vault> --root "${freshMachineRoot}"`,

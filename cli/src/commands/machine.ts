@@ -13,10 +13,12 @@ import {
   MachineProjectCandidate,
 } from "../lib/machine-projects";
 import {
+  buildMachineVerificationProof,
   buildMachineInstallReport,
   buildMachineReadinessReport,
   buildMachineRunChecksReport,
   buildMachineServerProbeReport,
+  writeMachineVerificationProof,
 } from "../lib/machine-verify";
 import { buildFreshMachineBootstrapPrompt } from "../lib/machine-bootstrap-prompt";
 
@@ -74,6 +76,8 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("--server-timeout-ms <n>") + chalk.dim(" (verify) timeout per server probe, default 45000"));
   console.log("    " + chalk.cyan("--max-server-projects <n>") + chalk.dim(" (verify) dev server probe cap, default 3"));
   console.log("    " + chalk.cyan("--server-start-port <n>") + chalk.dim(" (verify) first localhost probe port, default 4310"));
+  console.log("    " + chalk.cyan("--write-report") + chalk.dim(" (verify) write secret-safe JSON proof to ~/.youmd/machine-reports/latest.json"));
+  console.log("    " + chalk.cyan("--report-path <path>") + chalk.dim(" (verify) custom machine proof report path"));
   console.log("    " + chalk.cyan("--no-github") + chalk.dim("  (projects) skip authenticated GitHub recent-repo scan"));
   console.log("    " + chalk.cyan("--yes") + chalk.dim("        (projects) include older projects without prompting"));
   console.log("    " + chalk.cyan("--no-clone") + chalk.dim("   (projects) create directories only"));
@@ -339,6 +343,8 @@ async function machineVerifyCommand(opts: {
   serverTimeoutMs?: string | number;
   maxServerProjects?: string | number;
   serverStartPort?: string | number;
+  writeReport?: boolean;
+  reportPath?: string;
 } = {}): Promise<void> {
   const defaultRoot = path.join(os.homedir(), "Desktop", "CODE_YOU");
   const rootDir = expandHome(opts.root || defaultRoot);
@@ -385,8 +391,12 @@ async function machineVerifyCommand(opts: {
   console.log("");
   console.log(chalk.dim("  secret rule: readiness checks only inspect file names and package scripts; .env.local values are never read."));
 
+  let installReport: ReturnType<typeof buildMachineInstallReport> | undefined;
+  let runReport: ReturnType<typeof buildMachineRunChecksReport> | undefined;
+  let probeReport: Awaited<ReturnType<typeof buildMachineServerProbeReport>> | undefined;
+
   if (opts.installDeps) {
-    const installReport = buildMachineInstallReport(rootDir, {
+    installReport = buildMachineInstallReport(rootDir, {
       timeoutMs: Number(opts.installTimeoutMs || 180_000),
       maxProjects: Number(opts.maxInstallProjects || 4),
       scanLimit: Number.isFinite(maxProjects) && maxProjects > 0 ? maxProjects : 80,
@@ -427,6 +437,13 @@ async function machineVerifyCommand(opts: {
   }
 
   if (!opts.runChecks && !opts.probeServers) {
+    if (opts.writeReport) {
+      const proof = buildMachineVerificationProof({ readiness: report, installs: installReport });
+      const paths = writeMachineVerificationProof(proof, opts.reportPath ? expandHome(opts.reportPath) : undefined);
+      console.log(chalk.dim("  proof report: ") + chalk.cyan(paths.latestPath));
+      console.log(chalk.dim("  proof archive: ") + chalk.cyan(paths.archivedPath));
+      console.log("");
+    }
     console.log(chalk.dim("  run ") + chalk.cyan("youmd machine verify --install-deps --run-checks --probe-servers") + chalk.dim(" to install deps, execute bounded checks, and smoke-probe dev servers."));
     console.log("");
     return;
@@ -436,7 +453,7 @@ async function machineVerifyCommand(opts: {
     const checkScripts = opts.checkScripts
       ? opts.checkScripts.split(",").map((script) => script.trim()).filter(Boolean)
       : undefined;
-    const runReport = buildMachineRunChecksReport(rootDir, {
+    runReport = buildMachineRunChecksReport(rootDir, {
       scripts: checkScripts,
       timeoutMs: Number(opts.checkTimeoutMs || 120_000),
       maxProjects: Number(opts.maxCheckProjects || 8),
@@ -479,7 +496,7 @@ async function machineVerifyCommand(opts: {
   }
 
   if (opts.probeServers) {
-    const probeReport = await buildMachineServerProbeReport(rootDir, {
+    probeReport = await buildMachineServerProbeReport(rootDir, {
       timeoutMs: Number(opts.serverTimeoutMs || 45_000),
       maxProjects: Number(opts.maxServerProjects || 3),
       startPort: Number(opts.serverStartPort || 4310),
@@ -520,10 +537,22 @@ async function machineVerifyCommand(opts: {
       process.exitCode = 1;
     }
   }
+  if (opts.writeReport) {
+    const proof = buildMachineVerificationProof({
+      readiness: report,
+      installs: installReport,
+      checks: runReport,
+      servers: probeReport,
+    });
+    const paths = writeMachineVerificationProof(proof, opts.reportPath ? expandHome(opts.reportPath) : undefined);
+    console.log("");
+    console.log(chalk.dim("  proof report: ") + chalk.cyan(paths.latestPath));
+    console.log(chalk.dim("  proof archive: ") + chalk.cyan(paths.archivedPath));
+  }
   console.log("");
 }
 
-export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxProjects?: string | number; installDeps?: boolean; installTimeoutMs?: string | number; maxInstallProjects?: string | number; runChecks?: boolean; checkScripts?: string; checkTimeoutMs?: string | number; maxCheckProjects?: string | number; probeServers?: boolean; serverTimeoutMs?: string | number; maxServerProjects?: string | number; serverStartPort?: string | number; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
+export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxProjects?: string | number; installDeps?: boolean; installTimeoutMs?: string | number; maxInstallProjects?: string | number; runChecks?: boolean; checkScripts?: string; checkTimeoutMs?: string | number; maxCheckProjects?: string | number; probeServers?: boolean; serverTimeoutMs?: string | number; maxServerProjects?: string | number; serverStartPort?: string | number; writeReport?: boolean; reportPath?: string; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
   if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
     printHelp();
     return;

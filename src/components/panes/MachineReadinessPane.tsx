@@ -19,6 +19,13 @@ function statusClass(status: LocalReadinessStatus | LocalProjectReadiness["statu
   return "text-[hsl(var(--text-secondary))] opacity-55";
 }
 
+function proofStatusClass(status?: string) {
+  if (status === "ready") return "text-[hsl(var(--success))]";
+  if (status === "warn") return "text-[hsl(var(--accent))]";
+  if (status === "failed") return "text-red-400";
+  return "text-[hsl(var(--text-secondary))] opacity-55";
+}
+
 function formatTime(value?: string) {
   if (!value) return "not observed";
   const date = new Date(value);
@@ -185,6 +192,52 @@ export function MachineReadinessPane() {
               </div>
             </div>
 
+            <div className="mt-4 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/30 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-65">
+                  latest machine proof
+                </span>
+                {report.latestProof ? (
+                  <>
+                    <span className={`ml-auto font-mono text-[9px] uppercase tracking-[0.14em] ${proofStatusClass(report.latestProof.status)}`}>
+                      {report.latestProof.status}
+                    </span>
+                    <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
+                      {formatTime(report.latestProof.generatedAt)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="ml-auto font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
+                    not observed
+                  </span>
+                )}
+              </div>
+              {report.latestProof ? (
+                <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_0.85fr]">
+                  <div>
+                    <div className="font-mono text-[11px] text-[hsl(var(--text-primary))]">
+                      {report.latestProof.hostName} / {report.latestProof.rootDir}
+                    </div>
+                    <div className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
+                      scanned {report.latestProof.scanned} projects / ready {report.latestProof.ready} / needs env {report.latestProof.needsEnv} / partial {report.latestProof.partial}
+                    </div>
+                    <div className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-42">
+                      installs {report.latestProof.installPassed} / checks {report.latestProof.checksPassed} / servers {report.latestProof.serversPassed} / failures {report.latestProof.failures}
+                    </div>
+                  </div>
+                  <div className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
+                    {report.latestProof.warnings.length > 0
+                      ? report.latestProof.warnings.slice(0, 3).join(" / ")
+                      : `proof report saved at ${report.latestProof.reportPath}; secret values exposed: ${String(report.latestProof.secretValuesExposed)}`}
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-3 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
+                  Run the full fresh-root proof command below after cloning/restoring envs on a new host. The CLI writes a secret-safe JSON artifact to ~/.youmd/machine-reports/latest.json.
+                </p>
+              )}
+            </div>
+
             <PaneDivider />
 
             <section>
@@ -300,6 +353,7 @@ export function MachineReadinessPane() {
               <div className="space-y-2">
                 <CopyableCommand command={report.commands.verifyCurrent} />
                 <CopyableCommand command={report.commands.verifyFresh} dimmed />
+                <CopyableCommand command={report.commands.verifyFreshFull} dimmed />
                 <CopyableCommand command={report.commands.daemonStatus} dimmed />
                 <CopyableCommand command={report.commands.envBackup} dimmed />
                 <CopyableCommand command={report.commands.envRestore} dimmed />

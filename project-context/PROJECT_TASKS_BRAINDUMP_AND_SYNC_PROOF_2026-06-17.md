@@ -153,6 +153,16 @@ GitHub status and task/graph paths behave in the actual product.
   Compiled CLI smoke verified a disposable project where `npm install` passed
   and `npm run dev` returned HTTP 200 on localhost; the actual brand-new
   computer run remains pending.
+- `youmd machine verify --write-report` now persists a secret-safe proof artifact
+  at `~/.youmd/machine-reports/latest.json` plus a timestamped archive. The
+  proof includes host/root/status/project totals/install/check/server pass
+  counts/warnings and keeps `secretValuesExposed: false`; output tails are
+  redacted before writing. The Machine pane server builder reads the latest
+  proof and now exposes the summary plus full fresh-root proof command. Current
+  local proof: `warn`, `61` scanned projects, `26` ready, `2` needing env
+  restore, `8` partial, and zero proof failures. Authenticated browser visual
+  proof for this new strip is pending because no attachable authenticated
+  browser session was available in this turn.
 - Authenticated Chrome QA opened `/shell?integration=github`, clicked
   `refresh active projects`, waited through the 90-day GitHub analyzer, and
   verified the dashboard catalog returned with 38 visible `repo:
