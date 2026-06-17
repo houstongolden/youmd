@@ -301,7 +301,22 @@ describe("integration: API endpoint contract", () => {
 
     const data = await res.json() as Record<string, unknown>;
     const skills = data.skills as unknown[];
-    expect(skills.length).toBeGreaterThanOrEqual(4);
+    const names = skills
+      .map((skill) => (skill as { name?: unknown }).name)
+      .filter((name): name is string => typeof name === "string")
+      .sort();
+    expect(names).toEqual([
+      "claude-md-generator",
+      "machine-bootstrap",
+      "meta-improve",
+      "portfolio-graph-auditor",
+      "proactive-context-fill",
+      "project-context-init",
+      "voice-sync",
+      "you-logs",
+      "youstack-maintainer",
+      "youstack-start",
+    ]);
   });
 
   it("CORS headers present on OPTIONS", async () => {

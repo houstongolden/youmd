@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-17 — Hosted skill registry parity
+
+### feat(api): seed all bundled local-agent skills in production
+- Added the missing Convex bundled skill seed entries for `youstack-maintainer`, `machine-bootstrap`, and `portfolio-graph-auditor`, bringing the hosted registry seed set to the same 10-skill shape as the local CLI catalog.
+- Added `convex/skillsSeed.test.ts` so the seed mutation proves all 10 bundled/local-agent skills are published and key full-content instructions are present.
+- Tightened the live CLI integration test so production `/api/v1/skills` must return the exact 10-skill contract, including `machine-bootstrap` and `portfolio-graph-auditor`.
+- Deployed Convex, ran `npx convex run skills:seedBundledSkills`, and verified the live Convex Site registry returns `count: 10`; content lookups confirmed `machine-bootstrap` includes graph-backed machine setup and `portfolio-graph-auditor` includes `get_agent_brief` plus env-audit guidance.
+
 ## 2026-06-17 — Bounded clean-host machine proof
 
 ### feat(cli/web/docs): add capped clone proofs and show synced machine records on hosted shells

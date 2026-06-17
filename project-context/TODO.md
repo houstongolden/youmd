@@ -138,7 +138,7 @@ PRD Version: 2.3
 - [x] Link fresh-machine env handling to the canonical encrypted `.env.local` audit/backup/restore flow in `.agent-shared`
 - [x] Add a dedicated signed-in machine/computer readiness card that shows this machine, synced computers, skill-stack sync, project clone readiness, and encrypted env-backup readiness in one dashboard/shell confirmation
 - [x] Run the authenticated GitHub project refresh and verify the dashboard lists the 90-day active project catalog with repo, dir, stack, API/MCP docs, goal, and recent progress
-- [ ] Reseed/deploy the hosted bundled-skill registry so production `/api/v1/skills` includes `machine-bootstrap`
+- [x] Reseed/deploy the hosted bundled-skill registry so production `/api/v1/skills` includes `machine-bootstrap`
 
 ### 2026-06-16 — Local agent auth handoff
 - [x] Preserve Houston's raw prompt for fresh-machine curl install, browser auth handoff, branded success confirmation, and local agent sync/onboarding path
@@ -706,7 +706,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Deploy and verify the `/ctx` reliability fix so valid full-context links keep returning `you-md/v1` JSON even when tracking/logging writes fail
 - [x] Change generated context-link URLs to `https://www.you.md/ctx/...` so agent fetchers avoid the apex-domain redirect
 - [ ] Execute the ship-readiness plan across CLI, MCP, API, web-agent reliability, parity, and personality
-- [ ] Deploy/reseed the Convex bundled-skill registry so production `/api/v1/skills` includes `youstack-start`
+- [x] Deploy/reseed the Convex bundled-skill registry so production `/api/v1/skills` includes `youstack-start`
 - [ ] Verify the new local MCP `get_agent_brief` tool through a real Claude Code/Codex MCP host after publishing or local MCP config refresh
 - [x] Complete the first ship-readiness evidence pass: CLI/bootstrap smoke tests, live MCP/API checks, and a tracked audit doc
 - [x] Complete authenticated production CLI hard-smoke coverage for `register`, `login`, `login --key`, `whoami`, `push`, `pull`, `diff`, `status`, `keys list`, and `sync`
