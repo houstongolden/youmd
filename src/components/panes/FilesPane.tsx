@@ -17,6 +17,7 @@ interface FilesPaneProps {
 }
 
 type WorkspaceMode = "files" | "artifacts" | "reports";
+type ViewerMode = "edit" | "preview" | "split";
 
 type LoopReportDefinition = Doc<"loopReportDefinitions">;
 type LoopReportRun = Doc<"loopReportRuns">;
@@ -30,6 +31,23 @@ type ArtifactTemplate = {
   path: string;
   description: string;
   content: string;
+};
+
+type MarkdownHeading = {
+  id: string;
+  level: number;
+  text: string;
+};
+
+type MarkdownDocumentInfo = {
+  title: string;
+  kind: string;
+  visibility: string;
+  words: number;
+  lines: number;
+  readingMinutes: number;
+  frontmatter: Record<string, string>;
+  headings: MarkdownHeading[];
 };
 
 const WORKSPACE_MODES: Array<{ key: WorkspaceMode; label: string; detail: string }> = [
@@ -329,19 +347,131 @@ function VisibilityIcon({ isPublic }: { isPublic: boolean }) {
   );
 }
 
+// ── Markdown Document Helpers ───────────────────────────────────────────
+
+function stripYamlQuotes(value: string): string {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function parseMarkdownFrontmatter(source: string): { frontmatter: Record<string, string>; body: string } {
+  const lines = source.split("\n");
+  const frontmatter: Record<string, string> = {};
+
+  if (lines[0]?.trim() !== "---") {
+    return { frontmatter, body: source };
+  }
+
+  const endIndex = lines.findIndex((line, index) => index > 0 && line.trim() === "---");
+  if (endIndex <= 0) {
+    return { frontmatter, body: source };
+  }
+
+  for (const line of lines.slice(1, endIndex)) {
+    const match = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (match) {
+      frontmatter[match[1]] = stripYamlQuotes(match[2]);
+    }
+  }
+
+  return { frontmatter, body: lines.slice(endIndex + 1).join("\n") };
+}
+
+function fileTitleFromPath(path: string): string {
+  const basename = path.split("/").pop() ?? path;
+  return basename.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
+}
+
+function analyzeMarkdownDocument(source: string, path: string): MarkdownDocumentInfo {
+  const { frontmatter, body } = parseMarkdownFrontmatter(source);
+  const lines = source.split("\n");
+  const bodyLines = body.split("\n");
+  const headings: MarkdownHeading[] = [];
+
+  bodyLines.forEach((line, index) => {
+    const match = line.match(/^(#{1,6})\s+(.+)$/);
+    if (!match) return;
+    const text = match[2].replace(/[#`*_]/g, "").trim();
+    if (!text) return;
+    headings.push({
+      id: `${index}-${text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`,
+      level: match[1].length,
+      text,
+    });
+  });
+
+  const firstHeading = headings[0]?.text;
+  const wordMatches = body.trim().match(/\b[\w'-]+\b/g);
+  const words = wordMatches ? wordMatches.length : 0;
+
+  return {
+    title: frontmatter.title || firstHeading || fileTitleFromPath(path),
+    kind: frontmatter.kind || getExtLabel(path).toLowerCase(),
+    visibility: frontmatter.visibility || (isPublicPath(path) ? "public" : "private"),
+    words,
+    lines: lines.length,
+    readingMinutes: Math.max(1, Math.ceil(words / 220)),
+    frontmatter,
+    headings,
+  };
+}
+
+function workspaceLabelForPath(path: string): string {
+  if (path.startsWith("reports/generated/")) return "generated report";
+  if (path.startsWith("reports/")) return "report template";
+  if (path.startsWith("artifacts/")) return "artifact";
+  if (path.startsWith("dsi/")) return "dsi component";
+  if (path.startsWith("memories/")) return "memory";
+  if (path.startsWith("private/")) return "private context";
+  if (path.startsWith("profile/")) return "public profile";
+  return "bundle file";
+}
+
 // ── Simple Markdown Renderer ────────────────────────────────────────────
 
 function renderMarkdown(source: string): string {
   const lines = source.split("\n");
   const html: string[] = [];
   let inList = false;
+  let inOrderedList = false;
+  let inCode = false;
+  const codeLines: string[] = [];
+
+  const closeLists = () => {
+    if (inList) { html.push("</ul>"); inList = false; }
+    if (inOrderedList) { html.push("</ol>"); inOrderedList = false; }
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    const fenceMatch = line.match(/^```([A-Za-z0-9_-]*)\s*$/);
+
+    if (fenceMatch) {
+      if (inCode) {
+        html.push(`<pre class="md-pre"><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+        codeLines.length = 0;
+        inCode = false;
+      } else {
+        closeLists();
+        inCode = true;
+      }
+      continue;
+    }
+
+    if (inCode) {
+      codeLines.push(line);
+      continue;
+    }
 
     // Horizontal rule
     if (/^---+\s*$/.test(line)) {
-      if (inList) { html.push("</ul>"); inList = false; }
+      closeLists();
       html.push('<hr class="md-hr" />');
       continue;
     }
@@ -349,22 +479,50 @@ function renderMarkdown(source: string): string {
     // Headings
     const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
     if (headingMatch) {
-      if (inList) { html.push("</ul>"); inList = false; }
+      closeLists();
       const level = headingMatch[1].length;
       html.push(`<h${level} class="md-h${level}">${escapeAndInline(headingMatch[2])}</h${level}>`);
+      continue;
+    }
+
+    // Blockquote
+    const quoteMatch = line.match(/^>\s?(.+)$/);
+    if (quoteMatch) {
+      closeLists();
+      html.push(`<blockquote class="md-quote">${escapeAndInline(quoteMatch[1])}</blockquote>`);
+      continue;
+    }
+
+    // Task list items
+    const taskMatch = line.match(/^\s*[-*]\s+\[( |x|X)\]\s+(.+)$/);
+    if (taskMatch) {
+      if (inOrderedList) { html.push("</ol>"); inOrderedList = false; }
+      if (!inList) { html.push('<ul class="md-ul md-task-ul">'); inList = true; }
+      const checked = taskMatch[1].toLowerCase() === "x";
+      html.push(`<li class="md-li md-task-li"><span class="md-check">${checked ? "x" : " "}</span>${escapeAndInline(taskMatch[2])}</li>`);
       continue;
     }
 
     // Bullet list items
     const bulletMatch = line.match(/^\s*[-*]\s+(.+)$/);
     if (bulletMatch) {
+      if (inOrderedList) { html.push("</ol>"); inOrderedList = false; }
       if (!inList) { html.push('<ul class="md-ul">'); inList = true; }
       html.push(`<li class="md-li">${escapeAndInline(bulletMatch[1])}</li>`);
       continue;
     }
 
+    // Ordered list items
+    const orderedMatch = line.match(/^\s*\d+\.\s+(.+)$/);
+    if (orderedMatch) {
+      if (inList) { html.push("</ul>"); inList = false; }
+      if (!inOrderedList) { html.push('<ol class="md-ol">'); inOrderedList = true; }
+      html.push(`<li class="md-oli">${escapeAndInline(orderedMatch[1])}</li>`);
+      continue;
+    }
+
     // Close list if we're leaving it
-    if (inList) { html.push("</ul>"); inList = false; }
+    closeLists();
 
     // Blank line
     if (line.trim() === "") {
@@ -376,7 +534,10 @@ function renderMarkdown(source: string): string {
     html.push(`<p class="md-p">${escapeAndInline(line)}</p>`);
   }
 
-  if (inList) html.push("</ul>");
+  if (inCode) {
+    html.push(`<pre class="md-pre"><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+  }
+  closeLists();
   return html.join("\n");
 }
 
@@ -390,6 +551,11 @@ function escapeHtml(text: string): string {
 
 function escapeAndInline(text: string): string {
   let s = escapeHtml(text);
+  // Links: [label](https://example.com)
+  s = s.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+    '<a class="md-link" href="$2" target="_blank" rel="noreferrer">$1</a>',
+  );
   // Bold: **text**
   s = s.replace(/\*\*(.+?)\*\*/g, '<strong class="md-bold">$1</strong>');
   // Italic: *text*
@@ -399,11 +565,11 @@ function escapeAndInline(text: string): string {
   return s;
 }
 
-function MarkdownPreview({ content }: { content: string }) {
+function MarkdownPreview({ content, className = "" }: { content: string; className?: string }) {
   const html = useMemo(() => renderMarkdown(content), [content]);
   return (
     <div
-      className="flex-1 overflow-auto p-3 md:p-4 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-primary))] md-preview"
+      className={`flex-1 overflow-auto p-3 md:p-4 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-primary))] md-preview ${className}`}
       dangerouslySetInnerHTML={{ __html: html }}
       style={{
         // Scoped styles for the preview via CSS custom properties
@@ -428,10 +594,44 @@ function MarkdownStyles() {
       .md-preview .md-blank { height: 8px; }
       .md-preview .md-hr { border: none; border-top: 1px solid var(--md-border); margin: 12px 0; opacity: 0.3; }
       .md-preview .md-ul { list-style: none; padding-left: 12px; margin: 4px 0; }
+      .md-preview .md-ol { list-style: decimal; padding-left: 20px; margin: 4px 0; }
       .md-preview .md-li { opacity: 0.8; margin: 2px 0; }
+      .md-preview .md-oli { opacity: 0.8; margin: 2px 0; }
       .md-preview .md-li::before { content: "- "; opacity: 0.4; }
+      .md-preview .md-task-li::before { content: ""; }
+      .md-preview .md-check {
+        display: inline-flex;
+        width: 13px;
+        height: 13px;
+        align-items: center;
+        justify-content: center;
+        margin-right: 6px;
+        border: 1px solid var(--md-border);
+        border-radius: 2px;
+        color: var(--md-accent);
+        font-size: 9px;
+        line-height: 1;
+      }
+      .md-preview .md-quote {
+        border-left: 2px solid var(--md-accent);
+        margin: 6px 0;
+        padding: 4px 0 4px 10px;
+        color: var(--md-muted);
+        opacity: 0.85;
+      }
+      .md-preview .md-pre {
+        overflow: auto;
+        margin: 8px 0;
+        padding: 10px;
+        border: 1px solid var(--md-border);
+        border-radius: 2px;
+        background: var(--md-bg);
+        color: var(--md-muted);
+        white-space: pre;
+      }
       .md-preview .md-bold { font-weight: 600; opacity: 0.9; }
       .md-preview .md-italic { font-style: italic; opacity: 0.7; }
+      .md-preview .md-link { color: var(--md-accent); text-decoration: underline; text-underline-offset: 3px; }
       .md-preview .md-code {
         background: var(--md-bg);
         border: 1px solid var(--md-border);
@@ -1168,90 +1368,208 @@ function FileViewer({
   const content = editedContent ?? file.content;
   const isModified = editedContent !== undefined && editedContent !== file.content;
   const isMarkdown = file.path.endsWith(".md");
-  const [previewMode, setPreviewMode] = useState(false);
+  const defaultViewerMode: ViewerMode = isMarkdown ? "split" : "edit";
+  const [viewerState, setViewerState] = useState<{ path: string; mode: ViewerMode }>({
+    path: file.path,
+    mode: defaultViewerMode,
+  });
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const documentInfo = useMemo(() => analyzeMarkdownDocument(content, file.path), [content, file.path]);
+  const activeMode: ViewerMode = isMarkdown
+    ? viewerState.path === file.path
+      ? viewerState.mode
+      : defaultViewerMode
+    : "edit";
+  const workspaceLabel = workspaceLabelForPath(file.path);
+
+  const copyToClipboard = useCallback(async (label: string, value: string) => {
+    if (typeof navigator === "undefined" || !navigator.clipboard) {
+      setCopyStatus("copy unavailable");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyStatus(`${label} copied`);
+      window.setTimeout(() => setCopyStatus(null), 1500);
+    } catch {
+      setCopyStatus("copy failed");
+    }
+  }, []);
+
+  const sourcePane = file.editable ? (
+    <Textarea
+      value={content}
+      onChange={(e) => onContentChange(file.path, e.target.value)}
+      className="h-full min-h-[280px] resize-none border-0 bg-background p-3 text-[11px] leading-relaxed focus-visible:outline-offset-[-2px] md:p-4"
+      spellCheck={false}
+      aria-label={`edit ${file.path}`}
+      name={file.path}
+      data-artifact-source
+    />
+  ) : (
+    <pre
+      className="h-full min-h-[280px] overflow-auto bg-[hsl(var(--bg))] text-[hsl(var(--text-secondary))] font-mono text-[11px] leading-relaxed p-3 md:p-4 whitespace-pre-wrap break-words"
+      data-artifact-source
+    >
+      {content}
+    </pre>
+  );
+
+  const hasFrontmatter = Object.keys(documentInfo.frontmatter).length > 0;
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[hsl(var(--border))] shrink-0">
-        <div className="flex items-center gap-2">
-          {onBack && (
+    <div className="flex h-full flex-col" data-file-viewer-mode={activeMode}>
+      <div className="shrink-0 border-b border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between gap-3 px-3 py-1.5">
+          <div className="flex min-w-0 items-center gap-2">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="mr-1 shrink-0 font-mono text-[10px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100"
+              >
+                {"<"} back
+              </button>
+            )}
+            <VisibilityIcon isPublic={isPublicPath(file.path)} />
+            <span className="truncate font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80">
+              {file.path}
+            </span>
+            {isModified && (
+              <span className="shrink-0 font-mono text-[9px] uppercase text-[hsl(var(--accent))]">modified</span>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {isMarkdown && (
+              <div
+                className="flex items-center border border-[hsl(var(--border))]"
+                style={{ borderRadius: "var(--radius)" }}
+                aria-label="markdown viewer mode"
+              >
+                {(["edit", "preview", "split"] as ViewerMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setViewerState({ path: file.path, mode })}
+                    className={`font-mono text-[9px] px-1.5 py-0.5 transition-colors ${
+                      activeMode === mode
+                        ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
+                        : "text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-70"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            )}
             <button
-              onClick={onBack}
-              className="font-mono text-[10px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100 mr-1"
+              type="button"
+              onClick={() => copyToClipboard("path", file.path)}
+              className="hidden font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35 transition-opacity hover:text-[hsl(var(--accent))] hover:opacity-80 sm:inline"
             >
-              {"<"} back
+              copy path
             </button>
-          )}
-          <VisibilityIcon isPublic={isPublicPath(file.path)} />
-          <span className="font-mono text-[11px] text-[hsl(var(--text-primary))] opacity-80 truncate">
-            {file.path}
-          </span>
-          {isModified && (
-            <span className="font-mono text-[9px] text-[hsl(var(--accent))] uppercase shrink-0">modified</span>
-          )}
+            <button
+              type="button"
+              onClick={() => copyToClipboard("content", content)}
+              className="hidden font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35 transition-opacity hover:text-[hsl(var(--accent))] hover:opacity-80 sm:inline"
+            >
+              copy
+            </button>
+            {copyStatus && (
+              <span className="hidden font-mono text-[9px] text-[hsl(var(--success))] opacity-70 sm:inline">
+                {copyStatus}
+              </span>
+            )}
+            <span className="hidden font-mono text-[9px] uppercase text-[hsl(var(--text-secondary))] opacity-30 sm:inline">
+              {getExtLabel(file.path)}
+            </span>
+            {!file.editable && (
+              <span
+                className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 uppercase border border-[hsl(var(--border))] px-1.5 py-0.5"
+                style={{ borderRadius: "var(--radius)" }}
+              >
+                read-only
+              </span>
+            )}
+            {isCustomDir && onAddFileInDir && (
+              <button
+                onClick={onAddFileInDir}
+                className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100 border border-[hsl(var(--accent))]/40 px-1.5 py-0.5 hover:bg-[hsl(var(--accent))]/10 transition-colors"
+                title="add a new markdown file inside this custom directory"
+              >
+                + new file in dir
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Markdown preview toggle */}
-          {isMarkdown && (
-            <div className="flex items-center border border-[hsl(var(--border))]" style={{ borderRadius: "var(--radius)" }}>
-              <button
-                onClick={() => setPreviewMode(false)}
-                className={`font-mono text-[9px] px-1.5 py-0.5 transition-colors ${
-                  !previewMode
-                    ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
-                    : "text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-60"
-                }`}
-              >
-                edit
-              </button>
-              <div className="w-px h-3 bg-[hsl(var(--border))]" />
-              <button
-                onClick={() => setPreviewMode(true)}
-                className={`font-mono text-[9px] px-1.5 py-0.5 transition-colors ${
-                  previewMode
-                    ? "text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10"
-                    : "text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-60"
-                }`}
-              >
-                preview
-              </button>
+
+        {isMarkdown && (
+          <div className="border-t border-[hsl(var(--border))] px-3 py-2">
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0">
+                <div className="truncate font-mono text-[13px] text-[hsl(var(--text-primary))] opacity-90">
+                  {documentInfo.title}
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">
+                  <span>{workspaceLabel}</span>
+                  <span>{documentInfo.kind}</span>
+                  <span>{documentInfo.visibility}</span>
+                  <span>{documentInfo.words} words</span>
+                  <span>{documentInfo.lines} lines</span>
+                  <span>{documentInfo.readingMinutes} min</span>
+                  {hasFrontmatter && <span>{Object.keys(documentInfo.frontmatter).length} yaml keys</span>}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
+                {documentInfo.frontmatter.cadence && <span>cadence: {documentInfo.frontmatter.cadence}</span>}
+                {documentInfo.frontmatter.status && <span>status: {documentInfo.frontmatter.status}</span>}
+                {documentInfo.frontmatter.created_at && <span>created: {documentInfo.frontmatter.created_at.slice(0, 10)}</span>}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {isMarkdown ? (
+        <div className="flex min-h-0 flex-1 flex-col 2xl:flex-row">
+          {activeMode !== "preview" && (
+            <div
+              className={`min-h-0 ${activeMode === "split" ? "h-1/2 border-b border-[hsl(var(--border))] 2xl:h-auto 2xl:w-1/2 2xl:border-b-0 2xl:border-r" : "flex-1"} border-[hsl(var(--border))]`}
+            >
+              {sourcePane}
             </div>
           )}
-          <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 uppercase hidden sm:inline">
-            {getExtLabel(file.path)}
-          </span>
-          {!file.editable && (
-            <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-30 uppercase border border-[hsl(var(--border))] px-1.5 py-0.5" style={{ borderRadius: "var(--radius)" }}>
-              read-only
-            </span>
+          {activeMode !== "edit" && (
+            <div className={`${activeMode === "split" ? "h-1/2 2xl:h-auto 2xl:w-1/2" : "flex-1"} min-h-0`}>
+              <MarkdownPreview content={content} />
+            </div>
           )}
-          {isCustomDir && onAddFileInDir && (
-            <button
-              onClick={onAddFileInDir}
-              className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-70 hover:opacity-100 border border-[hsl(var(--accent))]/40 px-1.5 py-0.5 hover:bg-[hsl(var(--accent))]/10 transition-colors"
-              title="add a new markdown file inside this custom directory"
+          {documentInfo.headings.length > 0 && (
+            <aside
+              className="hidden w-[190px] shrink-0 overflow-auto border-l border-[hsl(var(--border))] px-3 py-3 2xl:block"
+              data-artifact-outline
             >
-              + new file in dir
-            </button>
+              <div className="font-mono text-[9px] uppercase text-[hsl(var(--text-secondary))] opacity-35">outline</div>
+              <div className="mt-2 space-y-1">
+                {documentInfo.headings.slice(0, 18).map((heading) => (
+                  <div
+                    key={heading.id}
+                    className="truncate font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-60"
+                    style={{ paddingLeft: `${Math.max(0, heading.level - 1) * 8}px` }}
+                    title={heading.text}
+                  >
+                    {heading.text}
+                  </div>
+                ))}
+              </div>
+            </aside>
           )}
         </div>
-      </div>
-      {/* Content area */}
-      {previewMode && isMarkdown ? (
-        <MarkdownPreview content={content} />
-      ) : file.editable ? (
-        <Textarea
-          value={content}
-          onChange={(e) => onContentChange(file.path, e.target.value)}
-          className="flex-1 resize-none border-0 bg-background p-3 text-[11px] leading-relaxed focus-visible:outline-offset-[-2px] md:p-4"
-          spellCheck={false}
-          aria-label={`edit ${file.path}`}
-          name={file.path}
-        />
       ) : (
-        <pre className="flex-1 overflow-auto bg-[hsl(var(--bg))] text-[hsl(var(--text-secondary))] font-mono text-[11px] leading-relaxed p-3 md:p-4 whitespace-pre-wrap break-all">
-          {content}
-        </pre>
+        <div className="min-h-0 flex-1">
+          {sourcePane}
+        </div>
       )}
     </div>
   );
