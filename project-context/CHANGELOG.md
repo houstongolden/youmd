@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-17 — Machine verify local-run proof
+
+### feat(cli): add bounded install and dev-server probes to machine verify
+- Extended `youmd machine verify` with opt-in `--install-deps` and `--probe-servers` modes so a fresh-machine setup can install dependencies and smoke-probe local dev servers for capped selected projects.
+- Added install/project/server caps and timeouts: `--max-install-projects`, `--install-timeout-ms`, `--max-server-projects`, `--server-timeout-ms`, and `--server-start-port`.
+- Updated the one-command fresh-computer bootstrap prompt to support `YOUMD_INSTALL_DEPS=1` and `YOUMD_PROBE_SERVERS=1` without embedding `.env.local` values.
+- Verified with focused CLI tests, full CLI test suite (`53` files / `557` tests), CLI build, root typecheck, docs check, focused ESLint, production build, and compiled CLI smoke against a disposable project where `npm install` passed and `npm run dev` returned HTTP 200 on localhost.
+- Remaining proof is the real brand-new computer / clean host run with actual cloned projects, env vault restore, resident daemons, and Portfolio Graph sync.
+
 ## 2026-06-17 — Signed-in machine readiness
 
 ### feat(web/local): add localhost-only Machine readiness pane

@@ -704,10 +704,17 @@ program
   .option("--days <n>", "projects: recent activity window in days", "90")
   .option("--limit <n>", "prompt: portfolio graph project cap", "80")
   .option("--max-projects <n>", "verify: maximum project directories to scan", "80")
+  .option("--install-deps", "verify: run bounded dependency installs before checks/probes")
+  .option("--install-timeout-ms <n>", "verify: timeout per dependency install", "180000")
+  .option("--max-install-projects <n>", "verify: maximum package projects to install", "4")
   .option("--run-checks", "verify: run bounded package checks after readiness audit")
   .option("--check-scripts <names>", "verify: comma-separated scripts to run, default typecheck,lint,test,build")
   .option("--check-timeout-ms <n>", "verify: timeout per package script", "120000")
   .option("--max-check-projects <n>", "verify: maximum package projects to run checks against", "8")
+  .option("--probe-servers", "verify: start bounded dev servers and probe localhost")
+  .option("--server-timeout-ms <n>", "verify: timeout per dev server probe", "45000")
+  .option("--max-server-projects <n>", "verify: maximum package projects to server-probe", "3")
+  .option("--server-start-port <n>", "verify: first localhost probe port", "4310")
   .option("--key <apiKey>", "prompt: embed a You.md API key for non-interactive login")
   .option("--env-vault <path>", "prompt: encrypted .env.local vault path to restore")
   .option("--no-github", "projects: skip authenticated GitHub recent-repo scan")
@@ -723,10 +730,17 @@ program
       days: options.days,
       limit: options.limit,
       maxProjects: options.maxProjects,
+      installDeps: options.installDeps,
+      installTimeoutMs: options.installTimeoutMs,
+      maxInstallProjects: options.maxInstallProjects,
       runChecks: options.runChecks,
       checkScripts: options.checkScripts,
       checkTimeoutMs: options.checkTimeoutMs,
       maxCheckProjects: options.maxCheckProjects,
+      probeServers: options.probeServers,
+      serverTimeoutMs: options.serverTimeoutMs,
+      maxServerProjects: options.maxServerProjects,
+      serverStartPort: options.serverStartPort,
       key: options.key,
       envVault: options.envVault,
       yes: options.yes,

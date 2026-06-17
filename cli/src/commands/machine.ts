@@ -13,8 +13,10 @@ import {
   MachineProjectCandidate,
 } from "../lib/machine-projects";
 import {
+  buildMachineInstallReport,
   buildMachineReadinessReport,
   buildMachineRunChecksReport,
+  buildMachineServerProbeReport,
 } from "../lib/machine-verify";
 import { buildFreshMachineBootstrapPrompt } from "../lib/machine-bootstrap-prompt";
 
@@ -61,10 +63,17 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("--key <key>") + chalk.dim("   (prompt) embed a You.md API key for non-interactive login"));
   console.log("    " + chalk.cyan("--env-vault <path>") + chalk.dim(" (prompt) encrypted .env.local vault path to restore"));
   console.log("    " + chalk.cyan("--max-projects <n>") + chalk.dim(" (verify) project scan cap, default 80"));
+  console.log("    " + chalk.cyan("--install-deps") + chalk.dim(" (verify) run bounded dependency installs before checks/probes"));
+  console.log("    " + chalk.cyan("--install-timeout-ms <n>") + chalk.dim(" (verify) timeout per dependency install, default 180000"));
+  console.log("    " + chalk.cyan("--max-install-projects <n>") + chalk.dim(" (verify) package project install cap, default 4"));
   console.log("    " + chalk.cyan("--run-checks") + chalk.dim(" (verify) run bounded package checks after audit"));
   console.log("    " + chalk.cyan("--check-scripts <names>") + chalk.dim(" (verify) comma list, default typecheck,lint,test,build"));
   console.log("    " + chalk.cyan("--check-timeout-ms <n>") + chalk.dim(" (verify) timeout per script, default 120000"));
   console.log("    " + chalk.cyan("--max-check-projects <n>") + chalk.dim(" (verify) package project run cap, default 8"));
+  console.log("    " + chalk.cyan("--probe-servers") + chalk.dim(" (verify) start bounded dev servers and probe localhost"));
+  console.log("    " + chalk.cyan("--server-timeout-ms <n>") + chalk.dim(" (verify) timeout per server probe, default 45000"));
+  console.log("    " + chalk.cyan("--max-server-projects <n>") + chalk.dim(" (verify) dev server probe cap, default 3"));
+  console.log("    " + chalk.cyan("--server-start-port <n>") + chalk.dim(" (verify) first localhost probe port, default 4310"));
   console.log("    " + chalk.cyan("--no-github") + chalk.dim("  (projects) skip authenticated GitHub recent-repo scan"));
   console.log("    " + chalk.cyan("--yes") + chalk.dim("        (projects) include older projects without prompting"));
   console.log("    " + chalk.cyan("--no-clone") + chalk.dim("   (projects) create directories only"));
@@ -316,14 +325,21 @@ async function machineProjectsCommand(opts: {
   console.log(chalk.dim("  next: open Claude Code or Codex from that CODE folder and run ") + chalk.cyan("you"));
 }
 
-function machineVerifyCommand(opts: {
+async function machineVerifyCommand(opts: {
   root?: string;
   maxProjects?: string | number;
+  installDeps?: boolean;
+  installTimeoutMs?: string | number;
+  maxInstallProjects?: string | number;
   runChecks?: boolean;
   checkScripts?: string;
   checkTimeoutMs?: string | number;
   maxCheckProjects?: string | number;
-} = {}): void {
+  probeServers?: boolean;
+  serverTimeoutMs?: string | number;
+  maxServerProjects?: string | number;
+  serverStartPort?: string | number;
+} = {}): Promise<void> {
   const defaultRoot = path.join(os.homedir(), "Desktop", "CODE_YOU");
   const rootDir = expandHome(opts.root || defaultRoot);
   const maxProjects = Number(opts.maxProjects || 80);
@@ -368,60 +384,146 @@ function machineVerifyCommand(opts: {
   }
   console.log("");
   console.log(chalk.dim("  secret rule: readiness checks only inspect file names and package scripts; .env.local values are never read."));
-  if (!opts.runChecks) {
-    console.log(chalk.dim("  run ") + chalk.cyan("youmd machine verify --run-checks") + chalk.dim(" to execute bounded lint/typecheck/test/build scripts."));
+
+  if (opts.installDeps) {
+    const installReport = buildMachineInstallReport(rootDir, {
+      timeoutMs: Number(opts.installTimeoutMs || 180_000),
+      maxProjects: Number(opts.maxInstallProjects || 4),
+      scanLimit: Number.isFinite(maxProjects) && maxProjects > 0 ? maxProjects : 80,
+    });
+
     console.log("");
-    return;
-  }
-
-  const checkScripts = opts.checkScripts
-    ? opts.checkScripts.split(",").map((script) => script.trim()).filter(Boolean)
-    : undefined;
-  const runReport = buildMachineRunChecksReport(rootDir, {
-    scripts: checkScripts,
-    timeoutMs: Number(opts.checkTimeoutMs || 120_000),
-    maxProjects: Number(opts.maxCheckProjects || 8),
-    scanLimit: Number.isFinite(maxProjects) && maxProjects > 0 ? maxProjects : 80,
-  });
-
-  console.log("");
-  console.log("  " + chalk.bold("bounded package checks"));
-  console.log(chalk.dim(`  scripts: ${runReport.requestedScripts.join(", ")}`));
-  console.log(chalk.dim(`  max projects: ${runReport.maxProjects} / timeout: ${runReport.timeoutMs}ms per script`));
-  console.log(chalk.dim(`  passed: ${runReport.totals.passed} / failed: ${runReport.totals.failed} / timeout: ${runReport.totals.timeout} / skipped: ${runReport.totals.skipped}`));
-  console.log("");
-
-  if (runReport.results.length === 0) {
-    console.log(chalk.dim("  no package projects had requested check scripts."));
+    console.log("  " + chalk.bold("bounded dependency install"));
+    console.log(chalk.dim(`  max projects: ${installReport.maxProjects} / timeout: ${installReport.timeoutMs}ms per project`));
+    console.log(chalk.dim(`  passed: ${installReport.totals.passed} / failed: ${installReport.totals.failed} / timeout: ${installReport.totals.timeout} / skipped: ${installReport.totals.skipped}`));
     console.log("");
-    return;
-  }
 
-  for (const result of runReport.results) {
-    const statusColor = result.status === "passed"
-      ? chalk.green
-      : result.status === "skipped"
-        ? chalk.dim
-        : result.status === "timeout"
-          ? chalk.yellow
-          : chalk.hex("#C46A3A");
-    console.log(`  ${statusColor(result.status.padEnd(7))} ${chalk.cyan(result.dirName)} ${chalk.dim(result.command)} ${chalk.dim(`${result.durationMs}ms`)}`);
-    if (result.reason) console.log(chalk.dim(`           reason: ${result.reason}`));
-    if (result.status !== "passed" && result.status !== "skipped" && result.outputTail) {
-      console.log(chalk.dim("           output tail:"));
-      for (const line of result.outputTail.split("\n").slice(-12)) {
-        console.log(chalk.dim(`             ${line}`));
+    if (installReport.results.length === 0) {
+      console.log(chalk.dim("  no package projects were available for dependency install."));
+      console.log("");
+    }
+
+    for (const result of installReport.results) {
+      const statusColor = result.status === "passed"
+        ? chalk.green
+        : result.status === "skipped"
+          ? chalk.dim
+          : result.status === "timeout"
+            ? chalk.yellow
+            : chalk.hex("#C46A3A");
+      console.log(`  ${statusColor(result.status.padEnd(7))} ${chalk.cyan(result.dirName)} ${chalk.dim(result.command)} ${chalk.dim(`${result.durationMs}ms`)}`);
+      if (result.reason) console.log(chalk.dim(`           reason: ${result.reason}`));
+      if (result.status !== "passed" && result.status !== "skipped" && result.outputTail) {
+        console.log(chalk.dim("           output tail:"));
+        for (const line of result.outputTail.split("\n").slice(-12)) {
+          console.log(chalk.dim(`             ${line}`));
+        }
       }
+    }
+
+    if (installReport.totals.failed > 0 || installReport.totals.timeout > 0) {
+      process.exitCode = 1;
     }
   }
 
-  if (runReport.totals.failed > 0 || runReport.totals.timeout > 0) {
-    process.exitCode = 1;
+  if (!opts.runChecks && !opts.probeServers) {
+    console.log(chalk.dim("  run ") + chalk.cyan("youmd machine verify --install-deps --run-checks --probe-servers") + chalk.dim(" to install deps, execute bounded checks, and smoke-probe dev servers."));
+    console.log("");
+    return;
+  }
+
+  if (opts.runChecks) {
+    const checkScripts = opts.checkScripts
+      ? opts.checkScripts.split(",").map((script) => script.trim()).filter(Boolean)
+      : undefined;
+    const runReport = buildMachineRunChecksReport(rootDir, {
+      scripts: checkScripts,
+      timeoutMs: Number(opts.checkTimeoutMs || 120_000),
+      maxProjects: Number(opts.maxCheckProjects || 8),
+      scanLimit: Number.isFinite(maxProjects) && maxProjects > 0 ? maxProjects : 80,
+    });
+
+    console.log("");
+    console.log("  " + chalk.bold("bounded package checks"));
+    console.log(chalk.dim(`  scripts: ${runReport.requestedScripts.join(", ")}`));
+    console.log(chalk.dim(`  max projects: ${runReport.maxProjects} / timeout: ${runReport.timeoutMs}ms per script`));
+    console.log(chalk.dim(`  passed: ${runReport.totals.passed} / failed: ${runReport.totals.failed} / timeout: ${runReport.totals.timeout} / skipped: ${runReport.totals.skipped}`));
+    console.log("");
+
+    if (runReport.results.length === 0) {
+      console.log(chalk.dim("  no package projects had requested check scripts."));
+      console.log("");
+    }
+
+    for (const result of runReport.results) {
+      const statusColor = result.status === "passed"
+        ? chalk.green
+        : result.status === "skipped"
+          ? chalk.dim
+          : result.status === "timeout"
+            ? chalk.yellow
+            : chalk.hex("#C46A3A");
+      console.log(`  ${statusColor(result.status.padEnd(7))} ${chalk.cyan(result.dirName)} ${chalk.dim(result.command)} ${chalk.dim(`${result.durationMs}ms`)}`);
+      if (result.reason) console.log(chalk.dim(`           reason: ${result.reason}`));
+      if (result.status !== "passed" && result.status !== "skipped" && result.outputTail) {
+        console.log(chalk.dim("           output tail:"));
+        for (const line of result.outputTail.split("\n").slice(-12)) {
+          console.log(chalk.dim(`             ${line}`));
+        }
+      }
+    }
+
+    if (runReport.totals.failed > 0 || runReport.totals.timeout > 0) {
+      process.exitCode = 1;
+    }
+  }
+
+  if (opts.probeServers) {
+    const probeReport = await buildMachineServerProbeReport(rootDir, {
+      timeoutMs: Number(opts.serverTimeoutMs || 45_000),
+      maxProjects: Number(opts.maxServerProjects || 3),
+      startPort: Number(opts.serverStartPort || 4310),
+      scanLimit: Number.isFinite(maxProjects) && maxProjects > 0 ? maxProjects : 80,
+    });
+
+    console.log("");
+    console.log("  " + chalk.bold("bounded dev server probes"));
+    console.log(chalk.dim(`  max projects: ${probeReport.maxProjects} / timeout: ${probeReport.timeoutMs}ms per server / first port: ${probeReport.startPort}`));
+    console.log(chalk.dim(`  passed: ${probeReport.totals.passed} / failed: ${probeReport.totals.failed} / timeout: ${probeReport.totals.timeout} / skipped: ${probeReport.totals.skipped}`));
+    console.log("");
+
+    if (probeReport.results.length === 0) {
+      console.log(chalk.dim("  no package projects had a dev script to probe."));
+      console.log("");
+    }
+
+    for (const result of probeReport.results) {
+      const statusColor = result.status === "passed"
+        ? chalk.green
+        : result.status === "skipped"
+          ? chalk.dim
+          : result.status === "timeout"
+            ? chalk.yellow
+            : chalk.hex("#C46A3A");
+      const statusSuffix = result.statusCode ? ` HTTP ${result.statusCode}` : "";
+      console.log(`  ${statusColor(result.status.padEnd(7))} ${chalk.cyan(result.dirName)} ${chalk.dim(result.command)} ${chalk.dim(`${result.url}${statusSuffix} · ${result.durationMs}ms`)}`);
+      if (result.reason) console.log(chalk.dim(`           reason: ${result.reason}`));
+      if (result.status !== "passed" && result.status !== "skipped" && result.outputTail) {
+        console.log(chalk.dim("           output tail:"));
+        for (const line of result.outputTail.split("\n").slice(-12)) {
+          console.log(chalk.dim(`             ${line}`));
+        }
+      }
+    }
+
+    if (probeReport.totals.failed > 0 || probeReport.totals.timeout > 0) {
+      process.exitCode = 1;
+    }
   }
   console.log("");
 }
 
-export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxProjects?: string | number; runChecks?: boolean; checkScripts?: string; checkTimeoutMs?: string | number; maxCheckProjects?: string | number; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
+export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxProjects?: string | number; installDeps?: boolean; installTimeoutMs?: string | number; maxInstallProjects?: string | number; runChecks?: boolean; checkScripts?: string; checkTimeoutMs?: string | number; maxCheckProjects?: string | number; probeServers?: boolean; serverTimeoutMs?: string | number; maxServerProjects?: string | number; serverStartPort?: string | number; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
   if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
     printHelp();
     return;
@@ -433,7 +535,7 @@ export async function machineCommand(subcommand: string, opts: { force?: boolean
   }
 
   if (subcommand === "verify" || subcommand === "readiness" || subcommand === "doctor") {
-    machineVerifyCommand(opts);
+    await machineVerifyCommand(opts);
     return;
   }
 

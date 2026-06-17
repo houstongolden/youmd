@@ -21,7 +21,7 @@ PRD Version: 2.3
 - [x] Verify with focused CLI tests, CLI build, root typecheck, docs check, lint/radius, production build, compiled CLI prompt smoke, and authenticated local browser QA of `/new computer`
 - [x] Add a first-class post-clone local readiness checker with `youmd machine verify` that reports git remotes, package managers/scripts, env file presence, root agent docs, and `project-context/` readiness without reading secret values
 - [x] Extend `youmd machine verify` with an explicit opt-in bounded package-check mode for `typecheck`, `lint`, `test`, and `build`, including project caps, timeout caps, output tails, and generated prompt docs
-- [ ] Extend `youmd machine verify` with clean-host dependency install and local server smoke/probe modes for selected key projects
+- [x] Extend `youmd machine verify` with clean-host dependency install and local server smoke/probe modes for selected key projects
 - [ ] Run the generated command end-to-end on the actual brand-new computer / clean agent host and verify projects, skills, env vault restore, local servers, and portfolio graph sync there
 
 ### 2026-06-17 — Shell sidebar expand/collapse regression

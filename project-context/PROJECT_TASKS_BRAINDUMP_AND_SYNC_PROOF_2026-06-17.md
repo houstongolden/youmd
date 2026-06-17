@@ -145,6 +145,14 @@ GitHub status and task/graph paths behave in the actual product.
   `61` project directories scanned, `26` ready projects, `2` needing env
   restore, and `8` partial projects; `youmd stack daemon status` reports all
   three resident sync daemons loaded.
+- `youmd machine verify` now has the bounded local-run proof path needed before
+  the actual clean-host run: `--install-deps` for capped dependency installs,
+  `--run-checks` for package scripts, and `--probe-servers` for local dev-server
+  HTTP probes. The generated fresh-machine command exposes
+  `YOUMD_INSTALL_DEPS=1`, `YOUMD_RUN_CHECKS=1`, and `YOUMD_PROBE_SERVERS=1`.
+  Compiled CLI smoke verified a disposable project where `npm install` passed
+  and `npm run dev` returned HTTP 200 on localhost; the actual brand-new
+  computer run remains pending.
 - Authenticated Chrome QA opened `/shell?integration=github`, clicked
   `refresh active projects`, waited through the 90-day GitHub analyzer, and
   verified the dashboard catalog returned with 38 visible `repo:

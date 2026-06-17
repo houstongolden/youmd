@@ -3,8 +3,10 @@ import * as os from "os";
 import * as path from "path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  buildMachineInstallReport,
   buildMachineReadinessReport,
   buildMachineRunChecksReport,
+  buildMachineServerProbeReport,
   inspectMachineProject,
 } from "../lib/machine-verify";
 
@@ -90,5 +92,50 @@ describe("machine readiness verifier", () => {
     expect(report.totals.failed).toBe(1);
     expect(report.results.map((result) => result.status)).toEqual(["passed", "failed"]);
     expect(report.results.find((result) => result.status === "failed")?.outputTail).toContain("build nope");
+  });
+
+  it("runs bounded dependency installs for package projects", () => {
+    const root = makeTempRoot();
+    const projectDir = path.join(root, "installable");
+    fs.mkdirSync(projectDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDir, "package.json"),
+      JSON.stringify({ scripts: { build: "node -e \"console.log('ok')\"" } }, null, 2),
+    );
+
+    const report = buildMachineInstallReport(root, {
+      timeoutMs: 30_000,
+      maxProjects: 1,
+    });
+
+    expect(report.totals.passed).toBe(1);
+    expect(report.results[0].command).toBe("npm install");
+  });
+
+  it("smoke probes bounded local dev servers", async () => {
+    const root = makeTempRoot();
+    const projectDir = path.join(root, "server");
+    fs.mkdirSync(projectDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDir, "package.json"),
+      JSON.stringify({ scripts: { dev: "node server.js" } }, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(projectDir, "server.js"),
+      [
+        "const http = require('http');",
+        "const port = Number(process.env.PORT || 4310);",
+        "http.createServer((_req, res) => res.end('ok')).listen(port, '127.0.0.1');",
+      ].join("\n"),
+    );
+
+    const report = await buildMachineServerProbeReport(root, {
+      timeoutMs: 10_000,
+      maxProjects: 1,
+      startPort: 4390,
+    });
+
+    expect(report.totals.passed).toBe(1);
+    expect(report.results[0].url).toBe("http://127.0.0.1:4390");
   });
 });

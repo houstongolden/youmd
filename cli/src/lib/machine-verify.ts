@@ -1,8 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as childProcess from "child_process";
+import * as http from "http";
 
 export const DEFAULT_MACHINE_CHECK_SCRIPTS = ["typecheck", "lint", "test", "build"];
+export const DEFAULT_MACHINE_SERVER_START_PORT = 4310;
 
 export interface MachineRunCheckResult {
   dirName: string;
@@ -11,6 +13,29 @@ export interface MachineRunCheckResult {
   command: string;
   status: "passed" | "failed" | "timeout" | "skipped";
   exitCode?: number | null;
+  durationMs: number;
+  outputTail?: string;
+  reason?: string;
+}
+
+export interface MachineInstallResult {
+  dirName: string;
+  projectDir: string;
+  command: string;
+  status: "passed" | "failed" | "timeout" | "skipped";
+  exitCode?: number | null;
+  durationMs: number;
+  outputTail?: string;
+  reason?: string;
+}
+
+export interface MachineServerProbeResult {
+  dirName: string;
+  projectDir: string;
+  command: string;
+  url: string;
+  status: "passed" | "failed" | "timeout" | "skipped";
+  statusCode?: number;
   durationMs: number;
   outputTail?: string;
   reason?: string;
@@ -56,6 +81,33 @@ export interface MachineRunChecksReport {
   timeoutMs: number;
   maxProjects: number;
   results: MachineRunCheckResult[];
+  totals: {
+    passed: number;
+    failed: number;
+    timeout: number;
+    skipped: number;
+  };
+}
+
+export interface MachineInstallReport {
+  rootDir: string;
+  timeoutMs: number;
+  maxProjects: number;
+  results: MachineInstallResult[];
+  totals: {
+    passed: number;
+    failed: number;
+    timeout: number;
+    skipped: number;
+  };
+}
+
+export interface MachineServerProbeReport {
+  rootDir: string;
+  timeoutMs: number;
+  maxProjects: number;
+  startPort: number;
+  results: MachineServerProbeResult[];
   totals: {
     passed: number;
     failed: number;
@@ -114,10 +166,94 @@ function checkCommandParts(
   return { command: packageManager, args: ["run", script], display: `${packageManager} run ${script}` };
 }
 
+function installCommandParts(project: MachineProjectReadiness): { command: string; args: string[]; display: string } | null {
+  if (!project.packageManager) return null;
+
+  if (project.packageManager === "npm") {
+    const hasPackageLock = fs.existsSync(path.join(project.projectDir, "package-lock.json"));
+    return hasPackageLock
+      ? { command: "npm", args: ["ci"], display: "npm ci" }
+      : { command: "npm", args: ["install"], display: "npm install" };
+  }
+
+  if (project.packageManager === "pnpm") {
+    const hasLock = fs.existsSync(path.join(project.projectDir, "pnpm-lock.yaml"));
+    return {
+      command: "pnpm",
+      args: hasLock ? ["install", "--frozen-lockfile"] : ["install"],
+      display: hasLock ? "pnpm install --frozen-lockfile" : "pnpm install",
+    };
+  }
+
+  if (project.packageManager === "yarn") {
+    const hasLock = fs.existsSync(path.join(project.projectDir, "yarn.lock"));
+    return {
+      command: "yarn",
+      args: hasLock ? ["install", "--frozen-lockfile"] : ["install"],
+      display: hasLock ? "yarn install --frozen-lockfile" : "yarn install",
+    };
+  }
+
+  const hasLock = fs.existsSync(path.join(project.projectDir, "bun.lockb")) || fs.existsSync(path.join(project.projectDir, "bun.lock"));
+  return {
+    command: "bun",
+    args: hasLock ? ["install", "--frozen-lockfile"] : ["install"],
+    display: hasLock ? "bun install --frozen-lockfile" : "bun install",
+  };
+}
+
+function packageText(projectDir: string): string {
+  return readText(path.join(projectDir, "package.json")).toLowerCase();
+}
+
+function devServerCommandParts(
+  project: MachineProjectReadiness,
+  port: number
+): { command: string; args: string[]; display: string } | null {
+  if (!project.packageManager || !project.scripts.includes("dev")) return null;
+
+  const text = packageText(project.projectDir);
+  let extraArgs: string[] = [];
+  if (text.includes("\"next\"") || text.includes("next dev")) {
+    extraArgs = ["--hostname", "127.0.0.1", "--port", String(port)];
+  } else if (text.includes("\"vite\"") || text.includes("vite ")) {
+    extraArgs = ["--host", "127.0.0.1", "--port", String(port), "--strictPort"];
+  } else if (text.includes("\"astro\"") || text.includes("astro dev")) {
+    extraArgs = ["--host", "127.0.0.1", "--port", String(port)];
+  }
+
+  const withArgs = extraArgs.length > 0 ? ["--", ...extraArgs] : [];
+  if (project.packageManager === "yarn") {
+    return {
+      command: "yarn",
+      args: ["dev", ...extraArgs],
+      display: ["yarn dev", ...extraArgs].join(" "),
+    };
+  }
+  if (project.packageManager === "bun") {
+    return {
+      command: "bun",
+      args: ["run", "dev", ...withArgs],
+      display: ["bun run dev", ...withArgs].join(" "),
+    };
+  }
+  return {
+    command: project.packageManager,
+    args: ["run", "dev", ...withArgs],
+    display: [`${project.packageManager} run dev`, ...withArgs].join(" "),
+  };
+}
+
 function outputTail(value: string, maxLength = 1200): string {
   const trimmed = value.trim();
   if (trimmed.length <= maxLength) return trimmed;
   return trimmed.slice(trimmed.length - maxLength);
+}
+
+function appendBounded(buffer: string, chunk: Buffer | string, maxLength = 12_000): string {
+  const next = buffer + String(chunk);
+  if (next.length <= maxLength) return next;
+  return next.slice(next.length - maxLength);
 }
 
 function statusForProject(project: Omit<MachineProjectReadiness, "status">): MachineProjectReadiness["status"] {
@@ -289,6 +425,202 @@ export function runMachineProjectChecks(
   return results;
 }
 
+export function runMachineDependencyInstalls(
+  projects: MachineProjectReadiness[],
+  options: {
+    timeoutMs?: number;
+    maxProjects?: number;
+  } = {}
+): MachineInstallResult[] {
+  const timeoutMs = Number.isFinite(options.timeoutMs) && Number(options.timeoutMs) > 0
+    ? Number(options.timeoutMs)
+    : 180_000;
+  const maxProjects = Number.isFinite(options.maxProjects) && Number(options.maxProjects) > 0
+    ? Number(options.maxProjects)
+    : 4;
+  const runnableProjects = projects
+    .filter((project) => Boolean(project.packageManager))
+    .slice(0, maxProjects);
+  const results: MachineInstallResult[] = [];
+
+  for (const project of runnableProjects) {
+    const commandParts = installCommandParts(project);
+    if (!commandParts) {
+      results.push({
+        dirName: project.dirName,
+        projectDir: project.projectDir,
+        command: "install",
+        status: "skipped",
+        durationMs: 0,
+        reason: "no package manager detected",
+      });
+      continue;
+    }
+
+    const startedAt = Date.now();
+    const result = childProcess.spawnSync(commandParts.command, commandParts.args, {
+      cwd: project.projectDir,
+      encoding: "utf-8",
+      timeout: timeoutMs,
+      maxBuffer: 1024 * 1024,
+      env: {
+        ...process.env,
+        CI: process.env.CI || "1",
+        NO_COLOR: process.env.NO_COLOR || "1",
+      },
+    });
+    const durationMs = Date.now() - startedAt;
+    const combinedOutput = [result.stdout, result.stderr].filter(Boolean).join("\n");
+    const timedOut = result.error && result.error.message.includes("ETIMEDOUT");
+    results.push({
+      dirName: project.dirName,
+      projectDir: project.projectDir,
+      command: commandParts.display,
+      status: timedOut ? "timeout" : result.status === 0 ? "passed" : "failed",
+      exitCode: result.status,
+      durationMs,
+      outputTail: outputTail(combinedOutput),
+      reason: result.error && !timedOut ? result.error.message : undefined,
+    });
+  }
+
+  return results;
+}
+
+function waitForHttp(url: string, timeoutMs: number): Promise<{ status: "passed" | "timeout" | "failed"; statusCode?: number; reason?: string }> {
+  const startedAt = Date.now();
+
+  return new Promise((resolve) => {
+    let lastError = "";
+
+    const attempt = () => {
+      const req = http.get(url, { timeout: 1500 }, (res) => {
+        res.resume();
+        resolve({ status: "passed", statusCode: res.statusCode });
+      });
+
+      req.on("timeout", () => {
+        req.destroy(new Error("probe request timed out"));
+      });
+
+      req.on("error", (err) => {
+        lastError = err.message;
+        if (Date.now() - startedAt >= timeoutMs) {
+          resolve({ status: "timeout", reason: lastError || "server did not respond before timeout" });
+        } else {
+          setTimeout(attempt, 500);
+        }
+      });
+    };
+
+    attempt();
+  });
+}
+
+function stopChild(child: childProcess.ChildProcess): void {
+  if (child.exitCode !== null || child.killed) return;
+  child.kill("SIGTERM");
+  setTimeout(() => {
+    if (child.exitCode === null && !child.killed) {
+      child.kill("SIGKILL");
+    }
+  }, 1000).unref();
+}
+
+export async function runMachineServerProbes(
+  projects: MachineProjectReadiness[],
+  options: {
+    timeoutMs?: number;
+    maxProjects?: number;
+    startPort?: number;
+  } = {}
+): Promise<MachineServerProbeResult[]> {
+  const timeoutMs = Number.isFinite(options.timeoutMs) && Number(options.timeoutMs) > 0
+    ? Number(options.timeoutMs)
+    : 45_000;
+  const maxProjects = Number.isFinite(options.maxProjects) && Number(options.maxProjects) > 0
+    ? Number(options.maxProjects)
+    : 3;
+  const startPort = Number.isFinite(options.startPort) && Number(options.startPort) > 0
+    ? Number(options.startPort)
+    : DEFAULT_MACHINE_SERVER_START_PORT;
+  const runnableProjects = projects
+    .filter((project) => Boolean(project.packageManager) && project.scripts.includes("dev"))
+    .slice(0, maxProjects);
+  const results: MachineServerProbeResult[] = [];
+
+  for (const [index, project] of runnableProjects.entries()) {
+    const port = startPort + index;
+    const commandParts = devServerCommandParts(project, port);
+    const url = `http://127.0.0.1:${port}`;
+    if (!commandParts) {
+      results.push({
+        dirName: project.dirName,
+        projectDir: project.projectDir,
+        command: "dev",
+        url,
+        status: "skipped",
+        durationMs: 0,
+        reason: "no dev server command could be inferred",
+      });
+      continue;
+    }
+
+    const startedAt = Date.now();
+    let output = "";
+    const child = childProcess.spawn(commandParts.command, commandParts.args, {
+      cwd: project.projectDir,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        PORT: String(port),
+        HOST: "127.0.0.1",
+        HOSTNAME: "127.0.0.1",
+        BROWSER: "none",
+        CI: "1",
+        NEXT_TELEMETRY_DISABLED: "1",
+        NO_COLOR: process.env.NO_COLOR || "1",
+      },
+    });
+
+    child.stdout?.on("data", (chunk) => {
+      output = appendBounded(output, chunk);
+    });
+    child.stderr?.on("data", (chunk) => {
+      output = appendBounded(output, chunk);
+    });
+
+    const earlyExit = new Promise<{ status: "failed"; reason: string }>((resolve) => {
+      child.once("error", (err) => resolve({ status: "failed", reason: err.message }));
+      child.once("exit", (code, signal) => {
+        const exitReason = signal || (code ?? "unknown");
+        resolve({ status: "failed", reason: `server exited before probe responded (${exitReason})` });
+      });
+    });
+
+    const probe = await Promise.race([
+      waitForHttp(url, timeoutMs),
+      earlyExit,
+    ]);
+    const durationMs = Date.now() - startedAt;
+    stopChild(child);
+
+    results.push({
+      dirName: project.dirName,
+      projectDir: project.projectDir,
+      command: commandParts.display,
+      url,
+      status: probe.status,
+      statusCode: "statusCode" in probe ? probe.statusCode : undefined,
+      durationMs,
+      outputTail: outputTail(output),
+      reason: probe.reason,
+    });
+  }
+
+  return results;
+}
+
 export function buildMachineRunChecksReport(
   rootDir: string,
   options: {
@@ -321,6 +653,84 @@ export function buildMachineRunChecksReport(
     requestedScripts,
     timeoutMs,
     maxProjects,
+    results,
+    totals: {
+      passed: results.filter((result) => result.status === "passed").length,
+      failed: results.filter((result) => result.status === "failed").length,
+      timeout: results.filter((result) => result.status === "timeout").length,
+      skipped: results.filter((result) => result.status === "skipped").length,
+    },
+  };
+}
+
+export function buildMachineInstallReport(
+  rootDir: string,
+  options: {
+    timeoutMs?: number;
+    maxProjects?: number;
+    scanLimit?: number;
+  } = {}
+): MachineInstallReport {
+  const scanLimit = Number.isFinite(options.scanLimit) && Number(options.scanLimit) > 0
+    ? Number(options.scanLimit)
+    : 80;
+  const timeoutMs = Number.isFinite(options.timeoutMs) && Number(options.timeoutMs) > 0
+    ? Number(options.timeoutMs)
+    : 180_000;
+  const maxProjects = Number.isFinite(options.maxProjects) && Number(options.maxProjects) > 0
+    ? Number(options.maxProjects)
+    : 4;
+  const readiness = buildMachineReadinessReport(rootDir, scanLimit);
+  const results = runMachineDependencyInstalls(readiness.projects, {
+    timeoutMs,
+    maxProjects,
+  });
+  return {
+    rootDir,
+    timeoutMs,
+    maxProjects,
+    results,
+    totals: {
+      passed: results.filter((result) => result.status === "passed").length,
+      failed: results.filter((result) => result.status === "failed").length,
+      timeout: results.filter((result) => result.status === "timeout").length,
+      skipped: results.filter((result) => result.status === "skipped").length,
+    },
+  };
+}
+
+export async function buildMachineServerProbeReport(
+  rootDir: string,
+  options: {
+    timeoutMs?: number;
+    maxProjects?: number;
+    scanLimit?: number;
+    startPort?: number;
+  } = {}
+): Promise<MachineServerProbeReport> {
+  const scanLimit = Number.isFinite(options.scanLimit) && Number(options.scanLimit) > 0
+    ? Number(options.scanLimit)
+    : 80;
+  const timeoutMs = Number.isFinite(options.timeoutMs) && Number(options.timeoutMs) > 0
+    ? Number(options.timeoutMs)
+    : 45_000;
+  const maxProjects = Number.isFinite(options.maxProjects) && Number(options.maxProjects) > 0
+    ? Number(options.maxProjects)
+    : 3;
+  const startPort = Number.isFinite(options.startPort) && Number(options.startPort) > 0
+    ? Number(options.startPort)
+    : DEFAULT_MACHINE_SERVER_START_PORT;
+  const readiness = buildMachineReadinessReport(rootDir, scanLimit);
+  const results = await runMachineServerProbes(readiness.projects, {
+    timeoutMs,
+    maxProjects,
+    startPort,
+  });
+  return {
+    rootDir,
+    timeoutMs,
+    maxProjects,
+    startPort,
     results,
     totals: {
       passed: results.filter((result) => result.status === "passed").length,
