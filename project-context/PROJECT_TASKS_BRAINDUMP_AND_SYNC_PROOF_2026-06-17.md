@@ -170,6 +170,16 @@ GitHub status and task/graph paths behave in the actual product.
   generated fresh-machine command now uses `--write-report --sync-report` for
   readiness, optional checks, and optional install/server probe phases without
   uploading raw proof logs or `.env.local` values.
+- Production proof-sync verification passed after Convex deploy run
+  `27690893196`: `node cli/dist/index.js machine verify --root
+  /Users/houstongolden/Desktop/CODE_2025 --max-projects 80 --write-report
+  --sync-report` created a You.md machine record, and production read-back
+  returned `1` synced row with `61` scanned, `26` ready, `2` needing env,
+  `8` partial, `0` failures, and `secretValuesExposed: false`. Authenticated
+  Codex Browser QA verified the signed-in Machine pane showing
+  `synced machine records`, `1 tracked`, the same root/totals, warnings, and
+  `secret values exposed: false`. Screenshot:
+  `/tmp/youmd-machine-proof-sync-records-2026-06-17.png`.
 - Authenticated Chrome QA opened `/shell?integration=github`, clicked
   `refresh active projects`, waited through the 90-day GitHub analyzer, and
   verified the dashboard catalog returned with 38 visible `repo:

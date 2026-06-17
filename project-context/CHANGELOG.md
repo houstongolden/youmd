@@ -9,7 +9,9 @@
 - Extended the signed-in Machine pane with synced machine records from Convex alongside the localhost-only latest local proof strip.
 - Regenerated agent docs/OpenAPI references for the new machine proof endpoints.
 - Verified locally with `npx convex codegen`, focused Convex tests, full Convex suite (`44` files / `427` tests), focused CLI tests, full CLI suite (`53` files / `558` tests), CLI build, root typecheck, focused ESLint, docs check, production build, and compiled CLI prompt smoke showing all verify phases include `--sync-report`.
-- Production deploy/live proof-sync smoke is the next step after pushing this code; the actual brand-new-computer run remains open.
+- Deployed Convex to production via GitHub Actions run `27690893196`, then live-smoked production proof sync with `node cli/dist/index.js machine verify --root /Users/houstongolden/Desktop/CODE_2025 --max-projects 80 --write-report --sync-report`. Production read-back returned one synced machine row: `Houstons-MBP.lan`, `warn`, `61` scanned, `26` ready, `2` needs env, `8` partial, `0` failures, `secretValuesExposed: false`.
+- Authenticated Codex Browser visual QA verified the Machine pane showing `synced machine records`, `1 tracked`, the current root, synced timestamp, totals, warnings, and `secret values exposed: false`. Screenshot: `/tmp/youmd-machine-proof-sync-records-2026-06-17.png`.
+- The actual brand-new-computer run remains open.
 
 ## 2026-06-17 — Machine proof report
 
