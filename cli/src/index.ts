@@ -678,21 +678,25 @@ program
   .allowUnknownOption(true)
   .option("--root <dir>", "directory to search for / restore .env.local files")
   .option("--out <dir>", "output directory for the vault and manifest")
+  .option("--preflight", "backup: verify env-vault tooling/discovery without writing a vault")
+  .option("--list", "restore: list encrypted vault contents without writing files")
   .option("-f, --force", "overwrite existing .env.local without backing them up")
   .action((subcommand, args, options) => {
     const a = args || [];
     if (subcommand === "backup") {
-      envBackupCommand({ root: options.root, out: options.out });
+      envBackupCommand({ root: options.root, out: options.out, preflight: options.preflight });
     } else if (subcommand === "restore") {
       if (!a[0]) {
-        console.log("usage: youmd env restore <vault> [--root <dir>] [--force]");
+        console.log("usage: youmd env restore <vault> [--root <dir>] [--list] [--force]");
         return;
       }
-      envRestoreCommand(a[0], { root: options.root, force: options.force });
+      envRestoreCommand(a[0], { root: options.root, force: options.force, list: options.list });
     } else {
       console.log("usage: youmd env <backup|restore> [options]");
-      console.log("  backup            encrypt all .env.local files into a portable vault");
-      console.log("  restore <vault>   decrypt and restore .env.local files from a vault");
+      console.log("  backup              encrypt all .env.local files into a portable vault");
+      console.log("  backup --preflight  verify env-vault readiness without writing a vault");
+      console.log("  restore <vault>     decrypt and restore .env.local files from a vault");
+      console.log("  restore --list      list vault contents without writing files");
     }
   });
 

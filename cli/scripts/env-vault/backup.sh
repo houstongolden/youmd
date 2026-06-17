@@ -4,7 +4,7 @@
 # echoes, logs, or writes any secret VALUE. Only variable NAMES, counts, and
 # file paths appear in plaintext output.
 #
-# Usage: bash backup.sh [--root <search-root>] [--out <output-dir>]
+# Usage: bash backup.sh [--preflight] [--root <search-root>] [--out <output-dir>]
 # Defaults:
 #   search-root: /Users/houstongolden/Desktop/CODE_2025
 #   output-dir:  /Users/houstongolden/Desktop/CODE_2025/youmd/.env-vault
@@ -14,6 +14,7 @@ set -euo pipefail
 # ── configurable defaults ──────────────────────────────────────────────────────
 SEARCH_ROOT="${ENV_VAULT_ROOT:-/Users/houstongolden/Desktop/CODE_2025}"
 OUTPUT_DIR="${ENV_VAULT_OUT:-/Users/houstongolden/Desktop/CODE_2025/youmd/.env-vault}"
+PREFLIGHT=false
 
 # ── agent-auth secret files ────────────────────────────────────────────────────
 # Absolute paths to hard agent-auth secrets that must travel with the vault.
@@ -28,6 +29,7 @@ AGENT_SECRET_FILES=(
 # ── parse flags ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --preflight) PREFLIGHT=true; shift ;;
     --root)  SEARCH_ROOT="$2"; shift 2 ;;
     --out)   OUTPUT_DIR="$2";  shift 2 ;;
     *) echo "Unknown flag: $1" >&2; exit 1 ;;
@@ -66,10 +68,31 @@ done < <(find "${SEARCH_ROOT}" -maxdepth 2 -name ".env.local" -print0 2>/dev/nul
 
 if [[ ${#ENV_FILES[@]} -eq 0 ]]; then
   echo "No .env.local files found under ${SEARCH_ROOT}" >&2
+  if [[ "${PREFLIGHT}" == "true" ]]; then
+    echo "Preflight only: encryption tooling is available, but no .env.local files were found."
+    exit 0
+  fi
   exit 1
 fi
 
 echo "Found ${#ENV_FILES[@]} .env.local file(s)."
+
+if [[ "${PREFLIGHT}" == "true" ]]; then
+  echo "Output dir: ${OUTPUT_DIR}"
+  echo "Agent-auth candidates:"
+  for ENTRY in "${AGENT_SECRET_FILES[@]}"; do
+    SRC_PATH="${ENTRY%%:*}"
+    ARCHIVE_NAME="${ENTRY##*:}"
+    if [[ -f "${SRC_PATH}" ]]; then
+      FILE_BYTES=$(wc -c < "${SRC_PATH}" | tr -d ' ')
+      echo "  present: agent-auth/${ARCHIVE_NAME} (${FILE_BYTES} bytes)"
+    else
+      echo "  missing: agent-auth/${ARCHIVE_NAME}"
+    fi
+  done
+  echo "Preflight only: no vault written and no secret values printed."
+  exit 0
+fi
 
 # ── build plaintext manifest (names + counts, NO values) ─────────────────────
 mkdir -p "${OUTPUT_DIR}"

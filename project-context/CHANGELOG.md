@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Env-vault preflight for fresh-machine bootstrap
+
+### feat(cli/web/docs): verify encrypted env vaults before restore
+- Added `youmd env backup --preflight`, which checks encryption tooling, `.env.local` discovery, and agent-auth file presence without writing a vault or printing secret values.
+- Added `youmd env restore <vault> --list`, which decrypts into a temp directory, prints target paths plus variable names/counts and agent-auth presence, then exits without writing files.
+- Hardened the generated fresh-computer command so it checks env-vault tooling, fails early when `YOUMD_ENV_VAULT` points to a missing file, lists the encrypted vault before restore, then restores only after the list step passes.
+- Brought the web shell `/new computer` generated command up to CLI parity: graph-backed dry-run preview, optional clone cap, env-vault preflight/list/restore, readiness proof sync, and optional bounded checks/install/server probes.
+- Updated the bundled `machine-bootstrap` skill, env-vault README, and public docs to teach the preflight/list/restore flow.
+- Verified with focused machine prompt tests, CLI build, disposable encrypted backup/list/restore smoke with a fake `.env.local` and no fake value leakage in output, compiled `youmd machine prompt` smoke, `npm run docs:check`, `npm run build`, and `git diff --check`.
+
 ## 2026-06-17 — Canonical skills API route
 
 ### feat(web): expose hosted skill registry through the web domain

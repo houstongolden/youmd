@@ -143,6 +143,7 @@ Audit local project env coverage before backup:
 ```bash
 ~/.agent-shared/bin/env-key-audit.py --root ~/Desktop/CODE_2025
 ~/.agent-shared/bin/env-secure-backup.sh --preflight
+youmd env backup --root ~/Desktop/CODE_2025 --preflight
 ```
 
 Create an encrypted archive from the old machine in an interactive macOS terminal:
@@ -155,6 +156,8 @@ On the new machine, list the encrypted archive by path only before restore:
 
 ```bash
 ~/.agent-shared/bin/env-secure-restore.sh --archive ~/Desktop/env-local-backup.tar.gz.gpg --list
+youmd env restore ~/Desktop/env-local-backup.tar.gz.gpg --root ~/Desktop/CODE_YOU --list
+youmd env restore ~/Desktop/env-local-backup.tar.gz.gpg --root ~/Desktop/CODE_YOU
 ```
 
 ## Useful Variants

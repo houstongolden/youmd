@@ -29,6 +29,9 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('PROJECT_ARGS+=(--max-clone-projects "$YOUMD_MAX_CLONE_PROJECTS")');
     expect(command).toContain('youmd machine projects "${PROJECT_ARGS[@]}" --dry-run');
     expect(command).toContain('youmd machine projects "${PROJECT_ARGS[@]}" --yes');
+    expect(command).toContain('youmd env backup --root "$ROOT" --preflight');
+    expect(command).toContain('if [ ! -f "$YOUMD_ENV_VAULT" ]; then');
+    expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --list');
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"');
     expect(command).toContain('youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report');
     expect(command).toContain('YOUMD_RUN_CHECKS');
@@ -51,11 +54,14 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("audits cloned project readiness without reading secret values");
     expect(prompt).toContain("writes a secret-safe machine proof report");
     expect(prompt).toContain("syncs the proof summary back to your You.md machine dashboard");
+    expect(prompt).toContain("checks env-vault tooling");
+    expect(prompt).toContain("lists an encrypted env vault without writing files");
     expect(prompt).toContain("YOUMD_MAX_CLONE_PROJECTS");
     expect(prompt).toContain("YOUMD_RUN_CHECKS=1");
     expect(prompt).toContain("YOUMD_INSTALL_DEPS=1");
     expect(prompt).toContain("YOUMD_PROBE_SERVERS=1");
     expect(prompt).toContain("You.md portfolio graph + authenticated GitHub recent repos");
     expect(prompt).toContain(".env.local values are never embedded here");
+    expect(prompt).toContain("variable names/counts and target paths only");
   });
 });

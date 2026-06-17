@@ -28,6 +28,9 @@ top of `backup.sh` and add the matching entry to `AGENT_AUTH_MAP` in
 # via CLI (preferred — ships in the npm package)
 youmd env backup
 
+# Check local encryption tooling and env discovery without writing a vault:
+youmd env backup --preflight
+
 # or directly via bash (from the youmd repo root)
 cd /Users/houstongolden/Desktop/CODE_2025/youmd
 bash cli/scripts/env-vault/backup.sh
@@ -52,6 +55,7 @@ Do NOT transfer via unencrypted email or public Slack.
 
 ```bash
 # Install dependencies first (e.g. Node, pnpm, etc.), then:
+youmd env restore /path/to/env-vault-<date>.tar.<ext> --list
 youmd env restore /path/to/env-vault-<date>.tar.<ext>
 
 # If files already exist on the new Mac:
@@ -63,10 +67,12 @@ bash cli/scripts/env-vault/restore.sh --force /path/to/env-vault-<date>.tar.<ext
 ```
 
 The script:
-1. Creates `<CODE_2025>/<project>/.env.local` for each project.
-2. Restores agent-auth files to their absolute home paths (`~/.codex/auth.json`, `~/.cursor/mcp.json`, `~/.claude.json`), creating parent directories as needed.
+1. Lists vault contents without writing files when `--list` is provided.
+2. Creates `<CODE_2025>/<project>/.env.local` for each project during restore.
+3. Restores agent-auth files to their absolute home paths (`~/.codex/auth.json`, `~/.cursor/mcp.json`, `~/.claude.json`), creating parent directories as needed.
 
 Existing files are backed up to `<path>.bak.<timestamp>` before overwrite (or silently overwritten with `--force`).
+List mode prints project env target paths, variable names/counts, and agent-auth file presence only. It never prints secret values.
 
 ---
 
@@ -101,10 +107,12 @@ and are exposed as first-class CLI commands:
 
 ```bash
 youmd env backup                # back up all .env.local files
+youmd env backup --preflight    # verify tooling/discovery without writing
 youmd env backup --root <dir>   # custom search root
 youmd env backup --out <dir>    # custom output dir
 
 youmd env restore <vault>       # restore from an encrypted vault
+youmd env restore <vault> --list # list vault contents without writing
 youmd env restore --force       # overwrite existing .env.local files
 youmd env restore --root <dir>  # restore into a custom root
 ```
@@ -121,6 +129,7 @@ your terminal unchanged.
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `--preflight` | off | Verify encryption tooling/discovery without writing a vault |
 | `--root <dir>` | `~/Desktop/CODE_2025` | Where to discover `.env.local` files |
 | `--out <dir>` | `youmd/.env-vault/` | Where to write encrypted vault + manifest |
 
@@ -128,6 +137,7 @@ your terminal unchanged.
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `--list` | off | List vault contents without writing files |
 | `--root <dir>` | `~/Desktop/CODE_2025` | Where to restore project `.env.local` files |
 | `--force` | off | Overwrite existing `.env.local` instead of skipping |
 

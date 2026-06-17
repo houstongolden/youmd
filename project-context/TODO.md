@@ -25,7 +25,8 @@ PRD Version: 2.3
 - [x] Add a secret-safe machine proof report written by `youmd machine verify --write-report` and surfaced in the signed-in Machine pane
 - [x] Add persisted owner-gated machine proof records and `youmd machine verify --sync-report` so synced computer proof summaries appear in the Machine pane across hosts
 - [x] Run a bounded graph-backed clean-root proof with `--max-clone-projects 2`: production graph input reported `55` projects / `40` graph-tracked repos / `41` recent GitHub repos, cloned `youmd` and `agent-shared` into `/tmp/youmd-clean-host-CODE_YOU-20260617T0714`, synced the machine proof row to You.md, verified `npm ci` passed for `youmd`, and classified the remaining server blocker as non-interactive Convex setup before dev-server start
-- [ ] Run the generated command end-to-end on the actual brand-new computer / clean agent host and verify projects, skills, env vault restore, local servers, and portfolio graph sync there
+- [x] Add env-vault setup guardrails to the generated command: `youmd env backup --preflight`, missing-vault path failure, `youmd env restore --list` before restore, dashboard `/new computer` parity, and disposable secret-safe backup/list/restore smoke proof
+- [ ] Run the generated command end-to-end on the actual brand-new computer / clean agent host with a real encrypted env vault and verify projects, skills, env vault restore, local servers, and portfolio graph sync there
 
 ### 2026-06-17 — Shell sidebar expand/collapse regression
 - [x] Investigate why the left shell sidebar can get stuck collapsed when the right detail pane is open

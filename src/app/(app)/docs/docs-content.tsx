@@ -1570,12 +1570,15 @@ preferences: terminal-native, monochrome
                       <InlineCode>youmd env backup</InlineCode> walks a root
                       directory, encrypts every <InlineCode>.env.local</InlineCode>{" "}
                       into one openssl-encrypted portable file plus a
-                      values-free manifest. Secrets never auto-sync over the
-                      network — you carry the vault (AirDrop, USB, secure
+                      values-free manifest.{" "}
+                      <InlineCode>youmd env backup --preflight</InlineCode>{" "}
+                      checks readiness without writing a vault. Secrets never
+                      auto-sync over the network — you carry the vault (AirDrop, USB, secure
                       cloud file) and restore on the new machine with{" "}
-                      <InlineCode>youmd env restore &lt;vault&gt;</InlineCode>,
-                      which decrypts and writes each file back (backing up any
-                      existing file first).
+                      <InlineCode>youmd env restore &lt;vault&gt; --list</InlineCode>{" "}
+                      first, then <InlineCode>youmd env restore &lt;vault&gt;</InlineCode>,
+                      which decrypts and writes each file back after the
+                      secret-safe list step passes.
                     </td>
                   </tr>
                   <tr className="border-b border-[hsl(var(--border))]">
@@ -1626,8 +1629,10 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 90 --limit 80 
               syncs your identity bundle, restores shared skills/stacks/agent
               host config, hydrates the portfolio graph from You.md and GitHub,
               creates <InlineCode>~/Desktop/CODE_YOU</InlineCode>, clones active
-              project repos, optionally restores an encrypted env vault, then
-              rehydrates local README/project-context/env-key evidence.
+              project repos, checks env-vault readiness, optionally lists and
+              restores an encrypted env vault, then rehydrates local
+              README/project-context/env-key evidence and syncs a secret-safe
+              machine proof report.
               For clean-host proof runs, add{" "}
               <InlineCode>--max-clone-projects</InlineCode> or set{" "}
               <InlineCode>YOUMD_MAX_CLONE_PROJECTS</InlineCode>; omit it on the
@@ -1644,7 +1649,8 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 90 --limit 80 
               The generated prompt may contain a bootstrap API key, so treat it
               as secret-bearing setup material. Raw <InlineCode>.env.local</InlineCode>{" "}
               values are never embedded in the browser prompt; move the
-              encrypted env vault separately and restore it locally. The
+              encrypted env vault separately and restore it locally. Vault list
+              mode prints target paths plus variable names/counts only. The
               project-context sync is intentionally context-only: it refuses to
               merge upstream app-code changes.
             </Callout>

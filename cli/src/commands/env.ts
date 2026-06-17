@@ -21,17 +21,18 @@ function assertScriptExists(scriptPath: string): void {
   }
 }
 
-export function envBackupCommand(opts: { root?: string; out?: string }): void {
+export function envBackupCommand(opts: { root?: string; out?: string; preflight?: boolean }): void {
   const scriptPath = resolveScript("backup.sh");
   assertScriptExists(scriptPath);
 
   const args: string[] = [];
+  if (opts.preflight) args.push("--preflight");
   if (opts.root) args.push("--root", opts.root);
   if (opts.out) args.push("--out", opts.out);
 
   // Print the spinner line then stop it before handing the TTY to bash
   // (the script needs an interactive TTY for the passphrase prompt).
-  const spinner = new BrailleSpinner("sealing your env vault...");
+  const spinner = new BrailleSpinner(opts.preflight ? "checking env vault readiness..." : "sealing your env vault...");
   spinner.start();
   spinner.stop("handing off to vault script");
   console.log("");
@@ -50,18 +51,19 @@ export function envBackupCommand(opts: { root?: string; out?: string }): void {
 
 export function envRestoreCommand(
   vault: string,
-  opts: { root?: string; force?: boolean }
+  opts: { root?: string; force?: boolean; list?: boolean }
 ): void {
   const scriptPath = resolveScript("restore.sh");
   assertScriptExists(scriptPath);
 
-  // Build arg list — restore.sh expects: [--force] [--root <path>] <vault-file>
+  // Build arg list — restore.sh expects: [--list] [--force] [--root <path>] <vault-file>
   const args: string[] = [];
+  if (opts.list) args.push("--list");
   if (opts.force) args.push("--force");
   if (opts.root) args.push("--root", opts.root);
   args.push(vault);
 
-  const spinner = new BrailleSpinner("opening the vault...");
+  const spinner = new BrailleSpinner(opts.list ? "inspecting the vault..." : "opening the vault...");
   spinner.start();
   spinner.stop("handing off to restore script");
   console.log("");
