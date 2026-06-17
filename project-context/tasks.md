@@ -6,6 +6,7 @@
 
 ## Done
 
+- [x] Verify the exact Portfolio Graph docs/curl refinement on production `www.you.md`: authenticated Browser QA loaded `bamfaiapp#project-detail`, confirmed 56 projects, BAMF docs/API/MCP links, BAMFStack install command, GitHub clone command, BAMF API surface curl, shipped counters, and matching owner API graph read-back. Screenshot: `/tmp/youmd-production-bamf-portfolio-graph-links-2026-06-17.png`. (source: 2026-06-17 13:05 PT)
 - [x] Tighten Portfolio Graph exact docs/curl behavior: authenticated Browser QA found `bamfaiapp` could fall back to generic You.md docs/curl rows, then verified stack-aware BAMF docs, BAMF API/MCP curl, shipped counters, card click, search/sort/focus controls, and project graph command block after the fix. Screenshot: `/tmp/youmd-portfolio-bamf-exact-docs-surface-curl-final-2026-06-17.png`. (source: 2026-06-17 12:57 PT)
 - [x] Add strict fresh-machine env-vault proof mode so `youmd machine prompt --require-env-vault` emits `YOUMD_REQUIRE_ENV_VAULT=1` and generated setup commands fail before completion when `YOUMD_ENV_VAULT` is missing. (source: 2026-06-17 fresh-machine proof continuation)
 - [x] Run a 5-repo graph-backed clean-root clone/readiness proof at `/tmp/youmd-fresh-machine-proof-20260617T183447Z/CODE_YOU`, verify remotes for `youmd`, `agent-shared`, `bamfsite`, `houstongolden-you-md`, and `bamfaiapp`, sync a secret-safe machine proof row, and document that real env-vault restore remains the blocker. (source: 2026-06-17 fresh-machine proof continuation)

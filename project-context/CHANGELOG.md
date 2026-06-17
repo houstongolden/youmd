@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Production portfolio exact-docs proof
+
+### test(prod): verify BAMF project graph links on www.you.md
+- Verified the pushed Portfolio Graph exact-docs fix in an authenticated production Codex in-app Browser session at `https://www.you.md/shell?tab=portfolio&project=bamfaiapp#project-detail`.
+- Confirmed the production shell is signed in and renders the persisted Portfolio Graph directly, not the sign-in page: `56` projects, selected project `bamfaiapp`, shipped `today` / `7d` / `30d` / `90d`, and GitHub chrome present.
+- Confirmed the selected project graph links show BAMF-specific docs and commands: `https://bamf.ai/docs`, `https://bamf.ai/docs/api/posts`, `https://bamf.ai/docs/mcp/overview`, `https://bamf.ai/docs/mcp/tools`, `curl -fsSL https://bamf.ai/bamfstack/install.sh | bash`, and `git clone https://github.com/houstongolden/bamfaiapp bamfaiapp`.
+- Confirmed the BAMF API/MCP surface curl is no longer the generic You.md MCP fallback; production renders `curl -H "Authorization: Bearer $BAMF_API_KEY" https://api.bamf.ai/v1/agent/capabilities`.
+- Production owner API read-back for `GET /api/v1/me/portfolio/graph?includeTasks=1` returned `56` projects and the same BAMF docs/curl/install/clone fields plus shipped counters (`19` today / `58` 7d / `58` 30d / `58` 90d) and `latestShippedCount: 5`.
+- Screenshot: `/tmp/youmd-production-bamf-portfolio-graph-links-2026-06-17.png`.
+
 ## 2026-06-17 — Portfolio graph exact docs/curl refinement
 
 ### fix(web/api): make stack-aware project graph commands exact
