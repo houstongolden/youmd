@@ -746,6 +746,54 @@ export default defineSchema({
     .index("by_userId_owner", ["userId", "ownerType"])
     .index("by_userId_status", ["userId", "status"]),
 
+  repoUpdateRuns: defineTable({
+    userId: v.id("users"),
+    source: v.string(), // "shell" | "chat" | "cli" | "api" | "github-pane"
+    trigger: v.string(), // "update-button" | "task-sync" | "braindump-sync" | ...
+    actorLabel: v.optional(v.string()),
+    repoFullName: v.optional(v.string()),
+    branch: v.optional(v.string()),
+    status: v.string(), // "running" | "success" | "failed"
+    summary: v.optional(v.string()),
+    publishVersion: v.optional(v.number()),
+    profileUrl: v.optional(v.string()),
+    pushedFiles: v.array(v.string()),
+    route: v.optional(v.string()), // "pr" | "direct"
+    prUrl: v.optional(v.string()),
+    prNumber: v.optional(v.number()),
+    merged: v.optional(v.boolean()),
+    branchRecreated: v.optional(v.boolean()),
+    commitSha: v.optional(v.string()),
+    mirrorFileCount: v.optional(v.number()),
+    mirrorTruncated: v.optional(v.boolean()),
+    error: v.optional(v.string()),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_startedAt", ["userId", "startedAt"])
+    .index("by_userId_status", ["userId", "status"]),
+
+  repoUpdateSteps: defineTable({
+    userId: v.id("users"),
+    runId: v.id("repoUpdateRuns"),
+    order: v.number(),
+    stepKey: v.string(),
+    label: v.string(),
+    status: v.string(), // "running" | "success" | "failed" | "skipped"
+    detail: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    startedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_runId", ["runId"])
+    .index("by_userId_run_order", ["userId", "runId", "order"]),
+
   // artifactType: "author_voice" | "topic_map" | "bio_variants" | "faq"
   //             | "voice_linkedin" | "voice_linkedin_doc"
   //             | "voice_x" | "voice_blog"

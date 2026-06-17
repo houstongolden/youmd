@@ -3,6 +3,7 @@
 import { SignOutButton, useUser } from "@/lib/you-auth";
 import { useAction, useQuery, useMutation, useConvex, useConvexAuth } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import {
   useCallback,
   useEffect,
@@ -1233,6 +1234,9 @@ export function DashboardContent() {
   const createUser = useMutation(api.users.createUser);
   const claimProfile = useMutation(api.profiles.claimProfile);
   const publishLatest = useMutation(api.me.publishLatest);
+  const startRepoUpdateRun = useMutation(api.portfolio.startRepoUpdateRun);
+  const appendRepoUpdateStep = useMutation(api.portfolio.appendRepoUpdateStep);
+  const completeRepoUpdateRun = useMutation(api.portfolio.completeRepoUpdateRun);
   const pushToRepo = useAction(api.githubRepo.pushToRepo);
   const syncMirror = useAction(api.githubRepo.syncMirror);
   const autoCreateAttempted = useRef(false);
@@ -1289,6 +1293,33 @@ export function DashboardContent() {
     }
     const repoName = githubConnection?.repoFullName ?? repoMirror?.repoFullName ?? `you.md/${shellUsername}`;
     setRepoUpdateBusy(true);
+    let updateRunId: Id<"repoUpdateRuns"> | null = null;
+    const recordStep = async (step: {
+      order: number;
+      stepKey: string;
+      label: string;
+      status: "running" | "success" | "failed" | "skipped";
+      detail?: string;
+      metadata?: unknown;
+      completedAt?: number;
+    }) => {
+      if (!updateRunId || !user?.id) return;
+      try {
+        await appendRepoUpdateStep({
+          clerkId: user.id,
+          runId: updateRunId,
+          order: step.order,
+          stepKey: step.stepKey,
+          label: step.label,
+          status: step.status,
+          detail: step.detail,
+          metadata: step.metadata,
+          completedAt: step.completedAt,
+        });
+      } catch (err) {
+        console.warn("repo update step history failed:", err);
+      }
+    };
     agent.addSystemMessage(
       [
         "[update started]",
@@ -1300,7 +1331,39 @@ export function DashboardContent() {
       ].join("\n")
     );
     try {
+      const run = await startRepoUpdateRun({
+        clerkId: user.id,
+        source: "shell",
+        trigger: "update-button",
+        actorLabel: "web-shell",
+        repoFullName: repoName,
+        branch: githubConnection?.repoDefaultBranch ?? "main",
+        summary: "Manual shell update from the top GitHub chrome.",
+      });
+      updateRunId = run.runId;
+      await recordStep({
+        order: 0,
+        stepKey: "start",
+        label: "update started",
+        status: "success",
+        detail: `repo: ${repoName}`,
+        metadata: { repoName },
+        completedAt: Date.now(),
+      });
+
       const publishResult = await publishLatest({ clerkId: user.id });
+      await recordStep({
+        order: 10,
+        stepKey: "publish",
+        label: "publish current You.md bundle",
+        status: "success",
+        detail: `published v${publishResult.version}`,
+        metadata: {
+          version: publishResult.version,
+          username: publishResult.username,
+        },
+        completedAt: Date.now(),
+      });
       agent.addSystemMessage(
         `[update step 1 complete]\n\npublished v${publishResult.version}. live at you.md/${publishResult.username}`
       );
@@ -1308,6 +1371,7 @@ export function DashboardContent() {
       const pushResult = await pushToRepo({ clerkId: user.id }) as {
         upToDate: boolean;
         pushed: string[];
+        commitSha?: string | null;
         via?: "pr" | "direct";
         prUrl?: string | null;
         prNumber?: number | null;
@@ -1325,12 +1389,53 @@ export function DashboardContent() {
         pushResult.merged === true ? "> merge: complete" : pushResult.merged === false ? "> merge: pending or manual" : null,
         pushResult.branchRecreated ? "> conflict: branch recreated from latest default branch and retried" : null,
       ].filter(Boolean);
+      await recordStep({
+        order: 20,
+        stepKey: "push",
+        label: "push identity files to linked GitHub repo",
+        status: "success",
+        detail: pushResult.upToDate
+          ? "repo already matched current identity files"
+          : `pushed ${pushResult.pushed.join(", ") || "identity files"}`,
+        metadata: pushResult,
+        completedAt: Date.now(),
+      });
       agent.addSystemMessage(pushLines.join("\n"));
 
       const mirrorResult = await syncMirror({ clerkId: user.id }) as {
         fileCount: number;
         truncated: boolean;
       };
+      await recordStep({
+        order: 30,
+        stepKey: "mirror",
+        label: "refresh server mirror",
+        status: "success",
+        detail: `mirror refreshed: ${mirrorResult.fileCount} file${mirrorResult.fileCount === 1 ? "" : "s"}`,
+        metadata: mirrorResult,
+        completedAt: Date.now(),
+      });
+      if (updateRunId) {
+        await completeRepoUpdateRun({
+          clerkId: user.id,
+          runId: updateRunId,
+          status: "success",
+          summary: pushResult.upToDate
+            ? "Repo already matched current identity files; mirror refreshed."
+            : `Pushed ${pushResult.pushed.length} file${pushResult.pushed.length === 1 ? "" : "s"} and refreshed mirror.`,
+          publishVersion: publishResult.version,
+          profileUrl: `https://you.md/${publishResult.username}`,
+          pushedFiles: pushResult.pushed,
+          route: pushResult.via,
+          prUrl: pushResult.prUrl ?? undefined,
+          prNumber: pushResult.prNumber ?? undefined,
+          merged: pushResult.merged,
+          branchRecreated: pushResult.branchRecreated,
+          commitSha: pushResult.commitSha ?? undefined,
+          mirrorFileCount: mirrorResult.fileCount,
+          mirrorTruncated: mirrorResult.truncated,
+        });
+      }
       agent.addSystemMessage(
         [
           "[update complete]",
@@ -1340,14 +1445,36 @@ export function DashboardContent() {
         ].join("\n")
       );
     } catch (err) {
+      const message = err instanceof Error ? err.message : "unknown GitHub sync error";
+      await recordStep({
+        order: 90,
+        stepKey: "error",
+        label: "update failed",
+        status: "failed",
+        detail: message,
+        completedAt: Date.now(),
+      });
+      if (updateRunId) {
+        try {
+          await completeRepoUpdateRun({
+            clerkId: user.id,
+            runId: updateRunId,
+            status: "failed",
+            summary: "Shell update failed before completing the full publish/push/mirror loop.",
+            error: message,
+          });
+        } catch (historyErr) {
+          console.warn("repo update run failure history failed:", historyErr);
+        }
+      }
       agent.addSystemMessage(
-        `[update failed]\n\n${err instanceof Error ? err.message : "unknown GitHub sync error"}`
+        `[update failed]\n\n${message}`
       );
     } finally {
       setRepoUpdateBusy(false);
       focusShellInput();
     }
-  }, [agent, focusShellInput, githubConnection?.repoFullName, publishLatest, pushToRepo, repoMirror?.repoFullName, repoUpdateBusy, shellUsername, syncMirror, user?.id]);
+  }, [agent, appendRepoUpdateStep, completeRepoUpdateRun, focusShellInput, githubConnection?.repoDefaultBranch, githubConnection?.repoFullName, publishLatest, pushToRepo, repoMirror?.repoFullName, repoUpdateBusy, shellUsername, startRepoUpdateRun, syncMirror, user?.id]);
 
   useEffect(() => {
     repoUpdateRunnerRef.current = runRepoUpdate;

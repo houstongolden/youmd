@@ -26,6 +26,47 @@ type RepoListItem = {
   updatedAt: string;
 };
 
+type RepoUpdateStep = {
+  _id: string;
+  order: number;
+  stepKey: string;
+  label: string;
+  status: string;
+  detail?: string;
+};
+
+type RepoUpdateRun = {
+  _id: string;
+  source: string;
+  trigger: string;
+  status: string;
+  summary?: string;
+  repoFullName?: string;
+  publishVersion?: number;
+  pushedFiles: string[];
+  route?: string;
+  prUrl?: string;
+  prNumber?: number;
+  merged?: boolean;
+  commitSha?: string;
+  mirrorFileCount?: number;
+  error?: string;
+  startedAt: number;
+  completedAt?: number;
+  steps: RepoUpdateStep[];
+};
+
+function relativeTime(value?: number | null): string {
+  if (!value) return "never";
+  const diff = Date.now() - value;
+  const minutes = Math.max(0, Math.round(diff / 60000));
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
 /**
  * Phase 2: connect or create the user's own You.md GitHub repo (public or
  * private). Terminal-native — visibility is a toggle, existing repos are a
@@ -46,6 +87,10 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
     api.github.getRepoMirror,
     clerkId ? { clerkId } : "skip"
   );
+  const updateRuns = useQuery(
+    api.portfolio.listRepoUpdateRuns,
+    clerkId ? { clerkId, limit: 5, includeSteps: true } : "skip"
+  ) as RepoUpdateRun[] | undefined;
 
   const [visibility, setVisibility] = useState<"private" | "public">("private");
   const [busy, setBusy] = useState<string | null>(null);
@@ -329,6 +374,78 @@ export function GithubRepoSection({ clerkId }: { clerkId: string }) {
             <p className="text-[hsl(var(--text-secondary))] opacity-40 pt-1">
               agents read these via the API at /api/v1/me/repo/files
             </p>
+          </div>
+        )}
+
+        {updateRuns && updateRuns.length > 0 && (
+          <div className="mt-3 font-mono text-[10px]">
+            <SectionLabel>update history</SectionLabel>
+            <div className="divide-y divide-[hsl(var(--border))]/55 border-y border-[hsl(var(--border))]/55">
+              {updateRuns.map((run) => (
+                <details key={run._id} className="group py-2">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+                    <span className="min-w-0">
+                      <span
+                        className={
+                          run.status === "success"
+                            ? "text-[hsl(var(--success))]"
+                            : run.status === "failed"
+                              ? "text-[hsl(var(--accent))]"
+                              : "text-[#a371f7]"
+                        }
+                      >
+                        {run.status}
+                      </span>
+                      <span className="ml-2 text-[hsl(var(--text-primary))] opacity-70">
+                        {run.prNumber ? `PR #${run.prNumber}` : run.trigger}
+                      </span>
+                      <span className="ml-2 text-[hsl(var(--text-secondary))] opacity-45">
+                        {relativeTime(run.completedAt ?? run.startedAt)}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-[hsl(var(--text-secondary))] opacity-35 transition-opacity group-open:opacity-70">
+                      {run.mirrorFileCount ? `${run.mirrorFileCount} files` : run.route ?? run.source}
+                    </span>
+                  </summary>
+                  <div className="mt-2 space-y-2 pl-3 text-[hsl(var(--text-secondary))]">
+                    {run.summary && <p className="opacity-65">{run.summary}</p>}
+                    <div className="grid gap-1 opacity-60">
+                      {run.publishVersion && <span>published v{run.publishVersion}</span>}
+                      {run.pushedFiles.length > 0 && (
+                        <span>pushed {run.pushedFiles.join(", ")}</span>
+                      )}
+                      {run.prUrl && (
+                        <a
+                          href={run.prUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[hsl(var(--accent-mid))] hover:text-[hsl(var(--accent))]"
+                        >
+                          open PR {run.prNumber ? `#${run.prNumber}` : ""}
+                        </a>
+                      )}
+                      {run.commitSha && <span>commit {run.commitSha.slice(0, 12)}</span>}
+                      {run.error && <span className="text-[hsl(var(--accent))]">{run.error}</span>}
+                    </div>
+                    {run.steps.length > 0 && (
+                      <ol className="space-y-1 border-l border-[hsl(var(--border))]/55 pl-3">
+                        {run.steps.map((step) => (
+                          <li key={step._id}>
+                            <span className="text-[hsl(var(--text-primary))] opacity-70">
+                              {step.label}
+                            </span>
+                            <span className="ml-2 opacity-45">{step.status}</span>
+                            {step.detail && (
+                              <span className="block opacity-45">{step.detail}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </div>
+                </details>
+              ))}
+            </div>
           </div>
         )}
 

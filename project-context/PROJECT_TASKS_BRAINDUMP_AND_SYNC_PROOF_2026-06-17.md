@@ -194,12 +194,25 @@ GitHub status and task/graph paths behave in the actual product.
   `2026-06-17T09:43:00Z` with merge commit
   `a8188ac7bcfe905d3767997d63fdd177e1bbdf99`. Visual proof screenshot:
   `/tmp/youmd-shell-update-proof-2026-06-17-pr11.png`.
+- Persisted update history now has a verified first slice. Added
+  `repoUpdateRuns` and `repoUpdateSteps`, deployed Convex, clicked the real
+  local `[ update ]` button again in the Codex in-app Browser, and verified
+  PR #12 appeared in the account/GitHub pane `UPDATE HISTORY` section.
+- The expanded persisted history row showed `published v109`, pushed `you.md`,
+  `you.json`, `projects/_braindumps/recent.md`,
+  `projects/_personal/tasks.md`, and `projects/youmd/tasks.md`, linked
+  `open PR #12`, stored commit `021870e5a1f0`, and rendered ordered
+  `update started`, `publish current You.md bundle`, `push identity files to
+  linked GitHub repo`, and `refresh server mirror` steps.
+- Visual proof screenshot:
+  `/tmp/youmd-update-history-proof-2026-06-17-pr12.png`.
 
 ## Still Open
 
 - Export the persisted portfolio graph back into repo-backed markdown snapshots.
 - Add mobile/watch invocation proof for task and brain-dump capture paths.
-- Add persisted update artifacts/history for PR, conflict, check, merge, and
-  mirror-refresh steps.
+- Extend persisted update history with explicit GitHub check-status and
+  conflict-resolution retry timeline rows beyond the current PR/merge/commit/
+  mirror first slice.
 - Enrich active project strategy records with vision, pain points, solution,
   constraints, not-building notes, metrics, and competitors.

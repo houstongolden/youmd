@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-06-17 — Persisted shell update history
+
+### feat(web/convex): store and render repo update run artifacts
+- Added owner-scoped `repoUpdateRuns` and `repoUpdateSteps` Convex tables for shell/GitHub update history.
+- Added `portfolio.startRepoUpdateRun`, `portfolio.appendRepoUpdateStep`, `portfolio.completeRepoUpdateRun`, and `portfolio.listRepoUpdateRuns` so the shell can persist publish, push, PR, merge, commit, mirror, and failure state instead of leaving update evidence only in the transient chat transcript.
+- Wired the shell `[ update ]` loop to create a run, append start/publish/push/mirror/error steps, and complete the run with PR URL/number, merge state, branch-recreated flag, commit SHA, pushed files, publish version, and mirror file counts.
+- Added an `update history` section to the account/GitHub repo pane with expandable run details and ordered steps.
+- Deployed Convex to `kindly-cassowary-600`.
+- Verified with focused Convex tests, `npx convex codegen`, `npx tsc --noEmit --pretty false`, `npm run docs:check`, `npm run lint`, `npm run build`, and authenticated Codex in-app Browser QA.
+- Visual proof: clicked local `[ update ]`, observed GitHub chrome return to `synced / repo mirror current / just now`, merged PR #12, refreshed 50 mirrored files, expanded the account-pane history row, and confirmed `published v109`, pushed five files, `open PR #12`, commit `021870e5a1f0`, plus start/publish/push/mirror steps. Screenshot: `/tmp/youmd-update-history-proof-2026-06-17-pr12.png`.
+- Remaining: add explicit GitHub check-status events and richer conflict-resolution retry timeline rows beyond the current branch-recreated flag.
+
 ## 2026-06-17 — Authenticated shell update proof
 
 ### qa(web): verify shell GitHub update loop in Codex browser

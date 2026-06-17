@@ -51,6 +51,8 @@ const taskDraftValidator = v.object({
 
 const TASK_STATUSES = ["proposed", "open", "in_progress", "done", "snoozed", "cancelled"] as const;
 const TASK_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+const UPDATE_RUN_STATUSES = ["running", "success", "failed"] as const;
+const UPDATE_STEP_STATUSES = ["running", "success", "failed", "skipped"] as const;
 
 function normalizeTaskStatus(value: string | undefined, fallback: string): string {
   const next = value?.trim();
@@ -60,6 +62,16 @@ function normalizeTaskStatus(value: string | undefined, fallback: string): strin
 function normalizeTaskPriority(value: string | undefined, fallback: string): string {
   const next = value?.trim();
   return next && TASK_PRIORITIES.includes(next as typeof TASK_PRIORITIES[number]) ? next : fallback;
+}
+
+function normalizeUpdateRunStatus(value: string | undefined, fallback: string): string {
+  const next = value?.trim();
+  return next && UPDATE_RUN_STATUSES.includes(next as typeof UPDATE_RUN_STATUSES[number]) ? next : fallback;
+}
+
+function normalizeUpdateStepStatus(value: string | undefined, fallback: string): string {
+  const next = value?.trim();
+  return next && UPDATE_STEP_STATUSES.includes(next as typeof UPDATE_STEP_STATUSES[number]) ? next : fallback;
 }
 
 const projectActivityValidator = v.object({
@@ -886,5 +898,154 @@ export const recordBrainDump = mutation({
     }
 
     return { captureId, taskIds };
+  },
+});
+
+export const startRepoUpdateRun = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    source: v.string(),
+    trigger: v.string(),
+    actorLabel: v.optional(v.string()),
+    repoFullName: v.optional(v.string()),
+    branch: v.optional(v.string()),
+    summary: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<{ runId: Id<"repoUpdateRuns"> }> => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const now = Date.now();
+    const runId = await ctx.db.insert("repoUpdateRuns", {
+      userId: user._id,
+      source: args.source,
+      trigger: args.trigger,
+      actorLabel: args.actorLabel,
+      repoFullName: nonEmpty(args.repoFullName),
+      branch: nonEmpty(args.branch),
+      status: "running",
+      summary: args.summary,
+      pushedFiles: [],
+      startedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return { runId };
+  },
+});
+
+export const appendRepoUpdateStep = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    runId: v.id("repoUpdateRuns"),
+    order: v.number(),
+    stepKey: v.string(),
+    label: v.string(),
+    status: v.string(),
+    detail: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    startedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<{ stepId: Id<"repoUpdateSteps"> }> => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const run = await ctx.db.get(args.runId);
+    if (!run || run.userId !== user._id) throw new Error("Repo update run not found");
+    const now = Date.now();
+    const stepId = await ctx.db.insert("repoUpdateSteps", {
+      userId: user._id,
+      runId: args.runId,
+      order: args.order,
+      stepKey: args.stepKey,
+      label: args.label,
+      status: normalizeUpdateStepStatus(args.status, "running"),
+      detail: args.detail,
+      metadata: args.metadata,
+      startedAt: args.startedAt,
+      completedAt: args.completedAt,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await ctx.db.patch(args.runId, { updatedAt: now });
+    return { stepId };
+  },
+});
+
+export const completeRepoUpdateRun = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    runId: v.id("repoUpdateRuns"),
+    status: v.string(),
+    summary: v.optional(v.string()),
+    publishVersion: v.optional(v.number()),
+    profileUrl: v.optional(v.string()),
+    pushedFiles: v.optional(v.array(v.string())),
+    route: v.optional(v.string()),
+    prUrl: v.optional(v.string()),
+    prNumber: v.optional(v.number()),
+    merged: v.optional(v.boolean()),
+    branchRecreated: v.optional(v.boolean()),
+    commitSha: v.optional(v.string()),
+    mirrorFileCount: v.optional(v.number()),
+    mirrorTruncated: v.optional(v.boolean()),
+    error: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const run = await ctx.db.get(args.runId);
+    if (!run || run.userId !== user._id) throw new Error("Repo update run not found");
+    const now = Date.now();
+    const status = normalizeUpdateRunStatus(args.status, run.status);
+    const patch: Partial<Doc<"repoUpdateRuns">> = {
+      status,
+      summary: args.summary ?? run.summary,
+      publishVersion: args.publishVersion ?? run.publishVersion,
+      profileUrl: args.profileUrl ?? run.profileUrl,
+      pushedFiles: args.pushedFiles ? optionalStrings(args.pushedFiles) : run.pushedFiles,
+      route: args.route ?? run.route,
+      prUrl: args.prUrl ?? run.prUrl,
+      prNumber: args.prNumber ?? run.prNumber,
+      merged: args.merged ?? run.merged,
+      branchRecreated: args.branchRecreated ?? run.branchRecreated,
+      commitSha: args.commitSha ?? run.commitSha,
+      mirrorFileCount: args.mirrorFileCount ?? run.mirrorFileCount,
+      mirrorTruncated: args.mirrorTruncated ?? run.mirrorTruncated,
+      error: args.error ?? run.error,
+      completedAt: now,
+      updatedAt: now,
+    };
+    await ctx.db.patch(args.runId, patch);
+    return { runId: args.runId, status, completedAt: now };
+  },
+});
+
+export const listRepoUpdateRuns = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    limit: v.optional(v.number()),
+    includeSteps: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const limit = Math.max(1, Math.min(Number(args.limit ?? 6), 20));
+    const runs = await ctx.db
+      .query("repoUpdateRuns")
+      .withIndex("by_userId_startedAt", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(limit);
+
+    if (!args.includeSteps) return runs.map((run) => ({ ...run, steps: [] }));
+
+    const withSteps = [];
+    for (const run of runs) {
+      const steps = await ctx.db
+        .query("repoUpdateSteps")
+        .withIndex("by_userId_run_order", (q) => q.eq("userId", user._id).eq("runId", run._id))
+        .collect();
+      withSteps.push({ ...run, steps: steps.sort((a, b) => a.order - b.order) });
+    }
+    return withSteps;
   },
 });
