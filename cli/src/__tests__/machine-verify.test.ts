@@ -1,0 +1,65 @@
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  buildMachineReadinessReport,
+  inspectMachineProject,
+} from "../lib/machine-verify";
+
+const tempRoots: string[] = [];
+
+function makeTempRoot(): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "youmd-machine-verify-"));
+  tempRoots.push(root);
+  return root;
+}
+
+afterEach(() => {
+  for (const root of tempRoots.splice(0)) {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+describe("machine readiness verifier", () => {
+  it("audits project readiness without reading env values", () => {
+    const root = makeTempRoot();
+    const projectDir = path.join(root, "youmd");
+    fs.mkdirSync(path.join(projectDir, ".git"), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDir, ".git", "config"),
+      '[remote "origin"]\n\turl = https://github.com/houstongolden/youmd.git\n',
+    );
+    fs.writeFileSync(path.join(projectDir, "AGENTS.md"), "# agent docs\n");
+    fs.writeFileSync(path.join(projectDir, ".env.example"), "OPENAI_API_KEY=\n");
+    fs.writeFileSync(path.join(projectDir, ".env.local"), "OPENAI_API_KEY=secret-not-read\n");
+    fs.writeFileSync(
+      path.join(projectDir, "package.json"),
+      JSON.stringify({ scripts: { build: "next build", dev: "next dev", lint: "eslint" } }, null, 2),
+    );
+    fs.writeFileSync(path.join(projectDir, "package-lock.json"), "{}\n");
+
+    const project = inspectMachineProject(projectDir);
+
+    expect(project.status).toBe("ready");
+    expect(project.remoteUrl).toBe("https://github.com/houstongolden/youmd.git");
+    expect(project.packageManager).toBe("npm");
+    expect(project.suggestedChecks).toEqual(["npm run lint", "npm run build", "npm run dev"]);
+    expect(project.notes).not.toContain("env restore needed before full local run");
+  });
+
+  it("marks projects with env examples but no env local as needing env restore", () => {
+    const root = makeTempRoot();
+    const projectDir = path.join(root, "bamfaiapp");
+    fs.mkdirSync(projectDir, { recursive: true });
+    fs.writeFileSync(path.join(projectDir, ".env.example"), "RESEND_API_KEY=\n");
+    fs.writeFileSync(path.join(projectDir, "package.json"), JSON.stringify({ scripts: { build: "next build" } }));
+
+    const report = buildMachineReadinessReport(root);
+
+    expect(report.scanned).toBe(1);
+    expect(report.totals.needsEnv).toBe(1);
+    expect(report.projects[0].status).toBe("needs-env");
+    expect(report.projects[0].notes).toContain("env restore needed before full local run");
+  });
+});

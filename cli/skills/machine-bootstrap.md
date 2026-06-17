@@ -91,6 +91,17 @@ You.md is the brain. The new machine should become a runnable local agent workst
    youmd project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 90 --limit 80
    ```
 
+9. Run the secret-safe readiness audit:
+
+   ```bash
+   youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80
+   ```
+
+   This checks cloned directories, git remotes, package managers, standard
+   scripts, `.env.local` presence, `.env.example` presence, root agent docs, and
+   `project-context/` presence. It does not read secret values or launch every
+   dev server.
+
 ## Project Bootstrap Rules
 
 - Use repo directory names from GitHub URLs. `https://github.com/houstongolden/foldermd` becomes `foldermd`.
@@ -143,6 +154,12 @@ Create directories only, without cloning:
 youmd machine projects --root ~/Desktop/CODE_YOU --no-clone
 ```
 
+Audit cloned readiness:
+
+```bash
+youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80
+```
+
 Include older projects without prompts:
 
 ```bash
@@ -170,6 +187,8 @@ curl -H "Authorization: Bearer $YOUMD_API_KEY" https://you.md/api/v1/me/portfoli
 - Active GitHub-backed project repos are cloned into matching repo-name directories.
 - The clone plan visibly used the persisted portfolio graph, authenticated
   GitHub recent repos, and local bundle records with source counts.
+- `youmd machine verify` reports git/package/env/agent-doc/project-context
+  readiness for the cloned workspace without reading `.env.local` values.
 - The portfolio graph is hydrated from both remote project records and local
   code/project-context/env-key evidence.
 - `.env.local` files, if restored, came from encrypted vault tooling without

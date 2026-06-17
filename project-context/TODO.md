@@ -19,7 +19,8 @@ PRD Version: 2.3
 - [x] Add a graph-backed dry-run preview step to the one-command bootstrap prompt before cloning
 - [x] Verify the compiled CLI dry-run against deployed production graph data: `55` portfolio projects, `40` tracked repos, and `40` graph-backed cloneable project repos selected after fixing false-positive badge/docs URL detection
 - [x] Verify with focused CLI tests, CLI build, root typecheck, docs check, lint/radius, production build, compiled CLI prompt smoke, and authenticated local browser QA of `/new computer`
-- [ ] Add a first-class post-clone local readiness/run checker that can install deps, restore env status, start or smoke key local servers safely, and report per-project pass/fail without pretending every app can share one generic launch command
+- [x] Add a first-class post-clone local readiness checker with `youmd machine verify` that reports git remotes, package managers/scripts, env file presence, root agent docs, and `project-context/` readiness without reading secret values
+- [ ] Extend `youmd machine verify` with explicit opt-in run/smoke modes for installing deps and starting or probing key local servers safely on a clean host
 - [ ] Run the generated command end-to-end on the actual brand-new computer / clean agent host and verify projects, skills, env vault restore, local servers, and portfolio graph sync there
 
 ### 2026-06-17 — Shell sidebar expand/collapse regression

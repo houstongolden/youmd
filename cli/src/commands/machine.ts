@@ -12,6 +12,7 @@ import {
   GithubProjectSource,
   MachineProjectCandidate,
 } from "../lib/machine-projects";
+import { buildMachineReadinessReport } from "../lib/machine-verify";
 import { buildFreshMachineBootstrapPrompt } from "../lib/machine-bootstrap-prompt";
 
 // The compiled file lives at dist/commands/machine.js.
@@ -45,6 +46,7 @@ function printHelp(): void {
   console.log("  " + chalk.hex("#C46A3A")("Commands"));
   console.log("    " + chalk.cyan("setup") + chalk.dim("     bootstrap a fresh Mac: clone synced repos, restore skills, guide secrets + daemons"));
   console.log("    " + chalk.cyan("projects") + chalk.dim("  create/clone active You.md project repos into a Desktop code root"));
+  console.log("    " + chalk.cyan("verify") + chalk.dim("    audit cloned project readiness without reading secret values"));
   console.log("    " + chalk.cyan("prompt") + chalk.dim("    print a one-command Claude Code/Codex fresh-computer setup prompt"));
   console.log("    " + chalk.cyan("capture") + chalk.dim("   snapshot agent config (settings, commands, plugins) into ~/.agent-shared"));
   console.log("    " + chalk.cyan("restore") + chalk.dim("   apply ~/.agent-shared/agent-config/ back onto this machine"));
@@ -55,6 +57,7 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("--limit <n>") + chalk.dim("    (prompt) portfolio graph project cap, default 80"));
   console.log("    " + chalk.cyan("--key <key>") + chalk.dim("   (prompt) embed a You.md API key for non-interactive login"));
   console.log("    " + chalk.cyan("--env-vault <path>") + chalk.dim(" (prompt) encrypted .env.local vault path to restore"));
+  console.log("    " + chalk.cyan("--max-projects <n>") + chalk.dim(" (verify) project scan cap, default 80"));
   console.log("    " + chalk.cyan("--no-github") + chalk.dim("  (projects) skip authenticated GitHub recent-repo scan"));
   console.log("    " + chalk.cyan("--yes") + chalk.dim("        (projects) include older projects without prompting"));
   console.log("    " + chalk.cyan("--no-clone") + chalk.dim("   (projects) create directories only"));
@@ -306,7 +309,58 @@ async function machineProjectsCommand(opts: {
   console.log(chalk.dim("  next: open Claude Code or Codex from that CODE folder and run ") + chalk.cyan("you"));
 }
 
-export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
+function machineVerifyCommand(opts: {
+  root?: string;
+  maxProjects?: string | number;
+} = {}): void {
+  const defaultRoot = path.join(os.homedir(), "Desktop", "CODE_YOU");
+  const rootDir = expandHome(opts.root || defaultRoot);
+  const maxProjects = Number(opts.maxProjects || 80);
+  const report = buildMachineReadinessReport(rootDir, Number.isFinite(maxProjects) && maxProjects > 0 ? maxProjects : 80);
+
+  console.log("");
+  console.log("  " + chalk.bold("machine readiness audit"));
+  console.log(chalk.dim(`  root: ${report.rootDir}`));
+  console.log(chalk.dim(`  scanned: ${report.scanned} project director${report.scanned === 1 ? "y" : "ies"}`));
+  console.log(chalk.dim(`  git: ${report.totals.gitRepos} / packages: ${report.totals.packageProjects} / env.local: ${report.totals.envLocal} / env examples: ${report.totals.envExample}`));
+  console.log(chalk.dim(`  agent docs: ${report.totals.agentDocs} / project-context: ${report.totals.projectContext} / ready: ${report.totals.ready} / needs env: ${report.totals.needsEnv} / partial: ${report.totals.partial}`));
+  console.log("");
+
+  if (report.projects.length === 0) {
+    console.log(chalk.dim("  no cloned projects found yet. run ") + chalk.cyan("youmd machine projects") + chalk.dim(" first."));
+    console.log("");
+    return;
+  }
+
+  for (const project of report.projects) {
+    const statusColor = project.status === "ready"
+      ? chalk.green
+      : project.status === "needs-env"
+        ? chalk.yellow
+        : project.status === "empty"
+          ? chalk.dim
+          : chalk.hex("#C46A3A");
+    const tags = [
+      project.isGitRepo ? "git" : "no-git",
+      project.packageManager || "no-pkg",
+      project.hasEnvLocal ? ".env.local" : project.hasEnvExample ? "env-needed" : "no-env-template",
+      project.hasAgentDocs ? "agent-docs" : "agent-docs-missing",
+    ];
+    console.log(`  ${statusColor(project.status.padEnd(9))} ${chalk.cyan(project.dirName)} ${chalk.dim(tags.join(" · "))}`);
+    if (project.remoteUrl) console.log(chalk.dim(`             remote: ${project.remoteUrl}`));
+    if (project.suggestedChecks.length > 0) {
+      console.log(chalk.dim(`             checks: ${project.suggestedChecks.slice(0, 4).join(" | ")}`));
+    }
+    for (const note of project.notes.slice(0, 2)) {
+      console.log(chalk.dim(`             note: ${note}`));
+    }
+  }
+  console.log("");
+  console.log(chalk.dim("  secret rule: readiness checks only inspect file names and package scripts; .env.local values are never read."));
+  console.log("");
+}
+
+export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; maxProjects?: string | number; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
   if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
     printHelp();
     return;
@@ -314,6 +368,11 @@ export async function machineCommand(subcommand: string, opts: { force?: boolean
 
   if (subcommand === "projects") {
     await machineProjectsCommand(opts);
+    return;
+  }
+
+  if (subcommand === "verify" || subcommand === "readiness" || subcommand === "doctor") {
+    machineVerifyCommand(opts);
     return;
   }
 

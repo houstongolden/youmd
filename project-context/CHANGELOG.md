@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Fresh-machine readiness audit
+
+### feat(cli): audit cloned project readiness after bootstrap
+- Added `youmd machine verify` / `youmd machine readiness` / `youmd machine doctor`.
+- The verifier scans cloned project directories for git repo/remotes, package manager, standard scripts, `.env.local` presence, `.env.example` presence, root agent docs, and `project-context/` presence without reading secret values.
+- Updated `youmd machine prompt` so the one-paste fresh-computer command runs `youmd machine verify --root "$ROOT" --max-projects "$LIMIT"` after clone/env restore/rehydration.
+- Updated `machine-bootstrap` skill docs so local agents treat the readiness audit as part of fresh-machine done-ness, while still not pretending that every app can be launched with one generic dev-server command.
+- Verified with focused CLI tests (`11` passing), CLI build, root typecheck, docs generation/check, compiled `machine verify` smoke against `/Users/houstongolden/Desktop/CODE_2025`, lint/radius, and production build.
+- Remaining: add explicit opt-in run/smoke mode for installing dependencies and probing key local servers on the actual clean host.
+
 ## 2026-06-17 — Production graph-backed machine bootstrap planning
 
 ### feat(api/cli): make fresh-machine project setup read the persisted graph
