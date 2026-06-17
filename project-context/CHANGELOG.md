@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-17 — Production portfolio anchor QA
+
+### fix(web): replace project detail hash when opening timeline anchors
+- Production QA on `https://www.you.md/shell?tab=portfolio&project=youmd#project-detail` verified the new shipped board, latest shipped rows, full ranked project focus options, and `PROJECT GRAPH LINKS` docs/curl/install/clone block were live on the custom domain.
+- The same production QA found a real URL hygiene bug: clicking `View timeline for youmd` from `#project-detail` scrolled correctly, but the browser URL became `#project-detail#timeline` instead of replacing the hash with clean `#timeline`.
+- Updated the Portfolio Graph project selector to compute a single anchored URL and use `window.history.replaceState` after the Next router update when the current hash does not match the target anchor.
+- Local authenticated Browser QA now proves the exact transition from `http://localhost:3100/shell?tab=portfolio&project=youmd#project-detail` to `http://localhost:3100/shell?tab=portfolio&project=youmd#timeline`, with no doubled hash and the shipping timeline in view.
+
 ## 2026-06-17 — Portfolio shipped board polish
 
 ### feat(web): make shipped work and project priority controls more obvious

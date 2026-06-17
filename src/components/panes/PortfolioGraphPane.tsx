@@ -757,9 +757,13 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", "portfolio");
     params.set("project", projectSlug);
-    router.replace(`${pathname}?${params.toString()}${anchor ? `#${anchor}` : ""}`, { scroll: false });
+    const nextUrl = `${pathname}?${params.toString()}${anchor ? `#${anchor}` : ""}`;
+    router.replace(nextUrl, { scroll: false });
     if (anchor) {
       window.setTimeout(() => {
+        if (window.location.hash !== `#${anchor}`) {
+          window.history.replaceState(null, "", nextUrl);
+        }
         document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
     }

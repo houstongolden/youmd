@@ -9,8 +9,9 @@ Make the Portfolio Graph project list/detail experience work as a compact founde
 1. Save the current Houston prompt and reconcile its actionable requests into the execution docs. Done.
 2. Tighten the Portfolio Graph UI so shipped activity and focus controls are obvious without expanding every project. Done.
 3. Verify TypeScript/lint/CLI build and authenticated local browser behavior for detail links, graph links, timeline anchor, and focus mutation. Done.
-4. Commit and push the coherent web/docs slice, then watch CI/deploy status.
-5. Continue the broader active goal after this slice: actual fresh-machine setup proof with real env-vault flow and synced project/skill graph across machines.
+4. Production-QA the pushed UI on `www.you.md`; if production exposes a behavioral bug, fix it before logging the proof. In progress; shipped UI is live and doubled hash bug is fixed locally.
+5. Commit and push the coherent anchor-fix/docs slice, then watch CI/deploy status.
+6. Continue the broader active goal after this slice: actual fresh-machine setup proof with real env-vault flow and synced project/skill graph across machines.
 
 ## Recovery Notes
 
