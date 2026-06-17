@@ -28,6 +28,9 @@ export interface ApiSurface {
   features: string[];
   risk: "low" | "medium" | "high";
   notes: string;
+  docsUrls?: string[];
+  integrationTypes?: Array<"admin" | "workspace" | "user-level" | "developer-agent" | "local-agent">;
+  curlCommand?: string;
 }
 
 export interface DependencyEdge {
@@ -136,6 +139,9 @@ export const apiSurfaces: ApiSurface[] = [
     features: ["identity", "projects", "memories", "sources", "activity", "stacks"],
     risk: "high",
     notes: "Primary source of truth for human/project context and local agent startup.",
+    docsUrls: ["https://you.md/api/v1/docs/reference", "https://you.md/api/v1/docs/openapi.json"],
+    integrationTypes: ["developer-agent", "local-agent"],
+    curlCommand: 'curl -H "Authorization: Bearer $YOUMD_API_KEY" https://you.md/api/v1/me/portfolio/graph',
   },
   {
     slug: "youmd-mcp",
@@ -149,6 +155,9 @@ export const apiSurfaces: ApiSurface[] = [
     features: ["agent brief", "project context", "stack capabilities", "activity trail"],
     risk: "medium",
     notes: "Default bridge for Claude Code, Codex, Cursor, ChatGPT, and other local agents.",
+    docsUrls: ["https://you.md/.well-known/mcp.json", "https://you.md/api/v1/mcp"],
+    integrationTypes: ["developer-agent", "local-agent"],
+    curlCommand: "curl -fsSL https://you.md/.well-known/mcp.json",
   },
   {
     slug: "bamf-ai-api",
@@ -162,6 +171,15 @@ export const apiSurfaces: ApiSurface[] = [
     features: ["creator context", "copy workflows", "media context", "app agent support"],
     risk: "high",
     notes: "Public/installable BAMFStack should teach external agents to use the API, not expose the protected product harness.",
+    docsUrls: [
+      "https://bamf.ai/docs",
+      "https://bamf.ai/docs/api/posts",
+      "https://bamf.ai/docs/mcp/overview",
+      "https://bamf.ai/docs/mcp/tools",
+      "https://bamf.ai/openapi.json",
+    ],
+    integrationTypes: ["user-level", "workspace", "developer-agent", "local-agent"],
+    curlCommand: 'curl -H "Authorization: Bearer $BAMF_API_KEY" https://api.bamf.ai/v1/agent/capabilities',
   },
   {
     slug: "bamfos-admin-api",
@@ -175,6 +193,9 @@ export const apiSurfaces: ApiSurface[] = [
     features: ["admin workflows", "browser/session operators", "Lempod context", "agency operations"],
     risk: "high",
     notes: "Internal agency/admin surface. Keep separate from product-facing BAMF.ai harnesses.",
+    docsUrls: ["https://bamf.ai/docs", "https://bamf.ai/docs/agents/bamfstack"],
+    integrationTypes: ["admin", "developer-agent"],
+    curlCommand: "curl -fsSL https://bamf.ai/bamfstack/install.sh | bash",
   },
   {
     slug: "lempod-management",
@@ -188,6 +209,9 @@ export const apiSurfaces: ApiSurface[] = [
     features: ["Lempod accounts", "business-expense tracking", "boost context"],
     risk: "high",
     notes: "Canonical owner is pending audit against bamfaiapp. Do not add duplicate APIs until ownership is decided.",
+    docsUrls: ["https://bamf.ai/docs/api/engagement-boost"],
+    integrationTypes: ["admin", "developer-agent"],
+    curlCommand: 'curl -H "Authorization: Bearer $BAMF_API_KEY" https://api.bamf.ai/v1/boost/tiers',
   },
 ];
 

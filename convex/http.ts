@@ -1516,6 +1516,7 @@ http.route({
           notes: surface.notes,
           docsUrls: surface.docsUrls,
           integrationTypes: surface.integrationTypes,
+          curlCommand: surface.curlCommand,
           updatedAt: surface.updatedAt,
         })),
         dependencyEdges: graph.dependencyEdges.map((edge) => ({

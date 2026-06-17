@@ -133,6 +133,9 @@ const dashboardSurfaceValidator = v.object({
   features: v.array(v.string()),
   risk: v.string(),
   notes: v.string(),
+  docsUrls: v.optional(v.array(v.string())),
+  integrationTypes: v.optional(v.array(v.string())),
+  curlCommand: v.optional(v.string()),
 });
 
 const dashboardDependencyValidator = v.object({
@@ -456,8 +459,9 @@ export const syncDashboardSeed = mutation({
         features: optionalStrings(surface.features),
         risk: surface.risk,
         notes: surface.notes,
-        docsUrls: [],
-        integrationTypes: [],
+        docsUrls: optionalStrings(surface.docsUrls),
+        integrationTypes: optionalStrings(surface.integrationTypes),
+        curlCommand: nonEmpty(surface.curlCommand),
         updatedAt: now,
       };
       if (existing) {

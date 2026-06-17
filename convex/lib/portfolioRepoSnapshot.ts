@@ -65,6 +65,7 @@ export type PortfolioRepoApiSurface = {
   notes?: MaybeString;
   docsUrls?: string[];
   integrationTypes?: string[];
+  curlCommand?: MaybeString;
   updatedAt?: MaybeNumber;
 };
 
@@ -290,6 +291,7 @@ function compactGraph(graph: PortfolioRepoSnapshotGraph, generatedAt: string) {
     notes: cleanText(surface.notes),
     docsUrls: cleanList(surface.docsUrls, 8),
     integrationTypes: cleanList(surface.integrationTypes),
+    curlCommand: cleanText(surface.curlCommand),
     updatedAt: surface.updatedAt,
   }));
   const dependencyEdges = asArray(graph.dependencyEdges).slice(0, MAX_EDGES).map((edge) => ({
@@ -385,7 +387,7 @@ function renderMarkdown(snapshot: ReturnType<typeof compactGraph>): string {
     `| ${tableCell(project.name)} | ${tableCell(project.slug)} | ${tableCell(project.status)} | ${tableCell(project.stackName)} | ${tableCell(project.repoFullName)} | ${dateStamp(project.lastActivityAt ?? project.updatedAt)} | ${tableCell(project.goal ?? project.summary)} |`
   );
   const surfaceRows = snapshot.apiSurfaces.map((surface) =>
-    `| ${tableCell(surface.name)} | ${tableCell(surface.kind)} | ${tableCell(surface.ownerProjectSlug)} | ${tableCell(surface.trust)} | ${tableCell(surface.writePolicy)} | ${tableCell(surface.features.join(", "))} |`
+    `| ${tableCell(surface.name)} | ${tableCell(surface.kind)} | ${tableCell(surface.ownerProjectSlug)} | ${tableCell(surface.ownerStack)} | ${tableCell(surface.docsUrls.join(", "))} | ${tableCell(surface.curlCommand)} | ${tableCell(surface.writePolicy)} |`
   );
   const edgeRows = snapshot.dependencyEdges.map((edge) =>
     `| ${tableCell(edge.fromProjectSlug)} | ${tableCell(edge.toProjectSlug ?? edge.toSurfaceSlug)} | ${tableCell(edge.tier)} | ${tableCell(edge.integrationType)} | ${tableCell(edge.failureImpact)} |`
@@ -427,9 +429,9 @@ function renderMarkdown(snapshot: ReturnType<typeof compactGraph>): string {
     "",
     "## API / MCP / Stack Surfaces",
     "",
-    "| Surface | Kind | Owner Project | Trust | Write Policy | Features |",
-    "|---|---|---|---|---|---|",
-    ...(surfaceRows.length ? surfaceRows : ["| none | - | - | - | - | - |"]),
+    "| Surface | Kind | Owner Project | Stack | Docs URLs | Curl / Install | Write Policy |",
+    "|---|---|---|---|---|---|---|",
+    ...(surfaceRows.length ? surfaceRows : ["| none | - | - | - | - | - | - |"]),
     "",
     "## Dependency Edges",
     "",
@@ -493,6 +495,8 @@ function renderJsonForMirror(snapshot: ReturnType<typeof compactGraph>): string 
       risk: surface.risk,
       features: surface.features,
       integrationTypes: surface.integrationTypes,
+      docsUrls: surface.docsUrls,
+      curlCommand: surface.curlCommand,
     })),
     dependencyEdges: snapshot.dependencyEdges,
     reusablePatterns: snapshot.reusablePatterns.map((pattern) => ({

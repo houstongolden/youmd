@@ -54,6 +54,7 @@ describe("buildPortfolioRepoSnapshotFiles", () => {
             risk: "medium",
             docsUrls: ["https://you.md/.well-known/mcp.json"],
             integrationTypes: ["local-agent"],
+            curlCommand: "curl -fsSL https://you.md/.well-known/mcp.json",
           },
         ],
         dependencyEdges: [
@@ -110,7 +111,7 @@ describe("buildPortfolioRepoSnapshotFiles", () => {
     const markdown = files.find((file) => file.path.endsWith("graph.md"))?.content ?? "";
     expect(markdown).toContain("# Portfolio Graph Snapshot");
     expect(markdown).toContain("| You.md | youmd | active | YouStack | houstongolden/youmd |");
-    expect(markdown).toContain("| You.md MCP | mcp | youmd | protected | approved-write |");
+    expect(markdown).toContain("| You.md MCP | mcp | youmd | - | https://you.md/.well-known/mcp.json | curl -fsSL https://you.md/.well-known/mcp.json | approved-write |");
     expect(markdown).toContain("| bamfsite | youmd | dependent | developer-agent |");
     expect(markdown).toContain("| Export portfolio graph snapshots | youmd | agent | in_progress | high |");
 
@@ -126,6 +127,7 @@ describe("buildPortfolioRepoSnapshotFiles", () => {
       schemaVersion: string;
       counts: { projects: number; apiSurfaces: number; dependencyEdges: number; tasks: number };
       projects: Array<{ slug: string; constraints: string[] }>;
+      apiSurfaces: Array<{ slug: string; docsUrls: string[]; curlCommand?: string }>;
     };
     expect(parsed.schemaVersion).toBe("you-md/portfolio-graph-repo-snapshot/v1");
     expect(parsed.counts).toMatchObject({
@@ -137,6 +139,11 @@ describe("buildPortfolioRepoSnapshotFiles", () => {
     expect(parsed.projects[0]).toMatchObject({
       slug: "youmd",
       constraints: ["Never expose .env.local"],
+    });
+    expect(parsed.apiSurfaces[0]).toMatchObject({
+      slug: "youmd-mcp",
+      docsUrls: ["https://you.md/.well-known/mcp.json"],
+      curlCommand: "curl -fsSL https://you.md/.well-known/mcp.json",
     });
     expect(JSON.stringify(parsed)).toContain("OPENAI_API_KEY=[REDACTED_SECRET]");
   });

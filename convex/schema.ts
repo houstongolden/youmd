@@ -666,6 +666,7 @@ export default defineSchema({
     notes: v.optional(v.string()),
     docsUrls: v.array(v.string()),
     integrationTypes: v.array(v.string()),
+    curlCommand: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

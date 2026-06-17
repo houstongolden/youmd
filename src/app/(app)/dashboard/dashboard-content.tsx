@@ -183,6 +183,22 @@ const PANE_GROUPS: Array<{
   },
 ];
 
+const RIGHT_PANE_KEYS = new Set<RightPane>(
+  PANE_GROUPS.flatMap((group) => group.panes.map((pane) => pane.key))
+);
+
+function paneFromShellQuery(searchParams: Pick<URLSearchParams, "get">): RightPane | null {
+  if (searchParams.get("integration") === "github") return "github";
+  if (searchParams.get("project")) return "portfolio";
+
+  const requested = searchParams.get("pane") ?? searchParams.get("tab");
+  if (!requested) return null;
+  if (RIGHT_PANE_KEYS.has(requested as RightPane)) return requested as RightPane;
+
+  const requestedGroup = PANE_GROUPS.find((group) => group.key === requested);
+  return requestedGroup?.defaultPane ?? null;
+}
+
 const MOBILE_PRIMARY_PANES: Array<{ key: PrimaryPaneGroup | "terminal"; label: string }> = [
   { key: "terminal", label: "shell" },
   ...PANE_GROUPS.map((group) => ({ key: group.key, label: group.label })),
@@ -1175,14 +1191,13 @@ export function DashboardContent() {
     user?.firstName?.toLowerCase().replace(/[^a-z0-9-]/g, "") ||
     "user";
 
-  // Post-OAuth redirect lands at /shell?integration=github — open the github
-  // pane from the initial state (deriving here avoids a setState-in-effect that
-  // can trigger cascading renders).
-  const wantsGithub = searchParams.get("integration") === "github";
-  const [rightPane, setRightPane] = useState<RightPane>(wantsGithub ? "github" : "profile");
+  // Query-backed panes keep deep links such as /shell?project=youmd and
+  // /shell?tab=files reload-safe without inventing a second dashboard router.
+  const requestedRightPane = paneFromShellQuery(searchParams);
+  const [rightPane, setRightPane] = useState<RightPane>(requestedRightPane ?? "profile");
   const [mobileView, setMobileView] = useState<"terminal" | "preview">("terminal");
   const [panelOpen, setPanelOpen] = useState<boolean>(() =>
-    wantsGithub ? true : readStoredPanelOpen()
+    requestedRightPane ? true : readStoredPanelOpen()
   );
   const [sidebarCollapseMode, setSidebarCollapseMode] = useState<SidebarCollapseMode>(() =>
     readStoredSidebarCollapseMode()
@@ -1227,6 +1242,13 @@ export function DashboardContent() {
       // localStorage unavailable (private mode etc.) — non-fatal
     }
   }, [chatWidth]);
+
+  useEffect(() => {
+    if (!requestedRightPane) return;
+    setRightPane(requestedRightPane);
+    setPanelOpen(true);
+    setMobileView("preview");
+  }, [requestedRightPane]);
 
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);

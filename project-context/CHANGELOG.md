@@ -2,6 +2,15 @@
 
 ## 2026-06-17 — Portfolio project details and shipped/focus controls
 
+### feat(web/convex): deep-link portfolio details and expose shipped/API command pulse
+- Made `/shell?project=<slug>` open the Portfolio pane directly on reload, including `/shell?project=youmd`, so project detail pages are real shareable shell deep links instead of only in-memory selection state.
+- Added a top-level shipped pulse for the whole portfolio (`today`, `7d`, `30d`, `90d`) plus leader chips for the highest-shipping projects.
+- Tightened the compact project list with showing/sort/focus summary text, row-level `details` and `timeline` deep-link controls, and row-level quick focus dropdowns.
+- Updated focus labels to match the requested operating statuses: `Top Priority`, `Focusing`, `Freeze / On Ice`, `Abandoned`, `Dead / Killed`, and `Unsorted`.
+- Added `curlCommand` to persisted API/MCP/stack surface records, preserved exact surface docs URLs/integration types during seed sync, surfaced stack install commands in project details, and mirrored docs/curl fields into repo-backed `projects/_portfolio/graph.md` / `graph.json` snapshots.
+- Verified with Convex codegen, focused Portfolio snapshot/focus tests, root TypeScript, `npm run lint` (warnings only), `git diff --check`, and `npm run build`.
+- Authenticated Codex in-app Browser proof verified direct `/shell?project=youmd` routing, Portfolio pane selection, `SHIPPED PULSE`, project detail URL, You.md API docs/curl, YouStack install command, compact list controls, and row-level focus mutation by changing `bamfsite` to `focusing` and back to `unset`. Screenshots: `/tmp/youmd-portfolio-shipped-deeplink-controls-2026-06-17.png` and `/tmp/youmd-portfolio-compact-list-controls-2026-06-17.png`.
+
 ### feat(web/convex): make project portfolio cards compact, clickable, and priority-aware
 - Added a compact Portfolio Graph project browser with search, focus filter, activity/priority/shipped/name sorting, and a compact/expanded density toggle.
 - Made project rows and `details` / `timeline` controls open a stable URL-backed detail state such as `/shell?project=youmd`.
