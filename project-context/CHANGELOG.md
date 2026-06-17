@@ -2,6 +2,14 @@
 
 ## 2026-06-17 — Portfolio project details and shipped/focus controls
 
+### test(shell): verify local GitHub sync returns to JUST NOW after portfolio push
+- Re-ran authenticated local Codex in-app Browser QA on `http://localhost:3100/shell?project=youmd` after the portfolio detail/shipped pulse push.
+- Verified the Portfolio Graph still renders the new direct project detail state, shipped pulse, compact project list, and You.md selected-project context.
+- Clicked the real `[ update ]` GitHub control from the shell chrome while it showed `SYNCED / REPO MIRROR CURRENT / 2H AGO`; the chrome switched to `SYNCING / PUBLISHING, PUSHING, AND REFRESHING THE REPO MIRROR`.
+- Watched the transcript complete publish -> GitHub PR -> merge -> mirror refresh. The run published `v126`, pushed `you.md`, `you.json`, task snapshots, brain-dump snapshots, and `projects/_portfolio/{README.md,graph.md,graph.json}`, opened and merged identity sync PR #18, checked that GitHub reported no merge conflict, refreshed `53` mirror files, and returned the chrome to `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
+- GitHub read-back confirmed PR #18 (`https://github.com/houstongolden/houstongolden-you-md/pull/18`) merged at `2026-06-17T16:48:04Z` with merge commit `797951a7ef728aada9bb711153e93d72af1d9af1`.
+- Visual proof: `/tmp/youmd-local-github-sync-just-now-pr18-2026-06-17.jpg`.
+
 ### feat(web/convex): deep-link portfolio details and expose shipped/API command pulse
 - Made `/shell?project=<slug>` open the Portfolio pane directly on reload, including `/shell?project=youmd`, so project detail pages are real shareable shell deep links instead of only in-memory selection state.
 - Added a top-level shipped pulse for the whole portfolio (`today`, `7d`, `30d`, `90d`) plus leader chips for the highest-shipping projects.
