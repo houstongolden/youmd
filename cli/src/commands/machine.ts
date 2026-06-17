@@ -112,7 +112,7 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("--require-env-vault") + chalk.dim(" (prompt) fail setup proof unless YOUMD_ENV_VAULT is restored"));
   console.log("    " + chalk.cyan("--max-clone-projects <n>") + chalk.dim(" (projects/prompt) cap clones for clean-host proof runs"));
   console.log("    " + chalk.cyan("--recent-only") + chalk.dim(" (projects) skip projects outside the activity window without prompting"));
-  console.log("    " + chalk.cyan("--include-inactive") + chalk.dim(" (projects) include inactive/non-focused portfolio projects"));
+  console.log("    " + chalk.cyan("--include-inactive") + chalk.dim(" (projects) audit override; include inactive/non-focused portfolio projects"));
   console.log("    " + chalk.cyan("--max-projects <n>") + chalk.dim(" (verify) project scan cap, default 80"));
   console.log("    " + chalk.cyan("--install-deps") + chalk.dim(" (verify) run bounded dependency installs before checks/probes"));
   console.log("    " + chalk.cyan("--install-timeout-ms <n>") + chalk.dim(" (verify) timeout per dependency install, default 180000"));
@@ -338,6 +338,9 @@ async function machineProjectsCommand(opts: {
     console.log(chalk.dim(`  clone cap: ${maxCloneProjects} project${maxCloneProjects === 1 ? "" : "s"} (proof mode)`));
   }
   console.log(chalk.dim(`  graph inputs: ${plan.sourceCounts.portfolioGraphProjects} portfolio project${plan.sourceCounts.portfolioGraphProjects === 1 ? "" : "s"} / ${plan.sourceCounts.portfolioGraphTrackedProjects} graph-tracked repo${plan.sourceCounts.portfolioGraphTrackedProjects === 1 ? "" : "s"} / ${plan.sourceCounts.githubProjects} gh repo${plan.sourceCounts.githubProjects === 1 ? "" : "s"} / ${plan.sourceCounts.bundleProjects} bundle project${plan.sourceCounts.bundleProjects === 1 ? "" : "s"}`));
+  if (plan.sourceCounts.portfolioGraphProjects > 0 && !opts.includeInactive) {
+    console.log(chalk.dim("  setup gate: Portfolio Graph status=active and focus=Top Priority/Focusing only"));
+  }
   if (plan.skipped.length > 0) {
     console.log(chalk.dim(`  skipped duplicates/unusable/not setup-eligible: ${plan.skipped.length}`));
   }

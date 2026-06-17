@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio setup eligibility filter proof
+
+### feat(portfolio): expose the exact new-computer setup gate in project rows
+- Added a first-class `setup eligible` Portfolio status filter and count using the same rule as `youmd machine projects`: `status=active` plus focus `Top Priority` or `Focusing`.
+- Added row/detail setup badges (`setup yes` / `setup skip`) beside the existing `last updated` time-ago labels, and made the row `active` / `inactive` toggle visibly button-like with accessible action labels.
+- Tightened CLI wording so `--include-inactive` reads as an audit override, and dry-runs now print `setup gate: Portfolio Graph status=active and focus=Top Priority/Focusing only`.
+- Verification: focused CLI planner/prompt/parity tests, CLI build, root TypeScript, root lint/radius, root production build, compiled graph dry-run (`56` projects / `40` tracked repos -> `16` selected / `84` skipped plus setup-gate line), and authenticated Codex in-app Browser QA on local `/shell?tab=portfolio&project=bamfaiapp#timeline`. Browser proof confirmed `LAST UPDATED`, `SETUP YES`, active buttons, `setup eligible` filter narrowing to `24 / 56`, and a reversible `bamfaiapp-next` status mutation (`inactive -> active -> inactive`). Screenshot: `/tmp/youmd-portfolio-setup-eligible-filter-toggle-proof-2026-06-17.png`.
+
 ## 2026-06-17 — Fresh-machine prompt parity and portable root
 
 ### fix(cli/shell): keep `/new computer` aligned with active focus setup gate

@@ -409,12 +409,24 @@ const PROJECT_SORT_OPTIONS = [
 ] as const;
 
 type ProjectFocusStatus = typeof PROJECT_FOCUS_OPTIONS[number]["value"];
-type ProjectStatusFilter = "all" | "active" | "inactive";
+type ProjectStatusFilter = "all" | "setup" | "active" | "inactive";
 type ProjectSortMode = typeof PROJECT_SORT_OPTIONS[number]["value"];
 type ProjectDensity = "dense" | "compact" | "expanded";
 
+const MACHINE_SETUP_FOCUS_STATUSES = new Set<ProjectFocusStatus>(["top-priority", "focusing"]);
+
 function projectFocusOption(status?: string) {
   return PROJECT_FOCUS_OPTIONS.find((option) => option.value === status) ?? PROJECT_FOCUS_OPTIONS[5];
+}
+
+function isProjectSetupEligible(project: DisplayProject) {
+  return project.status === "active" && MACHINE_SETUP_FOCUS_STATUSES.has(projectFocusOption(project.focusStatus).value);
+}
+
+function projectSetupEligibilityLabel(project: DisplayProject) {
+  if (isProjectSetupEligible(project)) return "setup eligible";
+  if (project.status !== "active") return `setup skipped: ${project.status || "not active"}`;
+  return `setup skipped: ${projectFocusOption(project.focusStatus).label}`;
 }
 
 function ProjectFocusIcon({ status }: { status?: string }) {
@@ -762,6 +774,8 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
       .filter((project) => {
         const focus = projectFocusOption(project.focusStatus).value;
         const isActive = project.status === "active";
+        const setupEligible = isProjectSetupEligible(project);
+        if (projectStatusFilter === "setup" && !setupEligible) return false;
         if (projectStatusFilter === "active" && !isActive) return false;
         if (projectStatusFilter === "inactive" && isActive) return false;
         if (projectFocusFilter !== "all" && focus !== projectFocusFilter) return false;
@@ -799,6 +813,10 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
         return activeProjects.indexOf(a) - activeProjects.indexOf(b);
       });
   }, [activeProjects, activitiesByProject, projectFocusFilter, projectSearch, projectSortMode, projectStatusFilter]);
+  const setupEligibleCount = useMemo(
+    () => activeProjects.filter(isProjectSetupEligible).length,
+    [activeProjects]
+  );
   const shippingLeaders = useMemo(() => (
     activeProjects
       .map((project) => {
@@ -1180,6 +1198,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                 className="bg-transparent font-mono text-[10px] text-[hsl(var(--text-primary))] outline-none"
               >
                 <option value="all">all status</option>
+                <option value="setup">setup eligible</option>
                 <option value="active">active</option>
                 <option value="inactive">inactive/not active</option>
               </select>
@@ -1222,6 +1241,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           </div>
           <div className="mb-3 flex flex-wrap items-center gap-2 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
             <span>showing {filteredProjects.length} / {activeProjects.length}</span>
+            <span>setup eligible {setupEligibleCount}</span>
             <span>sort {PROJECT_SORT_OPTIONS.find((option) => option.value === projectSortMode)?.label ?? projectSortMode}</span>
             <span>status {projectStatusFilter === "all" ? "all" : projectStatusFilter}</span>
             <span>focus {projectFocusFilter === "all" ? "all" : projectFocusOption(projectFocusFilter).label}</span>
@@ -1236,6 +1256,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                 const counts = shippedCounts(projectActivitiesForCard);
                 const focus = projectFocusOption(project.focusStatus);
                 const lastUpdatedAt = projectLastUpdatedAt(project, projectActivitiesForCard);
+                const setupEligible = isProjectSetupEligible(project);
                 const selected = effectiveSelectedProjectSlug === project.slug;
                 return (
                   <article
@@ -1268,6 +1289,12 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       >
                         last updated {formatTimeAgo(lastUpdatedAt)}
                       </span>
+                      <span
+                        className={`font-mono text-[8px] uppercase tracking-[0.14em] ${setupEligible ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-38"}`}
+                        title={projectSetupEligibilityLabel(project)}
+                      >
+                        {setupEligible ? "setup yes" : "setup skip"}
+                      </span>
                       <button
                         type="button"
                         disabled={!clerkId || statusUpdatingSlug === project.slug}
@@ -1275,8 +1302,10 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                           event.stopPropagation();
                           void handleProjectStatusToggle(project);
                         }}
-                        className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] transition-opacity hover:opacity-100 disabled:opacity-35 ${statusClass(project.status)}`}
+                        className={`ml-auto h-6 border border-[hsl(var(--border))]/60 px-2 font-mono text-[8.5px] uppercase tracking-[0.14em] transition-colors hover:border-[hsl(var(--accent))] hover:opacity-100 disabled:opacity-35 ${statusClass(project.status)}`}
+                        style={{ borderRadius: "var(--radius)" }}
                         title={project.status === "active" ? "Mark inactive; excluded from new-computer setup" : "Mark active; eligible only if focus is Top Priority or Focusing"}
+                        aria-label={`${project.status === "active" ? "Mark inactive" : "Mark active"} for ${project.name}`}
                       >
                         {statusUpdatingSlug === project.slug ? "saving" : project.status}
                       </button>
@@ -1378,6 +1407,12 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                           title={selectedLastUpdatedAt ? `last project signal: ${new Date(selectedLastUpdatedAt).toLocaleString()}` : "no activity timestamp saved"}
                         >
                           last updated {formatTimeAgo(selectedLastUpdatedAt)}
+                        </span>
+                        <span
+                          className={`font-mono text-[8.5px] uppercase tracking-[0.14em] ${isProjectSetupEligible(selectedProject) ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-42"}`}
+                          title={projectSetupEligibilityLabel(selectedProject)}
+                        >
+                          {isProjectSetupEligible(selectedProject) ? "setup eligible" : "setup skipped"}
                         </span>
                       </div>
                       <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">{selectedProject.summary}</p>

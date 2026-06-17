@@ -9,13 +9,15 @@ PRD Version: 2.3
 
 ### 2026-06-17 — Portfolio active/inactive setup controls
 - [x] Add `last updated` time-ago labels to compact Portfolio project rows and selected project details
-- [x] Add status filtering for all / active / inactive-not-active projects
+- [x] Add status filtering for all / setup-eligible / active / inactive-not-active projects
+- [x] Show setup eligibility count and per-row `setup yes` / `setup skip` badges using the same `active` + `Top Priority`/`Focusing` rule as the new-computer setup planner
 - [x] Add owner-gated one-click project status toggles for `active` <-> `inactive`
 - [x] Persist manual project status ownership with `statusSource: manual` and preserve it through GitHub tracked-project hydration
 - [x] Restrict graph-backed fresh-machine project setup to `active` + `Top Priority`/`Focusing` projects by default
 - [x] Add explicit `youmd machine projects --include-inactive` override for audit/legacy setup runs
-- [x] Verify the built CLI planner against the live graph: `56` projects / `40` tracked repos -> `16` selected / `84` skipped
+- [x] Verify the built CLI planner against the live graph: `56` projects / `40` tracked repos -> `16` selected / `84` skipped with the setup-gate line visible
 - [x] Deploy the new Convex `portfolio.updateProjectStatus` mutation to the remote backend, then rerun authenticated browser click proof that a status pill persists from `active` to `inactive`
+- [x] Re-verify authenticated local Portfolio UI after the setup-eligible filter polish: filter narrowed to `24 / 56`, rows showed `LAST UPDATED` + `SETUP YES`, and `bamfaiapp-next` toggled `inactive -> active -> inactive`
 
 ### 2026-06-17 — Graph-backed fresh-computer bootstrap prompt
 - [x] Change the generated new-computer bootstrap to a 30-day first pass into `~/Desktop/CODE_YOU`, with `--recent-only` preventing older projects from being prompted/included before the explicit 90-day expansion gate
