@@ -6,6 +6,7 @@ import { useUser } from "@/lib/you-auth";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { PaneSectionLabel, PaneDivider } from "./shared";
+import { skillPropagation } from "@/data/portfolioGraph";
 
 interface SkillEntry {
   name: string;
@@ -70,6 +71,13 @@ const BUNDLED_SKILLS: SkillEntry[] = [
     version: "1.0.0",
     scope: "shared",
     identityFields: ["profile.projects", "profile.about", "preferences.agent", "voice.overall"],
+  },
+  {
+    name: "portfolio-graph-auditor",
+    description: "Audit local projects, APIs, MCPs, env key names, stacks, protected harnesses, dependencies, and reusable patterns",
+    version: "0.1.0",
+    scope: "shared",
+    identityFields: ["profile.projects", "preferences.agent", "directives.agent"],
   },
   {
     name: "you-logs",
@@ -284,6 +292,10 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
               • <span className="text-[hsl(var(--text-primary))] opacity-80">proactive-context-fill</span>:
               detects thin context and proposes safe additive improvements
             </li>
+            <li>
+              • <span className="text-[hsl(var(--text-primary))] opacity-80">portfolio-graph-auditor</span>:
+              maps active projects, APIs, MCPs, env keys, and reusable patterns without printing secrets
+            </li>
           </ul>
         </div>
 
@@ -332,6 +344,44 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           </span>
         </div>
       )}
+
+      <PaneDivider />
+
+      {/* Cross-project skill propagation */}
+      <div>
+        <PaneSectionLabel>tracked project propagation</PaneSectionLabel>
+        <div className="space-y-3">
+          {skillPropagation.map((entry) => (
+            <div key={entry.skill} className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-[12px] text-[hsl(var(--text-primary))]">{entry.skill}</span>
+                <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">{entry.owner}</span>
+              </div>
+              <div className="mt-3 grid gap-2 md:grid-cols-3">
+                {entry.projects.map((project) => (
+                  <div key={`${entry.skill}-${project.project}`} className="border-t border-[hsl(var(--border))]/45 pt-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] text-[hsl(var(--text-primary))]">{project.project}</span>
+                      <span className={`ml-auto font-mono text-[8px] uppercase tracking-[0.14em] ${
+                        project.status === "synced"
+                          ? "text-[hsl(var(--success))]"
+                          : project.status === "cataloged"
+                            ? "text-[hsl(var(--accent))]"
+                            : "text-[hsl(var(--text-secondary))] opacity-50"
+                      }`}>
+                        {project.status}
+                      </span>
+                    </div>
+                    <p className="mt-1 font-mono text-[9px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">
+                      {project.note}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <PaneDivider />
 
@@ -397,6 +447,8 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
         <PaneSectionLabel>cli quick start</PaneSectionLabel>
         <div className="space-y-2">
           <CommandRow command="youmd skill install all" description="install all bundled skills" />
+          <CommandRow command="/skill use portfolio-graph-auditor" description="audit projects, APIs, env keys, and reuse candidates" />
+          <CommandRow command="youmd project portfolio-audit --root ~/Desktop/CODE_2025" description="local project/API/env portfolio scan" />
           <CommandRow command="youmd skill use youstack-maintainer" description="organize or improve a named stack" />
           <CommandRow command="youmd skill init-project" description="AGENTS/CLAUDE bootstrap + project-context/ + .you/ + links" />
           <CommandRow command="youmd skill link claude" description="link skills to Claude Code" />

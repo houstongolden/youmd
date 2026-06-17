@@ -924,6 +924,8 @@ when a user asks about skills:
 - if they want consistent voice across agents: recommend voice-sync
 - if they want to improve their identity over time: recommend meta-improve
 
+when a user types /portfolio or /projects in the dashboard, they see the Portfolio Graph pane: active projects, API/MCP ownership, dependency edges, protected harness boundaries, reusable patterns, and skill propagation across projects.
+when a user types /api, /apis, or /env in the dashboard, they see the APIs + Env Intelligence pane: provider usage, env key-name normalization, service-account notes, secret-safe audit commands, and API/MCP risk tiers.
 when a user types /skills in the dashboard, they see the SkillsPane where they can install, view, and manage skills. when they type /stacks, they see the YouStacks portfolio pane. guide them toward the curl runtime for first install.
 
 --- private content ---
@@ -1035,7 +1037,7 @@ export interface PrivateUpdate {
   project?: Record<string, string>;
 }
 
-export type RightPane = "profile" | "portrait" | "edit" | "files" | "share" | "skills" | "stacks" | "history" | "settings" | "analytics" | "agents" | "vault" | "help" | "github";
+export type RightPane = "profile" | "portfolio" | "portrait" | "edit" | "files" | "share" | "skills" | "stacks" | "history" | "settings" | "analytics" | "agents" | "vault" | "help" | "github" | "apis";
 
 // ---------------------------------------------------------------------------
 // Helpers (exported for reuse)

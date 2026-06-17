@@ -151,6 +151,22 @@ The first skill target is a bundled `portfolio-graph-auditor` style skill that
 reads local repos, project-context files, prompts, docs, API/MCP surfaces, and
 stack manifests, then proposes canonical owners and reusable pattern records.
 
+Local implementation slice:
+
+- `src/data/portfolioGraph.ts` defines the first typed local contract for
+  projects, API surfaces, dependency edges, reusable patterns, env-provider
+  usage, service-account notes, and skill propagation.
+- `src/components/panes/PortfolioGraphPane.tsx` renders the `/shell`
+  portfolio view.
+- `src/components/panes/ApiEnvPane.tsx` renders the `/shell` APIs/env
+  intelligence view.
+- `cli/src/lib/portfolio-audit.ts` powers `youmd project portfolio-audit`,
+  `env-audit`, and `apis` with value-safe env scanning and optional local salted
+  HMAC fingerprints for duplicate-key detection.
+- `/Users/houstongolden/.agent-shared/claude-skills/portfolio-graph-auditor`
+  is the canonical shared agent skill for cross-project portfolio/env/API/MCP
+  audits.
+
 ### Writeback Rules
 
 Any write from an agent or connected product should record actor, host, app, stack, source, confidence, timestamp, reason, and approval state. Low-trust agent writes should land as proposed updates or lower-confidence memories, not overwrite higher-trust human-authored context.

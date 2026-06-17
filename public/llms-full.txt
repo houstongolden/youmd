@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: 3f2f802f397df5384adc6a5bd237f340fccead3af7b8b5de0f32e6840daae45e. CLI version: 0.8.2. Endpoints: 85 documented (7 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 10. CLI commands: 30. Reference intelligence: 2026-06-15T15:31:00.696Z.
+> Generated full agent context. Source hash: e1c2fac442b723500818196f3374ed378346c251c49c5cf8165bc1630aa2594f. CLI version: 0.8.2. Endpoints: 85 documented (7 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 10. CLI commands: 30. Reference intelligence: 2026-06-15T15:31:00.696Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -145,7 +145,7 @@ All 30 registered runtime commands, generated from the commander registrations i
 - `youmd memories [subcommand] [args...]`: Manage your memory brain (list, add, stats)
 - `youmd private [subcommand] [args...]`: Manage private context (notes, links, projects)
 - `youmd project [subcommand] [args...]`: Manage project agent context (init, list, show, memories)
-- `youmd prompts [subcommand] [args...]`: Search and browse your past messages across agent sessions
+- `youmd prompts [subcommand] [args...]`: Search, browse, and catalog your past messages across agent sessions
 
 ### SKILLS
 

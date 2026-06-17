@@ -1706,11 +1706,17 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       const paneCommands: Record<string, RightPane> = {
         "/preview": "profile",
         "/profile": "profile",
+        "/portfolio": "portfolio",
+        "/projects": "portfolio",
+        "/project-graph": "portfolio",
         "/portrait": "portrait",
         "/settings": "settings",
         "/billing": "settings",
         "/tokens": "settings",
-        "/api": "github",
+        "/api": "apis",
+        "/apis": "apis",
+        "/env": "apis",
+        "/providers": "apis",
         "/mcp": "github",
         "/connect": "github",
         "/connectors": "github",
@@ -1743,6 +1749,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use youstack-start\ninstall runtime: curl -fsSL https://you.md/install.sh | bash\nscaffold a project: youmd skill init-project\n\navailable: youstack-start, youstack-maintainer, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs"
           : trimmed === "/stacks" || trimmed === "/youstacks"
             ? "[switched to youstacks]\n\nnamed expertise packages for different domains. default visibility is private.\n\nuse in chat: /skill use youstack-maintainer\ninstall runtime: curl -fsSL https://you.md/install.sh | bash\nexamples: personal-agent-start, bamfstack-public, coding-copilot, scientific-research, content-studio"
+          : trimmed === "/portfolio" || trimmed === "/projects" || trimmed === "/project-graph"
+            ? "[switched to portfolio]\n\nproject graph, dependency edges, API/MCP ownership, protected harness boundaries, reusable patterns, and skill propagation across active projects."
+          : trimmed === "/api" || trimmed === "/apis" || trimmed === "/env" || trimmed === "/providers"
+            ? "[switched to apis/env]\n\nprovider usage, env key-name normalization, service-account notes, API/MCP risk tiers, and local secret-safe audit commands."
           : `[switched to ${paneCommands[trimmed]}]`;
 
         setDisplayMessages((prev) => [
@@ -1961,8 +1971,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("help");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n\nIDENTITY\n/profile -- live profile preview\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait variants inline\n/portrait --regenerate -- re-scrape sources and update portrait\n/edit -- edit identity context (files, json, sources)\n/json -- raw identity json\n/files -- file browser\n/sources -- manage connected sources\n\nSHARING\n/share -- create shareable identity link (copies to clipboard)\n/share --private -- include private context in link\n/share --project {name} -- project-scoped context link\n/publish -- publish latest bundle publicly\n\nSKILLS + STACKS\n/skills -- browse + install skills\n/stacks -- manage named private/public YouStacks\n/skill use {name} -- activate skill in this conversation\n\nAPI + CONNECTORS\n/api -- private Human API/MCP docs, grants, and endpoint map\n/mcp -- hosted MCP endpoint and stack namespace\n/connectors -- app grants, custom API/MCP, webhooks\n/crawlers -- sources, Firecrawl/native crawlers, crons, loops\n/loops -- daily reports, monitored refresh cadence, source versions\n\nACCOUNT\n/vault -- api keys + secrets manager\n/agents -- connected agent integrations (MCP)\n/settings -- account, billing, session log\n/activity -- agent activity log\n\nDATA\n/analytics -- profile views + agent reads\n/history -- bundle version history\n\nMEMORY\n/memory -- memory stats by category\n/recall -- recent memories\n/recall {query} -- search memories by keyword\n\nSYSTEM\n/status -- @username | plan | version | published/draft\n/help -- show this reference"
-          : "available commands:\n/profile, /portrait, /edit, /json, /files, /sources\n/share, /share --private, /share --project {name}, /publish\n/skills, /stacks, /skill use {name}\n/api, /mcp, /connectors, /crawlers, /loops\n/vault, /agents, /settings, /activity\n/analytics, /history\n/memory, /recall, /recall {query}\n/status, /help";
+          ? "available commands:\n\nIDENTITY\n/profile -- live profile preview\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait variants inline\n/portrait --regenerate -- re-scrape sources and update portrait\n/edit -- edit identity context (files, json, sources)\n/json -- raw identity json\n/files -- file browser\n/sources -- manage connected sources\n\nPROJECTS\n/portfolio -- project graph, dependencies, reusable patterns, skill propagation\n/projects -- same as /portfolio\n/history -- bundle version history\n\nSHARING\n/share -- create shareable identity link (copies to clipboard)\n/share --private -- include private context in link\n/share --project {name} -- project-scoped context link\n/publish -- publish latest bundle publicly\n\nSKILLS + STACKS\n/skills -- browse + install skills\n/stacks -- manage named private/public YouStacks\n/skill use {name} -- activate skill in this conversation\n\nAPI + CONNECTORS\n/api -- provider/env inventory, API risk tiers, service-account notes\n/apis -- same as /api\n/env -- secret-safe env key-name audit surface\n/mcp -- hosted MCP endpoint and stack namespace\n/connectors -- app grants, custom API/MCP, webhooks\n/crawlers -- sources, Firecrawl/native crawlers, crons, loops\n/loops -- daily reports, monitored refresh cadence, source versions\n\nACCOUNT\n/vault -- api keys + secrets manager\n/agents -- connected agent integrations (MCP)\n/settings -- account, billing, session log\n/activity -- agent activity log\n\nDATA\n/analytics -- profile views + agent reads\n\nMEMORY\n/memory -- memory stats by category\n/recall -- recent memories\n/recall {query} -- search memories by keyword\n\nSYSTEM\n/status -- @username | plan | version | published/draft\n/help -- show this reference"
+          : "available commands:\n/profile, /portrait, /portfolio, /projects, /edit, /json, /files, /sources\n/share, /share --private, /share --project {name}, /publish\n/skills, /stacks, /skill use {name}\n/api, /apis, /env, /mcp, /connectors, /crawlers, /loops\n/vault, /agents, /settings, /activity\n/analytics, /history\n/memory, /recall, /recall {query}\n/status, /help";
 
         setDisplayMessages((prev) => [
           ...prev,

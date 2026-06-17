@@ -608,6 +608,7 @@ program
 program
   .command("project [subcommand] [args...]")
   .description("Manage project agent context (init, list, show, memories)")
+  .allowUnknownOption(true)
   .action((subcommand, args) => {
     return projectCommand(subcommand, ...(args || []));
   });

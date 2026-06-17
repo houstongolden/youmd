@@ -41,7 +41,7 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "3f2f802f397df5384adc6a5bd237f340fccead3af7b8b5de0f32e6840daae45e",
+  "sourceHash": "e1c2fac442b723500818196f3374ed378346c251c49c5cf8165bc1630aa2594f",
   "cli": {
     "version": "0.8.2"
   },
@@ -1330,7 +1330,7 @@ export const docsReference = {
       "usage": "prompts [subcommand] [args...]",
       "group": "CHAT",
       "summary": "search and browse past agent messages",
-      "description": "Search and browse your past messages across agent sessions"
+      "description": "Search, browse, and catalog your past messages across agent sessions"
     },
     {
       "name": "skill",

@@ -29,6 +29,7 @@ import {
   Clock3,
   Code2,
   CreditCard,
+  Database,
   FileText,
   FolderGit2,
   Github,
@@ -99,9 +100,11 @@ const GithubPane = dynamic(
 import { HelpPane } from "@/components/panes/HelpPane";
 import { ProfilePane } from "@/components/panes/ProfilePane";
 import { StacksPane } from "@/components/panes/StacksPane";
+import { PortfolioGraphPane } from "@/components/panes/PortfolioGraphPane";
+import { ApiEnvPane } from "@/components/panes/ApiEnvPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-type PrimaryPaneGroup = "profile" | "content" | "share" | "agents" | "insights" | "portrait" | "account" | "integrations";
+type PrimaryPaneGroup = "profile" | "projects" | "share" | "agents" | "insights" | "portrait" | "account" | "integrations";
 
 const PANE_GROUPS: Array<{
   key: PrimaryPaneGroup;
@@ -116,10 +119,11 @@ const PANE_GROUPS: Array<{
     panes: [{ key: "profile", label: "profile" }],
   },
   {
-    key: "content",
-    label: "files",
-    defaultPane: "files",
+    key: "projects",
+    label: "projects",
+    defaultPane: "portfolio",
     panes: [
+      { key: "portfolio", label: "portfolio" },
       { key: "files", label: "files" },
       { key: "edit", label: "context" },
       { key: "history", label: "history" },
@@ -143,9 +147,12 @@ const PANE_GROUPS: Array<{
   },
   {
     key: "integrations",
-    label: "connect",
-    defaultPane: "github",
-    panes: [{ key: "github", label: "api/mcp" }],
+    label: "apis",
+    defaultPane: "apis",
+    panes: [
+      { key: "apis", label: "apis/env" },
+      { key: "github", label: "api/mcp" },
+    ],
   },
   {
     // analytics = aggregate stats (views, reads, referrers);
@@ -697,6 +704,7 @@ function ShellSidebar({
       label: "projects",
       icon: FolderGit2,
       items: [
+        { label: "Portfolio", detail: "projects + dependencies", icon: Database, pane: "portfolio", status: "new" },
         {
           label: githubRepoName ? "Synced Repo" : "GitHub Repo",
           detail: repoDetail,
@@ -712,6 +720,7 @@ function ShellSidebar({
       label: "personal api",
       icon: Code2,
       items: [
+        { label: "APIs / Env", detail: "providers + key map", icon: Database, pane: "apis", status: "new" },
         { label: "API / MCP", detail: "scoped agent access", icon: Code2, pane: "github" },
         { label: "API Tokens", detail: "owner keys", icon: KeyRound, pane: "settings" },
         { label: "Shared Links", detail: "scoped context", icon: Shield, pane: "share" },
@@ -752,13 +761,13 @@ function ShellSidebar({
   ];
   const collapsedItems: ShellSidebarItem[] = [
     {
-      label: githubRepoName ? "Repo" : "Projects",
-      detail: repoDetail,
+      label: "Portfolio",
+      detail: "projects + dependencies",
       icon: FolderGit2,
-      pane: githubRepoName ? "files" : "github",
-      status: githubRepoName ? "live" : "setup",
+      pane: "portfolio",
+      status: "new",
     },
-    { label: "API / MCP", detail: "scoped agent access", icon: Code2, pane: "github" },
+    { label: "APIs / Env", detail: "providers + key map", icon: Database, pane: "apis" },
     { label: "YouStack", detail: "your default stack", icon: Layers3, pane: "stacks" },
     { label: "Connectors", detail: "github + apps", icon: Plug, pane: "github" },
   ];
@@ -1663,6 +1672,9 @@ export function DashboardContent() {
                   {rightPane === "profile" && (
                     <ProfilePane userId={convexUser._id} username={username} ownerId={convexUser._id} />
                   )}
+                  {rightPane === "portfolio" && (
+                    <PortfolioGraphPane />
+                  )}
                   {rightPane === "portrait" && (
                     <PortraitPane username={username} ownerId={convexUser._id} />
                   )}
@@ -1679,6 +1691,9 @@ export function DashboardContent() {
                   )}
                   {rightPane === "github" && user?.id && (
                     <GithubPane clerkId={user.id} username={username} userId={convexUser._id} />
+                  )}
+                  {rightPane === "apis" && (
+                    <ApiEnvPane />
                   )}
                   {rightPane === "share" && user?.id && (
                     <SharePane

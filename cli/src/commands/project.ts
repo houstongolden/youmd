@@ -24,8 +24,11 @@ import {
   readProjectPrivateNotes,
   resolveProjectContext,
 } from "../lib/projectContext";
+import { runPortfolioAudit } from "../lib/portfolio-audit";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
+
+const ACCENT = chalk.hex("#C46A3A");
 
 function createRL(): readline.Interface {
   return readline.createInterface({
@@ -416,6 +419,65 @@ async function editFile(args: string[]): Promise<void> {
   console.log("");
 }
 
+function readFlagValue(args: string[], flag: string): string | undefined {
+  const index = args.indexOf(flag);
+  if (index === -1) return undefined;
+  return args[index + 1];
+}
+
+function hasFlag(args: string[], flag: string): boolean {
+  return args.includes(flag);
+}
+
+function showPortfolioAudit(args: string[]): void {
+  const root = readFlagValue(args, "--root");
+  const json = hasFlag(args, "--json");
+  const includeDotenv = hasFlag(args, "--include-dotenv");
+  const fingerprints = hasFlag(args, "--fingerprints");
+  const result = runPortfolioAudit({ root, includeDotenv, fingerprints, activeDays: 365 });
+
+  if (json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log("");
+  console.log("  " + chalk.bold("portfolio audit") + chalk.dim(" — project/api/env map"));
+  console.log("");
+  console.log(chalk.dim(`  root: ${result.root}`));
+  console.log(chalk.dim(`  projects scanned: ${result.projectsScanned}`));
+  console.log(chalk.dim(`  env files scanned: ${result.envFilesScanned}`));
+  console.log(chalk.dim(`  providers detected: ${result.providers.length}`));
+  console.log("");
+
+  if (!fingerprints) {
+    console.log(chalk.dim("  secret values were not read. add --fingerprints to compare reused values by local salted HMAC."));
+    console.log("");
+  } else {
+    console.log(chalk.dim("  fingerprints are local salted HMAC prefixes, not raw secret values."));
+    console.log("");
+  }
+
+  for (const provider of result.providers.slice(0, 20)) {
+    const shared = provider.sharedFingerprints.length > 0
+      ? ACCENT(` / ${provider.sharedFingerprints.length} shared value group${provider.sharedFingerprints.length === 1 ? "" : "s"}`)
+      : "";
+    console.log(`  ${chalk.cyan(provider.provider)} ${chalk.dim(`(${provider.category})`)}${shared}`);
+    console.log(chalk.dim(`    projects: ${provider.projects.join(", ") || "none"}`));
+    console.log(chalk.dim(`    key names: ${provider.keyNames.slice(0, 8).join(", ")}${provider.keyNames.length > 8 ? ", ..." : ""}`));
+    if (provider.sharedFingerprints.length > 0) {
+      for (const group of provider.sharedFingerprints.slice(0, 3)) {
+        console.log(chalk.dim(`    shared ${group.fingerprint}: ${group.projects.join(", ")} (${group.keyNames.join(", ")})`));
+      }
+    }
+    console.log("");
+  }
+
+  console.log(chalk.dim("  dashboard: /api or /env"));
+  console.log(chalk.dim("  skill: /skill use portfolio-graph-auditor"));
+  console.log("");
+}
+
 // ─── Main command router ──────────────────────────────────────────────
 
 export async function projectCommand(subcommand?: string, ...args: string[]): Promise<void> {
@@ -451,6 +513,11 @@ export async function projectCommand(subcommand?: string, ...args: string[]): Pr
         projectLogRead();
       }
       break;
+    case "portfolio-audit":
+    case "env-audit":
+    case "apis":
+      showPortfolioAudit(args);
+      break;
     default: {
       // If no subcommand, try auto-detecting the current project
       const detected = detectProjectContext();
@@ -473,6 +540,8 @@ export async function projectCommand(subcommand?: string, ...args: string[]): Pr
       console.log(`    ${chalk.cyan("edit <name> <file>".padEnd(28))} ${chalk.dim("show a project file path for editing")}`);
       console.log(`    ${chalk.cyan("log <message...>".padEnd(28))} ${chalk.dim("append an agent activity entry to project-context/you.md/log.md")}`);
       console.log(`    ${chalk.cyan("log".padEnd(28))} ${chalk.dim("read last 15 entries from the activity log")}`);
+      console.log(`    ${chalk.cyan("portfolio-audit".padEnd(28))} ${chalk.dim("scan recent projects and env key names without printing secrets")}`);
+      console.log(`    ${chalk.cyan("env-audit --fingerprints".padEnd(28))} ${chalk.dim("detect reused key values by local salted HMAC")}`);
       console.log("");
       console.log(chalk.dim("  projects are stored in .youmd/projects/<name>/"));
       console.log(chalk.dim("  run from a project directory for auto-detection."));

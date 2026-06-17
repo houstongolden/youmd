@@ -2,6 +2,14 @@
 
 ## 2026-06-17 — Project portfolio graph and reuse catalog
 
+### feat(web/cli/skills): add portfolio graph and APIs/env intelligence foundation
+- Added `src/data/portfolioGraph.ts` with the first local typed portfolio graph contract for projects, API/MCP/provider surfaces, dependency edges, reusable patterns, service-account notes, env-provider usage, and shared skill propagation.
+- Added `/shell` Portfolio Graph and APIs + Env Intelligence panes, plus sidebar, desktop/mobile pane navigation, command palette, slash-command, and You Agent help routing for `/portfolio`, `/projects`, `/api`, `/apis`, and `/env`.
+- Added bundled dashboard visibility for `portfolio-graph-auditor` and a tracked-project propagation table in the Skills pane so shared skills can be viewed across You.md/BAMF targets.
+- Added `youmd project portfolio-audit` with aliases `env-audit` and `apis`; it scans local projects and `.env.local` key names without printing values, with optional local salted HMAC fingerprints for reused-key detection.
+- Added shared `portfolio-graph-auditor` under `.agent-shared`, synced it into Claude/Codex/Cursor/Pi mirrors, updated `machine-sync`, and logged the skill-governor learning.
+- Verified with `cd cli && npm run build`, root `npx tsc --noEmit --pretty false`, `node cli/dist/index.js project portfolio-audit --root /Users/houstongolden/Desktop/CODE_2025/youmd --json`, `~/.agent-shared/bin/env-key-audit.py --root /Users/houstongolden/Desktop/CODE_2025/youmd`, shared skill inventory, and `npm run build`.
+
 ### docs(product): capture cross-project dependency and reuse layer
 - Added `project-context/PROJECT_PORTFOLIO_GRAPH_AND_REUSE_PRD_2026-06-17.md` as the product memo for a first-class You.md portfolio graph across projects, APIs, MCPs, stacks, protected in-product agent harnesses, dependency edges, integration tiers, machine readiness, and reusable code/UI/architecture patterns.
 - Added `project-context/prompts/2026-06-17-project-portfolio-graph-reuse-dependency-routing.md` as the sanitized prompt capture for the BAMF site/BAMF.ai/Lempod-driven realization.

@@ -10,9 +10,12 @@ interface SlashCommand {
 
 const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/profile", description: "view your public brain/profile", category: "navigation" },
+  { command: "/portfolio", description: "project graph and dependencies", category: "navigation" },
+  { command: "/projects", description: "same as /portfolio", category: "navigation" },
   { command: "/edit", description: "edit brain files", category: "navigation" },
   { command: "/settings", description: "account and plan settings", category: "navigation" },
-  { command: "/api", description: "private Human API/MCP docs", category: "navigation" },
+  { command: "/api", description: "APIs, env providers, and key map", category: "navigation" },
+  { command: "/env", description: "secret-safe env intelligence", category: "navigation" },
   { command: "/mcp", description: "hosted MCP and stack endpoint map", category: "navigation" },
   { command: "/connectors", description: "apps, grants, custom API/MCP", category: "navigation" },
   { command: "/crawlers", description: "sources, crawlers, crons, loops", category: "navigation" },

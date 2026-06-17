@@ -38,6 +38,8 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Tokenized `/ctx/<username>/<token>` links now fail safely and serve reliably for agents: valid links return `you-md/v1` JSON with `_privateContext`, tracking/logging writes are best-effort, invalid links return explicit JSON errors, and deployed responses use private/no-store cache headers with `Vary: Accept`
 - Deterministic shell project scaffolding for the `create my projects directory...` golden path, with real `private/projects/*` files now verified on production
 - Shell pane navigation is now grouped into clearer primary buckets with secondary sub-tabs where needed instead of exposing the full flat tab sprawl on desktop and mobile
+- Local `/shell` now has a Portfolio Graph pane for project goals, API/MCP ownership, dependency edges, protected harness vs public stack boundaries, reusable patterns, and shared skill propagation across You.md/BAMF targets
+- Local `/shell` now has an APIs + Env Intelligence pane for provider usage, env key-name normalization, service-account notes, API/MCP risk tiers, and secret-safe local audit commands
 - Homepage now has a first-class YouStacks section that explains stacks as "your own GStack" for packaging expertise, skills, sub-agents, prompts, workflows, taste, examples, tool rules, safe You.md memory access, and improvement loops; it now explicitly supports naming separate stacks for coding, scientific research, content creation, and other domains, teaches curl-first runtime install instead of a CLI-first mental model, and shows GStack/GBrain reference patterns guiding the architecture
 
 ### CLI (youmd v0.6.23 — ready to publish)
@@ -46,6 +48,7 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Bundled skills now include `youstack-maintainer`, which lets host agents organize, update, improve, smoke, and prepare named YouStacks for private/scoped/public sharing with owner approval
 - Bundled skills now include `machine-bootstrap`, which teaches host agents to set up a fresh Mac/laptop/virtual agent host with You.md auth, local bundle sync, shared skills/stacks, GitHub auth, and active project repo checkout
 - `youmd machine projects` now creates a Desktop code workspace such as `~/Desktop/CODE_YOU`, merges authenticated GitHub repos pushed in the last 90 days with local You.md project records, uses GitHub repo names as target directories, tags associated stacks, attaches API/MCP docs links, skips broad duplicate bundle entries, asks before older projects, supports dry-run/directory-only modes, and clones with `gh repo clone` or `git clone`
+- `youmd project portfolio-audit` / `env-audit` / `apis` now scan local project folders and `.env.local` key names without printing secret values; optional `--fingerprints` uses a local salted HMAC prefix to detect reused key values without exposing the raw secret
 - CLI ↔ Convex skill sync (installs, usage, and removals auto-sync to server)
 - Conversational AI onboarding with BrailleSpinners, ASCII logo, portrait rendering
 - Passwordless email-code auth (no API token required for your own account)

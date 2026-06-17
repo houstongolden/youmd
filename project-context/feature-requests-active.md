@@ -7,24 +7,39 @@ Last Updated: 2026-06-17
 ## 2026-06-17 — Project portfolio graph, API/MCP dependency map, and reuse catalog
 
 ### 131. Add Project Portfolio Graph and reusable pattern intelligence
-**Status:** IN PROGRESS (product context captured; implementation pending)
-**Verified:** PARTIAL (docs/product-context validation passed; implementation pending)
+**Status:** IN PROGRESS (local dashboard/data/CLI/shared-skill foundation shipped; persistence + production verification pending)
+**Verified:** PARTIAL (local TypeScript, CLI build, portfolio audit smoke, env-key audit, shared skill mirror check, and production build passed)
 **Production Verified:** NO
 **Source:** 2026-06-17 — Houston: "we need to have a page/view in our you.md app dashboard dedicated to showing an organized display of all of our APIS/MCPS their associated projects... dependencies... code-reusability and ui-ux-reusability... project / api ecosystem... standard repeatable decisions... protected agentic harnesses vs installable stacks... Lempod management across bamfsite and bamfaiapp..."
 **Actionable Scope:**
 1. Explain how You.md currently saves and organizes Projects. **DONE in docs:** identity bundle `projects`, generated `projects/<slug>/` markdown packs, repo/global project-context overlays, GitHub `trackedProjects`, repo mirror, DSI components, and Loop Report snapshots are documented.
 2. Preserve the strategic product direction in a dedicated memo. **DONE:** `project-context/PROJECT_PORTFOLIO_GRAPH_AND_REUSE_PRD_2026-06-17.md`.
 3. Preserve a sanitized prompt capture for the realization. **DONE:** `project-context/prompts/2026-06-17-project-portfolio-graph-reuse-dependency-routing.md`.
-4. Add Project records that carry detailed and summarized AI descriptions, high-level goal, current focus, PRD/tasks/design/research/ideas/changelog/current-state/agent-doc paths, repo/local/docs/API/MCP URLs, stack, environment, and fresh-machine setup metadata. **PENDING implementation.**
-5. Add API/MCP surface records with owning project, owning stack, docs, auth mode, integration type, write policy, risk tier, features powered, failure impact, and duplicate-risk warnings. **PENDING implementation.**
-6. Add dependency edges that label who depends on whom: dependent, feature, optional, dev-only, admin, workspace, user-level, provides API to, consumes API from, shares stack, reuses code, reuses UI, owns public stack, owns protected harness. **PENDING implementation.**
-7. Add a `/shell` Portfolio/Projects graph view that shows APIs/MCPs, associated projects, dependency direction, integration tiers, docs status, machine readiness, duplicate-risk warnings, and reusable patterns. **PENDING implementation.**
-8. Track protected in-product agentic harnesses separately from public/installable skill stacks so proprietary product-agent IP is not exposed through public stack installs. **DONE in docs; implementation pending.**
-9. Add a cross-project reusable code/UI/architecture pattern catalog, tagged by tech stack and canonical/candidate/deprecated status. **DONE in docs; implementation pending.**
+4. Add Project records that carry detailed and summarized AI descriptions, high-level goal, current focus, PRD/tasks/design/research/ideas/changelog/current-state/agent-doc paths, repo/local/docs/API/MCP URLs, stack, environment, and fresh-machine setup metadata. **DONE local static data contract; pending Convex/repo-backed persistence.**
+5. Add API/MCP surface records with owning project, owning stack, docs, auth mode, integration type, write policy, risk tier, features powered, failure impact, and duplicate-risk warnings. **DONE local static data contract + dashboard; pending persistence.**
+6. Add dependency edges that label who depends on whom: dependent, feature, optional, dev-only, admin, workspace, user-level, provides API to, consumes API from, shares stack, reuses code, reuses UI, owns public stack, owns protected harness. **DONE local static data contract + dashboard; pending persistence.**
+7. Add a `/shell` Portfolio/Projects graph view that shows APIs/MCPs, associated projects, dependency direction, integration tiers, docs status, machine readiness, duplicate-risk warnings, and reusable patterns. **DONE locally:** `PortfolioGraphPane`.
+8. Track protected in-product agentic harnesses separately from public/installable skill stacks so proprietary product-agent IP is not exposed through public stack installs. **DONE local data/dashboard/docs; pending per-project audit.**
+9. Add a cross-project reusable code/UI/architecture pattern catalog, tagged by tech stack and canonical/candidate/deprecated status. **DONE local data/dashboard/docs; pending scanner-derived records.**
 10. Preserve Houston's reusable defaults: API/MCP/SkillStack-first architecture, standard role hierarchy, first-party passwordless auth preference, standard left sidebar/app shell, agentic split workspace, streaming response behavior, no loading spinners, and no boxes-within-boxes admin/docs surfaces. **DONE in docs; implementation pending.**
-11. Add a bundled YouStack skill or CLI command that audits local projects, prompts, docs, APIs, MCPs, stacks, code patterns, and UI patterns, then proposes graph/reuse updates. **PENDING implementation.**
+11. Add a bundled YouStack skill or CLI command that audits local projects, prompts, docs, APIs, MCPs, stacks, code patterns, and UI patterns, then proposes graph/reuse updates. **DONE first slice:** shared `portfolio-graph-auditor` + `youmd project portfolio-audit`; pending richer code/UI pattern mining.
 12. Audit Lempod management across `bamfsite` and `bamfaiapp` before creating any duplicate Lempod API endpoint. **PENDING implementation.**
-**Progress (2026-06-17):** Added the portfolio graph/reuse PRD and sanitized prompt capture, updated PRD, Architecture, Current State, Features, TODO, Changelog, and active request tracking. The first implementation slice remains the data contract plus auditor skill/CLI.
+**Progress (2026-06-17):** Added the portfolio graph/reuse PRD and sanitized prompt capture, then shipped the first local implementation slice: `src/data/portfolioGraph.ts`, `/shell` Portfolio Graph pane, dashboard/sidebar/slash-command routing, Skills pane propagation visibility, shared `portfolio-graph-auditor`, and local `youmd project portfolio-audit`. Verified local TypeScript, CLI build, portfolio audit smoke, env-key audit, shared mirror sync, and production build. Remaining: Convex/repo-backed persistence, MCP brief inclusion, production signed-in dashboard verification, richer pattern mining, and the actual BAMF Lempod ownership audit.
+
+### 132. Add APIs/env intelligence dashboard and secret-safe provider account mapping
+**Status:** IN PROGRESS (local dashboard + CLI foundation shipped; encrypted persistence and full cross-project scan pending)
+**Verified:** PARTIAL (local TypeScript, CLI build, portfolio audit smoke, env-key audit, and production build passed)
+**Production Verified:** NO
+**Source:** 2026-06-17 — Houston: "introduce another new ui surface for having a high-level view of all the apis your projects are using and some stats on which ones are being used the most across projects... encrypted way to see without revealing which api keys are being used for which platform... analyze all the projects' .env.locals... identify when the same api or service is being used even under different names... save some key details to that api/service account so i know what email or login method i used..."
+**Actionable Scope:**
+1. Add a `/shell` high-level APIs/env surface with provider usage, project counts, key-name variants, API/MCP risk tiers, service-account notes, and local audit commands. **DONE locally:** `ApiEnvPane`.
+2. Normalize env key names across conventions such as `NEXT_`, `NEXT_PUBLIC_`, `VITE_`, and raw server-side names. **DONE first CLI slice:** `normalizeKeyName` in `cli/src/lib/portfolio-audit.ts`.
+3. Scan `.env.local` / `.env.*.local` without printing values. **DONE first CLI slice:** `portfolio-audit` parses names only by default.
+4. Detect reused secret values without exposing values. **DONE first CLI slice:** optional `--fingerprints` uses local salted HMAC prefixes.
+5. Store service-account metadata such as provider, login hint, billing owner, separation policy, and encrypted storage notes. **DONE local static data; pending encrypted/persistent account records.**
+6. Integrate with the existing secure env backup/restore path from machine-sync/fresh-machine setup. **DONE docs/skill routing; pending dashboard-backed live state.**
+7. Add monthly provider/project cost tracking. **PENDING.**
+8. Add full cross-project scan for projects active in the last year. **PENDING full-root audit + persistence; command supports `--root`.**
 
 ## 2026-06-16 — Preserve h.computer platform ideas in You.md
 

@@ -158,6 +158,20 @@ The portfolio graph should connect:
 The first saved product memo is
 `project-context/PROJECT_PORTFOLIO_GRAPH_AND_REUSE_PRD_2026-06-17.md`.
 
+Implementation slice shipped locally on 2026-06-17:
+
+- `/shell` now has a Portfolio Graph pane for projects, API/MCP ownership,
+  dependency edges, reusable patterns, protected harness boundaries, and shared
+  skill propagation.
+- `/shell` now has an APIs + Env Intelligence pane for provider usage,
+  env-key normalization, service-account notes, API/MCP risk tiers, and
+  secret-safe local audit commands.
+- `youmd project portfolio-audit` / `env-audit` / `apis` now scan local
+  projects and `.env.local` key names without printing values. Optional
+  `--fingerprints` compares reused key values by local salted HMAC.
+- Shared `portfolio-graph-auditor` now lives in the global agent skill layer and
+  syncs into Claude, Codex, Cursor, and Pi.
+
 Important boundary: a product's protected in-app agent harness is not the same
 thing as an installable public skill stack. The public stack teaches host agents
 how to use the product API/MCP safely. The protected harness may include private
