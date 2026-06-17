@@ -7,6 +7,7 @@
 - The same production QA found a real URL hygiene bug: clicking `View timeline for youmd` from `#project-detail` scrolled correctly, but the browser URL became `#project-detail#timeline` instead of replacing the hash with clean `#timeline`.
 - Updated the Portfolio Graph project selector to compute a single anchored URL and use `window.history.replaceState` after the Next router update when the current hash does not match the target anchor.
 - Local authenticated Browser QA now proves the exact transition from `http://localhost:3100/shell?tab=portfolio&project=youmd#project-detail` to `http://localhost:3100/shell?tab=portfolio&project=youmd#timeline`, with no doubled hash and the shipping timeline in view.
+- Post-deploy production QA on `www.you.md` now proves the same clean transition to `https://www.you.md/shell?tab=portfolio&project=youmd#timeline`, with no doubled hash, `Me + agents, shipped across the portfolio` still present, `latest shipped here` still present, and the shipping timeline in view. Screenshot: `/var/folders/4n/hqpz_03d477c1f_m2ks7x18c0000gn/T/youmd-production-clean-timeline-anchor-2026-06-17.png`.
 
 ## 2026-06-17 — Portfolio shipped board polish
 
