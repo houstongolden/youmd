@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { CONVEX_SITE_URL } from "@/lib/constants";
 
+const DEFAULT_CHAT_PROXY_TIMEOUT_MS = 30_000;
+const STREAM_CHAT_PROXY_TIMEOUT_MS = 240_000;
+
 export function copyProxyHeaders(source: Headers): Headers {
   const headers = new Headers();
   source.forEach((value, key) => {
@@ -17,6 +20,41 @@ export function copyProxyHeaders(source: Headers): Headers {
     headers.set(key, value);
   });
   return headers;
+}
+
+function isStreamPath(path: string): boolean {
+  return path.endsWith("/stream");
+}
+
+function proxyErrorResponse(path: string, error: unknown): NextResponse {
+  const message =
+    error instanceof Error && error.name === "TimeoutError"
+      ? "chat upstream timed out"
+      : "chat upstream unavailable";
+
+  if (isStreamPath(path)) {
+    return new NextResponse(
+      `data: ${JSON.stringify({ error: message })}\n\ndata: [DONE]\n\n`,
+      {
+        status: 504,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+        },
+      }
+    );
+  }
+
+  return NextResponse.json(
+    {
+      error: {
+        code: "upstream_unavailable",
+        message,
+      },
+      message,
+    },
+    { status: 504 }
+  );
 }
 
 export async function proxyChatRequest(
@@ -39,13 +77,20 @@ export async function proxyChatRequest(
   const lastEventId = request.headers.get("last-event-id");
   if (lastEventId) headers.set("Last-Event-ID", lastEventId);
 
-  const upstream = await fetch(upstreamUrl, {
-    method: request.method,
-    headers,
-    body,
-    cache: "no-store",
-    signal: AbortSignal.timeout(15_000),
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(upstreamUrl, {
+      method: request.method,
+      headers,
+      body,
+      cache: "no-store",
+      signal: AbortSignal.timeout(
+        isStreamPath(path) ? STREAM_CHAT_PROXY_TIMEOUT_MS : DEFAULT_CHAT_PROXY_TIMEOUT_MS
+      ),
+    });
+  } catch (error) {
+    return proxyErrorResponse(path, error);
+  }
 
   return new NextResponse(upstream.body, {
     status: upstream.status,
