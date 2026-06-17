@@ -65,4 +65,107 @@ describe("MCP agent brief", () => {
     expect(markdown).toContain("youmd project portfolio-audit --root ~/Desktop/CODE_2025");
     expect(markdown).toContain("project-context/feature-requests-active.md");
   });
+
+  it("maps persisted portfolio graph snapshots into the local agent brief shape", async () => {
+    const { portfolioGraphBriefFromSnapshot, formatPortfolioGraphBriefMarkdown } = await import("../lib/portfolio-graph");
+
+    const brief = portfolioGraphBriefFromSnapshot({
+      projects: [
+        {
+          slug: "real-project",
+          name: "Real Project",
+          stackName: "RealStack",
+          goal: "Clone the right repos on a new machine.",
+          focus: "30-day active setup gate.",
+        },
+      ],
+      apiSurfaces: [
+        {
+          slug: "real-api",
+          ownerProjectSlug: "real-project",
+          ownerStack: "RealStack",
+          risk: "high",
+          writePolicy: "owner-approved",
+          features: ["machine setup", "portfolio graph"],
+        },
+      ],
+      dependencyEdges: [
+        {
+          fromProjectSlug: "real-project",
+          toSurfaceSlug: "real-api",
+          tier: "dependent",
+          integrationType: "developer-agent",
+          features: ["fresh machine bootstrap"],
+          failureImpact: "New computer setup loses graph context.",
+        },
+      ],
+      reusablePatterns: [
+        {
+          slug: "fresh-machine-bootstrap",
+          canonicalOwnerProject: "real-project",
+          status: "canonical",
+        },
+      ],
+    });
+    const markdown = formatPortfolioGraphBriefMarkdown(brief);
+
+    expect(brief.generatedFrom).toContain("authenticated /api/v1/me/portfolio/graph (1 projects)");
+    expect(brief.projects[0]).toEqual({
+      slug: "real-project",
+      stack: "RealStack",
+      goal: "Clone the right repos on a new machine.",
+      focus: "30-day active setup gate.",
+    });
+    expect(brief.apiSurfaces[0].ownerProject).toBe("real-project");
+    expect(brief.dependencyEdges[0].toSurface).toBe("real-api");
+    expect(markdown).toContain("real-project (RealStack): 30-day active setup gate.");
+    expect(markdown).toContain("real-api: owner=real-project/RealStack");
+  });
+
+  it("returns project-scoped portfolio slices from the persisted graph in get_project_context", async () => {
+    const { CLI_MCP_TOOLS } = await import("../mcp/registry");
+    const tool = CLI_MCP_TOOLS.find((candidate) => candidate.name === "get_project_context");
+    expect(tool).toBeTruthy();
+
+    const result = await tool!.handler(
+      { project: "real-project" },
+      {
+        authenticated: true,
+        logActivity: vi.fn(),
+        fetchMemoriesEnvelope: vi.fn(),
+        fetchPrivateContextEnvelope: vi.fn(),
+        apiRequest: vi.fn(async () => ({
+          projects: [
+            {
+              slug: "real-project",
+              name: "Real Project",
+              stackName: "RealStack",
+              focus: "30-day active setup gate.",
+            },
+          ],
+          apiSurfaces: [
+            {
+              slug: "real-api",
+              ownerProjectSlug: "real-project",
+              ownerStack: "RealStack",
+              features: ["machine setup"],
+            },
+          ],
+          dependencyEdges: [],
+          reusablePatterns: [],
+        })),
+        memoryCategories: [],
+        resolveAgentName: () => "test-agent",
+        getInstalledSkills: () => [],
+        activeBundleExists: () => true,
+        fetchActivityLog: vi.fn(),
+        getYouJson: () => ({}),
+      },
+    );
+    const parsed = JSON.parse(String(result.content[0].text));
+
+    expect(parsed.portfolioGraph.readiness.ready).toBe(true);
+    expect(parsed.portfolioGraph.matchedProject.slug).toBe("real-project");
+    expect(parsed.portfolioGraph.ownedSurfaces[0].slug).toBe("real-api");
+  });
 });

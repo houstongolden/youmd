@@ -72,7 +72,7 @@ import {
   routeYouStackRequest,
   runYouStackSmoke,
 } from "../lib/youstack";
-import { getPortfolioGraphProjectSlice } from "../lib/portfolio-graph";
+import { getPortfolioGraphProjectSlice, portfolioGraphBriefFromSnapshot } from "../lib/portfolio-graph";
 
 // ─── Shared config/helpers (duplicated here to avoid circular server.ts dep) ──
 
@@ -252,6 +252,19 @@ export interface CliMcpCtx {
   getYouJson: () => Record<string, unknown>;
 }
 
+async function getProjectPortfolioSlice(projectName: string | null | undefined, ctx: CliMcpCtx) {
+  if (ctx.authenticated) {
+    try {
+      const snapshot = await ctx.apiRequest("/api/v1/me/portfolio/graph?includeTasks=1");
+      const brief = portfolioGraphBriefFromSnapshot(snapshot as Record<string, unknown>);
+      return getPortfolioGraphProjectSlice(projectName, brief);
+    } catch {
+      // Use the bundled fallback when the local agent is offline or unauthenticated.
+    }
+  }
+  return getPortfolioGraphProjectSlice(projectName);
+}
+
 /** Single CLI MCP tool specification (metadata + handler). */
 export interface CliToolSpec {
   name: string;
@@ -421,7 +434,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
 
       if (projectName) {
         const ctx2 = readMergedProjectContext({ projectName });
-        const portfolioGraph = getPortfolioGraphProjectSlice(projectName);
+        const portfolioGraph = await getProjectPortfolioSlice(projectName, ctx);
         if (!ctx2) {
           const result = {
             readiness: readiness("not_found", `Project context for ${projectName} was not found or is incomplete.`,
@@ -459,7 +472,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
 
       const finalCtx = merged;
       const name = finalCtx?.meta?.name || current?.name || null;
-      const portfolioGraph = getPortfolioGraphProjectSlice(name);
+      const portfolioGraph = await getProjectPortfolioSlice(name, ctx);
       const result = finalCtx
         ? {
             readiness: readiness("ready", `Project context for ${name} is available.`, "None needed."),

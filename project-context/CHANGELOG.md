@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-17 — Local MCP persisted portfolio graph
+
+### fix(mcp): stop local agents from seeing the four-project fallback graph
+- `youmd://portfolio/graph` now returns the authenticated persisted `/api/v1/me/portfolio/graph?includeTasks=1` snapshot when available, including exact project docs/curl fields, shipped counts, setup eligibility, tracked repos, API surfaces, dependency edges, reusable patterns, and tasks.
+- `get_agent_brief` now maps that persisted snapshot into the compact `## Portfolio Graph` startup section instead of always using the static four-project fallback.
+- `get_project_context` now resolves project-scoped Portfolio Graph slices from the persisted graph before falling back to the bundled static graph.
+- Fresh-machine env-vault restore commands now try macOS Keychain service `youmd-env-vault` for `ENV_VAULT_PASS` before prompting, while still never embedding `.env.local` values in prompts.
+- Verification: full CLI test suite (`565` tests), CLI build, root `npx tsc --noEmit`, machine-sync preflights, portfolio hydration (`56` projects / `40` tracked repos), compiled 30-day planner (`16` selected), compiled 90-day planner (`17` selected), and live MCP SDK proof showing `youmd://portfolio/graph` returns `56` projects and `get_project_context` for `bamfaiapp` returns a ready persisted slice.
+
 ## 2026-06-17 — Shell drill-in detail navigation
 
 ### fix(shell): make portfolio, stacks, and skills details dedicated sub-pages

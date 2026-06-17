@@ -50,6 +50,10 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('fresh-machine ${DAYS}-day setup pass complete');
     expect(command).toContain('youmd env backup --root "$ROOT" --preflight');
     expect(command).toContain('if [ ! -f "$YOUMD_ENV_VAULT" ]; then');
+    expect(command).toContain('YOUMD_ENV_VAULT_KEYCHAIN_SERVICE:-youmd-env-vault');
+    expect(command).toContain('security find-generic-password');
+    expect(command).toContain('export ENV_VAULT_PASS="$ENV_VAULT_PASS_FROM_KEYCHAIN"');
+    expect(command).toContain("no env-vault Keychain item found; restore will prompt for the passphrase");
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --list');
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"');
     expect(command).toContain("youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
@@ -81,6 +85,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("syncs the proof summary back to your You.md machine dashboard");
     expect(prompt).toContain("checks env-vault tooling");
     expect(prompt).toContain("lists an encrypted env vault without writing files");
+    expect(prompt).toContain("tries macOS Keychain service `youmd-env-vault` for the passphrase");
+    expect(prompt).toContain("If macOS Keychain contains service `youmd-env-vault` for the current user, restore uses it automatically");
     expect(prompt).toContain("YOUMD_MAX_CLONE_PROJECTS");
     expect(prompt).toContain("YOUMD_RUN_CHECKS=1");
     expect(prompt).toContain("YOUMD_INSTALL_DEPS=1");

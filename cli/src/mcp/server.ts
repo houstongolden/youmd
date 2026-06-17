@@ -65,6 +65,7 @@ import {
 import {
   PORTFOLIO_GRAPH_BRIEF,
   formatPortfolioGraphBriefMarkdown,
+  portfolioGraphBriefFromSnapshot,
   type PortfolioGraphBrief,
 } from "../lib/portfolio-graph";
 
@@ -562,6 +563,19 @@ export async function apiRequest(path: string, opts?: { method?: string; body?: 
   return res.json();
 }
 
+async function fetchPersistedPortfolioGraphSnapshot(): Promise<Record<string, unknown> | null> {
+  if (!isAuthenticated()) return null;
+  try {
+    const result = await apiRequest("/api/v1/me/portfolio/graph?includeTasks=1");
+    if (!result || typeof result !== "object") return null;
+    const projects = (result as { projects?: unknown }).projects;
+    if (!Array.isArray(projects) || projects.length === 0) return null;
+    return result as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Agent attribution. Resolution order:
  *   1. YOUMD_AGENT_NAME env (set by generated MCP configs per host)
@@ -963,6 +977,7 @@ export async function buildAgentBrief(options: { includeMemories?: boolean } = {
     nextMoves.push("Read the project instructions, pick the highest-signal task, and act end-to-end.");
   }
 
+  const persistedPortfolioGraph = await fetchPersistedPortfolioGraphSnapshot();
   const brief: AgentBrief = {
     generatedAt: new Date().toISOString(),
     user: {
@@ -987,7 +1002,7 @@ export async function buildAgentBrief(options: { includeMemories?: boolean } = {
         "you-logs",
       ],
     },
-    portfolioGraph: PORTFOLIO_GRAPH_BRIEF,
+    portfolioGraph: portfolioGraphBriefFromSnapshot(persistedPortfolioGraph),
     nextMoves: nextMoves.slice(0, 5),
     reminders: [
       "Read the whole user request before acting; split multi-part asks into tracked items.",
@@ -1347,11 +1362,12 @@ export async function startMcpServer(): Promise<void> {
 
     if (uri === "youmd://portfolio/graph") {
       void logMcpActivity("read", "portfolio/graph");
+      const persistedPortfolioGraph = await fetchPersistedPortfolioGraphSnapshot();
       return {
         contents: [{
           uri,
           mimeType: "application/json",
-          text: JSON.stringify(PORTFOLIO_GRAPH_BRIEF, null, 2),
+          text: JSON.stringify(persistedPortfolioGraph ?? PORTFOLIO_GRAPH_BRIEF, null, 2),
         }],
       };
     }

@@ -36,6 +36,36 @@ export interface PortfolioGraphBrief {
   guardrails: string[];
 }
 
+type PersistedPortfolioGraphSnapshot = {
+  schemaVersion?: string;
+  projects?: Array<Record<string, unknown>>;
+  apiSurfaces?: Array<Record<string, unknown>>;
+  dependencyEdges?: Array<Record<string, unknown>>;
+  reusablePatterns?: Array<Record<string, unknown>>;
+};
+
+const SURFACE_RISKS = new Set(["low", "medium", "high"]);
+const EDGE_TIERS = new Set(["dependent", "feature", "optional", "dev-only", "admin", "workspace", "user-level"]);
+const INTEGRATION_TYPES = new Set(["admin", "workspace", "user-level", "developer-agent"]);
+const PATTERN_STATUSES = new Set(["canonical", "candidate", "deprecated"]);
+
+function asString(value: unknown, fallback = ""): string {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (typeof item !== "string") return [];
+    const trimmed = item.trim();
+    return trimmed ? [trimmed] : [];
+  });
+}
+
+function oneOf<T extends string>(value: unknown, allowed: Set<string>, fallback: T): T {
+  return typeof value === "string" && allowed.has(value) ? value as T : fallback;
+}
+
 export const PORTFOLIO_GRAPH_BRIEF: PortfolioGraphBrief = {
   generatedFrom: "project-context/PROJECT_PORTFOLIO_GRAPH_AND_REUSE_PRD_2026-06-17.md",
   projects: [
@@ -164,6 +194,49 @@ export const PORTFOLIO_GRAPH_BRIEF: PortfolioGraphBrief = {
     "Distinguish public/installable skill stacks from protected product-agent harnesses.",
   ],
 };
+
+export function portfolioGraphBriefFromSnapshot(
+  snapshot: PersistedPortfolioGraphSnapshot | null | undefined,
+  fallback: PortfolioGraphBrief = PORTFOLIO_GRAPH_BRIEF
+): PortfolioGraphBrief {
+  if (!snapshot || !Array.isArray(snapshot.projects) || snapshot.projects.length === 0) {
+    return fallback;
+  }
+
+  return {
+    generatedFrom: `authenticated /api/v1/me/portfolio/graph (${snapshot.projects.length} projects)`,
+    projects: snapshot.projects.map((project) => ({
+      slug: asString(project.slug, asString(project.name, "unknown-project")),
+      stack: asString(project.stackName, asString(project.stackSlug, "Project Stack")),
+      goal: asString(project.goal, asString(project.summary, "No goal captured yet.")),
+      focus: asString(project.focus, asString(project.summary, "No focus captured yet.")),
+    })),
+    apiSurfaces: (snapshot.apiSurfaces ?? []).map((surface) => ({
+      slug: asString(surface.slug, asString(surface.name, "unknown-surface")),
+      ownerProject: asString(surface.ownerProjectSlug, asString(surface.ownerProject, "unknown-project")),
+      ownerStack: asString(surface.ownerStack, "Project Stack"),
+      risk: oneOf(surface.risk, SURFACE_RISKS, "medium"),
+      writePolicy: asString(surface.writePolicy, "review-required"),
+      features: asStringArray(surface.features),
+    })),
+    dependencyEdges: (snapshot.dependencyEdges ?? []).map((edge) => ({
+      fromProject: asString(edge.fromProjectSlug, asString(edge.fromProject, "unknown-project")),
+      toSurface: asString(edge.toSurfaceSlug, asString(edge.toSurface, asString(edge.toProjectSlug, "unknown-surface"))),
+      tier: oneOf(edge.tier, EDGE_TIERS, "optional"),
+      integrationType: oneOf(edge.integrationType, INTEGRATION_TYPES, "developer-agent"),
+      features: asStringArray(edge.features),
+      failureImpact: asString(edge.failureImpact, "Not documented yet."),
+    })),
+    reusablePatterns: (snapshot.reusablePatterns ?? []).map((pattern) => ({
+      slug: asString(pattern.slug, asString(pattern.name, "unknown-pattern")),
+      owner: asString(pattern.canonicalOwnerProject, asString(pattern.owner, "youmd")),
+      status: oneOf(pattern.status, PATTERN_STATUSES, "candidate"),
+    })),
+    skillPropagation: fallback.skillPropagation,
+    agentCommands: fallback.agentCommands,
+    guardrails: fallback.guardrails,
+  };
+}
 
 export function formatPortfolioGraphBriefMarkdown(graph: PortfolioGraphBrief = PORTFOLIO_GRAPH_BRIEF): string {
   const lines: string[] = [];
