@@ -12,6 +12,33 @@
 
 ## 2026-06-17 — GitHub sync proof, portfolio persistence, and project tasks
 
+### fix(web/cli/convex): hydrate Portfolio Graph from real active projects
+- Fixed the Portfolio Graph pane so the persisted graph is no longer only the
+  4-project dashboard bootstrap seed.
+- Added `portfolio.syncTrackedProjects`, which hydrates `portfolioProjects`
+  from authenticated 90-day GitHub `trackedProjects` records while preserving
+  richer human/agent strategy fields.
+- Added a `hydrate active projects` action in the Portfolio Graph pane beside
+  the seed refresh button.
+- Added `POST /api/v1/me/portfolio/projects/hydrate` and
+  `youmd project portfolio-hydrate`, which run the local portfolio auditor,
+  filter noisy nested packages/reference repos, and upsert workspace-level
+  local projects into the Convex portfolio graph.
+- Added local MCP tool `hydrate_portfolio_graph` for agents that need to
+  hydrate from the tracked GitHub project catalog without using the dashboard.
+- Ran `youmd project portfolio-audit --root /Users/houstongolden/Desktop/CODE_2025`:
+  268 project/package candidates, 23 env files, and 97 providers were detected
+  without printing secret values.
+- Ran `youmd project portfolio-hydrate --root /Users/houstongolden/Desktop/CODE_2025 --days 90 --limit 80`:
+  129 recent local candidates scanned, 30 local projects upserted, 40 GitHub
+  tracked projects considered, 36 portfolio rows created, and 4 updated.
+- Deployed Convex to `kindly-cassowary-600`.
+- Authenticated local browser QA verified the actual shell now shows
+  `55 PROJECTS`, `CONVEX PERSISTED GRAPH`, `40 recent GitHub-tracked projects
+  nearby`, the `hydrate active projects` control, and hydrated rows including
+  `badapp`, `bamfaiapp`, `bamfsite`, `bigbounce`, `foldermd`, `youmd`, `claws`,
+  and `creator-new`.
+
 ### feat(api/cli/mcp): let local agents write portfolio tasks and brain dumps
 - Added authenticated API endpoints for local-agent writes:
   `POST /api/v1/me/portfolio/tasks` and

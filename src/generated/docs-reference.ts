@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "7d225b3b7f3a3b29be6a65c9157415616e8dd24f11c93188a859f08d4b10360d",
+  "sourceHash": "15c2a9dc4aa8421d44ca60f3c3b2c690cf16e53b5e1249f27e8fb5357964a027",
   "cli": {
     "version": "0.8.2"
   },
   "counts": {
-    "endpoints": 87,
+    "endpoints": 88,
     "internalRoutes": 7,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 30,
-    "convexRoutes": 68,
+    "convexRoutes": 69,
     "nextRoutes": 26
   },
   "endpoints": [
@@ -227,6 +227,17 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Preserve raw dumps and route proposed tasks.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/portfolio/projects/hydrate",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Hydrate portfolio graph from recent GitHub projects and local auditor output.",
       "sources": [
         "convex"
       ]

@@ -1551,6 +1551,137 @@ http.route({
   }),
 });
 
+// POST /api/v1/me/portfolio/projects/hydrate — Hydrate portfolio graph from recent GitHub projects and local auditor output.
+http.route({
+  path: "/api/v1/me/portfolio/projects/hydrate",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle", "projects");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    const startedAt = Date.now();
+    const body = await request.json();
+    const includeTracked = body.includeTracked !== false;
+    const days = typeof body.days === "number" && Number.isFinite(body.days) ? body.days : 90;
+    const limit = typeof body.limit === "number" && Number.isFinite(body.limit) ? body.limit : 80;
+    const source = typeof body.source === "string" && body.source.trim()
+      ? body.source.trim()
+      : "local-portfolio-audit";
+    const projects = Array.isArray(body.projects) ? body.projects : [];
+
+    const local = {
+      received: projects.length,
+      upserted: 0,
+      skipped: 0,
+      projects: [] as Array<{ slug?: string; name: string; created?: boolean }>,
+    };
+
+    try {
+      const tracked = includeTracked
+        ? await ctx.runMutation(api.portfolio.syncTrackedProjects, {
+            clerkId: auth.userId,
+            _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+            days,
+            limit,
+          })
+        : null;
+
+      for (const rawProject of projects.slice(0, Math.max(1, Math.min(limit, 200)))) {
+        const row = typeof rawProject === "object" && rawProject !== null
+          ? rawProject as Record<string, unknown>
+          : {};
+        const name = typeof row.name === "string" ? row.name.trim() : "";
+        if (!name) {
+          local.skipped += 1;
+          continue;
+        }
+
+        const repoPath = typeof row.path === "string" && row.path.trim() ? row.path.trim() : undefined;
+        const providers = cleanStringArray(row.providers);
+        const envFiles = cleanStringArray(row.envFiles);
+        const tags = cleanStringArray(row.tags ?? providers.map((provider) => provider.toLowerCase().replace(/[^a-z0-9]+/g, "-")));
+        const summary = typeof row.summary === "string" && row.summary.trim()
+          ? row.summary.trim()
+          : `Local portfolio auditor found ${name}${repoPath ? ` at ${repoPath}` : ""}${providers.length ? ` using ${providers.slice(0, 5).join(", ")}` : ""}.`;
+        const result = await ctx.runMutation(api.portfolio.upsertProject, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          slug: typeof row.slug === "string" ? row.slug : undefined,
+          name,
+          stackName: typeof row.stackName === "string" ? row.stackName : undefined,
+          status: typeof row.status === "string" ? row.status : "local-audited",
+          summary,
+          focus: typeof row.focus === "string" ? row.focus : "Audit project role, API/MCP ownership, reusable patterns, and env/service-account boundaries.",
+          docs: cleanStringArray(row.docs),
+          environments: envFiles,
+          tags: ["local-audit", ...tags],
+          source,
+          repoPath,
+          lastActivityAt: typeof row.lastActivityAt === "number" && Number.isFinite(row.lastActivityAt)
+            ? row.lastActivityAt
+            : Date.now(),
+        });
+        const slug = portfolioSlug(row.slug ?? name) ?? portfolioSlug(name);
+        const activities = Array.isArray(row.activityEvents) ? row.activityEvents : [];
+        if (slug && activities.length > 0) {
+          await ctx.runMutation(api.portfolio.upsertProjectActivityBatch, {
+            clerkId: auth.userId,
+            _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+            projectSlug: slug,
+            activities: activities.slice(0, 120).map((activity: unknown) => {
+              const event = typeof activity === "object" && activity !== null
+                ? activity as Record<string, unknown>
+                : {};
+              return {
+                kind: typeof event.kind === "string" && event.kind.trim() ? event.kind.trim() : "summary",
+                title: typeof event.title === "string" ? event.title.slice(0, 220) : "Project activity",
+                summary: typeof event.summary === "string" && event.summary.trim() ? event.summary.slice(0, 1000) : undefined,
+                url: typeof event.url === "string" && event.url.trim() ? event.url.trim() : undefined,
+                source: typeof event.source === "string" && event.source.trim() ? event.source.trim() : source,
+                evidencePath: typeof event.evidencePath === "string" && event.evidencePath.trim() ? event.evidencePath.trim() : undefined,
+                dedupeKey: typeof event.dedupeKey === "string" && event.dedupeKey.trim() ? event.dedupeKey.trim() : undefined,
+                tags: cleanStringArray(event.tags),
+                metadata: typeof event.metadata === "object" && event.metadata !== null ? event.metadata : undefined,
+                occurredAt: typeof event.occurredAt === "number" && Number.isFinite(event.occurredAt)
+                  ? event.occurredAt
+                  : Date.now(),
+              };
+            }),
+          });
+        }
+        local.upserted += 1;
+        local.projects.push({ slug, name, created: result.created });
+      }
+
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: body.agentName || auth.appName || agent.name,
+          agentSource: authAgentSource(auth, request),
+          agentVersion: agent.version,
+          action: "write",
+          resource: "portfolio/projects",
+          status: "success",
+          connectedAppGrantId: auth.connectedAppGrantId,
+          durationMs: Date.now() - startedAt,
+          details: { includeTracked, trackedCount: tracked?.tracked ?? 0, localUpserted: local.upserted, source },
+        });
+      } catch {
+        // best-effort
+      }
+
+      return guard.finish(json({ success: true, tracked, local }));
+    } catch (err) {
+      return serverErrorResponse("me/portfolio/projects/hydrate", err, "Failed to hydrate portfolio projects");
+    }
+  }),
+});
+
 // POST /api/v1/me/sources — Add a source
 http.route({
   path: "/api/v1/me/sources",
@@ -3275,6 +3406,7 @@ http.route({ path: "/ctx", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/bundle", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/publish", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/portfolio/projects/hydrate", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/tasks", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/brain-dumps", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/sources", method: "OPTIONS", handler: corsPreflight });

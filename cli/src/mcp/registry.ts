@@ -789,6 +789,52 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     },
   },
 
+  // ── hydrate_portfolio_graph ────────────────────────────────────────────────
+  {
+    name: "hydrate_portfolio_graph",
+    description:
+      "Hydrate the persisted You.md Portfolio Graph from the authenticated recent GitHub project catalog. Use after refreshing/analyzing active projects so the Portfolio Graph is not stuck on bootstrap seed rows.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        days: { type: "number", description: "Recent activity window in days. Defaults to 90." },
+        limit: { type: "number", description: "Maximum tracked projects to hydrate. Defaults to 80." },
+        include_github: { type: "boolean", description: "Whether to hydrate from tracked GitHub projects. Defaults true." },
+      },
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.authenticated) {
+        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+      }
+      const days = typeof args.days === "number" && Number.isFinite(args.days) ? args.days : 90;
+      const limit = typeof args.limit === "number" && Number.isFinite(args.limit) ? args.limit : 80;
+      try {
+        const result = await ctx.apiRequest("/api/v1/me/portfolio/projects/hydrate", {
+          method: "POST",
+          body: {
+            includeTracked: args.include_github !== false,
+            days,
+            limit,
+            projects: [],
+            source: "mcp-portfolio-hydrate",
+            agentName: ctx.resolveAgentName(),
+          },
+        }) as Record<string, unknown>;
+        const ok = result.success === true;
+        ctx.logActivity("write", "portfolio/projects", { days, limit });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          isError: !ok,
+        };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `failed to hydrate portfolio graph: ${err instanceof Error ? err.message : "unknown error"}` }],
+          isError: true,
+        };
+      }
+    },
+  },
+
   // ── record_brain_dump ───────────────────────────────────────────────────────
   {
     name: "record_brain_dump",

@@ -163,6 +163,17 @@ Local implementation slice:
 - `cli/src/lib/portfolio-audit.ts` powers `youmd project portfolio-audit`,
   `env-audit`, and `apis` with value-safe env scanning and optional local salted
   HMAC fingerprints for duplicate-key detection.
+- `convex/portfolio.syncTrackedProjects` hydrates `portfolioProjects` from
+  authenticated recent GitHub `trackedProjects` records while preserving richer
+  strategy fields that may have been edited by Houston or agents.
+- `POST /api/v1/me/portfolio/projects/hydrate` combines tracked GitHub project
+  hydration with filtered local auditor output so local agents can push real
+  portfolio graph rows through the same owner-gated API surface.
+- `youmd project portfolio-hydrate` runs the local auditor against a workspace
+  root, filters nested/reference noise, and upserts recent project candidates
+  into the persisted Convex graph.
+- Local MCP exposes `hydrate_portfolio_graph` for agents that need to hydrate
+  from the tracked GitHub catalog without using the dashboard.
 - `cli/src/lib/portfolio-graph.ts` is the local-agent graph brief mirror used
   by the published CLI/MCP package.
 - `cli/src/mcp/server.ts` injects `portfolioGraph` into `get_agent_brief` /

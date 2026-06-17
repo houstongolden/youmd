@@ -634,6 +634,54 @@ export interface BrainDumpPayload {
   agentName?: string;
 }
 
+export interface PortfolioHydrateProjectPayload {
+  name: string;
+  path?: string;
+  slug?: string;
+  stackName?: string;
+  status?: string;
+  summary?: string;
+  focus?: string;
+  docs?: string[];
+  envFiles?: string[];
+  providers?: string[];
+  tags?: string[];
+  lastActivityAt?: number;
+  activityEvents?: Array<{
+    kind: string;
+    title: string;
+    summary?: string;
+    url?: string;
+    source: string;
+    evidencePath?: string;
+    dedupeKey?: string;
+    tags?: string[];
+    metadata?: Record<string, unknown>;
+    occurredAt: number;
+  }>;
+}
+
+export interface PortfolioHydrateResult {
+  success: boolean;
+  tracked?: {
+    tracked: number;
+    created: number;
+    updated: number;
+    skipped: number;
+    days: number;
+    limit: number;
+    projects: Array<{ slug: string; name: string; created: boolean }>;
+  } | null;
+  local: {
+    received: number;
+    upserted: number;
+    skipped: number;
+    projects: Array<{ slug?: string; name: string; created?: boolean }>;
+  };
+  error?: unknown;
+  message?: string;
+}
+
 export async function savePortfolioTask(
   payload: PortfolioTaskPayload
 ): Promise<ApiResponse<PortfolioWriteResult>> {
@@ -648,6 +696,21 @@ export async function saveBrainDump(
   payload: BrainDumpPayload
 ): Promise<ApiResponse<PortfolioWriteResult>> {
   return apiRequest<PortfolioWriteResult>("/api/v1/me/portfolio/brain-dumps", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
+export async function hydratePortfolioProjects(payload: {
+  projects?: PortfolioHydrateProjectPayload[];
+  includeTracked?: boolean;
+  days?: number;
+  limit?: number;
+  source?: string;
+  agentName?: string;
+}): Promise<ApiResponse<PortfolioHydrateResult>> {
+  return apiRequest<PortfolioHydrateResult>("/api/v1/me/portfolio/projects/hydrate", {
     method: "POST",
     token: getToken(),
     body: payload,

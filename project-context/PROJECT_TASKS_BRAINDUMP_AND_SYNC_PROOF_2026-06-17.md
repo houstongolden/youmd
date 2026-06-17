@@ -91,9 +91,26 @@ GitHub status and task/graph paths behave in the actual product.
   `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
 - Follow-up authenticated Chrome QA on local `/shell` opened the Portfolio Graph
   pane, verified the initial bootstrap state, deployed the new Convex mutation,
-  refreshed the pane, and proved it now reads `CONVEX PERSISTED GRAPH` with
-  `4 projects / 5 surfaces / 4 edges / 5 patterns` plus the status line
-  `persisted 4 projects / 5 surfaces / 4 edges / 5 patterns`.
+  refreshed the pane, and proved the first persisted seed path. That 4-project
+  seed proof was intentionally treated as insufficient after Houston's follow-up
+  correction; the graph now has to hydrate from real local/GitHub activity.
+- `youmd project portfolio-audit --root /Users/houstongolden/Desktop/CODE_2025`
+  ran the real local portfolio auditor across the workspace. It found 268
+  project/package candidates, 23 env files, and 97 providers without printing
+  secret values.
+- `~/.agent-shared/bin/env-key-audit.py --root /Users/houstongolden/Desktop/CODE_2025`
+  ran as the secret-safety cross-check. It printed only key names and reported
+  missing `.env.example` coverage for `bamfaiapp` and `bamfsite`; it did not
+  expose secret values.
+- `youmd project portfolio-hydrate --root /Users/houstongolden/Desktop/CODE_2025 --days 90 --limit 80`
+  ran the corrected hydration path. It scanned 129 recent local candidates,
+  upserted 30 local projects, considered 40 authenticated GitHub tracked
+  projects, created 36 portfolio rows, and updated 4.
+- Authenticated local browser QA then opened the Portfolio Graph pane and
+  verified `55 PROJECTS`, `CONVEX PERSISTED GRAPH`, `40 recent GitHub-tracked
+  projects nearby`, the `hydrate active projects` control, and hydrated rows
+  including `badapp`, `bamfaiapp`, `bamfsite`, `bigbounce`, `foldermd`, `youmd`,
+  `claws`, and `creator-new`.
 - Authenticated Chrome QA opened `/shell?integration=github`, clicked
   `refresh active projects`, waited through the 90-day GitHub analyzer, and
   verified the dashboard catalog returned with 38 visible `repo:
@@ -141,6 +158,9 @@ GitHub status and task/graph paths behave in the actual product.
   `record_brain_dump` are present in the built CLI tool registry, so Claude,
   Codex, Cursor, and other local MCP clients can call the same API-backed write
   path instead of relying on static dashboard data.
+- Local MCP registry proof also confirmed `hydrate_portfolio_graph` is present,
+  so agents can trigger tracked-project portfolio hydration without relying on a
+  manual dashboard click.
 
 ## Still Open
 

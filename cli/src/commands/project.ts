@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
+import { execFileSync } from "child_process";
 import chalk from "chalk";
 import {
   initProjectFiles,
@@ -21,10 +22,12 @@ import {
 } from "../lib/config";
 import {
   apiErrorMessage,
+  hydratePortfolioProjects,
   saveBrainDump,
   savePortfolioTask,
   type BrainDumpPayload as BrainDumpPayloadType,
   type BrainDumpTaskPayload as BrainDumpTaskPayloadType,
+  type PortfolioHydrateProjectPayload as PortfolioHydrateProjectPayloadType,
   type PortfolioTaskPayload as PortfolioTaskPayloadType,
   type PortfolioWriteResult as PortfolioWriteResultType,
   type ApiResponse as ApiResponseType,
@@ -725,6 +728,313 @@ function showPortfolioAudit(args: string[]): void {
   console.log("");
 }
 
+function inferStackName(name: string, projectPath: string): string {
+  const key = `${name} ${projectPath}`.toLowerCase();
+  if (key.includes("youmd")) return "YouStack";
+  if (key.includes("bamfaiapp") || key.includes("bamf.ai")) return "BAMFStack";
+  if (key.includes("bamfsite") || key.includes("bamfos")) return "BAMFOSStack";
+  if (key.includes("badapp")) return "BadStack";
+  if (key.includes("foldermd")) return "FolderMD Stack";
+  if (key.includes("bigbounce")) return "AstroStack";
+  if (key.includes("hubify")) return "HubStack";
+  if (key.includes("myo")) return "Myo Stack";
+  return "Project Stack";
+}
+
+function shouldHydrateLocalProject(project: {
+  name: string;
+  path: string;
+  envFiles: string[];
+  providers: string[];
+}, includeNested: boolean): boolean {
+  if (!project.name || project.path === ".") return false;
+  if (project.path.includes(".reference-repos/") || project.path.startsWith(".dev-skills/")) return false;
+  if (project.path.includes("/project-context/")) return false;
+  if (includeNested) return true;
+  const depth = project.path.split("/").filter(Boolean).length;
+  return depth === 1 || (depth <= 2 && project.envFiles.length > 0);
+}
+
+function readTextIfExists(filePath: string): string {
+  try {
+    if (!fs.existsSync(filePath)) return "";
+    return fs.readFileSync(filePath, "utf-8");
+  } catch {
+    return "";
+  }
+}
+
+function cleanDocSnippet(text: string, limit = 420): string | undefined {
+  const cleaned = text
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/[#*_>`[\]]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned ? cleaned.slice(0, limit) : undefined;
+}
+
+function repoFullNameFromRemote(absPath: string): string | undefined {
+  try {
+    const remote = execFileSync("git", ["-C", absPath, "config", "--get", "remote.origin.url"], {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    const match = remote.match(/github\.com[:/](.+?)(?:\.git)?$/);
+    return match?.[1];
+  } catch {
+    return undefined;
+  }
+}
+
+function githubCommitUrl(repoFullName: string | undefined, sha: string): string | undefined {
+  return repoFullName ? `https://github.com/${repoFullName}/commit/${sha}` : undefined;
+}
+
+function readRecentCommitEvents(absPath: string, relPath: string, days: number): NonNullable<PortfolioHydrateProjectPayloadType["activityEvents"]> {
+  try {
+    const output = execFileSync("git", [
+      "-C",
+      absPath,
+      "log",
+      `--since=${Math.max(1, Math.min(days, 365))} days ago`,
+      "--max-count=40",
+      "--pretty=format:%H%x1f%ct%x1f%s",
+    ], {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (!output) return [];
+    const repoFullName = repoFullNameFromRemote(absPath);
+    return output.split("\n").map((line) => {
+      const [sha, epoch, subject] = line.split("\x1f");
+      const occurredAt = Number(epoch) * 1000;
+      return {
+        kind: "commit",
+        title: subject || "Commit",
+        summary: subject || undefined,
+        url: sha ? githubCommitUrl(repoFullName, sha) : undefined,
+        source: "local-git",
+        evidencePath: relPath,
+        dedupeKey: sha ? `commit:${sha}` : undefined,
+        tags: ["commit", "shipped"],
+        metadata: { sha, repoFullName },
+        occurredAt: Number.isFinite(occurredAt) ? occurredAt : Date.now(),
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+function readRecentPrEvents(absPath: string, relPath: string, days: number): NonNullable<PortfolioHydrateProjectPayloadType["activityEvents"]> {
+  const repoFullName = repoFullNameFromRemote(absPath);
+  if (!repoFullName) return [];
+  const since = new Date(Date.now() - Math.max(1, Math.min(days, 365)) * 86_400_000).toISOString().slice(0, 10);
+  try {
+    const output = execFileSync("gh", [
+      "pr",
+      "list",
+      "--repo",
+      repoFullName,
+      "--state",
+      "all",
+      "--search",
+      `updated:>=${since}`,
+      "--limit",
+      "30",
+      "--json",
+      "number,title,state,updatedAt,mergedAt,url",
+    ], {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    const rows = JSON.parse(output || "[]") as Array<{
+      number?: number;
+      title?: string;
+      state?: string;
+      updatedAt?: string;
+      mergedAt?: string;
+      url?: string;
+    }>;
+    return rows.map((row) => {
+      const occurredAt = Date.parse(row.mergedAt || row.updatedAt || "");
+      return {
+        kind: "pull-request",
+        title: row.title || `Pull request #${row.number ?? "?"}`,
+        summary: row.state ? `${row.state.toLowerCase()} pull request #${row.number ?? "?"}` : undefined,
+        url: row.url,
+        source: "github-pr",
+        evidencePath: relPath,
+        dedupeKey: row.number ? `pr:${repoFullName}:${row.number}` : undefined,
+        tags: ["pull-request", row.state?.toLowerCase() || "pr"].filter(Boolean),
+        metadata: { repoFullName, number: row.number, state: row.state },
+        occurredAt: Number.isFinite(occurredAt) ? occurredAt : Date.now(),
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+function readProjectDocs(absPath: string): { summary?: string; focus?: string; docs: string[] } {
+  const docs: string[] = [];
+  const readmePath = ["README.md", "readme.md"].map((file) => path.join(absPath, file)).find((file) => fs.existsSync(file));
+  const currentStatePath = path.join(absPath, "project-context", "CURRENT_STATE.md");
+  const todoPath = path.join(absPath, "project-context", "TODO.md");
+  const prdPath = path.join(absPath, "project-context", "PRD.md");
+  const changelogPath = path.join(absPath, "project-context", "CHANGELOG.md");
+
+  const readme = readmePath ? readTextIfExists(readmePath) : "";
+  const currentState = readTextIfExists(currentStatePath);
+  const todo = readTextIfExists(todoPath);
+
+  if (readmePath) docs.push(path.relative(absPath, readmePath));
+  if (fs.existsSync(currentStatePath)) docs.push("project-context/CURRENT_STATE.md");
+  if (fs.existsSync(todoPath)) docs.push("project-context/TODO.md");
+  if (fs.existsSync(prdPath)) docs.push("project-context/PRD.md");
+  if (fs.existsSync(changelogPath)) docs.push("project-context/CHANGELOG.md");
+
+  return {
+    summary: cleanDocSnippet(readme || currentState),
+    focus: cleanDocSnippet(currentState || todo, 360),
+    docs,
+  };
+}
+
+function shippedCount(events: NonNullable<PortfolioHydrateProjectPayloadType["activityEvents"]>, days: number): number {
+  const cutoff = Date.now() - days * 86_400_000;
+  return events.filter((event) =>
+    event.occurredAt >= cutoff && (event.kind === "commit" || event.kind === "pull-request" || event.tags?.includes("shipped"))
+  ).length;
+}
+
+function hydrationProjectsFromAudit(
+  result: ReturnType<typeof runPortfolioAudit>,
+  options: { includeNested: boolean; limit: number; days: number; includePrs: boolean }
+): PortfolioHydrateProjectPayloadType[] {
+  return result.projects
+    .filter((project) => shouldHydrateLocalProject(project, options.includeNested))
+    .slice(0, options.limit)
+    .map((project) => {
+      const absPath = path.join(result.root, project.path);
+      const docs = readProjectDocs(absPath);
+      const commitEvents = readRecentCommitEvents(absPath, project.path, options.days);
+      const prEvents = options.includePrs ? readRecentPrEvents(absPath, project.path, options.days) : [];
+      const activityEvents = [...commitEvents, ...prEvents]
+        .sort((a, b) => b.occurredAt - a.occurredAt)
+        .slice(0, 70);
+      const latestSubjects = activityEvents
+        .filter((event) => event.kind === "commit" || event.kind === "pull-request")
+        .slice(0, 4)
+        .map((event) => event.title)
+        .join("; ");
+      const shippedToday = shippedCount(activityEvents, 1);
+      const shipped7d = shippedCount(activityEvents, 7);
+      const shipped30d = shippedCount(activityEvents, 30);
+      const fallbackSummary = `Local portfolio auditor found ${project.name} at ${project.path}${project.providers.length ? ` using ${project.providers.slice(0, 6).join(", ")}` : ""}.`;
+      return {
+        name: project.name,
+        path: project.path,
+        stackName: inferStackName(project.name, project.path),
+        status: activityEvents.length ? "active" : "local-audited",
+        summary: docs.summary || fallbackSummary,
+        focus: docs.focus || (latestSubjects ? `Recent shipping activity: ${latestSubjects}` : "Audit project role, API/MCP ownership, reusable patterns, and env/service-account boundaries."),
+        docs: docs.docs,
+        envFiles: project.envFiles,
+        providers: project.providers,
+        tags: [
+          ...project.providers.map((provider) => provider.toLowerCase().replace(/[^a-z0-9]+/g, "-")).filter(Boolean),
+          activityEvents.length ? "activity-hydrated" : "local-audit",
+        ],
+        lastActivityAt: activityEvents[0]?.occurredAt ?? Date.now(),
+        activityEvents: [
+          {
+            kind: "summary",
+            title: `Shipped ${shippedToday} today / ${shipped7d} in 7d / ${shipped30d} in 30d`,
+            summary: latestSubjects || docs.focus || docs.summary || fallbackSummary,
+            source: "local-portfolio-audit",
+            evidencePath: project.path,
+            dedupeKey: `summary:${project.path}`,
+            tags: ["activity-summary", "shipped"],
+            metadata: { shippedToday, shipped7d, shipped30d, providerCount: project.providers.length },
+            occurredAt: activityEvents[0]?.occurredAt ?? Date.now(),
+          },
+          ...activityEvents,
+        ],
+      };
+    });
+}
+
+async function hydratePortfolioFromCli(args: string[]): Promise<void> {
+  if (!isAuthenticated()) {
+    console.log("");
+    console.log(chalk.yellow("  not authenticated. run: youmd login"));
+    console.log("");
+    return;
+  }
+
+  const root = readFlagValue(args, "--root");
+  const days = Number(readFlagValue(args, "--days") ?? 90);
+  const limit = Number(readFlagValue(args, "--limit") ?? 80);
+  const includeNested = hasFlag(args, "--include-nested");
+  const includeTracked = !hasFlag(args, "--no-github");
+  const includePrs = !hasFlag(args, "--no-prs");
+  const dryRun = hasFlag(args, "--dry-run");
+  const audit = runPortfolioAudit({ root, includeDotenv: hasFlag(args, "--include-dotenv"), fingerprints: false, activeDays: days });
+  const projects = hydrationProjectsFromAudit(audit, {
+    includeNested,
+    limit: Math.max(1, Math.min(limit, 200)),
+    days: Number.isFinite(days) ? days : 90,
+    includePrs,
+  });
+
+  console.log("");
+  console.log("  " + chalk.bold("portfolio hydrate") + chalk.dim(" — auditor -> portfolio graph"));
+  console.log("");
+  console.log(chalk.dim(`  root: ${audit.root}`));
+  console.log(chalk.dim(`  auditor projects scanned: ${audit.projectsScanned}`));
+  console.log(chalk.dim(`  local hydration candidates: ${projects.length}`));
+  console.log(chalk.dim(`  github tracked sync: ${includeTracked ? `${Number.isFinite(days) ? days : 90}d` : "skipped"}`));
+  console.log(chalk.dim(`  local git/PR activity: commits${includePrs ? " + pull requests" : ""}`));
+  console.log("");
+
+  for (const project of projects.slice(0, 12)) {
+    console.log(`  ${chalk.cyan(project.name.padEnd(24))} ${chalk.dim(project.path || "")}`);
+  }
+  if (projects.length > 12) console.log(chalk.dim(`  ... ${projects.length - 12} more`));
+  console.log("");
+
+  if (dryRun) {
+    console.log(chalk.dim("  dry run only. remove --dry-run to hydrate Convex portfolio records."));
+    console.log("");
+    return;
+  }
+
+  const res = await hydratePortfolioProjects({
+    projects,
+    includeTracked,
+    days: Number.isFinite(days) ? days : 90,
+    limit: Number.isFinite(limit) ? limit : 80,
+    source: "local-portfolio-audit",
+    agentName: "youmd CLI portfolio-graph-auditor",
+  });
+
+  if (!res.ok || !res.data?.success) {
+    console.log(chalk.red("  portfolio hydrate failed") + chalk.dim(` — ${apiErrorMessage(res.data) || `HTTP ${res.status}`}`));
+    console.log("");
+    return;
+  }
+
+  const tracked = res.data.tracked;
+  console.log(chalk.green("  portfolio graph hydrated"));
+  if (tracked) {
+    console.log(chalk.dim(`  github tracked: ${tracked.tracked} considered / ${tracked.created} created / ${tracked.updated} updated`));
+  }
+  console.log(chalk.dim(`  local audit: ${res.data.local.upserted} upserted / ${res.data.local.skipped} skipped`));
+  console.log("");
+}
+
 // ─── Main command router ──────────────────────────────────────────────
 
 export async function projectCommand(subcommand?: string, ...args: string[]): Promise<void> {
@@ -774,6 +1084,11 @@ export async function projectCommand(subcommand?: string, ...args: string[]): Pr
     case "apis":
       showPortfolioAudit(args);
       break;
+    case "portfolio-hydrate":
+    case "hydrate-portfolio":
+    case "hydrate":
+      await hydratePortfolioFromCli(args);
+      break;
     default: {
       // If no subcommand, try auto-detecting the current project
       const detected = detectProjectContext();
@@ -799,6 +1114,7 @@ export async function projectCommand(subcommand?: string, ...args: string[]): Pr
       console.log(`    ${chalk.cyan("task agent youmd: ...".padEnd(28))} ${chalk.dim("save an agent/human portfolio task and sync the repo snapshot")}`);
       console.log(`    ${chalk.cyan("braindump project:youmd ...".padEnd(28))} ${chalk.dim("capture raw dump text, route tasks, and sync the repo snapshot")}`);
       console.log(`    ${chalk.cyan("portfolio-audit".padEnd(28))} ${chalk.dim("scan recent projects and env key names without printing secrets")}`);
+      console.log(`    ${chalk.cyan("portfolio-hydrate".padEnd(28))} ${chalk.dim("hydrate portfolio graph from GitHub + local auditor results")}`);
       console.log(`    ${chalk.cyan("env-audit --fingerprints".padEnd(28))} ${chalk.dim("detect reused key values by local salted HMAC")}`);
       console.log("");
       console.log(chalk.dim("  projects are stored in .youmd/projects/<name>/"));

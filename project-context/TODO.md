@@ -66,6 +66,7 @@ PRD Version: 2.3
 - [x] Add CLI/local-agent task and brain-dump invocation proof through You.md MCP/CLI
 - [ ] Add first-class persisted update artifacts/history for PR/check/conflict/merge steps
 - [x] Seed the first persisted portfolio graph records from the dashboard bootstrap model and visually verify the Convex-backed pane
+- [x] Run the real `portfolio-graph-auditor` hydration path against recent GitHub/local activity and verify the Portfolio Graph shows 55 persisted projects instead of only the 4-project bootstrap seed
 - [ ] Enrich active project strategy records with vision, pain points, solution, constraints, not-building, metrics, and competitors
 
 ### 2026-06-16 — Mobile capture, voice, Slack, and project routing

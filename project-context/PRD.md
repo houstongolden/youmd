@@ -186,6 +186,10 @@ Implementation slice shipped and verified on 2026-06-17:
 - Portfolio graph records now persist in Convex tables for projects, API/MCP
   surfaces, dependency edges, reusable patterns, brain-dump captures, and
   human/agent portfolio tasks.
+- Portfolio project records now hydrate from real active project activity:
+  authenticated 90-day GitHub `trackedProjects` plus filtered local
+  `portfolio-graph-auditor` output. The 4-project bootstrap seed is only a
+  fallback/proof seed, not the completion bar.
 - Local MCP `get_project_context` now includes a project-scoped portfolio slice
   so agents see owned surfaces, dependencies, reusable patterns, commands, and
   guardrails before creating duplicate APIs, MCP routes, stacks, or UI/code.
@@ -195,6 +199,10 @@ Implementation slice shipped and verified on 2026-06-17:
 - Authenticated API endpoints now let local agents do the same work:
   `POST /api/v1/me/portfolio/tasks` and
   `POST /api/v1/me/portfolio/brain-dumps`.
+- Authenticated API endpoint `POST /api/v1/me/portfolio/projects/hydrate`,
+  local CLI command `youmd project portfolio-hydrate`, and MCP tool
+  `hydrate_portfolio_graph` hydrate the persisted portfolio graph for local and
+  web agents.
 - The local CLI exposes `youmd project task` and `youmd project braindump`.
   Local MCP exposes `upsert_portfolio_task` and `record_brain_dump`.
 - Repo-backed snapshots such as `projects/youmd/tasks.md` and
@@ -203,6 +211,11 @@ Implementation slice shipped and verified on 2026-06-17:
 - Authenticated CLI and browser QA proved the path through merged PR #9 and PR
   #10 in `houstongolden/houstongolden-you-md`, refreshed the repo mirror to 50
   files, and rendered the CLI-created rows in the persisted Portfolio Graph pane.
+- Authenticated local hydration QA proved the real graph path on 2026-06-17:
+  the auditor found 268 project/package candidates and 97 providers, hydration
+  scanned 129 recent local candidates, upserted 30 local projects, considered
+  40 GitHub tracked projects, and the shell rendered `55 PROJECTS` in the
+  persisted Portfolio Graph pane.
 
 Important boundary: a product's protected in-app agent harness is not the same
 thing as an installable public skill stack. The public stack teaches host agents

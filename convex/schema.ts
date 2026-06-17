@@ -628,6 +628,27 @@ export default defineSchema({
     .index("by_userId_slug", ["userId", "slug"])
     .index("by_userId_updatedAt", ["userId", "updatedAt"]),
 
+  portfolioProjectActivities: defineTable({
+    userId: v.id("users"),
+    projectSlug: v.string(),
+    kind: v.string(), // "commit" | "pull-request" | "doc" | "release" | "summary"
+    title: v.string(),
+    summary: v.optional(v.string()),
+    url: v.optional(v.string()),
+    source: v.string(), // "local-git" | "github-pr" | "readme" | "project-context" | "agent"
+    evidencePath: v.optional(v.string()),
+    dedupeKey: v.optional(v.string()),
+    tags: v.array(v.string()),
+    metadata: v.optional(v.any()),
+    occurredAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_project", ["userId", "projectSlug"])
+    .index("by_userId_project_occurredAt", ["userId", "projectSlug", "occurredAt"])
+    .index("by_userId_project_dedupe", ["userId", "projectSlug", "dedupeKey"]),
+
   portfolioApiSurfaces: defineTable({
     userId: v.id("users"),
     slug: v.string(),

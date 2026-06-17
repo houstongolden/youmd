@@ -16,6 +16,20 @@ type PortfolioGraphPaneProps = {
   clerkId?: string;
 };
 
+type ProjectActivity = {
+  projectSlug: string;
+  kind: string;
+  title: string;
+  summary?: string;
+  url?: string;
+  source: string;
+  evidencePath?: string;
+  dedupeKey?: string;
+  tags: string[];
+  metadata?: Record<string, unknown>;
+  occurredAt: number;
+};
+
 function statusClass(status: string) {
   if (status === "canonical" || status === "active" || status === "synced") return "text-[hsl(var(--success))]";
   if (status === "candidate" || status === "cataloged" || status === "build") return "text-[hsl(var(--accent))]";
@@ -143,11 +157,35 @@ function fromPersistedPattern(pattern: {
   };
 }
 
+function shippedCounts(activities: ProjectActivity[]) {
+  const now = Date.now();
+  const shippable = activities.filter((activity) =>
+    activity.kind === "commit" || activity.kind === "pull-request" || activity.kind === "release"
+  );
+  return {
+    today: shippable.filter((activity) => activity.occurredAt >= now - 86_400_000).length,
+    seven: shippable.filter((activity) => activity.occurredAt >= now - 7 * 86_400_000).length,
+    thirty: shippable.filter((activity) => activity.occurredAt >= now - 30 * 86_400_000).length,
+  };
+}
+
+function formatActivityDate(value: number) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const graph = useQuery(api.portfolio.listPortfolioGraph, clerkId ? { clerkId } : "skip");
   const syncDashboardSeed = useMutation(api.portfolio.syncDashboardSeed);
+  const syncTrackedProjects = useMutation(api.portfolio.syncTrackedProjects);
   const [syncing, setSyncing] = useState(false);
+  const [hydrating, setHydrating] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(null);
 
   const hasPersistedGraph = Boolean(graph && (
     graph.projects.length > 0 ||
@@ -168,6 +206,13 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const activePatterns = hasPersistedGraph && graph
     ? graph.reusablePatterns.map(fromPersistedPattern)
     : reusablePatterns;
+  const projectActivities: ProjectActivity[] = useMemo(
+    () => graph?.projectActivities ?? [],
+    [graph?.projectActivities]
+  );
+  const effectiveSelectedProjectSlug = selectedProjectSlug && activeProjects.some((project) => project.slug === selectedProjectSlug)
+    ? selectedProjectSlug
+    : activeProjects[0]?.slug;
 
   const surfaceBySlug = useMemo(
     () => new Map(activeSurfaces.map((surface) => [surface.slug, surface])),
@@ -177,9 +222,27 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     () => new Map(activeProjects.map((project) => [project.slug, project])),
     [activeProjects]
   );
+  const activitiesByProject = useMemo(() => {
+    const map = new Map<string, ProjectActivity[]>();
+    for (const activity of projectActivities) {
+      const rows = map.get(activity.projectSlug) ?? [];
+      rows.push(activity);
+      map.set(activity.projectSlug, rows);
+    }
+    for (const rows of map.values()) {
+      rows.sort((a, b) => b.occurredAt - a.occurredAt);
+    }
+    return map;
+  }, [projectActivities]);
+  const selectedProject = effectiveSelectedProjectSlug
+    ? projectBySlug.get(effectiveSelectedProjectSlug)
+    : undefined;
+  const selectedActivities = effectiveSelectedProjectSlug
+    ? activitiesByProject.get(effectiveSelectedProjectSlug) ?? []
+    : [];
 
   const handleSyncSeed = async () => {
-    if (!clerkId || syncing) return;
+    if (!clerkId || syncing || hydrating) return;
     setSyncing(true);
     setSyncStatus(null);
     try {
@@ -197,6 +260,22 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
       setSyncStatus(`error: ${err instanceof Error ? err.message : "failed to persist graph"}`);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleHydrateTrackedProjects = async () => {
+    if (!clerkId || syncing || hydrating) return;
+    setHydrating(true);
+    setSyncStatus(null);
+    try {
+      const result = await syncTrackedProjects({ clerkId, days: 90, limit: 80 });
+      setSyncStatus(
+        `hydrated ${result.tracked} recent GitHub projects into portfolio graph (${result.created} created / ${result.updated} updated)`
+      );
+    } catch (err) {
+      setSyncStatus(`error: ${err instanceof Error ? err.message : "failed to hydrate active projects"}`);
+    } finally {
+      setHydrating(false);
     }
   };
 
@@ -245,15 +324,26 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                 </p>
               )}
             </div>
-            <button
-              type="button"
-              onClick={handleSyncSeed}
-              disabled={!clerkId || syncing}
-              className="h-8 shrink-0 border border-[hsl(var(--border))] px-3 font-mono text-[10px] text-[hsl(var(--text-primary))] transition-colors hover:border-[hsl(var(--accent))] disabled:opacity-35"
-              style={{ borderRadius: "var(--radius)" }}
-            >
-              {syncing ? "syncing graph..." : hasPersistedGraph ? "refresh persisted graph" : "persist graph"}
-            </button>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleHydrateTrackedProjects}
+                disabled={!clerkId || syncing || hydrating}
+                className="h-8 border border-[hsl(var(--border))] px-3 font-mono text-[10px] text-[hsl(var(--text-primary))] transition-colors hover:border-[hsl(var(--accent))] disabled:opacity-35"
+                style={{ borderRadius: "var(--radius)" }}
+              >
+                {hydrating ? "hydrating..." : "hydrate active projects"}
+              </button>
+              <button
+                type="button"
+                onClick={handleSyncSeed}
+                disabled={!clerkId || syncing || hydrating}
+                className="h-8 border border-[hsl(var(--border))]/70 px-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-75 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))] disabled:opacity-35"
+                style={{ borderRadius: "var(--radius)" }}
+              >
+                {syncing ? "syncing seed..." : hasPersistedGraph ? "refresh seed" : "persist seed"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -264,10 +354,37 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           <div className="grid gap-3 xl:grid-cols-2">
             {activeProjects.map((project) => (
               <article key={project.slug} className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/40 px-4 py-3">
+                {(() => {
+                  const counts = shippedCounts(activitiesByProject.get(project.slug) ?? []);
+                  return (
+                    <>
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">{project.name}</h3>
                   <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">{project.stack}</span>
                   <span className={`ml-auto font-mono text-[9px] uppercase tracking-[0.14em] ${statusClass(project.status)}`}>{project.status}</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--success))] opacity-75">
+                    today {counts.today}
+                  </span>
+                  <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">
+                    7d {counts.seven}
+                  </span>
+                  <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">
+                    30d {counts.thirty}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProjectSlug(project.slug)}
+                    className={`ml-auto border px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.12em] transition-colors ${
+                      effectiveSelectedProjectSlug === project.slug
+                        ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"
+                        : "border-[hsl(var(--border))]/60 text-[hsl(var(--text-secondary))] opacity-55 hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                    }`}
+                    style={{ borderRadius: "var(--radius)" }}
+                  >
+                    timeline
+                  </button>
                 </div>
                 <p className="mt-2 font-mono text-[10.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-62">{project.summary}</p>
                 <div className="mt-3 grid gap-2 md:grid-cols-2">
@@ -287,8 +404,63 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                     </span>
                   ))}
                 </div>
+                    </>
+                  );
+                })()}
               </article>
             ))}
+          </div>
+        </section>
+
+        <PaneDivider />
+
+        <section>
+          <PaneSectionLabel>shipping timeline</PaneSectionLabel>
+          <div className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+                {selectedProject?.name ?? "No project selected"}
+              </h3>
+              {selectedProject && (
+                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
+                  shipped over time
+                </span>
+              )}
+            </div>
+            {selectedActivities.length > 0 ? (
+              <div className="mt-3 space-y-2">
+                {selectedActivities.slice(0, 18).map((activity) => (
+                  <div key={`${activity.projectSlug}-${activity.dedupeKey ?? activity.source}-${activity.occurredAt}-${activity.title}`} className="grid gap-2 border-t border-[hsl(var(--border))]/45 pt-2 md:grid-cols-[0.35fr_0.55fr_1.2fr]">
+                    <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-45">
+                      {formatActivityDate(activity.occurredAt)}
+                    </div>
+                    <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
+                      {activity.kind} / {activity.source}
+                    </div>
+                    <div>
+                      {activity.url ? (
+                        <a href={activity.url} target="_blank" rel="noreferrer" className="font-mono text-[10.5px] leading-relaxed text-[hsl(var(--text-primary))] underline-offset-4 hover:underline">
+                          {activity.title}
+                        </a>
+                      ) : (
+                        <div className="font-mono text-[10.5px] leading-relaxed text-[hsl(var(--text-primary))]">
+                          {activity.title}
+                        </div>
+                      )}
+                      {(activity.summary || activity.evidencePath) && (
+                        <p className="mt-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">
+                          {activity.summary ?? activity.evidencePath}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
+                Run `youmd project portfolio-hydrate --root ~/Desktop/CODE_2025` to load recent commit, PR, README, and project-context evidence for this project.
+              </p>
+            )}
           </div>
         </section>
 
