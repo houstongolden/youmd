@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio recency and active setup gate proof
+
+### feat(portfolio): make manual active overrides obvious for fresh-machine setup
+- Portfolio project rows now distinguish GitHub recency (`github updated X ago`) from newer Portfolio activity (`graph signal X ago`) so fresh-machine setup decisions are easier to sanity-check.
+- The project toolbar now shows active/inactive/setup-eligible counts, and active/inactive buttons are styled as explicit one-click setup-exclusion toggles with manual override badges.
+- Verification: local Browser QA on `/shell?tab=portfolio&project=bamfaiapp#timeline` showed `active 47`, `inactive 9`, `setup eligible 24`, row `github updated` labels, and a reversible `h-computer` active toggle (`active -> inactive -> active`). Screenshot: `/tmp/youmd-portfolio-recency-active-toggle-setup-gate-proof-2026-06-17.png`.
+- Machine planner proof: `youmd machine projects --root ~/Desktop/CODE_YOU --days 30 --limit 80 --dry-run --recent-only` selected `16` projects; the 90-day dry-run selected `17`; both printed `setup gate: Portfolio Graph status=active and focus=Top Priority/Focusing only`.
+- Env-vault proof: `youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault --preflight` found `17` `.env.local` files and `3` agent-auth files, with no secret values printed. No `~/Desktop/youmd-env-vault/env-vault-*.tar.enc` file exists yet, so the real new-computer strict run remains open.
+
 ## 2026-06-17 — Fresh-machine env-vault handoff clarity
 
 ### fix(machine): make the new-computer handoff self-contained

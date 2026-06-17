@@ -117,6 +117,7 @@ type DisplayTrackedProject = {
   description?: string;
   primaryLanguage?: string;
   pushedAt: number;
+  updatedAt?: number;
   commitsLast90d?: number;
   visibility?: string;
 };
@@ -362,6 +363,17 @@ function formatTimeAgo(value?: number) {
 
 function projectLastUpdatedAt(project: DisplayProject, activities: ProjectActivity[]) {
   return activities[0]?.occurredAt ?? project.lastActivityAt ?? project.updatedAt;
+}
+
+function projectGitHubUpdatedAt(trackedProject?: DisplayTrackedProject) {
+  const pushedAt = trackedProject?.pushedAt;
+  const updatedAt = trackedProject?.updatedAt;
+  const latest = Math.max(pushedAt ?? 0, updatedAt ?? 0);
+  return latest > 0 ? latest : undefined;
+}
+
+function timestampTitle(label: string, value?: number) {
+  return value ? `${label}: ${new Date(value).toLocaleString()}` : `${label}: no timestamp saved`;
 }
 
 const CORE_PROJECT_SLUGS = new Set([
@@ -817,6 +829,14 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     () => activeProjects.filter(isProjectSetupEligible).length,
     [activeProjects]
   );
+  const activeStatusCount = useMemo(
+    () => activeProjects.filter((project) => project.status === "active").length,
+    [activeProjects]
+  );
+  const inactiveStatusCount = useMemo(
+    () => activeProjects.filter((project) => project.status !== "active").length,
+    [activeProjects]
+  );
   const shippingLeaders = useMemo(() => (
     activeProjects
       .map((project) => {
@@ -874,6 +894,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const selectedTrackedProject = effectiveSelectedProjectSlug
     ? trackedBySlug.get(effectiveSelectedProjectSlug)
     : undefined;
+  const selectedGitHubUpdatedAt = projectGitHubUpdatedAt(selectedTrackedProject);
   const selectedProjectDocs = selectedProject
     ? projectDocs(selectedProject, selectedTrackedProject)
     : [];
@@ -1241,6 +1262,8 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           </div>
           <div className="mb-3 flex flex-wrap items-center gap-2 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
             <span>showing {filteredProjects.length} / {activeProjects.length}</span>
+            <span>active {activeStatusCount}</span>
+            <span>inactive {inactiveStatusCount}</span>
             <span>setup eligible {setupEligibleCount}</span>
             <span>sort {PROJECT_SORT_OPTIONS.find((option) => option.value === projectSortMode)?.label ?? projectSortMode}</span>
             <span>status {projectStatusFilter === "all" ? "all" : projectStatusFilter}</span>
@@ -1256,6 +1279,8 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                 const counts = shippedCounts(projectActivitiesForCard);
                 const focus = projectFocusOption(project.focusStatus);
                 const lastUpdatedAt = projectLastUpdatedAt(project, projectActivitiesForCard);
+                const trackedProjectForCard = trackedBySlug.get(project.slug);
+                const githubUpdatedAt = projectGitHubUpdatedAt(trackedProjectForCard);
                 const setupEligible = isProjectSetupEligible(project);
                 const selected = effectiveSelectedProjectSlug === project.slug;
                 return (
@@ -1284,11 +1309,19 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       <h3 className="min-w-0 truncate font-mono text-[12px] text-[hsl(var(--text-primary))]">{project.name}</h3>
                       <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-65">{project.stack}</span>
                       <span
-                        className="font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45"
-                        title={lastUpdatedAt ? `last project signal: ${new Date(lastUpdatedAt).toLocaleString()}` : "no activity timestamp saved"}
+                        className="font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--text-primary))] opacity-62"
+                        title={timestampTitle("latest GitHub pushed/updated signal", githubUpdatedAt ?? lastUpdatedAt)}
                       >
-                        last updated {formatTimeAgo(lastUpdatedAt)}
+                        github updated {formatTimeAgo(githubUpdatedAt ?? lastUpdatedAt)}
                       </span>
+                      {lastUpdatedAt && githubUpdatedAt && Math.abs(lastUpdatedAt - githubUpdatedAt) > 60_000 && (
+                        <span
+                          className="font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-38"
+                          title={timestampTitle("latest portfolio activity signal", lastUpdatedAt)}
+                        >
+                          graph signal {formatTimeAgo(lastUpdatedAt)}
+                        </span>
+                      )}
                       <span
                         className={`font-mono text-[8px] uppercase tracking-[0.14em] ${setupEligible ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-38"}`}
                         title={projectSetupEligibilityLabel(project)}
@@ -1298,17 +1331,27 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       <button
                         type="button"
                         disabled={!clerkId || statusUpdatingSlug === project.slug}
+                        aria-pressed={project.status === "active"}
                         onClick={(event) => {
                           event.stopPropagation();
                           void handleProjectStatusToggle(project);
                         }}
-                        className={`ml-auto h-6 border border-[hsl(var(--border))]/60 px-2 font-mono text-[8.5px] uppercase tracking-[0.14em] transition-colors hover:border-[hsl(var(--accent))] hover:opacity-100 disabled:opacity-35 ${statusClass(project.status)}`}
+                        className={`ml-auto h-6 border px-2 font-mono text-[8.5px] uppercase tracking-[0.14em] transition-colors hover:border-[hsl(var(--accent))] hover:opacity-100 disabled:opacity-35 ${
+                          project.status === "active"
+                            ? "border-[hsl(var(--success))]/70 bg-[hsl(var(--success))]/[0.07] text-[hsl(var(--success))]"
+                            : "border-[hsl(var(--border))]/60 bg-[hsl(var(--bg-raised))]/35 text-[hsl(var(--text-secondary))] opacity-62"
+                        }`}
                         style={{ borderRadius: "var(--radius)" }}
                         title={project.status === "active" ? "Mark inactive; excluded from new-computer setup" : "Mark active; eligible only if focus is Top Priority or Focusing"}
                         aria-label={`${project.status === "active" ? "Mark inactive" : "Mark active"} for ${project.name}`}
                       >
                         {statusUpdatingSlug === project.slug ? "saving" : project.status}
                       </button>
+                      {project.statusSource === "manual" && (
+                        <span className="font-mono text-[7.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-35">
+                          manual
+                        </span>
+                      )}
                       <span className="font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-38">open</span>
                     </div>
                     <div className={`${projectDensity === "dense" ? "mt-1" : "mt-2"} flex flex-wrap items-center gap-1.5`}>
@@ -1403,11 +1446,19 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                         <h3 className="font-mono text-[14px] text-[hsl(var(--text-primary))]">{selectedProject.name}</h3>
                         <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">{selectedProject.stack}</span>
                         <span
-                          className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45"
-                          title={selectedLastUpdatedAt ? `last project signal: ${new Date(selectedLastUpdatedAt).toLocaleString()}` : "no activity timestamp saved"}
+                          className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-primary))] opacity-62"
+                          title={timestampTitle("latest GitHub pushed/updated signal", selectedGitHubUpdatedAt ?? selectedLastUpdatedAt)}
                         >
-                          last updated {formatTimeAgo(selectedLastUpdatedAt)}
+                          github updated {formatTimeAgo(selectedGitHubUpdatedAt ?? selectedLastUpdatedAt)}
                         </span>
+                        {selectedLastUpdatedAt && selectedGitHubUpdatedAt && Math.abs(selectedLastUpdatedAt - selectedGitHubUpdatedAt) > 60_000 && (
+                          <span
+                            className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-38"
+                            title={timestampTitle("latest portfolio activity signal", selectedLastUpdatedAt)}
+                          >
+                            graph signal {formatTimeAgo(selectedLastUpdatedAt)}
+                          </span>
+                        )}
                         <span
                           className={`font-mono text-[8.5px] uppercase tracking-[0.14em] ${isProjectSetupEligible(selectedProject) ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-42"}`}
                           title={projectSetupEligibilityLabel(selectedProject)}
@@ -1468,8 +1519,13 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                     <button
                       type="button"
                       disabled={!clerkId || statusUpdatingSlug === selectedProject.slug}
+                      aria-pressed={selectedProject.status === "active"}
                       onClick={() => void handleProjectStatusToggle(selectedProject)}
-                      className={`flex h-7 items-center border border-[hsl(var(--border))]/60 px-2 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors hover:border-[hsl(var(--accent))] disabled:opacity-35 ${statusClass(selectedProject.status)}`}
+                      className={`flex h-7 items-center border px-2 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors hover:border-[hsl(var(--accent))] disabled:opacity-35 ${
+                        selectedProject.status === "active"
+                          ? "border-[hsl(var(--success))]/70 bg-[hsl(var(--success))]/[0.07] text-[hsl(var(--success))]"
+                          : "border-[hsl(var(--border))]/60 bg-[hsl(var(--bg-raised))]/35 text-[hsl(var(--text-secondary))] opacity-62"
+                      }`}
                       title={selectedProject.status === "active" ? "Mark inactive; excluded from new-computer setup" : "Mark active; eligible only if focus is Top Priority or Focusing"}
                     >
                       {statusUpdatingSlug === selectedProject.slug ? "saving" : selectedProject.status}
