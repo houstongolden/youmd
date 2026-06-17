@@ -68,6 +68,7 @@ import {
   routeYouStackRequest,
   runYouStackSmoke,
 } from "../lib/youstack";
+import { getPortfolioGraphProjectSlice } from "../lib/portfolio-graph";
 
 // ─── Shared config/helpers (duplicated here to avoid circular server.ts dep) ──
 
@@ -416,12 +417,14 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
 
       if (projectName) {
         const ctx2 = readMergedProjectContext({ projectName });
+        const portfolioGraph = getPortfolioGraphProjectSlice(projectName);
         if (!ctx2) {
           const result = {
             readiness: readiness("not_found", `Project context for ${projectName} was not found or is incomplete.`,
               "Use local repo instructions, project-context files, or confirm the named project exists before retrying."),
             project: { name: projectName, source: "named" as const },
             projectContext: null,
+            portfolioGraph,
           };
           ctx.logActivity("read", "project/" + projectName);
           return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }], isError: true };
@@ -430,6 +433,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
           readiness: readiness("ready", `Project context for ${projectName} is available.`, "None needed."),
           project: { name: projectName, source: "named" as const },
           projectContext: ctx2,
+          portfolioGraph,
         };
         ctx.logActivity("read", "project/" + projectName);
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
@@ -451,17 +455,20 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
 
       const finalCtx = merged;
       const name = finalCtx?.meta?.name || current?.name || null;
+      const portfolioGraph = getPortfolioGraphProjectSlice(name);
       const result = finalCtx
         ? {
             readiness: readiness("ready", `Project context for ${name} is available.`, "None needed."),
             project: { name, source: "current" as const },
             projectContext: finalCtx,
+            portfolioGraph,
           }
         : {
             readiness: readiness("not_found", "Project context could not be read.",
               "Use repo-local instructions and project-context markdown files directly."),
             project: { name, source: "current" as const },
             projectContext: null,
+            portfolioGraph,
           };
       ctx.logActivity("read", "project/current");
       return {

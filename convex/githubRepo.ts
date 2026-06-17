@@ -627,6 +627,10 @@ export const pushToRepo = action({
         commitSha: prResult.mergeCommitSha ?? null,
         upToDate: false,
         via: "pr" as const,
+        prNumber: prResult.prNumber,
+        prUrl: prResult.prUrl,
+        merged: prResult.merged,
+        branchRecreated: prResult.branchRecreated,
       };
     } catch (prErr) {
       console.warn(

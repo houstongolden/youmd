@@ -1,7 +1,7 @@
 "use client";
 
 import { SignOutButton, useUser } from "@/lib/you-auth";
-import { useQuery, useMutation, useConvex, useConvexAuth } from "convex/react";
+import { useAction, useQuery, useMutation, useConvex, useConvexAuth } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import {
   useCallback,
@@ -564,15 +564,17 @@ function ShellGitHubChrome({
   repoFullName,
   status,
   lastSyncedAt,
+  busy,
   onClick,
 }: {
   repoFullName?: string | null;
   status: ShellGitHubChromeStatus;
   lastSyncedAt?: number | null;
+  busy?: boolean;
   onClick: () => void;
 }) {
   const repoLabel = repoFullName ?? "connect github";
-  const syncLabel = lastSyncedAt ? formatRelativeTime(lastSyncedAt) : status.label;
+  const syncLabel = busy ? "syncing" : lastSyncedAt ? formatRelativeTime(lastSyncedAt) : status.label;
 
   return (
     <div className="group relative flex h-8 items-center justify-end">
@@ -588,7 +590,10 @@ function ShellGitHubChrome({
           <GitHubMark className="h-4 w-4" />
           <span
             aria-hidden="true"
-            className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full shadow-[0_0_0_2px_hsl(var(--bg))]"
+            className={[
+              "absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full shadow-[0_0_0_2px_hsl(var(--bg))]",
+              busy ? "animate-pulse" : "",
+            ].join(" ")}
             style={{ backgroundColor: status.color }}
           />
         </span>
@@ -610,17 +615,18 @@ function ShellGitHubChrome({
   );
 }
 
-function ShellUpdateButton({ onClick }: { onClick: () => void }) {
+function ShellUpdateButton({ busy, onClick }: { busy?: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={busy}
       className="h-7 cursor-pointer px-2.5 font-mono text-[10px] text-[hsl(var(--accent))] opacity-82 transition-[background,opacity] hover:bg-[hsl(var(--accent))]/[0.11] hover:opacity-100"
       style={{ borderRadius: "var(--radius)" }}
       aria-label="Update You.md context and repository"
       title="Update You.md context and repository"
     >
-      update
+      {busy ? "updating" : "update"}
     </button>
   );
 }
@@ -1210,7 +1216,11 @@ export function DashboardContent() {
 
   const createUser = useMutation(api.users.createUser);
   const claimProfile = useMutation(api.profiles.claimProfile);
+  const publishLatest = useMutation(api.me.publishLatest);
+  const pushToRepo = useAction(api.githubRepo.pushToRepo);
+  const syncMirror = useAction(api.githubRepo.syncMirror);
   const autoCreateAttempted = useRef(false);
+  const [repoUpdateBusy, setRepoUpdateBusy] = useState(false);
 
   const agent = useYouAgent({
     onPaneSwitch: (pane) => {
@@ -1252,23 +1262,74 @@ export function DashboardContent() {
     focusShellInput();
   }, [agent, focusShellInput]);
 
-  const runRepoUpdate = useCallback(() => {
+  const runRepoUpdate = useCallback(async () => {
     setMobileView("terminal");
+    if (repoUpdateBusy) return;
+    if (!user?.id) {
+      agent.addSystemMessage("[update blocked]\n\nsign in first so the web shell can publish and sync your repo.");
+      return;
+    }
     const repoName = githubConnection?.repoFullName ?? repoMirror?.repoFullName ?? `you.md/${shellUsername}`;
+    setRepoUpdateBusy(true);
     agent.addSystemMessage(
       [
-        "[update queued]",
+        "[update started]",
         "",
         `> repo: ${repoName}`,
-        "> step 1: checking latest You.md bundle + private context",
-        "> step 2: publishing current public context",
-        "> step 3: letting Convex/GitHub mirror sync any repo-backed files",
-        "> artifact: update transcript will stay in this chat; PR/conflict artifact is next",
+        "> step 1: publish current You.md bundle",
+        "> step 2: push identity files to linked GitHub repo",
+        "> step 3: refresh server mirror that powers the GitHub status dot",
       ].join("\n")
     );
-    agent.handleSlashCommand("/publish");
-    focusShellInput();
-  }, [agent, focusShellInput, githubConnection?.repoFullName, repoMirror?.repoFullName, shellUsername]);
+    try {
+      const publishResult = await publishLatest({ clerkId: user.id });
+      agent.addSystemMessage(
+        `[update step 1 complete]\n\npublished v${publishResult.version}. live at you.md/${publishResult.username}`
+      );
+
+      const pushResult = await pushToRepo({ clerkId: user.id }) as {
+        upToDate: boolean;
+        pushed: string[];
+        via?: "pr" | "direct";
+        prUrl?: string | null;
+        prNumber?: number | null;
+        merged?: boolean;
+        branchRecreated?: boolean;
+      };
+      const pushLines = [
+        "[update step 2 complete]",
+        "",
+        pushResult.upToDate
+          ? "> repo already matched current identity files"
+          : `> pushed: ${pushResult.pushed.join(", ") || "identity files"}`,
+        `> route: ${pushResult.via ?? "unknown"}`,
+        pushResult.prUrl ? `> pr: ${pushResult.prUrl}` : null,
+        pushResult.merged === true ? "> merge: complete" : pushResult.merged === false ? "> merge: pending or manual" : null,
+        pushResult.branchRecreated ? "> conflict: branch recreated from latest default branch and retried" : null,
+      ].filter(Boolean);
+      agent.addSystemMessage(pushLines.join("\n"));
+
+      const mirrorResult = await syncMirror({ clerkId: user.id }) as {
+        fileCount: number;
+        truncated: boolean;
+      };
+      agent.addSystemMessage(
+        [
+          "[update complete]",
+          "",
+          `> mirror refreshed: ${mirrorResult.fileCount} file${mirrorResult.fileCount === 1 ? "" : "s"}${mirrorResult.truncated ? " (capped)" : ""}`,
+          "> github status should now show fresh repo mirror time after Convex re-renders",
+        ].join("\n")
+      );
+    } catch (err) {
+      agent.addSystemMessage(
+        `[update failed]\n\n${err instanceof Error ? err.message : "unknown GitHub sync error"}`
+      );
+    } finally {
+      setRepoUpdateBusy(false);
+      focusShellInput();
+    }
+  }, [agent, focusShellInput, githubConnection?.repoFullName, publishLatest, pushToRepo, repoMirror?.repoFullName, repoUpdateBusy, shellUsername, syncMirror, user?.id]);
 
   const openChatSession = useCallback(async (sessionId: string) => {
     if (sessionId === agent.currentSessionId) {
@@ -1435,10 +1496,17 @@ export function DashboardContent() {
     PANE_GROUPS.find((group) => group.panes.some((pane) => pane.key === rightPane)) ??
     PANE_GROUPS[0];
   const activePreviewTab = activePaneGroup.key;
-  const shellGitHubStatus = getShellGitHubStatus(
-    githubConnection as ShellGitHubConnection,
-    repoMirror as ShellRepoMirror
-  );
+  const shellGitHubStatus = repoUpdateBusy
+    ? {
+        label: "syncing",
+        detail: "publishing, pushing, and refreshing the repo mirror",
+        color: "#a371f7",
+        toneClass: "text-[#a371f7]",
+      }
+    : getShellGitHubStatus(
+        githubConnection as ShellGitHubConnection,
+        repoMirror as ShellRepoMirror
+      );
   const shellGitHubRepoName = githubConnection?.repoFullName ?? repoMirror?.repoFullName ?? null;
   const shellGitHubSyncedAt = repoMirror?.syncedAt ?? githubConnection?.lastSyncedAt ?? null;
 
@@ -1476,9 +1544,10 @@ export function DashboardContent() {
                 repoFullName={shellGitHubRepoName}
                 status={shellGitHubStatus}
                 lastSyncedAt={shellGitHubSyncedAt}
+                busy={repoUpdateBusy}
                 onClick={() => openPane("github")}
               />
-              <ShellUpdateButton onClick={runRepoUpdate} />
+              <ShellUpdateButton busy={repoUpdateBusy} onClick={runRepoUpdate} />
               <button
                 type="button"
                 onClick={() => setPanelOpen((value) => !value)}

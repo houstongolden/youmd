@@ -38,6 +38,24 @@ PRD Version: 2.3
 - [ ] Teach MCP `get_project_context` to include a project-scoped portfolio graph slice before agents create new APIs, MCP routes, stacks, or reusable components
 - [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens (deferred per Houston's 2026-06-17 focus change)
 
+### 2026-06-17 — GitHub sync proof, Projects -> Tasks, and brain-dump routing
+- [x] Archive Houston's continuation prompt and explicitly track the no-premature-completion rule
+- [x] Identify why the shell GitHub icon can stay stale after `[ update ]`: the button did not call the real repo push/mirror actions
+- [x] Wire shell `[ update ]` to publish, push to linked GitHub repo, refresh mirror, stream step transcript, and pulse the GitHub status dot while running
+- [x] Return PR URL/number, merge state, and branch-recreated conflict retry info from `pushToRepo`
+- [x] Add Convex tables for persisted project intelligence, API/MCP surfaces, dependency edges, reusable patterns, brain-dump captures, and owner-aware portfolio tasks
+- [x] Add owner-gated Convex portfolio graph/task/brain-dump queries and mutations
+- [x] Add project-scoped portfolio graph slices to local MCP `get_project_context`
+- [x] Add shared `braindump-task-router` skill and register it in the shared stack map
+- [x] Run shared-skill sync and verify the new skill appears in Claude/Codex/Cursor/Pi mirrors
+- [x] Run Convex codegen/typecheck/tests and root/CLI builds for the new schema/API/MCP updates
+- [x] Run a real local MCP `get_project_context` smoke that proves the portfolio slice is present
+- [x] Run authenticated Chrome web QA against local `/shell`, click `[ update ]`, and verify chat transcript + GitHub icon timestamp behavior
+- [ ] Run the authenticated recent GitHub project analysis refresh and verify 90-day project catalog visibility
+- [ ] Add dashboard hydration for persisted portfolio graph/tasks instead of static-only pane data
+- [ ] Add first-class persisted update artifacts/history for PR/check/conflict/merge steps
+- [ ] Seed portfolio project detail records with goals, vision, pain points, solution, constraints, not-building, metrics, and competitors for active projects
+
 ### 2026-06-16 — Mobile capture, voice, Slack, and project routing
 - [x] Preserve the 2026-06-16 Part 2 mobile brain-dump intent safely without private phone numbers or secrets
 - [x] Add the durable mobile capture/product-routing memo to project context

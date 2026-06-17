@@ -580,6 +580,151 @@ export default defineSchema({
     .index("by_userId_slug", ["userId", "slug"])
     .index("by_userId_updatedAt", ["userId", "updatedAt"]),
 
+  // ── Portfolio Graph ──────────────────────────────────────
+  //
+  // User-owned project intelligence for the cross-project graph Houston keeps
+  // asking agents to load before inventing duplicate APIs, MCP tools, skills,
+  // auth patterns, UI shells, or env/service-account conventions. These tables
+  // complement `trackedProjects` (GitHub activity) with durable strategy,
+  // dependency, task-owner, and reusable-pattern context.
+  portfolioProjects: defineTable({
+    userId: v.id("users"),
+    slug: v.string(),
+    name: v.string(),
+    stackName: v.optional(v.string()),
+    status: v.string(), // "active" | "build" | "research" | "template" | "audit" | ...
+    summary: v.optional(v.string()),
+    detailedDescription: v.optional(v.string()),
+    goal: v.optional(v.string()),
+    vision: v.optional(v.string()),
+    focus: v.optional(v.string()),
+    positioning: v.optional(v.string()),
+    audience: v.optional(v.string()),
+    painPoints: v.array(v.string()),
+    solution: v.optional(v.string()),
+    whyThisSolution: v.optional(v.string()),
+    northStar: v.optional(v.string()),
+    metrics: v.array(v.string()),
+    constraints: v.array(v.string()),
+    notBuilding: v.array(v.string()),
+    competitors: v.array(v.object({
+      name: v.string(),
+      url: v.optional(v.string()),
+      note: v.optional(v.string()),
+    })),
+    repoFullName: v.optional(v.string()),
+    repoUrl: v.optional(v.string()),
+    productUrl: v.optional(v.string()),
+    docs: v.array(v.string()),
+    environments: v.array(v.string()),
+    tags: v.array(v.string()),
+    source: v.string(), // "manual" | "github" | "agent" | "repo"
+    repoPath: v.optional(v.string()),
+    lastActivityAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_slug", ["userId", "slug"])
+    .index("by_userId_updatedAt", ["userId", "updatedAt"]),
+
+  portfolioApiSurfaces: defineTable({
+    userId: v.id("users"),
+    slug: v.string(),
+    name: v.string(),
+    kind: v.string(), // "api" | "mcp" | "skillstack" | "agent-harness" | "provider"
+    ownerProjectSlug: v.string(),
+    ownerStack: v.optional(v.string()),
+    trust: v.string(), // "private" | "public" | "protected" | "third-party"
+    authMode: v.optional(v.string()),
+    writePolicy: v.string(), // "read-only" | "propose" | "approved-write" | "owner-only"
+    features: v.array(v.string()),
+    risk: v.string(), // "low" | "medium" | "high"
+    notes: v.optional(v.string()),
+    docsUrls: v.array(v.string()),
+    integrationTypes: v.array(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_slug", ["userId", "slug"])
+    .index("by_userId_owner", ["userId", "ownerProjectSlug"]),
+
+  portfolioDependencyEdges: defineTable({
+    userId: v.id("users"),
+    fromProjectSlug: v.string(),
+    toProjectSlug: v.optional(v.string()),
+    toSurfaceSlug: v.optional(v.string()),
+    tier: v.string(), // "dependent" | "feature" | "optional" | "dev-only" | ...
+    integrationType: v.string(), // "admin" | "workspace" | "user-level" | "developer-agent"
+    features: v.array(v.string()),
+    failureImpact: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_from", ["userId", "fromProjectSlug"])
+    .index("by_userId_surface", ["userId", "toSurfaceSlug"]),
+
+  portfolioReusablePatterns: defineTable({
+    userId: v.id("users"),
+    slug: v.string(),
+    name: v.string(),
+    status: v.string(), // "canonical" | "candidate" | "deprecated"
+    tags: v.array(v.string()),
+    techStacks: v.array(v.string()),
+    canonicalOwnerProject: v.optional(v.string()),
+    summary: v.string(),
+    sourcePaths: v.array(v.string()),
+    usageProjects: v.array(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_slug", ["userId", "slug"])
+    .index("by_userId_status", ["userId", "status"]),
+
+  brainDumpCaptures: defineTable({
+    userId: v.id("users"),
+    source: v.string(), // "shell" | "cli" | "sms" | "watch" | "badapp" | "slack" | "api" | "manual"
+    rawText: v.string(),
+    summary: v.optional(v.string()),
+    insights: v.array(v.string()),
+    projectSlugs: v.array(v.string()),
+    tags: v.array(v.string()),
+    transcriptStartedAt: v.optional(v.number()),
+    transcriptEndedAt: v.optional(v.number()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_createdAt", ["userId", "createdAt"]),
+
+  portfolioTasks: defineTable({
+    userId: v.id("users"),
+    projectSlug: v.optional(v.string()),
+    title: v.string(),
+    description: v.optional(v.string()),
+    ownerType: v.union(v.literal("human"), v.literal("agent")),
+    ownerLabel: v.optional(v.string()),
+    status: v.string(), // "proposed" | "open" | "in_progress" | "done" | "snoozed" | "cancelled"
+    priority: v.string(), // "low" | "normal" | "high" | "urgent"
+    dueAt: v.optional(v.number()),
+    sourceType: v.optional(v.string()), // "manual" | "braindump" | "agent" | "github" | ...
+    sourceId: v.optional(v.string()),
+    rawCaptureId: v.optional(v.id("brainDumpCaptures")),
+    tags: v.array(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_project", ["userId", "projectSlug"])
+    .index("by_userId_owner", ["userId", "ownerType"])
+    .index("by_userId_status", ["userId", "status"]),
+
   // artifactType: "author_voice" | "topic_map" | "bio_variants" | "faq"
   //             | "voice_linkedin" | "voice_linkedin_doc"
   //             | "voice_x" | "voice_blog"

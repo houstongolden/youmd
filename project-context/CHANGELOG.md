@@ -1,5 +1,19 @@
 # You.md — Changelog
 
+## 2026-06-17 — GitHub sync proof, portfolio persistence, and project tasks
+
+### feat(convex/cli/web/skills): persist portfolio graph foundations and prove repo update freshness
+- Added persisted Convex portfolio foundations for project strategy records, API/MCP surfaces, dependency edges, reusable patterns, raw brain-dump captures, and owner-aware portfolio tasks.
+- Added owner-gated portfolio queries/mutations for listing the graph, fetching a project slice, upserting projects/tasks, and recording brain dumps.
+- Added local MCP `get_project_context` project-scoped `portfolioGraph` slices so agents can see owned surfaces, dependencies, reusable patterns, commands, guardrails, and skill propagation before creating duplicate APIs or stacks.
+- Added shared `braindump-task-router` under the canonical `.agent-shared` skill root, synced it through Claude/Codex/Cursor/Pi mirrors, and recorded the route in the shared stack map.
+- Rewired shell `[ update ]` to publish the bundle, push identity files to the linked GitHub repo, refresh the server mirror, animate the GitHub status, and stream each step into shell chat.
+- Extended `pushToRepo` results with PR URL/number, merged state, and branch-recreated retry state so shell transcripts can show PR/merge/conflict details.
+- Fixed explicit GitHub push/mirror completion so `pendingPushAt`, `lastPushError`, and `mirrorStale` clear after a successful sync.
+- Deployed the Convex backend to `kindly-cassowary-600`.
+- Verified with root `npm run build`, `npm run test:convex` (421 tests), `npx tsc -p convex/tsconfig.json --noEmit`, `cd cli && npm run build`, focused diff hygiene, local MCP `get_project_context` smoke, shared-skill mirror checks, and authenticated Chrome `/shell` QA. The final Chrome proof showed `SYNCING` -> `SYNCED / REPO MIRROR CURRENT / JUST NOW` and PR #5 merged for `houstongolden/houstongolden-you-md`.
+- Kept the larger lane open: dashboard hydration from persisted records, authenticated 90-day project catalog visibility, persisted update artifacts/history, shell-chat-initiated content-change proof, and seeded project strategy records remain pending.
+
 ## 2026-06-17 — Resident daemon and always-on sync
 
 ### feat(cli/runtime): make resident sync first-class and daemon-safe

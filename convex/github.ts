@@ -886,7 +886,10 @@ export const internalMarkSynced = internalMutation({
       // P17: a push (manual included) re-anchors ancestry and reconciles any
       // mirror divergence — the canonical store just force-won.
       lastPushedCommitSha: args.repoSha,
+      pendingPushAt: undefined,
       mirrorStale: false,
+      lastPushError: undefined,
+      lastPushErrorAt: undefined,
       updatedAt: now,
     });
   },

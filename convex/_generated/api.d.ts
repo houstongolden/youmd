@@ -72,6 +72,7 @@ import type * as pipeline_mutations from "../pipeline/mutations.js";
 import type * as pipeline_orchestrator from "../pipeline/orchestrator.js";
 import type * as pipeline_portraitSource from "../pipeline/portraitSource.js";
 import type * as pipeline_prompts from "../pipeline/prompts.js";
+import type * as portfolio from "../portfolio.js";
 import type * as portrait from "../portrait.js";
 import type * as private_ from "../private.js";
 import type * as profileIndexing from "../profileIndexing.js";
@@ -157,6 +158,7 @@ declare const fullApi: ApiFromModules<{
   "pipeline/orchestrator": typeof pipeline_orchestrator;
   "pipeline/portraitSource": typeof pipeline_portraitSource;
   "pipeline/prompts": typeof pipeline_prompts;
+  portfolio: typeof portfolio;
   portrait: typeof portrait;
   private: typeof private_;
   profileIndexing: typeof profileIndexing;
