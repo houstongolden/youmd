@@ -46,6 +46,7 @@ import type * as lib_mcpRegistry from "../lib/mcpRegistry.js";
 import type * as lib_memoryCategories from "../lib/memoryCategories.js";
 import type * as lib_openrouter from "../lib/openrouter.js";
 import type * as lib_pagination from "../lib/pagination.js";
+import type * as lib_portfolioRepoSnapshot from "../lib/portfolioRepoSnapshot.js";
 import type * as lib_profileDirectory from "../lib/profileDirectory.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_scopes from "../lib/scopes.js";
@@ -132,6 +133,7 @@ declare const fullApi: ApiFromModules<{
   "lib/memoryCategories": typeof lib_memoryCategories;
   "lib/openrouter": typeof lib_openrouter;
   "lib/pagination": typeof lib_pagination;
+  "lib/portfolioRepoSnapshot": typeof lib_portfolioRepoSnapshot;
   "lib/profileDirectory": typeof lib_profileDirectory;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/scopes": typeof lib_scopes;

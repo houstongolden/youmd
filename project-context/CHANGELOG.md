@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Repo-backed portfolio graph snapshots
+
+### feat(convex/github): push portfolio graph snapshots into the linked repo
+- Added `convex/lib/portfolioRepoSnapshot.ts` to render the persisted portfolio graph into repo-backed files: `projects/_portfolio/README.md`, `projects/_portfolio/graph.md`, and `projects/_portfolio/graph.json`.
+- Wired `githubRepo.pushToRepo` to append those generated snapshots to every normal identity sync, alongside `you.md`, `you.json`, project task snapshots, and brain-dump snapshots.
+- Kept the snapshot secret-safe by excluding raw brain-dump transcripts and `.env.local` values, and added a mirror-size guard so `graph.json` stays below the repo mirror per-file cap.
+- Verified with focused renderer tests, full Convex tests, `npx convex codegen`, `npx tsc --noEmit --pretty false`, `npx convex deploy`, authenticated Codex in-app Browser QA, and GitHub PR #15 cross-check.
+- Visual proof: clicked local `[ update ]`, observed PR #15 merge, saw `projects/_portfolio/README.md`, `projects/_portfolio/graph.md`, and `projects/_portfolio/graph.json` in the pushed file list, and confirmed the server mirror refreshed to `53 files`. Screenshot: `/tmp/youmd-portfolio-repo-snapshot-proof-2026-06-17-pr15.png`.
+- GitHub proof: PR #15 merged at `2026-06-17T10:41:46Z` with merge commit `819bddc31ad7c336f38978642df618c995225bba`; `graph.md` is `23559` bytes, `graph.json` is `114299` bytes, and `README.md` is `695` bytes on `main`.
+
 ## 2026-06-17 — Persisted shell update history
 
 ### test(convex): prove GitHub 409 branch-recreation retry timeline

@@ -63,6 +63,7 @@ PRD Version: 2.3
 - [x] Verify the local agent path end-to-end with real stdio MCP smoke, skill install refreshes, `youmd skill sync`, signed-in browser visual QA, focused CLI tests, lint/radius, and production build
 - [x] Persist portfolio graph records in Convex instead of only the local static data contract
 - [x] Teach MCP `get_project_context` to include a project-scoped portfolio graph slice before agents create new APIs, MCP routes, stacks, or reusable components
+- [x] Export the persisted portfolio graph into repo-backed `projects/_portfolio/README.md`, `graph.md`, and mirror-safe `graph.json` snapshots during GitHub sync
 - [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens (deferred per Houston's 2026-06-17 focus change)
 
 ### 2026-06-17 — GitHub sync proof, Projects -> Tasks, and brain-dump routing

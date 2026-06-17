@@ -226,10 +226,21 @@ GitHub status and task/graph paths behave in the actual product.
   PR merge return `409`, and verifies stale branch deletion, fresh default-head
   branch recreation, merge retry, `branchRecreated: true`, and conflict
   timeline rows.
+- Persisted portfolio graph repo snapshots are now verified. `pushToRepo`
+  writes `projects/_portfolio/README.md`, `projects/_portfolio/graph.md`, and
+  compact `projects/_portfolio/graph.json` from the Convex portfolio graph.
+- Authenticated Codex in-app Browser QA clicked local `[ update ]`, merged
+  PR #15, showed all three `projects/_portfolio/*` files in the pushed list,
+  and refreshed the server mirror to `53 files`.
+- GitHub independently verified PR #15 as `MERGED` at
+  `2026-06-17T10:41:46Z` with merge commit
+  `819bddc31ad7c336f38978642df618c995225bba`; `graph.json` is `114299`
+  bytes on `main`, below the mirror file cap.
+- Visual proof screenshot:
+  `/tmp/youmd-portfolio-repo-snapshot-proof-2026-06-17-pr15.png`.
 
 ## Still Open
 
-- Export the persisted portfolio graph back into repo-backed markdown snapshots.
 - Add mobile/watch invocation proof for task and brain-dump capture paths.
 - Enrich active project strategy records with vision, pain points, solution,
   constraints, not-building notes, metrics, and competitors.

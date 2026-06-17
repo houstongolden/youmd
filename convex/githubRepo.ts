@@ -1,6 +1,6 @@
 import { action, internalAction } from "./_generated/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { requireOwner } from "./lib/auth";
@@ -8,6 +8,8 @@ import { decryptSecret, encryptSecret } from "./lib/secretCrypto";
 import { isGithubAppConfigured, mintInstallationToken } from "./githubApp";
 import { agentPushViaPR } from "./githubAgentSync";
 import type { AgentPushTimelineEvent } from "./githubAgentSync";
+import { buildPortfolioRepoSnapshotFiles } from "./lib/portfolioRepoSnapshot";
+import type { PortfolioRepoSnapshotGraph } from "./lib/portfolioRepoSnapshot";
 
 /**
  * GitHub repo actions (Phase 2): create or connect the user's own You.md repo
@@ -385,6 +387,14 @@ function customFilesFromYouJson(youJson: unknown): { path: string; content: stri
   return result;
 }
 
+function dedupeRepoFiles(files: { path: string; content: string }[]): { path: string; content: string }[] {
+  const byPath = new Map<string, { path: string; content: string }>();
+  for (const file of files) {
+    byPath.set(file.path, file);
+  }
+  return Array.from(byPath.values());
+}
+
 /** List the authenticated user's repos so they can connect an existing one. */
 export const listRepos = action({
   args: { clerkId: v.string() },
@@ -634,11 +644,18 @@ export const pushToRepo = action({
       throw new Error("Nothing to push yet — build your You.md first.");
     }
 
-    const files: { path: string; content: string }[] = [
+    const portfolioGraph = await ctx.runQuery(api.portfolio.listPortfolioGraph, {
+      clerkId,
+      _internalAuthToken,
+      includeDoneTasks: false,
+    }) as PortfolioRepoSnapshotGraph;
+
+    const files: { path: string; content: string }[] = dedupeRepoFiles([
       { path: "you.md", content: seed.youMd ?? "" },
       { path: "you.json", content: JSON.stringify(seed.youJson ?? {}, null, 2) },
       ...customFilesFromYouJson(seed.youJson),
-    ];
+      ...buildPortfolioRepoSnapshotFiles(portfolioGraph),
+    ]);
 
     // Autonomous management: route identity writes through agentPushViaPR
     // (branch → PR → auto-merge → conflict-resolve) for an auditable, conflict-
