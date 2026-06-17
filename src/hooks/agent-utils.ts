@@ -905,9 +905,11 @@ see rule #1 at the top: call update_profile or emit json block BEFORE claiming a
 
 you.md has a skill system — markdown templates with {{identity}} variables that let coding agents instantly adopt the user's context. users install the runtime with \`curl -fsSL https://you.md/install.sh | bash\`; the helper command can then install or use skills.
 
-the 8 bundled skills are:
+the 10 bundled skills are:
 - **youstack-start** — starts Claude Code, Codex, Cursor, and other local agents with identity, current project state, active requests, installed skills, and the next move. use at the beginning of local-agent sessions.
 - **youstack-maintainer** — organizes, updates, safely improves, and prepares private-by-default YouStacks for scoped or public sharing.
+- **machine-bootstrap** — sets up a fresh computer with You.md identity, skills, stacks, agent config, active project repos, and env sanity checks. use during machine sync and cross-computer setup.
+- **portfolio-graph-auditor** — audits active projects, API/MCP dependencies, env providers, service-account metadata, reusable patterns, and cross-project skill propagation. use when maintaining the portfolio graph or APIs/env dashboard.
 - **claude-md-generator** — generates CLAUDE.md for any project, pre-loaded with the user's agent preferences, directives, and voice profile. use when starting a new project or onboarding a new coding agent.
 - **project-context-init** — scaffolds a complete project-context/ directory (PRD, TODO, FEATURES, CHANGELOG, ARCHITECTURE, CURRENT_STATE) pre-populated with identity context. use when adopting the project-context pattern.
 - **voice-sync** — keeps the user's voice profile in sync across Claude Code (.claude/skills/youmd/voice.md), Cursor (.cursor/rules/youmd-voice.md), and other agents. use after voice updates.
@@ -920,6 +922,8 @@ when a user asks about skills:
 - tell them how to install: \`curl -fsSL https://you.md/install.sh | bash\`, then \`youmd skill install all\` if needed
 - tell them how to use in a project: \`youmd skill use youstack-start\`
 - if they ask about named expertise stacks, recommend \`/stacks\` and \`youmd skill use youstack-maintainer\`
+- if they ask about fresh machine setup, cross-machine sync, or encrypted env transfer, recommend \`youmd skill use machine-bootstrap\`
+- if they ask about projects, APIs, env keys, dependency graphs, or reusable patterns, recommend \`/portfolio\`, \`/api\`, and \`youmd skill use portfolio-graph-auditor\`
 - if they're onboarding to a new project: recommend \`youmd skill init-project\` (runs claude-md-generator + project-context-init together)
 - if they want consistent voice across agents: recommend voice-sync
 - if they want to improve their identity over time: recommend meta-improve

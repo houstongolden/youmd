@@ -17,6 +17,7 @@ PRD Version: 2.3
 - [x] Add shared `portfolio-graph-auditor` skill plus local `youmd project portfolio-audit` / `env-audit` / `apis` command for secret-safe local project/API/env scans
 - [x] Build the `/shell` Portfolio/Projects graph view with API/MCP ownership, connected projects, dependency tiers, docs status, shared skill propagation, and reusable pattern catalog
 - [x] Build the `/shell` APIs + Env Intelligence view with provider usage stats, env key-name normalization, service-account notes, API/MCP risk tiers, and secret-safe audit commands
+- [x] Register `portfolio-graph-auditor` in the bundled local CLI skill catalog and align the Skills pane with `machine-bootstrap` + portfolio-audit catalog visibility
 - [ ] Persist portfolio graph records in Convex and/or repo-backed markdown instead of only the local static data contract
 - [ ] Teach MCP `get_agent_brief` / `get_project_context` to include the relevant portfolio graph slice before agents create new APIs, MCP routes, stacks, or reusable components
 - [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens

@@ -1746,7 +1746,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
         // Custom messages for skills and stacks
         const noticeContent = trimmed === "/skills"
-            ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use youstack-start\ninstall runtime: curl -fsSL https://you.md/install.sh | bash\nscaffold a project: youmd skill init-project\n\navailable: youstack-start, youstack-maintainer, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs"
+            ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use portfolio-graph-auditor\ninstall runtime: curl -fsSL https://you.md/install.sh | bash\nscaffold a project: youmd skill init-project\n\navailable: youstack-start, youstack-maintainer, machine-bootstrap, portfolio-graph-auditor, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs"
           : trimmed === "/stacks" || trimmed === "/youstacks"
             ? "[switched to youstacks]\n\nnamed expertise packages for different domains. default visibility is private.\n\nuse in chat: /skill use youstack-maintainer\ninstall runtime: curl -fsSL https://you.md/install.sh | bash\nexamples: personal-agent-start, bamfstack-public, coding-copilot, scientific-research, content-studio"
           : trimmed === "/portfolio" || trimmed === "/projects" || trimmed === "/project-graph"
@@ -1780,7 +1780,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
             {
               id: crypto.randomUUID(),
               role: "system-notice",
-              content: `usage: /skill use <name>\navailable skills: youstack-start, youstack-maintainer, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs\ninstall via runtime: curl -fsSL https://you.md/install.sh | bash`,
+              content: `usage: /skill use <name>\navailable skills: youstack-start, youstack-maintainer, machine-bootstrap, portfolio-graph-auditor, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs\ninstall via runtime: curl -fsSL https://you.md/install.sh | bash`,
             },
           ]);
           return true;

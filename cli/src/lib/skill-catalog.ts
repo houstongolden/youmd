@@ -64,6 +64,16 @@ function defaultSkills(): SkillEntry[] {
       installed: false,
     },
     {
+      name: "portfolio-graph-auditor",
+      description: "Audit active projects, API/MCP dependencies, env providers, service accounts, and reusable patterns",
+      version: "1.0.0",
+      source: "shared:portfolio-graph-auditor",
+      scope: "shared",
+      identity_fields: ["profile.projects", "preferences.agent", "directives.agent"],
+      requires: ["youstack-maintainer", "machine-bootstrap"],
+      installed: false,
+    },
+    {
       name: "claude-md-generator",
       description: "Generate CLAUDE.md from identity + project detection",
       version: "1.0.0",

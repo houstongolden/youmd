@@ -38,6 +38,13 @@ const BUNDLED_SKILLS: SkillEntry[] = [
     identityFields: ["profile.about", "preferences.agent", "directives.agent", "voice.overall"],
   },
   {
+    name: "machine-bootstrap",
+    description: "Set up a fresh computer with identity, skills, stacks, agent config, active projects, and env sanity checks",
+    version: "1.0.0",
+    scope: "shared",
+    identityFields: ["profile.about", "profile.projects", "preferences.agent", "directives.agent"],
+  },
+  {
     name: "claude-md-generator",
     description: "Generate CLAUDE.md from identity + project detection",
     version: "1.0.0",

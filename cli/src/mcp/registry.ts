@@ -840,7 +840,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
       properties: {
         name: {
           type: "string",
-          description: "Skill name: youstack-start, youstack-maintainer, voice-sync, claude-md-generator, project-context-init, meta-improve, proactive-context-fill, you-logs",
+          description: "Skill name: youstack-start, youstack-maintainer, machine-bootstrap, portfolio-graph-auditor, voice-sync, claude-md-generator, project-context-init, meta-improve, proactive-context-fill, you-logs",
         },
       },
       required: ["name"],

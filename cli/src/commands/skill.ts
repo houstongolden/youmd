@@ -98,7 +98,13 @@ function truncateAtWord(text: string, max: number): string {
 
 // ─── Subcommands ──────────────────────────────────────────────────────
 
-const RECOMMENDED_SKILLS = new Set(["youstack-start", "machine-bootstrap", "claude-md-generator", "voice-sync"]);
+const RECOMMENDED_SKILLS = new Set([
+  "youstack-start",
+  "machine-bootstrap",
+  "portfolio-graph-auditor",
+  "claude-md-generator",
+  "voice-sync",
+]);
 
 async function listSkills(): Promise<void> {
   const catalog = readSkillCatalog();
