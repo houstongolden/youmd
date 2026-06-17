@@ -761,6 +761,7 @@ program
       clone: options.clone,
       github: options.github,
     });
+    process.exit(process.exitCode ?? 0);
   });
 
 // ─── Guided tutorial when invoked with no args ─────────────────────
