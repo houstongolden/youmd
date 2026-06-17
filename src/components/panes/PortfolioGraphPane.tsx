@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { ArrowUpDown, ChevronDown, ExternalLink, ListFilter, Search, Target } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
@@ -22,6 +24,8 @@ type DisplayProject = {
   name: string;
   stack: string;
   status: string;
+  focusStatus?: string;
+  focusRank?: number;
   summary: string;
   detailedDescription?: string;
   goal: string;
@@ -40,9 +44,28 @@ type DisplayProject = {
   docs: string[];
   environments: string[];
   tags?: string[];
+  repoUrl?: string;
+  productUrl?: string;
+  repoPath?: string;
   source?: string;
   lastActivityAt?: number;
   updatedAt?: number;
+};
+
+type DisplaySurface = {
+  slug: string;
+  name: string;
+  kind: string;
+  ownerProject: string;
+  ownerStack: string;
+  trust: string;
+  authMode: string;
+  writePolicy: string;
+  features: string[];
+  risk: string;
+  notes: string;
+  docsUrls: string[];
+  integrationTypes: string[];
 };
 
 type ProjectActivity = {
@@ -115,6 +138,8 @@ function fromPersistedProject(project: {
   name: string;
   stackName?: string;
   status: string;
+  focusStatus?: string;
+  focusRank?: number;
   summary?: string;
   detailedDescription?: string;
   goal?: string;
@@ -133,6 +158,9 @@ function fromPersistedProject(project: {
   docs: string[];
   environments?: string[];
   tags?: string[];
+  repoUrl?: string;
+  productUrl?: string;
+  repoPath?: string;
   source?: string;
   lastActivityAt?: number;
   updatedAt?: number;
@@ -142,6 +170,8 @@ function fromPersistedProject(project: {
     name: project.name,
     stack: project.stackName ?? "Project YouStack",
     status: project.status,
+    focusStatus: project.focusStatus,
+    focusRank: project.focusRank,
     summary: project.summary ?? "No project summary saved yet.",
     detailedDescription: project.detailedDescription,
     goal: project.goal ?? "No high-level goal saved yet.",
@@ -160,6 +190,9 @@ function fromPersistedProject(project: {
     docs: project.docs,
     environments: project.environments ?? [],
     tags: project.tags,
+    repoUrl: project.repoUrl,
+    productUrl: project.productUrl,
+    repoPath: project.repoPath,
     source: project.source,
     lastActivityAt: project.lastActivityAt,
     updatedAt: project.updatedAt,
@@ -178,7 +211,9 @@ function fromPersistedSurface(surface: {
   features: string[];
   risk: string;
   notes?: string;
-}) {
+  docsUrls?: string[];
+  integrationTypes?: string[];
+}): DisplaySurface {
   return {
     slug: surface.slug,
     name: surface.name,
@@ -191,6 +226,8 @@ function fromPersistedSurface(surface: {
     features: surface.features,
     risk: surface.risk,
     notes: surface.notes ?? "",
+    docsUrls: surface.docsUrls ?? [],
+    integrationTypes: surface.integrationTypes ?? [],
   };
 }
 
@@ -247,6 +284,7 @@ function shippedCounts(activities: ProjectActivity[]) {
     today: shippable.filter((activity) => activity.occurredAt >= now - 86_400_000).length,
     seven: shippable.filter((activity) => activity.occurredAt >= now - 7 * 86_400_000).length,
     thirty: shippable.filter((activity) => activity.occurredAt >= now - 30 * 86_400_000).length,
+    ninety: shippable.filter((activity) => activity.occurredAt >= now - 90 * 86_400_000).length,
   };
 }
 
@@ -287,6 +325,50 @@ const TASK_PRIORITY_ACTIONS = [
   { value: "urgent", label: "urgent" },
 ] as const;
 
+const PROJECT_FOCUS_OPTIONS = [
+  { value: "top-priority", label: "Top Priority", short: "top", rank: 1, weight: 100 },
+  { value: "focusing", label: "Focusing", short: "focus", rank: 2, weight: 80 },
+  { value: "on-ice", label: "On Ice", short: "ice", rank: 3, weight: 35 },
+  { value: "abandoned", label: "Abandoned", short: "gone", rank: 0, weight: 5 },
+  { value: "killed", label: "Killed", short: "dead", rank: 0, weight: 0 },
+  { value: "unset", label: "Unsorted", short: "open", rank: 4, weight: 50 },
+] as const;
+
+const PROJECT_SORT_OPTIONS = [
+  { value: "activity", label: "activity" },
+  { value: "focus", label: "priority" },
+  { value: "shipped90", label: "shipped 90d" },
+  { value: "name", label: "name" },
+] as const;
+
+type ProjectFocusStatus = typeof PROJECT_FOCUS_OPTIONS[number]["value"];
+type ProjectSortMode = typeof PROJECT_SORT_OPTIONS[number]["value"];
+type ProjectDensity = "compact" | "expanded";
+
+function projectFocusOption(status?: string) {
+  return PROJECT_FOCUS_OPTIONS.find((option) => option.value === status) ?? PROJECT_FOCUS_OPTIONS[5];
+}
+
+function projectFocusWeight(project: DisplayProject) {
+  return projectFocusOption(project.focusStatus).weight;
+}
+
+function docsForSurface(surface: DisplaySurface) {
+  const fallback = surface.kind === "mcp"
+    ? ["https://you.md/.well-known/mcp.json", "https://you.md/api/v1/mcp"]
+    : surface.kind === "skillstack"
+      ? ["https://you.md/api/v1/skills", "https://you.md/api/v1/stacks/capabilities"]
+      : ["https://you.md/api/v1/docs/reference", "https://you.md/api/v1/docs/openapi.json"];
+  return surface.docsUrls.length > 0 ? surface.docsUrls : fallback;
+}
+
+function curlForSurface(surface: DisplaySurface) {
+  if (surface.kind === "mcp") return "curl https://you.md/.well-known/mcp.json";
+  if (surface.kind === "skillstack") return "curl https://you.md/api/v1/skills";
+  if (surface.ownerProject === "youmd") return 'curl -H "Authorization: Bearer $YOUMD_API_KEY" https://you.md/api/v1/me/portfolio/graph';
+  return `curl ${docsForSurface(surface)[0]}`;
+}
+
 function projectActivityScore(project: DisplayProject, activities: ProjectActivity[]) {
   const counts = shippedCounts(activities);
   const latestActivityAt = activities[0]?.occurredAt ?? project.lastActivityAt ?? project.updatedAt ?? 0;
@@ -294,22 +376,49 @@ function projectActivityScore(project: DisplayProject, activities: ProjectActivi
   const localSignal = project.source === "local-portfolio-audit" || tags.includes("activity-hydrated") ? 1 : 0;
   const coreSignal = CORE_PROJECT_SLUGS.has(project.slug) ? 1 : 0;
   return {
-    score: counts.today * 10_000 + counts.seven * 1_000 + counts.thirty * 100 + localSignal * 50 + coreSignal * 25,
+    score: counts.today * 10_000 + counts.seven * 1_000 + counts.thirty * 100 + counts.ninety * 10 + localSignal * 50 + coreSignal * 25,
     latestActivityAt,
   };
 }
 
+function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 12_000): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(`${label} timed out; backend may not be deployed yet`));
+    }, timeoutMs);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const graph = useQuery(api.portfolio.listPortfolioGraph, clerkId ? { clerkId } : "skip");
   const syncDashboardSeed = useMutation(api.portfolio.syncDashboardSeed);
   const syncTrackedProjects = useMutation(api.portfolio.syncTrackedProjects);
+  const updateProjectFocus = useMutation(api.portfolio.updateProjectFocus);
   const updateTaskTriage = useMutation(api.portfolio.updateTaskTriage);
   const updateTaskDetails = useMutation(api.portfolio.updateTaskDetails);
   const [syncing, setSyncing] = useState(false);
   const [hydrating, setHydrating] = useState(false);
   const [triagingTaskId, setTriagingTaskId] = useState<string | null>(null);
+  const [focusUpdatingSlug, setFocusUpdatingSlug] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
-  const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(null);
+  const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(() => searchParams.get("project"));
+  const [projectSearch, setProjectSearch] = useState("");
+  const [projectFocusFilter, setProjectFocusFilter] = useState<ProjectFocusStatus | "all">("all");
+  const [projectSortMode, setProjectSortMode] = useState<ProjectSortMode>("activity");
+  const [projectDensity, setProjectDensity] = useState<ProjectDensity>("compact");
 
   const hasPersistedGraph = Boolean(graph && (
     graph.projects.length > 0 ||
@@ -322,17 +431,24 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     if (hasPersistedGraph && graph) return graph.projects.map(fromPersistedProject);
     return portfolioProjects.map((project) => ({
       ...project,
+      focusStatus: "unset",
+      focusRank: 4,
       painPoints: [],
       metrics: [],
       constraints: [],
       notBuilding: [],
       competitors: [],
+      repoUrl: project.repo?.includes("/") ? `https://github.com/${project.repo}` : undefined,
       source: "bootstrap",
     }));
   }, [graph, hasPersistedGraph]);
-  const activeSurfaces = hasPersistedGraph && graph
+  const activeSurfaces: DisplaySurface[] = hasPersistedGraph && graph
     ? graph.apiSurfaces.map(fromPersistedSurface)
-    : apiSurfaces;
+    : apiSurfaces.map((surface) => ({
+      ...surface,
+      docsUrls: [],
+      integrationTypes: [],
+    }));
   const activeEdges = hasPersistedGraph && graph
     ? graph.dependencyEdges.map(fromPersistedEdge)
     : dependencyEdges;
@@ -370,6 +486,46 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     }),
     [activitiesByProject, rawProjects]
   );
+  const filteredProjects = useMemo(() => {
+    const search = projectSearch.trim().toLowerCase();
+    return activeProjects
+      .filter((project) => {
+        const focus = projectFocusOption(project.focusStatus).value;
+        if (projectFocusFilter !== "all" && focus !== projectFocusFilter) return false;
+        if (!search) return true;
+        const haystack = [
+          project.name,
+          project.slug,
+          project.stack,
+          project.status,
+          project.summary,
+          project.goal,
+          project.focus,
+          ...(project.tags ?? []),
+          ...project.docs,
+        ].join(" ").toLowerCase();
+        return haystack.includes(search);
+      })
+      .sort((a, b) => {
+        const aActivities = activitiesByProject.get(a.slug) ?? [];
+        const bActivities = activitiesByProject.get(b.slug) ?? [];
+        const aScore = projectActivityScore(a, aActivities);
+        const bScore = projectActivityScore(b, bActivities);
+        if (projectSortMode === "focus") {
+          const focusDiff = projectFocusWeight(b) - projectFocusWeight(a);
+          if (focusDiff !== 0) return focusDiff;
+          return bScore.latestActivityAt - aScore.latestActivityAt;
+        }
+        if (projectSortMode === "shipped90") {
+          const aShipped = shippedCounts(aActivities).ninety;
+          const bShipped = shippedCounts(bActivities).ninety;
+          if (bShipped !== aShipped) return bShipped - aShipped;
+          return bScore.latestActivityAt - aScore.latestActivityAt;
+        }
+        if (projectSortMode === "name") return a.name.localeCompare(b.name);
+        return activeProjects.indexOf(a) - activeProjects.indexOf(b);
+      });
+  }, [activeProjects, activitiesByProject, projectFocusFilter, projectSearch, projectSortMode]);
   const projectBySlug = useMemo(
     () => new Map(activeProjects.map((project) => [project.slug, project])),
     [activeProjects]
@@ -383,6 +539,20 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const selectedActivities = effectiveSelectedProjectSlug
     ? activitiesByProject.get(effectiveSelectedProjectSlug) ?? []
     : [];
+  const selectedCounts = shippedCounts(selectedActivities);
+  const selectedOwnedSurfaces = selectedProject
+    ? activeSurfaces.filter((surface) => surface.ownerProject === selectedProject.slug)
+    : [];
+  const selectedDependencyEdges = selectedProject
+    ? activeEdges.filter((edge) => edge.fromProject === selectedProject.slug)
+    : [];
+
+  const selectProject = (projectSlug: string) => {
+    setSelectedProjectSlug(projectSlug);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("project", projectSlug);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   const handleSyncSeed = async () => {
     if (!clerkId || syncing || hydrating) return;
@@ -453,6 +623,29 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
       setSyncStatus(`error: ${err instanceof Error ? err.message : "failed to update task"}`);
     } finally {
       setTriagingTaskId(null);
+    }
+  };
+
+  const handleProjectFocus = async (project: DisplayProject, focusStatus: ProjectFocusStatus) => {
+    if (!clerkId || focusUpdatingSlug) return;
+    const option = projectFocusOption(focusStatus);
+    setFocusUpdatingSlug(project.slug);
+    setSyncStatus(null);
+    try {
+      const result = await withTimeout(
+        updateProjectFocus({
+          clerkId,
+          projectSlug: project.slug,
+          focusStatus: option.value,
+          focusRank: option.rank,
+        }),
+        "project focus update"
+      );
+      setSyncStatus(`project focus updated: ${project.name} / ${result.focusStatus} / ${result.focusRank}`);
+    } catch (err) {
+      setSyncStatus(`error: ${err instanceof Error ? err.message : "failed to update project focus"}`);
+    } finally {
+      setFocusUpdatingSlug(null);
     }
   };
 
@@ -528,64 +721,265 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
 
         <section>
           <PaneSectionLabel>projects</PaneSectionLabel>
-          <div className="grid gap-3 xl:grid-cols-2">
-            {activeProjects.map((project) => (
-              <article key={project.slug} className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/40 px-4 py-3">
-                {(() => {
-                  const counts = shippedCounts(activitiesByProject.get(project.slug) ?? []);
-                  return (
-                    <>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">{project.name}</h3>
-                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">{project.stack}</span>
-                  <span className={`ml-auto font-mono text-[9px] uppercase tracking-[0.14em] ${statusClass(project.status)}`}>{project.status}</span>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--success))] opacity-75">
-                    today {counts.today}
-                  </span>
-                  <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">
-                    7d {counts.seven}
-                  </span>
-                  <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">
-                    30d {counts.thirty}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedProjectSlug(project.slug)}
-                    className={`ml-auto border px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.12em] transition-colors ${
-                      effectiveSelectedProjectSlug === project.slug
-                        ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"
-                        : "border-[hsl(var(--border))]/60 text-[hsl(var(--text-secondary))] opacity-55 hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+          <div className="mb-3 flex flex-col gap-2 border-y border-[hsl(var(--border))]/55 py-3 lg:flex-row lg:items-center">
+            <label className="flex min-w-0 flex-1 items-center gap-2 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 py-2">
+              <Search size={13} className="shrink-0 text-[hsl(var(--accent))] opacity-70" />
+              <input
+                value={projectSearch}
+                onChange={(event) => setProjectSearch(event.target.value)}
+                placeholder="search projects, stacks, docs, tags"
+                className="min-w-0 flex-1 bg-transparent font-mono text-[10px] text-[hsl(var(--text-primary))] outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-40"
+              />
+            </label>
+            <label className="flex items-center gap-2 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 py-2">
+              <ListFilter size={13} className="text-[hsl(var(--accent))] opacity-70" />
+              <select
+                aria-label="Filter project focus"
+                value={projectFocusFilter}
+                onChange={(event) => setProjectFocusFilter(event.target.value as ProjectFocusStatus | "all")}
+                className="bg-transparent font-mono text-[10px] text-[hsl(var(--text-primary))] outline-none"
+              >
+                <option value="all">all focus</option>
+                {PROJECT_FOCUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 py-2">
+              <ArrowUpDown size={13} className="text-[hsl(var(--accent))] opacity-70" />
+              <select
+                aria-label="Sort projects"
+                value={projectSortMode}
+                onChange={(event) => setProjectSortMode(event.target.value as ProjectSortMode)}
+                className="bg-transparent font-mono text-[10px] text-[hsl(var(--text-primary))] outline-none"
+              >
+                {PROJECT_SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>sort {option.label}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() => setProjectDensity(projectDensity === "compact" ? "expanded" : "compact")}
+              className="flex h-9 items-center gap-2 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))]"
+            >
+              <ChevronDown size={13} className={projectDensity === "expanded" ? "rotate-180 text-[hsl(var(--accent))]" : "text-[hsl(var(--accent))]"} />
+              {projectDensity}
+            </button>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[minmax(290px,0.9fr)_minmax(360px,1.1fr)]">
+            <div className="max-h-[760px] space-y-2 overflow-y-auto pr-1">
+              {filteredProjects.map((project) => {
+                const counts = shippedCounts(activitiesByProject.get(project.slug) ?? []);
+                const focus = projectFocusOption(project.focusStatus);
+                const selected = effectiveSelectedProjectSlug === project.slug;
+                return (
+                  <article
+                    key={project.slug}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open ${project.name} project details`}
+                    onClick={() => selectProject(project.slug)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        selectProject(project.slug);
+                      }
+                    }}
+                    className={`cursor-pointer border-l bg-[hsl(var(--bg))]/40 px-4 py-3 transition-colors ${
+                      selected
+                        ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent))]/[0.055]"
+                        : "border-[hsl(var(--border))]/80 hover:border-[hsl(var(--accent))]/75"
                     }`}
-                    style={{ borderRadius: "var(--radius)" }}
                   >
-                    timeline
-                  </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span title={focus.label} className="inline-flex h-6 w-6 shrink-0 items-center justify-center border border-[hsl(var(--border))]/70 font-mono text-[10px] text-[hsl(var(--accent))]">
+                        {focus.rank}
+                      </span>
+                      <h3 className="min-w-0 truncate font-mono text-[12px] text-[hsl(var(--text-primary))]">{project.name}</h3>
+                      <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-65">{project.stack}</span>
+                      <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${statusClass(project.status)}`}>{project.status}</span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--success))] opacity-75">today {counts.today}</span>
+                      <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">7d {counts.seven}</span>
+                      <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">30d {counts.thirty}</span>
+                      <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">90d {counts.ninety}</span>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          selectProject(project.slug);
+                        }}
+                        aria-label={`View details for ${project.name}`}
+                        className="ml-auto border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-60 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                        style={{ borderRadius: "var(--radius)" }}
+                      >
+                        details
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          selectProject(project.slug);
+                        }}
+                        aria-label={`View timeline for ${project.name}`}
+                        className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-60 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                        style={{ borderRadius: "var(--radius)" }}
+                      >
+                        timeline
+                      </button>
+                    </div>
+                    <p className={`mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58 ${projectDensity === "compact" ? "line-clamp-2" : ""}`}>
+                      {project.summary}
+                    </p>
+                    {projectDensity === "expanded" && (
+                      <div className="mt-3 grid gap-2 md:grid-cols-2">
+                        <div>
+                          <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">goal</div>
+                          <p className="mt-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-55">{project.goal}</p>
+                        </div>
+                        <div>
+                          <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">focus</div>
+                          <p className="mt-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-55">{project.focus}</p>
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+              {filteredProjects.length === 0 && (
+                <div className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-6 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-55">
+                  no projects match the current search/filter.
                 </div>
-                <p className="mt-2 font-mono text-[10.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-62">{project.summary}</p>
-                <div className="mt-3 grid gap-2 md:grid-cols-2">
-                  <div>
-                    <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">goal</div>
-                    <p className="mt-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-55">{project.goal}</p>
+              )}
+            </div>
+
+            <div className="min-w-0 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
+              {selectedProject ? (
+                <>
+                  <div className="flex flex-wrap items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Target size={14} className="text-[hsl(var(--accent))]" />
+                        <h3 className="font-mono text-[14px] text-[hsl(var(--text-primary))]">{selectedProject.name}</h3>
+                        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">{selectedProject.stack}</span>
+                      </div>
+                      <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">{selectedProject.summary}</p>
+                    </div>
+                    <label className="flex items-center gap-2 border border-[hsl(var(--border))]/60 px-2 py-1">
+                      <span className="font-mono text-[10px] text-[hsl(var(--accent))]">{projectFocusOption(selectedProject.focusStatus).rank}</span>
+                      <select
+                        aria-label={`Set focus status for ${selectedProject.name}`}
+                        value={projectFocusOption(selectedProject.focusStatus).value}
+                        disabled={focusUpdatingSlug === selectedProject.slug}
+                        onChange={(event) => handleProjectFocus(selectedProject, event.target.value as ProjectFocusStatus)}
+                        className="bg-transparent font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--text-primary))] outline-none disabled:opacity-40"
+                      >
+                        {PROJECT_FOCUS_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
-                  <div>
-                    <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">focus</div>
-                    <p className="mt-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-55">{project.focus}</p>
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-4">
+                    {[
+                      ["today", selectedCounts.today],
+                      ["7d", selectedCounts.seven],
+                      ["30d", selectedCounts.thirty],
+                      ["90d", selectedCounts.ninety],
+                    ].map(([label, value]) => (
+                      <div key={label as string} className="border-t border-[hsl(var(--border))]/45 pt-2">
+                        <div className="font-mono text-[16px] text-[hsl(var(--text-primary))]">{value as number}</div>
+                        <div className="font-mono text-[8px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-45">shipped {label as string}</div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {project.docs.slice(0, 3).map((doc) => (
-                    <span key={doc} className="border border-[hsl(var(--border))]/70 px-2 py-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">
-                      {doc}
-                    </span>
-                  ))}
-                </div>
-                    </>
-                  );
-                })()}
-              </article>
-            ))}
+
+                  <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                    <div>
+                      <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">project links</div>
+                      <div className="mt-2 space-y-1">
+                        {selectedProject.repoUrl && (
+                          <a href={selectedProject.repoUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-mono text-[9.5px] text-[hsl(var(--text-primary))] underline-offset-4 hover:underline">
+                            repo <ExternalLink size={10} />
+                          </a>
+                        )}
+                        {selectedProject.productUrl && (
+                          <a href={selectedProject.productUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-mono text-[9.5px] text-[hsl(var(--text-primary))] underline-offset-4 hover:underline">
+                            product <ExternalLink size={10} />
+                          </a>
+                        )}
+                        {selectedProject.docs.slice(0, 6).map((doc) => (
+                          /^https?:\/\//.test(doc) ? (
+                            <a key={doc} href={doc} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-65 underline-offset-4 hover:underline">
+                              {doc.replace(/^https?:\/\//, "")} <ExternalLink size={10} />
+                            </a>
+                          ) : (
+                            <div key={doc} className="font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-50">{doc}</div>
+                          )
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">focus / goal</div>
+                      <p className="mt-2 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-55">{selectedProject.focus}</p>
+                      <p className="mt-2 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-45">{selectedProject.goal}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
+                    <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">api / mcp / stack surfaces</div>
+                    <div className="mt-2 space-y-3">
+                      {selectedOwnedSurfaces.length > 0 ? selectedOwnedSurfaces.map((surface) => (
+                        <div key={surface.slug} className="border-t border-[hsl(var(--border))]/35 pt-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-[10.5px] text-[hsl(var(--text-primary))]">{surface.name}</span>
+                            <span className="font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">{surface.kind} / {surface.ownerStack}</span>
+                            <span className={`ml-auto font-mono text-[8px] uppercase tracking-[0.14em] ${statusClass(surface.risk)}`}>{surface.risk}</span>
+                          </div>
+                          <p className="mt-1 font-mono text-[9px] leading-4 text-[hsl(var(--text-secondary))] opacity-48">{surface.features.join(", ")}</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {docsForSurface(surface).slice(0, 3).map((url) => (
+                              <a key={url} href={url} target="_blank" rel="noreferrer" className="break-all font-mono text-[8.5px] text-[hsl(var(--accent))] opacity-70 underline-offset-4 hover:underline">
+                                {url.replace(/^https?:\/\//, "")}
+                              </a>
+                            ))}
+                          </div>
+                          <div className="mt-2 overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1 font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-60">
+                            {curlForSurface(surface)}
+                          </div>
+                        </div>
+                      )) : (
+                        <p className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-45">
+                          no owned API/MCP surface is linked to this project yet.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {selectedDependencyEdges.length > 0 && (
+                    <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
+                      <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">dependency snapshot</div>
+                      <div className="mt-2 space-y-1">
+                        {selectedDependencyEdges.slice(0, 4).map((edge) => {
+                          const surface = surfaceBySlug.get(edge.toSurface);
+                          return (
+                            <p key={`${edge.fromProject}-${edge.toSurface}`} className="font-mono text-[9px] leading-4 text-[hsl(var(--text-secondary))] opacity-52">
+                              {edge.tier} / {edge.integrationType}: {surface?.name ?? edge.toSurface}
+                            </p>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">select a project to inspect details.</p>
+              )}
+            </div>
           </div>
         </section>
 

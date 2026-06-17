@@ -295,4 +295,54 @@ describe("portfolio repo update history", () => {
       })
     ).rejects.toThrow("Task not found");
   });
+
+  it("persists project focus status without letting another owner edit it", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    const asOther = t.withIdentity({ subject: OTHER_CLERK });
+
+    await asOwner.mutation(api.portfolio.upsertProject, {
+      clerkId: CLERK,
+      slug: "youmd",
+      name: "You.md",
+      stackName: "YouStack",
+      status: "active",
+      summary: "Agent brain and portfolio graph.",
+      goal: "Make project context durable.",
+      focus: "Project portfolio intelligence.",
+      docs: ["project-context/PRD.md"],
+      tags: ["youstack"],
+    });
+
+    const updated = await asOwner.mutation(api.portfolio.updateProjectFocus, {
+      clerkId: CLERK,
+      projectSlug: "youmd",
+      focusStatus: "top-priority",
+      focusRank: 1,
+    });
+
+    expect(updated).toMatchObject({
+      projectSlug: "youmd",
+      focusStatus: "top-priority",
+      focusRank: 1,
+    });
+
+    const graph = await asOwner.query(api.portfolio.listPortfolioGraph, {
+      clerkId: CLERK,
+    });
+    expect(graph.projects[0]).toMatchObject({
+      slug: "youmd",
+      focusStatus: "top-priority",
+      focusRank: 1,
+    });
+
+    await expect(
+      asOther.mutation(api.portfolio.updateProjectFocus, {
+        clerkId: OTHER_CLERK,
+        projectSlug: "youmd",
+        focusStatus: "killed",
+      })
+    ).rejects.toThrow("Project not found");
+  });
 });

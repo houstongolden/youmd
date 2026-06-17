@@ -51,6 +51,7 @@ const taskDraftValidator = v.object({
 
 const TASK_STATUSES = ["proposed", "open", "in_progress", "done", "snoozed", "cancelled"] as const;
 const TASK_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+const PROJECT_FOCUS_STATUSES = ["unset", "top-priority", "focusing", "on-ice", "abandoned", "killed"] as const;
 const MACHINE_PROOF_STATUSES = ["ready", "warn", "failed"] as const;
 const UPDATE_RUN_STATUSES = ["running", "success", "failed"] as const;
 const UPDATE_STEP_STATUSES = ["running", "success", "failed", "skipped", "pending"] as const;
@@ -63,6 +64,20 @@ function normalizeTaskStatus(value: string | undefined, fallback: string): strin
 function normalizeTaskPriority(value: string | undefined, fallback: string): string {
   const next = value?.trim();
   return next && TASK_PRIORITIES.includes(next as typeof TASK_PRIORITIES[number]) ? next : fallback;
+}
+
+function normalizeProjectFocusStatus(value: string | undefined): typeof PROJECT_FOCUS_STATUSES[number] {
+  const next = value?.trim();
+  return next && PROJECT_FOCUS_STATUSES.includes(next as typeof PROJECT_FOCUS_STATUSES[number]) ? next as typeof PROJECT_FOCUS_STATUSES[number] : "unset";
+}
+
+function projectFocusRank(status: string, suppliedRank?: number): number {
+  if (Number.isFinite(suppliedRank)) return Math.max(0, Math.min(9, Math.round(suppliedRank!)));
+  if (status === "top-priority") return 1;
+  if (status === "focusing") return 2;
+  if (status === "on-ice") return 3;
+  if (status === "abandoned" || status === "killed") return 0;
+  return 4;
 }
 
 function normalizeMachineProofStatus(value: string | undefined, fallback: string): string {
@@ -264,6 +279,40 @@ export const listPortfolioGraph = query({
       reusablePatterns: reusablePatterns.sort((a, b) => a.slug.localeCompare(b.slug)),
       tasks: tasks.sort((a, b) => b.updatedAt - a.updatedAt),
       recentCaptures,
+    };
+  },
+});
+
+export const updateProjectFocus = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    projectSlug: v.string(),
+    focusStatus: v.string(),
+    focusRank: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const slug = slugify(args.projectSlug);
+    const project = await ctx.db
+      .query("portfolioProjects")
+      .withIndex("by_userId_slug", (q) => q.eq("userId", user._id).eq("slug", slug))
+      .first();
+    if (!project) throw new Error("Project not found");
+
+    const focusStatus = normalizeProjectFocusStatus(args.focusStatus);
+    const focusRank = projectFocusRank(focusStatus, args.focusRank);
+    await ctx.db.patch(project._id, {
+      focusStatus,
+      focusRank,
+      updatedAt: Date.now(),
+    });
+
+    return {
+      projectId: project._id,
+      projectSlug: slug,
+      focusStatus,
+      focusRank,
     };
   },
 });

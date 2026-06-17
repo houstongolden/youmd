@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 102
-**Total messages:** 513
+**Total sessions:** 103
+**Total messages:** 514
 **Last updated:** 2026-06-17
 
 ## Table of Contents
 
+1. [2026-06-17 (portfolio-project-details-shipped-focus-controls)](#session-2026-06-17-portfolio-project-details-shipped-focus-controls) --- 1 message
 1. [2026-06-17 (env-vault-bootstrap-guardrails-continuation)](#session-2026-06-17-env-vault-bootstrap-guardrails-continuation) --- 1 message
 1. [2026-06-17 (canonical-skills-api-continuation)](#session-2026-06-17-canonical-skills-api-continuation) --- 1 message
 1. [2026-06-17 (hosted-skill-registry-continuation)](#session-2026-06-17-hosted-skill-registry-continuation) --- 1 message
@@ -110,6 +111,13 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-17 (portfolio-project-details-shipped-focus-controls)
+
+**2026-06-17 16:14:00 UTC**
+> k awesome - please ensure you have project detail pages clickable from the projects portfolio properly and that the project graph must include links to the exact API docs page url and curl command and stack associated with it etc. --- and more obviously! the SHIPPED stuff we talked about earlier please add that! so crucial! Shipped today, 7d, 30d, 90d, etc etc...! show what me and my agents are shipping on the main card and in more detail on the project pages etc ---  i need a quick way to see a more compact view of my projects portfolio list and need to have a quick way to give projects a quick status order of priority or focus etc... basically there are a lot and showing all details by default but should be able to click into the project by clicking the card or a view details next to the timeline option but even a dropdown button near the timeline one to the right of it maybe since i do think sorting by priority/focus is gonna be helpful and add filters/sorting/search above the PRojects list in the portfolio and i think some simple statuses or tags like: Top Priority, Focussing, Freeze/On Ice, Abandoned, Dead/Killed. with just a simple little single icon that if you hover or click it the different icons with simple one word labels that show on hover appear or something for the status even show a little number by it or something so you know 1 = top priority, 0 - dead/abandoned, etc.
 
 ---
 

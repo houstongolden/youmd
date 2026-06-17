@@ -1,5 +1,18 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio project details and shipped/focus controls
+
+### feat(web/convex): make project portfolio cards compact, clickable, and priority-aware
+- Added a compact Portfolio Graph project browser with search, focus filter, activity/priority/shipped/name sorting, and a compact/expanded density toggle.
+- Made project rows and `details` / `timeline` controls open a stable URL-backed detail state such as `/shell?project=youmd`.
+- Added persisted project focus metadata (`focusStatus`, `focusRank`) with owner-gated `portfolio.updateProjectFocus` mutation and regression coverage for owner isolation.
+- Added project focus statuses: `Top Priority`, `Focusing`, `On Ice`, `Abandoned`, `Killed`, and `Unsorted`, with numeric rank badges.
+- Expanded shipped counters from `today` / `7d` / `30d` to include `90d` on both compact project rows and selected project detail panels.
+- Surfaced project links, API/MCP/stack surfaces, exact docs URLs, curl commands, associated stack, and dependency snapshot inside the selected project detail panel.
+- Added a timeout/recovery guard so the focus dropdown cannot stay disabled if the frontend is ahead of the deployed Convex backend.
+- Verified locally with `npx tsc --noEmit --pretty false`, `npm run test:convex -- convex/portfolio.test.ts`, `git diff --check`, `npm run lint` (warnings only), and `npm run build`.
+- Authenticated in-app Browser proof verified `/shell` renders the Portfolio Graph with search, URL-backed `project=youmd` detail selection, shipped `today` / `7d` / `30d` / `90d` counters, docs URL, and curl command visibility. The first focus-mutation browser attempt correctly exposed that the remote deploy was still running from pre-push `main`; post-push Convex redeploy and focus-mutation proof remain the next required step.
+
 ## 2026-06-17 — Live fresh-machine env-vault bootstrap proof
 
 ### fix(web/installer): install You.md without sudo on locked-down npm prefixes

@@ -59,6 +59,8 @@ PRD Version: 2.3
 - [x] Persist project activity intelligence from local README/project-context files plus recent commits/PRs into `portfolioProjectActivities`
 - [x] Add shipped `today` / `7d` / `30d` chips to project cards and a per-project shipping timeline in the Portfolio Graph pane
 - [x] Visually verify authenticated local `/shell` shows 55 hydrated projects, high-signal project ordering, shipped chips, and the scrolled shipping timeline
+- [x] Add compact portfolio project browser controls: search, focus filter, sort, density toggle, URL-backed clickable details, shipped `today` / `7d` / `30d` / `90d`, API docs URL/curl/stack surface details, and persisted project focus rank/status fields
+- [ ] After this commit is pushed and Convex deploys from the new `main`, rerun authenticated browser proof that changing a project focus status persists and the dropdown recovers from backend deploy gaps
 - [x] Build the `/shell` APIs + Env Intelligence view with provider usage stats, env key-name normalization, service-account notes, API/MCP risk tiers, and secret-safe audit commands
 - [x] Register `portfolio-graph-auditor` in the bundled local CLI skill catalog and align the Skills pane with `machine-bootstrap` + portfolio-audit catalog visibility
 - [x] Run signed-in local visual QA for Portfolio Graph, APIs + Env Intelligence, and `/skills` tracked-project propagation at `http://localhost:3100/shell`
