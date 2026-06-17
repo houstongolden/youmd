@@ -7,6 +7,16 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-17 — Graph-backed fresh-computer bootstrap prompt
+- [x] Add `youmd machine prompt` to generate a one-command Claude Code/Codex fresh-computer setup artifact
+- [x] Make the generated command install You.md, authenticate, pull/sync identity, restore shared skills/stacks, hydrate the portfolio graph before cloning, clone active projects into `~/Desktop/CODE_YOU`, restore encrypted env vaults when provided, rehydrate local evidence, and start resident sync daemons
+- [x] Update the bundled `machine-bootstrap` skill so local agents use the portfolio graph + GitHub/local audit hydration path instead of a static checklist
+- [x] Add signed-in shell handling for `/new computer`, `/new machine`, and obvious natural-language fresh-machine setup requests
+- [x] Mint a short-lived scoped bootstrap key from the web shell and embed it in the copyable local setup command, while keeping raw `.env.local` values out of the browser prompt
+- [x] Add command-palette/help/skills-pane discovery for `/new computer` and `youmd machine prompt`
+- [x] Verify with focused CLI tests, CLI build, root typecheck, docs check, lint/radius, production build, compiled CLI prompt smoke, and authenticated local browser QA of `/new computer`
+- [ ] Run the generated command end-to-end on the actual brand-new computer / clean agent host and verify projects, skills, env vault restore, local servers, and portfolio graph sync there
+
 ### 2026-06-17 — Shell sidebar expand/collapse regression
 - [x] Investigate why the left shell sidebar can get stuck collapsed when the right detail pane is open
 - [x] Fix the responsive auto-collapse state so a manual click expands the sidebar immediately instead of being overridden below `1520px`

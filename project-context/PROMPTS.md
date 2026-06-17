@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 90
-**Total messages:** 500
+**Total sessions:** 91
+**Total messages:** 501
 **Last updated:** 2026-06-17
 
 ## Table of Contents
 
+1. [2026-06-17 (fresh-computer-one-command-setup)](#session-2026-06-17-fresh-computer-one-command-setup) --- 1 message
 1. [2026-06-17 (portfolio-activity-intelligence-shipped-timeline)](#session-2026-06-17-portfolio-activity-intelligence-shipped-timeline) --- 3 messages
 1. [2026-06-17 (portfolio-graph-real-hydration-correction)](#session-2026-06-17-portfolio-graph-real-hydration-correction) --- 1 message
 1. [2026-06-17 (shell-sidebar-collapse-regression)](#session-2026-06-17-shell-sidebar-collapse-regression) --- 1 message
@@ -100,6 +101,16 @@ Auto-maintained — new messages appended each session.
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
 
 ---
+
+## Session: 2026-06-17 (fresh-computer-one-command-setup)
+
+**2026-06-17 08:20:00 UTC**
+> Okay please ensure that the skills that I requested earlier are going to leverage the projects graph and everything to finish or do a full setup of installing UMD and all your active projects on a brand new computer that I want to test. That's the goal.
+> That's going to include:
+> - running basically having Claude Code on the brand new computer or Codex
+> - running the one curl command with the prompt, just the one curl command that will have all the prompts to instruct what to do next to set up the project, to create the local uppercase code_ directory on the computer, to make the subdirectories for the projects, to use their GitHub links to actually fork those projects into the new directories, and to set that as the remote main, and then to actually try to run them locally and ensure that they are up and running and working locally
+> There's also that step where, via the API, the agent will share the secure.env.local file as well before the agent tries to run the whole thing locally on the new computer. That should all happen basically as soon as I run the curl command on the new computer inside of Claude Code or Codex.
+> At that point I could just log into UMD on the web, copy a prompt from my dashboard, or use a slash command like /new computer or something, whatever we want to call it, instead of having to do / and just asking the agent in natural language in the web chat, "Hey I want to set up a new computer," and just saying that alone. It'll know what to do. It'll create the prompt, it'll embed your API key into the prompt, and have a little copy prompt button directly in the chat. You just copy that right into the cloud coder Codex terminal and it'll do everything and share the.env.local at the end and set up the project directory subdirectories and then also pull down all of your local skills synced from this local machine as it should be, with the whole setup of my cloud.md, my agents.md, the sim links sharing the skills between my local projects, my everything syncing properly between this local computer that we're on right now on Codex and this new computer, all from just doing this one command. It'll have everything, all the skills, all my preferences, ready to go.
 
 ## Session: 2026-06-17 (portfolio-activity-intelligence-shipped-timeline)
 

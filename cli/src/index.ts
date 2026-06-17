@@ -702,6 +702,9 @@ program
   .description("set up a new machine with your synced skills, stacks, and agent config")
   .option("--root <dir>", "projects: workspace root, default ~/Desktop/CODE_YOU")
   .option("--days <n>", "projects: recent activity window in days", "90")
+  .option("--limit <n>", "prompt: portfolio graph project cap", "80")
+  .option("--key <apiKey>", "prompt: embed a You.md API key for non-interactive login")
+  .option("--env-vault <path>", "prompt: encrypted .env.local vault path to restore")
   .option("--no-github", "projects: skip authenticated GitHub recent-repo scan")
   .option("--yes", "projects: include older projects without prompting")
   .option("--no-clone", "projects: create directories only")
@@ -713,6 +716,9 @@ program
       dryRun: options.dryRun,
       root: options.root,
       days: options.days,
+      limit: options.limit,
+      key: options.key,
+      envVault: options.envVault,
       yes: options.yes,
       clone: options.clone,
       github: options.github,

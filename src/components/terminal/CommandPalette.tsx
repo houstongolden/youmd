@@ -21,6 +21,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/crawlers", description: "sources, crawlers, crons, loops", category: "navigation" },
   { command: "/skills", description: "skills inside your stacks", category: "navigation" },
   { command: "/stacks", description: "named private/public expertise stacks", category: "navigation" },
+  { command: "/new computer", description: "generate fresh-machine setup command", category: "action" },
   { command: "/share", description: "create a shareable identity link", category: "action" },
   { command: "/share --private", description: "share with private context included", category: "action" },
   { command: "/publish", description: "publish your latest bundle", category: "action" },

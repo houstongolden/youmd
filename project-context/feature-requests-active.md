@@ -4,6 +4,23 @@ Last Updated: 2026-06-17
 
 ---
 
+## 2026-06-17 — Fresh-computer You.md + active-project setup
+
+### 137. Generate one-command setup for a brand-new computer and prove it on a real clean host
+**Status:** IN PROGRESS (graph-backed prompt generation and authenticated web/CLI proof complete; actual new-host run pending)
+**Verified:** PARTIAL (`youmd machine prompt` unit tests/build, root typecheck, docs check, lint/radius, production build, compiled CLI prompt smoke, and authenticated local browser `/new computer` QA passed)
+**Production Verified:** NO
+**Source:** 2026-06-17 — Houston: "ensure that the skills that I requested earlier are going to leverage the projects graph and everything to finish or do a full setup of installing UMD and all your active projects on a brand new computer that I want to test..."
+**Actionable Scope:**
+1. Make the fresh-machine skill leverage the Projects/Portfolio Graph instead of only static local records. **DONE local slice:** `machine-bootstrap` now requires `youmd project portfolio-hydrate` before and after clone, and `youmd machine prompt` embeds that flow.
+2. Provide one copyable command/prompt for Claude Code or Codex on the new machine. **DONE local slice:** `youmd machine prompt` prints the artifact; web shell `/new computer` returns the same kind of copyable fenced command.
+3. Have the command install You.md, authenticate, pull/sync identity, restore shared skills/stacks/agent config, create `~/Desktop/CODE_YOU`, clone active GitHub-backed projects, restore encrypted env vaults, rehydrate local evidence, install daemons, and show status. **DONE in generated command; pending real new-host execution.**
+4. Generate the web-shell prompt from natural language or `/new computer`. **DONE and visually verified:** signed-in local dashboard handles `/new computer`, switches to Skills, mints a 7-day scoped key, and renders the copyable command.
+5. Embed an API key in the generated prompt without exposing raw `.env.local` values. **DONE local slice:** web shell creates a short-lived scoped key for the command; `.env.local` remains behind `YOUMD_ENV_VAULT` / encrypted local restore only.
+6. Sync local skills/preferences/AGENTS/CLAUDE symlink behavior through the existing shared stack ownership model. **DONE in command path:** it runs `youmd machine setup`, `youmd skill install all`, `youmd skill sync`, `youmd skill link claude`, and `youmd skill link codex`; actual new-host proof pending.
+7. Test on an actual brand-new computer / clean agent host. **PENDING:** run the generated command there, verify project clone count, local server startup for key projects, env vault restore, resident daemon status, and Portfolio Graph sync back to You.md.
+**Progress (2026-06-17):** Added `cli/src/lib/machine-bootstrap-prompt.ts`, `youmd machine prompt`, dashboard `/new computer` handling, command-palette/help/skills/docs discovery, and updated bundled `machine-bootstrap`. Verified compiled CLI output and authenticated local browser UI at `http://localhost:3100/dashboard`; screenshot: `/tmp/youmd-new-computer-prompt-2026-06-17.png`.
+
 ## 2026-06-17 — Shell sidebar expand/collapse regression
 
 ### 136. Fix left sidebar menu stuck collapsed

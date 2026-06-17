@@ -1,5 +1,18 @@
 # You.md — Changelog
 
+## 2026-06-17 — Graph-backed fresh-computer bootstrap prompt
+
+### feat(cli/web): generate one-command new-computer setup artifacts
+- Added `youmd machine prompt` / `youmd machine new-computer` / `youmd machine new-machine`, which print a single copyable Claude Code/Codex bootstrap command.
+- Added `cli/src/lib/machine-bootstrap-prompt.ts` with shell-safe command generation and focused tests.
+- The generated command installs You.md, authenticates with `YOUMD_API_KEY` when present, pulls/syncs identity, restores shared skills/stacks, links Claude/Codex skills, checks GitHub auth, hydrates the Portfolio Graph before cloning, runs `youmd machine projects`, restores encrypted env vaults only when `YOUMD_ENV_VAULT` is set, rehydrates local project/env evidence, starts resident daemons, and shows status.
+- Updated the bundled `machine-bootstrap` skill so local agents use portfolio graph hydration before and after project clone rather than treating fresh-machine setup as a static checklist.
+- Added deterministic signed-in shell handling for `/new computer`, `/new machine`, `/machine bootstrap`, and obvious natural-language fresh-machine setup requests. The web shell mints a 7-day scoped bootstrap key and returns the copyable command while keeping raw `.env.local` values out of the browser prompt.
+- Added command-palette, Help pane, Skills pane, and docs references for `/new computer` and `youmd machine prompt`.
+- Verified with `npm --prefix cli test -- machine-bootstrap-prompt`, `npm --prefix cli run build`, `npx tsc --noEmit --pretty false`, `npm run docs:check`, `npm run lint` (warnings only), `npm run build`, compiled CLI prompt smoke, and authenticated local browser QA of `/new computer`.
+- Visual QA screenshot: `/tmp/youmd-new-computer-prompt-2026-06-17.png`.
+- Remaining: run the generated command on the actual fresh/new computer or clean agent host and verify cloned projects, local servers, env vault restore, shared skills, resident daemons, and portfolio graph sync there.
+
 ## 2026-06-17 — Shell sidebar expand/collapse
 
 ### fix(web): let manual sidebar toggles override responsive auto-collapse

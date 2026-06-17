@@ -108,6 +108,120 @@ type BrainDumpCommand = {
   }>;
 };
 
+const FRESH_MACHINE_BOOTSTRAP_SCOPES = [
+  "read:public",
+  "read:private",
+  "write:bundle",
+  "write:memories",
+];
+
+const FRESH_MACHINE_BOOTSTRAP_ROOT = "~/Desktop/CODE_YOU";
+const FRESH_MACHINE_BOOTSTRAP_DAYS = 90;
+const FRESH_MACHINE_BOOTSTRAP_LIMIT = 80;
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\"'\"'`)}'`;
+}
+
+function buildFreshMachineBootstrapCommand(apiKey?: string): string {
+  const script = [
+    "set -euo pipefail",
+    'ROOT="${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}"',
+    'DAYS="${YOUMD_ACTIVE_DAYS:-90}"',
+    'LIMIT="${YOUMD_PROJECT_LIMIT:-80}"',
+    'echo "[you.md] installing runtime"',
+    "curl -fsSL https://you.md/install.sh | bash",
+    'if [ -n "${YOUMD_API_KEY:-}" ]; then',
+    '  echo "[you.md] logging in with bootstrap key"',
+    '  youmd login --key "$YOUMD_API_KEY"',
+    "else",
+    '  echo "[you.md] no YOUMD_API_KEY set; starting interactive login"',
+    "  youmd login",
+    "fi",
+    'echo "[you.md] pulling identity bundle and syncing local brain"',
+    "youmd pull",
+    "youmd sync",
+    'echo "[you.md] restoring shared skills, stacks, and agent host config"',
+    "youmd machine setup",
+    "youmd skill install all",
+    "youmd skill sync",
+    "youmd skill link claude || true",
+    "youmd skill link codex || true",
+    'if command -v gh >/dev/null 2>&1; then',
+    "  gh auth status >/dev/null 2>&1 || gh auth login",
+    "else",
+    '  echo "[you.md] GitHub CLI missing; private repo clones may need gh installed"',
+    "fi",
+    'echo "[you.md] hydrating portfolio graph from You.md/GitHub before local clone"',
+    'youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true',
+    'echo "[you.md] creating code workspace and cloning active project repos"',
+    'youmd machine projects --root "$ROOT" --days "$DAYS" --yes',
+    'if [ -n "${YOUMD_ENV_VAULT:-}" ]; then',
+    '  echo "[you.md] restoring encrypted .env.local vault"',
+    '  youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"',
+    "else",
+    '  echo "[you.md] env vault not restored yet"',
+    '  echo "copy your encrypted env vault to this machine, then run:"',
+    '  echo "youmd env restore <vault> --root \\"$ROOT\\""',
+    "fi",
+    'echo "[you.md] rehydrating portfolio graph with local README/project-context/env-key evidence"',
+    'youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true',
+    'echo "[you.md] installing resident identity/skillstack/project-context daemons"',
+    "youmd stack daemon install || true",
+    "youmd stack daemon status || true",
+    "youmd status",
+    'echo "[you.md] fresh-machine bootstrap complete: $ROOT"',
+  ].join("\n");
+
+  const assignments = [
+    apiKey ? `YOUMD_API_KEY=${shellQuote(apiKey)}` : null,
+    `YOUMD_ACTIVE_DAYS=${shellQuote(String(FRESH_MACHINE_BOOTSTRAP_DAYS))}`,
+    `YOUMD_PROJECT_LIMIT=${shellQuote(String(FRESH_MACHINE_BOOTSTRAP_LIMIT))}`,
+  ].filter(Boolean);
+
+  return `${assignments.join(" ")} bash -lc ${shellQuote(script)}`;
+}
+
+function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: string): string {
+  const command = buildFreshMachineBootstrapCommand(apiKey);
+  const authLine = apiKey
+    ? "I minted a 7-day bootstrap key and embedded it in the command. Treat this as secret local setup material."
+    : `I could not mint a bootstrap key${keyError ? ` (${keyError})` : ""}. The command will fall back to interactive You.md login.`;
+
+  return [
+    "fresh-computer setup prompt ready.",
+    "",
+    authLine,
+    "",
+    "Copy this whole command into Claude Code or Codex on the new machine:",
+    "",
+    "```bash",
+    command,
+    "```",
+    "",
+    "What it will do:",
+    "- install You.md from the curl runtime",
+    "- authenticate and pull/sync your identity bundle",
+    "- restore shared agent skills, stack config, Claude/Codex links, and resident sync daemons",
+    "- hydrate the portfolio graph from You.md + authenticated GitHub before cloning",
+    `- create \`${FRESH_MACHINE_BOOTSTRAP_ROOT}\` and clone active project repos from the last 90 days`,
+    "- restore `.env.local` only if `YOUMD_ENV_VAULT` is set, then rehydrate local project/env evidence",
+    "",
+    "Secret rule: raw `.env.local` values are not embedded in this prompt. Put your encrypted vault on the new machine and either set `YOUMD_ENV_VAULT=/path/to/vault` before running, or run the printed `youmd env restore <vault>` command after clone.",
+  ].join("\n");
+}
+
+function isFreshMachineBootstrapRequest(text: string): boolean {
+  const normalized = text.trim().toLowerCase();
+  if (!normalized) return false;
+  return (
+    /^\/(?:new[-\s]?computer|new[-\s]?machine|machine[-\s]?bootstrap|fresh[-\s]?machine)\b/.test(normalized) ||
+    /\b(set ?up|setup|bootstrap|install|hydrate)\b/.test(normalized) &&
+      /\b(new|fresh|brand new)\b/.test(normalized) &&
+      /\b(computer|machine|mac|macbook|mac mini|workstation|codex|claude code)\b/.test(normalized)
+  );
+}
+
 function slugifyPortfolioToken(value: string): string {
   return value
     .trim()
@@ -622,6 +736,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const scaffoldProjectDirectories = useMutation(api.me.scaffoldProjectDirectories);
   const publishLatest = useMutation(api.me.publishLatest);
   const createContextLink = useMutation(api.contextLinks.createLink);
+  const createApiKey = useMutation(api.apiKeys.createKey);
   const updatePrivateContext = useMutation(api.private.updatePrivateContext);
   const updateProfile = useMutation(api.profiles.updateProfile);
   const setProfileImages = useMutation(api.profiles.setProfileImages);
@@ -1487,6 +1602,77 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     ]
   );
 
+  const handleFreshMachineBootstrapCommand = useCallback(
+    async (rawCommand: string): Promise<boolean> => {
+      if (!isFreshMachineBootstrapRequest(rawCommand)) return false;
+
+      setDisplayMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: "user", content: rawCommand.trim() },
+      ]);
+
+      if (!user?.id) {
+        setDisplayMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: "sign in first so the You Agent can mint a fresh-machine bootstrap key and generate the setup prompt.",
+          },
+        ]);
+        return true;
+      }
+
+      if (onPaneSwitch) onPaneSwitch("skills");
+      setIsThinking(true);
+      setThinkingCategory("building");
+      setThinkingPhrase("building fresh-machine bootstrap prompt");
+      clearSteps();
+      const keyStepId = addStep("minting scoped bootstrap key", "7-day local setup credential");
+
+      let apiKey: string | undefined;
+      let keyError: string | undefined;
+      try {
+        const result = await createApiKey({
+          clerkId: user.id,
+          label: "fresh-machine bootstrap",
+          scopes: FRESH_MACHINE_BOOTSTRAP_SCOPES,
+          expiresInDays: 7,
+        });
+        apiKey = result.key;
+        completeStep(keyStepId, "expires in 7d");
+      } catch (err) {
+        keyError = err instanceof Error ? err.message : "unknown key creation error";
+        failStep(keyStepId, "interactive login fallback");
+      }
+
+      const graphStepId = addStep("binding setup to portfolio graph", "remote GitHub + local audit hydration");
+      completeStep(graphStepId, `${FRESH_MACHINE_BOOTSTRAP_LIMIT} project cap`);
+
+      setDisplayMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: buildFreshMachineBootstrapMessage(apiKey, keyError),
+        },
+      ]);
+      setIsThinking(false);
+      setTimeout(() => clearSteps(), 1200);
+      textareaRef.current?.focus();
+      return true;
+    },
+    [
+      addStep,
+      clearSteps,
+      completeStep,
+      createApiKey,
+      failStep,
+      onPaneSwitch,
+      user?.id,
+    ]
+  );
+
   const handleProjectDirectoryScaffold = useCallback(
     async (trimmed: string, priorConversation: ChatMessage[], userMsg: ChatMessage) => {
       if (!user?.id) return false;
@@ -2142,6 +2328,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
         return true;
       }
 
+      if (isFreshMachineBootstrapRequest(trimmed)) {
+        void handleFreshMachineBootstrapCommand(cmd);
+        return true;
+      }
+
       // Pane-switching commands
       // Note: /publish and /help are handled separately below with special logic
       const paneCommands: Record<string, RightPane> = {
@@ -2624,7 +2815,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       return false;
     },
-    [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone, privateContext, recentMemories, handlePortfolioChatCommand]
+    [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone, privateContext, recentMemories, handlePortfolioChatCommand, handleFreshMachineBootstrapCommand]
   );
 
   // Track scraped sources to avoid re-scraping
@@ -2648,6 +2839,14 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       /^(?:braindump|brain\s+dump|dump)\b/i.test(trimmed)
     ) {
       const handled = await handlePortfolioChatCommand(trimmed);
+      if (handled) {
+        textareaRef.current?.focus();
+        return;
+      }
+    }
+
+    if (isFreshMachineBootstrapRequest(trimmed)) {
+      const handled = await handleFreshMachineBootstrapCommand(trimmed);
       if (handled) {
         textareaRef.current?.focus();
         return;
@@ -3479,7 +3678,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     setIsThinking(false);
     setTimeout(() => clearSteps(), 250);
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, handlePortfolioChatCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps, buildTurnScaffold, pruneResolvedMutationTurns, handleProjectDirectoryScaffold]);
+  }, [input, isThinking, handleSlashCommand, handlePortfolioChatCommand, handleFreshMachineBootstrapCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps, buildTurnScaffold, pruneResolvedMutationTurns, handleProjectDirectoryScaffold]);
 
   return {
     // State

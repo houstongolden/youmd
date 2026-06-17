@@ -1607,28 +1607,24 @@ preferences: terminal-native, monochrome
 
             <H3 id="sync-new-machine">Set Up a New Machine</H3>
             <P>
-              On a fresh machine, run these five commands in order. Each one
-              depends on the previous step being complete.
+              From the You.md dashboard, ask the shell for{" "}
+              <InlineCode>/new computer</InlineCode>. It mints a short-lived
+              bootstrap key and returns one copyable command for Claude Code or
+              Codex on the fresh machine. Terminal-only users can generate the
+              same runbook with <InlineCode>youmd machine prompt</InlineCode>.
             </P>
-            <CodeBlock title="new machine setup">{`# 1. Install the CLI, bundled skills, and auto-configure MCP for detected agents
-curl -fsSL https://you.md/install.sh | bash
+            <CodeBlock title="new machine setup">{`# Web shell
+/new computer
 
-# 2. Clone synced repos, restore skills and shared agent layer, guided setup
-youmd machine setup
-
-# 3. Restore secrets from your encrypted vault (carry this file between machines)
-youmd env restore <vault>
-
-# 4. Start the background daemon so skills and stacks stay in sync automatically
-youmd stack daemon install
-
-# 5. Authenticate the CLI
-youmd login`}</CodeBlock>
+# CLI-only
+youmd machine prompt --root ~/Desktop/CODE_YOU --days 90 --limit 80`}</CodeBlock>
             <P>
-              <InlineCode>youmd machine setup</InlineCode> clones the skill
-              sync repo and shared agent layer, restores installed skills, and
-              walks through any remaining configuration that cannot be automated.
-              Run it first, before restoring secrets or starting the daemon.
+              The generated command installs You.md, authenticates, pulls and
+              syncs your identity bundle, restores shared skills/stacks/agent
+              host config, hydrates the portfolio graph from You.md and GitHub,
+              creates <InlineCode>~/Desktop/CODE_YOU</InlineCode>, clones active
+              project repos, optionally restores an encrypted env vault, then
+              rehydrates local README/project-context/env-key evidence.
             </P>
             <CommandTable
               commands={[
@@ -1638,11 +1634,12 @@ youmd login`}</CodeBlock>
               ]}
             />
             <Callout type="tip">
-              The encrypted env vault is the only sync plane that requires
-              manual transport. Everything else (identity, skills, stacks)
-              reaches the new machine automatically once the daemon is running
-              and you have logged in. The project-context sync is intentionally
-              context-only: it refuses to merge upstream app-code changes.
+              The generated prompt may contain a bootstrap API key, so treat it
+              as secret-bearing setup material. Raw <InlineCode>.env.local</InlineCode>{" "}
+              values are never embedded in the browser prompt; move the
+              encrypted env vault separately and restore it locally. The
+              project-context sync is intentionally context-only: it refuses to
+              merge upstream app-code changes.
             </Callout>
 
             {/* ── CLI ──────────────────────────────────────── */}

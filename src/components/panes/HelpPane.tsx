@@ -140,6 +140,7 @@ export function HelpPane({ username }: HelpPaneProps) {
         <div className="space-y-1 mb-3">
           <CopyableCommand command="/stacks" dimmed />
           <CopyableCommand command="/skills" dimmed />
+          <CopyableCommand command="/new computer" dimmed />
           <CopyableCommand command="/skill use {name}" dimmed />
           <CopyableCommand command="/skill use youstack-maintainer" dimmed />
         </div>
@@ -230,6 +231,7 @@ export function HelpPane({ username }: HelpPaneProps) {
           <CopyableCommand command="youmd logout" dimmed />
           <CopyableCommand command="youmd push" dimmed />
           <CopyableCommand command="youmd pull" dimmed />
+          <CopyableCommand command="youmd machine prompt --root ~/Desktop/CODE_YOU --days 90" dimmed />
           <CopyableCommand command="youmd skill install all" dimmed />
           <CopyableCommand command="youmd skill use youstack-maintainer" dimmed />
           <CopyableCommand command="youmd skill init-project" dimmed />

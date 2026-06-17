@@ -1,0 +1,39 @@
+import { describe, expect, it } from "vitest";
+import {
+  buildFreshMachineBootstrapCommand,
+  buildFreshMachineBootstrapPrompt,
+} from "../lib/machine-bootstrap-prompt";
+
+describe("fresh machine bootstrap prompt", () => {
+  it("builds one pasteable shell command with portfolio graph hydration and project clone steps", () => {
+    const command = buildFreshMachineBootstrapCommand({
+      apiKey: "ym_test'quoted",
+      root: "~/Desktop/CODE_2026",
+      days: 120,
+      limit: 44,
+      envVaultPath: "~/Desktop/env-local-backup.tar.gz.gpg",
+    });
+
+    expect(command).toContain("YOUMD_API_KEY='ym_test'\"'\"'quoted'");
+    expect(command).toContain("YOUMD_CODE_ROOT='~/Desktop/CODE_2026'");
+    expect(command).toContain("YOUMD_ACTIVE_DAYS='120'");
+    expect(command).toContain("YOUMD_PROJECT_LIMIT='44'");
+    expect(command).toContain("YOUMD_ENV_VAULT='~/Desktop/env-local-backup.tar.gz.gpg'");
+    expect(command).toContain("bash -lc");
+    expect(command).toContain("curl -fsSL https://you.md/install.sh | bash");
+    expect(command).toContain('youmd login --key "$YOUMD_API_KEY"');
+    expect(command).toContain('youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT"');
+    expect(command).toContain('youmd machine projects --root "$ROOT" --days "$DAYS" --yes');
+    expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"');
+    expect(command).not.toContain(".env.local=");
+  });
+
+  it("renders a copyable agent prompt with secret-safe env-vault language", () => {
+    const prompt = buildFreshMachineBootstrapPrompt({ root: "~/Desktop/CODE_YOU" });
+
+    expect(prompt).toContain("Fresh computer bootstrap for Claude Code / Codex");
+    expect(prompt).toContain("```bash");
+    expect(prompt).toContain("You.md portfolio graph + authenticated GitHub recent repos");
+    expect(prompt).toContain(".env.local values are never embedded here");
+  });
+});

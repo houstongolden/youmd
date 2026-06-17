@@ -11,6 +11,7 @@ import {
   GithubProjectSource,
   MachineProjectCandidate,
 } from "../lib/machine-projects";
+import { buildFreshMachineBootstrapPrompt } from "../lib/machine-bootstrap-prompt";
 
 // The compiled file lives at dist/commands/machine.js.
 // Walking up two levels lands at the package root, then into scripts/.
@@ -43,12 +44,16 @@ function printHelp(): void {
   console.log("  " + chalk.hex("#C46A3A")("Commands"));
   console.log("    " + chalk.cyan("setup") + chalk.dim("     bootstrap a fresh Mac: clone synced repos, restore skills, guide secrets + daemons"));
   console.log("    " + chalk.cyan("projects") + chalk.dim("  create/clone active You.md project repos into a Desktop code root"));
+  console.log("    " + chalk.cyan("prompt") + chalk.dim("    print a one-command Claude Code/Codex fresh-computer setup prompt"));
   console.log("    " + chalk.cyan("capture") + chalk.dim("   snapshot agent config (settings, commands, plugins) into ~/.agent-shared"));
   console.log("    " + chalk.cyan("restore") + chalk.dim("   apply ~/.agent-shared/agent-config/ back onto this machine"));
   console.log("");
   console.log("  " + chalk.dim("Options:"));
   console.log("    " + chalk.cyan("--root <dir>") + chalk.dim("   (projects) workspace root, default ~/Desktop/CODE_YOU"));
   console.log("    " + chalk.cyan("--days <n>") + chalk.dim("     (projects) recent activity window, default 90"));
+  console.log("    " + chalk.cyan("--limit <n>") + chalk.dim("    (prompt) portfolio graph project cap, default 80"));
+  console.log("    " + chalk.cyan("--key <key>") + chalk.dim("   (prompt) embed a You.md API key for non-interactive login"));
+  console.log("    " + chalk.cyan("--env-vault <path>") + chalk.dim(" (prompt) encrypted .env.local vault path to restore"));
   console.log("    " + chalk.cyan("--no-github") + chalk.dim("  (projects) skip authenticated GitHub recent-repo scan"));
   console.log("    " + chalk.cyan("--yes") + chalk.dim("        (projects) include older projects without prompting"));
   console.log("    " + chalk.cyan("--no-clone") + chalk.dim("   (projects) create directories only"));
@@ -279,7 +284,7 @@ async function machineProjectsCommand(opts: {
   console.log(chalk.dim("  next: open Claude Code or Codex from that CODE folder and run ") + chalk.cyan("you"));
 }
 
-export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
+export async function machineCommand(subcommand: string, opts: { force?: boolean; dryRun?: boolean; root?: string; days?: string | number; limit?: string | number; key?: string; envVault?: string; yes?: boolean; clone?: boolean; github?: boolean } = {}): Promise<void> {
   if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
     printHelp();
     return;
@@ -287,6 +292,19 @@ export async function machineCommand(subcommand: string, opts: { force?: boolean
 
   if (subcommand === "projects") {
     await machineProjectsCommand(opts);
+    return;
+  }
+
+  if (subcommand === "prompt" || subcommand === "new-computer" || subcommand === "new-machine") {
+    console.log("");
+    console.log(buildFreshMachineBootstrapPrompt({
+      apiKey: opts.key,
+      root: opts.root,
+      days: opts.days,
+      limit: opts.limit,
+      envVaultPath: opts.envVault,
+    }));
+    console.log("");
     return;
   }
 
