@@ -1,5 +1,20 @@
 # You.md — Changelog
 
+## 2026-06-17 — Bounded machine checks and artifact viewer polish
+
+### feat(cli): add bounded machine verify checks
+- Added `youmd machine verify --run-checks` for opt-in package checks after the secret-safe readiness audit.
+- Default scripts are `typecheck`, `lint`, `test`, and `build`; callers can override them with `--check-scripts`, cap projects with `--max-check-projects`, and cap per-script execution with `--check-timeout-ms`.
+- The checker reports passed, failed, timeout, and skipped totals, prints bounded failure output tails, and exits non-zero on failed/timeouts.
+- Updated `youmd machine prompt` so generated fresh-computer scripts can set `YOUMD_RUN_CHECKS=1` to run the bounded package-check pass.
+- Updated the bundled `machine-bootstrap` skill docs with the new opt-in verification command.
+- Verified with focused CLI tests for machine verify/bootstrap prompt, `cli npm run build`, and `git diff --check`.
+
+### feat(web): upgrade artifact markdown viewer
+- Upgraded the Files pane viewer with edit, preview, and split modes for markdown artifacts.
+- Added markdown metadata/frontmatter analysis, document stats, a heading outline, copy path/content controls, and richer markdown rendering for headings, links, code fences, blockquotes, tasks, and ordered lists.
+- Verified with focused Files pane ESLint, `git diff --check`, and root `npm run build`.
+
 ## 2026-06-17 — Fresh-machine readiness audit
 
 ### feat(cli): audit cloned project readiness after bootstrap

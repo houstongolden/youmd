@@ -2,6 +2,11 @@
 
 Last Updated: 2026-06-17
 
+## 2026-06-17 Session Notes
+
+- Machine bootstrap now has an opt-in bounded package-check pass in `youmd machine verify --run-checks`, with script/project/timeout caps and generated prompt support through `YOUMD_RUN_CHECKS=1`; the real clean-host dependency install and local-server smoke pass remains open.
+- Artifact workspace now has a richer markdown viewer in the Files pane with edit/preview/split modes, document metadata, heading outline, and copy controls.
+
 ## Core Platform
 
 | Feature | Status | Notes |

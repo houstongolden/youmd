@@ -20,7 +20,8 @@ PRD Version: 2.3
 - [x] Verify the compiled CLI dry-run against deployed production graph data: `55` portfolio projects, `40` tracked repos, and `40` graph-backed cloneable project repos selected after fixing false-positive badge/docs URL detection
 - [x] Verify with focused CLI tests, CLI build, root typecheck, docs check, lint/radius, production build, compiled CLI prompt smoke, and authenticated local browser QA of `/new computer`
 - [x] Add a first-class post-clone local readiness checker with `youmd machine verify` that reports git remotes, package managers/scripts, env file presence, root agent docs, and `project-context/` readiness without reading secret values
-- [ ] Extend `youmd machine verify` with explicit opt-in run/smoke modes for installing deps and starting or probing key local servers safely on a clean host
+- [x] Extend `youmd machine verify` with an explicit opt-in bounded package-check mode for `typecheck`, `lint`, `test`, and `build`, including project caps, timeout caps, output tails, and generated prompt docs
+- [ ] Extend `youmd machine verify` with clean-host dependency install and local server smoke/probe modes for selected key projects
 - [ ] Run the generated command end-to-end on the actual brand-new computer / clean agent host and verify projects, skills, env vault restore, local servers, and portfolio graph sync there
 
 ### 2026-06-17 — Shell sidebar expand/collapse regression
@@ -153,6 +154,7 @@ PRD Version: 2.3
 - [x] Preserve Houston's raw prompt for markdown/artifact viewing, daily reports, h.computer source migration, DSI components, and public profile chat
 - [x] Add the detailed implementation plan for artifact workspace, Loop Reports, source snapshots, DSI catalog components, and profile conversation API
 - [x] Add `files`, `artifacts`, and `reports` modes to the shell Files pane
+- [x] Upgrade the Files pane markdown/artifact viewer with edit/preview/split modes, document metadata, heading outline, richer markdown rendering, and copy path/content controls
 - [x] Add staged markdown templates for daily briefing, project carryover, daily journal article, and public profile chat contract
 - [x] Add first-class loop report tables and owner CRUD for scheduled reports
 - [x] Add source snapshot table and a deterministic first daily briefing runner for You.md-owned activity, projects, sources, repo mirror, pending source changes, and memories
