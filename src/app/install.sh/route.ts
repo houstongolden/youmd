@@ -15,7 +15,10 @@ INSTALL_CHANNEL="\${YOUMD_INSTALL_CHANNEL:-source}"
 SOURCE_REF="\${YOUMD_SOURCE_REF:-main}"
 YOUMD_HOME_DIR="\${YOUMD_HOME:-$HOME/.youmd}"
 YOUMD_BIN_DIR="$YOUMD_HOME_DIR/bin"
+YOUMD_NPM_PREFIX="\${YOUMD_NPM_PREFIX:-$YOUMD_HOME_DIR/npm-global}"
 TMP_DIR=""
+NPM_GLOBAL_FLAGS=()
+USING_USER_NPM_PREFIX=0
 
 cleanup() {
   if [ -n "$TMP_DIR" ] && [ -d "$TMP_DIR" ]; then
@@ -23,6 +26,73 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
+
+prepend_path_once() {
+  case ":$PATH:" in
+    *":$1:"*) ;;
+    *) export PATH="$1:$PATH" ;;
+  esac
+}
+
+can_write_npm_global_root() {
+  GLOBAL_ROOT="$(npm root -g 2>/dev/null || true)"
+  if [ -z "$GLOBAL_ROOT" ]; then
+    return 1
+  fi
+  mkdir -p "$GLOBAL_ROOT" >/dev/null 2>&1 && [ -w "$GLOBAL_ROOT" ]
+}
+
+configure_npm_target() {
+  if [ "\${YOUMD_FORCE_USER_NPM_PREFIX:-0}" = "1" ] || ! can_write_npm_global_root; then
+    mkdir -p "$YOUMD_NPM_PREFIX/bin" "$YOUMD_BIN_DIR"
+    NPM_GLOBAL_FLAGS=(--prefix "$YOUMD_NPM_PREFIX")
+    USING_USER_NPM_PREFIX=1
+    prepend_path_once "$YOUMD_NPM_PREFIX/bin"
+    prepend_path_once "$YOUMD_BIN_DIR"
+    echo "Using user-writable npm prefix: $YOUMD_NPM_PREFIX"
+  fi
+}
+
+link_runtime_bins() {
+  mkdir -p "$YOUMD_BIN_DIR"
+  for BIN_NAME in youmd you create-youmd; do
+    if [ -x "$YOUMD_NPM_PREFIX/bin/$BIN_NAME" ]; then
+      BIN_PATH="$YOUMD_NPM_PREFIX/bin/$BIN_NAME"
+    else
+      BIN_PATH="$(command -v "$BIN_NAME" 2>/dev/null || true)"
+    fi
+    if [ -n "$BIN_PATH" ]; then
+      ln -sf "$BIN_PATH" "$YOUMD_BIN_DIR/$BIN_NAME"
+    fi
+  done
+  prepend_path_once "$YOUMD_BIN_DIR"
+}
+
+persist_user_path_hint() {
+  if [ "$USING_USER_NPM_PREFIX" != "1" ]; then
+    return 0
+  fi
+
+  PROFILE_FILE="\${YOUMD_SHELL_PROFILE:-}"
+  if [ -z "$PROFILE_FILE" ]; then
+    case "$(basename "\${SHELL:-}")" in
+      zsh) PROFILE_FILE="$HOME/.zshrc" ;;
+      bash) PROFILE_FILE="$HOME/.bashrc" ;;
+      *) PROFILE_FILE="$HOME/.profile" ;;
+    esac
+  fi
+
+  mkdir -p "$(dirname "$PROFILE_FILE")"
+  touch "$PROFILE_FILE"
+  if ! grep -Fq 'You.md runtime path' "$PROFILE_FILE" 2>/dev/null; then
+    {
+      echo ""
+      echo "# You.md runtime path"
+      echo 'export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:$PATH"'
+    } >> "$PROFILE_FILE"
+    echo "Added You.md runtime PATH to $PROFILE_FILE"
+  fi
+}
 
 echo ""
 echo "you.md runtime installer"
@@ -47,6 +117,8 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
+configure_npm_target
+
 install_from_source() {
   if ! command -v git >/dev/null 2>&1; then
     return 1
@@ -59,12 +131,12 @@ install_from_source() {
   npm ci >/dev/null
   npm run build >/dev/null
   TARBALL="$(npm pack --silent)"
-  npm install -g "$TARBALL" >/dev/null
+  npm install -g "\${NPM_GLOBAL_FLAGS[@]}" "$TARBALL" >/dev/null
 }
 
 install_from_npm() {
   echo "Installing $PACKAGE globally..."
-  npm install -g "$PACKAGE"
+  npm install -g "\${NPM_GLOBAL_FLAGS[@]}" "$PACKAGE"
 }
 
 if [ "$INSTALL_CHANNEL" = "source" ]; then
@@ -76,6 +148,9 @@ if [ "$INSTALL_CHANNEL" = "source" ]; then
 else
   install_from_npm
 fi
+
+link_runtime_bins
+persist_user_path_hint
 
 if ! command -v youmd >/dev/null 2>&1; then
   echo ""
@@ -185,6 +260,9 @@ fi
 
 echo ""
 echo "Installed You.md runtime: $(youmd --version)"
+if [ "$USING_USER_NPM_PREFIX" = "1" ]; then
+  echo "Runtime installed without sudo under: $YOUMD_NPM_PREFIX"
+fi
 echo ""
 echo "Next:"
 echo "  youmd login          # press Enter to authenticate this machine in the browser"
