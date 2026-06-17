@@ -4,6 +4,18 @@ Last Updated: 2026-06-17
 
 ---
 
+## 2026-06-17 — Shell sidebar expand/collapse regression
+
+### 136. Fix left sidebar menu stuck collapsed
+**Status:** CODE COMPLETE (authenticated visual QA pending)
+**Verified:** PARTIAL (focused dashboard lint, root lint/radius, `git diff --check`, and `npm run build` passed)
+**Production Verified:** NO
+**Source:** 2026-06-17 — Houston: "the left sidebar menu is stuck collapsed and will not properly expand/collapse"
+**Actionable Scope:**
+1. Investigate why the left shell sidebar cannot reliably expand/collapse. **FINDING:** the responsive auto-collapse rule below `1520px` overrides the user's click when the detail pane is open, so the rendered `effectiveSidebarCollapsed` can stay `true` even after the user clicks expand.
+2. Make manual expand/collapse clicks override auto-collapse. **DONE locally:** sidebar persistence now uses explicit `auto` / `expanded` / `collapsed` mode, and the toggle writes a manual override from the rendered state.
+3. Verify locally in the actual shell UI. **PENDING:** headless Playwright reached the sign-in guard, and no attachable authenticated browser session was available without writing a new local auth session. Code/build verification passed.
+
 ## 2026-06-17 — Project portfolio graph, API/MCP dependency map, and reuse catalog
 
 ### 135. Finish live GitHub sync proof, persisted project graph, project tasks, and brain-dump routing
