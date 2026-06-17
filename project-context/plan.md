@@ -26,10 +26,19 @@ missing.
    `YOUMD_REQUIRE_ENV_VAULT=1`, and CLI/web-shell scripts stop before readiness
    completion when `YOUMD_ENV_VAULT` is missing.
 6. Verify focused tests/builds and update session docs. Done locally.
-7. Still open: run the uncapped generated command on the actual brand-new
-   computer / clean agent host with the real encrypted env vault and verify full
+7. Run the closest local strict real-vault proof in a disposable temp home/root.
+   Done; it selected `43` active projects, cloned `41` repos, restored `17`
+   `.env.local` files plus `3` agent-auth files, synced a proof row, and
+   completed status `0` after fixing the project-bootstrap handoff.
+8. Add bootstrap guards for real blockers found by the proof. Done; the
+   `machine` command exits cleanly after project bootstrap and generated
+   portfolio hydration is bounded by
+   `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS`.
+9. Still open: run the generated command on the actual brand-new computer /
+   separate clean agent host with the real encrypted env vault and verify full
    project clone count, shared skill symlinks, `.env.local` restore, local
-   servers, resident daemons, and Portfolio Graph proof sync there.
+   servers, resident daemons, authenticated visual Machine pane proof, and
+   Portfolio Graph proof sync there.
 
 ## Recovery Notes
 
@@ -38,8 +47,15 @@ missing.
 - Cloned repos:
   `youmd`, `agent-shared`, `bamfsite`, `houstongolden-you-md`, `bamfaiapp`.
 - Real env-vault blocker:
-  no encrypted vault file in `.env-vault`, and no `youmd-env-vault` /
-  `YOUMD_ENV_VAULT_PASS` Keychain item was available in this session.
+  original no-vault blocker is closed for local disposable proof; a real vault
+  was created with an in-process passphrase and restored without printing
+  values. The remaining blocker is actual separate-host execution plus
+  authenticated visual dashboard verification.
+- Latest strict real-vault proof:
+  `/tmp/strict-real-env-bootstrap-20260617T185635Z/CODE_YOU`.
+- Latest proof row:
+  `48` scanned / `41` git / `33` package / `17` env local / `25` ready /
+  `8` needs-env / `4` partial / `secretValuesExposed: false`.
 - Verification commands:
   `npm --prefix cli test -- machine-bootstrap-prompt`,
   `npm --prefix cli run build`,

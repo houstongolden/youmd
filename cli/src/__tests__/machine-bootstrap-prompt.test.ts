@@ -25,6 +25,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("YOUMD_REQUIRE_ENV_VAULT='1'");
     expect(command).toContain("bash -lc");
     expect(command).toContain("curl -fsSL https://you.md/install.sh | bash");
+    expect(command).toContain('HYDRATE_TIMEOUT="${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"');
+    expect(command).toContain('run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate');
     expect(command).toContain('youmd login --key "$YOUMD_API_KEY"');
     expect(command).toContain('youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT"');
     expect(command).toContain('PROJECT_ARGS=(--root "$ROOT" --days "$DAYS")');
