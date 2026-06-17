@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio dense detail polish and CLI help recovery
+
+### feat(shell/cli): make portfolio project rows denser and graph commands more legible
+- Made the Portfolio Graph project browser default to a true `dense` scan mode, while keeping `compact` and `expanded` available through the density control.
+- Strengthened project-card affordances: rows remain clickable, the row action now reads `open detail`, and selected project pages expose obvious `open detail`, `timeline`, `api docs`, and `mcp` action chips.
+- Clarified selected project graph links with labeled API docs, MCP docs, stack, repo, owner-gated portfolio graph curl, docs curl, stack install, and repo clone snippets.
+- Replaced faint unlabeled command boxes in project and API/MCP surface details with labeled command snippets that avoid high-contrast orange blocks and keep commands readable.
+- Fixed CLI help interception for `youmd project task --help` and `youmd project braindump --help`, so local agents can discover task/braindump syntax instead of seeing only generic project help.
+- Verification: `npm --prefix cli run build`, `node cli/dist/index.js project task --help`, `node cli/dist/index.js project braindump --help`, `npm run lint` (existing warnings only), and `npm run build`.
+- Visual note: headless Playwright reached the expected unauthenticated `/sign-in?next=/shell` redirect, so final screenshot proof for this exact UI polish remains pending in the already-authenticated Codex in-app Browser session.
+
 ## 2026-06-17 — Local portfolio interaction re-proof
 
 ### test(shell): verify compact project portfolio controls after resume

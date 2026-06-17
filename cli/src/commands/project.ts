@@ -527,6 +527,82 @@ function printPortfolioWriteResult(label: string, res: ApiResponseType<Portfolio
   return true;
 }
 
+function printProjectHelp(topic?: string): void {
+  const normalized = (topic || "").toLowerCase();
+
+  if (normalized === "task" || normalized === "tasks") {
+    console.log("");
+    console.log("  " + chalk.bold("youmd project task") + chalk.dim(" — create or update portfolio tasks"));
+    console.log("");
+    console.log("  " + chalk.cyan("create:"));
+    console.log(`    ${chalk.cyan("youmd project task agent youmd: verify sync proof")} ${chalk.dim("# agent-owned project task")}`);
+    console.log(`    ${chalk.cyan("youmd project task me personal: follow up with billing")} ${chalk.dim("# human-owned personal task")}`);
+    console.log(`    ${chalk.cyan("youmd project task --owner agent --project youmd --title \"Audit MCP slice\" --no-sync")}`);
+    console.log("");
+    console.log("  " + chalk.cyan("update:"));
+    console.log(`    ${chalk.cyan("youmd project task update <task-id> --status in_progress --priority high")}`);
+    console.log(`    ${chalk.cyan("youmd project task update <task-id> --owner human --owner-label Houston --personal")}`);
+    console.log("");
+    console.log("  " + chalk.cyan("common flags:"));
+    console.log(`    ${chalk.cyan("--owner <agent|human|me>")}        ${chalk.dim("task owner")}`);
+    console.log(`    ${chalk.cyan("--owner-label <name>")}           ${chalk.dim("specific human/agent label")}`);
+    console.log(`    ${chalk.cyan("--project <slug>|--personal")}    ${chalk.dim("project scope or uncategorized personal")}`);
+    console.log(`    ${chalk.cyan("--status <state>")}               ${chalk.dim("proposed, open, in_progress, done, snoozed, cancelled")}`);
+    console.log(`    ${chalk.cyan("--priority <level>")}             ${chalk.dim("low, normal, high, urgent")}`);
+    console.log(`    ${chalk.cyan("--tags a,b,c")}                   ${chalk.dim("searchable tags")}`);
+    console.log(`    ${chalk.cyan("--no-sync")}                      ${chalk.dim("save to You.md without pushing repo snapshot")}`);
+    console.log("");
+    return;
+  }
+
+  if (normalized === "braindump" || normalized === "brain-dump" || normalized === "dump") {
+    console.log("");
+    console.log("  " + chalk.bold("youmd project braindump") + chalk.dim(" — preserve raw dumps and route tasks"));
+    console.log("");
+    console.log("  " + chalk.cyan("examples:"));
+    console.log(`    ${chalk.cyan("youmd project braindump project:youmd raw idea text --agent-task \"Audit MCP slice\"")}`);
+    console.log(`    ${chalk.cyan("youmd project braindump --project badapp --summary \"Watch workout capture\" --text \"raw transcript\"")}`);
+    console.log(`    ${chalk.cyan("youmd project braindump --project youmd --text \"raw\" --human-task \"Decide priority\" --no-sync")}`);
+    console.log("");
+    console.log("  " + chalk.cyan("common flags:"));
+    console.log(`    ${chalk.cyan("--project <slug>")}       ${chalk.dim("portfolio project association")}`);
+    console.log(`    ${chalk.cyan("--summary <text>")}       ${chalk.dim("short searchable synthesis")}`);
+    console.log(`    ${chalk.cyan("--text|--raw <text>")}    ${chalk.dim("raw source text, preserved first")}`);
+    console.log(`    ${chalk.cyan("--insights a,b,c")}       ${chalk.dim("through-lines or reusable ideas")}`);
+    console.log(`    ${chalk.cyan("--agent-task <title>")}   ${chalk.dim("proposed agent-owned task")}`);
+    console.log(`    ${chalk.cyan("--human-task <title>")}   ${chalk.dim("proposed Houston-owned task")}`);
+    console.log(`    ${chalk.cyan("--task agent: <title>")}  ${chalk.dim("alternate task syntax")}`);
+    console.log(`    ${chalk.cyan("--no-sync")}              ${chalk.dim("save to You.md without pushing repo snapshot")}`);
+    console.log("");
+    return;
+  }
+
+  console.log("");
+  console.log("  " + chalk.bold("youmd project") + chalk.dim(" — manage project agent context"));
+  console.log("");
+  console.log("  " + chalk.cyan("subcommands:"));
+  console.log("");
+  console.log(`    ${chalk.cyan("init [name]".padEnd(28))} ${chalk.dim("initialize a new project")}`);
+  console.log(`    ${chalk.cyan("list".padEnd(28))} ${chalk.dim("list all projects")}`);
+  console.log(`    ${chalk.cyan("show [name]".padEnd(28))} ${chalk.dim("show project details (auto-detects in project dir)")}`);
+  console.log(`    ${chalk.cyan("memories <name>".padEnd(28))} ${chalk.dim("list project memories")}`);
+  console.log(`    ${chalk.cyan("remember <name> <cat> <msg>".padEnd(28))} ${chalk.dim("add a memory to a project")}`);
+  console.log(`    ${chalk.cyan("edit <name> <file>".padEnd(28))} ${chalk.dim("show a project file path for editing")}`);
+  console.log(`    ${chalk.cyan("log <message...>".padEnd(28))} ${chalk.dim("append an agent activity entry to project-context/you.md/log.md")}`);
+  console.log(`    ${chalk.cyan("log".padEnd(28))} ${chalk.dim("read last 15 entries from the activity log")}`);
+  console.log(`    ${chalk.cyan("task agent youmd: ...".padEnd(28))} ${chalk.dim("save an agent/human portfolio task and sync the repo snapshot")}`);
+  console.log(`    ${chalk.cyan("task update <id> --status ...".padEnd(28))} ${chalk.dim("edit task owner, project scope, metadata, and triage fields")}`);
+  console.log(`    ${chalk.cyan("braindump project:youmd ...".padEnd(28))} ${chalk.dim("capture raw dump text, route tasks, and sync the repo snapshot")}`);
+  console.log(`    ${chalk.cyan("portfolio-audit".padEnd(28))} ${chalk.dim("scan recent projects and env key names without printing secrets")}`);
+  console.log(`    ${chalk.cyan("portfolio-hydrate".padEnd(28))} ${chalk.dim("hydrate portfolio graph from GitHub + local auditor results")}`);
+  console.log(`    ${chalk.cyan("env-audit --fingerprints".padEnd(28))} ${chalk.dim("detect reused key values by local salted HMAC")}`);
+  console.log("");
+  console.log(chalk.dim("  help: youmd project task --help | youmd project braindump --help"));
+  console.log(chalk.dim("  projects are stored in .youmd/projects/<name>/"));
+  console.log(chalk.dim("  run from a project directory for auto-detection."));
+  console.log("");
+}
+
 function parseTaskArgs(args: string[]): PortfolioTaskPayloadType | null {
   const ownerFlag = readFlagValue(args, "--owner");
   let ownerType: "human" | "agent" =
@@ -1232,6 +1308,11 @@ async function hydratePortfolioFromCli(args: string[]): Promise<void> {
 export async function projectCommand(subcommand?: string, ...args: string[]): Promise<void> {
   const sub = (subcommand || "").toLowerCase();
 
+  if (sub === "--help" || sub === "-h" || args.includes("--help") || args.includes("-h")) {
+    printProjectHelp(sub === "--help" || sub === "-h" ? undefined : sub);
+    return;
+  }
+
   switch (sub) {
     case "init":
       await initProject(args);
@@ -1290,29 +1371,7 @@ export async function projectCommand(subcommand?: string, ...args: string[]): Pr
         return;
       }
 
-      console.log("");
-      console.log("  " + chalk.bold("youmd project") + chalk.dim(" — manage project agent context"));
-      console.log("");
-      console.log("  " + chalk.cyan("subcommands:"));
-      console.log("");
-      console.log(`    ${chalk.cyan("init [name]".padEnd(28))} ${chalk.dim("initialize a new project")}`);
-      console.log(`    ${chalk.cyan("list".padEnd(28))} ${chalk.dim("list all projects")}`);
-      console.log(`    ${chalk.cyan("show [name]".padEnd(28))} ${chalk.dim("show project details (auto-detects in project dir)")}`);
-      console.log(`    ${chalk.cyan("memories <name>".padEnd(28))} ${chalk.dim("list project memories")}`);
-      console.log(`    ${chalk.cyan("remember <name> <cat> <msg>".padEnd(28))} ${chalk.dim("add a memory to a project")}`);
-      console.log(`    ${chalk.cyan("edit <name> <file>".padEnd(28))} ${chalk.dim("show a project file path for editing")}`);
-      console.log(`    ${chalk.cyan("log <message...>".padEnd(28))} ${chalk.dim("append an agent activity entry to project-context/you.md/log.md")}`);
-      console.log(`    ${chalk.cyan("log".padEnd(28))} ${chalk.dim("read last 15 entries from the activity log")}`);
-      console.log(`    ${chalk.cyan("task agent youmd: ...".padEnd(28))} ${chalk.dim("save an agent/human portfolio task and sync the repo snapshot")}`);
-      console.log(`    ${chalk.cyan("task update <id> --status ...".padEnd(28))} ${chalk.dim("edit task owner, project scope, metadata, and triage fields")}`);
-      console.log(`    ${chalk.cyan("braindump project:youmd ...".padEnd(28))} ${chalk.dim("capture raw dump text, route tasks, and sync the repo snapshot")}`);
-      console.log(`    ${chalk.cyan("portfolio-audit".padEnd(28))} ${chalk.dim("scan recent projects and env key names without printing secrets")}`);
-      console.log(`    ${chalk.cyan("portfolio-hydrate".padEnd(28))} ${chalk.dim("hydrate portfolio graph from GitHub + local auditor results")}`);
-      console.log(`    ${chalk.cyan("env-audit --fingerprints".padEnd(28))} ${chalk.dim("detect reused key values by local salted HMAC")}`);
-      console.log("");
-      console.log(chalk.dim("  projects are stored in .youmd/projects/<name>/"));
-      console.log(chalk.dim("  run from a project directory for auto-detection."));
-      console.log("");
+      printProjectHelp();
       break;
     }
   }

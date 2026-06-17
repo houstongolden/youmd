@@ -91,6 +91,9 @@ PRD Version: 2.3
 - [x] Re-run visible local Portfolio Graph proof for Houston's latest compact portfolio ask: 56 persisted projects, typed search, focus filter, shipped-90 sort, exact You.md graph/API/MCP/docs/install/clone commands, clean timeline anchor, and reversible `agent-shared` focus mutation (`unset -> on-ice / 3 -> unset / 4`)
 - [x] Fix exact-doc/curl fallback precision for stack-aware project details: `bamfaiapp` now shows BAMF docs/API/MCP URLs, BAMFStack install curl, GitHub clone command, and the BAMF API/MCP surface curl instead of generic You.md fallbacks; owner-gated portfolio graph rows now include focus status/rank, docs curl commands, stack install, clone command, shipped counters, and bounded latest-shipped rows for local agents
 - [x] Verify the exact-doc/curl fallback fix on production `www.you.md` with an authenticated Browser session and owner API read-back for `bamfaiapp`
+- [x] Add a true dense Portfolio Graph scan mode plus clearer selected-project actions (`open detail`, `timeline`, `api docs`, `mcp`) and labeled graph/API/MCP/stack/clone command snippets that are readable without bright orange blocks
+- [x] Restore local-agent CLI help discoverability for `youmd project task --help`, `youmd project braindump --help`, and `youmd project --help`
+- [ ] Run authenticated Codex in-app Browser visual QA for the latest dense/detail polish and confirm dense rows, project click-through, labeled command snippets, API/MCP action chips, and no unreadable bright-orange blocks render correctly
 - [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens (deferred per Houston's 2026-06-17 focus change)
 
 ### 2026-06-17 — GitHub sync proof, Projects -> Tasks, and brain-dump routing

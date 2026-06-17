@@ -384,7 +384,7 @@ const PROJECT_SORT_OPTIONS = [
 
 type ProjectFocusStatus = typeof PROJECT_FOCUS_OPTIONS[number]["value"];
 type ProjectSortMode = typeof PROJECT_SORT_OPTIONS[number]["value"];
-type ProjectDensity = "compact" | "expanded";
+type ProjectDensity = "dense" | "compact" | "expanded";
 
 function projectFocusOption(status?: string) {
   return PROJECT_FOCUS_OPTIONS.find((option) => option.value === status) ?? PROJECT_FOCUS_OPTIONS[5];
@@ -419,6 +419,12 @@ function ProjectFocusBadge({ status }: { status?: string }) {
       <span>{focus.rank}</span>
     </span>
   );
+}
+
+function nextProjectDensity(value: ProjectDensity): ProjectDensity {
+  if (value === "dense") return "compact";
+  if (value === "compact") return "expanded";
+  return "dense";
 }
 
 function projectFocusWeight(project: DisplayProject) {
@@ -551,6 +557,14 @@ function projectDocs(project: DisplayProject, trackedProject?: DisplayTrackedPro
   ]);
 }
 
+function preferredDocUrl(urls: string[], kind: "api" | "mcp") {
+  const httpUrls = urls.filter((url) => /^https?:\/\//.test(url));
+  if (kind === "mcp") {
+    return httpUrls.find((url) => /mcp|well-known/i.test(url)) ?? httpUrls[1] ?? httpUrls[0];
+  }
+  return httpUrls.find((url) => /api|openapi|docs\/reference/i.test(url)) ?? httpUrls[0];
+}
+
 function portfolioGraphCurlCommand(projectSlug: string) {
   return `curl -H "Authorization: Bearer $YOUMD_API_KEY" "https://you.md/api/v1/me/portfolio/graph?includeTasks=1" | jq '.projects[] | select(.slug == "${projectSlug}")'`;
 }
@@ -564,6 +578,26 @@ function cloneCommand(project: DisplayProject, trackedProject?: DisplayTrackedPr
   if (!repoUrl) return null;
   const target = trackedProject?.directoryName ?? project.repoPath ?? project.slug;
   return `git clone ${repoUrl} ${target}`;
+}
+
+function commandLabel(value: string) {
+  if (value.startsWith("curl")) return "curl";
+  if (value.startsWith("git clone")) return "clone";
+  return "cmd";
+}
+
+function CommandSnippet({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1.5">
+      <div className="mb-1 font-mono text-[7.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
+        {label}
+      </div>
+      <code className="whitespace-pre font-mono text-[8.5px] leading-4 text-[hsl(var(--text-primary))] opacity-82">
+        <Terminal size={10} className="mr-1 inline text-[hsl(var(--accent))]" />
+        {value}
+      </code>
+    </div>
+  );
 }
 
 function projectActivityScore(project: DisplayProject, activities: ProjectActivity[]) {
@@ -615,7 +649,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const [projectSearch, setProjectSearch] = useState("");
   const [projectFocusFilter, setProjectFocusFilter] = useState<ProjectFocusStatus | "all">("all");
   const [projectSortMode, setProjectSortMode] = useState<ProjectSortMode>("activity");
-  const [projectDensity, setProjectDensity] = useState<ProjectDensity>("compact");
+  const [projectDensity, setProjectDensity] = useState<ProjectDensity>("dense");
 
   const hasPersistedGraph = Boolean(graph && (
     graph.projects.length > 0 ||
@@ -789,6 +823,8 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const selectedProjectDocs = selectedProject
     ? projectDocs(selectedProject, selectedTrackedProject)
     : [];
+  const selectedApiDocsUrl = preferredDocUrl(selectedProjectDocs, "api");
+  const selectedMcpDocsUrl = preferredDocUrl(selectedProjectDocs, "mcp");
   const selectedDetailUrl = selectedProject ? detailHref(pathname, selectedProject.slug) : null;
   const selectedStackName = selectedTrackedProject?.stackName ?? selectedProject?.stack;
   const selectedStackInstallCommand = selectedStackName ? stackInstallCommand(selectedStackName) : null;
@@ -1106,7 +1142,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
             </label>
             <button
               type="button"
-              onClick={() => setProjectDensity(projectDensity === "compact" ? "expanded" : "compact")}
+              onClick={() => setProjectDensity(nextProjectDensity(projectDensity))}
               className="flex h-9 items-center gap-2 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))]"
             >
               <ChevronDown size={13} className={projectDensity === "expanded" ? "rotate-180 text-[hsl(var(--accent))]" : "text-[hsl(var(--accent))]"} />
@@ -1139,7 +1175,9 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                         selectProject(project.slug);
                       }
                     }}
-                    className={`cursor-pointer border-l bg-[hsl(var(--bg))]/40 px-4 py-3 transition-colors ${
+                    className={`cursor-pointer border-l bg-[hsl(var(--bg))]/40 transition-colors ${
+                      projectDensity === "dense" ? "px-3 py-2" : "px-4 py-3"
+                    } ${
                       selected
                         ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent))]/[0.055]"
                         : "border-[hsl(var(--border))]/80 hover:border-[hsl(var(--accent))]/75"
@@ -1150,8 +1188,9 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       <h3 className="min-w-0 truncate font-mono text-[12px] text-[hsl(var(--text-primary))]">{project.name}</h3>
                       <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-65">{project.stack}</span>
                       <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${statusClass(project.status)}`}>{project.status}</span>
+                      <span className="font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-38">open</span>
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <div className={`${projectDensity === "dense" ? "mt-1" : "mt-2"} flex flex-wrap items-center gap-1.5`}>
                       <span className="font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-42">shipped</span>
                       <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--success))] opacity-75">today {counts.today}</span>
                       <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">7d {counts.seven}</span>
@@ -1168,7 +1207,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                         className="ml-auto border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-60 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
                         style={{ borderRadius: "var(--radius)" }}
                       >
-                        details
+                        open detail
                       </a>
                       <a
                         href={detailHrefWithAnchor(pathname, project.slug, "timeline")}
@@ -1206,9 +1245,11 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                         </select>
                       </label>
                     </div>
-                    <p className={`font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58 ${projectDensity === "compact" ? "mt-1 line-clamp-1" : "mt-2"}`}>
-                      {project.summary}
-                    </p>
+                    {projectDensity !== "dense" && (
+                      <p className={`font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58 ${projectDensity === "compact" ? "mt-1 line-clamp-1" : "mt-2"}`}>
+                        {project.summary}
+                      </p>
+                    )}
                     {projectDensity === "expanded" && (
                       <div className="mt-3 grid gap-2 md:grid-cols-2">
                         <div>
@@ -1243,16 +1284,52 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       </div>
                       <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">{selectedProject.summary}</p>
                       {selectedDetailUrl && (
-                        <a
-                          href={detailHrefWithAnchor(pathname, selectedProject.slug, "project-detail")}
-                          className="mt-2 inline-flex items-center gap-1 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70 underline-offset-4 hover:underline"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            selectProject(selectedProject.slug, "project-detail");
-                          }}
-                        >
-                          project detail URL <ExternalLink size={10} />
-                        </a>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <a
+                            href={detailHrefWithAnchor(pathname, selectedProject.slug, "project-detail")}
+                            className="inline-flex h-7 items-center gap-1 border border-[hsl(var(--border))]/60 px-2 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-70 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                            style={{ borderRadius: "var(--radius)" }}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              selectProject(selectedProject.slug, "project-detail");
+                            }}
+                          >
+                            open detail <ExternalLink size={10} />
+                          </a>
+                          <a
+                            href={detailHrefWithAnchor(pathname, selectedProject.slug, "timeline")}
+                            className="inline-flex h-7 items-center gap-1 border border-[hsl(var(--border))]/60 px-2 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-70 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                            style={{ borderRadius: "var(--radius)" }}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              selectProject(selectedProject.slug, "timeline");
+                            }}
+                          >
+                            timeline <ExternalLink size={10} />
+                          </a>
+                          {selectedApiDocsUrl && (
+                            <a
+                              href={selectedApiDocsUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex h-7 items-center gap-1 border border-[hsl(var(--border))]/60 px-2 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-70 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                              style={{ borderRadius: "var(--radius)" }}
+                            >
+                              api docs <ExternalLink size={10} />
+                            </a>
+                          )}
+                          {selectedMcpDocsUrl && selectedMcpDocsUrl !== selectedApiDocsUrl && (
+                            <a
+                              href={selectedMcpDocsUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex h-7 items-center gap-1 border border-[hsl(var(--border))]/60 px-2 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-70 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                              style={{ borderRadius: "var(--radius)" }}
+                            >
+                              mcp <ExternalLink size={10} />
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
                     <label className="flex items-center gap-2 border border-[hsl(var(--border))]/60 px-2 py-1">
@@ -1354,6 +1431,18 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                           <span className="text-[hsl(var(--text-primary))] opacity-85">{selectedStackName ?? "Project Stack"}</span>
                           {selectedTrackedProject?.stackSlug && <span className="opacity-45">/{selectedTrackedProject.stackSlug}</span>}
                         </div>
+                        {selectedApiDocsUrl && (
+                          <a href={selectedApiDocsUrl} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-1 break-all font-mono text-[8.5px] text-[hsl(var(--text-primary))] opacity-72 underline-offset-4 hover:underline">
+                            <Link2 size={10} className="shrink-0 text-[hsl(var(--accent))]" />
+                            api docs: {selectedApiDocsUrl.replace(/^https?:\/\//, "")}
+                          </a>
+                        )}
+                        {selectedMcpDocsUrl && selectedMcpDocsUrl !== selectedApiDocsUrl && (
+                          <a href={selectedMcpDocsUrl} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-1 break-all font-mono text-[8.5px] text-[hsl(var(--text-primary))] opacity-72 underline-offset-4 hover:underline">
+                            <Link2 size={10} className="shrink-0 text-[hsl(var(--accent))]" />
+                            mcp docs: {selectedMcpDocsUrl.replace(/^https?:\/\//, "")}
+                          </a>
+                        )}
                         {selectedTrackedProject?.fullName && (
                           <div className="flex flex-wrap items-center gap-2 font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-55">
                             <GitBranch size={12} className="text-[hsl(var(--accent))]" />
@@ -1361,8 +1450,8 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                             {selectedTrackedProject.commitsLast90d !== undefined && <span>{selectedTrackedProject.commitsLast90d} commits 90d</span>}
                           </div>
                         )}
-                        {selectedProjectDocs.filter((doc) => /^https?:\/\//.test(doc)).slice(0, 4).map((url) => (
-                          <a key={url} href={url} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-1 break-all font-mono text-[8.5px] text-[hsl(var(--accent))] opacity-70 underline-offset-4 hover:underline">
+                        {selectedProjectDocs.filter((doc) => /^https?:\/\//.test(doc) && doc !== selectedApiDocsUrl && doc !== selectedMcpDocsUrl).slice(0, 3).map((url) => (
+                          <a key={url} href={url} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-1 break-all font-mono text-[8.5px] text-[hsl(var(--text-secondary))] opacity-58 underline-offset-4 hover:underline">
                             <Link2 size={10} className="shrink-0" />
                             {url.replace(/^https?:\/\//, "")}
                           </a>
@@ -1370,25 +1459,16 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       </div>
                       <div className="space-y-2">
                         {selectedGraphCurlCommand && (
-                          <div className="overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1 font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-64">
-                            <Terminal size={10} className="mr-1 inline text-[hsl(var(--accent))]" />
-                            {selectedGraphCurlCommand}
-                          </div>
+                          <CommandSnippet label="portfolio graph curl" value={selectedGraphCurlCommand} />
                         )}
                         {selectedProjectDocs.filter((doc) => /^https?:\/\//.test(doc)).slice(0, 2).map((url) => (
-                          <div key={`curl-${url}`} className="overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1 font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-58">
-                            {docsCurlCommand(url)}
-                          </div>
+                          <CommandSnippet key={`curl-${url}`} label={`${commandLabel(docsCurlCommand(url))} docs`} value={docsCurlCommand(url)} />
                         ))}
                         {selectedStackInstallCommand && (
-                          <div className="overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1 font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-58">
-                            {selectedStackInstallCommand}
-                          </div>
+                          <CommandSnippet label="stack install" value={selectedStackInstallCommand} />
                         )}
                         {selectedCloneCommand && (
-                          <div className="overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1 font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-58">
-                            {selectedCloneCommand}
-                          </div>
+                          <CommandSnippet label="repo clone" value={selectedCloneCommand} />
                         )}
                       </div>
                     </div>
@@ -1407,13 +1487,13 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                           <p className="mt-1 font-mono text-[9px] leading-4 text-[hsl(var(--text-secondary))] opacity-48">{surface.features.join(", ")}</p>
                           <div className="mt-2 flex flex-wrap gap-2">
                             {docsForSurface(surface).slice(0, 3).map((url) => (
-                              <a key={url} href={url} target="_blank" rel="noreferrer" className="break-all font-mono text-[8.5px] text-[hsl(var(--accent))] opacity-70 underline-offset-4 hover:underline">
-                                {url.replace(/^https?:\/\//, "")}
+                              <a key={url} href={url} target="_blank" rel="noreferrer" className="break-all font-mono text-[8.5px] text-[hsl(var(--text-primary))] opacity-68 underline-offset-4 hover:underline">
+                                {surface.kind} docs: {url.replace(/^https?:\/\//, "")}
                               </a>
                             ))}
                           </div>
-                          <div className="mt-2 overflow-x-auto border border-[hsl(var(--border))]/45 bg-[hsl(var(--bg-raised))]/45 px-2 py-1 font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-60">
-                            {curlForSurface(surface)}
+                          <div className="mt-2">
+                            <CommandSnippet label={`${surface.kind} ${commandLabel(curlForSurface(surface))}`} value={curlForSurface(surface)} />
                           </div>
                         </div>
                       )) : (
