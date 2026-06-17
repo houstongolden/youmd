@@ -37,6 +37,7 @@ import { runStackImprove, type ImproveMode } from "../lib/stackImprove";
 import { checkStackUpdate, applyStackUpdate } from "../lib/stackUpdate";
 import { installStack } from "../lib/stackInstall";
 import { getHeartbeatSignal } from "../lib/heartbeat";
+import { YOUMD_DAEMONS, getDaemonHealth } from "../lib/daemon";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -79,9 +80,9 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("consent revoke <scope>") + DIM(" Revoke a brainScope"));
   console.log("    " + chalk.cyan("sync") + DIM("                 Sync agent skills/stacks across machines (--dry-run to preview)"));
   console.log("    " + chalk.cyan("context-sync") + DIM("         Sync per-project context files (conflict-safe, --dry-run to preview)"));
-  console.log("    " + chalk.cyan("daemon install") + DIM("       Install skillstack-sync + identity-sync launchd daemons"));
-  console.log("    " + chalk.cyan("daemon uninstall") + DIM("     Remove launchd daemon plists (does not stop running daemon)"));
-  console.log("    " + chalk.cyan("daemon status") + DIM("        Show loaded/not-loaded state for both daemons"));
+  console.log("    " + chalk.cyan("daemon install") + DIM("       Install resident identity, skillstack, and context sync daemons"));
+  console.log("    " + chalk.cyan("daemon uninstall") + DIM("     Remove launchd daemon plists"));
+  console.log("    " + chalk.cyan("daemon status") + DIM("        Show loaded/not-loaded state and recent daemon health"));
   console.log("");
   console.log("  " + DIM("Options: ") + chalk.cyan("--path <manifest-or-dir>") + DIM(", ") + chalk.cyan("--hosts claude-code,codex,cursor") + DIM(", ") + chalk.cyan("--target <dir>") + DIM(", ") + chalk.cyan("--dry-run") + DIM(", ") + chalk.cyan("--verify") + DIM(", ") + chalk.cyan("--json") + DIM(", ") + chalk.cyan("--init") + DIM(", ") + chalk.cyan("--mode propose|auto_pr") + DIM(", ") + chalk.cyan("--apply") + DIM(", ") + chalk.cyan("--force") + DIM(", ") + chalk.cyan("--dir <path>"));
   console.log("");
@@ -445,10 +446,6 @@ export async function stackCommand(
   // ── stack daemon ─────────────────────────────────────────────────────────────
   if (cmd === "daemon") {
     const action = args[0]; // install | uninstall | status
-    const DAEMON_LABELS = [
-      "com.youmd.skillstack-sync",
-      "com.youmd.identity-sync",
-    ];
     const LAUNCH_AGENTS_DIR = path.join(
       process.env.HOME ?? process.env.USERPROFILE ?? "/",
       "Library", "LaunchAgents"
@@ -485,8 +482,8 @@ export async function stackCommand(
 
     if (action === "uninstall") {
       console.log("");
-      for (const label of DAEMON_LABELS) {
-        const plistPath = path.join(LAUNCH_AGENTS_DIR, `${label}.plist`);
+      for (const daemon of YOUMD_DAEMONS) {
+        const plistPath = path.join(LAUNCH_AGENTS_DIR, `${daemon.label}.plist`);
         // unload (ignore errors — may not be loaded)
         child_process.spawnSync("launchctl", ["unload", plistPath], { stdio: "inherit" });
         // remove plist if present
@@ -503,14 +500,15 @@ export async function stackCommand(
 
     if (action === "status") {
       console.log("");
-      for (const label of DAEMON_LABELS) {
-        const result = child_process.spawnSync("launchctl", ["list", label], {
-          encoding: "utf-8",
-        });
-        if (result.status === 0 && result.stdout && result.stdout.trim()) {
-          console.log("  " + chalk.green("loaded") + "   " + label);
-        } else {
-          console.log("  " + chalk.dim("not loaded") + " " + label);
+      for (const daemon of getDaemonHealth()) {
+        const state = daemon.loaded ? chalk.green("loaded") : chalk.dim("not loaded");
+        const interval = `${Math.round(daemon.intervalSeconds / 60)}m`;
+        console.log("  " + state + "   " + daemon.label + DIM(` (${daemon.name}, every ${interval})`));
+        if (daemon.lastActivityAt) {
+          console.log("             " + DIM(`last activity: ${daemon.lastActivityAt}`));
+        }
+        if (daemon.warning) {
+          console.log("             " + chalk.yellow(`last warning: ${daemon.warning}`));
         }
       }
       console.log("");

@@ -174,6 +174,15 @@ if [ "$MCP_CONFIGURED" = "0" ]; then
   echo "  (no Claude Code / Codex / Cursor detected — run \\\`youmd mcp --install <host> --auto\\\` after installing one)"
 fi
 
+if [ "\${YOUMD_INSTALL_DAEMON:-0}" = "1" ]; then
+  if [ "$(uname -s 2>/dev/null || true)" = "Darwin" ]; then
+    echo "Installing resident You.md sync daemon..."
+    youmd stack daemon install || true
+  else
+    echo "Resident daemon auto-install is currently macOS launchd-only; skipping."
+  fi
+fi
+
 echo ""
 echo "Installed You.md runtime: $(youmd --version)"
 echo ""
@@ -181,10 +190,14 @@ echo "Next:"
 echo "  youmd login          # press Enter to authenticate this machine in the browser"
 echo "  youmd pull           # sync your live brain into ~/.youmd"
 echo "  youmd sync           # refresh skills, stacks, prompts, and project context"
+echo "  youmd stack daemon install  # keep identity, skills, stacks, and project context synced in the background"
 echo "  you                  # meet U; it will guide onboarding, stacks, and next moves"
 echo ""
 echo "Auto-update helper:"
 echo "  ~/.youmd/bin/youmd-auto-upgrade --quiet"
+echo ""
+echo "Install with resident sync enabled:"
+echo "  curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_DAEMON=1 bash"
 echo ""
 `;
 }

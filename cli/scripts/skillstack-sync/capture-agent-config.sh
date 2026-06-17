@@ -85,6 +85,7 @@ capture_plist() {
 }
 capture_plist "com.youmd.skillstack-sync"
 capture_plist "com.youmd.identity-sync"
+capture_plist "com.youmd.context-sync"
 capture_plist "com.houstongolden.agent-runtime-guard"
 
 if ! is_dry; then

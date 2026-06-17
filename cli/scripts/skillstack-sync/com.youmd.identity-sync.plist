@@ -9,7 +9,7 @@
     <array>
         <string>/bin/zsh</string>
         <string>-lc</string>
-        <string>youmd sync</string>
+        <string>youmd sync --daemon</string>
     </array>
 
     <key>StartInterval</key>
@@ -31,6 +31,8 @@
     <dict>
         <key>HOME</key>
         <string>__HOME__</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     </dict>
 </dict>
 </plist>

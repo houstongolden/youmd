@@ -19,12 +19,23 @@ import { syncAllSkills } from "../lib/skills";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
 import { readSkillCatalog } from "../lib/skill-catalog";
 
-export async function pushCommand(options: { publish?: boolean; force?: boolean; local?: boolean }) {
+export type PushOutcome =
+  | "ok"
+  | "auth-required"
+  | "not-initialized"
+  | "compile-failed"
+  | "empty"
+  | "size-regression"
+  | "remote-changed"
+  | "upload-failed"
+  | "publish-failed";
+
+export async function pushCommand(options: { publish?: boolean; force?: boolean; local?: boolean; daemon?: boolean }): Promise<PushOutcome> {
   const config = readGlobalConfig();
 
   if (!config.token) {
     console.log(chalk.hex("#C46A3A")("  not authenticated. run: youmd login"));
-    return;
+    return "auth-required";
   }
 
   // T7 — home-first: identity pushes compile ~/.youmd unless --local or a
@@ -41,7 +52,7 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean;
     } else {
       console.log(chalk.dim("  run: youmd init"));
     }
-    return;
+    return "not-initialized";
   }
 
   // Step 1: Compile the bundle from local files
@@ -50,7 +61,7 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean;
 
   if (!compiled) {
     console.log(chalk.hex("#C46A3A")("  compilation failed."));
-    return;
+    return "compile-failed";
   }
 
   // ── Empty bundle guard ─────────────────────────────────────────
@@ -60,7 +71,7 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean;
     console.log(chalk.dim("  your profile/ directory may be empty."));
     console.log(chalk.dim("  run " + chalk.cyan("youmd pull") + " to fetch your profile first."));
     console.log("");
-    return;
+    return "empty";
   }
 
   // ── Size regression warning ────────────────────────────────────
@@ -78,12 +89,18 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean;
       const compiledSize = compiledStr.length;
       if (baseSize > 0 && compiledSize < baseSize * 0.5) {
         console.log("");
-        console.log(chalk.yellow("  warning: compiled bundle is >50% smaller than base.json"));
+        console.log(chalk.yellow(options.daemon
+          ? "  daemon skipped push: compiled bundle is >50% smaller than base.json"
+          : "  warning: compiled bundle is >50% smaller than base.json"));
         console.log(chalk.dim(`  base: ${(baseSize / 1024).toFixed(1)} KB, compiled: ${(compiledSize / 1024).toFixed(1)} KB`));
-        console.log(chalk.dim("  this might mean data was lost during compilation."));
-        console.log(chalk.dim("  use " + chalk.cyan("youmd push --force") + " to override."));
+        console.log(chalk.dim("  this might mean data was lost during compilation, so the remote brain was preserved."));
+        if (options.daemon) {
+          console.log(chalk.dim("  daemon mode treats this as pull/refresh-only sync until the roundtrip gap is fixed."));
+        } else {
+          console.log(chalk.dim("  use " + chalk.cyan("youmd push --force") + " to override."));
+        }
         console.log("");
-        return;
+        return "size-regression";
       }
     } catch {
       // non-fatal
@@ -151,7 +168,7 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean;
         console.log(chalk.dim("  run ") + chalk.cyan("youmd pull") + chalk.dim(" first, then push."));
         console.log(chalk.dim("  or: ") + chalk.cyan("youmd push --force") + chalk.dim(" to override."));
         console.log("");
-        return;
+        return "remote-changed";
       }
 
       if (options.force && remoteHash && parentHash && remoteHash !== parentHash) {
@@ -193,14 +210,14 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean;
       console.log(chalk.dim("  run ") + chalk.cyan("youmd pull") + chalk.dim(" first, then push."));
       console.log(chalk.dim("  or: ") + chalk.cyan("youmd push --force") + chalk.dim(" to override."));
       console.log("");
-      return;
+      return "remote-changed";
     }
 
     if (!uploadResult.ok) {
       console.log(
         chalk.hex("#C46A3A")(`  push failed: ${JSON.stringify(uploadResult.data)}`)
       );
-      return;
+      return "upload-failed";
     }
 
     // Update local config with hash tracking
@@ -238,6 +255,7 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean;
         console.log(
           chalk.hex("#C46A3A")(`  publish failed: ${JSON.stringify(pubResult.data)}`)
         );
+        return "publish-failed";
       }
     }
 
@@ -351,7 +369,10 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean;
         `  push failed: ${err instanceof Error ? err.message : String(err)}`
       )
     );
+    return "upload-failed";
   }
+
+  return "ok";
 }
 
 // ── Diff summary helper ──────────────────────────────────────────────

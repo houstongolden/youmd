@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-06-17 — Resident daemon and always-on sync
+
+### feat(cli/runtime): make resident sync first-class and daemon-safe
+- Added shared daemon metadata/health helpers for the resident You.md runtime.
+- Added `com.youmd.context-sync`, a third LaunchAgent that runs `youmd stack context-sync` every 15 minutes for project agent-context files.
+- Changed `com.youmd.identity-sync` to run `youmd sync --daemon`; daemon mode refreshes local identity files and installed skills while skipping unsafe lossy pushes instead of force-uploading a compiled bundle that is >50% smaller than `base.json`.
+- Added daemon health to `youmd status` and expanded `youmd stack daemon status` to show loaded state, sync plane, interval, last activity, and current warnings.
+- Added opt-in curl installer daemon activation via `YOUMD_INSTALL_DAEMON=1`, while keeping normal install non-surprising and documenting `youmd stack daemon install` as the later activation path.
+- Hardened `context-sync.sh` so it fetches first and refuses pull/push when upstream contains non-context app-code paths; it only syncs `AGENTS.md`, `CLAUDE.md`, `project-context/`, and `.claude/`.
+- Installed the updated local `0.8.2` CLI tarball globally on this machine, installed all three LaunchAgents, kicked the identity daemon, and verified `youmd sync --daemon` and daemon status.
+- First context daemon run pushed a context merge in `bamfaiapp`, made local context commits in `bigbounce`, `myo`, `hubifycode`, and `badapp`, and skipped pull/push where WIP code existed; the upstream app-code merge gap was then fixed in the script.
+
 ## 2026-06-17 — Project portfolio graph and reuse catalog
 
 ### fix(web/cli/skills): prove portfolio graph sync across local agents and dashboard

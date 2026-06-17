@@ -146,6 +146,49 @@ existing_context_paths() {
   echo "${found}"
 }
 
+path_is_context() {
+  local changed="$1"
+  local p
+  for p in ${CONTEXT_PATHSPECS}; do
+    if [ "${changed}" = "${p}" ]; then
+      return 0
+    fi
+    case "${changed}" in
+      "${p}/"*) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+remote_has_non_context_changes() {
+  local repo="$1" repo_name="$2" upstream="$3"
+  local changed non_context line
+  changed="$(git -C "${repo}" diff --name-only "HEAD..${upstream}" 2>/dev/null || true)"
+  if [ -z "${changed}" ]; then
+    return 1
+  fi
+
+  non_context=""
+  while IFS= read -r line; do
+    [ -z "${line}" ] && continue
+    if ! path_is_context "${line}"; then
+      if [ -z "${non_context}" ]; then
+        non_context="${line}"
+      else
+        non_context="${non_context}, ${line}"
+      fi
+    fi
+  done <<EOF
+${changed}
+EOF
+
+  if [ -n "${non_context}" ]; then
+    log_warn "${repo_name}: upstream has non-context changes (${non_context}). Skipping pull/push so context-sync never merges application code."
+    return 0
+  fi
+  return 1
+}
+
 # ---------------------------------------------------------------------------
 # SYNC ONE REPO
 # Returns 0 on success, 1 on non-fatal failure.
@@ -263,8 +306,33 @@ sync_context_repo() {
 
   # ---- Pull (merge, no rebase) ---------------------------------------------
   if is_dry; then
-    log_dry "Would git pull --no-rebase --no-edit in ${repo_name}"
+    log_dry "Would fetch upstream and pull only if remote changes are limited to context paths in ${repo_name}"
   else
+    local upstream
+    upstream="$(git -C "${repo}" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
+    if [ -z "${upstream}" ]; then
+      log_warn "Skipping pull/push for ${repo_name}: no upstream branch configured."
+      return 0
+    fi
+
+    local fetch_log
+    fetch_log="$(mktemp -t context_sync_fetch)"
+    local fetch_ok=0
+    git -C "${repo}" fetch --quiet >"${fetch_log}" 2>&1 || fetch_ok=$?
+    if [ "${fetch_ok}" -ne 0 ]; then
+      while IFS= read -r line; do
+        log "fetch|${repo_name}: ${line}"
+      done < "${fetch_log}"
+      rm -f "${fetch_log}"
+      log_error "Fetch FAILED for ${repo_name}. Skipping pull/push."
+      return 1
+    fi
+    rm -f "${fetch_log}"
+
+    if remote_has_non_context_changes "${repo}" "${repo_name}" "${upstream}"; then
+      return 0
+    fi
+
     local pull_log
     # BSD mktemp: no -p, use /tmp explicitly
     pull_log="$(mktemp -t context_sync_pull)"

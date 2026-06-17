@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-daemons.sh — install skillstack-sync and identity-sync LaunchAgents
+# install-daemons.sh — install resident You.md sync LaunchAgents
 #
 # Idempotent: safe to re-run. Unloads before reloading.
 # Does NOT need sudo — LaunchAgents run as the current user.
@@ -12,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LAUNCH_AGENTS_DIR="${HOME}/Library/LaunchAgents"
 LOG_DIR="${HOME}/.youmd/logs"
 
-PLISTS="com.youmd.skillstack-sync com.youmd.identity-sync"
+PLISTS="com.youmd.skillstack-sync com.youmd.identity-sync com.youmd.context-sync"
 
 echo "==> Creating log directory: ${LOG_DIR}"
 mkdir -p "${LOG_DIR}"
@@ -55,7 +55,7 @@ done
 
 echo ""
 echo "================================================================"
-echo "Both daemons installed and running."
+echo "Resident You.md daemons installed and running."
 echo ""
 echo "Log files:"
 echo "  ${LOG_DIR}/skillstack-sync.log      (combined sync log)"
@@ -63,10 +63,14 @@ echo "  ${LOG_DIR}/skillstack-sync.out.log  (daemon stdout)"
 echo "  ${LOG_DIR}/skillstack-sync.err.log  (daemon stderr)"
 echo "  ${LOG_DIR}/identity-sync.out.log    (youmd sync stdout)"
 echo "  ${LOG_DIR}/identity-sync.err.log    (youmd sync stderr)"
+echo "  ${LOG_DIR}/context-sync.log         (combined project-context sync log)"
+echo "  ${LOG_DIR}/context-sync.out.log     (daemon stdout)"
+echo "  ${LOG_DIR}/context-sync.err.log     (daemon stderr)"
 echo ""
 echo "Check daemon status:"
 echo "  launchctl list com.youmd.skillstack-sync"
 echo "  launchctl list com.youmd.identity-sync"
+echo "  launchctl list com.youmd.context-sync"
 echo ""
 echo "To uninstall:"
 for label in ${PLISTS}; do

@@ -51,6 +51,14 @@ youmd link create        # generate a shareable context link
 
 The installer also writes `~/.youmd/bin/youmd-auto-upgrade` so host agents can refresh the runtime before stack work.
 
+To enable the resident macOS sync daemon during install:
+
+```bash
+curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_DAEMON=1 bash
+```
+
+You can also enable it later with `youmd stack daemon install`. It keeps identity/API sync, shared skills/stacks, and safe project-context files fresh in the background without syncing secrets or arbitrary app code.
+
 ---
 
 ## For Agents

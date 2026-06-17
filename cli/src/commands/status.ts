@@ -19,6 +19,7 @@ import { readSkillCatalog } from "../lib/skill-catalog";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
 import { loadIdentityData, resolveVariable } from "../lib/skill-renderer";
 import { getHeartbeatSignal } from "../lib/heartbeat";
+import { getDaemonHealth } from "../lib/daemon";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -245,6 +246,31 @@ export async function statusCommand(): Promise<void> {
     // skip
   }
 
+  // ── Resident daemon health ───────────────────────────────────────
+  try {
+    const daemons = getDaemonHealth();
+    console.log("");
+    console.log("  " + chalk.bold("resident sync:"));
+    for (const daemon of daemons) {
+      const state = daemon.loaded ? chalk.green("loaded") : chalk.yellow("not loaded");
+      const activity = daemon.lastActivityAt
+        ? DIM(" -- " + timeSince(new Date(daemon.lastActivityAt)) + " ago")
+        : DIM(" -- no log yet");
+      console.log(
+        "    " +
+          state.padEnd(18) +
+          chalk.cyan(daemon.name.padEnd(16)) +
+          DIM(` every ${Math.round(daemon.intervalSeconds / 60)}m`) +
+          activity
+      );
+      if (daemon.warning) {
+        console.log("      " + chalk.yellow("last warning: ") + DIM(daemon.warning.slice(0, 110)));
+      }
+    }
+  } catch {
+    // advisory only
+  }
+
   // ── Recommendations ───────────────────────────────────────────────
   const recs: string[] = [];
   if (!authed) {
@@ -260,6 +286,12 @@ export async function statusCommand(): Promise<void> {
     const installedNames = catalog.skills.filter((s) => s.installed).map((s) => s.name);
     if (installedNames.length > 0 && !hasLinkedClaudeSkills(process.cwd(), installedNames)) {
       recs.push("Run " + chalk.cyan("youmd skill link claude") + " to connect skills to this project");
+    }
+  } catch { /* skip */ }
+  try {
+    const daemons = getDaemonHealth();
+    if (process.platform === "darwin" && daemons.some((d) => !d.loaded)) {
+      recs.push("Run " + chalk.cyan("youmd stack daemon install") + " to keep identity, skills, stacks, and project context synced");
     }
   } catch { /* skip */ }
 

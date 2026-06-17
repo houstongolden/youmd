@@ -1594,9 +1594,11 @@ preferences: terminal-native, monochrome
                     <td className="px-4 py-3 font-mono text-[13px] text-[hsl(var(--accent))] whitespace-nowrap align-top">Stacks</td>
                     <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">Named YouStacks and skill stacks</td>
                     <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">
-                      Each stack syncs via its own git remote. The daemon
-                      covers stacks that are part of the shared agent layer;
-                      standalone stacks use their configured remote.
+                      Each stack syncs via its own git remote. The resident
+                      runtime covers stacks that are part of the shared agent
+                      layer and runs a slower project-context sync for
+                      AGENTS/CLAUDE/project-context files; standalone stacks
+                      use their configured remote.
                     </td>
                   </tr>
                 </tbody>
@@ -1630,8 +1632,8 @@ youmd login`}</CodeBlock>
             </P>
             <CommandTable
               commands={[
-                { cmd: "youmd stack daemon install", desc: "Register the background skill-sync daemon (launchd, ~5 min interval)" },
-                { cmd: "youmd stack daemon status", desc: "Check whether the daemon is running and when it last synced" },
+                { cmd: "youmd stack daemon install", desc: "Register resident identity, skillstack, and project-context sync daemons" },
+                { cmd: "youmd stack daemon status", desc: "Check loaded state, intervals, recent activity, and current warnings" },
                 { cmd: "youmd stack daemon uninstall", desc: "Remove the daemon from launchd without deleting synced files" },
               ]}
             />
@@ -1639,7 +1641,8 @@ youmd login`}</CodeBlock>
               The encrypted env vault is the only sync plane that requires
               manual transport. Everything else (identity, skills, stacks)
               reaches the new machine automatically once the daemon is running
-              and you have logged in.
+              and you have logged in. The project-context sync is intentionally
+              context-only: it refuses to merge upstream app-code changes.
             </Callout>
 
             {/* ── CLI ──────────────────────────────────────── */}
@@ -2133,6 +2136,7 @@ youmd login`}</CodeBlock>
             <CommandTable
               commands={[
                 { cmd: "curl -fsSL https://you.md/install.sh | bash", desc: "Install the You.md runtime, bundled skills, auto-upgrade helper, and stack starter files" },
+                { cmd: "curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_DAEMON=1 bash", desc: "Install the runtime and opt into resident sync on macOS" },
                 { cmd: "youmd stack inspect --path DIR", desc: "Show name, slug, domain, manifest metadata, files, scopes, adapters, and validation warnings" },
                 { cmd: "youmd stack doctor --path DIR", desc: "Run read-only diagnostics for manifest bloat, route drift, stale adapters, update hygiene, and public-readiness gaps" },
                 { cmd: "youmd stack smoke --path DIR", desc: "Run read-only schema, file, checksum, adapter, and capability checks" },

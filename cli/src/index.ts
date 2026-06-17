@@ -557,7 +557,9 @@ program
   .option("--no-publish", "Upload without publishing")
   .option("-f, --force", "Push even if remote has richer data")
   .option("--local", "Target the project-local .youmd/ instead of ~/.youmd/")
-  .action(pushCommand);
+  .action(async (options) => {
+    await pushCommand(options);
+  });
 
 program
   .command("sync")
@@ -565,6 +567,7 @@ program
   .option("-w, --watch", "Watch for local changes and auto-push")
   .option("-f, --force", "Sync even when local and remote have both changed")
   .option("--local", "Target the project-local .youmd/ instead of ~/.youmd/")
+  .option("--daemon", "Resident-safe sync: refresh local files/skills and skip unsafe lossy pushes")
   .action(syncCommand);
 
 const linkCmd = program

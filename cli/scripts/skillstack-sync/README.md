@@ -28,7 +28,8 @@ Cross-machine sync toolkit for Houston Golden's agent skill/stack setup.
 
 ### Complementary sync planes
 
-- **Identity plane:** `youmd sync` (Convex ↔ local profile, memories, preferences). Automated via `com.youmd.identity-sync` daemon.
+- **Identity plane:** `youmd sync --daemon` (Convex ↔ local profile, memories, preferences). Automated via `com.youmd.identity-sync` daemon. Daemon mode refreshes local files/skills and skips unsafe lossy pushes instead of forcing over richer server data.
+- **Project-context plane:** `youmd stack context-sync` safely commits and syncs only `AGENTS.md`, `CLAUDE.md`, `project-context/`, and `.claude/` in curated Houston-owned repos. It refuses to merge remote app-code changes.
 - **Env-vault plane:** `cli/scripts/env-vault/restore.sh` for secrets (manual, invoked on new machine); also available as `youmd env restore <vault>`.
 
 ---
@@ -38,10 +39,11 @@ Cross-machine sync toolkit for Houston Golden's agent skill/stack setup.
 ```
 cli/scripts/skillstack-sync/
 ├── sync.sh                         Core syncer (bash 3.2 compatible)
-├── install-daemons.sh              Installs both LaunchAgents
+├── install-daemons.sh              Installs all resident LaunchAgents
 ├── bootstrap-new-mac.sh            New machine setup script
 ├── com.youmd.skillstack-sync.plist LaunchAgent: runs `youmd stack sync` every 5 min
-├── com.youmd.identity-sync.plist   LaunchAgent: runs `youmd sync` every 5 min
+├── com.youmd.identity-sync.plist   LaunchAgent: runs `youmd sync --daemon` every 5 min
+├── com.youmd.context-sync.plist    LaunchAgent: runs `youmd stack context-sync` every 15 min
 └── README.md                       This file
 ```
 
@@ -90,7 +92,7 @@ GIT_USER_EMAIL="houston@bamf.ai"                    # commit email (default)
 The preferred way is via the CLI:
 
 ```bash
-youmd stack daemon install    # installs both LaunchAgents
+youmd stack daemon install    # installs all resident LaunchAgents
 youmd stack daemon status     # check loaded/not-loaded
 youmd stack daemon uninstall  # remove plists from ~/Library/LaunchAgents/
 ```
@@ -101,9 +103,10 @@ Or run the raw script directly:
 bash cli/scripts/skillstack-sync/install-daemons.sh
 ```
 
-Installs two LaunchAgents that fire every 300 seconds (5 minutes):
+Installs three LaunchAgents:
 - `com.youmd.skillstack-sync` → runs `youmd stack sync`
-- `com.youmd.identity-sync` → runs `youmd sync`
+- `com.youmd.identity-sync` → runs `youmd sync --daemon`
+- `com.youmd.context-sync` → runs `youmd stack context-sync`
 
 Check status:
 ```bash
@@ -111,6 +114,7 @@ youmd stack daemon status
 # or directly:
 launchctl list com.youmd.skillstack-sync
 launchctl list com.youmd.identity-sync
+launchctl list com.youmd.context-sync
 ```
 
 Check logs:
@@ -118,6 +122,7 @@ Check logs:
 tail -f ~/.youmd/logs/skillstack-sync.log
 tail -f ~/.youmd/logs/skillstack-sync.out.log
 tail -f ~/.youmd/logs/identity-sync.out.log
+tail -f ~/.youmd/logs/context-sync.log
 ```
 
 ### Uninstall daemons
@@ -130,8 +135,10 @@ Or manually:
 ```bash
 launchctl unload ~/Library/LaunchAgents/com.youmd.skillstack-sync.plist
 launchctl unload ~/Library/LaunchAgents/com.youmd.identity-sync.plist
+launchctl unload ~/Library/LaunchAgents/com.youmd.context-sync.plist
 rm ~/Library/LaunchAgents/com.youmd.skillstack-sync.plist
 rm ~/Library/LaunchAgents/com.youmd.identity-sync.plist
+rm ~/Library/LaunchAgents/com.youmd.context-sync.plist
 ```
 
 ---

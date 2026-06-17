@@ -19,7 +19,7 @@ import { decompileToFilesystem } from "../lib/decompile";
 import { mergeSections, decisionLabel } from "../lib/merge";
 import { BrailleSpinner } from "../lib/render";
 
-export async function syncCommand(options: { watch?: boolean; force?: boolean; local?: boolean }) {
+export async function syncCommand(options: { watch?: boolean; force?: boolean; local?: boolean; daemon?: boolean }) {
   const config = readGlobalConfig();
 
   if (!config.token) {
@@ -167,7 +167,18 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean; l
       // Local edits, remote unchanged — push first so pull can't destroy them
       console.log(chalk.dim("  local edits detected — pushing first..."));
       console.log(chalk.dim("  ── push ──"));
-      await pushCommand({ publish: true, force: options.force, local: options.local });
+      const pushResult = await pushCommand({
+        publish: true,
+        force: options.force,
+        local: options.local,
+        daemon: options.daemon,
+      });
+      if (options.daemon && pushResult === "size-regression") {
+        console.log("");
+        console.log(chalk.green("  sync complete."));
+        console.log(chalk.dim("  daemon refreshed local identity and skills; remote upload skipped to preserve richer server data."));
+        return;
+      }
 
       console.log("");
       console.log(chalk.dim("  ── pull ──"));
@@ -197,7 +208,18 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean; l
 
       console.log("");
       console.log(chalk.dim("  ── push ──"));
-      await pushCommand({ publish: true, force: options.force, local: options.local });
+      const pushResult = await pushCommand({
+        publish: true,
+        force: options.force,
+        local: options.local,
+        daemon: options.daemon,
+      });
+      if (options.daemon && pushResult === "size-regression") {
+        console.log("");
+        console.log(chalk.green("  sync complete."));
+        console.log(chalk.dim("  daemon refreshed local identity and skills; remote upload skipped to preserve richer server data."));
+        return;
+      }
     }
 
     console.log("");

@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 85
-**Total messages:** 492
+**Total sessions:** 86
+**Total messages:** 494
 **Last updated:** 2026-06-17
 
 ## Table of Contents
 
+1. [2026-06-17 (resident-daemon-always-on-sync)](#session-2026-06-17-resident-daemon-always-on-sync) --- 2 messages
 1. [2026-06-17 (local-skill-mcp-dashboard-proof-followup)](#session-2026-06-17-local-skill-mcp-dashboard-proof-followup) --- 1 message
 1. [2026-06-17 (portfolio-graph-apis-env-implementation)](#session-2026-06-17-portfolio-graph-apis-env-implementation) --- 1 message
 1. [2026-06-17 (project-portfolio-graph-reuse-dependency-routing)](#session-2026-06-17-project-portfolio-graph-reuse-dependency-routing) --- 1 message
@@ -93,6 +94,24 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-17 (resident-daemon-always-on-sync)
+
+**2026-06-17 04:00:00 UTC**
+> do we have a youmd daemon that installs via the main curl command install and documented in the ystack etc that helps ensure the you agent / daemon running in background can always keep skills/context/anything from the local/global context synced with the you.md api/mcp/ystack and the users' personal stacks/skills/PROJECTS/data/apis etc etc... ?
+
+**2026-06-17 04:20:00 UTC**
+> ok well continue looping through all given everything ive asked for and our need to 100% close the entire main gap and all gaps you identified or uncover along the way - Main gap: the daemon syncs identity + global/shared skillstack layers, but it does not yet feel like a first-class “You.md resident background agent” that covers all local/global/project context, personal stacks, APIs, PROJECTS data, and MCP readiness end-to-end. Also, current identity-sync logs show youmd sync hitting the >50% smaller bundle safety guard, so that plane is not fully clean right now. ---
+>
+> yes continue Best Next Steps
+> Make curl install optionally enable the daemon after login/machine setup.
+> Add a youmd daemon doctor or youmd status section showing sync health, last run, and blocked guards.
+> Add a third safe LaunchAgent for youmd stack context-sync or fold it into the existing sync daemon.
+> Fix the current youmd sync bundle-size guard so identity sync can complete unattended.
+>
+> - but please do not stop there please ensure your progressing towards the goal of being 100% confident in accomplishing successfully all requests ive made and all ideas ive shared and you havent missed anything or any key insight -- the daemon needs to just work to always keep EVERYTHING in you.md in sync always also without slowing down a users machine too much is key but i am not sure what this is "show youmd sync hitting the >50% smaller bundle safety guard," but if you need to change whatever that is or means then please do so we can keep moving forward with no blockers
 
 ---
 

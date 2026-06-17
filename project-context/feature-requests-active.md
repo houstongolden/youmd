@@ -6,6 +6,22 @@ Last Updated: 2026-06-17
 
 ## 2026-06-17 — Project portfolio graph, API/MCP dependency map, and reuse catalog
 
+### 134. Make You.md resident daemon first-class and safe enough for always-on sync
+**Status:** IN PROGRESS (resident runtime foundation implemented locally; production docs/build verification and deeper stack/API persistence still pending)
+**Verified:** PARTIAL (CLI build, daemon install/status, global CLI refresh, daemon-safe identity sync, context-sync dry-run, script syntax checks, and LaunchAgent kickstart passed)
+**Production Verified:** NO
+**Source:** 2026-06-17 — Houston: "continue looping through all given everything ive asked for... 100% close the entire main gap... daemon needs to just work to always keep EVERYTHING in you.md in sync always also without slowing down a users machine too much..."
+**Actionable Scope:**
+1. Make curl install optionally enable resident sync without surprising users. **DONE locally:** `YOUMD_INSTALL_DAEMON=1` enables `youmd stack daemon install`; normal install prints the command.
+2. Add daemon health visibility. **DONE locally:** `youmd status` and `youmd stack daemon status` show identity, skillstack, and project-context daemon loaded state, intervals, last activity, and current warnings.
+3. Add project-context sync as a third safe LaunchAgent. **DONE locally:** `com.youmd.context-sync` runs `youmd stack context-sync` every 15 minutes.
+4. Fix identity daemon's repeated size-regression blocker. **DONE locally:** identity LaunchAgent now runs `youmd sync --daemon`; daemon mode refreshes local files/skills and skips unsafe lossy pushes instead of forcing over richer server data.
+5. Avoid slowing machines down. **DONE locally:** daemon remains interval-based, not a hot file watcher; context sync runs every 15 minutes.
+6. Prevent project-context sync from touching app code. **DONE locally after first-run finding:** `context-sync.sh` now fetches first and refuses pull/push when upstream contains non-context paths.
+7. Verify the global installed binary matches the repo build so launchd can run the new flags. **DONE locally:** installed local `youmd-0.8.2.tgz` globally and verified `youmd sync --daemon`.
+8. Broaden daemon coverage toward personal stacks, APIs, PROJECTS data, MCP readiness, and dashboard readiness. **PENDING:** current local foundation covers identity/private context, installed skills, shared skills/stacks, project-context files, MCP config visibility, and daemon health; richer persisted stack/API/project graph sync still needs backend/dashboard work.
+**Progress (2026-06-17):** Added shared daemon metadata/health helpers, a third project-context LaunchAgent, daemon-safe identity sync, resident status in `youmd status`, opt-in curl install daemon activation, docs updates, and a safer context-sync upstream gate. Installed all three LaunchAgents locally and refreshed the global CLI to the built `0.8.2` tarball. `youmd sync --daemon` completes cleanly and preserves the richer remote draft instead of force-pushing a smaller compiled bundle. `youmd stack daemon status` now shows all three daemons loaded with recent activity and no current identity warning after kickstart. First context daemon run surfaced and partially exercised the safety model: it pushed a context merge in `bamfaiapp`, made local context commits in `bigbounce`, `myo`, `hubifycode`, and `badapp`, and skipped pull/push where WIP code existed; the script was then hardened to refuse future remote app-code merges.
+
 ### 133. Make local skill/MCP/dashboard sync proof actually verifiable
 **Status:** IN PROGRESS (local CLI/MCP/shared-skill/web proof completed; production and Codex in-app browser attach still pending)
 **Verified:** PARTIAL (local stdio MCP smoke, shared skill mirror check, local You.md skill cache check, signed-in Chrome visual QA, focused CLI tests, lint/radius, and production build passed)

@@ -7,6 +7,16 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-17 — Resident daemon and always-on sync
+- [x] Add a first-class daemon health model for identity/API sync, shared skillstack sync, and project-context sync
+- [x] Add `com.youmd.context-sync` as a third resident LaunchAgent running `youmd stack context-sync` every 15 minutes
+- [x] Change identity LaunchAgent to run `youmd sync --daemon` so the background process refreshes local files/skills and skips unsafe lossy pushes
+- [x] Add `youmd status` resident-sync health with loaded state, interval, last activity, and current warning visibility
+- [x] Add opt-in curl installer support via `YOUMD_INSTALL_DAEMON=1`
+- [x] Harden `context-sync.sh` so it fetches first and refuses pull/push when upstream includes non-context app-code paths
+- [ ] Add persisted dashboard machine/readiness cards for daemon status, last sync, blocked guards, MCP readiness, project-context sync, and env-vault readiness
+- [ ] Extend resident sync beyond the local foundation into persisted personal stack/API/project graph records and per-project MCP context slices
+
 ### 2026-06-17 — Project portfolio graph and reuse catalog
 - [x] Preserve Houston's project portfolio / API-MCP dependency / reusable pattern direction in a dedicated memo
 - [x] Document how You.md currently saves and organizes Projects across identity bundle projects, project markdown packs, `trackedProjects`, repo mirror, DSI components, and Loop Reports
