@@ -328,16 +328,17 @@ GitHub status and task/graph paths behave in the actual product.
   owner/owner label, project scope, status, priority, due date, tags,
   clear-to-personal behavior, completion timestamps, and owner isolation.
 - Authenticated CLI create proof saved task
-  `rx7cbe2gnrxy9pmemtfvwv6zhn88vkzn` with repo sync skipped. The follow-up
-  update command correctly hit the not-yet-deployed production endpoint and
-  returned `HTTP 404`, so the remaining proof is deploy + live rerun, not local
-  API/CLI/MCP wiring.
+  `rx7cbe2gnrxy9pmemtfvwv6zhn88vkzn` with repo sync skipped. The pre-deploy
+  update command correctly returned `HTTP 404`; after Convex Deploy run
+  `27692450980`, the post-deploy update published bundle v116 and the
+  repo-backed sync retry merged PR #16 with the final `done` task snapshot in
+  `projects/youmd/tasks.md`.
+- CI initially timed out in one live public-profile integration test, then the
+  rerun passed with typecheck, lint, web build, CLI tests, and Convex tests.
 
 ## Still Open
 
 - Add mobile/watch invocation proof for task and brain-dump capture paths.
-- Deploy the task-update HTTP route and rerun authenticated
-  `youmd project task update ...` against production.
 - Run the generated fresh-machine command on an actual clean/new host and
   verify cloned projects, restored skills, env vault restore, local servers,
   and portfolio graph sync there.

@@ -9,8 +9,8 @@
 - Expanded local MCP `update_portfolio_task` from status/priority triage into full task routing/editing.
 - Extended the Portfolio Graph pane task section with due/tag visibility plus quick controls to reassign owner and route a task to the selected project or back to personal.
 - Added focused Convex regression coverage for partial edits, clear-to-personal behavior, completion timestamps, and owner isolation.
-- Verified with `npm run test:convex -- convex/portfolio.test.ts`, `npm run build`, `npm run lint`, and `npm --prefix cli run build`.
-- Authenticated CLI create proof saved task `rx7cbe2gnrxy9pmemtfvwv6zhn88vkzn`; live update proof is pending deploy because the pre-deploy production endpoint returned `HTTP 404`.
+- Verified with `npm run test:convex -- convex/portfolio.test.ts`, `npm run build`, `npm run lint`, `npm --prefix cli run build`, Convex Deploy run `27692450980`, Agent Docs, and CI rerun.
+- Authenticated CLI create proof saved task `rx7cbe2gnrxy9pmemtfvwv6zhn88vkzn`; the pre-deploy update returned `HTTP 404`, then the deployed route published bundles v116/v119 and repo-backed snapshot sync merged PR #16 with `projects/youmd/tasks.md`.
 
 ## 2026-06-17 — Machine proof sync
 
