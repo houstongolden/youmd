@@ -95,6 +95,7 @@ PRD Version: 2.3
 - [x] Add dashboard hydration for persisted portfolio graph records instead of static-only pane data, with static data demoted to bootstrap seed/fallback
 - [x] Add first shell-chat task and brain-dump invocation on top of persisted `portfolioTasks` / `brainDumpCaptures`
 - [x] Prove shell chat can trigger the repo update loop without relying only on the `[ update ]` button
+- [x] Fix and re-prove shell-chat deterministic commands when the opening You Agent greeting is still thinking: `/braindump project:youmd ...` now bypasses the generic thinking guard, saved a raw capture, proposed one agent task, wrote `projects/_braindumps/recent.md`, merged PR #19, refreshed 53 mirror files, and returned GitHub chrome to `JUST NOW`
 - [x] Add first-class dashboard task editing/triage controls on top of persisted `portfolioTasks` / `brainDumpCaptures`, plus API/MCP task status/priority updates for local agents
 - [x] Add richer persisted task updates for title, description, owner, owner label, project/personal scope, status, priority, due date, and tags through Convex, HTTP, CLI, MCP, and dashboard quick-routing controls
 - [x] Deploy the new task-update HTTP route and rerun authenticated `youmd project task update ...` against production; pre-deploy proof correctly returned `HTTP 404`, post-deploy proof published bundles v116/v119 and merged repo snapshot PR #16

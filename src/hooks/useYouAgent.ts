@@ -409,6 +409,14 @@ function parseBrainDumpCommand(text: string): BrainDumpCommand | null {
   };
 }
 
+function isPortfolioCommandText(text: string): boolean {
+  const trimmed = text.trim();
+  return (
+    /^\/?task\b/i.test(trimmed) ||
+    /^\/?(?:braindump|brain\s+dump|dump)\b/i.test(trimmed)
+  );
+}
+
 function readCustomFileFromBundle(
   latestBundle: Record<string, unknown> | null | undefined,
   path: string
@@ -2867,19 +2875,13 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const sendMessage = useCallback(async (pastedImageUrl?: string) => {
     const trimmed = input.trim();
     if (!trimmed && !pastedImageUrl) return;
-    if (isThinking) return;
+    const isPortfolioCommand = isPortfolioCommandText(trimmed);
+    const isFreshMachineCommand = isFreshMachineBootstrapRequest(trimmed);
+    if (isThinking && !isPortfolioCommand && !isFreshMachineCommand) return;
 
     setInput("");
 
-    // Handle slash commands (no image for slash commands)
-    if (trimmed.startsWith("/")) {
-      if (handleSlashCommand(trimmed)) return;
-    }
-
-    if (
-      /^task\b/i.test(trimmed) ||
-      /^(?:braindump|brain\s+dump|dump)\b/i.test(trimmed)
-    ) {
+    if (isPortfolioCommand) {
       const handled = await handlePortfolioChatCommand(trimmed);
       if (handled) {
         textareaRef.current?.focus();
@@ -2887,12 +2889,17 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       }
     }
 
-    if (isFreshMachineBootstrapRequest(trimmed)) {
+    if (isFreshMachineCommand) {
       const handled = await handleFreshMachineBootstrapCommand(trimmed);
       if (handled) {
         textareaRef.current?.focus();
         return;
       }
+    }
+
+    // Handle slash commands (no image for slash commands)
+    if (trimmed.startsWith("/")) {
+      if (handleSlashCommand(trimmed)) return;
     }
 
     // Build the user message content — include pasted image if present

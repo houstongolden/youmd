@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Shell-chat brain-dump sync proof
+
+### fix(shell): let deterministic portfolio commands run while the opener is stuck
+- Found a real browser-test blocker while proving shell-chat brain-dump sync: the shell opening greeting could remain in `isThinking` for minutes, and `sendMessage` returned before deterministic `/task`, `/braindump`, or fresh-machine commands could run.
+- Moved portfolio and fresh-machine command routing ahead of the generic `isThinking` guard, while keeping normal chat messages blocked during active thinking. This lets command-like agent actions proceed even if the LLM opener stalls.
+- Verified locally with `npx tsc --noEmit --pretty false`.
+- Authenticated Codex in-app Browser proof on `http://localhost:3100/shell?project=youmd` submitted `/braindump project:youmd ...` through the actual composer. The shell saved the raw brain dump, proposed one agent task, wrote `projects/_braindumps/recent.md`, published bundle `v127`, queued repo sync from shell chat, opened and merged identity sync PR #19, refreshed 53 mirror files, and returned GitHub chrome to `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
+- GitHub read-back confirmed PR #19 (`https://github.com/houstongolden/houstongolden-you-md/pull/19`) merged at `2026-06-17T16:59:45Z` with merge commit `e53141345e2480175b8c9a73bf2a6b47ca2d83e4`, and `projects/_braindumps/recent.md` on `main` contains the `2026-06-17T1703Z` raw proof, `shell-chat-proof` tags, and proposed agent task.
+- Visual proof: `/tmp/youmd-shell-chat-braindump-sync-pr19-2026-06-17.jpg`.
+
 ## 2026-06-17 — Portfolio project details and shipped/focus controls
 
 ### test(shell): verify local GitHub sync returns to JUST NOW after portfolio push
