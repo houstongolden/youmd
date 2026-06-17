@@ -177,6 +177,10 @@ function buildFreshMachineBootstrapCommand(apiKey?: string): string {
     '  echo "[you.md] env vault not restored yet"',
     '  echo "copy your encrypted env vault to this machine, then run:"',
     '  echo "youmd env restore <vault> --root \\"$ROOT\\""',
+    '  if [ "${YOUMD_REQUIRE_ENV_VAULT:-}" = "1" ]; then',
+    '    echo "[you.md] strict proof requires YOUMD_ENV_VAULT; stopping before readiness is marked complete" >&2',
+    "    exit 1",
+    "  fi",
     "fi",
     'echo "[you.md] rehydrating portfolio graph with local README/project-context/env-key evidence"',
     'youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true',
@@ -244,6 +248,7 @@ function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: string): 
     "- write and sync a secret-safe machine proof report, with optional bounded install/check/server proof flags",
     "",
     "Secret rule: raw `.env.local` values are not embedded in this prompt. Put your encrypted vault on the new machine and either set `YOUMD_ENV_VAULT=/path/to/vault` before running, or run the printed `youmd env restore <vault>` command after clone. Vault listing prints variable names/counts and target paths only, never values.",
+    "Done-ness rule: for real fresh-computer proof, prefix the command with `YOUMD_REQUIRE_ENV_VAULT=1` so it fails instead of pretending setup is complete when the encrypted env vault is missing.",
   ].join("\n");
 }
 

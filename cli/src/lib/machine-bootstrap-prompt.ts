@@ -9,6 +9,7 @@ export interface FreshMachineBootstrapOptions {
   limit?: string | number;
   maxCloneProjects?: string | number;
   envVaultPath?: string;
+  requireEnvVault?: boolean;
 }
 
 function shellQuote(value: string): string {
@@ -74,6 +75,10 @@ export function buildFreshMachineBootstrapScript(): string {
     '  echo "[you.md] env vault not restored yet"',
     '  echo "copy your encrypted env vault to this machine, then run:"',
     '  echo "youmd env restore <vault> --root \\"$ROOT\\""',
+    '  if [ "${YOUMD_REQUIRE_ENV_VAULT:-}" = "1" ]; then',
+    '    echo "[you.md] strict proof requires YOUMD_ENV_VAULT; stopping before readiness is marked complete" >&2',
+    "    exit 1",
+    "  fi",
     "fi",
     'echo "[you.md] rehydrating portfolio graph with local README/project-context/env-key evidence"',
     'youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true',
@@ -114,6 +119,7 @@ export function buildFreshMachineBootstrapCommand(options: FreshMachineBootstrap
     envAssignment("YOUMD_PROJECT_LIMIT", options.limit ?? DEFAULT_FRESH_MACHINE_LIMIT),
     envAssignment("YOUMD_MAX_CLONE_PROJECTS", options.maxCloneProjects),
     envAssignment("YOUMD_ENV_VAULT", options.envVaultPath),
+    envAssignment("YOUMD_REQUIRE_ENV_VAULT", options.requireEnvVault ? "1" : undefined),
   ].filter((value): value is string => Boolean(value));
 
   return `${assignments.join(" ")} bash -lc ${shellQuote(buildFreshMachineBootstrapScript())}`;
@@ -134,9 +140,10 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
     command,
     "```",
     "",
-    `What it does: installs You.md, authenticates, pulls/syncs identity, restores shared agent skills/stacks, fetches and hydrates the persisted portfolio graph, previews the graph-backed project setup plan, creates ${root}, clones active projects from the last ${days} days, checks env-vault tooling, lists an encrypted env vault without writing files if supplied, restores that vault only after the list step passes, rehydrates local evidence, audits cloned project readiness without reading secret values, writes a secret-safe machine proof report, syncs the proof summary back to your You.md machine dashboard, optionally caps clone count for proof runs with YOUMD_MAX_CLONE_PROJECTS, optionally runs bounded package checks with YOUMD_RUN_CHECKS=1, optionally runs clean-host dependency installs with YOUMD_INSTALL_DEPS=1, optionally smoke-probes local dev servers with YOUMD_PROBE_SERVERS=1, and starts resident sync daemons.`,
+    `What it does: installs You.md, authenticates, pulls/syncs identity, restores shared agent skills/stacks, fetches and hydrates the persisted portfolio graph, previews the graph-backed project setup plan, creates ${root}, clones active projects from the last ${days} days, checks env-vault tooling, lists an encrypted env vault without writing files if supplied, restores that vault only after the list step passes, rehydrates local evidence, audits cloned project readiness without reading secret values, writes a secret-safe machine proof report, syncs the proof summary back to your You.md machine dashboard, optionally requires env-vault restore before completion with YOUMD_REQUIRE_ENV_VAULT=1, optionally caps clone count for proof runs with YOUMD_MAX_CLONE_PROJECTS, optionally runs bounded package checks with YOUMD_RUN_CHECKS=1, optionally runs clean-host dependency installs with YOUMD_INSTALL_DEPS=1, optionally smoke-probes local dev servers with YOUMD_PROBE_SERVERS=1, and starts resident sync daemons.`,
     "",
     `Project source: You.md portfolio graph + authenticated GitHub recent repos, capped at ${limit} tracked projects before local audit evidence is merged.`,
     "Secret rule: .env.local values are never embedded here. Use YOUMD_ENV_VAULT or run the printed env restore command with your encrypted vault on the new machine. The restore path lists variable names/counts and target paths only, never values.",
+    "Done-ness rule: for real fresh-computer proof, set YOUMD_REQUIRE_ENV_VAULT=1 or pass --require-env-vault so the command fails instead of pretending setup is complete when the encrypted env vault is missing.",
   ].join("\n");
 }

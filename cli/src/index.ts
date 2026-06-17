@@ -725,6 +725,7 @@ program
   .option("--report-path <path>", "verify: custom path for the machine proof report")
   .option("--key <apiKey>", "prompt: embed a You.md API key for non-interactive login")
   .option("--env-vault <path>", "prompt: encrypted .env.local vault path to restore")
+  .option("--require-env-vault", "prompt: fail the fresh-machine command unless YOUMD_ENV_VAULT is restored")
   .option("--no-github", "projects: skip authenticated GitHub recent-repo scan")
   .option("--yes", "projects: include older projects without prompting")
   .option("--no-clone", "projects: create directories only")
@@ -755,6 +756,7 @@ program
       reportPath: options.reportPath,
       key: options.key,
       envVault: options.envVault,
+      requireEnvVault: options.requireEnvVault,
       yes: options.yes,
       clone: options.clone,
       github: options.github,

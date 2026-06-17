@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-06-17 — Fresh-machine strict env-vault proof mode
+
+### feat(cli/web): prevent fresh-computer proof from passing without env restore
+- Re-verified the live local Portfolio Graph request in the Codex in-app Browser at `http://localhost:3100/shell?tab=portfolio&project=youmd#project-detail`: `55` projects, shipped `today` / `7d` / `30d` / `90d`, compact controls, clickable `details` / `timeline`, ranked focus dropdowns, `PROJECT GRAPH LINKS`, API/MCP docs URLs, graph/docs/stack/clone curl commands, and current You.md shipped rows are present.
+- Ran a fresh graph-backed clean-root clone proof at `/tmp/youmd-fresh-machine-proof-20260617T183447Z/CODE_YOU` with `--max-clone-projects 5`. The planner read `55` portfolio projects, `40` graph-tracked repos, and `41` recent GitHub repos, then cloned `youmd`, `agent-shared`, `bamfsite`, `houstongolden-you-md`, and `bamfaiapp` with correct GitHub remotes.
+- Ran secret-safe readiness proof on that clean root. It wrote and synced a You.md machine record with `5` scanned projects, `5` git repos, `3` package projects, `0` `.env.local` files, `3` env examples, `4` agent-doc roots, `3` project-context roots, `0` ready, `3` needs env, `1` partial, and `secretValuesExposed: false`.
+- Confirmed the real blocker for actual done-ness: no encrypted real env vault file was present in `.env-vault`, no `youmd-env-vault` / `YOUMD_ENV_VAULT_PASS` Keychain item exists, and the clean root correctly reports `needs-env` for `youmd`, `bamfsite`, and `bamfaiapp`.
+- Added strict env-vault proof mode to the CLI generated command: `youmd machine prompt --require-env-vault` now emits `YOUMD_REQUIRE_ENV_VAULT=1`, and the generated script exits before readiness completion when `YOUMD_ENV_VAULT` is missing.
+- Added the same fail-loud branch and done-ness language to the web shell `/new computer` generated command so dashboard prompts no longer encourage agents to mark setup complete without vault restore.
+- Verification: `npm --prefix cli test -- machine-bootstrap-prompt`, `npm --prefix cli run build`, compiled `node cli/dist/index.js machine prompt --require-env-vault` smoke, `npx tsc --noEmit --pretty false`, `npm run lint -- --file src/hooks/useYouAgent.ts` (existing warnings only), and `npm run build`.
+- Remaining gap: run the uncapped generated command on the actual new computer / clean agent host with the real encrypted env vault and verify restored skills/symlinks, env files, local servers, resident daemons, and Portfolio Graph sync there.
+
 ## 2026-06-17 — Portfolio proof and provider account persistence
 
 ### feat(convex/web): persist secret-safe provider account notes

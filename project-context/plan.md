@@ -2,26 +2,48 @@
 
 ## Goal
 
-Make the Portfolio Graph project list/detail experience work as a compact founder/agent operating console: clickable project details, exact graph docs/curl/stack links, obvious shipped activity for today/7d/30d/90d, and fast project focus/priority triage.
+Prove the You.md fresh-computer setup path without gaming done-ness: the
+generated command must use the persisted Portfolio Graph, clone active projects,
+restore encrypted envs when supplied, sync shared skills/stacks, write
+secret-safe proof rows, and fail loudly when a real env vault is required but
+missing.
 
 ## Steps
 
-1. Save the current Houston prompt and reconcile its actionable requests into the execution docs. Done.
-2. Tighten the Portfolio Graph UI so shipped activity and focus controls are obvious without expanding every project. Done.
-3. Verify TypeScript/lint/CLI build and authenticated local browser behavior for detail links, graph links, timeline anchor, and focus mutation. Done.
-4. Production-QA the pushed UI on `www.you.md`; if production exposes a behavioral bug, fix it before logging the proof. Done; shipped UI is live, doubled hash bug is fixed, and post-deploy production QA verifies clean `#timeline`.
-5. Commit and push the coherent provider-account persistence / verification-docs slice, then watch CI/deploy status. In progress.
-6. Continue the broader active goal after this slice: actual fresh-machine setup proof with real env-vault flow and synced project/skill graph across machines.
+1. Re-check the latest Portfolio Graph shipped/detail/focus UI in the Codex
+   in-app Browser against the real local app. Done.
+2. Audit fresh-machine/env-vault prerequisites without printing secrets:
+   You.md status, env-key audit, portfolio audit, env-vault preflight, and
+   generated command output. Done.
+3. Run a clean-root graph-backed project clone proof in `/tmp` using the
+   persisted Portfolio Graph plus recent GitHub repos. Done; 5 real repos
+   cloned into `/tmp/youmd-fresh-machine-proof-20260617T183447Z/CODE_YOU`.
+4. Run secret-safe machine readiness proof and sync the summary to You.md.
+   Done; proof row synced with `5` scanned projects and
+   `secretValuesExposed: false`.
+5. Patch the generated fresh-computer commands so proof mode cannot pass without
+   env restore. Done; `--require-env-vault` emits
+   `YOUMD_REQUIRE_ENV_VAULT=1`, and CLI/web-shell scripts stop before readiness
+   completion when `YOUMD_ENV_VAULT` is missing.
+6. Verify focused tests/builds and update session docs. Done locally.
+7. Still open: run the uncapped generated command on the actual brand-new
+   computer / clean agent host with the real encrypted env vault and verify full
+   project clone count, shared skill symlinks, `.env.local` restore, local
+   servers, resident daemons, and Portfolio Graph proof sync there.
 
 ## Recovery Notes
 
-- Last prompt-history audit: 2026-06-17 10:25 PT
-- Recent source prompts reviewed: last 10
-- Browser proof screenshots:
-  - `/tmp/youmd-portfolio-55-projects-shipped-controls-loaded-proof-2026-06-17.png`
-  - `/tmp/youmd-portfolio-project-cards-clickable-status-proof-2026-06-17.png`
-  - `/tmp/youmd-portfolio-detail-graph-shipped-focus-proof-2026-06-17.png`
-  - `/tmp/youmd-api-env-provider-accounts-persisted-proof-2026-06-17.png`
-  - `/var/folders/4n/hqpz_03d477c1f_m2ks7x18c0000gn/T/youmd-portfolio-detail-shipped-graph-links-2026-06-17.png`
-  - `/var/folders/4n/hqpz_03d477c1f_m2ks7x18c0000gn/T/youmd-portfolio-graph-links-curl-2026-06-17.png`
-  - `/var/folders/4n/hqpz_03d477c1f_m2ks7x18c0000gn/T/youmd-portfolio-timeline-shipped-focus-2026-06-17.png`
+- Latest clean-root proof:
+  `/tmp/youmd-fresh-machine-proof-20260617T183447Z/CODE_YOU`.
+- Cloned repos:
+  `youmd`, `agent-shared`, `bamfsite`, `houstongolden-you-md`, `bamfaiapp`.
+- Real env-vault blocker:
+  no encrypted vault file in `.env-vault`, and no `youmd-env-vault` /
+  `YOUMD_ENV_VAULT_PASS` Keychain item was available in this session.
+- Verification commands:
+  `npm --prefix cli test -- machine-bootstrap-prompt`,
+  `npm --prefix cli run build`,
+  `node cli/dist/index.js machine prompt --require-env-vault`,
+  `npx tsc --noEmit --pretty false`,
+  `npm run lint -- --file src/hooks/useYouAgent.ts`,
+  `npm run build`.

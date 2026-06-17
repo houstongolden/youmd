@@ -13,6 +13,7 @@ describe("fresh machine bootstrap prompt", () => {
       limit: 44,
       maxCloneProjects: 3,
       envVaultPath: "~/Desktop/env-local-backup.tar.gz.gpg",
+      requireEnvVault: true,
     });
 
     expect(command).toContain("YOUMD_API_KEY='ym_test'\"'\"'quoted'");
@@ -21,6 +22,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("YOUMD_PROJECT_LIMIT='44'");
     expect(command).toContain("YOUMD_MAX_CLONE_PROJECTS='3'");
     expect(command).toContain("YOUMD_ENV_VAULT='~/Desktop/env-local-backup.tar.gz.gpg'");
+    expect(command).toContain("YOUMD_REQUIRE_ENV_VAULT='1'");
     expect(command).toContain("bash -lc");
     expect(command).toContain("curl -fsSL https://you.md/install.sh | bash");
     expect(command).toContain('youmd login --key "$YOUMD_API_KEY"');
@@ -33,6 +35,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('if [ ! -f "$YOUMD_ENV_VAULT" ]; then');
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --list');
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT"');
+    expect(command).toContain('strict proof requires YOUMD_ENV_VAULT');
+    expect(command).toContain('[ "${YOUMD_REQUIRE_ENV_VAULT:-}" = "1" ]');
     expect(command).toContain('youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report');
     expect(command).toContain('YOUMD_RUN_CHECKS');
     expect(command).toContain('--run-checks --max-check-projects "${YOUMD_MAX_CHECK_PROJECTS:-8}"');
@@ -60,8 +64,10 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("YOUMD_RUN_CHECKS=1");
     expect(prompt).toContain("YOUMD_INSTALL_DEPS=1");
     expect(prompt).toContain("YOUMD_PROBE_SERVERS=1");
+    expect(prompt).toContain("YOUMD_REQUIRE_ENV_VAULT=1");
     expect(prompt).toContain("You.md portfolio graph + authenticated GitHub recent repos");
     expect(prompt).toContain(".env.local values are never embedded here");
     expect(prompt).toContain("variable names/counts and target paths only");
+    expect(prompt).toContain("fails instead of pretending setup is complete");
   });
 });
