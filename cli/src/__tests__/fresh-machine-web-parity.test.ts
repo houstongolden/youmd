@@ -19,6 +19,9 @@ describe("web /new computer bootstrap prompt parity", () => {
     expect(source).toContain("YOUMD_REQUIRE_ENV_VAULT=1");
     expect(source).toContain("youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
     expect(source).toContain("YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc");
+    expect(source).toContain('DEFAULT_ENV_VAULT_DIR="$HOME/Desktop/youmd-env-vault"');
+    expect(source).toContain('export YOUMD_ENV_VAULT="$DETECTED_ENV_VAULT"');
+    expect(source).toContain("auto-detect the newest `~/Desktop/youmd-env-vault/env-vault-*`");
     expect(source).toContain("YOUMD_ENV_VAULT_KEYCHAIN_SERVICE:-youmd-env-vault");
     expect(source).toContain("security find-generic-password");
     expect(source).toContain("try macOS Keychain service `youmd-env-vault` for the passphrase");

@@ -49,6 +49,10 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('fresh-machine full ${EXPAND_DAYS}-day project setup complete');
     expect(command).toContain('fresh-machine ${DAYS}-day setup pass complete');
     expect(command).toContain('youmd env backup --root "$ROOT" --preflight');
+    expect(command).toContain('DEFAULT_ENV_VAULT_DIR="$HOME/Desktop/youmd-env-vault"');
+    expect(command).toContain('find "$DEFAULT_ENV_VAULT_DIR"');
+    expect(command).toContain('export YOUMD_ENV_VAULT="$DETECTED_ENV_VAULT"');
+    expect(command).toContain('using detected env vault');
     expect(command).toContain('if [ ! -f "$YOUMD_ENV_VAULT" ]; then');
     expect(command).toContain('YOUMD_ENV_VAULT_KEYCHAIN_SERVICE:-youmd-env-vault');
     expect(command).toContain('security find-generic-password');
@@ -84,6 +88,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("writes a secret-safe machine proof report");
     expect(prompt).toContain("syncs the proof summary back to your You.md machine dashboard");
     expect(prompt).toContain("checks env-vault tooling");
+    expect(prompt).toContain("auto-detects the newest encrypted vault in `~/Desktop/youmd-env-vault/`");
+    expect(prompt).toContain("The command auto-detects the newest vault there");
     expect(prompt).toContain("lists an encrypted env vault without writing files");
     expect(prompt).toContain("tries macOS Keychain service `youmd-env-vault` for the passphrase");
     expect(prompt).toContain("If macOS Keychain contains service `youmd-env-vault` for the current user, restore uses it automatically");

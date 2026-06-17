@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-17 — Fresh-machine env-vault auto-detect proof
+
+### fix(machine): auto-detect transferred env vaults during strict setup
+- Fresh-machine CLI and web-shell commands now auto-detect the newest `~/Desktop/youmd-env-vault/env-vault-*` file when `YOUMD_ENV_VAULT` is not supplied, then continue through the existing strict env-vault list/restore path.
+- Verified the real encrypted vault at `~/Desktop/youmd-env-vault/env-vault-2026-06-17T2317Z.tar.enc`, tightened its permissions to `600`, and confirmed macOS Keychain service `youmd-env-vault` can supply the passphrase without printing it.
+- Secret-safe list proof showed `17` `.env.local` files and `3` agent-auth files in the vault with variable names/counts only and no secret values.
+- Restore proof restored `17` `.env.local` files into a disposable root and confirmed the agent-auth restore path, again without printing secret values.
+- The current macOS clipboard contains a fresh 7-day `/new computer` setup command with `~/Desktop/CODE_YOU`, strict env-vault mode, vault auto-detection, Keychain passphrase lookup, `--recent-only`, and the 90-day expansion prompt; the embedded script passed `bash -n`.
+
 ## 2026-06-17 — Local MCP persisted portfolio graph
 
 ### fix(mcp): stop local agents from seeing the four-project fallback graph
