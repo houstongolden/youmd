@@ -1,7 +1,7 @@
 # You.md — Product Requirements Document
 
 Version: 2.3
-Last Updated: 2026-06-16
+Last Updated: 2026-06-17
 Founder: Houston Golden
 
 ---
@@ -20,6 +20,9 @@ You.md is your agent brain, personal API/MCP, and named expertise stack layer fo
 - **Stacks:** named packages of expertise, skills, workflows, prompts, examples, docs, tests, host adapters, improvement policy, and update policy. A stack is a `youstack.json` (`youstack/v1`) manifest plus its files; in a connected GitHub repo, stacks live under `stacks/<slug>/` — the layout the server seeds and parses (`deriveStacks` in `convex/github.ts`). Known drift: CLI discovery and the example stack still use `youstack.json` / `.you/` / `youstacks/` paths instead of `stacks/`; reconciliation tracked as backlog P8.
 - **Runtime:** the one curl-installed helper layer that gets You.md into Claude Code, Codex, Cursor, and other agent hosts.
 - **Protected API/MCP:** the authenticated boundary for private memory retrieval, tokens, repo sync, connected tools, visibility changes, and sensitive actions.
+- **Portfolio Graph:** the project ecosystem map that connects projects, APIs,
+  MCPs, stacks, protected app agent harnesses, dependencies, reusable patterns,
+  machine setup, and DRY ownership.
 
 **Positioning:** Not just a social profile, resume, settings page, CLI, API, or chatbot. You.md is the durable brain plus portable expertise-stack layer agents use before they start improvising.
 
@@ -130,6 +133,40 @@ The compiled output — a portable identity file containing:
 - YouStacks should carry model routing policy, not just human-written instructions
 - Policy fields should cover orchestrator model, lead model, worker models, fallback models, BYOK/provider preferences, cost posture, risk thresholds, and approval gates
 - Host adapters should translate that policy into Claude Code, Codex, Cursor, ChatGPT, MCP-client, and local-agent guidance
+
+### 3.10 Project Portfolio Graph and Reuse Catalog
+You.md should organize Projects as a strategic portfolio, not just a list of
+names. The `projects` resource must evolve into a goal-oriented map for a single
+human building many products with many agents.
+
+The portfolio graph should connect:
+
+- active projects, repos, local directories, product URLs, docs, and current
+  goals
+- maintained project packs: PRD, tasks, design, research, ideas, changelog,
+  current state, agent docs, API docs, and MCP docs
+- APIs, MCP servers, CLI commands, webhooks, SDKs, internal functions, and
+  protected product agent harnesses
+- primary owning project and connected consumer projects
+- dependency edges with clear labels: dependent, feature, optional, dev-only,
+  admin, workspace, user-level
+- risk and failure notes: what breaks if a dependency fails
+- canonical skill-stack ownership and protected-vs-public stack boundaries
+- reusable code, UI/UX, auth, role, sidebar, chat, streaming, connector, docs,
+  and env patterns
+
+The first saved product memo is
+`project-context/PROJECT_PORTFOLIO_GRAPH_AND_REUSE_PRD_2026-06-17.md`.
+
+Important boundary: a product's protected in-app agent harness is not the same
+thing as an installable public skill stack. The public stack teaches host agents
+how to use the product API/MCP safely. The protected harness may include private
+strategy, copywriting, image generation, internal tools, client data, approvals,
+and proprietary prompts.
+
+The first duplicate-risk example to audit is Lempod management across
+`bamfsite` and `bamfaiapp`. You.md should verify which project owns the
+canonical Lempod management API before any agent adds a redundant endpoint.
 
 ---
 

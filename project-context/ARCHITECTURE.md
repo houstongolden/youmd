@@ -1,6 +1,6 @@
 # You.md — Architecture Reference
 
-Last Updated: 2026-06-16
+Last Updated: 2026-06-17
 
 ## System Overview
 
@@ -83,7 +83,8 @@ External product or agent
 |---|---|---|---|
 | `identity` | Public profile, links, bio, voice, public bundle | `/api/v1/profiles`, `/ctx`, MCP `get_identity` | Needs tighter versioned resource contract |
 | `now` | Current status, focus, active work | Profile `now`, bundle fields | Needs first-class API/MCP route |
-| `projects` | User/project context, repo status, next actions | CLI project context, MCP project resources, repo mirror | Needs hosted resource contract and grants |
+| `projects` | User/project context, repo status, next actions | CLI project context, MCP project resources, repo mirror, `trackedProjects` | Needs hosted resource contract and grants |
+| `portfolio_graph` | Cross-project APIs/MCPs, dependency edges, protected harnesses, reusable patterns, machine readiness, and DRY ownership | Planned in `PROJECT_PORTFOLIO_GRAPH_AND_REUSE_PRD_2026-06-17.md` | Needs data contract, auditor, dashboard view, and MCP/API slice |
 | `captures` | Mobile/host brain dumps, raw transcripts, inbound messages, routed ideas | Planned in `MOBILE_CAPTURE_AND_PROJECT_ROUTING_2026-06-16.md` | Needs inbox/event/session data model, provider adapters, dedupe/segment/classify pipeline, and review UI |
 | `sources` | Source catalog, provenance, freshness, trust | `sources`, pipeline, immutable raw-source work | Needs user-facing connector grid and refresh policy |
 | `memories` | Private/scoped durable facts | `memories`, MCP `search_memories` | Needs richer writeback approvals and source confidence UX |
@@ -111,6 +112,45 @@ External product or agent
 | BAMF OS | Private/internal BAMF company brain and client/admin tools | Separate private product surface; can consume You.md for Houston identity when scoped |
 | Agent hosts | Claude Code, Codex, Cursor, ChatGPT, MCP clients, local agents | Consume scoped context via links, API keys, MCP, host adapters, and YouStack installs |
 
+### Portfolio Graph and Reuse Layer
+
+Current project data is split across several useful surfaces:
+
+- `profiles.projects` and bundle `youJson.projects` for identity-level project
+  summaries.
+- `projects/<slug>/README.md`, `context.md`, `prd.md`, and `todo.md` custom
+  files generated from bundle projects.
+- repo-local `project-context/` plus global `~/.youmd/projects/<name>/` context
+  overlays read by the CLI/MCP project engine.
+- `trackedProjects` for GitHub-active project telemetry: repo URL, product URL,
+  repo/directory name, API docs, MCP docs, stack name, high-level goal, recent
+  progress, pushed date, language, and LLM insight.
+- `repoMirror` for server-readable identity and `stacks/**` files.
+- DSI GitHub Project Catalog components and Loop Report source snapshots.
+
+The portfolio graph should layer on top of those records rather than replace
+them. It should add typed relationships:
+
+- project owns API/MCP
+- project consumes API/MCP
+- project depends on project
+- project reuses code/UI/pattern from project
+- project shares stack/skill source
+- project owns protected product agent harness
+- project owns public/installable skill stack
+
+Each relationship should carry dependency tier, integration type, auth boundary,
+features powered, failure mode, last verification, and duplicate-risk notes.
+
+The first dashboard target is a `/shell` Projects or Portfolio view that shows
+all APIs/MCPs, owning projects, connected consumers, dependency direction,
+integration tier, docs status, fresh-machine setup status, and reusable patterns
+without devolving into nested cards.
+
+The first skill target is a bundled `portfolio-graph-auditor` style skill that
+reads local repos, project-context files, prompts, docs, API/MCP surfaces, and
+stack manifests, then proposes canonical owners and reusable pattern records.
+
 ### Writeback Rules
 
 Any write from an agent or connected product should record actor, host, app, stack, source, confidence, timestamp, reason, and approval state. Low-trust agent writes should land as proposed updates or lower-confidence memories, not overwrite higher-trust human-authored context.
@@ -122,6 +162,9 @@ Any write from an agent or connected product should record actor, host, app, sta
 - Lovable-simple connector UX that maps sources into structured context with preview, visibility, trust rules, and refresh policy.
 - Source refresh policies, crawlers, crons, monitors, and approval-aware writeback that reuse the immutable raw-source ledger.
 - Provider-agnostic mobile capture gateway for SMS/iMessage, voice transcripts, Slack, CLI/web shell, and future host inputs, with raw artifact preservation, source redaction, project routing, task proposals, and approval-aware external writes.
+- Portfolio graph resource contract for project dependencies, API/MCP ownership,
+  protected harnesses, reusable patterns, machine readiness, and duplicate-risk
+  warnings.
 - Skill-learning ingestion for screen recordings, transcripts, SOPs, tool/API lists, agent-run logs, and summaries.
 - YouStacks distribution: private/scoped/public repo-backed stacks, host adapters for Claude Code, Codex, Cursor, ChatGPT, MCP clients, and local agents.
 - Stack-level model routing/BYOK policy in YouStack manifests and generated host adapters as an advanced capability, not the headline contract.

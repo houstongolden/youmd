@@ -1,11 +1,23 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-16
+Last Updated: 2026-06-17
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-06-17 — Project portfolio graph and reuse catalog
+- [x] Preserve Houston's project portfolio / API-MCP dependency / reusable pattern direction in a dedicated memo
+- [x] Document how You.md currently saves and organizes Projects across identity bundle projects, project markdown packs, `trackedProjects`, repo mirror, DSI components, and Loop Reports
+- [x] Define the portfolio graph product model: projects, API/MCP surfaces, dependency edges, integration tiers, protected product harnesses, public skill stacks, reusable patterns, and fresh-machine readiness
+- [x] Capture reusable cross-project defaults for API/MCP/SkillStack-first architecture, role hierarchy, auth preference, app shell layout, agentic split workspace, and streaming response behavior
+- [x] Track Lempod management across `bamfsite` and `bamfaiapp` as the first concrete duplicate-risk audit
+- [ ] Define the first `portfolio_graph` / `reuse_patterns` data contract and decide Convex table vs repo markdown vs hybrid storage
+- [ ] Add a bundled `portfolio-graph-auditor` style skill or `youmd project audit-portfolio` command that scans local repos/docs/prompts/API/MCP/stack surfaces and proposes graph updates
+- [ ] Build the `/shell` Portfolio/Projects graph view with API/MCP ownership, connected projects, dependency tiers, docs status, fresh-machine readiness, and reusable pattern catalog
+- [ ] Teach MCP `get_agent_brief` / `get_project_context` to include the relevant portfolio graph slice before agents create new APIs, MCP routes, stacks, or reusable components
+- [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens
 
 ### 2026-06-16 — Mobile capture, voice, Slack, and project routing
 - [x] Preserve the 2026-06-16 Part 2 mobile brain-dump intent safely without private phone numbers or secrets

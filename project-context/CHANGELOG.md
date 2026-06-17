@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Project portfolio graph and reuse catalog
+
+### docs(product): capture cross-project dependency and reuse layer
+- Added `project-context/PROJECT_PORTFOLIO_GRAPH_AND_REUSE_PRD_2026-06-17.md` as the product memo for a first-class You.md portfolio graph across projects, APIs, MCPs, stacks, protected in-product agent harnesses, dependency edges, integration tiers, machine readiness, and reusable code/UI/architecture patterns.
+- Added `project-context/prompts/2026-06-17-project-portfolio-graph-reuse-dependency-routing.md` as the sanitized prompt capture for the BAMF site/BAMF.ai/Lempod-driven realization.
+- Updated PRD, Architecture, Current State, Features, TODO, and active request tracking so future agents see this as an active product lane.
+- Documented how You.md currently saves Projects: identity bundle `projects`, generated `projects/<slug>/` markdown packs, repo-local/global project-context overlays, GitHub `trackedProjects`, repo mirror, DSI project catalog components, and Loop Report snapshots.
+- Captured reusable defaults Houston wants available across projects: API/MCP/SkillStack-first architecture, protected harness vs installable public stack boundaries, role hierarchy, custom passwordless auth preference, standard left sidebar/app shell, agentic split workspace, no dead loading spinners, and no boxes-within-boxes design.
+- Tracked Lempod management across `bamfsite` and `bamfaiapp` as the first duplicate-risk ownership audit before any new endpoint work.
+
 ## 2026-06-16 — Fresh-machine project catalog sync
 
 ### feat(cli/convex/web): hydrate 90-day GitHub projects for CODE_YOU setup

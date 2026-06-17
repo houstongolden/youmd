@@ -1,8 +1,30 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-16
+Last Updated: 2026-06-17
 
 ---
+
+## 2026-06-17 — Project portfolio graph, API/MCP dependency map, and reuse catalog
+
+### 131. Add Project Portfolio Graph and reusable pattern intelligence
+**Status:** IN PROGRESS (product context captured; implementation pending)
+**Verified:** PARTIAL (docs/product-context validation passed; implementation pending)
+**Production Verified:** NO
+**Source:** 2026-06-17 — Houston: "we need to have a page/view in our you.md app dashboard dedicated to showing an organized display of all of our APIS/MCPS their associated projects... dependencies... code-reusability and ui-ux-reusability... project / api ecosystem... standard repeatable decisions... protected agentic harnesses vs installable stacks... Lempod management across bamfsite and bamfaiapp..."
+**Actionable Scope:**
+1. Explain how You.md currently saves and organizes Projects. **DONE in docs:** identity bundle `projects`, generated `projects/<slug>/` markdown packs, repo/global project-context overlays, GitHub `trackedProjects`, repo mirror, DSI components, and Loop Report snapshots are documented.
+2. Preserve the strategic product direction in a dedicated memo. **DONE:** `project-context/PROJECT_PORTFOLIO_GRAPH_AND_REUSE_PRD_2026-06-17.md`.
+3. Preserve a sanitized prompt capture for the realization. **DONE:** `project-context/prompts/2026-06-17-project-portfolio-graph-reuse-dependency-routing.md`.
+4. Add Project records that carry detailed and summarized AI descriptions, high-level goal, current focus, PRD/tasks/design/research/ideas/changelog/current-state/agent-doc paths, repo/local/docs/API/MCP URLs, stack, environment, and fresh-machine setup metadata. **PENDING implementation.**
+5. Add API/MCP surface records with owning project, owning stack, docs, auth mode, integration type, write policy, risk tier, features powered, failure impact, and duplicate-risk warnings. **PENDING implementation.**
+6. Add dependency edges that label who depends on whom: dependent, feature, optional, dev-only, admin, workspace, user-level, provides API to, consumes API from, shares stack, reuses code, reuses UI, owns public stack, owns protected harness. **PENDING implementation.**
+7. Add a `/shell` Portfolio/Projects graph view that shows APIs/MCPs, associated projects, dependency direction, integration tiers, docs status, machine readiness, duplicate-risk warnings, and reusable patterns. **PENDING implementation.**
+8. Track protected in-product agentic harnesses separately from public/installable skill stacks so proprietary product-agent IP is not exposed through public stack installs. **DONE in docs; implementation pending.**
+9. Add a cross-project reusable code/UI/architecture pattern catalog, tagged by tech stack and canonical/candidate/deprecated status. **DONE in docs; implementation pending.**
+10. Preserve Houston's reusable defaults: API/MCP/SkillStack-first architecture, standard role hierarchy, first-party passwordless auth preference, standard left sidebar/app shell, agentic split workspace, streaming response behavior, no loading spinners, and no boxes-within-boxes admin/docs surfaces. **DONE in docs; implementation pending.**
+11. Add a bundled YouStack skill or CLI command that audits local projects, prompts, docs, APIs, MCPs, stacks, code patterns, and UI patterns, then proposes graph/reuse updates. **PENDING implementation.**
+12. Audit Lempod management across `bamfsite` and `bamfaiapp` before creating any duplicate Lempod API endpoint. **PENDING implementation.**
+**Progress (2026-06-17):** Added the portfolio graph/reuse PRD and sanitized prompt capture, updated PRD, Architecture, Current State, Features, TODO, Changelog, and active request tracking. The first implementation slice remains the data contract plus auditor skill/CLI.
 
 ## 2026-06-16 — Preserve h.computer platform ideas in You.md
 
