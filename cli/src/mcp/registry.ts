@@ -11,7 +11,7 @@
  *
  * ─── MIGRATION STATUS ───────────────────────────────────────────────────────
  *
- * MIGRATED (19 tools):
+ * MIGRATED (22 tools):
  *   whoami              — local bundle read, no auth required
  *   get_identity        — local bundle read, compact/full/json/markdown
  *   list_skills         — pure local dir scan
@@ -31,6 +31,8 @@
  *   use_skill           — ctx.getInstalledSkills()
  *   get_activity_log    — auth-gated fetch via ctx.fetchActivityLog
  *   upsert_portfolio_task — authenticated write via ctx.apiRequest
+ *   update_portfolio_task — authenticated task triage via ctx.apiRequest
+ *   hydrate_portfolio_graph — authenticated portfolio hydration via ctx.apiRequest
  *   record_brain_dump   — authenticated write via ctx.apiRequest
  *
  * DEFERRED (4 tools — write-ops and dynamic-import tools):
@@ -783,6 +785,60 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
       } catch (err) {
         return {
           content: [{ type: "text", text: `failed to save portfolio task: ${err instanceof Error ? err.message : "unknown error"}` }],
+          isError: true,
+        };
+      }
+    },
+  },
+
+  // ── update_portfolio_task ───────────────────────────────────────────────────
+  {
+    name: "update_portfolio_task",
+    description:
+      "Triage an existing portfolio task by updating its status and/or priority. Use after an agent starts, finishes, snoozes, cancels, or escalates a task in You.md's persisted project task graph. Requires authentication.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        task_id: { type: "string", description: "Existing portfolio task id." },
+        status: { type: "string", enum: ["proposed", "open", "in_progress", "done", "snoozed", "cancelled"], description: "New task status." },
+        priority: { type: "string", enum: ["low", "normal", "high", "urgent"], description: "New task priority." },
+        sync_repo: { type: "boolean", description: "Whether to publish and sync the GitHub repo snapshot. Defaults true." },
+      },
+      required: ["task_id"],
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.authenticated) {
+        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+      }
+      const taskId = typeof args.task_id === "string" ? args.task_id.trim() : "";
+      if (!taskId) {
+        return { content: [{ type: "text", text: "missing required argument: task_id" }], isError: true };
+      }
+      const status = typeof args.status === "string" ? args.status.trim() : undefined;
+      const priority = typeof args.priority === "string" ? args.priority.trim() : undefined;
+      if (!status && !priority) {
+        return { content: [{ type: "text", text: "status or priority is required" }], isError: true };
+      }
+      try {
+        const result = await ctx.apiRequest("/api/v1/me/portfolio/tasks/triage", {
+          method: "POST",
+          body: {
+            taskId,
+            status,
+            priority,
+            syncRepo: args.sync_repo !== false,
+            agentName: ctx.resolveAgentName(),
+          },
+        }) as Record<string, unknown>;
+        const ok = result.success === true;
+        ctx.logActivity("write", "portfolio/task-triage", { taskId, status, priority });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          isError: !ok,
+        };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `failed to update portfolio task: ${err instanceof Error ? err.message : "unknown error"}` }],
           isError: true,
         };
       }

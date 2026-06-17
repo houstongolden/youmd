@@ -610,6 +610,14 @@ export interface PortfolioWriteResult {
   message?: string;
 }
 
+export interface PortfolioTaskTriagePayload {
+  taskId: string;
+  status?: string;
+  priority?: string;
+  syncRepo?: boolean;
+  agentName?: string;
+}
+
 export interface BrainDumpTaskPayload {
   projectSlug?: string;
   title: string;
@@ -686,6 +694,16 @@ export async function savePortfolioTask(
   payload: PortfolioTaskPayload
 ): Promise<ApiResponse<PortfolioWriteResult>> {
   return apiRequest<PortfolioWriteResult>("/api/v1/me/portfolio/tasks", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
+export async function triagePortfolioTask(
+  payload: PortfolioTaskTriagePayload
+): Promise<ApiResponse<PortfolioWriteResult>> {
+  return apiRequest<PortfolioWriteResult>("/api/v1/me/portfolio/tasks/triage", {
     method: "POST",
     token: getToken(),
     body: payload,

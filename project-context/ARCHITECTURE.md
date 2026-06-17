@@ -177,6 +177,10 @@ Local implementation slice:
   plus commit/PR activity into the persisted Convex graph.
 - Local MCP exposes `hydrate_portfolio_graph` for agents that need to hydrate
   from the tracked GitHub catalog without using the dashboard.
+- `portfolio.updateTaskTriage`, `POST /api/v1/me/portfolio/tasks/triage`, and
+  local MCP `update_portfolio_task` update task status/priority on existing
+  `portfolioTasks` rows without creating duplicate tasks. API callers may opt
+  into or out of repo snapshot sync with `syncRepo`.
 - `cli/src/lib/portfolio-graph.ts` is the local-agent graph brief mirror used
   by the published CLI/MCP package.
 - `cli/src/mcp/server.ts` injects `portfolioGraph` into `get_agent_brief` /

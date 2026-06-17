@@ -1439,6 +1439,84 @@ http.route({
   }),
 });
 
+// POST /api/v1/me/portfolio/tasks/triage — Update task status/priority from local agents.
+http.route({
+  path: "/api/v1/me/portfolio/tasks/triage",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle", "projects");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    const startedAt = Date.now();
+    const body = await request.json();
+    const taskId = typeof body.taskId === "string" && body.taskId.trim()
+      ? body.taskId.trim() as Id<"portfolioTasks">
+      : undefined;
+    if (!taskId) return errorResponse("invalid_request", "taskId must be a non-empty string", 400);
+
+    const status = typeof body.status === "string" && body.status.trim()
+      ? body.status.trim()
+      : undefined;
+    const priority = typeof body.priority === "string" && body.priority.trim()
+      ? body.priority.trim()
+      : undefined;
+    if (!status && !priority) {
+      return errorResponse("invalid_request", "status or priority is required", 400);
+    }
+
+    try {
+      const task = await ctx.runMutation(api.portfolio.updateTaskTriage, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        taskId,
+        status,
+        priority,
+      });
+
+      const snapshot = await saveSnapshotPublishAndSync(
+        ctx,
+        auth,
+        snapshotPathForProject(task.projectSlug),
+        taskSnapshotMarkdown(task, new Date().toISOString()),
+        "api:portfolio-task-triage",
+        body.syncRepo !== false
+      );
+
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: body.agentName || auth.appName || agent.name,
+          agentSource: authAgentSource(auth, request),
+          agentVersion: agent.version,
+          action: "write",
+          resource: "portfolio/task-triage",
+          status: "success",
+          connectedAppGrantId: auth.connectedAppGrantId,
+          durationMs: Date.now() - startedAt,
+          details: {
+            taskId,
+            projectSlug: task.projectSlug ?? "personal",
+            taskStatus: task.status,
+            priority: task.priority,
+            snapshotPath: snapshot.path,
+          },
+        });
+      } catch {
+        // best-effort
+      }
+
+      return guard.finish(json({ success: true, ...task, snapshot }));
+    } catch (err) {
+      return serverErrorResponse("me/portfolio/tasks/triage", err, "Failed to triage portfolio task");
+    }
+  }),
+});
+
 // POST /api/v1/me/portfolio/brain-dumps — Preserve raw dumps and route proposed tasks.
 http.route({
   path: "/api/v1/me/portfolio/brain-dumps",
@@ -3408,6 +3486,7 @@ http.route({ path: "/api/v1/me/bundle", method: "OPTIONS", handler: corsPrefligh
 http.route({ path: "/api/v1/me/publish", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/projects/hydrate", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/tasks", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/portfolio/tasks/triage", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/brain-dumps", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/sources", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPreflight });

@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "15c2a9dc4aa8421d44ca60f3c3b2c690cf16e53b5e1249f27e8fb5357964a027",
+  "sourceHash": "71f859ad1f762293a435ae5bfd5d9346308203f385368ef96aa8342f71f84aeb",
   "cli": {
     "version": "0.8.2"
   },
   "counts": {
-    "endpoints": 88,
+    "endpoints": 89,
     "internalRoutes": 7,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 30,
-    "convexRoutes": 69,
+    "convexRoutes": 70,
     "nextRoutes": 26
   },
   "endpoints": [
@@ -249,6 +249,17 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Create an owner-aware portfolio task from CLI/MCP/API.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/portfolio/tasks/triage",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Update task status/priority from local agents.",
       "sources": [
         "convex"
       ]

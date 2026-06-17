@@ -49,6 +49,19 @@ const taskDraftValidator = v.object({
   tags: v.optional(v.array(v.string())),
 });
 
+const TASK_STATUSES = ["proposed", "open", "in_progress", "done", "snoozed", "cancelled"] as const;
+const TASK_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+
+function normalizeTaskStatus(value: string | undefined, fallback: string): string {
+  const next = value?.trim();
+  return next && TASK_STATUSES.includes(next as typeof TASK_STATUSES[number]) ? next : fallback;
+}
+
+function normalizeTaskPriority(value: string | undefined, fallback: string): string {
+  const next = value?.trim();
+  return next && TASK_PRIORITIES.includes(next as typeof TASK_PRIORITIES[number]) ? next : fallback;
+}
+
 const projectActivityValidator = v.object({
   kind: v.string(),
   title: v.string(),
@@ -767,6 +780,52 @@ export const upsertTask = mutation({
       createdAt: now,
     });
     return { taskId, created: true };
+  },
+});
+
+export const updateTaskTriage = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    taskId: v.id("portfolioTasks"),
+    status: v.optional(v.string()),
+    priority: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const existing = await ctx.db.get(args.taskId);
+    if (!existing || existing.userId !== user._id) throw new Error("Task not found");
+
+    const now = Date.now();
+    const status = normalizeTaskStatus(args.status, existing.status);
+    const priority = normalizeTaskPriority(args.priority, existing.priority);
+    const patch: Partial<Doc<"portfolioTasks">> = {
+      updatedAt: now,
+    };
+
+    if (args.status !== undefined) {
+      patch.status = status;
+      patch.completedAt = status === "done" ? (existing.completedAt ?? now) : undefined;
+    }
+    if (args.priority !== undefined) {
+      patch.priority = priority;
+    }
+
+    await ctx.db.patch(args.taskId, patch);
+
+    return {
+      taskId: args.taskId,
+      title: existing.title,
+      description: existing.description,
+      ownerType: existing.ownerType,
+      ownerLabel: existing.ownerLabel,
+      projectSlug: existing.projectSlug,
+      status,
+      priority,
+      tags: existing.tags,
+      updatedAt: now,
+      completedAt: status === "done" ? (existing.completedAt ?? now) : undefined,
+    };
   },
 });
 

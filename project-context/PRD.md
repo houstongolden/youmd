@@ -209,12 +209,22 @@ Implementation slice shipped and verified on 2026-06-17:
   web agents.
 - The local CLI exposes `youmd project task` and `youmd project braindump`.
   Local MCP exposes `upsert_portfolio_task` and `record_brain_dump`.
+- Portfolio task triage is now first-class in the dashboard and local-agent
+  layer: `portfolio.updateTaskTriage`, `POST /api/v1/me/portfolio/tasks/triage`,
+  and MCP `update_portfolio_task` update status/priority on existing tasks
+  without creating duplicates. The `/shell` Portfolio Graph pane renders
+  compact task controls for proposed/open/in-progress/done/snoozed/cancelled
+  state and low/normal/high/urgent priority.
 - Repo-backed snapshots such as `projects/youmd/tasks.md` and
   `projects/_braindumps/recent.md` are pushed as real files in the linked
   GitHub brain repo, not hidden only inside `you.json.custom_files`.
 - Authenticated CLI and browser QA proved the path through merged PR #9 and PR
   #10 in `houstongolden/houstongolden-you-md`, refreshed the repo mirror to 50
   files, and rendered the CLI-created rows in the persisted Portfolio Graph pane.
+- Authenticated task-triage QA proved the dashboard controls and local-agent API
+  route: the shell moved a no-sync QA task from open/low to urgent, in-progress,
+  and done; the API route triaged another no-sync task to done/urgent without
+  attempting a GitHub repo push.
 - Authenticated local hydration QA proved the real graph path on 2026-06-17:
   the auditor found 268 project/package candidates and 97 providers, hydration
   scanned 129 recent local candidates, upserted 30 local projects, considered

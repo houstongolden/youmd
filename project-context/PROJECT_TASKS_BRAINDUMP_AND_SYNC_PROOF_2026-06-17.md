@@ -171,12 +171,21 @@ GitHub status and task/graph paths behave in the actual product.
 - Local MCP registry proof also confirmed `hydrate_portfolio_graph` is present,
   so agents can trigger tracked-project portfolio hydration without relying on a
   manual dashboard click.
+- Follow-up task triage work added `portfolio.updateTaskTriage`,
+  `POST /api/v1/me/portfolio/tasks/triage`, and local MCP
+  `update_portfolio_task` so existing tasks can move through status/priority
+  states without duplicate task creation.
+- Authenticated local browser QA created a no-sync QA task, opened the Portfolio
+  Graph pane, verified `TASK TRIAGE`, clicked `urgent`, `doing`, and `done`, and
+  observed `task triaged: done / urgent`. Screenshot:
+  `/tmp/youmd-task-triage-controls-2026-06-17.png`.
+- API/local-agent proof created a no-sync task through the built CLI API helper,
+  triaged it through `/api/v1/me/portfolio/tasks/triage` to `done / urgent`, and
+  verified the response kept `repoSync.attempted=false`.
 
 ## Still Open
 
 - Export the persisted portfolio graph back into repo-backed markdown snapshots.
-- Add first-class dashboard task editing/triage controls on top of persisted
-  `portfolioTasks` / `brainDumpCaptures`.
 - Add mobile/watch invocation proof for task and brain-dump capture paths.
 - Add persisted update artifacts/history for PR, conflict, check, merge, and
   mirror-refresh steps.

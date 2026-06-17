@@ -720,6 +720,45 @@ export const openApiSpec = {
         ]
       }
     },
+    "/api/v1/me/portfolio/tasks/triage": {
+      "post": {
+        "operationId": "post_api_v1_me_portfolio_tasks_triage",
+        "summary": "Update task status/priority from local agents.",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/me/portrait": {
       "post": {
         "operationId": "post_api_v1_me_portrait",

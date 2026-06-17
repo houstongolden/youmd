@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import {
   apiSurfaces,
   dependencyEdges,
@@ -47,8 +48,8 @@ type ProjectActivity = {
 };
 
 function statusClass(status: string) {
-  if (status === "canonical" || status === "active" || status === "synced") return "text-[hsl(var(--success))]";
-  if (status === "candidate" || status === "cataloged" || status === "build") return "text-[hsl(var(--accent))]";
+  if (status === "canonical" || status === "active" || status === "synced" || status === "done") return "text-[hsl(var(--success))]";
+  if (status === "candidate" || status === "cataloged" || status === "build" || status === "proposed" || status === "open" || status === "in_progress" || status === "urgent" || status === "high") return "text-[hsl(var(--accent))]";
   return "text-[hsl(var(--text-secondary))] opacity-55";
 }
 
@@ -217,6 +218,21 @@ const CORE_PROJECT_SLUGS = new Set([
   "fantasyis",
 ]);
 
+const TASK_STATUS_ACTIONS = [
+  { value: "open", label: "open" },
+  { value: "in_progress", label: "doing" },
+  { value: "done", label: "done" },
+  { value: "snoozed", label: "snooze" },
+  { value: "cancelled", label: "cancel" },
+] as const;
+
+const TASK_PRIORITY_ACTIONS = [
+  { value: "low", label: "low" },
+  { value: "normal", label: "normal" },
+  { value: "high", label: "high" },
+  { value: "urgent", label: "urgent" },
+] as const;
+
 function projectActivityScore(project: DisplayProject, activities: ProjectActivity[]) {
   const counts = shippedCounts(activities);
   const latestActivityAt = activities[0]?.occurredAt ?? project.lastActivityAt ?? project.updatedAt ?? 0;
@@ -233,8 +249,10 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const graph = useQuery(api.portfolio.listPortfolioGraph, clerkId ? { clerkId } : "skip");
   const syncDashboardSeed = useMutation(api.portfolio.syncDashboardSeed);
   const syncTrackedProjects = useMutation(api.portfolio.syncTrackedProjects);
+  const updateTaskTriage = useMutation(api.portfolio.updateTaskTriage);
   const [syncing, setSyncing] = useState(false);
   const [hydrating, setHydrating] = useState(false);
+  const [triagingTaskId, setTriagingTaskId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(null);
 
@@ -341,6 +359,23 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
       setSyncStatus(`error: ${err instanceof Error ? err.message : "failed to hydrate active projects"}`);
     } finally {
       setHydrating(false);
+    }
+  };
+
+  const handleTaskTriage = async (
+    taskId: Id<"portfolioTasks">,
+    patch: { status?: string; priority?: string }
+  ) => {
+    if (!clerkId || triagingTaskId) return;
+    setTriagingTaskId(String(taskId));
+    setSyncStatus(null);
+    try {
+      const result = await updateTaskTriage({ clerkId, taskId, ...patch });
+      setSyncStatus(`task triaged: ${result.status} / ${result.priority}`);
+    } catch (err) {
+      setSyncStatus(`error: ${err instanceof Error ? err.message : "failed to triage task"}`);
+    } finally {
+      setTriagingTaskId(null);
     }
   };
 
@@ -585,21 +620,66 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           <>
             <PaneDivider />
             <section>
-              <PaneSectionLabel>open tasks</PaneSectionLabel>
+              <PaneSectionLabel>task triage</PaneSectionLabel>
               <div className="space-y-2">
-                {graph.tasks.slice(0, 8).map((task) => (
-                  <div key={task._id} className="grid gap-2 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3 md:grid-cols-[0.75fr_0.4fr_1fr]">
-                    <div className="font-mono text-[11px] text-[hsl(var(--text-primary))]">
-                      {task.title}
+                {graph.tasks.slice(0, 12).map((task) => {
+                  const busy = triagingTaskId === String(task._id);
+                  return (
+                    <div key={task._id} className="grid gap-3 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3 lg:grid-cols-[0.9fr_0.55fr_1.05fr]">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-[11px] text-[hsl(var(--text-primary))]">{task.title}</span>
+                          <span className={`font-mono text-[8.5px] uppercase tracking-[0.14em] ${statusClass(task.status)}`}>{task.status}</span>
+                          <span className={`font-mono text-[8.5px] uppercase tracking-[0.14em] ${statusClass(task.priority)}`}>{task.priority}</span>
+                        </div>
+                        <p className="mt-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">
+                          {task.description ?? (task.tags.join(", ") || "No task detail saved yet.")}
+                        </p>
+                      </div>
+                      <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
+                        {task.ownerType}{task.ownerLabel ? ` / ${task.ownerLabel}` : ""}{task.projectSlug ? ` / ${task.projectSlug}` : " / personal"}
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-1.5">
+                          {TASK_STATUS_ACTIONS.map((action) => (
+                            <button
+                              key={`${task._id}-${action.value}`}
+                              type="button"
+                              disabled={!clerkId || busy || task.status === action.value}
+                              onClick={() => handleTaskTriage(task._id, { status: action.value })}
+                              className={`h-7 border px-2 font-mono text-[8.5px] uppercase tracking-[0.12em] transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+                                task.status === action.value
+                                  ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"
+                                  : "border-[hsl(var(--border))]/60 text-[hsl(var(--text-secondary))] opacity-60 hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                              }`}
+                              style={{ borderRadius: "var(--radius)" }}
+                            >
+                              {busy ? "..." : action.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {TASK_PRIORITY_ACTIONS.map((action) => (
+                            <button
+                              key={`${task._id}-${action.value}`}
+                              type="button"
+                              disabled={!clerkId || busy || task.priority === action.value}
+                              onClick={() => handleTaskTriage(task._id, { priority: action.value })}
+                              className={`h-7 border px-2 font-mono text-[8.5px] uppercase tracking-[0.12em] transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+                                task.priority === action.value
+                                  ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"
+                                  : "border-[hsl(var(--border))]/60 text-[hsl(var(--text-secondary))] opacity-60 hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                              }`}
+                              style={{ borderRadius: "var(--radius)" }}
+                            >
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
-                      {task.ownerType}{task.projectSlug ? ` / ${task.projectSlug}` : " / personal"}
-                    </div>
-                    <div className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
-                      {task.description ?? (task.tags.join(", ") || task.status)}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           </>

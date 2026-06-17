@@ -12,6 +12,15 @@
 
 ## 2026-06-17 — GitHub sync proof, portfolio persistence, and project tasks
 
+### feat(web/api/mcp): add portfolio task triage controls
+- Added owner-gated `portfolio.updateTaskTriage` for status and priority updates on persisted `portfolioTasks`.
+- Added `POST /api/v1/me/portfolio/tasks/triage` so local agents can move tasks through `proposed`, `open`, `in_progress`, `done`, `snoozed`, and `cancelled`, or change priority without creating duplicate tasks.
+- Added local MCP tool `update_portfolio_task` beside `upsert_portfolio_task`, `hydrate_portfolio_graph`, and `record_brain_dump`.
+- Reworked the Portfolio Graph task section into `TASK TRIAGE`, with visible status and priority chips plus compact controls for `open`, `doing`, `done`, `snooze`, `cancel`, `low`, `normal`, `high`, and `urgent`.
+- Deployed Convex to `kindly-cassowary-600` after the first browser click proved the local web app needed the new remote mutation.
+- Authenticated local browser QA created a no-sync QA task, opened `/shell`, clicked the task controls, moved it to `urgent`, then `in_progress`, then `done`, and verified `task triaged: done / urgent`. Screenshot: `/tmp/youmd-task-triage-controls-2026-06-17.png`.
+- API/local-agent proof created a no-sync task through `savePortfolioTask`, triaged it through `/api/v1/me/portfolio/tasks/triage` to `done / urgent`, and verified `repoSync.attempted=false`.
+
 ### fix(web/cli/convex): hydrate Portfolio Graph from real active projects
 - Fixed the Portfolio Graph pane so the persisted graph is no longer only the
   4-project dashboard bootstrap seed.

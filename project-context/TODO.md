@@ -65,7 +65,7 @@ PRD Version: 2.3
 - [x] Add dashboard hydration for persisted portfolio graph records instead of static-only pane data, with static data demoted to bootstrap seed/fallback
 - [x] Add first shell-chat task and brain-dump invocation on top of persisted `portfolioTasks` / `brainDumpCaptures`
 - [x] Prove shell chat can trigger the repo update loop without relying only on the `[ update ]` button
-- [ ] Add first-class dashboard task editing/triage controls on top of persisted `portfolioTasks` / `brainDumpCaptures`
+- [x] Add first-class dashboard task editing/triage controls on top of persisted `portfolioTasks` / `brainDumpCaptures`, plus API/MCP task status/priority updates for local agents
 - [x] Add CLI/local-agent task and brain-dump invocation proof through You.md MCP/CLI
 - [ ] Add first-class persisted update artifacts/history for PR/check/conflict/merge steps
 - [x] Seed the first persisted portfolio graph records from the dashboard bootstrap model and visually verify the Convex-backed pane
