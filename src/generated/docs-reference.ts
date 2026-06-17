@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "6ca85856402e78bdcc2cdb1b5e3396da2ecd8c602f2ae29e69bc3ad804560086",
+  "sourceHash": "e91c5484699cfb1ca714972c695133a3eace4e1a47d064c69b013c9b90cedaf0",
   "cli": {
     "version": "0.8.2"
   },
   "counts": {
-    "endpoints": 92,
+    "endpoints": 93,
     "internalRoutes": 8,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 30,
-    "convexRoutes": 73,
+    "convexRoutes": 74,
     "nextRoutes": 26
   },
   "endpoints": [
@@ -293,6 +293,17 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Update task status/priority from local agents.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/portfolio/tasks/update",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Partially update ownership, scope, metadata, and triage fields.",
       "sources": [
         "convex"
       ]

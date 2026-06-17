@@ -944,6 +944,88 @@ export const updateTaskTriage = mutation({
   },
 });
 
+export const updateTaskDetails = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    taskId: v.id("portfolioTasks"),
+    projectSlug: v.optional(v.union(v.string(), v.null())),
+    title: v.optional(v.string()),
+    description: v.optional(v.union(v.string(), v.null())),
+    ownerType: v.optional(v.union(v.literal("human"), v.literal("agent"))),
+    ownerLabel: v.optional(v.union(v.string(), v.null())),
+    status: v.optional(v.string()),
+    priority: v.optional(v.string()),
+    dueAt: v.optional(v.union(v.number(), v.null())),
+    tags: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const existing = await ctx.db.get(args.taskId);
+    if (!existing || existing.userId !== user._id) throw new Error("Task not found");
+
+    const now = Date.now();
+    const patch: Partial<Doc<"portfolioTasks">> = {
+      updatedAt: now,
+    };
+
+    if (args.projectSlug !== undefined) {
+      patch.projectSlug = args.projectSlug === null ? undefined : slugify(args.projectSlug);
+    }
+    if (args.title !== undefined) {
+      const title = args.title.trim();
+      if (!title) throw new Error("Task title cannot be blank");
+      patch.title = title;
+    }
+    if (args.description !== undefined) {
+      patch.description = args.description === null ? undefined : args.description.trim() || undefined;
+    }
+    if (args.ownerType !== undefined) {
+      patch.ownerType = args.ownerType;
+    }
+    if (args.ownerLabel !== undefined) {
+      patch.ownerLabel = args.ownerLabel === null ? undefined : args.ownerLabel.trim() || undefined;
+    }
+    if (args.status !== undefined) {
+      const status = normalizeTaskStatus(args.status, existing.status);
+      patch.status = status;
+      patch.completedAt = status === "done" ? (existing.completedAt ?? now) : undefined;
+    }
+    if (args.priority !== undefined) {
+      patch.priority = normalizeTaskPriority(args.priority, existing.priority);
+    }
+    if (args.dueAt !== undefined) {
+      patch.dueAt = args.dueAt === null ? undefined : args.dueAt;
+    }
+    if (args.tags !== undefined) {
+      patch.tags = optionalStrings(args.tags);
+    }
+
+    await ctx.db.patch(args.taskId, patch);
+    const updated = {
+      ...existing,
+      ...patch,
+      _id: existing._id,
+      _creationTime: existing._creationTime,
+    };
+
+    return {
+      taskId: args.taskId,
+      title: updated.title,
+      description: updated.description,
+      ownerType: updated.ownerType,
+      ownerLabel: updated.ownerLabel,
+      projectSlug: updated.projectSlug,
+      status: updated.status,
+      priority: updated.priority,
+      dueAt: updated.dueAt,
+      tags: updated.tags,
+      updatedAt: now,
+      completedAt: updated.completedAt,
+    };
+  },
+});
+
 export const recordBrainDump = mutation({
   args: {
     clerkId: v.string(),

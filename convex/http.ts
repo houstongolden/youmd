@@ -902,6 +902,10 @@ function cleanStringArray(value: unknown): string[] {
     : [];
 }
 
+function hasBodyKey(body: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(body, key);
+}
+
 function cleanOptionalString(value: unknown, limit = 1200): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.replace(/\s+/g, " ").trim();
@@ -1024,6 +1028,7 @@ function taskSnapshotMarkdown(task: {
   status?: string;
   priority?: string;
   description?: string;
+  dueAt?: number;
   tags?: string[];
 }, savedAt: string): string {
   return [
@@ -1033,6 +1038,7 @@ function taskSnapshotMarkdown(task: {
     `- project: ${task.projectSlug ?? "personal"}`,
     `- status: ${task.status ?? "open"}`,
     task.priority ? `- priority: ${task.priority}` : null,
+    task.dueAt ? `- due: ${new Date(task.dueAt).toISOString()}` : null,
     task.description ? `- notes: ${task.description}` : null,
     task.tags?.length ? `- tags: ${task.tags.join(", ")}` : null,
   ].filter(Boolean).join("\n");
@@ -1615,7 +1621,9 @@ http.route({
         const agent = detectAgent(request.headers.get("user-agent"));
         await ctx.runMutation(internal.activity.logActivity, {
           userId: auth.userDbId,
-          agentName: body.agentName || auth.appName || agent.name,
+          agentName: typeof body.agentName === "string" && body.agentName.trim()
+            ? body.agentName.trim()
+            : auth.appName || agent.name,
           agentSource: authAgentSource(auth, request),
           agentVersion: agent.version,
           action: "write",
@@ -1687,7 +1695,9 @@ http.route({
         const agent = detectAgent(request.headers.get("user-agent"));
         await ctx.runMutation(internal.activity.logActivity, {
           userId: auth.userDbId,
-          agentName: body.agentName || auth.appName || agent.name,
+          agentName: typeof body.agentName === "string" && body.agentName.trim()
+            ? body.agentName.trim()
+            : auth.appName || agent.name,
           agentSource: authAgentSource(auth, request),
           agentVersion: agent.version,
           action: "write",
@@ -1710,6 +1720,138 @@ http.route({
       return guard.finish(json({ success: true, ...task, snapshot }));
     } catch (err) {
       return serverErrorResponse("me/portfolio/tasks/triage", err, "Failed to triage portfolio task");
+    }
+  }),
+});
+
+// POST /api/v1/me/portfolio/tasks/update — Partially update ownership, scope, metadata, and triage fields.
+http.route({
+  path: "/api/v1/me/portfolio/tasks/update",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle", "projects");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    const startedAt = Date.now();
+    const body = await request.json() as Record<string, unknown>;
+    const taskId = typeof body.taskId === "string" && body.taskId.trim()
+      ? body.taskId.trim() as Id<"portfolioTasks">
+      : undefined;
+    if (!taskId) return errorResponse("invalid_request", "taskId must be a non-empty string", 400);
+
+    const patch: {
+      projectSlug?: string | null;
+      title?: string;
+      description?: string | null;
+      ownerType?: "human" | "agent";
+      ownerLabel?: string | null;
+      status?: string;
+      priority?: string;
+      dueAt?: number | null;
+      tags?: string[];
+    } = {};
+
+    if (hasBodyKey(body, "projectSlug") || hasBodyKey(body, "project")) {
+      const rawProject = hasBodyKey(body, "projectSlug") ? body.projectSlug : body.project;
+      if (rawProject === null || rawProject === "" || rawProject === "personal" || rawProject === "uncategorized") {
+        patch.projectSlug = null;
+      } else {
+        patch.projectSlug = portfolioSlug(rawProject) ?? null;
+      }
+    }
+    if (hasBodyKey(body, "title")) {
+      const title = cleanOptionalString(body.title, 240);
+      if (!title) return errorResponse("invalid_request", "title must be a non-empty string when provided", 400);
+      patch.title = title;
+    }
+    if (hasBodyKey(body, "description")) {
+      patch.description = body.description === null ? null : (cleanOptionalString(body.description, 1600) ?? null);
+    }
+    if (hasBodyKey(body, "ownerType")) {
+      if (body.ownerType !== "human" && body.ownerType !== "agent") {
+        return errorResponse("invalid_request", "ownerType must be human or agent when provided", 400);
+      }
+      patch.ownerType = body.ownerType;
+    }
+    if (hasBodyKey(body, "ownerLabel")) {
+      patch.ownerLabel = body.ownerLabel === null ? null : (cleanOptionalString(body.ownerLabel, 120) ?? null);
+    }
+    if (hasBodyKey(body, "status")) {
+      const status = cleanOptionalString(body.status, 40);
+      if (!status) return errorResponse("invalid_request", "status must be non-empty when provided", 400);
+      patch.status = status;
+    }
+    if (hasBodyKey(body, "priority")) {
+      const priority = cleanOptionalString(body.priority, 40);
+      if (!priority) return errorResponse("invalid_request", "priority must be non-empty when provided", 400);
+      patch.priority = priority;
+    }
+    if (hasBodyKey(body, "dueAt")) {
+      const due = body.dueAt === null || body.dueAt === "" ? null : cleanFiniteNumber(body.dueAt, NaN);
+      if (due !== null && !Number.isFinite(due)) {
+        return errorResponse("invalid_request", "dueAt must be a finite timestamp in milliseconds when provided", 400);
+      }
+      patch.dueAt = due;
+    }
+    if (hasBodyKey(body, "tags")) {
+      patch.tags = cleanStringArray(body.tags).slice(0, 24);
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return errorResponse("invalid_request", "at least one task field is required", 400);
+    }
+
+    try {
+      const task = await ctx.runMutation(api.portfolio.updateTaskDetails, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        taskId,
+        ...patch,
+      });
+
+      const snapshot = await saveSnapshotPublishAndSync(
+        ctx,
+        auth,
+        snapshotPathForProject(task.projectSlug),
+        taskSnapshotMarkdown(task, new Date().toISOString()),
+        "api:portfolio-task-update",
+        body.syncRepo !== false
+      );
+
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: typeof body.agentName === "string" && body.agentName.trim()
+            ? body.agentName.trim()
+            : auth.appName || agent.name,
+          agentSource: authAgentSource(auth, request),
+          agentVersion: agent.version,
+          action: "write",
+          resource: "portfolio/task-update",
+          status: "success",
+          connectedAppGrantId: auth.connectedAppGrantId,
+          durationMs: Date.now() - startedAt,
+          details: {
+            taskId,
+            projectSlug: task.projectSlug ?? "personal",
+            taskStatus: task.status,
+            priority: task.priority,
+            updatedFields: Object.keys(patch),
+            snapshotPath: snapshot.path,
+          },
+        });
+      } catch {
+        // best-effort
+      }
+
+      return guard.finish(json({ success: true, ...task, snapshot }));
+    } catch (err) {
+      return serverErrorResponse("me/portfolio/tasks/update", err, "Failed to update portfolio task");
     }
   }),
 });
@@ -1805,7 +1947,9 @@ http.route({
         const agent = detectAgent(request.headers.get("user-agent"));
         await ctx.runMutation(internal.activity.logActivity, {
           userId: auth.userDbId,
-          agentName: body.agentName || auth.appName || agent.name,
+          agentName: typeof body.agentName === "string" && body.agentName.trim()
+            ? body.agentName.trim()
+            : auth.appName || agent.name,
           agentSource: authAgentSource(auth, request),
           agentVersion: agent.version,
           action: "write",
@@ -1966,7 +2110,9 @@ http.route({
         const agent = detectAgent(request.headers.get("user-agent"));
         await ctx.runMutation(internal.activity.logActivity, {
           userId: auth.userDbId,
-          agentName: body.agentName || auth.appName || agent.name,
+          agentName: typeof body.agentName === "string" && body.agentName.trim()
+            ? body.agentName.trim()
+            : auth.appName || agent.name,
           agentSource: authAgentSource(auth, request),
           agentVersion: agent.version,
           action: "write",
@@ -2044,7 +2190,9 @@ http.route({
         const agent = detectAgent(request.headers.get("user-agent"));
         await ctx.runMutation(internal.activity.logActivity, {
           userId: auth.userDbId,
-          agentName: body.agentName || auth.appName || agent.name,
+          agentName: typeof body.agentName === "string" && body.agentName.trim()
+            ? body.agentName.trim()
+            : auth.appName || agent.name,
           agentSource: authAgentSource(auth, request),
           agentVersion: agent.version,
           action: "write",
@@ -3824,6 +3972,7 @@ http.route({ path: "/api/v1/me/portfolio/graph", method: "OPTIONS", handler: cor
 http.route({ path: "/api/v1/me/portfolio/projects/hydrate", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/tasks", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/tasks/triage", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/portfolio/tasks/update", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/brain-dumps", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/sources", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPreflight });
@@ -4067,7 +4216,9 @@ http.route({
       clerkId: auth.userId,
       _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
       userId: user._id,
-      agentName: body.agentName || auth.username || "API",
+      agentName: typeof body.agentName === "string" && body.agentName.trim()
+        ? body.agentName.trim()
+        : auth.username || "API",
       memories: sanitized,
     });
 
@@ -4077,7 +4228,9 @@ http.route({
       const agentSource = authAgentSource(auth, request);
       await ctx.runMutation(internal.activity.logActivity, {
         userId: user._id,
-        agentName: body.agentName || auth.appName || agent.name,
+        agentName: typeof body.agentName === "string" && body.agentName.trim()
+          ? body.agentName.trim()
+          : auth.appName || agent.name,
         agentSource,
         agentVersion: agent.version,
         action: "memory_add",

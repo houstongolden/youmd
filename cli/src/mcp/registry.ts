@@ -795,13 +795,20 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
   {
     name: "update_portfolio_task",
     description:
-      "Triage an existing portfolio task by updating its status and/or priority. Use after an agent starts, finishes, snoozes, cancels, or escalates a task in You.md's persisted project task graph. Requires authentication.",
+      "Update an existing portfolio task's triage, owner, project scope, title, details, due date, or tags. Use after an agent starts, finishes, reassigns, routes, or enriches a task in You.md's persisted project graph. Requires authentication.",
     inputSchema: {
       type: "object",
       properties: {
         task_id: { type: "string", description: "Existing portfolio task id." },
+        title: { type: "string", description: "Updated task title." },
+        project: { type: ["string", "null"], description: "Updated project slug/name. Use null or personal to move to uncategorized personal tasks." },
+        description: { type: ["string", "null"], description: "Updated task details. Use null to clear." },
+        owner_type: { type: "string", enum: ["human", "agent"], description: "Who owns this task: human or agent." },
+        owner_label: { type: ["string", "null"], description: "Optional owner label, such as Houston, Codex, Claude, or You Agent. Use null to clear." },
         status: { type: "string", enum: ["proposed", "open", "in_progress", "done", "snoozed", "cancelled"], description: "New task status." },
         priority: { type: "string", enum: ["low", "normal", "high", "urgent"], description: "New task priority." },
+        due_at: { type: ["number", "null"], description: "Due timestamp in milliseconds. Use null to clear." },
+        tags: { type: "array", items: { type: "string" }, description: "Replacement tag list." },
         sync_repo: { type: "boolean", description: "Whether to publish and sync the GitHub repo snapshot. Defaults true." },
       },
       required: ["task_id"],
@@ -816,22 +823,30 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
       }
       const status = typeof args.status === "string" ? args.status.trim() : undefined;
       const priority = typeof args.priority === "string" ? args.priority.trim() : undefined;
-      if (!status && !priority) {
-        return { content: [{ type: "text", text: "status or priority is required" }], isError: true };
+      const body: Record<string, unknown> = {
+        taskId,
+        syncRepo: args.sync_repo !== false,
+        agentName: ctx.resolveAgentName(),
+      };
+      if (typeof args.title === "string") body.title = args.title.trim();
+      if ("project" in args) body.projectSlug = args.project === null ? null : args.project;
+      if ("description" in args) body.description = args.description === null ? null : args.description;
+      if (args.owner_type === "human" || args.owner_type === "agent") body.ownerType = args.owner_type;
+      if ("owner_label" in args) body.ownerLabel = args.owner_label === null ? null : args.owner_label;
+      if (status) body.status = status;
+      if (priority) body.priority = priority;
+      if ("due_at" in args) body.dueAt = args.due_at === null ? null : args.due_at;
+      if (Array.isArray(args.tags)) body.tags = args.tags.filter((tag): tag is string => typeof tag === "string");
+      if (Object.keys(body).length <= 3) {
+        return { content: [{ type: "text", text: "at least one task field is required" }], isError: true };
       }
       try {
-        const result = await ctx.apiRequest("/api/v1/me/portfolio/tasks/triage", {
+        const result = await ctx.apiRequest("/api/v1/me/portfolio/tasks/update", {
           method: "POST",
-          body: {
-            taskId,
-            status,
-            priority,
-            syncRepo: args.sync_repo !== false,
-            agentName: ctx.resolveAgentName(),
-          },
+          body,
         }) as Record<string, unknown>;
         const ok = result.success === true;
-        ctx.logActivity("write", "portfolio/task-triage", { taskId, status, priority });
+        ctx.logActivity("write", "portfolio/task-update", { taskId, fields: Object.keys(body).filter((field) => !["taskId", "syncRepo", "agentName"].includes(field)) });
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
           isError: !ok,

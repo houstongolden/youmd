@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-06-17 — Richer Portfolio Task Updates
+
+### feat(api/cli/mcp/web): update task details across project graph surfaces
+- Added `portfolio.updateTaskDetails` for owner-gated partial task updates: title, description, owner type, owner label, project/personal scope, status, priority, due date, and tags.
+- Added authenticated `POST /api/v1/me/portfolio/tasks/update`, with repo-backed task snapshot publishing and activity logging.
+- Added `youmd project task update <task-id> ...`, task id/capture id printing in CLI write results, and `updatePortfolioTask` API helper.
+- Expanded local MCP `update_portfolio_task` from status/priority triage into full task routing/editing.
+- Extended the Portfolio Graph pane task section with due/tag visibility plus quick controls to reassign owner and route a task to the selected project or back to personal.
+- Added focused Convex regression coverage for partial edits, clear-to-personal behavior, completion timestamps, and owner isolation.
+- Verified with `npm run test:convex -- convex/portfolio.test.ts`, `npm run build`, `npm run lint`, and `npm --prefix cli run build`.
+- Authenticated CLI create proof saved task `rx7cbe2gnrxy9pmemtfvwv6zhn88vkzn`; live update proof is pending deploy because the pre-deploy production endpoint returned `HTTP 404`.
+
 ## 2026-06-17 — Machine proof sync
 
 ### feat(api/cli/web): sync fresh-machine proof summaries to You.md

@@ -304,6 +304,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const syncDashboardSeed = useMutation(api.portfolio.syncDashboardSeed);
   const syncTrackedProjects = useMutation(api.portfolio.syncTrackedProjects);
   const updateTaskTriage = useMutation(api.portfolio.updateTaskTriage);
+  const updateTaskDetails = useMutation(api.portfolio.updateTaskDetails);
   const [syncing, setSyncing] = useState(false);
   const [hydrating, setHydrating] = useState(false);
   const [triagingTaskId, setTriagingTaskId] = useState<string | null>(null);
@@ -433,6 +434,23 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
       setSyncStatus(`task triaged: ${result.status} / ${result.priority}`);
     } catch (err) {
       setSyncStatus(`error: ${err instanceof Error ? err.message : "failed to triage task"}`);
+    } finally {
+      setTriagingTaskId(null);
+    }
+  };
+
+  const handleTaskDetails = async (
+    taskId: Id<"portfolioTasks">,
+    patch: { projectSlug?: string | null; ownerType?: "human" | "agent"; ownerLabel?: string | null }
+  ) => {
+    if (!clerkId || triagingTaskId) return;
+    setTriagingTaskId(String(taskId));
+    setSyncStatus(null);
+    try {
+      const result = await updateTaskDetails({ clerkId, taskId, ...patch });
+      setSyncStatus(`task updated: ${result.ownerType}${result.projectSlug ? ` / ${result.projectSlug}` : " / personal"}`);
+    } catch (err) {
+      setSyncStatus(`error: ${err instanceof Error ? err.message : "failed to update task"}`);
     } finally {
       setTriagingTaskId(null);
     }
@@ -783,6 +801,9 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
               <div className="space-y-2">
                 {graph.tasks.slice(0, 12).map((task) => {
                   const busy = triagingTaskId === String(task._id);
+                  const routeTarget = effectiveSelectedProjectSlug && effectiveSelectedProjectSlug !== task.projectSlug
+                    ? effectiveSelectedProjectSlug
+                    : null;
                   return (
                     <div key={task._id} className="grid gap-3 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3 lg:grid-cols-[0.9fr_0.55fr_1.05fr]">
                       <div>
@@ -794,6 +815,10 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                         <p className="mt-1 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">
                           {task.description ?? (task.tags.join(", ") || "No task detail saved yet.")}
                         </p>
+                        <div className="mt-2 flex flex-wrap gap-2 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-40">
+                          {task.dueAt ? <span>due {new Date(task.dueAt).toLocaleDateString()}</span> : <span>no due date</span>}
+                          {task.tags.length ? <span>{task.tags.slice(0, 4).map((tag) => `#${tag}`).join(" ")}</span> : <span>no tags</span>}
+                        </div>
                       </div>
                       <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
                         {task.ownerType}{task.ownerLabel ? ` / ${task.ownerLabel}` : ""}{task.projectSlug ? ` / ${task.projectSlug}` : " / personal"}
@@ -834,6 +859,52 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                               {action.label}
                             </button>
                           ))}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <button
+                            type="button"
+                            disabled={!clerkId || busy || task.ownerType === "human"}
+                            onClick={() => handleTaskDetails(task._id, { ownerType: "human", ownerLabel: "Houston" })}
+                            className={`h-7 border px-2 font-mono text-[8.5px] uppercase tracking-[0.12em] transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+                              task.ownerType === "human"
+                                ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"
+                                : "border-[hsl(var(--border))]/60 text-[hsl(var(--text-secondary))] opacity-60 hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                            }`}
+                            style={{ borderRadius: "var(--radius)" }}
+                          >
+                            me
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!clerkId || busy || task.ownerType === "agent"}
+                            onClick={() => handleTaskDetails(task._id, { ownerType: "agent", ownerLabel: "You Agent" })}
+                            className={`h-7 border px-2 font-mono text-[8.5px] uppercase tracking-[0.12em] transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+                              task.ownerType === "agent"
+                                ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"
+                                : "border-[hsl(var(--border))]/60 text-[hsl(var(--text-secondary))] opacity-60 hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+                            }`}
+                            style={{ borderRadius: "var(--radius)" }}
+                          >
+                            agent
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!clerkId || busy || !routeTarget}
+                            onClick={() => routeTarget && handleTaskDetails(task._id, { projectSlug: routeTarget })}
+                            className="h-7 border border-[hsl(var(--border))]/60 px-2 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-60 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))] disabled:cursor-not-allowed disabled:opacity-35"
+                            style={{ borderRadius: "var(--radius)" }}
+                          >
+                            route here
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!clerkId || busy || !task.projectSlug}
+                            onClick={() => handleTaskDetails(task._id, { projectSlug: null })}
+                            className="h-7 border border-[hsl(var(--border))]/60 px-2 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-60 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))] disabled:cursor-not-allowed disabled:opacity-35"
+                            style={{ borderRadius: "var(--radius)" }}
+                          >
+                            personal
+                          </button>
                         </div>
                       </div>
                     </div>

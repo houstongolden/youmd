@@ -25,11 +25,13 @@ import {
   hydratePortfolioProjects,
   saveBrainDump,
   savePortfolioTask,
+  updatePortfolioTask,
   type BrainDumpPayload as BrainDumpPayloadType,
   type BrainDumpTaskPayload as BrainDumpTaskPayloadType,
   type PortfolioHydratePatternPayload as PortfolioHydratePatternPayloadType,
   type PortfolioHydrateProjectPayload as PortfolioHydrateProjectPayloadType,
   type PortfolioTaskPayload as PortfolioTaskPayloadType,
+  type PortfolioTaskUpdatePayload as PortfolioTaskUpdatePayloadType,
   type PortfolioWriteResult as PortfolioWriteResultType,
   type ApiResponse as ApiResponseType,
 } from "../lib/api";
@@ -502,6 +504,9 @@ function printPortfolioWriteResult(label: string, res: ApiResponseType<Portfolio
   const snapshot = res.data.snapshot;
   console.log("");
   console.log(chalk.green(`  ${label} saved`));
+  if (res.data.taskId) console.log(chalk.dim(`  task: ${res.data.taskId}`));
+  if (res.data.captureId) console.log(chalk.dim(`  capture: ${res.data.captureId}`));
+  if (res.data.taskIds?.length) console.log(chalk.dim(`  routed tasks: ${res.data.taskIds.join(", ")}`));
   if (snapshot) {
     console.log(chalk.dim(`  snapshot: ${snapshot.path}`));
     if (snapshot.bundleVersion) console.log(chalk.dim(`  bundle: v${snapshot.bundleVersion}`));
@@ -572,6 +577,76 @@ function parseTaskArgs(args: string[]): PortfolioTaskPayloadType | null {
     syncRepo: !hasFlag(args, "--no-sync"),
     agentName: "youmd CLI",
   };
+}
+
+function parseTaskUpdateArgs(args: string[]): PortfolioTaskUpdatePayloadType | null {
+  const rawArgs = [...args];
+  if (["update", "edit", "triage"].includes((rawArgs[0] || "").toLowerCase())) {
+    rawArgs.shift();
+  }
+
+  const taskId = readFlagValue(rawArgs, "--task-id") || readFlagValue(rawArgs, "--id") || nonFlagArgs(rawArgs, [
+    "--task-id", "--id", "--owner", "--owner-label", "--project", "--priority", "--status",
+    "--description", "--notes", "--title", "--tags", "--due",
+  ])[0];
+  if (!taskId?.trim()) return null;
+
+  const ownerFlag = readFlagValue(rawArgs, "--owner");
+  const projectFlagPresent = hasFlag(rawArgs, "--project") || hasFlag(rawArgs, "--personal");
+  const projectFlag = hasFlag(rawArgs, "--personal") ? "personal" : readFlagValue(rawArgs, "--project");
+  const dueFlagPresent = hasFlag(rawArgs, "--due") || hasFlag(rawArgs, "--clear-due");
+  const dueFlag = hasFlag(rawArgs, "--clear-due") ? "clear" : readFlagValue(rawArgs, "--due");
+
+  const payload: PortfolioTaskUpdatePayloadType = {
+    taskId: taskId.trim(),
+    syncRepo: !hasFlag(rawArgs, "--no-sync"),
+    agentName: "youmd CLI",
+  };
+
+  const title = readFlagValue(rawArgs, "--title");
+  if (title !== undefined) payload.title = title;
+
+  if (hasFlag(rawArgs, "--description") || hasFlag(rawArgs, "--notes") || hasFlag(rawArgs, "--clear-description")) {
+    payload.description = hasFlag(rawArgs, "--clear-description")
+      ? null
+      : (readFlagValue(rawArgs, "--description") ?? readFlagValue(rawArgs, "--notes") ?? null);
+  }
+
+  if (ownerFlag) {
+    payload.ownerType = ownerFlag === "me" || ownerFlag === "human" ? "human" : "agent";
+  }
+  if (hasFlag(rawArgs, "--owner-label") || hasFlag(rawArgs, "--clear-owner-label")) {
+    payload.ownerLabel = hasFlag(rawArgs, "--clear-owner-label")
+      ? null
+      : (readFlagValue(rawArgs, "--owner-label") ?? null);
+  }
+  if (projectFlagPresent) {
+    payload.projectSlug = normalizeProjectSlug(projectFlag) ?? null;
+  }
+
+  const status = readFlagValue(rawArgs, "--status");
+  if (status !== undefined) payload.status = status;
+  const priority = readFlagValue(rawArgs, "--priority");
+  if (priority !== undefined) payload.priority = priority;
+
+  if (dueFlagPresent) {
+    if (!dueFlag || ["clear", "none", "null"].includes(dueFlag.toLowerCase())) {
+      payload.dueAt = null;
+    } else {
+      const parsed = Date.parse(dueFlag);
+      payload.dueAt = Number.isFinite(parsed) ? parsed : Number(dueFlag);
+    }
+  }
+
+  if (hasFlag(rawArgs, "--tags")) {
+    payload.tags = csvFlag(rawArgs, "--tags");
+  }
+
+  const changedFields = [
+    "projectSlug", "title", "description", "ownerType", "ownerLabel",
+    "status", "priority", "dueAt", "tags",
+  ] as const;
+  return changedFields.some((field) => payload[field] !== undefined) ? payload : null;
 }
 
 function parseBrainDumpTask(value: string, ownerType: "human" | "agent", projectSlug?: string): BrainDumpTaskPayloadType | null {
@@ -651,11 +726,25 @@ async function saveTaskFromCli(args: string[]): Promise<void> {
     console.log("");
     return;
   }
+  if (["update", "edit", "triage"].includes((args[0] || "").toLowerCase())) {
+    const payload = parseTaskUpdateArgs(args);
+    if (!payload) {
+      console.log("");
+      console.log(chalk.yellow("  usage: youmd project task update <task-id> --status in_progress --owner agent --project youmd"));
+      console.log(chalk.dim("  clear scope: youmd project task update <task-id> --personal"));
+      console.log("");
+      return;
+    }
+    const res = await updatePortfolioTask(payload);
+    printPortfolioWriteResult("portfolio task update", res);
+    return;
+  }
   const payload = parseTaskArgs(args);
   if (!payload) {
     console.log("");
     console.log(chalk.yellow("  usage: youmd project task agent youmd: verify sync proof"));
     console.log(chalk.dim("  or:    youmd project task --owner me --project personal --title \"follow up\""));
+    console.log(chalk.dim("  edit:  youmd project task update <task-id> --status in_progress --priority high"));
     console.log("");
     return;
   }
@@ -1215,6 +1304,7 @@ export async function projectCommand(subcommand?: string, ...args: string[]): Pr
       console.log(`    ${chalk.cyan("log <message...>".padEnd(28))} ${chalk.dim("append an agent activity entry to project-context/you.md/log.md")}`);
       console.log(`    ${chalk.cyan("log".padEnd(28))} ${chalk.dim("read last 15 entries from the activity log")}`);
       console.log(`    ${chalk.cyan("task agent youmd: ...".padEnd(28))} ${chalk.dim("save an agent/human portfolio task and sync the repo snapshot")}`);
+      console.log(`    ${chalk.cyan("task update <id> --status ...".padEnd(28))} ${chalk.dim("edit task owner, project scope, metadata, and triage fields")}`);
       console.log(`    ${chalk.cyan("braindump project:youmd ...".padEnd(28))} ${chalk.dim("capture raw dump text, route tasks, and sync the repo snapshot")}`);
       console.log(`    ${chalk.cyan("portfolio-audit".padEnd(28))} ${chalk.dim("scan recent projects and env key names without printing secrets")}`);
       console.log(`    ${chalk.cyan("portfolio-hydrate".padEnd(28))} ${chalk.dim("hydrate portfolio graph from GitHub + local auditor results")}`);

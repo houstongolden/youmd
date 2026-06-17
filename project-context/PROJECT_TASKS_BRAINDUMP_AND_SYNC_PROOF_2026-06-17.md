@@ -319,10 +319,25 @@ GitHub status and task/graph paths behave in the actual product.
   pane renders `REUSABLE PATTERNS`, scanner evidence summaries, `used by`
   usage-project rows, and `evidence` source-path rows. Visual proof screenshot:
   `/tmp/youmd-reusable-patterns-scanner-proof-2026-06-17-v2.png`.
+- Richer task editing now has a local implementation and regression proof:
+  `portfolio.updateTaskDetails`, `POST /api/v1/me/portfolio/tasks/update`,
+  `youmd project task update <task-id>`, expanded MCP
+  `update_portfolio_task`, task id printing in CLI write results, dashboard
+  owner/project quick-routing controls, and due/tag visibility.
+- Focused Convex regression proof covers partial task edits, title/details,
+  owner/owner label, project scope, status, priority, due date, tags,
+  clear-to-personal behavior, completion timestamps, and owner isolation.
+- Authenticated CLI create proof saved task
+  `rx7cbe2gnrxy9pmemtfvwv6zhn88vkzn` with repo sync skipped. The follow-up
+  update command correctly hit the not-yet-deployed production endpoint and
+  returned `HTTP 404`, so the remaining proof is deploy + live rerun, not local
+  API/CLI/MCP wiring.
 
 ## Still Open
 
 - Add mobile/watch invocation proof for task and brain-dump capture paths.
+- Deploy the task-update HTTP route and rerun authenticated
+  `youmd project task update ...` against production.
 - Run the generated fresh-machine command on an actual clean/new host and
   verify cloned projects, restored skills, env vault restore, local servers,
   and portfolio graph sync there.

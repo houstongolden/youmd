@@ -221,4 +221,78 @@ describe("portfolio repo update history", () => {
       })
     ).rejects.toThrow("Repo update run not found");
   });
+
+  it("updates task details without letting another owner edit the task", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    const asOther = t.withIdentity({ subject: OTHER_CLERK });
+
+    const { taskId } = await asOwner.mutation(api.portfolio.upsertTask, {
+      clerkId: CLERK,
+      projectSlug: "youmd",
+      title: "Draft richer task update surface",
+      description: "Initial task detail.",
+      ownerType: "agent",
+      ownerLabel: "You Agent",
+      status: "open",
+      priority: "normal",
+      tags: ["task-graph"],
+    });
+
+    const updated = await asOwner.mutation(api.portfolio.updateTaskDetails, {
+      clerkId: CLERK,
+      taskId,
+      projectSlug: "bamf-ai-app",
+      title: "Verify task update surface",
+      description: "Updated by an authenticated local agent.",
+      ownerType: "human",
+      ownerLabel: "Houston",
+      status: "done",
+      priority: "urgent",
+      dueAt: 1_781_780_000_000,
+      tags: ["task-graph", "proof"],
+    });
+
+    expect(updated).toMatchObject({
+      taskId,
+      projectSlug: "bamf-ai-app",
+      title: "Verify task update surface",
+      description: "Updated by an authenticated local agent.",
+      ownerType: "human",
+      ownerLabel: "Houston",
+      status: "done",
+      priority: "urgent",
+      dueAt: 1_781_780_000_000,
+      tags: ["task-graph", "proof"],
+    });
+    expect(updated.completedAt).toEqual(expect.any(Number));
+
+    const cleared = await asOwner.mutation(api.portfolio.updateTaskDetails, {
+      clerkId: CLERK,
+      taskId,
+      projectSlug: null,
+      description: null,
+      ownerLabel: null,
+      dueAt: null,
+      status: "in_progress",
+      tags: [],
+    });
+
+    expect(cleared.projectSlug).toBeUndefined();
+    expect(cleared.description).toBeUndefined();
+    expect(cleared.ownerLabel).toBeUndefined();
+    expect(cleared.dueAt).toBeUndefined();
+    expect(cleared.completedAt).toBeUndefined();
+    expect(cleared.status).toBe("in_progress");
+    expect(cleared.tags).toEqual([]);
+
+    await expect(
+      asOther.mutation(api.portfolio.updateTaskDetails, {
+        clerkId: OTHER_CLERK,
+        taskId,
+        status: "done",
+      })
+    ).rejects.toThrow("Task not found");
+  });
 });

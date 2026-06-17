@@ -88,6 +88,8 @@ PRD Version: 2.3
 - [x] Add first shell-chat task and brain-dump invocation on top of persisted `portfolioTasks` / `brainDumpCaptures`
 - [x] Prove shell chat can trigger the repo update loop without relying only on the `[ update ]` button
 - [x] Add first-class dashboard task editing/triage controls on top of persisted `portfolioTasks` / `brainDumpCaptures`, plus API/MCP task status/priority updates for local agents
+- [x] Add richer persisted task updates for title, description, owner, owner label, project/personal scope, status, priority, due date, and tags through Convex, HTTP, CLI, MCP, and dashboard quick-routing controls
+- [ ] Deploy the new task-update HTTP route and rerun authenticated `youmd project task update ...` against production; pre-deploy proof correctly returned `HTTP 404`
 - [x] Add CLI/local-agent task and brain-dump invocation proof through You.md MCP/CLI
 - [x] Add first-class persisted update run history for publish/push/PR/merge/mirror steps
 - [x] Extend persisted update history with explicit GitHub check-status and conflict/no-conflict timeline events
