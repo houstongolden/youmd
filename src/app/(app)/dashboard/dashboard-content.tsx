@@ -187,9 +187,18 @@ const RIGHT_PANE_KEYS = new Set<RightPane>(
   PANE_GROUPS.flatMap((group) => group.panes.map((pane) => pane.key))
 );
 
+function paneFromShellPath(pathname: string): RightPane | null {
+  if (/^\/shell\/projects\/[^/]+/.test(pathname)) return "portfolio";
+  if (/^\/shell\/stacks\/[^/]+/.test(pathname)) return "stacks";
+  if (/^\/shell\/skills\/[^/]+/.test(pathname)) return "skills";
+  return null;
+}
+
 function paneFromShellQuery(searchParams: Pick<URLSearchParams, "get">): RightPane | null {
   if (searchParams.get("integration") === "github") return "github";
   if (searchParams.get("project")) return "portfolio";
+  if (searchParams.get("stack")) return "stacks";
+  if (searchParams.get("skill")) return "skills";
 
   const requested = searchParams.get("pane") ?? searchParams.get("tab");
   if (!requested) return null;
@@ -1195,7 +1204,7 @@ export function DashboardContent() {
   // Query-backed panes keep deep links such as /shell?project=youmd and
   // /shell?tab=files reload-safe without inventing a second dashboard router.
   const shellQueryString = searchParams.toString();
-  const requestedRightPane = paneFromShellQuery(searchParams);
+  const requestedRightPane = paneFromShellPath(pathname) ?? paneFromShellQuery(searchParams);
   const [rightPane, setRightPane] = useState<RightPane>(requestedRightPane ?? "profile");
   const [mobileView, setMobileView] = useState<"terminal" | "preview">("terminal");
   const [panelOpen, setPanelOpen] = useState<boolean>(() =>
@@ -1284,7 +1293,7 @@ export function DashboardContent() {
 
     const nextQuery = params.toString();
     const currentUrl = `${pathname}${shellQueryString ? `?${shellQueryString}` : ""}`;
-    const nextUrl = `${pathname}${nextQuery ? `?${nextQuery}` : ""}`;
+    const nextUrl = `/shell${nextQuery ? `?${nextQuery}` : ""}`;
     if (nextUrl !== currentUrl) router.replace(nextUrl, { scroll: false });
   }, [pathname, router, searchParams, shellQueryString]);
 

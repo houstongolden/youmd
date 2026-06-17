@@ -120,6 +120,15 @@ function IdentityFieldTag({ field }: { field: string }) {
   );
 }
 
+function skillNameFromPath(pathname: string) {
+  const match = pathname.match(/^\/shell\/skills\/([^/]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function skillDetailHref(skillName: string) {
+  return `/shell/skills/${encodeURIComponent(skillName)}`;
+}
+
 function SkillCard({
   skill,
   isInstalled,
@@ -358,7 +367,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
 
   const installedSkills = allSkills.filter((s) => installedNames.has(s.name));
   const availableSkills = allSkills.filter((s) => !installedNames.has(s.name));
-  const selectedSkillName = searchParams.get("skill");
+  const selectedSkillName = skillNameFromPath(pathname) ?? searchParams.get("skill");
   const selectedSkill = selectedSkillName ? allSkills.find((skill) => skill.name === selectedSkillName) : undefined;
   const localSyncRows = [
     {
@@ -390,21 +399,11 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   };
 
   const openSkill = (skillName: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", "skills");
-    params.set("skill", skillName);
-    params.delete("project");
-    params.delete("stack");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    router.push(skillDetailHref(skillName), { scroll: false });
   };
 
   const returnToSkills = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", "skills");
-    params.delete("skill");
-    params.delete("project");
-    params.delete("stack");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    router.push("/shell?tab=skills", { scroll: false });
   };
 
   if (selectedSkill) {

@@ -534,15 +534,17 @@ function curlForSurface(surface: DisplaySurface) {
   return `curl ${docsForSurface(surface)[0]}`;
 }
 
-function detailHref(pathname: string, projectSlug: string) {
-  const params = new URLSearchParams();
-  params.set("tab", "portfolio");
-  params.set("project", projectSlug);
-  return `${pathname}?${params.toString()}`;
+function projectSlugFromPath(pathname: string) {
+  const match = pathname.match(/^\/shell\/projects\/([^/]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
-function detailHrefWithAnchor(pathname: string, projectSlug: string, anchor: "strategy" | "timeline") {
-  return `${detailHref(pathname, projectSlug)}#${anchor}`;
+function detailHref(projectSlug: string) {
+  return `/shell/projects/${encodeURIComponent(projectSlug)}`;
+}
+
+function detailHrefWithAnchor(projectSlug: string, anchor: "strategy" | "timeline") {
+  return `${detailHref(projectSlug)}#${anchor}`;
 }
 
 function stackInstallCommand(stackName: string) {
@@ -709,6 +711,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const routeProjectSlug = projectSlugFromPath(pathname);
   const graph = useQuery(api.portfolio.listPortfolioGraph, clerkId ? { clerkId } : "skip");
   const syncDashboardSeed = useMutation(api.portfolio.syncDashboardSeed);
   const syncTrackedProjects = useMutation(api.portfolio.syncTrackedProjects);
@@ -722,7 +725,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const [focusUpdatingSlug, setFocusUpdatingSlug] = useState<string | null>(null);
   const [statusUpdatingSlug, setStatusUpdatingSlug] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
-  const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(() => searchParams.get("project"));
+  const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(() => routeProjectSlug ?? searchParams.get("project"));
   const [projectSearch, setProjectSearch] = useState("");
   const [projectStatusFilter, setProjectStatusFilter] = useState<ProjectStatusFilter>("all");
   const [projectFocusFilter, setProjectFocusFilter] = useState<ProjectFocusStatus | "all">("all");
@@ -930,14 +933,9 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
 
   const selectProject = (projectSlug: string, section?: "overview" | "strategy" | "timeline") => {
     setSelectedProjectSlug(projectSlug);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", "portfolio");
-    params.set("project", projectSlug);
-    params.delete("stack");
-    params.delete("skill");
     const anchor = section && section !== "overview" ? section : undefined;
-    const nextUrl = `${pathname}?${params.toString()}${anchor ? `#${anchor}` : ""}`;
-    router.replace(nextUrl, { scroll: false });
+    const nextUrl = anchor ? detailHrefWithAnchor(projectSlug, anchor) : detailHref(projectSlug);
+    router.push(nextUrl, { scroll: false });
     const targetId = anchor ?? "portfolio-detail-top";
     window.setTimeout(() => {
       if (anchor && window.location.hash !== `#${anchor}`) {
@@ -949,30 +947,21 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
 
   const returnToProjectList = () => {
     setSelectedProjectSlug(null);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", "portfolio");
-    params.delete("project");
-    params.delete("stack");
-    params.delete("skill");
-    const nextUrl = `${pathname}?${params.toString()}`;
-    router.replace(nextUrl, { scroll: false });
+    router.push("/shell?tab=portfolio", { scroll: false });
     window.setTimeout(() => {
       document.getElementById("portfolio-projects")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
   };
 
   useEffect(() => {
-    const projectSlug = searchParams.get("project");
+    const projectSlug = projectSlugFromPath(pathname) ?? searchParams.get("project");
     setSelectedProjectSlug(projectSlug);
-  }, [searchParams]);
+  }, [pathname, searchParams]);
 
   useEffect(() => {
     const anchor = window.location.hash.replace("#", "");
     if (anchor === "project-detail") {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("tab", "portfolio");
-      if (selectedProjectSlug) params.set("project", selectedProjectSlug);
-      const nextUrl = `${pathname}?${params.toString()}`;
+      const nextUrl = selectedProjectSlug ? detailHref(selectedProjectSlug) : "/shell?tab=portfolio";
       window.history.replaceState(null, "", nextUrl);
       window.setTimeout(() => scrollToPortfolioSection("portfolio-detail-top"), 80);
       return;
@@ -1270,7 +1259,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
               <span className="text-[hsl(var(--text-primary))] opacity-85">{selectedProject.name}</span>
               <span className="text-[hsl(var(--text-secondary))] opacity-35">/</span>
               <a
-                href={detailHref(pathname, selectedProject.slug)}
+                href={detailHref(selectedProject.slug)}
                 onClick={(event) => {
                   event.preventDefault();
                   selectProject(selectedProject.slug, "overview");
@@ -1280,7 +1269,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                 overview
               </a>
               <a
-                href={detailHrefWithAnchor(pathname, selectedProject.slug, "strategy")}
+                href={detailHrefWithAnchor(selectedProject.slug, "strategy")}
                 onClick={(event) => {
                   event.preventDefault();
                   selectProject(selectedProject.slug, "strategy");
@@ -1290,7 +1279,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                 strategy
               </a>
               <a
-                href={detailHrefWithAnchor(pathname, selectedProject.slug, "timeline")}
+                href={detailHrefWithAnchor(selectedProject.slug, "timeline")}
                 onClick={(event) => {
                   event.preventDefault();
                   selectProject(selectedProject.slug, "timeline");
@@ -1486,7 +1475,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">30d {counts.thirty}</span>
                       <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">90d {counts.ninety}</span>
                       <a
-                        href={detailHref(pathname, project.slug)}
+                        href={detailHref(project.slug)}
                         onClick={(event) => {
                           event.stopPropagation();
                           event.preventDefault();
@@ -1499,7 +1488,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                         open detail
                       </a>
                       <a
-                        href={detailHrefWithAnchor(pathname, project.slug, "timeline")}
+                        href={detailHrefWithAnchor(project.slug, "timeline")}
                         onClick={(event) => {
                           event.stopPropagation();
                           event.preventDefault();

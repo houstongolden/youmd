@@ -7,6 +7,13 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-17 — Shell dedicated path drill-ins
+- [x] Add dedicated hard-refreshable shell routes for project, stack, and skill detail pages: `/shell/projects/[projectSlug]`, `/shell/stacks/[stackSlug]`, and `/shell/skills/[skillName]`
+- [x] Teach the shell pane router to open Portfolio, YouStacks, and Skills from those pathname drill-ins
+- [x] Update Portfolio project cards, detail links, shipped/timeline links, and breadcrumbs to use `/shell/projects/<slug>` plus `#timeline` instead of `?project=` / `#project-detail`
+- [x] Update YouStacks and Skills detail navigation to use `/shell/stacks/<slug>` and `/shell/skills/<name>` with breadcrumb returns to compact list views
+- [x] Verify authenticated in-app Browser behavior for direct route reload, list click-through, breadcrumb back, timeline hash scroll, stack detail/back, and skill detail/back
+
 ### 2026-06-17 — Portfolio active/inactive setup controls
 - [x] Add `last updated` time-ago labels to compact Portfolio project rows and selected project details
 - [x] Add status filtering for all / setup-eligible / active / inactive-not-active projects

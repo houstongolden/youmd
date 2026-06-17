@@ -79,6 +79,15 @@ function visibilityClass(visibility: StackVisibility) {
   return "text-[hsl(var(--text-secondary))] opacity-60";
 }
 
+function stackSlugFromPath(pathname: string) {
+  const match = pathname.match(/^\/shell\/stacks\/([^/]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function stackDetailHref(stackSlug: string) {
+  return `/shell/stacks/${encodeURIComponent(stackSlug)}`;
+}
+
 function StackRow({ stack, onOpen }: { stack: StackCard; onOpen: () => void }) {
   return (
     <article
@@ -227,27 +236,17 @@ export function StacksPane() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const selectedStackSlug = searchParams.get("stack");
+  const selectedStackSlug = stackSlugFromPath(pathname) ?? searchParams.get("stack");
   const selectedStack = selectedStackSlug
     ? STACKS.find((stack) => stack.slug === selectedStackSlug)
     : undefined;
 
   const openStack = (stackSlug: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", "stacks");
-    params.set("stack", stackSlug);
-    params.delete("project");
-    params.delete("skill");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    router.push(stackDetailHref(stackSlug), { scroll: false });
   };
 
   const returnToStacks = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", "stacks");
-    params.delete("stack");
-    params.delete("project");
-    params.delete("skill");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    router.push("/shell?tab=stacks", { scroll: false });
   };
 
   return (
