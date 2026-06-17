@@ -1237,6 +1237,7 @@ export function DashboardContent() {
   const syncMirror = useAction(api.githubRepo.syncMirror);
   const autoCreateAttempted = useRef(false);
   const [repoUpdateBusy, setRepoUpdateBusy] = useState(false);
+  const repoUpdateRunnerRef = useRef<(() => Promise<void>) | null>(null);
 
   const agent = useYouAgent({
     onPaneSwitch: (pane) => {
@@ -1248,6 +1249,7 @@ export function DashboardContent() {
     // githubConnection is null when not connected, undefined while loading.
     // repoFullName is null until the user creates/connects a repo.
     githubRepoName: githubConnection?.repoFullName ?? null,
+    onRepoUpdate: () => repoUpdateRunnerRef.current?.(),
   });
 
   const isWritingFiles = agent.progressSteps.some(
@@ -1346,6 +1348,10 @@ export function DashboardContent() {
       focusShellInput();
     }
   }, [agent, focusShellInput, githubConnection?.repoFullName, publishLatest, pushToRepo, repoMirror?.repoFullName, repoUpdateBusy, shellUsername, syncMirror, user?.id]);
+
+  useEffect(() => {
+    repoUpdateRunnerRef.current = runRepoUpdate;
+  }, [runRepoUpdate]);
 
   const openChatSession = useCallback(async (sessionId: string) => {
     if (sessionId === agent.currentSessionId) {

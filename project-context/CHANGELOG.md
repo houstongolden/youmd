@@ -12,6 +12,14 @@
 
 ## 2026-06-17 — GitHub sync proof, portfolio persistence, and project tasks
 
+### feat(web): let shell chat save tasks/brain dumps and trigger repo sync
+- Added deterministic shell chat commands for `/task ...` and `/braindump ...` so the You Agent surface can create owner-aware `portfolioTasks` and raw `brainDumpCaptures` without using a form.
+- Task commands write portable markdown snapshots into `projects/<project-or-_personal>/tasks.md`; brain-dump commands write `projects/_braindumps/recent.md`, preserving raw text, summaries, tags, linked projects, and proposed tasks in `you.json.custom_files`.
+- Wired those chat-created bundle updates to the same publish -> GitHub PR push -> mirror refresh loop used by the shell `[ update ]` button, so chat-initiated work visibly animates the GitHub status and streams PR/merge/mirror transcript lines.
+- Added `recent brain dumps` rows to the Portfolio Graph pane beside the existing open task rows.
+- Verified with root `npm run lint`, root `npm run build`, and authenticated Chrome QA on local `/shell`: `/braindump project:youmd ...` saved the capture, proposed agent tasks, wrote `projects/_braindumps/recent.md`, pushed/merged PR #7, refreshed 47 mirror files, and returned GitHub chrome to `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
+- Verified `/task me personal: ...` saved a human-owned personal task, displayed `HUMAN / PERSONAL`, wrote `projects/_personal/tasks.md`, pushed/merged PR #8, refreshed 47 mirror files, and kept GitHub chrome at `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
+
 ### test(web): verify authenticated 90-day GitHub project catalog refresh
 - Opened authenticated local `/shell?integration=github` in Chrome, clicked `refresh active projects`, and waited through the `analyzing your most active repos` state.
 - Verified the dashboard returned 38 visible `repo: houstongolden/...` project rows, including repo name, local directory name, inferred stack, API/MCP docs links, goal, and recent progress fields.

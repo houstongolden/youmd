@@ -80,6 +80,236 @@ function countTextLines(text: string): number {
   return text.split(/\r?\n/).length;
 }
 
+type PortfolioTaskCommand = {
+  projectSlug?: string;
+  title: string;
+  description?: string;
+  ownerType: "human" | "agent";
+  ownerLabel: string;
+  priority: string;
+  tags: string[];
+};
+
+type BrainDumpCommand = {
+  rawText: string;
+  projectSlugs: string[];
+  tags: string[];
+  summary: string;
+  insights: string[];
+  tasks: Array<{
+    projectSlug?: string;
+    title: string;
+    description?: string;
+    ownerType: "human" | "agent";
+    ownerLabel: string;
+    status: string;
+    priority: string;
+    tags: string[];
+  }>;
+};
+
+function slugifyPortfolioToken(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 90);
+}
+
+function normalizeProjectSlug(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const slug = slugifyPortfolioToken(value);
+  if (!slug || ["personal", "uncategorized", "inbox", "none"].includes(slug)) {
+    return undefined;
+  }
+  return slug;
+}
+
+function extractHashTags(text: string): string[] {
+  const tags = new Set<string>();
+  for (const match of text.matchAll(/#([a-zA-Z0-9][a-zA-Z0-9_-]{1,40})/g)) {
+    const tag = slugifyPortfolioToken(match[1]);
+    if (tag) tags.add(tag);
+  }
+  return Array.from(tags);
+}
+
+function parseOwnerToken(value: string | undefined): { ownerType: "human" | "agent"; ownerLabel: string } {
+  const token = (value ?? "").trim().toLowerCase();
+  if (token === "me" || token === "human" || token === "houston") {
+    return { ownerType: "human", ownerLabel: "Houston" };
+  }
+  return { ownerType: "agent", ownerLabel: token === "agents" ? "Agents" : "You Agent" };
+}
+
+function splitTitleAndDescription(value: string): { title: string; description?: string } {
+  const parts = value.split(/\s+(?:--desc|--description)\s+/i);
+  if (parts.length > 1) {
+    return { title: parts[0].trim(), description: parts.slice(1).join(" ").trim() || undefined };
+  }
+  const pipeParts = value.split(/\s+\|\s+/);
+  if (pipeParts.length > 1) {
+    return { title: pipeParts[0].trim(), description: pipeParts.slice(1).join(" | ").trim() || undefined };
+  }
+  return { title: value.trim() };
+}
+
+function parsePortfolioTaskCommand(text: string): PortfolioTaskCommand | null {
+  const original = text.trim();
+  const match = original.match(/^\/?task\b\s*(.*)$/i);
+  if (!match) return null;
+
+  let body = match[1].trim();
+  if (!body) return null;
+
+  let owner = parseOwnerToken(undefined);
+  const ownerMatch = body.match(/^(me|human|houston|agent|agents|you(?:\s+agent)?)\b[:\s-]*/i);
+  if (ownerMatch) {
+    owner = parseOwnerToken(ownerMatch[1]);
+    body = body.slice(ownerMatch[0].length).trim();
+  }
+
+  let projectSlug: string | undefined;
+  const explicitProject = body.match(/^project\s*[:=]\s*([a-zA-Z0-9._-]+)\s+(.+)$/i);
+  if (explicitProject) {
+    projectSlug = normalizeProjectSlug(explicitProject[1]);
+    body = explicitProject[2].trim();
+  } else {
+    const projectPrefix = body.match(/^([a-zA-Z0-9._-]{2,80})\s*:\s*(.+)$/);
+    if (projectPrefix) {
+      projectSlug = normalizeProjectSlug(projectPrefix[1]);
+      body = projectPrefix[2].trim();
+    }
+  }
+
+  const { title, description } = splitTitleAndDescription(body);
+  if (!title) return null;
+
+  return {
+    projectSlug,
+    title,
+    description,
+    ownerType: owner.ownerType,
+    ownerLabel: owner.ownerLabel,
+    priority: /\b(urgent|asap|today|critical)\b/i.test(body) ? "urgent" : "normal",
+    tags: Array.from(new Set(["shell-chat", ...extractHashTags(original)])),
+  };
+}
+
+function buildBrainDumpSummary(rawText: string): string {
+  const cleaned = rawText.replace(/\s+/g, " ").trim();
+  if (!cleaned) return "Empty brain dump.";
+  const sentence = cleaned.match(/^(.{24,220}?[.!?])\s/)?.[1];
+  return (sentence || cleaned.slice(0, 220)).trim();
+}
+
+function buildBrainDumpInsights(rawText: string): string[] {
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((line) => line.trim().replace(/^[-*]\s+/, ""))
+    .filter(Boolean)
+    .filter((line) => !/^(me|human|houston|agent|agents|you)\s+task\s*:/i.test(line));
+  return lines.slice(0, 4);
+}
+
+function parseBrainDumpCommand(text: string): BrainDumpCommand | null {
+  const original = text.trim();
+  const match = original.match(/^\/?(?:braindump|brain\s+dump|dump)\b:?\s*([\s\S]+)$/i);
+  if (!match) return null;
+
+  let rawText = match[1].trim();
+  if (!rawText) return null;
+
+  const explicitProject = rawText.match(/(?:^|\s)project\s*[:=]\s*([a-zA-Z0-9._-]+)/i);
+  const projectSlugs = new Set<string>();
+  const projectSlug = normalizeProjectSlug(explicitProject?.[1]);
+  if (projectSlug) projectSlugs.add(projectSlug);
+
+  const tags = new Set<string>(["shell-chat", "braindump", ...extractHashTags(rawText)]);
+  const tasks: BrainDumpCommand["tasks"] = [];
+
+  for (const line of rawText.split(/\r?\n/)) {
+    const taskMatch = line.trim().match(/^[-*]?\s*(me|human|houston|agent|agents|you(?:\s+agent)?)\s+task\s*:\s*(.+)$/i);
+    if (!taskMatch) continue;
+    const owner = parseOwnerToken(taskMatch[1]);
+    const { title, description } = splitTitleAndDescription(taskMatch[2]);
+    if (!title) continue;
+    tasks.push({
+      projectSlug,
+      title,
+      description,
+      ownerType: owner.ownerType,
+      ownerLabel: owner.ownerLabel,
+      status: "proposed",
+      priority: /\b(urgent|asap|today|critical)\b/i.test(title) ? "urgent" : "normal",
+      tags: Array.from(tags),
+    });
+  }
+
+  rawText = rawText.replace(/(?:^|\s)project\s*[:=]\s*[a-zA-Z0-9._-]+/i, "").trim() || rawText;
+
+  return {
+    rawText,
+    projectSlugs: Array.from(projectSlugs),
+    tags: Array.from(tags),
+    summary: buildBrainDumpSummary(rawText),
+    insights: buildBrainDumpInsights(rawText),
+    tasks,
+  };
+}
+
+function readCustomFileFromBundle(
+  latestBundle: Record<string, unknown> | null | undefined,
+  path: string
+): string {
+  const youJson = latestBundle?.youJson as Record<string, unknown> | undefined;
+  const files = Array.isArray(youJson?.custom_files)
+    ? youJson.custom_files as Array<{ path?: string; content?: string }>
+    : [];
+  return files.find((file) => file.path === path)?.content ?? "";
+}
+
+function appendMarkdownEntry(existing: string, title: string, entry: string): string {
+  const base = existing.trim()
+    ? existing.trim()
+    : `# ${title}\n\nRepo-backed snapshot maintained from shell chat commands.`;
+  return `${base}\n\n${entry.trim()}\n`;
+}
+
+function taskSnapshotMarkdown(task: PortfolioTaskCommand, savedAt: string): string {
+  return [
+    `## ${savedAt}`,
+    `- title: ${task.title}`,
+    `- owner: ${task.ownerType}${task.ownerLabel ? ` (${task.ownerLabel})` : ""}`,
+    `- project: ${task.projectSlug ?? "personal"}`,
+    `- status: open`,
+    task.description ? `- notes: ${task.description}` : null,
+    task.tags.length ? `- tags: ${task.tags.join(", ")}` : null,
+  ].filter(Boolean).join("\n");
+}
+
+function brainDumpSnapshotMarkdown(capture: BrainDumpCommand, savedAt: string): string {
+  const lines = [
+    `## ${savedAt}`,
+    `summary: ${capture.summary}`,
+    capture.projectSlugs.length ? `projects: ${capture.projectSlugs.join(", ")}` : "projects: uncategorized",
+    capture.tags.length ? `tags: ${capture.tags.join(", ")}` : null,
+    "",
+    "raw:",
+    capture.rawText,
+  ].filter((line): line is string => line !== null);
+
+  if (capture.tasks.length > 0) {
+    lines.push("", "proposed tasks:");
+    capture.tasks.forEach((task) => {
+      lines.push(`- [${task.ownerType}] ${task.title}`);
+    });
+  }
+
+  return lines.join("\n");
+}
+
 function buildOpeningActivityBrief(params: {
   username: string;
   displayName: string;
@@ -366,7 +596,7 @@ function buildCompletionFollowThrough(params: {
 // ---------------------------------------------------------------------------
 
 export function useYouAgent(options: UseYouAgentOptions = {}) {
-  const { onPaneSwitch, isOnboarding, onboardingGreeting, onDone, githubRepoName } = options;
+  const { onPaneSwitch, isOnboarding, onboardingGreeting, onDone, githubRepoName, onRepoUpdate } = options;
 
   const { user } = useUser();
   const { isAuthenticated } = useConvexAuth();
@@ -396,6 +626,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
   const updateProfile = useMutation(api.profiles.updateProfile);
   const setProfileImages = useMutation(api.profiles.setProfileImages);
   const saveMemories = useMutation(api.memories.saveMemories);
+  const upsertPortfolioTask = useMutation(api.portfolio.upsertTask);
+  const recordBrainDump = useMutation(api.portfolio.recordBrainDump);
   const upsertSession = useMutation(api.memories.upsertSession);
   const summarizeSession = useAction(api.chat.summarizeSession);
   const compactSession = useAction(api.chat.compactSession);
@@ -1056,6 +1288,205 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     [user?.id, convexUser, latestBundle?.youJson, saveBundleFromForm]
   );
 
+  const runRepoUpdateFromChat = useCallback(async (reason: string) => {
+    if (!onRepoUpdate) {
+      setDisplayMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "system-notice",
+          content: `[repo update skipped]\n\n${reason} was saved, but this surface has no repo update runner attached.`,
+        },
+      ]);
+      return;
+    }
+
+    setDisplayMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role: "system-notice",
+        content: `[repo update queued from shell chat]\n\n${reason} changed portable project context. handing off to the GitHub sync loop now.`,
+      },
+    ]);
+    await onRepoUpdate();
+  }, [onRepoUpdate]);
+
+  const handlePortfolioChatCommand = useCallback(
+    async (rawCommand: string): Promise<boolean> => {
+      const taskCommand = parsePortfolioTaskCommand(rawCommand);
+      const brainDumpCommand = taskCommand ? null : parseBrainDumpCommand(rawCommand);
+      if (!taskCommand && !brainDumpCommand) return false;
+
+      setDisplayMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: "user", content: rawCommand.trim() },
+      ]);
+
+      if (!user?.id) {
+        setDisplayMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: "sign in first so the You Agent can save portfolio tasks and brain dumps.",
+          },
+        ]);
+        return true;
+      }
+
+      if (onPaneSwitch) onPaneSwitch("portfolio");
+      setIsThinking(true);
+      setThinkingCategory("building");
+      setThinkingPhrase(taskCommand ? "saving portfolio task" : "routing brain dump");
+      clearSteps();
+
+      try {
+        if (taskCommand) {
+          const taskStepId = addStep("saving portfolio task", taskCommand.title);
+          await upsertPortfolioTask({
+            clerkId: user.id,
+            projectSlug: taskCommand.projectSlug,
+            title: taskCommand.title,
+            description: taskCommand.description,
+            ownerType: taskCommand.ownerType,
+            ownerLabel: taskCommand.ownerLabel,
+            status: "open",
+            priority: taskCommand.priority,
+            sourceType: "shell-chat",
+            tags: taskCommand.tags,
+          });
+          completeStep(taskStepId, `${taskCommand.ownerType} task`);
+
+          const snapshotPath = `projects/${taskCommand.projectSlug ?? "_personal"}/tasks.md`;
+          const savedAt = new Date().toISOString();
+          const existing = readCustomFileFromBundle(latestBundle as Record<string, unknown> | null, snapshotPath);
+          const content = appendMarkdownEntry(
+            existing,
+            `${taskCommand.projectSlug ?? "Personal"} Tasks`,
+            taskSnapshotMarkdown(taskCommand, savedAt)
+          );
+
+          const fileStepId = addStep("writing repo-backed task snapshot", snapshotPath);
+          const bundleResult = await saveUpdates([{ section: snapshotPath, content }]);
+          if (bundleResult) {
+            completeStep(fileStepId, `v${bundleResult.version}`);
+          } else {
+            failStep(fileStepId, "bundle save failed");
+          }
+
+          setDisplayMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: [
+                "[task saved]",
+                "",
+                `> title: ${taskCommand.title}`,
+                `> owner: ${taskCommand.ownerType}${taskCommand.ownerLabel ? ` (${taskCommand.ownerLabel})` : ""}`,
+                `> project: ${taskCommand.projectSlug ?? "personal"}`,
+                `> snapshot: ${snapshotPath}`,
+                bundleResult ? `> bundle: v${bundleResult.version}` : null,
+              ].filter(Boolean).join("\n"),
+            },
+          ]);
+
+          if (bundleResult) {
+            await runRepoUpdateFromChat("portfolio task");
+          }
+          return true;
+        }
+
+        if (brainDumpCommand) {
+          const captureStepId = addStep("saving brain dump capture", brainDumpCommand.summary);
+          const result = await recordBrainDump({
+            clerkId: user.id,
+            source: "shell",
+            rawText: brainDumpCommand.rawText,
+            summary: brainDumpCommand.summary,
+            insights: brainDumpCommand.insights,
+            projectSlugs: brainDumpCommand.projectSlugs,
+            tags: brainDumpCommand.tags,
+            metadata: {
+              command: "shell-chat",
+              savedFrom: "useYouAgent",
+            },
+            tasks: brainDumpCommand.tasks,
+          });
+          completeStep(captureStepId, `${result.taskIds.length} task${result.taskIds.length === 1 ? "" : "s"} proposed`);
+
+          const snapshotPath = "projects/_braindumps/recent.md";
+          const savedAt = new Date().toISOString();
+          const existing = readCustomFileFromBundle(latestBundle as Record<string, unknown> | null, snapshotPath);
+          const content = appendMarkdownEntry(
+            existing,
+            "Brain Dump Captures",
+            brainDumpSnapshotMarkdown(brainDumpCommand, savedAt)
+          );
+
+          const fileStepId = addStep("writing repo-backed brain dump snapshot", snapshotPath);
+          const bundleResult = await saveUpdates([{ section: snapshotPath, content }]);
+          if (bundleResult) {
+            completeStep(fileStepId, `v${bundleResult.version}`);
+          } else {
+            failStep(fileStepId, "bundle save failed");
+          }
+
+          setDisplayMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "system-notice",
+              content: [
+                "[brain dump saved]",
+                "",
+                `> summary: ${brainDumpCommand.summary}`,
+                `> projects: ${brainDumpCommand.projectSlugs.join(", ") || "uncategorized"}`,
+                `> proposed tasks: ${result.taskIds.length}`,
+                `> snapshot: ${snapshotPath}`,
+                bundleResult ? `> bundle: v${bundleResult.version}` : null,
+              ].filter(Boolean).join("\n"),
+            },
+          ]);
+
+          if (bundleResult) {
+            await runRepoUpdateFromChat("brain dump capture");
+          }
+          return true;
+        }
+      } catch (err) {
+        setDisplayMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "system-notice",
+            content: `[portfolio command failed]\n\n${err instanceof Error ? err.message : "unknown error"}`,
+          },
+        ]);
+      } finally {
+        setIsThinking(false);
+        setTimeout(() => clearSteps(), 1200);
+        textareaRef.current?.focus();
+      }
+
+      return true;
+    },
+    [
+      addStep,
+      clearSteps,
+      completeStep,
+      failStep,
+      latestBundle,
+      onPaneSwitch,
+      recordBrainDump,
+      runRepoUpdateFromChat,
+      saveUpdates,
+      upsertPortfolioTask,
+      user?.id,
+    ]
+  );
+
   const handleProjectDirectoryScaffold = useCallback(
     async (trimmed: string, priorConversation: ChatMessage[], userMsg: ChatMessage) => {
       if (!user?.id) return false;
@@ -1701,6 +2132,16 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     (cmd: string): boolean => {
       const trimmed = cmd.trim().toLowerCase();
 
+      if (
+        trimmed.startsWith("/task") ||
+        trimmed.startsWith("/braindump") ||
+        trimmed.startsWith("/brain dump") ||
+        trimmed.startsWith("/dump")
+      ) {
+        void handlePortfolioChatCommand(cmd);
+        return true;
+      }
+
       // Pane-switching commands
       // Note: /publish and /help are handled separately below with special logic
       const paneCommands: Record<string, RightPane> = {
@@ -1971,8 +2412,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("help");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n\nIDENTITY\n/profile -- live profile preview\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait variants inline\n/portrait --regenerate -- re-scrape sources and update portrait\n/edit -- edit identity context (files, json, sources)\n/json -- raw identity json\n/files -- file browser\n/sources -- manage connected sources\n\nPROJECTS\n/portfolio -- project graph, dependencies, reusable patterns, skill propagation\n/projects -- same as /portfolio\n/history -- bundle version history\n\nSHARING\n/share -- create shareable identity link (copies to clipboard)\n/share --private -- include private context in link\n/share --project {name} -- project-scoped context link\n/publish -- publish latest bundle publicly\n\nSKILLS + STACKS\n/skills -- browse + install skills\n/stacks -- manage named private/public YouStacks\n/skill use {name} -- activate skill in this conversation\n\nAPI + CONNECTORS\n/api -- provider/env inventory, API risk tiers, service-account notes\n/apis -- same as /api\n/env -- secret-safe env key-name audit surface\n/mcp -- hosted MCP endpoint and stack namespace\n/connectors -- app grants, custom API/MCP, webhooks\n/crawlers -- sources, Firecrawl/native crawlers, crons, loops\n/loops -- daily reports, monitored refresh cadence, source versions\n\nACCOUNT\n/vault -- api keys + secrets manager\n/agents -- connected agent integrations (MCP)\n/settings -- account, billing, session log\n/activity -- agent activity log\n\nDATA\n/analytics -- profile views + agent reads\n\nMEMORY\n/memory -- memory stats by category\n/recall -- recent memories\n/recall {query} -- search memories by keyword\n\nSYSTEM\n/status -- @username | plan | version | published/draft\n/help -- show this reference"
-          : "available commands:\n/profile, /portrait, /portfolio, /projects, /edit, /json, /files, /sources\n/share, /share --private, /share --project {name}, /publish\n/skills, /stacks, /skill use {name}\n/api, /apis, /env, /mcp, /connectors, /crawlers, /loops\n/vault, /agents, /settings, /activity\n/analytics, /history\n/memory, /recall, /recall {query}\n/status, /help";
+          ? "available commands:\n\nIDENTITY\n/profile -- live profile preview\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait variants inline\n/portrait --regenerate -- re-scrape sources and update portrait\n/edit -- edit identity context (files, json, sources)\n/json -- raw identity json\n/files -- file browser\n/sources -- manage connected sources\n\nPROJECTS\n/portfolio -- project graph, dependencies, reusable patterns, skill propagation\n/projects -- same as /portfolio\n/task agent youmd: verify sync proof -- save an agent-owned project task\n/task me personal: follow up with billing -- save a human-owned personal task\n/braindump project:youmd ... -- capture raw dump, summary, insights, proposed tasks\n/history -- bundle version history\n\nSHARING\n/share -- create shareable identity link (copies to clipboard)\n/share --private -- include private context in link\n/share --project {name} -- project-scoped context link\n/publish -- publish latest bundle publicly\n\nSKILLS + STACKS\n/skills -- browse + install skills\n/stacks -- manage named private/public YouStacks\n/skill use {name} -- activate skill in this conversation\n\nAPI + CONNECTORS\n/api -- provider/env inventory, API risk tiers, service-account notes\n/apis -- same as /api\n/env -- secret-safe env key-name audit surface\n/mcp -- hosted MCP endpoint and stack namespace\n/connectors -- app grants, custom API/MCP, webhooks\n/crawlers -- sources, Firecrawl/native crawlers, crons, loops\n/loops -- daily reports, monitored refresh cadence, source versions\n\nACCOUNT\n/vault -- api keys + secrets manager\n/agents -- connected agent integrations (MCP)\n/settings -- account, billing, session log\n/activity -- agent activity log\n\nDATA\n/analytics -- profile views + agent reads\n\nMEMORY\n/memory -- memory stats by category\n/recall -- recent memories\n/recall {query} -- search memories by keyword\n\nSYSTEM\n/status -- @username | plan | version | published/draft\n/help -- show this reference"
+          : "available commands:\n/profile, /portrait, /portfolio, /projects, /task agent youmd: title, /braindump project:youmd ...\n/edit, /json, /files, /sources\n/share, /share --private, /share --project {name}, /publish\n/skills, /stacks, /skill use {name}\n/api, /apis, /env, /mcp, /connectors, /crawlers, /loops\n/vault, /agents, /settings, /activity\n/analytics, /history\n/memory, /recall, /recall {query}\n/status, /help";
 
         setDisplayMessages((prev) => [
           ...prev,
@@ -2183,7 +2624,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
       return false;
     },
-    [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone, privateContext, recentMemories]
+    [latestBundle, convexUser, user?.id, publishLatest, createContextLink, onPaneSwitch, onDone, privateContext, recentMemories, handlePortfolioChatCommand]
   );
 
   // Track scraped sources to avoid re-scraping
@@ -2200,6 +2641,17 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     // Handle slash commands (no image for slash commands)
     if (trimmed.startsWith("/")) {
       if (handleSlashCommand(trimmed)) return;
+    }
+
+    if (
+      /^task\b/i.test(trimmed) ||
+      /^(?:braindump|brain\s+dump|dump)\b/i.test(trimmed)
+    ) {
+      const handled = await handlePortfolioChatCommand(trimmed);
+      if (handled) {
+        textareaRef.current?.focus();
+        return;
+      }
     }
 
     // Build the user message content — include pasted image if present
@@ -3027,7 +3479,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
     setIsThinking(false);
     setTimeout(() => clearSteps(), 250);
     textareaRef.current?.focus();
-  }, [input, isThinking, handleSlashCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps, buildTurnScaffold, pruneResolvedMutationTurns, handleProjectDirectoryScaffold]);
+  }, [input, isThinking, handleSlashCommand, handlePortfolioChatCommand, callLLM, saveUpdates, user?.id, userProfile?._id, privateContext, updatePrivateContext, latestBundle, userProfile, convexUser, publishLatest, updateProfile, setProfileImages, saveMemories, upsertSession, summarizeSession, addStep, completeStep, failStep, clearSteps, buildTurnScaffold, pruneResolvedMutationTurns, handleProjectDirectoryScaffold]);
 
   return {
     // State

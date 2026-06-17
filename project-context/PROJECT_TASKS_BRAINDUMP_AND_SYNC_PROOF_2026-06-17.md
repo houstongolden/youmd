@@ -100,16 +100,29 @@ GitHub status and task/graph paths behave in the actual product.
   houstongolden/...` rows. The rows include repo, directory, stack, API/MCP
   docs links, goal, and recent progress; the top GitHub status also refreshed
   back to `JUST NOW`.
+- Authenticated Chrome QA on local `/shell` sent `/braindump project:youmd ...`
+  from the shell chat. The command saved a `brainDumpCaptures` record, proposed
+  agent-owned `portfolioTasks`, wrote the repo-backed snapshot
+  `projects/_braindumps/recent.md` into `you.json.custom_files`, queued the
+  GitHub update loop from chat, pushed `you.md` and `you.json` through PR #7,
+  merged the PR, refreshed 47 mirrored files, displayed the capture under
+  `RECENT BRAIN DUMPS`, and returned the GitHub chrome to
+  `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
+- Authenticated Chrome QA then sent `/task me personal: ...` from shell chat.
+  The command saved a human-owned personal `portfolioTasks` record, displayed it
+  as `HUMAN / PERSONAL` under open tasks, wrote
+  `projects/_personal/tasks.md` into `you.json.custom_files`, pushed through PR
+  #8, merged the PR, refreshed 47 mirrored files, and kept the GitHub chrome at
+  `SYNCED / REPO MIRROR CURRENT / JUST NOW`.
 
 ## Still Open
 
 - Export the persisted portfolio graph back into repo-backed markdown snapshots.
-- Add first-class dashboard task creation/editing and brain-dump invocation on
-  top of persisted `portfolioTasks` / `brainDumpCaptures`.
+- Add first-class dashboard task editing/triage controls on top of persisted
+  `portfolioTasks` / `brainDumpCaptures`.
+- Add CLI/local-agent and mobile/watch invocation proof for task and brain-dump
+  capture paths.
 - Add persisted update artifacts/history for PR, conflict, check, merge, and
   mirror-refresh steps.
-- Prove the You Agent can initiate a content/project/task update from shell chat,
-  then trigger the repo update loop without relying only on the `[ update ]`
-  button.
 - Enrich active project strategy records with vision, pain points, solution,
   constraints, not-building notes, metrics, and competitors.

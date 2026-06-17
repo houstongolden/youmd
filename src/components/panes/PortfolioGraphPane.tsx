@@ -368,6 +368,30 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           </>
         )}
 
+        {graph && graph.recentCaptures.length > 0 && (
+          <>
+            <PaneDivider />
+            <section>
+              <PaneSectionLabel>recent brain dumps</PaneSectionLabel>
+              <div className="space-y-2">
+                {graph.recentCaptures.slice(0, 5).map((capture) => (
+                  <div key={capture._id} className="grid gap-2 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3 md:grid-cols-[0.8fr_1.1fr_0.6fr]">
+                    <div className="font-mono text-[11px] text-[hsl(var(--text-primary))]">
+                      {capture.summary ?? capture.rawText.slice(0, 96)}
+                    </div>
+                    <div className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
+                      {capture.insights.slice(0, 2).join(" / ") || capture.rawText.slice(0, 140)}
+                    </div>
+                    <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
+                      {capture.projectSlugs.join(", ") || "uncategorized"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
+
         <PaneDivider />
 
         <section>

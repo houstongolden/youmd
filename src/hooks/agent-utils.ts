@@ -1954,6 +1954,7 @@ export interface UseYouAgentOptions {
   isOnboarding?: boolean;
   onboardingGreeting?: string;
   onDone?: () => void;
+  onRepoUpdate?: () => Promise<void> | void;
   /**
    * Set to the connected repo's full name (e.g. "houstongolden/houstongolden-you-md")
    * when the {username}-you-md repo exists. The agent will run the post-connect
