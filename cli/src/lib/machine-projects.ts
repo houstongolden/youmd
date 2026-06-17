@@ -4,6 +4,7 @@ export type ProjectRecency = "recent" | "active-undated" | "older";
 
 export interface MachineProjectCandidate {
   name: string;
+  slug?: string;
   repoName: string;
   targetDirName: string;
   githubUrl?: string;
@@ -14,8 +15,13 @@ export interface MachineProjectCandidate {
   updatedAt?: string;
   recency: ProjectRecency;
   reason: string;
-  source: "youmd" | "github" | "youmd+github";
+  source: "youmd" | "github" | "portfolio-graph" | "youmd+github" | "portfolio-graph+github";
   stackName?: string;
+  goal?: string;
+  focus?: string;
+  docs?: string[];
+  environments?: string[];
+  tags?: string[];
   apiDocsUrl: string;
   mcpDocsUrl: string;
 }
@@ -25,6 +31,12 @@ export interface MachineProjectPlan {
   recent: MachineProjectCandidate[];
   older: MachineProjectCandidate[];
   skipped: Array<{ name: string; reason: string }>;
+  sourceCounts: {
+    portfolioGraphProjects: number;
+    portfolioGraphTrackedProjects: number;
+    githubProjects: number;
+    bundleProjects: number;
+  };
 }
 
 export interface GithubProjectSource {
@@ -55,6 +67,19 @@ function stringField(record: Record<string, unknown>, keys: string[]): string {
     if (typeof value === "string" && value.trim()) return value.trim();
   }
   return "";
+}
+
+function stringArrayField(record: Record<string, unknown>, keys: string[]): string[] {
+  for (const key of keys) {
+    const value = record[key];
+    if (Array.isArray(value)) {
+      return value
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  }
+  return [];
 }
 
 function stableDirName(input: string): string {
@@ -126,7 +151,7 @@ function findGithubUrl(record: Record<string, unknown>): string {
 
   for (const value of Object.values(record)) {
     if (typeof value !== "string") continue;
-    const match = value.match(/(?:https?:\/\/github\.com\/[^\s),]+|git@github\.com:[^\s),]+|[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)/i);
+    const match = value.match(/(?:https?:\/\/github\.com\/[^\s),]+|git@github\.com:[^\s),]+)/i);
     if (match && githubRepoFromUrl(match[0])) return match[0];
   }
 
@@ -162,6 +187,100 @@ function projectUpdatedAt(record: Record<string, unknown>): Date | null {
     if (date) return date;
   }
   return null;
+}
+
+function recordArray(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value)
+    ? value
+        .map(asRecord)
+        .filter((record) => Object.keys(record).length > 0)
+    : [];
+}
+
+function portfolioGraphSources(root: Record<string, unknown>, explicitGraph?: unknown): Record<string, unknown>[] {
+  const rootPortfolio = asRecord(root.portfolio);
+  const candidates = [
+    explicitGraph,
+    root.portfolioGraph,
+    root.portfolio_graph,
+    root.portfolioGraphSnapshot,
+    root.portfolio_graph_snapshot,
+    rootPortfolio.graph,
+    rootPortfolio.portfolioGraph,
+    rootPortfolio,
+  ];
+  const seen = new Set<Record<string, unknown>>();
+  const sources: Record<string, unknown>[] = [];
+  for (const candidate of candidates) {
+    const record = asRecord(candidate);
+    if (!Object.keys(record).length || seen.has(record)) continue;
+    if (
+      Array.isArray(record.projects) ||
+      Array.isArray(record.portfolioProjects) ||
+      Array.isArray(record.recentTrackedProjects)
+    ) {
+      sources.push(record);
+      seen.add(record);
+    }
+  }
+  return sources;
+}
+
+function graphDate(value: unknown): string | undefined {
+  const date = parseDate(value);
+  return date ? date.toISOString() : undefined;
+}
+
+function portfolioGraphProjectRecords(sources: Record<string, unknown>[]): Record<string, unknown>[] {
+  const records: Record<string, unknown>[] = [];
+  for (const source of sources) {
+    const projects = [
+      ...recordArray(source.projects),
+      ...recordArray(source.portfolioProjects),
+    ];
+    for (const project of projects) {
+      const name = stringField(project, ["name", "title", "project", "slug"]);
+      if (!name) continue;
+      const repoFullName = stringField(project, ["repoFullName", "fullName", "repo", "repository"]);
+      const repoUrl = stringField(project, ["repoUrl", "githubUrl", "github_url", "repositoryUrl", "repository_url"]);
+      const productUrl = stringField(project, ["productUrl", "projectUrl", "homepage", "website"]);
+      records.push({
+        ...project,
+        name,
+        githubUrl: repoUrl || repoFullName,
+        repo: repoFullName || repoUrl,
+        website: productUrl,
+        stackName: stringField(project, ["stackName", "stack", "stack_name"]),
+        updatedAt: graphDate(project.lastActivityAt) || graphDate(project.updatedAt) || project.updatedAt,
+        lastActiveAt: graphDate(project.lastActivityAt) || project.lastActivityAt,
+        _machineSource: "portfolio-graph",
+      });
+    }
+  }
+  return records;
+}
+
+function portfolioGraphTrackedProjects(sources: Record<string, unknown>[]): GithubProjectSource[] {
+  const repos: GithubProjectSource[] = [];
+  for (const source of sources) {
+    for (const record of recordArray(source.recentTrackedProjects)) {
+      const fullName = stringField(record, ["fullName", "repoFullName", "repo", "repository"]);
+      const name = stringField(record, ["name", "repoName", "directoryName"]) || fullName.split("/").pop() || "";
+      const url = stringField(record, ["url", "repoUrl", "githubUrl"]) || (fullName ? `https://github.com/${fullName}` : "");
+      if (!name || !fullName || !githubRepoFromUrl(url || fullName)) continue;
+      repos.push({
+        name,
+        fullName,
+        url,
+        pushedAt: graphDate(record.pushedAt),
+        updatedAt: graphDate(record.updatedAt),
+        description: stringField(record, ["description", "insight", "recentProgress", "highLevelGoal"]) || null,
+        homepage: stringField(record, ["projectUrl", "homepage", "productUrl"]) || null,
+        isPrivate: record.isPrivate === true,
+      });
+    }
+  }
+  return repos;
 }
 
 export function inferStackName(input: string): string {
@@ -218,6 +337,7 @@ export function buildMachineProjectPlan(
     activeDays?: number;
     now?: Date;
     githubProjects?: GithubProjectSource[];
+    portfolioGraph?: unknown;
     apiDocsUrl?: string;
     mcpDocsUrl?: string;
   },
@@ -229,6 +349,9 @@ export function buildMachineProjectPlan(
   const mcpDocsUrl = options.mcpDocsUrl ?? DEFAULT_MCP_DOCS_URL;
   const root = asRecord(youJson);
   const projects = Array.isArray(root.projects) ? root.projects : [];
+  const graphSources = portfolioGraphSources(root, options.portfolioGraph);
+  const graphProjectRecords = portfolioGraphProjectRecords(graphSources);
+  const graphGithubProjects = portfolioGraphTrackedProjects(graphSources);
   const seen = new Set<string>();
   const recent: MachineProjectCandidate[] = [];
   const older: MachineProjectCandidate[] = [];
@@ -248,9 +371,17 @@ export function buildMachineProjectPlan(
     else recent.push(candidate);
   };
 
-  const bundleRecords = projects.map(asRecord);
+  const bundleRecords = [
+    ...graphProjectRecords,
+    ...projects.map(asRecord),
+  ];
 
-  for (const repo of options.githubProjects ?? []) {
+  const githubProjectSources = [
+    ...graphGithubProjects,
+    ...(options.githubProjects ?? []),
+  ];
+
+  for (const repo of githubProjectSources) {
     const github = githubRepoFromUrl(repo.url || repo.fullName);
     if (!github) continue;
     const matchingBundle = bundleRecords.find((record) => {
@@ -272,9 +403,11 @@ export function buildMachineProjectPlan(
     };
     const classified = classifyProject(record, now, activeDays);
     const targetDirName = stableDirName(github.repo);
+    const fromPortfolioGraph = stringField(matchingBundle ?? {}, ["_machineSource"]) === "portfolio-graph";
     pushCandidate(
       {
         name,
+        slug: stringField(matchingBundle ?? {}, ["slug"]),
         repoName: github.repo,
         targetDirName,
         githubUrl: github.url,
@@ -285,8 +418,13 @@ export function buildMachineProjectPlan(
         updatedAt: classified.updatedAt,
         recency: classified.recency,
         reason: classified.reason,
-        source: matchingBundle ? "youmd+github" : "github",
-        stackName: inferStackName(repo.fullName),
+        source: matchingBundle ? (fromPortfolioGraph ? "portfolio-graph+github" : "youmd+github") : "github",
+        stackName: stringField(record, ["stackName", "stack", "stack_name"]) || inferStackName(repo.fullName),
+        goal: stringField(record, ["goal", "highLevelGoal"]),
+        focus: stringField(record, ["focus", "recentProgress", "insight"]),
+        docs: stringArrayField(record, ["docs", "docsUrls"]),
+        environments: stringArrayField(record, ["environments"]),
+        tags: stringArrayField(record, ["tags"]),
         apiDocsUrl,
         mcpDocsUrl,
       },
@@ -303,8 +441,10 @@ export function buildMachineProjectPlan(
     const dedupeKey = github?.cloneSpec.toLowerCase() || targetDirName.toLowerCase();
 
     const classified = classifyProject(record, now, activeDays);
+    const fromPortfolioGraph = stringField(record, ["_machineSource"]) === "portfolio-graph";
     const candidate: MachineProjectCandidate = {
       name,
+      slug: stringField(record, ["slug"]),
       repoName,
       targetDirName,
       githubUrl: github?.url,
@@ -315,8 +455,13 @@ export function buildMachineProjectPlan(
       updatedAt: classified.updatedAt,
       recency: classified.recency,
       reason: classified.reason,
-      source: "youmd",
-      stackName: inferStackName(github?.cloneSpec || name),
+      source: fromPortfolioGraph ? "portfolio-graph" : "youmd",
+      stackName: stringField(record, ["stackName", "stack", "stack_name"]) || inferStackName(github?.cloneSpec || name),
+      goal: stringField(record, ["goal", "highLevelGoal"]),
+      focus: stringField(record, ["focus", "recentProgress", "insight"]),
+      docs: stringArrayField(record, ["docs", "docsUrls"]),
+      environments: stringArrayField(record, ["environments"]),
+      tags: stringArrayField(record, ["tags"]),
       apiDocsUrl,
       mcpDocsUrl,
     };
@@ -331,5 +476,16 @@ export function buildMachineProjectPlan(
     pushCandidate(candidate, dedupeKey);
   }
 
-  return { rootDir, recent, older, skipped };
+  return {
+    rootDir,
+    recent,
+    older,
+    skipped,
+    sourceCounts: {
+      portfolioGraphProjects: graphProjectRecords.length,
+      portfolioGraphTrackedProjects: graphGithubProjects.length,
+      githubProjects: options.githubProjects?.length ?? 0,
+      bundleProjects: projects.length,
+    },
+  };
 }

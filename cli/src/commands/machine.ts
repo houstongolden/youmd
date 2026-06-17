@@ -5,7 +5,8 @@ import * as readline from "readline";
 import * as child_process from "child_process";
 import chalk from "chalk";
 import { BrailleSpinner } from "../lib/render";
-import { resolveActiveBundleDir } from "../lib/config";
+import { isAuthenticated, resolveActiveBundleDir } from "../lib/config";
+import { apiErrorMessage, getPortfolioGraph } from "../lib/api";
 import {
   buildMachineProjectPlan,
   GithubProjectSource,
@@ -187,6 +188,23 @@ async function machineProjectsCommand(opts: {
   }
 
   const activeDays = Number(opts.days || 90);
+  let portfolioGraph: Record<string, unknown> | null = null;
+  if (isAuthenticated()) {
+    const graphRes = await getPortfolioGraph({ includeTasks: true });
+    if (graphRes.ok && graphRes.data) {
+      portfolioGraph = graphRes.data as unknown as Record<string, unknown>;
+      console.log(
+        chalk.dim(
+          `  portfolio graph: ${graphRes.data.projects.length} project${graphRes.data.projects.length === 1 ? "" : "s"} / ${graphRes.data.recentTrackedProjects.length} tracked repo${graphRes.data.recentTrackedProjects.length === 1 ? "" : "s"}`
+        )
+      );
+    } else {
+      console.log(chalk.dim(`  portfolio graph: unavailable (${apiErrorMessage(graphRes.data) || `HTTP ${graphRes.status}`}); falling back to local bundle + GitHub`));
+    }
+  } else {
+    console.log(chalk.dim("  portfolio graph: skipped until youmd login completes"));
+  }
+
   const githubProjects = opts.github === false ? [] : readRecentGithubProjectsFromGh(activeDays);
   if (githubProjects.length > 0) {
     console.log(chalk.dim(`  github: found ${githubProjects.length} repo${githubProjects.length === 1 ? "" : "s"} pushed within ${activeDays || 90}d`));
@@ -198,6 +216,7 @@ async function machineProjectsCommand(opts: {
     rootDir,
     activeDays: Number.isFinite(activeDays) && activeDays > 0 ? activeDays : 90,
     githubProjects,
+    portfolioGraph,
   });
 
   let selected = [...plan.recent];
@@ -229,6 +248,7 @@ async function machineProjectsCommand(opts: {
   console.log("  " + chalk.bold("machine project bootstrap"));
   console.log(chalk.dim(`  root: ${plan.rootDir}`));
   console.log(chalk.dim(`  selected: ${selected.length} project${selected.length === 1 ? "" : "s"}`));
+  console.log(chalk.dim(`  graph inputs: ${plan.sourceCounts.portfolioGraphProjects} portfolio project${plan.sourceCounts.portfolioGraphProjects === 1 ? "" : "s"} / ${plan.sourceCounts.portfolioGraphTrackedProjects} graph-tracked repo${plan.sourceCounts.portfolioGraphTrackedProjects === 1 ? "" : "s"} / ${plan.sourceCounts.githubProjects} gh repo${plan.sourceCounts.githubProjects === 1 ? "" : "s"} / ${plan.sourceCounts.bundleProjects} bundle project${plan.sourceCounts.bundleProjects === 1 ? "" : "s"}`));
   if (plan.skipped.length > 0) {
     console.log(chalk.dim(`  skipped duplicates/unusable: ${plan.skipped.length}`));
   }
@@ -246,6 +266,8 @@ async function machineProjectsCommand(opts: {
       const meta = [
         candidate.githubUrl ? `<- ${candidate.githubUrl}` : "",
         candidate.stackName ? `[${candidate.stackName}]` : "",
+        `source:${candidate.source}`,
+        candidate.focus ? `focus:${candidate.focus.slice(0, 72)}` : "",
       ].filter(Boolean).join(" ");
       console.log(`  ${chalk.cyan(action.padEnd(5))} ${target}${meta ? chalk.dim(` ${meta}`) : ""}`);
     }

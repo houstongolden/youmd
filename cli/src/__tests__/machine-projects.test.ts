@@ -122,4 +122,74 @@ describe("machine project bootstrap planner", () => {
     expect(bamfRepo?.stackName).toBe("BAMFStack");
     expect(plan.skipped).toEqual([{ name: "BAMF.ai", reason: "covered by recent BAMFStack repo" }]);
   });
+
+  it("uses persisted portfolio graph projects even when the local identity bundle is thin", () => {
+    const plan = buildMachineProjectPlan(
+      {
+        projects: [],
+      },
+      {
+        rootDir: "/tmp/CODE_YOU",
+        activeDays: 90,
+        now: new Date("2026-06-16T00:00:00.000Z"),
+        portfolioGraph: {
+          projects: [
+            {
+              slug: "badapp",
+              name: "Bad.app",
+              stackName: "BadStack",
+              status: "active",
+              goal: "Fitness app with watch/iPhone agent capture loops.",
+              focus: "Workout braindump capture into You.md task routing.",
+              repoFullName: "houstongolden/badapp",
+              repoUrl: "https://github.com/houstongolden/badapp",
+              docs: ["project-context/PRD.md"],
+              environments: ["local", "iOS", "watchOS"],
+              tags: ["fitness", "watchos", "youmd"],
+              lastActivityAt: Date.parse("2026-06-14T00:00:00.000Z"),
+            },
+          ],
+          recentTrackedProjects: [],
+        },
+      },
+    );
+
+    expect(plan.sourceCounts.portfolioGraphProjects).toBe(1);
+    expect(plan.recent).toHaveLength(1);
+    expect(plan.recent[0]).toMatchObject({
+      slug: "badapp",
+      targetDirName: "badapp",
+      cloneSpec: "houstongolden/badapp",
+      source: "portfolio-graph",
+      stackName: "BadStack",
+      goal: "Fitness app with watch/iPhone agent capture loops.",
+      focus: "Workout braindump capture into You.md task routing.",
+      docs: ["project-context/PRD.md"],
+      environments: ["local", "iOS", "watchOS"],
+    });
+  });
+
+  it("does not infer fake GitHub repos from non-GitHub slash paths in summaries", () => {
+    const plan = buildMachineProjectPlan(
+      {
+        projects: [
+          {
+            name: "Docs-only project",
+            status: "active",
+            summary: "README has a badge at img.shields.io/badge/build-green and docs at nextjs.org/docs.",
+          },
+        ],
+      },
+      {
+        rootDir: "/tmp/CODE_YOU",
+        activeDays: 90,
+        now: new Date("2026-06-16T00:00:00.000Z"),
+      },
+    );
+
+    expect(plan.recent).toHaveLength(1);
+    expect(plan.recent[0].githubUrl).toBeUndefined();
+    expect(plan.recent[0].cloneSpec).toBeUndefined();
+    expect(plan.recent[0].targetDirName).toBe("Docs-only-project");
+  });
 });

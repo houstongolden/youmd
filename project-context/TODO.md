@@ -14,7 +14,12 @@ PRD Version: 2.3
 - [x] Add signed-in shell handling for `/new computer`, `/new machine`, and obvious natural-language fresh-machine setup requests
 - [x] Mint a short-lived scoped bootstrap key from the web shell and embed it in the copyable local setup command, while keeping raw `.env.local` values out of the browser prompt
 - [x] Add command-palette/help/skills-pane discovery for `/new computer` and `youmd machine prompt`
+- [x] Add secret-safe `GET /api/v1/me/portfolio/graph` so fresh-machine agents can fetch persisted project graph records with repo/stack/docs/task metadata but no raw `.env.local` values or raw brain-dump transcripts
+- [x] Teach `youmd machine projects` to fetch the persisted portfolio graph before planning, merge it with authenticated GitHub tracked repos and local bundle projects, and print source counts in dry-run/clone output
+- [x] Add a graph-backed dry-run preview step to the one-command bootstrap prompt before cloning
+- [x] Verify the compiled CLI dry-run against deployed production graph data: `55` portfolio projects, `40` tracked repos, and `40` graph-backed cloneable project repos selected after fixing false-positive badge/docs URL detection
 - [x] Verify with focused CLI tests, CLI build, root typecheck, docs check, lint/radius, production build, compiled CLI prompt smoke, and authenticated local browser QA of `/new computer`
+- [ ] Add a first-class post-clone local readiness/run checker that can install deps, restore env status, start or smoke key local servers safely, and report per-project pass/fail without pretending every app can share one generic launch command
 - [ ] Run the generated command end-to-end on the actual brand-new computer / clean agent host and verify projects, skills, env vault restore, local servers, and portfolio graph sync there
 
 ### 2026-06-17 — Shell sidebar expand/collapse regression

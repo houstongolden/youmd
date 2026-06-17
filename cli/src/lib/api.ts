@@ -690,6 +690,50 @@ export interface PortfolioHydrateResult {
   message?: string;
 }
 
+export interface PortfolioGraphSnapshot {
+  schemaVersion: "you-md/portfolio-graph/v1";
+  projects: Array<{
+    slug: string;
+    name: string;
+    stackName?: string;
+    status?: string;
+    summary?: string;
+    goal?: string;
+    focus?: string;
+    repoFullName?: string;
+    repoUrl?: string;
+    productUrl?: string;
+    docs?: string[];
+    environments?: string[];
+    tags?: string[];
+    source?: string;
+    repoPath?: string;
+    lastActivityAt?: number;
+    updatedAt?: number;
+  }>;
+  recentTrackedProjects: Array<{
+    fullName: string;
+    name: string;
+    url?: string;
+    projectUrl?: string;
+    repoName?: string;
+    directoryName?: string;
+    apiDocsUrl?: string;
+    mcpDocsUrl?: string;
+    stackName?: string;
+    highLevelGoal?: string;
+    recentProgress?: string;
+    description?: string;
+    pushedAt: number;
+    updatedAt: number;
+    isPrivate: boolean;
+  }>;
+  apiSurfaces: Array<Record<string, unknown>>;
+  dependencyEdges: Array<Record<string, unknown>>;
+  reusablePatterns: Array<Record<string, unknown>>;
+  tasks?: Array<Record<string, unknown>>;
+}
+
 export async function savePortfolioTask(
   payload: PortfolioTaskPayload
 ): Promise<ApiResponse<PortfolioWriteResult>> {
@@ -732,6 +776,17 @@ export async function hydratePortfolioProjects(payload: {
     method: "POST",
     token: getToken(),
     body: payload,
+  });
+}
+
+export async function getPortfolioGraph(opts?: {
+  includeTasks?: boolean;
+}): Promise<ApiResponse<PortfolioGraphSnapshot>> {
+  const params = new URLSearchParams();
+  if (opts?.includeTasks) params.set("includeTasks", "1");
+  const qs = params.toString();
+  return apiRequest<PortfolioGraphSnapshot>(`/api/v1/me/portfolio/graph${qs ? `?${qs}` : ""}`, {
+    token: getToken(),
   });
 }
 

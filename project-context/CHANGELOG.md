@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Production graph-backed machine bootstrap planning
+
+### feat(api/cli): make fresh-machine project setup read the persisted graph
+- Added secret-safe `GET /api/v1/me/portfolio/graph` for authenticated local agents and fresh-machine bootstrap keys. The endpoint returns project/repo/stack/docs/surface/dependency/pattern/task summary metadata, while avoiding raw `.env.local` values and raw brain-dump transcripts.
+- Taught `youmd machine projects` to fetch that persisted graph when authenticated, merge portfolio graph projects, graph-tracked GitHub repos, live `gh` repo scans, and local `you.json.projects`, then print source counts in dry-run and clone output.
+- Updated `machine-bootstrap` and `youmd machine prompt` so the one-paste command hydrates the graph, previews the graph-backed setup plan, then clones active project repos.
+- Fixed overly broad repo inference so non-GitHub slash paths in summaries, docs, badges, or image URLs no longer become fake `github.com/<thing>/<path>` clones.
+- Deployed Convex to `kindly-cassowary-600`.
+- Verified with focused CLI tests (`9` passing), CLI build, root typecheck, docs generation, Convex codegen/deploy, compiled prompt smoke, and production graph dry-run. The compiled dry-run now reports `55 projects / 40 tracked repos`, selects `40` graph-backed cloneable repos, and labels rows as `source:portfolio-graph+github`.
+- Remaining: run the generated command on the actual brand-new computer / clean agent host, restore encrypted env vaults there, and add a real post-clone local readiness/run checker for key projects.
+
 ## 2026-06-17 — Graph-backed fresh-computer bootstrap prompt
 
 ### feat(cli/web): generate one-command new-computer setup artifacts

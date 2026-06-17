@@ -1361,6 +1361,143 @@ http.route({
   }),
 });
 
+// GET /api/v1/me/portfolio/graph — Secret-safe project graph snapshot for local agents and fresh-machine bootstrap.
+http.route({
+  path: "/api/v1/me/portfolio/graph",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
+
+    try {
+      const url = new URL(request.url);
+      const includeTasks = url.searchParams.get("includeTasks") === "1" || url.searchParams.get("includeTasks") === "true";
+      const graph = await ctx.runQuery(api.portfolio.listPortfolioGraph, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        includeDoneTasks: false,
+      });
+
+      return json({
+        schemaVersion: "you-md/portfolio-graph/v1",
+        projects: graph.projects.map((project) => ({
+          slug: project.slug,
+          name: project.name,
+          stackName: project.stackName,
+          status: project.status,
+          summary: project.summary,
+          detailedDescription: project.detailedDescription,
+          goal: project.goal,
+          vision: project.vision,
+          focus: project.focus,
+          positioning: project.positioning,
+          audience: project.audience,
+          painPoints: project.painPoints,
+          solution: project.solution,
+          whyThisSolution: project.whyThisSolution,
+          northStar: project.northStar,
+          metrics: project.metrics,
+          constraints: project.constraints,
+          notBuilding: project.notBuilding,
+          competitors: project.competitors,
+          repoFullName: project.repoFullName,
+          repoUrl: project.repoUrl,
+          productUrl: project.productUrl,
+          docs: project.docs,
+          environments: project.environments,
+          tags: project.tags,
+          source: project.source,
+          repoPath: project.repoPath,
+          lastActivityAt: project.lastActivityAt,
+          updatedAt: project.updatedAt,
+        })),
+        recentTrackedProjects: graph.recentTrackedProjects.map((project) => ({
+          fullName: project.fullName,
+          name: project.name,
+          url: project.url,
+          projectUrl: project.projectUrl,
+          repoName: project.repoName,
+          directoryName: project.directoryName,
+          apiDocsUrl: project.apiDocsUrl,
+          mcpDocsUrl: project.mcpDocsUrl,
+          stackName: project.stackName,
+          stackSlug: project.stackSlug,
+          highLevelGoal: project.highLevelGoal,
+          recentProgress: project.recentProgress,
+          description: project.description,
+          primaryLanguage: project.primaryLanguage,
+          pushedAt: project.pushedAt,
+          commitsLast90d: project.commitsLast90d,
+          isPrivate: project.isPrivate,
+          insight: project.insight,
+          visibility: project.visibility,
+          trackedAt: project.trackedAt,
+          updatedAt: project.updatedAt,
+        })),
+        apiSurfaces: graph.apiSurfaces.map((surface) => ({
+          slug: surface.slug,
+          name: surface.name,
+          kind: surface.kind,
+          ownerProjectSlug: surface.ownerProjectSlug,
+          ownerStack: surface.ownerStack,
+          trust: surface.trust,
+          authMode: surface.authMode,
+          writePolicy: surface.writePolicy,
+          features: surface.features,
+          risk: surface.risk,
+          notes: surface.notes,
+          docsUrls: surface.docsUrls,
+          integrationTypes: surface.integrationTypes,
+          updatedAt: surface.updatedAt,
+        })),
+        dependencyEdges: graph.dependencyEdges.map((edge) => ({
+          fromProjectSlug: edge.fromProjectSlug,
+          toProjectSlug: edge.toProjectSlug,
+          toSurfaceSlug: edge.toSurfaceSlug,
+          tier: edge.tier,
+          integrationType: edge.integrationType,
+          features: edge.features,
+          failureImpact: edge.failureImpact,
+          notes: edge.notes,
+          updatedAt: edge.updatedAt,
+        })),
+        reusablePatterns: graph.reusablePatterns.map((pattern) => ({
+          slug: pattern.slug,
+          name: pattern.name,
+          status: pattern.status,
+          tags: pattern.tags,
+          techStacks: pattern.techStacks,
+          canonicalOwnerProject: pattern.canonicalOwnerProject,
+          summary: pattern.summary,
+          sourcePaths: pattern.sourcePaths,
+          usageProjects: pattern.usageProjects,
+          updatedAt: pattern.updatedAt,
+        })),
+        tasks: includeTasks
+          ? graph.tasks.map((task) => ({
+              projectSlug: task.projectSlug,
+              title: task.title,
+              description: task.description,
+              ownerType: task.ownerType,
+              ownerLabel: task.ownerLabel,
+              status: task.status,
+              priority: task.priority,
+              dueAt: task.dueAt,
+              sourceType: task.sourceType,
+              tags: task.tags,
+              createdAt: task.createdAt,
+              updatedAt: task.updatedAt,
+            }))
+          : undefined,
+      });
+    } catch (err) {
+      return serverErrorResponse("me/portfolio/graph", err, "Failed to load portfolio graph");
+    }
+  }),
+});
+
 // POST /api/v1/me/portfolio/tasks — Create an owner-aware portfolio task from CLI/MCP/API.
 http.route({
   path: "/api/v1/me/portfolio/tasks",
@@ -3484,6 +3621,7 @@ http.route({ path: "/ctx", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/bundle", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/publish", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/portfolio/graph", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/projects/hydrate", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/tasks", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/tasks/triage", method: "OPTIONS", handler: corsPreflight });

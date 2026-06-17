@@ -66,10 +66,12 @@ You.md is the brain. The new machine should become a runnable local agent workst
    ```
 
 6. Hydrate the portfolio graph from You.md/GitHub records before cloning, then
-   create the desktop code workspace and sync active projects:
+   preview the graph-backed setup plan before creating the desktop code workspace
+   and syncing active projects:
 
    ```bash
    youmd project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 90 --limit 80
+   youmd machine projects --root ~/Desktop/CODE_YOU --days 90 --dry-run
    youmd machine projects --root ~/Desktop/CODE_YOU --days 90
    ```
 
@@ -98,6 +100,9 @@ You.md is the brain. The new machine should become a runnable local agent workst
 - Use the You.md Portfolio Graph as the strategic source of truth, then merge
   authenticated GitHub recent-repo data and local bundle project records so repo
   names and URLs stay cloneable.
+- `youmd machine projects` should fetch the persisted owner graph through the
+  You.md API when authenticated. If that graph is unavailable, fall back to the
+  local bundle plus authenticated GitHub scan and say so.
 - Clone with `gh repo clone owner/repo <target>` when `gh` is authenticated; otherwise fall back to `git clone`.
 - Skip non-empty directories instead of overwriting them.
 - Never print secrets. If `.env.local` files are needed, use the shared encrypted env backup/restore path or a password manager.
@@ -150,6 +155,12 @@ Generate the copy/paste prompt for a new Claude Code or Codex terminal:
 youmd machine prompt --root ~/Desktop/CODE_YOU --days 90 --limit 80
 ```
 
+Fetch the secret-safe project graph directly:
+
+```bash
+curl -H "Authorization: Bearer $YOUMD_API_KEY" https://you.md/api/v1/me/portfolio/graph
+```
+
 ## Done Means
 
 - You.md CLI is installed and authenticated.
@@ -157,6 +168,8 @@ youmd machine prompt --root ~/Desktop/CODE_YOU --days 90 --limit 80
 - Shared skills/stacks/agent config are restored.
 - A Desktop code root exists.
 - Active GitHub-backed project repos are cloned into matching repo-name directories.
+- The clone plan visibly used the persisted portfolio graph, authenticated
+  GitHub recent repos, and local bundle records with source counts.
 - The portfolio graph is hydrated from both remote project records and local
   code/project-context/env-key evidence.
 - `.env.local` files, if restored, came from encrypted vault tooling without

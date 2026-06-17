@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "71f859ad1f762293a435ae5bfd5d9346308203f385368ef96aa8342f71f84aeb",
+  "sourceHash": "bcbc4cf8ffefa760e52fc97b3379c1a46ea589cb12e7149d6f4f2d7fffd1bc57",
   "cli": {
     "version": "0.8.2"
   },
   "counts": {
-    "endpoints": 89,
+    "endpoints": 90,
     "internalRoutes": 7,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 30,
-    "convexRoutes": 70,
+    "convexRoutes": 71,
     "nextRoutes": 26
   },
   "endpoints": [
@@ -227,6 +227,17 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Preserve raw dumps and route proposed tasks.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/portfolio/graph",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Secret-safe project graph snapshot for local agents and fresh-machine bootstrap.",
       "sources": [
         "convex"
       ]
