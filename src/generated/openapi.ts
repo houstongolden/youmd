@@ -3352,7 +3352,7 @@ export const openApiSpec = {
           "Skills"
         ],
         "x-youmd-auth": "Public or rate-limited",
-        "x-youmd-source": "convex",
+        "x-youmd-source": "convex + next",
         "responses": {
           "200": {
             "description": "Successful response"

@@ -41,7 +41,7 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "e91c5484699cfb1ca714972c695133a3eace4e1a47d064c69b013c9b90cedaf0",
+  "sourceHash": "5502f870028b613da91ffe19d47c4f43e50b22cc29ea89b64c4264094bc5f834",
   "cli": {
     "version": "0.8.2"
   },
@@ -52,7 +52,7 @@ export const docsReference = {
     "hostedMcpTools": 10,
     "cliCommands": 30,
     "convexRoutes": 74,
-    "nextRoutes": 26
+    "nextRoutes": 27
   },
   "endpoints": [
     {
@@ -1057,10 +1057,11 @@ export const docsReference = {
       "path": "/api/v1/skills",
       "category": "Skills",
       "auth": "Public or rate-limited",
-      "source": "convex",
+      "source": "convex + next",
       "summary": "Browse published skills (public, no auth required; supports ?cursor= + ?limit= pagination — paginated calls add nextCursor + hasMore)",
       "sources": [
-        "convex"
+        "convex",
+        "next"
       ]
     },
     {

@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 100
-**Total messages:** 511
+**Total sessions:** 101
+**Total messages:** 512
 **Last updated:** 2026-06-17
 
 ## Table of Contents
 
+1. [2026-06-17 (canonical-skills-api-continuation)](#session-2026-06-17-canonical-skills-api-continuation) --- 1 message
 1. [2026-06-17 (hosted-skill-registry-continuation)](#session-2026-06-17-hosted-skill-registry-continuation) --- 1 message
 1. [2026-06-17 (bounded-clean-host-machine-proof-continuation)](#session-2026-06-17-bounded-clean-host-machine-proof-continuation) --- 1 message
 1. [2026-06-17 (production-dashboard-sync-proof-continuation)](#session-2026-06-17-production-dashboard-sync-proof-continuation) --- 1 message
@@ -16087,4 +16088,11 @@ Note: Codex desktop transcript JSONL was not available at the documented `~/.Cod
 ## Session: 2026-06-17 (hosted-skill-registry-continuation)
 
 **2026-06-17 14:52:35 UTC**
+> continue
+
+---
+
+## Session: 2026-06-17 (canonical-skills-api-continuation)
+
+**2026-06-17 15:00:38 UTC**
 > continue

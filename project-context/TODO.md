@@ -139,6 +139,7 @@ PRD Version: 2.3
 - [x] Add a dedicated signed-in machine/computer readiness card that shows this machine, synced computers, skill-stack sync, project clone readiness, and encrypted env-backup readiness in one dashboard/shell confirmation
 - [x] Run the authenticated GitHub project refresh and verify the dashboard lists the 90-day active project catalog with repo, dir, stack, API/MCP docs, goal, and recent progress
 - [x] Reseed/deploy the hosted bundled-skill registry so production `/api/v1/skills` includes `machine-bootstrap`
+- [x] Add the same-origin web-domain `/api/v1/skills` proxy so docs/agents can use `https://you.md/api/v1/skills` instead of the raw Convex Site URL
 
 ### 2026-06-16 — Local agent auth handoff
 - [x] Preserve Houston's raw prompt for fresh-machine curl install, browser auth handoff, branded success confirmation, and local agent sync/onboarding path
