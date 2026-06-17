@@ -41,6 +41,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('run_machine_projects_recent_only "${PROJECT_ARGS[@]}" --dry-run');
     expect(command).toContain('run_machine_projects_recent_only "${PROJECT_ARGS[@]}"');
     expect(command).toContain('expand to all active projects from the last ${EXPAND_DAYS} days');
+    expect(command).toContain("ACTIVE + Top Priority/Focusing");
     expect(command).toContain('EXPAND_PROJECT_ARGS=(--root "$ROOT" --days "$EXPAND_DAYS" "${RECENT_ONLY_ARGS[@]}")');
     expect(command).toContain('YOUMD_EXPAND_TO_90_DAYS');
     expect(command).toContain("FULL_PROJECT_SET_COMPLETE=0");
@@ -70,8 +71,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("Fresh computer bootstrap for Claude Code / Codex");
     expect(prompt).toContain("```bash");
     expect(prompt).toContain("previews the graph-backed project setup plan");
-    expect(prompt).toContain("clones truly active projects from the last 30 days first");
-    expect(prompt).toContain("asks before expanding the workspace to all active projects from the last 90 days");
+    expect(prompt).toContain("clones projects that are both ACTIVE and Top Priority/Focusing from the last 30 days first");
+    expect(prompt).toContain("asks before expanding the workspace to all active focused projects from the last 90 days");
     expect(prompt).toContain("audits cloned project readiness without reading secret values");
     expect(prompt).toContain("writes a secret-safe machine proof report");
     expect(prompt).toContain("syncs the proof summary back to your You.md machine dashboard");
@@ -84,6 +85,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("YOUMD_REQUIRE_ENV_VAULT=1");
     expect(prompt).toContain("YOUMD_EXPAND_TO_90_DAYS=1");
     expect(prompt).toContain("You.md portfolio graph + authenticated GitHub recent repos");
+    expect(prompt).toContain("clones only projects with status ACTIVE and focus Top Priority/Focusing");
+    expect(prompt).toContain("inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped");
     expect(prompt).toContain("First pass is 30 days");
     expect(prompt).toContain(".env.local values are never embedded here");
     expect(prompt).toContain("variable names/counts and target paths only");

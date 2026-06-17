@@ -1592,8 +1592,14 @@ http.route({
             stackName,
             stackSlug: trackedProject?.stackSlug,
             status: project.status,
+            statusSource: project.statusSource,
+            statusUpdatedAt: project.statusUpdatedAt,
             focusStatus: project.focusStatus,
             focusRank: project.focusRank,
+            machineSetupEligible: project.status === "active" && (
+              project.focusStatus === "top-priority" ||
+              project.focusStatus === "focusing"
+            ),
             summary: project.summary,
             detailedDescription: project.detailedDescription,
             goal: project.goal,

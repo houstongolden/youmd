@@ -52,6 +52,7 @@ const taskDraftValidator = v.object({
 const TASK_STATUSES = ["proposed", "open", "in_progress", "done", "snoozed", "cancelled"] as const;
 const TASK_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 const PROJECT_FOCUS_STATUSES = ["unset", "top-priority", "focusing", "on-ice", "abandoned", "killed"] as const;
+const PROJECT_MANUAL_STATUSES = ["active", "inactive"] as const;
 const MACHINE_PROOF_STATUSES = ["ready", "warn", "failed"] as const;
 const UPDATE_RUN_STATUSES = ["running", "success", "failed"] as const;
 const UPDATE_STEP_STATUSES = ["running", "success", "failed", "skipped", "pending"] as const;
@@ -69,6 +70,13 @@ function normalizeTaskPriority(value: string | undefined, fallback: string): str
 function normalizeProjectFocusStatus(value: string | undefined): typeof PROJECT_FOCUS_STATUSES[number] {
   const next = value?.trim();
   return next && PROJECT_FOCUS_STATUSES.includes(next as typeof PROJECT_FOCUS_STATUSES[number]) ? next as typeof PROJECT_FOCUS_STATUSES[number] : "unset";
+}
+
+function normalizeManualProjectStatus(value: string | undefined): typeof PROJECT_MANUAL_STATUSES[number] {
+  const next = value?.trim().toLowerCase();
+  return next && PROJECT_MANUAL_STATUSES.includes(next as typeof PROJECT_MANUAL_STATUSES[number])
+    ? next as typeof PROJECT_MANUAL_STATUSES[number]
+    : "active";
 }
 
 function projectFocusRank(status: string, suppliedRank?: number): number {
@@ -349,6 +357,41 @@ export const updateProjectFocus = mutation({
   },
 });
 
+export const updateProjectStatus = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    projectSlug: v.string(),
+    status: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const slug = slugify(args.projectSlug);
+    const project = await ctx.db
+      .query("portfolioProjects")
+      .withIndex("by_userId_slug", (q) => q.eq("userId", user._id).eq("slug", slug))
+      .first();
+    if (!project) throw new Error("Project not found");
+
+    const status = normalizeManualProjectStatus(args.status);
+    const now = Date.now();
+    await ctx.db.patch(project._id, {
+      status,
+      statusSource: "manual",
+      statusUpdatedAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      projectId: project._id,
+      projectSlug: slug,
+      status,
+      statusSource: "manual",
+      statusUpdatedAt: now,
+    };
+  },
+});
+
 export const upsertProjectActivityBatch = mutation({
   args: {
     clerkId: v.string(),
@@ -442,7 +485,9 @@ export const syncDashboardSeed = mutation({
         slug,
         name: project.name,
         stackName: project.stack,
-        status: project.status,
+        status: existing?.statusSource === "manual" ? existing.status : project.status,
+        statusSource: existing?.statusSource === "manual" ? existing.statusSource : existing?.statusSource ?? "dashboard-bootstrap",
+        statusUpdatedAt: existing?.statusSource === "manual" ? existing.statusUpdatedAt : existing?.statusUpdatedAt ?? now,
         summary: project.summary,
         goal: project.goal,
         focus: project.focus,
@@ -645,6 +690,13 @@ export const syncTrackedProjects = mutation({
       const focus = existingIsBootstrap
         ? nonEmpty(trackedProject.recentProgress) ?? nonEmpty(existing?.focus)
         : nonEmpty(existing?.focus) ?? nonEmpty(trackedProject.recentProgress);
+      const inferredStatus = statusFromPushedAt(trackedProject.pushedAt);
+      const statusWasManual = existing?.statusSource === "manual";
+      const status = statusWasManual
+        ? existing.status
+        : existingIsBootstrap
+          ? inferredStatus
+          : existing?.status ?? inferredStatus;
 
       const row = {
         userId: user._id,
@@ -653,7 +705,9 @@ export const syncTrackedProjects = mutation({
         stackName: existingIsBootstrap
           ? nonEmpty(trackedProject.stackName) ?? nonEmpty(existing?.stackName) ?? "Project Stack"
           : nonEmpty(existing?.stackName) ?? nonEmpty(trackedProject.stackName) ?? "Project Stack",
-        status: existingIsBootstrap ? statusFromPushedAt(trackedProject.pushedAt) : (existing?.status ?? statusFromPushedAt(trackedProject.pushedAt)),
+        status,
+        statusSource: statusWasManual ? existing.statusSource : existing?.statusSource ?? "github-tracked",
+        statusUpdatedAt: statusWasManual ? existing.statusUpdatedAt : existing?.statusUpdatedAt ?? now,
         summary,
         detailedDescription: existing?.detailedDescription,
         goal,
@@ -1024,12 +1078,26 @@ export const upsertProject = mutation({
     const source = existingIsHumanManaged && incomingSource !== existing?.source
       ? existing.source
       : incomingSource;
+    const preserveManualStatus = existing?.statusSource === "manual" && source !== "manual";
+    const status = preserveManualStatus
+      ? existing.status
+      : args.status ?? existing?.status ?? "active";
     const row = {
       userId: user._id,
       slug,
       name: args.name.trim(),
       stackName: args.stackName ?? existing?.stackName,
-      status: args.status ?? existing?.status ?? "active",
+      status,
+      statusSource: preserveManualStatus
+        ? existing.statusSource
+        : args.status
+          ? (source === "manual" ? "manual" : existing?.statusSource ?? source)
+          : existing?.statusSource,
+      statusUpdatedAt: preserveManualStatus
+        ? existing.statusUpdatedAt
+        : args.status
+          ? now
+          : existing?.statusUpdatedAt,
       summary: args.summary ?? existing?.summary,
       detailedDescription: args.detailedDescription ?? existing?.detailedDescription,
       goal: args.goal ?? existing?.goal,

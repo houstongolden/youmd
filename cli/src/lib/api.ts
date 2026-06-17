@@ -747,8 +747,11 @@ export interface PortfolioGraphSnapshot {
     stackName?: string;
     stackSlug?: string;
     status?: string;
+    statusSource?: string;
+    statusUpdatedAt?: number;
     focusStatus?: string;
     focusRank?: number;
+    machineSetupEligible?: boolean;
     summary?: string;
     goal?: string;
     focus?: string;

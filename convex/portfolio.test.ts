@@ -346,6 +346,77 @@ describe("portfolio repo update history", () => {
     ).rejects.toThrow("Project not found");
   });
 
+  it("persists manual project active/inactive status through tracked GitHub hydration", async () => {
+    const t = convexTest(schema);
+    const { ownerId } = await seedUsers(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    const asOther = t.withIdentity({ subject: OTHER_CLERK });
+
+    await asOwner.mutation(api.portfolio.upsertProject, {
+      clerkId: CLERK,
+      slug: "scratch-repo",
+      name: "Scratch Repo",
+      stackName: "Project Stack",
+      status: "active",
+      repoFullName: "houstongolden/scratch-repo",
+      repoUrl: "https://github.com/houstongolden/scratch-repo",
+    });
+
+    const statusUpdate = await asOwner.mutation(api.portfolio.updateProjectStatus, {
+      clerkId: CLERK,
+      projectSlug: "scratch-repo",
+      status: "inactive",
+    });
+
+    expect(statusUpdate).toMatchObject({
+      projectSlug: "scratch-repo",
+      status: "inactive",
+      statusSource: "manual",
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("trackedProjects", {
+        userId: ownerId,
+        githubRepoId: 12345,
+        fullName: "houstongolden/scratch-repo",
+        name: "scratch-repo",
+        url: "https://github.com/houstongolden/scratch-repo",
+        repoName: "scratch-repo",
+        directoryName: "scratch-repo",
+        stackName: "Project Stack",
+        pushedAt: Date.now(),
+        commitsLast90d: 4,
+        isPrivate: true,
+        visibility: "private",
+        trackedAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
+    await asOwner.mutation(api.portfolio.syncTrackedProjects, {
+      clerkId: CLERK,
+      days: 90,
+      limit: 10,
+    });
+
+    const graph = await asOwner.query(api.portfolio.listPortfolioGraph, {
+      clerkId: CLERK,
+    });
+    expect(graph.projects[0]).toMatchObject({
+      slug: "scratch-repo",
+      status: "inactive",
+      statusSource: "manual",
+    });
+
+    await expect(
+      asOther.mutation(api.portfolio.updateProjectStatus, {
+        clerkId: OTHER_CLERK,
+        projectSlug: "scratch-repo",
+        status: "active",
+      })
+    ).rejects.toThrow("Project not found");
+  });
+
   it("persists provider account metadata without exposing secrets across owners", async () => {
     const t = convexTest(schema);
     await seedUsers(t);

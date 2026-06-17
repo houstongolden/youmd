@@ -139,6 +139,8 @@ describe("machine project bootstrap planner", () => {
               name: "Bad.app",
               stackName: "BadStack",
               status: "active",
+              focusStatus: "focusing",
+              focusRank: 2,
               goal: "Fitness app with watch/iPhone agent capture loops.",
               focus: "Workout braindump capture into You.md task routing.",
               repoFullName: "houstongolden/badapp",
@@ -166,6 +168,115 @@ describe("machine project bootstrap planner", () => {
       focus: "Workout braindump capture into You.md task routing.",
       docs: ["project-context/PRD.md"],
       environments: ["local", "iOS", "watchOS"],
+    });
+  });
+
+  it("uses active focused portfolio graph projects as the default fresh-machine setup gate", () => {
+    const plan = buildMachineProjectPlan(
+      {
+        projects: [
+          {
+            name: "Local legacy idea",
+            status: "active",
+            url: "https://github.com/houstongolden/local-legacy-idea",
+          },
+        ],
+      },
+      {
+        rootDir: "/tmp/CODE_YOU",
+        activeDays: 30,
+        now: new Date("2026-06-16T00:00:00.000Z"),
+        portfolioGraph: {
+          projects: [
+            {
+              slug: "youmd",
+              name: "You.md",
+              stackName: "YouStack",
+              status: "active",
+              focusStatus: "top-priority",
+              focusRank: 1,
+              repoUrl: "https://github.com/houstongolden/youmd",
+              lastActivityAt: Date.parse("2026-06-15T00:00:00.000Z"),
+            },
+            {
+              slug: "one-off-active",
+              name: "One-off Active Repo",
+              stackName: "Project Stack",
+              status: "active",
+              focusStatus: "unset",
+              repoUrl: "https://github.com/houstongolden/one-off-active",
+              lastActivityAt: Date.parse("2026-06-15T00:00:00.000Z"),
+            },
+            {
+              slug: "paused-focus",
+              name: "Paused Focus Repo",
+              stackName: "Project Stack",
+              status: "inactive",
+              focusStatus: "focusing",
+              repoUrl: "https://github.com/houstongolden/paused-focus",
+              lastActivityAt: Date.parse("2026-06-15T00:00:00.000Z"),
+            },
+          ],
+          recentTrackedProjects: [
+            {
+              name: "scratch-recent",
+              fullName: "houstongolden/scratch-recent",
+              url: "https://github.com/houstongolden/scratch-recent",
+              pushedAt: "2026-06-15T00:00:00.000Z",
+              isPrivate: true,
+            },
+          ],
+        },
+      },
+    );
+
+    expect(plan.recent.map((project) => project.slug)).toEqual(["youmd"]);
+    expect(plan.recent[0]).toMatchObject({
+      status: "active",
+      focusStatus: "top-priority",
+      focusRank: 1,
+      machineSetupEligible: true,
+    });
+    expect(plan.skipped).toEqual(
+      expect.arrayContaining([
+        { name: "scratch-recent", reason: "not in focused portfolio graph for machine setup" },
+        { name: "One-off Active Repo", reason: "focus not setup-eligible (unset)" },
+        { name: "Paused Focus Repo", reason: "not active (inactive)" },
+        { name: "Local legacy idea", reason: "superseded by focused portfolio graph selection gate" },
+      ]),
+    );
+  });
+
+  it("can include inactive and non-focused portfolio projects when explicitly requested", () => {
+    const plan = buildMachineProjectPlan(
+      { projects: [] },
+      {
+        rootDir: "/tmp/CODE_YOU",
+        activeDays: 30,
+        now: new Date("2026-06-16T00:00:00.000Z"),
+        includeInactive: true,
+        portfolioGraph: {
+          projects: [
+            {
+              slug: "paused-focus",
+              name: "Paused Focus Repo",
+              status: "inactive",
+              focusStatus: "focusing",
+              repoUrl: "https://github.com/houstongolden/paused-focus",
+              lastActivityAt: Date.parse("2026-06-15T00:00:00.000Z"),
+            },
+          ],
+          recentTrackedProjects: [],
+        },
+      },
+    );
+
+    expect(plan.recent).toHaveLength(1);
+    expect(plan.recent[0]).toMatchObject({
+      slug: "paused-focus",
+      status: "inactive",
+      focusStatus: "focusing",
+      machineSetupEligible: false,
     });
   });
 

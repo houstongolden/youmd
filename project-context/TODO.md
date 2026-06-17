@@ -7,6 +7,16 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-17 — Portfolio active/inactive setup controls
+- [x] Add `last updated` time-ago labels to compact Portfolio project rows and selected project details
+- [x] Add status filtering for all / active / inactive-not-active projects
+- [x] Add owner-gated one-click project status toggles for `active` <-> `inactive`
+- [x] Persist manual project status ownership with `statusSource: manual` and preserve it through GitHub tracked-project hydration
+- [x] Restrict graph-backed fresh-machine project setup to `active` + `Top Priority`/`Focusing` projects by default
+- [x] Add explicit `youmd machine projects --include-inactive` override for audit/legacy setup runs
+- [x] Verify the built CLI planner against the live graph: `56` projects / `40` tracked repos -> `16` selected / `84` skipped
+- [ ] Deploy the new Convex `portfolio.updateProjectStatus` mutation to the remote backend, then rerun authenticated browser click proof that a status pill persists from `active` to `inactive`
+
 ### 2026-06-17 — Graph-backed fresh-computer bootstrap prompt
 - [x] Change the generated new-computer bootstrap to a 30-day first pass into `~/Desktop/CODE_YOU`, with `--recent-only` preventing older projects from being prompted/included before the explicit 90-day expansion gate
 - [x] Make `/new computer` / `youmd machine prompt` ask before expanding to the 90-day active project set, and only report full 90-day project setup complete after that expansion runs

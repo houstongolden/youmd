@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio active setup gate
+
+### feat(portfolio): add active/inactive controls and setup eligibility policy
+- Added `last updated` time-ago labels to compact Portfolio project rows and selected project details, using latest activity/GitHub signal before record update timestamps.
+- Added a status filter (`all status`, `active`, `inactive/not active`) and one-click status pills that toggle project status between `active` and `inactive` through owner-gated Convex state.
+- Added `statusSource` / `statusUpdatedAt` so manual status overrides survive dashboard seed refreshes, GitHub tracked-project hydration, and local project upserts.
+- Tightened `youmd machine projects` and fresh-computer prompt copy: when Portfolio Graph records exist, setup selects only `active` projects whose focus is `Top Priority` or `Focusing`; inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped by default.
+- Added `--include-inactive` as an explicit CLI override for audit/legacy runs.
+- Verification: focused CLI planner/prompt tests, Convex status-hydration regression, `npx convex codegen`, `npm run test:convex -- convex/portfolio.test.ts`, `npm --prefix cli run build`, `npm run lint`, `npm run build`, live graph dry-run (`56` projects / `40` tracked repos -> `16` selected / `84` skipped), and authenticated local Browser UI proof of filters/last-updated/status buttons.
+- Blocker: authenticated status-click write proof against the deployed backend is pending because this shell does not have `CONVEX_PROD_DEPLOY_KEY`; the click reaches `saving` in the UI until the new Convex mutation is deployed.
+
 ## 2026-06-17 — Portfolio deep-link reliability
 
 ### fix(shell): keep project detail URLs and pane state in sync

@@ -73,6 +73,11 @@ Add a first-class portfolio graph resource family on top of the existing
 Every meaningful project should have:
 
 - `name`, `slug`, `aliases`, and `status`
+- `status_source` and `status_updated_at`: manual overrides must survive
+  GitHub/local activity hydration so Houston can keep one-off repos inactive
+  even when they have recent commits.
+- `focus_status` and `focus_rank`: Top Priority, Focusing, Freeze/On Ice,
+  Abandoned, Dead/Killed, or Unsorted.
 - `type`: SaaS, API, MCP, skill stack, research, agency, internal admin,
   public site, personal site, library, experiment, or infrastructure
 - `owner`: human, team, agent, or product owner
@@ -89,7 +94,10 @@ Every meaningful project should have:
 - `source_of_truth`: repo, You.md bundle, local project-context, product DB, or
   external system
 - `fresh_machine_setup`: clone command, env backup/restore note, smoke command,
-  and expected local directory
+  expected local directory, and setup eligibility. Default new-machine setup
+  should clone only projects that are both `active` and `Top Priority` or
+  `Focusing`; inactive, unsorted, frozen, abandoned, killed, and unreviewed
+  GitHub-only repos require an explicit override.
 
 ### API/MCP Surface Record
 
@@ -265,7 +273,8 @@ The view should show:
 - Project docs pack status: PRD, tasks, design, research, ideas, changelog,
   current state, agent docs, API docs, MCP docs.
 - Fresh-machine readiness: repo clone path, env backup/restore readiness,
-  stack install, MCP smoke, last verified.
+  stack install, MCP smoke, last verified, manual active/inactive state, and
+  whether the project is setup-eligible by the active + focus gate.
 
 The view should use one clear outer section shell, then rows, tables, dividers,
 badges, and compact graph/list toggles. Avoid card piles.
@@ -358,8 +367,9 @@ Required next audit:
   who depends on whom, and what breaks if a dependency fails.
 - A fresh agent can see the canonical reusable auth/sidebar/chat/layout/role
   hierarchy patterns before building a new app.
-- A fresh machine can clone/setup active projects and understand their API/MCP,
-  stack, env, docs, and dependency readiness.
+- A fresh machine can clone/setup only the active + Top Priority/Focusing
+  project set by default, and understand each selected project's API/MCP, stack,
+  env, docs, and dependency readiness.
 - Lempod and similar shared capabilities have one canonical owner or a documented
   split, not quiet duplicate endpoints.
 - Product-facing protected app harnesses are clearly separate from public or

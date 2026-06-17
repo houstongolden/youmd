@@ -12,6 +12,10 @@ export interface MachineProjectCandidate {
   projectUrl?: string;
   fullName?: string;
   status?: string;
+  statusSource?: string;
+  focusStatus?: string;
+  focusRank?: number;
+  machineSetupEligible?: boolean;
   updatedAt?: string;
   recency: ProjectRecency;
   reason: string;
@@ -54,6 +58,7 @@ const ACTIVE_STATUS_RE = /\b(active|current|in.?progress|building|maintained|liv
 const INACTIVE_STATUS_RE = /\b(archived|inactive|paused|dormant|old|deprecated|sunset)\b/i;
 const DEFAULT_API_DOCS_URL = "https://you.md/api/v1/docs/reference";
 const DEFAULT_MCP_DOCS_URL = "https://you.md/.well-known/mcp.json";
+const MACHINE_SETUP_FOCUS_STATUSES = new Set(["top-priority", "focusing"]);
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -80,6 +85,17 @@ function stringArrayField(record: Record<string, unknown>, keys: string[]): stri
     }
   }
   return [];
+}
+
+function optionalNumberField(record: Record<string, unknown>, keys: string[]): number | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim() && Number.isFinite(Number(value))) {
+      return Number(value);
+    }
+  }
+  return undefined;
 }
 
 function stableDirName(input: string): string {
@@ -260,6 +276,22 @@ function portfolioGraphProjectRecords(sources: Record<string, unknown>[]): Recor
   return records;
 }
 
+function isPortfolioGraphRecord(record: Record<string, unknown>): boolean {
+  return stringField(record, ["_machineSource"]) === "portfolio-graph";
+}
+
+function portfolioMachineSetupEligibility(record: Record<string, unknown>): { eligible: boolean; reason?: string } {
+  const status = stringField(record, ["status", "state"]).toLowerCase();
+  const focusStatus = stringField(record, ["focusStatus", "focus_status"]).toLowerCase();
+  if (status !== "active") {
+    return { eligible: false, reason: `not active (${status || "unset"})` };
+  }
+  if (!MACHINE_SETUP_FOCUS_STATUSES.has(focusStatus)) {
+    return { eligible: false, reason: `focus not setup-eligible (${focusStatus || "unset"})` };
+  }
+  return { eligible: true };
+}
+
 function portfolioGraphTrackedProjects(sources: Record<string, unknown>[]): GithubProjectSource[] {
   const repos: GithubProjectSource[] = [];
   for (const source of sources) {
@@ -340,6 +372,7 @@ export function buildMachineProjectPlan(
     portfolioGraph?: unknown;
     apiDocsUrl?: string;
     mcpDocsUrl?: string;
+    includeInactive?: boolean;
   },
 ): MachineProjectPlan {
   const rootDir = path.resolve(options.rootDir);
@@ -352,6 +385,7 @@ export function buildMachineProjectPlan(
   const graphSources = portfolioGraphSources(root, options.portfolioGraph);
   const graphProjectRecords = portfolioGraphProjectRecords(graphSources);
   const graphGithubProjects = portfolioGraphTrackedProjects(graphSources);
+  const requireFocusedPortfolioProjects = graphProjectRecords.length > 0 && options.includeInactive !== true;
   const seen = new Set<string>();
   const recent: MachineProjectCandidate[] = [];
   const older: MachineProjectCandidate[] = [];
@@ -401,9 +435,20 @@ export function buildMachineProjectPlan(
       updatedAt: repo.updatedAt,
       status: stringField(matchingBundle ?? {}, ["status", "state"]) || "active from GitHub",
     };
+    const fromPortfolioGraph = isPortfolioGraphRecord(matchingBundle ?? {});
+    if (requireFocusedPortfolioProjects) {
+      if (!fromPortfolioGraph) {
+        skipped.push({ name, reason: "not in focused portfolio graph for machine setup" });
+        continue;
+      }
+      const eligibility = portfolioMachineSetupEligibility(matchingBundle ?? {});
+      if (!eligibility.eligible) {
+        skipped.push({ name, reason: eligibility.reason ?? "not setup-eligible" });
+        continue;
+      }
+    }
     const classified = classifyProject(record, now, activeDays);
     const targetDirName = stableDirName(github.repo);
-    const fromPortfolioGraph = stringField(matchingBundle ?? {}, ["_machineSource"]) === "portfolio-graph";
     pushCandidate(
       {
         name,
@@ -415,6 +460,10 @@ export function buildMachineProjectPlan(
         projectUrl: repo.homepage || undefined,
         fullName: repo.fullName,
         status: stringField(record, ["status", "state"]) || undefined,
+        statusSource: stringField(record, ["statusSource", "status_source"]) || undefined,
+        focusStatus: stringField(record, ["focusStatus", "focus_status"]) || undefined,
+        focusRank: optionalNumberField(record, ["focusRank", "focus_rank"]),
+        machineSetupEligible: fromPortfolioGraph ? portfolioMachineSetupEligibility(matchingBundle ?? {}).eligible : undefined,
         updatedAt: classified.updatedAt,
         recency: classified.recency,
         reason: classified.reason,
@@ -441,7 +490,18 @@ export function buildMachineProjectPlan(
     const dedupeKey = github?.cloneSpec.toLowerCase() || targetDirName.toLowerCase();
 
     const classified = classifyProject(record, now, activeDays);
-    const fromPortfolioGraph = stringField(record, ["_machineSource"]) === "portfolio-graph";
+    const fromPortfolioGraph = isPortfolioGraphRecord(record);
+    if (requireFocusedPortfolioProjects) {
+      if (!fromPortfolioGraph) {
+        skipped.push({ name, reason: "superseded by focused portfolio graph selection gate" });
+        continue;
+      }
+      const eligibility = portfolioMachineSetupEligibility(record);
+      if (!eligibility.eligible) {
+        skipped.push({ name, reason: eligibility.reason ?? "not setup-eligible" });
+        continue;
+      }
+    }
     const candidate: MachineProjectCandidate = {
       name,
       slug: stringField(record, ["slug"]),
@@ -452,6 +512,10 @@ export function buildMachineProjectPlan(
       projectUrl: stringField(record, ["website", "homepage", "projectUrl", "project_url"]) || undefined,
       fullName: github?.cloneSpec,
       status: stringField(record, ["status", "state"]) || undefined,
+      statusSource: stringField(record, ["statusSource", "status_source"]) || undefined,
+      focusStatus: stringField(record, ["focusStatus", "focus_status"]) || undefined,
+      focusRank: optionalNumberField(record, ["focusRank", "focus_rank"]),
+      machineSetupEligible: fromPortfolioGraph ? portfolioMachineSetupEligibility(record).eligible : undefined,
       updatedAt: classified.updatedAt,
       recency: classified.recency,
       reason: classified.reason,

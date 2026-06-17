@@ -40,6 +40,8 @@ type DisplayProject = {
   name: string;
   stack: string;
   status: string;
+  statusSource?: string;
+  statusUpdatedAt?: number;
   focusStatus?: string;
   focusRank?: number;
   summary: string;
@@ -175,6 +177,8 @@ function fromPersistedProject(project: {
   name: string;
   stackName?: string;
   status: string;
+  statusSource?: string;
+  statusUpdatedAt?: number;
   focusStatus?: string;
   focusRank?: number;
   summary?: string;
@@ -207,6 +211,8 @@ function fromPersistedProject(project: {
     name: project.name,
     stack: project.stackName ?? "Project YouStack",
     status: project.status,
+    statusSource: project.statusSource,
+    statusUpdatedAt: project.statusUpdatedAt,
     focusStatus: project.focusStatus,
     focusRank: project.focusRank,
     summary: project.summary ?? "No project summary saved yet.",
@@ -338,6 +344,26 @@ function formatActivityDate(value: number) {
   }).format(new Date(value));
 }
 
+function formatTimeAgo(value?: number) {
+  if (!value) return "unknown";
+  const diffMs = Math.max(0, Date.now() - value);
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const month = 30 * day;
+  const year = 365 * day;
+  if (diffMs < minute) return "now";
+  if (diffMs < hour) return `${Math.floor(diffMs / minute)}m ago`;
+  if (diffMs < day) return `${Math.floor(diffMs / hour)}h ago`;
+  if (diffMs < month) return `${Math.floor(diffMs / day)}d ago`;
+  if (diffMs < year) return `${Math.floor(diffMs / month)}mo ago`;
+  return `${Math.floor(diffMs / year)}y ago`;
+}
+
+function projectLastUpdatedAt(project: DisplayProject, activities: ProjectActivity[]) {
+  return activities[0]?.occurredAt ?? project.lastActivityAt ?? project.updatedAt;
+}
+
 const CORE_PROJECT_SLUGS = new Set([
   "youmd",
   "bamfaiapp",
@@ -383,6 +409,7 @@ const PROJECT_SORT_OPTIONS = [
 ] as const;
 
 type ProjectFocusStatus = typeof PROJECT_FOCUS_OPTIONS[number]["value"];
+type ProjectStatusFilter = "all" | "active" | "inactive";
 type ProjectSortMode = typeof PROJECT_SORT_OPTIONS[number]["value"];
 type ProjectDensity = "dense" | "compact" | "expanded";
 
@@ -638,15 +665,18 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const syncDashboardSeed = useMutation(api.portfolio.syncDashboardSeed);
   const syncTrackedProjects = useMutation(api.portfolio.syncTrackedProjects);
   const updateProjectFocus = useMutation(api.portfolio.updateProjectFocus);
+  const updateProjectStatus = useMutation(api.portfolio.updateProjectStatus);
   const updateTaskTriage = useMutation(api.portfolio.updateTaskTriage);
   const updateTaskDetails = useMutation(api.portfolio.updateTaskDetails);
   const [syncing, setSyncing] = useState(false);
   const [hydrating, setHydrating] = useState(false);
   const [triagingTaskId, setTriagingTaskId] = useState<string | null>(null);
   const [focusUpdatingSlug, setFocusUpdatingSlug] = useState<string | null>(null);
+  const [statusUpdatingSlug, setStatusUpdatingSlug] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(() => searchParams.get("project"));
   const [projectSearch, setProjectSearch] = useState("");
+  const [projectStatusFilter, setProjectStatusFilter] = useState<ProjectStatusFilter>("all");
   const [projectFocusFilter, setProjectFocusFilter] = useState<ProjectFocusStatus | "all">("all");
   const [projectSortMode, setProjectSortMode] = useState<ProjectSortMode>("activity");
   const [projectDensity, setProjectDensity] = useState<ProjectDensity>("dense");
@@ -731,6 +761,9 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     return activeProjects
       .filter((project) => {
         const focus = projectFocusOption(project.focusStatus).value;
+        const isActive = project.status === "active";
+        if (projectStatusFilter === "active" && !isActive) return false;
+        if (projectStatusFilter === "inactive" && isActive) return false;
         if (projectFocusFilter !== "all" && focus !== projectFocusFilter) return false;
         if (!search) return true;
         const haystack = [
@@ -765,7 +798,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
         if (projectSortMode === "name") return a.name.localeCompare(b.name);
         return activeProjects.indexOf(a) - activeProjects.indexOf(b);
       });
-  }, [activeProjects, activitiesByProject, projectFocusFilter, projectSearch, projectSortMode]);
+  }, [activeProjects, activitiesByProject, projectFocusFilter, projectSearch, projectSortMode, projectStatusFilter]);
   const shippingLeaders = useMemo(() => (
     activeProjects
       .map((project) => {
@@ -809,6 +842,9 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const selectedActivities = effectiveSelectedProjectSlug
     ? activitiesByProject.get(effectiveSelectedProjectSlug) ?? []
     : [];
+  const selectedLastUpdatedAt = selectedProject
+    ? projectLastUpdatedAt(selectedProject, selectedActivities)
+    : undefined;
   const selectedShippingActivities = selectedActivities.filter(isShippableActivity).slice(0, 5);
   const selectedCounts = shippedCounts(selectedActivities);
   const selectedOwnedSurfaces = selectedProject
@@ -953,6 +989,28 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
       setSyncStatus(`error: ${err instanceof Error ? err.message : "failed to update project focus"}`);
     } finally {
       setFocusUpdatingSlug(null);
+    }
+  };
+
+  const handleProjectStatusToggle = async (project: DisplayProject) => {
+    if (!clerkId || statusUpdatingSlug) return;
+    const nextStatus = project.status === "active" ? "inactive" : "active";
+    setStatusUpdatingSlug(project.slug);
+    setSyncStatus(null);
+    try {
+      const result = await withTimeout(
+        updateProjectStatus({
+          clerkId,
+          projectSlug: project.slug,
+          status: nextStatus,
+        }),
+        "project status update"
+      );
+      setSyncStatus(`project status updated: ${project.name} / ${result.status}`);
+    } catch (err) {
+      setSyncStatus(`error: ${err instanceof Error ? err.message : "failed to update project status"}`);
+    } finally {
+      setStatusUpdatingSlug(null);
     }
   };
 
@@ -1116,6 +1174,19 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
             <label className="flex items-center gap-2 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 py-2">
               <ListFilter size={13} className="text-[hsl(var(--accent))] opacity-70" />
               <select
+                aria-label="Filter project status"
+                value={projectStatusFilter}
+                onChange={(event) => setProjectStatusFilter(event.target.value as ProjectStatusFilter)}
+                className="bg-transparent font-mono text-[10px] text-[hsl(var(--text-primary))] outline-none"
+              >
+                <option value="all">all status</option>
+                <option value="active">active</option>
+                <option value="inactive">inactive/not active</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 py-2">
+              <Target size={13} className="text-[hsl(var(--accent))] opacity-70" />
+              <select
                 aria-label="Filter project focus"
                 value={projectFocusFilter}
                 onChange={(event) => setProjectFocusFilter(event.target.value as ProjectFocusStatus | "all")}
@@ -1152,15 +1223,19 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           <div className="mb-3 flex flex-wrap items-center gap-2 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
             <span>showing {filteredProjects.length} / {activeProjects.length}</span>
             <span>sort {PROJECT_SORT_OPTIONS.find((option) => option.value === projectSortMode)?.label ?? projectSortMode}</span>
+            <span>status {projectStatusFilter === "all" ? "all" : projectStatusFilter}</span>
             <span>focus {projectFocusFilter === "all" ? "all" : projectFocusOption(projectFocusFilter).label}</span>
+            <span>setup active + top/focus only</span>
             <span>rank 1 top / 2 focus / 3 ice / 0 dead</span>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[minmax(290px,0.9fr)_minmax(360px,1.1fr)]">
             <div className="max-h-[760px] space-y-2 overflow-y-auto pr-1">
               {filteredProjects.map((project) => {
-                const counts = shippedCounts(activitiesByProject.get(project.slug) ?? []);
+                const projectActivitiesForCard = activitiesByProject.get(project.slug) ?? [];
+                const counts = shippedCounts(projectActivitiesForCard);
                 const focus = projectFocusOption(project.focusStatus);
+                const lastUpdatedAt = projectLastUpdatedAt(project, projectActivitiesForCard);
                 const selected = effectiveSelectedProjectSlug === project.slug;
                 return (
                   <article
@@ -1187,7 +1262,24 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       <ProjectFocusBadge status={project.focusStatus} />
                       <h3 className="min-w-0 truncate font-mono text-[12px] text-[hsl(var(--text-primary))]">{project.name}</h3>
                       <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-65">{project.stack}</span>
-                      <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${statusClass(project.status)}`}>{project.status}</span>
+                      <span
+                        className="font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45"
+                        title={lastUpdatedAt ? `last project signal: ${new Date(lastUpdatedAt).toLocaleString()}` : "no activity timestamp saved"}
+                      >
+                        last updated {formatTimeAgo(lastUpdatedAt)}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={!clerkId || statusUpdatingSlug === project.slug}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleProjectStatusToggle(project);
+                        }}
+                        className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] transition-opacity hover:opacity-100 disabled:opacity-35 ${statusClass(project.status)}`}
+                        title={project.status === "active" ? "Mark inactive; excluded from new-computer setup" : "Mark active; eligible only if focus is Top Priority or Focusing"}
+                      >
+                        {statusUpdatingSlug === project.slug ? "saving" : project.status}
+                      </button>
                       <span className="font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-38">open</span>
                     </div>
                     <div className={`${projectDensity === "dense" ? "mt-1" : "mt-2"} flex flex-wrap items-center gap-1.5`}>
@@ -1281,6 +1373,12 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                         <Target size={14} className="text-[hsl(var(--accent))]" />
                         <h3 className="font-mono text-[14px] text-[hsl(var(--text-primary))]">{selectedProject.name}</h3>
                         <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">{selectedProject.stack}</span>
+                        <span
+                          className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45"
+                          title={selectedLastUpdatedAt ? `last project signal: ${new Date(selectedLastUpdatedAt).toLocaleString()}` : "no activity timestamp saved"}
+                        >
+                          last updated {formatTimeAgo(selectedLastUpdatedAt)}
+                        </span>
                       </div>
                       <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">{selectedProject.summary}</p>
                       {selectedDetailUrl && (
@@ -1332,6 +1430,15 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                         </div>
                       )}
                     </div>
+                    <button
+                      type="button"
+                      disabled={!clerkId || statusUpdatingSlug === selectedProject.slug}
+                      onClick={() => void handleProjectStatusToggle(selectedProject)}
+                      className={`flex h-7 items-center border border-[hsl(var(--border))]/60 px-2 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors hover:border-[hsl(var(--accent))] disabled:opacity-35 ${statusClass(selectedProject.status)}`}
+                      title={selectedProject.status === "active" ? "Mark inactive; excluded from new-computer setup" : "Mark active; eligible only if focus is Top Priority or Focusing"}
+                    >
+                      {statusUpdatingSlug === selectedProject.slug ? "saving" : selectedProject.status}
+                    </button>
                     <label className="flex items-center gap-2 border border-[hsl(var(--border))]/60 px-2 py-1">
                       <ProjectFocusBadge status={selectedProject.focusStatus} />
                       <select

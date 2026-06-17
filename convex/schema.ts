@@ -593,6 +593,8 @@ export default defineSchema({
     name: v.string(),
     stackName: v.optional(v.string()),
     status: v.string(), // "active" | "build" | "research" | "template" | "audit" | ...
+    statusSource: v.optional(v.string()), // "manual" | "github" | "dashboard-bootstrap" | "agent" | ...
+    statusUpdatedAt: v.optional(v.number()),
     focusStatus: v.optional(v.string()), // "top-priority" | "focusing" | "on-ice" | "abandoned" | "killed" | "unset"
     focusRank: v.optional(v.number()),
     summary: v.optional(v.string()),
