@@ -1,8 +1,50 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { apiSurfaces, envProviderUsages, serviceAccounts } from "@/data/portfolioGraph";
 import { CopyableCommand } from "./CopyableCommand";
 import { PaneDivider, PaneHeader, PaneSectionLabel } from "./shared";
+
+type ApiEnvPaneProps = {
+  clerkId?: string;
+};
+
+type ProviderAccountRow = {
+  slug?: string;
+  provider: string;
+  category?: string;
+  loginHint?: string;
+  billingOwner?: string;
+  separationPolicy?: string;
+  encryptedStorage?: string;
+  vaultRef?: string;
+  projects?: string[];
+  keyNameAliases?: string[];
+  status?: string;
+  risk?: string;
+  monthlyCostUsd?: number;
+  notes?: string;
+  source?: string;
+};
+
+type ProviderAccountSeedInput = {
+  provider: string;
+  category?: string;
+  loginHint?: string;
+  billingOwner?: string;
+  separationPolicy?: string;
+  encryptedStorage?: string;
+  vaultRef?: string;
+  projects?: string[];
+  keyNameAliases?: string[];
+  status?: string;
+  risk?: string;
+  monthlyCostUsd?: number;
+  notes?: string;
+  source?: string;
+};
 
 function riskClass(risk: string) {
   if (risk === "high") return "text-[hsl(var(--accent))]";
@@ -16,11 +58,100 @@ function categoryClass(category: string) {
   return "text-[hsl(var(--text-secondary))] opacity-60";
 }
 
-export function ApiEnvPane() {
+function staticProviderAccountRows(): ProviderAccountRow[] {
+  return serviceAccounts.map((account) => {
+    const usage = envProviderUsages.find((item) => item.provider === account.provider);
+    const risk = account.provider === "Sendblue" || account.provider === "Lempod" || account.provider.includes("OpenAI")
+      ? "high"
+      : "medium";
+    return {
+      provider: account.provider,
+      category: usage?.category ?? "other",
+      loginHint: account.loginHint,
+      billingOwner: account.billingOwner,
+      separationPolicy: account.separationPolicy,
+      encryptedStorage: account.encryptedStorage,
+      projects: usage?.projects ?? [],
+      keyNameAliases: usage?.normalizedNames ?? [],
+      status: account.provider === "Lempod" ? "audit" : "active",
+      risk,
+      source: "static-seed",
+    };
+  });
+}
+
+function providerSeedInput(account: ProviderAccountRow): ProviderAccountSeedInput {
+  const row: ProviderAccountSeedInput = {
+    provider: account.provider,
+    source: "dashboard-seed",
+  };
+  if (account.category) row.category = account.category;
+  if (account.loginHint) row.loginHint = account.loginHint;
+  if (account.billingOwner) row.billingOwner = account.billingOwner;
+  if (account.separationPolicy) row.separationPolicy = account.separationPolicy;
+  if (account.encryptedStorage) row.encryptedStorage = account.encryptedStorage;
+  if (account.vaultRef) row.vaultRef = account.vaultRef;
+  if (account.projects?.length) row.projects = account.projects;
+  if (account.keyNameAliases?.length) row.keyNameAliases = account.keyNameAliases;
+  if (account.status) row.status = account.status;
+  if (account.risk) row.risk = account.risk;
+  if (typeof account.monthlyCostUsd === "number") row.monthlyCostUsd = account.monthlyCostUsd;
+  if (account.notes) row.notes = account.notes;
+  return row;
+}
+
+function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 12_000): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(`${label} timed out; backend may not be deployed yet`));
+    }, timeoutMs);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
+export function ApiEnvPane({ clerkId }: ApiEnvPaneProps) {
+  const persistedAccounts = useQuery(api.portfolio.listProviderAccounts, clerkId ? { clerkId } : "skip");
+  const syncProviderAccountSeed = useMutation(api.portfolio.syncProviderAccountSeed);
+  const [syncingAccounts, setSyncingAccounts] = useState(false);
+  const [accountSyncStatus, setAccountSyncStatus] = useState<string | null>(null);
   const providerCount = envProviderUsages.length;
   const projectRefs = new Set(envProviderUsages.flatMap((usage) => usage.projects));
   const normalizedKeyCount = envProviderUsages.reduce((total, usage) => total + usage.normalizedNames.length, 0);
   const highRiskSurfaces = apiSurfaces.filter((surface) => surface.risk === "high").length;
+  const staticAccounts = useMemo(() => staticProviderAccountRows(), []);
+  const accountRows: ProviderAccountRow[] = persistedAccounts && persistedAccounts.length > 0
+    ? persistedAccounts
+    : staticAccounts;
+  const usingPersistedAccounts = Boolean(persistedAccounts && persistedAccounts.length > 0);
+
+  const handleSyncProviderAccounts = async () => {
+    if (!clerkId || syncingAccounts) return;
+    setSyncingAccounts(true);
+    setAccountSyncStatus(null);
+    try {
+      const result = await withTimeout(
+        syncProviderAccountSeed({
+          clerkId,
+          accounts: staticAccounts.map(providerSeedInput),
+        }),
+        "provider account seed sync"
+      );
+      setAccountSyncStatus(`persisted ${result.created} new / ${result.updated} refreshed provider account notes`);
+    } catch (err) {
+      setAccountSyncStatus(`error: ${err instanceof Error ? err.message : "failed to persist provider account notes"}`);
+    } finally {
+      setSyncingAccounts(false);
+    }
+  };
 
   return (
     <div className="h-full overflow-y-auto">
@@ -122,15 +253,76 @@ export function ApiEnvPane() {
 
         <section>
           <PaneSectionLabel>service account notes</PaneSectionLabel>
+          <div className="mb-3 flex flex-col gap-2 border-y border-[hsl(var(--border))]/55 py-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-70">
+                {usingPersistedAccounts ? "convex persisted account notes" : "static seed account notes"}
+              </div>
+              <p className="mt-1 max-w-3xl font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
+                Login hints, billing owner, separation policy, project usage, and vault reference notes only. Raw API keys stay out of browser payloads.
+              </p>
+              {accountSyncStatus && (
+                <p className={`mt-2 font-mono text-[10px] ${accountSyncStatus.startsWith("error") ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"} opacity-80`}>
+                  {accountSyncStatus}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleSyncProviderAccounts}
+              disabled={!clerkId || syncingAccounts}
+              className="h-8 shrink-0 border border-[hsl(var(--border))]/70 px-3 font-mono text-[10px] text-[hsl(var(--text-primary))] transition-colors hover:border-[hsl(var(--accent))] disabled:opacity-35"
+              style={{ borderRadius: "var(--radius)" }}
+            >
+              {syncingAccounts ? "persisting..." : usingPersistedAccounts ? "refresh account seed" : "persist account notes"}
+            </button>
+          </div>
           <div className="space-y-2">
-            {serviceAccounts.map((account) => (
+            {accountRows.map((account) => (
               <div key={account.provider} className="grid gap-3 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3 lg:grid-cols-[0.7fr_1fr_1fr]">
                 <div>
-                  <div className="font-mono text-[12px] text-[hsl(var(--text-primary))]">{account.provider}</div>
-                  <div className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">{account.billingOwner}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[12px] text-[hsl(var(--text-primary))]">{account.provider}</span>
+                    {account.category && (
+                      <span className={`ml-auto font-mono text-[9px] uppercase tracking-[0.14em] ${categoryClass(account.category)}`}>
+                        {account.category}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">
+                    {account.billingOwner ?? "billing owner not set"} / {account.status ?? "active"} / {account.risk ?? "medium"} risk
+                  </div>
+                  {typeof account.monthlyCostUsd === "number" && (
+                    <div className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">
+                      ${account.monthlyCostUsd.toFixed(2)} monthly estimate
+                    </div>
+                  )}
                 </div>
-                <p className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">{account.loginHint}</p>
-                <p className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-45">{account.separationPolicy}</p>
+                <div>
+                  <p className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">{account.loginHint ?? "login hint not saved yet"}</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {(account.projects ?? []).slice(0, 8).map((project) => (
+                      <span key={`${account.provider}-${project}`} className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8.5px] text-[hsl(var(--text-secondary))] opacity-45">
+                        {project}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-45">{account.separationPolicy ?? "separation policy not saved yet"}</p>
+                  {(account.keyNameAliases ?? []).length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {(account.keyNameAliases ?? []).slice(0, 8).map((name) => (
+                        <span key={`${account.provider}-${name}`} className="font-mono text-[8.5px] text-[hsl(var(--text-secondary))] opacity-40">
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <p className="mt-2 font-mono text-[9px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-38">
+                    {account.vaultRef ? `vault: ${account.vaultRef}` : account.encryptedStorage ?? "vault reference pending"}
+                  </p>
+                </div>
               </div>
             ))}
           </div>

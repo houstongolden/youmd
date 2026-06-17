@@ -345,4 +345,87 @@ describe("portfolio repo update history", () => {
       })
     ).rejects.toThrow("Project not found");
   });
+
+  it("persists provider account metadata without exposing secrets across owners", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    const asOther = t.withIdentity({ subject: OTHER_CLERK });
+
+    const seed = await asOwner.mutation(api.portfolio.syncProviderAccountSeed, {
+      clerkId: CLERK,
+      accounts: [
+        {
+          provider: "OpenAI / OpenRouter",
+          category: "llm",
+          loginHint: "owner-managed; exact email stays in encrypted vault",
+          billingOwner: "Houston",
+          separationPolicy: "Separate production products when cost attribution matters.",
+          encryptedStorage: "Vault reference only; never raw key material.",
+          projects: ["youmd", "bamfsite"],
+          keyNameAliases: ["OPENAI_API_KEY", "OPENROUTER_API_KEY", "NEXT_OPENAI_API_KEY"],
+          status: "audit",
+          risk: "high",
+          notes: "Shared light-use key is acceptable only for private/dev flows.",
+        },
+      ],
+    });
+
+    expect(seed).toMatchObject({ received: 1, created: 1, updated: 0, skipped: 0 });
+
+    const update = await asOwner.mutation(api.portfolio.upsertProviderAccount, {
+      clerkId: CLERK,
+      provider: "OpenAI / OpenRouter",
+      monthlyCostUsd: 42.5,
+      status: "needs-split",
+      projects: ["youmd", "bamfaiapp"],
+      keyNameAliases: ["OPENAI_API_KEY", "OPENROUTER_API_KEY"],
+      notes: "Split product keys before public usage scales.",
+    });
+
+    expect(update.created).toBe(false);
+
+    const ownerAccounts = await asOwner.query(api.portfolio.listProviderAccounts, {
+      clerkId: CLERK,
+    });
+    expect(ownerAccounts).toHaveLength(1);
+    expect(ownerAccounts[0]).toMatchObject({
+      slug: "openai-openrouter",
+      provider: "OpenAI / OpenRouter",
+      category: "llm",
+      billingOwner: "Houston",
+      status: "needs-split",
+      risk: "high",
+      monthlyCostUsd: 42.5,
+      projects: ["youmd", "bamfaiapp"],
+      keyNameAliases: ["OPENAI_API_KEY", "OPENROUTER_API_KEY"],
+    });
+    expect(JSON.stringify(ownerAccounts[0])).not.toContain("sk-");
+
+    const projectSlice = await asOwner.query(api.portfolio.getProjectSlice, {
+      clerkId: CLERK,
+      projectSlug: "youmd",
+    });
+    expect(projectSlice.providerAccounts).toHaveLength(1);
+    expect(projectSlice.providerAccounts[0].slug).toBe("openai-openrouter");
+
+    const otherAccounts = await asOther.query(api.portfolio.listProviderAccounts, {
+      clerkId: OTHER_CLERK,
+    });
+    expect(otherAccounts).toHaveLength(0);
+
+    await expect(
+      asOther.mutation(api.portfolio.upsertProviderAccount, {
+        clerkId: OTHER_CLERK,
+        provider: "OpenAI / OpenRouter",
+        billingOwner: "Other",
+      })
+    ).resolves.toMatchObject({ created: true });
+
+    const stillOwnerOnly = await asOwner.query(api.portfolio.listProviderAccounts, {
+      clerkId: CLERK,
+    });
+    expect(stillOwnerOnly).toHaveLength(1);
+    expect(stillOwnerOnly[0].billingOwner).toBe("Houston");
+  });
 });

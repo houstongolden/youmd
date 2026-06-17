@@ -2,11 +2,12 @@
 
 ## Active
 
-- [ ] Run a full typed search/filter/sort browser interaction once the in-app browser virtual clipboard/type helper is available again, or verify through Chrome as a fallback if Houston wants that extra proof. (source: 2026-06-17 10:25 PT)
 - [ ] Continue the broader active goal: actual new-host/fresh-computer setup with real encrypted env vault, full synced project clone set, shared skills/stacks, local servers, and Portfolio Graph sync. (source: prior active goal)
 
 ## Done
 
+- [x] Re-verify the Portfolio Graph shipped/detail/focus request in the authenticated Codex in-app Browser against the real persisted graph: `55` projects, shipped `today` / `7d` / `30d` / `90d`, `youmd` detail and timeline anchors, exact API/MCP docs URLs, graph/docs/stack/clone curl commands, reversible `youmd` focus mutation, typed search, sort, and focus-filter controls. (source: 2026-06-17 10:25 PT)
+- [x] Persist API/env provider account notes in owner-gated Convex records and visually verify the APIs/env pane refreshes `CONVEX PERSISTED ACCOUNT NOTES` without exposing raw secret patterns. (source: 2026-06-17 API/env continuation)
 - [x] Save Houston's latest Portfolio Graph shipped/focus/detail request to prompt history. (source: 2026-06-17 10:25 PT)
 - [x] Make shipped work obvious on the Portfolio Graph main card with top shippers and latest shipped commit/PR/release rows. (source: 2026-06-17 10:25 PT)
 - [x] Add concrete `latest shipped here` rows to selected project detail pages. (source: 2026-06-17 10:25 PT)

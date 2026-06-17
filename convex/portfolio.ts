@@ -156,6 +156,23 @@ const dashboardPatternValidator = v.object({
   summary: v.string(),
 });
 
+const providerAccountValidator = v.object({
+  provider: v.string(),
+  category: v.optional(v.string()),
+  loginHint: v.optional(v.string()),
+  billingOwner: v.optional(v.string()),
+  separationPolicy: v.optional(v.string()),
+  encryptedStorage: v.optional(v.string()),
+  vaultRef: v.optional(v.string()),
+  projects: v.optional(v.array(v.string())),
+  keyNameAliases: v.optional(v.array(v.string())),
+  status: v.optional(v.string()),
+  risk: v.optional(v.string()),
+  monthlyCostUsd: v.optional(v.number()),
+  notes: v.optional(v.string()),
+  source: v.optional(v.string()),
+});
+
 const reusablePatternValidator = v.object({
   slug: v.string(),
   name: v.string(),
@@ -203,6 +220,18 @@ function mergeLimitedStringArray(
 function normalizePatternStatus(value: string | undefined, fallback: string): string {
   const next = value?.trim();
   if (next === "canonical" || next === "candidate" || next === "deprecated") return next;
+  return fallback;
+}
+
+function normalizeProviderAccountStatus(value: string | undefined, fallback = "active"): string {
+  const next = value?.trim();
+  if (next === "active" || next === "audit" || next === "needs-split" || next === "archived") return next;
+  return fallback;
+}
+
+function normalizeRisk(value: string | undefined, fallback = "medium"): string {
+  const next = value?.trim();
+  if (next === "low" || next === "medium" || next === "high") return next;
   return fallback;
 }
 
@@ -765,7 +794,7 @@ export const getProjectSlice = query({
       return candidates.includes(slug);
     }) ?? null;
 
-    const [ownedSurfaces, dependencyEdges, reusablePatterns, tasks, activities] = await Promise.all([
+    const [ownedSurfaces, dependencyEdges, reusablePatterns, tasks, activities, providerAccounts] = await Promise.all([
       ctx.db
         .query("portfolioApiSurfaces")
         .withIndex("by_userId_owner", (q) => q.eq("userId", user._id).eq("ownerProjectSlug", slug))
@@ -786,6 +815,10 @@ export const getProjectSlice = query({
         .query("portfolioProjectActivities")
         .withIndex("by_userId_project_occurredAt", (q) => q.eq("userId", user._id).eq("projectSlug", slug))
         .collect(),
+      ctx.db
+        .query("portfolioProviderAccounts")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect(),
     ]);
 
     return {
@@ -793,6 +826,7 @@ export const getProjectSlice = query({
       trackedProject: trackedMatch,
       ownedSurfaces,
       dependencyEdges,
+      providerAccounts: providerAccounts.filter((account) => account.projects.includes(slug)),
       reusablePatterns: reusablePatterns.filter((pattern) => pattern.usageProjects.includes(slug)),
       tasks: tasks.filter((task) => task.status !== "done" && task.status !== "cancelled"),
       activities: activities.sort((a, b) => b.occurredAt - a.occurredAt).slice(0, 80),
@@ -800,6 +834,146 @@ export const getProjectSlice = query({
         ? { ready: true, reason: "Project portfolio slice is available." }
         : { ready: false, reason: "No persisted portfolio slice found for this project yet." },
     };
+  },
+});
+
+export const listProviderAccounts = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    return (await ctx.db
+      .query("portfolioProviderAccounts")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect())
+      .sort((a, b) => {
+        if (a.risk !== b.risk) return (b.risk === "high" ? 1 : 0) - (a.risk === "high" ? 1 : 0);
+        return a.provider.localeCompare(b.provider);
+      });
+  },
+});
+
+export const upsertProviderAccount = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    provider: v.string(),
+    category: v.optional(v.string()),
+    loginHint: v.optional(v.string()),
+    billingOwner: v.optional(v.string()),
+    separationPolicy: v.optional(v.string()),
+    encryptedStorage: v.optional(v.string()),
+    vaultRef: v.optional(v.string()),
+    projects: v.optional(v.array(v.string())),
+    keyNameAliases: v.optional(v.array(v.string())),
+    status: v.optional(v.string()),
+    risk: v.optional(v.string()),
+    monthlyCostUsd: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    source: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<{ accountId: Id<"portfolioProviderAccounts">; created: boolean }> => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const provider = args.provider.trim().slice(0, 160);
+    if (!provider) throw new Error("Provider is required");
+    const slug = slugify(provider);
+    const existing = await ctx.db
+      .query("portfolioProviderAccounts")
+      .withIndex("by_userId_slug", (q) => q.eq("userId", user._id).eq("slug", slug))
+      .first();
+    const now = Date.now();
+    const row = {
+      userId: user._id,
+      slug,
+      provider,
+      category: args.category?.trim().slice(0, 60) || existing?.category || "other",
+      loginHint: args.loginHint?.trim().slice(0, 240) || existing?.loginHint,
+      billingOwner: args.billingOwner?.trim().slice(0, 180) || existing?.billingOwner,
+      separationPolicy: args.separationPolicy?.trim().slice(0, 420) || existing?.separationPolicy,
+      encryptedStorage: args.encryptedStorage?.trim().slice(0, 360) || existing?.encryptedStorage,
+      vaultRef: args.vaultRef?.trim().slice(0, 240) || existing?.vaultRef,
+      projects: args.projects ? optionalStrings(args.projects).map(slugify).slice(0, 80) : (existing?.projects ?? []),
+      keyNameAliases: args.keyNameAliases ? optionalStrings(args.keyNameAliases).slice(0, 80) : (existing?.keyNameAliases ?? []),
+      status: normalizeProviderAccountStatus(args.status, existing?.status ?? "active"),
+      risk: normalizeRisk(args.risk, existing?.risk ?? "medium"),
+      monthlyCostUsd: args.monthlyCostUsd ?? existing?.monthlyCostUsd,
+      notes: args.notes?.trim().slice(0, 600) || existing?.notes,
+      source: args.source?.trim().slice(0, 80) || existing?.source || "manual",
+      updatedAt: now,
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, row);
+      return { accountId: existing._id, created: false };
+    }
+
+    const accountId = await ctx.db.insert("portfolioProviderAccounts", { ...row, createdAt: now });
+    return { accountId, created: true };
+  },
+});
+
+export const syncProviderAccountSeed = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    accounts: v.array(providerAccountValidator),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const now = Date.now();
+    const counts = {
+      received: args.accounts.length,
+      created: 0,
+      updated: 0,
+      skipped: 0,
+      accounts: [] as Array<{ slug: string; provider: string; created: boolean }>,
+    };
+
+    for (const account of args.accounts.slice(0, 80)) {
+      const provider = account.provider.trim().slice(0, 160);
+      if (!provider) {
+        counts.skipped += 1;
+        continue;
+      }
+      const slug = slugify(provider);
+      const existing = await ctx.db
+        .query("portfolioProviderAccounts")
+        .withIndex("by_userId_slug", (q) => q.eq("userId", user._id).eq("slug", slug))
+        .first();
+      const row = {
+        userId: user._id,
+        slug,
+        provider,
+        category: account.category?.trim().slice(0, 60) || existing?.category || "other",
+        loginHint: account.loginHint?.trim().slice(0, 240) || existing?.loginHint,
+        billingOwner: account.billingOwner?.trim().slice(0, 180) || existing?.billingOwner,
+        separationPolicy: account.separationPolicy?.trim().slice(0, 420) || existing?.separationPolicy,
+        encryptedStorage: account.encryptedStorage?.trim().slice(0, 360) || existing?.encryptedStorage,
+        vaultRef: account.vaultRef?.trim().slice(0, 240) || existing?.vaultRef,
+        projects: account.projects ? optionalStrings(account.projects).map(slugify).slice(0, 80) : (existing?.projects ?? []),
+        keyNameAliases: account.keyNameAliases ? optionalStrings(account.keyNameAliases).slice(0, 80) : (existing?.keyNameAliases ?? []),
+        status: normalizeProviderAccountStatus(account.status, existing?.status ?? "active"),
+        risk: normalizeRisk(account.risk, existing?.risk ?? "medium"),
+        monthlyCostUsd: account.monthlyCostUsd ?? existing?.monthlyCostUsd,
+        notes: account.notes?.trim().slice(0, 600) || existing?.notes,
+        source: account.source?.trim().slice(0, 80) || existing?.source || "dashboard-seed",
+        updatedAt: now,
+      };
+
+      if (existing) {
+        await ctx.db.patch(existing._id, row);
+        counts.updated += 1;
+        counts.accounts.push({ slug, provider, created: false });
+      } else {
+        await ctx.db.insert("portfolioProviderAccounts", { ...row, createdAt: now });
+        counts.created += 1;
+        counts.accounts.push({ slug, provider, created: true });
+      }
+    }
+
+    return counts;
   },
 });
 

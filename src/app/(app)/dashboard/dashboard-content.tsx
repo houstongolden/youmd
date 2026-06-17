@@ -1973,7 +1973,7 @@ export function DashboardContent() {
                     <GithubPane clerkId={user.id} username={username} userId={convexUser._id} />
                   )}
                   {rightPane === "apis" && (
-                    <ApiEnvPane />
+                    <ApiEnvPane clerkId={user?.id} />
                   )}
                   {rightPane === "share" && user?.id && (
                     <SharePane

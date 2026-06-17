@@ -81,6 +81,8 @@ PRD Version: 2.3
 - [x] Export the persisted portfolio graph into repo-backed `projects/_portfolio/README.md`, `graph.md`, and mirror-safe `graph.json` snapshots during GitHub sync
 - [x] Enrich active project strategy records from local README/project-context docs plus recent activity, including vision, solution, positioning, audience, north star, metrics, constraints, not-building, competitors, docs, and fallback local-audit summaries
 - [x] Mine reusable code/UI/auth/layout/streaming/env/task patterns from active repos into `portfolioReusablePatterns` instead of relying on hand-written seed records
+- [x] Persist secret-safe API/env provider account notes in owner-gated Convex records and verify the APIs/env pane can refresh persisted account metadata without exposing raw secrets
+- [x] Re-run authenticated Codex in-app Browser proof for Houston's compact portfolio request: 55 persisted projects, shipped `today` / `7d` / `30d` / `90d`, typed search/sort/focus filtering, clickable details/timeline anchors, exact API/MCP docs/curl/stack/clone commands, and reversible project focus mutation
 - [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens (deferred per Houston's 2026-06-17 focus change)
 
 ### 2026-06-17 — GitHub sync proof, Projects -> Tasks, and brain-dump routing

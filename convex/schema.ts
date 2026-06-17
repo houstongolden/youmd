@@ -674,6 +674,31 @@ export default defineSchema({
     .index("by_userId_slug", ["userId", "slug"])
     .index("by_userId_owner", ["userId", "ownerProjectSlug"]),
 
+  portfolioProviderAccounts: defineTable({
+    userId: v.id("users"),
+    slug: v.string(),
+    provider: v.string(),
+    category: v.string(), // "llm" | "auth" | "sms" | "email" | "hosting" | "database" | ...
+    loginHint: v.optional(v.string()),
+    billingOwner: v.optional(v.string()),
+    separationPolicy: v.optional(v.string()),
+    encryptedStorage: v.optional(v.string()),
+    vaultRef: v.optional(v.string()),
+    projects: v.array(v.string()),
+    keyNameAliases: v.array(v.string()),
+    status: v.string(), // "active" | "audit" | "needs-split" | "archived"
+    risk: v.string(), // "low" | "medium" | "high"
+    monthlyCostUsd: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    source: v.string(), // "dashboard-seed" | "manual" | "agent" | "local-audit"
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_slug", ["userId", "slug"])
+    .index("by_userId_category", ["userId", "category"])
+    .index("by_userId_status", ["userId", "status"]),
+
   portfolioDependencyEdges: defineTable({
     userId: v.id("users"),
     fromProjectSlug: v.string(),

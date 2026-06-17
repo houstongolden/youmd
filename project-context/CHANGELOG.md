@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio proof and provider account persistence
+
+### feat(convex/web): persist secret-safe provider account notes
+- Added owner-gated `portfolioProviderAccounts` records for API/env service-account metadata: provider, category, login hint, billing owner, separation policy, encrypted-storage/vault reference notes, project slugs, key-name aliases, status, risk, cost estimate, and source.
+- Added `portfolio.listProviderAccounts`, `portfolio.upsertProviderAccount`, and `portfolio.syncProviderAccountSeed`; `getProjectSlice` now includes matching provider accounts for the requested project without returning raw secrets.
+- Updated the APIs + Env Intelligence pane so static service-account notes can be persisted/refreshed into Convex, then rendered as `CONVEX PERSISTED ACCOUNT NOTES`. The browser payload shows provider/account/key-name metadata only; raw `.env.local` values and raw API keys are never sent.
+- Hardened the dashboard action with undefined-field stripping and a timeout guard so a stale backend deploy reports a clear error instead of leaving the button stuck on `persisting...`.
+- Authenticated Codex in-app Browser QA verified the Portfolio Graph request against the real persisted graph: `55 PROJECTS`, `CONVEX PERSISTED GRAPH`, shipped `today` / `7d` / `30d` / `90d`, compact project list controls, clickable `details` / `timeline`, You.md `PROJECT GRAPH LINKS`, API/MCP docs URLs, graph/docs/stack/clone curl commands, and a reversible `youmd` focus mutation (`focusing / 2` -> `top-priority / 1`).
+- Authenticated Codex in-app Browser QA also verified the APIs/env persisted account path after `npx convex dev --once`: `persisted 0 new / 4 refreshed provider account notes`, `CONVEX PERSISTED ACCOUNT NOTES`, no raw `sk-*` secret pattern, and screenshot `/tmp/youmd-api-env-provider-accounts-persisted-proof-2026-06-17.png`.
+- Verification: `npx convex dev --once`, `npm run test:convex -- convex/portfolio.test.ts`, `npx tsc --noEmit --pretty false`, `npx tsc -p convex/tsconfig.json --noEmit --pretty false`, `npm run lint` (existing warnings only), and `npm run build`.
+
 ## 2026-06-17 — Web-shell portfolio task sync proof
 
 ### test(shell): prove project-scoped agent task sync from the local composer
