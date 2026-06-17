@@ -187,6 +187,7 @@ const MOBILE_PRIMARY_PANES: Array<{ key: PrimaryPaneGroup | "terminal"; label: s
 
 const PANEL_OPEN_STORAGE_KEY = "youmd.dashboard.panelOpen";
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "youmd.shell.sidebarCollapsed";
+const SIDEBAR_COLLAPSE_MODE_STORAGE_KEY = "youmd.shell.sidebarCollapseMode";
 const CHAT_WIDTH_STORAGE_KEY = "youmd.shell.chatWidth";
 const STALE_NUDGE_SESSION_KEY = "youmd.dashboard.staleNudgeShown";
 const STALE_NUDGE_DAYS = 7;
@@ -197,6 +198,8 @@ const MAX_CHAT_WIDTH = 54;
 const MIN_CHAT_WIDTH_PX = 460;
 const MIN_DETAIL_WIDTH_PX = 440;
 const SIDEBAR_AUTO_COLLAPSE_PX = 1520;
+
+type SidebarCollapseMode = "auto" | "collapsed" | "expanded";
 
 function formatRelativeTime(ts: number): string {
   const diffMin = Math.floor((Date.now() - ts) / 60000);
@@ -359,12 +362,19 @@ function readStoredPanelOpen(): boolean {
   }
 }
 
-function readStoredSidebarCollapsed(): boolean {
-  if (typeof window === "undefined") return false;
+function readStoredSidebarCollapseMode(): SidebarCollapseMode {
+  if (typeof window === "undefined") return "auto";
   try {
-    return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true";
+    const stored = window.localStorage.getItem(SIDEBAR_COLLAPSE_MODE_STORAGE_KEY);
+    if (stored === "auto" || stored === "collapsed" || stored === "expanded") {
+      return stored;
+    }
+
+    const legacy = window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
+    if (legacy === "true") return "collapsed";
+    return "auto";
   } catch {
-    return false;
+    return "auto";
   }
 }
 
@@ -1169,7 +1179,9 @@ export function DashboardContent() {
   const [panelOpen, setPanelOpen] = useState<boolean>(() =>
     wantsGithub ? true : readStoredPanelOpen()
   );
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => readStoredSidebarCollapsed());
+  const [sidebarCollapseMode, setSidebarCollapseMode] = useState<SidebarCollapseMode>(() =>
+    readStoredSidebarCollapseMode()
+  );
   const [chatWidth, setChatWidth] = useState<number>(() => readStoredChatWidth());
   const [editInitialSubTab, setEditInitialSubTab] = useState<EditSubTab>("files");
   const [viewportWidth, setViewportWidth] = useState(0);
@@ -1193,11 +1205,15 @@ export function DashboardContent() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(sidebarCollapsed));
+      window.localStorage.setItem(SIDEBAR_COLLAPSE_MODE_STORAGE_KEY, sidebarCollapseMode);
+      window.localStorage.setItem(
+        SIDEBAR_COLLAPSED_STORAGE_KEY,
+        String(sidebarCollapseMode === "collapsed")
+      );
     } catch {
       // localStorage unavailable (private mode etc.) — non-fatal
     }
-  }, [sidebarCollapsed]);
+  }, [sidebarCollapseMode]);
 
   useEffect(() => {
     try {
@@ -1490,8 +1506,14 @@ export function DashboardContent() {
     || null;
   const email = user?.emailAddresses[0]?.emailAddress ?? null;
   const displayName = user?.fullName ?? user?.firstName ?? username;
+  const autoSidebarCollapsed =
+    panelOpen && viewportWidth > 0 && viewportWidth < SIDEBAR_AUTO_COLLAPSE_PX;
   const effectiveSidebarCollapsed =
-    sidebarCollapsed || (panelOpen && viewportWidth > 0 && viewportWidth < SIDEBAR_AUTO_COLLAPSE_PX);
+    sidebarCollapseMode === "collapsed" ||
+    (sidebarCollapseMode === "auto" && autoSidebarCollapsed);
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapseMode(effectiveSidebarCollapsed ? "expanded" : "collapsed");
+  };
   const activePaneGroup =
     PANE_GROUPS.find((group) => group.panes.some((pane) => pane.key === rightPane)) ??
     PANE_GROUPS[0];
@@ -1531,7 +1553,7 @@ export function DashboardContent() {
           loadingSessionId={loadingSessionId}
           rightPane={rightPane}
           collapsed={effectiveSidebarCollapsed}
-          onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
+          onToggleCollapsed={toggleSidebarCollapsed}
           onOpenPane={openPane}
           onNewChat={startNewChat}
           onSearch={openSearch}
