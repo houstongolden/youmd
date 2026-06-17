@@ -20,9 +20,13 @@ PRD Version: 2.3
 - [x] Register `portfolio-graph-auditor` in the bundled local CLI skill catalog and align the Skills pane with `machine-bootstrap` + portfolio-audit catalog visibility
 - [x] Run signed-in local visual QA for Portfolio Graph, APIs + Env Intelligence, and `/skills` tracked-project propagation at `http://localhost:3100/shell`
 - [x] Run `youmd skill improve`, fix `shared:` skill source resolution, and install/sync `portfolio-graph-auditor` into the local You.md skill bundle
+- [x] Fix the `/skills` unreadable orange explainer regression and add a readable local-agent sync proof strip for `portfolio-graph-auditor`, `meta-improve`, `proactive-context-fill`, and `get_agent_brief`
+- [x] Teach local MCP `get_agent_brief` and `youmd://agent/brief` to include the portfolio graph, plus expose structured `youmd://portfolio/graph`
+- [x] Self-improve the canonical shared `portfolio-graph-auditor` skill so it requires local agents to verify `get_agent_brief` / `youmd://portfolio/graph`, then sync the shared layer into Claude/Codex/Cursor/Pi and refresh the local You.md skill cache
+- [x] Verify the local agent path end-to-end with real stdio MCP smoke, skill install refreshes, `youmd skill sync`, signed-in browser visual QA, focused CLI tests, lint/radius, and production build
 - [ ] Persist portfolio graph records in Convex and/or repo-backed markdown instead of only the local static data contract
-- [ ] Teach MCP `get_agent_brief` / `get_project_context` to include the relevant portfolio graph slice before agents create new APIs, MCP routes, stacks, or reusable components
-- [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens
+- [ ] Teach MCP `get_project_context` to include a project-scoped portfolio graph slice before agents create new APIs, MCP routes, stacks, or reusable components
+- [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens (deferred per Houston's 2026-06-17 focus change)
 
 ### 2026-06-16 — Mobile capture, voice, Slack, and project routing
 - [x] Preserve the 2026-06-16 Part 2 mobile brain-dump intent safely without private phone numbers or secrets

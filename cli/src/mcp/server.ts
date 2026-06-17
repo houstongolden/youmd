@@ -62,6 +62,11 @@ import {
   routeYouStackRequest,
   runYouStackSmoke,
 } from "../lib/youstack";
+import {
+  PORTFOLIO_GRAPH_BRIEF,
+  formatPortfolioGraphBriefMarkdown,
+  type PortfolioGraphBrief,
+} from "../lib/portfolio-graph";
 
 const MCP_SERVER_VERSION = "0.6.23";
 
@@ -782,6 +787,7 @@ export interface AgentBrief {
     installed: string[];
     recommended: string[];
   };
+  portfolioGraph: PortfolioGraphBrief;
   memoriesReadiness?: MemoryRetrievalEnvelope["readiness"];
   memories?: BriefMemory[];
   nextMoves: string[];
@@ -945,6 +951,11 @@ export async function buildAgentBrief(options: { includeMemories?: boolean } = {
   if (project && project.contextFiles.length === 0) {
     nextMoves.push("Bootstrap project-context with: youmd skill init-project --mode additive");
   }
+  if (installedSkills.includes("portfolio-graph-auditor")) {
+    nextMoves.push("Before adding APIs, MCP routes, env integrations, stacks, or reusable UI/code patterns, consult the portfolio graph and run: youmd project portfolio-audit --root ~/Desktop/CODE_2025");
+  } else {
+    nextMoves.push("Install the portfolio graph auditor with: youmd skill install portfolio-graph-auditor");
+  }
   if (!installedSkills.includes("youstack-start")) {
     nextMoves.push("Install the YouStack starter skill with: youmd skill install youstack-start");
   }
@@ -970,11 +981,13 @@ export async function buildAgentBrief(options: { includeMemories?: boolean } = {
       recommended: [
         "youstack-start",
         "project-context-init",
+        "portfolio-graph-auditor",
         "proactive-context-fill",
         "voice-sync",
         "you-logs",
       ],
     },
+    portfolioGraph: PORTFOLIO_GRAPH_BRIEF,
     nextMoves: nextMoves.slice(0, 5),
     reminders: [
       "Read the whole user request before acting; split multi-part asks into tracked items.",
@@ -1010,7 +1023,7 @@ function renderList(items: string[], empty: string): string {
   return items.map((item) => `- ${item}`).join("\n");
 }
 
-export function formatAgentBriefMarkdown(brief: AgentBrief, maxChars = 6000): string {
+export function formatAgentBriefMarkdown(brief: AgentBrief, maxChars = 10000): string {
   const project = brief.project;
   const lines: string[] = [];
 
@@ -1054,6 +1067,9 @@ export function formatAgentBriefMarkdown(brief: AgentBrief, maxChars = 6000): st
   lines.push("## Skills");
   lines.push(`- installed: ${brief.skills.installed.length > 0 ? brief.skills.installed.join(", ") : "none"}`);
   lines.push(`- recommended: ${brief.skills.recommended.join(", ")}`);
+  lines.push("");
+
+  lines.push(formatPortfolioGraphBriefMarkdown(brief.portfolioGraph));
   lines.push("");
 
   if (brief.memories) {
@@ -1139,8 +1155,15 @@ export async function startMcpServer(): Promise<void> {
     resources.push({
       uri: "youmd://agent/brief",
       name: "agent-brief",
-      description: "YouStack startup brief for local agents: compact identity, project instructions, active requests, open TODOs, installed skills, and next moves",
+      description: "YouStack startup brief for local agents: compact identity, project instructions, active requests, open TODOs, installed skills, portfolio graph, and next moves",
       mimeType: "text/markdown",
+    });
+
+    resources.push({
+      uri: "youmd://portfolio/graph",
+      name: "portfolio/graph",
+      description: "Local portfolio graph: project/API/MCP ownership, reusable patterns, shared-skill propagation, and agent guardrails",
+      mimeType: "application/json",
     });
 
     const currentStack = tryLoadCurrentYouStack();
@@ -1322,6 +1345,17 @@ export async function startMcpServer(): Promise<void> {
       };
     }
 
+    if (uri === "youmd://portfolio/graph") {
+      void logMcpActivity("read", "portfolio/graph");
+      return {
+        contents: [{
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify(PORTFOLIO_GRAPH_BRIEF, null, 2),
+        }],
+      };
+    }
+
     if (uri === "youmd://stacks/current/manifest") {
       const loaded = tryLoadCurrentYouStack();
       if (!loaded) throw new Error("no local YouStack manifest found from current directory");
@@ -1492,7 +1526,7 @@ export async function startMcpServer(): Promise<void> {
               },
               maxChars: {
                 type: "number",
-                description: "Maximum markdown characters when format=markdown. Default 6000.",
+                description: "Maximum markdown characters when format=markdown. Default 10000.",
               },
             },
           },
@@ -1642,8 +1676,8 @@ export async function startMcpServer(): Promise<void> {
         }
 
         const maxChars = typeof briefArgs.maxChars === "number" && briefArgs.maxChars > 500
-          ? Math.min(briefArgs.maxChars, 20000)
-          : 6000;
+          ? Math.min(briefArgs.maxChars, 24000)
+          : 10000;
         return {
           content: [{
             type: "text" as const,

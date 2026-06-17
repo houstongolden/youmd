@@ -241,6 +241,23 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
 
   const installedSkills = allSkills.filter((s) => installedNames.has(s.name));
   const availableSkills = allSkills.filter((s) => !installedNames.has(s.name));
+  const localSyncRows = [
+    {
+      label: "portfolio-graph-auditor",
+      value: installedNames.has("portfolio-graph-auditor") ? "synced" : "install needed",
+      ok: installedNames.has("portfolio-graph-auditor"),
+    },
+    {
+      label: "meta-improve",
+      value: installedNames.has("meta-improve") ? "synced" : "install needed",
+      ok: installedNames.has("meta-improve"),
+    },
+    {
+      label: "proactive-context-fill",
+      value: installedNames.has("proactive-context-fill") ? "synced" : "install needed",
+      ok: installedNames.has("proactive-context-fill"),
+    },
+  ];
 
   const handleInstallMcp = async () => {
     const installCommand = "npx --yes youmd@latest mcp --install claude --auto";
@@ -257,9 +274,13 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
     <div className="p-6 space-y-6">
       {/* ── Always-visible explainer ─────────────────────────── */}
       <div
-        className="border border-[hsl(var(--accent))] border-opacity-40 bg-[hsl(var(--accent))] bg-opacity-[0.03] p-4 space-y-3"
-        style={{ borderRadius: "var(--radius)" }}
+        className="relative overflow-hidden border border-[hsl(var(--border))]/80 p-4 space-y-3"
+        style={{
+          borderRadius: "var(--radius)",
+          background: "linear-gradient(90deg, hsl(var(--accent) / 0.055), hsl(var(--bg)) 38%)",
+        }}
       >
+        <span aria-hidden className="absolute left-0 top-0 h-full w-px bg-[hsl(var(--accent))]/70" />
         <div className="text-[11px] font-mono text-[hsl(var(--accent))] uppercase tracking-wider">
           skills
         </div>
@@ -317,7 +338,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <button
             onClick={handleInstallMcp}
-            className="text-[10px] font-mono text-[hsl(var(--accent))] border border-[hsl(var(--accent))] px-3 py-1.5 hover:bg-[hsl(var(--accent))] hover:bg-opacity-10 transition-colors"
+            className="text-[10px] font-mono text-[hsl(var(--accent))] border border-[hsl(var(--accent))] px-3 py-1.5 hover:bg-[hsl(var(--accent)/0.1)] transition-colors"
             title="copy install command"
           >
             {mcpCopied ? "copied Claude MCP install command" : "install MCP"}
@@ -329,6 +350,39 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           >
             {showAllSkills ? "hide all skills" : "view all skills"}
           </button>
+        </div>
+      </div>
+
+      <div>
+        <PaneSectionLabel>local agent sync</PaneSectionLabel>
+        <div className="space-y-2 border-l border-[hsl(var(--border))]/80 pl-4 font-mono text-[11px]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-[hsl(var(--success))]">
+              {installs ? `${installs.length}/${allSkills.length} skills synced` : "checking sync"}
+            </span>
+            <span className="text-[hsl(var(--text-secondary))] opacity-25">|</span>
+            <span className="text-[hsl(var(--text-secondary))] opacity-55">
+              MCP startup packet: get_agent_brief + portfolio graph
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {localSyncRows.map((row) => (
+              <div key={row.label} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[hsl(var(--border))]/45 pt-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[hsl(var(--text-primary))]">{row.label}</span>
+                  <span className={`text-[8px] uppercase tracking-[0.14em] ${
+                    row.ok ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-50"
+                  }`}>
+                    {row.value}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] leading-4 text-[hsl(var(--text-secondary))] opacity-45">
+            Local Claude/Codex agents should call `get_agent_brief` first; the brief now includes API/MCP ownership,
+            env-audit commands, reusable patterns, and shared-skill propagation guardrails.
+          </p>
         </div>
       </div>
 

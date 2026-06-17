@@ -2,6 +2,16 @@
 
 ## 2026-06-17 — Project portfolio graph and reuse catalog
 
+### fix(web/cli/skills): prove portfolio graph sync across local agents and dashboard
+- Fixed the `/skills` explainer visual regression where the intended faint orange wash rendered as a solid bright orange block; the panel now uses an explicit low-opacity gradient and readable terminal-dark styling.
+- Added a local-agent sync proof strip to `/skills` showing current installed-skill state for `portfolio-graph-auditor`, `meta-improve`, `proactive-context-fill`, plus the `get_agent_brief + portfolio graph` startup packet path.
+- Added `cli/src/lib/portfolio-graph.ts`, wired `portfolioGraph` into local MCP `get_agent_brief` / `youmd://agent/brief`, exposed structured `youmd://portfolio/graph`, and bumped the markdown brief default cap to preserve the new graph section.
+- Self-improved the canonical shared `portfolio-graph-auditor` skill so it requires local agents to verify `get_agent_brief` / `youmd://agent/brief` includes `## Portfolio Graph` and to use `youmd://portfolio/graph` for structured reads.
+- Synced the shared agent layer from `.agent-shared`, verified the canonical skill update appears in Claude/Codex/Cursor mirrors, refreshed the local You.md installed skill cache, and ran `youmd skill sync` showing 7 installed skills synced.
+- Verified local stdio MCP end-to-end: `get_agent_brief` includes `## Portfolio Graph`, `portfolio-graph-auditor`, and `youmd project portfolio-audit --root ~/Desktop/CODE_2025`; `resources/list` includes `youmd://portfolio/graph`; `resources/read` returns `bamfaiapp` context without secret-like values.
+- Verified the signed-in local `/skills` dashboard in Chrome at `http://localhost:3100/shell`; screenshot saved at `/tmp/youmd-skills-pane-sync-proof-2026-06-17-v2.png`.
+- Verified with `cd cli && npm test -- mcp-agent-brief skills-registry-sync`, `cd cli && npm run build`, root `npm run lint`, `git diff --check`, and root `npm run build`.
+
 ### feat(web/cli/skills): add portfolio graph and APIs/env intelligence foundation
 - Added `src/data/portfolioGraph.ts` with the first local typed portfolio graph contract for projects, API/MCP/provider surfaces, dependency edges, reusable patterns, service-account notes, env-provider usage, and shared skill propagation.
 - Added `/shell` Portfolio Graph and APIs + Env Intelligence panes, plus sidebar, desktop/mobile pane navigation, command palette, slash-command, and You Agent help routing for `/portfolio`, `/projects`, `/api`, `/apis`, and `/env`.

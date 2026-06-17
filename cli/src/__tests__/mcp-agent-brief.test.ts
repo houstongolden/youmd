@@ -56,8 +56,13 @@ describe("MCP agent brief", () => {
 
     expect(brief.project?.activeRequests[0]).toContain("Improve YouStack startup");
     expect(brief.project?.openTodos[0]).toContain("Add get_agent_brief");
+    expect(brief.portfolioGraph.projects.some((project) => project.slug === "youmd")).toBe(true);
+    expect(brief.portfolioGraph.skillPropagation.some((entry) => entry.skill === "portfolio-graph-auditor")).toBe(true);
     expect(brief.nextMoves[0]).toContain("Improve YouStack startup");
     expect(markdown).toContain("# YouStack Agent Brief");
+    expect(markdown).toContain("## Portfolio Graph");
+    expect(markdown).toContain("portfolio-graph-auditor");
+    expect(markdown).toContain("youmd project portfolio-audit --root ~/Desktop/CODE_2025");
     expect(markdown).toContain("project-context/feature-requests-active.md");
   });
 });

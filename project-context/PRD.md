@@ -171,6 +171,15 @@ Implementation slice shipped locally on 2026-06-17:
   `--fingerprints` compares reused key values by local salted HMAC.
 - Shared `portfolio-graph-auditor` now lives in the global agent skill layer and
   syncs into Claude, Codex, Cursor, and Pi.
+- Local MCP `get_agent_brief` / `youmd://agent/brief` now includes the
+  portfolio graph so Claude Code, Codex, Cursor, and other local agents see
+  project/API/MCP ownership before adding duplicate routes or stacks.
+- Local MCP exposes `youmd://portfolio/graph` as structured JSON for agents
+  that need the graph without scraping dashboard copy.
+- `/shell` `/skills` now includes a readable local-agent sync proof strip for
+  `portfolio-graph-auditor`, `meta-improve`, `proactive-context-fill`, and
+  `get_agent_brief + portfolio graph`, making shared/meta skill propagation
+  visible to Houston in the web UI.
 
 Important boundary: a product's protected in-app agent harness is not the same
 thing as an installable public skill stack. The public stack teaches host agents
@@ -178,9 +187,11 @@ how to use the product API/MCP safely. The protected harness may include private
 strategy, copywriting, image generation, internal tools, client data, approvals,
 and proprietary prompts.
 
-The first duplicate-risk example to audit is Lempod management across
-`bamfsite` and `bamfaiapp`. You.md should verify which project owns the
-canonical Lempod management API before any agent adds a redundant endpoint.
+The first duplicate-risk example to audit remains Lempod management across
+`bamfsite` and `bamfaiapp`, but Houston deferred that audit on 2026-06-17 while
+handling Lempod in those repos directly. You.md should still preserve the
+ownership rule: verify which project owns a capability before any agent adds a
+redundant endpoint.
 
 ---
 

@@ -163,9 +163,17 @@ Local implementation slice:
 - `cli/src/lib/portfolio-audit.ts` powers `youmd project portfolio-audit`,
   `env-audit`, and `apis` with value-safe env scanning and optional local salted
   HMAC fingerprints for duplicate-key detection.
+- `cli/src/lib/portfolio-graph.ts` is the local-agent graph brief mirror used
+  by the published CLI/MCP package.
+- `cli/src/mcp/server.ts` injects `portfolioGraph` into `get_agent_brief` /
+  `youmd://agent/brief` and exposes structured `youmd://portfolio/graph` for
+  local agents.
+- `src/components/panes/SkillsPane.tsx` shows the local-agent sync proof strip
+  for shared/meta skills and the MCP portfolio graph startup path.
 - `/Users/houstongolden/.agent-shared/claude-skills/portfolio-graph-auditor`
   is the canonical shared agent skill for cross-project portfolio/env/API/MCP
-  audits.
+  audits and now requires agents to verify `get_agent_brief` /
+  `youmd://portfolio/graph`.
 
 ### Writeback Rules
 
@@ -178,9 +186,10 @@ Any write from an agent or connected product should record actor, host, app, sta
 - Lovable-simple connector UX that maps sources into structured context with preview, visibility, trust rules, and refresh policy.
 - Source refresh policies, crawlers, crons, monitors, and approval-aware writeback that reuse the immutable raw-source ledger.
 - Provider-agnostic mobile capture gateway for SMS/iMessage, voice transcripts, Slack, CLI/web shell, and future host inputs, with raw artifact preservation, source redaction, project routing, task proposals, and approval-aware external writes.
-- Portfolio graph resource contract for project dependencies, API/MCP ownership,
-  protected harnesses, reusable patterns, machine readiness, and duplicate-risk
-  warnings.
+- Persisted portfolio graph resource contract for project dependencies, API/MCP
+  ownership, protected harnesses, reusable patterns, machine readiness, and
+  duplicate-risk warnings. The local MCP startup/resource slice exists; durable
+  Convex/repo persistence is still pending.
 - Skill-learning ingestion for screen recordings, transcripts, SOPs, tool/API lists, agent-run logs, and summaries.
 - YouStacks distribution: private/scoped/public repo-backed stacks, host adapters for Claude Code, Codex, Cursor, ChatGPT, MCP clients, and local agents.
 - Stack-level model routing/BYOK policy in YouStack manifests and generated host adapters as an advanced capability, not the headline contract.
