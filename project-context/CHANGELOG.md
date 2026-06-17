@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-06-17 — Signed-in machine readiness
+
+### feat(web/local): add localhost-only Machine readiness pane
+- Added an authenticated localhost-only `GET /api/local/machine-readiness` route for secret-safe local machine metadata.
+- Added a `/machine` shell pane under `stacks -> machine` showing resident sync daemons, current/fresh project roots, clone/package/env-doc readiness, local You.md auth, shared skill mirrors, Codex/Claude MCP config presence, and env-vault tooling.
+- Kept raw `.env.local` values out of the browser response; the pane reports presence/readiness and explicitly shows `secret values exposed: false`.
+- Wired `/machine`, `/computer`, `/readiness`, and `/daemons` slash commands into the shell command router and help output.
+- Marked the route as an internal/local route in generated agent docs so it is not advertised as a hosted public API endpoint.
+- Refreshed the global `youmd` install from the local `cli/` package so `youmd machine verify` works from a normal shell.
+- Verified with `npx tsc --noEmit`, targeted ESLint, `git diff --check`, exact global `youmd machine verify --root /Users/houstongolden/Desktop/CODE_2025`, `youmd stack daemon status`, authenticated Codex in-app Browser QA, and `npm run build`.
+- Visual proof: `/tmp/youmd-machine-readiness-pane-2026-06-17-v2.png` and `/tmp/youmd-machine-readiness-stack-env-proof-2026-06-17-v2.png`.
+
 ## 2026-06-17 — Scanner-derived reusable patterns
 
 ### feat(cli/api/web): mine reusable code/UI/auth/layout patterns into the portfolio graph

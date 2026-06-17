@@ -103,6 +103,7 @@ import { ProfilePane } from "@/components/panes/ProfilePane";
 import { StacksPane } from "@/components/panes/StacksPane";
 import { PortfolioGraphPane } from "@/components/panes/PortfolioGraphPane";
 import { ApiEnvPane } from "@/components/panes/ApiEnvPane";
+import { MachineReadinessPane } from "@/components/panes/MachineReadinessPane";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 type PrimaryPaneGroup = "profile" | "projects" | "share" | "agents" | "insights" | "portrait" | "account" | "integrations";
@@ -143,6 +144,7 @@ const PANE_GROUPS: Array<{
     panes: [
       { key: "stacks", label: "stacks" },
       { key: "skills", label: "skills" },
+      { key: "machine", label: "machine" },
       { key: "agents", label: "activity" },
     ],
   },
@@ -750,6 +752,7 @@ function ShellSidebar({
       items: [
         { label: "YouStack", detail: "your default stack", icon: Layers3, pane: "stacks" },
         { label: "Skills", detail: "templates + tools", icon: Wrench, pane: "skills" },
+        { label: "Machine", detail: "sync + readiness", icon: Monitor, pane: "machine", status: "new" },
         { label: "Agents", detail: "activity + MCP", icon: Bot, pane: "agents" },
       ],
     },
@@ -786,6 +789,7 @@ function ShellSidebar({
     },
     { label: "APIs / Env", detail: "providers + key map", icon: Database, pane: "apis" },
     { label: "YouStack", detail: "your default stack", icon: Layers3, pane: "stacks" },
+    { label: "Machine", detail: "sync + readiness", icon: Monitor, pane: "machine" },
     { label: "Connectors", detail: "github + apps", icon: Plug, pane: "github" },
   ];
   const toggleGroup = (label: string) => {
@@ -1963,6 +1967,9 @@ export function DashboardContent() {
                   )}
                   {rightPane === "stacks" && (
                     <StacksPane />
+                  )}
+                  {rightPane === "machine" && (
+                    <MachineReadinessPane />
                   )}
                   {rightPane === "history" && user?.id && (
                     <HistoryPane userId={convexUser._id} clerkId={user.id} />

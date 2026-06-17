@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 94
-**Total messages:** 505
+**Total sessions:** 95
+**Total messages:** 506
 **Last updated:** 2026-06-17
 
 ## Table of Contents
 
+1. [2026-06-17 (machine-readiness-continuation)](#session-2026-06-17-machine-readiness-continuation) --- 1 message
 1. [2026-06-17 (portfolio-strategy-enrichment-continuation)](#session-2026-06-17-portfolio-strategy-enrichment-continuation) --- 1 message
 1. [2026-06-17 (persisted-update-history-continuation)](#session-2026-06-17-persisted-update-history-continuation) --- 1 message
 1. [2026-06-17 (sidebar-commit-push-continuation)](#session-2026-06-17-sidebar-commit-push-continuation) --- 2 messages
@@ -16039,4 +16040,11 @@ Note: Codex desktop transcript JSONL was not available at the documented `~/.Cod
 ## Session: 2026-06-17 (portfolio-strategy-enrichment-continuation)
 
 **2026-06-17 11:07:00 UTC**
+> continue
+
+---
+
+## Session: 2026-06-17 (machine-readiness-continuation)
+
+**2026-06-17 12:18:21 UTC**
 > continue

@@ -128,6 +128,23 @@ GitHub status and task/graph paths behave in the actual product.
   `bigbounce`) and captured visual proof:
   `/tmp/youmd-portfolio-activity-proof-2026-06-17-v2.png` and
   `/tmp/youmd-portfolio-timeline-proof-2026-06-17-v3.png`.
+- Authenticated Codex in-app Browser QA now also verifies the signed-in Machine
+  readiness surface at `http://localhost:3100/shell` under `/machine` /
+  `stacks -> machine`. The pane shows `3/3` daemons loaded, `61` project
+  directories scanned, `35` git repos, `32` package projects, `17` `.env.local`
+  files, `19` env examples, `21` agent-doc roots, `21` project-context roots,
+  `api key present READY`, Codex/Claude MCP config readiness, env
+  audit/backup/restore readiness, and `secret values exposed: false`. The
+  fresh-root toggle shows the `CODE_YOU` target blocker before a real clean-host
+  run. Screenshots:
+  `/tmp/youmd-machine-readiness-pane-2026-06-17-v2.png` and
+  `/tmp/youmd-machine-readiness-stack-env-proof-2026-06-17-v2.png`.
+- The global `youmd` binary on this machine was refreshed from the local
+  `cli/` package so the dashboard's copyable command works outside the repo:
+  `youmd machine verify --root /Users/houstongolden/Desktop/CODE_2025` reports
+  `61` project directories scanned, `26` ready projects, `2` needing env
+  restore, and `8` partial projects; `youmd stack daemon status` reports all
+  three resident sync daemons loaded.
 - Authenticated Chrome QA opened `/shell?integration=github`, clicked
   `refresh active projects`, waited through the 90-day GitHub analyzer, and
   verified the dashboard catalog returned with 38 visible `repo:

@@ -38,7 +38,7 @@ PRD Version: 2.3
 - [x] Add `youmd status` resident-sync health with loaded state, interval, last activity, and current warning visibility
 - [x] Add opt-in curl installer support via `YOUMD_INSTALL_DAEMON=1`
 - [x] Harden `context-sync.sh` so it fetches first and refuses pull/push when upstream includes non-context app-code paths
-- [ ] Add persisted dashboard machine/readiness cards for daemon status, last sync, blocked guards, MCP readiness, project-context sync, and env-vault readiness
+- [x] Add persisted dashboard machine/readiness cards for daemon status, last sync, blocked guards, MCP readiness, project-context sync, and env-vault readiness
 - [ ] Extend resident sync beyond the local foundation into persisted personal stack/API/project graph records and per-project MCP context slices
 
 ### 2026-06-17 — Project portfolio graph and reuse catalog
@@ -129,7 +129,7 @@ PRD Version: 2.3
 - [x] Default fresh-machine project setup to `~/Desktop/CODE_YOU`
 - [x] Add project stack names, API docs links, MCP docs links, repo/directory names, high-level goals, and recent progress to tracked project records and DSI/dashboard project catalog output
 - [x] Link fresh-machine env handling to the canonical encrypted `.env.local` audit/backup/restore flow in `.agent-shared`
-- [ ] Add a dedicated signed-in machine/computer readiness card that shows this machine, synced computers, skill-stack sync, project clone readiness, and encrypted env-backup readiness in one dashboard/shell confirmation
+- [x] Add a dedicated signed-in machine/computer readiness card that shows this machine, synced computers, skill-stack sync, project clone readiness, and encrypted env-backup readiness in one dashboard/shell confirmation
 - [x] Run the authenticated GitHub project refresh and verify the dashboard lists the 90-day active project catalog with repo, dir, stack, API/MCP docs, goal, and recent progress
 - [ ] Reseed/deploy the hosted bundled-skill registry so production `/api/v1/skills` includes `machine-bootstrap`
 

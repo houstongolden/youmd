@@ -83,6 +83,10 @@ const INTERNAL_ROUTES = new Map([
   // Machine-to-machine plumbing: GitHub App webhook receiver authenticated by
   // an HMAC signature; agents cannot usefully call it.
   ["POST /api/github/webhook", "GitHub App webhook receiver authenticated by HMAC signature"],
+  // Localhost-only signed-in shell surface for inspecting the current laptop or
+  // agent host. This reports local filesystem readiness metadata and is not a
+  // hosted/public agent API.
+  ["GET /api/local/machine-readiness", "localhost-only signed-in machine readiness metadata"],
 ]);
 
 // Every documented endpoint must land in one of these categories. The docs
