@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { useUser } from "@/lib/you-auth";
 import { api } from "../../../convex/_generated/api";
@@ -123,10 +124,12 @@ function SkillCard({
   skill,
   isInstalled,
   useCount,
+  onOpen,
 }: {
   skill: SkillEntry;
   isInstalled: boolean;
   useCount?: number;
+  onOpen: () => void;
 }) {
   const [useCopied, setUseCopied] = useState(false);
   const useCmd = `/skill use ${skill.name}`;
@@ -165,6 +168,14 @@ function SkillCard({
             </span>
           )}
           <ScopeTag scope={skill.scope} />
+          <button
+            type="button"
+            onClick={onOpen}
+            className="text-[9px] font-mono uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-45 transition-opacity hover:opacity-85"
+            title={`open ${skill.name} detail`}
+          >
+            detail
+          </button>
         </div>
       </div>
 
@@ -198,11 +209,117 @@ function SkillCard({
   );
 }
 
+function SkillDetailView({
+  skill,
+  isInstalled,
+  useCount,
+  onBack,
+}: {
+  skill: SkillEntry;
+  isInstalled: boolean;
+  useCount?: number;
+  onBack: () => void;
+}) {
+  const useCmd = `/skill use ${skill.name}`;
+  const propagationRows = skillPropagation.filter((entry) => entry.skill === skill.name);
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-2 border-y border-[hsl(var(--border))]/55 py-3 font-mono text-[9px] uppercase tracking-[0.14em]">
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-[hsl(var(--accent))] opacity-80 transition-opacity hover:opacity-100"
+        >
+          {"<<"} back to skills
+        </button>
+        <span className="text-[hsl(var(--text-secondary))] opacity-35">/</span>
+        <span className="text-[hsl(var(--text-primary))] opacity-85">{skill.name}</span>
+      </div>
+
+      <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-mono text-[15px] leading-tight text-[hsl(var(--text-primary))]">{skill.name}</h2>
+              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
+                v{skill.version}
+              </span>
+              <ScopeTag scope={skill.scope} />
+              <span className={`font-mono text-[8.5px] uppercase tracking-[0.14em] ${
+                isInstalled ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-45"
+              }`}>
+                {isInstalled ? "installed" : "available"}
+              </span>
+              {useCount !== undefined && useCount > 0 && (
+                <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
+                  {useCount} uses
+                </span>
+              )}
+            </div>
+            <p className="mt-3 max-w-3xl font-mono text-[10.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-62">
+              {skill.description}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div>
+            <PaneSectionLabel>identity fields</PaneSectionLabel>
+            {skill.identityFields.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {skill.identityFields.map((field) => (
+                  <IdentityFieldTag key={field} field={field} />
+                ))}
+              </div>
+            ) : (
+              <p className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-45">
+                no identity fields required.
+              </p>
+            )}
+          </div>
+          <div>
+            <PaneSectionLabel>use in shell</PaneSectionLabel>
+            <CommandRow command={useCmd} description="copy and paste into the You.md shell" />
+            <CommandRow command={`youmd skill use ${skill.name}`} description="local CLI equivalent for terminal agents" />
+          </div>
+        </div>
+
+        {propagationRows.length > 0 && (
+          <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
+            <PaneSectionLabel>project propagation</PaneSectionLabel>
+            <div className="space-y-2">
+              {propagationRows.flatMap((entry) => entry.projects.map((project) => (
+                <div key={`${entry.skill}-${project.project}`} className="flex flex-wrap items-center gap-2 border-t border-[hsl(var(--border))]/35 pt-2 font-mono text-[9.5px]">
+                  <span className="text-[hsl(var(--text-primary))]">{project.project}</span>
+                  <span className={`uppercase tracking-[0.14em] ${
+                    project.status === "synced"
+                      ? "text-[hsl(var(--success))]"
+                      : project.status === "cataloged"
+                        ? "text-[hsl(var(--accent))]"
+                        : "text-[hsl(var(--text-secondary))] opacity-50"
+                  }`}>
+                    {project.status}
+                  </span>
+                  <span className="text-[hsl(var(--text-secondary))] opacity-48">{project.note}</span>
+                </div>
+              )))}
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 interface SkillsPaneProps {
   userId: Id<"users">;
 }
 
 export function SkillsPane({ userId }: SkillsPaneProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useUser();
   const clerkId = user?.id;
   // Query user's installed skills from Convex
@@ -241,6 +358,8 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
 
   const installedSkills = allSkills.filter((s) => installedNames.has(s.name));
   const availableSkills = allSkills.filter((s) => !installedNames.has(s.name));
+  const selectedSkillName = searchParams.get("skill");
+  const selectedSkill = selectedSkillName ? allSkills.find((skill) => skill.name === selectedSkillName) : undefined;
   const localSyncRows = [
     {
       label: "portfolio-graph-auditor",
@@ -269,6 +388,57 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
       // clipboard not available
     }
   };
+
+  const openSkill = (skillName: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "skills");
+    params.set("skill", skillName);
+    params.delete("project");
+    params.delete("stack");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const returnToSkills = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "skills");
+    params.delete("skill");
+    params.delete("project");
+    params.delete("stack");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  if (selectedSkill) {
+    return (
+      <div className="p-6 space-y-6">
+        <SkillDetailView
+          skill={selectedSkill}
+          isInstalled={installedNames.has(selectedSkill.name)}
+          useCount={installMap.get(selectedSkill.name)?.useCount}
+          onBack={returnToSkills}
+        />
+      </div>
+    );
+  }
+
+  if (selectedSkillName && !selectedSkill) {
+    return (
+      <div className="p-6">
+        <div className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+          <button
+            type="button"
+            onClick={returnToSkills}
+            className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-80 transition-opacity hover:opacity-100"
+          >
+            {"<<"} back to skills
+          </button>
+          <h2 className="mt-3 font-mono text-[14px] text-[hsl(var(--text-primary))]">skill not found</h2>
+          <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+            No skill is saved as <code className="text-[hsl(var(--text-primary))]">{selectedSkillName}</code>.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -464,6 +634,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
                 skill={skill}
                 isInstalled={true}
                 useCount={installMap.get(skill.name)?.useCount}
+                onOpen={() => openSkill(skill.name)}
               />
             ))}
           </div>
@@ -489,6 +660,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
                   skill={skill}
                   isInstalled={false}
                   useCount={installMap.get(skill.name)?.useCount}
+                  onOpen={() => openSkill(skill.name)}
                 />
               ))}
             </div>

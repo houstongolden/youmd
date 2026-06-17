@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Shell drill-in detail navigation
+
+### fix(shell): make portfolio, stacks, and skills details dedicated sub-pages
+- Portfolio project details now open as a clean URL-backed shell detail page at `/shell?tab=portfolio&project=<slug>` instead of an anchored lower-page appendix.
+- The Portfolio list stays compact at `/shell?tab=portfolio`; opening a project hides global portfolio-wide sections and shows `<< back to projects`, overview, strategy, timeline nav, exact graph/API/MCP/stack commands, and selected-project shipped context.
+- The old `#project-detail` hash is normalized away; `#strategy` and `#timeline` remain section anchors inside the detail page.
+- Fixed nested-pane hash scrolling so direct `#timeline` reloads wait for graph hydration and scroll the shell's inner overflow container until the shipping timeline is visible.
+- Added the same compact-list-to-detail pattern for YouStacks (`/shell?tab=stacks&stack=youstack`) and Skills (`/shell?tab=skills&skill=portfolio-graph-auditor`), both with breadcrumb back navigation.
+- Verification: `npx tsc --noEmit`; `npm run lint -- --file src/components/panes/PortfolioGraphPane.tsx --file src/components/panes/StacksPane.tsx --file src/components/panes/SkillsPane.tsx` (existing repo warnings only); authenticated Codex in-app Browser QA for project list/detail/back, direct timeline hash visibility, stack detail/back, and skill detail/back.
+
 ## 2026-06-17 — Fresh-machine direct clipboard handoff
 
 ### chore(machine): refresh synced skills and copy the setup prompt directly

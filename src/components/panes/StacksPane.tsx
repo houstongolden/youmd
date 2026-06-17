@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PaneDivider, PaneHeader, PaneSectionLabel } from "./shared";
 import { CopyableCommand } from "./CopyableCommand";
 
@@ -78,58 +79,199 @@ function visibilityClass(visibility: StackVisibility) {
   return "text-[hsl(var(--text-secondary))] opacity-60";
 }
 
-function StackCardView({ stack }: { stack: StackCard }) {
+function StackRow({ stack, onOpen }: { stack: StackCard; onOpen: () => void }) {
   return (
-    <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
-            {stack.name}
-          </p>
-          <p className="mt-1 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-40">
-            {stack.slug} / {stack.domain}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-wider">
-          <span className={visibilityClass(stack.visibility)}>{stack.visibility}</span>
-          <span className="text-[hsl(var(--text-secondary))] opacity-20">|</span>
-          <span className="text-[hsl(var(--accent))] opacity-70">{stack.status}</span>
-        </div>
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      className="cursor-pointer border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/40 px-4 py-3 transition-colors hover:border-[hsl(var(--accent))]/80"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+          {stack.name}
+        </p>
+        <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-60">
+          {stack.slug}
+        </span>
+        <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-40">
+          {stack.domain}
+        </span>
+        <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${visibilityClass(stack.visibility)}`}>
+          {stack.visibility}
+        </span>
+        <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
+          {stack.status}
+        </span>
       </div>
-
-      <p className="mt-3 font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-65">
+      <p className="mt-2 line-clamp-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
         {stack.description}
       </p>
-
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {stack.skills.map((skill) => (
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {stack.skills.slice(0, 4).map((skill) => (
           <span
             key={skill}
-            className="border border-[hsl(var(--border))] px-2 py-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-55"
+            className="border border-[hsl(var(--border))]/55 px-2 py-1 font-mono text-[8.5px] text-[hsl(var(--text-secondary))] opacity-55"
+            style={{ borderRadius: "var(--radius)" }}
           >
             {skill}
           </span>
         ))}
+        <span className="ml-auto font-mono text-[8px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-40">
+          open detail
+        </span>
+      </div>
+    </article>
+  );
+}
+
+function StackDetailView({
+  stack,
+  onBack,
+}: {
+  stack: StackCard;
+  onBack: () => void;
+}) {
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-2 border-y border-[hsl(var(--border))]/55 py-3 font-mono text-[9px] uppercase tracking-[0.14em]">
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-[hsl(var(--accent))] opacity-80 transition-opacity hover:opacity-100"
+        >
+          {"<<"} back to stacks
+        </button>
+        <span className="text-[hsl(var(--text-secondary))] opacity-35">/</span>
+        <span className="text-[hsl(var(--text-primary))] opacity-85">{stack.name}</span>
       </div>
 
-      <div className="mt-3 border-t border-[hsl(var(--border))]/60 pt-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-45">
-        update: <span className="text-[hsl(var(--text-primary))] opacity-70">{stack.update}</span>
-      </div>
-
-      {stack.install && (
-        <div className="mt-3">
-          <CopyableCommand command={stack.install} dimmed />
+      <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-mono text-[15px] leading-tight text-[hsl(var(--text-primary))]">
+                {stack.name}
+              </h2>
+              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-70">
+                {stack.slug}
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
+                {stack.domain}
+              </span>
+            </div>
+            <p className="mt-3 max-w-3xl font-mono text-[10.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-62">
+              {stack.description}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 font-mono text-[9px] uppercase tracking-[0.14em]">
+            <span className={visibilityClass(stack.visibility)}>{stack.visibility}</span>
+            <span className="text-[hsl(var(--text-secondary))] opacity-25">/</span>
+            <span className="text-[hsl(var(--accent))] opacity-70">{stack.status}</span>
+          </div>
         </div>
-      )}
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div>
+            <PaneSectionLabel>skills in stack</PaneSectionLabel>
+            <div className="space-y-1.5">
+              {stack.skills.map((skill) => (
+                <div key={skill} className="flex items-center gap-2 border-t border-[hsl(var(--border))]/35 pt-2 font-mono text-[10px]">
+                  <span className="text-[hsl(var(--text-primary))]">{skill}</span>
+                  <span className="ml-auto text-[hsl(var(--text-secondary))] opacity-35">skill</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <PaneSectionLabel>operating contract</PaneSectionLabel>
+            <p className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+              update: <span className="text-[hsl(var(--text-primary))] opacity-75">{stack.update}</span>
+            </p>
+            <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-48">
+              Keep the stack private by default, smoke it before agent use, route self-improvements through policy, and expose only the public-safe commands/docs for external agents.
+            </p>
+          </div>
+        </div>
+
+        {stack.install && (
+          <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
+            <PaneSectionLabel>install</PaneSectionLabel>
+            <CopyableCommand command={stack.install} dimmed />
+          </div>
+        )}
+      </section>
+
+      <PaneDivider />
+
+      <section>
+        <PaneSectionLabel>agent commands</PaneSectionLabel>
+        <div className="space-y-1">
+          <CopyableCommand command={`/skill use youstack-maintainer`} dimmed />
+          <CopyableCommand command={`youmd stack inspect --path stacks/${stack.slug}`} dimmed />
+          <CopyableCommand command={`youmd stack doctor --path stacks/${stack.slug}`} dimmed />
+          <CopyableCommand command={`youmd stack smoke --path stacks/${stack.slug}`} dimmed />
+        </div>
+      </section>
     </div>
   );
 }
 
 export function StacksPane() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const selectedStackSlug = searchParams.get("stack");
+  const selectedStack = selectedStackSlug
+    ? STACKS.find((stack) => stack.slug === selectedStackSlug)
+    : undefined;
+
+  const openStack = (stackSlug: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "stacks");
+    params.set("stack", stackSlug);
+    params.delete("project");
+    params.delete("skill");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const returnToStacks = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "stacks");
+    params.delete("stack");
+    params.delete("project");
+    params.delete("skill");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       <PaneHeader>youstacks</PaneHeader>
-      <div className="px-6 py-6 max-w-3xl">
+      <div className="px-6 py-6 max-w-4xl">
+        {selectedStack ? (
+          <StackDetailView stack={selectedStack} onBack={returnToStacks} />
+        ) : selectedStackSlug ? (
+          <div className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+            <button
+              type="button"
+              onClick={returnToStacks}
+              className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-80 transition-opacity hover:opacity-100"
+            >
+              {"<<"} back to stacks
+            </button>
+            <h2 className="mt-3 font-mono text-[14px] text-[hsl(var(--text-primary))]">stack not found</h2>
+            <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+              No stack is saved as <code className="text-[hsl(var(--text-primary))]">{selectedStackSlug}</code>.
+            </p>
+          </div>
+        ) : (
+          <>
         <PaneSectionLabel>stack names</PaneSectionLabel>
         <div className="mb-6 grid gap-3 md:grid-cols-3">
           {[
@@ -159,9 +301,13 @@ export function StacksPane() {
           install into any agent.
         </p>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           {STACKS.map((stack) => (
-            <StackCardView key={stack.slug} stack={stack} />
+            <StackRow
+              key={stack.slug}
+              stack={stack}
+              onOpen={() => openStack(stack.slug)}
+            />
           ))}
         </div>
 
@@ -188,6 +334,8 @@ export function StacksPane() {
           <p>5. Protected API/MCP gates private memories, tokens, connected tools, sync, and sensitive actions.</p>
           <p>6. Self-improvement is policy-bound: doctor first, smoke before use, and remote writes only with approval.</p>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

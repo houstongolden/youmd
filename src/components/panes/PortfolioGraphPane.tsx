@@ -541,7 +541,7 @@ function detailHref(pathname: string, projectSlug: string) {
   return `${pathname}?${params.toString()}`;
 }
 
-function detailHrefWithAnchor(pathname: string, projectSlug: string, anchor: "project-detail" | "timeline") {
+function detailHrefWithAnchor(pathname: string, projectSlug: string, anchor: "strategy" | "timeline") {
   return `${detailHref(pathname, projectSlug)}#${anchor}`;
 }
 
@@ -679,6 +679,30 @@ function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 12_000):
       }
     );
   });
+}
+
+function scrollToPortfolioSection(targetId: string, attempt = 0) {
+  const target = document.getElementById(targetId);
+  if (target) {
+    let scrollParent = target.parentElement;
+    while (scrollParent) {
+      const style = window.getComputedStyle(scrollParent);
+      const canScroll = /(auto|scroll)/.test(style.overflowY) && scrollParent.scrollHeight > scrollParent.clientHeight;
+      if (canScroll) break;
+      scrollParent = scrollParent.parentElement;
+    }
+    if (scrollParent) {
+      const parentRect = scrollParent.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const top = Math.max(0, scrollParent.scrollTop + targetRect.top - parentRect.top - 12);
+      scrollParent.scrollTo({ top, behavior: "auto" });
+      return;
+    }
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  if (attempt >= 40) return;
+  window.setTimeout(() => scrollToPortfolioSection(targetId, attempt + 1), 100);
 }
 
 export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
@@ -899,25 +923,27 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     : [];
   const selectedApiDocsUrl = preferredDocUrl(selectedProjectDocs, "api");
   const selectedMcpDocsUrl = preferredDocUrl(selectedProjectDocs, "mcp");
-  const selectedDetailUrl = selectedProject ? detailHref(pathname, selectedProject.slug) : null;
   const selectedStackName = selectedTrackedProject?.stackName ?? selectedProject?.stack;
   const selectedStackInstallCommand = selectedStackName ? stackInstallCommand(selectedStackName) : null;
   const selectedGraphCurlCommand = selectedProject ? portfolioGraphCurlCommand(selectedProject.slug) : null;
   const selectedCloneCommand = selectedProject ? cloneCommand(selectedProject, selectedTrackedProject) : null;
 
-  const selectProject = (projectSlug: string, anchor?: "project-detail" | "timeline") => {
+  const selectProject = (projectSlug: string, section?: "overview" | "strategy" | "timeline") => {
     setSelectedProjectSlug(projectSlug);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", "portfolio");
     params.set("project", projectSlug);
+    params.delete("stack");
+    params.delete("skill");
+    const anchor = section && section !== "overview" ? section : undefined;
     const nextUrl = `${pathname}?${params.toString()}${anchor ? `#${anchor}` : ""}`;
     router.replace(nextUrl, { scroll: false });
-    const targetId = anchor ?? "portfolio-projects";
+    const targetId = anchor ?? "portfolio-detail-top";
     window.setTimeout(() => {
       if (anchor && window.location.hash !== `#${anchor}`) {
         window.history.replaceState(null, "", nextUrl);
       }
-      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      scrollToPortfolioSection(targetId);
     }, 80);
   };
 
@@ -926,6 +952,8 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", "portfolio");
     params.delete("project");
+    params.delete("stack");
+    params.delete("skill");
     const nextUrl = `${pathname}?${params.toString()}`;
     router.replace(nextUrl, { scroll: false });
     window.setTimeout(() => {
@@ -940,11 +968,26 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
 
   useEffect(() => {
     const anchor = window.location.hash.replace("#", "");
-    if (anchor !== "project-detail" && anchor !== "timeline") return;
-    window.setTimeout(() => {
-      document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 120);
-  }, [selectedProjectSlug]);
+    if (anchor === "project-detail") {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", "portfolio");
+      if (selectedProjectSlug) params.set("project", selectedProjectSlug);
+      const nextUrl = `${pathname}?${params.toString()}`;
+      window.history.replaceState(null, "", nextUrl);
+      window.setTimeout(() => scrollToPortfolioSection("portfolio-detail-top"), 80);
+      return;
+    }
+    if (anchor !== "strategy" && anchor !== "timeline") return;
+    window.setTimeout(() => scrollToPortfolioSection(anchor), 120);
+  }, [
+    pathname,
+    searchParams,
+    selectedActivities.length,
+    selectedOwnedSurfaces.length,
+    selectedProject?.slug,
+    selectedProjectDocs.length,
+    selectedProjectSlug,
+  ]);
 
   const handleSyncSeed = async () => {
     if (!clerkId || syncing || hydrating) return;
@@ -1212,7 +1255,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           </>
         )}
 
-        <section id="portfolio-projects">
+        <section id={isProjectDetailView ? "portfolio-detail-top" : "portfolio-projects"}>
           <PaneSectionLabel>{isProjectDetailView ? "project detail" : "projects"}</PaneSectionLabel>
           {isProjectDetailView && selectedProject && (
             <div className="mb-3 flex flex-wrap items-center gap-2 border-y border-[hsl(var(--border))]/55 py-3 font-mono text-[9px] uppercase tracking-[0.14em]">
@@ -1226,9 +1269,36 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
               <span className="text-[hsl(var(--text-secondary))] opacity-35">/</span>
               <span className="text-[hsl(var(--text-primary))] opacity-85">{selectedProject.name}</span>
               <span className="text-[hsl(var(--text-secondary))] opacity-35">/</span>
-              <a href="#project-detail" className="text-[hsl(var(--text-secondary))] opacity-55 transition-opacity hover:opacity-90">overview</a>
-              <a href="#strategy" className="text-[hsl(var(--text-secondary))] opacity-55 transition-opacity hover:opacity-90">strategy</a>
-              <a href="#timeline" className="text-[hsl(var(--text-secondary))] opacity-55 transition-opacity hover:opacity-90">timeline</a>
+              <a
+                href={detailHref(pathname, selectedProject.slug)}
+                onClick={(event) => {
+                  event.preventDefault();
+                  selectProject(selectedProject.slug, "overview");
+                }}
+                className="text-[hsl(var(--text-secondary))] opacity-55 transition-opacity hover:opacity-90"
+              >
+                overview
+              </a>
+              <a
+                href={detailHrefWithAnchor(pathname, selectedProject.slug, "strategy")}
+                onClick={(event) => {
+                  event.preventDefault();
+                  selectProject(selectedProject.slug, "strategy");
+                }}
+                className="text-[hsl(var(--text-secondary))] opacity-55 transition-opacity hover:opacity-90"
+              >
+                strategy
+              </a>
+              <a
+                href={detailHrefWithAnchor(pathname, selectedProject.slug, "timeline")}
+                onClick={(event) => {
+                  event.preventDefault();
+                  selectProject(selectedProject.slug, "timeline");
+                }}
+                className="text-[hsl(var(--text-secondary))] opacity-55 transition-opacity hover:opacity-90"
+              >
+                timeline
+              </a>
             </div>
           )}
           {isProjectDetailView && !selectedProject && (
@@ -1416,11 +1486,11 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                       <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">30d {counts.thirty}</span>
                       <span className="border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">90d {counts.ninety}</span>
                       <a
-                        href={detailHrefWithAnchor(pathname, project.slug, "project-detail")}
+                        href={detailHref(pathname, project.slug)}
                         onClick={(event) => {
                           event.stopPropagation();
                           event.preventDefault();
-                          selectProject(project.slug, "project-detail");
+                          selectProject(project.slug, "overview");
                         }}
                         aria-label={`View details for ${project.name}`}
                         className="ml-auto border border-[hsl(var(--border))]/60 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-60 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
@@ -1493,7 +1563,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
             )}
 
             {isProjectDetailView && selectedProject && (
-            <div id="project-detail" className="scroll-mt-4 min-w-0 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
+            <div className="scroll-mt-4 min-w-0 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3">
               {selectedProject ? (
                 <>
                   <div className="flex flex-wrap items-start gap-3">
@@ -1524,30 +1594,8 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                         </span>
                       </div>
                       <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">{selectedProject.summary}</p>
-                      {selectedDetailUrl && (
+                      {(selectedApiDocsUrl || selectedMcpDocsUrl) && (
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <a
-                            href={detailHrefWithAnchor(pathname, selectedProject.slug, "project-detail")}
-                            className="inline-flex h-7 items-center gap-1 border border-[hsl(var(--border))]/60 px-2 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-70 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
-                            style={{ borderRadius: "var(--radius)" }}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              selectProject(selectedProject.slug, "project-detail");
-                            }}
-                          >
-                            open detail <ExternalLink size={10} />
-                          </a>
-                          <a
-                            href={detailHrefWithAnchor(pathname, selectedProject.slug, "timeline")}
-                            className="inline-flex h-7 items-center gap-1 border border-[hsl(var(--border))]/60 px-2 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-70 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
-                            style={{ borderRadius: "var(--radius)" }}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              selectProject(selectedProject.slug, "timeline");
-                            }}
-                          >
-                            timeline <ExternalLink size={10} />
-                          </a>
                           {selectedApiDocsUrl && (
                             <a
                               href={selectedApiDocsUrl}
