@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-17 — Live new-computer command proof
+
+### test(shell): mint and copy the actual fresh-machine bootstrap command
+- Submitted `/new computer` in the authenticated local shell and verified the product path minted a fresh 7-day bootstrap key, embedded it in the copyable command, and switched to the Skills/Machine setup surface.
+- Copied the full generated command to the in-app browser clipboard for Houston's immediate new-computer paste. The command was inspected only in redacted form for docs.
+- Redacted structural proof confirmed `YOUMD_ACTIVE_DAYS='30'`, `~/Desktop/CODE_YOU`, `curl -fsSL https://you.md/install.sh | bash`, source/runtime login with the bootstrap key, portfolio hydrate before clone, `RECENT_ONLY_ARGS` detection, stdin-from-`/dev/null` fallback for older CLIs, env-vault list/restore handling, the explicit 90-day expansion prompt, and separate 30-day-vs-full completion messages.
+- Remaining gap is deliberately still open: the command must run on the actual new computer with the real encrypted env vault before the long-running fresh-machine goal can be called complete.
+
 ## 2026-06-17 — Portfolio visual proof and bootstrap fallback
 
 ### fix(cli/web): make fresh-machine project planning tolerate older installed runtimes

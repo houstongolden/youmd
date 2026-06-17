@@ -36,6 +36,7 @@ PRD Version: 2.3
 - [x] Run the strict generated command with a real encrypted env vault in a disposable temp-home/root proof: uncapped graph plan selected 43 active projects, cloned 41 repos, restored 17 `.env.local` files + 3 agent-auth files without printing values, synced a proof row with 48 scanned / 25 ready / 8 needs-env / 4 partial / `secretValuesExposed: false`, and completed status 0
 - [x] Fix full-path fresh-machine proof blockers found by the real-vault run: force the `machine` CLI action to exit cleanly after `machine projects --yes`, and add `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` timeout guards around generated portfolio hydration calls
 - [x] Add a compatibility guard to generated fresh-machine commands so source/current installs use `--recent-only`, while fallback older npm installs force noninteractive project planning via stdin from `/dev/null` instead of blocking on older-project prompts
+- [x] Generate the real authenticated `/new computer` shell command with a fresh 7-day bootstrap key, verify the command structure in redacted form, and copy the full command to the in-app browser clipboard for Houston's immediate new-machine paste
 - [ ] Run the generated command end-to-end on the actual brand-new computer / separate clean agent host with a real encrypted env vault and visually verify projects, skills, env vault restore, local servers, resident daemons, Machine pane proof row, and portfolio graph sync there
 
 ### 2026-06-17 — Shell sidebar expand/collapse regression
