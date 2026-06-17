@@ -59,6 +59,18 @@ type ProjectActivity = {
   occurredAt: number;
 };
 
+type DisplayPattern = {
+  slug: string;
+  name: string;
+  status: string;
+  tags: string[];
+  canonicalOwner: string;
+  summary: string;
+  techStacks?: string[];
+  sourcePaths?: string[];
+  usageProjects?: string[];
+};
+
 function statusClass(status: string) {
   if (status === "canonical" || status === "active" || status === "synced" || status === "done") return "text-[hsl(var(--success))]";
   if (status === "candidate" || status === "cataloged" || status === "build" || status === "proposed" || status === "open" || status === "in_progress" || status === "urgent" || status === "high") return "text-[hsl(var(--accent))]";
@@ -207,16 +219,22 @@ function fromPersistedPattern(pattern: {
   name: string;
   status: string;
   tags: string[];
+  techStacks?: string[];
   canonicalOwnerProject?: string;
   summary: string;
+  sourcePaths?: string[];
+  usageProjects?: string[];
 }) {
   return {
     slug: pattern.slug,
     name: pattern.name,
     status: pattern.status,
     tags: pattern.tags,
+    techStacks: pattern.techStacks ?? [],
     canonicalOwner: pattern.canonicalOwnerProject ?? "youmd",
     summary: pattern.summary,
+    sourcePaths: pattern.sourcePaths ?? [],
+    usageProjects: pattern.usageProjects ?? [],
   };
 }
 
@@ -317,9 +335,9 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const activeEdges = hasPersistedGraph && graph
     ? graph.dependencyEdges.map(fromPersistedEdge)
     : dependencyEdges;
-  const activePatterns = hasPersistedGraph && graph
+  const activePatterns: DisplayPattern[] = hasPersistedGraph && graph
     ? graph.reusablePatterns.map(fromPersistedPattern)
-    : reusablePatterns;
+    : reusablePatterns.map((pattern) => ({ ...pattern, techStacks: [], sourcePaths: [], usageProjects: [pattern.canonicalOwner] }));
   const projectActivities: ProjectActivity[] = useMemo(
     () => graph?.projectActivities ?? [],
     [graph?.projectActivities]
@@ -738,6 +756,20 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
                     <span key={tag} className="font-mono text-[9px] text-[hsl(var(--accent))] opacity-55">#{tag}</span>
                   ))}
                 </div>
+                {(pattern.usageProjects?.length || pattern.sourcePaths?.length) ? (
+                  <div className="mt-3 space-y-1 border-t border-[hsl(var(--border))]/45 pt-2">
+                    {pattern.usageProjects?.length ? (
+                      <p className="font-mono text-[9px] leading-4 text-[hsl(var(--text-secondary))] opacity-48">
+                        used by {pattern.usageProjects.slice(0, 8).join(", ")}{pattern.usageProjects.length > 8 ? ` +${pattern.usageProjects.length - 8}` : ""}
+                      </p>
+                    ) : null}
+                    {pattern.sourcePaths?.length ? (
+                      <p className="font-mono text-[8.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-38">
+                        evidence {pattern.sourcePaths.slice(0, 3).join(" / ")}{pattern.sourcePaths.length > 3 ? ` +${pattern.sourcePaths.length - 3}` : ""}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>

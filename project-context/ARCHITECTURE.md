@@ -179,6 +179,15 @@ Local implementation slice:
   hydration from README plus `project-context` PRD, overview, tasks, design,
   research, and ideas files. It redacts secret-like values and filters
   setup/build/doc-title boilerplate before fields reach Convex.
+- `cli/src/lib/reusable-patterns.ts` mines reusable code/UI/auth/layout/
+  streaming/env/task/project-context patterns from active repo file/path/
+  package/doc signals during the same local hydrate pass. It skips generated
+  folders and env values, then sends usage projects and source-path evidence to
+  `portfolioReusablePatterns`.
+- `portfolio.upsertReusablePatternBatch` and
+  `POST /api/v1/me/portfolio/projects/hydrate` persist scanner-derived reusable
+  patterns with capped arrays, merged tags/tech stacks, and refreshed scanner
+  evidence paths on each hydrate.
 - Local MCP exposes `hydrate_portfolio_graph` for agents that need to hydrate
   from the tracked GitHub catalog without using the dashboard.
 - `portfolio.updateTaskTriage`, `POST /api/v1/me/portfolio/tasks/triage`, and

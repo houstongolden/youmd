@@ -234,6 +234,12 @@ Implementation slice shipped and verified on 2026-06-17:
   40 GitHub tracked projects, and the shell rendered `55 PROJECTS`, shipped
   chips, high-signal ordering, and a scrolled shipping timeline in the
   persisted Portfolio Graph pane.
+- Reusable pattern mining is now scanner-derived, not seed-only: the same
+  compiled hydrate path mines code/UI/auth/layout/streaming/env/task/project-
+  context patterns from active repo signals into `portfolioReusablePatterns`.
+  Verified run: `8` pattern families from `30` active projects / `8240` signal
+  files, `11` persisted patterns total, and authenticated browser proof of
+  `REUSABLE PATTERNS` usage/source evidence.
 
 Important boundary: a product's protected in-app agent harness is not the same
 thing as an installable public skill stack. The public stack teaches host agents

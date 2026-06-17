@@ -132,6 +132,18 @@ const dashboardPatternValidator = v.object({
   summary: v.string(),
 });
 
+const reusablePatternValidator = v.object({
+  slug: v.string(),
+  name: v.string(),
+  status: v.optional(v.string()),
+  tags: v.optional(v.array(v.string())),
+  techStacks: v.optional(v.array(v.string())),
+  canonicalOwnerProject: v.optional(v.string()),
+  summary: v.string(),
+  sourcePaths: v.optional(v.array(v.string())),
+  usageProjects: v.optional(v.array(v.string())),
+});
+
 function githubRepoUrl(repo: string | undefined): string | undefined {
   if (!repo) return undefined;
   if (/^https?:\/\//.test(repo)) return repo;
@@ -154,6 +166,20 @@ function mergeStringArray(
   fallback: string[] | undefined
 ): string[] {
   return Array.from(new Set([...(primary ?? []), ...(fallback ?? [])].map((item) => item.trim()).filter(Boolean)));
+}
+
+function mergeLimitedStringArray(
+  primary: string[] | undefined,
+  fallback: string[] | undefined,
+  limit = 40
+): string[] {
+  return mergeStringArray(primary, fallback).slice(0, limit);
+}
+
+function normalizePatternStatus(value: string | undefined, fallback: string): string {
+  const next = value?.trim();
+  if (next === "canonical" || next === "candidate" || next === "deprecated") return next;
+  return fallback;
 }
 
 function statusFromPushedAt(pushedAt: number): string {
@@ -576,6 +602,77 @@ export const syncTrackedProjects = mutation({
         counts.created += 1;
         counts.projects.push({ slug, name: trackedProject.name, created: true });
       }
+    }
+
+    return counts;
+  },
+});
+
+export const upsertReusablePatternBatch = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    patterns: v.array(reusablePatternValidator),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const now = Date.now();
+    const counts = {
+      received: args.patterns.length,
+      upserted: 0,
+      created: 0,
+      updated: 0,
+      skipped: 0,
+      patterns: [] as Array<{ slug: string; name: string; created: boolean }>,
+    };
+
+    for (const pattern of args.patterns.slice(0, 80)) {
+      const slug = slugify(pattern.slug || pattern.name);
+      const name = pattern.name.trim();
+      const summary = pattern.summary.trim();
+      if (!slug || !name || !summary) {
+        counts.skipped += 1;
+        continue;
+      }
+
+      const existing = await ctx.db
+        .query("portfolioReusablePatterns")
+        .withIndex("by_userId_slug", (q) => q.eq("userId", user._id).eq("slug", slug))
+        .first();
+
+      const status = existing?.status === "canonical"
+        ? "canonical"
+        : normalizePatternStatus(pattern.status, existing?.status ?? "candidate");
+      const row = {
+        userId: user._id,
+        slug,
+        name,
+        status,
+        tags: mergeLimitedStringArray(pattern.tags, existing?.tags, 24),
+        techStacks: mergeLimitedStringArray(pattern.techStacks, existing?.techStacks, 20),
+        canonicalOwnerProject: slugify(
+          pattern.canonicalOwnerProject ?? existing?.canonicalOwnerProject ?? pattern.usageProjects?.[0] ?? "youmd"
+        ),
+        summary,
+        sourcePaths: pattern.sourcePaths && pattern.sourcePaths.length > 0
+          ? mergeLimitedStringArray(pattern.sourcePaths, undefined, 40)
+          : existing?.sourcePaths ?? [],
+        usageProjects: pattern.usageProjects && pattern.usageProjects.length > 0
+          ? mergeLimitedStringArray(pattern.usageProjects.map(slugify), undefined, 80)
+          : existing?.usageProjects ?? [],
+        updatedAt: now,
+      };
+
+      if (existing) {
+        await ctx.db.patch(existing._id, row);
+        counts.updated += 1;
+        counts.patterns.push({ slug, name, created: false });
+      } else {
+        await ctx.db.insert("portfolioReusablePatterns", { ...row, createdAt: now });
+        counts.created += 1;
+        counts.patterns.push({ slug, name, created: true });
+      }
+      counts.upserted += 1;
     }
 
     return counts;

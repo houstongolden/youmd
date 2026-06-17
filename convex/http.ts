@@ -924,6 +924,39 @@ function cleanCompetitors(value: unknown): Array<{ name: string; url?: string; n
   });
 }
 
+function cleanReusablePatterns(value: unknown): Array<{
+  slug: string;
+  name: string;
+  status?: string;
+  tags?: string[];
+  techStacks?: string[];
+  canonicalOwnerProject?: string;
+  summary: string;
+  sourcePaths?: string[];
+  usageProjects?: string[];
+}> {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 80).flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    const slug = portfolioSlug(row.slug ?? row.name);
+    const name = cleanOptionalString(row.name, 160);
+    const summary = cleanOptionalString(row.summary, 900);
+    if (!slug || !name || !summary) return [];
+    return [{
+      slug,
+      name,
+      status: cleanOptionalString(row.status, 40),
+      tags: cleanStringArray(row.tags).slice(0, 24),
+      techStacks: cleanStringArray(row.techStacks).slice(0, 20),
+      canonicalOwnerProject: portfolioSlug(row.canonicalOwnerProject ?? row.canonicalOwner),
+      summary,
+      sourcePaths: cleanStringArray(row.sourcePaths).slice(0, 40),
+      usageProjects: cleanStringArray(row.usageProjects).map((project) => portfolioSlug(project)).filter((project): project is string => Boolean(project)).slice(0, 80),
+    }];
+  });
+}
+
 function portfolioSlug(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const slug = value
@@ -1809,6 +1842,7 @@ http.route({
       ? body.source.trim()
       : "local-portfolio-audit";
     const projects = Array.isArray(body.projects) ? body.projects : [];
+    const reusablePatterns = cleanReusablePatterns(body.reusablePatterns ?? body.patterns);
 
     const local = {
       received: projects.length,
@@ -1816,6 +1850,14 @@ http.route({
       skipped: 0,
       projects: [] as Array<{ slug?: string; name: string; created?: boolean }>,
     };
+    let patterns: {
+      received: number;
+      upserted: number;
+      created: number;
+      updated: number;
+      skipped: number;
+      patterns: Array<{ slug: string; name: string; created: boolean }>;
+    } | null = null;
 
     try {
       const tracked = includeTracked
@@ -1907,6 +1949,14 @@ http.route({
         local.projects.push({ slug, name, created: result.created });
       }
 
+      if (reusablePatterns.length > 0) {
+        patterns = await ctx.runMutation(api.portfolio.upsertReusablePatternBatch, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          patterns: reusablePatterns,
+        });
+      }
+
       try {
         const agent = detectAgent(request.headers.get("user-agent"));
         await ctx.runMutation(internal.activity.logActivity, {
@@ -1919,13 +1969,13 @@ http.route({
           status: "success",
           connectedAppGrantId: auth.connectedAppGrantId,
           durationMs: Date.now() - startedAt,
-          details: { includeTracked, trackedCount: tracked?.tracked ?? 0, localUpserted: local.upserted, source },
+          details: { includeTracked, trackedCount: tracked?.tracked ?? 0, localUpserted: local.upserted, patternUpserted: patterns?.upserted ?? 0, source },
         });
       } catch {
         // best-effort
       }
 
-      return guard.finish(json({ success: true, tracked, local }));
+      return guard.finish(json({ success: true, tracked, local, patterns }));
     } catch (err) {
       return serverErrorResponse("me/portfolio/projects/hydrate", err, "Failed to hydrate portfolio projects");
     }

@@ -27,6 +27,7 @@ import {
   savePortfolioTask,
   type BrainDumpPayload as BrainDumpPayloadType,
   type BrainDumpTaskPayload as BrainDumpTaskPayloadType,
+  type PortfolioHydratePatternPayload as PortfolioHydratePatternPayloadType,
   type PortfolioHydrateProjectPayload as PortfolioHydrateProjectPayloadType,
   type PortfolioTaskPayload as PortfolioTaskPayloadType,
   type PortfolioWriteResult as PortfolioWriteResultType,
@@ -39,6 +40,7 @@ import {
   resolveProjectContext,
 } from "../lib/projectContext";
 import { runPortfolioAudit } from "../lib/portfolio-audit";
+import { mineReusablePatterns } from "../lib/reusable-patterns";
 import { synthesizeProjectStrategy } from "../lib/project-strategy";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -1056,6 +1058,7 @@ async function hydratePortfolioFromCli(args: string[]): Promise<void> {
   const includeTracked = !hasFlag(args, "--no-github");
   const includePrs = !hasFlag(args, "--no-prs");
   const strategy = !hasFlag(args, "--no-strategy");
+  const reusablePatternsEnabled = !hasFlag(args, "--no-patterns");
   const dryRun = hasFlag(args, "--dry-run");
   const audit = runPortfolioAudit({ root, includeDotenv: hasFlag(args, "--include-dotenv"), fingerprints: false, activeDays: days });
   const projects = hydrationProjectsFromAudit(audit, {
@@ -1065,6 +1068,16 @@ async function hydratePortfolioFromCli(args: string[]): Promise<void> {
     includePrs,
     strategy,
   });
+  const patternMining = reusablePatternsEnabled
+    ? mineReusablePatterns({
+        root: audit.root,
+        projects: audit.projects
+          .filter((project) => shouldHydrateLocalProject(project, includeNested))
+          .slice(0, Math.max(1, Math.min(limit, 200))),
+        maxProjects: Math.max(1, Math.min(limit, 200)),
+      })
+    : null;
+  const reusablePatternsPayload: PortfolioHydratePatternPayloadType[] = patternMining?.patterns ?? [];
 
   console.log("");
   console.log("  " + chalk.bold("portfolio hydrate") + chalk.dim(" — auditor -> portfolio graph"));
@@ -1075,12 +1088,20 @@ async function hydratePortfolioFromCli(args: string[]): Promise<void> {
   console.log(chalk.dim(`  github tracked sync: ${includeTracked ? `${Number.isFinite(days) ? days : 90}d` : "skipped"}`));
   console.log(chalk.dim(`  local git/PR activity: commits${includePrs ? " + pull requests" : ""}`));
   console.log(chalk.dim(`  strategy fields: ${strategy ? "docs + activity synthesis" : "skipped"}`));
+  console.log(chalk.dim(`  reusable patterns: ${patternMining ? `${patternMining.patterns.length} mined from ${patternMining.projectsScanned} projects / ${patternMining.filesScanned} files` : "skipped"}`));
   console.log("");
 
   for (const project of projects.slice(0, 12)) {
     console.log(`  ${chalk.cyan(project.name.padEnd(24))} ${chalk.dim(project.path || "")}`);
   }
   if (projects.length > 12) console.log(chalk.dim(`  ... ${projects.length - 12} more`));
+  if (patternMining && patternMining.patterns.length > 0) {
+    console.log("");
+    for (const pattern of patternMining.patterns.slice(0, 8)) {
+      console.log(`  ${chalk.hex("#C46A3A")(pattern.name.padEnd(36))} ${chalk.dim(`${pattern.usageProjects.length} project${pattern.usageProjects.length === 1 ? "" : "s"}`)}`);
+    }
+    if (patternMining.patterns.length > 8) console.log(chalk.dim(`  ... ${patternMining.patterns.length - 8} more patterns`));
+  }
   console.log("");
 
   if (dryRun) {
@@ -1091,6 +1112,7 @@ async function hydratePortfolioFromCli(args: string[]): Promise<void> {
 
   const res = await hydratePortfolioProjects({
     projects,
+    reusablePatterns: reusablePatternsPayload,
     includeTracked,
     days: Number.isFinite(days) ? days : 90,
     limit: Number.isFinite(limit) ? limit : 80,
@@ -1110,6 +1132,9 @@ async function hydratePortfolioFromCli(args: string[]): Promise<void> {
     console.log(chalk.dim(`  github tracked: ${tracked.tracked} considered / ${tracked.created} created / ${tracked.updated} updated`));
   }
   console.log(chalk.dim(`  local audit: ${res.data.local.upserted} upserted / ${res.data.local.skipped} skipped`));
+  if (res.data.patterns) {
+    console.log(chalk.dim(`  reusable patterns: ${res.data.patterns.upserted} upserted / ${res.data.patterns.created} created / ${res.data.patterns.updated} updated`));
+  }
   console.log("");
 }
 

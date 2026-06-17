@@ -683,6 +683,18 @@ export interface PortfolioHydrateProjectPayload {
   }>;
 }
 
+export interface PortfolioHydratePatternPayload {
+  slug: string;
+  name: string;
+  status?: "canonical" | "candidate" | "deprecated";
+  tags?: string[];
+  techStacks?: string[];
+  canonicalOwnerProject?: string;
+  summary: string;
+  sourcePaths?: string[];
+  usageProjects?: string[];
+}
+
 export interface PortfolioHydrateResult {
   success: boolean;
   tracked?: {
@@ -699,6 +711,14 @@ export interface PortfolioHydrateResult {
     upserted: number;
     skipped: number;
     projects: Array<{ slug?: string; name: string; created?: boolean }>;
+  };
+  patterns?: {
+    received: number;
+    upserted: number;
+    created: number;
+    updated: number;
+    skipped: number;
+    patterns: Array<{ slug: string; name: string; created: boolean }>;
   };
   error?: unknown;
   message?: string;
@@ -780,6 +800,7 @@ export async function saveBrainDump(
 
 export async function hydratePortfolioProjects(payload: {
   projects?: PortfolioHydrateProjectPayload[];
+  reusablePatterns?: PortfolioHydratePatternPayload[];
   includeTracked?: boolean;
   days?: number;
   limit?: number;

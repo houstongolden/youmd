@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-17 — Scanner-derived reusable patterns
+
+### feat(cli/api/web): mine reusable code/UI/auth/layout patterns into the portfolio graph
+- Added a deterministic local reusable-pattern miner for active project repos. It scans safe file/path/package/doc signals, skips generated directories and env values, and emits reusable pattern families with usage projects plus source-path evidence.
+- Extended `youmd project portfolio-hydrate` to mine reusable patterns by default, show local pattern counts in dry-run/live output, and send the pattern batch through `POST /api/v1/me/portfolio/projects/hydrate`.
+- Added `portfolio.upsertReusablePatternBatch` and wired the hydrate API to persist scanner-derived records into `portfolioReusablePatterns`, replacing stale scanner evidence paths on each hydrate while preserving merged tags/tech stacks.
+- Updated the Portfolio Graph pane to render pattern usage projects and source-path evidence under `REUSABLE PATTERNS`.
+- Verified with focused CLI tests, CLI build, root TypeScript, Convex deploy, real compiled hydrate, authenticated API proof, and authenticated Codex in-app Browser QA.
+- Real hydrate proof: `youmd project portfolio-hydrate --root /Users/houstongolden/Desktop/CODE_2025 --days 90 --limit 80` mined `8` pattern families from `30` projects / `8240` signal files, refreshed `40` GitHub-tracked rows and `30` local-audit rows, and updated `8` persisted reusable pattern records.
+- API/UI proof: persisted graph now has `55` projects and `11` reusable patterns; verified scanner-derived families include `agent-streaming-progress`, `agentic-shell-layout`, `api-mcp-skillstack-first`, `first-party-passwordless-auth`, `task-braindump-router`, `convex-owner-gated-api`, `env-provider-intelligence`, and `project-context-operating-docs`, with no `_generated` evidence paths in the sample. Screenshot: `/tmp/youmd-reusable-patterns-scanner-proof-2026-06-17-v2.png`.
+
 ## 2026-06-17 — Portfolio strategy enrichment
 
 ### feat(cli/api/mcp/web): enrich active projects with strategy intelligence

@@ -250,9 +250,29 @@ GitHub status and task/graph paths behave in the actual product.
   bytes on `main`, below the mirror file cap.
 - Visual proof screenshot:
   `/tmp/youmd-portfolio-repo-snapshot-proof-2026-06-17-pr15.png`.
+- Scanner-derived reusable patterns are now persisted instead of relying only
+  on hand-written seed records. `youmd project portfolio-hydrate --root
+  /Users/houstongolden/Desktop/CODE_2025 --days 90 --limit 80` mined `8`
+  reusable pattern families from `30` active projects / `8240` signal files,
+  refreshed `40` GitHub-tracked rows and `30` local-audit rows, and updated
+  `8` `portfolioReusablePatterns` records.
+- Authenticated API proof verified the graph now has `55` projects and `11`
+  reusable patterns, including `agent-streaming-progress`,
+  `agentic-shell-layout`, `api-mcp-skillstack-first`,
+  `first-party-passwordless-auth`, `task-braindump-router`,
+  `convex-owner-gated-api`, `env-provider-intelligence`, and
+  `project-context-operating-docs`, with no `_generated` evidence paths in the
+  sample.
+- Authenticated Codex in-app Browser QA verified the local `/shell` Portfolio
+  pane renders `REUSABLE PATTERNS`, scanner evidence summaries, `used by`
+  usage-project rows, and `evidence` source-path rows. Visual proof screenshot:
+  `/tmp/youmd-reusable-patterns-scanner-proof-2026-06-17-v2.png`.
 
 ## Still Open
 
 - Add mobile/watch invocation proof for task and brain-dump capture paths.
-- Enrich active project strategy records with vision, pain points, solution,
-  constraints, not-building notes, metrics, and competitors.
+- Run the generated fresh-machine command on an actual clean/new host and
+  verify cloned projects, restored skills, env vault restore, local servers,
+  and portfolio graph sync there.
+- Continue pattern-quality curation as agents find stronger canonical source
+  files and reusable abstractions across active projects.
