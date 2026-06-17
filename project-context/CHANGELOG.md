@@ -20,6 +20,9 @@
   richer human/agent strategy fields.
 - Added a `hydrate active projects` action in the Portfolio Graph pane beside
   the seed refresh button.
+- Sorted hydrated project rows by recent shipping activity, local-audit signal,
+  and core project priority so high-signal projects are visible first instead
+  of being buried under arbitrary repo order.
 - Added `POST /api/v1/me/portfolio/projects/hydrate` and
   `youmd project portfolio-hydrate`, which run the local portfolio auditor,
   filter noisy nested packages/reference repos, and upsert workspace-level

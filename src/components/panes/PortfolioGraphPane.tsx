@@ -16,6 +16,22 @@ type PortfolioGraphPaneProps = {
   clerkId?: string;
 };
 
+type DisplayProject = {
+  slug: string;
+  name: string;
+  stack: string;
+  status: string;
+  summary: string;
+  goal: string;
+  focus: string;
+  docs: string[];
+  environments: string[];
+  tags?: string[];
+  source?: string;
+  lastActivityAt?: number;
+  updatedAt?: number;
+};
+
 type ProjectActivity = {
   projectSlug: string;
   kind: string;
@@ -78,7 +94,12 @@ function fromPersistedProject(project: {
   goal?: string;
   focus?: string;
   docs: string[];
-}) {
+  environments?: string[];
+  tags?: string[];
+  source?: string;
+  lastActivityAt?: number;
+  updatedAt?: number;
+}): DisplayProject {
   return {
     slug: project.slug,
     name: project.name,
@@ -88,6 +109,11 @@ function fromPersistedProject(project: {
     goal: project.goal ?? "No high-level goal saved yet.",
     focus: project.focus ?? "No current focus saved yet.",
     docs: project.docs,
+    environments: project.environments ?? [],
+    tags: project.tags,
+    source: project.source,
+    lastActivityAt: project.lastActivityAt,
+    updatedAt: project.updatedAt,
   };
 }
 
@@ -178,6 +204,31 @@ function formatActivityDate(value: number) {
   }).format(new Date(value));
 }
 
+const CORE_PROJECT_SLUGS = new Set([
+  "youmd",
+  "bamfaiapp",
+  "bamfsite",
+  "badapp",
+  "foldermd",
+  "bigbounce",
+  "hubify",
+  "myo",
+  "creator-new",
+  "fantasyis",
+]);
+
+function projectActivityScore(project: DisplayProject, activities: ProjectActivity[]) {
+  const counts = shippedCounts(activities);
+  const latestActivityAt = activities[0]?.occurredAt ?? project.lastActivityAt ?? project.updatedAt ?? 0;
+  const tags = project.tags ?? [];
+  const localSignal = project.source === "local-portfolio-audit" || tags.includes("activity-hydrated") ? 1 : 0;
+  const coreSignal = CORE_PROJECT_SLUGS.has(project.slug) ? 1 : 0;
+  return {
+    score: counts.today * 10_000 + counts.seven * 1_000 + counts.thirty * 100 + localSignal * 50 + coreSignal * 25,
+    latestActivityAt,
+  };
+}
+
 export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const graph = useQuery(api.portfolio.listPortfolioGraph, clerkId ? { clerkId } : "skip");
   const syncDashboardSeed = useMutation(api.portfolio.syncDashboardSeed);
@@ -194,9 +245,13 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     graph.reusablePatterns.length > 0
   ));
 
-  const activeProjects = hasPersistedGraph && graph
-    ? graph.projects.map(fromPersistedProject)
-    : portfolioProjects;
+  const rawProjects: DisplayProject[] = useMemo(() => {
+    if (hasPersistedGraph && graph) return graph.projects.map(fromPersistedProject);
+    return portfolioProjects.map((project) => ({
+      ...project,
+      source: "bootstrap",
+    }));
+  }, [graph, hasPersistedGraph]);
   const activeSurfaces = hasPersistedGraph && graph
     ? graph.apiSurfaces.map(fromPersistedSurface)
     : apiSurfaces;
@@ -210,17 +265,10 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     () => graph?.projectActivities ?? [],
     [graph?.projectActivities]
   );
-  const effectiveSelectedProjectSlug = selectedProjectSlug && activeProjects.some((project) => project.slug === selectedProjectSlug)
-    ? selectedProjectSlug
-    : activeProjects[0]?.slug;
 
   const surfaceBySlug = useMemo(
     () => new Map(activeSurfaces.map((surface) => [surface.slug, surface])),
     [activeSurfaces]
-  );
-  const projectBySlug = useMemo(
-    () => new Map(activeProjects.map((project) => [project.slug, project])),
-    [activeProjects]
   );
   const activitiesByProject = useMemo(() => {
     const map = new Map<string, ProjectActivity[]>();
@@ -234,6 +282,23 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
     }
     return map;
   }, [projectActivities]);
+  const activeProjects = useMemo(
+    () => [...rawProjects].sort((a, b) => {
+      const aScore = projectActivityScore(a, activitiesByProject.get(a.slug) ?? []);
+      const bScore = projectActivityScore(b, activitiesByProject.get(b.slug) ?? []);
+      if (bScore.score !== aScore.score) return bScore.score - aScore.score;
+      if (bScore.latestActivityAt !== aScore.latestActivityAt) return bScore.latestActivityAt - aScore.latestActivityAt;
+      return a.name.localeCompare(b.name);
+    }),
+    [activitiesByProject, rawProjects]
+  );
+  const projectBySlug = useMemo(
+    () => new Map(activeProjects.map((project) => [project.slug, project])),
+    [activeProjects]
+  );
+  const effectiveSelectedProjectSlug = selectedProjectSlug && activeProjects.some((project) => project.slug === selectedProjectSlug)
+    ? selectedProjectSlug
+    : activeProjects[0]?.slug;
   const selectedProject = effectiveSelectedProjectSlug
     ? projectBySlug.get(effectiveSelectedProjectSlug)
     : undefined;
