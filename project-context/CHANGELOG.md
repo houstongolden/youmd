@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Authenticated shell update proof
+
+### qa(web): verify shell GitHub update loop in Codex browser
+- Opened the authenticated local shell at `http://localhost:3100/shell` in the Codex in-app browser and verified the pre-update GitHub chrome showed `synced / repo mirror current / 1h ago`.
+- Clicked the real `[ update ]` button and observed the top GitHub chrome switch to `syncing`, the button disable as `updating`, and the shell transcript stream publish, push, and mirror-refresh steps.
+- Verified completion in the rendered shell: `published v108`, `pushed: you.md, you.json, projects/_braindumps/recent.md, projects/_personal/tasks.md, projects/youmd/tasks.md`, `route: pr`, PR #11, `merge: complete`, `mirror refreshed: 50 files`, and GitHub chrome returning to `synced / repo mirror current / just now`.
+- Cross-checked GitHub externally: `houstongolden/houstongolden-you-md` PR #11 is `MERGED` at `2026-06-17T09:43:00Z` with merge commit `a8188ac7bcfe905d3767997d63fdd177e1bbdf99`.
+- Verified repo-backed snapshots still exist on `main`: `projects/_braindumps/recent.md` and `projects/youmd/tasks.md`.
+- Visual proof screenshot: `/tmp/youmd-shell-update-proof-2026-06-17-pr11.png`.
+
 ## 2026-06-17 — Bounded machine checks and artifact viewer polish
 
 ### feat(cli): add bounded machine verify checks

@@ -182,6 +182,18 @@ GitHub status and task/graph paths behave in the actual product.
 - API/local-agent proof created a no-sync task through the built CLI API helper,
   triaged it through `/api/v1/me/portfolio/tasks/triage` to `done / urgent`, and
   verified the response kept `repoSync.attempted=false`.
+- Fresh Codex in-app Browser QA reopened authenticated local `/shell`, verified
+  the GitHub chrome started at `synced / repo mirror current / 1h ago`, clicked
+  the real `[ update ]` button, and observed the UI move through `syncing` /
+  `updating` into `synced / repo mirror current / just now`.
+- The same rendered shell transcript showed `published v108`, pushed `you.md`,
+  `you.json`, `projects/_braindumps/recent.md`, `projects/_personal/tasks.md`,
+  and `projects/youmd/tasks.md`, used `route: pr`, linked PR #11, reported
+  `merge: complete`, and refreshed the mirror to 50 files.
+- GitHub independently verified PR #11 as `MERGED` at
+  `2026-06-17T09:43:00Z` with merge commit
+  `a8188ac7bcfe905d3767997d63fdd177e1bbdf99`. Visual proof screenshot:
+  `/tmp/youmd-shell-update-proof-2026-06-17-pr11.png`.
 
 ## Still Open
 
