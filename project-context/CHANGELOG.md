@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-17 — Portfolio deep-link reliability
+
+### fix(shell): keep project detail URLs and pane state in sync
+- Fixed a shell state bug where `?project=<slug>` could remain in the URL after an agent workflow switched the right pane to another surface, making project detail deep links look unreliable until a full reload.
+- Pane switches now update the query string, clear stale `project=` outside Portfolio, clear stale GitHub integration hints outside GitHub, and query-backed pane sync now responds to full query-string changes.
+- Authenticated Codex in-app Browser QA verified direct Portfolio deep links, switching away to `?tab=stacks`, switching back to Portfolio, clicking `bamfaiapp`, search narrowing, `shipped90` sorting, API/MCP/stack/clone command visibility, clean `#timeline` navigation, shipped counters, status dropdowns, and no unreadable orange blocks.
+- Screenshots: `/tmp/youmd-portfolio-clickable-detail-shipped-status-proof-2026-06-17.png`, `/tmp/youmd-portfolio-project-detail-api-mcp-curl-proof-2026-06-17.png`, and `/tmp/youmd-portfolio-command-block-scrolled-proof-2026-06-17.png`.
+- Verification: `git diff --check`, focused `npx eslint 'src/app/(app)/dashboard/dashboard-content.tsx'`, `npm run check:radius`, and `npm run build`.
+- Note: GitHub Actions run `27720163894` from the previous docs-proof commit failed in CLI live integration tests due to two 10s timeouts against live profile endpoints after `557` CLI tests passed; unrelated to this dashboard navigation patch.
+
 ## 2026-06-17 — Live new-computer command proof
 
 ### test(shell): mint and copy the actual fresh-machine bootstrap command

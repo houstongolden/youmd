@@ -12,7 +12,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AsciiAvatar from "@/components/AsciiAvatar";
 import { useYouAgent, type RestorableChatSession, type RightPane } from "@/hooks/useYouAgent";
 import { TerminalShell } from "@/components/terminal/TerminalShell";
@@ -1154,6 +1154,7 @@ export function DashboardContent() {
   const { isAuthenticated } = useConvexAuth();
   const convex = useConvex();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   // Gate on isAuthenticated so the query only fires AFTER Convex has
   // validated the custom JWT. Without this, there's a timing window
@@ -1193,6 +1194,7 @@ export function DashboardContent() {
 
   // Query-backed panes keep deep links such as /shell?project=youmd and
   // /shell?tab=files reload-safe without inventing a second dashboard router.
+  const shellQueryString = searchParams.toString();
   const requestedRightPane = paneFromShellQuery(searchParams);
   const [rightPane, setRightPane] = useState<RightPane>(requestedRightPane ?? "profile");
   const [mobileView, setMobileView] = useState<"terminal" | "preview">("terminal");
@@ -1248,7 +1250,7 @@ export function DashboardContent() {
     setRightPane(requestedRightPane);
     setPanelOpen(true);
     setMobileView("preview");
-  }, [requestedRightPane]);
+  }, [requestedRightPane, shellQueryString]);
 
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
@@ -1269,11 +1271,26 @@ export function DashboardContent() {
   const [repoUpdateBusy, setRepoUpdateBusy] = useState(false);
   const repoUpdateRunnerRef = useRef<(() => Promise<void>) | null>(null);
 
+  const openPane = useCallback((pane: RightPane, subTab?: EditSubTab) => {
+    if (subTab) setEditInitialSubTab(subTab);
+    setPanelOpen(true);
+    setMobileView("preview");
+    setRightPane(pane);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (pane !== "portfolio") params.delete("project");
+    if (pane !== "github") params.delete("integration");
+    params.set("tab", pane);
+
+    const nextQuery = params.toString();
+    const currentUrl = `${pathname}${shellQueryString ? `?${shellQueryString}` : ""}`;
+    const nextUrl = `${pathname}${nextQuery ? `?${nextQuery}` : ""}`;
+    if (nextUrl !== currentUrl) router.replace(nextUrl, { scroll: false });
+  }, [pathname, router, searchParams, shellQueryString]);
+
   const agent = useYouAgent({
     onPaneSwitch: (pane) => {
-      setRightPane(pane);
-      setMobileView("preview");
-      setPanelOpen(true); // auto-open the panel when agent switches to it
+      openPane(pane); // auto-open the panel when agent switches to it
     },
     // Pass the connected repo name so the agent runs the post-connect protocol.
     // githubConnection is null when not connected, undefined while loading.
@@ -1285,13 +1302,6 @@ export function DashboardContent() {
   const isWritingFiles = agent.progressSteps.some(
     (s) => s.status === "running" && s.label === "writing profile files"
   );
-
-  const openPane = useCallback((pane: RightPane, subTab?: EditSubTab) => {
-    if (subTab) setEditInitialSubTab(subTab);
-    setPanelOpen(true);
-    setMobileView("preview");
-    setRightPane(pane);
-  }, []);
 
   const focusShellInput = useCallback(() => {
     requestAnimationFrame(() => agent.textareaRef.current?.focus());
@@ -1782,9 +1792,8 @@ export function DashboardContent() {
                       if (key === "terminal") {
                         setMobileView("terminal");
                       } else {
-                        setMobileView("preview");
                         const group = PANE_GROUPS.find((g) => g.key === key);
-                        if (group) setRightPane(group.defaultPane);
+                        if (group) openPane(group.defaultPane);
                       }
                     }}
                     className={`min-h-11 px-2.5 text-[10px] font-mono transition-colors whitespace-nowrap ${
@@ -1823,7 +1832,7 @@ export function DashboardContent() {
                 {activePaneGroup.panes.map((pane) => (
                   <button
                     key={pane.key}
-                    onClick={() => setRightPane(pane.key)}
+                    onClick={() => openPane(pane.key)}
                     className={`min-h-9 px-2 text-[10px] font-mono whitespace-nowrap transition-colors border ${
                       rightPane === pane.key
                         ? "border-transparent bg-[hsl(var(--accent))]/[0.08] text-[hsl(var(--text-primary))]"

@@ -99,6 +99,7 @@ PRD Version: 2.3
 - [x] Add a true dense Portfolio Graph scan mode plus clearer selected-project actions (`open detail`, `timeline`, `api docs`, `mcp`) and labeled graph/API/MCP/stack/clone command snippets that are readable without bright orange blocks
 - [x] Restore local-agent CLI help discoverability for `youmd project task --help`, `youmd project braindump --help`, and `youmd project --help`
 - [x] Run authenticated Codex in-app Browser visual QA for the latest dense/detail polish and confirm dense rows, project click-through, labeled command snippets, API/MCP action chips, and no unreadable bright-orange blocks render correctly. Screenshots: `/tmp/youmd-portfolio-latest-details-shipped-focus-proof-2026-06-17.png`, `/tmp/youmd-portfolio-project-detail-links-proof-2026-06-17.png`, `/tmp/youmd-portfolio-project-graph-command-block-proof-2026-06-17.png`
+- [x] Fix shell pane/query sync so clickable Portfolio project detail pages stay reliable after other workflows switch panes: leaving Portfolio now clears stale `project=`, direct project deep links re-open Portfolio, and visual QA verified card click, search, shipped-90 sort, API/MCP/stack/clone commands, clean `#timeline`, and no orange-block regression
 - [ ] Audit `bamfaiapp` and `bamfsite` Lempod management so one canonical API owner is documented before any duplicate endpoint work happens (deferred per Houston's 2026-06-17 focus change)
 
 ### 2026-06-17 — GitHub sync proof, Projects -> Tasks, and brain-dump routing
